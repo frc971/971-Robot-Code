@@ -1,0 +1,13 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width,user-scalable=no" />
+	<title>Native Web App</title>
+</head>
+<body onload="window.frc.info('Howdy!');">
+	<h3>Native Web App</h3>
+	<input type="text" id="ib"><br />
+	<button onclick="window.frc.info(document.getElementById('ib').value);">Log Info</button>  
+	<button onclick="window.frc.error(document.getElementById('ib').value);">Log Error</button><br />
+	<button onclick="if (window.confirm('Exit now?')) window.frc.exitApp();">Exit This App</button><br />
+</body>
+</html>
