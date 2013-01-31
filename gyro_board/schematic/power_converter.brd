@@ -128,7 +128,7 @@
 <text x="60.861" y="17.944" size="3.81" layer="21" rot="R270">-</text>
 <text x="60.861" y="5.444" size="3.81" layer="21" rot="R270">-</text>
 <text x="44.176" y="2.944" size="2.1844" layer="21">+</text>
-<text x="36.676" y="5.444" size="2.1844" layer="21">+</text>
+<text x="36.801" y="5.569" size="2.1844" layer="21">+</text>
 <text x="41.931" y="2.486" size="3.81" layer="21">-</text>
 <text x="34.056" y="4.986" size="3.81" layer="21">-</text>
 </plain>
@@ -439,7 +439,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <class number="0" name="default" width="0" drill="0">
 </class>
 </classes>
-<designrules name="SparkFun *">
+<designrules name="SparkFun">
 <description language="en">&lt;b&gt;EAGLE Design Rules&lt;/b&gt;
 &lt;p&gt;
 The default Design Rules have been set to cover
@@ -509,7 +509,7 @@ design rules under a new name.</description>
 <param name="dpMaxLengthDifference" value="10mm"/>
 <param name="dpGapFactor" value="2.5"/>
 <param name="checkGrid" value="0"/>
-<param name="checkAngle" value="1"/>
+<param name="checkAngle" value="0"/>
 <param name="checkFont" value="1"/>
 <param name="checkRestrict" value="1"/>
 <param name="useDiameter" value="13"/>
@@ -645,9 +645,9 @@ design rules under a new name.</description>
 <element name="COUT$0" library="custom_parts" package="RR71C331MDN1" value="" x="45.25" y="10.125" rot="R270"/>
 <element name="COUT$1" library="custom_parts" package="RR71C331MDN1" value="" x="47.25" y="20.5" rot="R315"/>
 <element name="OUT1" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="59.375" y="7.25" rot="R90"/>
-<element name="JP1" library="SparkFun-Connectors" package="1X03" value="" x="42.545" y="1.7145"/>
-<element name="JP2" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="1.7145"/>
-<element name="JP3" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="4.2545"/>
+<element name="JP1" library="SparkFun-Connectors" package="1X03" value="" x="42.545" y="2.0895"/>
+<element name="JP2" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="2.0895"/>
+<element name="JP3" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="4.6295"/>
 </elements>
 <signals>
 <signal name="N$1">
@@ -885,7 +885,7 @@ design rules under a new name.</description>
 <via x="31.125" y="4.625" extent="1-16" drill="0.6"/>
 <via x="54.5" y="5.75" extent="1-16" drill="0.6"/>
 <via x="54.125" y="3.25" extent="1-16" drill="0.6"/>
-<via x="53.875" y="1.5" extent="1-16" drill="0.6"/>
+<via x="55.25" y="1.875" extent="1-16" drill="0.6"/>
 <via x="48.875" y="6.375" extent="1-16" drill="0.6"/>
 <via x="43" y="4.625" extent="1-16" drill="0.6"/>
 <via x="38.875" y="6.5" extent="1-16" drill="0.6"/>
@@ -906,7 +906,7 @@ design rules under a new name.</description>
 <via x="52" y="6.5" extent="1-16" drill="0.6"/>
 <via x="56.625" y="7.125" extent="1-16" drill="0.6"/>
 <via x="61.25" y="6.625" extent="1-16" drill="0.6"/>
-<via x="59.125" y="10.375" extent="1-16" drill="0.6"/>
+<via x="59.125" y="11.875" extent="1-16" drill="0.6"/>
 <via x="50.75" y="13.75" extent="1-16" drill="0.6"/>
 <via x="49.5" y="17.25" extent="1-16" drill="0.6"/>
 <via x="54.5" y="16.5" extent="1-16" drill="0.6"/>
@@ -1034,23 +1034,30 @@ design rules under a new name.</description>
 <vertex x="55.875" y="20.875"/>
 <vertex x="63.875" y="20.875"/>
 </polygon>
-<wire x1="51.75" y1="1.453" x2="51.75" y2="0.5" width="0.3048" layer="1"/>
+<wire x1="51.75" y1="1.453" x2="51.75" y2="0.625" width="0.3048" layer="1"/>
 <via x="63.125" y="9.875" extent="1-16" drill="0.6"/>
-<wire x1="51.75" y1="0.5" x2="63.375" y2="0.5" width="0.6096" layer="1"/>
-<wire x1="63.375" y1="0.5" x2="63.375" y2="9.875" width="0.6096" layer="1"/>
+<wire x1="51.75" y1="0.625" x2="63.375" y2="0.625" width="0.6096" layer="1"/>
+<wire x1="63.375" y1="0.625" x2="63.375" y2="9.875" width="0.6096" layer="1"/>
 <wire x1="63.375" y1="9.875" x2="63.125" y2="9.875" width="0.3048" layer="1"/>
 <contactref element="OUT1" pad="P$1"/>
 <wire x1="63.125" y1="9.79" x2="56.835" y2="9.79" width="1.016" layer="16"/>
 <contactref element="JP1" pad="2"/>
 <contactref element="JP2" pad="2"/>
 <contactref element="JP3" pad="2"/>
-<wire x1="37.465" y1="4.2545" x2="37.465" y2="1.7145" width="0.6096" layer="1"/>
-<wire x1="37.465" y1="1.7145" x2="37.465" y2="0.5" width="0.6096" layer="1"/>
-<wire x1="37.465" y1="0.5" x2="45.085" y2="0.5" width="0.6096" layer="1"/>
-<wire x1="45.085" y1="0.5" x2="51.75" y2="0.5" width="0.6096" layer="1"/>
-<wire x1="45.085" y1="1.7145" x2="45.085" y2="0.5" width="0.6096" layer="1"/>
+<wire x1="37.465" y1="4.6295" x2="37.465" y2="2.0895" width="0.6096" layer="1"/>
+<wire x1="37.465" y1="2.0895" x2="37.465" y2="0.625" width="0.6096" layer="1"/>
+<wire x1="37.465" y1="0.625" x2="45.085" y2="0.625" width="0.6096" layer="1"/>
+<wire x1="45.085" y1="0.625" x2="51.75" y2="0.625" width="0.6096" layer="1"/>
+<wire x1="45.085" y1="2.0895" x2="45.085" y2="0.625" width="0.6096" layer="1"/>
 <wire x1="25.525" y1="2.125" x2="25.525" y2="0.5" width="0.3048" layer="1"/>
 <wire x1="25.525" y1="0.5" x2="37.465" y2="0.5" width="0.3048" layer="1"/>
+<wire x1="37.465" y1="0.5" x2="37.465" y2="0.625" width="0.3048" layer="1"/>
+<wire x1="63.375" y1="9.875" x2="63.375" y2="0.625" width="0.6096" layer="16"/>
+<wire x1="63.375" y1="0.625" x2="45.085" y2="0.625" width="0.6096" layer="16"/>
+<wire x1="45.085" y1="0.625" x2="37.465" y2="0.625" width="0.6096" layer="16"/>
+<wire x1="37.465" y1="0.625" x2="37.465" y2="4.625" width="0.6096" layer="16"/>
+<wire x1="45.085" y1="0.625" x2="45.085" y2="2.0895" width="0.6096" layer="16"/>
+<wire x1="63.375" y1="9.875" x2="63.125" y2="9.875" width="0.6096" layer="16"/>
 </signal>
 <signal name="N$2">
 <contactref element="IN" pad="P$2"/>
