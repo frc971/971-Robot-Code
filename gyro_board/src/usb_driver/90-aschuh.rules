@@ -1,0 +1,1 @@
+KERNEL=="aschuh[0-9]*",GROUP="dialout"

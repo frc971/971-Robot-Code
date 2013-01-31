@@ -1,0 +1,119 @@
+Partlist
+
+Exported from gyro_motherboard.brd at 1/23/12 2:45 AM
+
+EAGLE Version 5.11.0 Copyright (c) 1988-2010 CadSoft
+
+Part     Value          Package       Library      Position (mm)         Orientation
+
+3.3V                    SOT223        custom_parts (15.875 22)           R0
+C1       18pf           0805          SparkFun     (22.25 27.5)          MR0
+C2       18pf           0805          SparkFun     (24.25 25.375)        MR270
+C3       0.1 uf         0603-CAP      SparkFun     (11 34.375)           MR90
+C4       10 uF          0805          SparkFun     (21 21)               R90
+C5       0.1 uf         0603-CAP      SparkFun     (25.75 34.125)        MR90
+C6       10 uF          0805          SparkFun     (16.75 30.125)        R90
+C7       100 nF         0805          SparkFun     (31.25 27)            R180
+C8       0.1 uf         0603-CAP      SparkFun     (11 37.5)             MR90
+C9       0.1 uf         0603-CAP      SparkFun     (25.75 37.25)         MR90
+C10      10 uF          0805          SparkFun     (13.25 2.5)           R270
+C11      10 uF          0805          SparkFun     (52.5 30.5)           R0
+C12      1 uF           0603-CAP      SparkFun     (55.625 18.875)       R0
+C13      1 uF           0603-CAP      SparkFun     (61.875 19)           R0
+C14      1 uF           0603-CAP      SparkFun     (58.75 17.875)        R180
+C15      100 nF         0603-CAP      SparkFun     (63.25 32.5)          R180
+C16      1 uF           0603-CAP      SparkFun     (58.625 32.5)         R0
+C17      10 uF          0805          SparkFun     (58.75 16)            R180
+C18      10 uF          1210          SparkFun     (3.375 15.375)        MR180
+C19      10 nF          0805          SparkFun     (7.375 11.25)         MR0
+C20      22 nF          0805          SparkFun     (10.25 12.875)        MR0
+C21      100 uF         1210          SparkFun     (8.125 15.375)        MR0
+C22      10 uF          1210          SparkFun     (3.375 18.375)        MR180
+C23      10 uF          0805          SparkFun     (25.5 2.375)          R270
+C24      10 uF          0805          SparkFun     (19 16.75)            R0
+C25      10 uF          0805          SparkFun     (43.625 35.25)        MR180
+C26      10 uF          0805          SparkFun     (52.875 17.375)       R90
+C27      100 nF         C0402         rcl          (28.625 25.75)        MR90
+C28      100 nF         C0402         rcl          (34.625 14.375)       MR0
+C29      100 nF         C0402         rcl          (27.625 22.75)        MR90
+C30      100 nF         C0402         rcl          (39.75 14.5)          MR180
+C31      100 nF         C0402         rcl          (35 35.125)           MR270
+CAN1     MCP2551SO8     SO08          can          (43.625 40.5)         MR0
+D1                      SOT23-3       SparkFun     (65.375 19.5)         R0
+ERR                     CHIPLED_0805  led          (43.875 16.5)         R0
+ERR1                    CHIPLED_0805  led          (48.125 16.5)         R0
+HB                      CHIPLED_0805  led          (46 16.5)             R0
+IC1                     SOT223        custom_parts (54.625 15.75)        MR270
+IC3      LPC1768        LQFP100-14X14 lpc1xxx-v6   (38.75 24.25)         MR90
+JP1                     1X03          SparkFun     (38.75 1.5)           R90
+JP2                     1X03          SparkFun     (41.25 1.5)           R90
+JP3                     1X03          SparkFun     (43.75 1.5)           R90
+JP4                     1X03          SparkFun     (46.25 1.5)           R90
+JP5                     1X03          SparkFun     (48.75 1.5)           R90
+JP6                     1X03          SparkFun     (51.25 1.5)           R90
+JP7                     1X03          SparkFun     (53.75 1.5)           R90
+JP8                     1X03          SparkFun     (56.25 1.5)           R90
+JP9                     1X03          SparkFun     (58.75 1.5)           R90
+JP10                    1X03          SparkFun     (61.25 1.5)           R90
+JP11                    1X03          SparkFun     (63.75 1.5)           R90
+JP12                    1X03          SparkFun     (66.25 1.5)           R90
+JP13                    1X04_NO_SILK  SparkFun     (27.75 1.5)           R90
+JP14                    1X04_NO_SILK  SparkFun     (33.25 1.5)           R90
+JP15                    1X04_NO_SILK  SparkFun     (36 1.5)              R90
+JP16                    1X03          SparkFun     (15.25 1.5)           R90
+JP17                    1X03          SparkFun     (17.75 1.5)           R90
+JP18                    1X03          SparkFun     (20.25 1.5)           R90
+JP19                    1X03          SparkFun     (22.75 1.5)           R90
+JP20                    1X04_NO_SILK  SparkFun     (26.5 30.25)          MR0
+JP21                    1X04_NO_SILK  SparkFun     (30.5 1.5)            R90
+POW                     CHIPLED_0805  led          (12.625 6)            R0
+R1       300            0603-RES      SparkFun     (12.625 9.25)         R270
+R2       24 ohm 1%      0603-RES      SparkFun     (27.875 36.625)       MR270
+R3       24 ohm 1%      0603-RES      SparkFun     (10.625 40.25)        MR0
+R4       24 ohm 1%      0603-RES      SparkFun     (10.625 42.375)       MR0
+R5       130            0603-RES      SparkFun     (37.75 35)            MR180
+R6       47k            0603-RES      SparkFun     (34 25.875)           R90
+R7       47k            0603-RES      SparkFun     (49 28.375)           MR90
+R8       24 ohm 1%      0603-RES      SparkFun     (30 36.625)           MR270
+R9       28k            0603-RES      SparkFun     (15.125 12.875)       MR90
+R10      31.6k          0603-RES      SparkFun     (15.125 9.625)        MR270
+R11      130            0603-RES      SparkFun     (46 19.875)           R270
+R12      130            0603-RES      SparkFun     (43.875 19.875)       R270
+R13      130            0603-RES      SparkFun     (48.125 19.875)       R270
+R14      28k            0603-RES      SparkFun     (17.875 12.875)       MR270
+R15      31.6k          0603-RES      SparkFun     (17.875 9.625)        MR90
+R16      28k            0603-RES      SparkFun     (20.125 12.875)       MR90
+R17      31.6k          0603-RES      SparkFun     (20.125 9.625)        MR270
+R18      28k            0603-RES      SparkFun     (22.875 12.875)       MR270
+R19      31.6k          0603-RES      SparkFun     (22.875 9.625)        MR90
+R20      154.0 kOhm     0805          SparkFun     (1.625 11.25)         MR180
+R21       9.31 kOhm     0805          SparkFun     (4.5 11.25)           MR0
+R22      34.0 kOhm      0805          SparkFun     (2.625 12.875)        MR0
+R23      1.27 kOhm      0805          SparkFun     (7.375 12.875)        MR180
+R24      6.65 kOhm      0805          SparkFun     (10.25 11.25)         MR180
+R25      1.5K 1%        0805          SparkFun     (32.5 35.875)         MR0
+U$2      CRYSTAL        CRYSTAL       MC33887      (23.625 26)           R0
+U$4      ADUM3160       SOIC_W        custom_parts (18.625 38.5)         MR90
+U$5      ADXRS450       SOIC_CAV      custom_parts (59.625 25.75)        R0
+U$6      DIP_SWITCH_X4  219-4LPST     custom_parts (61.375 39.125)       R180
+U$8      RJ16           85510-5019    custom_parts (44.25 38.375)        R270
+U$9      USB            M701-330442   custom_parts (5.375 35.75)         R90
+U$10     RJ16           85510-5019    custom_parts (21.5 38.375)         R90
+U$13     NUF6406M       DFN12         custom_parts (59 9.125)            R90
+U$14     NUF6406M       DFN12         custom_parts (45 9.375)            R90
+U$15     NUF6406M       DFN12         custom_parts (30.75 11.625)        R90
+U$16     TL974IPWR      TSSOP-14      custom_parts (19 13.375)           R270
+U$19     NUF6406M       DFN12         custom_parts (18.5 9.5)            R90
+U$21     WA06X103JTL    0603X4        custom_parts (59.625 9)            MR270
+U$22     WA06X103JTL    0603X4        custom_parts (47.375 9.25)         MR270
+U$23     WA06X103JTL    0603X4        custom_parts (43.125 9.25)         MR270
+U$36     LQH43MN471J03L L1812         custom_parts (63.75 16)            R180
+U$39     LMZ12002       TZA07A        custom_parts (5.75 12.375)         R0
+U$43     39543-020239   39543-0202    custom_parts (8 5)                 R270
+U$44     NUF6406M       DFN12         custom_parts (39.125 9.875)        R90
+U$45     WA06X103JTL    0603X4        custom_parts (35.625 11.5)         MR270
+U$46     WA06X103JTL    0603X4        custom_parts (30.5 11.625)         MR270
+U$52     1608_INDUCTOR  L1608         custom_parts (25.375 22)           R270
+U$53     1608_INDUCTOR  L1608         custom_parts (28.875 22)           R270
+USB                     CHIPLED_0805  led          (35.625 32.625)       R0
+Z1       MMSZ5242BT1G   SOD-123       custom_parts (1.25 4.625)          MR90
