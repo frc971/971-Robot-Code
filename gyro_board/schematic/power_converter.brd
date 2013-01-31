@@ -122,9 +122,9 @@
 <text x="62.844" y="8.752" size="0.8128" layer="21" font="vector" ratio="10" rot="SR270">gyro</text>
 <text x="62.051" y="8.944" size="2.1844" layer="21">+</text>
 <text x="62.051" y="22.194" size="2.1844" layer="21">+</text>
-<text x="0.176" y="18.694" size="2.1844" layer="21">+</text>
-<text x="0.73" y="17.354" size="1" layer="21" font="vector" ratio="10" rot="SR270">in</text>
-<text x="2.763" y="13.431" size="3.81" layer="21" rot="R90">-</text>
+<text x="-0.074" y="18.694" size="2.1844" layer="21">+</text>
+<text x="0.48" y="17.354" size="1" layer="21" font="vector" ratio="10" rot="SR270">in</text>
+<text x="2.263" y="13.431" size="3.81" layer="21" rot="R90">-</text>
 <text x="60.861" y="17.944" size="3.81" layer="21" rot="R270">-</text>
 <text x="60.861" y="5.444" size="3.81" layer="21" rot="R270">-</text>
 <text x="44.176" y="2.944" size="2.1844" layer="21">+</text>
@@ -632,8 +632,8 @@ design rules under a new name.</description>
 <element name="M1" library="custom_parts" package="PG-TSDSON8" value="BSZ097N04LS_G" x="20.5" y="12.5" rot="R270"/>
 <element name="CIN$1" library="resistor" package="C1210" value="C3225X7R1E106M" x="3.25" y="3.5"/>
 <element name="CIN$2" library="resistor" package="C1210" value="C3225X7R1E106M" x="3.25" y="6.75"/>
-<element name="IN" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="4.75" y="18.125" rot="R270"/>
-<element name="OUT" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="59.375" y="19.5" rot="R90"/>
+<element name="IN" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="4.375" y="18.125" rot="R270"/>
+<element name="OUT" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="59.75" y="19.5" rot="R90"/>
 <element name="DTVS" library="custom_parts" package="SOD-123" value="MMSZ5246BT1G" x="3.25" y="1" rot="R180"/>
 <element name="IPOW" library="led" package="CHIPLED_0805" value="" x="11" y="5.75" rot="R90"/>
 <element name="RIPOW" library="resistor" package="R1206" value="1K" x="10.625" y="4" rot="R180"/>
@@ -644,7 +644,7 @@ design rules under a new name.</description>
 <element name="CSEP$3" library="resistor" package="C1210" value="C3225X7R1E106M" x="25" y="14.5"/>
 <element name="COUT$0" library="custom_parts" package="RR71C331MDN1" value="" x="45.25" y="10.125" rot="R270"/>
 <element name="COUT$1" library="custom_parts" package="RR71C331MDN1" value="" x="47.25" y="20.5" rot="R315"/>
-<element name="OUT1" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="59.375" y="7.25" rot="R90"/>
+<element name="OUT1" library="custom_parts" package="ELFH0225*" value="POWER_CONNECTORELFH0225*" x="59.75" y="7.25" rot="R90"/>
 <element name="JP1" library="SparkFun-Connectors" package="1X03" value="" x="42.545" y="2.0895"/>
 <element name="JP2" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="2.0895"/>
 <element name="JP3" library="SparkFun-Connectors" package="1X03" value="" x="34.925" y="4.6295"/>
@@ -987,7 +987,7 @@ design rules under a new name.</description>
 <contactref element="OUT" pad="P$1"/>
 <wire x1="63.125" y1="9.79" x2="63.125" y2="9.875" width="1.016" layer="16"/>
 <wire x1="63.125" y1="9.875" x2="63.125" y2="22.04" width="1.016" layer="16"/>
-<wire x1="63.125" y1="22.04" x2="56.835" y2="22.04" width="1.016" layer="16"/>
+<wire x1="63.125" y1="22.04" x2="57.21" y2="22.04" width="1.016" layer="16"/>
 <via x="54.625" y="23.375" extent="1-16" drill="0.6"/>
 <via x="51.875" y="23.5" extent="1-16" drill="0.6"/>
 <via x="60.125" y="22.625" extent="1-16" drill="0.6"/>
@@ -1040,7 +1040,7 @@ design rules under a new name.</description>
 <wire x1="63.375" y1="0.625" x2="63.375" y2="9.875" width="0.6096" layer="1"/>
 <wire x1="63.375" y1="9.875" x2="63.125" y2="9.875" width="0.3048" layer="1"/>
 <contactref element="OUT1" pad="P$1"/>
-<wire x1="63.125" y1="9.79" x2="56.835" y2="9.79" width="1.016" layer="16"/>
+<wire x1="63.125" y1="9.79" x2="57.21" y2="9.79" width="1.016" layer="16"/>
 <contactref element="JP1" pad="2"/>
 <contactref element="JP2" pad="2"/>
 <contactref element="JP3" pad="2"/>
