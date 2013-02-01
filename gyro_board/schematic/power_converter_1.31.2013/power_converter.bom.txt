@@ -1,0 +1,42 @@
+Partlist exported from C:/Users/User1/Desktop/frc971/2013/trunk/src/gyro_board/schematic/power_converter.sch at 1/31/2013 5:15:48 PM
+
+Part   Value                    Device                   Package      Description                         
+CBP    C0603C104K5RACT          C-USC0603                C0603        CAPACITOR, American symbol          
+CCC    GRM155R61A224KE19D       C-USC0402                C0402        CAPACITOR, American symbol          
+CCOMP  GRM155C80G184KE01        C-USC0402                C0402        CAPACITOR, American symbol          
+CCOMP2 GRM1885C1H162JA01        C-USC0603                C0603        CAPACITOR, American symbol          
+CIN$0  C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+CIN$1  C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+CIN$2  C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+COUT$0                          C-USRR71C331MDN1         RR71C331MDN1 CAPACITOR, American symbol          
+COUT$1                          C-USRR71C331MDN1         RR71C331MDN1 CAPACITOR, American symbol          
+CRAMP  CC0805KRX7R9BB56         C-USC0805                C0805        CAPACITOR, American symbol          
+CSEP$0 C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+CSEP$1 C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+CSEP$2 C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+CSEP$3 C3225X7R1E106M           C-USC1210                C1210        CAPACITOR, American symbol          
+D1      12CWQ10FNPB             VS-12CWQ10FNPBF          D-PAK        Schottky Rectifier, 2 x 6 A (diode) 
+DTVS   MMSZ5246BT1G             MMSZ5242BT1G             SOD-123      zener diode                         
+IN     POWER_CONNECTORELFH0225* POWER_CONNECTORELFH0225* ELFH0225*    MOLEX 39543-0202                    
+IPOW                            LEDCHIPLED_0805          CHIPLED_0805 LED                                 
+JP1                             M03PTH                   1X03         Header 3                            
+JP2                             M03PTH                   1X03         Header 3                            
+JP3                             M03PTH                   1X03         Header 3                            
+LIN    XAL1060-152ME            L-US1060-152             1060-152     INDUCTOR, American symbol           
+LOUT   XAL1010-153ME            L-US1010-153             1010-153     INDUCTOR, American symbol           
+M1     BSZ097N04LS_G            BSZ097N04LS_G            PG-TSDSON8   mosfet                              
+OPOW                            LEDCHIPLED_0805          CHIPLED_0805 LED                                 
+OUT    POWER_CONNECTORELFH0225* POWER_CONNECTORELFH0225* ELFH0225*    MOLEX 39543-0202                    
+OUT1   POWER_CONNECTORELFH0225* POWER_CONNECTORELFH0225* ELFH0225*    MOLEX 39543-0202                    
+RBP    CRCW040220R0FKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RCOMP  CRCW04021K58FKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RFADJ  CRCW040233K2FKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RFB1   CRCW040210K0FKED         R-US_R0402               R0402        RESISTOR, American symbol           
+RFB2   CRCW040284K5FKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RIPOW  1K                       R-US_R1206               R1206        RESISTOR, American symbol           
+ROPOW  1K                       R-US_R1206               R1206        RESISTOR, American symbol           
+RRAMP  CRCW0402100RFKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RSENSE CSNL1206FT2L00           R-US_M1206               M1206        RESISTOR, American symbol           
+RUVLO1 CRCW040268K1FKE          R-US_R0402               R0402        RESISTOR, American symbol           
+RUVLO2 CRCW0402100KFKE          R-US_R0402               R0402        RESISTOR, American symbol           
+U$1    LM3481                   LM3481                   MSOP10       switching regulator controller      

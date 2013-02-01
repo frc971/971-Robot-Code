@@ -1,0 +1,144 @@
+Pinlist
+
+Exported from power_converter.brd at 1/31/2013 5:13:56 PM
+
+EAGLE Version 6.4.0 Copyright (c) 1988-2013 CadSoft
+
+Part     Pad      Net
+
+CBP      1        N$1
+         2        GND
+
+CCC      1        N$3
+         2        GND
+
+CCOMP    1        N$7
+         2        GND
+
+CCOMP2   1        N$5
+         2        GND
+
+CIN$0    1        N$2
+         2        GND
+
+CIN$1    1        N$2
+         2        GND
+
+CIN$2    1        N$2
+         2        GND
+
+COUT$0   +        N$14
+         -        GND
+
+COUT$1   +        N$14
+         -        GND
+
+CRAMP    1        N$8
+         2        GND
+
+CSEP$0   1        N$13
+         2        N$12
+
+CSEP$1   1        N$13
+         2        N$12
+
+CSEP$2   1        N$13
+         2        N$12
+
+CSEP$3   1        N$13
+         2        N$12
+
+D1       ANODE$0  N$12
+         ANODE$1  N$12
+         CATHODE  N$14
+
+DTVS     ANODE    GND
+         CATHODE  N$2
+
+IN       P$1      GND
+         P$2      N$2
+
+IPOW     A        N$16
+         C        GND
+
+JP1      1        GND
+         2        N$14
+         3                 *** unconnected ***
+
+JP2      1        GND
+         2        N$14
+         3                 *** unconnected ***
+
+JP3      1        GND
+         2        N$14
+         3                 *** unconnected ***
+
+LIN      P$1      N$2
+         P$2      N$13
+
+LOUT     P$1      GND
+         P$2      N$12
+
+M1       D$0      N$13
+         D$1      N$13
+         D$2      N$13
+         D$3      N$13
+         D$4      N$13
+         G        N$11
+         S$0      N$10
+         S$1      N$10
+         S$2      N$10
+
+OPOW     A        N$17
+         C        GND
+
+OUT      P$1      N$14
+         P$2      GND
+
+OUT1     P$1      N$14
+         P$2      GND
+
+RBP      1        N$1
+         2        N$2
+
+RCOMP    1        N$7
+         2        N$5
+
+RFADJ    1        GND
+         2        N$9
+
+RFB1     1        N$15
+         2        GND
+
+RFB2     1        N$14
+         2        N$15
+
+RIPOW    1        N$16
+         2        N$2
+
+ROPOW    1        N$17
+         2        N$14
+
+RRAMP    1        N$10
+         2        N$8
+
+RSENSE   1        N$10
+         2        GND
+
+RUVLO1   1        GND
+         2        N$4
+
+RUVLO2   1        N$4
+         2        N$2
+
+U$1      1        N$8
+         10       N$1
+         2        N$4
+         3        N$5
+         4        N$15
+         5        GND
+         6        N$9
+         7        GND
+         8        N$11
+         9        N$3
+

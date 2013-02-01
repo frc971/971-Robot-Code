@@ -1,8 +1,8 @@
 #!/usr/bin/ruby
-#
+
 #=~ and !~ are regex (not) match operators. they set $1 etc
 
-Suffix = "_1.19.2012"
+Suffix = "_1.31.2013"
 PartsLists = ['parts.txt']
 
 Mouser = 1
@@ -36,6 +36,9 @@ class Component
 		end
 
 		true
+	end
+	def inspect
+		"Component{desc=>#{desc.inspect},quant=>#{quant.inspect},ordering=>#{ordering.inspect},names=>#{names.inspect},other_names=>#{other_names.inspect},maybe=#{maybe}}"
 	end
 	def main_quant
 		names.size
@@ -72,7 +75,24 @@ class Component
 	def part_num
 		case @source
 		when Mouser
-			`wget '#{ordering}' -O - 2>/dev/null | grep 'Mouser Part #:' -A 3 | grep -v '<' | head -n1`.chomp
+			lines = `wget '#{ordering}' -O -`.lines
+			if (!$?.success?)
+				$stderr.puts "determing part # for #{ordering.inspect} failed #$?"
+				exit(1)
+			end
+			found = 0
+			lines.each do |line|
+				if /^Mouser Part #:/ =~ line
+					found = 5
+				end
+				if (found == 1)
+					@result = line.chomp
+				end
+				if (found > 0)
+					found -= 1
+				end
+			end
+			@result
 		when Digikey
 			#`wget '#{ordering}' -O - 2>/dev/null | grep 'Digi-Key Part Number' | sed 's/.*\td id=reportpartnumber\(.*\)\<\/td.*/\1/g'`
 			puts "warning: digikey ordering link #{ordering} not recognized" unless ordering =~ /.*\/(.*)\/.*$/

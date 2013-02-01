@@ -79,10 +79,6 @@
 	http://www.mouser.com/ProductDetail/Walsin/WA06X103JTL/?qs=sGAEpiMZZMvrmc6UYKmaNZko%252bNlity%2FEV4c2Bk25eAg%3D
 // U$21-23, U$45-46
 
-16 x 3-pin 0.1" headers
-	http://www.mouser.com/ProductDetail/FCI/69190-103HLF/?qs=sGAEpiMZZMtsLRyDR9nM1%252bmbmmVUI0dA0Z1OFUoOXHc%3d
-// JP1-12, JP16-19
-
 5 x 4-pin 0.1" headers
 	http://www.mouser.com/ProductDetail/3M-Electronic-Solutions-Division/961104-6804-AR/?qs=sGAEpiMZZMtsLRyDR9nM17VtKPchIJvtC4eCEPRcQ7o%3d
 // JP13-15, JP20-21
@@ -177,18 +173,25 @@
 	http://www.mouser.com/ProductDetail/Vishay-Dale/CRCW0603300RFKEA/?qs=sGAEpiMZZMvdGkrng054t27YQJ%252bwbTvXi4D6ehZcvac%3d
 // R1
 
-
 // Common
+
+19 x 3-pin 0.1" headers
+	http://www.mouser.com/ProductDetail/FCI/69190-103HLF/?qs=sGAEpiMZZMtsLRyDR9nM1%252bmbmmVUI0dA0Z1OFUoOXHc%3d
+// JP1-12, JP16-19 gyro
+// JP1-3 regulator
 
 9 x 1210 10 uF 25V caps
 	http://www.mouser.com/ProductDetail/TDK/C3225X7R1E106MT/?qs=nUVS3y17YY4s9OT5qYCJ9w%3d%3d
 // C18, C22 gyro
 // CIN$0, CIN$1, CIN$2, CSEP$0, CSEP$1, CSEP$2, CSEP$3 regulator
 
-4 x Molex 39543-0202 screw terminal
+1 x Molex 39543-0202 screw terminal
 	http://www.mouser.com/ProductDetail/Molex/39543-0202/?qs=4dAX1jW9NQp7F8cTdTMv1g%3d%3d
-// IN, OUT, OUT1 regulator
 // U$43 gyro
+
+3 x Amphenol ELFH02250 connector terminal block
+	http://www.digikey.com/product-detail/en/ELFH02250/APC1242-ND/1788033
+// IN, OUT, OUT1 regulator
 
 2 x zener tvs diodes (SOD-123 16V)
 	http://www.mouser.com/ProductDetail/ON-Semiconductor/MMSZ5246BT1G/?qs=sGAEpiMZZMstCHp3EWKGl1Xq7JMFNrq0wSn4l1OCWWw%3d
