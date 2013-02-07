@@ -1,0 +1,11 @@
+FRC Gyro sample program
+--------------------------------
+
+This is a sample showing the use of the Gyro sensor and the associated class for
+driving in a straight line. It uses simple proportional control to steer the
+robot during the autonomous period. There is no operator control portion of
+this program, so the default action (print a message on the console) is taken
+while the driver station is in teleop mode.
+
+
+

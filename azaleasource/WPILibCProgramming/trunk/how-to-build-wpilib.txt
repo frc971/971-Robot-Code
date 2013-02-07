@@ -1,0 +1,26 @@
+How to build a custom WPILib in Windriver Workbench
+---------------------------------------------------
+
+Make a WR WB project "WPILib" to build this copy of WPILib:
+    New "Downloadable Kernel Module" project (*not* a Shared Libary project).
+        You can create the project in the workspace directory with content at "external location", that is, the directory where you put the WPILib source code.
+        Build Specs for PPC603gnu only; debug mode.
+        Build tool: Librarian (*not* Linker); Pass the build target to the next level. [Does the "pass" checkbox matter?]
+
+    Project Properties > C/C++ General > Indexer > Paths and Symbols > Sources/Filters
+        Set a filter to exclude PPC603gnu/, .svn/, .settings/ . [Needed?]
+
+    [Irrelevant. CInterfaces is absent in 2013.] Under the Project Explorer view's WPILib project, expand +Build Targets (PPC603gnu - debug), +WPILib (WPILib.a), +WPILib - recursive, +WPILib; select CInterfaces, hit Delete, and confirm excluding the CInterfaces/ directory from the build.
+        [With these steps, WR WB won't fail trying to build CInterfaces. For some reason, setting Project Properties > C/C++ General > Paths and Symbols > Sources/Filters exclusion filters won't do it.]
+
+    Approach 1:
+      Start a build, let it analyze the needed include paths, add the WPILib/ source directory, and move that up to the top of the list.
+      It should now say "There are 0 unresolved include directives".
+      Proceed.
+    Approach 2:
+      Select WPILib project > Project Properties > Build Properties > Build Paths
+        Add the WPILib/ source directory to the include paths and move that up to the first entry.
+    Note: The other include path entries should be -I$(WIND_BASE)/target/h and -I$(WIND_BASE)/target/h/wrn/coreip
+    Question: Is there a way to do this using a $variable rather than a hard-wired directory path so you could check in and share the project files?
+
+    Build the Project. (If WB asks about generating include files, you can do it or skip it.)

@@ -1,0 +1,7 @@
+FRC Dashboard Data Example
+--------------------------------
+
+This example shows how to send data to a dashboard application running on a laptop
+connected to the driver station.
+
+This is the only method of data communication that will be possible during competition.

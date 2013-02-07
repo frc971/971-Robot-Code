@@ -1,0 +1,10 @@
+FRC Line Tracker Sample Program
+--------------------------------
+
+This is a simple line tracker sample program that provides
+a useful starting point for creating a robot program that
+can autonomously put tubes on the wall for the 2011 FRC
+game. The comments describe how it might be modified for
+your own use and depends on the weight and speed of your own
+robot. This has been tested at FIRST using the 2011 kitbot
+with a charged battery.

@@ -1,0 +1,5 @@
+FRC Driver Station LCD Text
+--------------------------------
+
+This program is a simple example program that implements
+printing text to your Driver Station LCD.

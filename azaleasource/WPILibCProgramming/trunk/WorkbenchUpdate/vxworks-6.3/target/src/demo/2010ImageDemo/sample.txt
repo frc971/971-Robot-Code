@@ -1,0 +1,9 @@
+FRC 2010 Vision Demonstration Program
+-------------------------------------
+This demonstartion program shows how to track to the FRC 2010 game target
+using the AxisCamera class. The demo uses the camera to get the heading to
+the target, then uses a Gyro to turn to that heading. In addition, this
+program will display data from the I/O ports on the cRIO and Camera tracking
+information onto the LabVIEW sample dashboard.
+
+

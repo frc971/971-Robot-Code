@@ -1,0 +1,7 @@
+FRC Kinect Gestures Sample
+--------------------------------
+This program demonstrates robot side processing of the Kinect data
+using C++. This program implements the same gestures that are in the
+FRC Kinect Server and are described in the Getting Started with the
+Microsoft Kinect for FRC document. This program maps the resulting
+axes from each arm to tank drive at 1/3 power.

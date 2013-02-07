@@ -1,0 +1,26 @@
+FRC Default Program (Current with imaging tool)
+--------------------------------
+
+This program is the "default" main program included when imaging the cRIO with the
+"default" code in C++.  
+
+This demo uses the IterativeRobot base class in order to mirror the "old style" default
+code (prior to 2009) by providing methods which are called by the main loop at the
+appropriate times.
+
+This demo is intended to provide functionality that will confirm the operation and usage
+of the core control system components, as used in the "Benchtop Test" described in
+Chapter 2 of the 2009 FRC Control System Manual.
+
+This program provides features in the Disabled, Autonomous, and Teleop modes as described
+in the "benchtop test" directions, including "once-a-second" debugging printouts when
+disabled, a "KITT light show" on the solenoid lights when disabled, and elementary driving
+capabilities and "button mapping" of joysticks when teleoperated.  This demonstration
+program also shows the use of the user watchdog timer.
+
+This demonstration is not intended to serve as a "starting template" for development of
+robot code for a team, as there are better templates and examples created specifically
+for that purpose.  However, teams may find the techniques used in this program to be
+interesting possibilities for use in their own robot code.
+
+

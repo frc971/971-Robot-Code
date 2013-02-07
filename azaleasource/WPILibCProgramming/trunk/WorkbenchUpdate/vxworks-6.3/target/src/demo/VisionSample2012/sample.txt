@@ -1,0 +1,7 @@
+FRC 2012 Vision Sample Program
+--------------------------------
+This project is a camera vision sample that detects the 4 rectangles that are the 2012 FRC game
+vision targets. Look at the comments in the code and the Vision white paper published in the
+documents section of the WPILib project on firstforge.wpi.edu. Look in the VisionImages directory
+inside the project that is created for the sample images as well as the NI Vision Assistant file
+that contains the vision command chain (open it with the Vision Assistant)

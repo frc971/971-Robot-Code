@@ -1,0 +1,9 @@
+FRC KinectStick Example
+--------------------------------
+
+This program demonstrates the use of the KinectStick
+class for the FRC 2012 game. This program uses the
+KinectSticks to tank drive a 2 motor robot and shows
+an example of accessing the KinectStick button. The
+KinectStick gestures are documented in the "Getting
+Started with the Microsoft Kinect for FRC" document.
