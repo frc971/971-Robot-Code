@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Creates the directory specified by the first argument and runs swig with the
+# rest of the arguments.
+mkdir -p $1
+shift
+swig $@

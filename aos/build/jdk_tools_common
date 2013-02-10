@@ -1,0 +1,13 @@
+# This file gets sourced by all the shell scripts that use the JDK tools.
+# gyp likes quoting some of the input arguments, but nothing else tolerates it,
+#   so " are removed from various inputs.
+
+set -e # stop on error
+#set -x # echo everything
+
+TMPDIR=$2
+# ${CLASSPATH} is used by the jdk tools
+EXTRA_CLASSPATH=`echo $3 | tr -d '"' | sed 's/ /:/g'`
+EXTRA_JARS=`echo $3 | tr -d '"'`
+
+mkdir -p ${TMPDIR}

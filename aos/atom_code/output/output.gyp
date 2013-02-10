@@ -1,0 +1,35 @@
+{
+  'targets': [
+    {
+      'target_name': 'http_server',
+      'type': 'static_library',
+      'sources': [
+        'HTTPServer.cpp',
+        'evhttp_ctemplate_emitter.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+        '<(EXTERNALS):libevent',
+        '<(EXTERNALS):ctemplate',
+      ],
+      'export_dependent_settings': [
+# Our headers #include headers from both of these.
+        '<(EXTERNALS):libevent',
+        '<(EXTERNALS):ctemplate',
+      ],
+    },
+    {
+      'target_name': 'motor_output',
+      'type': 'static_library',
+      'sources': [
+        'MotorOutput.cpp',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:libaos',
+      ],
+    },
+  ],
+}

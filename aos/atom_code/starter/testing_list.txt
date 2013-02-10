@@ -1,0 +1,3 @@
+../bin/LogReader
+../bin/JoystickCode
+../bin/AutoMode

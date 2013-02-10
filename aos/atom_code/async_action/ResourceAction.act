@@ -1,0 +1,13 @@
+args resource_args {
+	// 1 = request, 2 = release, 4 = child run, 8 = child request, 16 = child release, all others 0
+	uint8_t first;
+	uint8_t second;
+
+	int number; // top level is 1
+
+	uint8_t state_to_set; // first 2 bits are this one, next 2 bits are for parent
+};
+status resource_status {
+	int failed; // 0 means none have failed yet
+};
+priority 100;

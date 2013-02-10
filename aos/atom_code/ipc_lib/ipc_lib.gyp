@@ -1,0 +1,55 @@
+{
+  'targets': [
+    {
+      'target_name': 'ipc_lib',
+      'type': 'static_library',
+      'sources': [
+        'aos_sync.c',
+        'binheap.c',
+        'core_lib.c',
+        'queue.c',
+        'resource.c',
+        'shared_mem.c',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:aos/ResourceList.h',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:aos/ResourceList.h',
+      ],
+    },
+    {
+      'target_name': 'binheap_test',
+      'type': 'executable',
+      'sources': [
+        'binheap_test.cpp',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:libaos',
+      ],
+    },
+    {
+      'target_name': 'resource_test',
+      'type': 'executable',
+      'sources': [
+        'resource_test.cpp',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:libaos',
+      ],
+    },
+    {
+      'target_name': 'ipc_queue_test',
+      'type': 'executable',
+      'sources': [
+        'queue_test.cpp',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:libaos',
+      ],
+    },
+  ],
+}

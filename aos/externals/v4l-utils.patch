@@ -1,0 +1,22 @@
+--- utils/v4l2-ctl/Makefile	2012-07-22 14:29:00.182803000 -0700
++++ utils/v4l2-ctl/Makefile	2012-07-22 14:29:13.046885458 -0700
+@@ -13,7 +13,7 @@
+ 	$(CC) $(LDFLAGS) -o $@ $^ -lm
+ 
+ v4l2-ctl: v4l2-ctl.o
+-	$(CXX) $(LDFLAGS) -o $@ $^ -lv4l2 -lv4lconvert -lrt
++	$(CXX) $(LDFLAGS) -o $@ $^ -lv4l2 -lv4lconvert -lrt -ljpeg
+ 
+ install: $(TARGETS)
+ 	mkdir -p $(DESTDIR)$(PREFIX)/bin
+--- utils/v4l2-compliance/Makefile	2012-07-22 14:28:01.850429221 -0700
++++ utils/v4l2-compliance/Makefile	2012-07-22 14:28:16.434522654 -0700
+@@ -6,7 +6,7 @@
+ 
+ v4l2-compliance: v4l2-compliance.o v4l2-test-debug.o v4l2-test-input-output.o \
+ 	v4l2-test-controls.o v4l2-test-io-config.o v4l2-test-formats.o
+-	$(CXX) $(LDFLAGS) -o $@ $^ -lv4l2 -lv4lconvert -lrt
++	$(CXX) $(LDFLAGS) -o $@ $^ -lv4l2 -lv4lconvert -lrt -ljpeg
+ 
+ install: $(TARGETS)
+ 	mkdir -p $(DESTDIR)$(PREFIX)/bin

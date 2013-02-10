@@ -1,0 +1,21 @@
+diff -rupN before/pylib/gyp/input.py after/pylib/gyp/input.py
+--- before/pylib/gyp/input.py	2012-11-20 16:38:09.394784918 -0800
++++ after/pylib/gyp/input.py	2012-11-20 16:39:10.527105964 -0800
+@@ -2156,17 +2156,6 @@ def ValidateSourcesInTarget(target, targ
+     basename = os.path.basename(name)  # Don't include extension.
+     basenames.setdefault(basename, []).append(source)
+ 
+-  error = ''
+-  for basename, files in basenames.iteritems():
+-    if len(files) > 1:
+-      error += '  %s: %s\n' % (basename, ' '.join(files))
+-
+-  if error:
+-    print ('static library %s has several files with the same basename:\n' %
+-           target + error + 'Some build systems, e.g. MSVC08, '
+-           'cannot handle that.')
+-    raise KeyError, 'Duplicate basenames in sources section, see list above'
+-
+ 
+ def ValidateRulesInTarget(target, target_dict, extra_sources_for_rules):
+   """Ensures that the rules sections in target_dict are valid and consistent,

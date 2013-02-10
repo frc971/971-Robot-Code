@@ -1,0 +1,4 @@
+test_resource1
+test_resource2
+drivetrain_left
+drivetrain_right

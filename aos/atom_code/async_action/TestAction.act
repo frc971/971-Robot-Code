@@ -1,0 +1,13 @@
+args testing_args {
+	double seconds;
+	int loops;
+};
+status testing_status {
+	int loops;
+	double total_seconds;
+};
+async_queue LeftDrive;
+async_queue TestAction;
+//has OnEnd;
+//has OnStart;
+priority 50;

@@ -1,0 +1,327 @@
+#include <unistd.h>
+
+#include <memory>
+
+#include "gtest/gtest.h"
+#include "aos/common/test_queue.q.h"
+#include "aos/common/queue_testutils.h"
+
+
+using ::aos::time::Time;
+
+namespace aos {
+namespace common {
+
+// TODO(aschuh): Pull this out somewhere and test it.
+class Thread {
+ public:
+  Thread () {
+    started_ = false;
+    joined_ = false;
+  }
+
+  ~Thread() {
+    if (!joined_ && started_) {
+      assert(false);
+    }
+  }
+
+  void Start() {
+    assert(!started_);
+    pthread_create(&thread_, NULL, &Thread::StaticRun, this);
+    started_ = true;
+  }
+
+  virtual void Run() = 0;
+
+  void Join() {
+    assert(!joined_);
+    pthread_join(thread_, NULL);
+    joined_ = true;
+  }
+ private:
+  static void *StaticRun(void *thread_class) {
+    static_cast<Thread *>(thread_class)->Run();
+    return NULL;
+  }
+
+  pthread_t thread_;
+  bool started_;
+  bool joined_;
+
+  DISALLOW_COPY_AND_ASSIGN(Thread);
+};
+
+namespace testing {
+
+class QueueTest : public ::testing::Test {
+ protected:
+  GlobalCoreInstance my_core;
+  // Create a new instance of the test queue so that it invalidates the queue
+  // that it points to.  Otherwise, we will have a pointer to shared memory that
+  // is no longer valid.
+  ::aos::Queue<TestingMessage> my_test_queue;
+
+  QueueTest() : my_test_queue(".aos.common.testing.test_queue") {}
+};
+
+class MyThread : public Thread {
+ public:
+  MyThread() : threaded_test_queue(".aos.common.testing.test_queue") {}
+
+  virtual void Run() {
+    ASSERT_TRUE(threaded_test_queue.FetchNextBlocking());
+    EXPECT_TRUE(threaded_test_queue->test_bool);
+    EXPECT_EQ(0x971, threaded_test_queue->test_int);
+  }
+
+  ::aos::Queue<TestingMessage> threaded_test_queue;
+ private:
+  DISALLOW_COPY_AND_ASSIGN(MyThread);
+};
+
+
+// Tests that we can send a message to another thread and it blocking receives
+// it at the correct time.
+TEST_F(QueueTest, FetchBlocking) {
+  MyThread t;
+  t.Start();
+  usleep(50000);
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+  t.Join();
+  EXPECT_EQ(true, t.threaded_test_queue.IsNewerThanMS(20));
+}
+
+// Tests that we can send a message with the message pointer and get it back.
+TEST_F(QueueTest, SendMessage) {
+  ScopedMessagePtr<TestingMessage> msg = my_test_queue.MakeMessage();
+  msg->test_bool = true;
+  msg->test_int = 0x971;
+  msg.Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_TRUE(my_test_queue->test_bool);
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+}
+
+// Tests that we can send a message with the message pointer and get it back.
+TEST_F(QueueTest, SendMessageBlockingSafe) {
+  SafeScopedMessagePtr<TestingMessage> msg = my_test_queue.SafeMakeMessage();
+  msg->test_bool = true;
+  msg->test_int = 0x971;
+  ASSERT_TRUE(msg.SendBlocking());
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_TRUE(my_test_queue->test_bool);
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+}
+
+// Tests that we can send a message with the message pointer and get it back.
+TEST_F(QueueTest, SendMessageSafe) {
+  SafeScopedMessagePtr<TestingMessage> msg = my_test_queue.SafeMakeMessage();
+  msg->test_bool = true;
+  msg->test_int = 0x971;
+  msg.Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_TRUE(my_test_queue->test_bool);
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+}
+
+// Tests that we can send a message with the builder and get it back.
+TEST_F(QueueTest, SendWithBuilder) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_EQ(true, my_test_queue->test_bool);
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+  EXPECT_EQ(true, my_test_queue.IsNewerThanMS(10000));
+}
+
+// Tests that various pointer deref functions at least seem to work.
+TEST_F(QueueTest, PointerDeref) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  const TestingMessage *msg_ptr = my_test_queue.get();
+  ASSERT_NE(static_cast<TestingMessage*>(NULL), msg_ptr);
+  EXPECT_EQ(0x971, msg_ptr->test_int);
+  EXPECT_EQ(msg_ptr, &(*my_test_queue));
+}
+
+// Tests that FetchNext doesn't miss any messages.
+TEST_F(QueueTest, FetchNext) {
+  for (int i = 0; i < 10; ++i) {
+    my_test_queue.MakeWithBuilder().test_bool(true).test_int(i).Send();
+  }
+
+  for (int i = 0; i < 10; ++i) {
+    ASSERT_TRUE(my_test_queue.FetchNext());
+    EXPECT_EQ(i, my_test_queue->test_int);
+  }
+}
+
+// Tests that FetchLatest skips a missing message.
+TEST_F(QueueTest, FetchLatest) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x254).Send();
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+}
+
+// Tests that FetchLatest works with multiple readers.
+TEST_F(QueueTest, FetchLatestMultiple) {
+  ::aos::Queue<TestingMessage> my_second_test_queue(
+      ".aos.common.testing.test_queue");
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x254).Send();
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+  ASSERT_TRUE(my_second_test_queue.FetchLatest());
+  ASSERT_TRUE(my_second_test_queue.get() != NULL);
+  EXPECT_EQ(0x971, my_second_test_queue->test_int);
+}
+
+
+// Tests that fetching without a new message returns false.
+TEST_F(QueueTest, FetchLatestWithoutMessage) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x254).Send();
+  EXPECT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_FALSE(my_test_queue.FetchLatest());
+  EXPECT_FALSE(my_test_queue.FetchLatest());
+  EXPECT_EQ(0x254, my_test_queue->test_int);
+}
+
+// Tests that fetching without a message returns false.
+TEST_F(QueueTest, FetchOnFreshQueue) {
+  EXPECT_FALSE(my_test_queue.FetchLatest());
+  EXPECT_EQ(static_cast<TestingMessage*>(NULL), my_test_queue.get());
+}
+
+// Tests that fetch next without a message returns false.
+TEST_F(QueueTest, FetchNextOnFreshQueue) {
+  EXPECT_FALSE(my_test_queue.FetchNext());
+  EXPECT_EQ(static_cast<TestingMessage*>(NULL), my_test_queue.get());
+}
+
+// Tests that fetch next without a new message returns false.
+TEST_F(QueueTest, FetchNextWithoutMessage) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x254).Send();
+  EXPECT_TRUE(my_test_queue.FetchNext());
+  EXPECT_FALSE(my_test_queue.FetchNext());
+  EXPECT_NE(static_cast<TestingMessage*>(NULL), my_test_queue.get());
+}
+
+// Tests that age makes some sense.
+TEST_F(QueueTest, Age) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_TRUE(my_test_queue.IsNewerThanMS(100));
+  const Time age = my_test_queue.Age();
+  EXPECT_EQ(0, age.sec());
+  EXPECT_GE(100000000, age.nsec());
+}
+
+
+class GroupTest : public ::testing::Test {
+ protected:
+  GlobalCoreInstance my_core;
+  // Create a new instance of the test group so that it invalidates the queue
+  // that it points to.  Otherwise, we will have a pointer to shared memory that
+  // is no longer valid.
+  TwoQueues my_test_queuegroup;
+
+  GroupTest()
+      : my_test_queuegroup(".aos.common.testing.test_queuegroup",
+                           0x20561114,
+                           ".aos.common.testing.test_queuegroup.first",
+                           ".aos.common.testing.test_queuegroup.second") {}
+};
+
+// Tests that the hash gets preserved.
+TEST_F(GroupTest, Hash) {
+  EXPECT_EQ(static_cast<uint32_t>(0x20561114), my_test_queuegroup.hash());
+}
+
+// Tests that the hash works.
+TEST_F(GroupTest, RealHash) {
+  EXPECT_EQ(static_cast<uint32_t>(0x5b25097f), test_queuegroup.hash());
+}
+
+// Tests that name works.
+TEST_F(GroupTest, Name) {
+  EXPECT_EQ(std::string(".aos.common.testing.test_queuegroup"),
+            std::string(my_test_queuegroup.name()));
+}
+
+
+class MessageTest : public ::testing::Test {
+ public:
+  TestingMessage msg;
+};
+
+TEST_F(MessageTest, Zeroing) {
+  msg.test_bool = true;
+  msg.test_int = 0x254;
+  msg.SetTimeToNow();
+
+  msg.Zero();
+
+  EXPECT_FALSE(msg.test_bool);
+  EXPECT_EQ(0, msg.test_int);
+  EXPECT_EQ(0, msg.sent_time.sec());
+  EXPECT_EQ(0, msg.sent_time.nsec());
+}
+
+TEST_F(MessageTest, Size) {
+  EXPECT_EQ(static_cast<size_t>(13), msg.Size());
+}
+
+TEST_F(MessageTest, Serialize) {
+  char serialized_data[msg.Size()];
+  msg.test_bool = true;
+  msg.test_int = 0x254;
+  msg.SetTimeToNow();
+
+  msg.Serialize(serialized_data);
+
+  TestingMessage new_msg;
+  new_msg.Deserialize(serialized_data);
+
+  EXPECT_EQ(msg.test_bool, new_msg.test_bool);
+  EXPECT_EQ(msg.test_int, new_msg.test_int);
+  EXPECT_EQ(msg.sent_time, new_msg.sent_time);
+}
+
+// Tests that Print prints out a message nicely.
+TEST_F(MessageTest, Print) {
+  char printdata[1024];
+  msg.test_bool = true;
+  msg.test_int = 2056;
+  msg.sent_time = Time(971, 254);
+
+  std::string golden("971.000000254s, t, 2056");
+  EXPECT_EQ(golden.size(), msg.Print(printdata, sizeof(printdata)));
+
+  EXPECT_EQ(golden, std::string(printdata));
+}
+
+// Tests that the hash never changes.  If it changes, then someone broke the
+// hash routine or changed the message declaration.  Both changes need to be
+// validated by hand.
+TEST_F(MessageTest, Hash) {
+  EXPECT_EQ(static_cast<uint32_t>(0xcf740cc1),
+            static_cast<uint32_t>(TestingMessage::kHash));
+}
+
+TEST_F(MessageTest, SetNow) {
+  msg.SetTimeToNow();
+  EXPECT_LE(msg.sent_time - Time::Now(), Time::InMS(20));
+}
+
+}  // namespace testing
+}  // namespace common
+}  // namespace aos

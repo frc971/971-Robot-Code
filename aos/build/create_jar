@@ -1,0 +1,29 @@
+#!/bin/bash
+source `dirname $0`/jdk_tools_common
+
+# This is a helper script that compiles java files into a jar.
+
+SOURCEFILEPARENTDIRS=`echo $4 | tr -d '"'`
+SOURCEFILEDIRS=`echo $1 | tr -d '"'`
+[ -n "${SOURCEFILEPARENTDIRS}" ] && SOURCEFILEDIRS+=" `find ${SOURCEFILEPARENTDIRS} -type d -maxdepth 1`"
+SOURCEFILES=`find ${SOURCEFILEDIRS} -name *.java`
+MANIFEST_FILE=$5
+OUTPUT_JAR=$6
+HEADER_DIR=$7
+GEN_HEADERS=$8
+
+CLASSFILES_DIR=${TMPDIR}/classfiles
+
+[ -a ${CLASSFILES_DIR} ] && rm -r ${CLASSFILES_DIR}
+mkdir ${CLASSFILES_DIR}
+[ -a ${HEADER_DIR} ] && rm -r ${HEADER_DIR}
+mkdir -p ${HEADER_DIR}
+
+javac -d ${CLASSFILES_DIR} -classpath "${EXTRA_CLASSPATH}" ${SOURCEFILES}
+
+jar cfm ${OUTPUT_JAR} ${MANIFEST_FILE} \
+  `find ${CLASSFILES_DIR} -name *.class | \
+  sed "s:${CLASSFILES_DIR}/\(.*\):-C ${CLASSFILES_DIR} \1:g"`
+
+[ -z ${GEN_HEADERS} ] || javah -d ${HEADER_DIR} \
+  -classpath "${EXTRA_CLASSPATH}:${OUTPUT_JAR}" ${GEN_HEADERS}

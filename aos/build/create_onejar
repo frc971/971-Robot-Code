@@ -1,0 +1,26 @@
+#!/bin/bash
+source `dirname $0`/jdk_tools_common
+
+# This is a helper script that puts jars into a OneJAR package.
+
+MAIN_JAR=$1
+OUTPUT_ONEJAR=$4
+ONEJAR_JAR=$5
+SHARED_OBJECTS=$6
+
+JAR_DIR=${TMPDIR}/jardir
+
+# the dir name in the jar under which shared objects get put
+BINLIB_DIR=so_libs
+
+[ -a ${JAR_DIR} ] && rm -r ${JAR_DIR}
+mkdir ${JAR_DIR} ${JAR_DIR}/main ${JAR_DIR}/lib ${JAR_DIR}/${BINLIB_DIR}
+
+cp ${EXTRA_JARS} ${JAR_DIR}/lib
+cp ${SHARED_OBJECTS} ${JAR_DIR}/${BINLIB_DIR}
+cp ${MAIN_JAR} ${JAR_DIR}/main/main.jar
+
+unzip -q -d ${JAR_DIR} ${ONEJAR_JAR}
+cp ${JAR_DIR}/boot-manifest.mf ${TMPDIR}/manifest.mf
+echo "One-Jar-Expand: ${BINLIB_DIR}" >> ${TMPDIR}/manifest.mf
+jar cfm ${OUTPUT_ONEJAR} ${TMPDIR}/manifest.mf -C ${JAR_DIR} .
