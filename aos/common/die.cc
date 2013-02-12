@@ -48,6 +48,7 @@ const std::string GetFilename() {
 #endif
 }
 }  // namespace
+
 void VDie(const char *format, va_list args_in) {
   va_list args;
 

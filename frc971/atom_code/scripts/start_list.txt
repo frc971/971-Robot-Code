@@ -3,10 +3,6 @@ JoystickReader
 SensorReader
 GyroReader
 DriveTrain
-WristMotor
-IntakeRollers
-HorizontalRoller
-VerticalRoller
 AutoMode
 BinaryLogReader
 CRIOLogReader
