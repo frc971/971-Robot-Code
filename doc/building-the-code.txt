@@ -1,0 +1,32 @@
+This file contains instructions on how to set up a computer to build the code.
+
+[Install Packages]
+First, you have to download and follow the directions in
+  <http://robotics.mvla.net/files/frc971/packages/frc971.list>.
+You also have to follow the directions at
+  <http://backports-master.debian.org/Instructions/>.
+Then, run `apt-get install subversion git g++-multilib gcc-multilib ruby patch \
+    make openjdk-6-jdk lib32event-dev`
+  and `apt-get install -t squeeze-backports swig` (package lists correct for
+  amd64 Squeeze; you might be able to get it to build on other
+  versions/platforms/distributions (Ubuntu, Mint, ...) if you can find the
+  right packages.
+  You will have to accept the
+    "WARNING: The following packages cannot be authenticated!" warning for the
+    "libevent-2.0-5 lib32event-2.0-5 libevent-core-2.0-5 lib32event-core-2.0-5 \
+      libevent-extra-2.0-5 libevent-pthreads-2.0-5 libevent-openssl-2.0-5 \
+      libevent-dev lib32event-extra-2.0-5 lib32event-pthreads-2.0-5 \
+      lib32event-openssl-2.0-5 lib32event-dev" packages.
+Also run `apt-get install powerpc-wrs-vxworks` if you want to be able to build
+  the cRIO code too.
+  NOTE: That is in *addition* to the above command.
+  You will have to accept the
+    "WARNING: The following packages cannot be authenticated!" warning for the
+    "powerpc-wrs-vxworks" package.
+If you want to actually download code to a robot (it will only work on amd64
+  Squeeze), then also do `apt-get install ncftp rsync`.
+
+[Running Locally]
+If you want to be able to run the realtime code on your development machine
+  without just disabling the realtime part (set the AOS_NO_REALTIME environment
+  variable), follow the directions in /src/aos/config/aos.conf.
