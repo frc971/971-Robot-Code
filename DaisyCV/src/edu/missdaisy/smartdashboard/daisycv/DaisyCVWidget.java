@@ -151,7 +151,7 @@ public class DaisyCVWidget extends WPICameraExtension
         {
             try
             {
-                heading = Robot.getTable().getNumber("Heading");
+            //    heading = Robot.getTable().getNumber("Heading");
             }
             catch( NoSuchElementException e)
             {
@@ -288,9 +288,9 @@ public class DaisyCVWidget extends WPICameraExtension
             {
 
 //                Robot.getTable().beginTransaction();
-                Robot.getTable().putBoolean("found", true);
-                Robot.getTable().putNumber("azimuth", azimuth);
-                Robot.getTable().putNumber("rpms", rpms);
+                //Robot.getTable().putBoolean("found", true);
+                //Robot.getTable().putNumber("azimuth", azimuth);
+                //Robot.getTable().putNumber("rpms", rpms);
 //                Robot.getTable().endTransaction();
             } else
             {
@@ -307,7 +307,7 @@ public class DaisyCVWidget extends WPICameraExtension
 
             if (!m_debugMode)
             {
-                Robot.getTable().putBoolean("found", false);
+            //    Robot.getTable().putBoolean("found", false);
             } else
             {
                 System.out.println("Target not found");
@@ -346,8 +346,9 @@ public class DaisyCVWidget extends WPICameraExtension
             return;
         }
 
-        DashboardFrame frame = new DashboardFrame(false); // suggested 2013 adaptation
-        frame.getPrefs();
+        DashboardFrame.initialize(false); // suggested 2013 adaptation
+        DashboardFrame frame = DashboardFrame.getInstance(); 	
+        //frame.getPrefs();
 
         // Create the widget
         DaisyCVWidget widget = new DaisyCVWidget(true);
