@@ -27,10 +27,6 @@ public class Recognizer2013 implements Recognizer {
     // --- Constants that need to be tuned.
     static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(30));
     static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 30));
-    private int min1Hue;
-    private int max1Hue;
-    private int min1Sat;
-    private int min1Val;
     static final int kHoleClosingIterations = 2;
     static final double kPolygonPercentFit = 12;
 
@@ -51,6 +47,8 @@ public class Recognizer2013 implements Recognizer {
     private static final WPIColor reject2Color = WPIColor.YELLOW;
     private static final WPIColor candidateColor = WPIColor.BLUE;
     private static final WPIColor targetColor = new WPIColor(255, 0, 0);
+
+    private int min1Hue, max1Hue, min1Sat, min1Val;
 
     // Show intermediate images for parameter tuning.
     private final DebugCanvas thresholdedCanvas = new DebugCanvas("thresholded");
@@ -89,9 +87,9 @@ public class Recognizer2013 implements Recognizer {
     @Override
     public int getHueMax() { return max1Hue - 1; }
     @Override
-    public int getSatMin() { return min1Sat - 1; }
+    public int getSatMin() { return min1Sat + 1; }
     @Override
-    public int getValMin() { return min1Val - 1; }
+    public int getValMin() { return min1Val + 1; }
 
     @Override
     public void showIntermediateStages(boolean enable) {
@@ -136,7 +134,6 @@ public class Recognizer2013 implements Recognizer {
 
         // NOTE: Since red is at the end of the cyclic color space, you can OR
         // a threshold and an inverted threshold to match red pixels.
-        // TODO(jerry): Use tunable constants instead of literals.
         opencv_imgproc.cvThreshold(hue, bin, min1Hue, 255, opencv_imgproc.CV_THRESH_BINARY);
         opencv_imgproc.cvThreshold(hue, hue, max1Hue, 255, opencv_imgproc.CV_THRESH_BINARY_INV);
         opencv_imgproc.cvThreshold(sat, sat, min1Sat, 255, opencv_imgproc.CV_THRESH_BINARY);
@@ -157,11 +154,6 @@ public class Recognizer2013 implements Recognizer {
         morphedCanvas.showImage(bin);
 
         // Find contours.
-        //
-        // TODO(jerry): Request contours as a two-level hierarchy (blobs and
-        // holes)? The targets have known sizes and their holes have known,
-        // smaller sizes. This matters for distance measurement. OTOH it's moot
-        // if/when we use the vertical stripes for distance measurement.
         WPIBinaryImage binWpi = DaisyExtensions.makeWPIBinaryImage(bin);
         WPIContour[] contours = daisyExtensions.findConvexContours(binWpi);
 

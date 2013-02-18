@@ -72,9 +72,9 @@ public class VisionTuner {
             public void stateChanged(ChangeEvent e) {
                 System.out.println("New HSV range ["
                         + hueMinSlider.getValue() + " .. "
-                        + hueMaxSlider.getValue() + "], ["
-                        + satMinSlider.getValue() + " .. 255], ["
-                        + valMinSlider.getValue() + " .. 255]");
+                        + hueMaxSlider.getValue() + "] "
+                        + satMinSlider.getValue() + "+ "
+                        + valMinSlider.getValue() + "+");
                 recognizer.setHSVRange(
                         hueMinSlider.getValue(), hueMaxSlider.getValue(),
                         satMinSlider.getValue(),
@@ -83,25 +83,31 @@ public class VisionTuner {
             }
         };
 
-        hueMinSlider.setValue(recognizer.getHueMin());
         hueMinSlider.setToolTipText("minimum HSV hue");
         hueMinSlider.setMaximum(255);
+        hueMinSlider.setValue(recognizer.getHueMin());
         panel.add(hueMinSlider);
 
-        hueMaxSlider.setValue(recognizer.getHueMax());
         hueMaxSlider.setToolTipText("maximum HSV hue");
         hueMaxSlider.setMaximum(255);
+        hueMaxSlider.setValue(recognizer.getHueMax());
         panel.add(hueMaxSlider);
 
-        satMinSlider.setValue(recognizer.getSatMin());
         satMinSlider.setToolTipText("minimum HSV color saturation");
         satMinSlider.setMaximum(255);
+        satMinSlider.setValue(recognizer.getSatMin());
         panel.add(satMinSlider);
 
-        valMinSlider.setValue(recognizer.getValMin());
         valMinSlider.setToolTipText("minimum HSV brightness value");
         valMinSlider.setMaximum(255);
+        valMinSlider.setValue(recognizer.getValMin());
         panel.add(valMinSlider);
+
+        System.out.println("Initial HSV range ["
+                + hueMinSlider.getValue() + " .. "
+                + hueMaxSlider.getValue() + "] "
+                + satMinSlider.getValue() + "+ "
+                + valMinSlider.getValue() + "+");
 
         hueMinSlider.addChangeListener(sliderListener);
         hueMaxSlider.addChangeListener(sliderListener);
