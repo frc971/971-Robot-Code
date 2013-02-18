@@ -35,6 +35,9 @@ import edu.wpi.first.wpijavacv.WPIImage;
 /**
  * FRC 2013 vision-target recognizer tuner app.
  *
+ * <p>
+ * See {@link #processEvents()} for the keystroke commands.
+ *
  * @author jerry
  */
 public class VisionTuner {
@@ -50,15 +53,16 @@ public class VisionTuner {
     private final JSlider satMinSlider = new JSlider();
     private final JSlider valMinSlider = new JSlider();
 
-    private static int totalFrames;
-    private static double totalMsec;
-    //    private static double minMsec = Double.MAX_VALUE;
-    //    private static double maxMsec;
+    private int totalFrames;
+    private double totalMsec;
+    private double minMsec = Double.MAX_VALUE;
+    private double maxMsec;
 
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         loadTestImages(imageFilenames);
+        recognizer.showIntermediateStages(true);
 
         cameraFrame.getContentPane().add(panel, BorderLayout.SOUTH);
         panel.setLayout(new GridLayout(0, 2, 0, 0));
@@ -145,9 +149,9 @@ public class VisionTuner {
         double milliseconds = (endTime - startTime) / 1e6;
         ++totalFrames;
         totalMsec += milliseconds;
-        //        minMsec = Math.min(minMsec, milliseconds);
-        //        maxMsec = Math.max(maxMsec, milliseconds);
-        System.out.format("Processing took %.2f ms, %.2f fps, %.2f avg%n",
+        minMsec = Math.min(minMsec, milliseconds);
+        maxMsec = Math.max(maxMsec, milliseconds);
+        System.out.format("The recognizer took %.2f ms, %.2f fps, %.2f avg%n",
                 milliseconds, 1000 / milliseconds,
                 1000 * totalFrames / totalMsec);
     }
@@ -170,12 +174,19 @@ public class VisionTuner {
         KeyEvent e = cameraFrame.waitKey();
 
         switch (e.getKeyCode()) {
-        case KeyEvent.VK_LEFT:
+        case KeyEvent.VK_LEFT: // left arrow key: go to previous image
             previousImage();
             break;
-        case KeyEvent.VK_RIGHT:
+        case KeyEvent.VK_RIGHT: // right arrow key: go to next image
             nextImage();
             break;
+        case KeyEvent.VK_Q: // Q: print time measurements then quit
+            System.out.format("The recognizer took %.2f ms avg, %.2f min,"
+                    + " %.2f max, %.2f fps avg%n",
+                    totalMsec / totalFrames,
+                    minMsec, maxMsec,
+                    1000 * totalFrames / totalMsec);
+            System.exit(0);
         }
     }
 

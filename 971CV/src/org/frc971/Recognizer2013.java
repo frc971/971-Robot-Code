@@ -94,6 +94,12 @@ public class Recognizer2013 implements Recognizer {
     public int getValMin() { return min1Val - 1; }
 
     @Override
+    public void showIntermediateStages(boolean enable) {
+        thresholdedCanvas.show = enable;
+        morphedCanvas.show = enable;
+    }
+
+    @Override
     public WPIImage processImage(WPIColorImage cameraImage) {
         // (Re)allocate the intermediate images if the input is a different
         // size than the previous image.

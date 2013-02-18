@@ -18,6 +18,7 @@ import com.googlecode.javacv.cpp.opencv_imgproc;
  */
 public class DaisyExtensions {
     private final CvMemStorage storage = CvMemStorage.create();
+    private IplImage contourImage;
 
     public DaisyExtensions() {
     }
@@ -59,14 +60,20 @@ public class DaisyExtensions {
     public WPIContour[] findConvexContours(WPIBinaryImage image) {
         image.validateDisposed();
 
-        // TODO(jerry): Reuse tempImage from frame to frame.
-        IplImage tempImage = IplImage.create(image.image.cvSize(),
-        	image.image.depth(), 1);
+        if (contourImage == null
+                || contourImage.cvSize().width() != image.getWidth()
+                || contourImage.cvSize().height() != image.getHeight()) {
+            if (contourImage != null) {
+                contourImage.release();
+            }
+            contourImage = IplImage.create(image.image.cvSize(),
+                    image.image.depth(), 1);
+        }
 
-        opencv_core.cvCopy(image.image, tempImage);
+        opencv_core.cvCopy(image.image, contourImage);
 
         CvSeq contours = new CvSeq();
-        opencv_imgproc.cvFindContours(tempImage, storage, contours, 256,
+        opencv_imgproc.cvFindContours(contourImage, storage, contours, 256,
         	opencv_imgproc.CV_RETR_LIST,
         	opencv_imgproc.CV_CHAIN_APPROX_TC89_KCOS);
         ArrayList<WPIContour> results = new ArrayList<WPIContour>();
@@ -79,7 +86,6 @@ public class DaisyExtensions {
             contours = contours.h_next();
         }
 
-        tempImage.release();
         WPIContour[] array = new WPIContour[results.size()];
         return results.toArray(array);
     }

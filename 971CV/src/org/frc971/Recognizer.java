@@ -14,12 +14,15 @@ public interface Recognizer {
      * Sets the HSV filter to allow H in [minHue .. maxHue], S >= minSat,
      * V >= minVal.
      */
-    public void setHSVRange(int minHue, int maxHue, int minSat, int minVal);
+    void setHSVRange(int minHue, int maxHue, int minSat, int minVal);
 
-    public int getHueMin();
-    public int getHueMax();
-    public int getSatMin();
-    public int getValMin();
+    int getHueMin();
+    int getHueMax();
+    int getSatMin();
+    int getValMin();
+
+    /** Enables/disables windows to view intermediate stages, for tuning. */
+    void showIntermediateStages(boolean enable);
 
     /**
      * Processes a camera image, returning an image to display for targeting

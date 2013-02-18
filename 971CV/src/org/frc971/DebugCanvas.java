@@ -4,7 +4,7 @@ import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
 
 public class DebugCanvas {
-    public static boolean show = true;
+    public boolean show;
     private CanvasFrame canvasFrame;
     private String name;
 
