@@ -18,7 +18,6 @@ import com.googlecode.javacv.cpp.opencv_imgproc.IplConvKernel;
 
 import edu.wpi.first.smartdashboard.camera.WPICameraExtension;
 import edu.wpi.first.smartdashboard.gui.DashboardFrame;
-import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpijavacv.DaisyExtensions;
 import edu.wpi.first.wpijavacv.WPIBinaryImage;
 import edu.wpi.first.wpijavacv.WPIColor;
@@ -28,18 +27,22 @@ import edu.wpi.first.wpijavacv.WPIImage;
 import edu.wpi.first.wpijavacv.WPIPoint;
 import edu.wpi.first.wpijavacv.WPIPolygon;
 
-/* HOW TO GET THIS COMPILING:
- *  1. Install the SmartDashboard using the installer (if on Windows)
- *      1a. Verify that the OpenCV libraries are in your PATH (on Windows)
- *  2. Add the following libraries to the project:
+/* REQUIRED JAVA LIBRARIES:
+ *   external_jars/
+ *     javacpp.jar
+ *     javacv-YOUR_OS.jar
+ *     javacv.jar
+ *     WPIJavaCV.jar
  *     SmartDashboard.jar
- *     extensions/WPICameraExtension.jar
- *     lib/NetworkTable_Client.jar
- *     extensions/lib/javacpp.jar
- *     extensions/lib/javacv-*your environment*.jar
- *     extensions/lib/javacv.jar
- *     extensions/lib/WPIJavaCV.jar
+ *     WPICameraExtension.jar
+ *     NetworkTable_Client.jar
  *
+ * REQUIRED NATIVE CODE LIBRARIES ON $PATH:
+ *   Program Files/WPIJavaCV/     [for example]
+ *     JavaCV_2.2.0/javacv-bin/javacv-YOUR_OS.jar
+ *     OpenCV_2.2.0/bin/*
+ *
+ * The native libraries and javacv-YOUR_OS.jar must match the 32 vs. 64-bit JVM.
  */
 /**
  * @author jrussell
@@ -347,7 +350,7 @@ public class DaisyCVWidget extends WPICameraExtension
         }
 
         DashboardFrame.initialize(false); // suggested 2013 adaptation
-        DashboardFrame frame = DashboardFrame.getInstance(); 	
+        DashboardFrame frame = DashboardFrame.getInstance();
         //frame.getPrefs();
 
         // Create the widget
