@@ -50,6 +50,11 @@ public class VisionTuner {
     private final JSlider satMinSlider = new JSlider();
     private final JSlider valMinSlider = new JSlider();
 
+    private static int totalFrames;
+    private static double totalMsec;
+//    private static double minMsec = Double.MAX_VALUE;
+//    private static double maxMsec;
+
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -131,8 +136,20 @@ public class VisionTuner {
         WPIColorImage cameraImage = testImages[currentIndex];
         cameraFrame.setTitle(testImageFilenames[currentIndex]);
 
+        long startTime = System.nanoTime();
         WPIImage processedImage = recognizer.processImage(cameraImage);
+        long endTime = System.nanoTime();
+
         cameraFrame.showImage(processedImage.getBufferedImage());
+
+        double milliseconds = (endTime - startTime) / 1e6;
+        ++totalFrames;
+        totalMsec += milliseconds;
+//        minMsec = Math.min(minMsec, milliseconds);
+//        maxMsec = Math.max(maxMsec, milliseconds);
+        System.out.format("Processing took %.2f ms, %.2f fps, %.2f avg%n",
+        	milliseconds, 1000 / milliseconds,
+        	1000 * totalFrames / totalMsec);
     }
 
     private void previousImage() {
