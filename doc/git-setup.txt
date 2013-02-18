@@ -13,6 +13,8 @@ Some us are using git for managing quickly changing code. This file has
   where username is your login on the server and somebody is another person's
   git repository
 
+nothing terribly useful...
+
 [Synchronizing with SVN]
 In order to synchronize the git commits with svn, somebody has to get git-svn
   set up in their local git repo and then push/pull commits.
