@@ -40,8 +40,6 @@ public class VisionTuner {
 
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        cameraFrame.setFocusable(true);
-        cameraFrame.requestFocus();
 
         loadTestImages(imageFilenames);
     }

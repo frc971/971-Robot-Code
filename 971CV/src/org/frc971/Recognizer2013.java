@@ -24,18 +24,29 @@ import edu.wpi.first.wpijavacv.WPIPolygon;
  */
 public class Recognizer2013 implements Recognizer {
 
-    // Constants that need to be tuned
-    static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(20));
-    static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 20));
-    static final int kMinWidth = 20;
-    static final int kMaxWidth = 400;
-    static final int kHoleClosingIterations = 9;
+    // --- Constants that need to be tuned.
+    static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(25));
+    static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 25));
+    static final double kMin1Hue = 55 - 1; // - 1 because cvThreshold() does > not >=
+    static final double kMax1Hue = 118 + 1;
+    static final double kMin1Sat = 80 - 1;
+    static final double kMin1Val = 69 - 1;
+    static final int kHoleClosingIterations = 3;
+    static final double kPolygonPercentFit = 12; // was 20
+
+    static final int kMinWidthAt320 = 35; // for high goal and middle goals
+
+    // These aspect ratios include the outside edges of the vision target tape.
+    static final double kHighGoalAspect = (21 + 8.0) / (54 + 8);
+    static final double kMiddleGoalAspect = (24 + 8.0) / (54 + 8);
+    static final double kMinAspect = kHighGoalAspect * 0.6;
+    static final double kMaxAspect = kMiddleGoalAspect * 1.4;
 
     static final double kShooterOffsetDeg = 0;
     static final double kHorizontalFOVDeg = 47.0;
     static final double kVerticalFOVDeg = 480.0 / 640.0 * kHorizontalFOVDeg;
 
-    // Colors for drawing indicators on the image.
+    // --- Colors for drawing indicators on the image.
     private static final WPIColor reject1Color = WPIColor.GRAY;
     private static final WPIColor reject2Color = WPIColor.YELLOW;
     private static final WPIColor candidateColor = WPIColor.BLUE;
@@ -45,19 +56,21 @@ public class Recognizer2013 implements Recognizer {
     private final DebugCanvas thresholdedCanvas = new DebugCanvas("thresholded");
     private final DebugCanvas morphedCanvas = new DebugCanvas("morphed");
 
-    // JavaCV data to reuse for each frame.
+    // Data to reuse for each frame.
     private final DaisyExtensions daisyExtensions = new DaisyExtensions();
     private final IplConvKernel morphKernel = IplConvKernel.create(3, 3, 1, 1,
 		opencv_imgproc.CV_SHAPE_RECT, null);
-    private CvSize size = null;
-    private WPIContour[] contours;
     private final ArrayList<WPIPolygon> polygons = new ArrayList<WPIPolygon>();
+
+    // Frame-size-dependent data to reuse for each frame.
+    private CvSize size = null;
     private WPIColorImage rawImage;
     private IplImage bin;
     private IplImage hsv;
     private IplImage hue;
     private IplImage sat;
     private IplImage val;
+    private int minWidth;
     private WPIPoint linePt1, linePt2; // crosshair endpoints
 
     public Recognizer2013() {
@@ -78,6 +91,7 @@ public class Recognizer2013 implements Recognizer {
             hue = IplImage.create(size, 8, 1);
             sat = IplImage.create(size, 8, 1);
             val = IplImage.create(size, 8, 1);
+            minWidth = (kMinWidthAt320 * cameraImage.getWidth() + 319) / 320;
 
             int horizontalOffsetPixels = (int)Math.round(
         	    kShooterOffsetDeg * size.width() / kHorizontalFOVDeg);
@@ -85,6 +99,7 @@ public class Recognizer2013 implements Recognizer {
             linePt1 = new WPIPoint(x, size.height() - 1);
             linePt2 = new WPIPoint(x, 0);
         } else {
+            // Copy the camera image so it's safe to draw on.
             opencv_core.cvCopy(DaisyExtensions.getIplImage(cameraImage),
         	    DaisyExtensions.getIplImage(rawImage));
         }
@@ -93,16 +108,16 @@ public class Recognizer2013 implements Recognizer {
 
         // Threshold the pixels in HSV color space.
         // TODO(jerry): Do this in one pass of a pixel-processing loop.
-        opencv_imgproc.cvCvtColor(input, hsv, opencv_imgproc.CV_BGR2HSV);
+        opencv_imgproc.cvCvtColor(input, hsv, opencv_imgproc.CV_BGR2HSV_FULL);
         opencv_core.cvSplit(hsv, hue, sat, val, null);
 
         // NOTE: Since red is at the end of the cyclic color space, you can OR
         // a threshold and an inverted threshold to match red pixels.
         // TODO(jerry): Use tunable constants instead of literals.
-        opencv_imgproc.cvThreshold(hue, bin, 60 - 15, 255, opencv_imgproc.CV_THRESH_BINARY);
-        opencv_imgproc.cvThreshold(hue, hue, 60 + 15, 255, opencv_imgproc.CV_THRESH_BINARY_INV);
-        opencv_imgproc.cvThreshold(sat, sat, 200, 255, opencv_imgproc.CV_THRESH_BINARY);
-        opencv_imgproc.cvThreshold(val, val, 55, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(hue, bin, kMin1Hue, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(hue, hue, kMax1Hue, 255, opencv_imgproc.CV_THRESH_BINARY_INV);
+        opencv_imgproc.cvThreshold(sat, sat, kMin1Sat, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(val, val, kMin1Val, 255, opencv_imgproc.CV_THRESH_BINARY);
 
         // Combine the results to obtain a binary image which is mostly the
         // interesting pixels.
@@ -119,29 +134,43 @@ public class Recognizer2013 implements Recognizer {
         morphedCanvas.showImage(bin);
 
         // Find contours.
+        //
+        // TODO(jerry): Request contours as a two-level hierarchy (blobs and
+        // holes)? The targets have known sizes and their holes have known,
+        // smaller sizes. This matters for distance measurement. OTOH it's moot
+        // if/when we use the vertical stripes for distance measurement.
         WPIBinaryImage binWpi = DaisyExtensions.makeWPIBinaryImage(bin);
-        contours = daisyExtensions.findConvexContours(binWpi);
+        WPIContour[] contours = daisyExtensions.findConvexContours(binWpi);
 
-        // Simplify the contour to polygons and filter by size and aspect ratio.
-        // TODO(jerry): Use tunable constants instead of literals.
+        // Simplify the contours to polygons and filter by size and aspect ratio.
+        //
+        // TODO(jerry): Also look for the two vertical stripe vision targets.
+        // They'll greatly increase the precision of measuring the distance. If
+        // both stripes are visible, they'll increase the accuracy for
+        // identifying the high goal.
         polygons.clear();
         for (WPIContour c : contours) {
-            double ratio = ((double) c.getHeight()) / ((double) c.getWidth());
-            if (ratio < 1.0 && ratio > 0.5 && c.getWidth() >= kMinWidth
-        	    && c.getWidth() <= kMaxWidth) {
-                polygons.add(c.approxPolygon(20));
+            if (c.getWidth() >= minWidth) {
+        	double ratio = ((double) c.getHeight()) / c.getWidth();
+        	if (ratio >= kMinAspect && ratio <= kMaxAspect) {
+        	    polygons.add(c.approxPolygon(kPolygonPercentFit));
+//        	    System.out.println("  Accepted aspect ratio " + ratio);
+        	} else {
+//        	    System.out.println("  Rejected aspect ratio " + ratio);
+        	}
             }
         }
 
-        // Pick the highest target that matches more filter criteria.
+        // Pick the target with the highest center-point that matches yet more
+        // filter criteria.
         WPIPolygon bestTarget = null;
         int highestY = Integer.MAX_VALUE;
 
         for (WPIPolygon p : polygons) {
+            // TODO(jerry): Replace boolean filters with a scoring function?
             if (p.isConvex() && p.getNumVertices() == 4) { // quadrilateral
                 WPIPoint[] points = p.getPoints();
-                // We expect the polygon to have a top line that is nearly
-                // horizontal and two side lines that are nearly vertical.
+                // Filter for polygons with 2 ~horizontal and 2 ~vertical sides.
                 int numRoughlyHorizontal = 0;
                 int numRoughlyVertical = 0;
                 for (int i = 0; i < 4; ++i) {
@@ -159,14 +188,14 @@ public class Recognizer2013 implements Recognizer {
                     }
                 }
 
-                if (numRoughlyHorizontal >= 1 && numRoughlyVertical == 2) {
+                if (numRoughlyHorizontal >= 2 && numRoughlyVertical == 2) {
                     rawImage.drawPolygon(p, candidateColor, 2);
 
                     int pCenterX = p.getX() + p.getWidth() / 2;
                     int pCenterY = p.getY() + p.getHeight() / 2;
 
                     rawImage.drawPoint(new WPIPoint(pCenterX, pCenterY),
-                	    candidateColor, 3);
+                	    targetColor, 2);
                     if (pCenterY < highestY) {
                         bestTarget = p;
                         highestY = pCenterY;

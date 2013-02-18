@@ -52,9 +52,14 @@ public class DaisyExtensions {
         return image.image;
     }
 
+    /**
+     * Finds a flat (non-hierarchical) list of contours in the given image, then
+     * computes the convex hull of each contour.
+     */
     public WPIContour[] findConvexContours(WPIBinaryImage image) {
         image.validateDisposed();
 
+        // TODO(jerry): Reuse tempImage from frame to frame.
         IplImage tempImage = IplImage.create(image.image.cvSize(),
         	image.image.depth(), 1);
 
