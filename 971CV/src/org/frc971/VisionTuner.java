@@ -10,6 +10,7 @@ import javax.swing.WindowConstants;
 import com.googlecode.javacv.CanvasFrame;
 
 import edu.wpi.first.wpijavacv.WPIColorImage;
+import edu.wpi.first.wpijavacv.WPIImage;
 
 /* REQUIRED JAVA LIBRARIES:
  *   Program Files/SmartDashboard/
@@ -35,6 +36,7 @@ public class VisionTuner {
     private WPIColorImage[] testImages;
     private final CanvasFrame cameraFrame = new CanvasFrame("Camera");
     private int currentIndex = 0;
+    private Recognizer recognizer = new Recognizer2013();
 
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -43,7 +45,6 @@ public class VisionTuner {
 
         loadTestImages(imageFilenames);
     }
-
 
     /**
      * Loads the named test image files.
@@ -59,9 +60,11 @@ public class VisionTuner {
             System.out.println("Loading image file: " + imageFilename);
             WPIColorImage rawImage = null;
             try {
-                rawImage = new WPIColorImage(ImageIO.read(new File(imageFilename)));
+                rawImage = new WPIColorImage(ImageIO.read(
+                	new File(imageFilename)));
             } catch (IOException e) {
-                System.err.println("Couldn't load image file: " + imageFilename + ": " + e.getMessage());
+                System.err.println("Couldn't load image file: " + imageFilename
+                	+ ": " + e.getMessage());
                 System.exit(1);
                 return;
             }
@@ -70,9 +73,11 @@ public class VisionTuner {
     }
 
     private void processCurrentImage() {
-        WPIColorImage rawImage = testImages[currentIndex];
-        cameraFrame.showImage(rawImage.getBufferedImage());
+        WPIColorImage cameraImage = testImages[currentIndex];
         cameraFrame.setTitle(testImageFilenames[currentIndex]);
+
+        WPIImage processedImage = recognizer.processImage(cameraImage);
+        cameraFrame.showImage(processedImage.getBufferedImage());
     }
 
     private void previousImage() {

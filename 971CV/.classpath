@@ -2,13 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="C:/WindRiver/WPILib/desktop-lib/networktables-desktop.jar" sourcepath="C:/WindRiver/WPILib/desktop-lib/networktables-desktop.src.zip">
-		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/C:/WindRiver/WPILib/desktop-lib/networktables-desktop.javadoc.zip!/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/SmartDashboard.jar" sourcepath="C:/sourcecontrolled/FIRSTforge/SmartDashboard/trunk/smartdashboard/src"/>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/WPICameraExtension.jar" sourcepath="C:/sourcecontrolled/FIRSTforge/SmartDashboard/trunk/extensions"/>
 	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/javacpp.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/javacv.jar">
 		<attributes>
