@@ -13,18 +13,18 @@ import edu.wpi.first.wpijavacv.WPIColorImage;
 import edu.wpi.first.wpijavacv.WPIImage;
 
 /* REQUIRED JAVA LIBRARIES:
- *   Program Files/SmartDashboard/
- *     extensions/lib/javacpp.jar
- *     extensions/lib/javacv-YOUR_OS.jar
- *     extensions/lib/javacv.jar
- *     extensions/lib/WPIJavaCV.jar
- *     SmartDashboard.jar                 -- maybe in the future
- *     extensions/WPICameraExtension.jar  -- maybe in the future
+ *   external_jars/
+ *     javacpp.jar
+ *     javacv-YOUR_OS.jar
+ *     javacv.jar
+ *     WPIJavaCV.jar
  *
- * REQUIRED NATIVE CODE LIBRARIES:
- *   Program Files/WPIJavaCV/
+ * REQUIRED NATIVE CODE LIBRARIES ON $PATH:
+ *   Program Files/WPIJavaCV/     [for example]
  *     JavaCV_2.2.0/javacv-bin/javacv-YOUR_OS.jar
  *     OpenCV_2.2.0/bin/*
+ *
+ * The native libraries and javacv-YOUR_OS.jar must match the 32 vs. 64-bit JVM.
  */
 /**
  * FRC 2013 vision-target recognizer tuner app.
