@@ -25,14 +25,14 @@ import edu.wpi.first.wpijavacv.WPIPolygon;
 public class Recognizer2013 implements Recognizer {
 
     // --- Constants that need to be tuned.
-    static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(25));
-    static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 25));
-    static final double kMin1Hue = 55 - 1; // - 1 because cvThreshold() does > not >=
-    static final double kMax1Hue = 118 + 1;
-    static final double kMin1Sat = 80 - 1;
-    static final double kMin1Val = 69 - 1;
-    static final int kHoleClosingIterations = 3;
-    static final double kPolygonPercentFit = 12; // was 20
+    static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(30));
+    static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 30));
+    private int min1Hue;
+    private int max1Hue;
+    private int min1Sat;
+    private int min1Val;
+    static final int kHoleClosingIterations = 2;
+    static final double kPolygonPercentFit = 12;
 
     static final int kMinWidthAt320 = 35; // for high goal and middle goals
 
@@ -74,7 +74,24 @@ public class Recognizer2013 implements Recognizer {
     private WPIPoint linePt1, linePt2; // crosshair endpoints
 
     public Recognizer2013() {
+	setHSVRange(70, 106, 137, 27);
     }
+
+    @Override
+    public void setHSVRange(int minHue, int maxHue, int minSat, int minVal) {
+	min1Hue = minHue - 1; // - 1 because cvThreshold() does > instead of >=
+	max1Hue = maxHue + 1;
+	min1Sat = minSat - 1;
+	min1Val = minVal - 1;
+    }
+    @Override
+    public int getHueMin() { return min1Hue + 1; }
+    @Override
+    public int getHueMax() { return max1Hue - 1; }
+    @Override
+    public int getSatMin() { return min1Sat - 1; }
+    @Override
+    public int getValMin() { return min1Val - 1; }
 
     @Override
     public WPIImage processImage(WPIColorImage cameraImage) {
@@ -114,10 +131,10 @@ public class Recognizer2013 implements Recognizer {
         // NOTE: Since red is at the end of the cyclic color space, you can OR
         // a threshold and an inverted threshold to match red pixels.
         // TODO(jerry): Use tunable constants instead of literals.
-        opencv_imgproc.cvThreshold(hue, bin, kMin1Hue, 255, opencv_imgproc.CV_THRESH_BINARY);
-        opencv_imgproc.cvThreshold(hue, hue, kMax1Hue, 255, opencv_imgproc.CV_THRESH_BINARY_INV);
-        opencv_imgproc.cvThreshold(sat, sat, kMin1Sat, 255, opencv_imgproc.CV_THRESH_BINARY);
-        opencv_imgproc.cvThreshold(val, val, kMin1Val, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(hue, bin, min1Hue, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(hue, hue, max1Hue, 255, opencv_imgproc.CV_THRESH_BINARY_INV);
+        opencv_imgproc.cvThreshold(sat, sat, min1Sat, 255, opencv_imgproc.CV_THRESH_BINARY);
+        opencv_imgproc.cvThreshold(val, val, min1Val, 255, opencv_imgproc.CV_THRESH_BINARY);
 
         // Combine the results to obtain a binary image which is mostly the
         // interesting pixels.

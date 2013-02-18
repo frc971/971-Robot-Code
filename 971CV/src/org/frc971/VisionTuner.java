@@ -1,11 +1,17 @@
 package org.frc971;
 
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.WindowConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import com.googlecode.javacv.CanvasFrame;
 
@@ -34,14 +40,64 @@ import edu.wpi.first.wpijavacv.WPIImage;
 public class VisionTuner {
     private String[] testImageFilenames;
     private WPIColorImage[] testImages;
-    private final CanvasFrame cameraFrame = new CanvasFrame("Camera");
     private int currentIndex = 0;
     private Recognizer recognizer = new Recognizer2013();
+
+    private final CanvasFrame cameraFrame = new CanvasFrame("Camera");
+    private final JPanel panel = new JPanel();
+    private final JSlider hueMinSlider = new JSlider();
+    private final JSlider hueMaxSlider = new JSlider();
+    private final JSlider satMinSlider = new JSlider();
+    private final JSlider valMinSlider = new JSlider();
 
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         loadTestImages(imageFilenames);
+
+        cameraFrame.getContentPane().add(panel, BorderLayout.SOUTH);
+        panel.setLayout(new GridLayout(0, 2, 0, 0));
+
+        ChangeListener sliderListener = new ChangeListener() {
+            @Override
+	    public void stateChanged(ChangeEvent e) {
+        	System.out.println("New HSV range ["
+        		+ hueMinSlider.getValue() + " .. "
+        		+ hueMaxSlider.getValue() + "], ["
+        		+ satMinSlider.getValue() + " .. 255], ["
+        		+ valMinSlider.getValue() + " .. 255]");
+        	recognizer.setHSVRange(
+        		hueMinSlider.getValue(), hueMaxSlider.getValue(),
+        		satMinSlider.getValue(),
+        		valMinSlider.getValue());
+        	processCurrentImage();
+            }
+        };
+
+        hueMinSlider.setValue(recognizer.getHueMin());
+        hueMinSlider.setToolTipText("minimum HSV hue");
+        hueMinSlider.setMaximum(255);
+        panel.add(hueMinSlider);
+
+        hueMaxSlider.setValue(recognizer.getHueMax());
+        hueMaxSlider.setToolTipText("maximum HSV hue");
+        hueMaxSlider.setMaximum(255);
+        panel.add(hueMaxSlider);
+
+        satMinSlider.setValue(recognizer.getSatMin());
+        satMinSlider.setToolTipText("minimum HSV color saturation");
+        satMinSlider.setMaximum(255);
+        panel.add(satMinSlider);
+
+        valMinSlider.setValue(recognizer.getValMin());
+        valMinSlider.setToolTipText("minimum HSV brightness value");
+        valMinSlider.setMaximum(255);
+        panel.add(valMinSlider);
+
+        hueMinSlider.addChangeListener(sliderListener);
+        hueMaxSlider.addChangeListener(sliderListener);
+        satMinSlider.addChangeListener(sliderListener);
+        valMinSlider.addChangeListener(sliderListener);
     }
 
     /**
@@ -51,6 +107,7 @@ public class VisionTuner {
     private void loadTestImages(String[] imageFilenames) {
 	testImageFilenames = imageFilenames;
 	testImages = new WPIColorImage[testImageFilenames.length];
+	currentIndex = 0;
 
 	for (int i = 0; i < testImageFilenames.length; i++) {
             String imageFilename = testImageFilenames[i];
