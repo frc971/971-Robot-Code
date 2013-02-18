@@ -13,7 +13,11 @@ Some us are using git for managing quickly changing code. This file has
   where username is your login on the server and somebody is another person's
   git repository
 
-nothing terribly useful...
+[Working with Other People's Repositories]
+`git fetch somebody` will pull their changes, and then you can rebase on top of
+  them etc.
+`git push --mirror` will push all of your local branches so that everybody else
+  can see them.
 
 [Synchronizing with SVN]
 In order to synchronize the git commits with svn, somebody has to get git-svn
@@ -22,4 +26,9 @@ In order to synchronize the git commits with svn, somebody has to get git-svn
   Then, unless you want git-svn to pull down everything from SVN again, you have
     to do `vim .git/refs/remotes/git-svn` (or whatever you name the remote) and
     put in the commit ID of the latest commit in the repository that's from SVN.
-  After doing that (and a `git-svn fetch`), git-svn works like usual.
+  After doing that (and a `git svn fetch`), git-svn works like usual.
+  To pull changes from svn, do `git-svn fetch`. To push changes to svn, do
+    `git svn dcommit`, which will take all of your git commits between the
+    latest commit from svn and your HEAD and make them into svn commits.
+  Multiple people dealing with svn works out because the git commit IDs end up
+    the same, so they all just become the same.
