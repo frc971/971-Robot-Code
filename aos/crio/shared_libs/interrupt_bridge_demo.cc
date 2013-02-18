@@ -4,7 +4,6 @@
 
 #include "WPILib/Timer.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/time.h"
 
 using aos::time::Time;

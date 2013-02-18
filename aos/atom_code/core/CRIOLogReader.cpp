@@ -8,44 +8,55 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <string.h>
 
 #include <map>
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging_impl.h"
+#include "aos/atom_code/logging/atom_logging.h"
 #include "aos/common/Configuration.h"
 #include "aos/common/byteorder.h"
+#include "aos/atom_code/init.h"
+
+namespace aos {
+namespace logging {
+namespace atom {
+namespace {
 
 struct log_buffer {
-  log_crio_message msg;
+  LogMessage *msg;
   size_t used;
 
-  log_buffer() {
+  log_buffer() : msg(NULL) {
     Clear();
   }
   void Clear() {
+    logging::atom::Free(msg);
+    msg = logging::atom::Get();
     used = 0;
   }
-  // returns whether msg is now complete
+
+  // Returns whether msg is now complete.
   bool ReceiveFrom(int sock) {
-    const ssize_t ret = recv(sock, reinterpret_cast<uint8_t *>(&msg) + used,
-                             sizeof(msg) - used, 0);
+    const ssize_t ret = recv(sock, reinterpret_cast<uint8_t *>(msg) + used,
+                             sizeof(*msg) - used, 0);
     if (ret == -1) {
       LOG(ERROR, "recv(%d, %p, %d) failed because of %d: %s\n",
-          sock, reinterpret_cast<uint8_t *>(&msg) + used, sizeof(msg) - used,
+          sock, reinterpret_cast<uint8_t *>(msg) + used, sizeof(*msg) - used,
           errno, strerror(errno));
       return false;
     } else {
       used += ret;
-      if (used > sizeof(msg)) {
-        LOG(WARNING, "used(%zd) is > sizeof(msg)(%zd)\n", used, sizeof(msg));
+      if (used > sizeof(*msg)) {
+        LOG(WARNING, "used(%zd) is > sizeof(*msg)(%zd)\n", used, sizeof(*msg));
       }
-      return used >= sizeof(msg);
+      return used >= sizeof(*msg);
     }
   }
 };
 
-int main() {
-  aos::InitNRT();
+int crio_log_reader_main() {
+  InitNRT();
 
   const int sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock == -1) {
@@ -59,11 +70,11 @@ int main() {
   } bind_sockaddr;
   memset(&bind_sockaddr, 0, sizeof(bind_sockaddr));
   bind_sockaddr.in.sin_family = AF_INET;
-  bind_sockaddr.in.sin_port = htons(static_cast<uint16_t>(aos::NetworkPort::kLogs));
+  bind_sockaddr.in.sin_port = htons(static_cast<uint16_t>(NetworkPort::kLogs));
   bind_sockaddr.in.sin_addr.s_addr = htonl(INADDR_ANY);
   if (bind(sock, &bind_sockaddr.addr, sizeof(bind_sockaddr.addr)) == -1) {
-    LOG(ERROR, "bind(%d, %p) failed because of %d: %s\n", sock, &bind_sockaddr.addr,
-        errno, strerror(errno));
+    LOG(ERROR, "bind(%d, %p) failed because of %d: %s\n", sock,
+        &bind_sockaddr.addr, errno, strerror(errno));
     return EXIT_FAILURE;
   }
   if (listen(sock, 10) == -1) {
@@ -109,21 +120,35 @@ int main() {
             "because of %d: %s\n",
             sock, SOCK_NONBLOCK, errno, strerror(errno));
       } else {
-        socks[new_sock]; // creates using value's default constructor
+        socks[new_sock];  // creates using value's default constructor
       }
     }
 
     for (auto it = socks.begin(); it != socks.end(); ++it) {
       if (FD_ISSET(it->first, &read_fds)) {
         if (it->second.ReceiveFrom(it->first)) {
-          it->second.msg.identifier = -1;
-          it->second.msg.time = aos::ntoh(it->second.msg.time);
-          log_crio_message_send(it->second.msg);
+          it->second.msg->source = ntoh(it->second.msg->source);
+          it->second.msg->sequence = ntoh(it->second.msg->sequence);
+          it->second.msg->level = ntoh(it->second.msg->level);
+          it->second.msg->seconds = ntoh(it->second.msg->seconds);
+          it->second.msg->nseconds = ntoh(it->second.msg->nseconds);
+
+          logging::atom::Write(it->second.msg);
+          it->second.msg = NULL;
           it->second.Clear();
         }
       }
     }
   }
 
-  aos::Cleanup();
+  Cleanup();
+}
+
+}  // namespace
+}  // namespace atom
+}  // namespace logging
+}  // namespace aos
+
+int main() {
+  return aos::logging::atom::crio_log_reader_main();
 }

@@ -8,54 +8,56 @@
 #include <sys/inotify.h>
 #include <sys/stat.h>
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/logging/logging_impl.h"
+#include "aos/atom_code/init.h"
 
 void niceexit(int status);
 
 pid_t start(const char *cmd, uint8_t times) {
   char *which_cmd, *which_cmd_stm;
   if (asprintf(&which_cmd, "which %s", cmd) == -1) {
-    LOG_IFINIT(ERROR, "creating \"which %s\" failed with %d: %s\n",
-               cmd, errno, strerror(errno));
+    LOG(ERROR, "creating \"which %s\" failed with %d: %s\n",
+        cmd, errno, strerror(errno));
     niceexit(EXIT_FAILURE);
   }
   if (asprintf(&which_cmd_stm, "which %s.stm", cmd) == -1) {
-    LOG_IFINIT(ERROR, "creating \"which %s.stm\" failed with %d: %s\n",
-               cmd, errno, strerror(errno));
+    LOG(ERROR, "creating \"which %s.stm\" failed with %d: %s\n",
+        cmd, errno, strerror(errno));
     niceexit(EXIT_FAILURE);
   }
   FILE *which = popen(which_cmd, "r");
   char exe[CMDLEN + 5], orig_exe[CMDLEN];
   size_t ret;
   if ((ret = fread(orig_exe, 1, sizeof(orig_exe), which)) == CMDLEN) {
-    LOG_IFINIT(ERROR, "`which %s` was too long. not starting '%s'\n", cmd, cmd);
+    LOG(ERROR, "`which %s` was too long. not starting '%s'\n", cmd, cmd);
     return 0;
   }
   orig_exe[ret] = '\0';
   if (pclose(which) == -1) {
-    LOG_IFINIT(WARNING, "pclose failed with %d: %s\n", errno, strerror(errno));
+    LOG(WARNING, "pclose failed with %d: %s\n", errno, strerror(errno));
   }
   free(which_cmd);
   if (strlen(orig_exe) == 0) { // which returned nothing; check if stm exists
-    LOG_IFINIT(INFO, "%s didn't exist. trying %s.stm\n", cmd, cmd);
+    LOG(INFO, "%s didn't exist. trying %s.stm\n", cmd, cmd);
     FILE *which_stm = popen(which_cmd_stm, "r");
     if ((ret = fread(orig_exe, 1, sizeof(orig_exe), which_stm)) == CMDLEN) {
-      LOG_IFINIT(ERROR, "`which %s.stm` was too long. not starting %s\n", cmd, cmd);
+      LOG(ERROR, "`which %s.stm` was too long. not starting %s\n", cmd, cmd);
       return 0;
     }
     orig_exe[ret] = '\0';
     if (pclose(which) == -1) {
-      LOG_IFINIT(WARNING, "pclose failed with %d: %s\n", errno, strerror(errno));
+      LOG(WARNING, "pclose failed with %d: %s\n", errno, strerror(errno));
     }
   }
   if (strlen(orig_exe) == 0) {
-    LOG_IFINIT(WARNING, "couldn't find file '%s[.stm]'. not going to start it\n",
-               cmd);
+    LOG(WARNING, "couldn't find file '%s[.stm]'. not going to start it\n",
+        cmd);
     return 0;
   }
   if (orig_exe[strlen(orig_exe) - 1] != '\n') {
-    LOG_IFINIT(WARNING, "no \\n on the end of `which %s[.stm]` output ('%s')\n",
-               cmd, orig_exe);
+    LOG(WARNING, "no \\n on the end of `which %s[.stm]` output ('%s')\n",
+        cmd, orig_exe);
   } else {
     orig_exe[strlen(orig_exe) - 1] = '\0'; // get rid of the \n
   }
@@ -65,11 +67,11 @@ pid_t start(const char *cmd, uint8_t times) {
   struct stat st;
   errno = 0;
   if (stat(orig_exe, &st) != 0 && errno != ENOENT) {
-    LOG_IFINIT(ERROR, "killing everything because stat('%s') failed with %d: %s\n",
-               orig_exe, errno, strerror(errno));
+    LOG(ERROR, "killing everything because stat('%s') failed with %d: %s\n",
+        orig_exe, errno, strerror(errno));
     niceexit(EXIT_FAILURE);
   } else if (errno == ENOENT) {
-    LOG_IFINIT(WARNING, "binary '%s' doesn't exist. not starting it\n", orig_exe);
+    LOG(WARNING, "binary '%s' doesn't exist. not starting it\n", orig_exe);
     return 0;
   }
   struct stat st2;
@@ -78,38 +80,38 @@ pid_t start(const char *cmd, uint8_t times) {
   if (!orig_zero) {
     // if it failed and it wasn't because it was missing
     if (unlink(exe) != 0 && (errno != EROFS && errno != ENOENT)) {
-      LOG_IFINIT(ERROR,
-                 "killing everything because unlink('%s') failed with %d: %s\n",
-                 exe, errno, strerror(errno));
+      LOG(ERROR,
+          "killing everything because unlink('%s') failed with %d: %s\n",
+          exe, errno, strerror(errno));
       niceexit(EXIT_FAILURE);
     }
     if (link(orig_exe, exe) != 0) {
-      LOG_IFINIT(ERROR,
-                 "killing everything because link('%s', '%s') failed with %d: %s\n",
-                 orig_exe, exe, errno, strerror(errno));
+      LOG(ERROR,
+          "killing everything because link('%s', '%s') failed with %d: %s\n",
+          orig_exe, exe, errno, strerror(errno));
       niceexit(EXIT_FAILURE);
     }
   }
   if (errno == EEXIST) {
-    LOG_IFINIT(INFO, "exe ('%s') already existed\n", exe);
+    LOG(INFO, "exe ('%s') already existed\n", exe);
   }
 
   pid_t child;
   if ((child = fork()) == 0) {
     execlp(exe, orig_exe, static_cast<char *>(NULL));
-    LOG_IFINIT(ERROR,
-               "killing everything because execlp('%s', '%s', NULL) "
-               "failed with %d: %s\n",
-               exe, cmd, errno, strerror(errno));
+    LOG(ERROR,
+        "killing everything because execlp('%s', '%s', NULL) "
+        "failed with %d: %s\n",
+        exe, cmd, errno, strerror(errno));
     _exit(EXIT_FAILURE); // don't niceexit or anything because this is the child!!
   }
   if (child == -1) {
-    LOG_IFINIT(WARNING, "fork on '%s' failed with %d: %s",
-               cmd, errno, strerror(errno));
+    LOG(WARNING, "fork on '%s' failed with %d: %s",
+        cmd, errno, strerror(errno));
     if (times < 100) {
       return start(cmd, times + 1);
     } else {
-      LOG_IFINIT(ERROR, "tried to start '%s' too many times. giving up\n", cmd);
+      LOG(ERROR, "tried to start '%s' too many times. giving up\n", cmd);
       return 0;
     }
   } else {
@@ -117,9 +119,9 @@ pid_t start(const char *cmd, uint8_t times) {
     files[child] = orig_exe;
     int ret = inotify_add_watch(notifyfd, orig_exe, IN_ATTRIB | IN_MODIFY);
     if (ret < 0) {
-      LOG_IFINIT(WARNING, "inotify_add_watch('%s') failed: "
-                 "not going to watch for changes to it because of %d: %s\n",
-                 orig_exe, errno, strerror(errno));
+      LOG(WARNING, "inotify_add_watch('%s') failed: "
+          "not going to watch for changes to it because of %d: %s\n",
+          orig_exe, errno, strerror(errno));
     } else {
       watches[ret] = child;
       mtimes[ret] = st2.st_mtime;
@@ -163,6 +165,8 @@ int main(int argc, char *argv[]) {
   }
 
   atexit(exit_handler);
+
+  aos::logging::Init();
 
   notifyfd = inotify_init1(IN_NONBLOCK);
 
@@ -329,18 +333,6 @@ int main(int argc, char *argv[]) {
           fputs("starter: error: core died. exiting\n", stderr);
           niceexit(EXIT_FAILURE);
         }
-
-        /*// remove all of the watches assigned to the pid that just died
-        for (auto it = watches.begin(); it != watches.end(); ++it) {
-          if (it->second == infop.si_pid) {
-            watches_to_ignore.insert(it->first);
-          }
-        }
-        for (auto it = watches_to_ignore.begin();
-             it != watches_to_ignore.end(); ++it) {
-          LOG(DEBUG, "watch id %d was on PID %d\n", *it, infop.si_pid);
-          watches.erase(*it);
-        }*/
 
         start(children[infop.si_pid], 0);
         LOG(DEBUG, "erasing %d from children\n", infop.si_pid);

@@ -1,7 +1,9 @@
-#include "Buffers.h"
-#include "V4L2.h"
+#include "aos/atom_code/camera/Buffers.h"
 
 #include <sys/mman.h>
+
+#include "aos/atom_code/camera/V4L2.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 namespace camera {

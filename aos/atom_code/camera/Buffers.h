@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "aos/aos_core.h"
+#include "aos/atom_code/ipc_lib/queue.h"
 #include "aos/common/type_traits.h"
 
 namespace aos {

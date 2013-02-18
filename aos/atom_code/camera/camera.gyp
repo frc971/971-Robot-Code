@@ -43,13 +43,28 @@
       'hard_dependency': 1,
     },
     {
+      'target_name': 'buffers',
+      'type': 'static_library',
+      'sources': [
+        'Buffers.cpp',
+      ],
+      'dependencies': [
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+      ],
+    },
+    {
       'target_name': 'CameraHTTPStreamer',
       'type': 'executable',
       'sources': [
         'HTTPStreamer.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        'buffers',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -59,7 +74,8 @@
         'Reader.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        'buffers',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],

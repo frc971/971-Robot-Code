@@ -1,6 +1,9 @@
 #include "aos/common/mutex.h"
 
 #include <semLib.h>
+#include <string.h>
+
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 

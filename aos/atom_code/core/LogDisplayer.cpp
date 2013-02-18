@@ -9,6 +9,7 @@
 
 #include "aos/atom_code/core/LogFileCommon.h"
 #include "aos/aos_core.h"
+#include "aos/common/logging/logging_impl.h"
 
 namespace {
 
@@ -81,7 +82,7 @@ int main(int argc, char **argv) {
         filter_name = optarg;
         break;
       case 'l':
-        filter_level = str_log(optarg);
+        filter_level = aos::logging::str_log(optarg);
         if (filter_level == LOG_UNKNOWN) {
           fprintf(stderr, "LogDisplayer: unknown log level '%s'\n", optarg);
           exit(EXIT_FAILURE);
@@ -121,7 +122,7 @@ int main(int argc, char **argv) {
   }
 
   fprintf(stderr, "displaying down to level %s from file '%s'\n",
-          log_str(filter_level), filename);
+          aos::logging::log_str(filter_level), filename);
   if (optind < argc) {
     fprintf(stderr, "non-option ARGV-elements: ");
     while (optind < argc) {
@@ -135,23 +136,33 @@ int main(int argc, char **argv) {
             filename, strerror(errno));
     exit(EXIT_FAILURE);
   }
-  aos::LogFileAccessor accessor(fd, false);
+  aos::logging::LogFileAccessor accessor(fd, false);
   if (!start_at_beginning) {
     accessor.MoveToEnd();
   }
-  const aos::LogFileMessageHeader *msg;
+  const aos::logging::LogFileMessageHeader *msg;
+  aos::logging::LogMessage log_message;
   do {
     msg = accessor.ReadNextMessage(follow);
     if (msg == NULL) continue;
-    if (log_gt_important(filter_level, msg->level)) continue;
+    if (aos::logging::log_gt_important(filter_level, msg->level)) continue;
     if (filter_name != NULL &&
         strcmp(filter_name, reinterpret_cast<const char *>(msg) + sizeof(*msg)) != 0) {
       continue;
     }
-    printf("%s(%"PRId32")(%03"PRId8"): %s at %010"PRIu64"s%09"PRIu64"ns: %s",
-           reinterpret_cast<const char *>(msg) + sizeof(*msg), msg->source,
-           msg->sequence, log_str(msg->level), msg->time_sec, msg->time_nsec,
-           reinterpret_cast<const char *>(msg) + sizeof(*msg) + msg->name_size);
+
+    log_message.source = msg->source;
+    log_message.sequence = msg->sequence;
+    log_message.level = msg->level;
+    log_message.seconds = msg->time_sec;
+    log_message.nseconds = msg->time_nsec;
+    strncpy(log_message.name,
+            reinterpret_cast<const char *>(msg) + sizeof(*msg),
+            sizeof(log_message.name));
+    strncpy(log_message.message,
+            reinterpret_cast<const char *>(msg) + sizeof(*msg) +
+            msg->name_size,
+            sizeof(log_message.message));
+    aos::logging::internal::PrintMessage(stdout, log_message);
   } while (msg != NULL);
 }
-

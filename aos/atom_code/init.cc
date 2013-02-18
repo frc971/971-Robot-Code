@@ -12,8 +12,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "aos/aos_core.h"
 #include "aos/common/die.h"
+#include "aos/atom_code/logging/atom_logging.h"
+#include "aos/atom_code/ipc_lib/shared_mem.h"
 
 namespace aos {
 
@@ -69,10 +70,7 @@ void DoInitNRT(aos_core_create create) {
     Die("%s-init: creating shared memory reference failed\n",
         program_invocation_short_name);
   }
-  if (log_init(program_invocation_short_name) != 0) {
-    Die("%s-init: initializing logging failed\n",
-        program_invocation_short_name);
-  }
+  logging::atom::Register();
 }
 
 const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";

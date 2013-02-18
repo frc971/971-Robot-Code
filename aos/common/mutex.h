@@ -5,9 +5,9 @@
 #include <semLib.h>
 #endif
 
-#include "aos/aos_core.h"
 #include "aos/common/macros.h"
 #include "aos/common/type_traits.h"
+#include "aos/atom_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 

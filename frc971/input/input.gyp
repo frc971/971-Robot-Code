@@ -26,6 +26,7 @@
         'actions',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -40,6 +41,13 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/network/network.gyp:socket',
       ],
+      'conditions': [
+        ['OS!="crio"', {
+          'dependencies': [
+            '<(AOS)/atom_code/atom_code.gyp:init',
+          ],
+        }],
+      ],
     },
     {
       'target_name': 'SensorWriter',
@@ -50,6 +58,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
       ],
     },
     {
@@ -59,8 +68,9 @@
         'GyroReader.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -74,6 +84,8 @@
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         'actions',
+# TODO(brians) this shouldn't need to be here
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],

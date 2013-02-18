@@ -5,8 +5,8 @@
 
 #include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/type_traits.h"
+#include "aos/common/queue.h"
 
 namespace aos {
 namespace control_loops {

@@ -2,6 +2,7 @@
 #define __AOS_MESSAGES_QUEUE_HOLDER_H_
 
 #include <stddef.h>
+#include <string.h>
 
 #include <algorithm>
 

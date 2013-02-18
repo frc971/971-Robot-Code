@@ -10,6 +10,7 @@
         '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/atom_code/output/output.gyp:http_server',
         '../frc971.gyp:common',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
       'copies': [
         {
@@ -30,6 +31,7 @@
               '../frc971.gyp:common',
               '<(AOS)/atom_code/output/output.gyp:motor_output',
               '<(AOS)/atom_code/messages/messages.gyp:messages',
+              '<(AOS)/atom_code/atom_code.gyp:init',
             ],
           }, {
             'sources': ['CRIOMotorWriter.cc'],

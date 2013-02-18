@@ -7,7 +7,7 @@
         'core.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -17,7 +17,9 @@
         'BinaryLogReader.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/common/common.gyp:common',
       ],
     },
     {
@@ -27,7 +29,8 @@
         'LogStreamer.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -37,7 +40,8 @@
         'LogDisplayer.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -47,7 +51,8 @@
         'CRIOLogReader.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],

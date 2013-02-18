@@ -4,6 +4,7 @@
 #ifndef __VXWORKS__
 #include <endian.h> // endian(3)
 #endif
+#include <string.h>
 
 // Contains functions for converting between host and network byte order for
 // things other than 16/32 bit integers (those are provided by byteorder(3)).

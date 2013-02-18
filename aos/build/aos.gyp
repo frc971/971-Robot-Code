@@ -8,17 +8,12 @@
     'conditions': [
       ['OS=="crio"', {
           'libaos_source_files': [
-            '<!@(find <(AOS)/crio/controls <(AOS)/crio/messages <(AOS)/crio/motor_server <(AOS)/crio/shared_libs -name *.c -or -name *.cpp -or -name *.cc)',
+            '<!@(find <(AOS)/crio/controls <(AOS)/crio/messages <(AOS)/crio/motor_server -name *.c -or -name *.cpp -or -name *.cc)',
             '<(AOS)/crio/Talon.cpp',
-            '<(AOS)/common/die.cc',
           ],
         }, {
           'libaos_source_files': [
-            '<(AOS)/atom_code/camera/Buffers.cpp',
             '<(AOS)/atom_code/async_action/AsyncAction_real.cpp',
-            '<(AOS)/atom_code/init.cc',
-            '<(AOS)/atom_code/ipc_lib/mutex.cpp',
-            '<(AOS)/common/die.cc',
           ],
         }
       ],
@@ -28,17 +23,20 @@
     {
       'target_name': 'logging',
       'type': 'static_library',
+      'sources': [
+        '<(AOS)/common/logging/logging_impl.cc',
+      ],
       'conditions': [
         ['OS=="crio"', {
           'sources': [
-            '<(AOS)/crio/logging/crio_logging.cpp',
+            '<(AOS)/crio/logging/crio_logging.cc',
           ],
           'dependencies': [
             '<(EXTERNALS):WPILib',
           ]
         }, {
           'sources': [
-            '<(AOS)/atom_code/logging/atom_logging.cpp'
+            '<(AOS)/atom_code/logging/atom_logging.cc',
           ],
           'dependencies': [
             '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
@@ -50,6 +48,9 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:once',
+        '<(AOS)/common/common.gyp:mutex',
+        '<(AOS)/common/common.gyp:die',
       ],
     },
     {

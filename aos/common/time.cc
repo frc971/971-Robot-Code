@@ -3,6 +3,8 @@
 #ifdef __VXWORKS__
 #include <taskLib.h>
 #endif
+#include <errno.h>
+#include <string.h>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/inttypes.h"

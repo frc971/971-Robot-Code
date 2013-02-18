@@ -3,10 +3,10 @@
 // Purposes: All shared memory gets allocated here.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include "aos/aos_core.h"
+#include <sys/select.h>
+#include <stdlib.h>
+
+#include "aos/atom_code/init.h"
 
 int main() {
   aos::InitCreate();

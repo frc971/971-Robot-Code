@@ -3,7 +3,7 @@
 
 #include "WPILib/Compressor.h"
 
-#include "aos/aos_core.h"
+#include "aos/crio/logging/crio_logging.h"
 #include "aos/crio/controls/ControlsManager.h"
 #include "aos/common/Configuration.h"
 #include "aos/crio/aos_ctdt.h"
@@ -22,7 +22,7 @@ void ControlsManager::StartCompetition() {
   printf("aos::ControlsManager::RobotMain\n");
   (new Compressor(14, 1))->Start();
 
-  logging::Start();
+  logging::crio::Register();
   LOG(INFO, "logging started\n");
 
   GetWatchdog().SetEnabled(false);

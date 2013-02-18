@@ -8,7 +8,7 @@
 
 #include "aos/common/scoped_ptr.h"
 
-#include "aos/aos_core.h"
+#include "aos/common/macros.h"
 
 class Task;
 

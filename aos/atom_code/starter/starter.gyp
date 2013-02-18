@@ -7,7 +7,7 @@
         'starter.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
       'copies': [
         {

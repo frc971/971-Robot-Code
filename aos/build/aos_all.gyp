@@ -19,7 +19,6 @@
         '../crio/crio.gyp:unsafe_queue_test',
         '../common/common.gyp:queue_test',
         #'../common/messages/messages.gyp:*', # TODO(brians) did this test ever exist?
-        '../atom_code/logging/logging.gyp:*',
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         'Common',
@@ -44,6 +43,7 @@
         '<(AOS)/common/common.gyp:time_test',
         '<(AOS)/common/common.gyp:mutex_test',
         '<(AOS)/common/common.gyp:once_test',
+        '<(AOS)/common/logging/logging.gyp:logging_impl_test',
       ],
     },
   ],

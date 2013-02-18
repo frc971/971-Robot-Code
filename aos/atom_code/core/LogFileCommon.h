@@ -11,18 +11,22 @@
 
 #include <algorithm>
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging_impl.h"
 
 namespace aos {
+namespace logging {
 
 // File format: {
 //   LogFileMessageHeader header;
-//   char *name; // of the process that wrote the message
+//   char *name;  // of the process that wrote the message
 //   char *message;
 // } not crossing kPageSize boundaries into the file.
 //
-// Field sizes designed to fit the various values from log_message even on
+// Field sizes designed to fit the various values from LogMessage even on
 // other machines (hopefully) because they're baked into the files.
+//
+// A lot of the fields don't have comments because they're the same as the
+// identically named fields in LogMessage.
 struct __attribute__((aligned)) LogFileMessageHeader {
   // gets condition_set once this one has been written
   // for readers keeping up with a live writer
@@ -36,18 +40,17 @@ struct __attribute__((aligned)) LogFileMessageHeader {
   log_level level;
   static_assert(sizeof(level) == 1, "log_level changed size!");
 
-  uint64_t time_sec;
-  static_assert(sizeof(time_sec) >= sizeof(log_message::time.tv_sec), "tv_sec won't fit");
-  uint64_t time_nsec;
-  static_assert(sizeof(time_nsec) >= sizeof(log_message::time.tv_nsec),
+  uint32_t time_sec;
+  static_assert(sizeof(time_sec) >= sizeof(LogMessage::seconds),
+                "tv_sec won't fit");
+  uint32_t time_nsec;
+  static_assert(sizeof(time_nsec) >= sizeof(LogMessage::nseconds),
                 "tv_nsec won't fit");
 
-  int32_t source; // pid or -1 for crio
-  static_assert(sizeof(source) >= sizeof(log_message::source), "PIDs won't fit");
-  uint8_t sequence;
-  static_assert(sizeof(sequence) == sizeof(log_crio_message::sequence),
-                "something changed");
-  static_assert(sizeof(sequence) == sizeof(log_message::sequence),
+  int32_t source;
+  static_assert(sizeof(source) >= sizeof(LogMessage::source), "PIDs won't fit");
+  uint16_t sequence;
+  static_assert(sizeof(sequence) == sizeof(LogMessage::sequence),
                 "something changed");
 
   // both including the terminating '\0'
@@ -129,7 +132,7 @@ class LogFileAccessor {
         sizeof(mutex) > kPageSize) {
       char *const temp = current_;
       MapNextPage();
-      if (condition_set_value(reinterpret_cast<mutex *>(&temp[position_]), 2) != 0) {
+      if (condition_set_value(reinterpret_cast<mutex *>(&temp[position_]), 2) == -1) {
         fprintf(stderr, "LogFileCommon: condition_set_value(%p, 2) failed with %d: %s."
                 " readers will hang\n", &temp[position_], errno, strerror(errno));
       }
@@ -186,7 +189,7 @@ class LogFileAccessor {
   }
 };
 
-};
+}  // namespace logging
+}  // namespace aos
 
 #endif
-

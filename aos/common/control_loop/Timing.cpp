@@ -1,6 +1,8 @@
-#include "aos/common/logging/logging.h"
 #include "aos/common/control_loop/Timing.h"
 
+#include <string.h>
+
+#include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
 
 namespace aos {

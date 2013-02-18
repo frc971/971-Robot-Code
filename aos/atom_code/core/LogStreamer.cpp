@@ -10,35 +10,43 @@
 #include <fcntl.h>
 #include <inttypes.h>
 
-#include "aos/aos_core.h"
+#include "aos/atom_code/logging/atom_logging.h"
 #include "aos/atom_code/core/LogFileCommon.h"
+#include "aos/atom_code/init.h"
+#include "aos/atom_code/ipc_lib/queue.h"
+#include "aos/common/logging/logging_impl.h"
 
-static const char *const kCRIOName = "CRIO";
+namespace aos {
+namespace logging {
+namespace atom {
+namespace {
 
-int main() {
-  aos::InitNRT();
+int log_streamer_main() {
+  InitNRT();
 
   const time_t t = time(NULL);
-  printf("starting at %jd----------------------------------\n", static_cast<uintmax_t>(t));
+  printf("starting at %jd----------------------------------\n",
+         static_cast<uintmax_t>(t));
 
   int index = 0;
   while (true) {
-    const log_message *const msg = log_read_next2(BLOCK, &index);
+    const LogMessage *const msg = ReadNext(BLOCK, &index);
     if (msg == NULL) continue;
-    const log_crio_message *const crio_msg = reinterpret_cast<const log_crio_message *>(
-        msg);
 
-    if (msg->source == -1) {
-      printf("CRIO(%03"PRId8"): %s at %f: %s", crio_msg->sequence,
-             log_str(crio_msg->level), crio_msg->time, crio_msg->message);
-    } else {
-      printf("%s(%"PRId32")(%03"PRId8"): %s at %010jus%09luns: %s",
-             msg->name, msg->source, msg->sequence, log_str(msg->level),
-             static_cast<uintmax_t>(msg->time.tv_sec), msg->time.tv_nsec, msg->message);
-    }
+    internal::PrintMessage(stdout, *msg);
 
-    log_free_message(msg);
+    logging::atom::Free(msg);
   }
 
-  aos::Cleanup();
+  Cleanup();
+  return 0;
+}
+
+}  // namespace
+}  // namespace atom
+}  // namespace logging
+}  // namespace aos
+
+int main() {
+  return aos::logging::atom::log_streamer_main();
 }

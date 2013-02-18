@@ -1,4 +1,7 @@
 #include "aos/common/queue_testutils.h"
+
+#include <string.h>
+
 #include "aos/common/queue.h"
 
 namespace aos {

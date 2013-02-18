@@ -13,12 +13,10 @@
         'header_path': 'frc971/control_loops',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
@@ -33,10 +31,10 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:controls',
-        '<(AOS)/build/aos.gyp:libaos',
         'control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(EXTERNALS):eigen',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],

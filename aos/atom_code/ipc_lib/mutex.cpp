@@ -2,6 +2,8 @@
 
 #include <inttypes.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "aos/aos_core.h"
 #include "aos/common/type_traits.h"

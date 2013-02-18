@@ -3,6 +3,8 @@
 #include "jni/aos_Natives.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/externals/libjpeg/include/jpeglib.h"
+#include "aos/common/logging/logging_impl.h"
+#include "aos/atom_code/init.h"
 
 using aos::camera::Buffers;
 
@@ -248,8 +250,8 @@ void Java_aos_Natives_LOG(JNIEnv *env, jclass, jstring message, jint jlevel) {
   } else {
     level = DEBUG;
   }
-  // can't use Get/ReleaseStringCritical because log_do might block waiting to
-  // put its message into the queue
+  // Can't use Get/ReleaseStringCritical because log_do might block waiting to
+  // put its message into the queue.
   const char *const message_chars = env->GetStringUTFChars(message, NULL);
   if (message_chars == NULL) return;
   log_do(level, "%s\n", message_chars);

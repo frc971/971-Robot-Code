@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <assert.h>
 
+#include "aos/common/logging/logging.h"
+
 #define READ_DEBUG 0
 #define WRITE_DEBUG 0
 #define REF_DEBUG 0
@@ -36,7 +38,7 @@ static inline int aos_free_msg(aos_msg_pool *pool, void *msg, aos_queue *queue) 
 		abort();
 	}
 #if REF_DEBUG
-	printf("ref_free_count: %p\n", msg);
+	printf("ref free: %p\n", msg);
 #endif
 	--pool->used;
 
@@ -484,10 +486,7 @@ static inline void *aos_pool_get_msg(aos_msg_pool *pool) {
 		msg = pool->pool[pool->used];
 	} else {
 		if (pool->length >= pool->mem_length) {
-			//TODO(brians) log this if it isn't the log queue
-			fprintf(stderr, "queue: overused_pool\n");
-			msg = NULL;
-			goto exit;
+			LOG(FATAL, "overused pool %p\n", pool);
 		}
 		msg = pool->pool[pool->length] = aos_alloc_msg(pool);
 		++pool->length;
@@ -500,7 +499,6 @@ static inline void *aos_pool_get_msg(aos_msg_pool *pool) {
 #endif
 	header->index = pool->used;
 	++pool->used;
-exit:
 	mutex_unlock(&pool->pool_lock);
 	return msg;
 }

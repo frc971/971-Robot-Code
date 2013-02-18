@@ -132,8 +132,15 @@
     {
       'target_name': 'controls',
       'type': 'static_library',
-      'sources': [],
+      'sources': [
+        # 'control_loop/ControlLoop-tmpl.h',
+      ],
       'dependencies': [
+        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/build/aos.gyp:logging',
+        'timing',
+      ],
+      'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
@@ -205,6 +212,34 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         '<(AOS)/build/aos.gyp:libaos',
+      ],
+    },
+    {
+      'target_name': 'die',
+      'type': 'static_library',
+      'sources': [
+        'die.cc',
+      ],
+    },
+    {
+      'target_name': 'mutex',
+      'type': 'static_library',
+      'conditions': [
+        ['OS=="crio"', {
+          'sources': [
+            '<(AOS)/crio/shared_libs/mutex.cpp',
+          ],
+        }, {
+          'sources': [
+            '<(AOS)/atom_code/ipc_lib/mutex.cpp',
+          ],
+          'dependencies': [
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+          ],
+          'export_dependent_settings': [
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+          ],
+        }],
       ],
     },
     {

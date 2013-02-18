@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging.h"
 
 #include "frc971/queues/GyroAngle.q.h"
 

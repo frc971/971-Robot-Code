@@ -8,12 +8,15 @@
 #ifndef __VXWORKS__
 #include <inttypes.h>
 #else
+#define PRId64 "lld"
+
 // It warns about just "d", but not this, which is kind of weird because
 // sizeof(int) == sizeof(long) == sizeof(int32_t) == 4, but oh well.
 #define PRId32 "ld"
 #define PRIx32 "lx"
-#define PRId64 "lld"
-#define PRIu16 "u"
+#define PRIu32 "lu"
+
+#define PRIu16 "hu"
 #endif
 
 #endif  // AOS_COMMON_INTTYPES_H_

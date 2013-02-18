@@ -5,6 +5,7 @@
 #include "WPILib/Task.h"
 
 #include "aos/common/logging/logging.h"
+#include "aos/crio/motor_server/MotorServer.h"
 #include "aos/common/time.h"
 
 extern "C" {
