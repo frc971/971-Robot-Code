@@ -2,17 +2,9 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/javacpp.jar"/>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/javacv.jar">
-		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="C:/Program Files/WPIJavaCV/OpenCV_2.2.0/bin"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/javacv-windows-x86.jar">
-		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="C:/Program Files/WPIJavaCV/JavaCV_2.2.0/javacv-bin"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="C:/Program Files/SmartDashboard/extensions/lib/WPIJavaCV.jar"/>
+	<classpathentry kind="lib" path="external_jars/javacpp.jar"/>
+	<classpathentry kind="lib" path="external_jars/javacv-windows-x86.jar"/>
+	<classpathentry kind="lib" path="external_jars/javacv.jar"/>
+	<classpathentry kind="lib" path="external_jars/WPIJavaCV.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
