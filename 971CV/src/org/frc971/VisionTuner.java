@@ -52,8 +52,8 @@ public class VisionTuner {
 
     private static int totalFrames;
     private static double totalMsec;
-//    private static double minMsec = Double.MAX_VALUE;
-//    private static double maxMsec;
+    //    private static double minMsec = Double.MAX_VALUE;
+    //    private static double maxMsec;
 
     public VisionTuner(String[] imageFilenames) {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -65,17 +65,17 @@ public class VisionTuner {
 
         ChangeListener sliderListener = new ChangeListener() {
             @Override
-	    public void stateChanged(ChangeEvent e) {
-        	System.out.println("New HSV range ["
-        		+ hueMinSlider.getValue() + " .. "
-        		+ hueMaxSlider.getValue() + "], ["
-        		+ satMinSlider.getValue() + " .. 255], ["
-        		+ valMinSlider.getValue() + " .. 255]");
-        	recognizer.setHSVRange(
-        		hueMinSlider.getValue(), hueMaxSlider.getValue(),
-        		satMinSlider.getValue(),
-        		valMinSlider.getValue());
-        	processCurrentImage();
+            public void stateChanged(ChangeEvent e) {
+                System.out.println("New HSV range ["
+                        + hueMinSlider.getValue() + " .. "
+                        + hueMaxSlider.getValue() + "], ["
+                        + satMinSlider.getValue() + " .. 255], ["
+                        + valMinSlider.getValue() + " .. 255]");
+                recognizer.setHSVRange(
+                        hueMinSlider.getValue(), hueMaxSlider.getValue(),
+                        satMinSlider.getValue(),
+                        valMinSlider.getValue());
+                processCurrentImage();
             }
         };
 
@@ -110,26 +110,26 @@ public class VisionTuner {
      * Sets testImageFilenames and testImages.
      */
     private void loadTestImages(String[] imageFilenames) {
-	testImageFilenames = imageFilenames;
-	testImages = new WPIColorImage[testImageFilenames.length];
-	currentIndex = 0;
+        testImageFilenames = imageFilenames;
+        testImages = new WPIColorImage[testImageFilenames.length];
+        currentIndex = 0;
 
-	for (int i = 0; i < testImageFilenames.length; i++) {
+        for (int i = 0; i < testImageFilenames.length; i++) {
             String imageFilename = testImageFilenames[i];
 
             System.out.println("Loading image file: " + imageFilename);
             WPIColorImage rawImage = null;
             try {
                 rawImage = new WPIColorImage(ImageIO.read(
-                	new File(imageFilename)));
+                        new File(imageFilename)));
             } catch (IOException e) {
                 System.err.println("Couldn't load image file: " + imageFilename
-                	+ ": " + e.getMessage());
+                        + ": " + e.getMessage());
                 System.exit(1);
                 return;
             }
             testImages[i] = rawImage;
-	}
+        }
     }
 
     private void processCurrentImage() {
@@ -145,44 +145,44 @@ public class VisionTuner {
         double milliseconds = (endTime - startTime) / 1e6;
         ++totalFrames;
         totalMsec += milliseconds;
-//        minMsec = Math.min(minMsec, milliseconds);
-//        maxMsec = Math.max(maxMsec, milliseconds);
+        //        minMsec = Math.min(minMsec, milliseconds);
+        //        maxMsec = Math.max(maxMsec, milliseconds);
         System.out.format("Processing took %.2f ms, %.2f fps, %.2f avg%n",
-        	milliseconds, 1000 / milliseconds,
-        	1000 * totalFrames / totalMsec);
+                milliseconds, 1000 / milliseconds,
+                1000 * totalFrames / totalMsec);
     }
 
     private void previousImage() {
-	if (currentIndex > 0) {
-	    --currentIndex;
-	}
-	processCurrentImage();
+        if (currentIndex > 0) {
+            --currentIndex;
+        }
+        processCurrentImage();
     }
 
     private void nextImage() {
-	if (currentIndex + 1 < testImages.length) {
-	    ++currentIndex;
-	}
-	processCurrentImage();
+        if (currentIndex + 1 < testImages.length) {
+            ++currentIndex;
+        }
+        processCurrentImage();
     }
 
     private void processEvents() {
-	KeyEvent e = cameraFrame.waitKey();
+        KeyEvent e = cameraFrame.waitKey();
 
-	switch (e.getKeyCode()) {
-	case KeyEvent.VK_LEFT:
-	    previousImage();
-	    break;
-	case KeyEvent.VK_RIGHT:
-	    nextImage();
-	    break;
-	}
+        switch (e.getKeyCode()) {
+        case KeyEvent.VK_LEFT:
+            previousImage();
+            break;
+        case KeyEvent.VK_RIGHT:
+            nextImage();
+            break;
+        }
     }
 
     public static void main(final String[] args) {
         if (args.length == 0) {
             System.err.println("Usage: " + VisionTuner.class.getName()
-        	    + " test image filenames...");
+                    + " test image filenames...");
             System.exit(1);
         }
 

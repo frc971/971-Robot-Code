@@ -59,7 +59,7 @@ public class Recognizer2013 implements Recognizer {
     // Data to reuse for each frame.
     private final DaisyExtensions daisyExtensions = new DaisyExtensions();
     private final IplConvKernel morphKernel = IplConvKernel.create(3, 3, 1, 1,
-		opencv_imgproc.CV_SHAPE_RECT, null);
+            opencv_imgproc.CV_SHAPE_RECT, null);
     private final ArrayList<WPIPolygon> polygons = new ArrayList<WPIPolygon>();
 
     // Frame-size-dependent data to reuse for each frame.
@@ -74,15 +74,15 @@ public class Recognizer2013 implements Recognizer {
     private WPIPoint linePt1, linePt2; // crosshair endpoints
 
     public Recognizer2013() {
-	setHSVRange(70, 106, 137, 27);
+        setHSVRange(70, 106, 137, 27);
     }
 
     @Override
     public void setHSVRange(int minHue, int maxHue, int minSat, int minVal) {
-	min1Hue = minHue - 1; // - 1 because cvThreshold() does > instead of >=
-	max1Hue = maxHue + 1;
-	min1Sat = minSat - 1;
-	min1Val = minVal - 1;
+        min1Hue = minHue - 1; // - 1 because cvThreshold() does > instead of >=
+        max1Hue = maxHue + 1;
+        min1Sat = minSat - 1;
+        min1Val = minVal - 1;
     }
     @Override
     public int getHueMin() { return min1Hue + 1; }
@@ -95,14 +95,14 @@ public class Recognizer2013 implements Recognizer {
 
     @Override
     public WPIImage processImage(WPIColorImage cameraImage) {
-	// (Re)allocate the intermediate images if the input is a different
-	// size than the previous image.
+        // (Re)allocate the intermediate images if the input is a different
+        // size than the previous image.
         if (size == null || size.width() != cameraImage.getWidth()
-        	|| size.height() != cameraImage.getHeight()) {
+                || size.height() != cameraImage.getHeight()) {
             size = opencv_core.cvSize(cameraImage.getWidth(),
-        	    cameraImage.getHeight());
+                    cameraImage.getHeight());
             rawImage = DaisyExtensions.makeWPIColorImage(
-        	    DaisyExtensions.getIplImage(cameraImage));
+                    DaisyExtensions.getIplImage(cameraImage));
             bin = IplImage.create(size, 8, 1);
             hsv = IplImage.create(size, 8, 3);
             hue = IplImage.create(size, 8, 1);
@@ -111,14 +111,14 @@ public class Recognizer2013 implements Recognizer {
             minWidth = (kMinWidthAt320 * cameraImage.getWidth() + 319) / 320;
 
             int horizontalOffsetPixels = (int)Math.round(
-        	    kShooterOffsetDeg * size.width() / kHorizontalFOVDeg);
+                    kShooterOffsetDeg * size.width() / kHorizontalFOVDeg);
             int x = size.width() / 2 + horizontalOffsetPixels;
             linePt1 = new WPIPoint(x, size.height() - 1);
             linePt2 = new WPIPoint(x, 0);
         } else {
             // Copy the camera image so it's safe to draw on.
             opencv_core.cvCopy(DaisyExtensions.getIplImage(cameraImage),
-        	    DaisyExtensions.getIplImage(rawImage));
+                    DaisyExtensions.getIplImage(rawImage));
         }
 
         IplImage input = DaisyExtensions.getIplImage(rawImage);
@@ -146,7 +146,7 @@ public class Recognizer2013 implements Recognizer {
 
         // Fill in gaps using binary morphology.
         opencv_imgproc.cvMorphologyEx(bin, bin, null, morphKernel,
-        	opencv_imgproc.CV_MOP_CLOSE, kHoleClosingIterations);
+                opencv_imgproc.CV_MOP_CLOSE, kHoleClosingIterations);
 
         morphedCanvas.showImage(bin);
 
@@ -168,13 +168,13 @@ public class Recognizer2013 implements Recognizer {
         polygons.clear();
         for (WPIContour c : contours) {
             if (c.getWidth() >= minWidth) {
-        	double ratio = ((double) c.getHeight()) / c.getWidth();
-        	if (ratio >= kMinAspect && ratio <= kMaxAspect) {
-        	    polygons.add(c.approxPolygon(kPolygonPercentFit));
-//        	    System.out.println("  Accepted aspect ratio " + ratio);
-        	} else {
-//        	    System.out.println("  Rejected aspect ratio " + ratio);
-        	}
+                double ratio = ((double) c.getHeight()) / c.getWidth();
+                if (ratio >= kMinAspect && ratio <= kMaxAspect) {
+                    polygons.add(c.approxPolygon(kPolygonPercentFit));
+                    //        	    System.out.println("  Accepted aspect ratio " + ratio);
+                } else {
+                    //        	    System.out.println("  Rejected aspect ratio " + ratio);
+                }
             }
         }
 
@@ -212,7 +212,7 @@ public class Recognizer2013 implements Recognizer {
                     int pCenterY = p.getY() + p.getHeight() / 2;
 
                     rawImage.drawPoint(new WPIPoint(pCenterX, pCenterY),
-                	    targetColor, 2);
+                            targetColor, 2);
                     if (pCenterY < highestY) {
                         bestTarget = p;
                         highestY = pCenterY;
@@ -234,7 +234,7 @@ public class Recognizer2013 implements Recognizer {
             rawImage.drawPolygon(bestTarget, targetColor, 2);
 
             System.out.println("Best target at (" + x + ", " + y + ") size "
-        	    + w + " x " + h);
+                    + w + " x " + h);
         } else {
             System.out.println("No target found");
         }
