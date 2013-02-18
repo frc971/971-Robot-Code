@@ -1,0 +1,23 @@
+Some us are using git for managing quickly changing code. This file has
+  directions/notes for setting that up.
+
+[Cloning]
+`git clone \
+    ssh://username@robotics.mvla.net/www/https/git/frc971/somebody/2013.git`
+  where username is your login on the server and somebody is whoever's git
+  repo you want to clone
+
+[Adding Other People's Repositories]
+`git remote add somebody \
+    ssh://username@robotics.mvla.net/www.https/git/frc971/somebody/2013.git`
+  where username is your login on the server and somebody is another person's
+  git repository
+
+[Synchronizing with SVN]
+In order to synchronize the git commits with svn, somebody has to get git-svn
+  set up in their local git repo and then push/pull commits.
+  To do that, `git svn init https://robotics.mvla.net/svn/frc971/2013/trunk/src`
+  Then, unless you want git-svn to pull down everything from SVN again, you have
+    to do `vim .git/refs/remotes/git-svn` (or whatever you name the remote) and
+    put in the commit ID of the latest commit in the repository that's from SVN.
+  After doing that (and a `git-svn fetch`), git-svn works like usual.
