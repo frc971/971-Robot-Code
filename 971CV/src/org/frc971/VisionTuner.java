@@ -53,7 +53,7 @@ public class VisionTuner {
     private final JSlider satMinSlider = new JSlider();
     private final JSlider valMinSlider = new JSlider();
 
-    private int totalFrames;
+    private int totalFrames = -1; // don't count the first (warmup) frame
     private double totalMsec;
     private double minMsec = Double.MAX_VALUE;
     private double maxMsec;
@@ -153,13 +153,14 @@ public class VisionTuner {
         cameraFrame.showImage(processedImage.getBufferedImage());
 
         double milliseconds = (endTime - startTime) / 1e6;
-        ++totalFrames;
-        totalMsec += milliseconds;
-        minMsec = Math.min(minMsec, milliseconds);
-        maxMsec = Math.max(maxMsec, milliseconds);
-        System.out.format("The recognizer took %.2f ms, %.2f fps, %.2f avg%n",
-                milliseconds, 1000 / milliseconds,
-                1000 * totalFrames / totalMsec);
+        if (++totalFrames > 0) {
+            totalMsec += milliseconds;
+            minMsec = Math.min(minMsec, milliseconds);
+            maxMsec = Math.max(maxMsec, milliseconds);
+            System.out.format("The recognizer took %.2f ms, %.2f fps, %.2f avg%n",
+                    milliseconds, 1000 / milliseconds,
+                    1000 * totalFrames / totalMsec);
+        }
     }
 
     private void previousImage() {

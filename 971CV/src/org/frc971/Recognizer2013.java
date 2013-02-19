@@ -20,34 +20,44 @@ import edu.wpi.first.wpijavacv.WPIPolygon;
 /**
  * Vision target recognizer for FRC 2013.
  *
+ * @author jrussell
  * @author jerry
  */
 public class Recognizer2013 implements Recognizer {
 
-    // --- Constants that need to be tuned.
+    // --- Tunable recognizer constants.
     static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(30));
     static final double kRoughlyVerticalSlope = Math.tan(Math.toRadians(90 - 30));
     static final int kHoleClosingIterations = 2;
     static final double kPolygonPercentFit = 12;
-
     static final int kMinWidthAt320 = 35; // for high goal and middle goals
 
-    // These aspect ratios include the outside edges of the vision target tape.
-    static final double kHighGoalAspect = (21 + 8.0) / (54 + 8);
-    static final double kMiddleGoalAspect = (24 + 8.0) / (54 + 8);
+    // --- Field dimensions.
+    // The target aspect ratios are for the midlines of the vision target tape.
+    static final double kGoalWidthIn = 54; // of the high and middle targets
+    static final double kTargetWidthIn = kGoalWidthIn + 4;
+    static final double kHighGoalAspect = (21 + 4) / kTargetWidthIn;
+    static final double kMiddleGoalAspect = (24 + 4) / kTargetWidthIn;
     static final double kMinAspect = kHighGoalAspect * 0.6;
     static final double kMaxAspect = kMiddleGoalAspect * 1.4;
+    static final double kTopTargetHeightIn = 104.125 + 21.0/2; // center of target
 
-    static final double kShooterOffsetDeg = 0;
-    static final double kHorizontalFOVDeg = 47.0;
+    // --- Robot and camera dimensions.
+    static final double kShooterOffsetDeg = 0; // azimuth offset from camera to shooter
+    static final double kHorizontalFOVDeg = 44.0; // Logitech C210 camera
     static final double kVerticalFOVDeg = 480.0 / 640.0 * kHorizontalFOVDeg;
+    static final double kCameraHeightIn = 24.0; // TODO
+    static final double kCameraPitchDeg = 21.0; // TODO
+    static final double kTanHFOV2 = Math.tan(Math.toRadians(kHorizontalFOVDeg / 2));
+    static final double kTanVFOV2 = Math.tan(Math.toRadians(kVerticalFOVDeg / 2));
 
     // --- Colors for drawing indicators on the image.
     private static final WPIColor reject1Color = WPIColor.GRAY;
     private static final WPIColor reject2Color = WPIColor.YELLOW;
     private static final WPIColor candidateColor = WPIColor.BLUE;
-    private static final WPIColor targetColor = new WPIColor(255, 0, 0);
+    private static final WPIColor targetColor = WPIColor.RED;
 
+    // --- Color thresholds, initialized in the constructor.
     private int min1Hue, max1Hue, min1Sat, min1Val;
 
     // Show intermediate images for parameter tuning.
@@ -154,6 +164,10 @@ public class Recognizer2013 implements Recognizer {
         morphedCanvas.showImage(bin);
 
         // Find contours.
+        //
+        // NOTE: If we distinguished between the inner and outer boundaries of
+        // the vision target rectangles, we could apply a more accurate width
+        // filter and more accurately compute the target range.
         WPIBinaryImage binWpi = DaisyExtensions.makeWPIBinaryImage(bin);
         WPIContour[] contours = daisyExtensions.findConvexContours(binWpi);
 
@@ -204,11 +218,10 @@ public class Recognizer2013 implements Recognizer {
                 }
 
                 if (numRoughlyHorizontal >= 2 && numRoughlyVertical == 2) {
-                    rawImage.drawPolygon(p, candidateColor, 2);
-
                     int pCenterX = p.getX() + p.getWidth() / 2;
                     int pCenterY = p.getY() + p.getHeight() / 2;
 
+                    rawImage.drawPolygon(p, candidateColor, 2);
                     rawImage.drawPoint(new WPIPoint(pCenterX, pCenterY),
                             targetColor, 2);
                     if (pCenterY < highestY) {
@@ -224,15 +237,8 @@ public class Recognizer2013 implements Recognizer {
         }
 
         if (bestTarget != null) {
-            double w = bestTarget.getWidth();
-            double h = bestTarget.getHeight();
-            double x = bestTarget.getX() + w / 2;
-            double y = bestTarget.getY() + h / 2;
-
             rawImage.drawPolygon(bestTarget, targetColor, 2);
-
-            System.out.println("Best target at (" + x + ", " + y + ") size "
-                    + w + " x " + h);
+            measureTarget(bestTarget);
         } else {
             System.out.println("No target found");
         }
@@ -244,6 +250,33 @@ public class Recognizer2013 implements Recognizer {
         //System.gc();
 
         return rawImage;
+    }
+
+    /**
+     * Uses the camera, field, and robot dimensions to compute targeting info.
+     */
+    private void measureTarget(WPIPolygon target) {
+        double w = target.getWidth();
+        double h = target.getHeight();
+        double x = target.getX() + w / 2; // target center in view coords
+        double y = target.getY() + h / 2;
+
+        double vw = size.width();
+        double vh = size.height();
+        double xc = x - vw / 2; // target center pos'n ±from view center
+        double yc = vh / 2 - y; // ... in world coords on the viewing plane
+
+        // Target angles relative to the camera.
+        double azimuthCam = Math.atan2(xc * 2 * kTanHFOV2, vw);
+        double elevationCam = Math.atan2(yc * 2 * kTanVFOV2, vh);
+        double rangeIn = kTargetWidthIn * vw / (w * 2 * kTanHFOV2);
+
+        System.out.format("Best target at (%.2f, %.2f) %.2f x %.2f"
+                + ", shot azimuth=%.2f elevation=%.2f range=%.2f'%n",
+                x, y, w, h,
+                Math.toDegrees(azimuthCam) - kShooterOffsetDeg,
+                Math.toDegrees(elevationCam) + kCameraPitchDeg,
+                rangeIn / 12);
     }
 
 }
