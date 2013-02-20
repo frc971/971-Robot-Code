@@ -4,5 +4,5 @@ import com.googlecode.javacv.cpp.opencv_core.IplImage;
 
 public class ImageWithTimestamp {
 	IplImage image;
-	float timestamp;
+	double timestamp;
 }

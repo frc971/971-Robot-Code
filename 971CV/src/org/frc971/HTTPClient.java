@@ -10,16 +10,24 @@ import javax.imageio.ImageIO;
 
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
 
+import aos.ChannelImageGetter;
+import aos.JPEGDecoder;
+
+import java.nio.channels.SocketChannel;
+import java.nio.ByteBuffer;
+
 public class HTTPClient {
 	//Connects to HTTP Server on robot and receives images
 	
 	private final static boolean LOCAL_DEBUG = true;
 	
-	private Socket sock;
-	private BufferedReader sock_in;
-	private PrintWriter sock_out;
+	private SocketChannel sock = SocketChannel.open();
+	private Socket core_sock = sock.socket();
 	
 	private String LastBoundary = "";
+	
+	private BufferedReader sock_in;
+	private PrintWriter sock_out;
 	
 	private void WriteDebug(String message) {
 		//small helper function to write debug messages
@@ -32,7 +40,7 @@ public class HTTPClient {
 		StringBuilder recvd = new StringBuilder();
 		String message = "";
 		try {
-			sock.setSoTimeout(5000);
+			core_sock.setSoTimeout(10000);
 		}
 		catch (SocketException e) {
 			System.err.println("Warning: Could not set socket timeout.");
@@ -72,16 +80,16 @@ public class HTTPClient {
 		//Initialize socket connection to robot
 		try {
 			WriteDebug("Connecting to server...");
-			sock = new Socket("192.168.0.178", 9714);
-			sock_in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-			sock_out = new PrintWriter(sock.getOutputStream(), true);
+			sock.connect(new InetSocketAddress("192.168.0.137", 9714));
+			sock_in = new BufferedReader(new InputStreamReader(core_sock.getInputStream()));
+			sock_out = new PrintWriter(core_sock.getOutputStream(), true);
 			//Write headers
 			//HTTPStreamer does not actually use the headers, so we can just write terminating chars.
 			WriteDebug("Writing headers...");
 			sock_out.println("\r\n\r\n");
 			//Receive headers
 			WriteDebug("Reading headers...");
-			ReadtoBoundary("cross\r\n");
+			ReadtoBoundary("donotcross\r\n");
 			WriteDebug("Now receiving data.");
 		}
 		catch (UnknownHostException e) {
@@ -95,7 +103,7 @@ public class HTTPClient {
 		
 	}
 	public ImageWithTimestamp GetFrame() {
-		//read all current data from socket, in case of processing bottleneck
+		/*//read all current data from socket, in case of processing bottleneck
 		WriteDebug("Emptying TCP stack...");
 		String message = ReadtoBoundary(null);
 		//we must end with a boundary
@@ -140,6 +148,25 @@ public class HTTPClient {
 		}
 		catch (IOException e) {
 			System.err.println(e.getMessage());
+			return null;
+		}
+		*/
+		//Use Brian's code to extract an image and timestamp from raw server data.
+		ImageWithTimestamp final_image = new ImageWithTimestamp();
+		try {
+			ChannelImageGetter cgetter = new ChannelImageGetter(sock);
+			ByteBuffer binary_image = cgetter.getJPEG();
+			JPEGDecoder decoder = new JPEGDecoder();
+			boolean sorf = decoder.decode(binary_image, final_image.image);
+			if (!sorf) {
+				WriteDebug("Error: JPEG decode failed.");
+				return null;
+			}
+			final_image.timestamp = cgetter.getTimestamp();
+			return final_image;
+		}
+		catch (IOException e) {
+			WriteDebug("Error: Failed to initialize ChannelImageGetter.");
 			return null;
 		}
 	}	
