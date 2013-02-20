@@ -127,7 +127,7 @@ public class HTTPClient {
 		cut = boundary.split("Content-Length: ");
 		String size_data = cut[1];
 		float size = Float.parseFloat(size_data);
-		assert (size == JPEGImage.length()) : ("Fatal size mismatch between image and expected image size. Check regular expressions.");
+		assert (size == JPEGImage.length()) : ("Fatal mismatch between actual and expected image size. Check regular expressions.");
 		byte[] ImageArray = JPEGImage.getBytes();
 		InputStream in = new ByteArrayInputStream(ImageArray);
 		try {
