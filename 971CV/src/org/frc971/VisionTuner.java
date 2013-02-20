@@ -3,10 +3,8 @@ package org.frc971;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
 
-import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.WindowConstants;
@@ -14,7 +12,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import com.googlecode.javacv.CanvasFrame;
-
 import edu.wpi.first.wpijavacv.WPIColorImage;
 import edu.wpi.first.wpijavacv.WPIImage;
 
@@ -39,11 +36,9 @@ import edu.wpi.first.wpijavacv.WPIImage;
  * See {@link #processEvents()} for the keystroke commands.
  *
  * @author jerry
+ * @author daniel
  */
 public class VisionTuner {
-    private String[] testImageFilenames;
-    private WPIColorImage[] testImages;
-    private int currentIndex = 0;
     private Recognizer recognizer = new Recognizer2013();
 
     private final CanvasFrame cameraFrame = new CanvasFrame("Camera");
@@ -57,11 +52,12 @@ public class VisionTuner {
     private double totalMsec;
     private double minMsec = Double.MAX_VALUE;
     private double maxMsec;
+    
+    private TestImageGetter getter;
 
-    public VisionTuner(String[] imageFilenames) {
+    public VisionTuner() {
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        loadTestImages(imageFilenames);
         recognizer.showIntermediateStages(true);
 
         cameraFrame.getContentPane().add(panel, BorderLayout.SOUTH);
@@ -79,7 +75,7 @@ public class VisionTuner {
                         hueMinSlider.getValue(), hueMaxSlider.getValue(),
                         satMinSlider.getValue(),
                         valMinSlider.getValue());
-                processCurrentImage();
+                processImage(getter.GetCurrent());
             }
         };
 
@@ -119,32 +115,9 @@ public class VisionTuner {
      * Loads the named test image files.
      * Sets testImageFilenames and testImages.
      */
-    private void loadTestImages(String[] imageFilenames) {
-        testImageFilenames = imageFilenames;
-        testImages = new WPIColorImage[testImageFilenames.length];
-        currentIndex = 0;
 
-        for (int i = 0; i < testImageFilenames.length; i++) {
-            String imageFilename = testImageFilenames[i];
-
-            System.out.println("Loading image file: " + imageFilename);
-            WPIColorImage rawImage = null;
-            try {
-                rawImage = new WPIColorImage(ImageIO.read(
-                        new File(imageFilename)));
-            } catch (IOException e) {
-                System.err.println("Couldn't load image file: " + imageFilename
-                        + ": " + e.getMessage());
-                System.exit(1);
-                return;
-            }
-            testImages[i] = rawImage;
-        }
-    }
-
-    private void processCurrentImage() {
-        WPIColorImage cameraImage = testImages[currentIndex];
-        cameraFrame.setTitle(testImageFilenames[currentIndex]);
+    private void processImage(WPIColorImage cameraImage) {
+        cameraFrame.setTitle("Test Images:");
 
         long startTime = System.nanoTime();
         WPIImage processedImage = recognizer.processImage(cameraImage);
@@ -164,17 +137,15 @@ public class VisionTuner {
     }
 
     private void previousImage() {
-        if (currentIndex > 0) {
-            --currentIndex;
-        }
-        processCurrentImage();
+    	WPIColorImage to_process = getter.GetPrev();
+    	if (to_process != null)
+    		processImage(to_process);
     }
 
     private void nextImage() {
-        if (currentIndex + 1 < testImages.length) {
-            ++currentIndex;
-        }
-        processCurrentImage();
+    	WPIColorImage to_process = getter.GetNext();
+    	if (to_process != null)
+    		processImage(to_process);
     }
 
     private void processEvents() {
@@ -198,17 +169,28 @@ public class VisionTuner {
     }
 
     public static void main(final String[] args) {
-        if (args.length == 0) {
-            System.err.println("Usage: " + VisionTuner.class.getName()
-                    + " test image filenames...");
-            System.exit(1);
+    	VisionTuner tuner = new VisionTuner();
+        if (Arrays.asList(args).contains("-debug")) {
+        	//debug mode has been requested
+        	tuner.getter = new TestImageGetter(".");
+        	WPIColorImage to_process = tuner.getter.GetNext();
+        	if (to_process != null) 
+        		tuner.processImage(to_process);
+        	else
+        		System.err.println("Cannot find test images.");
+        	for (;;) {
+                tuner.processEvents();
+            }
         }
-
-        VisionTuner tuner = new VisionTuner(args);
-        tuner.processCurrentImage();
-
-        for (;;) {
-            tuner.processEvents();
+        else {
+        	HTTPClient client = new HTTPClient();
+        	for (;;) {
+        		ImageWithTimestamp to_process = client.GetFrame();
+        		if (to_process.image != null) {
+        			tuner.processImage(to_process.image);
+        			System.out.println("Captured time: " + Double.toString(to_process.timestamp));
+        		}
+        	}
         }
     }
 

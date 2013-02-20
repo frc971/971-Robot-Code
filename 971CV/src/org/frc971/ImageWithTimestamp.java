@@ -1,8 +1,8 @@
 package org.frc971;
 
-import com.googlecode.javacv.cpp.opencv_core.IplImage;
+import edu.wpi.first.wpijavacv.WPIColorImage;
 
 public class ImageWithTimestamp {
-	IplImage image;
+	WPIColorImage image;
 	double timestamp;
 }

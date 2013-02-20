@@ -1,6 +1,6 @@
 package org.frc971;
 
-//Author: Daniel Petti
+//@author: daniel
 
 import java.io.*;
 import java.net.*;
@@ -8,24 +8,26 @@ import java.net.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
-import com.googlecode.javacv.cpp.opencv_core.IplImage;
-
 import aos.ChannelImageGetter;
 
 import java.nio.channels.SocketChannel;
 import java.nio.ByteBuffer;
+
+import edu.wpi.first.wpijavacv.WPIColorImage;
 
 public class HTTPClient {
 	//Connects to HTTP Server on robot and receives images
 	
 	private final static boolean LOCAL_DEBUG = true;
 	
-	private SocketChannel sock = SocketChannel.open();
-	private Socket core_sock = sock.socket();
+	private SocketChannel sock;
+	private Socket core_sock;
 	
 	
 	private BufferedReader sock_in;
 	private PrintWriter sock_out;
+	
+	private final String ATOM_IP = "10.9.71.6";
 	
 	private void WriteDebug(String message) {
 		//small helper function to write debug messages
@@ -77,8 +79,10 @@ public class HTTPClient {
 	public HTTPClient() {
 		//Initialize socket connection to robot
 		try {
+			sock = SocketChannel.open();
+			core_sock = sock.socket();
 			WriteDebug("Connecting to server...");
-			sock.connect(new InetSocketAddress("192.168.0.137", 9714));
+			sock.connect(new InetSocketAddress(ATOM_IP, 9714));
 			sock_in = new BufferedReader(new InputStreamReader(core_sock.getInputStream()));
 			sock_out = new PrintWriter(core_sock.getOutputStream(), true);
 			//Write headers
@@ -110,7 +114,7 @@ public class HTTPClient {
 			InputStream in = new ByteArrayInputStream(binary_image.array());
 			try {
 				BufferedImage bImageFromConvert = ImageIO.read(in);
-				final_image.image = IplImage.createFrom(bImageFromConvert);
+				final_image.image = new WPIColorImage(bImageFromConvert);
 				final_image.timestamp = cgetter.getTimestamp();
 				WriteDebug("Image processing successful.");
 				return final_image;
