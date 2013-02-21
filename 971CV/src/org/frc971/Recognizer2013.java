@@ -1,6 +1,7 @@
 package org.frc971;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import com.googlecode.javacv.cpp.opencv_core;
 import com.googlecode.javacv.cpp.opencv_core.CvSize;
@@ -24,6 +25,8 @@ import edu.wpi.first.wpijavacv.WPIPolygon;
  * @author jerry
  */
 public class Recognizer2013 implements Recognizer {
+	
+	private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     // --- Tunable recognizer constants.
     static final double kRoughlyHorizontalSlope = Math.tan(Math.toRadians(30));
@@ -240,7 +243,7 @@ public class Recognizer2013 implements Recognizer {
             rawImage.drawPolygon(bestTarget, targetColor, 2);
             measureTarget(bestTarget);
         } else {
-            System.out.println("No target found");
+            LOG.fine("No target found");
         }
 
         // Draw a crosshair
@@ -271,12 +274,10 @@ public class Recognizer2013 implements Recognizer {
         double elevationCam = Math.atan2(yc * 2 * kTanVFOV2, vh);
         double rangeIn = kTargetWidthIn * vw / (w * 2 * kTanHFOV2);
 
-        System.out.format("Best target at (%.2f, %.2f) %.2f x %.2f"
-                + ", shot azimuth=%.2f elevation=%.2f range=%.2f'%n",
-                x, y, w, h,
-                Math.toDegrees(azimuthCam) - kShooterOffsetDeg,
-                Math.toDegrees(elevationCam) + kCameraPitchDeg,
-                rangeIn / 12);
+        LOG.fine("Best target at (" + x + ", " + y + ") " + w +" x " + h
+                + ", shot azimuth=" + (Math.toDegrees(azimuthCam) - kShooterOffsetDeg) + 
+                " elevation=" + (Math.toDegrees(elevationCam) + kCameraPitchDeg) + 
+                " range=" + (rangeIn / 12));
     }
 
 }

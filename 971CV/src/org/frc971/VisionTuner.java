@@ -3,7 +3,12 @@ package org.frc971;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
+
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import java.io.FileNotFoundException;
 
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -41,6 +46,8 @@ import edu.wpi.first.wpijavacv.WPIImage;
 public class VisionTuner {
     private Recognizer recognizer = new Recognizer2013();
 
+    private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+    
     private final CanvasFrame cameraFrame = new CanvasFrame("Camera");
     private final JPanel panel = new JPanel();
     private final JSlider hueMinSlider = new JSlider();
@@ -56,6 +63,18 @@ public class VisionTuner {
     private TestImageGetter getter;
 
     public VisionTuner() {
+    	//set logger to log everything
+        LOG.setLevel(Level.ALL);
+        try {
+        	LogHandler handler = new LogHandler("../src/org/frc971/ds_vision.log");
+        	TimeFormatter formatter = new TimeFormatter();
+            handler.setFormatter(formatter);
+            LOG.addHandler(handler);
+        }
+        catch (FileNotFoundException e) {
+        	System.err.println("Warning: Logging initialization failed.");
+        }
+        
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         recognizer.showIntermediateStages(true);
@@ -66,7 +85,7 @@ public class VisionTuner {
         ChangeListener sliderListener = new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                System.out.println("New HSV range ["
+                LOG.fine("New HSV range ["
                         + hueMinSlider.getValue() + " .. "
                         + hueMaxSlider.getValue() + "] "
                         + satMinSlider.getValue() + "+ "
@@ -99,7 +118,7 @@ public class VisionTuner {
         valMinSlider.setValue(recognizer.getValMin());
         panel.add(valMinSlider);
 
-        System.out.println("Initial HSV range ["
+        LOG.fine("Initial HSV range ["
                 + hueMinSlider.getValue() + " .. "
                 + hueMaxSlider.getValue() + "] "
                 + satMinSlider.getValue() + "+ "
@@ -117,7 +136,7 @@ public class VisionTuner {
      */
 
     private void processImage(WPIColorImage cameraImage) {
-        cameraFrame.setTitle("Test Images:");
+        cameraFrame.setTitle("Input:");
 
         long startTime = System.nanoTime();
         WPIImage processedImage = recognizer.processImage(cameraImage);
@@ -130,9 +149,8 @@ public class VisionTuner {
             totalMsec += milliseconds;
             minMsec = Math.min(minMsec, milliseconds);
             maxMsec = Math.max(maxMsec, milliseconds);
-            System.out.format("The recognizer took %.2f ms, %.2f fps, %.2f avg%n",
-                    milliseconds, 1000 / milliseconds,
-                    1000 * totalFrames / totalMsec);
+            LOG.fine("The recognizer took " + milliseconds + " ms, " + 
+            (1000 * totalFrames / totalMsec) + " fps, %.2f avg");
         }
     }
 
@@ -159,11 +177,8 @@ public class VisionTuner {
             nextImage();
             break;
         case KeyEvent.VK_Q: // Q: print time measurements then quit
-            System.out.format("The recognizer took %.2f ms avg, %.2f min,"
-                    + " %.2f max, %.2f fps avg%n",
-                    totalMsec / totalFrames,
-                    minMsec, maxMsec,
-                    1000 * totalFrames / totalMsec);
+            LOG.fine("The recognizer took " + (totalMsec / totalFrames) + "ms avg, " + minMsec +" min,"
+                    + maxMsec + " max, " + (1000 * totalFrames / totalMsec) + " fps avg");
             System.exit(0);
         }
     }
@@ -174,13 +189,14 @@ public class VisionTuner {
         	//debug mode has been requested
         	tuner.getter = new TestImageGetter(".");
         	WPIColorImage to_process = tuner.getter.GetNext();
-        	if (to_process != null) 
+        	if (to_process != null) {
         		tuner.processImage(to_process);
+        		for (;;) {
+        			tuner.processEvents();
+        		}
+        	}
         	else
-        		System.err.println("Cannot find test images.");
-        	for (;;) {
-                tuner.processEvents();
-            }
+        		LOG.severe("Cannot find test images.");
         }
         else {
         	HTTPClient client = new HTTPClient();
@@ -188,7 +204,7 @@ public class VisionTuner {
         		ImageWithTimestamp to_process = client.GetFrame();
         		if (to_process.image != null) {
         			tuner.processImage(to_process.image);
-        			System.out.println("Captured time: " + Double.toString(to_process.timestamp));
+        			LOG.fine("Captured time: " + Double.toString(to_process.timestamp));
         		}
         	}
         }

@@ -10,15 +10,21 @@ package org.frc971;
 
 //get debug images for Java camera processor
 
+import java.io.File;
+import java.io.IOException;
+
+import java.util.logging.Logger;
+
 import javax.imageio.ImageIO;
 
 import edu.wpi.first.wpijavacv.WPIColorImage;
 
-import java.io.File;
-import java.io.IOException;
-
 public class TestImageGetter {
+	
 	private String path_to_images;
+	
+	private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	
 	final static String[] images = {"45in_DoubleGreen.jpg",
 									"57inLargeTarget_DoubleGreenBK.jpg",
 									"FullField_DoubleGreenBK3.jpg",
@@ -61,7 +67,7 @@ public class TestImageGetter {
 				return current_image;
 			}
 			catch (IOException e) {
-				System.err.println("Could not open file.");
+				LOG.warning("Could not open file.");
 				return null;
 			}
 		}
@@ -78,7 +84,7 @@ public class TestImageGetter {
 				return current_image;
 			}
 			catch (IOException e) {
-				System.err.println("Could not open file.");
+				LOG.warning("Could not open file.");
 				return null;
 			}
 		}

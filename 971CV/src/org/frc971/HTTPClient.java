@@ -6,12 +6,15 @@ import java.io.*;
 import java.net.*;
 
 import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-
-import aos.ChannelImageGetter;
 
 import java.nio.channels.SocketChannel;
 import java.nio.ByteBuffer;
+
+import java.util.logging.Logger;
+
+import javax.imageio.ImageIO;
+
+import aos.ChannelImageGetter;
 
 import edu.wpi.first.wpijavacv.WPIColorImage;
 
@@ -29,10 +32,14 @@ public class HTTPClient {
 	
 	private final String ATOM_IP = "10.9.71.6";
 	
+	private ChannelImageGetter cgetter;
+	
+	private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	
 	private void WriteDebug(String message) {
 		//small helper function to write debug messages
 		if (LOCAL_DEBUG)
-			System.out.println(message);
+			LOG.info("LOCAL_DEBUG: " + message);
 	}
 	private String ReadtoBoundary(String boundary) {
 		//reads from socket until it encounters a specific character combination
@@ -43,7 +50,7 @@ public class HTTPClient {
 			core_sock.setSoTimeout(10000);
 		}
 		catch (SocketException e) {
-			System.err.println("Warning: Could not set socket timeout.");
+			LOG.warning("Could not set socket timeout.");
 		}
 		try {
 			int ret;
@@ -67,11 +74,11 @@ public class HTTPClient {
 			}
 		}
 		catch (InterruptedIOException e) {
-			System.err.println("Warning: Image receive timed out.");
+			LOG.warning("Image receive timed out.");
 			return null;
 		}
 		catch (IOException e) {
-			System.err.println("Error: Socket read failed.");
+			LOG.severe("Socket read failed.");
 			return null;
 		}
 		return message;
@@ -81,7 +88,7 @@ public class HTTPClient {
 		try {
 			sock = SocketChannel.open();
 			core_sock = sock.socket();
-			WriteDebug("Connecting to server...");
+			WriteDebug("Connecting to server at " + ATOM_IP);
 			sock.connect(new InetSocketAddress(ATOM_IP, 9714));
 			sock_in = new BufferedReader(new InputStreamReader(core_sock.getInputStream()));
 			sock_out = new PrintWriter(core_sock.getOutputStream(), true);
@@ -93,13 +100,14 @@ public class HTTPClient {
 			WriteDebug("Reading headers...");
 			ReadtoBoundary("donotcross\r\n");
 			WriteDebug("Now receiving data.");
+			cgetter = new ChannelImageGetter(sock);
 		}
 		catch (UnknownHostException e) {
-			System.err.println("Error: Invalid host.");
+			LOG.severe("Invalid host.");
 			System.exit(1);
 		}
 		catch (IOException e) {
-			System.err.println("Error: Socket IO failed.");
+			LOG.severe("Socket IO failed.");
 			System.exit(2);
 		}
 		
@@ -107,26 +115,18 @@ public class HTTPClient {
 	public ImageWithTimestamp GetFrame() {
 		//Use Brian's code to extract an image and timestamp from raw server data.
 		ImageWithTimestamp final_image = new ImageWithTimestamp();
+		ByteBuffer binary_image = cgetter.getJPEG();
+		//Decode ByteBuffer into an IplImage
+		InputStream in = new ByteArrayInputStream(binary_image.array());
 		try {
-			ChannelImageGetter cgetter = new ChannelImageGetter(sock);
-			ByteBuffer binary_image = cgetter.getJPEG();
-			//Decode ByteBuffer into an IplImage
-			InputStream in = new ByteArrayInputStream(binary_image.array());
-			try {
-				BufferedImage bImageFromConvert = ImageIO.read(in);
-				final_image.image = new WPIColorImage(bImageFromConvert);
-				final_image.timestamp = cgetter.getTimestamp();
-				WriteDebug("Image processing successful.");
-				return final_image;
-			}
-			catch (IOException e) {
-				System.err.println(e.getMessage());
-				return null;
-			}
-			
+			BufferedImage bImageFromConvert = ImageIO.read(in);
+			final_image.image = new WPIColorImage(bImageFromConvert);
+			final_image.timestamp = cgetter.getTimestamp();
+			WriteDebug("Image processing successful.");
+			return final_image;
 		}
 		catch (IOException e) {
-			WriteDebug("Error: Failed to initialize ChannelImageGetter.");
+			LOG.warning("Image processing failed.");
 			return null;
 		}
 	}	
