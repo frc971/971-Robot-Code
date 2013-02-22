@@ -61,6 +61,8 @@ public class VisionTuner {
     private double maxMsec;
     
     private TestImageGetter getter;
+    
+    private WPIColorImage current;
 
     public VisionTuner() {
     	//set logger to log everything
@@ -94,7 +96,7 @@ public class VisionTuner {
                         hueMinSlider.getValue(), hueMaxSlider.getValue(),
                         satMinSlider.getValue(),
                         valMinSlider.getValue());
-                processImage(getter.GetCurrent());
+                processImage(current);
             }
         };
 
@@ -136,6 +138,7 @@ public class VisionTuner {
      */
 
     private void processImage(WPIColorImage cameraImage) {
+    	current = cameraImage;
         cameraFrame.setTitle("Input:");
 
         long startTime = System.nanoTime();
