@@ -24,9 +24,33 @@ Also run `apt-get install powerpc-wrs-vxworks` if you want to be able to build
     "WARNING: The following packages cannot be authenticated!" warning for the
     "powerpc-wrs-vxworks" package.
 If you want to actually download code to a robot (it will only work on amd64
-  Squeeze), then also do `apt-get install ncftp rsync`.
+  Squeeze), then 
+  (1) do `apt-get install ncftp rsync socat`.
+      socat is used for the netconsole.sh tool that is used to talk to the cRIO.
+  (2) Add robot and the following to the /etc/hosts file.  This requirement
+      should go away in the future.
+          10.9.71.179	fitpc
+          10.9.71.2	robot
+  (3) Set the IP address of the downloading machine to be on the same subnet.
+      ifconfig eth0 10.9.71.22
+      This will need to be redone when the computer Ethernet connection is
+      reset.  For example, it is reset by disconnecting and reconnecting 
+      the Ethernet cable or power cycling the robot.  Check it with
+      ifconfig eth0
 
 [Running Locally]
 If you want to be able to run the realtime code on your development machine
   without just disabling the realtime part (set the AOS_NO_REALTIME environment
   variable), follow the directions in /src/aos/config/aos.conf.
+
+[Compiling and Downloading]
+Run `./build.sh` from src/frc971/atom_code/ and src/frc971/crio/.
+Use `./build.sh deploy` to download to a robot.
+
+[Communicating with the cRIO]
+Use netconsole.sh to communicate directly with the cRIO.  
+frc971/2013/trunk/src/aos/crio/bin/netconsole.sh 
+Use "reboot" from within netconsole.sh will reboot the cRIO.  ^C will
+stop it the netconsole.sh command.  "version" will tell you the the
+VxWorks and WIND versions and "help" will give you a list of VxWorks
+commands that you can use.
