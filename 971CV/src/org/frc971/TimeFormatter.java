@@ -9,12 +9,20 @@ import java.util.Date;
 
 /**
  * @author daniel
- * Formats log messages with adequate timestamp
+ * 
  */
+
+/** Formats log messages with adequate timestamp. */
 public class TimeFormatter extends Formatter{
+	
+	/** Constructor, see Formatter. */
 	public TimeFormatter() {
 		super();
 	}
+	
+	/** Format a message in the propper way.
+	 * @return Includes time, name of logger, level and message.
+	 */
 	public String format(LogRecord message) {
 		//we need to include the date and time in our message
 		StringBuffer out = new StringBuffer();

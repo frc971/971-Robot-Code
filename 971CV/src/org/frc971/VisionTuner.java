@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -54,6 +55,8 @@ public class VisionTuner {
     private final JSlider hueMaxSlider = new JSlider();
     private final JSlider satMinSlider = new JSlider();
     private final JSlider valMinSlider = new JSlider();
+    
+    private ResultSender sender;
 
     private int totalFrames = -1; // don't count the first (warmup) frame
     private double totalMsec;
@@ -77,6 +80,13 @@ public class VisionTuner {
         	System.err.println("Warning: Logging initialization failed.");
         }
         
+        //initialize result sender
+        try {
+        	sender = new ResultSender();
+        }
+        catch (IOException e) {
+        	LOG.severe("Server initialization failed: " + e.getMessage() + " Result reporting disabled.");
+        }
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         recognizer.showIntermediateStages(true);
@@ -155,6 +165,9 @@ public class VisionTuner {
             LOG.fine("The recognizer took " + milliseconds + " ms, " + 
             (1000 * totalFrames / totalMsec) + " fps, %.2f avg");
         }
+        
+        //send results to atom. (and any connected clients)
+        
     }
 
     private void previousImage() {
@@ -202,13 +215,18 @@ public class VisionTuner {
         		LOG.severe("Cannot find test images.");
         }
         else {
-        	HTTPClient client = new HTTPClient();
-        	for (;;) {
-        		ImageWithTimestamp to_process = client.GetFrame();
-        		if (to_process.image != null) {
-        			tuner.processImage(to_process.image);
-        			LOG.fine("Captured time: " + Double.toString(to_process.timestamp));
-        		}
+        	try {
+        		HTTPClient client = new HTTPClient();
+        		for (;;) {
+            		ImageWithTimestamp to_process = client.GetFrame();
+            		if (to_process.image != null) {
+            			tuner.processImage(to_process.image);
+            			LOG.fine("Captured time: " + Double.toString(to_process.timestamp));
+            		}
+            	}
+        	}
+        	catch (IOException e) {
+        		LOG.severe("Client initialization failed.");
         	}
         }
     }

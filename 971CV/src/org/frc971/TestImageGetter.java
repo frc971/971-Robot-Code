@@ -8,8 +8,6 @@ package org.frc971;
  *
  */
 
-//get debug images for Java camera processor
-
 import java.io.File;
 import java.io.IOException;
 
@@ -19,12 +17,16 @@ import javax.imageio.ImageIO;
 
 import edu.wpi.first.wpijavacv.WPIColorImage;
 
+/** Get debug images for Java camera processor. */
 public class TestImageGetter {
 	
 	private String path_to_images;
 	
 	private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
+	/** The names of our debugging images, without paths.
+	 * The GetNext method should be used to get the first
+	 * image, and not GetCurrent. */
 	final static String[] images = {"45in_DoubleGreen.jpg",
 									"57inLargeTarget_DoubleGreenBK.jpg",
 									"FullField_DoubleGreenBK3.jpg",
@@ -49,15 +51,26 @@ public class TestImageGetter {
 	
 	private WPIColorImage current_image = null;
 	
+	/** Helper method to concatenate paths, similar to Python's os.path.join(). */
 	private String cocatenate_paths(String path1, String path2) {
 		if (path1.charAt(path1.length() - 1) == '/')
 			return path1 + path2;
 		else
 			return path1 + "/" + path2;
 	}
+	
+	/** Constructor
+	 * 
+	 * @param path_to_images is the path to the directory where our images are.
+	 */
 	public TestImageGetter(String path_to_images) {
 		this.path_to_images = path_to_images;
 	}
+	
+	/** Gets the next debugging image.
+	 * 
+	 * @return Returns a WPIColorImage.
+	 */
 	public WPIColorImage GetNext() {
 		image_index++;
 		if (image_index < images.length) {
@@ -75,6 +88,11 @@ public class TestImageGetter {
 			image_index--;
 			return null;
 	}
+	
+	/** Gets the previous debugging image.
+	 * 
+	 * @return Returns a WPIColorImage.
+	 */
 	public WPIColorImage GetPrev() {
 		image_index--;
 		if (image_index >= 0) {
@@ -92,6 +110,11 @@ public class TestImageGetter {
 			image_index++;
 			return null;
 	}
+	
+	/** Gets the current debugging image. This is vestigial, it is not longer used.
+	 * 
+	 * @return Returns a WPIColorImage
+	 */
 	public WPIColorImage GetCurrent() {
 		return current_image;
 	}
