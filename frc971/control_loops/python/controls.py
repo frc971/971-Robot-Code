@@ -81,3 +81,21 @@ def dplace(A, B, poles, alpha=1e-6):
                              num_uncontrollable_eigenvalues)
 
   return K
+
+
+def c2d(A, B, dt):
+  """Converts from continuous time state space representation to discrete time.
+     Evaluates e^(A dt) for the discrete time version of A, and
+     integral(e^(A t) * B, 0, dt).
+     Returns (A, B).  C and D are unchanged."""
+  e, P = numpy.linalg.eig(A)
+  diag = numpy.matrix(numpy.eye(A.shape[0]))
+  diage = numpy.matrix(numpy.eye(A.shape[0]))
+  for eig, count in zip(e, range(0, A.shape[0])):
+    diag[count, count] = numpy.exp(eig * dt)
+    if abs(eig) < 1.0e-16:
+      diage[count, count] = dt
+    else:
+      diage[count, count] = (numpy.exp(eig * dt) - 1.0) / eig
+
+  return (P * diag * numpy.linalg.inv(P), P * diage * numpy.linalg.inv(P) * B)
