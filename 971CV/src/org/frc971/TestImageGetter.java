@@ -59,6 +59,11 @@ public class TestImageGetter {
 			return path1 + "/" + path2;
 	}
 	
+	/** Gets the name to display at the top of the image window. */
+	public String GetName() {
+		return images[image_index];
+	}
+	
 	/** Constructor
 	 * 
 	 * @param path_to_images is the path to the directory where our images are.

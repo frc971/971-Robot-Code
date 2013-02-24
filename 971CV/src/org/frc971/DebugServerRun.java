@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -93,6 +94,7 @@ public class DebugServerRun {
 			}
 		}
 	}
+	
 	/** Constructor to start the server and bind it to a port. */
 	public DebugServerRun(final int port) throws IOException {
 		sock = ServerSocketChannel.open();
@@ -106,9 +108,20 @@ public class DebugServerRun {
 		LOG.info("Writing headers...");
 		SocketCommon.sendAll(client, "donotcross\r\n");
 	}
+	
 	/** Runs the server, and concurrently starts the vision processor with -vision flag. */
 	public static void main(final String args[]) throws IOException {
 		//main function for server
+		
+		String atomIP = null;
+    	try {
+    		atomIP = args[0];
+    	}
+    	catch (ArrayIndexOutOfBoundsException e) {
+    		System.out.println("Usage: VisionTuner [atom ip]");
+    		System.exit(0);
+    	}
+		
 		//set logger to log everything
         LOG.setLevel(Level.ALL);
         try {
@@ -121,9 +134,9 @@ public class DebugServerRun {
         	System.err.println("Warning: Logging initialization failed.");
         }
         
-		if (args[0].equals("-vision")) {
+		if (Arrays.asList(args).contains("-vision")) {
 			LOG.info("Starting vision processor.");
-			new TestClient();
+			new TestClient(atomIP);
 		}
 		
 		DebugServerRun server = new DebugServerRun(9714);

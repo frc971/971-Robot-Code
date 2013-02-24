@@ -14,7 +14,6 @@ import edu.wpi.first.wpijavacv.WPIBinaryImage;
 import edu.wpi.first.wpijavacv.WPIColor;
 import edu.wpi.first.wpijavacv.WPIColorImage;
 import edu.wpi.first.wpijavacv.WPIContour;
-import edu.wpi.first.wpijavacv.WPIImage;
 import edu.wpi.first.wpijavacv.WPIPoint;
 import edu.wpi.first.wpijavacv.WPIPolygon;
 
@@ -111,7 +110,7 @@ public class Recognizer2013 implements Recognizer {
     }
 
     @Override
-    public WPIImage processImage(WPIColorImage cameraImage) {
+    public Target processImage(WPIColorImage cameraImage) {
         // (Re)allocate the intermediate images if the input is a different
         // size than the previous image.
         if (size == null || size.width() != cameraImage.getWidth()
@@ -239,26 +238,32 @@ public class Recognizer2013 implements Recognizer {
             }
         }
 
+        Target found = null;
         if (bestTarget != null) {
             rawImage.drawPolygon(bestTarget, targetColor, 2);
-            measureTarget(bestTarget);
+            found = measureTarget(bestTarget);
         } else {
             LOG.fine("No target found");
         }
 
         // Draw a crosshair
         rawImage.drawLine(linePt1, linePt2, targetColor, 1);
+        
+        if (found == null) {
+        	found = new Target();
+        }
+        found.editedPicture = rawImage;
 
         daisyExtensions.releaseMemory();
         //System.gc();
-
-        return rawImage;
+        
+        return found;
     }
 
     /**
      * Uses the camera, field, and robot dimensions to compute targeting info.
      */
-    private void measureTarget(WPIPolygon target) {
+    private Target measureTarget(WPIPolygon target) {
         double w = target.getWidth();
         double h = target.getHeight();
         double x = target.getX() + w / 2; // target center in view coords
@@ -274,10 +279,18 @@ public class Recognizer2013 implements Recognizer {
         double elevationCam = Math.atan2(yc * 2 * kTanVFOV2, vh);
         double rangeIn = kTargetWidthIn * vw / (w * 2 * kTanHFOV2);
 
+        //Put results in target
+        Target data = new Target();
+        data.azimuth = (Math.toDegrees(azimuthCam) - kShooterOffsetDeg);
+        data.elevation = (Math.toDegrees(elevationCam));
+        data.range = (rangeIn / 12);
+        
         LOG.fine("Best target at (" + x + ", " + y + ") " + w +" x " + h
                 + ", shot azimuth=" + (Math.toDegrees(azimuthCam) - kShooterOffsetDeg) + 
                 " elevation=" + (Math.toDegrees(elevationCam) + kCameraPitchDeg) + 
                 " range=" + (rangeIn / 12));
+        
+        return data;
     }
 
 }

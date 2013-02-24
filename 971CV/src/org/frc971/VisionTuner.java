@@ -2,6 +2,8 @@ package org.frc971;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 import java.util.Arrays;
@@ -11,6 +13,8 @@ import java.util.logging.Logger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.WindowConstants;
@@ -55,10 +59,11 @@ public class VisionTuner {
     private final JSlider hueMaxSlider = new JSlider();
     private final JSlider satMinSlider = new JSlider();
     private final JSlider valMinSlider = new JSlider();
+    private final JButton showCalibration = new JButton("Calibrate");
     
-    private ResultSender sender;
+    private ResultSender sender = null;
 
-    private int totalFrames = -1; // don't count the first (warmup) frame
+    private int totalFrames = -1; // don't count the first (warm-up) frame
     private double totalMsec;
     private double minMsec = Double.MAX_VALUE;
     private double maxMsec;
@@ -66,18 +71,22 @@ public class VisionTuner {
     private TestImageGetter getter;
     
     private WPIColorImage current;
+    
+    private String currentWindowTitle;
+    
+    private boolean debug = false;
 
     public VisionTuner() {
     	//set logger to log everything
         LOG.setLevel(Level.ALL);
         try {
-        	LogHandler handler = new LogHandler("../src/org/frc971/ds_vision.log");
+        	LogHandler handler = new LogHandler("ds_vision.log");
         	TimeFormatter formatter = new TimeFormatter();
             handler.setFormatter(formatter);
             LOG.addHandler(handler);
         }
         catch (FileNotFoundException e) {
-        	System.err.println("Warning: Logging initialization failed.");
+        	Messages.warning("Logging initialization failed.");
         }
         
         //initialize result sender
@@ -85,15 +94,73 @@ public class VisionTuner {
         	sender = new ResultSender();
         }
         catch (IOException e) {
-        	LOG.severe("Server initialization failed: " + e.getMessage() + " Result reporting disabled.");
+        	LOG.severe("Server initialization failed: " + e.getMessage() + ". Result reporting disabled.");
         }
         cameraFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        recognizer.showIntermediateStages(true);
-
         cameraFrame.getContentPane().add(panel, BorderLayout.SOUTH);
-        panel.setLayout(new GridLayout(0, 2, 0, 0));
+        panel.setLayout(new GridLayout(0, 1, 0, 0));
+        
+        showCalibration.setToolTipText("Click here if the system is not finding targets well enough.");
+        panel.add(showCalibration);
+        showCalibration.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		showCalibrationWindow();
+        	}
+        });
 
+        LOG.fine("Initial HSV range ["
+                + hueMinSlider.getValue() + " .. "
+                + hueMaxSlider.getValue() + "] "
+                + satMinSlider.getValue() + "+ "
+                + valMinSlider.getValue() + "+");
+    }
+    
+    /** Shows a calibration window when the user clicks the Calibrate button. */
+    private void showCalibrationWindow() {
+    	final CanvasFrame calibrationWindow = new CanvasFrame("Calibration");
+    	calibrationWindow.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    	
+    	final JPanel panel = new JPanel();
+    	calibrationWindow.getContentPane().add(panel, BorderLayout.SOUTH);
+        panel.setLayout(new GridLayout(3, 3, 0, 0));
+        
+        hueMinSlider.setToolTipText("minimum HSV hue");
+        hueMinSlider.setMaximum(255);
+        hueMinSlider.setValue(recognizer.getHueMin());
+        panel.add(hueMinSlider);
+        
+        panel.add(new JLabel("min hue                          max hue")); 
+
+        hueMaxSlider.setToolTipText("maximum HSV hue");
+        hueMaxSlider.setMaximum(255);
+        hueMaxSlider.setValue(recognizer.getHueMax());
+        panel.add(hueMaxSlider);
+
+        satMinSlider.setToolTipText("minimum HSV color saturation");
+        satMinSlider.setMaximum(255);
+        satMinSlider.setValue(recognizer.getSatMin());
+        panel.add(satMinSlider);
+        
+        panel.add(new JLabel("min saturation  max saturation")); 
+
+        valMinSlider.setToolTipText("minimum HSV brightness value");
+        valMinSlider.setMaximum(255);
+        valMinSlider.setValue(recognizer.getValMin());
+        panel.add(valMinSlider);
+        
+        panel.add(new JLabel("")); //empty cells can cause problems
+        
+        final JButton done = new JButton("Done");
+        panel.add(done);
+        done.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		calibrationWindow.dispose();
+        	}
+        });
+        
+        panel.add(new JLabel("")); //empty cells can cause problems
+        
         ChangeListener sliderListener = new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -106,53 +173,37 @@ public class VisionTuner {
                         hueMinSlider.getValue(), hueMaxSlider.getValue(),
                         satMinSlider.getValue(),
                         valMinSlider.getValue());
-                processImage(current);
+                if (debug) {
+                	processImage(current, null);
+                }
             }
         };
-
-        hueMinSlider.setToolTipText("minimum HSV hue");
-        hueMinSlider.setMaximum(255);
-        hueMinSlider.setValue(recognizer.getHueMin());
-        panel.add(hueMinSlider);
-
-        hueMaxSlider.setToolTipText("maximum HSV hue");
-        hueMaxSlider.setMaximum(255);
-        hueMaxSlider.setValue(recognizer.getHueMax());
-        panel.add(hueMaxSlider);
-
-        satMinSlider.setToolTipText("minimum HSV color saturation");
-        satMinSlider.setMaximum(255);
-        satMinSlider.setValue(recognizer.getSatMin());
-        panel.add(satMinSlider);
-
-        valMinSlider.setToolTipText("minimum HSV brightness value");
-        valMinSlider.setMaximum(255);
-        valMinSlider.setValue(recognizer.getValMin());
-        panel.add(valMinSlider);
-
-        LOG.fine("Initial HSV range ["
-                + hueMinSlider.getValue() + " .. "
-                + hueMaxSlider.getValue() + "] "
-                + satMinSlider.getValue() + "+ "
-                + valMinSlider.getValue() + "+");
-
+        
         hueMinSlider.addChangeListener(sliderListener);
         hueMaxSlider.addChangeListener(sliderListener);
         satMinSlider.addChangeListener(sliderListener);
         valMinSlider.addChangeListener(sliderListener);
+        
+        calibrationWindow.pack();
+  
     }
 
     /**
      * Loads the named test image files.
      * Sets testImageFilenames and testImages.
      */
-
-    private void processImage(WPIColorImage cameraImage) {
+    private void processImage(WPIColorImage cameraImage, String title) {
     	current = cameraImage;
-        cameraFrame.setTitle("Input:");
+    	
+    	//set window title if it needs to be changed
+    	if (title != null && !title.equals(currentWindowTitle)) {
+    		cameraFrame.setTitle(title);
+    		currentWindowTitle = title;
+    	}
 
         long startTime = System.nanoTime();
-        WPIImage processedImage = recognizer.processImage(cameraImage);
+        Target target = recognizer.processImage(cameraImage);
+        WPIImage processedImage = target.editedPicture;
         long endTime = System.nanoTime();
 
         cameraFrame.showImage(processedImage.getBufferedImage());
@@ -167,19 +218,22 @@ public class VisionTuner {
         }
         
         //send results to atom. (and any connected clients)
+        if (sender != null) {
+        	sender.send(target.azimuth, target.elevation, target.range);
+        }
         
     }
 
     private void previousImage() {
     	WPIColorImage to_process = getter.GetPrev();
     	if (to_process != null)
-    		processImage(to_process);
+    		processImage(to_process, getter.GetName());
     }
 
     private void nextImage() {
     	WPIColorImage to_process = getter.GetNext();
     	if (to_process != null)
-    		processImage(to_process);
+    		processImage(to_process, getter.GetName());
     }
 
     private void processEvents() {
@@ -201,32 +255,51 @@ public class VisionTuner {
 
     public static void main(final String[] args) {
     	VisionTuner tuner = new VisionTuner();
+    	Messages.SetWindow(tuner.cameraFrame);
+    	
+    	String atomIP = null;
+    	try {
+    		atomIP = args[0];
+    	}
+    	catch (ArrayIndexOutOfBoundsException e) {
+    		System.out.println("Usage: VisionTuner [atom ip]");
+    		System.exit(0);
+    	}
+    	
         if (Arrays.asList(args).contains("-debug")) {
         	//debug mode has been requested
+        	tuner.debug = true;
+        	
+        	//show debugging windows
+        	tuner.recognizer.showIntermediateStages(true);
+        	
         	tuner.getter = new TestImageGetter(".");
         	WPIColorImage to_process = tuner.getter.GetNext();
         	if (to_process != null) {
-        		tuner.processImage(to_process);
+        		tuner.processImage(to_process, tuner.getter.GetName());
         		for (;;) {
         			tuner.processEvents();
         		}
         	}
-        	else
-        		LOG.severe("Cannot find test images.");
+        	else {
+        		LOG.severe("Could not load test images.");
+        		Messages.severe("Could not load test images.");
+        	}	
         }
         else {
         	try {
-        		HTTPClient client = new HTTPClient();
+        		HTTPClient client = new HTTPClient(atomIP);
         		for (;;) {
             		ImageWithTimestamp to_process = client.GetFrame();
             		if (to_process.image != null) {
-            			tuner.processImage(to_process.image);
+            			tuner.processImage(to_process.image, client.GetName());
             			LOG.fine("Captured time: " + Double.toString(to_process.timestamp));
             		}
             	}
         	}
         	catch (IOException e) {
-        		LOG.severe("Client initialization failed.");
+        		LOG.severe("Client initialization failed: " + e.getMessage() + ".");
+        		Messages.severe("Client initialization failed: " + e.getMessage() + ".");
         	}
         }
     }

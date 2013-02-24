@@ -16,7 +16,7 @@ import java.nio.channels.ServerSocketChannel;
 
 /**  Serves processing results back to the atom. */
 public class ResultSender {
-	private static final int PORT = 9715;
+	private static final int PORT = 9716;
 	
 	private ServerSocketChannel sock;
 	
@@ -39,15 +39,17 @@ public class ResultSender {
 	 */
 	public void send(double azimuth, double elevation, double range) {
 		//Formulate a message as a String similar to an HTTP header.
-		StringBuilder message = new StringBuilder();
-		message.append("\r\n--boundarydonotcross\r\n");
-		message.append("Azimuth: ");
-		message.append(azimuth);
-		message.append("\r\nElevation: ");
-		message.append(elevation);
-		message.append("\r\nRange: ");
-		message.append(range);
-		
-		acceptor.sendtoAll(message.toString());
+		if (azimuth != -1 && elevation != -1 && range != -1) {
+			StringBuilder message = new StringBuilder();
+			message.append("\r\n--boundarydonotcross\r\n");
+			message.append("Azimuth: ");
+			message.append(azimuth);
+			message.append("\r\nElevation: ");
+			message.append(elevation);
+			message.append("\r\nRange: ");
+			message.append(range);
+			
+			acceptor.sendtoAll(message.toString());
+		}
 	}
 }

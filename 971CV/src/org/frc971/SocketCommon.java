@@ -53,7 +53,8 @@ public class SocketCommon {
 			}
 		}
 		catch (IOException e) {
-			LOG.severe("Socket read failed.");
+			LOG.severe("Socket read failed. Check your network configuration.");
+			Messages.severe("Socket read failed. Check your network configuration.");
 			return null;
 		}
 		return message;
@@ -69,7 +70,8 @@ public class SocketCommon {
 				sock.write(message);
 			}
 			catch (IOException e) {
-				LOG.warning("Socket write failed.");
+				LOG.warning("Socket write failed. Check your network configuration.");
+				Messages.severe("Socket write failed. Check your network configuration.");
 				return -1;
 			}
 		}

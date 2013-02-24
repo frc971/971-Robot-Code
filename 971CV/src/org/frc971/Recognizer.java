@@ -1,7 +1,6 @@
 package org.frc971;
 
 import edu.wpi.first.wpijavacv.WPIColorImage;
-import edu.wpi.first.wpijavacv.WPIImage;
 
 /**
  * Vision target recognizer.
@@ -30,5 +29,5 @@ public interface Recognizer {
      *<p>
      * SIDE EFFECTS: May modify cameraImage.
      */
-    WPIImage processImage(WPIColorImage cameraImage);
+    Target processImage(WPIColorImage cameraImage);
 }

@@ -24,9 +24,9 @@ public class HTTPClient {
 	/** whether or not to print debug messages to stdout. */
 	private final static boolean LOCAL_DEBUG = false;
 	
-	private SocketChannel sock;
+	private String atomIP;
 	
-	private final String ATOM_IP = "192.168.0.137";
+	private SocketChannel sock;
 	
 	private ChannelImageGetter cgetter;
 	
@@ -41,11 +41,12 @@ public class HTTPClient {
 	
 	/** the constructor, initializes connection, and sets up aos getter. 
 	 * @throws IOException */
-	public HTTPClient() throws IOException {
+	public HTTPClient(String atomIP) throws IOException {
 		//Initialize socket connection to robot
+		this.atomIP = atomIP;
 		sock = SocketChannel.open();
-		WriteDebug("Connecting to server at " + ATOM_IP);
-		sock.connect(new InetSocketAddress(ATOM_IP, 9714));
+		WriteDebug("Connecting to server at " + atomIP);
+		sock.connect(new InetSocketAddress(atomIP, 9714));
 		sock.configureBlocking(false);
 		//Write headers
 		//HTTPStreamer does not actually use the headers, so we can just write terminating chars.
@@ -63,10 +64,14 @@ public class HTTPClient {
 	public ImageWithTimestamp GetFrame() {
 		ImageWithTimestamp final_image = new ImageWithTimestamp();
 		//Use Brian's code to extract an image and timestamp from raw server data.
-		ByteBuffer binary_image = cgetter.getJPEG();
+		ByteBuffer binaryImage = cgetter.getJPEG();
+		if (binaryImage == null) {
+			Messages.severe("Could not parse data from robot. See the log for details.");
+			return null;
+		}
 		//Decode ByteBuffer into an IplImage
-		byte[] b = new byte[binary_image.remaining()];
-		binary_image.get(b);
+		byte[] b = new byte[binaryImage.remaining()];
+		binaryImage.get(b);
 		try {
 			InputStream iis = new ByteArrayInputStream(b);
 			BufferedImage bImageFromConvert = ImageIO.read(iis);
@@ -80,4 +85,9 @@ public class HTTPClient {
 			return null;
 		}
 	}	
+	
+	/** Gets the name to display at the top of the image window. */
+	public String GetName() {
+		return atomIP;
+	}
 }

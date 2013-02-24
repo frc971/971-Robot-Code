@@ -67,7 +67,8 @@ public class AccepterThread extends Thread {
 				connected.add(clientSock);
 			}
 			catch (IOException e) {
-				LOG.warning("Socket accept failed.");
+				LOG.warning("Cannot serve image processing results to client:" + e.getMessage());
+				Messages.warning("Cannot serve image processing results to client:" + e.getMessage());
 			}
 		}
 	}
