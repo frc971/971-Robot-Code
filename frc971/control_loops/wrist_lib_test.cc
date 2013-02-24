@@ -7,6 +7,7 @@
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/wrist_motor.q.h"
 #include "frc971/control_loops/wrist.h"
+#include "frc971/constants.h"
 
 
 using ::aos::time::Time;
@@ -14,6 +15,108 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace control_loops {
 namespace testing {
+
+
+// Class which simulates the wrist and sends out queue messages containing the
+// position.
+class WristMotorSimulation {
+ public:
+  // Constructs a motor simulation.  initial_position is the inital angle of the
+  // wrist, which will be treated as 0 by the encoder.
+  WristMotorSimulation(double initial_position)
+      : wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeWristPlant())),
+        my_wrist_loop_(".frc971.control_loops.wrist",
+                       0x1a7b7094, ".frc971.control_loops.wrist.goal",
+                       ".frc971.control_loops.wrist.position",
+                       ".frc971.control_loops.wrist.output",
+                       ".frc971.control_loops.wrist.status") {
+    Reinitialize(initial_position);
+  }
+
+  // Resets the plant so that it starts at initial_position.
+  void Reinitialize(double initial_position) {
+    initial_position_ = initial_position;
+    wrist_plant_->X(0, 0) = initial_position_;
+    wrist_plant_->X(1, 0) = 0.0;
+    wrist_plant_->Y = wrist_plant_->C * wrist_plant_->X;
+    last_position_ = wrist_plant_->Y(0, 0);
+    calibration_value_ = 0.0;
+  }
+
+  // Returns the absolute angle of the wrist.
+  double GetAbsolutePosition() const {
+    return wrist_plant_->Y(0, 0);
+  }
+
+  // Returns the adjusted angle of the wrist.
+  double GetPosition() const {
+    return GetAbsolutePosition() - initial_position_;
+  }
+
+  // Sends out the position queue messages.
+  void SendPositionMessage() {
+    const double angle = GetPosition();
+
+    double horizontal_hall_effect_start_angle;
+    ASSERT_TRUE(constants::horizontal_hall_effect_start_angle(
+                    &horizontal_hall_effect_start_angle));
+    double horizontal_hall_effect_stop_angle;
+    ASSERT_TRUE(constants::horizontal_hall_effect_stop_angle(
+                    &horizontal_hall_effect_stop_angle));
+
+    ::aos::ScopedMessagePtr<control_loops::WristLoop::Position> position =
+        my_wrist_loop_.position.MakeMessage();
+    position->pos = angle;
+
+    // Signal that the hall effect sensor has been triggered if it is within
+    // the correct range.
+    double abs_position = GetAbsolutePosition();
+    if (abs_position >= horizontal_hall_effect_start_angle &&
+        abs_position <= horizontal_hall_effect_stop_angle) {
+      position->hall_effect = true;
+    } else {
+      position->hall_effect = false;
+    }
+
+    // Only set calibration if it changed last cycle.  Calibration starts out
+    // with a value of 0.
+    if ((last_position_ < horizontal_hall_effect_start_angle ||
+         last_position_ > horizontal_hall_effect_stop_angle) &&
+         position->hall_effect) {
+      calibration_value_ =
+          horizontal_hall_effect_start_angle - initial_position_;
+    }
+
+    position->calibration = calibration_value_;
+    position.Send();
+  }
+
+  // Simulates the wrist moving for one timestep.
+  void Simulate() {
+    last_position_ = wrist_plant_->Y(0, 0);
+    EXPECT_TRUE(my_wrist_loop_.output.FetchLatest());
+    wrist_plant_->U << my_wrist_loop_.output->voltage;
+    wrist_plant_->Update();
+
+    // Assert that we are in the right physical range.
+    double horizontal_upper_physical_limit;
+    ASSERT_TRUE(constants::horizontal_upper_physical_limit(
+                    &horizontal_upper_physical_limit));
+    double horizontal_lower_physical_limit;
+    ASSERT_TRUE(constants::horizontal_lower_physical_limit(
+                    &horizontal_lower_physical_limit));
+
+    EXPECT_GE(horizontal_upper_physical_limit, wrist_plant_->Y(0, 0));
+    EXPECT_LE(horizontal_lower_physical_limit, wrist_plant_->Y(0, 0));
+  }
+
+  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> wrist_plant_;
+ private:
+  WristLoop my_wrist_loop_;
+  double initial_position_;
+  double last_position_;
+  double calibration_value_;
+};
 
 class WristTest : public ::testing::Test {
  protected:
@@ -24,8 +127,9 @@ class WristTest : public ::testing::Test {
   // is no longer valid.
   WristLoop my_wrist_loop_;
 
+  // Create a loop and simulation plant.
   WristMotor wrist_motor_;
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> wrist_plant_;
+  WristMotorSimulation wrist_motor_plant_;
 
   WristTest() : my_wrist_loop_(".frc971.control_loops.wrist",
                                0x1a7b7094, ".frc971.control_loops.wrist.goal",
@@ -33,35 +137,126 @@ class WristTest : public ::testing::Test {
                                ".frc971.control_loops.wrist.output",
                                ".frc971.control_loops.wrist.status"),
                 wrist_motor_(&my_wrist_loop_),
-                wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeWristPlant())) {
-    // Flush the robot state queue so we can recreate shared memory for this
+                wrist_motor_plant_(0.5) {
+    // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
-    ::aos::robot_state.MakeWithBuilder().enabled(true)
+    SendDSPacket(true);
+  }
+
+  void SendDSPacket(bool enabled) {
+    ::aos::robot_state.MakeWithBuilder().enabled(enabled)
                                         .autonomous(false)
                                         .team_id(971).Send();
+    ::aos::robot_state.FetchLatest();
+  }
+
+  void VerifyNearGoal() {
+    my_wrist_loop_.goal.FetchLatest();
+    my_wrist_loop_.position.FetchLatest();
+    EXPECT_NEAR(my_wrist_loop_.goal->goal,
+                wrist_motor_plant_.GetAbsolutePosition(),
+                1e-4);
+  }
+
+  virtual ~WristTest() {
+    ::aos::robot_state.Clear();
   }
 };
 
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(WristTest, ZerosCorrectly) {
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 400; ++i) {
+    wrist_motor_plant_.SendPositionMessage();
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
 
-// Tests that we can send a message to another thread and it blocking receives
-// it at the correct time.
-TEST_F(WristTest, Stable) {
-  my_wrist_loop_.goal.MakeWithBuilder().goal(0.0).Send();
-  for (int i = 0; i < 1000; ++i) {
-    my_wrist_loop_.position.MakeWithBuilder()
-        .pos(wrist_plant_->Y(0, 0))
-        .hall_effect(false)
-        .calibration(0.0).Send();
+// Tests that the wrist zeros correctly starting on the hall effect sensor.
+TEST_F(WristTest, ZerosStartingOn) {
+  wrist_motor_plant_.Reinitialize(90 * M_PI / 180.0);
+
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 500; ++i) {
+    wrist_motor_plant_.SendPositionMessage();
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
+
+// Tests that missing positions are correctly handled.
+TEST_F(WristTest, HandleMissingPosition) {
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 400; ++i) {
+    if (i % 23) {
+      wrist_motor_plant_.SendPositionMessage();
+    }
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
+
+// Tests that loosing the encoder for a second triggers a re-zero.
+TEST_F(WristTest, RezeroWithMissingPos) {
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 800; ++i) {
+    // After 3 seconds, simulate the encoder going missing.
+    // This should trigger a re-zero.  To make sure it works, change the goal as
+    // well.
+    if (i < 300 || i > 400) {
+      wrist_motor_plant_.SendPositionMessage();
+    } else {
+      if (i > 310) {
+        // Should be re-zeroing now.
+        EXPECT_EQ(WristMotor::UNINITIALIZED, wrist_motor_.state_);
+      }
+      my_wrist_loop_.goal.MakeWithBuilder().goal(0.2).Send();
+    }
+    if (i == 430) {
+      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+    }
 
     wrist_motor_.Iterate();
-
-    EXPECT_TRUE(my_wrist_loop_.output.FetchLatest());
-    wrist_plant_->U << my_wrist_loop_.output->voltage;
-    wrist_plant_->Update();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
   }
-  my_wrist_loop_.position.FetchLatest();
-  EXPECT_FLOAT_EQ(0.0, my_wrist_loop_.position->pos);
+  VerifyNearGoal();
+}
+
+// Tests that disabling while zeroing sends the state machine into the
+// uninitialized state.
+TEST_F(WristTest, DisableGoesUninitialized) {
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 800; ++i) {
+    wrist_motor_plant_.SendPositionMessage();
+    // After 0.5 seconds, disable the robot.
+    if (i > 50 && i < 200) {
+      SendDSPacket(false);
+      if (i > 100) {
+        // Give the loop a couple cycled to get the message and then verify that
+        // it is in the correct state.
+        EXPECT_EQ(WristMotor::UNINITIALIZED, wrist_motor_.state_);
+      }
+    } else {
+      SendDSPacket(true);
+    }
+    if (i == 202) {
+      // Verify that we are zeroing after the bot gets enabled again.
+      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+    }
+
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+  }
+  VerifyNearGoal();
 }
 
 }  // namespace testing

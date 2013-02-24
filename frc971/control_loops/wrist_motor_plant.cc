@@ -26,7 +26,7 @@ StateFeedbackLoop<2, 1, 1> MakeWristLoop() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.35009841156, 23.2478308944;
   Eigen::Matrix<double, 1, 2> K;
-  K << 2.12069897779, -2.23821168376;
+  K << 8.74788328338, -1.58648298569;
   return StateFeedbackLoop<2, 1, 1>(L, K, MakeWristPlant());
 }
 

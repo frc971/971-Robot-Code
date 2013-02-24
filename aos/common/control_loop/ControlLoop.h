@@ -49,9 +49,9 @@ class ControlLoop : public SerializableControlLoop {
  public:
   // Maximum age of position packets before the loop will be disabled due to
   // invalid position data.
-  static const int kPositionTimeoutMs = 100;
+  static const int kPositionTimeoutMs = 1000;
   // Maximum age of driver station packets before the loop will be disabled.
-  static const int kDSPacketTimeoutMs = 100;
+  static const int kDSPacketTimeoutMs = 500;
 
   ControlLoop(T *control_loop) : control_loop_(control_loop) {}
 

@@ -64,8 +64,10 @@ void ControlLoop<T, has_position>::Iterate() {
         return;
       }
     }
-    position->Print(state, sizeof(state));
-    LOG(DEBUG, "position={%s}\n", state);
+    if (position) {
+      position->Print(state, sizeof(state));
+      LOG(DEBUG, "position={%s}\n", state);
+    }
   }
 
   bool outputs_enabled = false;

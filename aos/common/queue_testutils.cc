@@ -103,6 +103,7 @@ GlobalCoreInstance::GlobalCoreInstance() {
 }
 
 GlobalCoreInstance::~GlobalCoreInstance() {
+  log_uninit();
   free(global_core->mem_struct);
   global_core = NULL;
 }

@@ -11,6 +11,11 @@
 namespace frc971 {
 namespace control_loops {
 
+namespace testing {
+class WristTest_RezeroWithMissingPos_Test;
+class WristTest_DisableGoesUninitialized_Test;
+};
+
 class WristMotor
     : public aos::control_loops::ControlLoop<control_loops::WristLoop> {
  public:
@@ -25,11 +30,52 @@ class WristMotor
       ::aos::control_loops::Status *status);
 
  private:
+  // Friend the test classes for acces to the internal state.
+  friend class testing::WristTest_RezeroWithMissingPos_Test;
+  friend class testing::WristTest_DisableGoesUninitialized_Test;
+
+  // Fetches and locally caches the latest set of constants.
+  bool FetchConstants();
+
+  // Clips the goal to be inside the limits and returns the clipped goal.
+  // Requires the constants to have already been fetched.
+  double ClipGoal(double goal) const;
+  // Limits the voltage depending whether the wrist has been zeroed or is out of
+  // range to make it safer to use.
+  double LimitVoltage(double absolute_position, double voltage) const;
+
+  // The state feedback control loop to talk to.
   ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> loop_;
-  bool stop_;
+
+  // Enum to store the state of the internal zeroing state machine.
+  enum State {
+    UNINITIALIZED,
+    MOVING_OFF,
+    ZEROING,
+    READY,
+    ESTOP
+  };
+
+  // Internal state for zeroing.
+  State state_;
+
+  // Missed position packet count.
   int error_count_;
-  bool zeroed_;
+  // Offset from the raw encoder value to the absolute angle.
   double zero_offset_;
+  // Position that gets incremented when zeroing the wrist to slowly move it to
+  // the hall effect sensor.
+  double zeroing_position_;
+  // Last position at which the hall effect sensor was off.
+  double last_off_position_;
+
+  // Local cache of the wrist geometry constants.
+  double horizontal_lower_limit_;
+  double horizontal_upper_limit_;
+  double horizontal_hall_effect_start_angle_;
+  double horizontal_zeroing_speed_;
+
+  DISALLOW_COPY_AND_ASSIGN(WristMotor);
 };
 
 }  // namespace control_loops

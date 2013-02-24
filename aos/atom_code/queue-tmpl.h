@@ -180,7 +180,7 @@ void Queue<T>::Init() {
 
 template <class T>
 void Queue<T>::Clear() {
-  if (queue_ == NULL) {
+  if (queue_ != NULL) {
     queue_msg_.reset();
     queue_ = NULL;
     queue_msg_.set_queue(NULL);

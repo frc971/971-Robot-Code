@@ -42,7 +42,7 @@ class Wrist(object):
     self.A, self.B = controls.c2d(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.K = controls.dplace(self.A, self.B, [.95, .92])
+    self.K = controls.dplace(self.A, self.B, [.89, .85])
 
     self.rpl = .05
     self.ipl = 0.008
@@ -147,7 +147,7 @@ class Wrist(object):
     ans.append(self._DumpMatrix("K", self.K))
 
     ans.append("  return StateFeedbackLoop<%d, %d, %d>"
-               "(Make%sPlant(), L, K);\n" % (num_states, num_inputs,
+               "(L, K, Make%sPlant());\n" % (num_states, num_inputs,
                                              num_outputs, loop_name))
     ans.append("}\n")
     return "".join(ans)
@@ -173,8 +173,8 @@ def main(argv):
     wrist.Update(U)
     close_loop_x.append(wrist.X[0, 0])
 
-  #pylab.plot(range(100), close_loop_x)
-  #pylab.show()
+  pylab.plot(range(100), close_loop_x)
+  pylab.show()
 
   if len(argv) != 3:
     print "Expected .cc file name and .h file name"
