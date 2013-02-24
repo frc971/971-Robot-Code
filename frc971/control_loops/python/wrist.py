@@ -116,6 +116,42 @@ class Wrist(object):
     ans.append("}\n")
     return "".join(ans)
 
+  def DumpLoopHeader(self, loop_name):
+    """Writes out a c++ header declaration which will create a Loop object.
+
+    Args:
+      loop_name: string, the name of the loop.  Used to create the name of the
+        function.  The function name will be Make<loop_name>Loop().
+    """
+    num_states = self.A.shape[0]
+    num_inputs = self.B.shape[1]
+    num_outputs = self.C.shape[0]
+    return "StateFeedbackLoop<%d, %d, %d> Make%sLoop();\n" % (
+        num_states, num_inputs, num_outputs, loop_name)
+
+  def DumpLoop(self, loop_name):
+    """Writes out a c++ function which will create a Loop object.
+
+    Args:
+      loop_name: string, the name of the loop.  Used to create the name of the
+        function and create the plant.  The function name will be
+        Make<loop_name>Loop().
+    """
+    num_states = self.A.shape[0]
+    num_inputs = self.B.shape[1]
+    num_outputs = self.C.shape[0]
+    ans = ["StateFeedbackLoop<%d, %d, %d> Make%sLoop() {\n" % (
+        num_states, num_inputs, num_outputs, loop_name)]
+
+    ans.append(self._DumpMatrix("L", self.L))
+    ans.append(self._DumpMatrix("K", self.K))
+
+    ans.append("  return StateFeedbackLoop<%d, %d, %d>"
+               "(Make%sPlant(), L, K);\n" % (num_states, num_inputs,
+                                             num_outputs, loop_name))
+    ans.append("}\n")
+    return "".join(ans)
+
 
 def main(argv):
   wrist = Wrist()
@@ -124,8 +160,8 @@ def main(argv):
     wrist.Update(numpy.matrix([[12.0]]))
     simulated_x.append(wrist.X[0, 0])
 
-  pylab.plot(range(100), simulated_x)
-  pylab.show()
+  #pylab.plot(range(100), simulated_x)
+  #pylab.show()
 
   wrist = Wrist()
   close_loop_x = []
@@ -137,8 +173,8 @@ def main(argv):
     wrist.Update(U)
     close_loop_x.append(wrist.X[0, 0])
 
-  pylab.plot(range(100), close_loop_x)
-  pylab.show()
+  #pylab.plot(range(100), close_loop_x)
+  #pylab.show()
 
   if len(argv) != 3:
     print "Expected .cc file name and .h file name"
@@ -150,21 +186,30 @@ def main(argv):
                      "}  // namespace control_loops\n");
 
     header_start = ("#ifndef FRC971_CONTROL_LOOPS_WRIST_MOTOR_PLANT_H_\n"
-                    "#define  // FRC971_CONTROL_LOOPS_WRIST_MOTOR_PLANT_H_\n\n")
+                    "#define FRC971_CONTROL_LOOPS_WRIST_MOTOR_PLANT_H_\n\n")
     header_end = "#endif  // FRC971_CONTROL_LOOPS_WRIST_MOTOR_PLANT_H_\n";
 
     with open(argv[1], "w") as fd:
+      fd.write("#include \"frc971/control_loops/wrist_motor_plant.h\"\n")
+      fd.write('\n')
+      fd.write("#include \"frc971/control_loops/state_feedback_loop.h\"\n")
+      fd.write('\n')
       fd.write(namespace_start)
+      fd.write('\n')
       fd.write(wrist.DumpPlant("Wrist"))
+      fd.write('\n')
+      fd.write(wrist.DumpLoop("Wrist"))
       fd.write('\n')
       fd.write(namespace_end)
 
     with open(argv[2], "w") as fd:
       fd.write(header_start)
-      fd.write(namespace_start)
       fd.write("#include \"frc971/control_loops/state_feedback_loop.h\"\n")
       fd.write('\n')
+      fd.write(namespace_start)
       fd.write(wrist.DumpPlantHeader("Wrist"))
+      fd.write('\n')
+      fd.write(wrist.DumpLoopHeader("Wrist"))
       fd.write('\n')
       fd.write(namespace_end)
       fd.write(header_end)

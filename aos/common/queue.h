@@ -202,6 +202,10 @@ class Queue {
   // take a different amount of time the first cycle.
   void Init();
 
+  // Removes all internal references to shared memory so shared memory can be
+  // restarted safely.  This should only be used in testing.
+  void Clear();
+
   // Fetches the next message from the queue.
   // Returns true if there was a new message available and we successfully
   // fetched it.  This removes the message from the queue for all readers.

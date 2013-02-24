@@ -20,7 +20,7 @@ message Position {
 };
 
 message Output {
-  double pwm;
+  double voltage;
 };
 
 message Status {

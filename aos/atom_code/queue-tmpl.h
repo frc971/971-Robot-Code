@@ -179,6 +179,15 @@ void Queue<T>::Init() {
 }
 
 template <class T>
+void Queue<T>::Clear() {
+  if (queue_ == NULL) {
+    queue_msg_.reset();
+    queue_ = NULL;
+    queue_msg_.set_queue(NULL);
+  }
+}
+
+template <class T>
 bool Queue<T>::FetchNext() {
   Init();
   // TODO(aschuh): Use aos_queue_read_msg_index so that multiple readers
