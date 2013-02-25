@@ -59,6 +59,7 @@
         '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
+        '<(AOS)/crio/shared_libs/shared_libs.gyp:limit_encoder_reader',
       ],
     },
     {

@@ -1,6 +1,5 @@
 #include "aos/crio/motor_server/MotorControllerOutput.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/byteorder.h"
 #include "aos/common/commonmath.h"
 

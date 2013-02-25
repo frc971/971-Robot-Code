@@ -1,8 +1,9 @@
-#ifndef __CRIO_SHARED_LIBS_BYTE_BUFFER_H_
-#define __CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+#ifndef AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+#define AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+
+#include <algorithm>
 
 #include "aos/common/network/ReceiveSocket.h"
-#include <algorithm>
 
 namespace aos {
 
@@ -85,7 +86,6 @@ class ByteBuffer {
    }
 };
 
-} // namespace aos
+}  // namespace aos
 
-#endif
-
+#endif  // AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_

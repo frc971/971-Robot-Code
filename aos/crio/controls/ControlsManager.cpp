@@ -1,10 +1,11 @@
+#include "aos/crio/controls/ControlsManager.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "WPILib/Compressor.h"
 
 #include "aos/crio/logging/crio_logging.h"
-#include "aos/crio/controls/ControlsManager.h"
 #include "aos/common/Configuration.h"
 #include "aos/crio/aos_ctdt.h"
 #include "aos/crio/motor_server/CRIOControlLoopRunner.h"
@@ -50,4 +51,4 @@ void ControlsManager::StartCompetition() {
 }
 
 }  // namespace crio
-} // namespace aos
+}  // namespace aos

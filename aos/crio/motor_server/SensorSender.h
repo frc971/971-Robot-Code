@@ -1,5 +1,5 @@
-#ifndef __CRIO_SENSOR_SENDER_H_
-#define __CRIO_SENSOR_SENDER_H_
+#ifndef AOS_CRIO_MOTOR_SERVER_SENSOR_SENDER_H_
+#define AOS_CRIO_MOTOR_SERVER_SENSOR_SENDER_H_
 
 namespace aos {
 
@@ -15,9 +15,8 @@ template<class Values> class SensorSender {
    void Run();
 };
 
-} // namespace aos
+}  // namespace aos
 
 #include "SensorSender-tmpl.h"
 
-#endif
-
+#endif  // AOS_CRIO_MOTOR_SERVER_SENSOR_SENDER_H_

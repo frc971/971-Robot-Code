@@ -1,6 +1,6 @@
 #include "CRIOControlLoopRunner.h"
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging.h"
 #include "aos/crio/shared_libs/interrupt_bridge.h"
 #include "aos/crio/motor_server/MotorOutput.h"
 #include "aos/crio/motor_server/MotorServer.h"

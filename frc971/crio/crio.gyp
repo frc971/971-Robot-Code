@@ -29,6 +29,8 @@
         'WPILib_changes',
         '<(EXTERNALS):WPILib',
         '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/crio/controls/controls.gyp:ControlsManager',
+        '<(AOS)/crio/motor_server/motor_server.gyp:CRIOControlLoopRunner',
       ],
     },
     {
@@ -42,7 +44,6 @@
       'target_name': 'FRC_UserProgram_WithTests',
       'type': 'shared_library',
       'dependencies': [
-        'user_program',
         # For testing.
         '<(AOS)/build/aos_all.gyp:Crio',
       ],

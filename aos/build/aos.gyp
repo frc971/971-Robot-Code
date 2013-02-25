@@ -8,7 +8,6 @@
     'conditions': [
       ['OS=="crio"', {
           'libaos_source_files': [
-            '<!@(find <(AOS)/crio/controls <(AOS)/crio/messages <(AOS)/crio/motor_server -name *.c -or -name *.cpp -or -name *.cc)',
             '<(AOS)/crio/Talon.cpp',
           ],
         }, {

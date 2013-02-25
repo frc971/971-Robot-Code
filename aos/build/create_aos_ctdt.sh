@@ -9,4 +9,3 @@ done
 echo 'void aos_call_init_functions() {'
 echo -e $calls
 echo '}'
-
