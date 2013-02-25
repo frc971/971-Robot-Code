@@ -64,6 +64,7 @@ private:
 	NumberArray *ids;
 	NumberArray *toCancel;
 	ITable *m_table;
+	bool m_runningCommandsChanged;
 };
 #endif
 

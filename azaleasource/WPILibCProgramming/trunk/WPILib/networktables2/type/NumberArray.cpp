@@ -16,7 +16,7 @@ NumberArray::NumberArray() : ArrayData(TYPE) {
 }
 
 double NumberArray::get(int index){
-	return _get(index).b;
+	return _get(index).f;
 }
 
 void NumberArray::set(int index, double value){

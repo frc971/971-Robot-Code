@@ -19,20 +19,20 @@
 Scheduler *Scheduler::_instance = NULL;
 
 Scheduler::Scheduler() :
-	m_buttonsLock(NULL),
-	m_additionsLock(NULL),
-	m_adding(false)
-{
-	m_buttonsLock = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
-	m_additionsLock = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
+	m_buttonsLock(NULL), m_additionsLock(NULL), m_adding(false) {
+	m_buttonsLock = semMCreate(
+			SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
+	m_additionsLock = semMCreate(
+			SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
 
-	nUsageReporting::report(nUsageReporting::kResourceType_Command, nUsageReporting::kCommand_Scheduler);
-	
+	nUsageReporting::report(nUsageReporting::kResourceType_Command,
+			nUsageReporting::kCommand_Scheduler);
+
+	m_table = NULL;
 	m_enabled = true;
 }
 
-Scheduler::~Scheduler()
-{
+Scheduler::~Scheduler() {
 	semTake(m_additionsLock, WAIT_FOREVER);
 	semDelete(m_additionsLock);
 
@@ -44,8 +44,7 @@ Scheduler::~Scheduler()
  * Returns the {@link Scheduler}, creating it if one does not exist.
  * @return the {@link Scheduler}
  */
-Scheduler *Scheduler::GetInstance()
-{
+Scheduler *Scheduler::GetInstance() {
 	if (_instance == NULL)
 		_instance = new Scheduler();
 	return _instance;
@@ -61,53 +60,47 @@ void Scheduler::SetEnabled(bool enabled) {
  * at the end of the pass, they are all scheduled.
  * @param command The command to be scheduled
  */
-void Scheduler::AddCommand(Command *command)
-{
+void Scheduler::AddCommand(Command *command) {
 	Synchronized sync(m_additionsLock);
-	if (std::find(m_additions.begin(), m_additions.end(), command) != m_additions.end())
+	if (std::find(m_additions.begin(), m_additions.end(), command)
+			!= m_additions.end())
 		return;
 	m_additions.push_back(command);
 }
 
-void Scheduler::AddButton(ButtonScheduler *button)
-{
+void Scheduler::AddButton(ButtonScheduler *button) {
 	Synchronized sync(m_buttonsLock);
 	m_buttons.push_back(button);
 }
 
-void Scheduler::ProcessCommandAddition(Command *command)
-{
+void Scheduler::ProcessCommandAddition(Command *command) {
 	if (command == NULL)
 		return;
 
 	// Check to make sure no adding during adding
-	if (m_adding)
-	{
+	if (m_adding) {
 		wpi_setWPIErrorWithContext(IncompatibleState, "Can not start command from cancel method");
 		return;
 	}
 
 	// Only add if not already in
 	CommandSet::iterator found = m_commands.find(command);
-	if (found == m_commands.end())
-	{
+	if (found == m_commands.end()) {
 		// Check that the requirements can be had
 		Command::SubsystemSet requirements = command->GetRequirements();
 		Command::SubsystemSet::iterator iter;
-		for (iter = requirements.begin(); iter != requirements.end(); iter++)
-		{
+		for (iter = requirements.begin(); iter != requirements.end(); iter++) {
 			Subsystem *lock = *iter;
-			if (lock->GetCurrentCommand() != NULL && !lock->GetCurrentCommand()->IsInterruptible())
+			if (lock->GetCurrentCommand() != NULL
+					&& !lock->GetCurrentCommand()->IsInterruptible())
 				return;
 		}
 
 		// Give it the requirements
 		m_adding = true;
-		for (iter = requirements.begin(); iter != requirements.end(); iter++)
-		{
+		for (iter = requirements.begin(); iter != requirements.end(); iter++) {
 			Subsystem *lock = *iter;
-			if (lock->GetCurrentCommand() != NULL)
-			{
+			if (lock->GetCurrentCommand() != NULL) {
 				lock->GetCurrentCommand()->Cancel();
 				Remove(lock->GetCurrentCommand());
 			}
@@ -118,6 +111,7 @@ void Scheduler::ProcessCommandAddition(Command *command)
 		m_commands.insert(command);
 
 		command->StartRunning();
+		m_runningCommandsChanged = true;
 	}
 }
 
@@ -133,30 +127,30 @@ void Scheduler::ProcessCommandAddition(Command *command)
  * <li> Add Defaults </li>
  * </ol>
  */
-void Scheduler::Run()
-{
+void Scheduler::Run() {
 	// Get button input (going backwards preserves button priority)
 	{
-		if (!m_enabled) return;
+		if (!m_enabled)
+			return;
 
 		Synchronized sync(m_buttonsLock);
 		ButtonVector::reverse_iterator rButtonIter = m_buttons.rbegin();
-		for (; rButtonIter != m_buttons.rend(); rButtonIter++)
-		{
+		for (; rButtonIter != m_buttons.rend(); rButtonIter++) {
 			(*rButtonIter)->Execute();
 		}
 	}
+	
+	m_runningCommandsChanged = false;
 
 	// Loop through the commands
 	CommandSet::iterator commandIter = m_commands.begin();
-	for (; commandIter != m_commands.end();)
-	{
+	for (; commandIter != m_commands.end();) {
 		Command *command = *commandIter;
 		// Increment before potentially removing to keep the iterator valid
 		commandIter++;
-		if (!command->Run())
-		{
+		if (!command->Run()) {
 			Remove(command);
+			m_runningCommandsChanged = true;
 		}
 	}
 
@@ -164,8 +158,7 @@ void Scheduler::Run()
 	{
 		Synchronized sync(m_additionsLock);
 		CommandVector::iterator additionsIter = m_additions.begin();
-		for (; additionsIter != m_additions.end(); additionsIter++)
-		{
+		for (; additionsIter != m_additions.end(); additionsIter++) {
 			ProcessCommandAddition(*additionsIter);
 		}
 		m_additions.clear();
@@ -173,16 +166,14 @@ void Scheduler::Run()
 
 	// Add in the defaults
 	Command::SubsystemSet::iterator subsystemIter = m_subsystems.begin();
-	for (; subsystemIter != m_subsystems.end(); subsystemIter++)
-	{
+	for (; subsystemIter != m_subsystems.end(); subsystemIter++) {
 		Subsystem *lock = *subsystemIter;
-		if (lock->GetCurrentCommand() == NULL)
-		{
+		if (lock->GetCurrentCommand() == NULL) {
 			ProcessCommandAddition(lock->GetDefaultCommand());
 		}
 		lock->ConfirmCommand();
 	}
-	
+
 	UpdateTable();
 }
 
@@ -191,10 +182,8 @@ void Scheduler::Run()
  * if a default {@link Command} needs to be run.  All {@link Subsystem Subsystems} should call this.
  * @param system the system
  */
-void Scheduler::RegisterSubsystem(Subsystem *subsystem)
-{
-	if (subsystem == NULL)
-	{
+void Scheduler::RegisterSubsystem(Subsystem *subsystem) {
+	if (subsystem == NULL) {
 		wpi_setWPIErrorWithContext(NullParameter, "subsystem");
 		return;
 	}
@@ -205,10 +194,8 @@ void Scheduler::RegisterSubsystem(Subsystem *subsystem)
  * Removes the {@link Command} from the {@link Scheduler}.
  * @param command the command to remove
  */
-void Scheduler::Remove(Command *command)
-{
-	if (command == NULL)
-	{
+void Scheduler::Remove(Command *command) {
+	if (command == NULL) {
 		wpi_setWPIErrorWithContext(NullParameter, "command");
 		return;
 	}
@@ -218,8 +205,7 @@ void Scheduler::Remove(Command *command)
 
 	Command::SubsystemSet requirements = command->GetRequirements();
 	Command::SubsystemSet::iterator iter = requirements.begin();
-	for (; iter != requirements.end(); iter++)
-	{
+	for (; iter != requirements.end(); iter++) {
 		Subsystem *lock = *iter;
 		lock->SetCurrentCommand(NULL);
 	}
@@ -228,39 +214,49 @@ void Scheduler::Remove(Command *command)
 }
 
 void Scheduler::RemoveAll() {
-	while(m_commands.size()>0){
+	while (m_commands.size() > 0) {
 		Remove(*m_commands.begin());
 	}
 }
 
+/**
+ * Update the network tables associated with the Scheduler object on the SmartDashboard
+ */
 void Scheduler::UpdateTable() {
 	CommandSet::iterator commandIter;
 	if (m_table != NULL) {
-		// Get the commands to cancel
+		// Get the list of possible commands to cancel
 		m_table->RetrieveValue("Cancel", *toCancel);
-		
-		for (commandIter = m_commands.begin(); commandIter != m_commands.end();) {
-			for (unsigned i = 0; i < toCancel->size(); i++) {
-				Command *c = *commandIter;
-				if ((unsigned)c == toCancel->get(i)) {
-					c->Cancel();
+//		m_table->RetrieveValue("Ids", *ids);
+
+		// cancel commands that have had the cancel buttons pressed
+		// on the SmartDashboad
+		if (toCancel->size() > 0) {
+			for (commandIter = m_commands.begin(); commandIter
+					!= m_commands.end(); ++commandIter) {
+				for (unsigned i = 0; i < toCancel->size(); i++) {
+					Command *c = *commandIter;
+					if (c->GetID() == toCancel->get(i)) {
+						c->Cancel();
+					}
 				}
 			}
+			toCancel->setSize(0);
+			m_table->PutValue("Cancel", *toCancel);
 		}
-		toCancel->setSize(0);
-		m_table->PutValue("Cancel", *toCancel);
-		
-		commands->setSize(0);
-		ids->setSize(0);
 		
 		// Set the running commands
-		for (commandIter = m_commands.begin(); commandIter != m_commands.end();) {
-			Command *c = *commandIter;
-			commands->add(c->GetName());
-			ids->add((unsigned)c);
+		if (m_runningCommandsChanged) {
+			commands->setSize(0);
+			ids->setSize(0);
+			for (commandIter = m_commands.begin(); commandIter != m_commands.end(); ++commandIter) {
+				Command *c = *commandIter;
+				commands->add(c->GetName());
+				ids->add(c->GetID());
+			}
+			m_table->PutValue("Names", *commands);
+			m_table->PutValue("Ids", *ids);
 		}
-		m_table->PutValue("Names", *commands);
-		m_table->PutValue("Ids", *ids);
 	}
 }
 
@@ -281,7 +277,7 @@ void Scheduler::InitTable(ITable *subTable) {
 	commands = new StringArray();
 	ids = new NumberArray();
 	toCancel = new NumberArray();
-	
+
 	m_table->PutValue("Names", *commands);
 	m_table->PutValue("Ids", *ids);
 	m_table->PutValue("Cancel", *toCancel);

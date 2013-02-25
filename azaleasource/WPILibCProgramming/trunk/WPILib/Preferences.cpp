@@ -44,9 +44,6 @@ Preferences::Preferences() :
 	m_readTask.Start((UINT32)this);
 	semTake(m_fileOpStarted, WAIT_FOREVER);
 
-	NetworkTable::GetTable(kTableName)->PutBoolean(kSaveField, false);
-	NetworkTable::GetTable(kTableName)->AddTableListener(this);
-
 	nUsageReporting::report(nUsageReporting::kResourceType_Preferences, 0);
 }
 
@@ -430,7 +427,7 @@ void Preferences::ReadTaskRun()
 			{
 				value = fgetc(file);
 			} while (value == ' ' || value == '\t');
-
+			
 			if (value == '\n' || value == ';')
 			{
 				if (value == '\n')
@@ -501,7 +498,7 @@ void Preferences::ReadTaskRun()
 				{
 					m_keys.push_back(name);
 					m_values.insert(std::pair<std::string, std::string>(name, value));
-					//NetworkTable::GetTable(kTableName)->PutString(name, value);
+					NetworkTable::GetTable(kTableName)->PutString(name, value);
 
 					if (!comment.empty())
 					{
@@ -525,6 +522,9 @@ void Preferences::ReadTaskRun()
 
 	if (!comment.empty())
 		m_endComment = comment;
+	
+	NetworkTable::GetTable(kTableName)->PutBoolean(kSaveField, false);
+	NetworkTable::GetTable(kTableName)->AddTableListener(this);
 }
 
 /**

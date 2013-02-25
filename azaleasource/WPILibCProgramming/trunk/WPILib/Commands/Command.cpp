@@ -15,8 +15,11 @@ static const char *kName = "name";
 static const char *kRunning = "running";
 static const char *kIsParented = "isParented";
 
+int Command::m_commandCounter = 0;
+
 void Command::InitCommand(const char *name, double timeout)
 {
+	m_commandID = m_commandCounter++;
 	m_timeout = timeout;
 	m_locked = false;
 	m_startTime = -1;
@@ -92,6 +95,15 @@ Command::~Command()
 	/*if (m_table != NULL){
 		m_table->RemoveChangeListener(kRunning, this);
 	}*/
+}
+
+/**
+ * Get the ID (sequence number) for this command
+ * The ID is a unique sequence number that is incremented for each command.
+ * @return the ID of this command
+ */
+int Command::GetID() {
+	return m_commandID;
 }
 
 /**

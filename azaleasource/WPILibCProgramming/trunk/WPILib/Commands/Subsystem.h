@@ -31,6 +31,7 @@ private:
 	void ConfirmCommand();
 
 	Command *m_currentCommand;
+	bool m_currentCommandChanged;
 	Command *m_defaultCommand;
 	std::string m_name;
 	bool m_initializedDefaultCommand;

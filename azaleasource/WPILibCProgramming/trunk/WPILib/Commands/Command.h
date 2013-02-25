@@ -65,6 +65,7 @@ public:
 	CommandGroup *GetGroup();
 	void SetRunWhenDisabled(bool run);
 	bool WillRunWhenDisabled();
+	int GetID();
 
 
 protected:
@@ -147,7 +148,8 @@ private:
 	bool m_runWhenDisabled;
 	/** The {@link CommandGroup} this is in */
 	CommandGroup *m_parent;
-	
+	int m_commandID;
+	static int m_commandCounter;
 	
 public:
 	virtual std::string GetName();
