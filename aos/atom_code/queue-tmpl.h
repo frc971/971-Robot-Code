@@ -234,7 +234,9 @@ ScopedMessagePtr<T> Queue<T>::MakeMessage() {
 
 template <class T>
 T *Queue<T>::MakeRawMessage() {
-  return static_cast<T *>(aos_queue_get_msg(queue_));
+  T *ret = static_cast<T *>(aos_queue_get_msg(queue_));
+  assert(ret != NULL);
+  return ret;
 }
 
 template <class T>
