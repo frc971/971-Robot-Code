@@ -27,11 +27,7 @@ If you want to actually download code to a robot (it will only work on amd64
   Squeeze), then 
   (1) do `apt-get install ncftp rsync socat`.
       socat is used for the netconsole.sh tool that is used to talk to the cRIO.
-  (2) Add robot and the following to the /etc/hosts file.  This requirement
-      should go away in the future.
-          10.9.71.179	fitpc
-          10.9.71.2	robot
-  (3) Set the IP address of the downloading machine to be on the same subnet.
+  (2) Set the IP address of the downloading machine to be on the same subnet.
       ifconfig eth0 10.9.71.22
       This will need to be redone when the computer Ethernet connection is
       reset.  For example, it is reset by disconnecting and reconnecting 

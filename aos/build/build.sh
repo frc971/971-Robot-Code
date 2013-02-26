@@ -69,9 +69,9 @@ else
       [ ${PLATFORM} == atom ] && \
         rsync --progress -t -r --rsync-path=/home/driver/bin/rsync \
         ${OUTDIR}/Default/outputs/* \
-        driver@fitpc:/home/driver/robot_code/bin
+        driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
       [ ${PLATFORM} == crio ] && \
-        ncftpput robot / \
+        ncftpput `${AOS}/build/get_ip robot` / \
         ${OUTDIR}/Default/lib/FRC_UserProgram.out
       ;;
     tests)
