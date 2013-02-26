@@ -12,6 +12,7 @@
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
+        'interrupt_notifier',
       ],
     },
     {
