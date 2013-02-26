@@ -22,8 +22,8 @@ enum class NetworkPort : uint16_t {
   kCameraStreamer = 9714,
 };
 
-// Holds global configuration data. All of the public static functions are safe
-// to call concurrently (the ones that need to create locks on the cRIO).
+// Holds global configuration data. All of the functions are safe to call
+// from wherever (the ones that need to create locks on the cRIO).
 namespace configuration {
 
 // Constants indentifying various devices on the network.
@@ -35,6 +35,17 @@ enum class NetworkDevice {
 // Returns the IP address to get to the specified machine.
 // The return value should be passed to free(3) if it is no longer needed.
 const char *GetIPAddress(NetworkDevice device);
+
+// Returns the "root directory" for this run. Under linux, this is the
+// directory where the executable is located (from /proc/self/exe) and under
+// vxworks it is just "/".
+// The return value will always be to a static string, so no freeing is
+// necessary.
+const char *GetRootDirectory();
+// Returns the directory where logs get written. Relative to GetRootDirectory().
+// The return value will always be to a static string, so no freeing is
+// necessary.
+const char *GetLoggingDirectory();
 
 }  // namespace configuration
 }  // namespace aos

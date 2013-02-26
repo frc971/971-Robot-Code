@@ -81,10 +81,29 @@
       },
     },
     {
+# Dependents should only use the "gtest/gtest_prod.h" header.
+# This target is NOT the correct one for "aos/common/gtest_prod.h". That one is
+#   aos/common/common.gyp:gtest_prod. This target just deals with setting up to
+#   use the gtest header.
+      'target_name': 'gtest_prod',
+      'type': 'static_library',
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '<(externals)/gtest-<(gtest_version)/include'
+        ],
+      },
+    },
+    {
       'target_name': 'gtest',
       'type': 'static_library',
       'sources': [
         '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest-all.cc',
+      ],
+      'dependencies': [
+        'gtest_prod',
+      ],
+      'export_dependent_settings': [
+        'gtest_prod',
       ],
       'conditions': [['OS=="crio"', {
             'defines': [
@@ -104,10 +123,6 @@
             '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
           ],
         }]],
-      'include_dirs': [
-        '<(externals)/gtest-<(gtest_version)',
-        '<(externals)/gtest-<(gtest_version)/include'
-      ],
       'cflags!': ['-Werror'],
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/gtest-<(gtest_version)/include'],

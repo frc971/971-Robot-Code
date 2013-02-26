@@ -21,7 +21,7 @@
         #'../common/messages/messages.gyp:*', # TODO(brians) did this test ever exist?
         '../atom_code/logging/logging.gyp:*',
         '../common/common.gyp:die_test',
-        ':Common',
+        'Common',
       ],
     },
     {
@@ -29,7 +29,7 @@
       'type': 'none',
       'dependencies': [
         '../crio/googletest/googletest.gyp:*',
-        ':Common',
+        'Common',
       ],
     },
     {
@@ -42,6 +42,7 @@
         '<(AOS)/common/common.gyp:type_traits_test',
         '<(AOS)/common/common.gyp:time_test',
         '<(AOS)/common/common.gyp:mutex_test',
+        '<(AOS)/common/common.gyp:once_test',
       ],
     },
   ],

@@ -13,25 +13,16 @@
 
 #include "aos/aos_core.h"
 #include "aos/atom_code/core/LogFileCommon.h"
+#include "aos/common/Configuration.h"
 
 static const char *const kCRIOName = "CRIO";
 
 int main() {
   aos::InitNRT();
 
-  char *folder_tmp;
-  if (asprintf(&folder_tmp, "%s/tmp/robot_logs", getpwuid(getuid())->pw_dir) == -1) {
-    LOG(ERROR, "couldn't figure out what folder to use because of %d (%s)\n",
-        errno, strerror(errno));
-    return EXIT_FAILURE;
-  }
-  std::string hack("/home/driver/tmp/robot_logs"); // TODO(brians) remove this hack
-  const char *folder = hack.c_str();
+  const char *folder = aos::configuration::GetLoggingDirectory();
   if (access(folder, R_OK | W_OK) == -1) {
-    fprintf(stderr,
-            "LogReader: error: folder '%s' does not exist. please create it\n",
-            folder);
-    return EXIT_FAILURE;
+    LOG(FATAL, "folder '%s' does not exist. please create it\n", folder);
   }
   LOG(INFO, "logging to folder '%s'\n", folder);
 

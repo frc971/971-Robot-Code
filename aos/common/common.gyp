@@ -45,6 +45,10 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
+        'once',
+      ],
+      'export_dependent_settings': [
+        'once',
       ],
       'conditions': [
         ['OS=="crio"', {
@@ -154,6 +158,38 @@
       'type': '<(aos_target)',
       'sources': [
         'type_traits_test.cpp',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:libaos',
+        ':common',
+      ],
+    },
+    {
+      'target_name': 'gtest_prod',
+      'type': 'static_library',
+      'dependencies': [
+        '<(EXTERNALS):gtest_prod',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):gtest_prod',
+      ],
+    },
+    {
+      'target_name': 'once',
+      'type': 'static_library',
+      'dependencies': [
+        '<(EXTERNALS):gtest_prod',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):gtest_prod',
+      ],
+    },
+    {
+      'target_name': 'once_test',
+      'type': '<(aos_target)',
+      'sources': [
+        'once_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',

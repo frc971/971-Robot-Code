@@ -19,6 +19,7 @@
 #ifndef __VXWORKS__
 #include "aos/common/unique_malloc_ptr.h"
 #endif
+#include "aos/common/once.h"
 
 namespace aos {
 namespace configuration {
@@ -144,6 +145,60 @@ const char *GetIPAddress(NetworkDevice device) {
   }
   LOG(FATAL, "Unknown network device.");
   return NULL;
+}
+
+namespace {
+const char *DoGetRootDirectory() {
+#ifdef __VXWORKS__
+  return "/";
+#else
+  ssize_t size = 0;
+  char *r = NULL;
+  while (true) {
+    if (r != NULL) delete r;
+    size += 256;
+    r = new char[size];
+
+    ssize_t ret = readlink("/proc/self/exe", r, size);
+    if (ret < 0) {
+      if (ret != -1) {
+        LOG(WARNING, "it returned %zd, not -1\n", ret);
+      }
+      LOG(FATAL, "readlink(\"/proc/self/exe\", %p, %zu) failed with %d: %s\n",
+          r, size, errno, strerror(errno));
+    }
+    if (ret < size) {
+      void *last_slash = memrchr(r, '/', size);
+      if (last_slash == NULL) {
+        r[ret] = '\0';
+        LOG(FATAL, "couldn't find a '/' in \"%s\"\n", r);
+      }
+      *static_cast<char *>(last_slash) = '\0';
+      LOG(INFO, "got a root dir of \"%s\"\n", r);
+      return r;
+    }
+  }
+#endif
+}
+
+const char *DoGetLoggingDirectory() {
+  static const char kSuffix[] = "/../../tmp/robot_logs";
+  const char *root = GetRootDirectory();
+  char *r = new char[strlen(root) + sizeof(kSuffix)];
+  strcpy(r, root);
+  strcat(r, kSuffix);
+  return r;
+}
+}  // namespace
+
+const char *GetRootDirectory() {
+  static aos::Once<const char> once(DoGetRootDirectory);
+  return once.Get();
+}
+
+const char *GetLoggingDirectory() {
+  static aos::Once<const char> once(DoGetLoggingDirectory);
+  return once.Get();
 }
 
 }  // namespace configuration

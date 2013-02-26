@@ -3,6 +3,9 @@
 #include "aos/aos_core.h"
 #include "aos/atom_code/output/HTTPServer.h"
 #include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
+#include "aos/atom_code/output/ctemplate_cache.h"
+#include "aos/common/Configuration.h"
+#include "aos/common/messages/RobotState.q.h"
 #include "ctemplate/template.h"
 
 #include "frc971/constants.h"
@@ -11,12 +14,10 @@ RegisterTemplateFilename(ROBOT_HTML, "robot.html.tpl");
 
 namespace frc971 {
 
-const char *const kPath = "/home/driver/robot_code/bin/";
-//const char *const kPath = "/home/brians/Desktop/git_frc971/2012/trunk/src/frc971/output";
-
 class CameraServer : public aos::http::HTTPServer {
  public:
-  CameraServer() : HTTPServer(kPath, 8080), buf_(NULL) {
+  CameraServer() : HTTPServer(aos::configuration::GetRootDirectory(), 8080),
+      buf_(NULL) {
     AddPage<CameraServer>("/robot.html", &CameraServer::RobotHTML, this);
   }
 
@@ -53,6 +54,11 @@ class CameraServer : public aos::http::HTTPServer {
     // after it.
     dict.SetValue("HOST", ctemplate::TemplateString(host, length));
 
+    if (!aos::robot_state.FetchLatest()) {
+      LOG(WARNING, "getting a RobotState message failed\n");
+      evhttp_send_error(request, HTTP_INTERNAL, NULL);
+      return;
+    }
     int center;
     if (!constants::camera_center(&center)) {
       evhttp_send_error(request, HTTP_INTERNAL, NULL);
@@ -61,8 +67,9 @@ class CameraServer : public aos::http::HTTPServer {
     dict.SetIntValue("CENTER", center);
 
     aos::http::EvhttpCtemplateEmitter emitter(buf_);
-    if (!ctemplate::ExpandTemplate(ROBOT_HTML, ctemplate::STRIP_WHITESPACE,
-                                   &dict, &emitter)) {
+    if (!aos::http::get_template_cache()->
+        ExpandWithData(ROBOT_HTML, ctemplate::STRIP_WHITESPACE,
+                       &dict, NULL, &emitter)) {
       LOG(ERROR, "expanding the template failed\n");
       evhttp_send_error(request, HTTP_INTERNAL, NULL);
       return;
@@ -78,4 +85,3 @@ class CameraServer : public aos::http::HTTPServer {
 }  // namespace frc971
 
 AOS_RUN_NRT(frc971::CameraServer)
-
