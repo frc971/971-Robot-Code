@@ -36,8 +36,8 @@ class MotorWriter : public aos::MotorOutput {
       AddMotor(TALON, 6, 0.0f);
       LOG(WARNING, "zeroing drivetrain\n");
     }
-
-    if (shifters.FetchLatest()) {
+    shifters.FetchLatest();
+    if (shifters.IsNewerThanMS(kOutputMaxAgeMS)) {
       AddSolenoid(1, shifters->set);
       AddSolenoid(2, !shifters->set);
     }
