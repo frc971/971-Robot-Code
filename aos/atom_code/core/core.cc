@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
   if (argc > 1) {
     if (system((std::string("touch '") + argv[1] + "'").c_str()) != 0) {
-      fprintf(stderr, "`touch '%s'` failed", argv[1]);
+      fprintf(stderr, "`touch '%s'` failed\n", argv[1]);
       exit(EXIT_FAILURE);
     }
   }

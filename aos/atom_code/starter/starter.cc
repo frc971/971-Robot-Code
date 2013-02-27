@@ -113,6 +113,7 @@ class FileWatch {
     } else {
       watchers.erase(watch_);
     }
+    LOG(DEBUG, "removed watch ID %d\n", watch_);
     watch_ = -1;
   }
 
@@ -154,24 +155,24 @@ class FileWatch {
 
     // Keep looping through until we get to the end because inotify does return
     // multiple events at once.
-    while (true) {
+    while (reinterpret_cast<char *>(notifyevt) < end) {
       if (watchers.count(notifyevt->wd) != 1) {
         LOG(DEBUG, "couldn't find whose watch ID %d is\n", notifyevt->wd);
-        continue;
+      } else {
+        watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
+                                              notifyevt->name : NULL);
       }
-      watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
-                                            notifyevt->name : NULL);
 
       notifyevt = reinterpret_cast<inotify_event *>(
           reinterpret_cast<char *>(notifyevt) +
           sizeof(*notifyevt) + notifyevt->len);
-      if (reinterpret_cast<char *>(notifyevt) >= end) break;
     }
   }
 
   // INotifyReadable calls this method whenever the watch for our file triggers.
   void FileNotified(const char *filename) {
     assert(watch_ != -1);
+    LOG(DEBUG, "got a notification for %s\n", filename_.c_str());
 
     if (!check_filename_.empty()) {
       if (filename == NULL) {
@@ -376,6 +377,7 @@ class Child {
   }
 
   void FileModified() {
+    LOG(DEBUG, "file for %s modified\n", name());
     struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
     // This will reset the timeout again if it hasn't run yet.
     evtimer_add(restart_timeout_.get(), &restart_time_timeval);
@@ -385,9 +387,9 @@ class Child {
     static_cast<Child *>(self)->DoRestart();
   }
 
-  // Actually kills the current child to start the process of starting up a new
-  // one.
+  // Called after somebody else has finished modifying the file.
   void DoRestart() {
+    // TODO(brians) see if mtime changed before actually restarting
     if (pid_ != -1) {
       LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
       if (kill(pid_, SIGTERM) == -1) {
@@ -648,14 +650,15 @@ void Main() {
   
   libevent_base = EventBaseUniquePtr(event_base_new());
 
-  static const std::string kCoreTouchFileDir = "/tmp/";
-  std::string core_touch_file = "starter.";
+  std::string core_touch_file = "/tmp/starter.";
   core_touch_file += std::to_string(static_cast<intmax_t>(getpid()));
   core_touch_file += ".core_touch_file";
-  FileWatch core_touch_file_watch(kCoreTouchFileDir, Run, NULL, true,
-                                  core_touch_file);
+  if (system(("touch '" + core_touch_file + "'").c_str()) != 0) {
+    LOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
+  }
+  FileWatch core_touch_file_watch(core_touch_file, Run, NULL);
   core = unique_ptr<Child>(
-      new Child("core " + kCoreTouchFileDir + core_touch_file));
+      new Child("core " + core_touch_file));
 
   FILE *pid_file = fopen("/tmp/starter.pid", "w");
   if (pid_file == NULL) {
