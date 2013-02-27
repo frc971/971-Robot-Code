@@ -4,10 +4,11 @@
       'target_name': 'starter_exe',
       'type': 'executable',
       'sources': [
-        'starter.cpp',
+        'starter.cc',
       ],
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(EXTERNALS):libevent',
       ],
       'copies': [
         {
