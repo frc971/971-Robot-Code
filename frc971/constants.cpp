@@ -21,8 +21,6 @@ struct Values {
   double horizontal;
   // what camera_center returns
   int camera_center;
-  // what drivetrain_motor_controllers returns
-  char drivetrain_controllers;
 };
 Values *values = NULL;
 // Attempts to retrieve a new Values instance and stores it in values if
@@ -34,12 +32,10 @@ const Values *GetValues() {
         aos::robot_state->team_id);
     switch (aos::robot_state->team_id) {
       case kCompTeamNumber:
-        values = new Values{kCompHorizontal, kCompCameraCenter,
-          aos::MotorOutput::TALON};
+        values = new Values{kCompHorizontal, kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
-        values = new Values{kPracticeHorizontal, kPracticeCameraCenter,
-          aos::MotorOutput::VICTOR};
+        values = new Values{kPracticeHorizontal, kPracticeCameraCenter};
         break;
       default:
         LOG(ERROR, "unknown team #%"PRIu16"\n",
@@ -62,12 +58,6 @@ bool camera_center(int *center) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *center = values->camera_center;
-  return true;
-}
-bool drivetrain_motor_controllers(char *controllers) {
-  const Values *const values = GetValues();
-  if (values == NULL) return false;
-  *controllers = values->drivetrain_controllers;
   return true;
 }
 

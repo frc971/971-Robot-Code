@@ -19,11 +19,6 @@ bool horizontal_offset(double *horizontal);
 // Sets *center to how many pixels off center the vertical line
 // on the camera view is.
 bool camera_center(int *center);
-// Sets *talons to whether or not the drivetrain is using talons (otherwise it's
-// using victors).
-// Sets *controllers to what type of motor controllers to use for the drivetrain
-// (one of MotorOutput's constants).
-bool drivetrain_motor_controllers(char *controllers);
 
 }  // namespace constants
 }  // namespace frc971
