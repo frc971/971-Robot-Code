@@ -18,6 +18,16 @@ TEST(TimeTest, timespecConversions) {
   EXPECT_EQ(start.tv_nsec, end.tv_nsec);
 }
 
+TEST(TimeTest, timevalConversions) {
+  timeval start{1234, 5678};  // NOLINT
+  Time time(start);
+  EXPECT_EQ(start.tv_sec, static_cast<signed time_t>(time.sec()));
+  EXPECT_EQ(start.tv_usec, time.nsec() / Time::kNSecInUSec);
+  timeval end = time.ToTimeval();
+  EXPECT_EQ(start.tv_sec, end.tv_sec);
+  EXPECT_EQ(start.tv_usec, end.tv_usec);
+}
+
 // It's kind of hard not to test Now and SleepFor at the same time.
 TEST(TimeTest, NowAndSleepFor) {
   // without this, it tends to fail the first time (ends up sleeping for way

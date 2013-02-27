@@ -6,8 +6,10 @@
 
 #ifndef __VXWORKS__
 #include <type_traits>
+#include <sys/time.h>
 #else
 #include <sysLib.h>
+#include <sys/times.h>
 #endif
 #include <ostream>
 
@@ -45,6 +47,16 @@ struct Time {
     struct timespec ans;
     ans.tv_sec = sec_;
     ans.tv_nsec = nsec_;
+    return ans;
+  }
+  explicit Time(const struct timeval &value)
+      : sec_(value.tv_sec), nsec_(value.tv_usec * kNSecInUSec) {
+    Check();
+  }
+  struct timeval ToTimeval() const {
+    struct timeval ans;
+    ans.tv_sec = sec_;
+    ans.tv_usec = nsec_ / kNSecInUSec;
     return ans;
   }
   #endif  // SWIG
