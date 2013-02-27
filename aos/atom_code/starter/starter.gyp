@@ -9,6 +9,9 @@
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(EXTERNALS):libevent',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:once',
+        '<(AOS)/common/common.gyp:time',
       ],
       'copies': [
         {

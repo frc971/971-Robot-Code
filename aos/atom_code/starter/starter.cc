@@ -29,12 +29,13 @@
 #include "aos/atom_code/init.h"
 #include "aos/common/unique_malloc_ptr.h"
 #include "aos/common/time.h"
+#include "aos/common/once.h"
 
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.
 //
-// NOTE: This executable should never exit nicely. It catches all nice attempts
-// to exit, forwards them to all of the children that it has started, waits for
+// NOTE: This program should never exit nicely. It catches all nice attempts to
+// exit, forwards them to all of the children that it has started, waits for
 // them to exit nicely, and then SIGKILLs anybody left (which will always
 // include itself).
 
@@ -43,24 +44,18 @@ using ::std::unique_ptr;
 namespace aos {
 namespace starter {
 
-const char *child_list_file;
-
-pid_t group_leader;
-
 class EventBaseDeleter {
  public:
   void operator()(event_base *base) {
-    if (base == NULL) return;
     event_base_free(base);
   }
 };
 typedef unique_ptr<event_base, EventBaseDeleter> EventBaseUniquePtr;
-EventBaseUniquePtr libevent_base(NULL);
+EventBaseUniquePtr libevent_base;
 
 class EventDeleter {
  public:
   void operator()(event *evt) {
-    if (evt == NULL) return;
     if (event_del(evt) != 0) {
       LOG(WARNING, "event_del(%p) failed\n", evt);
     }
@@ -68,22 +63,30 @@ class EventDeleter {
 };
 typedef unique_ptr<event, EventDeleter> EventUniquePtr;
 
-// Watches a file path for modifications. Will clean up when destroyed.
+// Watches a file path for modifications. Once created, keeps watching until
+// destroyed or RemoveWatch() is called.
 class FileWatch {
  public:
   // Will call callback(value) when filename is modified.
   // If value is NULL, then a pointer to this object will be passed instead.
+  //
+  // Watching for file creations is slightly different. To do that, pass true
+  // for create, the directory where the file will be created for filename, and
+  // the name of the file (without directory name) for check_filename.
   FileWatch(std::string filename,
             std::function<void(void *)> callback, void *value,
             bool create = false, std::string check_filename = "")
       : filename_(filename), callback_(callback), value_(value),
         check_filename_(check_filename) {
+    init_once.Get();
+
     watch_ = inotify_add_watch(notify_fd, filename.c_str(),
                                create ? IN_CREATE : (IN_ATTRIB | IN_MODIFY));
     if (watch_ == -1) {
-      LOG(FATAL, "inotify_add_watch(%d, %s, IN_ATTRIB | IN_MODIFY)"
-          " failed with %d: %s\n",
-          notify_fd, filename.c_str(), errno, strerror(errno));
+      LOG(FATAL, "inotify_add_watch(%d, %s,"
+          " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed with %d: %s\n",
+          notify_fd, filename.c_str(), create ? "true" : "false",
+          errno, strerror(errno));
     }
     watchers[watch_] = this;
   }
@@ -95,40 +98,41 @@ class FileWatch {
   }
 
   // After calling this method, this object won't really be doing much of
-  // anything.
+  // anything besides possibly running its callback or something.
   void RemoveWatch() {
     assert(watch_ != -1);
+
     if (inotify_rm_watch(notify_fd, watch_) == -1) {
       LOG(WARNING, "inotify_rm_watch(%d, %d) failed with %d: %s\n",
           notify_fd, watch_, errno, strerror(errno));
     }
+
     if (watchers[watch_] != this) {
-      LOG(WARNING, "watcher for %s didn't find itself in the map\n",
-          filename_.c_str());
+      LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
+          filename_.c_str(), this);
     } else {
       watchers.erase(watch_);
     }
     watch_ = -1;
   }
 
-  // This gets called whenever the watch for this file triggers.
-  void FileNotified(const char *filename) {
-    if (!check_filename_.empty()) {
-      if (filename == NULL) {
-        return;
-      }
-      if (std::string(filename) != check_filename_) {
-        return;
-      }
-    }
-
-    callback_((value_ == NULL) ? this : value_);
+ private:
+  // Performs the static initialization. Called by init_once from the
+  // constructor.
+  static void *Init() {
+    notify_fd = inotify_init1(IN_CLOEXEC);
+    EventUniquePtr notify_event(event_new(libevent_base.get(), notify_fd,
+                                          EV_READ | EV_PERSIST,
+                                          FileWatch::INotifyReadable, NULL));
+    event_add(notify_event.release(), NULL);
+    return NULL;
   }
 
   // This gets set up as the callback for EV_READ on the inotify file
-  // descriptor.
+  // descriptor. It calls FileNotified on the appropriate instance.
   static void INotifyReadable(int /*fd*/, short /*events*/, void *) {
     unsigned int to_read;
+    // Use FIONREAD to figure out how many bytes there are to read.
     if (ioctl(notify_fd, FIONREAD, &to_read) < 0) {
       LOG(FATAL, "FIONREAD(%d, %p) failed with %d: %s\n",
           notify_fd, &to_read, errno, strerror(errno));
@@ -148,11 +152,12 @@ class FileWatch {
       return;
     }
 
-    // Might get multiple events.
+    // Keep looping through until we get to the end because inotify does return
+    // multiple events at once.
     while (true) {
       if (watchers.count(notifyevt->wd) != 1) {
-        LOG(ERROR, "couldn't find whose watch ID %d is\n", notifyevt->wd);
-        return;
+        LOG(DEBUG, "couldn't find whose watch ID %d is\n", notifyevt->wd);
+        continue;
       }
       watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
                                             notifyevt->name : NULL);
@@ -164,15 +169,25 @@ class FileWatch {
     }
   }
 
-  static void Init() {
-    notify_fd = inotify_init1(IN_CLOEXEC);
-    EventUniquePtr notify_event(event_new(libevent_base.get(), notify_fd,
-                                          EV_READ | EV_PERSIST,
-                                          FileWatch::INotifyReadable, NULL));
-    event_add(notify_event.release(), NULL);
+  // INotifyReadable calls this method whenever the watch for our file triggers.
+  void FileNotified(const char *filename) {
+    assert(watch_ != -1);
+
+    if (!check_filename_.empty()) {
+      if (filename == NULL) {
+        return;
+      }
+      if (std::string(filename) != check_filename_) {
+        return;
+      }
+    }
+
+    callback_((value_ == NULL) ? this : value_);
   }
 
- private:
+  // To make sure that Init gets called exactly once.
+  static ::aos::Once<void> init_once;
+
   const std::string filename_;
   const std::function<void(void *)> callback_;
   void *const value_;
@@ -181,38 +196,52 @@ class FileWatch {
   // The watch descriptor or -1 if we don't have one any more.
   int watch_;
 
+  // Map from watch IDs to instances.
+  // <https://patchwork.kernel.org/patch/73192/> says they won't get reused, but
+  // that shouldn't be counted on because we might have a
+  // modified/different version/whatever kernel.
   static std::map<int, FileWatch *> watchers;
+  // The inotify(7) file descriptor.
   static int notify_fd;
 };
+::aos::Once<void> FileWatch::init_once(FileWatch::Init);
 std::map<int, FileWatch *> FileWatch::watchers;
 int FileWatch::notify_fd;
 
+// Runs the given command and returns its first line of output (not including
+// the \n). LOG(FATAL)s if the command has an exit status other than 0 or does
+// not print out an entire line.
 std::string RunCommand(std::string command) {
+  // popen(3) might fail and not set it.
   errno = 0;
-  FILE *which = popen(command.c_str(), "r");
-  if (which == NULL) {
+  FILE *pipe = popen(command.c_str(), "r");
+  if (pipe == NULL) {
     LOG(FATAL, "popen(\"%s\", \"r\") failed with %d: %s\n",
         command.c_str(), errno, strerror(errno));
   }
 
+  // result_size is how many bytes result is currently allocated to.
   size_t result_size = 128, read = 0;
   unique_c_ptr<char> result(static_cast<char *>(malloc(result_size)));
   while (true) {
+    // If we filled up the buffer, then realloc(3) it bigger.
     if (read == result_size) {
       result_size *= 2;
       void *new_result = realloc(result.get(), result_size);
       if (new_result == NULL) {
-        LOG(FATAL, "realloc(..., %zd) failed because of %d: %s\n",
-            result_size, errno, strerror(errno));
+        LOG(FATAL, "realloc(%p, %zd) failed because of %d: %s\n",
+            result.get(), result_size, errno, strerror(errno));
       } else {
         result.release();
         result = unique_c_ptr<char>(static_cast<char *>(new_result));
       }
     }
 
-    size_t ret = fread(result.get() + read, 1, result_size - read, which);
+    size_t ret = fread(result.get() + read, 1, result_size - read, pipe);
+    // If the read didn't fill up the whole buffer, check to see if it was
+    // because of an error.
     if (ret < result_size - read) {
-      if (ferror(which)) {
+      if (ferror(pipe)) {
         LOG(FATAL, "couldn't finish reading output of \"%s\"\n",
             command.c_str());
       }
@@ -222,17 +251,17 @@ std::string RunCommand(std::string command) {
       break;
     }
 
-    if (feof(which)) {
-      LOG(FATAL, "`%s` failed. didn't print anything\n", command.c_str());
+    if (feof(pipe)) {
+      LOG(FATAL, "`%s` failed. didn't print a whole line\n", command.c_str());
     }
   }
 
-  // Get rid of the \n and anything after it.
+  // Get rid of the first \n and anything after it.
   *strchrnul(result.get(), '\n') = '\0';
 
-  int child_status = pclose(which);
+  int child_status = pclose(pipe);
   if (child_status == -1) {
-    LOG(FATAL, "pclose(%p) failed with %d: %s\n", which,
+    LOG(FATAL, "pclose(%p) failed with %d: %s\n", pipe,
         errno, strerror(errno));
   }
 
@@ -253,8 +282,8 @@ void Timeout(time::Time time, void (*callback)(int, short, void *), void *arg) {
 // Represents a child process. It will take care of restarting itself etc.
 class Child {
  public:
-  // command is the (space-separated) command to run and its arguments
-  Child(const std::string &command) : pid_(-1), watcher_(NULL),
+  // command is the (space-separated) command to run and its arguments.
+  Child(const std::string &command) : pid_(-1),
         restart_timeout_(
             evtimer_new(libevent_base.get(), StaticDoRestart, this)) {
     const char *start, *end;
@@ -268,21 +297,11 @@ class Child {
       }
     }
 
-    std::string full_binary = RunCommand("which " + args_[0]);
-
-    binary_ = full_binary + ".stm";
-
-    if (unlink(binary_.c_str()) != 0 && errno != ENOENT) {
-      LOG(FATAL, "removing %s failed because of %d: %s\n",
-          binary_.c_str(), errno, strerror(errno));
-    }
-    if (link(full_binary.c_str(), binary_.c_str()) != 0) {
-      LOG(FATAL, "link('%s', '%s') failed because of %d: %s\n",
-          full_binary.c_str(), binary_.c_str(), errno, strerror(errno));
-    }
+    original_binary_ = RunCommand("which " + args_[0]);
+    binary_ = original_binary_ + ".stm";
 
     watcher_ = unique_ptr<FileWatch>(
-        new FileWatch(full_binary, StaticFileModified, this));
+        new FileWatch(original_binary_, StaticFileModified, this));
 
     Start();
   }
@@ -326,19 +345,27 @@ class Child {
   // binaries without this.
   static const time::Time kRestartWaitTime;
 
-  // It will limit restarting to kMaxRestartsNumber every kMaxRestartsTime.
+  // Only kMaxRestartsNumber restarts will be allowed in kMaxRestartsTime.
   static const time::Time kMaxRestartsTime;
   static const size_t kMaxRestartsNumber = 5;
   // How long to wait if it gets restarted too many times.
   static const time::Time kResumeWait;
+
   // A history of the times that this process has been restarted.
   std::queue<time::Time, std::list<time::Time>> restarts_;
 
+  // The currently running child's PID or NULL.
   pid_t pid_;
 
+  // All of the arguments (including the name of the binary).
   std::deque<std::string> args_;
+
+  // The name of the real binary that we were told to run.
+  std::string original_binary_;
+  // The name of the file that we're actually running.
   std::string binary_;
 
+  // Watches original_binary_.
   unique_ptr<FileWatch> watcher_;
 
   // An event that restarts after kRestartWaitTime.
@@ -347,6 +374,7 @@ class Child {
   static void StaticFileModified(void *self) {
     static_cast<Child *>(self)->FileModified();
   }
+
   void FileModified() {
     struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
     // This will reset the timeout again if it hasn't run yet.
@@ -357,6 +385,8 @@ class Child {
     static_cast<Child *>(self)->DoRestart();
   }
 
+  // Actually kills the current child to start the process of starting up a new
+  // one.
   void DoRestart() {
     if (pid_ != -1) {
       LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
@@ -376,6 +406,8 @@ class Child {
     status->self->CheckDied(status->old_pid);
     delete status;
   }
+
+  // Checks to see if the child using the PID old_pid is still running.
   void CheckDied(pid_t old_pid) {
     if (pid_ == old_pid) {
       LOG(WARNING, "child %d refused to die\n", old_pid);
@@ -389,13 +421,31 @@ class Child {
   static void StaticStart(int, short, void *self) {
     static_cast<Child *>(self)->Start();
   }
+
+  // Actually starts the child.
   void Start() {
     if (pid_ != -1) {
       LOG(WARNING, "calling Start() but already have child %d running\n",
           pid_);
-      kill(pid_, SIGKILL);
+      if (kill(pid_, SIGKILL) == -1) {
+        LOG(WARNING, "kill(%d, SIGKILL) failed with %d: %s\n",
+            pid_, errno, strerror(errno));
+        return;
+      }
       pid_ = -1;
     }
+
+    // Remove the name that we run from (ie from a previous execution) and then
+    // hard link the real filename to it.
+    if (unlink(binary_.c_str()) != 0 && errno != ENOENT) {
+      LOG(FATAL, "removing %s failed because of %d: %s\n",
+          binary_.c_str(), errno, strerror(errno));
+    }
+    if (link(original_binary_.c_str(), binary_.c_str()) != 0) {
+      LOG(FATAL, "link('%s', '%s') failed because of %d: %s\n",
+          original_binary_.c_str(), binary_.c_str(), errno, strerror(errno));
+    }
+
     if ((pid_ = fork()) == 0) {
       ssize_t args_size = args_.size();
       const char **argv = new const char *[args_size + 1];
@@ -411,7 +461,7 @@ class Child {
       _exit(EXIT_FAILURE);
     }
     if (pid_ == -1) {
-      LOG(WARNING, "forking to \"%s\" failed with %d: %s\n",
+      LOG(FATAL, "forking to run \"%s\" failed with %d: %s\n",
           binary_.c_str(), errno, strerror(errno));
     }
   }
@@ -423,10 +473,11 @@ const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1.5);
 
 // This is where all of the Child instances except core live.
 std::vector<unique_ptr<Child>> children;
-// A global palce to hold on to which child is core.
-unique_ptr<Child> core(NULL);
+// A global place to hold on to which child is core.
+unique_ptr<Child> core;
 
-void kill_children(bool try_nice) {
+// Kills off the entire process group (including ourself).
+void KillChildren(bool try_nice) {
   if (try_nice) {
     static const int kNiceStopSignal = SIGTERM;
     static const time::Time kNiceWaitTime = time::Time::InSeconds(1);
@@ -437,25 +488,31 @@ void kill_children(bool try_nice) {
     sigaddset(&mask, kNiceStopSignal);
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
-    kill(-group_leader, kNiceStopSignal);
+    kill(-getpid(), kNiceStopSignal);
+
+    fflush(NULL);
     time::SleepFor(kNiceWaitTime);
   }
+
   // Send SIGKILL to our whole process group, which will forcibly terminate any
   // of them that are still running (us for sure, maybe more too).
-  kill(-group_leader, SIGKILL);
+  kill(-getpid(), SIGKILL);
 }
 
-void exit_handler() {
-  kill_children(true);
+void ExitHandler() {
+  KillChildren(true);
 }
-void signal_pg_kill_handler(int signum) {
-  // If we get SIGSEGV or something who knows what's happening and we should
-  // just kill everybody immediately.
-  kill_children(signum == SIGHUP || signum == SIGINT || signum == SIGQUIT ||
+
+void KillChildrenSignalHandler(int signum) {
+  // If we get SIGSEGV or some other random signal who knows what's happening
+  // and we should just kill everybody immediately.
+  // This is a list of all of the signals that mean some form of "nicely stop".
+  KillChildren(signum == SIGHUP || signum == SIGINT || signum == SIGQUIT ||
                 signum == SIGABRT || signum == SIGPIPE || signum == SIGTERM ||
                 signum == SIGXCPU);
 }
 
+// Returns the currently running child with PID pid or an empty unique_ptr.
 const unique_ptr<Child> &FindChild(pid_t pid) {
   for (auto it = children.begin(); it != children.end(); ++it) {
     if (pid == (*it)->pid()) {
@@ -467,25 +524,24 @@ const unique_ptr<Child> &FindChild(pid_t pid) {
     return core;
   }
 
-  static const unique_ptr<Child> kNothing(NULL);
+  static const unique_ptr<Child> kNothing;
   return kNothing;
 }
 
-void sigchld_received(int /*fd*/, short events, void *) {
-  if (events != EV_SIGNAL) {
-    LOG(WARNING, "received an event that wasn't EV_SIGNAL\n");
-    return;
-  }
-
+// Gets set up as a libevent handler for SIGCHLD.
+// Handles calling Child::ProcessDied() on the appropriate one.
+void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
   // In a while loop in case we miss any SIGCHLDs.
   while (true) {
     siginfo_t infop;
     infop.si_pid = 0;
     if (waitid(P_ALL, 0, &infop, WEXITED | WSTOPPED | WNOHANG) != 0) {
       LOG(WARNING, "waitid failed with %d: %s", errno, strerror(errno));
+      continue;
     }
+    // If there are no more child process deaths to process.
     if (infop.si_pid == 0) {
-      return;  // no more child process changes pending
+      return;
     }
 
     pid_t pid = infop.si_pid;
@@ -521,19 +577,20 @@ void sigchld_received(int /*fd*/, short events, void *) {
           continue;
       }
     } else {
-      LOG(WARNING, "couldn't find child for pid %d\n", pid);
-    }
-    if (child == core) {
-      fprintf(stderr, "starter: si_code=%d CLD_EXITED=%d CLD_DUMPED=%d "
-              "CLD_KILLED=%d CLD_STOPPED=%d si_status=%d (sig '%s')\n",
-              infop.si_code, CLD_EXITED, CLD_DUMPED, CLD_KILLED,
-              CLD_STOPPED, status, strsignal(status));
-      LOG(FATAL, "core died\n");
+      LOG(WARNING, "couldn't find a Child for pid %d\n", pid);
+      return;
     }
 
+    if (child == core) {
+      LOG(FATAL, "core died\n");
+    }
     child->ProcessDied();
   }
 }
+
+// This is used for communicating the name of the file to read processes to
+// start from main to Run.
+const char *child_list_file;
 
 // This is the callback for when core creates the file indicating that it has
 // started.
@@ -546,7 +603,6 @@ void Run(void *watch) {
 
   std::ifstream list_file(child_list_file);
   
-  // while it's not at EOF
   while (true) {
     std::string child_name;
     getline(list_file, child_name);
@@ -560,8 +616,8 @@ void Run(void *watch) {
   }
 
   EventUniquePtr sigchld(event_new(libevent_base.get(), SIGCHLD,
-  				   EV_SIGNAL | EV_PERSIST,
-				   sigchld_received, NULL));
+                                   EV_SIGNAL | EV_PERSIST,
+                                   SigCHLDReceived, NULL));
   event_add(sigchld.release(), NULL);
 }
 
@@ -570,27 +626,27 @@ void Main() {
   // TODO(brians) tell logging that using the root logger from here until we
   // bring up shm is ok
 
-  group_leader = setpgrp();
+  if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
+    LOG(FATAL, "setpgid(0, 0) failed with %d: %s\n", errno, strerror(errno));
+  }
 
   // Make sure that we kill all children when we exit.
-  atexit(exit_handler);
+  atexit(ExitHandler);
   // Do it on some signals too (ones that we otherwise tend to receive and then
   // leave all of our children going).
-  signal(SIGHUP, signal_pg_kill_handler);
-  signal(SIGINT, signal_pg_kill_handler);
-  signal(SIGQUIT, signal_pg_kill_handler);
-  signal(SIGILL, signal_pg_kill_handler);
-  signal(SIGABRT, signal_pg_kill_handler);
-  signal(SIGFPE, signal_pg_kill_handler);
-  signal(SIGSEGV, signal_pg_kill_handler);
-  signal(SIGPIPE, signal_pg_kill_handler);
-  signal(SIGTERM, signal_pg_kill_handler);
-  signal(SIGBUS, signal_pg_kill_handler);
-  signal(SIGXCPU, signal_pg_kill_handler);
+  signal(SIGHUP, KillChildrenSignalHandler);
+  signal(SIGINT, KillChildrenSignalHandler);
+  signal(SIGQUIT, KillChildrenSignalHandler);
+  signal(SIGILL, KillChildrenSignalHandler);
+  signal(SIGABRT, KillChildrenSignalHandler);
+  signal(SIGFPE, KillChildrenSignalHandler);
+  signal(SIGSEGV, KillChildrenSignalHandler);
+  signal(SIGPIPE, KillChildrenSignalHandler);
+  signal(SIGTERM, KillChildrenSignalHandler);
+  signal(SIGBUS, KillChildrenSignalHandler);
+  signal(SIGXCPU, KillChildrenSignalHandler);
   
   libevent_base = EventBaseUniquePtr(event_base_new());
-
-  FileWatch::Init();
 
   static const std::string kCoreTouchFileDir = "/tmp/";
   std::string core_touch_file = "starter.";
@@ -603,13 +659,12 @@ void Main() {
 
   FILE *pid_file = fopen("/tmp/starter.pid", "w");
   if (pid_file == NULL) {
-    LOG(FATAL, "fopen(/tmp/starter.pid, w) failed with %d: %s\n",
+    LOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed with %d: %s\n",
         errno, strerror(errno));
   } else {
     if (fprintf(pid_file, "%d", core->pid()) == -1) {
-      fprintf(stderr, "starter: error: fprintf(pid_file, core(=%d)) failed "
-              "with %d: %s",
-              core->pid(), errno, strerror(errno));
+      LOG(WARNING, "fprintf(%p, \"%%d\", %d) failed with %d: %s\n",
+          pid_file, core->pid(), errno, strerror(errno));
     }
     fclose(pid_file);
   }
