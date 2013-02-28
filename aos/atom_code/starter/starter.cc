@@ -157,7 +157,7 @@ class FileWatch {
     // multiple events at once.
     while (reinterpret_cast<char *>(notifyevt) < end) {
       if (watchers.count(notifyevt->wd) != 1) {
-        LOG(DEBUG, "couldn't find whose watch ID %d is\n", notifyevt->wd);
+        LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
       } else {
         watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
                                               notifyevt->name : NULL);
@@ -286,7 +286,8 @@ class Child {
   // command is the (space-separated) command to run and its arguments.
   Child(const std::string &command) : pid_(-1),
         restart_timeout_(
-            evtimer_new(libevent_base.get(), StaticDoRestart, this)) {
+            evtimer_new(libevent_base.get(), StaticDoRestart, this)),
+        stat_at_start_valid_(false) {
     const char *start, *end;
     start = command.c_str();
     while (true) {
@@ -372,12 +373,16 @@ class Child {
   // An event that restarts after kRestartWaitTime.
   EventUniquePtr restart_timeout_;
 
+  // Captured from the original file when we most recently started a new child
+  // process. Used to see if it actually changes or not.
+  struct stat stat_at_start_;
+  bool stat_at_start_valid_;
+
   static void StaticFileModified(void *self) {
     static_cast<Child *>(self)->FileModified();
   }
 
   void FileModified() {
-    LOG(DEBUG, "file for %s modified\n", name());
     struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
     // This will reset the timeout again if it hasn't run yet.
     evtimer_add(restart_timeout_.get(), &restart_time_timeval);
@@ -389,7 +394,19 @@ class Child {
 
   // Called after somebody else has finished modifying the file.
   void DoRestart() {
-    // TODO(brians) see if mtime changed before actually restarting
+    if (stat_at_start_valid_) {
+      struct stat current_stat;
+      if (stat(original_binary_.c_str(), &current_stat) == -1) {
+        LOG(FATAL, "stat(%s, %p) failed with %d: %s\n",
+            original_binary_.c_str(), &current_stat, errno, strerror(errno));
+      }
+      if (current_stat.st_mtime == stat_at_start_.st_mtime) {
+        LOG(DEBUG, "ignoring trigger for %s because mtime didn't change\n",
+            name());
+        return;
+      }
+    }
+
     if (pid_ != -1) {
       LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
       if (kill(pid_, SIGTERM) == -1) {
@@ -447,6 +464,12 @@ class Child {
       LOG(FATAL, "link('%s', '%s') failed because of %d: %s\n",
           original_binary_.c_str(), binary_.c_str(), errno, strerror(errno));
     }
+
+    if (stat(original_binary_.c_str(), &stat_at_start_) == -1) {
+      LOG(FATAL, "stat(%s, %p) failed with %d: %s\n",
+          original_binary_.c_str(), &stat_at_start_, errno, strerror(errno));
+    }
+    stat_at_start_valid_ = true;
 
     if ((pid_ = fork()) == 0) {
       ssize_t args_size = args_.size();
