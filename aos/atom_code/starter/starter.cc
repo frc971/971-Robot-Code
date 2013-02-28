@@ -48,6 +48,7 @@ using ::std::unique_ptr;
 namespace aos {
 namespace starter {
 
+// TODO(brians): split out the c++ libevent wrapper stuff into its own file(s)
 class EventBaseDeleter {
  public:
   void operator()(event_base *base) {
@@ -69,6 +70,7 @@ typedef unique_ptr<event, EventDeleter> EventUniquePtr;
 
 // Watches a file path for modifications. Once created, keeps watching until
 // destroyed or RemoveWatch() is called.
+// TODO(brians): split this out into its own file + tests
 class FileWatch {
  public:
   // Will call callback(value) when filename is modified.
@@ -541,8 +543,8 @@ void KillChildrenSignalHandler(int signum) {
   // and we should just kill everybody immediately.
   // This is a list of all of the signals that mean some form of "nicely stop".
   KillChildren(signum == SIGHUP || signum == SIGINT || signum == SIGQUIT ||
-                signum == SIGABRT || signum == SIGPIPE || signum == SIGTERM ||
-                signum == SIGXCPU);
+               signum == SIGABRT || signum == SIGPIPE || signum == SIGTERM ||
+               signum == SIGXCPU);
 }
 
 // Returns the currently running child with PID pid or an empty unique_ptr.
@@ -625,38 +627,9 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
 // start from main to Run.
 const char *child_list_file;
 
-// This is the callback for when core creates the file indicating that it has
-// started.
-void Run(void *watch) {
-  // Make it so it doesn't keep on seeing random changes in /tmp.
-  static_cast<FileWatch *>(watch)->RemoveWatch();
-
-  // It's safe now because core is up.
-  aos::InitNRT();
-
-  std::ifstream list_file(child_list_file);
-  
-  while (true) {
-    std::string child_name;
-    getline(list_file, child_name);
-    if ((list_file.rdstate() & std::ios_base::eofbit) != 0) {
-      break;
-    }
-    if (list_file.rdstate() != 0) {
-      LOG(FATAL, "reading input file %s failed\n", child_list_file);
-    }
-    children.push_back(unique_ptr<Child>(new Child(child_name)));
-  }
-
-  EventUniquePtr sigchld(event_new(libevent_base.get(), SIGCHLD,
-                                   EV_SIGNAL | EV_PERSIST,
-                                   SigCHLDReceived, NULL));
-  event_add(sigchld.release(), NULL);
-}
-
 void Main() {
   logging::Init();
-  // TODO(brians) tell logging that using the root logger from here until we
+  // TODO(brians): tell logging that using the root logger from here until we
   // bring up shm is ok
 
   if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
@@ -707,6 +680,35 @@ void Main() {
 
   event_base_dispatch(libevent_base.get());
   LOG(FATAL, "event_base_dispatch(%p) returned\n", libevent_base.get());
+}
+
+// This is the callback for when core creates the file indicating that it has
+// started.
+void Run(void *watch) {
+  // Make it so it doesn't keep on seeing random changes in /tmp.
+  static_cast<FileWatch *>(watch)->RemoveWatch();
+
+  // It's safe now because core is up.
+  aos::InitNRT();
+
+  std::ifstream list_file(child_list_file);
+  
+  while (true) {
+    std::string child_name;
+    getline(list_file, child_name);
+    if ((list_file.rdstate() & std::ios_base::eofbit) != 0) {
+      break;
+    }
+    if (list_file.rdstate() != 0) {
+      LOG(FATAL, "reading input file %s failed\n", child_list_file);
+    }
+    children.push_back(unique_ptr<Child>(new Child(child_name)));
+  }
+
+  EventUniquePtr sigchld(event_new(libevent_base.get(), SIGCHLD,
+                                   EV_SIGNAL | EV_PERSIST,
+                                   SigCHLDReceived, NULL));
+  event_add(sigchld.release(), NULL);
 }
 
 }  // namespace starter
