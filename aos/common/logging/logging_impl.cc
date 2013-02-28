@@ -66,8 +66,21 @@ void ExecuteFormat(char *output, size_t output_size,
   }
 }
 
+void NewContext() {
+  Context::Delete();
+}
+
 void *DoInit() {
   SetGlobalImplementation(new RootLogImplementation());
+
+#ifndef __VXWORKS__
+  if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
+                     NewContext /*child*/) != 0) {
+    LOG(FATAL, "pthread_atfork(NULL, NULL, %p) failed\n",
+        NewContext);
+  }
+#endif
+
   return NULL;
 }
 
