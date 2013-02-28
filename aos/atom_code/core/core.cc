@@ -1,19 +1,15 @@
-// This is the core scheduling system
-//
-// Purposes: All shared memory gets allocated here.
-//
-
 #include <sys/select.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 
 #include <string>
 
 #include "aos/atom_code/init.h"
+
+// Initializes shared memory. This is the only file that will create the shared
+// memory file if it doesn't already exist (and set everything up).
 
 int main(int argc, char **argv) {
   aos::InitCreate();

@@ -52,6 +52,7 @@ namespace starter {
 class EventBaseDeleter {
  public:
   void operator()(event_base *base) {
+    if (base == NULL) return;
     event_base_free(base);
   }
 };
@@ -61,6 +62,7 @@ EventBaseUniquePtr libevent_base;
 class EventDeleter {
  public:
   void operator()(event *evt) {
+    if (evt == NULL) return;
     if (event_del(evt) != 0) {
       LOG(WARNING, "event_del(%p) failed\n", evt);
     }
@@ -77,12 +79,16 @@ class FileWatch {
   // If value is NULL, then a pointer to this object will be passed instead.
   //
   // Watching for file creations is slightly different. To do that, pass true
-  // for create, the directory where the file will be created for filename, and
+  // as create, the directory where the file will be created for filename, and
   // the name of the file (without directory name) for check_filename.
   FileWatch(std::string filename,
-            std::function<void(void *)> callback, void *value,
-            bool create = false, std::string check_filename = "")
-      : filename_(filename), callback_(callback), value_(value),
+            std::function<void(void *)> callback,
+            void *value,
+            bool create = false,
+            std::string check_filename = "")
+      : filename_(filename),
+        callback_(callback),
+        value_(value),
         check_filename_(check_filename) {
     init_once.Get();
 
@@ -357,7 +363,7 @@ class Child {
 
   // Only kMaxRestartsNumber restarts will be allowed in kMaxRestartsTime.
   static const time::Time kMaxRestartsTime;
-  static const size_t kMaxRestartsNumber = 5;
+  static const size_t kMaxRestartsNumber = 4;
   // How long to wait if it gets restarted too many times.
   static const time::Time kResumeWait;
 
@@ -503,8 +509,8 @@ class Child {
 };
 const time::Time Child::kProcessDieTime = time::Time::InSeconds(0.5);
 const time::Time Child::kMaxRestartsTime = time::Time::InSeconds(2);
-const time::Time Child::kResumeWait = time::Time::InSeconds(1.5);
-const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1.5);
+const time::Time Child::kResumeWait = time::Time::InSeconds(2);
+const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1);
 
 // This is where all of the Child instances except core live.
 std::vector<unique_ptr<Child>> children;
@@ -627,6 +633,7 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
 // start from main to Run.
 const char *child_list_file;
 
+void Run(void *watch);
 void Main() {
   logging::Init();
   // TODO(brians): tell logging that using the root logger from here until we
@@ -711,17 +718,28 @@ void Run(void *watch) {
   event_add(sigchld.release(), NULL);
 }
 
+const char *kArgsHelp = "[OPTION]... START_LIST\n"
+    "Start all of the robot code binaries in START_LIST.\n"
+    "\n"
+    "START_LIST is the file to read binaries (looked up on PATH) to run.\n"
+    "  --help        display this help and exit\n";
+void PrintHelp() {
+  fprintf(stderr, "Usage: %s %s", program_invocation_name, kArgsHelp);
+}
+
 }  // namespace starter
 }  // namespace aos
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    fputs("starter: error: need an argument specifying what file to use\n",
-          stderr);
+  if (argc != 2) {
+    aos::starter::PrintHelp();
     exit(EXIT_FAILURE);
-  } else if(argc > 2) {
-    fputs("starter: warning: too many arguments\n", stderr);
   }
+  if (strcmp(argv[1], "--help") == 0) {
+    aos::starter::PrintHelp();
+    exit(EXIT_SUCCESS);
+  }
+
   aos::starter::child_list_file = argv[1];
 
   aos::starter::Main();
