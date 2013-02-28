@@ -21,7 +21,7 @@ TEST(TimeTest, timespecConversions) {
 TEST(TimeTest, timevalConversions) {
   timeval start{1234, 5678};  // NOLINT
   Time time(start);
-  EXPECT_EQ(start.tv_sec, static_cast<signed time_t>(time.sec()));
+  EXPECT_EQ(start.tv_sec, static_cast<long>(time.sec()));
   EXPECT_EQ(start.tv_usec, time.nsec() / Time::kNSecInUSec);
   timeval end = time.ToTimeval();
   EXPECT_EQ(start.tv_sec, end.tv_sec);
