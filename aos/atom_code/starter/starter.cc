@@ -34,6 +34,10 @@
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.
 //
+// Throughout, the code is not terribly concerned with thread safety because
+// there is only 1 thread. It does some setup and then lets inotify run things
+// when appropriate.
+//
 // NOTE: This program should never exit nicely. It catches all nice attempts to
 // exit, forwards them to all of the children that it has started, waits for
 // them to exit nicely, and then SIGKILLs anybody left (which will always
@@ -197,13 +201,15 @@ class FileWatch {
   // The watch descriptor or -1 if we don't have one any more.
   int watch_;
 
-  // Map from watch IDs to instances.
-  // <https://patchwork.kernel.org/patch/73192/> says they won't get reused, but
-  // that shouldn't be counted on because we might have a
-  // modified/different version/whatever kernel.
+  // Map from watch IDs to instances of this class.
+  // <https://patchwork.kernel.org/patch/73192/> ("inotify: do not reuse watch
+  // descriptors") says they won't get reused, but that shouldn't be counted on
+  // because we might have a modified/different version/whatever kernel.
   static std::map<int, FileWatch *> watchers;
   // The inotify(7) file descriptor.
   static int notify_fd;
+
+  DISALLOW_COPY_AND_ASSIGN(FileWatch);
 };
 ::aos::Once<void> FileWatch::init_once(FileWatch::Init);
 std::map<int, FileWatch *> FileWatch::watchers;
@@ -353,31 +359,6 @@ class Child {
   // How long to wait if it gets restarted too many times.
   static const time::Time kResumeWait;
 
-  // A history of the times that this process has been restarted.
-  std::queue<time::Time, std::list<time::Time>> restarts_;
-
-  // The currently running child's PID or NULL.
-  pid_t pid_;
-
-  // All of the arguments (including the name of the binary).
-  std::deque<std::string> args_;
-
-  // The name of the real binary that we were told to run.
-  std::string original_binary_;
-  // The name of the file that we're actually running.
-  std::string binary_;
-
-  // Watches original_binary_.
-  unique_ptr<FileWatch> watcher_;
-
-  // An event that restarts after kRestartWaitTime.
-  EventUniquePtr restart_timeout_;
-
-  // Captured from the original file when we most recently started a new child
-  // process. Used to see if it actually changes or not.
-  struct stat stat_at_start_;
-  bool stat_at_start_valid_;
-
   static void StaticFileModified(void *self) {
     static_cast<Child *>(self)->FileModified();
   }
@@ -490,6 +471,33 @@ class Child {
           binary_.c_str(), errno, strerror(errno));
     }
   }
+
+  // A history of the times that this process has been restarted.
+  std::queue<time::Time, std::list<time::Time>> restarts_;
+
+  // The currently running child's PID or NULL.
+  pid_t pid_;
+
+  // All of the arguments (including the name of the binary).
+  std::deque<std::string> args_;
+
+  // The name of the real binary that we were told to run.
+  std::string original_binary_;
+  // The name of the file that we're actually running.
+  std::string binary_;
+
+  // Watches original_binary_.
+  unique_ptr<FileWatch> watcher_;
+
+  // An event that restarts after kRestartWaitTime.
+  EventUniquePtr restart_timeout_;
+
+  // Captured from the original file when we most recently started a new child
+  // process. Used to see if it actually changes or not.
+  struct stat stat_at_start_;
+  bool stat_at_start_valid_;
+
+  DISALLOW_COPY_AND_ASSIGN(Child);
 };
 const time::Time Child::kProcessDieTime = time::Time::InSeconds(0.5);
 const time::Time Child::kMaxRestartsTime = time::Time::InSeconds(2);
