@@ -25,7 +25,8 @@ struct ZeroSwitchValue {
     edge_encoder = ntoh(edge_encoder);
   }
 };
-static_assert(shm_ok<ZeroSwitchValue>::value, "it's getting sent over the wire");
+static_assert(shm_ok<ZeroSwitchValue>::value,
+              "it's getting sent over the wire");
 
 }  // namespace aos
 
