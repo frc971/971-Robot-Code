@@ -5,6 +5,8 @@
 
 #include "aos/common/logging/logging.h"
 
+#include "aos/common/logging/logging.h"
+
 namespace aos {
 
 Mutex::Mutex() : impl_(semBCreate(SEM_Q_PRIORITY, SEM_FULL)) {
