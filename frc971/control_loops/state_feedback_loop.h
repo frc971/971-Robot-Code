@@ -73,9 +73,9 @@ class StateFeedbackPlant {
 
  protected:
   // these are accessible from non-templated subclasses
-  static constexpr int kNumStates = number_of_states;
-  static constexpr int kNumOutputs = number_of_outputs;
-  static constexpr int kNumInputs = number_of_inputs;
+  static const int kNumStates = number_of_states;
+  static const int kNumOutputs = number_of_outputs;
+  static const int kNumInputs = number_of_inputs;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -150,9 +150,9 @@ class StateFeedbackLoop {
 
  protected:
   // these are accessible from non-templated subclasses
-  static constexpr int kNumStates = number_of_states;
-  static constexpr int kNumOutputs = number_of_outputs;
-  static constexpr int kNumInputs = number_of_inputs;
+  static const int kNumStates = number_of_states;
+  static const int kNumOutputs = number_of_outputs;
+  static const int kNumInputs = number_of_inputs;
 };
 
 #endif  // FRC971_CONTROL_LOOPS_STATEFEEDBACKLOOP_H_
