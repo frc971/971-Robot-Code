@@ -121,6 +121,11 @@ struct Time {
         (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInMSec));
   }
 
+  // Returns the time represented in fractional seconds.
+  double ToSeconds() const {
+    return static_cast<double>(sec_) + static_cast<double>(nsec_) / kNSecInSec;
+  }
+
   #ifndef SWIG
   Time &operator+=(const Time &rhs);
   Time &operator-=(const Time &rhs);

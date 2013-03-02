@@ -1,0 +1,93 @@
+#include "gtest/gtest.h"
+
+#include "Eigen/Dense"
+
+#include "aos/common/util/trapezoid_profile.h"
+
+namespace aos {
+namespace util {
+namespace testing {
+
+class TrapezoidProfileTest : public ::testing::Test {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+ protected:
+  TrapezoidProfileTest() : profile_(delta_time) {
+    position_.setZero();
+    profile_.set_maximum_acceleration(0.75);
+    profile_.set_maximum_velocity(1.75);
+  }
+
+  // Runs an iteration.
+  void RunIteration(double goal_position,
+                    double goal_velocity) {
+    position_ = profile_.Update(goal_position,
+                                goal_velocity);
+  }
+
+  const Eigen::Matrix<double, 2, 1> &position() { return position_; }
+
+  TrapezoidProfile profile_;
+
+  ::testing::AssertionResult At(double position, double velocity) {
+    if (velocity != position_(1)) {
+      return ::testing::AssertionFailure() << "velocity is " << position_(1) <<
+          " not " << velocity;
+    }
+    if (position != position_(0)) {
+      return ::testing::AssertionFailure() << "position is " << position_(0) <<
+          " not " << position;
+    }
+    return ::testing::AssertionSuccess() << "at " << position <<
+        " moving at " << velocity;
+  }
+
+ private:
+  static const time::Time delta_time;
+
+  Eigen::Matrix<double, 2, 1> position_;
+};
+const time::Time TrapezoidProfileTest::delta_time = time::Time::InSeconds(0.01);
+
+TEST_F(TrapezoidProfileTest, ReachesGoal) {
+  for (int i = 0; i < 450; ++i) {
+    RunIteration(3, 0);
+  }
+  EXPECT_TRUE(At(3, 0));
+}
+
+// There is some somewhat tricky code for dealing with going backwards.
+TEST_F(TrapezoidProfileTest, Backwards) {
+  for (int i = 0; i < 400; ++i) {
+    RunIteration(-2, 0);
+  }
+  EXPECT_TRUE(At(-2, 0));
+}
+
+TEST_F(TrapezoidProfileTest, SwitchGoalInMiddle) {
+  for (int i = 0; i < 200; ++i) {
+    RunIteration(-2, 0);
+  }
+  EXPECT_FALSE(At(-2, 0));
+  for (int i = 0; i < 550; ++i) {
+    RunIteration(0, 0);
+  }
+  EXPECT_TRUE(At(0, 0));
+}
+
+// Checks to make sure that it hits top speed.
+TEST_F(TrapezoidProfileTest, TopSpeed) {
+  for (int i = 0; i < 200; ++i) {
+    RunIteration(4, 0);
+  }
+  EXPECT_NEAR(1.5, position()(1), 10e-5);
+  for (int i = 0; i < 2000; ++i) {
+    RunIteration(4, 0);
+  }
+  EXPECT_TRUE(At(4, 0));
+}
+
+}  // namespace testing
+}  // namespace util
+}  // namespace aos

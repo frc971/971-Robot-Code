@@ -21,6 +21,7 @@
         #'../common/messages/messages.gyp:*', # TODO(brians) did this test ever exist?
         '../atom_code/logging/logging.gyp:*',
         '../common/common.gyp:die_test',
+        '../common/util/util.gyp:trapezoid_profile_test',
         'Common',
       ],
     },

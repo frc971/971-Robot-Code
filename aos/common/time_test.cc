@@ -107,6 +107,10 @@ TEST(TimeTest, InSeconds) {
             Time::InSeconds(2.55));
 }
 
+TEST(TimeTest, ToSeconds) {
+  EXPECT_EQ(13.23, Time::InSeconds(13.23).ToSeconds());
+}
+
 #ifdef __VXWORKS__
 TEST(TimeTest, ToTicks) {
   EXPECT_EQ(sysClkRateGet() / 100,
