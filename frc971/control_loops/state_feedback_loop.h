@@ -153,6 +153,22 @@ class StateFeedbackLoop {
     }
   }
 
+  // Starts the file for storing recorded data.
+  // file_name is the name of the file to write to.
+  virtual void StartDataFile(const char *file_name) {
+    FILE *data_file = fopen(file_name, "w");
+    fprintf(data_file, "time, power, position");
+    fclose(data_file);
+  }
+
+  // Records a single data point to the file of file_name,
+  // using a time of time.
+  virtual void RecordDatum(const char *file_name, double time) {
+    FILE *data_file = fopen(file_name, "a");
+    fprintf(data_file, "\n%f, %f, %f", time, U[0], Y[0]);
+    fclose(data_file);
+  }
+
  protected:
   // these are accessible from non-templated subclasses
   static const int kNumStates = number_of_states;

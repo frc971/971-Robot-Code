@@ -8,6 +8,7 @@
         '../control_loops/control_loops.gyp:DriveTrain',
         '../control_loops/wrist/wrist.gyp:wrist',
         '../control_loops/wrist/wrist.gyp:wrist_lib_test',
+        '../control_loops/control_loops.gyp:hall_effect_lib_test',
         '../input/input.gyp:JoystickReader',
         '../input/input.gyp:SensorReader',
         '../input/input.gyp:GyroReader',
