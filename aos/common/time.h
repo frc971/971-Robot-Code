@@ -60,6 +60,7 @@ struct Time {
     return ans;
   }
   #endif  // SWIG
+
   // CLOCK_MONOTONIC on the fitpc and CLOCK_REALTIME on the cRIO because the
   // cRIO doesn't have any others.
   // CLOCK_REALTIME is the default realtime clock and CLOCK_MONOTONIC doesn't
@@ -158,6 +159,15 @@ struct Time {
     nsec_ = nsec;
     Check();
   }
+
+  // Enables returning the mock time value for Now instead of checking the
+  // system clock.  This should only be used when testing things depending on
+  // time, or many things may/will break.
+  static void EnableMockTime(const Time now);
+  // Sets now when time is being mocked.
+  static void SetMockTime(const Time now);
+  // Disables mocking time.
+  static void DisableMockTime();
 
  private:
   int32_t sec_, nsec_;
