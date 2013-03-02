@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/atom_code/output/MotorOutput.h"
@@ -11,25 +12,25 @@ namespace constants {
 
 namespace {
 
-constexpr double kCompHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
-constexpr double kPracticeHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
+const double kCompHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
+const double kPracticeHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
 
-constexpr double kCompHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
-constexpr double kPracticeHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
+const double kCompHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
+const double kPracticeHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
 
-constexpr double kPracticeHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
-constexpr double kCompHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kPracticeHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kCompHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
 
-constexpr double kPracticeHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
-constexpr double kCompHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kPracticeHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kCompHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
 
-constexpr double kPracticeHorizontalUpperLimit = 93 * M_PI / 180.0;
-constexpr double kCompHorizontalUpperLimit = 93 * M_PI / 180.0;
+const double kPracticeHorizontalUpperLimit = 93 * M_PI / 180.0;
+const double kCompHorizontalUpperLimit = 93 * M_PI / 180.0;
 
-constexpr double kPracticeHorizontalLowerLimit = -36 * M_PI / 180.0;
-constexpr double kCompHorizontalLowerLimit = -36 * M_PI / 180.0;
+const double kPracticeHorizontalLowerLimit = -36 * M_PI / 180.0;
+const double kCompHorizontalLowerLimit = -36 * M_PI / 180.0;
 
-constexpr double kHorizontalZeroingSpeed = 1.0;
+const double kHorizontalZeroingSpeed = 1.0;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;

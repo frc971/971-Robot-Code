@@ -5,7 +5,7 @@
 int main() {
   ::aos::Init();
   frc971::control_loops::WristMotor wrist;
-  looper.Run();
+  wrist.Run();
   ::aos::Cleanup();
   return 0;
 }

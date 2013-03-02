@@ -6,6 +6,7 @@
       'dependencies': [
         '<(AOS)/build/aos_all.gyp:Atom',
         '../control_loops/control_loops.gyp:DriveTrain',
+        '../control_loops/control_loops.gyp:wrist',
         '../control_loops/control_loops.gyp:wrist_lib_test',
         '../input/input.gyp:JoystickReader',
         '../input/input.gyp:SensorReader',

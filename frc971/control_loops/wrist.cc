@@ -125,6 +125,8 @@ void WristMotor::RunIteration(
         zeroing_position_ = absolute_position;
         // Clear the observer state.
         loop_->X_hat << absolute_position, 0.0;
+        // Set the goal to here to make it so it doesn't move when disabled.
+        loop_->R = loop_->X_hat;
         // Only progress if we are enabled.
         if (::aos::robot_state->enabled) {
           if (position->hall_effect) {

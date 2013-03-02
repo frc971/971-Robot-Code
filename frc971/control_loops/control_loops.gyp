@@ -37,6 +37,11 @@
         '<(DEPTH)/frc971/frc971.gyp:common',
         '<(EXTERNALS):eigen',
       ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):eigen',
+        '<(AOS)/common/common.gyp:controls',
+        'control_loops',
+      ],
     },
     {
       'target_name': 'wrist_lib_test',
