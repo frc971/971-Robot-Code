@@ -17,7 +17,9 @@ class Wrist(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 1.5
     # Moment of inertia of the wrist in kg m^2
-    self.J = 0.51
+    # TODO(aschuh): Measure this in reality.  It doesn't seem high enough.
+    # James measured 0.51, but that can't be right given what I am seeing.
+    self.J = 1.51
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -43,7 +45,9 @@ class Wrist(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.89, .85])
+    self.PlaceControllerPoles([.84, .84])
+
+    print self.K
 
     self.rpl = .05
     self.ipl = 0.008
@@ -79,10 +83,13 @@ def main(argv):
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
-    print "Expected .cc file name and .h file name"
+    print "Expected .h file name and .cc file name"
   else:
-    wrist.DumpHeaderFile(argv[1])
-    wrist.DumpCppFile(argv[2], argv[1])
+    if argv[1][-3:] == '.cc':
+      print '.cc file is second'
+    else:
+      wrist.DumpHeaderFile(argv[1])
+      wrist.DumpCppFile(argv[2], argv[1])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

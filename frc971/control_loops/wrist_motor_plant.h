@@ -12,4 +12,5 @@ StateFeedbackLoop<2, 1, 1> MakeWristLoop();
 
 }  // namespace frc971
 }  // namespace control_loops
+
 #endif  // FRC971_CONTROL_LOOPS_WRIST_MOTOR_PLANT_H_
