@@ -3,16 +3,18 @@
 
 #include "WPILib/InterruptableSensorBase.h"
 
-#include "aos/crio/shared_libs/interrupt_bridge.h"
-
 namespace aos {
 namespace crio {
 
 // An InterruptBridge that notifies based on interrupts from a WPILib
 // InterruptableSensorBase object (which DigitalInput is an example of).
+// Not actually a subclass because WPILib appears to not really use actual
+// interrupts.
 template<typename T>
-class InterruptNotifier : public InterruptBridge<T> {
+class InterruptNotifier {
  public:
+  typedef void (*Handler)(T *param);
+
   // This object will hold a reference to sensor, but will not free it. This
   // object will take ownership of everything related to interrupts for sensor
   // (ie this constructor will call sensor->RequestInterrupts).
@@ -20,10 +22,9 @@ class InterruptNotifier : public InterruptBridge<T> {
   // constructed in) when this constructor is called.
   // Any setup of sensor that is required should happen before Start() is
   // called, but after this constructor (ie SetUpSourceEdge).
-  InterruptNotifier(typename InterruptBridge<T>::Handler handler,
+  InterruptNotifier(Handler handler,
                     InterruptableSensorBase *sensor,
-                    T *param = NULL,
-                    int priority = InterruptBridge<T>::kDefaultPriority);
+                    T *param = NULL);
   virtual ~InterruptNotifier();
 
   // Starts calling the handler whenever the interrupt triggers.
@@ -31,11 +32,14 @@ class InterruptNotifier : public InterruptBridge<T> {
 
  private:
   // The only docs that seem to exist on the first arg is that it's named
-  // interruptAssertedMask in WPILib/ChipObject/tInterruptManager.h
+  // interruptAssertedMask in WPILib/ChipObject/tInterruptManager.h.
   // The second arg is the general callback parameter which will be a pointer to
   // an instance. This function calls Notify() on that instance.
   static void StaticNotify(uint32_t, void *self_in);
   virtual void StopNotifications();
+
+  const Handler handler_;
+  T *const param_;
 
   InterruptableSensorBase *const sensor_;
   DISALLOW_COPY_AND_ASSIGN(InterruptNotifier<T>);

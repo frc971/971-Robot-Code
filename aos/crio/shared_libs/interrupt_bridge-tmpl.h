@@ -4,8 +4,7 @@
 
 #include "WPILib/Task.h"
 
-#include "aos/aos_core.h"
-#include "aos/crio/motor_server/MotorServer.h"
+#include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
 
 extern "C" {
@@ -208,7 +207,6 @@ void WDInterruptNotifier<T>::StopNotifications() {
 //   cmpwi
 //   bne
 //   li
-// NOTE: This macro is used in interrupt_notifier-tmpl.h too.
 #define ASM_COMMENT(str) __asm__("# " str)
 template<typename T>
 void WDInterruptNotifier<T>::StaticNotify(void *self_in) {
