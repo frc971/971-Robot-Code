@@ -193,7 +193,7 @@ class ControlLoop(object):
       fd.write(self._namespace_start)
       fd.write(self._DumpPlantHeader(self._name))
       fd.write('\n')
-      fd.write(self._DumpLoopHeader("Wrist"))
+      fd.write(self._DumpLoopHeader(self._name))
       fd.write('\n')
       fd.write(self._namespace_end)
       fd.write('\n')
