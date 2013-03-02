@@ -91,10 +91,10 @@ class WristMotor
   double last_off_position_;
 
   // Local cache of the wrist geometry constants.
-  double horizontal_lower_limit_;
-  double horizontal_upper_limit_;
-  double horizontal_hall_effect_start_angle_;
-  double horizontal_zeroing_speed_;
+  double wrist_lower_limit_;
+  double wrist_upper_limit_;
+  double wrist_hall_effect_start_angle_;
+  double wrist_zeroing_speed_;
 
   DISALLOW_COPY_AND_ASSIGN(WristMotor);
 };

@@ -57,12 +57,12 @@ class WristMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    double horizontal_hall_effect_start_angle;
-    ASSERT_TRUE(constants::horizontal_hall_effect_start_angle(
-                    &horizontal_hall_effect_start_angle));
-    double horizontal_hall_effect_stop_angle;
-    ASSERT_TRUE(constants::horizontal_hall_effect_stop_angle(
-                    &horizontal_hall_effect_stop_angle));
+    double wrist_hall_effect_start_angle;
+    ASSERT_TRUE(constants::wrist_hall_effect_start_angle(
+                    &wrist_hall_effect_start_angle));
+    double wrist_hall_effect_stop_angle;
+    ASSERT_TRUE(constants::wrist_hall_effect_stop_angle(
+                    &wrist_hall_effect_stop_angle));
 
     ::aos::ScopedMessagePtr<control_loops::WristLoop::Position> position =
         my_wrist_loop_.position.MakeMessage();
@@ -71,8 +71,8 @@ class WristMotorSimulation {
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
     double abs_position = GetAbsolutePosition();
-    if (abs_position >= horizontal_hall_effect_start_angle &&
-        abs_position <= horizontal_hall_effect_stop_angle) {
+    if (abs_position >= wrist_hall_effect_start_angle &&
+        abs_position <= wrist_hall_effect_stop_angle) {
       position->hall_effect = true;
     } else {
       position->hall_effect = false;
@@ -80,11 +80,11 @@ class WristMotorSimulation {
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
-    if ((last_position_ < horizontal_hall_effect_start_angle ||
-         last_position_ > horizontal_hall_effect_stop_angle) &&
+    if ((last_position_ < wrist_hall_effect_start_angle ||
+         last_position_ > wrist_hall_effect_stop_angle) &&
          position->hall_effect) {
       calibration_value_ =
-          horizontal_hall_effect_start_angle - initial_position_;
+          wrist_hall_effect_start_angle - initial_position_;
     }
 
     position->calibration = calibration_value_;
@@ -99,15 +99,17 @@ class WristMotorSimulation {
     wrist_plant_->Update();
 
     // Assert that we are in the right physical range.
-    double horizontal_upper_physical_limit;
-    ASSERT_TRUE(constants::horizontal_upper_physical_limit(
-                    &horizontal_upper_physical_limit));
-    double horizontal_lower_physical_limit;
-    ASSERT_TRUE(constants::horizontal_lower_physical_limit(
-                    &horizontal_lower_physical_limit));
+    double wrist_upper_physical_limit;
+    ASSERT_TRUE(constants::wrist_upper_physical_limit(
+                    &wrist_upper_physical_limit));
+    double wrist_lower_physical_limit;
+    ASSERT_TRUE(constants::wrist_lower_physical_limit(
+                    &wrist_lower_physical_limit));
 
-    EXPECT_GE(horizontal_upper_physical_limit, wrist_plant_->Y(0, 0));
-    EXPECT_LE(horizontal_lower_physical_limit, wrist_plant_->Y(0, 0));
+    EXPECT_GE(wrist_upper_physical_limit,
+              wrist_plant_->Y(0, 0));
+    EXPECT_LE(wrist_lower_physical_limit,
+              wrist_plant_->Y(0, 0));
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> wrist_plant_;

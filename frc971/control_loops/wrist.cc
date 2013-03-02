@@ -25,22 +25,22 @@ WristMotor::WristMotor(control_loops::WristLoop *my_wrist)
 }
 
 bool WristMotor::FetchConstants() {
-  if (!constants::horizontal_lower_limit(&horizontal_lower_limit_)) {
-    LOG(ERROR, "Failed to fetch the horizontal lower limit constant.\n");
+  if (!constants::wrist_lower_limit(&wrist_lower_limit_)) {
+    LOG(ERROR, "Failed to fetch the wrist lower limit constant.\n");
     return false;
   }
-  if (!constants::horizontal_upper_limit(&horizontal_upper_limit_)) {
-    LOG(ERROR, "Failed to fetch the horizontal upper limit constant.\n");
+  if (!constants::wrist_upper_limit(&wrist_upper_limit_)) {
+    LOG(ERROR, "Failed to fetch the wrist upper limit constant.\n");
     return false;
   }
-  if (!constants::horizontal_hall_effect_start_angle(
-          &horizontal_hall_effect_start_angle_)) {
-    LOG(ERROR, "Failed to fetch the horizontal start angle constant.\n");
+  if (!constants::wrist_hall_effect_start_angle(
+          &wrist_hall_effect_start_angle_)) {
+    LOG(ERROR, "Failed to fetch the wrist start angle constant.\n");
     return false;
   }
-  if (!constants::horizontal_zeroing_speed(
-          &horizontal_zeroing_speed_)) {
-    LOG(ERROR, "Failed to fetch the horizontal zeroing speed constant.\n");
+  if (!constants::wrist_zeroing_speed(
+          &wrist_zeroing_speed_)) {
+    LOG(ERROR, "Failed to fetch the wrist zeroing speed constant.\n");
     return false;
   }
 
@@ -48,18 +48,18 @@ bool WristMotor::FetchConstants() {
 }
 
 double WristMotor::ClipGoal(double goal) const {
-  return std::min(horizontal_upper_limit_,
-                  std::max(horizontal_lower_limit_, goal));
+  return std::min(wrist_upper_limit_,
+                  std::max(wrist_lower_limit_, goal));
 }
 
 const double kMaxZeroingVoltage = 5.0;
 
 void WristMotor::WristStateFeedbackLoop::CapU() {
   if (wrist_motor_->state_ == READY) {
-    if (Y(0, 0) >= wrist_motor_->horizontal_upper_limit_) {
+    if (Y(0, 0) >= wrist_motor_->wrist_upper_limit_) {
       U(0, 0) = std::min(0.0, U(0, 0));
     }
-    if (Y(0, 0) <= wrist_motor_->horizontal_lower_limit_) {
+    if (Y(0, 0) <= wrist_motor_->wrist_lower_limit_) {
       U(0, 0) = std::max(0.0, U(0, 0));
     }
   }
@@ -104,7 +104,7 @@ void WristMotor::RunIteration(
   double absolute_position;
   if (position) {
     absolute_position =
-        position->pos + horizontal_hall_effect_start_angle_;
+        position->pos + wrist_hall_effect_start_angle_;
     if (state_ == READY) {
       absolute_position -= zero_offset_;
     }
@@ -146,8 +146,8 @@ void WristMotor::RunIteration(
         state_ = ZEROING;
       } else {
         // Slowly creep off the sensor.
-        zeroing_position_ -= horizontal_zeroing_speed_ / 100;
-        loop_->R << zeroing_position_, -horizontal_zeroing_speed_;
+        zeroing_position_ -= wrist_zeroing_speed_ / 100;
+        loop_->R << zeroing_position_, -wrist_zeroing_speed_;
         break;
       }
     case ZEROING:
@@ -176,8 +176,8 @@ void WristMotor::RunIteration(
         }
       } else {
         // Slowly creep towards the sensor.
-        zeroing_position_ += horizontal_zeroing_speed_ / 100;
-        loop_->R << zeroing_position_, horizontal_zeroing_speed_;
+        zeroing_position_ += wrist_zeroing_speed_ / 100;
+        loop_->R << zeroing_position_, wrist_zeroing_speed_;
       }
       break;
 

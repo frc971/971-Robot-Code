@@ -12,43 +12,44 @@ namespace constants {
 
 namespace {
 
-const double kCompHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
-const double kPracticeHorizontalHallEffectStartAngle = 72 * M_PI / 180.0;
+const double kCompWristHallEffectStartAngle = 72 * M_PI / 180.0;
+const double kPracticeWristHallEffectStartAngle = 72 * M_PI / 180.0;
 
-const double kCompHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
-const double kPracticeHorizontalHallEffectStopAngle = 100 * M_PI / 180.0;
+const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
+const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;
 
-const double kPracticeHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
-const double kCompHorizontalUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kPracticeWristUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kCompWristUpperPhysicalLimit = 95 * M_PI / 180.0;
 
-const double kPracticeHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
-const double kCompHorizontalLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kPracticeWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kCompWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
 
-const double kPracticeHorizontalUpperLimit = 93 * M_PI / 180.0;
-const double kCompHorizontalUpperLimit = 93 * M_PI / 180.0;
+const double kPracticeWristUpperLimit = 93 * M_PI / 180.0;
+const double kCompWristUpperLimit = 93 * M_PI / 180.0;
 
-const double kPracticeHorizontalLowerLimit = -36 * M_PI / 180.0;
-const double kCompHorizontalLowerLimit = -36 * M_PI / 180.0;
+const double kPracticeWristLowerLimit = -36 * M_PI / 180.0;
+const double kCompWristLowerLimit = -36 * M_PI / 180.0;
 
-const double kHorizontalZeroingSpeed = 1.0;
+const double kWristZeroingSpeed = 1.0;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
 struct Values {
   // Wrist hall effect positive and negative edges.
-  double horizontal_hall_effect_start_angle;
-  double horizontal_hall_effect_stop_angle;
+  double wrist_hall_effect_start_angle;
+  double wrist_hall_effect_stop_angle;
 
   // Upper and lower extreme limits of travel for the wrist.
-  double horizontal_upper_limit;
-  double horizontal_lower_limit;
+  double wrist_upper_limit;
+  double wrist_lower_limit;
+
   // Physical limits.  These are here for testing.
-  double horizontal_upper_physical_limit;
-  double horizontal_lower_physical_limit;
+  double wrist_upper_physical_limit;
+  double wrist_lower_physical_limit;
 
   // Zeroing speed.
-  double horizontal_zeroing_speed;
+  double wrist_zeroing_speed;
 
   // what camera_center returns
   int camera_center;
@@ -65,23 +66,23 @@ const Values *GetValues() {
         ::aos::robot_state->team_id);
     switch (::aos::robot_state->team_id) {
       case kCompTeamNumber:
-        values = new Values{kCompHorizontalHallEffectStartAngle,
-                            kCompHorizontalHallEffectStopAngle,
-                            kCompHorizontalUpperLimit,
-                            kCompHorizontalLowerLimit,
-                            kCompHorizontalUpperPhysicalLimit,
-                            kCompHorizontalLowerPhysicalLimit,
-                            kHorizontalZeroingSpeed,
+        values = new Values{kCompWristHallEffectStartAngle,
+                            kCompWristHallEffectStopAngle,
+                            kCompWristUpperLimit,
+                            kCompWristLowerLimit,
+                            kCompWristUpperPhysicalLimit,
+                            kCompWristLowerPhysicalLimit,
+                            kWristZeroingSpeed,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
-        values = new Values{kPracticeHorizontalHallEffectStartAngle,
-                            kPracticeHorizontalHallEffectStopAngle,
-                            kPracticeHorizontalUpperLimit,
-                            kPracticeHorizontalLowerLimit,
-                            kPracticeHorizontalUpperPhysicalLimit,
-                            kPracticeHorizontalLowerPhysicalLimit,
-                            kHorizontalZeroingSpeed,
+        values = new Values{kPracticeWristHallEffectStartAngle,
+                            kPracticeWristHallEffectStopAngle,
+                            kPracticeWristUpperLimit,
+                            kPracticeWristLowerLimit,
+                            kPracticeWristUpperPhysicalLimit,
+                            kPracticeWristLowerPhysicalLimit,
+                            kWristZeroingSpeed,
                             kPracticeCameraCenter};
         break;
       default:
@@ -95,50 +96,50 @@ const Values *GetValues() {
 
 }  // namespace
 
-bool horizontal_hall_effect_start_angle(double *angle) {
+bool wrist_hall_effect_start_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->horizontal_hall_effect_start_angle;
+  *angle = values->wrist_hall_effect_start_angle;
   return true;
 }
-bool horizontal_hall_effect_stop_angle(double *angle) {
+bool wrist_hall_effect_stop_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->horizontal_hall_effect_stop_angle;
+  *angle = values->wrist_hall_effect_stop_angle;
   return true;
 }
-bool horizontal_upper_limit(double *angle) {
+bool wrist_upper_limit(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->horizontal_upper_limit;
-  return true;
-}
-
-bool horizontal_lower_limit(double *angle) {
-  const Values *const values = GetValues();
-  if (values == NULL) return false;
-  *angle = values->horizontal_lower_limit;
+  *angle = values->wrist_upper_limit;
   return true;
 }
 
-bool horizontal_upper_physical_limit(double *angle) {
+bool wrist_lower_limit(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->horizontal_upper_physical_limit;
+  *angle = values->wrist_lower_limit;
   return true;
 }
 
-bool horizontal_lower_physical_limit(double *angle) {
+bool wrist_upper_physical_limit(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->horizontal_lower_physical_limit;
+  *angle = values->wrist_upper_physical_limit;
   return true;
 }
 
-bool horizontal_zeroing_speed(double *speed) {
+bool wrist_lower_physical_limit(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *speed = values->horizontal_zeroing_speed;
+  *angle = values->wrist_lower_physical_limit;
+  return true;
+}
+
+bool wrist_zeroing_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->wrist_zeroing_speed;
   return true;
 }
 
