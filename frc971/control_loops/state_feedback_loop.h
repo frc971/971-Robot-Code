@@ -89,6 +89,7 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_states, 1> X_hat;
   Eigen::Matrix<double, number_of_states, 1> R;
   Eigen::Matrix<double, number_of_inputs, 1> U;
+  Eigen::Matrix<double, number_of_inputs, 1> U_uncapped;
   Eigen::Matrix<double, number_of_outputs, 1> U_ff;
   Eigen::Matrix<double, number_of_outputs, 1> Y;
 
@@ -106,6 +107,7 @@ class StateFeedbackLoop {
     X_hat.setZero();
     R.setZero();
     U.setZero();
+    U_uncapped.setZero();
     U_ff.setZero();
     Y.setZero();
   }
@@ -137,7 +139,7 @@ class StateFeedbackLoop {
         U[i] = 0.0;
       }
     } else {
-      U.noalias() = K * (R - X_hat);
+      U = U_uncapped = K * (R - X_hat);
       CapU();
     }
 

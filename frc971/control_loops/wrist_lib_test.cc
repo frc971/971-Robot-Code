@@ -244,6 +244,9 @@ TEST_F(WristTest, DisableGoesUninitialized) {
         // Give the loop a couple cycled to get the message and then verify that
         // it is in the correct state.
         EXPECT_EQ(WristMotor::UNINITIALIZED, wrist_motor_.state_);
+        // When disabled, we should be applying 0 power.
+        EXPECT_TRUE(my_wrist_loop_.output.FetchLatest());
+        EXPECT_EQ(0, my_wrist_loop_.output->voltage);
       }
     } else {
       SendDSPacket(true);
@@ -255,6 +258,75 @@ TEST_F(WristTest, DisableGoesUninitialized) {
 
     wrist_motor_.Iterate();
     wrist_motor_plant_.Simulate();
+  }
+  VerifyNearGoal();
+}
+
+// Tests that the wrist can't get too far away from the zeroing position if the
+// zeroing position is saturating the goal.
+TEST_F(WristTest, NoWindupNegative) {
+  double saved_zeroing_position = 0;
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 500; ++i) {
+    wrist_motor_plant_.SendPositionMessage();
+    if (i == 50) {
+      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      // Move the zeroing position far away and verify that it gets moved back.
+      saved_zeroing_position = wrist_motor_.zeroing_position_;
+      wrist_motor_.zeroing_position_ = -100.0;
+    } else if (i == 51) {
+      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroing_position_, 0.4);
+    }
+    if (wrist_motor_.state_ != WristMotor::READY) {
+      if (i == 51) {
+        // The cycle after we kick the zero position is the only cycle during
+        // which we should expect to see a high uncapped power during zeroing.
+        EXPECT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+      } else {
+        EXPECT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+      }
+    }
+
+
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
+
+// Tests that the wrist can't get too far away from the zeroing position if the
+// zeroing position is saturating the goal.
+TEST_F(WristTest, NoWindupPositive) {
+  double saved_zeroing_position = 0;
+  my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 500; ++i) {
+    wrist_motor_plant_.SendPositionMessage();
+    if (i == 50) {
+      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      // Move the zeroing position far away and verify that it gets moved back.
+      saved_zeroing_position = wrist_motor_.zeroing_position_;
+      wrist_motor_.zeroing_position_ = 100.0;
+    } else {
+      if (i == 51) {
+        EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+        EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroing_position_, 0.4);
+      }
+    }
+    if (wrist_motor_.state_ != WristMotor::READY) {
+      if (i == 51) {
+        // The cycle after we kick the zero position is the only cycle during
+        // which we should expect to see a high uncapped power during zeroing.
+        EXPECT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+      } else {
+        EXPECT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+      }
+    }
+
+    wrist_motor_.Iterate();
+    wrist_motor_plant_.Simulate();
+    SendDSPacket(true);
   }
   VerifyNearGoal();
 }

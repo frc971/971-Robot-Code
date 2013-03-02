@@ -18,7 +18,7 @@ namespace control_loops {
 
 WristMotor::WristMotor(control_loops::WristLoop *my_wrist)
     : aos::control_loops::ControlLoop<control_loops::WristLoop>(my_wrist),
-      loop_(new StateFeedbackLoop<2, 1, 1>(MakeWristLoop())),
+      loop_(new WristStateFeedbackLoop(MakeWristLoop(), this)),
       state_(UNINITIALIZED),
       error_count_(0),
       zero_offset_(0.0) {
@@ -52,23 +52,22 @@ double WristMotor::ClipGoal(double goal) const {
                   std::max(horizontal_lower_limit_, goal));
 }
 
-double WristMotor::LimitVoltage(double absolute_position,
-                                double voltage) const {
-  if (state_ == READY) {
-    if (absolute_position >= horizontal_upper_limit_) {
-      voltage = std::min(0.0, voltage);
+const double kMaxZeroingVoltage = 5.0;
+
+void WristMotor::WristStateFeedbackLoop::CapU() {
+  if (wrist_motor_->state_ == READY) {
+    if (Y(0, 0) >= wrist_motor_->horizontal_upper_limit_) {
+      U(0, 0) = std::min(0.0, U(0, 0));
     }
-    if (absolute_position <= horizontal_lower_limit_) {
-      voltage = std::max(0.0, voltage);
+    if (Y(0, 0) <= wrist_motor_->horizontal_lower_limit_) {
+      U(0, 0) = std::max(0.0, U(0, 0));
     }
   }
 
-  double limit = (state_ == READY) ? 12.0 : 5.0;
-  // TODO(aschuh): Remove this line when we are done testing.
-  //limit = std::min(0.3, limit);
-  voltage = std::min(limit, voltage);
-  voltage = std::max(-limit, voltage);
-  return voltage;
+  double limit = (wrist_motor_->state_ == READY) ? 12.0 : kMaxZeroingVoltage;
+
+  U(0, 0) = std::min(limit, U(0, 0));
+  U(0, 0) = std::max(-limit, U(0, 0));
 }
 
 // Positive angle is up, and positive power is up.
@@ -197,6 +196,28 @@ void WristMotor::RunIteration(
   // Update the observer.
   loop_->Update(position != NULL, output == NULL);
 
+  // Verify that the zeroing goal hasn't run away.
+  switch (state_) {
+    case UNINITIALIZED:
+    case READY:
+    case ESTOP:
+      // Not zeroing.  No worries.
+      break;
+    case MOVING_OFF:
+    case ZEROING:
+      // Check if we have cliped and adjust the goal.
+      if (loop_->U_uncapped(0, 0) > kMaxZeroingVoltage) {
+        double dx = (loop_->U_uncapped(0, 0) -
+                     kMaxZeroingVoltage) / loop_->K(0, 0);
+        zeroing_position_ -= dx;
+      } else if(loop_->U_uncapped(0, 0) < -kMaxZeroingVoltage) {
+        double dx = (loop_->U_uncapped(0, 0) +
+                     kMaxZeroingVoltage) / loop_->K(0, 0);
+        zeroing_position_ -= dx;
+      }
+      break;
+  }
+
   if (position) {
     LOG(DEBUG, "pos=%f zero=%f currently %f hall: %s\n",
         position->pos, zero_offset_, absolute_position,
@@ -204,7 +225,7 @@ void WristMotor::RunIteration(
   }
 
   if (output) {
-    output->voltage = LimitVoltage(absolute_position, loop_->U(0, 0));
+    output->voltage = loop_->U(0, 0);
   }
 }
 

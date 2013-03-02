@@ -14,7 +14,12 @@ namespace control_loops {
 namespace testing {
 class WristTest_RezeroWithMissingPos_Test;
 class WristTest_DisableGoesUninitialized_Test;
+class WristTest_NoWindup_Test;
+class WristTest_NoWindupPositive_Test;
+class WristTest_NoWindupNegative_Test;
 };
+
+class WristMotor;
 
 class WristMotor
     : public aos::control_loops::ControlLoop<control_loops::WristLoop> {
@@ -33,6 +38,9 @@ class WristMotor
   // Friend the test classes for acces to the internal state.
   friend class testing::WristTest_RezeroWithMissingPos_Test;
   friend class testing::WristTest_DisableGoesUninitialized_Test;
+  friend class testing::WristTest_NoWindupPositive_Test;
+  friend class testing::WristTest_NoWindupNegative_Test;
+  friend class WristStateFeedbackLoop;
 
   // Fetches and locally caches the latest set of constants.
   bool FetchConstants();
@@ -40,12 +48,25 @@ class WristMotor
   // Clips the goal to be inside the limits and returns the clipped goal.
   // Requires the constants to have already been fetched.
   double ClipGoal(double goal) const;
-  // Limits the voltage depending whether the wrist has been zeroed or is out of
-  // range to make it safer to use.
-  double LimitVoltage(double absolute_position, double voltage) const;
+
+  // This class implements the CapU function correctly given all the extra
+  // information that we know about from the wrist motor.
+  class WristStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
+   public:
+    WristStateFeedbackLoop(StateFeedbackLoop<2, 1, 1> loop,
+                           WristMotor *wrist_motor)
+        : StateFeedbackLoop<2, 1, 1>(loop),
+          wrist_motor_(wrist_motor) {
+    }
+
+    // Caps U, but this time respects the state of the wrist as well.
+    virtual void CapU();
+   private:
+    WristMotor *wrist_motor_;
+  };
 
   // The state feedback control loop to talk to.
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> loop_;
+  ::std::unique_ptr<WristStateFeedbackLoop> loop_;
 
   // Enum to store the state of the internal zeroing state machine.
   enum State {
