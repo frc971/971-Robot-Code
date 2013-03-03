@@ -114,6 +114,7 @@ TEST_F(OnceTest, MultipleInstances) {
 // Tests calling Reset() to run the function a second time.
 TEST_F(OnceTest, Recalculate) {
   Once<int> once(Function);
+  once.Reset();
 
   EXPECT_EQ(value_, *once.Get());
   EXPECT_EQ(1, times_run_);
