@@ -17,7 +17,42 @@ class IndexMotor
     : public aos::control_loops::ControlLoop<control_loops::IndexLoop> {
  public:
   explicit IndexMotor(
-      control_loops::IndexLoop *my_index = &control_loops::index);
+      control_loops::IndexLoop *my_index = &control_loops::index_loop);
+
+  static const double kTransferStartPosition;
+  static const double kIndexStartPosition;
+  // The distance from where the disc first grabs on the indexer to where it
+  // just bairly clears the loader.
+  static const double kIndexFreeLength;
+  // The distance to where the disc just starts to enter the loader.
+  static const double kLoaderFreeStopPosition;
+
+  // Distance that the grabber pulls the disc in by.
+  static const double kGrabberLength;
+  // Distance to where the grabber takes over.
+  static const double kGrabberStartPosition;
+
+  // The distance to where the disc hits the back of the loader and is ready to
+  // lift.
+  static const double kReadyToLiftPosition;
+
+  static const double kGrabberMovementVelocity;
+  // TODO(aschuh): This depends on the shooter angle...
+  // Distance to where the shooter is up and ready to shoot.
+  static const double kLifterStopPosition;
+  static const double kLifterMovementVelocity;
+
+  // Distance to where the disc has been launched.
+  // TODO(aschuh): This depends on the shooter angle...
+  static const double kEjectorStopPosition;
+  static const double kEjectorMovementVelocity;
+
+  // Start and stop position of the bottom disc detect sensor in meters.
+  static const double kBottomDiscDetectStart;
+  static const double kBottomDiscDetectStop;
+
+  static const double kTopDiscDetectStart;
+  static const double kTopDiscDetectStop;
 
   // Converts the angle of the indexer to the angle of the disc.
   static double ConvertIndexToDiscAngle(const double angle);
@@ -25,38 +60,73 @@ class IndexMotor
   // disc has traveled.
   static double ConvertIndexToDiscPosition(const double angle);
 
+  // Converts the angle of the transfer roller to the position that the center
+  // of the disc has traveled.
+  static double ConvertTransferToDiscPosition(const double angle);
+
+  // Converts the distance around the indexer to the position of
+  // the index roller.
+  static double ConvertDiscPositionToIndex(const double position);
   // Converts the angle around the indexer to the position of the index roller.
   static double ConvertDiscAngleToIndex(const double angle);
   // Converts the angle around the indexer to the position of the disc in the
   // indexer.
   static double ConvertDiscAngleToDiscPosition(const double angle);
+  // Converts the distance around the indexer to the angle of the disc around
+  // the indexer.
+  static double ConvertDiscPositionToDiscAngle(const double position);
 
   // Disc radius in meters.
-  const static double kDiscRadius;
+  static const double kDiscRadius;
   // Roller radius in meters.
-  const static double kRollerRadius;
+  static const double kRollerRadius;
+  // Transfer roller radius in meters.
+  static const double kTransferRollerRadius;
 
+  // Time that it takes to grab the disc in cycles.
+  static const int kGrabbingDelay;
+  // Time that it takes to lift the loader in cycles.
+  static const int kLiftingDelay;
+  // Time that it takes to shoot the disc in cycles.
+  static const int kShootingDelay;
+  // Time that it takes to lower the loader in cycles.
+  static const int kLoweringDelay;
+
+  // Object representing a Frisbee tracked by the indexer.
   class Frisbee {
    public:
     Frisbee()
         : bottom_posedge_time_(0, 0),
-          bottom_negedge_time_(0, 0),
-          index_start_time_(0, 0) {
+          bottom_negedge_time_(0, 0) {
       Reset();
     }
 
+    // Resets a Frisbee so it can be reused.
     void Reset() {
       bottom_posedge_time_ = ::aos::time::Time(0, 0);
       bottom_negedge_time_ = ::aos::time::Time(0, 0);
-      index_start_time_ = ::aos::time::Time(0, 0);
       has_been_indexed_ = false;
       index_start_position_ = 0.0;
     }
 
+    // Returns true if the position is valid.
+    bool has_position() const {
+      return has_been_indexed_;
+    }
+
+    // Returns the most up to date and accurate position that we have for the
+    // disc.  This is the indexer position that the disc grabbed at.
+    double position() const {
+      return index_start_position_;
+    }
+
+    // Posedge and negedge disc times.
     ::aos::time::Time bottom_posedge_time_;
     ::aos::time::Time bottom_negedge_time_;
-    ::aos::time::Time index_start_time_;
+
+    // True if the disc has a valid index position.
     bool has_been_indexed_;
+    // Location of the index when the disc first contacted it.
     double index_start_position_;
   };
 
@@ -68,23 +138,20 @@ class IndexMotor
       control_loops::IndexLoop::Status *status);
 
  private:
-  // Fetches and locally caches the latest set of constants.
-  bool FetchConstants();
+  // Sets disc_position to the minimum or maximum disc position.
+  // Returns true if there were discs, and false if there weren't.
+  // On false, disc_position is left unmodified.
+  bool MinDiscPosition(double *disc_position);
+  bool MaxDiscPosition(double *disc_position);
 
   // The state feedback control loop to talk to for the index.
   ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> wrist_loop_;
-
-  // Local cache of the index geometry constants.
-  double horizontal_lower_limit_;
-  double horizontal_upper_limit_;
-  double horizontal_hall_effect_start_angle_;
-  double horizontal_zeroing_speed_;
 
   // Count of the number of discs that we have collected.
   uint32_t hopper_disc_count_;
   uint32_t total_disc_count_;
 
-  enum Goal {
+  enum class Goal {
     // Hold position, in a low power state.
     HOLD = 0,
     // Get ready to load discs by shifting the discs down.
@@ -97,19 +164,59 @@ class IndexMotor
     SHOOT = 4
   };
 
+  // These two enums command and track the loader loading discs into the
+  // shooter.
+  enum class LoaderState {
+    // Open and down, ready to accept a disc.
+    READY,
+    // Closing the grabber.
+    GRABBING,
+    // Grabber closed.
+    GRABBED,
+    // Lifting the disc.
+    LIFTING,
+    // Disc lifted.
+    LIFTED,
+    // Ejecting the disc into the shooter.
+    SHOOTING,
+    // The disc has been shot.
+    SHOOT,
+    // Lowering the loader back down.
+    LOWERING,
+    // The indexer is lowered.
+    LOWERED
+  };
+
+  // TODO(aschuh): If we are grabbed and asked to be ready, now what?
+  // LOG ?
+  enum class LoaderGoal {
+    // Get the loader ready to accept another disc.
+    READY,
+    // Grab a disc now.
+    GRAB,
+    // Lift it up, shoot, and reset.
+    // Waits to shoot until the shooter is stable.
+    // Resets the goal to READY once one disc has been shot.
+    SHOOT_AND_RESET
+  };
+
   // The current goal
   Goal safe_goal_;
+
+  // Loader goal, state, and counter.
+  LoaderGoal loader_goal_;
+  LoaderState loader_state_;
+  int loader_countdown_;
 
   // Current state of the pistons.
   bool loader_up_;
   bool disc_clamped_;
   bool disc_ejected_;
 
-  //::aos::time::Time disc_bottom_posedge_time_;
-  //::aos::time::Time disc_bottom_negedge_time_;
   // The frisbee that is flying through the transfer rollers.
   Frisbee transfer_frisbee_;
 
+  // Bottom disc detect from the last valid packet for detecting edges.
   bool last_bottom_disc_detect_;
 
   // Frisbees are in order such that the newest frisbee is on the front.

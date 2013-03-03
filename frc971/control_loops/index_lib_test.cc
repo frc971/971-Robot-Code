@@ -18,120 +18,150 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
-// TODO(aschuh): Figure out these constants.
-const double kTransferStartPosition = 0.0;
-const double kIndexStartPosition = 0.5;
-const double kIndexStopPosition = 2.5;
-const double kGrabberStopPosition = 2.625;
-const double kGrabberMovementVelocity = 0.4;
-
-// Start and stop position of the bottom disc detect sensor in meters.
-const double kBottomDiscDetectStart = -0.08;
-const double kBottomDiscDetectStop = 0.200025;
-
-const double kTopDiscDetectStart = 18.0;
-const double kTopDiscDetectStop = 19.0;
-
-// Disc radius in meters.
-const double kDiscRadius = 11.875 * 0.0254 / 2;
-// Roller radius in meters.
-const double kRollerRadius = 2.0 * 0.0254 / 2;
-
 class Frisbee {
  public:
   // Creates a frisbee starting at the specified position in the frisbee path,
   // and with the transfer and index rollers at the specified positions.
   Frisbee(double transfer_roller_position,
           double index_roller_position,
-          double position = 0.0)
+          double position = IndexMotor::kBottomDiscDetectStart)
       : transfer_roller_position_(transfer_roller_position),
         index_roller_position_(index_roller_position),
-        clamped_(false),
-        position_(position) {
+        position_(position),
+        has_been_shot_(false) {
   }
 
   // Returns true if the frisbee is controlled by the transfer roller.
   bool IsTouchingTransfer() const {
-    return (position_ >= kTransferStartPosition &&
-            position_ <= kIndexStartPosition);
+    return (position_ >= IndexMotor::kBottomDiscDetectStart &&
+            position_ <= IndexMotor::kIndexStartPosition);
+  }
+
+  // Returns true if the frisbee is in a place where it is unsafe to grab.
+  bool IsUnsafeToGrab() const {
+    return (position_ > (IndexMotor::kLoaderFreeStopPosition) &&
+            position_ < IndexMotor::kGrabberStartPosition);
   }
 
   // Returns true if the frisbee is controlled by the indexing roller.
   bool IsTouchingIndex() const {
-    return (position_ >= kIndexStartPosition &&
-            position_ <= kIndexStopPosition);
+    return (position_ >= IndexMotor::kIndexStartPosition &&
+            position_ < IndexMotor::kGrabberStartPosition);
+  }
+
+  // Returns true if the frisbee is in a position such that the disc can be
+  // lifted.
+  bool IsUnsafeToLift() const {
+    return (position_ >= IndexMotor::kLoaderFreeStopPosition &&
+            position_ <= IndexMotor::kReadyToLiftPosition);
   }
 
   // Returns true if the frisbee is in a position such that the grabber will
   // pull it into the loader.
   bool IsTouchingGrabber() const {
-    return (position_ >= kIndexStopPosition &&
-            position_ <= kGrabberStopPosition);
+    return (position_ >= IndexMotor::kGrabberStartPosition &&
+            position_ < IndexMotor::kReadyToLiftPosition);
+  }
+
+  // Returns true if the frisbee is in a position such that the disc can be
+  // lifted.
+  bool IsTouchingLoader() const {
+    return (position_ >= IndexMotor::kReadyToLiftPosition &&
+            position_ < IndexMotor::kLifterStopPosition);
+  }
+
+  // Returns true if the frisbee is touching the ejector.
+  bool IsTouchingEjector() const {
+    return (position_ >= IndexMotor::kLifterStopPosition &&
+            position_ < IndexMotor::kEjectorStopPosition);
   }
 
   // Returns true if the disc is triggering the bottom disc detect sensor.
   bool bottom_disc_detect() const {
-    return (position_ >= kBottomDiscDetectStart &&
-            position_ <= kBottomDiscDetectStop);
+    return (position_ >= IndexMotor::kBottomDiscDetectStart &&
+            position_ <= IndexMotor::kBottomDiscDetectStop);
   }
 
   // Returns true if the disc is triggering the top disc detect sensor.
   bool top_disc_detect() const {
-    return (position_ >= kTopDiscDetectStart &&
-            position_ <= kTopDiscDetectStop);
-  }
-
-  // Converts the angle of the indexer to the distance traveled by the center of
-  // the disc.
-  double ConvertIndexToDiscPosition(const double angle) const {
-    return (angle * (kDiscRadius + kRollerRadius) /
-            (1 + (kDiscRadius * 2 + kRollerRadius) / kRollerRadius));
-  }
-
-  // Converts the angle of the transfer to the distance traveled by the center
-  // of the disc.
-  double ConvertTransferToDiscPosition(const double angle) const {
-    return ConvertIndexToDiscPosition(angle);
+    return (position_ >= IndexMotor::kTopDiscDetectStart &&
+            position_ <= IndexMotor::kTopDiscDetectStop);
   }
 
   // Updates the position of the frisbee in the frisbee path.
   void UpdatePosition(double transfer_roller_position,
                       double index_roller_position,
-                      bool clamped) {
-    // TODO(aschuh): Assert that you can't slide the frisbee through the
-    // clamp.
-    if (IsTouchingTransfer()) {
-      position_ += ConvertTransferToDiscPosition(transfer_roller_position -
-                                                 transfer_roller_position_);
+                      bool clamped,
+                      bool lifted,
+                      bool ejected) {
+    if (IsTouchingTransfer() || position() < 0.0) {
+      position_ += IndexMotor::ConvertTransferToDiscPosition(
+          transfer_roller_position - transfer_roller_position_);
+      printf("Transfer Roller: ");
     } else if (IsTouchingIndex()) {
-      position_ += ConvertIndexToDiscPosition(index_roller_position -
-                                              index_roller_position_);
+      position_ += ::std::min(
+          IndexMotor::ConvertIndexToDiscPosition(
+            index_roller_position - index_roller_position_),
+          IndexMotor::kGrabberStartPosition);
+      // Verify that we aren't trying to grab or lift when it isn't safe.
+      EXPECT_FALSE(clamped && IsUnsafeToGrab());
+      EXPECT_FALSE(lifted && IsUnsafeToLift());
+      printf("Index: ");
     } else if (IsTouchingGrabber()) {
       if (clamped) {
-        position_ = ::std::min(position_ + kGrabberMovementVelocity / 100.0,
-                               kGrabberStopPosition);
+        const double grabber_dx = IndexMotor::kGrabberMovementVelocity / 100.0;
+        position_ = ::std::min(position_ + grabber_dx,
+                               IndexMotor::kReadyToLiftPosition);
       }
-    } else {
-      // TODO(aschuh): Deal with lifting.
-      // TODO(aschuh): Deal with shooting.
-      // We must wait long enough for the disc to leave the loader before
-      // lowering.
+      EXPECT_FALSE(lifted);
+      EXPECT_FALSE(ejected);
+      printf("Grabber: ");
+    } else if (IsTouchingLoader()) {
+      if (lifted) {
+        const double lifter_dx = IndexMotor::kLifterMovementVelocity / 100.0;
+        position_ = ::std::min(position_ + lifter_dx,
+                               IndexMotor::kLifterStopPosition);
+      }
+      EXPECT_TRUE(clamped);
+      EXPECT_FALSE(ejected);
+      printf("Loader: ");
+    } else if (IsTouchingEjector()) {
+      EXPECT_TRUE(lifted);
+      if (ejected) {
+        const double ejector_dx = IndexMotor::kEjectorMovementVelocity / 100.0;
+        position_ = ::std::min(position_ + ejector_dx,
+                               IndexMotor::kEjectorStopPosition);
+        EXPECT_FALSE(clamped);
+      }
+      printf("Ejector: ");
+    } else if (position_ == IndexMotor::kEjectorStopPosition) {
+      printf("Shot: ");
+      has_been_shot_ = true;
     }
     transfer_roller_position_ = transfer_roller_position;
     index_roller_position_ = index_roller_position;
-    clamped_ = clamped;
     printf("Disc is at %f\n", position_);
   }
 
+  // Returns if the disc has been shot and can be removed from the robot.
+  bool has_been_shot() const {
+    return has_been_shot_;
+  }
+
+  // Returns the position of the disc in the system.
   double position() const {
     return position_;
   }
 
  private:
+  // Previous transfer roller position for computing deltas.
   double transfer_roller_position_;
+  // Previous index roller position for computing deltas.
   double index_roller_position_;
-  bool clamped_;
+  // Position in the robot.
   double position_;
+  // True if the disc has been shot.
+  bool has_been_shot_;
 };
 
 
@@ -175,12 +205,42 @@ class IndexMotorSimulation {
     return top_disc_detect;
   }
 
-  void UpdateDiscs(bool clamped) {
+  // Updates all discs, and verifies that the state of the system is sane.
+  void UpdateDiscs(bool clamped, bool lifted, bool ejected) {
     for (Frisbee &frisbee : frisbees) {
-      // TODO(aschuh): Simulate clamping
       frisbee.UpdatePosition(transfer_roller_position(),
                              index_roller_position(),
-                             clamped);
+                             clamped,
+                             lifted,
+                             ejected);
+    }
+
+    // Make sure nobody is too close to anybody else.
+    Frisbee *last_frisbee = NULL;
+    for (Frisbee &frisbee : frisbees) {
+      if (last_frisbee) {
+        const double distance = frisbee.position() - last_frisbee->position();
+        double min_distance;
+        if (frisbee.IsTouchingTransfer() ||
+            last_frisbee->IsTouchingTransfer()) {
+          min_distance = 0.3;
+        } else {
+          min_distance =
+              IndexMotor::ConvertDiscAngleToDiscPosition(M_PI * 2.0 / 3.0);
+        }
+
+        EXPECT_LT(min_distance, ::std::abs(distance)) << "Discs too close";
+      }
+      last_frisbee = &frisbee;
+    }
+
+    // Remove any shot frisbees.
+    for (int i = 0; i < static_cast<int>(frisbees.size()); ++i) {
+      if (frisbees[i].has_been_shot()) {
+        shot_frisbees.push_back(frisbees[i]);
+        frisbees.erase(frisbees.begin() + i);
+        --i;
+      }
     }
   }
 
@@ -210,9 +270,12 @@ class IndexMotorSimulation {
            my_index_loop_.output->index_voltage,
            transfer_roller_position(), index_roller_position());
 
-    UpdateDiscs(my_index_loop_.output->disc_clamped);
+    UpdateDiscs(my_index_loop_.output->disc_clamped,
+                my_index_loop_.output->loader_up,
+                my_index_loop_.output->disc_ejected);
   }
 
+  // Plants for the index and transfer rollers.
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> index_plant_;
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> transfer_plant_;
 
@@ -226,9 +289,13 @@ class IndexMotorSimulation {
     return transfer_plant_->Y(0, 0);
   }
 
+  // Frisbees being tracked in the robot.
   ::std::vector<Frisbee> frisbees;
+  // Frisbees that have been shot.
+  ::std::vector<Frisbee> shot_frisbees;
 
  private:
+  // Control loop for the indexer.
   IndexLoop my_index_loop_;
 };
 
@@ -269,6 +336,54 @@ class IndexTest : public ::testing::Test {
     Time::SetMockTime(Time::InMS(10 * loop_count_));
   }
 
+  // Loads n discs into the indexer at the bottom.
+  void LoadNDiscs(int n) {
+    my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+    // Spin it up.
+    for (int i = 0; i < 100; ++i) {
+      index_motor_plant_.SendPositionMessage();
+      index_motor_.Iterate();
+      index_motor_plant_.Simulate();
+      SendDSPacket(true);
+      UpdateTime();
+    }
+
+    EXPECT_EQ(0, index_motor_plant_.index_roller_position());
+    my_index_loop_.status.FetchLatest();
+    EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+
+    // Stuff N discs in, waiting between each one for a tiny bit of time so they
+    // don't get too close.
+    int num_grabbed = 0;
+    int wait_counter = 0;
+    while (num_grabbed < n) {
+      index_motor_plant_.SendPositionMessage();
+      index_motor_.Iterate();
+      if (!index_motor_plant_.BottomDiscDetect()) {
+        if (wait_counter > 0) {
+          --wait_counter;
+        } else {
+          index_motor_plant_.InsertDisc();
+          ++num_grabbed;
+          wait_counter = 3;
+        }
+      }
+      index_motor_plant_.Simulate();
+      SendDSPacket(true);
+      UpdateTime();
+    }
+
+    // Settle.
+    for (int i = 0; i < 100; ++i) {
+      index_motor_plant_.SendPositionMessage();
+      index_motor_.Iterate();
+      index_motor_plant_.Simulate();
+      SendDSPacket(true);
+      UpdateTime();
+    }
+  }
+
+  // Copy of core that works in this process only.
   ::aos::common::testing::GlobalCoreInstance my_core;
 
   // Create a new instance of the test queue so that it invalidates the queue
@@ -280,6 +395,8 @@ class IndexTest : public ::testing::Test {
   IndexMotor index_motor_;
   IndexMotorSimulation index_motor_plant_;
 
+  // Number of loop cycles that have been executed for tracking the current
+  // time.
   int loop_count_;
 };
 
@@ -293,22 +410,222 @@ TEST_F(IndexTest, GrabSingleDisc) {
       EXPECT_EQ(0, index_motor_plant_.index_roller_position());
       index_motor_plant_.InsertDisc();
     }
+    if (i > 0) {
+      EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+      EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+    }
     index_motor_plant_.Simulate();
     SendDSPacket(true);
     UpdateTime();
   }
 
-  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+  my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
   EXPECT_EQ(static_cast<size_t>(1), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(
-      kIndexStartPosition + IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
-      index_motor_plant_.frisbees[0].position(), 0.01);
+      IndexMotor::kIndexStartPosition + IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      index_motor_plant_.frisbees[0].position(), 0.05);
 }
 
-// Test that pulling in a second disc works correctly.
-// Test that HOLD still finishes the disc correctly.
-// Test that pulling a disc down works correctly and ready_to_intake waits.
+// Tests that the index grabs 1 disc and places it at the correct position when
+// told to hold immediately after the disc starts into the bot.
+TEST_F(IndexTest, GrabAndHold) {
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  for (int i = 0; i < 200; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    if (i == 100) {
+      EXPECT_EQ(0, index_motor_plant_.index_roller_position());
+      index_motor_plant_.InsertDisc();
+    } else if (i == 102) {
+      // The disc has been seen.  Tell the indexer to now hold.
+      my_index_loop_.goal.MakeWithBuilder().goal_state(0).Send();
+    } else if (i > 102) {
+      my_index_loop_.status.FetchLatest();
+      EXPECT_FALSE(my_index_loop_.status->ready_to_intake);
+    }
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(static_cast<size_t>(1), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[0].position(), 0.04);
+}
+
+// Tests that the index grabs two discs and places them at the correct
+// positions.
+TEST_F(IndexTest, GrabTwoDiscs) {
+  LoadNDiscs(2);
+
+  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 2);
+  EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[1].position(), 0.10);
+  EXPECT_NEAR(
+      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      (index_motor_plant_.frisbees[0].position() -
+       index_motor_plant_.frisbees[1].position()), 0.10);
+}
+
+// Tests that the index grabs 2 discs, and loads one up into the loader to get
+// ready to shoot.  It then pulls the second disc back down to be ready to
+// intake more.
+TEST_F(IndexTest, ReadyGrabsOneDisc) {
+  LoadNDiscs(2);
+
+  // Lift the discs up to the top.  Wait a while to let the system settle and
+  // verify that they don't collide.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  for (int i = 0; i < 300; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  // Verify that the disc has been grabbed.
+  my_index_loop_.output.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.output->disc_clamped);
+  // And that we are preloaded.
+  my_index_loop_.status.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.status->preloaded);
+
+  // Pull the disc back down and verify that the transfer roller doesn't turn on
+  // until we are ready.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  for (int i = 0; i < 100; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+
+    EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+    EXPECT_TRUE(my_index_loop_.output.FetchLatest());
+    if (!my_index_loop_.status->ready_to_intake) {
+      EXPECT_EQ(my_index_loop_.output->transfer_voltage, 0)
+          << "Transfer should be off until indexer is ready";
+    }
+
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(my_index_loop_.status->total_disc_count, 2);
+  my_index_loop_.output.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.output->disc_clamped);
+
+  EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(IndexMotor::kReadyToLiftPosition,
+      index_motor_plant_.frisbees[0].position(), 0.01);
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[1].position(), 0.10);
+}
+
+// Tests that the index grabs 1 disc and continues to pull it in correctly when
+// in the READY_LOWER state.  The transfer roller should be disabled then.
+TEST_F(IndexTest, GrabAndReady) {
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  for (int i = 0; i < 200; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    if (i == 100) {
+      EXPECT_EQ(0, index_motor_plant_.index_roller_position());
+      index_motor_plant_.InsertDisc();
+    } else if (i == 102) {
+      my_index_loop_.goal.MakeWithBuilder().goal_state(1).Send();
+    } else if (i > 150) {
+      my_index_loop_.status.FetchLatest();
+      EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+      my_index_loop_.output.FetchLatest();
+      EXPECT_EQ(my_index_loop_.output->transfer_voltage, 0.0);
+    }
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(static_cast<size_t>(1), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[0].position(), 0.04);
+}
+
+// Tests that grabbing 4 discs ends up with 4 discs in the bot and us no longer
+// ready.
+TEST_F(IndexTest, GrabFourDiscs) {
+  LoadNDiscs(4);
+
+  EXPECT_TRUE(my_index_loop_.output.FetchLatest());
+  EXPECT_EQ(my_index_loop_.output->transfer_voltage, 0.0);
+  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 4);
+  EXPECT_FALSE(my_index_loop_.status->ready_to_intake);
+  EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      IndexMotor::kIndexStartPosition + IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      index_motor_plant_.frisbees[3].position(), 0.10);
+  EXPECT_NEAR(
+      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      (index_motor_plant_.frisbees[0].position() -
+       index_motor_plant_.frisbees[1].position()), 0.10);
+  EXPECT_NEAR(
+      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      (index_motor_plant_.frisbees[1].position() -
+       index_motor_plant_.frisbees[2].position()), 0.10);
+  EXPECT_NEAR(
+      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      (index_motor_plant_.frisbees[2].position() -
+       index_motor_plant_.frisbees[3].position()), 0.10);
+}
+
+// Tests that shooting 4 discs works.
+TEST_F(IndexTest, ShootFourDiscs) {
+  LoadNDiscs(4);
+
+  EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.frisbees.size());
+
+  my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+
+  // Lifting and shooting takes a while...
+  for (int i = 0; i < 300; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 0);
+  EXPECT_EQ(my_index_loop_.status->total_disc_count, 4);
+  my_index_loop_.output.FetchLatest();
+  EXPECT_FALSE(my_index_loop_.output->disc_clamped);
+  EXPECT_FALSE(my_index_loop_.output->loader_up);
+  EXPECT_FALSE(my_index_loop_.output->disc_ejected);
+
+  EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.shot_frisbees.size());
+}
+
+// Test that it doesn't abort preloading at the wrong time.
+
+// Test that we can loose values and handle disabling without dying.
+//  Not necesarily gracefully or anything.
 
 }  // namespace testing
 }  // namespace control_loops

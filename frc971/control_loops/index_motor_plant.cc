@@ -26,7 +26,7 @@ StateFeedbackLoop<2, 1, 1> MakeIndexLoop() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.64731520998, 56.0569452572;
   Eigen::Matrix<double, 1, 2> K;
-  K << 1.06905877421, 0.0368709177253;
+  K << 2.40538224198, 0.0619371641882;
   return StateFeedbackLoop<2, 1, 1>(L, K, MakeIndexPlant());
 }
 

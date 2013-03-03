@@ -4,8 +4,8 @@
 
 int main() {
   ::aos::Init();
-  frc971::control_loops::WristMotor wrist;
-  looper.Run();
+  frc971::control_loops::IndexMotor indexer;
+  indexer.Run();
   ::aos::Cleanup();
   return 0;
 }

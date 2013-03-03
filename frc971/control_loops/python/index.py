@@ -43,7 +43,7 @@ class Index(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.75, .6])
+    self.PlaceControllerPoles([.5, .55])
 
     self.rpl = .05
     self.ipl = 0.008
@@ -82,10 +82,13 @@ def main(argv):
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
-    print "Expected .cc file name and .h file name"
+    print "Expected .h file name and .c file name"
   else:
-    index.DumpHeaderFile(argv[1])
-    index.DumpCppFile(argv[2], argv[1])
+    if argv[1][-3:] == '.cc':
+      print '.cc file is second'
+    else:
+      index.DumpHeaderFile(argv[1])
+      index.DumpCppFile(argv[2], argv[1])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

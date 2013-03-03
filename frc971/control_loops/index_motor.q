@@ -29,8 +29,8 @@ queue_group IndexLoop {
     // Index roller.  Positive means up towards the shooter.
     double index_voltage;
     // Loader pistons.
-    bool loader_up;
     bool disc_clamped;
+    bool loader_up;
     bool disc_ejected;
   };
 
@@ -39,8 +39,9 @@ queue_group IndexLoop {
     int32_t hopper_disc_count;
     // Number of shot since reboot.
     int32_t total_disc_count;
-    // Ready to load.
+    // Disc ready in the loader.
     bool preloaded;
+    // Indexer ready to accept more discs.
     bool ready_to_intake;
   };
 
@@ -50,4 +51,4 @@ queue_group IndexLoop {
   queue Status status;
 };
 
-queue_group IndexLoop index;
+queue_group IndexLoop index_loop;
