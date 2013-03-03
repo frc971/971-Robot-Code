@@ -55,6 +55,19 @@
       ],
     },
     {
+      'target_name': 'shooter_csv',
+      'type': 'executable',
+      'sources': [
+        'shooter_csv.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:timing',
+        'shooter_loop',
+      ],
+    },
+    {
       'target_name': 'shooter',
       'type': 'executable',
       'sources': [
