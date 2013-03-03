@@ -2,4 +2,10 @@
 
 #include "aos/aos_core.h"
 
-AOS_RUN_LOOP(frc971::control_loops::ShooterMotor);
+int main() {
+  ::aos::Init();
+  frc971::control_loops::ShooterMotor shooter;
+  shooter.Run();
+  ::aos::Cleanup();
+  return 0;
+}

@@ -26,7 +26,7 @@ StateFeedbackLoop<2, 1, 1> MakeShooterLoop() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.07156131086, 28.0940195016;
   Eigen::Matrix<double, 1, 2> K;
-  K << 43.5200653183, 0.819154156845;
+  K << 0.486400730028, 0.247515916371;
   return StateFeedbackLoop<2, 1, 1>(L, K, MakeShooterPlant());
 }
 

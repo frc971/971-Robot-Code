@@ -15,7 +15,7 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
-// Class which simulates the shooter and sends out queue messages with the 
+// Class which simulates the shooter and sends out queue messages with the
 // position.
 class ShooterMotorSimulation {
  public:
@@ -28,19 +28,11 @@ class ShooterMotorSimulation {
           ".frc971.control_loops.shooter.position",
           ".frc971.control_loops.shooter.output",
           ".frc971.control_loops.shooter.status") {
-    Reinitialize();
-  }
-
-  // Resets the shooter simulation.
-  void Reinitialize() {
-    shooter_plant_->X(0, 0) = 0;
-    shooter_plant_->X(1, 0) = 0;
-    shooter_plant_->Y = shooter_plant_->C * shooter_plant_->X;
   }
 
   // Sends a queue message with the position of the shooter.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Position> position = 
+    ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Position> position =
       my_shooter_loop_.position.MakeMessage();
     position->position = shooter_plant_->Y(0, 0);
     position.Send();
@@ -49,42 +41,34 @@ class ShooterMotorSimulation {
   // Simulates shooter for a single timestep.
   void Simulate() {
     EXPECT_TRUE(my_shooter_loop_.output.FetchLatest());
-    shooter_plant_->U << my_shooter_loop_.output->voltage * 12;
+    shooter_plant_->U << my_shooter_loop_.output->voltage;
     shooter_plant_->Update();
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
+
  private:
   ShooterLoop my_shooter_loop_;
 };
 
 class ShooterTest : public ::testing::Test {
  protected:
-  // I haven't the faintest idea exactly what this line does,
-  // but without it things break.
-  ::aos::common::testing::GlobalCoreInstance my_core;
-
-  // Create a new instance of the test queue "so that it invalidates the queue
-  // that it points to Otherwise, we will have a pointed to 
-  // shared memory that is no longer valid."
-  ShooterLoop my_shooter_loop_;
-
-  // Create a control loop and simulation.
-  ShooterMotor shooter_motor_;
-  ShooterMotorSimulation shooter_motor_plant_;
-
   ShooterTest() : my_shooter_loop_(".frc971.control_loops.shooter",
-                                   0x78d8e372, 
+                                   0x78d8e372,
                                    ".frc971.control_loops.shooter.goal",
                                    ".frc971.control_loops.shooter.position",
                                    ".frc971.control_loops.shooter.output",
-                                    ".frc971.control_loops.shooter.status"), 
+                                   ".frc971.control_loops.shooter.status"),
                   shooter_motor_(&my_shooter_loop_),
                   shooter_motor_plant_() {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
     SendDSPacket(true);
+  }
+
+  virtual ~ShooterTest() {
+    ::aos::robot_state.Clear();
   }
 
   // Update the robot state. Without this, the Iteration of the control loop
@@ -104,9 +88,17 @@ class ShooterTest : public ::testing::Test {
                 10.0);
   }
 
-  virtual ~ShooterTest() {
-    ::aos::robot_state.Clear();
-  }
+  // Bring up and down Core.
+  ::aos::common::testing::GlobalCoreInstance my_core;
+
+  // Create a new instance of the test queue so that it invalidates the queue
+  // that it points to.  Otherwise, we will have a pointed to
+  // shared memory that is no longer valid.
+  ShooterLoop my_shooter_loop_;
+
+  // Create a control loop and simulation.
+  ShooterMotor shooter_motor_;
+  ShooterMotorSimulation shooter_motor_plant_;
 };
 
 // Tests that the shooter does nothing when the goal is zero.
@@ -117,6 +109,8 @@ TEST_F(ShooterTest, DoesNothing) {
   shooter_motor_.Iterate();
   shooter_motor_plant_.Simulate();
   VerifyNearGoal();
+  my_shooter_loop_.output.FetchLatest();
+  EXPECT_EQ(my_shooter_loop_.output->voltage, 0.0);
 }
 
 // Tests that the shooter spins up to speed and that it then spins down
@@ -133,13 +127,16 @@ TEST_F(ShooterTest, SpinUpAndDown) {
     is_done = my_shooter_loop_.status->ready;
   }
   VerifyNearGoal();
+
   my_shooter_loop_.goal.MakeWithBuilder().velocity(0.0).Send();
-  shooter_motor_plant_.SendPositionMessage();
-  shooter_motor_.Iterate();
-  shooter_motor_plant_.Simulate();
-  SendDSPacket(true);
-  EXPECT_TRUE(my_shooter_loop_.output.FetchLatest());
-  EXPECT_EQ(0.0, my_shooter_loop_.output->voltage);
+  for (int i = 0; i < 100; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+    EXPECT_TRUE(my_shooter_loop_.output.FetchLatest());
+    EXPECT_EQ(0.0, my_shooter_loop_.output->voltage);
+  }
 }
 
 // Test to make sure that it does not exceed the encoder's rated speed.
@@ -154,10 +151,41 @@ TEST_F(ShooterTest, RateLimitTest) {
     EXPECT_TRUE(my_shooter_loop_.status.FetchLatest());
     is_done = my_shooter_loop_.status->ready;
   }
+
   my_shooter_loop_.goal.FetchLatest();
   my_shooter_loop_.status.FetchLatest();
-  EXPECT_FALSE(std::abs(my_shooter_loop_.goal->velocity -
-              my_shooter_loop_.status->average_velocity) < 10.0);
+  EXPECT_LT(shooter_motor_.kMaxSpeed,
+            shooter_motor_plant_.shooter_plant_->X(1, 0));
+}
+
+// Tests that the shooter can spin up nicely while missing position packets.
+TEST_F(ShooterTest, MissingPositionMessages) {
+  my_shooter_loop_.goal.MakeWithBuilder().velocity(200.0).Send();
+  for (int i = 0; i < 100; ++i) {
+    if (i % 7) {
+      shooter_motor_plant_.SendPositionMessage();
+    }
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+
+  VerifyNearGoal();
+}
+
+// Tests that the shooter can spin up nicely while disabled for a while.
+TEST_F(ShooterTest, Disabled) {
+  my_shooter_loop_.goal.MakeWithBuilder().velocity(200.0).Send();
+  for (int i = 0; i < 100; ++i) {
+    if (i % 7) {
+      shooter_motor_plant_.SendPositionMessage();
+    }
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(i > 50);
+  }
+
+  VerifyNearGoal();
 }
 
 }  // namespace testing
