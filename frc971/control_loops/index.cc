@@ -183,6 +183,9 @@ void IndexMotor::RunIteration(
         Time now = Time::Now();
         // Posedge of the disc entering the beam break.
         if (position) {
+          // TODO(aschuh): Catch the edges on the FPGA since this is too slow.
+          // This means that we need to pass back enough data so that we can
+          // miss packets and everything works.
           if (position->bottom_disc_detect && !last_bottom_disc_detect_) {
             transfer_frisbee_.Reset();
             transfer_frisbee_.bottom_posedge_time_ = now;

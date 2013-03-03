@@ -622,10 +622,85 @@ TEST_F(IndexTest, ShootFourDiscs) {
   EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.shot_frisbees.size());
 }
 
-// Test that it doesn't abort preloading at the wrong time.
+// Tests that discs aren't pulled out of the loader half way through being
+// grabbed when being asked to index.
+TEST_F(IndexTest, PreloadToIndexEarlyTransition) {
+  LoadNDiscs(2);
 
-// Test that we can loose values and handle disabling without dying.
-//  Not necesarily gracefully or anything.
+  // Lift the discs up to the top.  Wait a while to let the system settle and
+  // verify that they don't collide.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  for (int i = 0; i < 300; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+    // Drop out of the loop as soon as it enters the loader.
+    // This will require it to finish the job before intaking more.
+    my_index_loop_.status.FetchLatest();
+    if (index_motor_plant_.frisbees[0].position() >
+        IndexMotor::kLoaderFreeStopPosition) {
+      break;
+    }
+  }
+
+  // Pull the disc back down and verify that the transfer roller doesn't turn on
+  // until we are ready.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(1).Send();
+  for (int i = 0; i < 100; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(my_index_loop_.status->total_disc_count, 2);
+  my_index_loop_.output.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.output->disc_clamped);
+
+  EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(IndexMotor::kReadyToLiftPosition,
+      index_motor_plant_.frisbees[0].position(), 0.01);
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[1].position(), 0.10);
+}
+
+// Tests that disabling while grabbing a disc doesn't cause problems.
+TEST_F(IndexTest, HandleDisable) {
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  for (int i = 0; i < 200; ++i) {
+    index_motor_plant_.SendPositionMessage();
+    index_motor_.Iterate();
+    if (i == 100) {
+      EXPECT_EQ(0, index_motor_plant_.index_roller_position());
+      index_motor_plant_.InsertDisc();
+    } else if (i == 102) {
+      my_index_loop_.goal.MakeWithBuilder().goal_state(1).Send();
+    } else if (i > 150) {
+      my_index_loop_.status.FetchLatest();
+      EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+      my_index_loop_.output.FetchLatest();
+      EXPECT_EQ(my_index_loop_.output->transfer_voltage, 0.0);
+    }
+    index_motor_plant_.Simulate();
+    SendDSPacket(i < 102 || i > 110);
+    UpdateTime();
+  }
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(static_cast<size_t>(1), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[0].position(), 0.04);
+}
 
 }  // namespace testing
 }  // namespace control_loops
