@@ -1,4 +1,4 @@
-#include "frc971/control_loops/shooter.h"
+#include "frc971/control_loops/shooter/shooter.h"
 
 #include "aos/aos_core.h"
 

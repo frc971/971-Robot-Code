@@ -2,7 +2,6 @@
   'variables': {
     'loop_files': [
       'DriveTrain.q',
-      'shooter_motor.q',
     ]
   },
   'targets': [
@@ -36,48 +35,6 @@
         '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../../aos/build/queues.gypi'],
-    },
-    {
-      'target_name': 'shooter_lib',
-      'type': 'static_library',
-      'sources': [
-        'shooter.cc',
-        'shooter_motor_plant.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        'control_loops',
-        '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/frc971.gyp:common',
-        'state_feedback_loop',
-      ],
-    },
-    {
-      'target_name': 'shooter_lib_test',
-      'type': 'executable',
-      'sources': [
-        'shooter_lib_test.cc',
-      ],
-      'dependencies': [
-        '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
-        'control_loops',
-        'shooter_lib',
-        '<(AOS)/common/common.gyp:queue_testutils',
-        'state_feedback_loop',
-      ],
-    },
-    {
-      'target_name': 'shooter',
-      'type': 'executable',
-      'sources': [
-        'shooter_main.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        'shooter_lib',
-        'control_loops',
-      ],
     },
     {
       'target_name': 'DriveTrain',

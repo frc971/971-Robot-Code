@@ -5,8 +5,8 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/shooter_motor.q.h"
-#include "frc971/control_loops/shooter.h"
+#include "frc971/control_loops/shooter/shooter_motor.q.h"
+#include "frc971/control_loops/shooter/shooter.h"
 #include "frc971/constants.h"
 
 using ::aos::time::Time;
