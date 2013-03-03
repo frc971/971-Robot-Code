@@ -11,6 +11,7 @@
       'type': 'static_library',
       'sources': [
         #'state_feedback_loop.h'
+        #'StateFeedbackLoop.h'
       ],
       'dependencies': [
         '<(EXTERNALS):eigen',
@@ -48,10 +49,10 @@
         'control_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
-        '<(EXTERNALS):eigen',
+        'state_feedback_loop',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):eigen',
+        'state_feedback_loop',
         '<(AOS)/common/common.gyp:controls',
         'control_loops',
       ],
@@ -68,7 +69,7 @@
         'control_loops',
         'wrist_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
-        '<(EXTERNALS):eigen',
+        'state_feedback_loop',
       ],
     },
     {
@@ -94,8 +95,8 @@
         '<(AOS)/common/common.gyp:controls',
         'control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(EXTERNALS):eigen',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        'state_feedback_loop',
       ],
     },
   ],
