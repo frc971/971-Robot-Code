@@ -15,6 +15,7 @@
  */
 void DoubleSolenoid::InitSolenoid()
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckSolenoidModule(m_moduleNumber))
 	{
@@ -158,12 +159,16 @@ void DoubleSolenoid::UpdateTable() {
 
 void DoubleSolenoid::StartLiveWindowMode() {
 	Set(kOff);
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void DoubleSolenoid::StopLiveWindowMode() {
 	Set(kOff);
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string DoubleSolenoid::GetSmartDashboardType() {

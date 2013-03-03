@@ -19,6 +19,7 @@ static Resource *counters = NULL;
  */
 void Counter::InitCounter(Mode mode)
 {
+	m_table = NULL;
 	Resource::CreateResourceObject(&counters, tCounter::kNumSystems);
 	UINT32 index = counters->Allocate("Counter");
 	if (index == ~0ul)

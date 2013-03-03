@@ -31,6 +31,7 @@ const double CANJaguar::kApproxBusVoltage;
  */
 void CANJaguar::InitCANJaguar()
 {
+	m_table = NULL;
 	m_transactionSemaphore = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
 	if (m_deviceNumber < 1 || m_deviceNumber > 63)
 	{
@@ -1248,11 +1249,15 @@ void CANJaguar::UpdateTable() {
 }
 
 void CANJaguar::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void CANJaguar::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string CANJaguar::GetSmartDashboardType() {

@@ -111,8 +111,8 @@ IOStream* SocketServerStreamProvider::accept(){
 				if (connectedSocket == ERROR)
 					return NULL;
 				
-				int on = 1;
-				setsockopt(connectedSocket, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
+				//int on = 1;
+				//setsockopt(connectedSocket, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 				
 				return new FDIOStream(connectedSocket);
 			}

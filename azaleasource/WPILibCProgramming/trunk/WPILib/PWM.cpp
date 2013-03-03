@@ -26,6 +26,7 @@ static Resource *allocated = NULL;
  */
 void PWM::InitPWM(UINT8 moduleNumber, UINT32 channel)
 {
+	m_table = NULL;
 	char buf[64];
 	Resource::CreateResourceObject(&allocated, tDIO::kNumSystems * kPwmChannels);
 	if (!CheckPWMModule(moduleNumber))
@@ -345,12 +346,16 @@ void PWM::UpdateTable() {
 }
 
 void PWM::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void PWM::StopLiveWindowMode() {
 	SetSpeed(0);
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string PWM::GetSmartDashboardType() {

@@ -26,6 +26,7 @@ const UINT8 HiTechnicCompass::kHeadingRegister;
 HiTechnicCompass::HiTechnicCompass(UINT8 moduleNumber)
 	: m_i2c (NULL)
 {
+	m_table = NULL;
 	DigitalModule *module = DigitalModule::GetInstance(moduleNumber);
 	if (module)
 	{

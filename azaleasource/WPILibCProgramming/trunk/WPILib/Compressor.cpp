@@ -47,6 +47,7 @@ void Compressor::InitCompressor(UINT8 pressureSwitchModuleNumber,
 		UINT8 compresssorRelayModuleNumber,
 		UINT32 compressorRelayChannel)
 {
+	m_table = NULL;
 	m_enabled = false;
 	m_pressureSwitch = new DigitalInput(pressureSwitchModuleNumber, pressureSwitchChannel);
 	m_relay = new Relay(compresssorRelayModuleNumber, compressorRelayChannel, Relay::kForwardOnly);

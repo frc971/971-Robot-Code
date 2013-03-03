@@ -19,6 +19,7 @@ extern Resource *interruptsResource;
  */
 void DigitalOutput::InitDigitalOutput(UINT8 moduleNumber, UINT32 channel)
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckDigitalModule(moduleNumber))
 	{
@@ -288,11 +289,15 @@ void DigitalOutput::UpdateTable() {
 }
 
 void DigitalOutput::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void DigitalOutput::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string DigitalOutput::GetSmartDashboardType() {

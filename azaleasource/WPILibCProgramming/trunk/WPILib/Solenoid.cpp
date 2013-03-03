@@ -14,6 +14,7 @@
  */
 void Solenoid::InitSolenoid()
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckSolenoidModule(m_moduleNumber))
 	{
@@ -115,12 +116,16 @@ void Solenoid::UpdateTable() {
 
 void Solenoid::StartLiveWindowMode() {
 	Set(false);
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Solenoid::StopLiveWindowMode() {
 	Set(false);
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Solenoid::GetSmartDashboardType() {

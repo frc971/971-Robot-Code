@@ -22,6 +22,7 @@ const UINT32 AnalogChannel::kAccumulatorChannels[] = {1, 2};
  */
 void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
 {
+	m_table = NULL;
 	char buf[64];
 	Resource::CreateResourceObject(&channels, kAnalogModules * kAnalogChannels);
 	if (!CheckAnalogModule(moduleNumber))

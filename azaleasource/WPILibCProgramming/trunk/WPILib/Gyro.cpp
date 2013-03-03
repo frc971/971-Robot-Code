@@ -28,6 +28,7 @@ const float Gyro::kDefaultVoltsPerDegreePerSecond;
  */
 void Gyro::InitGyro()
 {
+	m_table = NULL;
 	if (!m_analog->IsAccumulatorChannel())
 	{
 		wpi_setWPIErrorWithContext(ParameterOutOfRange,

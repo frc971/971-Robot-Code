@@ -25,6 +25,7 @@ static Resource *relayChannels = NULL;
  */
 void Relay::InitRelay (UINT8 moduleNumber)
 {
+	m_table = NULL;
 	char buf[64];
 	Resource::CreateResourceObject(&relayChannels, tDIO::kNumSystems * kRelayChannels * 2);
 	if (!SensorBase::CheckRelayModule(moduleNumber))
@@ -244,11 +245,15 @@ void Relay::UpdateTable() {
 }
 
 void Relay::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if(m_table != NULL){
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Relay::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if(m_table != NULL){
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Relay::GetSmartDashboardType() {

@@ -32,6 +32,7 @@ const UINT8 HiTechnicColorSensor::kRawBlueRegister;
 HiTechnicColorSensor::HiTechnicColorSensor(UINT8 moduleNumber)
 	: m_i2c (NULL)
 {
+	m_table = NULL;
 	DigitalModule *module = DigitalModule::GetInstance(moduleNumber);
 	m_mode = kActive;
 	

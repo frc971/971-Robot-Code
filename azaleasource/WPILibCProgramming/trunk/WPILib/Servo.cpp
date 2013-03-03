@@ -20,6 +20,7 @@ const float Servo::kMinServoAngle;
  */
 void Servo::InitServo()
 {
+	m_table = NULL;
 	// TODO: compute the appropriate values based on digital loop timing
 	SetBounds(245, 0, 0, 0, 11);
 	SetPeriodMultiplier(kPeriodMultiplier_4X);
@@ -134,11 +135,15 @@ void Servo::UpdateTable() {
 }
 
 void Servo::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Servo::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Servo::GetSmartDashboardType() {

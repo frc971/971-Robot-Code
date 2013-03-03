@@ -25,6 +25,7 @@ static Resource *quadEncoders = NULL;
  */
 void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 {
+	m_table = NULL;
 	m_encodingType = encodingType;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	switch (encodingType)
