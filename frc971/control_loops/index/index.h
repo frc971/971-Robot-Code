@@ -7,8 +7,8 @@
 #include "aos/common/control_loop/ControlLoop.h"
 #include "aos/common/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/index_motor.q.h"
-#include "frc971/control_loops/index_motor_plant.h"
+#include "frc971/control_loops/index/index_motor.q.h"
+#include "frc971/control_loops/index/index_motor_plant.h"
 
 namespace frc971 {
 namespace control_loops {

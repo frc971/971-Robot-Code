@@ -1,4 +1,4 @@
-#include "frc971/control_loops/index.h"
+#include "frc971/control_loops/index/index.h"
 
 #include <stdio.h>
 
@@ -11,7 +11,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/index_motor_plant.h"
+#include "frc971/control_loops/index/index_motor_plant.h"
 
 using ::aos::time::Time;
 

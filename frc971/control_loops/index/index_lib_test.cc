@@ -5,10 +5,10 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/index_motor.q.h"
-#include "frc971/control_loops/index.h"
-#include "frc971/control_loops/index_motor_plant.h"
-#include "frc971/control_loops/transfer_motor_plant.h"
+#include "frc971/control_loops/index/index_motor.q.h"
+#include "frc971/control_loops/index/index.h"
+#include "frc971/control_loops/index/index_motor_plant.h"
+#include "frc971/control_loops/index/transfer_motor_plant.h"
 #include "frc971/constants.h"
 
 

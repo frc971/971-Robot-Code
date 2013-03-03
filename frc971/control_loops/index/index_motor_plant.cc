@@ -1,4 +1,4 @@
-#include "frc971/control_loops/index_motor_plant.h"
+#include "frc971/control_loops/index/index_motor_plant.h"
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
