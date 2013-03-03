@@ -59,15 +59,17 @@ int HallEffectLoop<kNumHallEffect>::WhichHallEffect() const {
 
 template <int kNumHallEffect>
 void HallEffectLoop<kNumHallEffect>::LimitZeroingGoal() {
-  if (loop_->U_uncapped(0, 0) > kMaxZeroingVoltage) {
-    double excess = (loop_->U_uncapped(0, 0) - kMaxZeroingVoltage)
-                    / loop_->K(0, 0);
-    zeroing_position_ -= excess;
-  }
-  if (loop_->U_uncapped(0, 0) < -kMaxZeroingVoltage) {
-    double excess = (loop_->U_uncapped(0, 0) + kMaxZeroingVoltage)
-                    / loop_->K(0, 0);
-    zeroing_position_ -= excess;
+  if (state_ == MOVING_OFF || state_ == ZEROING) {
+    if (loop_->U_uncapped(0, 0) > kMaxZeroingVoltage) {
+      double excess = (loop_->U_uncapped(0, 0) - kMaxZeroingVoltage)
+                      / loop_->K(0, 0);
+      zeroing_position_ -= excess;
+    }
+    if (loop_->U_uncapped(0, 0) < -kMaxZeroingVoltage) {
+      double excess = (loop_->U_uncapped(0, 0) + kMaxZeroingVoltage)
+                      / loop_->K(0, 0);
+      zeroing_position_ -= excess;
+    }
   }
 }
 
@@ -180,10 +182,6 @@ void HallEffectLoop<kNumHallEffect>::UpdateZeros(
     case ESTOP:
       LOG(WARNING, "have already given up\n");
       return;
-  }
-
-  if (state_ == MOVING_OFF || state_ == ZEROING) {
-    LimitZeroingGoal();
   }
 
   if (good_position) {

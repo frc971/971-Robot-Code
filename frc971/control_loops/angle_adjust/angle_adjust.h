@@ -1,8 +1,8 @@
-#ifndef FRC971_CONTROL_LOOPS_ANGLE_ADJUST_H_
-#define FRC971_CONTROL_LOOPS_ANGLE_ADJUST_H_
+#ifndef FRC971_CONTROL_LOOPS_ANGLE_ADJUST_ANGLE_ADJUST_H_
+#define FRC971_CONTROL_LOOPS_ANGLE_ADJUST_ANGLE_ADJUST_H_
 
-#include <memory>
 #include <array>
+#include <memory>
 
 #include "aos/common/control_loop/ControlLoop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -23,7 +23,7 @@ class AngleAdjustMotor
   : public aos::control_loops::ControlLoop<control_loops::AngleAdjustLoop> {
  public:
   explicit AngleAdjustMotor(
-      control_loops::AngleAdjustLoop *my_angle_adjust = 
+      control_loops::AngleAdjustLoop *my_angle_adjust =
                                       &control_loops::angle_adjust);
  protected:
   virtual void RunIteration(
@@ -31,7 +31,7 @@ class AngleAdjustMotor
     const control_loops::AngleAdjustLoop::Position *position,
     ::aos::control_loops::Output *output,
     ::aos::control_loops::Status *status);
- 
+
  private:
   // Allows the testing code to access some of private members.
   friend class testing::AngleAdjustTest_RezeroWithMissingPos_Test;
@@ -41,9 +41,10 @@ class AngleAdjustMotor
   // turns on/off recording data.
   static const bool testing = true;
 
-  static constexpr double dt = 0.01;
+  // The time step of the control loop.
+  static const double dt;
 
-  // Fetches and locally caches the latest set of constants. 
+  // Fetches and locally caches the latest set of constants.
   // Returns whether it succeeded or not.
   bool FetchConstants();
 
@@ -61,10 +62,10 @@ class AngleAdjustMotor
   int error_count_;
 
   // Local cache of angle adjust geometry constants.
-  double horizontal_lower_limit_;
-  double horizontal_upper_limit_;
-  ::std::array<double, 2> horizontal_hall_effect_stop_angle_;
-  double horizontal_zeroing_speed_;
+  double lower_limit_;
+  double upper_limit_;
+  ::std::array<double, 2> hall_effect_stop_angle_;
+  double zeroing_speed_;
 
   // Stores information from the queue about the hall effect sensors.
   // Because we don't have arrays in the queue, we needs these to convert
@@ -81,4 +82,4 @@ class AngleAdjustMotor
 }  // namespace control_loops
 }  // namespace frc971
 
-#endif  // FRC971_CONTROL_LOOPS_ANGLE_ADJUST_H_
+#endif  // FRC971_CONTROL_LOOPS_ANGLE_ADJUST_ANGLE_ADJUST_H_

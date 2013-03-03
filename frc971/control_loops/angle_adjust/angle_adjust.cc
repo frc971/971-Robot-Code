@@ -1,6 +1,4 @@
 #include "frc971/control_loops/angle_adjust/angle_adjust.h"
-#include "frc971/control_loops/hall_effect_loop.h"
-#include "frc971/control_loops/hall_effect_loop-inl.h"
 
 #include <algorithm>
 
@@ -11,6 +9,8 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
+#include "frc971/control_loops/hall_effect_loop.h"
+#include "frc971/control_loops/hall_effect_loop-inl.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor_plant.h"
 
 namespace frc971 {
@@ -20,7 +20,8 @@ AngleAdjustMotor::AngleAdjustMotor(
     control_loops::AngleAdjustLoop *my_angle_adjust)
     : aos::control_loops::ControlLoop<control_loops::AngleAdjustLoop>(
         my_angle_adjust),
-    hall_effect_(new StateFeedbackLoop<2, 1, 1>(MakeAngleAdjustLoop()), true),
+    hall_effect_(new StateFeedbackLoop<2, 1, 1>(MakeAngleAdjustLoop()),
+        true, 5.0),
     error_count_(0),
     time_(0.0) {
   if (testing) {
@@ -28,25 +29,27 @@ AngleAdjustMotor::AngleAdjustMotor(
   }
 }
 
+/*static*/ const double AngleAdjustMotor::dt = 0.01;
+
 bool AngleAdjustMotor::FetchConstants() {
-  if (!constants::angle_adjust_horizontal_lower_limit(
-          &horizontal_lower_limit_)) {
-    LOG(ERROR, "Failed to fetch the horizontal lower limit constant.\n");
+  if (!constants::angle_adjust_lower_limit(
+          &lower_limit_)) {
+    LOG(ERROR, "Failed to fetch the angle adjust lower limit constant.\n");
     return false;
   }
-  if (!constants::angle_adjust_horizontal_upper_limit(
-          &horizontal_upper_limit_)) {
-    LOG(ERROR, "Failed to fetch the horizontal upper limit constant.\n");
+  if (!constants::angle_adjust_upper_limit(
+          &upper_limit_)) {
+    LOG(ERROR, "Failed to fetch the angle adjust upper limit constant.\n");
     return false;
   }
-  if (!constants::angle_adjust_horizontal_hall_effect_stop_angle(
-          &horizontal_hall_effect_stop_angle_)) {
+  if (!constants::angle_adjust_hall_effect_stop_angle(
+          &hall_effect_stop_angle_)) {
     LOG(ERROR, "Failed to fetch the hall effect stop angle constants.\n");
     return false;
   }
-  if (!constants::angle_adjust_horizontal_zeroing_speed(
-          &horizontal_zeroing_speed_)) {
-    LOG(ERROR, "Failed to fetch the horizontal zeroing speed constant.\n");
+  if (!constants::angle_adjust_zeroing_speed(
+          &zeroing_speed_)) {
+    LOG(ERROR, "Failed to fetch the angle adjust zeroing speed constant.\n");
     return false;
   }
 
@@ -54,24 +57,24 @@ bool AngleAdjustMotor::FetchConstants() {
 }
 
 double AngleAdjustMotor::ClipGoal(double goal) const {
-  return std::min(horizontal_upper_limit_,
-                  std::max(horizontal_lower_limit_, goal));
+  return std::min(upper_limit_,
+                  std::max(lower_limit_, goal));
 }
 
 double AngleAdjustMotor::LimitVoltage(double absolute_position,
                                 double voltage) const {
   if (hall_effect_.state_ == HallEffectLoop<2>::READY) {
-    if (absolute_position >= horizontal_upper_limit_) {
+    if (absolute_position >= upper_limit_) {
       voltage = std::min(0.0, voltage);
     }
-    if (absolute_position <= horizontal_lower_limit_) {
+    if (absolute_position <= lower_limit_) {
       voltage = std::max(0.0, voltage);
     }
   }
 
   double limit = (hall_effect_.state_ == HallEffectLoop<2>::READY) ? 12.0 : 5.0;
   // TODO(aschuh): Remove this line when we are done testing.
-  //limit = std::min(0.3, limit);
+  // limit = std::min(0.3, limit);
   voltage = std::min(limit, voltage);
   voltage = std::max(-limit, voltage);
   return voltage;
@@ -115,16 +118,18 @@ void AngleAdjustMotor::RunIteration(
     hall_effect_sensors_[1] = position->middle_hall_effect;
     calibration_values_[0] = position->bottom_calibration;
     calibration_values_[1] = position->middle_calibration;
-    absolute_position = position->before_angle;
+    absolute_position = position->bottom_angle;
   }
 
-  hall_effect_.UpdateZeros(horizontal_hall_effect_stop_angle_,
+  // Deals with all the zeroing stuff.
+  hall_effect_.UpdateZeros(hall_effect_stop_angle_,
               hall_effect_sensors_,
               calibration_values_,
-              horizontal_zeroing_speed_,
+              zeroing_speed_,
               absolute_position,
               position != NULL);
 
+  // Only try to go to our goal if we are actually zeroed.
   if (hall_effect_.state_ == HallEffectLoop<2>::READY) {
     const double limited_goal = ClipGoal(goal->goal);
     hall_effect_.loop_->R << limited_goal, 0.0;
@@ -133,9 +138,13 @@ void AngleAdjustMotor::RunIteration(
   // Update the observer.
   hall_effect_.loop_->Update(position != NULL, output == NULL);
 
+  // Prevent the zeroing goal from running off. Needs to happen after
+  // U is calculated, hence why this is after the loop_->Update.
+  hall_effect_.LimitZeroingGoal();
+
   if (position) {
     LOG(DEBUG, "pos=%f bottom_hall: %s middle_hall: %s\n",
-        position->before_angle,
+        position->bottom_angle,
         position->bottom_hall_effect ? "true" : "false",
         position->middle_hall_effect ? "true" : "false");
   }
@@ -154,7 +163,7 @@ void AngleAdjustMotor::RunIteration(
     hall_effect_.loop_->RecordDatum("angle_adjust.csv", time_);
   }
   time_ += dt;
-} // RunIteration
+}  // RunIteration
 
 }  // namespace control_loops
 }  // namespace frc971

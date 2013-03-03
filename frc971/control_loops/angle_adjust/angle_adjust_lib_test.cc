@@ -19,14 +19,15 @@ namespace control_loops {
 namespace testing {
 
 
-// Class which simulates the angle_adjust and sends out queue messages containing the
-// position.
+// Class which simulates the angle_adjust and
+// sends out queue messages containing the position.
 class AngleAdjustMotorSimulation {
  public:
   // Constructs a motor simulation.  initial_position is the inital angle of the
   // angle_adjust, which will be treated as 0 by the encoder.
-  AngleAdjustMotorSimulation(double initial_position)
-      : angle_adjust_plant_(new StateFeedbackPlant<2, 1, 1>(MakeAngleAdjustPlant())),
+  explicit AngleAdjustMotorSimulation(double initial_position)
+      : angle_adjust_plant_(
+          new StateFeedbackPlant<2, 1, 1>(MakeAngleAdjustPlant())),
         my_angle_adjust_loop_(".frc971.control_loops.angle_adjust",
                        0x65c7ef53, ".frc971.control_loops.angle_adjust.goal",
                        ".frc971.control_loops.angle_adjust.position",
@@ -60,28 +61,28 @@ class AngleAdjustMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    ::std::array<double, 2> horizontal_hall_effect_start_angle;
-    ASSERT_TRUE(constants::angle_adjust_horizontal_hall_effect_start_angle(
-                    &horizontal_hall_effect_start_angle));
-    ::std::array<double, 2> horizontal_hall_effect_stop_angle;
-    ASSERT_TRUE(constants::angle_adjust_horizontal_hall_effect_stop_angle(
-                    &horizontal_hall_effect_stop_angle));
+    ::std::array<double, 2> hall_effect_start_angle;
+    ASSERT_TRUE(constants::angle_adjust_hall_effect_start_angle(
+                    &hall_effect_start_angle));
+    ::std::array<double, 2> hall_effect_stop_angle;
+    ASSERT_TRUE(constants::angle_adjust_hall_effect_stop_angle(
+                    &hall_effect_stop_angle));
 
     ::aos::ScopedMessagePtr<control_loops::AngleAdjustLoop::Position> position =
         my_angle_adjust_loop_.position.MakeMessage();
-    position->before_angle = angle;
+    position->bottom_angle = angle;
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
     double abs_position = GetAbsolutePosition();
-    if (abs_position >= horizontal_hall_effect_start_angle[0] &&
-        abs_position <= horizontal_hall_effect_stop_angle[0]) {
+    if (abs_position >= hall_effect_start_angle[0] &&
+        abs_position <= hall_effect_stop_angle[0]) {
       position->bottom_hall_effect = true;
     } else {
       position->bottom_hall_effect = false;
     }
-    if (abs_position >= horizontal_hall_effect_start_angle[1] &&
-        abs_position <= horizontal_hall_effect_stop_angle[1]) {
+    if (abs_position >= hall_effect_start_angle[1] &&
+        abs_position <= hall_effect_stop_angle[1]) {
       position->middle_hall_effect = true;
     } else {
       position->middle_hall_effect = false;
@@ -89,13 +90,13 @@ class AngleAdjustMotorSimulation {
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
-    if ((last_position_ < horizontal_hall_effect_start_angle[0] ||
-         last_position_ > horizontal_hall_effect_stop_angle[0]) &&
+    if ((last_position_ < hall_effect_start_angle[0] ||
+         last_position_ > hall_effect_stop_angle[0]) &&
          (position->bottom_hall_effect)) {
       calibration_value_[0] = -initial_position_;
     }
-    if ((last_position_ < horizontal_hall_effect_start_angle[1] ||
-         last_position_ > horizontal_hall_effect_stop_angle[1]) &&
+    if ((last_position_ < hall_effect_start_angle[1] ||
+         last_position_ > hall_effect_stop_angle[1]) &&
          (position->middle_hall_effect)) {
       calibration_value_[1] = -initial_position_;
     }
@@ -113,18 +114,19 @@ class AngleAdjustMotorSimulation {
     angle_adjust_plant_->Update();
 
     // Assert that we are in the right physical range.
-    double horizontal_upper_physical_limit;
-    ASSERT_TRUE(constants::angle_adjust_horizontal_upper_physical_limit(
-                    &horizontal_upper_physical_limit));
-    double horizontal_lower_physical_limit;
-    ASSERT_TRUE(constants::angle_adjust_horizontal_lower_physical_limit(
-                    &horizontal_lower_physical_limit));
+    double upper_physical_limit;
+    ASSERT_TRUE(constants::angle_adjust_upper_physical_limit(
+                    &upper_physical_limit));
+    double lower_physical_limit;
+    ASSERT_TRUE(constants::angle_adjust_lower_physical_limit(
+                    &lower_physical_limit));
 
-    EXPECT_GE(horizontal_upper_physical_limit, angle_adjust_plant_->Y(0, 0));
-    EXPECT_LE(horizontal_lower_physical_limit, angle_adjust_plant_->Y(0, 0));
+    EXPECT_GE(upper_physical_limit, angle_adjust_plant_->Y(0, 0));
+    EXPECT_LE(lower_physical_limit, angle_adjust_plant_->Y(0, 0));
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> angle_adjust_plant_;
+
  private:
   AngleAdjustLoop my_angle_adjust_loop_;
   double initial_position_;
@@ -145,13 +147,14 @@ class AngleAdjustTest : public ::testing::Test {
   AngleAdjustMotor angle_adjust_motor_;
   AngleAdjustMotorSimulation angle_adjust_motor_plant_;
 
-  AngleAdjustTest() : my_angle_adjust_loop_(".frc971.control_loops.angle_adjust",
-                               0x65c7ef53, ".frc971.control_loops.angle_adjust.goal",
-                               ".frc971.control_loops.angle_adjust.position",
-                               ".frc971.control_loops.angle_adjust.output",
-                               ".frc971.control_loops.angle_adjust.status"),
-                angle_adjust_motor_(&my_angle_adjust_loop_),
-                angle_adjust_motor_plant_(.75) {
+  AngleAdjustTest() :
+    my_angle_adjust_loop_(".frc971.control_loops.angle_adjust",
+                          0x65c7ef53, ".frc971.control_loops.angle_adjust.goal",
+                          ".frc971.control_loops.angle_adjust.position",
+                          ".frc971.control_loops.angle_adjust.output",
+                          ".frc971.control_loops.angle_adjust.status"),
+    angle_adjust_motor_(&my_angle_adjust_loop_),
+    angle_adjust_motor_plant_(.75) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -190,7 +193,7 @@ TEST_F(AngleAdjustTest, ZerosCorrectly) {
   VerifyNearGoal();
 }
 
-// Tests that the angle_adjust zeros correctly starting on the hall effect sensor.
+// Tests that the angle_adjust zeros correctly starting on the sensor.
 TEST_F(AngleAdjustTest, ZerosStartingOn) {
   angle_adjust_motor_plant_.Reinitialize(0.25);
   my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
@@ -229,7 +232,7 @@ TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
     } else {
       if (i > 310) {
         // Should be re-zeroing now.
-        EXPECT_EQ(HallEffectLoop<2>::UNINITIALIZED, 
+        EXPECT_EQ(HallEffectLoop<2>::UNINITIALIZED,
                   angle_adjust_motor_.hall_effect_.state_);
       }
       my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.2).Send();
@@ -237,7 +240,7 @@ TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
     if (i == 430) {
       EXPECT_TRUE(
           HallEffectLoop<2>::ZEROING == angle_adjust_motor_.hall_effect_.state_
-          || HallEffectLoop<2>::MOVING_OFF == 
+          || HallEffectLoop<2>::MOVING_OFF ==
              angle_adjust_motor_.hall_effect_.state_);
     }
 
@@ -304,7 +307,6 @@ TEST_F(AngleAdjustTest, ZerosStartingOnSecond) {
   }
   VerifyNearGoal();
 }
-
 
 }  // namespace testing
 }  // namespace control_loops

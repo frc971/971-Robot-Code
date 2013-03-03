@@ -50,53 +50,6 @@
       ],
     },
     {
-      'target_name': 'wrist_lib',
-      'type': 'static_library',
-      'sources': [
-        'wrist.cc',
-        'wrist_motor_plant.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        'control_loops',
-        '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/frc971.gyp:common',
-        'state_feedback_loop',
-      ],
-      'export_dependent_settings': [
-        'state_feedback_loop',
-        '<(AOS)/common/common.gyp:controls',
-        'control_loops',
-      ],
-    },
-    {
-      'target_name': 'wrist_lib_test',
-      'type': 'executable',
-      'sources': [
-        'wrist_lib_test.cc',
-      ],
-      'dependencies': [
-        '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
-        'control_loops',
-        'wrist_lib',
-        '<(AOS)/common/common.gyp:queue_testutils',
-        'state_feedback_loop',
-      ],
-    },
-    {
-      'target_name': 'wrist',
-      'type': 'executable',
-      'sources': [
-        'wrist_main.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        'wrist_lib',
-        'control_loops',
-      ],
-    },
-    {
       'target_name': 'DriveTrain',
       'type': 'executable',
       'sources': [

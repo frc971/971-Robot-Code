@@ -27,19 +27,19 @@ bool wrist_upper_physical_limit(double *angle);
 
 // Returns the speed to move the wrist at when zeroing in rad/sec
 bool wrist_zeroing_speed(double *speed);
-bool angle_adjust_horizontal_hall_effect_start_angle(
+bool angle_adjust_hall_effect_start_angle(
     ::std::array<double, 2> *angle);
-bool angle_adjust_horizontal_hall_effect_stop_angle(
+bool angle_adjust_hall_effect_stop_angle(
     ::std::array<double, 2> *angle);
 // These are the soft stops for up and down.
-bool angle_adjust_horizontal_lower_limit(double *angle);
-bool angle_adjust_horizontal_upper_limit(double *angle);
+bool angle_adjust_lower_limit(double *angle);
+bool angle_adjust_upper_limit(double *angle);
 // These are the hard stops.  Don't use these for anything but testing.
-bool angle_adjust_horizontal_lower_physical_limit(double *angle);
-bool angle_adjust_horizontal_upper_physical_limit(double *angle);
+bool angle_adjust_lower_physical_limit(double *angle);
+bool angle_adjust_upper_physical_limit(double *angle);
 
 // Returns speed to move the angle adjust when zeroing, in rad/sec
-bool angle_adjust_horizontal_zeroing_speed(double *speed);
+bool angle_adjust_zeroing_speed(double *speed);
 
 // Sets *center to how many pixels off center the vertical line
 // on the camera view is.

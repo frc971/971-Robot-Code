@@ -7,8 +7,8 @@ queue_group AngleAdjustLoop {
 
   message Position {
     // Angle of the encoder.
-    double before_angle;
-    double after_angle;
+    double bottom_angle;
+    double middle_angle;
     bool bottom_hall_effect;
     bool middle_hall_effect;
     // The exact position when the corresponding hall_effect changed.
