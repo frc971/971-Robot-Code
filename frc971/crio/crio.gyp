@@ -5,13 +5,6 @@
       'target_name': 'WPILib_changes',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/externals/WPILib/WPILib/DriverStationLCD.cpp',
-        '<(AOS)/externals/WPILib/WPILib/Synchronized.cpp',
-        '<(AOS)/externals/WPILib/WPILib/DriverStation.cpp',
-        '<(AOS)/externals/WPILib/WPILib/Notifier.cpp',
-        '<(AOS)/externals/WPILib/WPILib/MotorSafetyHelper.cpp',
-        '<(AOS)/externals/WPILib/WPILib/Resource.cpp',
-        '<(AOS)/externals/WPILib/WPILib/SolenoidBase.cpp',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',

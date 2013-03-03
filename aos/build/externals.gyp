@@ -20,6 +20,7 @@
             'direct_dependent_settings': {
               'cflags': [
                 '-isystem', '<(aos_abs)/externals/WPILib',
+                '-isystem', '<(aos_abs)/externals/WPILib/WPILib',
               ],
               'link_settings': {
                 'libraries': [

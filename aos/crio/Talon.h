@@ -7,7 +7,7 @@
 
 // Used for controlling a Talon speed controller. Non-standard API and
 // namespace so that the likely WPILib version will be drop-in replaceable.
-class Talon : public SafePWM, public SpeedController, public PIDOutput {
+class Talon : public SafePWM, public SpeedController {
  public:
   explicit Talon(UINT32 channel);
 
