@@ -4,22 +4,27 @@
 #include "LiveWindow/LiveWindowSendable.h"
 #include "tables/ITable.h"
 #include "Commands/Scheduler.h"
+#include "Synchronized.h"
 #include <vector>
 #include <map>
 
 struct LiveWindowComponent
 {
+#if 0
 	std::string subsystem;
 	std::string name;
 	bool isSensor;
+#endif
 
 	LiveWindowComponent()
 	{}//WTF?
 	LiveWindowComponent(std::string subsystem, std::string name, bool isSensor)
 	{
+#if 0
 		this->subsystem = subsystem;
 		this->name = name;
 		this->isSensor = isSensor;
+#endif
 	}
 };
 
@@ -38,7 +43,7 @@ public:
 	void AddSensor(std::string type, int module, int channel, LiveWindowSendable *component);
 	void AddActuator(std::string type, int module, int channel, LiveWindowSendable *component);
 	
-	bool IsEnabled() { return m_enabled; }
+	bool IsEnabled() { return false; }
 	void SetEnabled(bool enabled);
 
 protected:
@@ -50,10 +55,14 @@ private:
 	void Initialize();
 	void InitializeLiveWindowComponents();
 	
+#if 0
 	std::vector<LiveWindowSendable *> m_sensors;
 	std::map<LiveWindowSendable *, LiveWindowComponent> m_components;
 	
+#endif
 	static LiveWindow *m_instance;
+  static ReentrantSemaphore m_instanceLock;
+#if 0
 	ITable *m_liveWindowTable;
 	ITable *m_statusTable;
 	
@@ -61,6 +70,7 @@ private:
 	
 	bool m_enabled;
 	bool m_firstTime;
+#endif
 };
 
 #endif

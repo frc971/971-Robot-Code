@@ -5,6 +5,7 @@
       'target_name': 'WPILib_changes',
       'type': 'static_library',
       'sources': [
+        '<(AOS)/externals/WPILib/WPILib/LiveWindow/LiveWindow.cpp',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
