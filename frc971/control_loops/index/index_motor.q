@@ -23,6 +23,9 @@ queue_group IndexLoop {
   };
 
   message Output {
+    // Intake roller(s) output voltage.
+    // Positive means into the robot.
+    double intake_voltage;
     // Transfer roller output voltage.
     // Positive means into the robot.
     double transfer_voltage;

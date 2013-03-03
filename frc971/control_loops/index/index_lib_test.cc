@@ -190,8 +190,9 @@ class IndexMotorSimulation {
   // Returns true if the bottom disc sensor is triggered.
   bool BottomDiscDetect() const {
     bool bottom_disc_detect = false;
-    for (const Frisbee &frisbee : frisbees) {
-      bottom_disc_detect |= frisbee.bottom_disc_detect();
+    for (auto frisbee = frisbees.begin();
+        frisbee != frisbees.end(); ++frisbee) {
+      bottom_disc_detect |= frisbee->bottom_disc_detect();
     }
     return bottom_disc_detect;
   }
@@ -199,29 +200,32 @@ class IndexMotorSimulation {
   // Returns true if the top disc sensor is triggered.
   bool TopDiscDetect() const {
     bool top_disc_detect = false;
-    for (const Frisbee &frisbee : frisbees) {
-      top_disc_detect |= frisbee.top_disc_detect();
+    for (auto frisbee = frisbees.begin();
+        frisbee != frisbees.end(); ++frisbee) {
+      top_disc_detect |= frisbee->top_disc_detect();
     }
     return top_disc_detect;
   }
 
   // Updates all discs, and verifies that the state of the system is sane.
   void UpdateDiscs(bool clamped, bool lifted, bool ejected) {
-    for (Frisbee &frisbee : frisbees) {
-      frisbee.UpdatePosition(transfer_roller_position(),
-                             index_roller_position(),
-                             clamped,
-                             lifted,
-                             ejected);
+    for (auto frisbee = frisbees.begin();
+        frisbee != frisbees.end(); ++frisbee) {
+      frisbee->UpdatePosition(transfer_roller_position(),
+                              index_roller_position(),
+                              clamped,
+                              lifted,
+                              ejected);
     }
 
     // Make sure nobody is too close to anybody else.
     Frisbee *last_frisbee = NULL;
-    for (Frisbee &frisbee : frisbees) {
+    for (auto frisbee = frisbees.begin();
+        frisbee != frisbees.end(); ++frisbee) {
       if (last_frisbee) {
-        const double distance = frisbee.position() - last_frisbee->position();
+        const double distance = frisbee->position() - last_frisbee->position();
         double min_distance;
-        if (frisbee.IsTouchingTransfer() ||
+        if (frisbee->IsTouchingTransfer() ||
             last_frisbee->IsTouchingTransfer()) {
           min_distance = 0.3;
         } else {
@@ -231,7 +235,7 @@ class IndexMotorSimulation {
 
         EXPECT_LT(min_distance, ::std::abs(distance)) << "Discs too close";
       }
-      last_frisbee = &frisbee;
+      last_frisbee = &*frisbee;
     }
 
     // Remove any shot frisbees.

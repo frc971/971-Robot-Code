@@ -151,8 +151,10 @@ void IndexMotor::RunIteration(
 
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
+  double intake_voltage = 0.0;
   double transfer_voltage = 0.0;
   if (output) {
+    output->intake_voltage = 0.0;
     output->transfer_voltage = 0.0;
     output->index_voltage = 0.0;
   }
@@ -204,7 +206,7 @@ void IndexMotor::RunIteration(
           }
 
           if (position->bottom_disc_detect) {
-            transfer_voltage = 12.0;
+            intake_voltage = transfer_voltage = 12.0;
             // Must wait until the disc gets out before we can change state.
             safe_to_change_state_ = false;
 
@@ -221,11 +223,12 @@ void IndexMotor::RunIteration(
           }
 
           // Check all non-indexed discs and see if they should be indexed.
-          for (Frisbee &frisbee : frisbees_) {
-            if (!frisbee.has_been_indexed_) {
-              transfer_voltage = 12.0;
+          for (auto frisbee = frisbees_.begin();
+              frisbee != frisbees_.end(); ++frisbee) {
+            if (!frisbee->has_been_indexed_) {
+              intake_voltage = transfer_voltage = 12.0;
               Time elapsed_negedge_time = now -
-                  frisbee.bottom_negedge_time_;
+                  frisbee->bottom_negedge_time_;
               if (elapsed_negedge_time >= Time::InSeconds(0.005)) {
                 // Should have just engaged.
                 // Save the indexer position, and the time.
@@ -234,11 +237,11 @@ void IndexMotor::RunIteration(
                 // Treat now as the time at which it contacted the indexer.
                 LOG(INFO, "Grabbed on the index now at %f\n", index_position);
                 printf("Grabbed on the index now at %f\n", index_position);
-                frisbee.has_been_indexed_ = true;
-                frisbee.index_start_position_ = index_position;
+                frisbee->has_been_indexed_ = true;
+                frisbee->index_start_position_ = index_position;
               }
             }
-            if (!frisbee.has_been_indexed_) {
+            if (!frisbee->has_been_indexed_) {
               // All discs must be indexed before it is safe to stop indexing.
               safe_to_change_state_ = false;
             }
@@ -285,7 +288,7 @@ void IndexMotor::RunIteration(
           // Turn on the transfer roller if we are ready.
           if (status->ready_to_intake && hopper_disc_count_ < 4 &&
               safe_goal_ == Goal::INTAKE) {
-            transfer_voltage = 12.0;
+            intake_voltage = transfer_voltage = 12.0;
           }
         }
         printf("INTAKE\n");
@@ -482,6 +485,7 @@ void IndexMotor::RunIteration(
   status->preloaded = (loader_state_ != LoaderState::READY);
 
   if (output) {
+    output->intake_voltage = intake_voltage;
     output->transfer_voltage = transfer_voltage;
     output->index_voltage = wrist_loop_->U(0, 0);
     output->loader_up = loader_up_;
