@@ -1,0 +1,994 @@
+@Sat Feb 23 12:11:35 PST 2013 in [global]: (FINE) Initial HSV range [70 .. 106] 137+ 27+
+@Sat Feb 23 12:11:35 PST 2013 in [global]: (INFO) Reading headers...
+@Sat Feb 23 12:11:35 PST 2013 in [global]: (INFO) Writing headers...
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68137, Content-Type=image/jpeg, X-Timestamp=1.361650296043E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68137
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296043E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68283, Content-Type=image/jpeg, X-Timestamp=1.361650296073E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68283
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 21.509065 ms, 46.492025571543905 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296073E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68407, Content-Type=image/jpeg, X-Timestamp=1.361650296108E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68407
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 13.399685 ms, 57.29222616106277 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296108E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68468, Content-Type=image/jpeg, X-Timestamp=1.361650296139E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68468
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 16.210285 ms, 58.6865538443752 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296139E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68481, Content-Type=image/jpeg, X-Timestamp=1.361650296171E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68481
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 16.315636 ms, 59.31666812758678 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296171E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68360, Content-Type=image/jpeg, X-Timestamp=1.361650296206E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68360
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 17.175151 ms, 59.094793982665514 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296206E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68568, Content-Type=image/jpeg, X-Timestamp=1.361650296238E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68568
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 16.372544 ms, 59.41631432957315 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.361650296238E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68433, Content-Type=image/jpeg, X-Timestamp=1.36165029665E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68433
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) The recognizer took 21.308172 ms, 57.2407327212838 fps, %.2f avg
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) Captured time: 1.36165029665E12
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68255, Content-Type=image/jpeg, X-Timestamp=1.361650296668E12}
+@Sat Feb 23 12:11:36 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68255
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 19.901973 ms, 56.26175347589157 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296668E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68236, Content-Type=image/jpeg, X-Timestamp=1.36165029669E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68236
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.058567 ms, 57.59960260882168 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.36165029669E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68282, Content-Type=image/jpeg, X-Timestamp=1.361650296708E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68282
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 13.691983 ms, 58.843238089020886 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296708E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68137, Content-Type=image/jpeg, X-Timestamp=1.361650296748E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68137
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.658528 ms, 59.26673397176573 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296748E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68107, Content-Type=image/jpeg, X-Timestamp=1.361650296792E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68107
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 13.575239 ms, 60.247972218937036 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296792E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68279, Content-Type=image/jpeg, X-Timestamp=1.361650296832E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68279
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.427516 ms, 60.576592988257495 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296832E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68123, Content-Type=image/jpeg, X-Timestamp=1.361650296878E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68123
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.644789 ms, 61.06893324652181 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296878E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68161, Content-Type=image/jpeg, X-Timestamp=1.361650296921E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68161
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 13.607566 ms, 61.7648187666423 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296921E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68088, Content-Type=image/jpeg, X-Timestamp=1.361650296961E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68088
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.72177 ms, 61.87676824708866 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650296961E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68280, Content-Type=image/jpeg, X-Timestamp=1.361650297013E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68280
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 19.274141 ms, 61.18351740514513 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297013E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67929, Content-Type=image/jpeg, X-Timestamp=1.361650297063E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67929
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.98678 ms, 61.46714074223417 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297063E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68138, Content-Type=image/jpeg, X-Timestamp=1.361650297145E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68138
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 16.333437 ms, 61.454301092249615 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297145E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68025, Content-Type=image/jpeg, X-Timestamp=1.36165029719E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68025
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.441173 ms, 61.802023398246064 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.36165029719E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68118, Content-Type=image/jpeg, X-Timestamp=1.361650297201E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68118
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 16.093952 ms, 61.817805195210745 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297201E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68172, Content-Type=image/jpeg, X-Timestamp=1.361650297229E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68172
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.226181 ms, 62.15845816713021 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297229E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68191, Content-Type=image/jpeg, X-Timestamp=1.361650297275E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68191
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.272387 ms, 62.46494494448388 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297275E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68233, Content-Type=image/jpeg, X-Timestamp=1.36165029735E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68233
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 13.738702 ms, 62.83623571549745 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.36165029735E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67939, Content-Type=image/jpeg, X-Timestamp=1.361650297365E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67939
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.826412 ms, 62.85013274727379 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297365E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68042, Content-Type=image/jpeg, X-Timestamp=1.361650297414E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68042
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.334621 ms, 63.09052503947071 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297414E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68034, Content-Type=image/jpeg, X-Timestamp=1.361650297453E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68034
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.279274 ms, 63.17481095622216 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297453E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68068, Content-Type=image/jpeg, X-Timestamp=1.361650297493E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68068
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 14.74945 ms, 63.32907670713834 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297493E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68112, Content-Type=image/jpeg, X-Timestamp=1.361650297535E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68112
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 13.374888 ms, 63.66492166458384 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297535E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68149, Content-Type=image/jpeg, X-Timestamp=1.361650297579E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68149
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) The recognizer took 15.922264 ms, 63.635883146878676 fps, %.2f avg
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) Captured time: 1.361650297579E12
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68096, Content-Type=image/jpeg, X-Timestamp=1.361650297651E12}
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68096
+@Sat Feb 23 12:11:37 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.227896 ms, 63.83065987845856 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297651E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68136, Content-Type=image/jpeg, X-Timestamp=1.361650297689E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68136
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.953313 ms, 64.04953078314523 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297689E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68298, Content-Type=image/jpeg, X-Timestamp=1.361650297696E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68298
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.188844 ms, 64.2270527989815 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297696E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68053, Content-Type=image/jpeg, X-Timestamp=1.361650297729E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68053
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.978126 ms, 64.29891460973653 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297729E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68248, Content-Type=image/jpeg, X-Timestamp=1.361650297768E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68248
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.69292 ms, 64.51931277788586 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297768E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67999, Content-Type=image/jpeg, X-Timestamp=1.361650297891E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67999
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.769403 ms, 64.71995827763172 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297891E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68053, Content-Type=image/jpeg, X-Timestamp=1.361650297899E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68053
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.607504 ms, 64.92935176744551 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297899E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68121, Content-Type=image/jpeg, X-Timestamp=1.361650297929E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68121
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.261341 ms, 65.05607479262719 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297929E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68094, Content-Type=image/jpeg, X-Timestamp=1.361650297966E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68094
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.003201 ms, 65.20488690430554 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650297966E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68071, Content-Type=image/jpeg, X-Timestamp=1.361650298008E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68071
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.871678 ms, 65.36093418174029 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298008E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68302, Content-Type=image/jpeg, X-Timestamp=1.361650298047E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68302
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.664885 ms, 65.5317167899109 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298047E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68212, Content-Type=image/jpeg, X-Timestamp=1.361650298083E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68212
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.77267 ms, 65.68412474383663 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298083E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68210, Content-Type=image/jpeg, X-Timestamp=1.361650298153E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68210
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.386876 ms, 65.76826321807344 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298153E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67971, Content-Type=image/jpeg, X-Timestamp=1.361650298188E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67971
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 16.265488 ms, 65.66416626873686 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298188E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68083, Content-Type=image/jpeg, X-Timestamp=1.361650298196E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68083
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.678746 ms, 65.81304495340147 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298196E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68165, Content-Type=image/jpeg, X-Timestamp=1.361650298226E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68165
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 22.735684 ms, 65.11055221156725 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298226E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67917, Content-Type=image/jpeg, X-Timestamp=1.361650298267E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67917
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 19.578643 ms, 64.73210866803855 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298267E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67945, Content-Type=image/jpeg, X-Timestamp=1.361650298342E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67945
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.207886 ms, 64.84057286997351 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298342E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68087, Content-Type=image/jpeg, X-Timestamp=1.361650298352E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68087
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 14.401086 ms, 64.92832593239419 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298352E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68160, Content-Type=image/jpeg, X-Timestamp=1.361650298391E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68160
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 19.303107 ms, 64.601033295078 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298391E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68155, Content-Type=image/jpeg, X-Timestamp=1.361650298426E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68155
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.791606 ms, 64.73945895436681 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298426E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68331, Content-Type=image/jpeg, X-Timestamp=1.361650298463E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68331
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 17.82901 ms, 64.54799908625854 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298463E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68191, Content-Type=image/jpeg, X-Timestamp=1.361650298504E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68191
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 15.927098 ms, 64.51384045972165 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298504E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68221, Content-Type=image/jpeg, X-Timestamp=1.361650298542E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68221
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 13.943935 ms, 64.63403966756431 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298542E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67978, Content-Type=image/jpeg, X-Timestamp=1.361650298636E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67978
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) The recognizer took 16.650224 ms, 64.5446497419509 fps, %.2f avg
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) Captured time: 1.361650298636E12
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68173, Content-Type=image/jpeg, X-Timestamp=1.361650298682E12}
+@Sat Feb 23 12:11:38 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68173
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 19.317185 ms, 64.26141647038419 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298682E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68085, Content-Type=image/jpeg, X-Timestamp=1.361650298689E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68085
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 14.313745 ms, 64.35193646848073 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298689E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68143, Content-Type=image/jpeg, X-Timestamp=1.361650298724E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68143
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 14.339 ms, 64.43776933591894 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298724E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68182, Content-Type=image/jpeg, X-Timestamp=1.361650298777E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68182
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.939341 ms, 64.54912199780995 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298777E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68039, Content-Type=image/jpeg, X-Timestamp=1.361650298854E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68039
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 15.432671 ms, 64.55324763553315 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298854E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67958, Content-Type=image/jpeg, X-Timestamp=1.361650298864E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67958
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.741261 ms, 64.67300611404605 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298864E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67899, Content-Type=image/jpeg, X-Timestamp=1.361650298902E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67899
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 16.295434 ms, 64.6168575013342 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298902E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67953, Content-Type=image/jpeg, X-Timestamp=1.361650298939E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67953
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 18.072673 ms, 64.44520887828172 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298939E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67887, Content-Type=image/jpeg, X-Timestamp=1.361650298981E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67887
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 18.21017 ms, 64.27091598621249 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650298981E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68154, Content-Type=image/jpeg, X-Timestamp=1.361650299025E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68154
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 14.143116 ms, 64.3610303201675 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299025E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67918, Content-Type=image/jpeg, X-Timestamp=1.361650299076E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67918
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 16.837754 ms, 64.27951688461772 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299076E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68069, Content-Type=image/jpeg, X-Timestamp=1.361650299116E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68069
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 17.185526 ms, 64.1792465740953 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299116E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68071, Content-Type=image/jpeg, X-Timestamp=1.361650299214E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68071
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 15.127699 ms, 64.20673808246177 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299214E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67849, Content-Type=image/jpeg, X-Timestamp=1.361650299223E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67849
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 15.581215 ms, 64.20634820056793 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299223E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68191, Content-Type=image/jpeg, X-Timestamp=1.361650299253E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68191
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.799678 ms, 64.31105861111529 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299253E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68148, Content-Type=image/jpeg, X-Timestamp=1.361650299294E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68148
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.373386 ms, 64.43806821187916 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299294E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68267, Content-Type=image/jpeg, X-Timestamp=1.36165029938E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68267
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.78849 ms, 64.53800921010279 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.36165029938E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67994, Content-Type=image/jpeg, X-Timestamp=1.361650299388E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67994
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.724991 ms, 64.63914415024655 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299388E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67840, Content-Type=image/jpeg, X-Timestamp=1.36165029942E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67840
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.91779 ms, 64.72693308485749 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.36165029942E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67858, Content-Type=image/jpeg, X-Timestamp=1.36165029946E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67858
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 13.913769 ms, 64.81283550283284 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.36165029946E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67922, Content-Type=image/jpeg, X-Timestamp=1.361650299501E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67922
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 22.243425 ms, 64.43836428909962 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299501E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68241, Content-Type=image/jpeg, X-Timestamp=1.361650299538E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68241
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 17.994847 ms, 64.30511198239604 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299538E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68077, Content-Type=image/jpeg, X-Timestamp=1.361650299578E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68077
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 14.180446 ms, 64.3778464298547 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299578E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68299, Content-Type=image/jpeg, X-Timestamp=1.361650299615E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68299
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) The recognizer took 15.450192 ms, 64.38220641904373 fps, %.2f avg
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) Captured time: 1.361650299615E12
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68145, Content-Type=image/jpeg, X-Timestamp=1.361650299685E12}
+@Sat Feb 23 12:11:39 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68145
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.609772 ms, 64.37818957163347 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299685E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68059, Content-Type=image/jpeg, X-Timestamp=1.361650299721E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68059
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 18.240182 ms, 64.23997853103091 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299721E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67975, Content-Type=image/jpeg, X-Timestamp=1.361650299729E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67975
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.110112 ms, 64.21263863051558 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299729E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68147, Content-Type=image/jpeg, X-Timestamp=1.361650299759E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68147
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.691253 ms, 64.15714702919048 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299759E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68162, Content-Type=image/jpeg, X-Timestamp=1.361650299795E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68162
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.212966 ms, 64.17546721783819 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299795E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68241, Content-Type=image/jpeg, X-Timestamp=1.361650299884E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68241
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 14.06972 ms, 64.24883874570213 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299884E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68105, Content-Type=image/jpeg, X-Timestamp=1.361650299892E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68105
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.078559 ms, 64.27217110898513 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299892E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67977, Content-Type=image/jpeg, X-Timestamp=1.361650299928E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67977
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 18.701205 ms, 64.12331138611535 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650299928E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67987, Content-Type=image/jpeg, X-Timestamp=1.361650300044E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67987
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 14.801449 ms, 64.16040928240051 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300044E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68087, Content-Type=image/jpeg, X-Timestamp=1.361650300053E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68087
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 13.991298 ms, 64.23425167462358 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300053E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68068, Content-Type=image/jpeg, X-Timestamp=1.361650300128E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68068
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 14.742065 ms, 64.27213973435038 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300128E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68238, Content-Type=image/jpeg, X-Timestamp=1.361650300174E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68238
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.670592 ms, 64.26706724155476 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300174E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68193, Content-Type=image/jpeg, X-Timestamp=1.361650300217E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68193
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.355486 ms, 64.23137755239753 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300217E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68120, Content-Type=image/jpeg, X-Timestamp=1.361650300293E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68120
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.053624 ms, 64.25423616502731 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300293E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68089, Content-Type=image/jpeg, X-Timestamp=1.3616503003E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68089
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.134075 ms, 64.2291713012313 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.3616503003E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68101, Content-Type=image/jpeg, X-Timestamp=1.36165030033E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68101
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 18.882135 ms, 64.08563036121582 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.36165030033E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68164, Content-Type=image/jpeg, X-Timestamp=1.361650300372E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68164
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 20.959789 ms, 63.85732625794959 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300372E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68069, Content-Type=image/jpeg, X-Timestamp=1.361650300444E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68069
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 22.38341 ms, 63.57592432887276 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300444E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68059, Content-Type=image/jpeg, X-Timestamp=1.361650300451E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68059
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.197574 ms, 63.59785922103913 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300451E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68114, Content-Type=image/jpeg, X-Timestamp=1.361650300484E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68114
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.701653 ms, 63.55793368314355 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300484E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68024, Content-Type=image/jpeg, X-Timestamp=1.361650300524E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68024
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 16.302819 ms, 63.534950874772825 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300524E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67947, Content-Type=image/jpeg, X-Timestamp=1.361650300565E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67947
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) The recognizer took 15.63446 ms, 63.539144050589364 fps, %.2f avg
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) Captured time: 1.361650300565E12
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68085, Content-Type=image/jpeg, X-Timestamp=1.361650300613E12}
+@Sat Feb 23 12:11:40 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68085
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 17.427975 ms, 63.47233716678747 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300613E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68220, Content-Type=image/jpeg, X-Timestamp=1.36165030065E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68220
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 19.315464 ms, 63.33337412494539 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.36165030065E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68140, Content-Type=image/jpeg, X-Timestamp=1.361650300694E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68140
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.907126 ms, 63.36742278893399 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300694E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68291, Content-Type=image/jpeg, X-Timestamp=1.361650300795E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68291
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 21.189145 ms, 63.16127550822476 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300795E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68135, Content-Type=image/jpeg, X-Timestamp=1.361650300813E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68135
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 12.909415 ms, 63.27147823687852 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300813E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68205, Content-Type=image/jpeg, X-Timestamp=1.361650300861E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68205
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 25.17717 ms, 62.92275868301463 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300861E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67964, Content-Type=image/jpeg, X-Timestamp=1.361650300901E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67964
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.214648 ms, 62.98432885863931 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300901E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68230, Content-Type=image/jpeg, X-Timestamp=1.361650300946E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68230
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.319634 ms, 63.04105856047028 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300946E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68141, Content-Type=image/jpeg, X-Timestamp=1.361650300985E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68141
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 19.518893 ms, 62.90923986798068 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650300985E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68225, Content-Type=image/jpeg, X-Timestamp=1.361650301033E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68225
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 16.465502 ms, 62.88893851701171 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301033E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68079, Content-Type=image/jpeg, X-Timestamp=1.36165030108E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68079
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 13.68321 ms, 62.96735392600625 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.36165030108E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68114, Content-Type=image/jpeg, X-Timestamp=1.361650301117E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68114
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.456633 ms, 63.01737972822734 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301117E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68093, Content-Type=image/jpeg, X-Timestamp=1.361650301157E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68093
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 17.864453 ms, 62.94793213588519 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301157E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68154, Content-Type=image/jpeg, X-Timestamp=1.361650301203E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68154
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 21.198177 ms, 62.76543132501559 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301203E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67964, Content-Type=image/jpeg, X-Timestamp=1.361650301242E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67964
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.041584 ms, 62.82970932617104 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301242E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68102, Content-Type=image/jpeg, X-Timestamp=1.361650301342E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68102
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.026121 ms, 62.893539761749814 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301342E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68176, Content-Type=image/jpeg, X-Timestamp=1.361650301381E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68176
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 19.221221 ms, 62.78239862084225 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301381E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68260, Content-Type=image/jpeg, X-Timestamp=1.36165030141E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68260
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 13.950618 ms, 62.84796475464167 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.36165030141E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68090, Content-Type=image/jpeg, X-Timestamp=1.361650301463E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68090
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 14.396957 ms, 62.89785352578393 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301463E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67961, Content-Type=image/jpeg, X-Timestamp=1.361650301499E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67961
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 25.962658 ms, 62.57052412329329 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301499E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67971, Content-Type=image/jpeg, X-Timestamp=1.361650301583E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67971
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 19.662501 ms, 62.452635562854354 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301583E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67962, Content-Type=image/jpeg, X-Timestamp=1.361650301593E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67962
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) The recognizer took 16.310279 ms, 62.4431828273742 fps, %.2f avg
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) Captured time: 1.361650301593E12
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68022, Content-Type=image/jpeg, X-Timestamp=1.36165030164E12}
+@Sat Feb 23 12:11:41 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68022
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 20.111986 ms, 62.31460547417438 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.36165030164E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68083, Content-Type=image/jpeg, X-Timestamp=1.361650301677E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68083
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 21.546259 ms, 62.14425731192266 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301677E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68087, Content-Type=image/jpeg, X-Timestamp=1.361650301712E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68087
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 22.729163 ms, 61.941479121079624 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301712E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68035, Content-Type=image/jpeg, X-Timestamp=1.361650301752E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68035
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.151238 ms, 62.00174842684832 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301752E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68106, Content-Type=image/jpeg, X-Timestamp=1.361650301795E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68106
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.158751 ms, 62.06096461500818 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301795E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68223, Content-Type=image/jpeg, X-Timestamp=1.361650301874E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68223
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 16.147102 ms, 62.059952063180376 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301874E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68129, Content-Type=image/jpeg, X-Timestamp=1.361650301924E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68129
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.991527 ms, 62.12288087139601 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301924E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68122, Content-Type=image/jpeg, X-Timestamp=1.361650301949E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68122
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 17.132243 ms, 62.09240142218409 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301949E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68074, Content-Type=image/jpeg, X-Timestamp=1.361650301996E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68074
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 31.077322 ms, 61.65814796604452 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650301996E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68182, Content-Type=image/jpeg, X-Timestamp=1.361650302051E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68182
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.693634 ms, 61.73040311913758 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302051E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68106, Content-Type=image/jpeg, X-Timestamp=1.361650302146E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68106
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.290942 ms, 61.78472498217688 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302146E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68028, Content-Type=image/jpeg, X-Timestamp=1.361650302164E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68028
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 19.469446 ms, 61.691997629382165 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302164E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68015, Content-Type=image/jpeg, X-Timestamp=1.361650302207E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68015
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.964618 ms, 61.72685642905711 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302207E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68098, Content-Type=image/jpeg, X-Timestamp=1.361650302242E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68098
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.135386 ms, 61.78434159870846 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302242E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68052, Content-Type=image/jpeg, X-Timestamp=1.36165030228E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68052
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.939299 ms, 61.84653303324636 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.36165030228E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67937, Content-Type=image/jpeg, X-Timestamp=1.361650302316E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67937
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.187118 ms, 61.901119996157895 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302316E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68078, Content-Type=image/jpeg, X-Timestamp=1.361650302357E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68078
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.215405 ms, 61.98167475836398 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302357E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68046, Content-Type=image/jpeg, X-Timestamp=1.361650302418E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68046
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.759267 ms, 62.046439618792434 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302418E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68066, Content-Type=image/jpeg, X-Timestamp=1.361650302534E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68066
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 13.963076 ms, 62.10488856229221 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302534E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67819, Content-Type=image/jpeg, X-Timestamp=1.361650302542E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67819
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 17.116238 ms, 62.07753882503248 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302542E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68048, Content-Type=image/jpeg, X-Timestamp=1.361650302577E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68048
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) The recognizer took 14.666667 ms, 62.11615842925325 fps, %.2f avg
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) Captured time: 1.361650302577E12
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67889, Content-Type=image/jpeg, X-Timestamp=1.361650302617E12}
+@Sat Feb 23 12:11:42 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67889
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 16.041432 ms, 62.11768689639553 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302617E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68011, Content-Type=image/jpeg, X-Timestamp=1.361650302689E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68011
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 17.466496 ms, 62.081552741207524 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302689E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68068, Content-Type=image/jpeg, X-Timestamp=1.361650302696E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68068
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 17.306979 ms, 62.05012915035792 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302696E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68007, Content-Type=image/jpeg, X-Timestamp=1.361650302724E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68007
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.216341 ms, 62.09958820160224 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302724E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68127, Content-Type=image/jpeg, X-Timestamp=1.361650302834E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68127
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.161177 ms, 62.14989071302522 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302834E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68005, Content-Type=image/jpeg, X-Timestamp=1.361650302843E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68005
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.268807 ms, 62.196826596333004 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302843E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67893, Content-Type=image/jpeg, X-Timestamp=1.361650302907E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67893
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.832411 ms, 62.25440901051155 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302907E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68027, Content-Type=image/jpeg, X-Timestamp=1.361650302947E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68027
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.536152 ms, 62.29336713804211 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302947E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67969, Content-Type=image/jpeg, X-Timestamp=1.361650302988E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67969
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 15.39789 ms, 62.30998866760906 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650302988E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68177, Content-Type=image/jpeg, X-Timestamp=1.36165030307E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68177
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 15.611252 ms, 62.32102153805157 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.36165030307E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67984, Content-Type=image/jpeg, X-Timestamp=1.361650303111E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67984
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.856087 ms, 62.375942349478755 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303111E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67751, Content-Type=image/jpeg, X-Timestamp=1.361650303119E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67751
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.768521 ms, 62.40746595493011 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303119E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67765, Content-Type=image/jpeg, X-Timestamp=1.361650303151E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67765
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 15.299922 ms, 62.425426441437914 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303151E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67743, Content-Type=image/jpeg, X-Timestamp=1.361650303187E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67743
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 15.932056 ms, 62.42757371690206 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303187E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67907, Content-Type=image/jpeg, X-Timestamp=1.361650303257E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67907
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 19.004319 ms, 62.35447641703818 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303257E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67909, Content-Type=image/jpeg, X-Timestamp=1.361650303264E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67909
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 15.293989 ms, 62.37254547977479 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303264E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68152, Content-Type=image/jpeg, X-Timestamp=1.361650303294E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68152
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.927785 ms, 62.42344912594939 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303294E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67882, Content-Type=image/jpeg, X-Timestamp=1.361650303333E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67882
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.975755 ms, 62.47265025944497 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303333E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67918, Content-Type=image/jpeg, X-Timestamp=1.361650303373E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67918
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.287583 ms, 62.51384681706999 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303373E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67741, Content-Type=image/jpeg, X-Timestamp=1.361650303413E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67741
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 17.232436 ms, 62.48440833035976 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303413E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67984, Content-Type=image/jpeg, X-Timestamp=1.361650303453E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67984
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.532996 ms, 62.542932880561935 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303453E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67890, Content-Type=image/jpeg, X-Timestamp=1.36165030349E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67890
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.979544 ms, 62.566729112684726 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.36165030349E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67808, Content-Type=image/jpeg, X-Timestamp=1.361650303528E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67808
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 20.862565 ms, 62.45255594787078 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303528E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67941, Content-Type=image/jpeg, X-Timestamp=1.361650303607E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67941
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 14.290472 ms, 62.49255248260611 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303607E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67905, Content-Type=image/jpeg, X-Timestamp=1.361650303614E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67905
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) The recognizer took 13.385942 ms, 62.553061768187796 fps, %.2f avg
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) Captured time: 1.361650303614E12
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67838, Content-Type=image/jpeg, X-Timestamp=1.361650303642E12}
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67838
+@Sat Feb 23 12:11:43 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 18.469737 ms, 62.49595568451488 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303642E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67959, Content-Type=image/jpeg, X-Timestamp=1.361650303677E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67959
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 25.829339 ms, 62.27227468422434 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303677E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68082, Content-Type=image/jpeg, X-Timestamp=1.361650303754E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68082
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 13.969978 ms, 62.31939745771724 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303754E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68058, Content-Type=image/jpeg, X-Timestamp=1.361650303762E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68058
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.328027 ms, 62.35799669383238 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303762E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68001, Content-Type=image/jpeg, X-Timestamp=1.361650303796E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68001
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.854641 ms, 62.384418411605935 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303796E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68028, Content-Type=image/jpeg, X-Timestamp=1.361650303833E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68028
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 18.980919 ms, 62.318854136576924 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303833E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67968, Content-Type=image/jpeg, X-Timestamp=1.361650303873E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67968
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.299246 ms, 62.35743332510277 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303873E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68107, Content-Type=image/jpeg, X-Timestamp=1.361650303929E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68107
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.203251 ms, 62.3977351136621 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303929E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68039, Content-Type=image/jpeg, X-Timestamp=1.361650303968E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68039
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.264664 ms, 62.436290320661364 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650303968E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68137, Content-Type=image/jpeg, X-Timestamp=1.361650304007E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68137
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 22.614892 ms, 62.29291570611008 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304007E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68106, Content-Type=image/jpeg, X-Timestamp=1.361650304102E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68106
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 17.498301 ms, 62.2617778337762 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304102E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68121, Content-Type=image/jpeg, X-Timestamp=1.361650304139E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68121
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 13.749805 ms, 62.31132142630288 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304139E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68168, Content-Type=image/jpeg, X-Timestamp=1.361650304147E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68168
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.720042 ms, 62.33967389756935 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304147E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67885, Content-Type=image/jpeg, X-Timestamp=1.361650304185E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67885
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 15.335181 ms, 62.35466962225714 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304185E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68025, Content-Type=image/jpeg, X-Timestamp=1.361650304231E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68025
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.419098 ms, 62.388882433523314 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304231E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67964, Content-Type=image/jpeg, X-Timestamp=1.361650304303E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67964
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 16.588391 ms, 62.377104565365315 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304303E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67988, Content-Type=image/jpeg, X-Timestamp=1.361650304311E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67988
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.510206 ms, 62.4089449927529 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304311E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67961, Content-Type=image/jpeg, X-Timestamp=1.361650304342E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67961
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 13.656799 ms, 62.45827486637607 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304342E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68031, Content-Type=image/jpeg, X-Timestamp=1.361650304407E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68031
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 16.168426 ms, 62.45500196008051 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304407E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67963, Content-Type=image/jpeg, X-Timestamp=1.36165030443E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67963
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.21982 ms, 62.49200156109917 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.36165030443E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67975, Content-Type=image/jpeg, X-Timestamp=1.361650304489E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67975
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 14.175721 ms, 62.52956235213426 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304489E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68017, Content-Type=image/jpeg, X-Timestamp=1.361650304527E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68017
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 21.643249 ms, 62.41409859381183 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304527E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67985, Content-Type=image/jpeg, X-Timestamp=1.361650304566E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67985
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 13.703156 ms, 62.461181920699936 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304566E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68066, Content-Type=image/jpeg, X-Timestamp=1.361650304648E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68066
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 13.958912 ms, 62.502670046056316 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304648E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68025, Content-Type=image/jpeg, X-Timestamp=1.361650304684E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68025
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) The recognizer took 15.449583 ms, 62.51374200680568 fps, %.2f avg
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) Captured time: 1.361650304684E12
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67993, Content-Type=image/jpeg, X-Timestamp=1.361650304692E12}
+@Sat Feb 23 12:11:44 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67993
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) The recognizer took 14.331512 ms, 62.54712727573383 fps, %.2f avg
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) Captured time: 1.361650304692E12
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67912, Content-Type=image/jpeg, X-Timestamp=1.361650304721E12}
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67912
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) The recognizer took 15.186039 ms, 62.563137337662575 fps, %.2f avg
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) Captured time: 1.361650304721E12
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) parsed headers {Content-Length=67848, Content-Type=image/jpeg, X-Timestamp=1.36165030476E12}
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 67848
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) No target found
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) The recognizer took 16.1276 ms, 62.560281396120345 fps, %.2f avg
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) Captured time: 1.36165030476E12
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (FINE) parsed headers {Content-Length=68137, Content-Type=image/jpeg, X-Timestamp=1.361650304832E12}
+@Sat Feb 23 12:11:45 PST 2013 in [global]: (INFO) allocating a new direct buffer of length 68137

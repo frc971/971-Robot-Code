@@ -7,8 +7,10 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.TreeMap;
 
-import javax.imageio.ImageIO;
+import com.googlecode.javacv.CanvasFrame;
+import com.googlecode.javacv.OpenCVFrameGrabber;
 
+import javax.imageio.ImageIO;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.cpp.opencv_core;
 import com.googlecode.javacv.cpp.opencv_core.CvSize;
@@ -355,22 +357,25 @@ public class DaisyCVWidget extends WPICameraExtension
 
         // Create the widget
         DaisyCVWidget widget = new DaisyCVWidget(true);
-        CanvasFrame original = new CanvasFrame("Raw");
-        CanvasFrame result = new CanvasFrame("Result");
+        CanvasFrame original = new CanvasFrame("Raw", 1);
+        CanvasFrame result = new CanvasFrame("Result", 1);
 
+        IplImage image,im;
+        OpenCVFrameGrabber grabber,gr;
+        
         long totalTime = 0;
         for (int i = 0; i < args.length; i++)
         {
             // Load the image
-            WPIColorImage rawImage = null;
-            try
+            WPIColorImage rawImage = new WPIColorImage(image.getBufferedImage());
+            /*try
             {
                 rawImage = new WPIColorImage(ImageIO.read(new File(args[i%args.length])));
             } catch (IOException e)
             {
                 System.err.println("Could not find file!");
                 return;
-            }
+            }*/
 
             //shows the raw image before processing to eliminate the possibility
             //that both may be the modified image.
