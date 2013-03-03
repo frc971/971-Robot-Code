@@ -32,11 +32,6 @@ public:
 	virtual UINT32 GetModuleForRouting();
 	virtual bool GetAnalogTriggerForRouting();
 	
-	// Interruptable Interface
-	virtual void RequestInterrupts(tInterruptHandler handler, void *param=NULL); ///< Asynchronus handler version.
-	virtual void RequestInterrupts();		///< Synchronus Wait version.
-	void SetUpSourceEdge(bool risingEdge, bool fallingEdge);
-
 	void UpdateTable();
 	void StartLiveWindowMode();
 	void StopLiveWindowMode();

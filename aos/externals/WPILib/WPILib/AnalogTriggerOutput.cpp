@@ -41,8 +41,10 @@ bool AnalogTriggerOutput::Get()
 	{
 	case kInWindow:
 		result = m_trigger->m_trigger->readOutput_InHysteresis(m_trigger->m_index, &localStatus);
+		break;
 	case kState:
 		result = m_trigger->m_trigger->readOutput_OverLimit(m_trigger->m_index, &localStatus);
+		break;
 	case kRisingPulse:
 	case kFallingPulse:
 		wpi_setWPIError(AnalogTriggerPulseOutputError);
@@ -75,20 +77,3 @@ bool AnalogTriggerOutput::GetAnalogTriggerForRouting()
 {
 	return true;
 }
-
-/**
- * Request interrupts asynchronously on this analog trigger output.
- * TODO: Hardware supports interrupts on Analog Trigger outputs... WPILib should too
- */
-void AnalogTriggerOutput::RequestInterrupts(tInterruptHandler handler, void *param)
-{
-}
-
-/**
- * Request interrupts synchronously on this analog trigger output.
- * TODO: Hardware supports interrupts on Analog Trigger outputs... WPILib should too
- */
-void AnalogTriggerOutput::RequestInterrupts()
-{
-}
-

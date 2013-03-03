@@ -42,6 +42,7 @@ class AnalogTriggerOutput: public DigitalSource
 {
 	friend class AnalogTrigger;
 public:
+  // kRisingPulse and kFallingPulse don't seem to work with RequestInterrupts.
 	typedef enum {kInWindow=0, kState=1, kRisingPulse=2, kFallingPulse=3} Type;
 	
 	virtual ~AnalogTriggerOutput();
@@ -51,8 +52,6 @@ public:
 	virtual UINT32 GetChannelForRouting();
 	virtual UINT32 GetModuleForRouting();
 	virtual bool GetAnalogTriggerForRouting();
-	virtual void RequestInterrupts(tInterruptHandler handler, void *param=NULL); ///< Asynchronus handler version.
-	virtual void RequestInterrupts();		///< Synchronus Wait version.
 protected:
 	AnalogTriggerOutput(AnalogTrigger *trigger, Type outputType);
 

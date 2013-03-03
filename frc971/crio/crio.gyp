@@ -6,6 +6,9 @@
       'type': 'static_library',
       'sources': [
         '<(AOS)/externals/WPILib/WPILib/LiveWindow/LiveWindow.cpp',
+        '<(AOS)/externals/WPILib/WPILib/AnalogTriggerOutput.cpp',
+        '<(AOS)/externals/WPILib/WPILib/DigitalInput.cpp',
+        '<(AOS)/externals/WPILib/WPILib/DigitalSource.cpp',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
