@@ -31,11 +31,12 @@ class TrapezoidProfileTest : public ::testing::Test {
   TrapezoidProfile profile_;
 
   ::testing::AssertionResult At(double position, double velocity) {
-    if (velocity != position_(1)) {
+    static const double kDoubleNear = 0.00001;
+    if (::std::abs(velocity - position_(1)) > kDoubleNear) {
       return ::testing::AssertionFailure() << "velocity is " << position_(1) <<
           " not " << velocity;
     }
-    if (position != position_(0)) {
+    if (::std::abs(position - position_(0)) > kDoubleNear) {
       return ::testing::AssertionFailure() << "position is " << position_(0) <<
           " not " << position;
     }
