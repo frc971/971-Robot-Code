@@ -9,7 +9,7 @@
 
 #include "Buttons/Button.h"
 
-class AnalogIOButton : public Button
+class AnalogIOButton : public Trigger
 {
 public:
 	static const double kThreshold;

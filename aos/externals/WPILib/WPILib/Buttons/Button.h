@@ -7,26 +7,27 @@
 #ifndef __BUTTON_H__
 #define __BUTTON_H__
 
-#include "SmartDashboard/SmartDashboardData.h"
+#include "Buttons/Trigger.h"
+#include "Commands/Command.h"
 
-class Command;
-
-class Button : public SmartDashboardData
-{
+/**
+ * This class provides an easy way to link commands to OI inputs.
+ *
+ * It is very easy to link a button to a command.  For instance, you could
+ * link the trigger button of a joystick to a "score" command.
+ *
+ * This class represents a subclass of Trigger that is specifically aimed at
+ * buttons on an operator interface as a common use case of the more generalized
+ * Trigger objects. This is a simple wrapper around Trigger with the method names
+ * renamed to fit the Button object use.
+ * 
+ * @author brad
+ */
+class Button : public Trigger {
 public:
-	Button();
-	virtual ~Button() {}
-	bool Grab();
-	virtual bool Get() = 0;
-	void WhenPressed(Command *command);
-	void WhileHeld(Command *command);
-	void WhenReleased(Command *command);
-
-	virtual std::string GetType() {return "Button";}
-	virtual NetworkTable *GetTable();
-
-protected:
-	NetworkTable* m_table;
+	virtual void WhenPressed(Command *command);
+	virtual void WhileHeld(Command *command);
+	virtual void WhenReleased(Command *command);
 };
 
 #endif

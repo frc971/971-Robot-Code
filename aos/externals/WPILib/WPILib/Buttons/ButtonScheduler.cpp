@@ -7,9 +7,8 @@
 #include "Buttons/ButtonScheduler.h"
 
 #include "Commands/Scheduler.h"
-#include "NetworkTables/NetworkTable.h"
 
-ButtonScheduler::ButtonScheduler(bool last, Button *button, Command *orders) :
+ButtonScheduler::ButtonScheduler(bool last, Trigger *button, Command *orders) :
 	m_pressedLast(last),
 	m_button(button),
 	m_command(orders)

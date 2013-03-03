@@ -23,7 +23,7 @@ public:
 	void Stop();
 private:
 	static Notifier *timerQueueHead;
-	static Semaphore queueSemaphore;
+	static ReentrantSemaphore queueSemaphore;
 	static tAlarm *talarm;
 	static tInterruptManager *manager;
 	static int refcount;

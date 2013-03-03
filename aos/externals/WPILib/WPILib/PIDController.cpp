@@ -11,6 +11,15 @@
 #include "PIDOutput.h"
 #include <math.h>
 #include "Synchronized.h"
+
+static const char *kP = "p";
+static const char *kI = "i";
+static const char *kD = "d";
+static const char *kF = "f";
+static const char *kSetpoint = "setpoint";
+static const char *kEnabled = "enabled";
+
+
 /**
  * Allocate a PID object with the given constants for P, I, D
  * @param Kp the proportional coefficient
@@ -26,13 +35,43 @@ PIDController::PIDController(float Kp, float Ki, float Kd,
 								float period) :
 	m_semaphore (0)
 {
-	m_semaphore = semBCreate(SEM_Q_PRIORITY, SEM_FULL);
+	Initialize(Kp, Ki, Kd, 0.0f, source, output, period);
+}
+
+/**
+ * Allocate a PID object with the given constants for P, I, D
+ * @param Kp the proportional coefficient
+ * @param Ki the integral coefficient
+ * @param Kd the derivative coefficient
+ * @param source The PIDSource object that is used to get values
+ * @param output The PIDOutput object that is set to the output value
+ * @param period the loop time for doing calculations. This particularly effects calculations of the
+ * integral and differental terms. The default is 50ms.
+ */
+PIDController::PIDController(float Kp, float Ki, float Kd, float Kf,
+								PIDSource *source, PIDOutput *output,
+								float period) :
+	m_semaphore (0)
+{
+	Initialize(Kp, Ki, Kd, Kf, source, output, period);
+}
+
+
+void PIDController::Initialize(float Kp, float Ki, float Kd, float Kf,
+								PIDSource *source, PIDOutput *output,
+								float period)
+{
+	m_table = NULL;
+	
+	m_semaphore = semMCreate(SEM_Q_PRIORITY);
 
 	m_controlLoop = new Notifier(PIDController::CallCalculate, this);
 
 	m_P = Kp;
 	m_I = Ki;
 	m_D = Kd;
+	m_F = Kf;
+	
 	m_maximumOutput = 1.0;
 	m_minimumOutput = -1.0;
 
@@ -58,6 +97,8 @@ PIDController::PIDController(float Kp, float Ki, float Kd,
 	static INT32 instances = 0;
 	instances++;
 	nUsageReporting::report(nUsageReporting::kResourceType_PIDController, instances);
+	
+	m_toleranceType = kNoTolerance;
 }
 
 /**
@@ -124,21 +165,24 @@ void PIDController::Calculate()
 					}
 				}
 			}
-
-			double potentialIGain = (m_totalError + m_error) * m_I;
-			if (potentialIGain < m_maximumOutput)
+			
+			if(m_I != 0)
 			{
-				if (potentialIGain > m_minimumOutput)
-					m_totalError += m_error;
+				double potentialIGain = (m_totalError + m_error) * m_I;
+				if (potentialIGain < m_maximumOutput)
+				{
+					if (potentialIGain > m_minimumOutput)
+						m_totalError += m_error;
+					else
+						m_totalError = m_minimumOutput / m_I;
+				}
 				else
-					m_totalError = m_minimumOutput / m_I;
-			}
-			else
-			{
-				m_totalError = m_maximumOutput / m_I;
+				{
+					m_totalError = m_maximumOutput / m_I;
+				}
 			}
 
-			m_result = m_P * m_error + m_I * m_totalError + m_D * (m_error - m_prevError);
+			m_result = m_P * m_error + m_I * m_totalError + m_D * (m_error - m_prevError) + m_setpoint * m_F;
 			m_prevError = m_error;
 
 			if (m_result > m_maximumOutput) m_result = m_maximumOutput;
@@ -168,6 +212,39 @@ void PIDController::SetPID(float p, float i, float d)
 		m_D = d;
 	}
 	END_REGION;
+
+	if (m_table != NULL) {
+		m_table->PutNumber("p", m_P);
+		m_table->PutNumber("i", m_I);
+		m_table->PutNumber("d", m_D);
+	}
+}
+
+/**
+ * Set the PID Controller gain parameters.
+ * Set the proportional, integral, and differential coefficients.
+ * @param p Proportional coefficient
+ * @param i Integral coefficient
+ * @param d Differential coefficient
+ * @param f Feed forward coefficient
+ */
+void PIDController::SetPID(float p, float i, float d, float f)
+{
+	CRITICAL_REGION(m_semaphore)
+	{
+		m_P = p;
+		m_I = i;
+		m_D = d;
+		m_F = f;
+	}
+	END_REGION;
+
+	if (m_table != NULL) {
+		m_table->PutNumber("p", m_P);
+		m_table->PutNumber("i", m_I);
+		m_table->PutNumber("d", m_D);
+		m_table->PutNumber("f", m_F);
+	}
 }
 
 /**
@@ -205,6 +282,19 @@ float PIDController::GetD()
 	CRITICAL_REGION(m_semaphore)
 	{
 		return m_D;
+	}
+	END_REGION;
+}
+
+/**
+ * Get the Feed forward coefficient
+ * @return Feed forward coefficient
+ */
+float PIDController::GetF()
+{
+	CRITICAL_REGION(m_semaphore)
+	{
+		return m_F;
 	}
 	END_REGION;
 }
@@ -299,6 +389,10 @@ void PIDController::SetSetpoint(float setpoint)
 		}
 	}
 	END_REGION;	
+	
+	if (m_table != NULL) {
+		m_table->PutNumber("setpoint", m_setpoint);
+	}
 }
 
 /**
@@ -325,7 +419,7 @@ float PIDController::GetError()
 	float error;
 	CRITICAL_REGION(m_semaphore)
 	{
-		error = m_error;
+		error = m_setpoint - m_pidInput->PIDGet();
 	}
 	END_REGION;
 	return error;
@@ -340,7 +434,38 @@ void PIDController::SetTolerance(float percent)
 {
 	CRITICAL_REGION(m_semaphore)
 	{
+		m_toleranceType = kPercentTolerance;
 		m_tolerance = percent;
+	}
+	END_REGION;
+}
+
+/*
+ * Set the percentage error which is considered tolerable for use with
+ * OnTarget.
+ * @param percentage error which is tolerable
+ */
+void PIDController::SetPercentTolerance(float percent)
+{
+	CRITICAL_REGION(m_semaphore)
+	{
+		m_toleranceType = kPercentTolerance;
+		m_tolerance = percent;
+	}
+	END_REGION;
+}
+
+/*
+ * Set the absolute error which is considered tolerable for use with
+ * OnTarget.
+ * @param percentage error which is tolerable
+ */
+void PIDController::SetAbsoluteTolerance(float absTolerance)
+{
+	CRITICAL_REGION(m_semaphore)
+	{
+		m_toleranceType = kAbsoluteTolerance;
+		m_tolerance = absTolerance;
 	}
 	END_REGION;
 }
@@ -349,14 +474,25 @@ void PIDController::SetTolerance(float percent)
  * Return true if the error is within the percentage of the total input range,
  * determined by SetTolerance. This asssumes that the maximum and minimum input
  * were set using SetInput.
+ * Currently this just reports on target as the actual value passes through the setpoint.
+ * Ideally it should be based on being within the tolerance for some period of time.
  */
 bool PIDController::OnTarget()
 {
 	bool temp;
 	CRITICAL_REGION(m_semaphore)
 	{
-		temp = fabs(m_error) < (m_tolerance / 100 * 
-			(m_maximumInput - m_minimumInput));
+		switch (m_toleranceType) {
+		case kPercentTolerance:
+			temp = fabs(GetError()) < (m_tolerance / 100 * (m_maximumInput - m_minimumInput));
+			break;
+		case kAbsoluteTolerance:
+			temp = fabs(GetError()) < m_tolerance;
+			break;
+		//TODO: this case needs an error
+		case kNoTolerance:
+			temp = false;
+		}
 	}
 	END_REGION;
 	return temp;
@@ -372,7 +508,12 @@ void PIDController::Enable()
 		m_enabled = true;
 	}
 	END_REGION;	
+	
+	if (m_table != NULL) {
+		m_table->PutBoolean("enabled", true);
+	}
 }
+
 /**
  * Stop running the PIDController, this sets the output to zero before stopping.
  */
@@ -384,6 +525,10 @@ void PIDController::Disable()
 		m_enabled = false;
 	}
 	END_REGION;
+	
+	if (m_table != NULL) {
+		m_table->PutBoolean("enabled", false);
+	}
 }
 
 /**
@@ -414,4 +559,55 @@ void PIDController::Reset()
 		m_result = 0;
 	}
 	END_REGION;
+}
+
+std::string PIDController::GetSmartDashboardType(){
+	return "PIDController";
+}
+
+void PIDController::InitTable(ITable* table){
+	if(m_table!=NULL)
+		m_table->RemoveTableListener(this);
+	m_table = table;
+	if(m_table!=NULL){
+		m_table->PutNumber(kP, GetP());
+		m_table->PutNumber(kI, GetI());
+		m_table->PutNumber(kD, GetD());
+		m_table->PutNumber(kF, GetF());
+		m_table->PutNumber(kSetpoint, GetSetpoint());
+		m_table->PutBoolean(kEnabled, IsEnabled());
+		m_table->AddTableListener(this, false);
+	}
+}
+
+ITable* PIDController::GetTable(){
+	return m_table;
+}
+
+void PIDController::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew){
+	if (key==kP || key==kI || key==kD || key==kF) {
+		if (m_P != m_table->GetNumber(kP) || m_I != m_table->GetNumber(kI) || m_D != m_table->GetNumber(kD) || m_F != m_table->GetNumber(kF)  ) {
+			SetPID(m_table->GetNumber(kP, 0.0), m_table->GetNumber(kI, 0.0), m_table->GetNumber(kD, 0.0), m_table->GetNumber(kF, 0.0));
+		}
+	} else if (key==kSetpoint && m_setpoint != value.f) {
+		SetSetpoint(value.f);
+	} else if (key==kEnabled && m_enabled != value.b) {
+		if (value.b) {
+			Enable();
+		} else {
+			Disable();
+		}
+	}
+}
+
+void PIDController::UpdateTable() {
+	
+}
+
+void PIDController::StartLiveWindowMode() {
+	Disable();
+}
+
+void PIDController::StopLiveWindowMode() {
+	
 }

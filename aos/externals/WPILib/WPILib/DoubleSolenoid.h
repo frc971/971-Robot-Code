@@ -8,6 +8,9 @@
 #define DOUBLE_SOLENOID_H_
 
 #include "SolenoidBase.h"
+#include "LiveWindow/LiveWindowSendable.h"
+#include "tables/ITableListener.h"
+
 
 /**
  * DoubleSolenoid class for running 2 channels of high voltage Digital Output
@@ -16,7 +19,7 @@
  * The DoubleSolenoid class is typically used for pneumatics solenoids that
  * have two positions controlled by two separate channels.
  */
-class DoubleSolenoid : public SolenoidBase {
+class DoubleSolenoid : public SolenoidBase, public LiveWindowSendable, public ITableListener {
 public:
 	typedef enum {kOff, kForward, kReverse} Value;
 
@@ -25,6 +28,14 @@ public:
 	virtual ~DoubleSolenoid();
 	virtual void Set(Value value);
 	virtual Value Get();
+	
+	void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	virtual void InitSolenoid();
@@ -33,6 +44,8 @@ private:
 	UINT32 m_reverseChannel; ///< The reverse channel on the module to control.
 	UINT8 m_forwardMask; ///< The mask for the forward channel.
 	UINT8 m_reverseMask; ///< The mask for the reverse channel.
+	
+	ITable *m_table;
 };
 
 #endif

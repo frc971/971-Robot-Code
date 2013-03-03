@@ -199,3 +199,29 @@ void DigitalInput::SetUpSourceEdge(bool risingEdge, bool fallingEdge)
 	wpi_setError(localStatus);
 }
 
+void DigitalInput::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutBoolean("Value", Get());
+	}
+}
+
+void DigitalInput::StartLiveWindowMode() {
+	
+}
+
+void DigitalInput::StopLiveWindowMode() {
+	
+}
+
+std::string DigitalInput::GetSmartDashboardType() {
+	return "DigitalInput";
+}
+
+void DigitalInput::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * DigitalInput::GetTable() {
+	return m_table;
+}

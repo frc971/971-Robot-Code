@@ -8,30 +8,41 @@
 #include "WPIErrors.h"
 #include "ErrorBase.h"
 
-Resource *Resource::m_resourceList = NULL;
-Semaphore Resource::m_createLock;
+ReentrantSemaphore Resource::m_createLock;
 
 /**
  * Allocate storage for a new instance of Resource.
  * Allocate a bool array of values that will get initialized to indicate that no resources
- * have been allocated yet. The indicies of the resources are 0..size-1.
- * This constructor will be called while m_createLock is held.
+ * have been allocated yet. The indicies of the resources are [0 .. elements - 1].
  */
 Resource::Resource(UINT32 elements)
 {
+	Synchronized sync(m_createLock);
 	m_size = elements;
 	m_isAllocated = new bool[m_size];
 	for (UINT32 i=0; i < m_size; i++)
+	{
 		m_isAllocated[i] = false;
-	m_nextResource = m_resourceList;
-	m_resourceList = this;
+	}
 }
 
+/**
+ * Factory method to create a Resource allocation-tracker *if* needed.
+ *
+ * @param r -- address of the caller's Resource pointer. If *r == NULL, this
+ *    will construct a Resource and make *r point to it. If *r != NULL, i.e.
+ *    the caller already has a Resource instance, this won't do anything.
+ * @param elements -- the number of elements for this Resource allocator to
+ *    track, that is, it will allocate resource numbers in the range
+ *    [0 .. elements - 1].
+ */
 /*static*/ void Resource::CreateResourceObject(Resource **r, UINT32 elements)
 {
 	Synchronized sync(m_createLock);
 	if (*r == NULL)
+	{
 		*r = new Resource(elements);
+	}
 }
 
 /**

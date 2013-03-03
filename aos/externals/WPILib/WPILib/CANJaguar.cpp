@@ -12,6 +12,7 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "WPIErrors.h"
 #include <stdio.h>
+#include "LiveWindow/LiveWindow.h"
 
 #define swap16(x) ( (((x)>>8) &0x00FF) \
                   | (((x)<<8) &0xFF00) )
@@ -69,6 +70,7 @@ void CANJaguar::InitCANJaguar()
 	m_safetyHelper = new MotorSafetyHelper(this);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_CANJaguar, m_deviceNumber, m_controlMode);
+	LiveWindow::GetInstance()->AddActuator("CANJaguar", m_deviceNumber, 0, this);
 }
 
 /**
@@ -1234,4 +1236,36 @@ void CANJaguar::StopMotor()
 {
 	DisableControl();
 }
+
+void CANJaguar::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
+	Set(value.f);
+}
+
+void CANJaguar::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", Get());
+	}
+}
+
+void CANJaguar::StartLiveWindowMode() {
+	m_table->AddTableListener("Value", this, true);
+}
+
+void CANJaguar::StopLiveWindowMode() {
+	m_table->RemoveTableListener(this);
+}
+
+std::string CANJaguar::GetSmartDashboardType() {
+	return "Speed Controller";
+}
+
+void CANJaguar::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * CANJaguar::GetTable() {
+	return m_table;
+}
+
 

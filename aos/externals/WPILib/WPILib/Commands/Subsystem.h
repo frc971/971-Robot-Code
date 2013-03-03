@@ -8,22 +8,18 @@
 #define __SUBSYSTEM_H__
 
 #include "ErrorBase.h"
-#include "SmartDashboard/SmartDashboardNamedData.h"
+#include "SmartDashboard/NamedSendable.h"
 #include <string>
 
-class NetworkTable;
+
 class Command;
 
-class Subsystem : public SmartDashboardNamedData, public ErrorBase
+class Subsystem : public ErrorBase, public NamedSendable
 {
 	friend class Scheduler;
 public:
 	Subsystem(const char *name);
 	virtual ~Subsystem() {}
-
-	virtual std::string GetName();
-	virtual std::string GetType();
-	virtual NetworkTable *GetTable();
 
 	void SetDefaultCommand(Command *command);
 	Command *GetDefaultCommand();
@@ -34,11 +30,19 @@ public:
 private:
 	void ConfirmCommand();
 
-	NetworkTable *m_table;
 	Command *m_currentCommand;
+	bool m_currentCommandChanged;
 	Command *m_defaultCommand;
 	std::string m_name;
 	bool m_initializedDefaultCommand;
+
+public:
+	virtual std::string GetName();
+	virtual void InitTable(ITable* table);
+	virtual ITable* GetTable();
+	virtual std::string GetSmartDashboardType();
+protected:
+	ITable* m_table;
 };
 
 #endif

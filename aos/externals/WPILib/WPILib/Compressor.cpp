@@ -164,3 +164,31 @@ bool Compressor::Enabled()
 	return m_enabled;
 }
 
+void Compressor::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutBoolean("Enabled", m_enabled);
+		m_table->PutBoolean("Pressure switch", GetPressureSwitchValue());
+	}
+}
+
+void Compressor::StartLiveWindowMode() {
+	
+}
+
+void Compressor::StopLiveWindowMode() {
+	
+}
+
+std::string Compressor::GetSmartDashboardType() {
+	return "Compressor";
+}
+
+void Compressor::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Compressor::GetTable() {
+	return m_table;
+}
+

@@ -8,11 +8,12 @@
 #define SPEED_CONTROLLER_H
 
 #include <vxWorks.h>
+#include "PIDOutput.h"
 
 /**
  * Interface for speed controlling devices.
  */
-class SpeedController
+class SpeedController : public PIDOutput
 {
 public:
 	virtual ~SpeedController() {};

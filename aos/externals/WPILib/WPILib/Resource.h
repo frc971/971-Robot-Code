@@ -12,17 +12,13 @@
 #include <vxWorks.h>
 
 /**
- * Track resources in the program.
- * The Resource class is a convienent way of keeping track of allocated arbitrary resources
- * in the program. Resources are just indicies that have an lower and upper bound that are
- * tracked by this class. In the library they are used for tracking allocation of hardware channels
- * but this is purely arbitrary. The resource class does not do any actual allocation, but
- * simply tracks if a given index is currently in use.
- * 
- * WARNING: this should only be statically allocated. When the program loads into memory all the
- * static constructors are called. At that time a linked list of all the "Resources" is created.
- * Then when the program actually starts - in the Robot constructor, all resources are initialized.
- * This ensures that the program is restartable in memory without having to unload/reload.
+ * The Resource class is a convenient way to track allocated resources.
+ * It tracks them as indicies in the range [0 .. elements - 1].
+ * E.g. the library uses this to track hardware channel allocation.
+ *
+ * The Resource class does not allocate the hardware channels or other
+ * resources; it just tracks which indices were marked in use by
+ * Allocate and not yet freed by Free.
  */
 class Resource : public ErrorBase
 {
@@ -33,17 +29,14 @@ public:
 	UINT32 Allocate(UINT32 index, const char *resourceDesc);
 	void Free(UINT32 index);
 
-protected:
+private:
 	explicit Resource(UINT32 size);
 
-private:
 	bool *m_isAllocated;
-	Semaphore m_allocateLock;
+	ReentrantSemaphore m_allocateLock;
 	UINT32 m_size;
-	Resource *m_nextResource;
 
-	static Semaphore m_createLock;
-	static Resource *m_resourceList;
+	static ReentrantSemaphore m_createLock;
 
 	DISALLOW_COPY_AND_ASSIGN(Resource);
 };

@@ -9,6 +9,7 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#include "LiveWindow/LiveWindow.h"
 
 static Resource *channels = NULL;
 
@@ -55,7 +56,7 @@ void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
 	{
 		m_accumulator = NULL;
 	}
-
+	LiveWindow::GetInstance()->AddActuator("AnalogChannel",channel, GetModuleNumber(), this);
 	nUsageReporting::report(nUsageReporting::kResourceType_AnalogChannel, channel, GetModuleNumber() - 1);
 }
 
@@ -432,3 +433,32 @@ double AnalogChannel::PIDGet()
 	if (StatusIsFatal()) return 0.0;
 	return GetAverageValue();
 }
+
+void AnalogChannel::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", GetAverageVoltage());
+	}
+}
+
+void AnalogChannel::StartLiveWindowMode() {
+	
+}
+
+void AnalogChannel::StopLiveWindowMode() {
+	
+}
+
+std::string AnalogChannel::GetSmartDashboardType() {
+	return "Analog Input";
+}
+
+void AnalogChannel::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * AnalogChannel::GetTable() {
+	return m_table;
+}
+
+

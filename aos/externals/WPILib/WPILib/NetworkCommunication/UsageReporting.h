@@ -2,7 +2,13 @@
 #ifndef __UsageReporting_h__
 #define __UsageReporting_h__
 
+#ifdef SIMULATION
+#include <vxWorks_compat.h>
+#define EXPORT_FUNC __declspec(dllexport) __cdecl
+#else
 #include <vxWorks.h>
+#define EXPORT_FUNC
+#endif
 
 #define kUsageReporting_version 1
 
@@ -54,6 +60,11 @@ namespace nUsageReporting
         kResourceType_AxisCamera,
         kResourceType_PCVideoServer,
         kResourceType_SmartDashboard,
+        kResourceType_Talon,
+        kResourceType_HiTechnicColorSensor,
+        kResourceType_HiTechnicAccel,
+        kResourceType_HiTechnicCompass,
+        kResourceType_SRF08,
     } tResourceType;
 
     typedef enum
@@ -93,7 +104,7 @@ namespace nUsageReporting
         kDriverStationEIO_TouchSlider = 11,
 
         kADXL345_SPI = 1,
-        kADXL345_I2C = 1,
+        kADXL345_I2C = 2,
 
         kCommand_Scheduler = 1,
 
@@ -108,14 +119,14 @@ namespace nUsageReporting
      * @param context an optional additional context number for some cases (such as module number).  Set to 0 to omit.
      * @param feature a string to be included describing features in use on a specific resource.  Setting the same resource more than once allows you to change the feature string.
      */
-    UINT32 report(tResourceType resource, UINT8 instanceNumber, UINT8 context = 0, const char *feature = NULL);
+    UINT32 EXPORT_FUNC report(tResourceType resource, UINT8 instanceNumber, UINT8 context = 0, const char *feature = NULL);
 }
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    UINT32 FRC_NetworkCommunication_nUsageReporting_report(UINT8 resource, UINT8 instanceNumber, UINT8 context, const char *feature);
+    UINT32 EXPORT_FUNC FRC_NetworkCommunication_nUsageReporting_report(UINT8 resource, UINT8 instanceNumber, UINT8 context, const char *feature);
 
 #ifdef __cplusplus
 }

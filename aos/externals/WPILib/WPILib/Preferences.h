@@ -8,12 +8,13 @@
 #define __PREFERENCES_H__
 
 #include "ErrorBase.h"
-#include "NetworkTables/NetworkTableChangeListener.h"
 #include "Task.h"
 #include <map>
 #include <semLib.h>
 #include <string>
 #include <vector>
+#include "tables/ITableListener.h"
+#include "networktables/NetworkTable.h"
 
 /**
  * The preferences class provides a relatively simple way to save important values to
@@ -30,7 +31,7 @@
  * Also, if the value of any variable is " in the {@link NetworkTable}, then that represents non-existence in the
  * {@link Preferences} table</p>
  */
-class Preferences : public ErrorBase, public NetworkTableChangeListener
+class Preferences : public ErrorBase, public ITableListener
 {
 public:
 	static Preferences *GetInstance();
@@ -52,6 +53,8 @@ public:
 	void Save();
 	bool ContainsKey(const char *key);
 	void Remove(const char *key);
+	
+	void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
 
 protected:
 	Preferences();
@@ -63,9 +66,6 @@ private:
 
 	void ReadTaskRun();
 	void WriteTaskRun();
-
-	virtual void ValueChanged(NetworkTable *table, const char *name, NetworkTables_Types type);
-	virtual void ValueConfirmed(NetworkTable *table, const char *name, NetworkTables_Types type);
 
 	static int InitReadTask(Preferences *obj) {obj->ReadTaskRun();return 0;}
 	static int InitWriteTask(Preferences *obj) {obj->WriteTaskRun();return 0;}

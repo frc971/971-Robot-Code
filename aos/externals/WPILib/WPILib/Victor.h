@@ -14,7 +14,7 @@
 /**
  * IFI Victor Speed Controller
  */
-class Victor : public SafePWM, public SpeedController, public PIDOutput
+class Victor : public SafePWM, public SpeedController
 {
 public:
 	explicit Victor(UINT32 channel);

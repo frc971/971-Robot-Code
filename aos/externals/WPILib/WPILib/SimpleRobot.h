@@ -20,7 +20,8 @@ public:
 	virtual void RobotInit();
 	virtual void Disabled();
 	virtual void Autonomous();
-	virtual void OperatorControl();
+    virtual void OperatorControl();
+    virtual void Test();
 	virtual void RobotMain();
 	void StartCompetition();
 

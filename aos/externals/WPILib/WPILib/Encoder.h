@@ -12,6 +12,7 @@
 #include "SensorBase.h"
 #include "Counter.h"
 #include "PIDSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class DigitalSource;
 
@@ -24,7 +25,7 @@ class DigitalSource;
  * generates negative values. Quadrature encoders have two digital outputs, an A Channel and a B Channel
  * that are out of phase with each other to allow the FPGA to do direction sensing. 
  */
-class Encoder: public SensorBase, public CounterBase, public PIDSource
+class Encoder: public SensorBase, public CounterBase, public PIDSource, public LiveWindowSendable
 {
 public:
 	typedef enum {kDistance, kRate} PIDSourceParameter;
@@ -53,6 +54,13 @@ public:
 
 	void SetPIDSourceParameter(PIDSourceParameter pidSource);
 	double PIDGet();
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	void InitEncoder(bool _reverseDirection, EncodingType encodingType);
@@ -68,6 +76,8 @@ private:
 	Counter *m_counter;				// Counter object for 1x and 2x encoding
 	EncodingType m_encodingType;	// Encoding type
 	PIDSourceParameter m_pidSource;// Encoder parameter that sources a PID controller
+	
+	ITable *m_table;
 };
 
 #endif

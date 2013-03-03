@@ -5,16 +5,15 @@
 /*----------------------------------------------------------------------------*/
 
 #include "Buttons/NetworkButton.h"
+#include "networktables/NetworkTable.h"
 
-#include "NetworkTables/NetworkTable.h"
-
-NetworkButton::NetworkButton(const char *tableName, const char *field) :
+NetworkButton::NetworkButton(const char *tableName, const char *field) ://TODO how is this supposed to work???
 	m_netTable(NetworkTable::GetTable(tableName)),
 	m_field(field)
 {
 }
 
-NetworkButton::NetworkButton(NetworkTable *table, const char *field) :
+NetworkButton::NetworkButton(ITable *table, const char *field) :
 	m_netTable(table),
 	m_field(field)
 {
@@ -22,8 +21,9 @@ NetworkButton::NetworkButton(NetworkTable *table, const char *field) :
 
 bool NetworkButton::Get()
 {
-	if (m_netTable->IsConnected())
+	/*if (m_netTable->isConnected())
 		return m_netTable->GetBoolean(m_field.c_str());
 	else
-		return false;
+		return false;*/
+	return m_netTable->GetBoolean(m_field);
 }

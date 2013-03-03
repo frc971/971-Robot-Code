@@ -8,6 +8,7 @@
 #define __HiTechnicCompass_h__
 
 #include "SensorBase.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class I2C;
 
@@ -23,12 +24,19 @@ class I2C;
  * 
  * @todo Implement a calibration method for the sensor.
  */
-class HiTechnicCompass : public SensorBase
+class HiTechnicCompass : public SensorBase, public LiveWindowSendable
 {
 public:
 	explicit HiTechnicCompass(UINT8 moduleNumber);
 	virtual ~HiTechnicCompass();
 	float GetAngle();
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	static const UINT8 kAddress = 0x02;
@@ -39,6 +47,8 @@ private:
 	static const UINT8 kHeadingRegister = 0x44;
 
 	I2C* m_i2c;
+	
+	ITable *m_table;
 };
 
 #endif

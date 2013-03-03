@@ -185,99 +185,11 @@ WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/ReleasedButtonScheduler.o : $(PRJ_ROOT
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
+WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/Trigger.o : $(PRJ_ROOT_DIR)/Buttons/Trigger.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
 WPILib/$(MODE_DIR)/Objects/WPILib/CANJaguar.o : $(PRJ_ROOT_DIR)/CANJaguar.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAccelerometer.o : $(PRJ_ROOT_DIR)/CInterfaces/CAccelerometer.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAnalogChannel.o : $(PRJ_ROOT_DIR)/CInterfaces/CAnalogChannel.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCompressor.o : $(PRJ_ROOT_DIR)/CInterfaces/CCompressor.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCounter.o : $(PRJ_ROOT_DIR)/CInterfaces/CCounter.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalInput.o : $(PRJ_ROOT_DIR)/CInterfaces/CDigitalInput.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalOutput.o : $(PRJ_ROOT_DIR)/CInterfaces/CDigitalOutput.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDriverStation.o : $(PRJ_ROOT_DIR)/CInterfaces/CDriverStation.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CEncoder.o : $(PRJ_ROOT_DIR)/CInterfaces/CEncoder.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGearTooth.o : $(PRJ_ROOT_DIR)/CInterfaces/CGearTooth.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGyro.o : $(PRJ_ROOT_DIR)/CInterfaces/CGyro.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJaguar.o : $(PRJ_ROOT_DIR)/CInterfaces/CJaguar.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJoystick.o : $(PRJ_ROOT_DIR)/CInterfaces/CJoystick.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CPWM.o : $(PRJ_ROOT_DIR)/CInterfaces/CPWM.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRelay.o : $(PRJ_ROOT_DIR)/CInterfaces/CRelay.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRobotDrive.o : $(PRJ_ROOT_DIR)/CInterfaces/CRobotDrive.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSerialPort.o : $(PRJ_ROOT_DIR)/CInterfaces/CSerialPort.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CServo.o : $(PRJ_ROOT_DIR)/CInterfaces/CServo.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSolenoid.o : $(PRJ_ROOT_DIR)/CInterfaces/CSolenoid.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CTimer.o : $(PRJ_ROOT_DIR)/CInterfaces/CTimer.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CUltrasonic.o : $(PRJ_ROOT_DIR)/CInterfaces/CUltrasonic.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CVictor.o : $(PRJ_ROOT_DIR)/CInterfaces/CVictor.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CWatchdog.o : $(PRJ_ROOT_DIR)/CInterfaces/CWatchdog.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/SimpleCRobot.o : $(PRJ_ROOT_DIR)/CInterfaces/SimpleCRobot.cpp $(FORCE_FILE_BUILD)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
@@ -425,91 +337,19 @@ WPILib/$(MODE_DIR)/Objects/WPILib/KinectStick.o : $(PRJ_ROOT_DIR)/KinectStick.cp
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
+WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindow.o : $(PRJ_ROOT_DIR)/LiveWindow/LiveWindow.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindowStatusListener.o : $(PRJ_ROOT_DIR)/LiveWindow/LiveWindowStatusListener.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
 WPILib/$(MODE_DIR)/Objects/WPILib/Module.o : $(PRJ_ROOT_DIR)/Module.cpp $(FORCE_FILE_BUILD)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
 WPILib/$(MODE_DIR)/Objects/WPILib/MotorSafetyHelper.o : $(PRJ_ROOT_DIR)/MotorSafetyHelper.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/BooleanEntry.o : $(PRJ_ROOT_DIR)/NetworkTables/BooleanEntry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Buffer.o : $(PRJ_ROOT_DIR)/NetworkTables/Buffer.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Confirmation.o : $(PRJ_ROOT_DIR)/NetworkTables/Confirmation.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Connection.o : $(PRJ_ROOT_DIR)/NetworkTables/Connection.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/ConnectionManager.o : $(PRJ_ROOT_DIR)/NetworkTables/ConnectionManager.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Data.o : $(PRJ_ROOT_DIR)/NetworkTables/Data.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Denial.o : $(PRJ_ROOT_DIR)/NetworkTables/Denial.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/DoubleEntry.o : $(PRJ_ROOT_DIR)/NetworkTables/DoubleEntry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Entry.o : $(PRJ_ROOT_DIR)/NetworkTables/Entry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/IntegerEntry.o : $(PRJ_ROOT_DIR)/NetworkTables/IntegerEntry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Key.o : $(PRJ_ROOT_DIR)/NetworkTables/Key.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkQueue.o : $(PRJ_ROOT_DIR)/NetworkTables/NetworkQueue.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkTable.o : $(PRJ_ROOT_DIR)/NetworkTables/NetworkTable.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/OldData.o : $(PRJ_ROOT_DIR)/NetworkTables/OldData.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Reader.o : $(PRJ_ROOT_DIR)/NetworkTables/Reader.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/StringEntry.o : $(PRJ_ROOT_DIR)/NetworkTables/StringEntry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableAssignment.o : $(PRJ_ROOT_DIR)/NetworkTables/TableAssignment.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableEntry.o : $(PRJ_ROOT_DIR)/NetworkTables/TableEntry.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionEnd.o : $(PRJ_ROOT_DIR)/NetworkTables/TransactionEnd.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionStart.o : $(PRJ_ROOT_DIR)/NetworkTables/TransactionStart.cpp $(FORCE_FILE_BUILD)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
@@ -573,14 +413,6 @@ WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableChooser.o : $(PRJ_ROOT_
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
-WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableGyro.o : $(PRJ_ROOT_DIR)/SmartDashboard/SendableGyro.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
-WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendablePIDController.o : $(PRJ_ROOT_DIR)/SmartDashboard/SendablePIDController.cpp $(FORCE_FILE_BUILD)
-	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
-
-
 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SmartDashboard.o : $(PRJ_ROOT_DIR)/SmartDashboard/SmartDashboard.cpp $(FORCE_FILE_BUILD)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
@@ -594,6 +426,10 @@ WPILib/$(MODE_DIR)/Objects/WPILib/SolenoidBase.o : $(PRJ_ROOT_DIR)/SolenoidBase.
 
 
 WPILib/$(MODE_DIR)/Objects/WPILib/Synchronized.o : $(PRJ_ROOT_DIR)/Synchronized.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/Talon.o : $(PRJ_ROOT_DIR)/Talon.cpp $(FORCE_FILE_BUILD)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
@@ -689,6 +525,202 @@ WPILib/$(MODE_DIR)/Objects/WPILib/Watchdog.o : $(PRJ_ROOT_DIR)/Watchdog.cpp $(FO
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
 
 
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTable.o : $(PRJ_ROOT_DIR)/networktables/NetworkTable.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableConnectionListenerAdapter.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableConnectionListenerAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableKeyListenerAdapter.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableKeyListenerAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableListenerAdapter.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableListenerAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableMode.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableMode.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableProvider.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableProvider.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableSubListenerAdapter.o : $(PRJ_ROOT_DIR)/networktables/NetworkTableSubListenerAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/AbstractNetworkTableEntryStore.o : $(PRJ_ROOT_DIR)/networktables2/AbstractNetworkTableEntryStore.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableEntry.o : $(PRJ_ROOT_DIR)/networktables2/NetworkTableEntry.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableNode.o : $(PRJ_ROOT_DIR)/networktables2/NetworkTableNode.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/OutgoingEntryReciever.o : $(PRJ_ROOT_DIR)/networktables2/OutgoingEntryReciever.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TableKeyExistsWithDifferentTypeException.o : $(PRJ_ROOT_DIR)/networktables2/TableKeyExistsWithDifferentTypeException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TransactionDirtier.o : $(PRJ_ROOT_DIR)/networktables2/TransactionDirtier.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/WriteManager.o : $(PRJ_ROOT_DIR)/networktables2/WriteManager.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionAdapter.o : $(PRJ_ROOT_DIR)/networktables2/client/ClientConnectionAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionState.o : $(PRJ_ROOT_DIR)/networktables2/client/ClientConnectionState.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientNetworkTableEntryStore.o : $(PRJ_ROOT_DIR)/networktables2/client/ClientNetworkTableEntryStore.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/NetworkTableClient.o : $(PRJ_ROOT_DIR)/networktables2/client/NetworkTableClient.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/BadMessageException.o : $(PRJ_ROOT_DIR)/networktables2/connection/BadMessageException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/ConnectionMonitorThread.o : $(PRJ_ROOT_DIR)/networktables2/connection/ConnectionMonitorThread.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/DataIOStream.o : $(PRJ_ROOT_DIR)/networktables2/connection/DataIOStream.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/NetworkTableConnection.o : $(PRJ_ROOT_DIR)/networktables2/connection/NetworkTableConnection.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/NetworkTableServer.o : $(PRJ_ROOT_DIR)/networktables2/server/NetworkTableServer.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionAdapter.o : $(PRJ_ROOT_DIR)/networktables2/server/ServerConnectionAdapter.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionList.o : $(PRJ_ROOT_DIR)/networktables2/server/ServerConnectionList.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionState.o : $(PRJ_ROOT_DIR)/networktables2/server/ServerConnectionState.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerIncomingStreamMonitor.o : $(PRJ_ROOT_DIR)/networktables2/server/ServerIncomingStreamMonitor.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerNetworkTableEntryStore.o : $(PRJ_ROOT_DIR)/networktables2/server/ServerNetworkTableEntryStore.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/FDIOStream.o : $(PRJ_ROOT_DIR)/networktables2/stream/FDIOStream.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketServerStreamProvider.o : $(PRJ_ROOT_DIR)/networktables2/stream/SocketServerStreamProvider.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreamFactory.o : $(PRJ_ROOT_DIR)/networktables2/stream/SocketStreamFactory.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreams.o : $(PRJ_ROOT_DIR)/networktables2/stream/SocketStreams.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/thread/DefaultThreadManger.o : $(PRJ_ROOT_DIR)/networktables2/thread/DefaultThreadManger.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayData.o : $(PRJ_ROOT_DIR)/networktables2/type/ArrayData.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayEntryType.o : $(PRJ_ROOT_DIR)/networktables2/type/ArrayEntryType.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/BooleanArray.o : $(PRJ_ROOT_DIR)/networktables2/type/BooleanArray.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexData.o : $(PRJ_ROOT_DIR)/networktables2/type/ComplexData.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexEntryType.o : $(PRJ_ROOT_DIR)/networktables2/type/ComplexEntryType.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/DefaultEntryTypes.o : $(PRJ_ROOT_DIR)/networktables2/type/DefaultEntryTypes.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryType.o : $(PRJ_ROOT_DIR)/networktables2/type/NetworkTableEntryType.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryTypeManager.o : $(PRJ_ROOT_DIR)/networktables2/type/NetworkTableEntryTypeManager.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NumberArray.o : $(PRJ_ROOT_DIR)/networktables2/type/NumberArray.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/StringArray.o : $(PRJ_ROOT_DIR)/networktables2/type/StringArray.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/EOFException.o : $(PRJ_ROOT_DIR)/networktables2/util/EOFException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IOException.o : $(PRJ_ROOT_DIR)/networktables2/util/IOException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IllegalStateException.o : $(PRJ_ROOT_DIR)/networktables2/util/IllegalStateException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/StringCache.o : $(PRJ_ROOT_DIR)/networktables2/util/StringCache.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/System.o : $(PRJ_ROOT_DIR)/networktables2/util/System.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
+WPILib/$(MODE_DIR)/Objects/WPILib/tables/TableKeyNotDefinedException.o : $(PRJ_ROOT_DIR)/tables/TableKeyNotDefinedException.cpp $(FORCE_FILE_BUILD)
+	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi; $(TOOL_PATH)ccppc $(DEBUGFLAGS_C++-Compiler) $(CC_ARCH_SPEC) -ansi -Wall  -MD -MP $(ADDED_C++FLAGS) $(IDE_INCLUDES) $(ADDED_INCLUDES) -DCPU=$(CPU) -DTOOL_FAMILY=$(TOOL_FAMILY) -DTOOL=$(TOOL) -D_WRS_KERNEL -D'SVN_REV="$(shell svnversion -n ..)"' $(DEFINES) -o "$@" -c "$<"
+
+
 OBJECTS_WPILib = WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_SPI.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Accelerometer.o \
@@ -706,30 +738,8 @@ OBJECTS_WPILib = WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/NetworkButton.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/PressedButtonScheduler.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/ReleasedButtonScheduler.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/Trigger.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/CANJaguar.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAccelerometer.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAnalogChannel.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCompressor.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCounter.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalInput.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalOutput.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDriverStation.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CEncoder.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGearTooth.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGyro.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJaguar.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJoystick.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CPWM.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRelay.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRobotDrive.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSerialPort.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CServo.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSolenoid.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CTimer.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CUltrasonic.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CVictor.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CWatchdog.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/SimpleCRobot.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Command.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroup.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroupEntry.o \
@@ -766,28 +776,10 @@ OBJECTS_WPILib = WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Joystick.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Kinect.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/KinectStick.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindow.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindowStatusListener.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Module.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/MotorSafetyHelper.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/BooleanEntry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Buffer.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Confirmation.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Connection.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/ConnectionManager.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Data.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Denial.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/DoubleEntry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Entry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/IntegerEntry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Key.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkQueue.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkTable.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/OldData.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Reader.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/StringEntry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableAssignment.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableEntry.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionEnd.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionStart.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Notifier.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/PIDController.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/PWM.o \
@@ -803,12 +795,11 @@ OBJECTS_WPILib = WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Servo.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/SimpleRobot.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableChooser.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableGyro.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendablePIDController.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SmartDashboard.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Solenoid.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/SolenoidBase.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Synchronized.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Talon.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Task.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Timer.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Ultrasonic.o \
@@ -831,7 +822,56 @@ OBJECTS_WPILib = WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/FrcError.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/TrackAPI.o \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/VisionAPI.o \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Watchdog.o
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Watchdog.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTable.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableConnectionListenerAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableKeyListenerAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableListenerAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableMode.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableProvider.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableSubListenerAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/AbstractNetworkTableEntryStore.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableEntry.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableNode.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/OutgoingEntryReciever.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TableKeyExistsWithDifferentTypeException.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TransactionDirtier.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/WriteManager.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionState.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientNetworkTableEntryStore.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/NetworkTableClient.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/BadMessageException.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/ConnectionMonitorThread.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/DataIOStream.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/NetworkTableConnection.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/NetworkTableServer.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionAdapter.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionList.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionState.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerIncomingStreamMonitor.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerNetworkTableEntryStore.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/FDIOStream.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketServerStreamProvider.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreamFactory.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreams.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/thread/DefaultThreadManger.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayData.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayEntryType.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/BooleanArray.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexData.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexEntryType.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/DefaultEntryTypes.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryType.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryTypeManager.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NumberArray.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/StringArray.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/EOFException.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IOException.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IllegalStateException.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/StringCache.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/System.o \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/tables/TableKeyNotDefinedException.o
 
 WPILib/$(MODE_DIR)/WPILib.a : $(OBJECTS_WPILib)
 	$(TRACE_FLAG)if [ ! -d "`dirname "$@"`" ]; then mkdir -p "`dirname "$@"`"; fi;echo "building $@"; $(TOOL_PATH)arppc crus "$@" $(OBJECTS_WPILib)
@@ -949,53 +989,55 @@ DEP_FILES := WPILib/$(MODE_DIR)/Objects/WPILib/ADXL345_I2C.d WPILib/$(MODE_DIR)/
 	 WPILib/$(MODE_DIR)/Objects/WPILib/AnalogTriggerOutput.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/AnalogIOButton.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/Button.d \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/ButtonScheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/DigitalIOButton.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/HeldButtonScheduler.d \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/InternalButton.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/JoystickButton.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/NetworkButton.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/PressedButtonScheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/ReleasedButtonScheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/CANJaguar.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAccelerometer.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CAnalogChannel.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCompressor.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CCounter.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalInput.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDigitalOutput.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CDriverStation.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CEncoder.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGearTooth.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CGyro.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJaguar.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CJoystick.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CPWM.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRelay.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CRobotDrive.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSerialPort.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CServo.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CSolenoid.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CTimer.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CUltrasonic.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CVictor.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/CWatchdog.d WPILib/$(MODE_DIR)/Objects/WPILib/CInterfaces/SimpleCRobot.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Command.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroup.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroupEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PIDCommand.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PIDSubsystem.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PrintCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Scheduler.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/StartCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Subsystem.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitCommand.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitForChildren.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitUntilCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Compressor.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Counter.d WPILib/$(MODE_DIR)/Objects/WPILib/Dashboard.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalInput.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/DigitalModule.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalOutput.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalSource.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/DoubleSolenoid.d WPILib/$(MODE_DIR)/Objects/WPILib/DriverStation.d WPILib/$(MODE_DIR)/Objects/WPILib/DriverStationEnhancedIO.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/DriverStationLCD.d WPILib/$(MODE_DIR)/Objects/WPILib/Encoder.d WPILib/$(MODE_DIR)/Objects/WPILib/Error.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/ErrorBase.d WPILib/$(MODE_DIR)/Objects/WPILib/GearTooth.d WPILib/$(MODE_DIR)/Objects/WPILib/Gyro.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/HiTechnicCompass.d WPILib/$(MODE_DIR)/Objects/WPILib/I2C.d WPILib/$(MODE_DIR)/Objects/WPILib/InterruptableSensorBase.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/IterativeRobot.d WPILib/$(MODE_DIR)/Objects/WPILib/Jaguar.d WPILib/$(MODE_DIR)/Objects/WPILib/Joystick.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Kinect.d WPILib/$(MODE_DIR)/Objects/WPILib/KinectStick.d WPILib/$(MODE_DIR)/Objects/WPILib/Module.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/MotorSafetyHelper.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/BooleanEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Buffer.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Confirmation.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Connection.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/ConnectionManager.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Data.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Denial.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/DoubleEntry.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Entry.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/IntegerEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Key.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkQueue.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/NetworkTable.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/OldData.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/Reader.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/StringEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableAssignment.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TableEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionEnd.d WPILib/$(MODE_DIR)/Objects/WPILib/NetworkTables/TransactionStart.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Notifier.d WPILib/$(MODE_DIR)/Objects/WPILib/PIDController.d WPILib/$(MODE_DIR)/Objects/WPILib/PWM.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Preferences.d WPILib/$(MODE_DIR)/Objects/WPILib/Relay.d WPILib/$(MODE_DIR)/Objects/WPILib/Resource.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/RobotBase.d WPILib/$(MODE_DIR)/Objects/WPILib/RobotDrive.d WPILib/$(MODE_DIR)/Objects/WPILib/SPI.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/SafePWM.d WPILib/$(MODE_DIR)/Objects/WPILib/SensorBase.d WPILib/$(MODE_DIR)/Objects/WPILib/SerialPort.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Servo.d WPILib/$(MODE_DIR)/Objects/WPILib/SimpleRobot.d WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableChooser.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableGyro.d WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendablePIDController.d WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SmartDashboard.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/PressedButtonScheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/ReleasedButtonScheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/Buttons/Trigger.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/CANJaguar.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Command.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroup.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/CommandGroupEntry.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PIDCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PIDSubsystem.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/PrintCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Scheduler.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/StartCommand.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/Subsystem.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitForChildren.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Commands/WaitUntilCommand.d WPILib/$(MODE_DIR)/Objects/WPILib/Compressor.d WPILib/$(MODE_DIR)/Objects/WPILib/Counter.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Dashboard.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalInput.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalModule.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/DigitalOutput.d WPILib/$(MODE_DIR)/Objects/WPILib/DigitalSource.d WPILib/$(MODE_DIR)/Objects/WPILib/DoubleSolenoid.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/DriverStation.d WPILib/$(MODE_DIR)/Objects/WPILib/DriverStationEnhancedIO.d WPILib/$(MODE_DIR)/Objects/WPILib/DriverStationLCD.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Encoder.d WPILib/$(MODE_DIR)/Objects/WPILib/Error.d WPILib/$(MODE_DIR)/Objects/WPILib/ErrorBase.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/GearTooth.d WPILib/$(MODE_DIR)/Objects/WPILib/Gyro.d WPILib/$(MODE_DIR)/Objects/WPILib/HiTechnicCompass.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/I2C.d WPILib/$(MODE_DIR)/Objects/WPILib/InterruptableSensorBase.d WPILib/$(MODE_DIR)/Objects/WPILib/IterativeRobot.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Jaguar.d WPILib/$(MODE_DIR)/Objects/WPILib/Joystick.d WPILib/$(MODE_DIR)/Objects/WPILib/Kinect.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/KinectStick.d WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindow.d WPILib/$(MODE_DIR)/Objects/WPILib/LiveWindow/LiveWindowStatusListener.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Module.d WPILib/$(MODE_DIR)/Objects/WPILib/MotorSafetyHelper.d WPILib/$(MODE_DIR)/Objects/WPILib/Notifier.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/PIDController.d WPILib/$(MODE_DIR)/Objects/WPILib/PWM.d WPILib/$(MODE_DIR)/Objects/WPILib/Preferences.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Relay.d WPILib/$(MODE_DIR)/Objects/WPILib/Resource.d WPILib/$(MODE_DIR)/Objects/WPILib/RobotBase.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/RobotDrive.d WPILib/$(MODE_DIR)/Objects/WPILib/SPI.d WPILib/$(MODE_DIR)/Objects/WPILib/SafePWM.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/SensorBase.d WPILib/$(MODE_DIR)/Objects/WPILib/SerialPort.d WPILib/$(MODE_DIR)/Objects/WPILib/Servo.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/SimpleRobot.d WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SendableChooser.d WPILib/$(MODE_DIR)/Objects/WPILib/SmartDashboard/SmartDashboard.d \
 	 WPILib/$(MODE_DIR)/Objects/WPILib/Solenoid.d WPILib/$(MODE_DIR)/Objects/WPILib/SolenoidBase.d WPILib/$(MODE_DIR)/Objects/WPILib/Synchronized.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Task.d WPILib/$(MODE_DIR)/Objects/WPILib/Timer.d WPILib/$(MODE_DIR)/Objects/WPILib/Ultrasonic.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Utility.d WPILib/$(MODE_DIR)/Objects/WPILib/Victor.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/AxisCamera.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/AxisCameraParams.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/BinaryImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/ColorImage.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/EnumCameraParameter.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/HSLImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/ImageBase.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/IntCameraParameter.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/MonoImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/PCVideoServer.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/RGBImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/Threshold.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/AxisCamera.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/BaeUtilities.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/FrcError.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/TrackAPI.d \
-	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/VisionAPI.d WPILib/$(MODE_DIR)/Objects/WPILib/Watchdog.d JavaCameraLib/$(MODE_DIR)/Objects/PCVideoServer.d \
-	 JavaCameraLib/$(MODE_DIR)/Objects/AxisCamera.d JavaCameraLib/$(MODE_DIR)/Objects/AxisCameraParams.d JavaCameraLib/$(MODE_DIR)/Objects/EnumCameraParameter.d \
-	 JavaCameraLib/$(MODE_DIR)/Objects/IntCameraParameter.d JavaCameraLib/$(MODE_DIR)/Objects/Error.d JavaCameraLib/$(MODE_DIR)/Objects/ErrorBase.d \
-	 JavaCameraLib/$(MODE_DIR)/Objects/Task.d JavaCameraLib/$(MODE_DIR)/Objects/Timer.d JavaCameraLib/$(MODE_DIR)/Objects/Synchronized.d \
-	 JavaCameraLib/$(MODE_DIR)/Objects/Utility.d
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Talon.d WPILib/$(MODE_DIR)/Objects/WPILib/Task.d WPILib/$(MODE_DIR)/Objects/WPILib/Timer.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Ultrasonic.d WPILib/$(MODE_DIR)/Objects/WPILib/Utility.d WPILib/$(MODE_DIR)/Objects/WPILib/Victor.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/AxisCamera.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/AxisCameraParams.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/BinaryImage.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/ColorImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/EnumCameraParameter.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/HSLImage.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/ImageBase.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/IntCameraParameter.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/MonoImage.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision/PCVideoServer.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/RGBImage.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision/Threshold.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/AxisCamera.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/BaeUtilities.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/FrcError.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/TrackAPI.d WPILib/$(MODE_DIR)/Objects/WPILib/Vision2009/VisionAPI.d WPILib/$(MODE_DIR)/Objects/WPILib/Watchdog.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTable.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableConnectionListenerAdapter.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableKeyListenerAdapter.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableListenerAdapter.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableMode.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableProvider.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables/NetworkTableSubListenerAdapter.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/AbstractNetworkTableEntryStore.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableEntry.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/NetworkTableNode.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/OutgoingEntryReciever.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TableKeyExistsWithDifferentTypeException.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/TransactionDirtier.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/WriteManager.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionAdapter.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientConnectionState.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/ClientNetworkTableEntryStore.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/client/NetworkTableClient.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/BadMessageException.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/ConnectionMonitorThread.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/DataIOStream.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/connection/NetworkTableConnection.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/NetworkTableServer.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionAdapter.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionList.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerConnectionState.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerIncomingStreamMonitor.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/server/ServerNetworkTableEntryStore.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/FDIOStream.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketServerStreamProvider.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreamFactory.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/stream/SocketStreams.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/thread/DefaultThreadManger.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayData.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ArrayEntryType.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/BooleanArray.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexData.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/ComplexEntryType.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/DefaultEntryTypes.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryType.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NetworkTableEntryTypeManager.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/NumberArray.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/type/StringArray.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/EOFException.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IOException.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/IllegalStateException.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/StringCache.d WPILib/$(MODE_DIR)/Objects/WPILib/networktables2/util/System.d \
+	 WPILib/$(MODE_DIR)/Objects/WPILib/tables/TableKeyNotDefinedException.d JavaCameraLib/$(MODE_DIR)/Objects/PCVideoServer.d JavaCameraLib/$(MODE_DIR)/Objects/AxisCamera.d \
+	 JavaCameraLib/$(MODE_DIR)/Objects/AxisCameraParams.d JavaCameraLib/$(MODE_DIR)/Objects/EnumCameraParameter.d JavaCameraLib/$(MODE_DIR)/Objects/IntCameraParameter.d \
+	 JavaCameraLib/$(MODE_DIR)/Objects/Error.d JavaCameraLib/$(MODE_DIR)/Objects/ErrorBase.d JavaCameraLib/$(MODE_DIR)/Objects/Task.d \
+	 JavaCameraLib/$(MODE_DIR)/Objects/Timer.d JavaCameraLib/$(MODE_DIR)/Objects/Synchronized.d JavaCameraLib/$(MODE_DIR)/Objects/Utility.d
 -include $(DEP_FILES)
 
 

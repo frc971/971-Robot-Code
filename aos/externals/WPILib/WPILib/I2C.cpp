@@ -31,9 +31,7 @@ I2C::I2C(DigitalModule *module, UINT8 deviceAddress)
 	}
 	m_objCount++;
 
-	const char *cm = NULL;
-	if (m_compatibilityMode) cm = "C";
-	nUsageReporting::report(nUsageReporting::kResourceType_I2C, deviceAddress, module->GetNumber() - 1, cm);
+	nUsageReporting::report(nUsageReporting::kResourceType_I2C, deviceAddress, module->GetNumber() - 1);
 }
 
 /**
@@ -199,6 +197,10 @@ void I2C::Broadcast(UINT8 registerAddress, UINT8 data)
 void I2C::SetCompatibilityMode(bool enable)
 {
 	m_compatibilityMode = enable;
+
+	const char *cm = NULL;
+	if (m_compatibilityMode) cm = "C";
+	nUsageReporting::report(nUsageReporting::kResourceType_I2C, m_deviceAddress, m_module->GetNumber() - 1, cm);
 }
 
 /**

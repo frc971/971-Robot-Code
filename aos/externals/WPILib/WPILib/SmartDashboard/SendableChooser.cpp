@@ -5,18 +5,17 @@
 /*----------------------------------------------------------------------------*/
 
 #include "SmartDashboard/SendableChooser.h"
+#include "networktables2/type/StringArray.h"
 
-#include "NetworkTables/NetworkTable.h"
 #include <stdio.h>
 
 static const char *kDefault = "default";
-static const char *kCount = "count";
+static const char *kOptions = "options";
 static const char *kSelected = "selected";
 
 SendableChooser::SendableChooser()
 {
-	m_table = new NetworkTable();
-	m_count = 0;
+	m_defaultChoice = "";
 }
 
 /**
@@ -27,23 +26,7 @@ SendableChooser::SendableChooser()
  */
 void SendableChooser::AddObject(const char *name, void *object)
 {
-	std::pair<std::map<std::string, void *>::iterator, bool> ret = m_choices.insert(std::pair<std::string, void *>(name, object));
-	if (ret.second)
-	{
-		//idBuf is: 10 bytes for m_count and 1 for NULL term
-		char idBuf[11];
-		snprintf(idBuf, 11, "%d", m_count);
-		m_ids.insert(std::pair<void *, std::string>(object, idBuf));
-		m_table->PutString(idBuf, name);
-		m_count++;
-		m_table->PutInt(kCount, m_count);
-	}
-	else
-	{
-		std::string id = m_ids[ret.first->second];
-		ret.first->second = object;
-		m_table->PutString(id, name);
-	}
+	m_choices[name] = object;
 }
 
 /**
@@ -55,9 +38,8 @@ void SendableChooser::AddObject(const char *name, void *object)
  */
 void SendableChooser::AddDefault(const char *name, void *object)
 {
-	m_defaultChoice = object;
+	m_defaultChoice = name;
 	AddObject(name, object);
-	m_table->PutString(kDefault, name);
 }
 
 /**
@@ -67,5 +49,30 @@ void SendableChooser::AddDefault(const char *name, void *object)
  */
 void *SendableChooser::GetSelected()
 {
-	return m_table->ContainsKey(kSelected) ? m_choices[m_table->GetString(kSelected)] : m_defaultChoice;
+	std::string selected = m_table->GetString(kSelected, m_defaultChoice);
+	if (selected == "")
+		return NULL;
+	else
+		return m_choices[selected];
+}
+
+void SendableChooser::InitTable(ITable* subtable) {
+	StringArray keys;
+	m_table = subtable;
+	if (m_table != NULL) {
+		std::map<std::string, void *>::iterator iter;
+		for (iter = m_choices.begin(); iter != m_choices.end(); iter++) {
+			keys.add(iter->first);
+		}
+		m_table->PutValue(kOptions, keys);
+		m_table->PutString(kDefault, m_defaultChoice);
+	}
+}
+
+ITable* SendableChooser::GetTable() {
+	return m_table;
+}
+
+std::string SendableChooser::GetSmartDashboardType() {
+	return "String Chooser";
 }

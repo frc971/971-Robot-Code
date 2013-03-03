@@ -29,6 +29,16 @@ public:
 	float GetAngle();
 	static float GetMaxAngle() { return kMaxServoAngle; };
 	static float GetMinAngle() { return kMinServoAngle; };
+	
+	void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+	
+	ITable *m_table;
 
 private:
 	void InitServo();

@@ -10,6 +10,7 @@
 #include "ChipObject.h"
 #include "SensorBase.h"
 #include "PIDSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class AnalogModule;
 
@@ -25,7 +26,7 @@ class AnalogModule;
  * resolution, while the averaged samples are divided by the number of samples to retain the resolution,
  * but get more stable values.
  */
-class AnalogChannel : public SensorBase, public PIDSource
+class AnalogChannel : public SensorBase, public PIDSource, public LiveWindowSendable
 {
 public:
 	static const UINT8 kAccumulatorModuleNumber = 1;
@@ -66,6 +67,13 @@ public:
 	void GetAccumulatorOutput(INT64 *value, UINT32 *count);
 	
 	double PIDGet();
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	void InitChannel(UINT8 moduleNumber, UINT32 channel);
@@ -73,6 +81,8 @@ private:
 	AnalogModule *m_module;
 	tAccumulator *m_accumulator;
 	INT64 m_accumulatorOffset;
+	
+	ITable *m_table;
 };
 
 #endif

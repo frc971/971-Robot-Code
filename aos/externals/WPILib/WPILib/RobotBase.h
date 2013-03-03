@@ -44,6 +44,7 @@ public:
 	bool IsDisabled();
 	bool IsAutonomous();
 	bool IsOperatorControl();
+    bool IsTest();
 	bool IsSystemActive();
 	bool IsNewDataAvailable();
 	Watchdog &GetWatchdog();

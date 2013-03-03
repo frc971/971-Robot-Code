@@ -6,39 +6,40 @@
 
 #include "Commands/PIDCommand.h"
 
-#include "SmartDashboard/SendablePIDController.h"
+#include "PIDController.h"
 #include "float.h"
 
-// XXX max and min are not used?
+PIDCommand::PIDCommand(const char *name, double p, double i, double d, double f, double period) :
+		Command(name)
+{
+	m_controller = new PIDController(p, i, d, this, this, period);
+}
+
+PIDCommand::PIDCommand(double p, double i, double d, double f, double period)
+{
+	m_controller = new PIDController(p, i, d, f, this, this, period);
+}
 
 PIDCommand::PIDCommand(const char *name, double p, double i, double d) :
 	Command(name)
 {
-	m_max = DBL_MAX;
-	m_min = DBL_MIN;
-	m_controller = new SendablePIDController(p, i, d, this, this);
+	m_controller = new PIDController(p, i, d, this, this);
 }
 
 PIDCommand::PIDCommand(const char *name, double p, double i, double d, double period) :
 	Command(name)
 {
-	m_max = DBL_MAX;
-	m_min = DBL_MIN;
-	m_controller = new SendablePIDController(p, i, d, this, this, period);
+	m_controller = new PIDController(p, i, d, this, this, period);
 }
 
 PIDCommand::PIDCommand(double p, double i, double d)
 {
-	m_max = DBL_MAX;
-	m_min = DBL_MIN;
-	m_controller = new SendablePIDController(p, i, d, this, this);
+	m_controller = new PIDController(p, i, d, this, this);
 }
 
 PIDCommand::PIDCommand(double p, double i, double d, double period)
 {
-	m_max = DBL_MAX;
-	m_min = DBL_MIN;
-	m_controller = new SendablePIDController(p, i, d, this, this, period);
+	m_controller = new PIDController(p, i, d, this, this, period);
 }
 
 PIDCommand::~PIDCommand()
@@ -96,27 +97,10 @@ double PIDCommand::GetPosition()
 	return ReturnPIDInput();
 }
 
-void PIDCommand::SetSetpointRange(double a, double b)
-{
-	if (a <= b)
-	{
-		m_min = a;
-		m_max = b;
-	}
-	else
-	{
-		m_min = b;
-		m_max = a;
-	}
+std::string PIDCommand::GetSmartDashboardType(){
+        return "PIDCommand";
 }
-
-std::string PIDCommand::GetType()
-{
-	return "PIDCommand";
+void PIDCommand::InitTable(ITable* table){
+	m_controller->InitTable(table);
+	Command::InitTable(table);
 }
-
-NetworkTable *PIDCommand::GetControllerTable()
-{
-	return m_controller->GetTable();
-}
-

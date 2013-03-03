@@ -30,11 +30,11 @@ private:
 	double m_expiration;			// the expiration time for this object
 	bool m_enabled;					// true if motor safety is enabled for this motor
 	double m_stopTime; 				// the FPGA clock value when this motor has expired
+	ReentrantSemaphore m_syncMutex;			// protect accesses to the state for this object
 	MotorSafety *m_safeObject;		// the object that is using the helper
 	MotorSafetyHelper *m_nextHelper; // next object in the list of MotorSafetyHelpers
 	static MotorSafetyHelper *m_headHelper; // the head of the list of MotorSafetyHelper objects
-	static Semaphore m_listMutex; // protect accesses to the list of helpers
-	Semaphore m_syncMutex;        // protect accesses to the state for this object
+	static ReentrantSemaphore m_listMutex;	// protect accesses to the list of helpers
 };
 
 #endif

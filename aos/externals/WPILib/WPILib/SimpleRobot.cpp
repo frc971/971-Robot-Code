@@ -9,6 +9,9 @@
 #include "DriverStation.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include "Timer.h"
+#include "SmartDashboard/SmartDashboard.h"
+#include "LiveWindow/LiveWindow.h"
+#include "networktables/NetworkTable.h"
 
 SimpleRobot::SimpleRobot()
 	: m_robotMainOverridden (true)
@@ -20,7 +23,7 @@ SimpleRobot::SimpleRobot()
  * Robot-wide initialization code should go here.
  * 
  * Programmers should override this method for default Robot-wide initialization which will
- * be called when the robot is first powered on.  It will be called exactly 1 time.
+ * be called each time the robot enters the disabled state.
  */
 void SimpleRobot::RobotInit()
 {
@@ -40,7 +43,8 @@ void SimpleRobot::Disabled()
 /**
  * Autonomous should go here.
  * Programmers should override this method to run code that should run while the field is
- * in the autonomous period.
+ * in the autonomous period. This will be called once each time the robot enters the
+ * autonomous state.
  */
 void SimpleRobot::Autonomous()
 {
@@ -50,9 +54,20 @@ void SimpleRobot::Autonomous()
 /**
  * Operator control (tele-operated) code should go here.
  * Programmers should override this method to run code that should run while the field is
- * in the Operator Control (tele-operated) period.
+ * in the Operator Control (tele-operated) period. This is called once each time the robot
+ * enters the teleop state.
  */
 void SimpleRobot::OperatorControl()
+{
+	printf("Default %s() method... Override me!\n", __FUNCTION__);
+}
+
+/**
+ * Test program should go here.
+ * Programmers should override this method to run code that executes while the robot is
+ * in test mode. This will be called once whenever the robot enters test mode
+ */
+void SimpleRobot::Test()
 {
 	printf("Default %s() method... Override me!\n", __FUNCTION__);
 }
@@ -77,19 +92,27 @@ void SimpleRobot::RobotMain()
  * Start a competition.
  * This code needs to track the order of the field starting to ensure that everything happens
  * in the right order. Repeatedly run the correct method, either Autonomous or OperatorControl
- * when the robot is enabled. After running the correct method, wait for some state to change,
- * either the other mode starts or the robot is disabled. Then go back and wait for the robot
- * to be enabled again.
+ * or Test when the robot is enabled. After running the correct method, wait for some state to
+ * change, either the other mode starts or the robot is disabled. Then go back and wait for the
+ * robot to be enabled again.
  */
 void SimpleRobot::StartCompetition()
 {
+	LiveWindow *lw = LiveWindow::GetInstance();
+
 	nUsageReporting::report(nUsageReporting::kResourceType_Framework, nUsageReporting::kFramework_Simple);
+
+	SmartDashboard::init();
+	NetworkTable::GetTable("LiveWindow")->GetSubTable("~STATUS~")->PutBoolean("LW Enabled", false);
 
 	RobotMain();
 	
 	if (!m_robotMainOverridden)
 	{
 		// first and one-time initialization
+		
+		lw->SetEnabled(false);
+		
 		RobotInit();
 
 		while (true)
@@ -108,6 +131,15 @@ void SimpleRobot::StartCompetition()
 				m_ds->InAutonomous(false);
 				while (IsAutonomous() && IsEnabled()) m_ds->WaitForData();
 			}
+            else if (IsTest())
+            {
+            	lw->SetEnabled(true);
+                m_ds->InTest(true);
+                Test();
+                m_ds->InTest(false);
+                while (IsTest() && IsEnabled()) m_ds->WaitForData();
+                lw->SetEnabled(false);
+            }
 			else
 			{
 				m_ds->InOperatorControl(true);

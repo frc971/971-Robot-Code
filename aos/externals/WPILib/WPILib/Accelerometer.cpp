@@ -8,6 +8,7 @@
 #include "AnalogModule.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include "WPIErrors.h"
+#include "LiveWindow/LiveWindow.h"
 
 /**
  * Common function for initializing the accelerometer.
@@ -17,6 +18,7 @@ void Accelerometer::InitAccelerometer()
 	m_voltsPerG = 1.0;
 	m_zeroGVoltage = 2.5;
 	nUsageReporting::report(nUsageReporting::kResourceType_Accelerometer, m_analogChannel->GetChannel(), m_analogChannel->GetModuleNumber() - 1);
+	LiveWindow::GetInstance()->AddSensor("Accelerometer", m_analogChannel->GetModuleNumber(), m_analogChannel->GetChannel(), this);
 }
 
 /**
@@ -125,3 +127,29 @@ double Accelerometer::PIDGet()
 {
 	return GetAcceleration();
 }
+
+void Accelerometer::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", GetAcceleration());
+	}
+}
+
+void Accelerometer::StartLiveWindowMode() {
+}
+
+void Accelerometer::StopLiveWindowMode() {
+}
+
+std::string Accelerometer::GetSmartDashboardType() {
+	return "Accelerometer";
+}
+
+void Accelerometer::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Accelerometer::GetTable() {
+	return m_table;
+}
+

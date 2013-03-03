@@ -11,7 +11,7 @@
 
 const UINT32 Notifier::kTimerInterruptNumber;
 Notifier *Notifier::timerQueueHead = NULL;
-Semaphore Notifier::queueSemaphore;
+ReentrantSemaphore Notifier::queueSemaphore;
 tAlarm *Notifier::talarm = NULL;
 tInterruptManager *Notifier::manager = NULL;
 int Notifier::refcount = 0;
@@ -243,7 +243,7 @@ void Notifier::StartSingle(double delay)
 /**
  * Register for periodic event notification.
  * A timer event is queued for periodic event notification. Each time the interrupt
- * occurs, the event will be immedeatly requeued for the same time interval.
+ * occurs, the event will be immediately requeued for the same time interval.
  * @param period Period in seconds to call the handler starting one period after the call to this method.
  */
 void Notifier::StartPeriodic(double period)

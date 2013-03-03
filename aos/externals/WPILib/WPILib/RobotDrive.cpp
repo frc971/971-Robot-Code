@@ -238,19 +238,19 @@ void RobotDrive::Drive(float outputMagnitude, float curve)
  * @param leftStick The joystick to control the left side of the robot.
  * @param rightStick The joystick to control the right side of the robot.
  */
-void RobotDrive::TankDrive(GenericHID *leftStick, GenericHID *rightStick)
+void RobotDrive::TankDrive(GenericHID *leftStick, GenericHID *rightStick, bool squaredInputs)
 {
 	if (leftStick == NULL || rightStick == NULL)
 	{
 		wpi_setWPIError(NullParameter);
 		return;
 	}
-	TankDrive(leftStick->GetY(), rightStick->GetY());
+	TankDrive(leftStick->GetY(), rightStick->GetY(), squaredInputs);
 }
 
-void RobotDrive::TankDrive(GenericHID &leftStick, GenericHID &rightStick)
+void RobotDrive::TankDrive(GenericHID &leftStick, GenericHID &rightStick, bool squaredInputs)
 {
-	TankDrive(leftStick.GetY(), rightStick.GetY());
+	TankDrive(leftStick.GetY(), rightStick.GetY(), squaredInputs);
 }
 
 /**
@@ -263,20 +263,20 @@ void RobotDrive::TankDrive(GenericHID &leftStick, GenericHID &rightStick)
  * @param rightAxis The axis to select on the right side Joystick object.
  */
 void RobotDrive::TankDrive(GenericHID *leftStick, UINT32 leftAxis,
-		GenericHID *rightStick, UINT32 rightAxis)
+		GenericHID *rightStick, UINT32 rightAxis, bool squaredInputs)
 {
 	if (leftStick == NULL || rightStick == NULL)
 	{
 		wpi_setWPIError(NullParameter);
 		return;
 	}
-	TankDrive(leftStick->GetRawAxis(leftAxis), rightStick->GetRawAxis(rightAxis));
+	TankDrive(leftStick->GetRawAxis(leftAxis), rightStick->GetRawAxis(rightAxis), squaredInputs);
 }
 
 void RobotDrive::TankDrive(GenericHID &leftStick, UINT32 leftAxis,
-		GenericHID &rightStick, UINT32 rightAxis)
+		GenericHID &rightStick, UINT32 rightAxis, bool squaredInputs)
 {
-	TankDrive(leftStick.GetRawAxis(leftAxis), rightStick.GetRawAxis(rightAxis));
+	TankDrive(leftStick.GetRawAxis(leftAxis), rightStick.GetRawAxis(rightAxis), squaredInputs);
 }
 
 
@@ -286,7 +286,7 @@ void RobotDrive::TankDrive(GenericHID &leftStick, UINT32 leftAxis,
  * @param leftValue The value of the left stick.
  * @param rightValue The value of the right stick.
  */
-void RobotDrive::TankDrive(float leftValue, float rightValue)
+void RobotDrive::TankDrive(float leftValue, float rightValue, bool squaredInputs)
 {
 	static bool reported = false;
 	if (!reported)
@@ -298,21 +298,24 @@ void RobotDrive::TankDrive(float leftValue, float rightValue)
 	// square the inputs (while preserving the sign) to increase fine control while permitting full power
 	leftValue = Limit(leftValue);
 	rightValue = Limit(rightValue);
-	if (leftValue >= 0.0)
+	if(squaredInputs)
 	{
-		leftValue = (leftValue * leftValue);
-	}
-	else
-	{
-		leftValue = -(leftValue * leftValue);
-	}
-	if (rightValue >= 0.0)
-	{
-		rightValue = (rightValue * rightValue);
-	}
-	else
-	{
-		rightValue = -(rightValue * rightValue);
+		if (leftValue >= 0.0)
+		{
+			leftValue = (leftValue * leftValue);
+		}
+		else
+		{
+			leftValue = -(leftValue * leftValue);
+		}
+		if (rightValue >= 0.0)
+		{
+			rightValue = (rightValue * rightValue);
+		}
+		else
+		{
+			rightValue = -(rightValue * rightValue);
+		}
 	}
 
 	SetLeftRightMotorOutputs(leftValue, rightValue);
@@ -330,7 +333,7 @@ void RobotDrive::TankDrive(float leftValue, float rightValue)
 void RobotDrive::ArcadeDrive(GenericHID *stick, bool squaredInputs)
 {
 	// simply call the full-featured ArcadeDrive with the appropriate values
-	ArcadeDrive(stick->GetY(), stick->GetX(), stick->GetTrigger());
+	ArcadeDrive(stick->GetY(), stick->GetX(), squaredInputs);
 }
 
 /**
@@ -345,7 +348,7 @@ void RobotDrive::ArcadeDrive(GenericHID *stick, bool squaredInputs)
 void RobotDrive::ArcadeDrive(GenericHID &stick, bool squaredInputs)
 {
 	// simply call the full-featured ArcadeDrive with the appropriate values
-	ArcadeDrive(stick.GetY(), stick.GetX(), stick.GetTrigger());
+	ArcadeDrive(stick.GetY(), stick.GetX(), squaredInputs);
 }
 
 /**

@@ -179,7 +179,7 @@ void Dashboard::AddString(char* value, INT32 length)
 	if (!ValidateAdd(length + sizeof(length))) return;
 	memcpy(m_packPtr, (char*)&length, sizeof(length));
 	m_packPtr += sizeof(length);
-	memcpy(m_packPtr, (char*)&value, length);
+	memcpy(m_packPtr, value, length);
 	m_packPtr += length;
 	AddedElement(kString);
 }

@@ -15,11 +15,17 @@
 #include "SpeedController.h"
 #include <semLib.h>
 #include <vxWorks.h>
+#include "LiveWindow/LiveWindowSendable.h"
+#include "tables/ITable.h"
 
 /**
  * Luminary Micro Jaguar Speed Control
  */
-class CANJaguar : public MotorSafety, public PIDOutput, public SpeedController, public ErrorBase
+class CANJaguar : public MotorSafety,
+					public SpeedController,
+					public ErrorBase,
+					public LiveWindowSendable,
+					public ITableListener
 {
 public:
 	// The internal PID control loop in the Jaguar runs at 1kHz.
@@ -112,6 +118,16 @@ protected:
 	double m_maxOutputVoltage;
 
 	MotorSafetyHelper *m_safetyHelper;
+
+	void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+	
+	ITable *m_table;
 
 private:
 	void InitCANJaguar();

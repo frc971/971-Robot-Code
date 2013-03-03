@@ -113,6 +113,15 @@ bool RobotBase::IsOperatorControl()
 }
 
 /**
+ * Determine if the robot is currently in Test mode.
+ * @return True if the robot is currently running tests as determined by the field controls.
+ */
+bool RobotBase::IsTest()
+{
+    return m_ds->IsTest();
+}
+
+/**
  * Indicates if new data is available from the driver station.
  * @return Has new data arrived over the network since the last time this function was called?
  */

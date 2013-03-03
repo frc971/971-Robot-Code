@@ -10,6 +10,7 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#include "LiveWindow/LiveWindow.h"
 
 // Allocate each direction separately.
 static Resource *relayChannels = NULL;
@@ -64,6 +65,7 @@ void Relay::InitRelay (UINT8 moduleNumber)
 	m_module = DigitalModule::GetInstance(moduleNumber);
 	m_module->SetRelayForward(m_channel, false);
 	m_module->SetRelayReverse(m_channel, false);
+	LiveWindow::GetInstance()->AddActuator("Relay", moduleNumber, m_channel, this);
 }
 
 /**
@@ -182,3 +184,84 @@ void Relay::Set(Relay::Value value)
 		break;
 	}
 }
+
+/**
+ * Get the Relay State
+ * 
+ * Gets the current state of the relay.
+ * 
+ * When set to kForwardOnly or kReverseOnly, value is returned as kOn/kOff not
+ * kForward/kReverse (per the recommendation in Set)
+ * 
+ * @return The current state of the relay as a Relay::Value
+ */
+Relay::Value Relay::Get() {
+   if(m_module->GetRelayForward(m_channel)) {
+	   if(m_module->GetRelayReverse(m_channel)) {
+		   return kOn;
+	   } else {
+		   if(m_direction == kForwardOnly) {
+			   return kOn;
+		   } else {
+		   return kForward;
+		   }
+	   }
+   } else {
+	   if(m_module->GetRelayReverse(m_channel)) {
+		   if(m_direction == kReverseOnly) {
+			   return kOn;
+		   } else {
+		   return kReverse;
+		   }
+	   } else {
+		   return kOff;
+	   }
+   }        
+}
+
+void Relay::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
+	std::string *val = (std::string *) value.ptr;
+	if (*val == "Off") Set(kOff);
+	else if (*val == "Forward") Set(kForward);
+	else if (*val == "Reverse") Set(kReverse);
+}
+
+void Relay::UpdateTable() {
+	if(m_table != NULL){
+		if (Get() == kOn) {
+			m_table->PutString("Value", "On");
+		}
+		else if (Get() == kForward) {
+			m_table->PutString("Value", "Forward");
+		}
+		else if (Get() == kReverse) {
+			m_table->PutString("Value", "Reverse");
+		}
+		else {
+			m_table->PutString("Value", "Off");
+		}
+	}
+}
+
+void Relay::StartLiveWindowMode() {
+	m_table->AddTableListener("Value", this, true);
+}
+
+void Relay::StopLiveWindowMode() {
+	m_table->RemoveTableListener(this);
+}
+
+std::string Relay::GetSmartDashboardType() {
+	return "Relay";
+}
+
+void Relay::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Relay::GetTable() {
+	return m_table;
+}
+
+

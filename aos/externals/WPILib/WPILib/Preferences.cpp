@@ -7,11 +7,11 @@
 #include "Preferences.h"
 
 #include "NetworkCommunication/UsageReporting.h"
-#include "NetworkTables/NetworkTable.h"
 #include "Synchronized.h"
 #include "WPIErrors.h"
 
 #include <stdio.h>
+#include <algorithm>
 
 /** Private NI function needed to write to the VxWorks target */
 extern "C" int Priv_SetWriteFileAllowed(UINT32 enable); 
@@ -45,7 +45,7 @@ Preferences::Preferences() :
 	semTake(m_fileOpStarted, WAIT_FOREVER);
 
 	NetworkTable::GetTable(kTableName)->PutBoolean(kSaveField, false);
-	NetworkTable::GetTable(kTableName)->AddChangeListenerAny(this);
+	NetworkTable::GetTable(kTableName)->AddTableListener(this);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Preferences, 0);
 }
@@ -501,7 +501,7 @@ void Preferences::ReadTaskRun()
 				{
 					m_keys.push_back(name);
 					m_values.insert(std::pair<std::string, std::string>(name, value));
-					NetworkTable::GetTable(kTableName)->PutString(name, value);
+					//NetworkTable::GetTable(kTableName)->PutString(name, value);
 
 					if (!comment.empty())
 					{
@@ -566,48 +566,55 @@ void Preferences::WriteTaskRun()
 	NetworkTable::GetTable(kTableName)->PutBoolean(kSaveField, false);
 }
 
-void Preferences::ValueChanged(NetworkTable *table, const char *name, NetworkTables_Types type)
+static bool isKeyAcceptable(const std::string& value) {
+    for (unsigned int i = 0; i < value.length(); i++) {
+        char letter = value.at(i);
+        switch (letter) {
+            case '=':
+            case '\n':
+            case '\r':
+            case ' ':
+            case '\t':
+            	return false;
+        }
+    }
+    return true;
+}
+void Preferences::ValueChanged(ITable* table, const std::string& key, EntryValue value, bool isNew)
 {
-	if (strcmp(name, kSaveField) == 0)
+	if (key==kSaveField)
 	{
-		if (table->GetBoolean(kSaveField))
+		if (table->GetBoolean(kSaveField, false))
 			Save();
 	}
 	else
 	{
 		Synchronized sync(m_tableLock);
 
-		std::string key = name;
-		if (key.find_first_of("=\n\r \t") != std::string::npos)
+		if (!isKeyAcceptable(key) || table->GetString(key, "").find('"')!=std::string::npos)
 		{
-			// The key is bogus... ignore it
-		}
-		else if (table->GetString(key).find_first_of("\"") != std::string::npos)
-		{
-			table->PutString(key, "\"");
-			m_values.erase(key);
-			std::vector<std::string>::iterator it = m_keys.begin();
-			for (; it != m_keys.end(); it++)
-			{
-				if (it->compare(name) == 0)
+			if(m_values.find(key) != m_values.end()){
+				m_values.erase(key);
+				std::vector<std::string>::iterator it = m_keys.begin();
+				for (; it != m_keys.end(); it++)
 				{
-					m_keys.erase(it);
-					break;
+					if (key==*it)
+					{
+						m_keys.erase(it);
+						break;
+					}
 				}
+				table->PutString(key, "\"");
 			}
 		}
 		else
 		{
 			std::pair<StringMap::iterator, bool> ret =
-				m_values.insert(StringMap::value_type(key, table->GetString(key)));
+				m_values.insert(StringMap::value_type(key, table->GetString(key, "")));
 			if (ret.second)
 				m_keys.push_back(key);
 			else
-				ret.first->second = table->GetString(key);
+				ret.first->second = table->GetString(key, "");
 		}
 	}
-}
-
-void Preferences::ValueConfirmed(NetworkTable *table, const char *name, NetworkTables_Types type)
-{
 }

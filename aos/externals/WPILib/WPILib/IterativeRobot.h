@@ -25,6 +25,7 @@
  *  - DisabledInit()   -- called only when first disabled
  *  - AutonomousInit() -- called each and every time autonomous is entered from another mode
  *  - TeleopInit()     -- called each and every time teleop is entered from another mode
+ *  - TestInit()       -- called each and every time test is entered from another mode
  * 
  * Periodic() functions -- each of these functions is called iteratively at the
  *                         appropriate periodic rate (aka the "slow loop").  The default period of
@@ -33,13 +34,7 @@
  *   - DisabledPeriodic()
  *   - AutonomousPeriodic()
  *   - TeleopPeriodic()
- * 
- * Continuous() functions -- each of these functions is called repeatedly as
- *                           fast as possible.  These functions are generally discouraged
- *                           and if they are used, they should contain a Wait() of some type:
- *   - DisabledContinuous()
- *   - AutonomousContinuous()
- *   - TeleopContinuous()
+ *   - TestPeriodic()
  * 
  */
 
@@ -57,15 +52,13 @@ public:
 	virtual void RobotInit();
 	virtual void DisabledInit();
 	virtual void AutonomousInit();
-	virtual void TeleopInit();
+    virtual void TeleopInit();
+    virtual void TestInit();
 
 	virtual void DisabledPeriodic();
 	virtual void AutonomousPeriodic();
-	virtual void TeleopPeriodic();
-
-	virtual void DisabledContinuous();
-	virtual void AutonomousContinuous();
-	virtual void TeleopContinuous();
+    virtual void TeleopPeriodic();
+    virtual void TestPeriodic();
 
 	void SetPeriod(double period);
 	double GetPeriod();
@@ -80,7 +73,8 @@ private:
 
 	bool m_disabledInitialized;
 	bool m_autonomousInitialized;
-	bool m_teleopInitialized;
+    bool m_teleopInitialized;
+    bool m_testInitialized;
 	double m_period;
 	Timer m_mainLoopTimer;
 };

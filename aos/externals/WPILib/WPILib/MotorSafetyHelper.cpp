@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 MotorSafetyHelper *MotorSafetyHelper::m_headHelper = NULL;
-Semaphore MotorSafetyHelper::m_listMutex;
+ReentrantSemaphore MotorSafetyHelper::m_listMutex;
 
 /**
  * The constructor for a MotorSafetyHelper object.
@@ -106,6 +106,7 @@ void MotorSafetyHelper::Check()
 {
 	if (!m_enabled) return;
 	if (DriverStation::GetInstance()->IsDisabled()) return;
+
 	Synchronized sync(m_syncMutex);
 	if (m_stopTime < Timer::GetFPGATimestamp())
 	{
@@ -142,7 +143,7 @@ bool MotorSafetyHelper::IsSafetyEnabled()
 
 /**
  * Check the motors to see if any have timed out.
- * This static method is called periodically to poll all the motors and stop any that have
+ * This static  method is called periodically to poll all the motors and stop any that have
  * timed out.
  */
 void MotorSafetyHelper::CheckMotors()

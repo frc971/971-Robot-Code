@@ -10,6 +10,7 @@
 #include "SensorBase.h"
 #include "Task.h"
 #include "PIDSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class Counter;
 class DigitalInput;
@@ -25,7 +26,7 @@ class DigitalOutput;
  * the echo is received. The time that the line is high determines the round trip distance
  * (time of flight).
  */
-class Ultrasonic: public SensorBase, public PIDSource
+class Ultrasonic: public SensorBase, public PIDSource, public LiveWindowSendable
 {
 public:
 	typedef enum {
@@ -52,6 +53,13 @@ public:
 	void SetDistanceUnits(DistanceUnit units);
 	DistanceUnit GetDistanceUnits();
 
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+
 private:
 	void Initialize();
 
@@ -73,8 +81,9 @@ private:
 	bool m_enabled;
 	Counter *m_counter;
 	Ultrasonic *m_nextSensor;
-	
 	DistanceUnit m_units;
+	
+	ITable *m_table;
 };
 
 #endif

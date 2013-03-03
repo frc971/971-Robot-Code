@@ -8,6 +8,8 @@
 #define DIGITAL_OUTPUT_H_
 
 #include "DigitalSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
+#include "tables/ITableListener.h"
 
 class DigitalModule;
 
@@ -16,7 +18,7 @@ class DigitalModule;
  * Write values to the digital output channels. Other devices implemented elsewhere will allocate
  * channels automatically so for those devices it shouldn't be done here.
  */
-class DigitalOutput : public DigitalSource
+class DigitalOutput : public DigitalSource, public ITableListener, public LiveWindowSendable
 {
 public:
 	explicit DigitalOutput(UINT32 channel);
@@ -39,6 +41,14 @@ public:
 	virtual void RequestInterrupts();
 
 	void SetUpSourceEdge(bool risingEdge, bool fallingEdge);
+	
+	virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	void InitDigitalOutput(UINT8 moduleNumber, UINT32 channel);
@@ -46,6 +56,8 @@ private:
 	UINT32 m_channel;
 	UINT32 m_pwmGenerator;
 	DigitalModule *m_module;
+	
+	ITable *m_table;
 };
 
 #endif

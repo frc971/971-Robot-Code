@@ -8,7 +8,6 @@
 
 #include "Commands/Command.h"
 #include "Commands/Scheduler.h"
-#include "NetworkTables/NetworkTable.h"
 #include "WPIErrors.h"
 
 /**
@@ -16,13 +15,14 @@
  * @param name the name of the subsystem
  */
 Subsystem::Subsystem(const char *name) :
-	m_table(NULL),
 	m_currentCommand(NULL),
 	m_defaultCommand(NULL),
 	m_initializedDefaultCommand(false)
 {
 	m_name = name;
 	Scheduler::GetInstance()->RegisterSubsystem(this);
+	m_table = NULL;
+	m_currentCommandChanged = true;
 }
 /**
  * Initialize the default command for this subsystem
@@ -75,10 +75,10 @@ void Subsystem::SetDefaultCommand(Command *command)
 	}
 	if (m_table != NULL)
 	{
-		if (m_defaultCommand != 0)
+		if (m_defaultCommand != NULL)
 		{
 			m_table->PutBoolean("hasDefault", true);
-			m_table->PutSubTable("default", m_defaultCommand->GetTable());
+			m_table->PutString("default", m_defaultCommand->GetName());
 		}
 		else
 		{
@@ -107,6 +107,7 @@ Command *Subsystem::GetDefaultCommand()
 void Subsystem::SetCurrentCommand(Command *command)
 {
 	m_currentCommand = command;
+	m_currentCommandChanged = true;
 }
 
 /**
@@ -125,36 +126,54 @@ Command *Subsystem::GetCurrentCommand()
  */
 void Subsystem::ConfirmCommand()
 {
-	if (m_table != NULL)
-	{
-		if (m_currentCommand != NULL)
+	if (m_currentCommandChanged) {
+		if (m_table != NULL)
 		{
-			m_table->PutBoolean("hasCommand", true);
-			m_table->PutSubTable("command", m_currentCommand->GetTable());
+			if (m_currentCommand != NULL)
+			{
+				m_table->PutBoolean("hasCommand", true);
+				m_table->PutString("command", m_currentCommand->GetName());
+			}
+			else
+			{
+				m_table->PutBoolean("hasCommand", false);
+			}
 		}
-		else
-		{
-			m_table->PutBoolean("hasCommand", false);
-		}
+		m_currentCommandChanged = false;
 	}
 }
+
+
 
 std::string Subsystem::GetName()
 {
 	return m_name;
 }
 
-std::string Subsystem::GetType()
+std::string Subsystem::GetSmartDashboardType()
 {
 	return "Subsystem";
 }
 
-NetworkTable *Subsystem::GetTable()
+void Subsystem::InitTable(ITable* table)
 {
-	if (m_table == NULL)
-	{
-		m_table = new NetworkTable();
-		m_table->PutInt("count", 0);
-	}
+    m_table = table;
+    if(m_table!=NULL){
+        if (m_defaultCommand != NULL) {
+        	m_table->PutBoolean("hasDefault", true);
+        	m_table->PutString("default", m_defaultCommand->GetName());
+        } else {
+        	m_table->PutBoolean("hasDefault", false);
+        }
+        if (m_currentCommand != NULL) {
+        	m_table->PutBoolean("hasCommand", true);
+            m_table->PutString("command", m_currentCommand->GetName());
+        } else {
+        	m_table->PutBoolean("hasCommand", false);
+        }
+    }
+}
+
+ITable* Subsystem::GetTable(){
 	return m_table;
 }

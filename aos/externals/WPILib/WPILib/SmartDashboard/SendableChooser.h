@@ -7,11 +7,10 @@
 #ifndef __SENDABLE_CHOOSER_H__
 #define __SENDABLE_CHOOSER_H__
 
-#include "SmartDashboard/SmartDashboardData.h"
+#include "SmartDashboard/Sendable.h"
+#include "tables/ITable.h"
 #include <map>
 #include <string>
-
-class NetworkTable;
 
 /**
  * The {@link SendableChooser} class is a useful tool for presenting a selection of options
@@ -25,7 +24,7 @@ class NetworkTable;
  *
  * @see SmartDashboard
  */
-class SendableChooser : public SmartDashboardData
+class SendableChooser : public Sendable
 {
 public:
 	SendableChooser();
@@ -35,16 +34,14 @@ public:
 	void AddDefault(const char *name, void *object);
 	void *GetSelected();
 
-	// SmartDashboardData interface
-	virtual std::string GetType() {return "String Chooser";}
-	virtual NetworkTable *GetTable() {return m_table;}
+	virtual void InitTable(ITable* subtable);
+	virtual ITable* GetTable();
+	virtual std::string GetSmartDashboardType();
 
 private:
-	void *m_defaultChoice;
+	std::string m_defaultChoice;
 	std::map<std::string, void *> m_choices;
-	std::map<void *, std::string> m_ids;
-	NetworkTable *m_table;
-	int m_count;
+	ITable *m_table;
 };
 
 #endif

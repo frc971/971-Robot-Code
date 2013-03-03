@@ -7,7 +7,7 @@
 #include "SolenoidBase.h"
 
 // Needs to be global since the protected resource spans all Solenoid objects.
-Semaphore SolenoidBase::m_semaphore;
+ReentrantSemaphore SolenoidBase::m_semaphore;
 Resource *SolenoidBase::m_allocated = NULL;
 
 tSolenoid *SolenoidBase::m_fpgaSolenoidModule = NULL;

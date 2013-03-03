@@ -10,6 +10,7 @@
 #include "AnalogChannel.h"
 #include "SensorBase.h"
 #include "PIDSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 /** 
  * Handle operation of the accelerometer.
@@ -17,7 +18,7 @@
  * multiple axis and can be treated as multiple devices. Each is calibrated by finding
  * the center value over a period of time.
  */
-class Accelerometer : public SensorBase, public PIDSource {
+class Accelerometer : public SensorBase, public PIDSource, public LiveWindowSendable {
 public:
 	explicit Accelerometer(UINT32 channel);
 	Accelerometer(UINT8 moduleNumber, UINT32 channel);
@@ -29,6 +30,13 @@ public:
 	void SetZero(float zero);
 	double PIDGet();
 
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+
 private:
 	void InitAccelerometer();
 
@@ -36,6 +44,8 @@ private:
 	float m_voltsPerG;
 	float m_zeroGVoltage;
 	bool m_allocatedChannel;
+	
+	ITable *m_table;
 };
 
 #endif

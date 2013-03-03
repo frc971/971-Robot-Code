@@ -7,6 +7,8 @@
 #include "DoubleSolenoid.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include "WPIErrors.h"
+#include <string.h>
+#include "LiveWindow/LiveWindow.h"
 
 /**
  * Common function to implement constructor behavior.
@@ -51,6 +53,7 @@ void DoubleSolenoid::InitSolenoid()
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Solenoid, m_forwardChannel, m_moduleNumber - 1);
 	nUsageReporting::report(nUsageReporting::kResourceType_Solenoid, m_reverseChannel, m_moduleNumber - 1);
+	LiveWindow::GetInstance()->AddSensor("DoubleSolenoid", m_moduleNumber, m_forwardChannel, this);
 }
 
 /**
@@ -134,3 +137,45 @@ DoubleSolenoid::Value DoubleSolenoid::Get()
 	if (value & m_reverseMask) return kReverse;
 	return kOff;
 }
+
+
+
+
+void DoubleSolenoid::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
+	Value lvalue = kOff;
+	if (strcmp((char*)value.ptr, "Forward") == 0)
+		lvalue = kForward;
+	else if (strcmp((char*)value.ptr, "Reverse") == 0)
+		lvalue = kReverse;
+	Set(lvalue);
+}
+
+void DoubleSolenoid::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutString("Value", (Get() == kForward ? "Forward" : (Get() == kReverse ? "Reverse" : "Off")));
+	}
+}
+
+void DoubleSolenoid::StartLiveWindowMode() {
+	Set(kOff);
+	m_table->AddTableListener("Value", this, true);
+}
+
+void DoubleSolenoid::StopLiveWindowMode() {
+	Set(kOff);
+	m_table->RemoveTableListener(this);
+}
+
+std::string DoubleSolenoid::GetSmartDashboardType() {
+	return "Double Solenoid";
+}
+
+void DoubleSolenoid::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * DoubleSolenoid::GetTable() {
+	return m_table;
+}
+

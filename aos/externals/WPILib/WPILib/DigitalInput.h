@@ -10,6 +10,7 @@
 class DigitalModule;
 
 #include "DigitalSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 /**
  * Class to read a digital input.
@@ -18,7 +19,7 @@ class DigitalModule;
  * allocate digital inputs and outputs as required. This class is only for devices like switches
  * etc. that aren't implemented anywhere else.
  */
-class DigitalInput : public DigitalSource {
+class DigitalInput : public DigitalSource, public LiveWindowSendable {
 public:
 	explicit DigitalInput(UINT32 channel);
 	DigitalInput(UINT8 moduleNumber, UINT32 channel);
@@ -36,11 +37,20 @@ public:
 	virtual void RequestInterrupts();		///< Synchronus Wait version.
 	void SetUpSourceEdge(bool risingEdge, bool fallingEdge);
 
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+
 private:
 	void InitDigitalInput(UINT8 moduleNumber, UINT32 channel);
 	UINT32 m_channel;
 	DigitalModule *m_module;
 	bool m_lastValue;
+	
+	ITable *m_table;
 };
 
 #endif

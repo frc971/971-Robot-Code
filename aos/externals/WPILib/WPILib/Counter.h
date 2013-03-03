@@ -10,6 +10,7 @@
 #include "AnalogTriggerOutput.h"
 #include "CounterBase.h"
 #include "SensorBase.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 /**
  * Class for counting the number of ticks on a digital input channel.
@@ -17,7 +18,7 @@
  * of counts, the period of the most recent cycle, and detect when the signal being counted
  * has stopped by supplying a maximum cycle time.
  */
-class Counter : public SensorBase, public CounterBase
+class Counter : public SensorBase, public CounterBase, public LiveWindowSendable
 {
 public:
 	typedef enum {kTwoPulse=0, kSemiperiod=1, kPulseLength=2, kExternalDirection=3} Mode;
@@ -68,6 +69,15 @@ public:
 	bool GetStopped();
 	bool GetDirection();
 	UINT32 GetIndex() {return m_index;}
+	
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	virtual std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+
 private:
 	void InitCounter(Mode mode = kTwoPulse);
 
@@ -77,6 +87,8 @@ private:
 	bool m_allocatedDownSource;	///< Was the downSource allocated locally?
 	tCounter *m_counter;				///< The FPGA counter object.
 	UINT32 m_index;					///< The index of this counter.
+	
+	ITable *m_table;
 };
 
 #endif

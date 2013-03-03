@@ -7,20 +7,20 @@
 #ifndef __BUTTON_SCHEDULER_H__
 #define __BUTTON_SCHEDULER_H__
 
-class Button;
+class Trigger;
 class Command;
 
 class ButtonScheduler
 {
 public:
-	ButtonScheduler(bool last, Button *button, Command *orders);
+	ButtonScheduler(bool last, Trigger *button, Command *orders);
 	virtual ~ButtonScheduler() {}
 	virtual void Execute() = 0;
 	void Start();
 
 protected:
 	bool m_pressedLast;
-	Button *m_button;
+	Trigger *m_button;
 	Command *m_command;
 };
 

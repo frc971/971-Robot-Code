@@ -9,6 +9,7 @@
 
 #include "SensorBase.h"
 #include "PIDSource.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class AnalogChannel;
 class AnalogModule;
@@ -23,7 +24,7 @@ class AnalogModule;
  * with a channel that is assigned one of the Analog accumulators from the FPGA. See
  * AnalogChannel for the current accumulator assignments.
  */
-class Gyro : public SensorBase, public PIDSource
+class Gyro : public SensorBase, public PIDSource, public LiveWindowSendable
 {
 public:
 	static const UINT32 kOversampleBits = 10;
@@ -43,6 +44,13 @@ public:
 
 	// PIDSource interface
 	double PIDGet();
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	void InitGyro();
@@ -51,5 +59,7 @@ private:
 	float m_voltsPerDegreePerSecond;
 	float m_offset;
 	bool m_channelAllocated;
+	
+	ITable *m_table;
 };
 #endif

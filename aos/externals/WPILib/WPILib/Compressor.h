@@ -12,6 +12,7 @@
 #include "SensorBase.h"
 #include "Relay.h"
 #include "Task.h"
+#include "LiveWindow/LiveWindowSendable.h"
 
 class DigitalInput;
 
@@ -22,7 +23,7 @@ class DigitalInput;
  * backround and periodically polls the pressure sensor and operates the relay that controls the
  * compressor.
  */ 
-class Compressor: public SensorBase
+class Compressor: public SensorBase, public LiveWindowSendable
 {
 public:
 	Compressor(UINT32 pressureSwitchChannel, UINT32 compressorRelayChannel);
@@ -35,6 +36,13 @@ public:
 	bool Enabled();
 	UINT32 GetPressureSwitchValue();
 	void SetRelayValue(Relay::Value relayValue);
+	
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
 
 private:
 	void InitCompressor(UINT8 pressureSwitchModuleNumber, UINT32 pressureSwitchChannel,
@@ -44,6 +52,8 @@ private:
 	Relay *m_relay;
 	bool m_enabled;
 	Task m_task;
+	
+	ITable *m_table;
 };
 
 #endif

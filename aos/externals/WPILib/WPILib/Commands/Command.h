@@ -8,13 +8,11 @@
 #define __COMMAND_H__
 
 #include "ErrorBase.h"
-#include "NetworkTables/NetworkTableChangeListener.h"
-#include "SmartDashboard/SmartDashboardNamedData.h"
+#include "SmartDashboard/NamedSendable.h"
 #include <set>
 #include <string>
 
 class CommandGroup;
-class NetworkTable;
 class Subsystem;
 
 /**
@@ -42,7 +40,7 @@ class Subsystem;
  * @see CommandGroup
  * @see Subsystem
  */
-class Command : public SmartDashboardNamedData, public NetworkTableChangeListener, public ErrorBase
+class Command : public ErrorBase, public NamedSendable, public ITableListener
 {
 	friend class CommandGroup;
 	friend class Scheduler;
@@ -67,13 +65,8 @@ public:
 	CommandGroup *GetGroup();
 	void SetRunWhenDisabled(bool run);
 	bool WillRunWhenDisabled();
+	int GetID();
 
-	virtual std::string GetName();
-	virtual std::string GetType();
-	virtual NetworkTable *GetTable();
-
-	virtual void ValueChanged(NetworkTable *table, const char *name, NetworkTables_Types type);
-	virtual void ValueConfirmed(NetworkTable *table, const char *name, NetworkTables_Types type) {}
 
 protected:
 	void SetTimeout(double timeout);
@@ -155,8 +148,17 @@ private:
 	bool m_runWhenDisabled;
 	/** The {@link CommandGroup} this is in */
 	CommandGroup *m_parent;
-
-	NetworkTable *m_table;
+	int m_commandID;
+	static int m_commandCounter;
+	
+public:
+	virtual std::string GetName();
+	virtual void InitTable(ITable* table);
+	virtual ITable* GetTable();
+	virtual std::string GetSmartDashboardType();
+	virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+protected:
+	ITable* m_table;
 };
 
 #endif

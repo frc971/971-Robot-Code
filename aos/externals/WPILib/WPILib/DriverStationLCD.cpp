@@ -31,7 +31,7 @@ DriverStationLCD::DriverStationLCD()
 
 	*((UINT16 *)m_textBuffer) = kFullDisplayTextCommand;
 
-	m_textBufferSemaphore = semMCreate(SEM_DELETE_SAFE | SEM_INVERSION_SAFE);
+	m_textBufferSemaphore = semMCreate(SEM_DELETE_SAFE);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_DriverStationLCD, 0);
 
@@ -69,7 +69,7 @@ void DriverStationLCD::UpdateLCD()
 /**
  * Print formatted text to the Driver Station LCD text bufer.
  * 
- * Use UpdateLCD() periodically to actually send the test to the Driver Station.
+ * Use UpdateLCD() periodically to actually send the text to the Driver Station.
  * 
  * @param line The line on the LCD to print to.
  * @param startingColumn The column to start printing to.  This is a 1-based number.
@@ -77,11 +77,12 @@ void DriverStationLCD::UpdateLCD()
  */
 void DriverStationLCD::Printf(Line line, INT32 startingColumn, const char *writeFmt, ...)
 {
-  va_list args;
+	va_list args;
 	va_start (args, writeFmt);
-  VPrintf(line, startingColumn, writeFmt, args);
-  va_end (args);
+	VPrintf(line, startingColumn, writeFmt, args);
+	va_end (args);
 }
+
 void DriverStationLCD::VPrintf(Line line, INT32 startingColumn, const char *writeFmt, va_list args)
 {
 	UINT32 start = startingColumn - 1;
@@ -114,18 +115,19 @@ void DriverStationLCD::VPrintf(Line line, INT32 startingColumn, const char *writ
  * Print formatted text to the Driver Station LCD text bufer. This function 
  * pads the line with empty spaces. 
  * 
- * Use UpdateLCD() periodically to actually send the test to the Driver Station.
+ * Use UpdateLCD() periodically to actually send the text to the Driver Station.
  * 
  * @param line The line on the LCD to print to.
  * @param writeFmt The printf format string describing how to print.
  */
 void DriverStationLCD::PrintfLine(Line line, const char *writeFmt, ...)
 {
-  va_list args;
+	va_list args;
 	va_start (args, writeFmt);
-  VPrintfLine(line, writeFmt, args);
-  va_end (args);
+	VPrintfLine(line, writeFmt, args);
+	va_end (args);
 }
+
 void DriverStationLCD::VPrintfLine(Line line, const char *writeFmt, va_list args)
 {
 	char lineBuffer[kLineLength + 1];

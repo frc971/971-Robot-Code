@@ -9,13 +9,13 @@
 
 #include "Buttons/ButtonScheduler.h"
 
-class Button;
+class Trigger;
 class Command;
 
 class HeldButtonScheduler : public ButtonScheduler
 {
 public:
-	HeldButtonScheduler(bool last, Button *button, Command *orders);
+	HeldButtonScheduler(bool last, Trigger *button, Command *orders);
 	virtual ~HeldButtonScheduler() {}
 	virtual void Execute();
 };

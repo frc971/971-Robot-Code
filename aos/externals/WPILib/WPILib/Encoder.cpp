@@ -9,6 +9,7 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#include "LiveWindow/LiveWindow.h"
 
 static Resource *quadEncoders = NULL;
 
@@ -70,6 +71,7 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 	wpi_setError(localStatus);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Encoder, m_index, encodingType);
+	LiveWindow::GetInstance()->AddSensor("Encoder", m_aSource->GetModuleForRouting(), m_aSource->GetChannelForRouting(), this);
 }
 
 /**
@@ -511,3 +513,36 @@ double Encoder::PIDGet()
 		return 0.0;
 	}
 }
+
+void Encoder::UpdateTable() {
+	if (m_table != NULL) {
+        m_table->PutNumber("Speed", GetRate());
+        m_table->PutNumber("Distance", GetDistance());
+        m_table->PutNumber("Distance per Tick", m_distancePerPulse);
+	}
+}
+
+void Encoder::StartLiveWindowMode() {
+	
+}
+
+void Encoder::StopLiveWindowMode() {
+	
+}
+
+std::string Encoder::GetSmartDashboardType() {
+	if (m_encodingType == k4X)
+		return "Quadrature Encoder";
+	else
+		return "Encoder";
+}
+
+void Encoder::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Encoder::GetTable() {
+	return m_table;
+}
+

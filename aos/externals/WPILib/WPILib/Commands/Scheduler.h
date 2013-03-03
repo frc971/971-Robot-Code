@@ -9,30 +9,38 @@
 
 #include "Commands/Command.h"
 #include "ErrorBase.h"
-#include "SmartDashboard/SmartDashboardNamedData.h"
+#include "SmartDashboard/NamedSendable.h"
+#include "networktables/NetworkTable.h"
+#include "networktables2/type/NumberArray.h"
+#include "networktables2/type/StringArray.h"
+#include "SmartDashboard/SmartDashboard.h"
 #include <list>
 #include <map>
 #include <set>
 #include <vector>
 
 class ButtonScheduler;
-class NetworkTable;
 class Subsystem;
 
-class Scheduler : public SmartDashboardNamedData, public ErrorBase
+class Scheduler : public ErrorBase, public NamedSendable
 {
 public:
 	static Scheduler *GetInstance();
-
-	virtual std::string GetName();
-	virtual std::string GetType();
-	virtual NetworkTable *GetTable();
 
 	void AddCommand(Command* command);
 	void AddButton(ButtonScheduler* button);
 	void RegisterSubsystem(Subsystem *subsystem);
 	void Run();	
 	void Remove(Command *command);
+	void RemoveAll();
+	void SetEnabled(bool enabled);
+	
+	void UpdateTable();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+	std::string GetName();
+	std::string GetType();
 
 private:
 	Scheduler();
@@ -41,8 +49,6 @@ private:
 	void ProcessCommandAddition(Command *command);
 
 	static Scheduler *_instance;
-	SEM_ID m_tableLock;
-	NetworkTable *m_table;
 	Command::SubsystemSet m_subsystems;
 	SEM_ID m_buttonsLock;
 	typedef std::vector<ButtonScheduler *> ButtonVector;
@@ -53,6 +59,12 @@ private:
 	typedef std::set<Command *> CommandSet;
 	CommandSet m_commands;
 	bool m_adding;
+	bool m_enabled;
+	StringArray *commands;
+	NumberArray *ids;
+	NumberArray *toCancel;
+	ITable *m_table;
+	bool m_runningCommandsChanged;
 };
 #endif
 

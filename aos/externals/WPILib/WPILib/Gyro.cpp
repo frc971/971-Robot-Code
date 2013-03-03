@@ -10,6 +10,7 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "Timer.h"
 #include "WPIErrors.h"
+#include "LiveWindow/LiveWindow.h"
 
 const UINT32 Gyro::kOversampleBits;
 const UINT32 Gyro::kAverageBits;
@@ -63,6 +64,7 @@ void Gyro::InitGyro()
 	m_analog->ResetAccumulator();
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Gyro, m_analog->GetChannel(), m_analog->GetModuleNumber() - 1);
+	LiveWindow::GetInstance()->AddSensor("Gyro", m_analog->GetModuleNumber(), m_analog->GetChannel(), this);
 }
 
 /**
@@ -185,3 +187,31 @@ double Gyro::PIDGet()
 {
 	return GetAngle();
 }
+
+void Gyro::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", GetAngle());
+	}
+}
+
+void Gyro::StartLiveWindowMode() {
+	
+}
+
+void Gyro::StopLiveWindowMode() {
+	
+}
+
+std::string Gyro::GetSmartDashboardType() {
+	return "Gyro";
+}
+
+void Gyro::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Gyro::GetTable() {
+	return m_table;
+}
+

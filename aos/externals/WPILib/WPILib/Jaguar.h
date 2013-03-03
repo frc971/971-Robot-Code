@@ -14,7 +14,7 @@
 /**
  * Luminary Micro Jaguar Speed Control
  */
-class Jaguar : public SafePWM, public SpeedController, public PIDOutput
+class Jaguar : public SafePWM, public SpeedController
 {
 public:
 	explicit Jaguar(UINT32 channel);

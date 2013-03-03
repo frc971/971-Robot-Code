@@ -9,6 +9,9 @@
 #include "DriverStation.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include <taskLib.h>
+#include "SmartDashboard/SmartDashboard.h"
+#include "LiveWindow/LiveWindow.h"
+#include "networktables/NetworkTable.h"
 
 const double IterativeRobot::kDefaultPeriod;
 
@@ -16,12 +19,13 @@ const double IterativeRobot::kDefaultPeriod;
  * Constructor for RobotIterativeBase
  * 
  * The constructor initializes the instance variables for the robot to indicate
- * the status of initialization for disabled, autonomous, and teleop code.
+ * the status of initialization for disabled, autonomous, teleop, and test code.
  */
 IterativeRobot::IterativeRobot()
 	: m_disabledInitialized (false)
 	, m_autonomousInitialized (false)
 	, m_teleopInitialized (false)
+	, m_testInitialized (false)
 	, m_period (kDefaultPeriod)
 {
 	m_watchdog.SetEnabled(false);
@@ -90,10 +94,14 @@ void IterativeRobot::StartCompetition()
 {
 	nUsageReporting::report(nUsageReporting::kResourceType_Framework, nUsageReporting::kFramework_Iterative);
 
+	LiveWindow *lw = LiveWindow::GetInstance();
 	// first and one-time initialization
+	SmartDashboard::init();
+	NetworkTable::GetTable("LiveWindow")->GetSubTable("~STATUS~")->PutBoolean("LW Enabled", false);
 	RobotInit();
 
 	// loop forever, calling the appropriate mode-dependent function
+	lw->SetEnabled(false);
 	while (true)
 	{
 		// Call the appropriate function depending upon the current robot mode
@@ -103,18 +111,19 @@ void IterativeRobot::StartCompetition()
 			// either a different mode or from power-on
 			if(!m_disabledInitialized)
 			{
+				lw->SetEnabled(false);
 				DisabledInit();
 				m_disabledInitialized = true;
 				// reset the initialization flags for the other modes
 				m_autonomousInitialized = false;
-				m_teleopInitialized = false;
+                m_teleopInitialized = false;
+                m_testInitialized = false;
 			}
 			if (NextPeriodReady())
 			{
 				FRC_NetworkCommunication_observeUserProgramDisabled();
 				DisabledPeriodic();
 			}
-			DisabledContinuous();
 		}
 		else if (IsAutonomous())
 		{
@@ -122,38 +131,63 @@ void IterativeRobot::StartCompetition()
 			// either a different mode or from power-on
 			if(!m_autonomousInitialized)
 			{
+				lw->SetEnabled(false);
 				AutonomousInit();
 				m_autonomousInitialized = true;
 				// reset the initialization flags for the other modes
 				m_disabledInitialized = false;
-				m_teleopInitialized = false;
+                m_teleopInitialized = false;
+                m_testInitialized = false;
 			}
 			if (NextPeriodReady())
 			{
 				FRC_NetworkCommunication_observeUserProgramAutonomous();
 				AutonomousPeriodic();
 			}
-			AutonomousContinuous();
 		}
+        else if (IsTest())
+        {
+            // call TestInit() if we are now just entering test mode from
+            // either a different mode or from power-on
+            if(!m_testInitialized)
+            {
+            	lw->SetEnabled(true);
+                TestInit();
+                m_testInitialized = true;
+                // reset the initialization flags for the other modes
+                m_disabledInitialized = false;
+                m_autonomousInitialized = false;
+                m_teleopInitialized = false;
+            }
+            if (NextPeriodReady())
+            {
+                FRC_NetworkCommunication_observeUserProgramTest();
+                TestPeriodic();
+            }
+        }
 		else
 		{
 			// call TeleopInit() if we are now just entering teleop mode from
 			// either a different mode or from power-on
 			if(!m_teleopInitialized)
 			{
+				lw->SetEnabled(false);
 				TeleopInit();
 				m_teleopInitialized = true;
 				// reset the initialization flags for the other modes
 				m_disabledInitialized = false;
-				m_autonomousInitialized = false;
+                m_autonomousInitialized = false;
+                m_testInitialized = false;
+                Scheduler::GetInstance()->SetEnabled(true);
 			}
 			if (NextPeriodReady())
 			{
 				FRC_NetworkCommunication_observeUserProgramTeleop();
 				TeleopPeriodic();
 			}
-			TeleopContinuous();
 		}
+		// wait for driver station data so the loop doesn't hog the CPU
+		m_ds->WaitForData();
 	}	
 }
 
@@ -220,7 +254,18 @@ void IterativeRobot::AutonomousInit()
  */
 void IterativeRobot::TeleopInit()
 {
-	printf("Default %s() method... Overload me!\n", __FUNCTION__);
+    printf("Default %s() method... Overload me!\n", __FUNCTION__);
+}
+
+/**
+ * Initialization code for test mode should go here.
+ * 
+ * Users should override this method for initialization code which will be called each time
+ * the robot enters test mode.
+ */
+void IterativeRobot::TestInit()
+{
+    printf("Default %s() method... Overload me!\n", __FUNCTION__);
 }
 
 /**
@@ -275,52 +320,19 @@ void IterativeRobot::TeleopPeriodic()
 }
 
 /**
- * Continuous code for disabled mode should go here.
+ * Periodic code for test mode should go here.
  *
- * Users should override this method for code which will be called repeatedly as frequently
- * as possible while the robot is in disabled mode.
+ * Users should override this method for code which will be called periodically at a regular
+ * rate while the robot is in test mode.
  */
-void IterativeRobot::DisabledContinuous()
+void IterativeRobot::TestPeriodic()
 {
-	static bool firstRun = true;
-	if (firstRun)
-	{
-		printf("Default %s() method... Overload me!\n", __FUNCTION__);
-		firstRun = false;
-	}
-	m_ds->WaitForData();
+    static bool firstRun = true;
+    if (firstRun)
+    {
+        printf("Default %s() method... Overload me!\n", __FUNCTION__);
+        firstRun = false;
+    }
+    taskDelay(1);
 }
 
-/**
- * Continuous code for autonomous mode should go here.
- *
- * Users should override this method for code which will be called repeatedly as frequently
- * as possible while the robot is in autonomous mode.
- */
-void IterativeRobot::AutonomousContinuous()
-{
-	static bool firstRun = true;
-	if (firstRun)
-	{
-		printf("Default %s() method... Overload me!\n", __FUNCTION__);
-		firstRun = false;
-	}
-	m_ds->WaitForData();
-}
-
-/**
- * Continuous code for teleop mode should go here.
- *
- * Users should override this method for code which will be called repeatedly as frequently
- * as possible while the robot is in teleop mode.
- */
-void IterativeRobot::TeleopContinuous()
-{
-	static bool firstRun = true;
-	if (firstRun)
-	{
-		printf("Default %s() method... Overload me!\n", __FUNCTION__);
-		firstRun = false;
-	}
-	m_ds->WaitForData();
-}

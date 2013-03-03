@@ -26,6 +26,8 @@ public:
 	GearTooth(DigitalSource &source, bool directionSensitive = false);
 	virtual ~GearTooth();
 	void EnableDirectionSensing(bool directionSensitive);
+	
+	virtual std::string GetSmartDashboardType();
 };
 
 

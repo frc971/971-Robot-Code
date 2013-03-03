@@ -32,7 +32,7 @@ protected:
 private:
 	static tSolenoid *m_fpgaSolenoidModule; ///< FPGA Solenoid Module object.
 	static UINT32 m_refCount; ///< Reference count for the chip object.
-	static Semaphore m_semaphore;
+	static ReentrantSemaphore m_semaphore;
 };
 
 #endif

@@ -8,6 +8,7 @@
 #include "Jaguar.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include "DigitalModule.h"
+#include "LiveWindow/LiveWindow.h"
 
 /**
  * Common initialization code called by all constructors.
@@ -29,6 +30,7 @@ void Jaguar::InitJaguar()
 	SetRaw(m_centerPwm);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Jaguar, GetChannel(), GetModuleNumber() - 1);
+	LiveWindow::GetInstance()->AddActuator("Jaguar", GetModuleNumber(), GetChannel(), this);
 }
 
 /**

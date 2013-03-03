@@ -14,7 +14,13 @@
 #ifndef __FRC_COMM_H__
 #define __FRC_COMM_H__
 
+#ifdef SIMULATION
+#include <vxWorks_compat.h>
+#define EXPORT_FUNC __declspec(dllexport) __cdecl
+#else
 #include <vxWorks.h>
+#define EXPORT_FUNC
+#endif
 
 // Commandeer some bytes at the end for advanced I/O feedback.
 #define IO_CONFIG_DATA_SIZE 32
@@ -26,6 +32,18 @@ struct FRCCommonControlData{
 	UINT16 packetIndex;
 	union {
 		UINT8 control;
+#ifdef SIMULATION
+		struct {
+			UINT8 checkVersions :1;
+			UINT8 test :1;
+			UINT8 resync : 1;
+			UINT8 fmsAttached:1;
+			UINT8 autonomous : 1;
+			UINT8 enabled : 1;
+			UINT8 notEStop : 1;
+			UINT8 reset : 1;
+		};
+#else
 		struct {
 			UINT8 reset : 1;
 			UINT8 notEStop : 1;
@@ -33,9 +51,10 @@ struct FRCCommonControlData{
 			UINT8 autonomous : 1;
 			UINT8 fmsAttached:1;
 			UINT8 resync : 1;
-			UINT8 cRIOChkSum :1;
-			UINT8 fpgaChkSum :1;
+			UINT8 test :1;
+			UINT8 checkVersions :1;
 		};
+#endif
 	};
 	UINT8 dsDigitalIn;
 	UINT16 teamID;
@@ -121,34 +140,41 @@ struct FRCCommonControlData{
 #define kFRC_NetworkCommunication_DynamicType_Kinect_Custom 25
 
 extern "C" {
-	void getFPGAHardwareVersion(UINT16 *fpgaVersion, UINT32 *fpgaRevision);
-	int getCommonControlData(FRCCommonControlData *data, int wait_ms);
-	int getRecentCommonControlData(FRCCommonControlData *commonData, int wait_ms);
-	int getRecentStatusData(UINT8 *batteryInt, UINT8 *batteryDec, UINT8 *dsDigitalOut, int wait_ms);
-	int getDynamicControlData(UINT8 type, char *dynamicData, INT32 maxLength, int wait_ms);
-	int setStatusData(float battery, UINT8 dsDigitalOut, UINT8 updateNumber,
+#ifndef SIMULATION
+	void EXPORT_FUNC getFPGAHardwareVersion(UINT16 *fpgaVersion, UINT32 *fpgaRevision);
+#endif
+	int EXPORT_FUNC getCommonControlData(FRCCommonControlData *data, int wait_ms);
+	int EXPORT_FUNC getRecentCommonControlData(FRCCommonControlData *commonData, int wait_ms);
+	int EXPORT_FUNC getRecentStatusData(UINT8 *batteryInt, UINT8 *batteryDec, UINT8 *dsDigitalOut, int wait_ms);
+	int EXPORT_FUNC getDynamicControlData(UINT8 type, char *dynamicData, INT32 maxLength, int wait_ms);
+	int EXPORT_FUNC setStatusData(float battery, UINT8 dsDigitalOut, UINT8 updateNumber,
 			const char *userDataHigh, int userDataHighLength,
 			const char *userDataLow, int userDataLowLength, int wait_ms);
-	int setStatusDataFloatAsInt(int battery, UINT8 dsDigitalOut, UINT8 updateNumber,
+	int EXPORT_FUNC setStatusDataFloatAsInt(int battery, UINT8 dsDigitalOut, UINT8 updateNumber,
 			const char *userDataHigh, int userDataHighLength,
 			const char *userDataLow, int userDataLowLength, int wait_ms);
-	int setErrorData(const char *errors, int errorsLength, int wait_ms);
-	int setUserDsLcdData(const char *userDsLcdData, int userDsLcdDataLength, int wait_ms);
-	int overrideIOConfig(const char *ioConfig, int wait_ms);
+	int EXPORT_FUNC setErrorData(const char *errors, int errorsLength, int wait_ms);
+	int EXPORT_FUNC setUserDsLcdData(const char *userDsLcdData, int userDsLcdDataLength, int wait_ms);
+	int EXPORT_FUNC overrideIOConfig(const char *ioConfig, int wait_ms);
 
-	void setNewDataSem(SEM_ID);
-	void setResyncSem(SEM_ID);
-	void signalResyncActionDone(void);
+	void EXPORT_FUNC setNewDataSem(SEM_ID);
+#ifndef SIMULATION
+	void EXPORT_FUNC setResyncSem(SEM_ID);
+	void EXPORT_FUNC signalResyncActionDone(void);
+#endif
 
 	// this UINT32 is really a LVRefNum
-	void setNewDataOccurRef(UINT32 refnum);
-	void setResyncOccurRef(UINT32 refnum);
+	void EXPORT_FUNC setNewDataOccurRef(UINT32 refnum);
+#ifndef SIMULATION
+	void EXPORT_FUNC setResyncOccurRef(UINT32 refnum);
+#endif
 
-	void FRC_NetworkCommunication_getVersionString(char *version);
-	void FRC_NetworkCommunication_observeUserProgramStarting(void);
-	void FRC_NetworkCommunication_observeUserProgramDisabled(void);
-	void FRC_NetworkCommunication_observeUserProgramAutonomous(void);
-	void FRC_NetworkCommunication_observeUserProgramTeleop(void);
+	void EXPORT_FUNC FRC_NetworkCommunication_getVersionString(char *version);
+	void EXPORT_FUNC FRC_NetworkCommunication_observeUserProgramStarting(void);
+	void EXPORT_FUNC FRC_NetworkCommunication_observeUserProgramDisabled(void);
+	void EXPORT_FUNC FRC_NetworkCommunication_observeUserProgramAutonomous(void);
+	void EXPORT_FUNC FRC_NetworkCommunication_observeUserProgramTeleop(void);
+	void EXPORT_FUNC FRC_NetworkCommunication_observeUserProgramTest(void);
 };
 
 #endif

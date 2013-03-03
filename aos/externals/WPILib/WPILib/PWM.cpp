@@ -332,3 +332,37 @@ void PWM::SetPeriodMultiplier(PeriodMultiplier mult)
 		wpi_assert(false);
 	}
 }
+
+
+void PWM::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
+	SetSpeed(value.f);
+}
+
+void PWM::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", GetSpeed());
+	}
+}
+
+void PWM::StartLiveWindowMode() {
+	m_table->AddTableListener("Value", this, true);
+}
+
+void PWM::StopLiveWindowMode() {
+	SetSpeed(0);
+	m_table->RemoveTableListener(this);
+}
+
+std::string PWM::GetSmartDashboardType() {
+	return "Speed Controller";
+}
+
+void PWM::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * PWM::GetTable() {
+	return m_table;
+}
+

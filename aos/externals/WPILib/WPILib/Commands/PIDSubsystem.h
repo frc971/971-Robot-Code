@@ -12,24 +12,29 @@
 #include "PIDSource.h"
 #include "PIDOutput.h"
 
-class NetworkTable;
-class SendablePIDController;
-
+/**
+ * This class is designed to handle the case where there is a {@link Subsystem}
+ * which uses a single {@link PIDController} almost constantly (for instance, 
+ * an elevator which attempts to stay at a constant height).
+ *
+ * <p>It provides some convenience methods to run an internal {@link PIDController}.
+ * It also allows access to the internal {@link PIDController} in order to give total control
+ * to the programmer.</p>
+ *
+ */
 class PIDSubsystem : public Subsystem, public PIDOutput, public PIDSource
 {
 public:
 	PIDSubsystem(const char *name, double p, double i, double d);
-	PIDSubsystem(const char *name, double p, double i, double d, double period);
+	PIDSubsystem(const char *name, double p, double i, double d, double f);
+	PIDSubsystem(const char *name, double p, double i, double d, double f, double period);
 	PIDSubsystem(double p, double i, double d);
-	PIDSubsystem(double p, double i, double d, double period);
+	PIDSubsystem(double p, double i, double d, double f);
+	PIDSubsystem(double p, double i, double d, double f, double period);
 	virtual ~PIDSubsystem();
 	
 	void Enable();
 	void Disable();
-	NetworkTable *GetControllerTable();
-
-	// SmartDashboardData interface
-	virtual std::string GetType();
 
 	// PIDOutput interface
 	virtual void PIDWrite(float output);
@@ -38,10 +43,14 @@ public:
 	virtual double PIDGet();
 	void SetSetpoint(double setpoint);
 	void SetSetpointRelative(double deltaSetpoint);
+	void SetInputRange(float minimumInput, float maximumInput);
 	double GetSetpoint();
 	double GetPosition();
-	void SetSetpointRange(double a, double b);
 
+	virtual void SetAbsoluteTolerance(float absValue);
+	virtual void SetPercentTolerance(float percent);
+	virtual bool OnTarget();
+	
 protected:
 	PIDController *GetPIDController();
 
@@ -49,12 +58,12 @@ protected:
 	virtual void UsePIDOutput(double output) = 0;
 
 private:
-	/** The max setpoint value */
-	double m_max;
-	/** The min setpoint value */
-	double m_min;
 	/** The internal {@link PIDController} */
-	SendablePIDController *m_controller;
+	PIDController *m_controller;
+
+public:
+	virtual void InitTable(ITable* table);
+	virtual std::string GetSmartDashboardType();
 };
 
 #endif

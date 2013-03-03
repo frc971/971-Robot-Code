@@ -10,7 +10,8 @@
 #include "SensorBase.h"
 
 /**
- * Provide access to LCD on the Driver Station.
+ * Provide access to "LCD" on the Driver Station.
+ * This is the Messages box on the DS Operation tab.
  * 
  * Buffer the printed data locally and then send it
  * when UpdateLCD is called.
@@ -28,13 +29,12 @@ public:
 	static DriverStationLCD *GetInstance();
 
 	void UpdateLCD();
-	void VPrintf(Line line, INT32 startingColumn, const char *writeFmt, va_list args);
-	void VPrintfLine(Line line, const char *writeFmt, va_list args);
 	void Printf(Line line, INT32 startingColumn, const char *writeFmt, ...);
+	void VPrintf(Line line, INT32 startingColumn, const char *writeFmt, va_list args);
 	void PrintfLine(Line line, const char *writeFmt, ...);
+	void VPrintfLine(Line line, const char *writeFmt, va_list args);
  
 	void Clear();
-
 
 protected:
 	DriverStationLCD();

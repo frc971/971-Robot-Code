@@ -8,6 +8,8 @@
 #define PWM_H_
 
 #include "SensorBase.h"
+#include "LiveWindow/LiveWindowSendable.h"
+#include "tables/ITableListener.h"
 
 class DigitalModule;
 
@@ -27,7 +29,7 @@ class DigitalModule;
  *   - 1 = full "reverse"
  *   - 0 = disabled (i.e. PWM output is held low)
  */
-class PWM : public SensorBase
+class PWM : public SensorBase, public ITableListener, public LiveWindowSendable
 {
 	friend class DigitalModule;
 public:
@@ -87,6 +89,16 @@ protected:
 	INT32 m_centerPwm;
 	INT32 m_deadbandMinPwm;
 	INT32 m_minPwm;
+	
+	void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew);
+	void UpdateTable();
+	void StartLiveWindowMode();
+	void StopLiveWindowMode();
+	std::string GetSmartDashboardType();
+	void InitTable(ITable *subTable);
+	ITable * GetTable();
+	
+	ITable *m_table;
 
 private:
 	void InitPWM(UINT8 moduleNumber, UINT32 channel);

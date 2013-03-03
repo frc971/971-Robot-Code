@@ -1,3 +1,8 @@
+broken:
+	@echo THIS FILE IS OLD 2>&1
+	@echo IT IS ONLY HERE TO HELP MANUALLY DOWNLOAD NEW VERSIONS!!!!! 2>&1
+	exit 1
+
 all: make.rb WPILib.a
 	#ruby make.rb
 clean:

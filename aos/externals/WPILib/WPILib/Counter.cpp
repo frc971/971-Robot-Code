@@ -665,3 +665,32 @@ void Counter::SetReverseDirection(bool reverseDirection)
 	}
 	wpi_setError(localStatus);
 }
+
+
+void Counter::UpdateTable() {
+	if (m_table != NULL) {
+		m_table->PutNumber("Value", Get());
+	}
+}
+
+void Counter::StartLiveWindowMode() {
+	
+}
+
+void Counter::StopLiveWindowMode() {
+	
+}
+
+std::string Counter::GetSmartDashboardType() {
+	return "Counter";
+}
+
+void Counter::InitTable(ITable *subTable) {
+	m_table = subTable;
+	UpdateTable();
+}
+
+ITable * Counter::GetTable() {
+	return m_table;
+}
+
