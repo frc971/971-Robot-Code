@@ -10,39 +10,19 @@ namespace aos {
 namespace crio {
 
 class JoystickRead {
-  /*virtual void Disabled () {
-    int i = 0;
-    while (IsDisabled()) {
-    printf("Disabled! %d\n", i);
-    Wait(0.1);
-    i++;
-    }
-    printf("Done with disabled. %d\n", i);
-    }
-    virtual void Autonomous () {
-    int j = 0;
-    while (IsAutonomous()) {
-    printf("Autonomous!  %d\n", j);
-    Wait(0.1);
-  //if (j > 5) {
-  //i(0);
-  //}
-  j ++;
-  }
-  printf("Done with autonomous. %d\n", j);
-  }
-  virtual void OperatorControl () {
-  int i = 0;
-  while (IsOperatorControl()) {
-  printf("Operator Control!  %d\n", i);
-  Wait(0.1);
-  i ++;
-  }
-  printf("Done with operator control. %d\n", i);
-  }*/
  public:
+  // Represents all of the states that FMS thinks of a robot as being in.
+  enum class FMSState {
+    kDisabled,
+    kAutonomous,
+    kTeleop,
+    kTestMode,
+  };
+
   DriverStation *ds;
+
   JoystickRead() {}
+
   void Run() {
     SendSocket sock(NetworkPort::kDS,
                     configuration::GetIPAddress(
@@ -71,8 +51,18 @@ class JoystickRead {
       data.stick3Buttons = ds->GetStickButtons(4);
       data.teamID = ds->GetTeamNumber();
       sock.Send(&data, sizeof(data));
+
+      // Echo the state back into the FMS system. It makes the correct lights
+      // turn on so that field personnel don't get distracted when debugging
+      // unrelated problems.
+      FMSState state = GetCurrentState();
+      ds->InDisabled(state == FMSState::kDisabled);
+      ds->InAutonomous(state == FMSState::kAutonomous);
+      ds->InOperatorControl(state == FMSState::kTeleop);
+      ds->InTest(state == FMSState::kTestMode);
     }
   }
+
   void SetStick(int8_t axes[6], uint32_t stick) {
     for (int i = 0; i < 6; ++i) {
       double val = ds->GetStickAxis(stick, i + 1);
@@ -82,6 +72,15 @@ class JoystickRead {
         axes[i] = (val * 127.0) + 0.5;
       }
     }
+  }
+
+  FMSState GetCurrentState() {
+    if (ds->IsDisabled()) return FMSState::kDisabled;
+    if (ds->IsAutonomous()) return FMSState::kAutonomous;
+    if (ds->IsOperatorControl()) return FMSState::kTeleop;
+    if (ds->IsTest()) return FMSState::kTestMode;
+    LOG(ERROR, "unknown fms state\n");
+    return FMSState::kDisabled;
   }
 };
 
