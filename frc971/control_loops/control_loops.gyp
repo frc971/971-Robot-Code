@@ -2,6 +2,7 @@
   'variables': {
     'loop_files': [
       'DriveTrain.q',
+      'angle_adjust_motor.q',
     ]
   },
   'targets': [
@@ -47,6 +48,52 @@
         '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+      ],
+    },
+    {
+      'target_name': 'angle_adjust_lib',
+      'type': 'static_library',
+      'sources': [
+        'angle_adjust.cc',
+        'angle_adjust_motor_plant.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+        'control_loops',
+        '<(AOS)/common/common.gyp:controls',
+        '<(DEPTH)/frc971/frc971.gyp:common',
+        'state_feedback_loop',
+      ],
+      'export_dependent_settings': [
+        'state_feedback_loop',
+        '<(AOS)/common/common.gyp:controls',
+        'control_loops',
+      ],
+    },
+    {
+      'target_name': 'angle_adjust_lib_test',
+      'type': 'executable',
+      'sources': [
+        'angle_adjust_lib_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:libaos',
+        'control_loops',
+        'angle_adjust_lib',
+        '<(AOS)/common/common.gyp:queue_testutils',
+      ],
+    },
+    {
+      'target_name': 'angle_adjust',
+      'type': 'executable',
+      'sources': [
+        'angle_adjust_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+        'angle_adjust_lib',
+        'control_loops',
       ],
     },
     {
