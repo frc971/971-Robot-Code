@@ -26,10 +26,13 @@ struct FRCCommonControlData{
 	UINT16 packetIndex;
 	union {
 		UINT8 control;
+    // The order of the bits has to be flipped on little-endian machines (aka
+    // everything other than the cRIO that we build for) in order for it to
+    // work. Upstream WPILib does this based off of a different macro.
+#ifndef __VXWORKS__
 		struct {
-			/*the order of these are flipped on the fit pc side to make it work*/
-			UINT8 fpgaChkSum :1;
-			UINT8 cRIOChkSum :1;
+			UINT8 checkVersions :1;
+			UINT8 test :1;
 			UINT8 resync : 1;
 			UINT8 fmsAttached:1;
 			UINT8 autonomous : 1;
@@ -37,6 +40,18 @@ struct FRCCommonControlData{
 			UINT8 notEStop : 1;
 			UINT8 reset : 1;
 		};
+#else
+		struct {
+			UINT8 reset : 1;
+			UINT8 notEStop : 1;
+			UINT8 enabled : 1;
+			UINT8 autonomous : 1;
+			UINT8 fmsAttached:1;
+			UINT8 resync : 1;
+			UINT8 test :1;
+			UINT8 checkVersions :1;
+		};
+#endif
 	};
 	UINT8 dsDigitalIn;
 	UINT16 teamID;

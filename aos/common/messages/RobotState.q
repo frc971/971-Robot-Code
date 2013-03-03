@@ -3,6 +3,7 @@ package aos;
 message RobotState {
 	bool enabled;
 	bool autonomous;
+	bool test_mode;
 	uint16_t team_id;
 };
 

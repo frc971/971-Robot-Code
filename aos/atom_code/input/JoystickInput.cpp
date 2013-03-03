@@ -18,7 +18,8 @@ void JoystickInput::SetupButtons() {
 
   buttons[0] |= (control_data_.enabled << (ENABLED - 9)) |
       (control_data_.autonomous << (AUTONOMOUS - 9)) |
-      (control_data_.fmsAttached << (FMS_ATTACHED - 9));
+      (control_data_.fmsAttached << (FMS_ATTACHED - 9)) |
+      (control_data_.test << (TEST_MODE - 9));
 
   for (int j = 0; j < 4; ++j) {
     for (int k = 1; k <= 12; ++k) {
@@ -36,6 +37,8 @@ void JoystickInput::SetupButtons() {
   if (NegEdge(0, AUTONOMOUS)) LOG(INFO, "NegEdge(AUTONOMOUS)\n");
   if (PosEdge(0, FMS_ATTACHED)) LOG(INFO, "PosEdge(FMS_ATTACHED)\n");
   if (NegEdge(0, FMS_ATTACHED)) LOG(INFO, "NegEdge(FMS_ATTACHED)\n");
+  if (PosEdge(0, TEST_MODE)) LOG(INFO, "PosEdge(TEST_MODE)\n");
+  if (NegEdge(0, TEST_MODE)) LOG(INFO, "NegEdge(TEST_MODE)\n");
 }
 
 void JoystickInput::Run() {
@@ -46,9 +49,12 @@ void JoystickInput::Run() {
       continue;
     }
     SetupButtons();
-    if (!robot_state.MakeWithBuilder().enabled(Pressed(0, ENABLED)).
-        autonomous(Pressed(0, AUTONOMOUS)).
-        team_id(ntohs(control_data_.teamID)).Send()) {
+    if (!robot_state.MakeWithBuilder()
+        .enabled(Pressed(0, ENABLED))
+        .autonomous(Pressed(0, AUTONOMOUS))
+        .test_mode(Pressed(0, TEST_MODE))
+        .team_id(ntohs(control_data_.teamID))
+        .Send()) {
 			LOG(WARNING, "sending robot_state failed\n");
 		}
 		if (robot_state.FetchLatest()) {
