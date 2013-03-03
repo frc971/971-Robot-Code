@@ -2,7 +2,6 @@
   'variables': {
     'loop_files': [
       'DriveTrain.q',
-      'angle_adjust_motor.q',
     ]
   },
   'targets': [
@@ -51,11 +50,11 @@
       ],
     },
     {
-      'target_name': 'angle_adjust_lib',
+      'target_name': 'wrist_lib',
       'type': 'static_library',
       'sources': [
-        'angle_adjust.cc',
-        'angle_adjust_motor_plant.cc',
+        'wrist.cc',
+        'wrist_motor_plant.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
@@ -71,28 +70,29 @@
       ],
     },
     {
-      'target_name': 'angle_adjust_lib_test',
+      'target_name': 'wrist_lib_test',
       'type': 'executable',
       'sources': [
-        'angle_adjust_lib_test.cc',
+        'wrist_lib_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
         '<(AOS)/build/aos.gyp:libaos',
         'control_loops',
-        'angle_adjust_lib',
+        'wrist_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
+        'state_feedback_loop',
       ],
     },
     {
-      'target_name': 'angle_adjust',
+      'target_name': 'wrist',
       'type': 'executable',
       'sources': [
-        'angle_adjust_main.cc',
+        'wrist_main.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
-        'angle_adjust_lib',
+        'wrist_lib',
         'control_loops',
       ],
     },

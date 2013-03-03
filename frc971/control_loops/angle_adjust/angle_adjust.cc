@@ -1,4 +1,4 @@
-#include "frc971/control_loops/angle_adjust.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust.h"
 #include "frc971/control_loops/hall_effect_loop.h"
 #include "frc971/control_loops/hall_effect_loop-inl.h"
 
@@ -11,7 +11,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/angle_adjust_motor_plant.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust_motor_plant.h"
 
 namespace frc971 {
 namespace control_loops {

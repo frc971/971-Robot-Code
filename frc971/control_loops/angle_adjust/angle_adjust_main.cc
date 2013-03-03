@@ -1,4 +1,4 @@
-#include "frc971/control_loops/angle_adjust.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust.h"
 
 #include "aos/aos_core.h"
 

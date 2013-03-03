@@ -6,8 +6,8 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/angle_adjust_motor.q.h"
-#include "frc971/control_loops/angle_adjust.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust.h"
 #include "frc971/control_loops/hall_effect_loop.h"
 #include "frc971/constants.h"
 

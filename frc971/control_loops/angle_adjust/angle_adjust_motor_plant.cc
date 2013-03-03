@@ -1,4 +1,4 @@
-#include "frc971/control_loops/angle_adjust_motor_plant.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust_motor_plant.h"
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
