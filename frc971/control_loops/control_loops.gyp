@@ -49,7 +49,7 @@
         'control_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
-        '<(EXTERNALS):eigen',
+        'state_feedback_loop',
       ],
     },
     {
@@ -64,7 +64,7 @@
         'control_loops',
         'shooter_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
-        '<(EXTERNALS):eigen',
+        'state_feedback_loop',
       ],
     },
     {

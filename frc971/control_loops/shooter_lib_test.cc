@@ -154,7 +154,7 @@ TEST_F(ShooterTest, RateLimitTest) {
 
   my_shooter_loop_.goal.FetchLatest();
   my_shooter_loop_.status.FetchLatest();
-  EXPECT_LT(shooter_motor_.kMaxSpeed,
+  EXPECT_GT(shooter_motor_.kMaxSpeed,
             shooter_motor_plant_.shooter_plant_->X(1, 0));
 }
 
