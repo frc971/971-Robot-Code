@@ -1,4 +1,4 @@
-#include "frc971/control_loops/wrist.h"
+#include "frc971/control_loops/wrist/wrist.h"
 
 #include <stdio.h>
 
@@ -11,7 +11,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/wrist_motor_plant.h"
+#include "frc971/control_loops/wrist/wrist_motor_plant.h"
 
 namespace frc971 {
 namespace control_loops {

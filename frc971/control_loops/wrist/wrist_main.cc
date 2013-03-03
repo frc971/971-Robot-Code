@@ -1,4 +1,4 @@
-#include "frc971/control_loops/wrist.h"
+#include "frc971/control_loops/wrist/wrist.h"
 
 #include "aos/aos_core.h"
 

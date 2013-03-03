@@ -5,8 +5,8 @@
 
 #include "aos/common/control_loop/ControlLoop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/wrist_motor.q.h"
-#include "frc971/control_loops/wrist_motor_plant.h"
+#include "frc971/control_loops/wrist/wrist_motor.q.h"
+#include "frc971/control_loops/wrist/wrist_motor_plant.h"
 
 namespace frc971 {
 namespace control_loops {

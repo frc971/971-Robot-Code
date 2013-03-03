@@ -5,8 +5,8 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/wrist_motor.q.h"
-#include "frc971/control_loops/wrist.h"
+#include "frc971/control_loops/wrist/wrist_motor.q.h"
+#include "frc971/control_loops/wrist/wrist.h"
 #include "frc971/constants.h"
 
 

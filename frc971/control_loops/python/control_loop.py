@@ -16,12 +16,13 @@ class ControlLoop(object):
     self._namespace_end = ("}  // namespace frc971\n"
                            "}  // namespace control_loops\n")
 
-    self._header_start = ("#ifndef FRC971_CONTROL_LOOPS_%s_MOTOR_PLANT_H_\n"
-                          "#define FRC971_CONTROL_LOOPS_%s_MOTOR_PLANT_H_\n\n"
-                          % (self._name.upper(), self._name.upper()))
+    self._header_start = ("#ifndef FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n"
+                          "#define FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n\n"
+                          % (self._name.upper(), self._name.upper(),
+                             self._name.upper(), self._name.upper()))
 
-    self._header_end = ("#endif  // FRC971_CONTROL_LOOPS_%s_MOTOR_PLANT_H_\n"
-                        % (self._name.upper()))
+    self._header_end = ("#endif  // FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n"
+                        % (self._name.upper(), self._name.upper()))
 
   def ContinuousToDiscrete(self, A_continuous, B_continuous, dt, C):
     """Calculates the discrete time values for A and B as well as initializing
