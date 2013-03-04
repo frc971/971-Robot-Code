@@ -19,7 +19,7 @@ class Wrist(control_loop.ControlLoop):
     # Moment of inertia of the wrist in kg m^2
     # TODO(aschuh): Measure this in reality.  It doesn't seem high enough.
     # James measured 0.51, but that can't be right given what I am seeing.
-    self.J = 1.51
+    self.J = 2.0
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -45,7 +45,7 @@ class Wrist(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.84, .84])
+    self.PlaceControllerPoles([.72, .72])
 
     print self.K
 

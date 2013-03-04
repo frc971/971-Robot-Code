@@ -8,9 +8,9 @@ namespace control_loops {
 
 StateFeedbackPlant<2, 1, 1> MakeWristPlant() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 1.0, 0.00876530955899, 0.0, 0.763669024671;
+  A << 1.0, 0.00904786878843, 0.0, 0.815818233346;
   Eigen::Matrix<double, 2, 1> B;
-  B << 0.000423500644841, 0.0810618735867;
+  B << 0.000326582411818, 0.0631746179893;
   Eigen::Matrix<double, 1, 2> C;
   C << 1, 0;
   Eigen::Matrix<double, 1, 1> D;
@@ -24,9 +24,9 @@ StateFeedbackPlant<2, 1, 1> MakeWristPlant() {
 
 StateFeedbackLoop<2, 1, 1> MakeWristLoop() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 1.66366902467, 58.1140316091;
+  L << 1.71581823335, 64.8264890043;
   Eigen::Matrix<double, 1, 2> K;
-  K << 31.5808145893, 0.867171288023;
+  K << 124.10047341, 5.30734038612;
   return StateFeedbackLoop<2, 1, 1>(L, K, MakeWristPlant());
 }
 
