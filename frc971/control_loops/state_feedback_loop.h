@@ -1,7 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_STATEFEEDBACKLOOP_H_
 #define FRC971_CONTROL_LOOPS_STATEFEEDBACKLOOP_H_
 
-// wikipedia article is <http://en.wikipedia.org/wiki/State_observer>
+#include <assert.h>
 
 // Stupid vxworks system headers define it which blows up Eigen...
 #undef m_data
@@ -56,20 +56,19 @@ class StateFeedbackPlant {
 
   virtual ~StateFeedbackPlant() {}
 
-  // If U is outside the hardware range, limit it before the plant tries to use
-  // it.
-  virtual void CapU() {
+  // Assert that U is within the hardware range.
+  virtual void CheckU() {
     for (int i = 0; i < kNumOutputs; ++i) {
-      if (U[i] > U_max[i]) {
-        U[i] = U_max[i];
-      } else if (U[i] < U_min[i]) {
-        U[i] = U_min[i];
-      }
+      assert(U[i] <= U_max[i]);
+      assert(U[i] >= U_min[i]);
     }
   }
+
   // Computes the new X and Y given the control input.
   void Update() {
-    CapU();
+    // Powers outside of the range are more likely controller bugs than things
+    // that the plant should deal with.
+    CheckU();
     X = A * X + B * U;
     Y = C * X + D * U;
   }
