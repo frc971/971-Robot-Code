@@ -153,6 +153,11 @@ class Frisbee {
     return position_;
   }
 
+  // Simulates the index roller moving without the disc moving.
+  void OffsetIndex(double offset) {
+    index_roller_position_ += offset;
+  }
+
  private:
   // Previous transfer roller position for computing deltas.
   double transfer_roller_position_;
@@ -191,7 +196,7 @@ class IndexMotorSimulation {
   bool BottomDiscDetect() const {
     bool bottom_disc_detect = false;
     for (auto frisbee = frisbees.begin();
-        frisbee != frisbees.end(); ++frisbee) {
+         frisbee != frisbees.end(); ++frisbee) {
       bottom_disc_detect |= frisbee->bottom_disc_detect();
     }
     return bottom_disc_detect;
@@ -201,7 +206,7 @@ class IndexMotorSimulation {
   bool TopDiscDetect() const {
     bool top_disc_detect = false;
     for (auto frisbee = frisbees.begin();
-        frisbee != frisbees.end(); ++frisbee) {
+         frisbee != frisbees.end(); ++frisbee) {
       top_disc_detect |= frisbee->top_disc_detect();
     }
     return top_disc_detect;
@@ -210,7 +215,7 @@ class IndexMotorSimulation {
   // Updates all discs, and verifies that the state of the system is sane.
   void UpdateDiscs(bool clamped, bool lifted, bool ejected) {
     for (auto frisbee = frisbees.begin();
-        frisbee != frisbees.end(); ++frisbee) {
+         frisbee != frisbees.end(); ++frisbee) {
       frisbee->UpdatePosition(transfer_roller_position(),
                               index_roller_position(),
                               clamped,
@@ -221,7 +226,7 @@ class IndexMotorSimulation {
     // Make sure nobody is too close to anybody else.
     Frisbee *last_frisbee = NULL;
     for (auto frisbee = frisbees.begin();
-        frisbee != frisbees.end(); ++frisbee) {
+         frisbee != frisbees.end(); ++frisbee) {
       if (last_frisbee) {
         const double distance = frisbee->position() - last_frisbee->position();
         double min_distance;
@@ -277,6 +282,14 @@ class IndexMotorSimulation {
     UpdateDiscs(my_index_loop_.output->disc_clamped,
                 my_index_loop_.output->loader_up,
                 my_index_loop_.output->disc_ejected);
+  }
+
+  // Simulates the index roller moving without the disc moving.
+  void OffsetIndices(double offset) {
+    for (auto frisbee = frisbees.begin();
+         frisbee != frisbees.end(); ++frisbee) {
+      frisbee->OffsetIndex(offset);
+    }
   }
 
   // Plants for the index and transfer rollers.
@@ -340,17 +353,22 @@ class IndexTest : public ::testing::Test {
     Time::SetMockTime(Time::InMS(10 * loop_count_));
   }
 
-  // Loads n discs into the indexer at the bottom.
-  void LoadNDiscs(int n) {
-    my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
-    // Spin it up.
-    for (int i = 0; i < 100; ++i) {
+  // Lets N cycles of time pass.
+  void SimulateNCycles(int cycles) {
+    for (int i = 0; i < cycles; ++i) {
       index_motor_plant_.SendPositionMessage();
       index_motor_.Iterate();
       index_motor_plant_.Simulate();
       SendDSPacket(true);
       UpdateTime();
     }
+  }
+
+  // Loads n discs into the indexer at the bottom.
+  void LoadNDiscs(int n) {
+    my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+    // Spin it up.
+    SimulateNCycles(100);
 
     EXPECT_EQ(0, index_motor_plant_.index_roller_position());
     my_index_loop_.status.FetchLatest();
@@ -489,13 +507,7 @@ TEST_F(IndexTest, ReadyGrabsOneDisc) {
   // Lift the discs up to the top.  Wait a while to let the system settle and
   // verify that they don't collide.
   my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
-  for (int i = 0; i < 300; ++i) {
-    index_motor_plant_.SendPositionMessage();
-    index_motor_.Iterate();
-    index_motor_plant_.Simulate();
-    SendDSPacket(true);
-    UpdateTime();
-  }
+  SimulateNCycles(300);
 
   // Verify that the disc has been grabbed.
   my_index_loop_.output.FetchLatest();
@@ -607,13 +619,7 @@ TEST_F(IndexTest, ShootFourDiscs) {
   my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
 
   // Lifting and shooting takes a while...
-  for (int i = 0; i < 300; ++i) {
-    index_motor_plant_.SendPositionMessage();
-    index_motor_.Iterate();
-    index_motor_plant_.Simulate();
-    SendDSPacket(true);
-    UpdateTime();
-  }
+  SimulateNCycles(300);
 
   my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 0);
@@ -652,13 +658,7 @@ TEST_F(IndexTest, PreloadToIndexEarlyTransition) {
   // Pull the disc back down and verify that the transfer roller doesn't turn on
   // until we are ready.
   my_index_loop_.goal.MakeWithBuilder().goal_state(1).Send();
-  for (int i = 0; i < 100; ++i) {
-    index_motor_plant_.SendPositionMessage();
-    index_motor_.Iterate();
-    index_motor_plant_.Simulate();
-    SendDSPacket(true);
-    UpdateTime();
-  }
+  SimulateNCycles(100);
 
   my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
@@ -704,6 +704,75 @@ TEST_F(IndexTest, HandleDisable) {
       (IndexMotor::kIndexStartPosition +
        IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
       index_motor_plant_.frisbees[0].position(), 0.04);
+}
+
+// Tests that we can shoot after grabbing in the loader.
+TEST_F(IndexTest, GrabbedToShoot) {
+  LoadNDiscs(2);
+
+  // Lift the discs up to the top.  Wait a while to let the system settle and
+  // verify that they don't collide.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(300);
+
+  // Verify that it is preloaded.
+  my_index_loop_.status.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.status->preloaded);
+
+  // Shoot them all.
+  my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+  SimulateNCycles(200);
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 0);
+  EXPECT_EQ(my_index_loop_.status->total_disc_count, 2);
+  EXPECT_FALSE(my_index_loop_.status->preloaded);
+}
+
+// Tests that the cRIO can reboot and we don't loose discs.
+TEST_F(IndexTest, cRIOReboot) {
+  LoadNDiscs(2);
+
+  SimulateNCycles(100);
+  for (int i = 0; i < 100; ++i) {
+    // No position for a while is a cRIO reboot.
+    index_motor_.Iterate();
+    index_motor_plant_.Simulate();
+    SendDSPacket(false);
+    UpdateTime();
+  }
+
+  // Shift the plant.
+  const double kPlantOffset = 5000.0;
+  index_motor_plant_.index_plant_->Y(0, 0) += kPlantOffset;
+  index_motor_plant_.index_plant_->X(0, 0) += kPlantOffset;
+
+  // Shift the discs
+  index_motor_plant_.OffsetIndices(kPlantOffset);
+  // Let time elapse to see if the loop wants to move the discs or not.
+  SimulateNCycles(1000);
+
+  // Verify that 2 discs are at the bottom of the hopper.
+  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 2);
+  EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
+  EXPECT_NEAR(
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+      index_motor_plant_.frisbees[1].position(), 0.10);
+  EXPECT_NEAR(
+      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
+      (index_motor_plant_.frisbees[0].position() -
+       index_motor_plant_.frisbees[1].position()), 0.10);
+}
+
+// Tests that invalid states are rejected.
+TEST_F(IndexTest, InvalidStateTest) {
+  my_index_loop_.goal.MakeWithBuilder().goal_state(10).Send();
+  SimulateNCycles(2);
+  // Verify that the goal is correct.
+  EXPECT_GE(4, static_cast<int>(index_motor_.safe_goal_));
+  EXPECT_LE(0, static_cast<int>(index_motor_.safe_goal_));
 }
 
 }  // namespace testing

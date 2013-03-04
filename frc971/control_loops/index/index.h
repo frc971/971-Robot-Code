@@ -12,6 +12,9 @@
 
 namespace frc971 {
 namespace control_loops {
+namespace testing {
+class IndexTest_InvalidStateTest_Test;
+}
 
 class IndexMotor
     : public aos::control_loops::ControlLoop<control_loops::IndexLoop> {
@@ -120,6 +123,12 @@ class IndexMotor
       return index_start_position_;
     }
 
+    // Shifts the disc down the indexer by the provided offset.  This is to
+    // handle when the cRIO reboots.
+    void OffsetDisc(double offset) {
+      index_start_position_ += offset;
+    }
+
     // Posedge and negedge disc times.
     ::aos::time::Time bottom_posedge_time_;
     ::aos::time::Time bottom_negedge_time_;
@@ -138,6 +147,7 @@ class IndexMotor
       control_loops::IndexLoop::Status *status);
 
  private:
+  friend class testing::IndexTest_InvalidStateTest_Test;
   // Sets disc_position to the minimum or maximum disc position.
   // Returns true if there were discs, and false if there weren't.
   // On false, disc_position is left unmodified.
@@ -222,6 +232,11 @@ class IndexMotor
   // Frisbees are in order such that the newest frisbee is on the front.
   ::std::deque<Frisbee> frisbees_;
   // std::array ?
+
+  // True if we haven't seen a position before.
+  bool no_prior_position_;
+  // Number of position messages that we have missed in a row.
+  uint32_t missing_position_count_;
 
   DISALLOW_COPY_AND_ASSIGN(IndexMotor);
 };

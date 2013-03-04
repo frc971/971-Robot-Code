@@ -29,7 +29,9 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       loader_up_(false),
       disc_clamped_(false),
       disc_ejected_(false),
-      last_bottom_disc_detect_(false) {
+      last_bottom_disc_detect_(false),
+      no_prior_position_(true),
+      missing_position_count_(0) {
 }
 
 /*static*/ const double IndexMotor::kTransferStartPosition = 0.0;
@@ -146,8 +148,13 @@ void IndexMotor::RunIteration(
     const control_loops::IndexLoop::Position *position,
     control_loops::IndexLoop::Output *output,
     control_loops::IndexLoop::Status *status) {
-  // Make goal easy to work with.
+  // Make goal easy to work with and sanity check it.
   Goal goal_enum = static_cast<Goal>(goal->goal_state);
+  if (goal->goal_state < 0 || goal->goal_state > 4) {
+    LOG(ERROR, "Goal state is %d which is out of range.  Going to HOLD.\n",
+        goal->goal_state);
+    goal_enum = Goal::HOLD;
+  }
 
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
@@ -164,13 +171,31 @@ void IndexMotor::RunIteration(
   // Compute a safe index position that we can use.
   if (position) {
     wrist_loop_->Y << position->index_position;
+    // Set the goal to be the current position if this is the first time through
+    // so we don't always spin the indexer to the 0 position before starting.
+    if (no_prior_position_) {
+      wrist_loop_->R << wrist_loop_->Y(0, 0), 0.0;
+      no_prior_position_ = false;
+    }
+
+    // If the cRIO is gone for 1/2 of a second, assume that it rebooted.
+    if (missing_position_count_ > 50) {
+      // Adjust the disc positions so that they don't have to move.
+      const double disc_offset =
+          position->index_position - wrist_loop_->X_hat(0, 0);
+      for (auto frisbee = frisbees_.begin();
+           frisbee != frisbees_.end(); ++frisbee) {
+        frisbee->OffsetDisc(disc_offset);
+      }
+    }
+    missing_position_count_ = 0;
+  } else {
+    ++missing_position_count_;
   }
   const double index_position = wrist_loop_->X_hat(0, 0);
 
   // TODO(aschuh): Watch for top disc detect and update the frisbee
   // position.
-
-  // TODO(aschuh): Horizontal and centering should be here as well...
 
   // Bool to track if it is safe for the goal to change yet.
   bool safe_to_change_state_ = true;
@@ -224,7 +249,7 @@ void IndexMotor::RunIteration(
 
           // Check all non-indexed discs and see if they should be indexed.
           for (auto frisbee = frisbees_.begin();
-              frisbee != frisbees_.end(); ++frisbee) {
+               frisbee != frisbees_.end(); ++frisbee) {
             if (!frisbee->has_been_indexed_) {
               intake_voltage = transfer_voltage = 12.0;
               Time elapsed_negedge_time = now -
@@ -317,6 +342,12 @@ void IndexMotor::RunIteration(
           // We already have a disc in the loader.
           // Stage the discs back a bit.
           wrist_loop_->R << ready_disc_position, 0.0;
+
+          // Shoot if we are grabbed and being asked to shoot.
+          if (loader_state_ == LoaderState::GRABBED &&
+              safe_goal_ == Goal::SHOOT) {
+            loader_goal_ = LoaderGoal::SHOOT_AND_RESET;
+          }
 
           // Must wait until it has been grabbed to continue.
           if (loader_state_ == LoaderState::GRABBING) {
@@ -487,6 +518,9 @@ void IndexMotor::RunIteration(
   if (output) {
     output->intake_voltage = intake_voltage;
     output->transfer_voltage = transfer_voltage;
+    // TODO(aschuh): Count the number of cycles with power below
+    // kFrictionVoltage and if it is too high, turn the motor off.
+    // 50 cycles, 5 volts?  Need data...
     output->index_voltage = wrist_loop_->U(0, 0);
     output->loader_up = loader_up_;
     output->disc_clamped = disc_clamped_;
