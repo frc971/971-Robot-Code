@@ -775,6 +775,17 @@ TEST_F(IndexTest, InvalidStateTest) {
   EXPECT_LE(0, static_cast<int>(index_motor_.safe_goal_));
 }
 
+// Tests that the motor is turned off after a number of cycles of low power.
+TEST_F(IndexTest, ZeroPowerAfterTimeout) {
+  LoadNDiscs(4);
+  SimulateNCycles(100);
+
+  // Verify that the motor is hard off.  This relies on floating point math
+  // never really getting to 0 unless you set it explicitly.
+  my_index_loop_.output.FetchLatest();
+  EXPECT_EQ(my_index_loop_.output->index_voltage, 0.0);
+}
+
 }  // namespace testing
 }  // namespace control_loops
 }  // namespace frc971

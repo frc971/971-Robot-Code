@@ -20,7 +20,7 @@ namespace control_loops {
 
 IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
     : aos::control_loops::ControlLoop<control_loops::IndexLoop>(my_index),
-      wrist_loop_(new StateFeedbackLoop<2, 1, 1>(MakeIndexLoop())),
+      wrist_loop_(new IndexStateFeedbackLoop(MakeIndexLoop())),
       hopper_disc_count_(0),
       total_disc_count_(0),
       safe_goal_(Goal::HOLD),
@@ -67,6 +67,12 @@ const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 /*static*/ const int IndexMotor::kLiftingDelay = 20;
 /*static*/ const int IndexMotor::kShootingDelay = 5;
 /*static*/ const int IndexMotor::kLoweringDelay = 20;
+
+// TODO(aschuh): Tune these.
+/*static*/ const double
+    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 5.0;
+/*static*/ const double
+    IndexMotor::IndexStateFeedbackLoop::kNoMotionCuttoffCount = 30;
 
 // Distance to move the indexer when grabbing a disc.
 const double kNextPosition = 10.0;
@@ -140,6 +146,31 @@ bool IndexMotor::MaxDiscPosition(double *disc_position) {
   }
   return found_start;
 }
+
+void IndexMotor::IndexStateFeedbackLoop::CapU() {
+  // If the voltage has been low for a large number of cycles, cut the motor
+  // power.  This is generally very bad controls practice since this isn't LTI,
+  // but we don't really care about tracking anything other than large step
+  // inputs, and the loader doesn't need to be that accurate.
+  if (::std::abs(U(0, 0)) < kMinMotionVoltage) {
+    ++low_voltage_count_;
+    if (low_voltage_count_ > kNoMotionCuttoffCount) {
+      printf("Limiting power from %f to 0\n", U(0, 0));
+      U(0, 0) = 0.0;
+    }
+  } else {
+    low_voltage_count_ = 0;
+  }
+
+  for (int i = 0; i < kNumOutputs; ++i) {
+    if (U[i] > plant.U_max[i]) {
+      U[i] = plant.U_max[i];
+    } else if (U[i] < plant.U_min[i]) {
+      U[i] = plant.U_min[i];
+    }
+  }
+}
+
 
 // Positive angle is towards the shooter, and positive power is towards the
 // shooter.
@@ -518,9 +549,6 @@ void IndexMotor::RunIteration(
   if (output) {
     output->intake_voltage = intake_voltage;
     output->transfer_voltage = transfer_voltage;
-    // TODO(aschuh): Count the number of cycles with power below
-    // kFrictionVoltage and if it is too high, turn the motor off.
-    // 50 cycles, 5 volts?  Need data...
     output->index_voltage = wrist_loop_->U(0, 0);
     output->loader_up = loader_up_;
     output->disc_clamped = disc_clamped_;

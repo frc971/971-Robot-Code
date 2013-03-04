@@ -148,6 +148,28 @@ class IndexMotor
 
  private:
   friend class testing::IndexTest_InvalidStateTest_Test;
+
+  // This class implements the CapU function correctly given all the extra
+  // information that we know about from the wrist motor.
+  class IndexStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
+   public:
+    IndexStateFeedbackLoop(StateFeedbackLoop<2, 1, 1> loop)
+        : StateFeedbackLoop<2, 1, 1>(loop),
+          low_voltage_count_(0) {
+    }
+
+    // Voltage below which the indexer won't move with a disc in it.
+    static const double kMinMotionVoltage;
+    // Maximum number of cycles to apply a low voltage to the motor.
+    static const double kNoMotionCuttoffCount;
+
+    // Caps U, but disables the motor after a number of cycles of inactivity.
+    virtual void CapU();
+   private:
+    // Number of cycles that we have seen a small voltage being applied.
+    uint32_t low_voltage_count_;
+  };
+
   // Sets disc_position to the minimum or maximum disc position.
   // Returns true if there were discs, and false if there weren't.
   // On false, disc_position is left unmodified.
@@ -155,7 +177,7 @@ class IndexMotor
   bool MaxDiscPosition(double *disc_position);
 
   // The state feedback control loop to talk to for the index.
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> wrist_loop_;
+  ::std::unique_ptr<IndexStateFeedbackLoop> wrist_loop_;
 
   // Count of the number of discs that we have collected.
   uint32_t hopper_disc_count_;
