@@ -24,18 +24,23 @@ class Frisbee {
   // and with the transfer and index rollers at the specified positions.
   Frisbee(double transfer_roller_position,
           double index_roller_position,
-          double position = IndexMotor::kBottomDiscDetectStart)
+          double position = IndexMotor::kBottomDiscDetectStart - 0.001)
       : transfer_roller_position_(transfer_roller_position),
         index_roller_position_(index_roller_position),
         position_(position),
-        has_been_shot_(false) {
+        has_been_shot_(false),
+        has_bottom_disc_negedge_wait_position_(false),
+        bottom_disc_negedge_wait_position_(0.0),
+        after_negedge_time_left_(IndexMotor::kBottomDiscIndexDelay),
+        counted_negedge_wait_(false) {
   }
 
   // Returns true if the frisbee is controlled by the transfer roller.
-  bool IsTouchingTransfer() const {
-    return (position_ >= IndexMotor::kBottomDiscDetectStart &&
-            position_ <= IndexMotor::kIndexStartPosition);
+  bool IsTouchingTransfer(double position) const {
+    return (position >= IndexMotor::kBottomDiscDetectStart &&
+            position <= IndexMotor::kIndexStartPosition);
   }
+  bool IsTouchingTransfer() const { return IsTouchingTransfer(position_); }
 
   // Returns true if the frisbee is in a place where it is unsafe to grab.
   bool IsUnsafeToGrab() const {
@@ -44,10 +49,11 @@ class Frisbee {
   }
 
   // Returns true if the frisbee is controlled by the indexing roller.
-  bool IsTouchingIndex() const {
-    return (position_ >= IndexMotor::kIndexStartPosition &&
-            position_ < IndexMotor::kGrabberStartPosition);
+  bool IsTouchingIndex(double position) const {
+    return (position >= IndexMotor::kIndexStartPosition &&
+            position < IndexMotor::kGrabberStartPosition);
   }
+  bool IsTouchingIndex() const { return IsTouchingIndex(position_); }
 
   // Returns true if the frisbee is in a position such that the disc can be
   // lifted.
@@ -77,15 +83,183 @@ class Frisbee {
   }
 
   // Returns true if the disc is triggering the bottom disc detect sensor.
-  bool bottom_disc_detect() const {
-    return (position_ >= IndexMotor::kBottomDiscDetectStart &&
-            position_ <= IndexMotor::kBottomDiscDetectStop);
+  bool bottom_disc_detect(double position) const {
+    return (position >= IndexMotor::kBottomDiscDetectStart &&
+            position <= IndexMotor::kBottomDiscDetectStop);
   }
+  bool bottom_disc_detect() const { return bottom_disc_detect(position_); }
 
   // Returns true if the disc is triggering the top disc detect sensor.
   bool top_disc_detect() const {
     return (position_ >= IndexMotor::kTopDiscDetectStart &&
             position_ <= IndexMotor::kTopDiscDetectStop);
+  }
+
+  // Returns true if the bottom disc sensor will negedge after the disc moves
+  // by dx.
+  bool will_negedge_bottom_disc_detect(double transfer_dx) {
+    if (bottom_disc_detect()) {
+      return bottom_disc_detect(position_ + transfer_dx);
+    }
+    return false;
+  }
+
+  // Handles potentially dealing with the delayed negedge.
+  // Computes the index position when time expires using the cached old indexer
+  // position, the elapsed time, and the average velocity.
+  void HandleAfterNegedge(
+      double index_velocity, double elapsed_time, double time_left) {
+    if (!has_bottom_disc_negedge_wait_position_) {
+      if (time_left < after_negedge_time_left_) {
+        after_negedge_time_left_ = 0.0;
+        // Assume constant velocity and compute the position.
+        bottom_disc_negedge_wait_position_ =
+            index_roller_position_ +
+            index_velocity * (elapsed_time + after_negedge_time_left_);
+        has_bottom_disc_negedge_wait_position_ = true;
+      } else {
+        after_negedge_time_left_ -= elapsed_time;
+      }
+    }
+  }
+
+  // Updates the position of the disc assuming that it has started on the
+  // transfer.  The elapsed time is the simulated amount of time that has
+  // elapsed since the simulation timestep started and this method was called.
+  // time_left is the amount of time left to spend during this timestep.
+  double UpdateTransferPositionForTime(double transfer_roller_velocity,
+                                       double index_roller_velocity,
+                                       double elapsed_time,
+                                       double time_left) {
+    double disc_dx = IndexMotor::ConvertTransferToDiscPosition(
+        transfer_roller_velocity * time_left);
+    bool shrunk_time = false;
+    if (!IsTouchingTransfer(position_ + disc_dx)) {
+      shrunk_time = true;
+      time_left = (IndexMotor::kIndexStartPosition - position_) /
+          transfer_roller_velocity;
+      disc_dx = IndexMotor::ConvertTransferToDiscPosition(
+          transfer_roller_velocity * time_left);
+    }
+
+    if (will_negedge_bottom_disc_detect(disc_dx)) {
+      // Compute the time from the negedge to the end of the cycle assuming
+      // constant velocity.
+      const double elapsed_time =
+          (position_ + disc_dx - IndexMotor::kBottomDiscDetectStop) /
+          disc_dx * time_left;
+
+      // I am not implementing very short delays until this fails.
+      assert(elapsed_time <= after_negedge_time_left_);
+      after_negedge_time_left_ -= elapsed_time;
+    } else if (position_ >= IndexMotor::kBottomDiscDetectStop) {
+      HandleAfterNegedge(index_roller_velocity, elapsed_time, time_left);
+    }
+
+    if (shrunk_time) {
+      position_ = IndexMotor::kIndexStartPosition;
+    } else {
+      position_ += disc_dx;
+    }
+    printf("Transfer Roller: Disc is at %f\n", position_);
+    return time_left;
+  }
+
+  // Updates the position of the disc assuming that it has started on the
+  // indexer.  The elapsed time is the simulated amount of time that has
+  // elapsed since the simulation timestep started and this method was called.
+  // time_left is the amount of time left to spend during this timestep.
+  double UpdateIndexPositionForTime(double index_roller_velocity,
+                                    double elapsed_time,
+                                    double time_left) {
+    double index_dx = IndexMotor::ConvertIndexToDiscPosition(
+        index_roller_velocity * time_left);
+    bool shrunk_time = false;
+    if (!IsTouchingIndex(position_ + index_dx)) {
+      shrunk_time = true;
+      time_left = (IndexMotor::kGrabberStartPosition - position_) /
+          index_roller_velocity;
+      index_dx = IndexMotor::ConvertTransferToDiscPosition(
+          index_roller_velocity * time_left);
+    }
+
+    if (position_ >= IndexMotor::kBottomDiscDetectStop) {
+      HandleAfterNegedge(index_roller_velocity, elapsed_time, time_left);
+    }
+
+    if (shrunk_time) {
+      position_ = IndexMotor::kGrabberStartPosition;
+    } else {
+      position_ += index_dx;
+    }
+    printf("Index: Disc is at %f\n", position_);
+    return time_left;
+  }
+
+  // Updates the position given velocities, piston comands, and the time left in
+  // the simulation cycle.
+  void UpdatePositionForTime(double transfer_roller_velocity,
+                             double index_roller_velocity,
+                             bool clamped,
+                             bool lifted,
+                             bool ejected,
+                             double time_left) {
+    double elapsed_time = 0.0;
+    // We are making this assumption below
+    ASSERT_LE(IndexMotor::kBottomDiscDetectStop,
+              IndexMotor::kIndexStartPosition);
+    if (IsTouchingTransfer() || position() < 0.0) {
+      double deltat = UpdateTransferPositionForTime(
+          transfer_roller_velocity, index_roller_velocity,
+          elapsed_time, time_left);
+      time_left -= deltat;
+      elapsed_time += deltat;
+    }
+
+    if (IsTouchingIndex() && time_left >= 0) {
+      // Verify that we aren't trying to grab or lift when it isn't safe.
+      EXPECT_FALSE(clamped && IsUnsafeToGrab());
+      EXPECT_FALSE(lifted && IsUnsafeToLift());
+
+      double deltat = UpdateIndexPositionForTime(
+          index_roller_velocity, elapsed_time, time_left);
+      time_left -= deltat;
+      elapsed_time += deltat;
+    }
+    if (IsTouchingGrabber()) {
+      if (clamped) {
+        const double grabber_dx =
+            IndexMotor::kGrabberMovementVelocity * time_left;
+        position_ = ::std::min(position_ + grabber_dx,
+                               IndexMotor::kReadyToLiftPosition);
+      }
+      EXPECT_FALSE(lifted) << "Can't lift while in grabber";
+      EXPECT_FALSE(ejected) << "Can't eject while in grabber";
+      printf("Grabber: Disc is at %f\n", position_);
+    } else if (IsTouchingLoader()) {
+      if (lifted) {
+        const double lifter_dx =
+            IndexMotor::kLifterMovementVelocity * time_left;
+        position_ = ::std::min(position_ + lifter_dx,
+                               IndexMotor::kLifterStopPosition);
+      }
+      EXPECT_TRUE(clamped);
+      EXPECT_FALSE(ejected);
+      printf("Loader: Disc is at %f\n", position_);
+    } else if (IsTouchingEjector()) {
+      EXPECT_TRUE(lifted);
+      if (ejected) {
+        const double ejector_dx =
+            IndexMotor::kEjectorMovementVelocity * time_left;
+        position_ = ::std::min(position_ + ejector_dx,
+                               IndexMotor::kEjectorStopPosition);
+        EXPECT_FALSE(clamped);
+      }
+      printf("Ejector: Disc is at %f\n", position_);
+    } else if (position_ == IndexMotor::kEjectorStopPosition) {
+      printf("Shot: Disc is at %f\n", position_);
+      has_been_shot_ = true;
+    }
   }
 
   // Updates the position of the frisbee in the frisbee path.
@@ -94,53 +268,18 @@ class Frisbee {
                       bool clamped,
                       bool lifted,
                       bool ejected) {
-    if (IsTouchingTransfer() || position() < 0.0) {
-      position_ += IndexMotor::ConvertTransferToDiscPosition(
-          transfer_roller_position - transfer_roller_position_);
-      printf("Transfer Roller: ");
-    } else if (IsTouchingIndex()) {
-      position_ += ::std::min(
-          IndexMotor::ConvertIndexToDiscPosition(
-            index_roller_position - index_roller_position_),
-          IndexMotor::kGrabberStartPosition);
-      // Verify that we aren't trying to grab or lift when it isn't safe.
-      EXPECT_FALSE(clamped && IsUnsafeToGrab());
-      EXPECT_FALSE(lifted && IsUnsafeToLift());
-      printf("Index: ");
-    } else if (IsTouchingGrabber()) {
-      if (clamped) {
-        const double grabber_dx = IndexMotor::kGrabberMovementVelocity / 100.0;
-        position_ = ::std::min(position_ + grabber_dx,
-                               IndexMotor::kReadyToLiftPosition);
-      }
-      EXPECT_FALSE(lifted);
-      EXPECT_FALSE(ejected);
-      printf("Grabber: ");
-    } else if (IsTouchingLoader()) {
-      if (lifted) {
-        const double lifter_dx = IndexMotor::kLifterMovementVelocity / 100.0;
-        position_ = ::std::min(position_ + lifter_dx,
-                               IndexMotor::kLifterStopPosition);
-      }
-      EXPECT_TRUE(clamped);
-      EXPECT_FALSE(ejected);
-      printf("Loader: ");
-    } else if (IsTouchingEjector()) {
-      EXPECT_TRUE(lifted);
-      if (ejected) {
-        const double ejector_dx = IndexMotor::kEjectorMovementVelocity / 100.0;
-        position_ = ::std::min(position_ + ejector_dx,
-                               IndexMotor::kEjectorStopPosition);
-        EXPECT_FALSE(clamped);
-      }
-      printf("Ejector: ");
-    } else if (position_ == IndexMotor::kEjectorStopPosition) {
-      printf("Shot: ");
-      has_been_shot_ = true;
-    }
+    const double transfer_roller_velocity =
+      (transfer_roller_position - transfer_roller_position_) / 0.01;
+    const double index_roller_velocity =
+      (index_roller_position - index_roller_position_) / 0.01;
+    UpdatePositionForTime(transfer_roller_velocity,
+                          index_roller_velocity,
+                          clamped,
+                          lifted,
+                          ejected,
+                          0.01);
     transfer_roller_position_ = transfer_roller_position;
     index_roller_position_ = index_roller_position;
-    printf("Disc is at %f\n", position_);
   }
 
   // Returns if the disc has been shot and can be removed from the robot.
@@ -151,6 +290,24 @@ class Frisbee {
   // Returns the position of the disc in the system.
   double position() const {
     return position_;
+  }
+
+  // Sets whether or not we have counted the delayed negedge.
+  void set_counted_negedge_wait(bool counted_negedge_wait) {
+    counted_negedge_wait_ = counted_negedge_wait;
+  }
+
+  // Returns if we have counted the delayed negedge.
+  bool counted_negedge_wait() { return counted_negedge_wait_; }
+
+  // Returns true if the negedge wait position is valid.
+  bool has_bottom_disc_negedge_wait_position() {
+    return has_bottom_disc_negedge_wait_position_;
+  }
+
+  // Returns the negedge wait position.
+  double bottom_disc_negedge_wait_position() {
+    return bottom_disc_negedge_wait_position_;
   }
 
   // Simulates the index roller moving without the disc moving.
@@ -167,6 +324,15 @@ class Frisbee {
   double position_;
   // True if the disc has been shot.
   bool has_been_shot_;
+  // True if the delay after the negedge of the beam break has occured.
+  bool has_bottom_disc_negedge_wait_position_;
+  // Posiiton of the indexer when the delayed negedge occures.
+  double bottom_disc_negedge_wait_position_;
+  // Time left after the negedge before we need to sample the indexer position.
+  double after_negedge_time_left_;
+  // Bool for the user to record if they have counted the negedge from this
+  // disc.
+  bool counted_negedge_wait_;
 };
 
 
@@ -179,6 +345,10 @@ class IndexMotorSimulation {
   IndexMotorSimulation()
       : index_plant_(new StateFeedbackPlant<2, 1, 1>(MakeIndexPlant())),
         transfer_plant_(new StateFeedbackPlant<2, 1, 1>(MakeTransferPlant())),
+        bottom_disc_posedge_count_(0),
+        bottom_disc_negedge_count_(0),
+        bottom_disc_negedge_wait_count_(0),
+        bottom_disc_negedge_wait_position_(0),
         my_index_loop_(".frc971.control_loops.index",
                        0x1a7b7094, ".frc971.control_loops.index.goal",
                        ".frc971.control_loops.index.position",
@@ -216,11 +386,35 @@ class IndexMotorSimulation {
   void UpdateDiscs(bool clamped, bool lifted, bool ejected) {
     for (auto frisbee = frisbees.begin();
          frisbee != frisbees.end(); ++frisbee) {
+      const bool old_bottom_disc_detect = frisbee->bottom_disc_detect();
       frisbee->UpdatePosition(transfer_roller_position(),
                               index_roller_position(),
                               clamped,
                               lifted,
                               ejected);
+
+      // Look for disc detect edges and report them.
+      const bool bottom_disc_detect = frisbee->bottom_disc_detect();
+      if (old_bottom_disc_detect && !bottom_disc_detect) {
+        printf("Negedge of disc\n");
+        ++bottom_disc_negedge_count_;
+      }
+
+      if (!old_bottom_disc_detect && frisbee->bottom_disc_detect()) {
+        printf("Posedge of disc\n");
+        ++bottom_disc_posedge_count_;
+      }
+
+      // See if the frisbee has a delayed negedge and encoder value to report
+      // back.
+      if (frisbee->has_bottom_disc_negedge_wait_position()) {
+        if (!frisbee->counted_negedge_wait()) {
+          bottom_disc_negedge_wait_position_ =
+              frisbee->bottom_disc_negedge_wait_position();
+          ++bottom_disc_negedge_wait_count_;
+          frisbee->set_counted_negedge_wait(true);
+        }
+      }
     }
 
     // Make sure nobody is too close to anybody else.
@@ -260,8 +454,18 @@ class IndexMotorSimulation {
     position->index_position = index_roller_position();
     position->bottom_disc_detect = BottomDiscDetect();
     position->top_disc_detect = TopDiscDetect();
-    printf("bdd: %x tdd: %x\n", position->bottom_disc_detect,
-           position->top_disc_detect);
+    position->bottom_disc_posedge_count = bottom_disc_posedge_count_;
+    position->bottom_disc_negedge_count = bottom_disc_negedge_count_;
+    position->bottom_disc_negedge_wait_count = bottom_disc_negedge_wait_count_;
+    position->bottom_disc_negedge_wait_position =
+        bottom_disc_negedge_wait_position_;
+    printf("bdd: %x tdd: %x posedge %d negedge %d delaycount %d delaypos %f\n",
+           position->bottom_disc_detect,
+           position->top_disc_detect,
+           position->bottom_disc_posedge_count,
+           position->bottom_disc_negedge_count,
+           position->bottom_disc_negedge_wait_count,
+           position->bottom_disc_negedge_wait_position);
     position.Send();
   }
 
@@ -295,6 +499,14 @@ class IndexMotorSimulation {
   // Plants for the index and transfer rollers.
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> index_plant_;
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> transfer_plant_;
+
+  // Posedge and negedge counts for the beam break.
+  int32_t bottom_disc_posedge_count_;
+  int32_t bottom_disc_negedge_count_;
+
+  // Delayed negedge count and corrisponding position.
+  int32_t bottom_disc_negedge_wait_count_;
+  int32_t bottom_disc_negedge_wait_position_;
 
   // Returns the absolute angle of the index.
   double index_roller_position() const {
@@ -387,7 +599,7 @@ class IndexTest : public ::testing::Test {
         } else {
           index_motor_plant_.InsertDisc();
           ++num_grabbed;
-          wait_counter = 3;
+          wait_counter = 5;
         }
       }
       index_motor_plant_.Simulate();
@@ -746,6 +958,10 @@ TEST_F(IndexTest, cRIOReboot) {
   const double kPlantOffset = 5000.0;
   index_motor_plant_.index_plant_->Y(0, 0) += kPlantOffset;
   index_motor_plant_.index_plant_->X(0, 0) += kPlantOffset;
+  index_motor_plant_.bottom_disc_posedge_count_ = 971;
+  index_motor_plant_.bottom_disc_negedge_count_ = 971;
+  index_motor_plant_.bottom_disc_negedge_wait_count_ = 971;
+  index_motor_plant_.bottom_disc_negedge_wait_position_ = -1502;
 
   // Shift the discs
   index_motor_plant_.OffsetIndices(kPlantOffset);

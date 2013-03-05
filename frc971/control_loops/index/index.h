@@ -53,6 +53,9 @@ class IndexMotor
   // Start and stop position of the bottom disc detect sensor in meters.
   static const double kBottomDiscDetectStart;
   static const double kBottomDiscDetectStop;
+  // Delay between the negedge of the disc detect and when it engages on the
+  // indexer.
+  static const double kBottomDiscIndexDelay;
 
   static const double kTopDiscDetectStart;
   static const double kTopDiscDetectStop;
@@ -250,6 +253,9 @@ class IndexMotor
 
   // Bottom disc detect from the last valid packet for detecting edges.
   bool last_bottom_disc_detect_;
+  int32_t last_bottom_disc_posedge_count_;
+  int32_t last_bottom_disc_negedge_count_;
+  int32_t last_bottom_disc_negedge_wait_count_;
 
   // Frisbees are in order such that the newest frisbee is on the front.
   ::std::deque<Frisbee> frisbees_;

@@ -45,7 +45,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kGrabberLength = 0.03175;
 /*static*/ const double IndexMotor::kGrabberStartPosition =
     kReadyToLiftPosition - kGrabberLength;
-/*static*/ const double IndexMotor::kGrabberMovementVelocity = 0.5;
+/*static*/ const double IndexMotor::kGrabberMovementVelocity = 0.7;
 /*static*/ const double IndexMotor::kLifterStopPosition =
     kReadyToLiftPosition + 0.161925;
 /*static*/ const double IndexMotor::kLifterMovementVelocity = 1.0;
@@ -54,6 +54,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kEjectorMovementVelocity = 1.0;
 /*static*/ const double IndexMotor::kBottomDiscDetectStart = -0.08;
 /*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.200025;
+/*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.01;
 
 // TODO(aschuh): Figure these out.
 /*static*/ const double IndexMotor::kTopDiscDetectStart = 18.0;
@@ -207,10 +208,18 @@ void IndexMotor::RunIteration(
     if (no_prior_position_) {
       wrist_loop_->R << wrist_loop_->Y(0, 0), 0.0;
       no_prior_position_ = false;
+      last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
+      last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
+      last_bottom_disc_negedge_wait_count_ =
+          position->bottom_disc_negedge_wait_count;
     }
 
     // If the cRIO is gone for 1/2 of a second, assume that it rebooted.
     if (missing_position_count_ > 50) {
+      last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
+      last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
+      last_bottom_disc_negedge_wait_count_ =
+          position->bottom_disc_negedge_wait_count;
       // Adjust the disc positions so that they don't have to move.
       const double disc_offset =
           position->index_position - wrist_loop_->X_hat(0, 0);
@@ -239,12 +248,10 @@ void IndexMotor::RunIteration(
     case Goal::INTAKE:
       {
         Time now = Time::Now();
-        // Posedge of the disc entering the beam break.
         if (position) {
-          // TODO(aschuh): Catch the edges on the FPGA since this is too slow.
-          // This means that we need to pass back enough data so that we can
-          // miss packets and everything works.
-          if (position->bottom_disc_detect && !last_bottom_disc_detect_) {
+          // Posedge of the disc entering the beam break.
+          if (position->bottom_disc_posedge_count !=
+              last_bottom_disc_posedge_count_) {
             transfer_frisbee_.Reset();
             transfer_frisbee_.bottom_posedge_time_ = now;
             printf("Posedge of bottom disc %f\n",
@@ -254,7 +261,8 @@ void IndexMotor::RunIteration(
           }
 
           // Disc exited the beam break now.
-          if (!position->bottom_disc_detect && last_bottom_disc_detect_) {
+          if (position->bottom_disc_negedge_count !=
+              last_bottom_disc_negedge_count_) {
             transfer_frisbee_.bottom_negedge_time_ = now;
             printf("Negedge of bottom disc %f\n",
                    transfer_frisbee_.bottom_negedge_time_.ToSeconds());
@@ -283,18 +291,23 @@ void IndexMotor::RunIteration(
                frisbee != frisbees_.end(); ++frisbee) {
             if (!frisbee->has_been_indexed_) {
               intake_voltage = transfer_voltage = 12.0;
-              Time elapsed_negedge_time = now -
-                  frisbee->bottom_negedge_time_;
-              if (elapsed_negedge_time >= Time::InSeconds(0.005)) {
-                // Should have just engaged.
-                // Save the indexer position, and the time.
 
-                // It has been long enough since the disc entered the indexer.
-                // Treat now as the time at which it contacted the indexer.
+              if (last_bottom_disc_negedge_wait_count_ !=
+                  position->bottom_disc_negedge_wait_count) {
+                // We have an index difference.
+                // Save the indexer position, and the time.
+                if (last_bottom_disc_negedge_wait_count_ + 1 !=
+                  position->bottom_disc_negedge_wait_count) {
+                  LOG(ERROR, "Funny, we got 2 edges since we last checked.\n");
+                }
+
+                // Save the captured position as the position at which the disc
+                // touched the indexer.
                 LOG(INFO, "Grabbed on the index now at %f\n", index_position);
                 printf("Grabbed on the index now at %f\n", index_position);
                 frisbee->has_been_indexed_ = true;
-                frisbee->index_start_position_ = index_position;
+                frisbee->index_start_position_ =
+                    position->bottom_disc_negedge_wait_position;
               }
             }
             if (!frisbee->has_been_indexed_) {
@@ -540,6 +553,11 @@ void IndexMotor::RunIteration(
   if (position) {
     LOG(DEBUG, "pos=%f\n", position->index_position);
     last_bottom_disc_detect_ = position->bottom_disc_detect;
+    last_bottom_disc_detect_ = position->bottom_disc_detect;
+    last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
+    last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
+    last_bottom_disc_negedge_wait_count_ =
+        position->bottom_disc_negedge_wait_count;
   }
 
   status->hopper_disc_count = hopper_disc_count_;
