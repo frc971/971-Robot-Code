@@ -48,16 +48,15 @@ LimitEncoderReader::LimitEncoderReader(const unique_ptr<Encoder> &encoder,
                                        bool posEdge, bool negEdge,
                                        float lowerVoltage,
                                        float upperVoltage) 
-    : encoder_(encoder),
-      getter_(NULL),
-      source_(NULL) {
+    : encoder_(encoder) {
   unique_ptr<AnalogTrigger> trigger(new AnalogTrigger(channel.get()));
   trigger->SetLimitsVoltage(lowerVoltage, upperVoltage);
   source_ = unique_ptr<AnalogTriggerOutput>(trigger->CreateOutput(type));
+  unique_ptr<AnalogTriggerOutput> getter_output(
+      trigger->CreateOutput(triggeredType));
   getter_ = unique_ptr<AnalogOnOffGetter>(
       new AnalogOnOffGetter(::std::move(channel), ::std::move(trigger),
-                            unique_ptr<AnalogTriggerOutput>(
-                                trigger->CreateOutput(triggeredType))));
+                            ::std::move(getter_output)));
   Init(posEdge, negEdge);
 }
 
