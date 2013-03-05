@@ -23,9 +23,8 @@ class LimitEncoderReader {
  public:
   // Defaults for the voltages for AnalogTriggers. They work well for digital
   // sensors connected to analog inputs.
-  // TODO(brians): make sure these values are reasonable
   static const float kDefaultLowerVoltage = 1;
-  static const float kDefaultUpperVoltage = 3;
+  static const float kDefaultUpperVoltage = 4;
 
   // See InterruptNotifier for details about the state of the sensor object
   // before the constructor is called.
