@@ -27,10 +27,11 @@ class LimitEncoderReader::AnalogOnOffGetter
   unique_ptr<AnalogTrigger> trigger_;
   unique_ptr<AnalogTriggerOutput> source_;
 };
+
 class LimitEncoderReader::DigitalOnOffGetter
     : public LimitEncoderReader::OnOffGetter {
  public:
-  DigitalOnOffGetter(DigitalInput *source)
+  DigitalOnOffGetter(const unique_ptr<DigitalInput> &source)
       : source_(source) {}
 
   virtual bool Get() {
@@ -38,17 +39,23 @@ class LimitEncoderReader::DigitalOnOffGetter
   }
 
  private:
-  DigitalInput *source_;
+  const unique_ptr<DigitalInput> &source_;
 };
 
-LimitEncoderReader::LimitEncoderReader(const unique_ptr<Encoder> &encoder,
-                                       unique_ptr<AnalogChannel> channel,
-                                       AnalogTriggerOutput::Type type,
-                                       AnalogTriggerOutput::Type triggeredType,
-                                       bool posEdge, bool negEdge,
-                                       float lowerVoltage,
-                                       float upperVoltage) 
-    : encoder_(encoder) {
+int32_t LimitEncoderReader::EncoderCountGetter::Get() {
+  return counter_->GetRaw();
+}
+
+int32_t LimitEncoderReader::CounterCountGetter::Get() {
+  return counter_->Get();
+}
+
+void LimitEncoderReader::Init(unique_ptr<AnalogChannel> channel,
+                         AnalogTriggerOutput::Type type,
+                         AnalogTriggerOutput::Type triggeredType,
+                         bool posEdge, bool negEdge,
+                         float lowerVoltage,
+                         float upperVoltage) {
   unique_ptr<AnalogTrigger> trigger(new AnalogTrigger(channel.get()));
   trigger->SetLimitsVoltage(lowerVoltage, upperVoltage);
   source_ = unique_ptr<AnalogTriggerOutput>(trigger->CreateOutput(type));
@@ -57,19 +64,17 @@ LimitEncoderReader::LimitEncoderReader(const unique_ptr<Encoder> &encoder,
   getter_ = unique_ptr<AnalogOnOffGetter>(
       new AnalogOnOffGetter(::std::move(channel), ::std::move(trigger),
                             ::std::move(getter_output)));
-  Init(posEdge, negEdge);
+  CommonInit(posEdge, negEdge);
 }
 
-LimitEncoderReader::LimitEncoderReader(const unique_ptr<Encoder> &encoder,
-                                       unique_ptr<DigitalInput> source,
-                                       bool posEdge, bool negEdge)
-    : encoder_(encoder),
-      getter_(new DigitalOnOffGetter(source.get())),
-      source_(::std::move(source)) {
-  Init(posEdge, negEdge);
+void LimitEncoderReader::Init(unique_ptr<DigitalInput> source,
+                         bool posEdge, bool negEdge) {
+  getter_ = unique_ptr<DigitalOnOffGetter>(new DigitalOnOffGetter(source));
+  source_ = ::std::move(source);
+  CommonInit(posEdge, negEdge);
 }
 
-void LimitEncoderReader::Init(bool posEdge, bool negEdge) {
+void LimitEncoderReader::CommonInit(bool posEdge, bool negEdge) {
   notifier_ = unique_ptr<InterruptNotifier<LimitEncoderReader>>(
       new InterruptNotifier<LimitEncoderReader>(ReadValueStatic,
                                                 source_.get(),
@@ -80,7 +85,7 @@ void LimitEncoderReader::Init(bool posEdge, bool negEdge) {
 void LimitEncoderReader::ReadValue() {
   // Retrieve the value before potentially waiting for somebody else currently
   // looking at the saved one.
-  int32_t new_value = encoder_->GetRaw();
+  int32_t new_value = encoder_->Get();
   {
     MutexLocker locker(&value_sync_);
     value_ = new_value;
@@ -89,11 +94,10 @@ void LimitEncoderReader::ReadValue() {
 
 ZeroSwitchValue LimitEncoderReader::Get() {
   MutexLocker locker(&value_sync_);
-  return ZeroSwitchValue{encoder_->GetRaw(), value_, getter_->Get()};
+  return ZeroSwitchValue{encoder_->Get(), value_, getter_->Get()};
 }
 
 void LimitEncoderReader::Start() {
-  encoder_->Start();
   notifier_->Start();
 }
 

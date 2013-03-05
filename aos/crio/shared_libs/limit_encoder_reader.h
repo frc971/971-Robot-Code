@@ -30,6 +30,8 @@ class LimitEncoderReader {
   // before the constructor is called.
   // The different constructors take in different types of inputs and configure
   // them to give interrupts.
+  // There are separate (very similar) constructors for Encoder and Counter
+  // because they implement CounterBase::Get() differently, making it useless...
   //
   // type is the type for triggering interrupts while triggeredType is the one
   // to use for writing *triggered in Get().
@@ -40,23 +42,49 @@ class LimitEncoderReader {
                      AnalogTriggerOutput::Type triggeredType,
                      bool posEdge, bool negEdge,
                      float lowerVoltage = kDefaultLowerVoltage,
-                     float upperVoltage = kDefaultUpperVoltage);
+                     float upperVoltage = kDefaultUpperVoltage)
+      : encoder_(new EncoderCountGetter(encoder)) {
+    Init(::std::move(channel), type, triggeredType, posEdge, negEdge,
+         lowerVoltage, upperVoltage);
+  }
+  LimitEncoderReader(const ::std::unique_ptr<Counter> &counter,
+                     ::std::unique_ptr<AnalogChannel> channel,
+                     AnalogTriggerOutput::Type type,
+                     AnalogTriggerOutput::Type triggeredType,
+                     bool posEdge, bool negEdge,
+                     float lowerVoltage = kDefaultLowerVoltage,
+                     float upperVoltage = kDefaultUpperVoltage)
+      : encoder_(new CounterCountGetter(counter)) {
+    Init(::std::move(channel), type, triggeredType, posEdge, negEdge,
+         lowerVoltage, upperVoltage);
+  }
   LimitEncoderReader(const ::std::unique_ptr<Encoder> &encoder,
                      ::std::unique_ptr<DigitalInput> sensor,
-                     bool posEdge, bool negEdge);
+                     bool posEdge, bool negEdge)
+      : encoder_(new EncoderCountGetter(encoder)) {
+    Init(::std::move(sensor), posEdge, negEdge);
+  }
+  LimitEncoderReader(const ::std::unique_ptr<Counter> &counter,
+                     ::std::unique_ptr<DigitalInput> sensor,
+                     bool posEdge, bool negEdge)
+      : encoder_(new CounterCountGetter(counter)) {
+    Init(::std::move(sensor), posEdge, negEdge);
+  }
+
 
   // Retrieves the values. See ZeroSwitchValue's declaration for an explanation
   // of why retrieving all of them is necessary.
   ZeroSwitchValue Get();
 
-  // Calls Start() on all contained objects.
+  // Calls Start() on all owned objects.
   void Start();
 
   // Only to set things up etc. Getting values through these methods will always
   // have race conditions!
   // Also helpful for debugging.
-  const ::std::unique_ptr<Encoder> &encoder() const { return encoder_; }
-  const ::std::unique_ptr<DigitalSource> &source() const { return source_; }
+  const ::std::unique_ptr<DigitalSource> &source() const {
+    return source_;
+  }
   
  private:
   // A class to deal with the fact that WPILib's AnalogTriggerOutput and
@@ -72,10 +100,51 @@ class LimitEncoderReader {
   class AnalogOnOffGetter;
   class DigitalOnOffGetter;
 
+  // A class to deal with the fact that WPILib's Encoder and Counter have no
+  // common superclass with the function that we want to use for getting the
+  // number of ticks.
+  class CountGetter {
+   public:
+    virtual int32_t Get() = 0;
+
+    virtual ~CountGetter() {}
+  };
+  class EncoderCountGetter : public CountGetter {
+   public:
+    EncoderCountGetter(const ::std::unique_ptr<Encoder> &counter)
+        : counter_(counter) {}
+
+    virtual int32_t Get();
+
+   private:
+    const ::std::unique_ptr<Encoder> &counter_;
+  };
+  class CounterCountGetter : public CountGetter {
+   public:
+    CounterCountGetter(const ::std::unique_ptr<Counter> &counter)
+        : counter_(counter) {}
+
+    virtual int32_t Get();
+
+   private:
+    const ::std::unique_ptr<Counter> &counter_;
+  };
+
+  // Separate initialization functions for each of the main constructor
+  // variants. encoder_ must be set before calling this.
+  void Init(::std::unique_ptr<AnalogChannel> channel,
+            AnalogTriggerOutput::Type type,
+            AnalogTriggerOutput::Type triggeredType,
+            bool posEdge, bool negEdge,
+            float lowerVoltage,
+            float upperVoltage);
+  void Init(::std::unique_ptr<DigitalInput> source,
+             bool posEdge, bool negEdge);
+
   // The common initialization code.
   // Gets called by all of the constructors.
   // getter_, encoder_, and source_ must be set before calling this.
-  void Init(bool posEdge, bool negEdge);
+  void CommonInit(bool posEdge, bool negEdge);
 
   static void ReadValueStatic(LimitEncoderReader *self) {
     self->ReadValue();
@@ -83,7 +152,7 @@ class LimitEncoderReader {
   void ReadValue();
 
   ::std::unique_ptr<InterruptNotifier<LimitEncoderReader>> notifier_;
-  const ::std::unique_ptr<Encoder> &encoder_;
+  const ::std::unique_ptr<CountGetter> encoder_;
 
   ::std::unique_ptr<OnOffGetter> getter_;
   ::std::unique_ptr<DigitalSource> source_;
