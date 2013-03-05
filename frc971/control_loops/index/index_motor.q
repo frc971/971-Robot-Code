@@ -18,8 +18,17 @@ queue_group IndexLoop {
   message Position {
     // Index position
     double index_position;
-    bool bottom_disc_detect;
+
+    // Current values of both sensors.
     bool top_disc_detect;
+    bool bottom_disc_detect;
+    // Counts for positive and negative edges on the bottom sensor.
+    int32_t bottom_disc_posedge_count;
+    int32_t bottom_disc_negedge_count;
+    // The most recent encoder position read TODO(aschuh) after the most recent
+    // negedge and a count of how many times it's been updated.
+    double bottom_disc_negedge_wait_position;
+    int32_t bottom_disc_negedge_wait_count;
   };
 
   message Output {
