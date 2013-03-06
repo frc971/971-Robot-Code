@@ -132,6 +132,11 @@ class IndexMotor
       index_start_position_ += offset;
     }
 
+    // Potentially offsets the position with the knowledge that no discs are
+    // currently blocking the top sensor.  This knowledge can be used to move
+    // this disc if it is believed to be blocking the top sensor.
+    void ObserveNoTopDiscSensor(double index_position, double index_velocity);
+
     // Posedge and negedge disc times.
     ::aos::time::Time bottom_posedge_time_;
     ::aos::time::Time bottom_negedge_time_;
@@ -253,9 +258,11 @@ class IndexMotor
 
   // Bottom disc detect from the last valid packet for detecting edges.
   bool last_bottom_disc_detect_;
+  bool last_top_disc_detect_;
   int32_t last_bottom_disc_posedge_count_;
   int32_t last_bottom_disc_negedge_count_;
   int32_t last_bottom_disc_negedge_wait_count_;
+  int32_t last_top_disc_posedge_count_;
 
   // Frisbees are in order such that the newest frisbee is on the front.
   ::std::deque<Frisbee> frisbees_;

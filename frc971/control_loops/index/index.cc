@@ -18,6 +18,38 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace control_loops {
 
+void IndexMotor::Frisbee::ObserveNoTopDiscSensor(
+    double index_position, double index_velocity) {
+  double disc_position = IndexMotor::ConvertIndexToDiscPosition(
+      index_position - index_start_position_);
+  if (IndexMotor::kTopDiscDetectStart <= disc_position &&
+      disc_position <= IndexMotor::kTopDiscDetectStop) {
+    // Whoops, this shouldn't be happening.
+    // Move the disc off the way that makes most sense.
+    double distance_to_above = ::std::abs(
+      disc_position - IndexMotor::kTopDiscDetectStop);
+    double distance_to_below = ::std::abs(
+      disc_position - IndexMotor::kTopDiscDetectStart);
+    if (::std::abs(index_velocity) < 100) {
+      if (distance_to_above < distance_to_below) {
+        // Move it up.
+        index_start_position_ += distance_to_above;
+      } else {
+        index_start_position_ -= distance_to_below;
+      }
+    } else {
+      if (index_velocity > 0) {
+        // Now going up.  If we didn't see it before, and we don't see it
+        // now but it should be in view, it must still be below.  If it were
+        // above, it would be going further away from us.
+        index_start_position_ -= distance_to_below;
+      } else {
+        index_start_position_ += distance_to_above;
+      }
+    }
+  }
+}
+
 IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
     : aos::control_loops::ControlLoop<control_loops::IndexLoop>(my_index),
       wrist_loop_(new IndexStateFeedbackLoop(MakeIndexLoop())),
@@ -30,6 +62,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       disc_clamped_(false),
       disc_ejected_(false),
       last_bottom_disc_detect_(false),
+      last_top_disc_detect_(false),
       no_prior_position_(true),
       missing_position_count_(0) {
 }
@@ -57,8 +90,13 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.01;
 
 // TODO(aschuh): Figure these out.
-/*static*/ const double IndexMotor::kTopDiscDetectStart = 18.0;
-/*static*/ const double IndexMotor::kTopDiscDetectStop = 19.0;
+/*static*/ const double IndexMotor::kTopDiscDetectStart =
+    (IndexMotor::kLoaderFreeStopPosition -
+     IndexMotor::ConvertDiscAngleToDiscPosition(60 * M_PI / 180));
+// This is a guess for the width of the disc radially.  It should be close to 11
+// inches but a bit below.
+/*static*/ const double IndexMotor::kTopDiscDetectStop =
+    IndexMotor::kTopDiscDetectStart + 10 * 0.0254;
 
 const /*static*/ double IndexMotor::kDiscRadius = 10.875 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
@@ -212,6 +250,7 @@ void IndexMotor::RunIteration(
       last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
       last_bottom_disc_negedge_wait_count_ =
           position->bottom_disc_negedge_wait_count;
+      last_top_disc_posedge_count_ = position->top_disc_posedge_count;
     }
 
     // If the cRIO is gone for 1/2 of a second, assume that it rebooted.
@@ -220,6 +259,7 @@ void IndexMotor::RunIteration(
       last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
       last_bottom_disc_negedge_wait_count_ =
           position->bottom_disc_negedge_wait_count;
+      last_top_disc_posedge_count_ = position->top_disc_posedge_count;
       // Adjust the disc positions so that they don't have to move.
       const double disc_offset =
           position->index_position - wrist_loop_->X_hat(0, 0);
@@ -234,8 +274,40 @@ void IndexMotor::RunIteration(
   }
   const double index_position = wrist_loop_->X_hat(0, 0);
 
-  // TODO(aschuh): Watch for top disc detect and update the frisbee
-  // position.
+  if (position) {
+    if (!position->top_disc_detect) {
+      // We don't see a disc.  Verify that there are no discs that we should be
+      // seeing.
+      // Assume that discs will move slow enough that we won't one as it goes
+      // by.  They will either pile up above or below the sensor.
+      for (auto frisbee = frisbees_.begin();
+           frisbee != frisbees_.end(); ++frisbee) {
+        frisbee->ObserveNoTopDiscSensor(
+            wrist_loop_->X_hat(0, 0), wrist_loop_->X_hat(1, 0));
+      }
+    }
+    if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
+      // TODO(aschuh): Sanity check this number...
+      // Requires storing when the disc was last seen with the sensor off, and
+      // figuring out what to do if things go south.
+
+      // Find a disc that we should be seeing.  There are 3 cases...
+      // 1) The top most disc is going up by the sensor.
+      // 2) There is 1 disc almost in the loader, and past the sensor.
+      //    This is the next disc.
+      // 3) The top most disc is coming back down and we are seeing it.
+      if (wrist_loop_->X_hat(1, 0) > 50.0) {
+        // Moving up at a reasonable clip.
+        // TODO(aschuh): Do something!
+      } else if (wrist_loop_->X_hat(1, 0) < -50.0) {
+        // Moving down at a reasonable clip.
+        // Find the top disc and use that.
+        // TODO(aschuh): Do something!
+      } else {
+        // TODO(aschuh): Do something!
+      }
+    }
+  }
 
   // Bool to track if it is safe for the goal to change yet.
   bool safe_to_change_state_ = true;
@@ -553,11 +625,12 @@ void IndexMotor::RunIteration(
   if (position) {
     LOG(DEBUG, "pos=%f\n", position->index_position);
     last_bottom_disc_detect_ = position->bottom_disc_detect;
-    last_bottom_disc_detect_ = position->bottom_disc_detect;
+    last_top_disc_detect_ = position->top_disc_detect;
     last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
     last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
     last_bottom_disc_negedge_wait_count_ =
         position->bottom_disc_negedge_wait_count;
+    last_top_disc_posedge_count_ = position->top_disc_posedge_count;
   }
 
   status->hopper_disc_count = hopper_disc_count_;

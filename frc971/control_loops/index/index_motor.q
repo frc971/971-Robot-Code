@@ -32,7 +32,7 @@ queue_group IndexLoop {
     // The most recent index position at the posedge of the top disc detect
     // and a count of how many edges have been seen.
     int32_t top_disc_posedge_count;
-    double top_disc_posedge_position
+    double top_disc_posedge_position;
   };
 
   message Output {

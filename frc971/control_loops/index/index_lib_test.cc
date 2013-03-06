@@ -32,7 +32,9 @@ class Frisbee {
         has_bottom_disc_negedge_wait_position_(false),
         bottom_disc_negedge_wait_position_(0.0),
         after_negedge_time_left_(IndexMotor::kBottomDiscIndexDelay),
-        counted_negedge_wait_(false) {
+        counted_negedge_wait_(false),
+        has_top_disc_posedge_position_(false),
+        top_disc_posedge_position_(0.0) {
   }
 
   // Returns true if the frisbee is controlled by the transfer roller.
@@ -90,16 +92,26 @@ class Frisbee {
   bool bottom_disc_detect() const { return bottom_disc_detect(position_); }
 
   // Returns true if the disc is triggering the top disc detect sensor.
-  bool top_disc_detect() const {
-    return (position_ >= IndexMotor::kTopDiscDetectStart &&
-            position_ <= IndexMotor::kTopDiscDetectStop);
+  bool top_disc_detect(double position) const {
+    return (position >= IndexMotor::kTopDiscDetectStart &&
+            position <= IndexMotor::kTopDiscDetectStop);
+  }
+  bool top_disc_detect() const { return top_disc_detect(position_); }
+
+  // Returns true if the bottom disc sensor will negedge after the disc moves
+  // by dx.
+  bool will_negedge_bottom_disc_detect(double disc_dx) {
+    if (bottom_disc_detect()) {
+      return !bottom_disc_detect(position_ + disc_dx);
+    }
+    return false;
   }
 
   // Returns true if the bottom disc sensor will negedge after the disc moves
   // by dx.
-  bool will_negedge_bottom_disc_detect(double transfer_dx) {
-    if (bottom_disc_detect()) {
-      return bottom_disc_detect(position_ + transfer_dx);
+  bool will_posedge_top_disc_detect(double disc_dx) {
+    if (!top_disc_detect()) {
+      return top_disc_detect(position_ + disc_dx);
     }
     return false;
   }
@@ -183,8 +195,20 @@ class Frisbee {
           index_roller_velocity * time_left);
     }
 
+
     if (position_ >= IndexMotor::kBottomDiscDetectStop) {
       HandleAfterNegedge(index_roller_velocity, elapsed_time, time_left);
+    }
+
+    if (will_posedge_top_disc_detect(index_dx)) {
+      // Wohoo!  Find the edge.
+      // Assume constant velocity and compute the position.
+      const double disc_time =
+          (IndexMotor::kTopDiscDetectStart - position_) / index_roller_velocity;
+      top_disc_posedge_position_ = index_roller_position_ +
+          index_roller_velocity * (elapsed_time + disc_time);
+      has_top_disc_posedge_position_ = true;
+      printf("Posedge on top sensor at %f\n", top_disc_posedge_position_);
     }
 
     if (shrunk_time) {
@@ -310,6 +334,17 @@ class Frisbee {
     return bottom_disc_negedge_wait_position_;
   }
 
+  // Returns the last position where a posedge was seen.
+  double top_disc_posedge_position() { return top_disc_posedge_position_; }
+
+  // True if the top disc has seen a posedge.
+  // Reading this flag clears it.
+  bool has_top_disc_posedge_position() {
+    bool prev = has_top_disc_posedge_position_;
+    has_top_disc_posedge_position_ = false;
+    return prev;
+  }
+
   // Simulates the index roller moving without the disc moving.
   void OffsetIndex(double offset) {
     index_roller_position_ += offset;
@@ -333,6 +368,11 @@ class Frisbee {
   // Bool for the user to record if they have counted the negedge from this
   // disc.
   bool counted_negedge_wait_;
+  // True if the top disc sensor posedge has occured and
+  // hasn't been counted yet.
+  bool has_top_disc_posedge_position_;
+  // The position at which the posedge occured.
+  double top_disc_posedge_position_;
 };
 
 
@@ -349,6 +389,8 @@ class IndexMotorSimulation {
         bottom_disc_negedge_count_(0),
         bottom_disc_negedge_wait_count_(0),
         bottom_disc_negedge_wait_position_(0),
+        top_disc_posedge_count_(0),
+        top_disc_posedge_position_(0.0),
         my_index_loop_(".frc971.control_loops.index",
                        0x1a7b7094, ".frc971.control_loops.index.goal",
                        ".frc971.control_loops.index.position",
@@ -415,6 +457,10 @@ class IndexMotorSimulation {
           frisbee->set_counted_negedge_wait(true);
         }
       }
+      if (frisbee->has_top_disc_posedge_position()) {
+        ++top_disc_posedge_count_;
+        top_disc_posedge_position_ = frisbee->top_disc_posedge_position();
+      }
     }
 
     // Make sure nobody is too close to anybody else.
@@ -459,13 +505,18 @@ class IndexMotorSimulation {
     position->bottom_disc_negedge_wait_count = bottom_disc_negedge_wait_count_;
     position->bottom_disc_negedge_wait_position =
         bottom_disc_negedge_wait_position_;
-    printf("bdd: %x tdd: %x posedge %d negedge %d delaycount %d delaypos %f\n",
+    position->top_disc_posedge_count = top_disc_posedge_count_;
+    position->top_disc_posedge_position = top_disc_posedge_position_;
+    printf("bdd: %x tdd: %x posedge %d negedge %d "
+           "delaycount %d delaypos %f topcount %d toppos %f\n",
            position->bottom_disc_detect,
            position->top_disc_detect,
            position->bottom_disc_posedge_count,
            position->bottom_disc_negedge_count,
            position->bottom_disc_negedge_wait_count,
-           position->bottom_disc_negedge_wait_position);
+           position->bottom_disc_negedge_wait_position,
+           position->top_disc_posedge_count,
+           position->top_disc_posedge_position);
     position.Send();
   }
 
@@ -507,6 +558,10 @@ class IndexMotorSimulation {
   // Delayed negedge count and corrisponding position.
   int32_t bottom_disc_negedge_wait_count_;
   int32_t bottom_disc_negedge_wait_position_;
+
+  // Posedge count and position for the upper disc sensor.
+  int32_t top_disc_posedge_count_;
+  double top_disc_posedge_position_;
 
   // Returns the absolute angle of the index.
   double index_roller_position() const {
@@ -1001,6 +1056,10 @@ TEST_F(IndexTest, ZeroPowerAfterTimeout) {
   my_index_loop_.output.FetchLatest();
   EXPECT_EQ(my_index_loop_.output->index_voltage, 0.0);
 }
+
+// TODO(aschuh): Test that we find discs corectly when moving them up.
+// Grab 2 discs, offset them down, and verify that they get shot correctly.
+// Grab 2 discs, offset them up, and verify that they get shot correctly.
 
 }  // namespace testing
 }  // namespace control_loops
