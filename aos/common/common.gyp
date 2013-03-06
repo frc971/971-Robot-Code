@@ -21,7 +21,10 @@
         'queue_testutils.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib'
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+        '<(AOS)/build/aos.gyp:logging',
+        'once',
+        '<(EXTERNALS):gtest',
       ],
     },
     {
