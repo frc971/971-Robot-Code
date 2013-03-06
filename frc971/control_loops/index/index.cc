@@ -18,36 +18,46 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace control_loops {
 
-void IndexMotor::Frisbee::ObserveNoTopDiscSensor(
+double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
     double index_position, double index_velocity) {
+  // The absolute disc position in meters.
   double disc_position = IndexMotor::ConvertIndexToDiscPosition(
-      index_position - index_start_position_);
+      index_position - index_start_position_) + IndexMotor::kIndexStartPosition;
   if (IndexMotor::kTopDiscDetectStart <= disc_position &&
       disc_position <= IndexMotor::kTopDiscDetectStop) {
     // Whoops, this shouldn't be happening.
     // Move the disc off the way that makes most sense.
-    double distance_to_above = ::std::abs(
-      disc_position - IndexMotor::kTopDiscDetectStop);
-    double distance_to_below = ::std::abs(
-      disc_position - IndexMotor::kTopDiscDetectStart);
+    double distance_to_above = IndexMotor::ConvertDiscPositionToIndex(
+        ::std::abs(disc_position - IndexMotor::kTopDiscDetectStop));
+    double distance_to_below = IndexMotor::ConvertDiscPositionToIndex(
+        ::std::abs(disc_position - IndexMotor::kTopDiscDetectStart));
     if (::std::abs(index_velocity) < 100) {
       if (distance_to_above < distance_to_below) {
+        printf("Moving disc to top slow.\n");
         // Move it up.
-        index_start_position_ += distance_to_above;
+        index_start_position_ -= distance_to_above;
+        return -distance_to_above;
       } else {
-        index_start_position_ -= distance_to_below;
+        printf("Moving disc to bottom slow.\n");
+        index_start_position_ += distance_to_below;
+        return distance_to_below;
       }
     } else {
       if (index_velocity > 0) {
         // Now going up.  If we didn't see it before, and we don't see it
         // now but it should be in view, it must still be below.  If it were
         // above, it would be going further away from us.
-        index_start_position_ -= distance_to_below;
+        printf("Moving fast up, shifting disc up\n");
+        index_start_position_ += distance_to_below;
+        return distance_to_below;
       } else {
-        index_start_position_ += distance_to_above;
+        printf("Moving fast down, shifting disc down\n");
+        index_start_position_ -= distance_to_above;
+        return -distance_to_above;
       }
     }
   }
+  return 0.0;
 }
 
 IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
@@ -280,10 +290,14 @@ void IndexMotor::RunIteration(
       // seeing.
       // Assume that discs will move slow enough that we won't one as it goes
       // by.  They will either pile up above or below the sensor.
-      for (auto frisbee = frisbees_.begin();
-           frisbee != frisbees_.end(); ++frisbee) {
-        frisbee->ObserveNoTopDiscSensor(
+
+      double cumulative_offset = 0.0;
+      for (auto frisbee = frisbees_.rbegin(), rend = frisbees_.rend();
+           frisbee != rend; ++frisbee) {
+        frisbee->OffsetDisc(cumulative_offset);
+        double amount_moved = frisbee->ObserveNoTopDiscSensor(
             wrist_loop_->X_hat(0, 0), wrist_loop_->X_hat(1, 0));
+        cumulative_offset += amount_moved;
       }
     }
     if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
