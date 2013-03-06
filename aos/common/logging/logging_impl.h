@@ -16,13 +16,15 @@
 
 // This file has all of the logging implementation. It can't be #included by C
 // code like logging.h can.
+// It is useful for the rest of the logging implementation and other C++ code
+// that needs to do special things with logging.
 
 namespace aos {
 namespace logging {
 
 // Unless explicitly stated otherwise, format must always be a string constant,
 // args are printf-style arguments for format, and ap is a va_list of args.
-// The validitiy of format and args together will be checked at compile time
+// The validity of format and args together will be checked at compile time
 // using a gcc function attribute.
 
 // The struct that the code uses for making logging calls.
@@ -139,6 +141,7 @@ void Cleanup();
 namespace internal {
 
 // An separate instance of this class is accessible from each task/thread.
+// NOTE: It will get deleted in the child of a fork.
 struct Context {
   Context();
 
