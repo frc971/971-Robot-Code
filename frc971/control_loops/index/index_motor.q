@@ -25,10 +25,14 @@ queue_group IndexLoop {
     // Counts for positive and negative edges on the bottom sensor.
     int32_t bottom_disc_posedge_count;
     int32_t bottom_disc_negedge_count;
-    // The most recent encoder position read TODO(aschuh) after the most recent
+    // The most recent encoder position read after the most recent
     // negedge and a count of how many times it's been updated.
     double bottom_disc_negedge_wait_position;
     int32_t bottom_disc_negedge_wait_count;
+    // The most recent index position at the posedge of the top disc detect
+    // and a count of how many edges have been seen.
+    int32_t top_disc_posedge_count;
+    double top_disc_posedge_position
   };
 
   message Output {
