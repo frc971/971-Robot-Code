@@ -120,22 +120,16 @@ Context *Context::Get() {
     holder = new ContextHolder();
 
     errno = 0;  // in case taskName decides not to set it
-    // We're going to make a copy of it because vxworks might allocate the
-    // memory for it from some funky place or something.
     const char *my_name = taskName(0);
     if (my_name == NULL) {
       Die("logging: taskName(0) failed with %d: %s\n",
           errno, strerror(errno));
     }
-    holder->context.name_size = strlen(my_name);
-    if (holder->context.name_size > sizeof(LogMessage::name)) {
+    holder->context.name = std::string(my_name);
+    if (holder->context.name.size() + 1 > sizeof(LogMessage::name)) {
       Die("logging: somebody chose a task name ('%s') that's too long\n",
           my_name);
     }
-    char *name_chars = new char[holder->context.name_size];
-    memcpy(name_chars, my_name, holder->context.name_size);
-    name_chars[holder->context.name_size - 1] = '\0';
-    holder->context.name = name_chars;
     holder->context.source = taskIdSelf();
   }
 

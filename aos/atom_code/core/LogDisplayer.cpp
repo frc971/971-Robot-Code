@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
         filter_name = optarg;
         break;
       case 'l':
-        filter_level = aos::logging::str_log(optarg);
+        filter_level = ::aos::logging::str_log(optarg);
         if (filter_level == LOG_UNKNOWN) {
           fprintf(stderr, "LogDisplayer: unknown log level '%s'\n", optarg);
           exit(EXIT_FAILURE);
@@ -117,13 +117,14 @@ int main(int argc, char **argv) {
       case '?':
         break;
       default:
-        fprintf(stderr, "LogDisplayer: in a bad spot (%s: %d)\n", __FILE__, __LINE__);
+        fprintf(stderr, "LogDisplayer: in a bad spot (%s: %d)\n",
+                __FILE__, __LINE__);
         abort();
     }
   }
 
   fprintf(stderr, "displaying down to level %s from file '%s'\n",
-          aos::logging::log_str(filter_level), filename);
+          ::aos::logging::log_str(filter_level), filename);
   if (optind < argc) {
     fprintf(stderr, "non-option ARGV-elements: ");
     while (optind < argc) {
@@ -137,18 +138,19 @@ int main(int argc, char **argv) {
             filename, strerror(errno));
     exit(EXIT_FAILURE);
   }
-  aos::logging::LogFileAccessor accessor(fd, false);
+  ::aos::logging::LogFileAccessor accessor(fd, false);
   if (!start_at_beginning) {
     accessor.MoveToEnd();
   }
-  const aos::logging::LogFileMessageHeader *msg;
-  aos::logging::LogMessage log_message;
+  const ::aos::logging::LogFileMessageHeader *msg;
+  ::aos::logging::LogMessage log_message;
   do {
     msg = accessor.ReadNextMessage(follow);
     if (msg == NULL) continue;
-    if (aos::logging::log_gt_important(filter_level, msg->level)) continue;
+    if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
     if (filter_name != NULL &&
-        strcmp(filter_name, reinterpret_cast<const char *>(msg) + sizeof(*msg)) != 0) {
+        strcmp(filter_name,
+               reinterpret_cast<const char *>(msg) + sizeof(*msg)) != 0) {
       continue;
     }
 
@@ -164,6 +166,6 @@ int main(int argc, char **argv) {
             reinterpret_cast<const char *>(msg) + sizeof(*msg) +
             msg->name_size,
             sizeof(log_message.message));
-    aos::logging::internal::PrintMessage(stdout, log_message);
+    ::aos::logging::internal::PrintMessage(stdout, log_message);
   } while (msg != NULL);
 }

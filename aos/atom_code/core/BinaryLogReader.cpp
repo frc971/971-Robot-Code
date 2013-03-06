@@ -21,7 +21,7 @@ namespace logging {
 namespace atom {
 namespace {
 
-int binary_log_reader_main() {
+int BinaryLogReaderMain() {
   InitNRT();
 
   const char *folder = configuration::GetLoggingDirectory();
@@ -112,5 +112,5 @@ int binary_log_reader_main() {
 }  // namespace aos
 
 int main() {
-  return aos::logging::atom::binary_log_reader_main();
+  return ::aos::logging::atom::BinaryLogReaderMain();
 }

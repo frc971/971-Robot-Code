@@ -15,18 +15,19 @@
 #include "aos/atom_code/init.h"
 #include "aos/atom_code/ipc_lib/queue.h"
 #include "aos/common/logging/logging_impl.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace logging {
 namespace atom {
 namespace {
 
-int log_streamer_main() {
+int LogStreamerMain() {
   InitNRT();
 
-  const time_t t = time(NULL);
-  printf("starting at %jd----------------------------------\n",
-         static_cast<uintmax_t>(t));
+  const time::Time now = time::Time::Now();
+  printf("starting at %"PRId32"s%"PRId32"ns---------------------------------\n",
+         now.sec(), now.nsec());
 
   int index = 0;
   while (true) {
@@ -48,5 +49,5 @@ int log_streamer_main() {
 }  // namespace aos
 
 int main() {
-  return aos::logging::atom::log_streamer_main();
+  return ::aos::logging::atom::LogStreamerMain();
 }

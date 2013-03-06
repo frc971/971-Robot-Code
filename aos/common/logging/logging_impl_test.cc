@@ -57,9 +57,10 @@ class LoggingTest : public ::testing::Test {
           static_cast<uint32_t>(log_implementation->message().source),
           static_cast<uint32_t>(context->source));
     }
-    if (strcmp(log_implementation->message().name, context->name) != 0) {
+    if (strcmp(log_implementation->message().name,
+               context->name.c_str()) != 0) {
       Die("got a message from %s, but we're %s\n",
-          log_implementation->message().name, context->name);
+          log_implementation->message().name, context->name.c_str());
     }
     if (strstr(log_implementation->message().message, message.c_str())
         == NULL) {

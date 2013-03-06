@@ -25,13 +25,13 @@ using internal::Context;
 
 AOS_THREAD_LOCAL Context *my_context(NULL);
 
-std::string GetMyName() {
+::std::string GetMyName() {
   // The maximum number of characters that can make up a thread name.
   // The docs are unclear if it can be 16 characters with no '\0', so we'll be
   // safe by adding our own where necessary.
   static const size_t kThreadNameLength = 16;
 
-  std::string process_name(program_invocation_short_name);
+  ::std::string process_name(program_invocation_short_name);
 
   char thread_name_array[kThreadNameLength + 1];
   if (prctl(PR_GET_NAME, thread_name_array) != 0) {
@@ -39,13 +39,13 @@ std::string GetMyName() {
         thread_name_array, errno, strerror(errno));
   }
   thread_name_array[sizeof(thread_name_array) - 1] = '\0';
-  std::string thread_name(thread_name_array);
+  ::std::string thread_name(thread_name_array);
 
   // If the first bunch of characters are the same.
   // We cut off comparing at the shorter of the 2 strings because one or the
   // other often ends up cut off.
   if (strncmp(thread_name.c_str(), process_name.c_str(),
-              std::min(thread_name.length(), process_name.length())) == 0) {
+              ::std::min(thread_name.length(), process_name.length())) == 0) {
     // This thread doesn't have an actual name.
     return process_name;
   }
@@ -53,7 +53,7 @@ std::string GetMyName() {
   return process_name + '.' + thread_name;
 }
 
-static const aos_type_sig message_sig = {sizeof(LogMessage), 1234, 1500};
+static const aos_type_sig message_sig = {sizeof(LogMessage), 1323, 1500};
 static aos_queue *queue;
 
 }  // namespace
@@ -62,12 +62,11 @@ namespace internal {
 Context *Context::Get() {
   if (my_context == NULL) {
     my_context = new Context();
-    std::string name = GetMyName();
-    char *name_chars = new char[name.size() + 1];
-    my_context->name_size = std::min(name.size() + 1, sizeof(LogMessage::name));
-    memcpy(name_chars, name.c_str(), my_context->name_size);
-    name_chars[my_context->name_size - 1] = '\0';
-    my_context->name = name_chars;
+    my_context->name = GetMyName();
+    if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
+      Die("logging: process/thread name '%s' is too long\n",
+          my_context->name.c_str());
+    }
     my_context->source = getpid();
   }
   return my_context;
@@ -82,7 +81,7 @@ void Context::Delete() {
 namespace atom {
 namespace {
 
-class AtomLogImplementation : public LogImplementation {
+class AtomQueueLogImplementation : public LogImplementation {
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     LogMessage *message = static_cast<LogMessage *>(aos_queue_get_msg(queue));
     if (message == NULL) {
@@ -105,7 +104,7 @@ void Register() {
     Die("logging: couldn't fetch queue\n");
   }
 
-  AddImplementation(new AtomLogImplementation());
+  AddImplementation(new AtomQueueLogImplementation());
 }
 
 const LogMessage *ReadNext(int flags, int *index) {

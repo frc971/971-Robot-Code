@@ -101,7 +101,7 @@ void FillInMessage(log_level level, const char *format, va_list ap,
 
   message->level = level;
   message->source = context->source;
-  memcpy(message->name, context->name, context->name_size);
+  memcpy(message->name, context->name.c_str(), context->name.size() + 1);
 
   time::Time now = time::Time::Now();
   message->seconds = now.sec();

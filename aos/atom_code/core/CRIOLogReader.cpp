@@ -55,7 +55,7 @@ struct log_buffer {
   }
 };
 
-int crio_log_reader_main() {
+int CRIOLogReaderMain() {
   InitNRT();
 
   const int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -150,5 +150,5 @@ int crio_log_reader_main() {
 }  // namespace aos
 
 int main() {
-  return aos::logging::atom::crio_log_reader_main();
+  return ::aos::logging::atom::CRIOLogReaderMain();
 }

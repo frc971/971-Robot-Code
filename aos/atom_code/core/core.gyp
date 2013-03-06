@@ -31,6 +31,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

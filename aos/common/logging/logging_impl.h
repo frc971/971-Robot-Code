@@ -161,11 +161,9 @@ struct Context {
   // Will be NULL if there is no logging implementation to use right now.
   LogImplementation *implementation;
 
-  // A string representing this task/(process and thread).
-  const char *name;
-  // The number of bytes in name (including the terminating '\0').
-  // Must be <= sizeof(LogMessage::name).
-  size_t name_size;
+  // A name representing this task/(process and thread).
+  // strlen(name.c_str()) must be <= sizeof(LogMessage::name).
+  ::std::string name;
 
   // What to assign LogMessage::source to in this task/thread.
   pid_t source;
