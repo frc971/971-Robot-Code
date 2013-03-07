@@ -11,16 +11,16 @@ using ::aos::time::Time;
 int main(int argc, char * argv[]) {
   FILE *data_file = NULL;
   FILE *output_file = NULL;
-  fprintf(data_file, "time, power, position");
 
-  if (argc != 2) {
-    printf("Not saving to a CSV file.\n");
+  if (argc == 2) {
     data_file = fopen(argv[1], "w");
-    fprintf(data_file, "time, power, position");
     output_file = data_file;
   } else {
+    printf("Logging to stdout instead\n");
     output_file = stdout;
   }
+
+  fprintf(data_file, "time, power, position");
 
   ::aos::Init();
 
@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) {
     if (shooter.output.get() &&
         shooter.position.get()) {
       fprintf(output_file, "\n%f, %f, %f",
-              (shooter.position->sent_time - start_time).ToSeconds(), 
+              (shooter.position->sent_time - start_time).ToSeconds(),
               shooter.output->voltage,
               shooter.position->position);
     }
