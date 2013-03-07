@@ -195,7 +195,6 @@ class Frisbee {
           index_roller_velocity * time_left);
     }
 
-
     if (position_ >= IndexMotor::kBottomDiscDetectStop) {
       HandleAfterNegedge(index_roller_velocity, elapsed_time, time_left);
     }
@@ -206,7 +205,8 @@ class Frisbee {
       const double disc_time =
           (IndexMotor::kTopDiscDetectStart - position_) / index_roller_velocity;
       top_disc_posedge_position_ = index_roller_position_ +
-          index_roller_velocity * (elapsed_time + disc_time);
+          IndexMotor::ConvertDiscPositionToIndex(
+          index_roller_velocity * (elapsed_time + disc_time));
       has_top_disc_posedge_position_ = true;
       printf("Posedge on top sensor at %f\n", top_disc_posedge_position_);
     }
@@ -672,6 +672,51 @@ class IndexTest : public ::testing::Test {
     }
   }
 
+  // Loads 2 discs, and then offsets them.  We then send the first disc to the
+  // grabber, and the second disc back down to the bottom.  Verify that both
+  // discs get found correctly.  Positive numbers shift the discs up.
+  void TestDualLostDiscs(double top_disc_offset, double bottom_disc_offset) {
+    LoadNDiscs(2);
+
+    // Move them in the indexer so they need to be re-found.
+    // The top one is moved further than the bottom one so that both edges need to
+    // be inspected.
+    index_motor_plant_.frisbees[0].OffsetIndex(
+         IndexMotor::ConvertDiscPositionToIndex(top_disc_offset));
+    index_motor_plant_.frisbees[1].OffsetIndex(
+         IndexMotor::ConvertDiscPositionToIndex(bottom_disc_offset));
+
+    // Lift the discs up to the top.  Wait a while to let the system settle and
+    // verify that they don't collide.
+    my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+    SimulateNCycles(300);
+
+    // Verify that the disc has been grabbed.
+    my_index_loop_.output.FetchLatest();
+    EXPECT_TRUE(my_index_loop_.output->disc_clamped);
+    // And that we are preloaded.
+    my_index_loop_.status.FetchLatest();
+    EXPECT_TRUE(my_index_loop_.status->preloaded);
+
+    // Pull the disc back down.
+    my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+    SimulateNCycles(300);
+
+    EXPECT_NEAR(IndexMotor::kReadyToLiftPosition,
+        index_motor_plant_.frisbees[0].position(), 0.01);
+    EXPECT_NEAR(
+        (IndexMotor::kIndexStartPosition +
+         IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
+        index_motor_plant_.frisbees[1].position(), 0.02);
+
+    // Verify that we found the disc as accurately as the FPGA allows.
+    my_index_loop_.position.FetchLatest();
+    EXPECT_NEAR(
+        index_motor_.frisbees()[0].absolute_position(
+            my_index_loop_.position->index_position),
+        index_motor_plant_.frisbees[1].position(), 0.0001);
+  }
+
   // Copy of core that works in this process only.
   ::aos::common::testing::GlobalCoreInstance my_core;
 
@@ -811,10 +856,17 @@ TEST_F(IndexTest, ReadyGrabsOneDisc) {
   EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(IndexMotor::kReadyToLiftPosition,
       index_motor_plant_.frisbees[0].position(), 0.01);
+  printf("Top disc error is %f\n",
+         IndexMotor::kReadyToLiftPosition -
+         index_motor_plant_.frisbees[0].position());
   EXPECT_NEAR(
       (IndexMotor::kIndexStartPosition +
        IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
-      index_motor_plant_.frisbees[1].position(), 0.10);
+      index_motor_plant_.frisbees[1].position(), 0.02);
+  printf("Bottom disc error is %f\n",
+      (IndexMotor::kIndexStartPosition +
+       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI))-
+      index_motor_plant_.frisbees[1].position());
 }
 
 // Tests that the index grabs 1 disc and continues to pull it in correctly when
@@ -1057,9 +1109,29 @@ TEST_F(IndexTest, ZeroPowerAfterTimeout) {
   EXPECT_EQ(my_index_loop_.output->index_voltage, 0.0);
 }
 
+// Tests that preloading 2 discs relocates the discs if they shift on the
+// indexer.  Test shifting all 4 ways.
+TEST_F(IndexTest, ShiftedDiscsAreRefound) {
+  TestDualLostDiscs(0.10, 0.15);
+}
+
+TEST_F(IndexTest, ShiftedDiscsAreRefoundOtherSeperation) {
+  TestDualLostDiscs(0.15, 0.10);
+}
+
+TEST_F(IndexTest, ShiftedDownDiscsAreRefound) {
+  TestDualLostDiscs(-0.15, -0.10);
+}
+
+TEST_F(IndexTest, ShiftedDownDiscsAreRefoundOtherSeperation) {
+  TestDualLostDiscs(-0.10, -0.15);
+}
+
 // TODO(aschuh): Test that we find discs corectly when moving them up.
-// Grab 2 discs, offset them down, and verify that they get shot correctly.
-// Grab 2 discs, offset them up, and verify that they get shot correctly.
+
+// TODO(aschuh): Exercise the disc coming down from above code and verify it.
+// If possible.
+
 
 }  // namespace testing
 }  // namespace control_loops

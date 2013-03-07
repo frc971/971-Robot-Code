@@ -21,8 +21,7 @@ namespace control_loops {
 double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
     double index_position, double index_velocity) {
   // The absolute disc position in meters.
-  double disc_position = IndexMotor::ConvertIndexToDiscPosition(
-      index_position - index_start_position_) + IndexMotor::kIndexStartPosition;
+  double disc_position = absolute_position(index_position);
   if (IndexMotor::kTopDiscDetectStart <= disc_position &&
       disc_position <= IndexMotor::kTopDiscDetectStop) {
     // Whoops, this shouldn't be happening.
@@ -47,12 +46,18 @@ double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
         // Now going up.  If we didn't see it before, and we don't see it
         // now but it should be in view, it must still be below.  If it were
         // above, it would be going further away from us.
-        printf("Moving fast up, shifting disc up\n");
+        printf("Moving fast up, shifting disc down.  Disc was at %f\n",
+               absolute_position(index_position));
         index_start_position_ += distance_to_below;
+        printf("Moving fast up, shifting disc down.  Disc now at %f\n",
+               absolute_position(index_position));
         return distance_to_below;
       } else {
-        printf("Moving fast down, shifting disc down\n");
+        printf("Moving fast down, shifting disc up.  Disc was at %f\n",
+               absolute_position(index_position));
         index_start_position_ -= distance_to_above;
+        printf("Moving fast down, shifting disc up.  Disc now at %f\n",
+               absolute_position(index_position));
         return -distance_to_above;
       }
     }
@@ -83,6 +88,8 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       IndexMotor::ConvertDiscAngleToDiscPosition((360 * 2 + 14) * M_PI / 180);
 /*static*/ const double IndexMotor::kLoaderFreeStopPosition =
       kIndexStartPosition + kIndexFreeLength;
+/*static*/ const double IndexMotor::kReadyToPreload =
+      kLoaderFreeStopPosition - ConvertDiscAngleToDiscPosition(M_PI / 6.0);
 /*static*/ const double IndexMotor::kReadyToLiftPosition =
     kLoaderFreeStopPosition + 0.2921;
 /*static*/ const double IndexMotor::kGrabberLength = 0.03175;
@@ -162,35 +169,49 @@ const double kNextPosition = 10.0;
       ConvertDiscPositionToDiscAngle(position));
 }
 
-bool IndexMotor::MinDiscPosition(double *disc_position) {
+bool IndexMotor::MinDiscPosition(double *disc_position, Frisbee **found_disc) {
   bool found_start = false;
   for (unsigned int i = 0; i < frisbees_.size(); ++i) {
-    const Frisbee &frisbee = frisbees_[i];
+    Frisbee &frisbee = frisbees_[i];
     if (!found_start) {
       if (frisbee.has_position()) {
         *disc_position = frisbee.position();
+        if (found_disc) {
+          *found_disc = &frisbee;
+        }
         found_start = true;
       }
     } else {
-      *disc_position = ::std::min(frisbee.position(),
-                                  *disc_position);
+      if (frisbee.position() <= *disc_position) {
+        *disc_position = frisbee.position();
+        if (found_disc) {
+          *found_disc = &frisbee;
+        }
+      }
     }
   }
   return found_start;
 }
 
-bool IndexMotor::MaxDiscPosition(double *disc_position) {
+bool IndexMotor::MaxDiscPosition(double *disc_position, Frisbee **found_disc) {
   bool found_start = false;
   for (unsigned int i = 0; i < frisbees_.size(); ++i) {
-    const Frisbee &frisbee = frisbees_[i];
+    Frisbee &frisbee = frisbees_[i];
     if (!found_start) {
       if (frisbee.has_position()) {
         *disc_position = frisbee.position();
+        if (found_disc) {
+          *found_disc = &frisbee;
+        }
         found_start = true;
       }
     } else {
-      *disc_position = ::std::max(frisbee.position(),
-                                  *disc_position);
+      if (frisbee.position() > *disc_position) {
+        *disc_position = frisbee.position();
+        if (found_disc) {
+          *found_disc = &frisbee;
+        }
+      }
     }
   }
   return found_start;
@@ -263,7 +284,7 @@ void IndexMotor::RunIteration(
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
     }
 
-    // If the cRIO is gone for 1/2 of a second, assume that it rebooted.
+    // If the cRIO is gone for over 1/2 of a second, assume that it rebooted.
     if (missing_position_count_ > 50) {
       last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
       last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
@@ -288,8 +309,8 @@ void IndexMotor::RunIteration(
     if (!position->top_disc_detect) {
       // We don't see a disc.  Verify that there are no discs that we should be
       // seeing.
-      // Assume that discs will move slow enough that we won't one as it goes
-      // by.  They will either pile up above or below the sensor.
+      // Assume that discs will move slow enough that we won't miss one as it
+      // goes by.  They will either pile up above or below the sensor.
 
       double cumulative_offset = 0.0;
       for (auto frisbee = frisbees_.rbegin(), rend = frisbees_.rend();
@@ -300,7 +321,10 @@ void IndexMotor::RunIteration(
         cumulative_offset += amount_moved;
       }
     }
+
     if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
+      const double index_position = wrist_loop_->X_hat(0, 0) -
+          position->index_position + position->top_disc_posedge_position;
       // TODO(aschuh): Sanity check this number...
       // Requires storing when the disc was last seen with the sensor off, and
       // figuring out what to do if things go south.
@@ -312,13 +336,88 @@ void IndexMotor::RunIteration(
       // 3) The top most disc is coming back down and we are seeing it.
       if (wrist_loop_->X_hat(1, 0) > 50.0) {
         // Moving up at a reasonable clip.
-        // TODO(aschuh): Do something!
+        // Find the highest disc that is below the top disc sensor.
+        // While we are at it, count the number above and log an error if there
+        // are too many.
+        if (frisbees_.size() == 0) {
+          Frisbee new_frisbee;
+          new_frisbee.has_been_indexed_ = true;
+          new_frisbee.index_start_position_ = index_position -
+              ConvertDiscPositionToIndex(kTopDiscDetectStart -
+                                         kIndexStartPosition);
+          frisbees_.push_front(new_frisbee);
+          LOG(WARNING, "Added a disc to the hopper at the top sensor\n");
+        }
+
+        int above_disc_count = 0;
+        double highest_position = 0;
+        Frisbee *highest_frisbee_below_sensor = NULL;
+        for (auto frisbee = frisbees_.rbegin(), rend = frisbees_.rend();
+             frisbee != rend; ++frisbee) {
+          const double disc_position = frisbee->absolute_position(
+              index_position);
+          // It is save to use the top position for the cuttoff, since the
+          // sensor being low will result in discs being pushed off of it.
+          if (disc_position >= kTopDiscDetectStop) {
+            ++above_disc_count;
+          } else if (!highest_frisbee_below_sensor ||
+                     disc_position > highest_position) {
+            highest_frisbee_below_sensor = &*frisbee;
+            highest_position = disc_position;
+          }
+        }
+        if (above_disc_count > 1) {
+          LOG(ERROR, "We have 2 discs above the top sensor.\n");
+        }
+
+        // We now have the disc.  Shift all the ones below the sensor up by the
+        // computed delta.
+        const double disc_delta = IndexMotor::ConvertDiscPositionToIndex(
+            highest_position - kTopDiscDetectStart);
+        for (auto frisbee = frisbees_.rbegin(), rend = frisbees_.rend();
+             frisbee != rend; ++frisbee) {
+          const double disc_position = frisbee->absolute_position(
+              index_position);
+          if (disc_position < kTopDiscDetectStop) {
+            frisbee->OffsetDisc(disc_delta);
+          }
+        }
+        printf("Currently have %d discs, saw posedge moving up.  "
+            "Moving down by %f to %f\n", frisbees_.size(), 
+            ConvertIndexToDiscPosition(disc_delta),
+            highest_frisbee_below_sensor->absolute_position(
+                wrist_loop_->X_hat(0, 0)));
       } else if (wrist_loop_->X_hat(1, 0) < -50.0) {
         // Moving down at a reasonable clip.
-        // Find the top disc and use that.
-        // TODO(aschuh): Do something!
+        // There can only be 1 disc up top that would give us a posedge.
+        // Find it and place it at the one spot that it can be.
+        double min_disc_position;
+        Frisbee *min_frisbee = NULL;
+        MinDiscPosition(&min_disc_position, &min_frisbee);
+        if (!min_frisbee) {
+          // Uh, oh, we see a disc but there isn't one...
+          LOG(ERROR, "Saw a disc up top but there isn't one in the hopper\n");
+        } else {
+          const double disc_position = min_frisbee->absolute_position(
+              index_position);
+
+          const double disc_delta_meters = disc_position - kTopDiscDetectStop;
+          const double disc_delta = IndexMotor::ConvertDiscPositionToIndex(
+              disc_delta_meters);
+          printf("Posedge going down.  Moving top disc down by %f\n",
+                 disc_delta_meters);
+          for (auto frisbee = frisbees_.begin(), end = frisbees_.end();
+               frisbee != end; ++frisbee) {
+            frisbee->OffsetDisc(disc_delta);
+          }
+        }
       } else {
+        // Save the upper and lower positions that we last saw a disc at.
+        // If there is a big buffer above, must be a disc from below.
+        // If there is a big buffer below, must be a disc from above.
+        // This should work to replace the velocity threshold above.
         // TODO(aschuh): Do something!
+        // 
       }
     }
   }
@@ -405,7 +504,7 @@ void IndexMotor::RunIteration(
           // Figure out where the indexer should be to move the discs down to
           // the right position.
           double max_disc_position;
-          if (MaxDiscPosition(&max_disc_position)) {
+          if (MaxDiscPosition(&max_disc_position, NULL)) {
             printf("There is a disc down here!\n");
             // TODO(aschuh): Figure out what to do if grabbing the next one
             // would cause things to jam into the loader.
@@ -453,10 +552,9 @@ void IndexMotor::RunIteration(
     case Goal::SHOOT:
       // Check if we have any discs to shoot or load and handle them.
       double min_disc_position;
-      if (MinDiscPosition(&min_disc_position)) {
-        const double ready_disc_position =
-            min_disc_position + ConvertDiscPositionToIndex(kIndexFreeLength) -
-            ConvertDiscAngleToIndex(M_PI / 6.0);
+      if (MinDiscPosition(&min_disc_position, NULL)) {
+        const double ready_disc_position = min_disc_position +
+            ConvertDiscPositionToIndex(kReadyToPreload - kIndexStartPosition);
 
         const double grabbed_disc_position =
             min_disc_position +

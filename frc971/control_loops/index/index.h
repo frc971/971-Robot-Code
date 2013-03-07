@@ -14,6 +14,7 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 class IndexTest_InvalidStateTest_Test;
+class IndexTest_ShiftedDiscsAreRefound_Test;
 }
 
 class IndexMotor
@@ -29,6 +30,9 @@ class IndexMotor
   static const double kIndexFreeLength;
   // The distance to where the disc just starts to enter the loader.
   static const double kLoaderFreeStopPosition;
+  // The distance to where the next disc gets positioned while the current disc
+  // is shooting.
+  static const double kReadyToPreload;
 
   // Distance that the grabber pulls the disc in by.
   static const double kGrabberLength;
@@ -126,6 +130,14 @@ class IndexMotor
       return index_start_position_;
     }
 
+    // Returns the absolute position of the disc in meters in the hopper given
+    // that the indexer is at the provided position.
+    double absolute_position(const double index_position) const {
+      return IndexMotor::ConvertIndexToDiscPosition(
+          index_position - index_start_position_) +
+          IndexMotor::kIndexStartPosition;
+    }
+
     // Shifts the disc down the indexer by the provided offset.  This is to
     // handle when the cRIO reboots.
     void OffsetDisc(double offset) {
@@ -148,6 +160,8 @@ class IndexMotor
     double index_start_position_;
   };
 
+  const ::std::deque<Frisbee> &frisbees() const { return frisbees_; }
+
  protected:
   virtual void RunIteration(
       const control_loops::IndexLoop::Goal *goal,
@@ -157,6 +171,7 @@ class IndexMotor
 
  private:
   friend class testing::IndexTest_InvalidStateTest_Test;
+  friend class testing::IndexTest_ShiftedDiscsAreRefound_Test;
 
   // This class implements the CapU function correctly given all the extra
   // information that we know about from the wrist motor.
@@ -180,10 +195,12 @@ class IndexMotor
   };
 
   // Sets disc_position to the minimum or maximum disc position.
+  // Sets found_disc to point to the frisbee that was found, and ignores it if
+  // found_disc is NULL.
   // Returns true if there were discs, and false if there weren't.
   // On false, disc_position is left unmodified.
-  bool MinDiscPosition(double *disc_position);
-  bool MaxDiscPosition(double *disc_position);
+  bool MinDiscPosition(double *disc_position, Frisbee **found_disc);
+  bool MaxDiscPosition(double *disc_position, Frisbee **found_disc);
 
   // The state feedback control loop to talk to for the index.
   ::std::unique_ptr<IndexStateFeedbackLoop> wrist_loop_;
