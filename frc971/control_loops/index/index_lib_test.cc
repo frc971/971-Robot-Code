@@ -34,7 +34,9 @@ class Frisbee {
         after_negedge_time_left_(IndexMotor::kBottomDiscIndexDelay),
         counted_negedge_wait_(false),
         has_top_disc_posedge_position_(false),
-        top_disc_posedge_position_(0.0) {
+        top_disc_posedge_position_(0.0),
+        has_top_disc_negedge_position_(false),
+        top_disc_negedge_position_(0.0) {
   }
 
   // Returns true if the frisbee is controlled by the transfer roller.
@@ -107,11 +109,20 @@ class Frisbee {
     return false;
   }
 
-  // Returns true if the bottom disc sensor will negedge after the disc moves
+  // Returns true if the bottom disc sensor will posedge after the disc moves
   // by dx.
   bool will_posedge_top_disc_detect(double disc_dx) {
     if (!top_disc_detect()) {
       return top_disc_detect(position_ + disc_dx);
+    }
+    return false;
+  }
+
+  // Returns true if the bottom disc sensor will negedge after the disc moves
+  // by dx.
+  bool will_negedge_top_disc_detect(double disc_dx) {
+    if (top_disc_detect()) {
+      return !top_disc_detect(position_ + disc_dx);
     }
     return false;
   }
@@ -211,6 +222,20 @@ class Frisbee {
           index_roller_velocity * (elapsed_time + disc_time));
       has_top_disc_posedge_position_ = true;
       printf("Posedge on top sensor at %f\n", top_disc_posedge_position_);
+    }
+
+    if (will_negedge_top_disc_detect(index_dx)) {
+      // Wohoo!  Find the edge.
+      // Assume constant velocity and compute the position.
+      double edge_position = index_roller_velocity > 0 ?
+          IndexMotor::kTopDiscDetectStop : IndexMotor::kTopDiscDetectStart;
+      const double disc_time =
+          (edge_position - position_) / index_roller_velocity;
+      top_disc_negedge_position_ = index_roller_position_ +
+          IndexMotor::ConvertDiscPositionToIndex(
+          index_roller_velocity * (elapsed_time + disc_time));
+      has_top_disc_negedge_position_ = true;
+      printf("Negedge on top sensor at %f\n", top_disc_negedge_position_);
     }
 
     if (shrunk_time) {
@@ -339,11 +364,22 @@ class Frisbee {
   // Returns the last position where a posedge was seen.
   double top_disc_posedge_position() { return top_disc_posedge_position_; }
 
+  // Returns the last position where a negedge was seen.
+  double top_disc_negedge_position() { return top_disc_negedge_position_; }
+
   // True if the top disc has seen a posedge.
   // Reading this flag clears it.
   bool has_top_disc_posedge_position() {
     bool prev = has_top_disc_posedge_position_;
     has_top_disc_posedge_position_ = false;
+    return prev;
+  }
+
+  // True if the top disc has seen a negedge.
+  // Reading this flag clears it.
+  bool has_top_disc_negedge_position() {
+    bool prev = has_top_disc_negedge_position_;
+    has_top_disc_negedge_position_ = false;
     return prev;
   }
 
@@ -375,6 +411,11 @@ class Frisbee {
   bool has_top_disc_posedge_position_;
   // The position at which the posedge occured.
   double top_disc_posedge_position_;
+  // True if the top disc sensor negedge has occured and
+  // hasn't been counted yet.
+  bool has_top_disc_negedge_position_;
+  // The position at which the negedge occured.
+  double top_disc_negedge_position_;
 };
 
 
@@ -393,6 +434,8 @@ class IndexMotorSimulation {
         bottom_disc_negedge_wait_position_(0),
         top_disc_posedge_count_(0),
         top_disc_posedge_position_(0.0),
+        top_disc_negedge_count_(0),
+        top_disc_negedge_position_(0.0),
         my_index_loop_(".frc971.control_loops.index",
                        0x1a7b7094, ".frc971.control_loops.index.goal",
                        ".frc971.control_loops.index.position",
@@ -463,6 +506,10 @@ class IndexMotorSimulation {
         ++top_disc_posedge_count_;
         top_disc_posedge_position_ = frisbee->top_disc_posedge_position();
       }
+      if (frisbee->has_top_disc_negedge_position()) {
+        ++top_disc_negedge_count_;
+        top_disc_negedge_position_ = frisbee->top_disc_negedge_position();
+      }
     }
 
     // Make sure nobody is too close to anybody else.
@@ -509,8 +556,11 @@ class IndexMotorSimulation {
         bottom_disc_negedge_wait_position_;
     position->top_disc_posedge_count = top_disc_posedge_count_;
     position->top_disc_posedge_position = top_disc_posedge_position_;
+    position->top_disc_negedge_count = top_disc_negedge_count_;
+    position->top_disc_negedge_position = top_disc_negedge_position_;
     printf("bdd: %x tdd: %x posedge %d negedge %d "
-           "delaycount %d delaypos %f topcount %d toppos %f\n",
+           "delaycount %d delaypos %f topcount %d toppos %f "
+           "topcount %d toppos %f\n",
            position->bottom_disc_detect,
            position->top_disc_detect,
            position->bottom_disc_posedge_count,
@@ -518,7 +568,9 @@ class IndexMotorSimulation {
            position->bottom_disc_negedge_wait_count,
            position->bottom_disc_negedge_wait_position,
            position->top_disc_posedge_count,
-           position->top_disc_posedge_position);
+           position->top_disc_posedge_position,
+           position->top_disc_negedge_count,
+           position->top_disc_negedge_position);
     position.Send();
   }
 
@@ -564,6 +616,10 @@ class IndexMotorSimulation {
   // Posedge count and position for the upper disc sensor.
   int32_t top_disc_posedge_count_;
   double top_disc_posedge_position_;
+
+  // Negedge count and position for the upper disc sensor.
+  int32_t top_disc_negedge_count_;
+  double top_disc_negedge_position_;
 
   // Returns the absolute angle of the index.
   double index_roller_position() const {
