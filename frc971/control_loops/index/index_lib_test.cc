@@ -202,8 +202,10 @@ class Frisbee {
     if (will_posedge_top_disc_detect(index_dx)) {
       // Wohoo!  Find the edge.
       // Assume constant velocity and compute the position.
+      double edge_position = index_roller_velocity > 0 ?
+          IndexMotor::kTopDiscDetectStart : IndexMotor::kTopDiscDetectStop;
       const double disc_time =
-          (IndexMotor::kTopDiscDetectStart - position_) / index_roller_velocity;
+          (edge_position - position_) / index_roller_velocity;
       top_disc_posedge_position_ = index_roller_position_ +
           IndexMotor::ConvertDiscPositionToIndex(
           index_roller_velocity * (elapsed_time + disc_time));
