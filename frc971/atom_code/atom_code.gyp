@@ -11,6 +11,7 @@
         '../control_loops/control_loops.gyp:hall_effect_lib_test',
         '../control_loops/angle_adjust/angle_adjust.gyp:angle_adjust',
         '../control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_lib_test',
+        '../control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_csv',
         '../input/input.gyp:JoystickReader',
         '../input/input.gyp:SensorReader',
         '../input/input.gyp:GyroReader',

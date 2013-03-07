@@ -53,6 +53,19 @@
       ],
     },
     {
+      'target_name': 'angle_adjust_csv',
+      'type': 'executable',
+      'sources': [
+        'angle_adjust_csv.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:timing',
+        'angle_adjust_loop',
+      ],
+    },
+    {
       'target_name': 'angle_adjust',
       'type': 'executable',
       'sources': [

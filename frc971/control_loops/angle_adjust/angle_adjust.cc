@@ -24,9 +24,6 @@ AngleAdjustMotor::AngleAdjustMotor(
         true, 5.0),
     error_count_(0),
     time_(0.0) {
-  if (testing) {
-    hall_effect_.loop_->StartDataFile("angle_adjust.csv");
-  }
 }
 
 /*static*/ const double AngleAdjustMotor::dt = 0.01;
@@ -158,11 +155,6 @@ void AngleAdjustMotor::RunIteration(
     output->voltage = LimitVoltage(hall_effect_.absolute_position_,
                                    hall_effect_.loop_->U(0, 0));
   }
-
-  if (testing) {
-    hall_effect_.loop_->RecordDatum("angle_adjust.csv", time_);
-  }
-  time_ += dt;
 }  // RunIteration
 
 }  // namespace control_loops
