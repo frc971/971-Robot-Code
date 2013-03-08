@@ -24,6 +24,9 @@ class DigitalSource {
   // This object maintains ownership.
   virtual ::DigitalSource *source() const = 0;
 
+ protected:
+  DigitalSource() {}
+
  private:
   DISALLOW_COPY_AND_ASSIGN(DigitalSource);
 };
@@ -36,30 +39,38 @@ class AnalogTriggerOutput : public DigitalSource {
   static const float kDefaultUpperVoltage = 4;
 
   // Will set up the voltages on trigger.
-  AnalogTriggerOutput(const ::AnalogTrigger &trigger,
+  AnalogTriggerOutput(const ::std::unique_ptr< ::AnalogTrigger> &trigger,
                       ::AnalogTriggerOutput::Type type,
                       float lowerVoltage = kDefaultLowerVoltage,
                       float upperVoltage = kDefaultUpperVoltage);
-  AnalogTriggerOutput(::std::unique_ptr<::AnalogTriggerOutput> output)
+  explicit AnalogTriggerOutput(::std::unique_ptr< ::AnalogTriggerOutput> output)
       : output_(::std::move(output)) {}
 
   virtual bool Get() { return output_->Get(); }
   virtual ::DigitalSource *source() const { return output_.get(); }
 
  private:
-  const ::std::unique_ptr<::AnalogTriggerOutput> output_;
+  const ::std::unique_ptr< ::AnalogTriggerOutput> output_;
 };
 
 class DigitalInput : public DigitalSource {
  public:
-  DigitalInput(::std::unique_ptr<::DigitalInput> input)
+  explicit DigitalInput(uint32_t channel)
+      : input_(::std::unique_ptr< ::DigitalInput>(
+              new ::DigitalInput(channel))) {
+  }
+  DigitalInput(uint8_t module, uint32_t channel)
+      : input_(::std::unique_ptr< ::DigitalInput>(
+              new ::DigitalInput(module, channel))) {
+  }
+  explicit DigitalInput(::std::unique_ptr< ::DigitalInput> input)
       : input_(::std::move(input)) {}
 
   virtual bool Get() { return input_->Get(); }
   virtual ::DigitalSource *source() const { return input_.get(); }
 
  private:
-  const ::std::unique_ptr<::DigitalInput> input_;
+  const ::std::unique_ptr< ::DigitalInput> input_;
 };
 
 }  // namespace hardware

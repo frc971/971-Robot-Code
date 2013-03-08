@@ -8,7 +8,8 @@ namespace hardware = ::aos::crio::hardware;
 namespace aos {
 namespace crio {
 
-LimitEncoderReader::LimitEncoderReader(unique_ptr<::hardware::Counter> &counter,
+LimitEncoderReader::LimitEncoderReader(const unique_ptr<::hardware::Counter>
+                                           &counter,
                                        unique_ptr<::hardware::DigitalSource>
                                            source,
                                        bool posEdge, bool negEdge)

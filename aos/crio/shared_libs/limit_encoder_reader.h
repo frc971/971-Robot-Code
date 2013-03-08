@@ -19,8 +19,9 @@ class LimitEncoderReader {
  public:
   // See InterruptNotifier for details about the state of the sensor object
   // before the constructor is called.
-  LimitEncoderReader(::std::unique_ptr<::aos::crio::hardware::Counter> &counter,
-                     ::std::uniuqe_ptr<::aos::crio::hardware::DigitalSource>
+  LimitEncoderReader(const ::std::unique_ptr< ::aos::crio::hardware::Counter>
+                         &counter,
+                     ::std::unique_ptr< ::aos::crio::hardware::DigitalSource>
                          source,
                      bool posEdge, bool negEdge);
 
@@ -34,10 +35,10 @@ class LimitEncoderReader {
   // Only to set things up etc. Getting values through these methods will always
   // have race conditions!
   // Also helpful for debugging.
-  const ::std::unique_ptr<::aos::crio::hardware::Counter> &counter() const {
+  const ::std::unique_ptr< ::aos::crio::hardware::Counter> &counter() const {
     return counter_;
   }
-  const ::std::unique_ptr<::aos::crio::hardware::DigitalSource>
+  const ::std::unique_ptr< ::aos::crio::hardware::DigitalSource>
       &source() const {
     return source_;
   }
@@ -48,8 +49,8 @@ class LimitEncoderReader {
   }
   void ReadValue();
 
-  const ::std::unique_ptr<::aos::crio::hardware::Counter> &counter_;
-  const ::std::unique_ptr<::aos::crio::hardware::DigitalSource> source_;
+  const ::std::unique_ptr< ::aos::crio::hardware::Counter> &counter_;
+  const ::std::unique_ptr< ::aos::crio::hardware::DigitalSource> source_;
 
   const ::std::unique_ptr<InterruptNotifier<LimitEncoderReader>> notifier_;
 

@@ -22,6 +22,7 @@
       'dependencies': [
         'digital_source',
         '<(EXTERNALS):WPILib',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',

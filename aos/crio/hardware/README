@@ -5,4 +5,5 @@ Be careful using the classes that have the same names as WPILib ones! Many of
   qualify the names of these ones (and should do the same for WPILib ones too).
 The wrappers only have the functionality that is missing from whatever WPILib
   class they are wrapping (and can return pointer to). Use that pointer to do
-  everything else.
+  everything else. They also ahve the more useful constructors that forward to
+  the WPILib ones.
