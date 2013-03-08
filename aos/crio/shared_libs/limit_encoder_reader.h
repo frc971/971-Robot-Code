@@ -3,19 +3,12 @@
 
 #include "aos/common/libstdc++/memory"
 
-#include "WPILib/DigitalSource.h"
-#include "WPILib/AnalogChannel.h"
-#include "WPILib/AnalogTriggerOutput.h"
-#include "WPILib/DigitalInput.h"
-#include "WPILib/Encoder.h"
-
 #include "aos/common/mutex.h"
 #include "aos/common/zero_switch_value.h"
 #include "aos/common/macros.h"
 #include "aos/crio/shared_libs/interrupt_notifier.h"
 #include "aos/crio/hardware/digital_source.h"
 #include "aos/crio/hardware/counter.h"
-// TODO(brians): fix the build file
 
 namespace aos {
 namespace crio {
@@ -26,7 +19,7 @@ class LimitEncoderReader {
  public:
   // See InterruptNotifier for details about the state of the sensor object
   // before the constructor is called.
-  LimitEncoderReader(::std::unique_ptr<::aos::crio::hardware::Counter> counter,
+  LimitEncoderReader(::std::unique_ptr<::aos::crio::hardware::Counter> &counter,
                      ::std::uniuqe_ptr<::aos::crio::hardware::DigitalSource>
                          source,
                      bool posEdge, bool negEdge);
@@ -55,11 +48,10 @@ class LimitEncoderReader {
   }
   void ReadValue();
 
-  ::std::unique_ptr<InterruptNotifier<LimitEncoderReader>> notifier_;
-  const ::std::unique_ptr<CountGetter> encoder_;
+  const ::std::unique_ptr<::aos::crio::hardware::Counter> &counter_;
+  const ::std::unique_ptr<::aos::crio::hardware::DigitalSource> source_;
 
-  ::std::unique_ptr<::aos::crio::hardware::Counter> counter_;
-  ::std::unique_ptr<::aos::crio::hardware::DigitalSource> source_;
+  const ::std::unique_ptr<InterruptNotifier<LimitEncoderReader>> notifier_;
 
   // The most recently read value.
   int32_t value_;
