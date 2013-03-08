@@ -7,6 +7,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifdef __VXWORKS__
+// Because the vxworks system headers miss the noreturn...
+void abort(void) __attribute__((noreturn));
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
