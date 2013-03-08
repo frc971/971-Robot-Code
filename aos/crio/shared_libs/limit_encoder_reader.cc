@@ -51,11 +51,11 @@ int32_t LimitEncoderReader::CounterCountGetter::Get() {
 }
 
 void LimitEncoderReader::Init(unique_ptr<AnalogChannel> channel,
-                         AnalogTriggerOutput::Type type,
-                         AnalogTriggerOutput::Type triggeredType,
-                         bool posEdge, bool negEdge,
-                         float lowerVoltage,
-                         float upperVoltage) {
+                              AnalogTriggerOutput::Type type,
+                              AnalogTriggerOutput::Type triggeredType,
+                              bool posEdge, bool negEdge,
+                              float lowerVoltage,
+                              float upperVoltage) {
   unique_ptr<AnalogTrigger> trigger(new AnalogTrigger(channel.get()));
   trigger->SetLimitsVoltage(lowerVoltage, upperVoltage);
   source_ = unique_ptr<AnalogTriggerOutput>(trigger->CreateOutput(type));

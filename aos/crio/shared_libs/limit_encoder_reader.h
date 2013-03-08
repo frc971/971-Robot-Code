@@ -13,6 +13,9 @@
 #include "aos/common/zero_switch_value.h"
 #include "aos/common/macros.h"
 #include "aos/crio/shared_libs/interrupt_notifier.h"
+#include "aos/crio/hardware/digital_source.h"
+#include "aos/crio/hardware/counter.h"
+// TODO(brians): fix the build file
 
 namespace aos {
 namespace crio {
@@ -21,59 +24,15 @@ namespace crio {
 // triggers, including all of the irritating WPILib setup and synchronization.
 class LimitEncoderReader {
  public:
-  // Defaults for the voltages for AnalogTriggers. They work well for digital
-  // sensors connected to analog inputs.
-  static const float kDefaultLowerVoltage = 1;
-  static const float kDefaultUpperVoltage = 4;
-
   // See InterruptNotifier for details about the state of the sensor object
   // before the constructor is called.
-  // The different constructors take in different types of inputs and configure
-  // them to give interrupts.
-  // There are separate (very similar) constructors for Encoder and Counter
-  // because they implement CounterBase::Get() differently, making it useless...
-  //
-  // type is the type for triggering interrupts while triggeredType is the one
-  // to use for writing *triggered in Get().
-  // AnalogTriggerOutput::Type::k*Pulse don't seem to do anything...
-  LimitEncoderReader(const ::std::unique_ptr<Encoder> &encoder,
-                     ::std::unique_ptr<AnalogChannel> channel,
-                     AnalogTriggerOutput::Type type,
-                     AnalogTriggerOutput::Type triggeredType,
-                     bool posEdge, bool negEdge,
-                     float lowerVoltage = kDefaultLowerVoltage,
-                     float upperVoltage = kDefaultUpperVoltage)
-      : encoder_(new EncoderCountGetter(encoder)) {
-    Init(::std::move(channel), type, triggeredType, posEdge, negEdge,
-         lowerVoltage, upperVoltage);
-  }
-  LimitEncoderReader(const ::std::unique_ptr<Counter> &counter,
-                     ::std::unique_ptr<AnalogChannel> channel,
-                     AnalogTriggerOutput::Type type,
-                     AnalogTriggerOutput::Type triggeredType,
-                     bool posEdge, bool negEdge,
-                     float lowerVoltage = kDefaultLowerVoltage,
-                     float upperVoltage = kDefaultUpperVoltage)
-      : encoder_(new CounterCountGetter(counter)) {
-    Init(::std::move(channel), type, triggeredType, posEdge, negEdge,
-         lowerVoltage, upperVoltage);
-  }
-  LimitEncoderReader(const ::std::unique_ptr<Encoder> &encoder,
-                     ::std::unique_ptr<DigitalInput> sensor,
-                     bool posEdge, bool negEdge)
-      : encoder_(new EncoderCountGetter(encoder)) {
-    Init(::std::move(sensor), posEdge, negEdge);
-  }
-  LimitEncoderReader(const ::std::unique_ptr<Counter> &counter,
-                     ::std::unique_ptr<DigitalInput> sensor,
-                     bool posEdge, bool negEdge)
-      : encoder_(new CounterCountGetter(counter)) {
-    Init(::std::move(sensor), posEdge, negEdge);
-  }
-
+  LimitEncoderReader(::std::unique_ptr<::aos::crio::hardware::Counter> counter,
+                     ::std::uniuqe_ptr<::aos::crio::hardware::DigitalSource>
+                         source,
+                     bool posEdge, bool negEdge);
 
   // Retrieves the values. See ZeroSwitchValue's declaration for an explanation
-  // of why retrieving all of them is necessary.
+  // of why retrieving all of them at once is necessary.
   ZeroSwitchValue Get();
 
   // Calls Start() on all owned objects.
@@ -82,70 +41,15 @@ class LimitEncoderReader {
   // Only to set things up etc. Getting values through these methods will always
   // have race conditions!
   // Also helpful for debugging.
-  const ::std::unique_ptr<DigitalSource> &source() const {
+  const ::std::unique_ptr<::aos::crio::hardware::Counter> &counter() const {
+    return counter_;
+  }
+  const ::std::unique_ptr<::aos::crio::hardware::DigitalSource>
+      &source() const {
     return source_;
   }
   
  private:
-  // A class to deal with the fact that WPILib's AnalogTriggerOutput and
-  // DigitalInput have no common superclass with their Get() functions.
-  // Also handles taking ownership of some attached objects for
-  // AnalogTriggerOutput.
-  class OnOffGetter {
-   public:
-    virtual bool Get() = 0;
-
-    virtual ~OnOffGetter() {}
-  };
-  class AnalogOnOffGetter;
-  class DigitalOnOffGetter;
-
-  // A class to deal with the fact that WPILib's Encoder and Counter have no
-  // common superclass with the function that we want to use for getting the
-  // number of ticks.
-  class CountGetter {
-   public:
-    virtual int32_t Get() = 0;
-
-    virtual ~CountGetter() {}
-  };
-  class EncoderCountGetter : public CountGetter {
-   public:
-    EncoderCountGetter(const ::std::unique_ptr<Encoder> &counter)
-        : counter_(counter) {}
-
-    virtual int32_t Get();
-
-   private:
-    const ::std::unique_ptr<Encoder> &counter_;
-  };
-  class CounterCountGetter : public CountGetter {
-   public:
-    CounterCountGetter(const ::std::unique_ptr<Counter> &counter)
-        : counter_(counter) {}
-
-    virtual int32_t Get();
-
-   private:
-    const ::std::unique_ptr<Counter> &counter_;
-  };
-
-  // Separate initialization functions for each of the main constructor
-  // variants. encoder_ must be set before calling this.
-  void Init(::std::unique_ptr<AnalogChannel> channel,
-            AnalogTriggerOutput::Type type,
-            AnalogTriggerOutput::Type triggeredType,
-            bool posEdge, bool negEdge,
-            float lowerVoltage,
-            float upperVoltage);
-  void Init(::std::unique_ptr<DigitalInput> source,
-             bool posEdge, bool negEdge);
-
-  // The common initialization code.
-  // Gets called by all of the constructors.
-  // getter_, encoder_, and source_ must be set before calling this.
-  void CommonInit(bool posEdge, bool negEdge);
-
   static void ReadValueStatic(LimitEncoderReader *self) {
     self->ReadValue();
   }
@@ -154,8 +58,8 @@ class LimitEncoderReader {
   ::std::unique_ptr<InterruptNotifier<LimitEncoderReader>> notifier_;
   const ::std::unique_ptr<CountGetter> encoder_;
 
-  ::std::unique_ptr<OnOffGetter> getter_;
-  ::std::unique_ptr<DigitalSource> source_;
+  ::std::unique_ptr<::aos::crio::hardware::Counter> counter_;
+  ::std::unique_ptr<::aos::crio::hardware::DigitalSource> source_;
 
   // The most recently read value.
   int32_t value_;
