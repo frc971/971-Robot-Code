@@ -6,13 +6,12 @@ namespace aos {
 namespace crio {
 namespace hardware {
 
-AnalogTriggerOutput::AnalogTriggerOutput(const unique_ptr< ::AnalogTrigger>
-                                             &trigger,
+AnalogTriggerOutput::AnalogTriggerOutput(unique_ptr< ::AnalogTrigger> trigger,
                                          ::AnalogTriggerOutput::Type type,
                                          float lowerVoltage,
                                          float upperVoltage)
-    : output_(trigger->CreateOutput(type)) {
-  trigger->SetLimitsVoltage(lowerVoltage, upperVoltage);
+    : trigger_(::std::move(trigger)), output_(trigger_->CreateOutput(type)) {
+  trigger_->SetLimitsVoltage(lowerVoltage, upperVoltage);
 }
 
 }  // namespace hardware

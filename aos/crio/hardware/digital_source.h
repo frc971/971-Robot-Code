@@ -39,7 +39,9 @@ class AnalogTriggerOutput : public DigitalSource {
   static const float kDefaultUpperVoltage = 4;
 
   // Will set up the voltages on trigger.
-  AnalogTriggerOutput(const ::std::unique_ptr< ::AnalogTrigger> &trigger,
+  // Takes ownership of trigger to make sure it stays around so that the output
+  // it creates won't blow up (because it holds on to and uses it).
+  AnalogTriggerOutput(::std::unique_ptr< ::AnalogTrigger> trigger,
                       ::AnalogTriggerOutput::Type type,
                       float lowerVoltage = kDefaultLowerVoltage,
                       float upperVoltage = kDefaultUpperVoltage);
@@ -50,6 +52,8 @@ class AnalogTriggerOutput : public DigitalSource {
   virtual ::DigitalSource *source() const { return output_.get(); }
 
  private:
+  // Might be NULL.
+  const ::std::unique_ptr< ::AnalogTrigger> trigger_;
   const ::std::unique_ptr< ::AnalogTriggerOutput> output_;
 };
 
