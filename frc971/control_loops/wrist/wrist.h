@@ -27,6 +27,9 @@ class WristMotor
   explicit WristMotor(
       control_loops::WristLoop *my_wrist = &control_loops::wrist);
 
+  // True if the goal was moved to avoid goal windup.
+  bool capped_goal() const { return capped_goal_; }
+
  protected:
   virtual void RunIteration(
       const ::aos::control_loops::Goal *goal,
@@ -95,6 +98,9 @@ class WristMotor
   double wrist_upper_limit_;
   double wrist_hall_effect_start_angle_;
   double wrist_zeroing_speed_;
+
+  // True if the zeroing goal was capped during this cycle.
+  bool capped_goal_;
 
   DISALLOW_COPY_AND_ASSIGN(WristMotor);
 };

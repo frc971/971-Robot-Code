@@ -267,6 +267,7 @@ TEST_F(WristTest, DisableGoesUninitialized) {
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
 TEST_F(WristTest, NoWindupNegative) {
+  int capped_count = 0;
   double saved_zeroing_position = 0;
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 500; ++i) {
@@ -281,12 +282,13 @@ TEST_F(WristTest, NoWindupNegative) {
       EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroing_position_, 0.4);
     }
     if (wrist_motor_.state_ != WristMotor::READY) {
-      if (i == 51) {
+      if (wrist_motor_.capped_goal()) {
+        ++capped_count;
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
-        EXPECT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        ASSERT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
       } else {
-        EXPECT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        ASSERT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
       }
     }
 
@@ -296,11 +298,13 @@ TEST_F(WristTest, NoWindupNegative) {
     SendDSPacket(true);
   }
   VerifyNearGoal();
+  EXPECT_GT(3, capped_count);
 }
 
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
 TEST_F(WristTest, NoWindupPositive) {
+  int capped_count = 0;
   double saved_zeroing_position = 0;
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 500; ++i) {
@@ -317,7 +321,8 @@ TEST_F(WristTest, NoWindupPositive) {
       }
     }
     if (wrist_motor_.state_ != WristMotor::READY) {
-      if (i == 51) {
+      if (wrist_motor_.capped_goal()) {
+        ++capped_count;
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
         EXPECT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
@@ -331,6 +336,7 @@ TEST_F(WristTest, NoWindupPositive) {
     SendDSPacket(true);
   }
   VerifyNearGoal();
+  EXPECT_GT(3, capped_count);
 }
 
 }  // namespace testing

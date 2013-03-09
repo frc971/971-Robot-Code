@@ -21,7 +21,8 @@ WristMotor::WristMotor(control_loops::WristLoop *my_wrist)
       loop_(new WristStateFeedbackLoop(MakeWristLoop(), this)),
       state_(UNINITIALIZED),
       error_count_(0),
-      zero_offset_(0.0) {
+      zero_offset_(0.0),
+      capped_goal_(false) {
 }
 
 bool WristMotor::FetchConstants() {
@@ -196,6 +197,7 @@ void WristMotor::RunIteration(
   // Update the observer.
   loop_->Update(position != NULL, output == NULL);
 
+  capped_goal_ = false;
   // Verify that the zeroing goal hasn't run away.
   switch (state_) {
     case UNINITIALIZED:
@@ -210,10 +212,12 @@ void WristMotor::RunIteration(
         double dx = (loop_->U_uncapped(0, 0) -
                      kMaxZeroingVoltage) / loop_->K(0, 0);
         zeroing_position_ -= dx;
+        capped_goal_ = true;
       } else if(loop_->U_uncapped(0, 0) < -kMaxZeroingVoltage) {
         double dx = (loop_->U_uncapped(0, 0) +
                      kMaxZeroingVoltage) / loop_->K(0, 0);
         zeroing_position_ -= dx;
+        capped_goal_ = true;
       }
       break;
   }
