@@ -10,8 +10,9 @@ AnalogTriggerOutput::AnalogTriggerOutput(unique_ptr< ::AnalogTrigger> trigger,
                                          ::AnalogTriggerOutput::Type type,
                                          float lowerVoltage,
                                          float upperVoltage)
-    : trigger_(::std::move(trigger)), output_(trigger_->CreateOutput(type)) {
-  trigger_->SetLimitsVoltage(lowerVoltage, upperVoltage);
+    : trigger_holder_(::std::move(trigger)),
+      output_(trigger_holder_->CreateOutput(type)) {
+  trigger_holder_->SetLimitsVoltage(lowerVoltage, upperVoltage);
 }
 
 }  // namespace hardware

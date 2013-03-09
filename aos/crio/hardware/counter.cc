@@ -9,6 +9,13 @@ namespace aos {
 namespace crio {
 namespace hardware {
 
+::DigitalSource *Counter::a() {
+  return a_wrapper_->source();
+}
+::DigitalSource *Counter::b() {
+  return b_wrapper_->source();
+}
+
 int Counter::GetDenominator() {
   switch (type_) {
     case ::CounterBase::EncodingType::k1X:
@@ -30,8 +37,8 @@ void Counter::BadEncodingType(::CounterBase::EncodingType type) {
   LOG(FATAL, "bad ::CounterBase::EncodingType %d\n", static_cast<int>(type));
 }
 
-unique_ptr<Counter> Counter::Create(unique_ptr< ::DigitalSource> a,
-                                    unique_ptr< ::DigitalSource> b,
+unique_ptr<Counter> Counter::Create(unique_ptr<DigitalSource> a,
+                                    unique_ptr<DigitalSource> b,
                                     ::CounterBase::EncodingType type) {
   switch (type) {
     case ::CounterBase::EncodingType::k4X:
@@ -46,17 +53,17 @@ unique_ptr<Counter> Counter::Create(unique_ptr< ::DigitalSource> a,
   BadEncodingType(type);
 }
 
-EncoderCounter::EncoderCounter(unique_ptr< ::DigitalSource> a_source,
-                               unique_ptr< ::DigitalSource> b_source)
-    : Counter(::std::move(a_source), ::std::move(b_source),
+EncoderCounter::EncoderCounter(unique_ptr<DigitalSource> a_wrapper,
+                               unique_ptr<DigitalSource> b_wrapper)
+    : Counter(::std::move(a_wrapper), ::std::move(b_wrapper),
               ::CounterBase::EncodingType::k4X),
-      encoder_(new ::Encoder(a().get(), b().get())) {}
+      encoder_(new ::Encoder(a(), b())) {}
 
-CounterCounter::CounterCounter(unique_ptr< ::DigitalSource> a_source,
-                               unique_ptr< ::DigitalSource> b_source,
+CounterCounter::CounterCounter(unique_ptr<DigitalSource> a_wrapper,
+                               unique_ptr<DigitalSource> b_wrapper,
                                ::CounterBase::EncodingType type)
-    : Counter(::std::move(a_source), ::std::move(b_source), type),
-      counter_(new ::Counter(type, a().get(), b().get(), false /*inverted*/)) {
+    : Counter(::std::move(a_wrapper), ::std::move(b_wrapper), type),
+      counter_(new ::Counter(type, a(), b(), false /*inverted*/)) {
   assert(type == ::CounterBase::EncodingType::k1X ||
          type == ::CounterBase::EncodingType::k2X);
 }

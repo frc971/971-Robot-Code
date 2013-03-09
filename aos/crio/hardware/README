@@ -5,5 +5,8 @@ Be careful using the classes that have the same names as WPILib ones! Many of
   qualify the names of these ones (and should do the same for WPILib ones too).
 The wrappers only have the functionality that is missing from whatever WPILib
   class they are wrapping (and can return pointer to). Use that pointer to do
-  everything else. They also ahve the more useful constructors that forward to
-  the WPILib ones.
+  everything else. They also have the more useful constructors that forward to
+  the WPILib ones. Some of them also have smart pointers named *_holder_. These
+  are only there to hold onto objects that WPILib needs held onto separately.
+  Many of them are sometimes left as NULL depending on how the wrapper is
+  created. They really should not be used for anything.

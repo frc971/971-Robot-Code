@@ -52,8 +52,8 @@ class AnalogTriggerOutput : public DigitalSource {
   virtual ::DigitalSource *source() const { return output_.get(); }
 
  private:
-  // Might be NULL.
-  const ::std::unique_ptr< ::AnalogTrigger> trigger_;
+  const ::std::unique_ptr< ::AnalogTrigger> trigger_holder_;
+
   const ::std::unique_ptr< ::AnalogTriggerOutput> output_;
 };
 
