@@ -47,7 +47,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
         'wrist_loop',
         'wrist_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
@@ -61,7 +60,7 @@
         'wrist_main.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/atom_code/atom_code.gyp:init',
         'wrist_lib',
         'wrist_loop',
       ],
