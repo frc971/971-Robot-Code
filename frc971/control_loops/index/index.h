@@ -2,7 +2,7 @@
 #define FRC971_CONTROL_LOOPS_WRIST_H_
 
 #include <deque>
-#include "aos/common/libstdc++/memory"
+#include <memory>
 
 #include "aos/common/control_loop/ControlLoop.h"
 #include "aos/common/time.h"
