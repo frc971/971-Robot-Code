@@ -14,7 +14,7 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 class IndexTest_InvalidStateTest_Test;
-class IndexTest_ShiftedDiscsAreRefound_Test;
+class IndexTest_LostDisc_Test;
 }
 
 class IndexMotor
@@ -63,6 +63,9 @@ class IndexMotor
 
   static const double kTopDiscDetectStart;
   static const double kTopDiscDetectStop;
+
+  // Minimum distance between 2 frisbees as seen by the top disc detect sensor.
+  static const double kTopDiscDetectMinSeperation;
 
   // Converts the angle of the indexer to the angle of the disc.
   static double ConvertIndexToDiscAngle(const double angle);
@@ -160,6 +163,7 @@ class IndexMotor
     double index_start_position_;
   };
 
+  // Returns where the indexer thinks the frisbees are.
   const ::std::deque<Frisbee> &frisbees() const { return frisbees_; }
 
  protected:
@@ -171,7 +175,7 @@ class IndexMotor
 
  private:
   friend class testing::IndexTest_InvalidStateTest_Test;
-  friend class testing::IndexTest_ShiftedDiscsAreRefound_Test;
+  friend class testing::IndexTest_LostDisc_Test;
 
   // This class implements the CapU function correctly given all the extra
   // information that we know about from the wrist motor.
@@ -206,8 +210,8 @@ class IndexMotor
   ::std::unique_ptr<IndexStateFeedbackLoop> wrist_loop_;
 
   // Count of the number of discs that we have collected.
-  uint32_t hopper_disc_count_;
-  uint32_t total_disc_count_;
+  int32_t hopper_disc_count_;
+  int32_t total_disc_count_;
 
   enum class Goal {
     // Hold position, in a low power state.
@@ -281,15 +285,26 @@ class IndexMotor
   int32_t last_bottom_disc_negedge_count_;
   int32_t last_bottom_disc_negedge_wait_count_;
   int32_t last_top_disc_posedge_count_;
+  int32_t last_top_disc_negedge_count_;
 
   // Frisbees are in order such that the newest frisbee is on the front.
   ::std::deque<Frisbee> frisbees_;
-  // std::array ?
 
   // True if we haven't seen a position before.
   bool no_prior_position_;
   // Number of position messages that we have missed in a row.
   uint32_t missing_position_count_;
+
+  // Upper position that is known to be open on the indexer because we saw it
+  // open.
+  double upper_open_index_position_;
+  // True if the upper position was set by a negedge and can be truly trusted.
+  bool upper_open_index_position_was_negedge_;
+  // Lower position that is known to be open on the indexer because we saw it
+  // open.
+  double lower_open_index_position_;
+  // True if the lower position was set by a negedge and can be truly trusted.
+  bool lower_open_index_position_was_negedge_;
 
   DISALLOW_COPY_AND_ASSIGN(IndexMotor);
 };

@@ -443,10 +443,14 @@ class IndexMotorSimulation {
                        ".frc971.control_loops.index.status") {
   }
 
-  // Starts a disc at the start of the index.
-  void InsertDisc() {
-    frisbees.push_back(Frisbee(transfer_roller_position(),
-                               index_roller_position()));
+  // Starts a disc offset from the start of the index.
+  void InsertDisc(double offset = IndexMotor::kBottomDiscDetectStart - 0.001) {
+    Frisbee new_frisbee(transfer_roller_position(),
+                        index_roller_position(),
+                        offset);
+    ASSERT_FALSE(new_frisbee.bottom_disc_detect());
+    ASSERT_FALSE(new_frisbee.top_disc_detect());
+    frisbees.push_back(new_frisbee);
   }
 
   // Returns true if the bottom disc sensor is triggered.
@@ -906,7 +910,7 @@ TEST_F(IndexTest, ReadyGrabsOneDisc) {
   }
 
   my_index_loop_.status.FetchLatest();
-  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 2);
   EXPECT_EQ(my_index_loop_.status->total_disc_count, 2);
   my_index_loop_.output.FetchLatest();
   EXPECT_TRUE(my_index_loop_.output->disc_clamped);
@@ -1038,7 +1042,7 @@ TEST_F(IndexTest, PreloadToIndexEarlyTransition) {
   SimulateNCycles(100);
 
   my_index_loop_.status.FetchLatest();
-  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 2);
   EXPECT_EQ(my_index_loop_.status->total_disc_count, 2);
   my_index_loop_.output.FetchLatest();
   EXPECT_TRUE(my_index_loop_.output->disc_clamped);
@@ -1185,11 +1189,71 @@ TEST_F(IndexTest, ShiftedDownDiscsAreRefoundOtherSeperation) {
   TestDualLostDiscs(-0.10, -0.15);
 }
 
-// TODO(aschuh): Test that we find discs corectly when moving them up.
+// Verifies that the indexer is ready to intake imediately after loading.
+TEST_F(IndexTest, IntakingAfterLoading) {
+  LoadNDiscs(1);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(200);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  SimulateNCycles(10);
+  my_index_loop_.output.FetchLatest();
+  EXPECT_EQ(12.0, my_index_loop_.output->transfer_voltage);
+  my_index_loop_.status.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+}
 
-// TODO(aschuh): Exercise the disc coming down from above code and verify it.
-// If possible.
+// Verifies that the indexer is ready to intake imediately after loading.
+TEST_F(IndexTest, CanShootOneDiscAfterReady) {
+  LoadNDiscs(1);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(200);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+  SimulateNCycles(100);
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(1, my_index_loop_.status->total_disc_count);
+  EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
+}
 
+// Verifies that the indexer is ready to intake imediately after loading.
+TEST_F(IndexTest, GotExtraDisc) {
+  LoadNDiscs(1);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(200);
+
+  double index_roller_position = index_motor_plant_.index_roller_position();
+  index_motor_plant_.InsertDisc(IndexMotor::kTopDiscDetectStart - 0.1);
+  index_motor_plant_.InsertDisc(IndexMotor::kTopDiscDetectStart - 0.6);
+  SimulateNCycles(100);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+  SimulateNCycles(300);
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(3, my_index_loop_.status->total_disc_count);
+  EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
+  EXPECT_LT(IndexMotor::ConvertDiscAngleToIndex(4 * M_PI),
+            index_motor_plant_.index_roller_position() - index_roller_position);
+}
+
+// Verifies that the indexer is ready to intake imediately after loading.
+TEST_F(IndexTest, LostDisc) {
+  LoadNDiscs(3);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(200);
+
+  index_motor_plant_.frisbees.erase(
+      index_motor_plant_.frisbees.begin() + 1);
+
+  double index_roller_position = index_motor_plant_.index_roller_position();
+  my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+  SimulateNCycles(300);
+
+  my_index_loop_.status.FetchLatest();
+  EXPECT_EQ(2, my_index_loop_.status->total_disc_count);
+  EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
+  EXPECT_LT(IndexMotor::ConvertDiscAngleToIndex(4 * M_PI),
+            index_motor_plant_.index_roller_position() - index_roller_position);
+  EXPECT_EQ(0u, index_motor_.frisbees_.size());
+}
 
 }  // namespace testing
 }  // namespace control_loops

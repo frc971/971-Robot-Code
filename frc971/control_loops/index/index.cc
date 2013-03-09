@@ -79,7 +79,11 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       last_bottom_disc_detect_(false),
       last_top_disc_detect_(false),
       no_prior_position_(true),
-      missing_position_count_(0) {
+      missing_position_count_(0),
+      upper_open_index_position_(0.0),
+      upper_open_index_position_was_negedge_(false),
+      lower_open_index_position_(0.0),
+      lower_open_index_position_was_negedge_(false) {
 }
 
 /*static*/ const double IndexMotor::kTransferStartPosition = 0.0;
@@ -106,14 +110,20 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.200025;
 /*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.01;
 
-// TODO(aschuh): Figure these out.
+// TODO(aschuh): Verify these with the sensor actually on.
 /*static*/ const double IndexMotor::kTopDiscDetectStart =
     (IndexMotor::kLoaderFreeStopPosition -
-     IndexMotor::ConvertDiscAngleToDiscPosition(60 * M_PI / 180));
-// This is a guess for the width of the disc radially.  It should be close to 11
-// inches but a bit below.
+     IndexMotor::ConvertDiscAngleToDiscPosition(49 * M_PI / 180));
 /*static*/ const double IndexMotor::kTopDiscDetectStop =
-    IndexMotor::kTopDiscDetectStart + 10 * 0.0254;
+    (IndexMotor::kLoaderFreeStopPosition +
+     IndexMotor::ConvertDiscAngleToDiscPosition(19 * M_PI / 180));
+
+// I measured the angle between 2 discs.  That then gives me the distance
+// between 2 posedges (or negedges).  Then subtract off the width of the
+// positive pulse, and that gives the width of the negative pulse.
+/*static*/ const double IndexMotor::kTopDiscDetectMinSeperation =
+    (IndexMotor::ConvertDiscAngleToDiscPosition(120 * M_PI / 180) -
+     (IndexMotor::kTopDiscDetectStop - IndexMotor::kTopDiscDetectStart));
 
 const /*static*/ double IndexMotor::kDiscRadius = 10.875 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
@@ -282,6 +292,12 @@ void IndexMotor::RunIteration(
       last_bottom_disc_negedge_wait_count_ =
           position->bottom_disc_negedge_wait_count;
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
+      last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+      // The open positions for the upper is right here and isn't a hard edge.
+      upper_open_index_position_ = wrist_loop_->Y(0, 0);
+      upper_open_index_position_was_negedge_ = false;
+      lower_open_index_position_ = wrist_loop_->Y(0, 0);
+      lower_open_index_position_was_negedge_ = false;
     }
 
     // If the cRIO is gone for over 1/2 of a second, assume that it rebooted.
@@ -291,6 +307,12 @@ void IndexMotor::RunIteration(
       last_bottom_disc_negedge_wait_count_ =
           position->bottom_disc_negedge_wait_count;
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
+      last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+      // We can't really trust the open range any more if the crio rebooted.
+      upper_open_index_position_ = wrist_loop_->Y(0, 0);
+      upper_open_index_position_was_negedge_ = false;
+      lower_open_index_position_ = wrist_loop_->Y(0, 0);
+      lower_open_index_position_was_negedge_ = false;
       // Adjust the disc positions so that they don't have to move.
       const double disc_offset =
           position->index_position - wrist_loop_->X_hat(0, 0);
@@ -306,6 +328,31 @@ void IndexMotor::RunIteration(
   const double index_position = wrist_loop_->X_hat(0, 0);
 
   if (position) {
+    // Reset the open region if we saw a negedge.
+    if (position->top_disc_negedge_count != last_top_disc_negedge_count_) {
+      // Saw a negedge, must be a new region.
+      upper_open_index_position_ = position->top_disc_negedge_position;
+      lower_open_index_position_ = position->top_disc_negedge_position;
+      upper_open_index_position_was_negedge_ = true;
+      lower_open_index_position_was_negedge_ = true;
+    }
+
+    // No disc.  Expand the open region.
+    if (!position->top_disc_detect) {
+      // If it is higher than it was before, the end of the region is no longer
+      // determined by the negedge.
+      if (index_position > upper_open_index_position_) {
+        upper_open_index_position_ = index_position;
+        upper_open_index_position_was_negedge_ = false;
+      }
+      // If it is lower than it was before, the end of the region is no longer
+      // determined by the negedge.
+      if (index_position < lower_open_index_position_) {
+        lower_open_index_position_ = index_position;
+        lower_open_index_position_was_negedge_ = false;
+      }
+    }
+
     if (!position->top_disc_detect) {
       // We don't see a disc.  Verify that there are no discs that we should be
       // seeing.
@@ -329,12 +376,51 @@ void IndexMotor::RunIteration(
       // Requires storing when the disc was last seen with the sensor off, and
       // figuring out what to do if things go south.
 
-      // Find a disc that we should be seeing.  There are 3 cases...
-      // 1) The top most disc is going up by the sensor.
-      // 2) There is 1 disc almost in the loader, and past the sensor.
-      //    This is the next disc.
-      // 3) The top most disc is coming back down and we are seeing it.
+      // 1 if discs are going up, 0 if we have no clue, and -1 if they are going
+      // down.
+      int disc_direction = 0;
       if (wrist_loop_->X_hat(1, 0) > 50.0) {
+        disc_direction = 1;
+      } else if (wrist_loop_->X_hat(1, 0) < -50.0) {
+        disc_direction = -1;
+      } else {
+        // Save the upper and lower positions that we last saw a disc at.
+        // If there is a big buffer above, must be a disc from below.
+        // If there is a big buffer below, must be a disc from above.
+        // This should work to replace the velocity threshold above.
+
+        const double open_width =
+            upper_open_index_position_ - lower_open_index_position_;
+        const double relative_upper_open_precentage =
+            (upper_open_index_position_ - index_position) / open_width;
+        const double relative_lower_open_precentage =
+            (index_position - lower_open_index_position_) / open_width;
+        printf("Width %f upper %f lower %f\n",
+               open_width, relative_upper_open_precentage,
+               relative_lower_open_precentage);
+
+        if (ConvertIndexToDiscPosition(open_width) <
+            kTopDiscDetectMinSeperation * 0.9) {
+          LOG(ERROR, "Discs are way too close to each other.  Doing nothing\n");
+        } else if (relative_upper_open_precentage > 0.75) {
+          // Looks like it is a disc going down from above since we are near
+          // the upper edge.
+          disc_direction = -1;
+          printf("Disc edge going down\n");
+        } else if (relative_lower_open_precentage > 0.75) {
+          // Looks like it is a disc going up from below since we are near
+          // the lower edge.
+          disc_direction = 1;
+          printf("Disc edge going up\n");
+        } else {
+          LOG(ERROR,
+              "Got an edge in the middle of what should be an open region.\n");
+          LOG(ERROR, "Open width: %f upper precentage %f %%\n",
+              open_width, relative_upper_open_precentage);
+        }
+      }
+
+      if (disc_direction > 0) {
         // Moving up at a reasonable clip.
         // Find the highest disc that is below the top disc sensor.
         // While we are at it, count the number above and log an error if there
@@ -345,6 +431,8 @@ void IndexMotor::RunIteration(
           new_frisbee.index_start_position_ = index_position -
               ConvertDiscPositionToIndex(kTopDiscDetectStart -
                                          kIndexStartPosition);
+          ++hopper_disc_count_;
+          ++total_disc_count_;
           frisbees_.push_front(new_frisbee);
           LOG(WARNING, "Added a disc to the hopper at the top sensor\n");
         }
@@ -383,11 +471,11 @@ void IndexMotor::RunIteration(
           }
         }
         printf("Currently have %d discs, saw posedge moving up.  "
-            "Moving down by %f to %f\n", frisbees_.size(), 
+            "Moving down by %f to %f\n", frisbees_.size(),
             ConvertIndexToDiscPosition(disc_delta),
             highest_frisbee_below_sensor->absolute_position(
                 wrist_loop_->X_hat(0, 0)));
-      } else if (wrist_loop_->X_hat(1, 0) < -50.0) {
+      } else if (disc_direction < 0) {
         // Moving down at a reasonable clip.
         // There can only be 1 disc up top that would give us a posedge.
         // Find it and place it at the one spot that it can be.
@@ -412,12 +500,7 @@ void IndexMotor::RunIteration(
           }
         }
       } else {
-        // Save the upper and lower positions that we last saw a disc at.
-        // If there is a big buffer above, must be a disc from below.
-        // If there is a big buffer below, must be a disc from above.
-        // This should work to replace the velocity threshold above.
-        // TODO(aschuh): Do something!
-        // 
+        LOG(ERROR, "Not sure how to handle the upper posedge, doing nothing\n");
       }
     }
   }
@@ -537,11 +620,14 @@ void IndexMotor::RunIteration(
             // No discs!  We are always ready for more if we aren't being
             // asked to change state.
             status->ready_to_intake = (safe_goal_ == goal_enum);
+            printf("Ready to intake, zero discs. %d %d %d\n",
+            status->ready_to_intake, hopper_disc_count_, safe_goal_);
           }
 
           // Turn on the transfer roller if we are ready.
           if (status->ready_to_intake && hopper_disc_count_ < 4 &&
               safe_goal_ == Goal::INTAKE) {
+            printf("Go\n");
             intake_voltage = transfer_voltage = 12.0;
           }
         }
@@ -570,6 +656,7 @@ void IndexMotor::RunIteration(
           // We already have a disc in the loader.
           // Stage the discs back a bit.
           wrist_loop_->R << ready_disc_position, 0.0;
+          printf("Loader not ready but asked to shoot\n");
 
           // Shoot if we are grabbed and being asked to shoot.
           if (loader_state_ == LoaderState::GRABBED &&
@@ -603,8 +690,62 @@ void IndexMotor::RunIteration(
               }
               // This frisbee is now gone.  Take it out of the queue.
               frisbees_.pop_back();
-              --hopper_disc_count_;
             }
+          }
+        }
+      } else {
+        if (loader_state_ != LoaderState::READY) {
+          // Shoot if we are grabbed and being asked to shoot.
+          if (loader_state_ == LoaderState::GRABBED &&
+              safe_goal_ == Goal::SHOOT) {
+            loader_goal_ = LoaderGoal::SHOOT_AND_RESET;
+          }
+        } else {
+          // Ok, no discs in sight.  Spin the hopper up by 150% of it's full
+          // range and verify that we don't see anything.
+          printf("Moving the indexer to verify that it is clear\n");
+          const double hopper_clear_verification_position =
+              lower_open_index_position_ +
+              ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
+
+          wrist_loop_->R << hopper_clear_verification_position, 0.0;
+          if (::std::abs(wrist_loop_->X_hat(0, 0) -
+                         hopper_clear_verification_position) <
+              ConvertDiscPositionToIndex(0.05)) {
+            printf("Should be empty\n");
+            // We are at the end of the range.  There are no more discs here.
+            while (frisbees_.size() > 0) {
+              LOG(ERROR, "Dropping an extra disc since it can't exist\n");
+              frisbees_.pop_back();
+              --hopper_disc_count_;
+              --total_disc_count_;
+            }
+            if (hopper_disc_count_ != 0) {
+              LOG(ERROR,
+                  "Emptied the hopper out but there are still discs there\n");
+            }
+          }
+        }
+      }
+
+      {
+        const double hopper_clear_verification_position =
+            lower_open_index_position_ +
+            ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
+
+        if (wrist_loop_->X_hat(0, 0) >
+            hopper_clear_verification_position +
+            ConvertDiscPositionToIndex(0.05)) {
+          // We are at the end of the range.  There are no more discs here.
+          while (frisbees_.size() > 0) {
+            LOG(ERROR, "Dropping an extra disc since it can't exist\n");
+            frisbees_.pop_back();
+            --hopper_disc_count_;
+            --total_disc_count_;
+          }
+          if (hopper_disc_count_ != 0) {
+            LOG(ERROR,
+                "Emptied the hopper out but there are still discs there\n");
           }
         }
       }
@@ -706,6 +847,7 @@ void IndexMotor::RunIteration(
       disc_ejected_ = true;
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
+      --hopper_disc_count_;
     case LoaderState::LOWERING:
       printf("Loader LOWERING %d\n", loader_countdown_);
       // Lowering the loader back down.
@@ -743,6 +885,7 @@ void IndexMotor::RunIteration(
     last_bottom_disc_negedge_wait_count_ =
         position->bottom_disc_negedge_wait_count;
     last_top_disc_posedge_count_ = position->top_disc_posedge_count;
+    last_top_disc_negedge_count_ = position->top_disc_negedge_count;
   }
 
   status->hopper_disc_count = hopper_disc_count_;
@@ -760,6 +903,9 @@ void IndexMotor::RunIteration(
 
   if (safe_to_change_state_) {
     safe_goal_ = goal_enum;
+  }
+  if (hopper_disc_count_ < 0) {
+    LOG(ERROR, "NEGATIVE DISCS.  VERY VERY BAD\n");
   }
 }
 
