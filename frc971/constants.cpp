@@ -1,11 +1,15 @@
 #include "frc971/constants.h"
 
 #include <stddef.h>
-#include <inttypes.h>
 #include <math.h>
 
+#include "aos/common/inttypes.h"
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/atom_code/output/MotorOutput.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace frc971 {
 namespace constants {

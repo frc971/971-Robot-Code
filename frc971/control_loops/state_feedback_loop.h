@@ -3,6 +3,9 @@
 
 // wikipedia article is <http://en.wikipedia.org/wiki/State_observer>
 
+// Stupid vxworks system headers define it which blows up Eigen...
+#undef m_data
+
 #include "Eigen/Dense"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
