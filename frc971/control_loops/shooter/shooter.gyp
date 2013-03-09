@@ -74,7 +74,7 @@
         'shooter_main.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/atom_code/atom_code.gyp:init',
         'shooter_lib',
         'shooter_loop',
       ],
