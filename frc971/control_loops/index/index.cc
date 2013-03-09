@@ -9,6 +9,7 @@
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/inttypes.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/index/index_motor_plant.h"
@@ -262,7 +263,7 @@ void IndexMotor::RunIteration(
   // Make goal easy to work with and sanity check it.
   Goal goal_enum = static_cast<Goal>(goal->goal_state);
   if (goal->goal_state < 0 || goal->goal_state > 4) {
-    LOG(ERROR, "Goal state is %d which is out of range.  Going to HOLD.\n",
+    LOG(ERROR, "Goal state is %"PRId32" which is out of range.  Going to HOLD.\n",
         goal->goal_state);
     goal_enum = Goal::HOLD;
   }
@@ -479,7 +480,7 @@ void IndexMotor::RunIteration(
         // Moving down at a reasonable clip.
         // There can only be 1 disc up top that would give us a posedge.
         // Find it and place it at the one spot that it can be.
-        double min_disc_position;
+        double min_disc_position = 0;
         Frisbee *min_frisbee = NULL;
         MinDiscPosition(&min_disc_position, &min_frisbee);
         if (!min_frisbee) {
@@ -586,7 +587,7 @@ void IndexMotor::RunIteration(
 
           // Figure out where the indexer should be to move the discs down to
           // the right position.
-          double max_disc_position;
+          double max_disc_position = 0;
           if (MaxDiscPosition(&max_disc_position, NULL)) {
             printf("There is a disc down here!\n");
             // TODO(aschuh): Figure out what to do if grabbing the next one
@@ -637,7 +638,7 @@ void IndexMotor::RunIteration(
     case Goal::READY_SHOOTER:
     case Goal::SHOOT:
       // Check if we have any discs to shoot or load and handle them.
-      double min_disc_position;
+      double min_disc_position = 0;
       if (MinDiscPosition(&min_disc_position, NULL)) {
         const double ready_disc_position = min_disc_position +
             ConvertDiscPositionToIndex(kReadyToPreload - kIndexStartPosition);
