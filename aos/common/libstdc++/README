@@ -1,0 +1,3 @@
+This directory contains replacement include files for ones that the libstdc++ we're using on the cRIO either don't implement completely or doesn't have at all.
+The ones in aos/crio/libstdc++ are copied from the libstdc++ that came with the compiler and tweaked so that they work.
+When used for compiles not for vxworks, they just #include the usual standard library header.

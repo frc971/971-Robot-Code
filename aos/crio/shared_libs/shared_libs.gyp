@@ -21,5 +21,24 @@
         '<(EXTERNALS):WPILib',
       ],
     },
+    {
+      'target_name': 'limit_encoder_reader',
+      'type': 'static_library',
+      'sources': [
+        'limit_encoder_reader.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/crio/hardware/hardware.gyp:counter',
+        '<(AOS)/crio/hardware/hardware.gyp:digital_source',
+        '<(AOS)/common/common.gyp:mutex',
+        'interrupt_notifier',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/crio/hardware/hardware.gyp:counter',
+        '<(AOS)/crio/hardware/hardware.gyp:digital_source',
+        '<(AOS)/common/common.gyp:mutex',
+        'interrupt_notifier',
+      ],
+    },
   ],
 }

@@ -1,0 +1,4 @@
+#include <memory>
+#ifdef __VXWORKS__
+#include "aos/crio/libstdc++/unique_ptr.h"
+#endif
