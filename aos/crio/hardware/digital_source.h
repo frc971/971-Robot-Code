@@ -35,7 +35,7 @@ class AnalogTriggerOutput : public DigitalSource {
  public:
   // Defaults for the voltages for AnalogTriggers. They work well for digital
   // sensors connected to analog inputs.
-  static const float kDefaultLowerVoltage = 1;
+  static const float kDefaultLowerVoltage = 1.35;
   static const float kDefaultUpperVoltage = 4;
 
   // Will set up the voltages on trigger.
