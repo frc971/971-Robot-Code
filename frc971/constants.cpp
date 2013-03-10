@@ -11,6 +11,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// Note: So far, none of the Angle Adjust numbers have been measured.
+// Do not rely on them for real life.
+
 namespace frc971 {
 namespace constants {
 
@@ -36,6 +39,28 @@ const double kCompWristLowerLimit = -36 * M_PI / 180.0;
 
 const double kWristZeroingSpeed = 1.0;
 
+const int kAngleAdjustHallEffect = 2;
+
+const double kCompAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
+const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
+
+const double kCompAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
+const double kPracticeAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
+
+const double kPracticeAngleAdjustUpperPhysicalLimit = 3.0;
+const double kCompAngleAdjustUpperPhysicalLimit = 3.0;
+
+const double kPracticeAngleAdjustLowerPhysicalLimit = 0.0;
+const double kCompAngleAdjustLowerPhysicalLimit = 0.0;
+
+const double kPracticeAngleAdjustUpperLimit = 3.0;
+const double kCompAngleAdjustUpperLimit = 3.0;
+
+const double kPracticeAngleAdjustLowerLimit = 0.0;
+const double kCompAngleAdjustLowerLimit = 0.0;
+
+const double kAngleAdjustZeroingSpeed = -1.0;
+
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
@@ -54,6 +79,20 @@ struct Values {
 
   // Zeroing speed.
   double wrist_zeroing_speed;
+
+  // AngleAdjust hall effect positive and negative edges.
+  const double *angle_adjust_hall_effect_start_angle;
+  const double *angle_adjust_hall_effect_stop_angle;
+
+  // Upper and lower extreme limits of travel for the angle adjust.
+  double angle_adjust_upper_limit;
+  double angle_adjust_lower_limit;
+  // Physical limits.  These are here for testing.
+  double angle_adjust_upper_physical_limit;
+  double angle_adjust_lower_physical_limit;
+
+  // Zeroing speed.
+  double angle_adjust_zeroing_speed;
 
   // what camera_center returns
   int camera_center;
@@ -77,6 +116,13 @@ const Values *GetValues() {
                             kCompWristUpperPhysicalLimit,
                             kCompWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kCompAngleAdjustHallEffectStartAngle,
+                            kCompAngleAdjustHallEffectStopAngle,
+                            kCompAngleAdjustUpperLimit,
+                            kCompAngleAdjustLowerLimit,
+                            kCompAngleAdjustUpperPhysicalLimit,
+                            kCompAngleAdjustLowerPhysicalLimit,
+                            kAngleAdjustZeroingSpeed,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
@@ -87,6 +133,13 @@ const Values *GetValues() {
                             kPracticeWristUpperPhysicalLimit,
                             kPracticeWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kPracticeAngleAdjustHallEffectStartAngle,
+                            kPracticeAngleAdjustHallEffectStopAngle,
+                            kPracticeAngleAdjustUpperLimit,
+                            kPracticeAngleAdjustLowerLimit,
+                            kPracticeAngleAdjustUpperPhysicalLimit,
+                            kPracticeAngleAdjustLowerPhysicalLimit,
+                            kAngleAdjustZeroingSpeed,
                             kPracticeCameraCenter};
         break;
       default:
@@ -144,6 +197,55 @@ bool wrist_zeroing_speed(double *speed) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *speed = values->wrist_zeroing_speed;
+  return true;
+}
+
+bool angle_adjust_hall_effect_start_angle(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  angle[0] = values->angle_adjust_hall_effect_start_angle[0];
+  angle[1] = values->angle_adjust_hall_effect_start_angle[1];
+  return true;
+}
+bool angle_adjust_hall_effect_stop_angle(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  angle[0] = values->angle_adjust_hall_effect_stop_angle[0];
+  angle[1] = values->angle_adjust_hall_effect_stop_angle[1];
+  return true;
+}
+bool angle_adjust_upper_limit(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *angle = values->angle_adjust_upper_limit;
+  return true;
+}
+
+bool angle_adjust_lower_limit(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *angle = values->angle_adjust_lower_limit;
+  return true;
+}
+
+bool angle_adjust_upper_physical_limit(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *angle = values->angle_adjust_upper_physical_limit;
+  return true;
+}
+
+bool angle_adjust_lower_physical_limit(double *angle) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *angle = values->angle_adjust_lower_physical_limit;
+  return true;
+}
+
+bool angle_adjust_zeroing_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->angle_adjust_zeroing_speed;
   return true;
 }
 

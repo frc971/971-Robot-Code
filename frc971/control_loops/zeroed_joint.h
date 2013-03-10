@@ -1,0 +1,363 @@
+#ifndef FRC971_CONTROL_LOOPS_ZEROED_JOINT_H_
+#define FRC971_CONTROL_LOOPS_ZEROED_JOINT_H_
+
+#include <memory>
+
+#include "aos/common/control_loop/ControlLoop.h"
+#include "frc971/control_loops/state_feedback_loop.h"
+
+namespace frc971 {
+namespace control_loops {
+namespace testing {
+class WristTest_NoWindupPositive_Test;
+class WristTest_NoWindupNegative_Test;
+};
+
+template<int kNumZeroSensors>
+class ZeroedJoint;
+
+// This class implements the CapU function correctly given all the extra
+// information that we know about from the wrist motor.
+template<int kNumZeroSensors>
+class ZeroedStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
+ public:
+  ZeroedStateFeedbackLoop(StateFeedbackLoop<2, 1, 1> loop,
+                          ZeroedJoint<kNumZeroSensors> *zeroed_joint)
+      : StateFeedbackLoop<2, 1, 1>(loop),
+        zeroed_joint_(zeroed_joint) {
+  }
+
+  // Caps U, but this time respects the state of the wrist as well.
+  virtual void CapU();
+ private:
+  ZeroedJoint<kNumZeroSensors> *zeroed_joint_;
+};
+
+template<int kNumZeroSensors>
+void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
+  if (zeroed_joint_->state_ == ZeroedJoint<kNumZeroSensors>::READY) {
+    if (Y(0, 0) >= zeroed_joint_->config_data_.upper_limit) {
+      U(0, 0) = std::min(0.0, U(0, 0));
+    }
+    if (Y(0, 0) <= zeroed_joint_->config_data_.lower_limit) {
+      U(0, 0) = std::max(0.0, U(0, 0));
+    }
+  }
+
+  const bool is_ready =
+      zeroed_joint_->state_ == ZeroedJoint<kNumZeroSensors>::READY;
+  double limit = is_ready ?
+      12.0 : zeroed_joint_->config_data_.max_zeroing_voltage;
+
+  U(0, 0) = std::min(limit, U(0, 0));
+  U(0, 0) = std::max(-limit, U(0, 0));
+}
+
+
+// Class to zero and control a joint with any number of zeroing sensors with a
+// state feedback controller.
+template<int kNumZeroSensors>
+class ZeroedJoint {
+ public:
+  // Sturcture to hold the hardware configuration information.
+  struct ConfigurationData {
+    // Angle at the lower hardware limit.
+    double lower_limit;
+    // Angle at the upper hardware limit.
+    double upper_limit;
+    // Speed (and direction) to move while zeroing.
+    double zeroing_speed;
+    // Maximum voltage to apply when zeroing.
+    double max_zeroing_voltage;
+    // Angles where we see a positive edge from the hall effect sensors.
+    double hall_effect_start_angle[kNumZeroSensors];
+  };
+
+  // Current position data for the encoder and hall effect information.
+  struct PositionData {
+    // Current encoder position.
+    double position;
+    // Array of hall effect values.
+    bool hall_effects[kNumZeroSensors];
+    // Array of the last positive edge position for the sensors.
+    double hall_effect_positions[kNumZeroSensors];
+  };
+
+  ZeroedJoint(StateFeedbackLoop<2, 1, 1> loop)
+      : loop_(new ZeroedStateFeedbackLoop<kNumZeroSensors>(loop, this)),
+        state_(UNINITIALIZED),
+        error_count_(0),
+        zero_offset_(0.0),
+        capped_goal_(false) {
+  }
+
+  // Copies the provided configuration data locally.
+  void set_config_data(const ConfigurationData &config_data) {
+    config_data_ = config_data;
+  }
+
+  // Clips the goal to be inside the limits and returns the clipped goal.
+  // Requires the constants to have already been fetched.
+  double ClipGoal(double goal) const {
+    return ::std::min(config_data_.upper_limit,
+                      std::max(config_data_.lower_limit, goal));
+  }
+
+  // Updates the loop and state machine.
+  // position is null if the position data is stale, output_enabled is true if
+  // the output will actually go to the motors, and goal_angle and goal_velocity
+  // are the goal position and velocities.
+  double Update(const ZeroedJoint<kNumZeroSensors>::PositionData *position,
+                bool output_enabled,
+                double goal_angle, double goal_velocity);
+
+  // True if the code is zeroing.
+  bool is_zeroing() const { return state_ == ZEROING; }
+
+  // True if the code is moving off the hall effect.
+  bool is_moving_off() const { return state_ == MOVING_OFF; }
+
+  // True if the state machine is uninitialized.
+  bool is_uninitialized() const { return state_ == UNINITIALIZED; }
+
+  // True if the state machine is ready.
+  bool is_ready() const { return state_ == READY; }
+
+  // Returns the uncapped voltage.
+  double U_uncapped() const { return loop_->U_uncapped(0, 0); }
+
+  // True if the goal was moved to avoid goal windup.
+  bool capped_goal() const { return capped_goal_; }
+
+  // Timestamp
+  static const double dt;
+
+ private:
+  friend class ZeroedStateFeedbackLoop<kNumZeroSensors>;
+  // Friend the wrist test cases so that they can simulate windeup.
+  friend class testing::WristTest_NoWindupPositive_Test;
+  friend class testing::WristTest_NoWindupNegative_Test;
+
+  // The state feedback control loop to talk to.
+  ::std::unique_ptr<ZeroedStateFeedbackLoop<kNumZeroSensors>> loop_;
+
+  ConfigurationData config_data_;
+
+  // Returns the index of the first active sensor, or -1 if none are active.
+  int ActiveSensorIndex(
+      const ZeroedJoint<kNumZeroSensors>::PositionData *position) {
+    if (!position) {
+      return -1;
+    }
+    int active_index = -1;
+    for (int i = 0; i < kNumZeroSensors; ++i) {
+      if (position->hall_effects[i]) {
+        if (active_index != -1) {
+          LOG(ERROR, "More than one hall effect sensor is active\n");
+        } else {
+          active_index = i;
+        }
+      }
+    }
+    return active_index;
+  }
+  // Returns true if any of the sensors are active.
+  bool AnySensorsActive(
+      const ZeroedJoint<kNumZeroSensors>::PositionData *position) {
+    return ActiveSensorIndex(position) != -1;
+  }
+
+  // Enum to store the state of the internal zeroing state machine.
+  enum State {
+    UNINITIALIZED,
+    MOVING_OFF,
+    ZEROING,
+    READY,
+    ESTOP
+  };
+
+  // Internal state for zeroing.
+  State state_;
+
+  // Missed position packet count.
+  int error_count_;
+  // Offset from the raw encoder value to the absolute angle.
+  double zero_offset_;
+  // Position that gets incremented when zeroing the wrist to slowly move it to
+  // the hall effect sensor.
+  double zeroing_position_;
+  // Last position at which the hall effect sensor was off.
+  double last_off_position_;
+
+  // True if the zeroing goal was capped during this cycle.
+  bool capped_goal_;
+
+  // Returns true if number is between first and second inclusive.
+  bool is_between(double first, double second, double number) {
+    if ((number >= first || number >= second) &&
+        (number <= first || number <= second)) {
+      return true;
+    }
+    return false;
+  }
+
+  DISALLOW_COPY_AND_ASSIGN(ZeroedJoint);
+};
+
+template <int kNumZeroSensors>
+/*static*/ const double ZeroedJoint<kNumZeroSensors>::dt = 0.01;
+
+// Updates the zeroed joint controller and state machine.
+template <int kNumZeroSensors>
+double ZeroedJoint<kNumZeroSensors>::Update(
+    const ZeroedJoint<kNumZeroSensors>::PositionData *position,
+    bool output_enabled,
+    double goal_angle, double goal_velocity) {
+  // Uninitialize the bot if too many cycles pass without an encoder.
+  if (position == NULL) {
+    LOG(WARNING, "no new pos given\n");
+    error_count_++;
+  } else {
+    error_count_ = 0;
+  }
+  if (error_count_ >= 4) {
+    LOG(WARNING, "err_count is %d so forcing a re-zero\n", error_count_);
+    state_ = UNINITIALIZED;
+  }
+
+  // Compute the absolute position of the wrist.
+  double absolute_position;
+  if (position) {
+    absolute_position = position->position;
+    if (state_ == READY) {
+      absolute_position -= zero_offset_;
+    }
+    loop_->Y << absolute_position;
+    if (!AnySensorsActive(position)) {
+      last_off_position_ = position->position;
+    }
+  } else {
+    // Dead recon for now.
+    absolute_position = loop_->X_hat(0, 0);
+  }
+
+  switch (state_) {
+    case UNINITIALIZED:
+      if (position) {
+        // Reset the zeroing goal.
+        zeroing_position_ = absolute_position;
+        // Clear the observer state.
+        loop_->X_hat << absolute_position, 0.0;
+        // Set the goal to here to make it so it doesn't move when disabled.
+        loop_->R = loop_->X_hat;
+        // Only progress if we are enabled.
+        if (::aos::robot_state->enabled) {
+          if (AnySensorsActive(position)) {
+            state_ = MOVING_OFF;
+          } else {
+            state_ = ZEROING;
+          }
+        }
+      }
+      break;
+    case MOVING_OFF:
+      {
+        // Move off the hall effect sensor.
+        if (!::aos::robot_state->enabled) {
+          // Start over if disabled.
+          state_ = UNINITIALIZED;
+        } else if (position && !AnySensorsActive(position)) {
+          // We are now off the sensor.  Time to zero now.
+          state_ = ZEROING;
+        } else {
+          // Slowly creep off the sensor.
+          zeroing_position_ -= config_data_.zeroing_speed * dt;
+          loop_->R << zeroing_position_, -config_data_.zeroing_speed;
+          break;
+        }
+      }
+    case ZEROING:
+      {
+        int active_sensor_index = ActiveSensorIndex(position);
+        if (!::aos::robot_state->enabled) {
+          // Start over if disabled.
+          state_ = UNINITIALIZED;
+        } else if (position && active_sensor_index != -1) {
+          state_ = READY;
+          // Verify that the calibration number is between the last off position
+          // and the current on position.  If this is not true, move off and try
+          // again.
+          const double calibration =
+              position->hall_effect_positions[active_sensor_index];
+          if (!is_between(last_off_position_, position->position, 
+                          calibration)) {
+            LOG(ERROR, "Got a bogus calibration number.  Trying again.\n");
+            LOG(ERROR,
+                "Last off position was %f, current is %f, calibration is %f\n",
+                last_off_position_, position->position,
+                position->hall_effect_positions[active_sensor_index]);
+            state_ = MOVING_OFF;
+          } else {
+            // Save the zero, and then offset the observer to deal with the
+            // phantom step change.
+            const double old_zero_offset = zero_offset_;
+            zero_offset_ =
+                position->hall_effect_positions[active_sensor_index] -
+                config_data_.hall_effect_start_angle[active_sensor_index];
+            loop_->X_hat(0, 0) += old_zero_offset - zero_offset_;
+            loop_->Y(0, 0) += old_zero_offset - zero_offset_;
+          }
+        } else {
+          // Slowly creep towards the sensor.
+          zeroing_position_ += config_data_.zeroing_speed * dt;
+          loop_->R << zeroing_position_, config_data_.zeroing_speed;
+        }
+        break;
+      }
+
+    case READY:
+      {
+        const double limited_goal = ClipGoal(goal_angle);
+        loop_->R << limited_goal, goal_velocity;
+        break;
+      }
+
+    case ESTOP:
+      LOG(WARNING, "have already given up\n");
+      return 0.0;
+  }
+
+  // Update the observer.
+  loop_->Update(position != NULL, !output_enabled);
+
+  capped_goal_ = false;
+  // Verify that the zeroing goal hasn't run away.
+  switch (state_) {
+    case UNINITIALIZED:
+    case READY:
+    case ESTOP:
+      // Not zeroing.  No worries.
+      break;
+    case MOVING_OFF:
+    case ZEROING:
+      // Check if we have cliped and adjust the goal.
+      if (loop_->U_uncapped(0, 0) > config_data_.max_zeroing_voltage) {
+        double dx = (loop_->U_uncapped(0, 0) -
+                     config_data_.max_zeroing_voltage) / loop_->K(0, 0);
+        zeroing_position_ -= dx;
+        capped_goal_ = true;
+      } else if(loop_->U_uncapped(0, 0) < -config_data_.max_zeroing_voltage) {
+        double dx = (loop_->U_uncapped(0, 0) +
+                     config_data_.max_zeroing_voltage) / loop_->K(0, 0);
+        zeroing_position_ -= dx;
+        capped_goal_ = true;
+      }
+      break;
+  }
+  return loop_->U(0, 0);
+}
+
+}  // namespace control_loops
+}  // namespace frc971
+
+#endif  // FRC971_CONTROL_LOOPS_ZEROED_JOINT_H_

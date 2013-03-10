@@ -8,18 +8,14 @@
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
 #include "frc971/control_loops/wrist/wrist_motor_plant.h"
 
+#include "frc971/control_loops/zeroed_joint.h"
+
 namespace frc971 {
 namespace control_loops {
-
 namespace testing {
-class WristTest_RezeroWithMissingPos_Test;
-class WristTest_DisableGoesUninitialized_Test;
-class WristTest_NoWindup_Test;
 class WristTest_NoWindupPositive_Test;
 class WristTest_NoWindupNegative_Test;
 };
-
-class WristMotor;
 
 class WristMotor
     : public aos::control_loops::ControlLoop<control_loops::WristLoop> {
@@ -28,7 +24,19 @@ class WristMotor
       control_loops::WristLoop *my_wrist = &control_loops::wrist);
 
   // True if the goal was moved to avoid goal windup.
-  bool capped_goal() const { return capped_goal_; }
+  bool capped_goal() const { return zeroed_joint_.capped_goal(); }
+
+  // True if the wrist is zeroing.
+  bool is_zeroing() const { return zeroed_joint_.is_zeroing(); }
+
+  // True if the wrist is zeroing.
+  bool is_moving_off() const { return zeroed_joint_.is_moving_off(); }
+
+  // True if the state machine is uninitialized.
+  bool is_uninitialized() const { return zeroed_joint_.is_uninitialized(); }
+
+  // True if the state machine is ready.
+  bool is_ready() const { return zeroed_joint_.is_ready(); }
 
  protected:
   virtual void RunIteration(
@@ -39,68 +47,14 @@ class WristMotor
 
  private:
   // Friend the test classes for acces to the internal state.
-  friend class testing::WristTest_RezeroWithMissingPos_Test;
-  friend class testing::WristTest_DisableGoesUninitialized_Test;
   friend class testing::WristTest_NoWindupPositive_Test;
   friend class testing::WristTest_NoWindupNegative_Test;
-  friend class WristStateFeedbackLoop;
 
   // Fetches and locally caches the latest set of constants.
-  bool FetchConstants();
+  bool FetchConstants(ZeroedJoint<1>::ConfigurationData *config_data);
 
-  // Clips the goal to be inside the limits and returns the clipped goal.
-  // Requires the constants to have already been fetched.
-  double ClipGoal(double goal) const;
-
-  // This class implements the CapU function correctly given all the extra
-  // information that we know about from the wrist motor.
-  class WristStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
-   public:
-    WristStateFeedbackLoop(StateFeedbackLoop<2, 1, 1> loop,
-                           WristMotor *wrist_motor)
-        : StateFeedbackLoop<2, 1, 1>(loop),
-          wrist_motor_(wrist_motor) {
-    }
-
-    // Caps U, but this time respects the state of the wrist as well.
-    virtual void CapU();
-   private:
-    WristMotor *wrist_motor_;
-  };
-
-  // The state feedback control loop to talk to.
-  ::std::unique_ptr<WristStateFeedbackLoop> loop_;
-
-  // Enum to store the state of the internal zeroing state machine.
-  enum State {
-    UNINITIALIZED,
-    MOVING_OFF,
-    ZEROING,
-    READY,
-    ESTOP
-  };
-
-  // Internal state for zeroing.
-  State state_;
-
-  // Missed position packet count.
-  int error_count_;
-  // Offset from the raw encoder value to the absolute angle.
-  double zero_offset_;
-  // Position that gets incremented when zeroing the wrist to slowly move it to
-  // the hall effect sensor.
-  double zeroing_position_;
-  // Last position at which the hall effect sensor was off.
-  double last_off_position_;
-
-  // Local cache of the wrist geometry constants.
-  double wrist_lower_limit_;
-  double wrist_upper_limit_;
-  double wrist_hall_effect_start_angle_;
-  double wrist_zeroing_speed_;
-
-  // True if the zeroing goal was capped during this cycle.
-  bool capped_goal_;
+  // The zeroed joint to use.
+  ZeroedJoint<1> zeroed_joint_;
 
   DISALLOW_COPY_AND_ASSIGN(WristMotor);
 };
