@@ -9,7 +9,7 @@
 #include "aos/atom_code/output/MotorOutput.h"
 
 #include "frc971/queues/Piston.q.h"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/constants.h"
 
 using ::frc971::control_loops::drivetrain;

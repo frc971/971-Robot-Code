@@ -1,12 +1,18 @@
 close all;
 load 'drivetrain_spin_low'
 load 'drivetrain_strait_low'
+% Max power amps of CIM or maybe half the mass of the robot in lbs or the whole robot in kg.
 m = 68;
+% Must be in meters. Maybe width of robot (distance of center wheels from center).
 rb = 0.617998644 / 2.0;
+% Moment of Inertia
 J = 7;
 stall_current = 133.0;
+% Resistance of the motor, divided by the number of motors.
 R = 12.0 / stall_current / 4 / 0.43;
+% Motor Constant
 Km = (12.0 - R * 2.7) / (4650.0 / 60.0 * 2.0 * pi);
+% Torque Constant
 Kt = 0.008;
 r = 0.04445; % 3.5 inches diameter
 G_low = 60.0 / 15.0 * 50.0 / 15.0;
@@ -15,6 +21,9 @@ dt = 0.01;
 
 G = G_low;
 
+% must refer to how each side of the robot affects the other? Units of 1 / kg
+% I think that if the center of mass is in the center of the robot, then
+% msp will evaluate to 2/(mass of robot) and msn will evaluate to 0.
 msp = (1.0 / m + rb ^ 2.0 / J);
 msn = (1.0 / m - rb ^ 2.0 / J);
 tc = -Km * Kt * G ^ 2.0 / (R * r ^ 2.0);

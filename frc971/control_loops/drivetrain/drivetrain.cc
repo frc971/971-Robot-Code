@@ -1,4 +1,4 @@
-#include "frc971/control_loops/DriveTrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
 
 #include <stdio.h>
 #include <sched.h>
@@ -7,8 +7,9 @@
 #include "aos/aos_core.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
-#include "frc971/control_loops/DriveTrain.mat"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
 
@@ -20,10 +21,10 @@ namespace control_loops {
 // Width of the robot.
 const double width = 22.0 / 100.0 * 2.54;
 
-class DrivetrainMotorsSS : public MatrixClass {
+class DrivetrainMotorsSS : public StateFeedbackLoop<4, 2, 2> {
  public:
-  DrivetrainMotorsSS (void) {
-    MATRIX_INIT;
+  DrivetrainMotorsSS (void)
+      : StateFeedbackLoop(MakeDrivetrainLoop()) {
     _offset = 0;
     _integral_offset = 0;
     _left_goal = 0.0;
@@ -298,5 +299,3 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
 }  // namespace control_loops
 }  // namespace frc971
-
-AOS_RUN_LOOP(frc971::control_loops::DrivetrainLoop)

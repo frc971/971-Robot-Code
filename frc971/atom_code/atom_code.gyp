@@ -5,7 +5,8 @@
       'type': 'none',
       'dependencies': [
         '<(AOS)/build/aos_all.gyp:Atom',
-        '../control_loops/control_loops.gyp:DriveTrain',
+        '../control_loops/drivetrain/drivetrain.gyp:drivetrain',
+        '../control_loops/drivetrain/drivetrain.gyp:drivetrain_lib_test',
         '../control_loops/wrist/wrist.gyp:wrist',
         '../control_loops/wrist/wrist.gyp:wrist_lib_test',
         '../control_loops/index/index.gyp:index',

@@ -6,7 +6,7 @@
 #include "aos/common/inttypes.h"
 #include "aos/common/input/SensorInput.h"
 
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/sensor_values.h"
 
 #define M_PI 3.14159265358979323846

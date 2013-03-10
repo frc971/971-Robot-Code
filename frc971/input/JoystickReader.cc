@@ -8,7 +8,7 @@
 #include "aos/atom_code/input/JoystickInput.h"
 
 #include "frc971/input/AutoMode.q.h"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
 

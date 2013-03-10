@@ -41,7 +41,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/network/network.gyp:socket',
       ],

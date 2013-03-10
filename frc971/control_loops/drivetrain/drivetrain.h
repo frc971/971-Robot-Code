@@ -2,7 +2,7 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 
 #include "aos/common/control_loop/ControlLoop.h"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
 namespace control_loops {
