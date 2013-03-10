@@ -71,6 +71,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       wrist_loop_(new IndexStateFeedbackLoop(MakeIndexLoop())),
       hopper_disc_count_(0),
       total_disc_count_(0),
+      shot_disc_count_(0),
       safe_goal_(Goal::HOLD),
       loader_goal_(LoaderGoal::READY),
       loader_state_(LoaderState::READY),
@@ -840,6 +841,7 @@ void IndexMotor::RunIteration(
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
       --hopper_disc_count_;
+      ++shot_disc_count_;
     case LoaderState::LOWERING:
       printf("Loader LOWERING %d\n", loader_countdown_);
       // Lowering the loader back down.
@@ -882,6 +884,7 @@ void IndexMotor::RunIteration(
 
   status->hopper_disc_count = hopper_disc_count_;
   status->total_disc_count = total_disc_count_;
+  status->shot_disc_count = shot_disc_count_;
   status->preloaded = (loader_state_ != LoaderState::READY);
 
   if (output) {

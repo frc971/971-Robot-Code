@@ -851,6 +851,7 @@ TEST_F(IndexTest, GrabAndHold) {
 
   my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 1);
+  EXPECT_EQ(0, my_index_loop_.status->shot_disc_count);
   EXPECT_EQ(static_cast<size_t>(1), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(
       (IndexMotor::kIndexStartPosition +
@@ -1289,6 +1290,7 @@ TEST_F(IndexTest, CanShootIntakeAndShoot) {
     my_index_loop_.status.FetchLatest();
     EXPECT_EQ(i, my_index_loop_.status->total_disc_count);
     EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
+    EXPECT_EQ(i, my_index_loop_.status->shot_disc_count);
   }
 }
 

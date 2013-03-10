@@ -57,8 +57,10 @@ queue_group IndexLoop {
   message Status {
     // Number of discs in the hopper
     int32_t hopper_disc_count;
-    // Number of shot since reboot.
+    // Number of discs seen by the hopper.
     int32_t total_disc_count;
+    // Number of discs shot by the shooter.
+    int32_t shot_disc_count;
     // Disc ready in the loader.
     bool preloaded;
     // Indexer ready to accept more discs.

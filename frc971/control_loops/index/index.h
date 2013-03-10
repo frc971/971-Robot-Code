@@ -246,6 +246,7 @@ class IndexMotor
   // Count of the number of discs that we have collected.
   int32_t hopper_disc_count_;
   int32_t total_disc_count_;
+  int32_t shot_disc_count_;
 
   enum class Goal {
     // Hold position, in a low power state.
