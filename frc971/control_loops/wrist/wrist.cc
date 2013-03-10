@@ -75,7 +75,6 @@ void WristMotor::RunIteration(
     transformed_position.position = position->pos;
     transformed_position.hall_effects[0] = position->hall_effect;
     transformed_position.hall_effect_positions[0] = position->calibration;
-    printf("Position is %f\n", position->pos);
   }
 
   const double voltage = zeroed_joint_.Update(transformed_position_ptr,
@@ -90,7 +89,6 @@ void WristMotor::RunIteration(
 
   if (output) {
     output->voltage = voltage;
-    printf("Voltage applied is %f\n", voltage);
   }
 }
 

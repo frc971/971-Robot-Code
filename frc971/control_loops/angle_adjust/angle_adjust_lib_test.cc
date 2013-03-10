@@ -8,7 +8,6 @@
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust.h"
-#include "frc971/control_loops/hall_effect_loop.h"
 #include "frc971/constants.h"
 
 
@@ -61,28 +60,28 @@ class AngleAdjustMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    ::std::array<double, 2> hall_effect_start_angle;
+    double hall_effect_start_angle[2];
     ASSERT_TRUE(constants::angle_adjust_hall_effect_start_angle(
-                    &hall_effect_start_angle));
-    ::std::array<double, 2> hall_effect_stop_angle;
+                    hall_effect_start_angle));
+    double hall_effect_stop_angle[2];
     ASSERT_TRUE(constants::angle_adjust_hall_effect_stop_angle(
-                    &hall_effect_stop_angle));
+                    hall_effect_stop_angle));
 
     ::aos::ScopedMessagePtr<control_loops::AngleAdjustLoop::Position> position =
         my_angle_adjust_loop_.position.MakeMessage();
-    position->bottom_angle = angle;
+    position->angle = angle;
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
     double abs_position = GetAbsolutePosition();
-    if (abs_position >= hall_effect_start_angle[0] &&
-        abs_position <= hall_effect_stop_angle[0]) {
+    if (abs_position <= hall_effect_start_angle[0] &&
+        abs_position >= hall_effect_stop_angle[0]) {
       position->bottom_hall_effect = true;
     } else {
       position->bottom_hall_effect = false;
     }
-    if (abs_position >= hall_effect_start_angle[1] &&
-        abs_position <= hall_effect_stop_angle[1]) {
+    if (abs_position <= hall_effect_start_angle[1] &&
+        abs_position >= hall_effect_stop_angle[1]) {
       position->middle_hall_effect = true;
     } else {
       position->middle_hall_effect = false;
@@ -90,15 +89,16 @@ class AngleAdjustMotorSimulation {
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
+    // TODO(aschuh): This won't deal with both edges correctly.
     if ((last_position_ < hall_effect_start_angle[0] ||
          last_position_ > hall_effect_stop_angle[0]) &&
          (position->bottom_hall_effect)) {
-      calibration_value_[0] = -initial_position_;
+      calibration_value_[0] = hall_effect_start_angle[0] - initial_position_;
     }
     if ((last_position_ < hall_effect_start_angle[1] ||
          last_position_ > hall_effect_stop_angle[1]) &&
          (position->middle_hall_effect)) {
-      calibration_value_[1] = -initial_position_;
+      calibration_value_[1] = hall_effect_start_angle[1] - initial_position_;
     }
 
     position->bottom_calibration = calibration_value_[0];
@@ -154,7 +154,7 @@ class AngleAdjustTest : public ::testing::Test {
                           ".frc971.control_loops.angle_adjust.output",
                           ".frc971.control_loops.angle_adjust.status"),
     angle_adjust_motor_(&my_angle_adjust_loop_),
-    angle_adjust_motor_plant_(.75) {
+    angle_adjust_motor_plant_(0.75) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -232,16 +232,13 @@ TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
     } else {
       if (i > 310) {
         // Should be re-zeroing now.
-        EXPECT_EQ(HallEffectLoop<2>::UNINITIALIZED,
-                  angle_adjust_motor_.hall_effect_.state_);
+        EXPECT_TRUE(angle_adjust_motor_.is_uninitialized());
       }
       my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.2).Send();
     }
     if (i == 430) {
-      EXPECT_TRUE(
-          HallEffectLoop<2>::ZEROING == angle_adjust_motor_.hall_effect_.state_
-          || HallEffectLoop<2>::MOVING_OFF ==
-             angle_adjust_motor_.hall_effect_.state_);
+      EXPECT_TRUE(angle_adjust_motor_.is_zeroing() ||
+                  angle_adjust_motor_.is_moving_off());
     }
 
     angle_adjust_motor_.Iterate();
@@ -263,16 +260,14 @@ TEST_F(AngleAdjustTest, DisableGoesUninitialized) {
       if (i > 100) {
         // Give the loop a couple cycled to get the message and then verify that
         // it is in the correct state.
-        EXPECT_EQ(HallEffectLoop<2>::UNINITIALIZED,
-                  angle_adjust_motor_.hall_effect_.state_);
+        EXPECT_TRUE(angle_adjust_motor_.is_uninitialized());
       }
     } else {
       SendDSPacket(true);
     }
     if (i == 202) {
       // Verify that we are zeroing after the bot gets enabled again.
-      EXPECT_EQ(HallEffectLoop<2>::ZEROING,
-                angle_adjust_motor_.hall_effect_.state_);
+      EXPECT_TRUE(angle_adjust_motor_.is_zeroing());
     }
 
     angle_adjust_motor_.Iterate();

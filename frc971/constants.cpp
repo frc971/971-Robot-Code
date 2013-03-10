@@ -2,7 +2,6 @@
 
 #include <stddef.h>
 #include <math.h>
-#include <array>
 
 #include "aos/common/inttypes.h"
 #include "aos/common/messages/RobotState.q.h"
@@ -42,15 +41,11 @@ const double kWristZeroingSpeed = 1.0;
 
 const int kAngleAdjustHallEffect = 2;
 
-const ::std::array<double, kAngleAdjustHallEffect>
-    kCompAngleAdjustHallEffectStartAngle = {{-0.1, 1.0}};
-const ::std::array<double, kAngleAdjustHallEffect>
-    kPracticeAngleAdjustHallEffectStartAngle = {{-0.1, 1.0}};
+const double kCompAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
+const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
 
-const ::std::array<double, kAngleAdjustHallEffect>
-    kCompAngleAdjustHallEffectStopAngle = {{0.5, 1.5}};
-const ::std::array<double, kAngleAdjustHallEffect>
-    kPracticeAngleAdjustHallEffectStopAngle = {{0.5, 1.5}};
+const double kCompAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
+const double kPracticeAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
 
 const double kPracticeAngleAdjustUpperPhysicalLimit = 3.0;
 const double kCompAngleAdjustUpperPhysicalLimit = 3.0;
@@ -64,7 +59,7 @@ const double kCompAngleAdjustUpperLimit = 3.0;
 const double kPracticeAngleAdjustLowerLimit = 0.0;
 const double kCompAngleAdjustLowerLimit = 0.0;
 
-const double kAngleAdjustZeroingSpeed = 1.0;
+const double kAngleAdjustZeroingSpeed = -1.0;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
@@ -86,8 +81,8 @@ struct Values {
   double wrist_zeroing_speed;
 
   // AngleAdjust hall effect positive and negative edges.
-  ::std::array<double, 2> angle_adjust_hall_effect_start_angle;
-  ::std::array<double, 2> angle_adjust_hall_effect_stop_angle;
+  const double *angle_adjust_hall_effect_start_angle;
+  const double *angle_adjust_hall_effect_stop_angle;
 
   // Upper and lower extreme limits of travel for the angle adjust.
   double angle_adjust_upper_limit;
@@ -205,18 +200,18 @@ bool wrist_zeroing_speed(double *speed) {
   return true;
 }
 
-bool angle_adjust_hall_effect_start_angle(
-    ::std::array<double, 2> *angle) {
+bool angle_adjust_hall_effect_start_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->angle_adjust_hall_effect_start_angle;
+  angle[0] = values->angle_adjust_hall_effect_start_angle[0];
+  angle[1] = values->angle_adjust_hall_effect_start_angle[1];
   return true;
 }
-bool angle_adjust_hall_effect_stop_angle(
-    ::std::array<double, 2> *angle) {
+bool angle_adjust_hall_effect_stop_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
-  *angle = values->angle_adjust_hall_effect_stop_angle;
+  angle[0] = values->angle_adjust_hall_effect_stop_angle[0];
+  angle[1] = values->angle_adjust_hall_effect_stop_angle[1];
   return true;
 }
 bool angle_adjust_upper_limit(double *angle) {

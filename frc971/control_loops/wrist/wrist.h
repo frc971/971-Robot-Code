@@ -29,6 +29,9 @@ class WristMotor
   // True if the wrist is zeroing.
   bool is_zeroing() const { return zeroed_joint_.is_zeroing(); }
 
+  // True if the wrist is zeroing.
+  bool is_moving_off() const { return zeroed_joint_.is_moving_off(); }
+
   // True if the state machine is uninitialized.
   bool is_uninitialized() const { return zeroed_joint_.is_uninitialized(); }
 

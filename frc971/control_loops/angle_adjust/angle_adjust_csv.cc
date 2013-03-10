@@ -50,4 +50,3 @@ int main(int argc, char * argv[]) {
   ::aos::Cleanup();
   return 0;
 }
-

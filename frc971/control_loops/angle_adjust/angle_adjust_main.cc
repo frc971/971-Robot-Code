@@ -2,4 +2,10 @@
 
 #include "aos/aos_core.h"
 
-AOS_RUN_LOOP(frc971::control_loops::AngleAdjustMotor);
+int main() {
+  ::aos::Init();
+  ::frc971::control_loops::AngleAdjustMotor angle_adjust;
+  angle_adjust.Run();
+  ::aos::Cleanup();
+  return 0;
+}

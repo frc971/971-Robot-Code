@@ -6,9 +6,8 @@ queue_group AngleAdjustLoop {
   implements aos.control_loops.ControlLoop;
 
   message Position {
-    // Angle of the encoder.
-    double bottom_angle;
-    double middle_angle;
+    // Angle of the height adjust.
+    double angle;
     bool bottom_hall_effect;
     bool middle_hall_effect;
     // The exact position when the corresponding hall_effect changed.

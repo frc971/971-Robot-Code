@@ -9,8 +9,6 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/hall_effect_loop.h"
-#include "frc971/control_loops/hall_effect_loop-inl.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor_plant.h"
 
 namespace frc971 {
@@ -20,61 +18,34 @@ AngleAdjustMotor::AngleAdjustMotor(
     control_loops::AngleAdjustLoop *my_angle_adjust)
     : aos::control_loops::ControlLoop<control_loops::AngleAdjustLoop>(
         my_angle_adjust),
-    hall_effect_(new StateFeedbackLoop<2, 1, 1>(MakeAngleAdjustLoop()),
-        true, 5.0),
-    error_count_(0),
-    time_(0.0) {
+      zeroed_joint_(MakeAngleAdjustLoop()) {
 }
 
-/*static*/ const double AngleAdjustMotor::dt = 0.01;
-
-bool AngleAdjustMotor::FetchConstants() {
+bool AngleAdjustMotor::FetchConstants(
+    ZeroedJoint<2>::ConfigurationData *config_data) {
   if (!constants::angle_adjust_lower_limit(
-          &lower_limit_)) {
+          &config_data->lower_limit)) {
     LOG(ERROR, "Failed to fetch the angle adjust lower limit constant.\n");
     return false;
   }
   if (!constants::angle_adjust_upper_limit(
-          &upper_limit_)) {
+          &config_data->upper_limit)) {
     LOG(ERROR, "Failed to fetch the angle adjust upper limit constant.\n");
     return false;
   }
-  if (!constants::angle_adjust_hall_effect_stop_angle(
-          &hall_effect_stop_angle_)) {
-    LOG(ERROR, "Failed to fetch the hall effect stop angle constants.\n");
+  if (!constants::angle_adjust_hall_effect_start_angle(
+          config_data->hall_effect_start_angle)) {
+    LOG(ERROR, "Failed to fetch the hall effect start angle constants.\n");
     return false;
   }
   if (!constants::angle_adjust_zeroing_speed(
-          &zeroing_speed_)) {
+          &config_data->zeroing_speed)) {
     LOG(ERROR, "Failed to fetch the angle adjust zeroing speed constant.\n");
     return false;
   }
 
+  config_data->max_zeroing_voltage = 4.0;
   return true;
-}
-
-double AngleAdjustMotor::ClipGoal(double goal) const {
-  return std::min(upper_limit_,
-                  std::max(lower_limit_, goal));
-}
-
-double AngleAdjustMotor::LimitVoltage(double absolute_position,
-                                double voltage) const {
-  if (hall_effect_.state_ == HallEffectLoop<2>::READY) {
-    if (absolute_position >= upper_limit_) {
-      voltage = std::min(0.0, voltage);
-    }
-    if (absolute_position <= lower_limit_) {
-      voltage = std::max(0.0, voltage);
-    }
-  }
-
-  double limit = (hall_effect_.state_ == HallEffectLoop<2>::READY) ? 12.0 : 5.0;
-  // TODO(aschuh): Remove this line when we are done testing.
-  // limit = std::min(0.3, limit);
-  voltage = std::min(limit, voltage);
-  voltage = std::max(-limit, voltage);
-  return voltage;
 }
 
 // Positive angle is up, and positive power is up.
@@ -91,71 +62,44 @@ void AngleAdjustMotor::RunIteration(
   }
 
   // Cache the constants to avoid error handling down below.
-  if (!FetchConstants()) {
+  ZeroedJoint<2>::ConfigurationData config_data;
+  if (!FetchConstants(&config_data)) {
     LOG(WARNING, "Failed to fetch constants.\n");
     return;
-  }
-
-  // Uninitialize the bot if too many cycles pass without an encoder.
-  if (position == NULL) {
-    LOG(WARNING, "no new pos given\n");
-    error_count_++;
   } else {
-    error_count_ = 0;
-  }
-  if (error_count_ >= 4) {
-    LOG(WARNING, "err_count is %d so forcing a re-zero\n", error_count_);
-    hall_effect_.state_ = HallEffectLoop<2>::UNINITIALIZED;
+    zeroed_joint_.set_config_data(config_data);
   }
 
-  double absolute_position = hall_effect_.loop_->X_hat(0, 0);
-  // Compute the absolute position of the angle adjust.
-  if (position) {
-    hall_effect_sensors_[0] = position->bottom_hall_effect;
-    hall_effect_sensors_[1] = position->middle_hall_effect;
-    calibration_values_[0] = position->bottom_calibration;
-    calibration_values_[1] = position->middle_calibration;
-    absolute_position = position->bottom_angle;
+  ZeroedJoint<2>::PositionData transformed_position;
+  ZeroedJoint<2>::PositionData *transformed_position_ptr =
+      &transformed_position;
+  if (!position) {
+    transformed_position_ptr = NULL;
+  } else {
+    transformed_position.position = position->angle;
+    transformed_position.hall_effects[0] = position->bottom_hall_effect;
+    transformed_position.hall_effect_positions[0] =
+        position->bottom_calibration;
+    transformed_position.hall_effects[1] = position->middle_hall_effect;
+    transformed_position.hall_effect_positions[1] =
+        position->middle_calibration;
   }
 
-  // Deals with all the zeroing stuff.
-  hall_effect_.UpdateZeros(hall_effect_stop_angle_,
-              hall_effect_sensors_,
-              calibration_values_,
-              zeroing_speed_,
-              absolute_position,
-              position != NULL);
-
-  // Only try to go to our goal if we are actually zeroed.
-  if (hall_effect_.state_ == HallEffectLoop<2>::READY) {
-    const double limited_goal = ClipGoal(goal->goal);
-    hall_effect_.loop_->R << limited_goal, 0.0;
-  }
-
-  // Update the observer.
-  hall_effect_.loop_->Update(position != NULL, output == NULL);
-
-  // Prevent the zeroing goal from running off. Needs to happen after
-  // U is calculated, hence why this is after the loop_->Update.
-  hall_effect_.LimitZeroingGoal();
+  const double voltage = zeroed_joint_.Update(transformed_position_ptr,
+      output != NULL,
+      goal->goal, 0.0);
 
   if (position) {
     LOG(DEBUG, "pos=%f bottom_hall: %s middle_hall: %s\n",
-        position->bottom_angle,
+        position->angle,
         position->bottom_hall_effect ? "true" : "false",
         position->middle_hall_effect ? "true" : "false");
   }
 
-  if (hall_effect_.state_ == HallEffectLoop<2>::READY) {
-    LOG(DEBUG, "calibrated with: %s hall effect\n",
-        hall_effect_.last_calibration_sensor_ ? "bottom" : "middle");
-  }
-
   if (output) {
-    output->voltage = LimitVoltage(hall_effect_.absolute_position_,
-                                   hall_effect_.loop_->U(0, 0));
+    output->voltage = voltage;
   }
-}  // RunIteration
+}
 
 }  // namespace control_loops
 }  // namespace frc971
