@@ -133,15 +133,15 @@ class Frisbee {
   void HandleAfterNegedge(
       double index_velocity, double elapsed_time, double time_left) {
     if (!has_bottom_disc_negedge_wait_position_) {
-      if (time_left < after_negedge_time_left_) {
-        after_negedge_time_left_ = 0.0;
+      if (after_negedge_time_left_ < time_left) {
         // Assume constant velocity and compute the position.
         bottom_disc_negedge_wait_position_ =
             index_roller_position_ +
             index_velocity * (elapsed_time + after_negedge_time_left_);
+        after_negedge_time_left_ = 0.0;
         has_bottom_disc_negedge_wait_position_ = true;
       } else {
-        after_negedge_time_left_ -= elapsed_time;
+        after_negedge_time_left_ -= time_left;
       }
     }
   }
@@ -716,7 +716,7 @@ class IndexTest : public ::testing::Test {
         } else {
           index_motor_plant_.InsertDisc();
           ++num_grabbed;
-          wait_counter = 5;
+          wait_counter = 9;
         }
       }
       index_motor_plant_.Simulate();

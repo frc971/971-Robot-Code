@@ -107,9 +107,9 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kEjectorStopPosition =
     kLifterStopPosition + 0.01;
 /*static*/ const double IndexMotor::kEjectorMovementVelocity = 1.0;
-/*static*/ const double IndexMotor::kBottomDiscDetectStart = -0.08;
-/*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.200025;
-/*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.01;
+/*static*/ const double IndexMotor::kBottomDiscDetectStart = 0.00;
+/*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.13;
+/*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.032;
 
 // TODO(aschuh): Verify these with the sensor actually on.
 /*static*/ const double IndexMotor::kTopDiscDetectStart =
@@ -628,7 +628,6 @@ void IndexMotor::RunIteration(
           // Turn on the transfer roller if we are ready.
           if (status->ready_to_intake && hopper_disc_count_ < 4 &&
               safe_goal_ == Goal::INTAKE) {
-            printf("Go\n");
             intake_voltage = transfer_voltage = 12.0;
           }
         }
