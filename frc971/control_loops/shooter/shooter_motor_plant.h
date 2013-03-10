@@ -1,0 +1,16 @@
+#ifndef FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
+#define FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
+
+#include "frc971/control_loops/state_feedback_loop.h"
+
+namespace frc971 {
+namespace control_loops {
+
+StateFeedbackPlant<2, 1, 1> MakeShooterPlant();
+
+StateFeedbackLoop<2, 1, 1> MakeShooterLoop();
+
+}  // namespace frc971
+}  // namespace control_loops
+
+#endif  // FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
