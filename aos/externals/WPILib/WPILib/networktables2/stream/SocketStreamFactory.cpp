@@ -59,8 +59,8 @@ IOStream* SocketStreamFactory::createStream(){
     	return NULL;
     }//TODO close fd if an error occured
 
-	int on = 1;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
+	//int on = 1;
+	//setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
 	return new FDIOStream(sockfd);
 #endif
