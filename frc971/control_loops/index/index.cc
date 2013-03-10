@@ -287,6 +287,7 @@ void IndexMotor::RunIteration(
     // so we don't always spin the indexer to the 0 position before starting.
     if (no_prior_position_) {
       wrist_loop_->R << wrist_loop_->Y(0, 0), 0.0;
+      wrist_loop_->X_hat(0, 0) = wrist_loop_->Y(0, 0);
       no_prior_position_ = false;
       last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
       last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
@@ -321,6 +322,7 @@ void IndexMotor::RunIteration(
            frisbee != frisbees_.end(); ++frisbee) {
         frisbee->OffsetDisc(disc_offset);
       }
+      wrist_loop_->X_hat(0, 0) = wrist_loop_->Y(0, 0);
     }
     missing_position_count_ = 0;
   } else {

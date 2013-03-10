@@ -180,6 +180,7 @@ class Frisbee {
     }
 
     if (shrunk_time) {
+      EXPECT_LT(0, transfer_roller_velocity);
       position_ = IndexMotor::kIndexStartPosition;
     } else {
       position_ += disc_dx;
@@ -239,7 +240,11 @@ class Frisbee {
     }
 
     if (shrunk_time) {
-      position_ = IndexMotor::kGrabberStartPosition;
+      if (index_roller_velocity > 0) {
+        position_ = IndexMotor::kGrabberStartPosition;
+      } else {
+        position_ = IndexMotor::kIndexStartPosition;
+      }
     } else {
       position_ += index_dx;
     }
@@ -699,7 +704,6 @@ class IndexTest : public ::testing::Test {
     // Spin it up.
     SimulateNCycles(100);
 
-    EXPECT_EQ(0, index_motor_plant_.index_roller_position());
     my_index_loop_.status.FetchLatest();
     EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
 
@@ -1253,6 +1257,22 @@ TEST_F(IndexTest, LostDisc) {
   EXPECT_LT(IndexMotor::ConvertDiscAngleToIndex(4 * M_PI),
             index_motor_plant_.index_roller_position() - index_roller_position);
   EXPECT_EQ(0u, index_motor_.frisbees_.size());
+}
+
+// Verifies that the indexer is ready to intake imediately after loading.
+TEST_F(IndexTest, CRIOReboot) {
+  index_motor_plant_.index_plant_->Y(0, 0) = 5000.0;
+  index_motor_plant_.index_plant_->X(0, 0) = 5000.0;
+  LoadNDiscs(1);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+  SimulateNCycles(200);
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  SimulateNCycles(10);
+  my_index_loop_.output.FetchLatest();
+  EXPECT_EQ(12.0, my_index_loop_.output->transfer_voltage);
+  my_index_loop_.status.FetchLatest();
+  EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
+  EXPECT_EQ(1, my_index_loop_.status->hopper_disc_count);
 }
 
 }  // namespace testing
