@@ -13,11 +13,11 @@ class Shooter(control_loop.ControlLoop):
     # Stall Current in Amps
     self.stall_current = 85
     # Free Speed in RPM
-    self.free_speed = 19300.0
+    self.free_speed = 19300.0 - 2700.0
     # Free Current in Amps
     self.free_current = 1.4
     # Moment of inertia of the shooter wheel in kg m^2
-    self.J = 0.00161906
+    self.J = 0.0012
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current / 2
     # Motor velocity constant
@@ -56,14 +56,28 @@ class Shooter(control_loop.ControlLoop):
 
 def main(argv):
   # Simulate the response of the system to a step input.
+  shooter_data = numpy.genfromtxt('shooter/shooter_data.csv', delimiter=',')
   shooter = Shooter()
   simulated_x = []
-  for _ in xrange(500):
-    shooter.Update(numpy.matrix([[12.0]]))
+  real_x = []
+  x_vel = []
+  initial_x = shooter_data[0, 2]
+  last_x = initial_x
+  for i in xrange(shooter_data.shape[0]):
+    shooter.Update(numpy.matrix([[shooter_data[i, 1]]]))
     simulated_x.append(shooter.X[0, 0])
+    x_offset = shooter_data[i, 2] - initial_x
+    real_x.append(x_offset / 2)
+    x_vel.append(shooter_data[i, 2] - last_x)
+    last_x = shooter_data[i, 2]
 
-#  pylab.plot(range(500), simulated_x)
-#  pylab.show()
+  sim_delay = 1
+  pylab.plot(range(sim_delay, shooter_data.shape[0] + sim_delay),
+             simulated_x, label='Simulation')
+  pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
+  pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
+  pylab.legend()
+  pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
   shooter = Shooter()
