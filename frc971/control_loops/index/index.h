@@ -17,6 +17,40 @@ class IndexTest_InvalidStateTest_Test;
 class IndexTest_LostDisc_Test;
 }
 
+// This class represents a region of space.
+class Region {
+ public:
+  Region () : upper_bound_(0.0), lower_bound_(0.0) {}
+
+  // Restarts the region tracking by starting over with a 0 width region with
+  // the bounds at [edge, edge].
+  void Restart(double edge) {
+    upper_bound_ = edge;
+    lower_bound_ = edge;
+  }
+
+  // Expands the region to include the new point.
+  void Expand(double new_point) {
+    if (new_point > upper_bound_) {
+      upper_bound_ = new_point;
+    } else if (new_point < lower_bound_) {
+      lower_bound_ = new_point;
+    }
+  }
+
+  // Returns the width of the region.
+  double width() const { return upper_bound_ - lower_bound_; }
+  // Returns the upper and lower bounds.
+  double upper_bound() const { return upper_bound_; }
+  double lower_bound() const { return lower_bound_; }
+
+ private:
+  // Upper bound of the region.
+  double upper_bound_;
+  // Lower bound of the region.
+  double lower_bound_;
+};
+
 class IndexMotor
     : public aos::control_loops::ControlLoop<control_loops::IndexLoop> {
  public:
@@ -295,20 +329,12 @@ class IndexMotor
   // Number of position messages that we have missed in a row.
   uint32_t missing_position_count_;
 
-  // Upper position that is known to be open on the indexer because we saw it
-  // open.
-  double upper_open_index_position_;
-  // True if the upper position was set by a negedge and can be truly trusted.
-  bool upper_open_index_position_was_negedge_;
-  // Lower position that is known to be open on the indexer because we saw it
-  // open.
-  double lower_open_index_position_;
-  // True if the lower position was set by a negedge and can be truly trusted.
-  bool lower_open_index_position_was_negedge_;
+  // The no-disc regions for both the bottom and top beam break sensors.
+  Region upper_open_region_;
+  Region lower_open_region_;
 
   DISALLOW_COPY_AND_ASSIGN(IndexMotor);
 };
-
 }  // namespace control_loops
 }  // namespace frc971
 

@@ -1254,9 +1254,11 @@ TEST_F(IndexTest, LostDisc) {
   my_index_loop_.status.FetchLatest();
   EXPECT_EQ(2, my_index_loop_.status->total_disc_count);
   EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
-  EXPECT_LT(IndexMotor::ConvertDiscAngleToIndex(4 * M_PI),
+  EXPECT_LT(IndexMotor::ConvertDiscAngleToIndex(3 * M_PI),
             index_motor_plant_.index_roller_position() - index_roller_position);
   EXPECT_EQ(0u, index_motor_.frisbees_.size());
+  my_index_loop_.output.FetchLatest();
+  EXPECT_EQ(0.0, my_index_loop_.output->index_voltage);
 }
 
 // Verifies that the indexer is ready to intake imediately after loading.
@@ -1273,6 +1275,21 @@ TEST_F(IndexTest, CRIOReboot) {
   my_index_loop_.status.FetchLatest();
   EXPECT_TRUE(my_index_loop_.status->ready_to_intake);
   EXPECT_EQ(1, my_index_loop_.status->hopper_disc_count);
+}
+
+// Verifies that the indexer can shoot a disc and then intake and shoot another
+// one.  This verifies that the code that forgets discs works correctly.
+TEST_F(IndexTest, CanShootIntakeAndShoot) {
+  for (int i = 1; i < 4; ++i) {
+    LoadNDiscs(1);
+    my_index_loop_.goal.MakeWithBuilder().goal_state(3).Send();
+    SimulateNCycles(200);
+    my_index_loop_.goal.MakeWithBuilder().goal_state(4).Send();
+    SimulateNCycles(500);
+    my_index_loop_.status.FetchLatest();
+    EXPECT_EQ(i, my_index_loop_.status->total_disc_count);
+    EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
+  }
 }
 
 }  // namespace testing

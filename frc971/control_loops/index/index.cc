@@ -80,11 +80,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       last_bottom_disc_detect_(false),
       last_top_disc_detect_(false),
       no_prior_position_(true),
-      missing_position_count_(0),
-      upper_open_index_position_(0.0),
-      upper_open_index_position_was_negedge_(false),
-      lower_open_index_position_(0.0),
-      lower_open_index_position_was_negedge_(false) {
+      missing_position_count_(0) {
 }
 
 /*static*/ const double IndexMotor::kTransferStartPosition = 0.0;
@@ -296,10 +292,8 @@ void IndexMotor::RunIteration(
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
       last_top_disc_negedge_count_ = position->top_disc_negedge_count;
       // The open positions for the upper is right here and isn't a hard edge.
-      upper_open_index_position_ = wrist_loop_->Y(0, 0);
-      upper_open_index_position_was_negedge_ = false;
-      lower_open_index_position_ = wrist_loop_->Y(0, 0);
-      lower_open_index_position_was_negedge_ = false;
+      upper_open_region_.Restart(wrist_loop_->Y(0, 0));
+      lower_open_region_.Restart(wrist_loop_->Y(0, 0));
     }
 
     // If the cRIO is gone for over 1/2 of a second, assume that it rebooted.
@@ -311,10 +305,8 @@ void IndexMotor::RunIteration(
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
       last_top_disc_negedge_count_ = position->top_disc_negedge_count;
       // We can't really trust the open range any more if the crio rebooted.
-      upper_open_index_position_ = wrist_loop_->Y(0, 0);
-      upper_open_index_position_was_negedge_ = false;
-      lower_open_index_position_ = wrist_loop_->Y(0, 0);
-      lower_open_index_position_was_negedge_ = false;
+      upper_open_region_.Restart(wrist_loop_->Y(0, 0));
+      lower_open_region_.Restart(wrist_loop_->Y(0, 0));
       // Adjust the disc positions so that they don't have to move.
       const double disc_offset =
           position->index_position - wrist_loop_->X_hat(0, 0);
@@ -332,28 +324,25 @@ void IndexMotor::RunIteration(
 
   if (position) {
     // Reset the open region if we saw a negedge.
+    if (position->bottom_disc_negedge_wait_count !=
+        last_bottom_disc_negedge_wait_count_) {
+      // Saw a negedge, must be a new region.
+      lower_open_region_.Restart(position->bottom_disc_negedge_wait_position);
+    }
+    // Reset the open region if we saw a negedge.
     if (position->top_disc_negedge_count != last_top_disc_negedge_count_) {
       // Saw a negedge, must be a new region.
-      upper_open_index_position_ = position->top_disc_negedge_position;
-      lower_open_index_position_ = position->top_disc_negedge_position;
-      upper_open_index_position_was_negedge_ = true;
-      lower_open_index_position_was_negedge_ = true;
+      upper_open_region_.Restart(position->top_disc_negedge_position);
+    }
+
+    // No disc.  Expand the open region.
+    if (!position->bottom_disc_detect) {
+      lower_open_region_.Expand(index_position);
     }
 
     // No disc.  Expand the open region.
     if (!position->top_disc_detect) {
-      // If it is higher than it was before, the end of the region is no longer
-      // determined by the negedge.
-      if (index_position > upper_open_index_position_) {
-        upper_open_index_position_ = index_position;
-        upper_open_index_position_was_negedge_ = false;
-      }
-      // If it is lower than it was before, the end of the region is no longer
-      // determined by the negedge.
-      if (index_position < lower_open_index_position_) {
-        lower_open_index_position_ = index_position;
-        lower_open_index_position_was_negedge_ = false;
-      }
+      upper_open_region_.Expand(index_position);
     }
 
     if (!position->top_disc_detect) {
@@ -392,12 +381,11 @@ void IndexMotor::RunIteration(
         // If there is a big buffer below, must be a disc from above.
         // This should work to replace the velocity threshold above.
 
-        const double open_width =
-            upper_open_index_position_ - lower_open_index_position_;
+        const double open_width = upper_open_region_.width();
         const double relative_upper_open_precentage =
-            (upper_open_index_position_ - index_position) / open_width;
+            (upper_open_region_.upper_bound() - index_position) / open_width;
         const double relative_lower_open_precentage =
-            (index_position - lower_open_index_position_) / open_width;
+            (index_position - upper_open_region_.lower_bound()) / open_width;
         printf("Width %f upper %f lower %f\n",
                open_width, relative_upper_open_precentage,
                relative_lower_open_precentage);
@@ -707,7 +695,8 @@ void IndexMotor::RunIteration(
           // range and verify that we don't see anything.
           printf("Moving the indexer to verify that it is clear\n");
           const double hopper_clear_verification_position =
-              lower_open_index_position_ +
+              ::std::min(upper_open_region_.lower_bound(),
+                         lower_open_region_.lower_bound()) +
               ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
 
           wrist_loop_->R << hopper_clear_verification_position, 0.0;
@@ -732,7 +721,8 @@ void IndexMotor::RunIteration(
 
       {
         const double hopper_clear_verification_position =
-            lower_open_index_position_ +
+            ::std::min(upper_open_region_.lower_bound(),
+                       lower_open_region_.lower_bound()) +
             ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
 
         if (wrist_loop_->X_hat(0, 0) >
