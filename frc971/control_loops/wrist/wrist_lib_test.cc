@@ -218,12 +218,12 @@ TEST_F(WristTest, RezeroWithMissingPos) {
     } else {
       if (i > 310) {
         // Should be re-zeroing now.
-        EXPECT_EQ(WristMotor::UNINITIALIZED, wrist_motor_.state_);
+        EXPECT_TRUE(wrist_motor_.is_uninitialized());
       }
       my_wrist_loop_.goal.MakeWithBuilder().goal(0.2).Send();
     }
     if (i == 430) {
-      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      EXPECT_TRUE(wrist_motor_.is_zeroing());
     }
 
     wrist_motor_.Iterate();
@@ -245,7 +245,7 @@ TEST_F(WristTest, DisableGoesUninitialized) {
       if (i > 100) {
         // Give the loop a couple cycled to get the message and then verify that
         // it is in the correct state.
-        EXPECT_EQ(WristMotor::UNINITIALIZED, wrist_motor_.state_);
+        EXPECT_TRUE(wrist_motor_.is_uninitialized());
         // When disabled, we should be applying 0 power.
         EXPECT_TRUE(my_wrist_loop_.output.FetchLatest());
         EXPECT_EQ(0, my_wrist_loop_.output->voltage);
@@ -255,7 +255,7 @@ TEST_F(WristTest, DisableGoesUninitialized) {
     }
     if (i == 202) {
       // Verify that we are zeroing after the bot gets enabled again.
-      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      EXPECT_TRUE(wrist_motor_.is_zeroing());
     }
 
     wrist_motor_.Iterate();
@@ -273,25 +273,25 @@ TEST_F(WristTest, NoWindupNegative) {
   for (int i = 0; i < 500; ++i) {
     wrist_motor_plant_.SendPositionMessage();
     if (i == 50) {
-      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      EXPECT_TRUE(wrist_motor_.is_zeroing());
       // Move the zeroing position far away and verify that it gets moved back.
-      saved_zeroing_position = wrist_motor_.zeroing_position_;
-      wrist_motor_.zeroing_position_ = -100.0;
+      saved_zeroing_position = wrist_motor_.zeroed_joint_.zeroing_position_;
+      wrist_motor_.zeroed_joint_.zeroing_position_ = -100.0;
     } else if (i == 51) {
-      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
-      EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroing_position_, 0.4);
+      EXPECT_TRUE(wrist_motor_.is_zeroing());
+      EXPECT_NEAR(saved_zeroing_position,
+                  wrist_motor_.zeroed_joint_.zeroing_position_, 0.4);
     }
-    if (wrist_motor_.state_ != WristMotor::READY) {
+    if (!wrist_motor_.is_ready()) {
       if (wrist_motor_.capped_goal()) {
         ++capped_count;
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        ASSERT_LT(5, ::std::abs(wrist_motor_.zeroed_joint_.U_uncapped()));
       } else {
-        ASSERT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        ASSERT_GT(5, ::std::abs(wrist_motor_.zeroed_joint_.U_uncapped()));
       }
     }
-
 
     wrist_motor_.Iterate();
     wrist_motor_plant_.Simulate();
@@ -310,24 +310,24 @@ TEST_F(WristTest, NoWindupPositive) {
   for (int i = 0; i < 500; ++i) {
     wrist_motor_plant_.SendPositionMessage();
     if (i == 50) {
-      EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
+      EXPECT_TRUE(wrist_motor_.is_zeroing());
       // Move the zeroing position far away and verify that it gets moved back.
-      saved_zeroing_position = wrist_motor_.zeroing_position_;
-      wrist_motor_.zeroing_position_ = 100.0;
+      saved_zeroing_position = wrist_motor_.zeroed_joint_.zeroing_position_;
+      wrist_motor_.zeroed_joint_.zeroing_position_ = 100.0;
     } else {
       if (i == 51) {
-        EXPECT_EQ(WristMotor::ZEROING, wrist_motor_.state_);
-        EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroing_position_, 0.4);
+        EXPECT_TRUE(wrist_motor_.is_zeroing());
+        EXPECT_NEAR(saved_zeroing_position, wrist_motor_.zeroed_joint_.zeroing_position_, 0.4);
       }
     }
-    if (wrist_motor_.state_ != WristMotor::READY) {
+    if (!wrist_motor_.is_ready()) {
       if (wrist_motor_.capped_goal()) {
         ++capped_count;
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
-        EXPECT_LT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        EXPECT_LT(5, ::std::abs(wrist_motor_.zeroed_joint_.U_uncapped()));
       } else {
-        EXPECT_GT(5, ::std::abs(wrist_motor_.loop_->U_uncapped(0, 0)));
+        EXPECT_GT(5, ::std::abs(wrist_motor_.zeroed_joint_.U_uncapped()));
       }
     }
 
