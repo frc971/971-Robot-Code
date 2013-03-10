@@ -15,6 +15,7 @@
         '../control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_csv',
         '../control_loops/shooter/shooter.gyp:shooter_lib_test',
         '../control_loops/shooter/shooter.gyp:shooter',
+        '../autonomous/autonomous.gyp:auto',
         '../input/input.gyp:JoystickReader',
         '../input/input.gyp:SensorReader',
         '../input/input.gyp:GyroReader',
