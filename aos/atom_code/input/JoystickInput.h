@@ -23,7 +23,6 @@ class JoystickInput {
   static const int ENABLED = 13;
   static const int AUTONOMOUS = 14;
   static const int FMS_ATTACHED = 15;
-  static const int TEST_MODE = 16;
   bool Pressed(int stick, int button) {
 	  return buttons[stick] & MASK(button);
   }
