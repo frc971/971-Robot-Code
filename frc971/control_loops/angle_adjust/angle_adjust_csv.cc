@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
       fprintf(output_file, "\n%f, %f, %f",
               (angle_adjust.position->sent_time - start_time).ToSeconds(), 
               angle_adjust.output->voltage,
-              angle_adjust.position->bottom_angle);
+              angle_adjust.position->angle);
     }
   }
 

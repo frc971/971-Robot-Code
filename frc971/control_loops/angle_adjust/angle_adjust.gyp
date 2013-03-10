@@ -63,6 +63,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
         'angle_adjust_loop',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
     {
@@ -76,6 +77,7 @@
         'angle_adjust_lib',
         'angle_adjust_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],
