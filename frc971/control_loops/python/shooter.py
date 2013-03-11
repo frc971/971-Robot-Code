@@ -13,11 +13,11 @@ class Shooter(control_loop.ControlLoop):
     # Stall Current in Amps
     self.stall_current = 85
     # Free Speed in RPM
-    self.free_speed = 19300.0 - 2700.0
+    self.free_speed = 19300.0 - 1500.0
     # Free Current in Amps
     self.free_current = 1.4
     # Moment of inertia of the shooter wheel in kg m^2
-    self.J = 0.0012
+    self.J = 0.0040
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current / 2
     # Motor velocity constant
@@ -67,8 +67,8 @@ def main(argv):
     shooter.Update(numpy.matrix([[shooter_data[i, 1]]]))
     simulated_x.append(shooter.X[0, 0])
     x_offset = shooter_data[i, 2] - initial_x
-    real_x.append(x_offset / 2)
-    x_vel.append(shooter_data[i, 2] - last_x)
+    real_x.append(x_offset)
+    x_vel.append((shooter_data[i, 2] - last_x) * 100.0)
     last_x = shooter_data[i, 2]
 
   sim_delay = 1
