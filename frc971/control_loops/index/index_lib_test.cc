@@ -9,6 +9,7 @@
 #include "frc971/control_loops/index/index.h"
 #include "frc971/control_loops/index/index_motor_plant.h"
 #include "frc971/control_loops/index/transfer_motor_plant.h"
+#include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/constants.h"
 
 
@@ -664,12 +665,20 @@ class IndexTest : public ::testing::Test {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
+    ::frc971::control_loops::shooter.goal.Clear();
+    ::frc971::control_loops::shooter.status.Clear();
+    ::frc971::control_loops::shooter.output.Clear();
+    ::frc971::control_loops::shooter.position.Clear();
     SendDSPacket(true);
     Time::EnableMockTime(Time(0, 0));
   }
 
   virtual ~IndexTest() {
     ::aos::robot_state.Clear();
+    ::frc971::control_loops::shooter.goal.Clear();
+    ::frc971::control_loops::shooter.status.Clear();
+    ::frc971::control_loops::shooter.output.Clear();
+    ::frc971::control_loops::shooter.position.Clear();
     Time::DisableMockTime();
   }
 

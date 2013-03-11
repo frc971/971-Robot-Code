@@ -13,6 +13,7 @@
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/index/index_motor_plant.h"
+#include "frc971/control_loops/shooter/shooter_motor.q.h"
 
 using ::aos::time::Time;
 
@@ -31,14 +32,14 @@ double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
         ::std::abs(disc_position - IndexMotor::kTopDiscDetectStop));
     double distance_to_below = IndexMotor::ConvertDiscPositionToIndex(
         ::std::abs(disc_position - IndexMotor::kTopDiscDetectStart));
-    if (::std::abs(index_velocity) < 100) {
+    if (::std::abs(index_velocity) < 100000) {
       if (distance_to_above < distance_to_below) {
-        printf("Moving disc to top slow.\n");
+        LOG(INFO, "Moving disc to top slow.\n");
         // Move it up.
         index_start_position_ -= distance_to_above;
         return -distance_to_above;
       } else {
-        printf("Moving disc to bottom slow.\n");
+        LOG(INFO, "Moving disc to bottom slow.\n");
         index_start_position_ += distance_to_below;
         return distance_to_below;
       }
@@ -47,18 +48,18 @@ double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
         // Now going up.  If we didn't see it before, and we don't see it
         // now but it should be in view, it must still be below.  If it were
         // above, it would be going further away from us.
-        printf("Moving fast up, shifting disc down.  Disc was at %f\n",
-               absolute_position(index_position));
+        LOG(INFO, "Moving fast up, shifting disc down.  Disc was at %f\n",
+            absolute_position(index_position));
         index_start_position_ += distance_to_below;
-        printf("Moving fast up, shifting disc down.  Disc now at %f\n",
-               absolute_position(index_position));
+        LOG(INFO, "Moving fast up, shifting disc down.  Disc now at %f\n",
+            absolute_position(index_position));
         return distance_to_below;
       } else {
-        printf("Moving fast down, shifting disc up.  Disc was at %f\n",
-               absolute_position(index_position));
+        LOG(INFO, "Moving fast down, shifting disc up.  Disc was at %f\n",
+            absolute_position(index_position));
         index_start_position_ -= distance_to_above;
-        printf("Moving fast down, shifting disc up.  Disc now at %f\n",
-               absolute_position(index_position));
+        LOG(INFO, "Moving fast down, shifting disc up.  Disc now at %f\n",
+            absolute_position(index_position));
         return -distance_to_above;
       }
     }
@@ -128,15 +129,15 @@ const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 /*static*/ const int IndexMotor::kGrabbingDelay = 5;
-/*static*/ const int IndexMotor::kLiftingDelay = 20;
+/*static*/ const int IndexMotor::kLiftingDelay = 30;
 /*static*/ const int IndexMotor::kShootingDelay = 5;
 /*static*/ const int IndexMotor::kLoweringDelay = 20;
 
 // TODO(aschuh): Tune these.
 /*static*/ const double
-    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 5.0;
+    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 6.0;
 /*static*/ const double
-    IndexMotor::IndexStateFeedbackLoop::kNoMotionCuttoffCount = 30;
+    IndexMotor::IndexStateFeedbackLoop::kNoMotionCuttoffCount = 20;
 
 // Distance to move the indexer when grabbing a disc.
 const double kNextPosition = 10.0;
@@ -398,12 +399,12 @@ void IndexMotor::RunIteration(
           // Looks like it is a disc going down from above since we are near
           // the upper edge.
           disc_direction = -1;
-          printf("Disc edge going down\n");
+          LOG(INFO, "Disc edge going down\n");
         } else if (relative_lower_open_precentage > 0.75) {
           // Looks like it is a disc going up from below since we are near
           // the lower edge.
           disc_direction = 1;
-          printf("Disc edge going up\n");
+          LOG(INFO, "Disc edge going up\n");
         } else {
           LOG(ERROR,
               "Got an edge in the middle of what should be an open region.\n");
@@ -462,7 +463,7 @@ void IndexMotor::RunIteration(
             frisbee->OffsetDisc(disc_delta);
           }
         }
-        printf("Currently have %d discs, saw posedge moving up.  "
+        LOG(INFO, "Currently have %d discs, saw posedge moving up.  "
             "Moving down by %f to %f\n", frisbees_.size(),
             ConvertIndexToDiscPosition(disc_delta),
             highest_frisbee_below_sensor->absolute_position(
@@ -484,8 +485,8 @@ void IndexMotor::RunIteration(
           const double disc_delta_meters = disc_position - kTopDiscDetectStop;
           const double disc_delta = IndexMotor::ConvertDiscPositionToIndex(
               disc_delta_meters);
-          printf("Posedge going down.  Moving top disc down by %f\n",
-                 disc_delta_meters);
+          LOG(INFO, "Posedge going down.  Moving top disc down by %f\n",
+              disc_delta_meters);
           for (auto frisbee = frisbees_.begin(), end = frisbees_.end();
                frisbee != end; ++frisbee) {
             frisbee->OffsetDisc(disc_delta);
@@ -514,8 +515,8 @@ void IndexMotor::RunIteration(
               last_bottom_disc_posedge_count_) {
             transfer_frisbee_.Reset();
             transfer_frisbee_.bottom_posedge_time_ = now;
-            printf("Posedge of bottom disc %f\n",
-                   transfer_frisbee_.bottom_posedge_time_.ToSeconds());
+            LOG(INFO, "Posedge of bottom disc %f\n",
+                transfer_frisbee_.bottom_posedge_time_.ToSeconds());
             ++hopper_disc_count_;
             ++total_disc_count_;
           }
@@ -524,8 +525,8 @@ void IndexMotor::RunIteration(
           if (position->bottom_disc_negedge_count !=
               last_bottom_disc_negedge_count_) {
             transfer_frisbee_.bottom_negedge_time_ = now;
-            printf("Negedge of bottom disc %f\n",
-                   transfer_frisbee_.bottom_negedge_time_.ToSeconds());
+            LOG(INFO, "Negedge of bottom disc %f\n",
+                transfer_frisbee_.bottom_negedge_time_.ToSeconds());
             frisbees_.push_front(transfer_frisbee_);
           }
 
@@ -580,7 +581,7 @@ void IndexMotor::RunIteration(
           // the right position.
           double max_disc_position = 0;
           if (MaxDiscPosition(&max_disc_position, NULL)) {
-            printf("There is a disc down here!\n");
+            LOG(DEBUG, "There is a disc down here!\n");
             // TODO(aschuh): Figure out what to do if grabbing the next one
             // would cause things to jam into the loader.
             // Say we aren't ready any more.  Undefined behavior will result if
@@ -622,7 +623,7 @@ void IndexMotor::RunIteration(
             intake_voltage = transfer_voltage = 12.0;
           }
         }
-        printf("INTAKE\n");
+        LOG(DEBUG, "INTAKE\n");
       }
       break;
     case Goal::READY_SHOOTER:
@@ -696,9 +697,9 @@ void IndexMotor::RunIteration(
           // range and verify that we don't see anything.
           printf("Moving the indexer to verify that it is clear\n");
           const double hopper_clear_verification_position =
-              ::std::min(upper_open_region_.lower_bound(),
+              ::std::max(upper_open_region_.lower_bound(),
                          lower_open_region_.lower_bound()) +
-              ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
+              ConvertDiscPositionToIndex(kIndexFreeLength) * 2.5;
 
           wrist_loop_->R << hopper_clear_verification_position, 0.0;
           if (::std::abs(wrist_loop_->X_hat(0, 0) -
@@ -722,9 +723,9 @@ void IndexMotor::RunIteration(
 
       {
         const double hopper_clear_verification_position =
-            ::std::min(upper_open_region_.lower_bound(),
+            ::std::max(upper_open_region_.lower_bound(),
                        lower_open_region_.lower_bound()) +
-            ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
+            ConvertDiscPositionToIndex(kIndexFreeLength) * 2.5;
 
         if (wrist_loop_->X_hat(0, 0) >
             hopper_clear_verification_position +
@@ -732,6 +733,12 @@ void IndexMotor::RunIteration(
           // We are at the end of the range.  There are no more discs here.
           while (frisbees_.size() > 0) {
             LOG(ERROR, "Dropping an extra disc since it can't exist\n");
+            LOG(ERROR, "Upper is [%f %f]\n",
+                upper_open_region_.upper_bound(),
+                upper_open_region_.lower_bound());
+            LOG(ERROR, "Lower is [%f %f]\n",
+                lower_open_region_.upper_bound(),
+                lower_open_region_.lower_bound());
             frisbees_.pop_back();
             --hopper_disc_count_;
             --total_disc_count_;
@@ -743,7 +750,7 @@ void IndexMotor::RunIteration(
         }
       }
 
-      printf("READY_SHOOTER or SHOOT\n");
+      LOG(DEBUG, "READY_SHOOTER or SHOOT\n");
       break;
   }
 
@@ -751,7 +758,7 @@ void IndexMotor::RunIteration(
   // forwards.
   switch (loader_state_) {
     case LoaderState::READY:
-      printf("Loader READY\n");
+      LOG(DEBUG, "Loader READY\n");
       // Open and down, ready to accept a disc.
       loader_up_ = false;
       disc_clamped_ = false;
@@ -759,9 +766,9 @@ void IndexMotor::RunIteration(
       if (loader_goal_ == LoaderGoal::GRAB ||
           loader_goal_ == LoaderGoal::SHOOT_AND_RESET) {
         if (loader_goal_ == LoaderGoal::GRAB) {
-          printf("Told to GRAB, moving on\n");
+          LOG(INFO, "Told to GRAB, moving on\n");
         } else {
-          printf("Told to SHOOT_AND_RESET, moving on\n");
+          LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
         }
         loader_state_ = LoaderState::GRABBING;
         loader_countdown_ = kGrabbingDelay;
@@ -769,7 +776,7 @@ void IndexMotor::RunIteration(
         break;
       }
     case LoaderState::GRABBING:
-      printf("Loader GRABBING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader GRABBING %d\n", loader_countdown_);
       // Closing the grabber.
       loader_up_ = false;
       disc_clamped_ = true;
@@ -781,18 +788,30 @@ void IndexMotor::RunIteration(
         loader_state_ = LoaderState::GRABBED;
       }
     case LoaderState::GRABBED:
-      printf("Loader GRABBED\n");
+      LOG(DEBUG, "Loader GRABBED\n");
       // Grabber closed.
       loader_up_ = false;
       disc_clamped_ = true;
       disc_ejected_ = false;
       if (loader_goal_ == LoaderGoal::SHOOT_AND_RESET) {
-        // TODO(aschuh): Only shoot if the shooter is up to speed.
-        // Seems like that would have us shooting a bit later than we could be,
-        // but it also probably spins back up real fast.
-        loader_state_ = LoaderState::LIFTING;
-        loader_countdown_ = kLiftingDelay;
-        printf("Told to SHOOT_AND_RESET, moving on\n");
+        shooter.status.FetchLatest();
+        if (shooter.status.get()) {
+          // TODO(aschuh): If we aren't shooting nicely, wait until the shooter
+          // is up to speed rather than just spinning.
+          if (shooter.status->average_velocity > 130) {
+            loader_state_ = LoaderState::LIFTING;
+            loader_countdown_ = kLiftingDelay;
+            LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
+          } else {
+            LOG(WARNING, "Told to SHOOT_AND_RESET, shooter too slow at %f\n",
+                shooter.status->average_velocity);
+            break;
+          }
+        } else {
+          LOG(ERROR, "Told to SHOOT_AND_RESET, no shooter data, moving on.\n");
+          loader_state_ = LoaderState::LIFTING;
+          loader_countdown_ = kLiftingDelay;
+        }
       } else if (loader_goal_ == LoaderGoal::READY) {
         LOG(ERROR, "Can't go to ready when we have something grabbed.\n");
         printf("Can't go to ready when we have something grabbed.\n");
@@ -801,7 +820,7 @@ void IndexMotor::RunIteration(
         break;
       }
     case LoaderState::LIFTING:
-      printf("Loader LIFTING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LIFTING %d\n", loader_countdown_);
       // Lifting the disc.
       loader_up_ = true;
       disc_clamped_ = true;
@@ -813,7 +832,7 @@ void IndexMotor::RunIteration(
         loader_state_ = LoaderState::LIFTED;
       }
     case LoaderState::LIFTED:
-      printf("Loader LIFTED\n");
+      LOG(DEBUG, "Loader LIFTED\n");
       // Disc lifted.  Time to eject it out.
       loader_up_ = true;
       disc_clamped_ = true;
@@ -821,7 +840,7 @@ void IndexMotor::RunIteration(
       loader_state_ = LoaderState::SHOOTING;
       loader_countdown_ = kShootingDelay;
     case LoaderState::SHOOTING:
-      printf("Loader SHOOTING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader SHOOTING %d\n", loader_countdown_);
       // Ejecting the disc into the shooter.
       loader_up_ = true;
       disc_clamped_ = false;
@@ -833,7 +852,7 @@ void IndexMotor::RunIteration(
         loader_state_ = LoaderState::SHOOT;
       }
     case LoaderState::SHOOT:
-      printf("Loader SHOOT\n");
+      LOG(DEBUG, "Loader SHOOT\n");
       // The disc has been shot.
       loader_up_ = true;
       disc_clamped_ = false;
@@ -843,7 +862,7 @@ void IndexMotor::RunIteration(
       --hopper_disc_count_;
       ++shot_disc_count_;
     case LoaderState::LOWERING:
-      printf("Loader LOWERING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LOWERING %d\n", loader_countdown_);
       // Lowering the loader back down.
       loader_up_ = false;
       disc_clamped_ = false;
@@ -855,7 +874,7 @@ void IndexMotor::RunIteration(
         loader_state_ = LoaderState::LOWERED;
       }
     case LoaderState::LOWERED:
-      printf("Loader LOWERED\n");
+      LOG(DEBUG, "Loader LOWERED\n");
       // The indexer is lowered.
       loader_up_ = false;
       disc_clamped_ = false;
