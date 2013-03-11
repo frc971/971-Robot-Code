@@ -41,25 +41,25 @@ const double kWristZeroingSpeed = 1.0;
 
 const int kAngleAdjustHallEffect = 2;
 
-const double kCompAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
-const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.5, 1.5};
+const double kCompAngleAdjustHallEffectStartAngle[2] = {0.305432, 1.5};
+const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305432, 1.5};
 
-const double kCompAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
-const double kPracticeAngleAdjustHallEffectStopAngle[2] = {-0.1, 1.0};
+const double kCompAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
+const double kPracticeAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 
-const double kPracticeAngleAdjustUpperPhysicalLimit = 3.0;
-const double kCompAngleAdjustUpperPhysicalLimit = 3.0;
+const double kPracticeAngleAdjustUpperPhysicalLimit = 0.894481;
+const double kCompAngleAdjustUpperPhysicalLimit = 0.894481;
 
-const double kPracticeAngleAdjustLowerPhysicalLimit = 0.0;
-const double kCompAngleAdjustLowerPhysicalLimit = 0.0;
+const double kPracticeAngleAdjustLowerPhysicalLimit = 0.283616;
+const double kCompAngleAdjustLowerPhysicalLimit = 0.283616;
 
-const double kPracticeAngleAdjustUpperLimit = 3.0;
-const double kCompAngleAdjustUpperLimit = 3.0;
+const double kPracticeAngleAdjustUpperLimit = 0.85;
+const double kCompAngleAdjustUpperLimit = 0.85;
 
-const double kPracticeAngleAdjustLowerLimit = 0.0;
-const double kCompAngleAdjustLowerLimit = 0.0;
+const double kPracticeAngleAdjustLowerLimit = 0.32;
+const double kCompAngleAdjustLowerLimit = 0.32;
 
-const double kAngleAdjustZeroingSpeed = -1.0;
+const double kAngleAdjustZeroingSpeed = -0.04;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
