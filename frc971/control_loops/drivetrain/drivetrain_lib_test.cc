@@ -161,7 +161,6 @@ TEST_F(DrivetrainTest, SurvivesZeroing) {
     } else {
       SendDSPacket(true);
     }
-    // frc971::sensors::gyro.MakeWithBuilder().angle(0.0).Send();
   }
   VerifyNearGoal();
 }
