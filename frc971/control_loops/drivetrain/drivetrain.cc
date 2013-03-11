@@ -263,8 +263,14 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
   bool bad_pos = false;
   if (position == NULL) {
-    LOG(WARNING, "no pos\n");
+    LOG(WARNING, "no position\n");
     bad_pos = true;
+  }
+
+  bool bad_output = false;
+  if (output == NULL) {
+    LOG(WARNING, "no output\n");
+    bad_output = true;
   }
 
   double wheel = goal->steering;
@@ -287,13 +293,15 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
   }
-  dt_closedloop.Update(!bad_pos, bad_pos || (output == NULL));
+  dt_closedloop.Update(!bad_pos, bad_pos || bad_output);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
-  if (control_loop_driving) {
-    dt_closedloop.SendMotors(output);
-  } else {
-    dt_openloop.SendMotors(output);
+  if (!bad_output) {
+    if (control_loop_driving) {
+      dt_closedloop.SendMotors(output);
+    } else {
+      dt_openloop.SendMotors(output);
+    }
   }
 }
 

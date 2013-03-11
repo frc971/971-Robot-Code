@@ -52,6 +52,7 @@
         'drivetrain_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],
     },
     {

@@ -9,6 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
+#include "frc971/queues/GyroAngle.q.h"
 
 
 using ::aos::time::Time;
@@ -102,8 +103,9 @@ class DrivetrainTest : public ::testing::Test {
                 drivetrain_motor_(&my_drivetrain_loop_),
                 drivetrain_motor_plant_() {
     // Flush the robot state queue so we can use clean shared memory for this
-    // test.
+    // test, also for the gyro.
     ::aos::robot_state.Clear();
+    ::frc971::sensors::gyro.Clear();
     SendDSPacket(true);
   }
 
@@ -127,6 +129,7 @@ class DrivetrainTest : public ::testing::Test {
 
   virtual ~DrivetrainTest() {
     ::aos::robot_state.Clear();
+    ::frc971::sensors::gyro.Clear();
   }
 };
 
@@ -150,14 +153,15 @@ TEST_F(DrivetrainTest, SurvivesZeroing) {
       .left_goal(-1.0)
       .right_goal(1.0).Send();
   for (int i = 0; i < 500; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
     if (i > 20 && i < 200) {
       SendDSPacket(false);
     } else {
       SendDSPacket(true);
     }
-    drivetrain_motor_plant_.SendPositionMessage();
-    drivetrain_motor_.Iterate();
-    drivetrain_motor_plant_.Simulate();
+    // frc971::sensors::gyro.MakeWithBuilder().angle(0.0).Send();
   }
   VerifyNearGoal();
 }
