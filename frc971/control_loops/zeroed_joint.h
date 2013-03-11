@@ -243,6 +243,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
 
   switch (state_) {
     case UNINITIALIZED:
+      LOG(DEBUG, "UNINITIALIZED\n");
       if (position) {
         // Reset the zeroing goal.
         zeroing_position_ = absolute_position;
@@ -261,6 +262,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       }
       break;
     case MOVING_OFF:
+      LOG(DEBUG, "MOVING_OFF\n");
       {
         // Move off the hall effect sensor.
         if (!::aos::robot_state->enabled) {
@@ -277,6 +279,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
         }
       }
     case ZEROING:
+      LOG(DEBUG, "ZEROING\n");
       {
         int active_sensor_index = ActiveSensorIndex(position);
         if (!::aos::robot_state->enabled) {
@@ -316,6 +319,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       }
 
     case READY:
+      LOG(DEBUG, "READY\n");
       {
         const double limited_goal = ClipGoal(goal_angle);
         loop_->R << limited_goal, goal_velocity;
@@ -323,6 +327,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       }
 
     case ESTOP:
+      LOG(DEBUG, "ESTOP\n");
       LOG(WARNING, "have already given up\n");
       return 0.0;
   }
