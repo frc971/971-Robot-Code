@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <inttypes.h>
 
 #include <map>
 #include <functional>
@@ -89,18 +90,12 @@ class FileWatch {
       : filename_(filename),
         callback_(callback),
         value_(value),
-        check_filename_(check_filename) {
+        create_(create),
+        check_filename_(check_filename),
+        watch_(-1) {
     init_once.Get();
 
-    watch_ = inotify_add_watch(notify_fd, filename.c_str(),
-                               create ? IN_CREATE : (IN_ATTRIB | IN_MODIFY));
-    if (watch_ == -1) {
-      LOG(FATAL, "inotify_add_watch(%d, %s,"
-          " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed with %d: %s\n",
-          notify_fd, filename.c_str(), create ? "true" : "false",
-          errno, strerror(errno));
-    }
-    watchers[watch_] = this;
+    CreateWatch();
   }
   // Cleans up everything.
   ~FileWatch() {
@@ -119,14 +114,7 @@ class FileWatch {
           notify_fd, watch_, errno, strerror(errno));
     }
 
-    if (watchers[watch_] != this) {
-      LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
-          filename_.c_str(), this);
-    } else {
-      watchers.erase(watch_);
-    }
-    LOG(DEBUG, "removed watch ID %d\n", watch_);
-    watch_ = -1;
+    RemoveWatchFromMap();
   }
 
  private:
@@ -139,6 +127,34 @@ class FileWatch {
                                           FileWatch::INotifyReadable, NULL));
     event_add(notify_event.release(), NULL);
     return NULL;
+  }
+
+  void RemoveWatchFromMap() {
+    if (watchers[watch_] != this) {
+      LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
+          filename_.c_str(), this);
+    } else {
+      watchers.erase(watch_);
+    }
+    LOG(DEBUG, "removed watch ID %d\n", watch_);
+    watch_ = -1;
+  }
+
+  void CreateWatch() {
+    assert(watch_ == -1);
+    watch_ = inotify_add_watch(notify_fd, filename_.c_str(),
+                               create_ ? IN_CREATE : (IN_ATTRIB |
+                                                     IN_MODIFY |
+                                                     IN_DELETE_SELF |
+                                                     IN_MOVE_SELF));
+    if (watch_ == -1) {
+      LOG(FATAL, "inotify_add_watch(%d, %s,"
+          " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed with %d: %s\n",
+          notify_fd, filename_.c_str(), create_ ? "true" : "false",
+          errno, strerror(errno));
+    }
+    watchers[watch_] = this;
+    LOG(DEBUG, "watch for %s is %d\n", filename_.c_str(), watch_);
   }
 
   // This gets set up as the callback for EV_READ on the inotify file
@@ -171,14 +187,28 @@ class FileWatch {
       if (watchers.count(notifyevt->wd) != 1) {
         LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
       } else {
-        watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
-                                              notifyevt->name : NULL);
+        LOG(DEBUG, "mask=%"PRIu32"\n", notifyevt->mask);
+        // If it was something that means the file got deleted.
+        if (notifyevt->mask & (IN_MOVE_SELF | IN_DELETE_SELF | IN_IGNORED)) {
+          watchers[notifyevt->wd]->WatchDeleted();
+        } else {
+          watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
+                                                notifyevt->name : NULL);
+        }
       }
 
       notifyevt = reinterpret_cast<inotify_event *>(
           reinterpret_cast<char *>(notifyevt) +
           sizeof(*notifyevt) + notifyevt->len);
     }
+  }
+
+  // INotifyReadable calls this method whenever the watch for our file gets
+  // removed somehow.
+  void WatchDeleted() {
+    LOG(DEBUG, "watch for %s deleted\n", filename_.c_str());
+    RemoveWatchFromMap();
+    CreateWatch();
   }
 
   // INotifyReadable calls this method whenever the watch for our file triggers.
@@ -204,6 +234,7 @@ class FileWatch {
   const std::string filename_;
   const std::function<void(void *)> callback_;
   void *const value_;
+  const bool create_;
   std::string check_filename_;
 
   // The watch descriptor or -1 if we don't have one any more.
@@ -332,7 +363,7 @@ class Child {
     if (restarts_.size() > kMaxRestartsNumber) {
       time::Time oldest = restarts_.front();
       restarts_.pop();
-      if ((time::Time::Now() - oldest) > kMaxRestartsTime) {
+      if ((time::Time::Now() - oldest) <= kMaxRestartsTime) {
         LOG(WARNING, "process %s getting restarted too often\n", name());
         Timeout(kResumeWait, StaticStart, this);
         return;
@@ -372,9 +403,13 @@ class Child {
   }
 
   void FileModified() {
+    LOG(DEBUG, "file for %s modified\n", name());
     struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
     // This will reset the timeout again if it hasn't run yet.
-    evtimer_add(restart_timeout_.get(), &restart_time_timeval);
+    if (evtimer_add(restart_timeout_.get(), &restart_time_timeval) != 0) {
+      LOG(FATAL, "evtimer_add(%p, %p) failed\n",
+          restart_timeout_.get(), &restart_time_timeval);
+    }
   }
 
   static void StaticDoRestart(int, short, void *self) {
@@ -406,6 +441,8 @@ class Child {
       status->self = this;
       status->old_pid = pid_;
       Timeout(kProcessDieTime, StaticCheckDied, status);
+    } else {
+      LOG(WARNING, "%s restart attempted but not running\n", name());
     }
   }
 
@@ -478,6 +515,7 @@ class Child {
       LOG(FATAL, "forking to run \"%s\" failed with %d: %s\n",
           binary_.c_str(), errno, strerror(errno));
     }
+    LOG(DEBUG, "started \"%s\" successfully\n", binary_.c_str());
   }
 
   // A history of the times that this process has been restarted.
@@ -508,9 +546,9 @@ class Child {
   DISALLOW_COPY_AND_ASSIGN(Child);
 };
 const time::Time Child::kProcessDieTime = time::Time::InSeconds(0.5);
-const time::Time Child::kMaxRestartsTime = time::Time::InSeconds(2);
+const time::Time Child::kMaxRestartsTime = time::Time::InSeconds(4);
 const time::Time Child::kResumeWait = time::Time::InSeconds(2);
-const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1);
+const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1.5);
 
 // This is where all of the Child instances except core live.
 std::vector<unique_ptr<Child>> children;
