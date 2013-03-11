@@ -8,9 +8,9 @@ namespace control_loops {
 
 StateFeedbackPlant<2, 1, 1> MakeShooterPlant() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 1.0, 0.0098571228289, 0.0, 0.971561310859;
+  A << 1.0, 0.00993695674898, 0.0, 0.987417901985;
   Eigen::Matrix<double, 2, 1> B;
-  B << 0.00785005397639, 1.56249765488;
+  B << 0.00319456032937, 0.637566599616;
   Eigen::Matrix<double, 1, 2> C;
   C << 1, 0;
   Eigen::Matrix<double, 1, 1> D;
@@ -24,9 +24,9 @@ StateFeedbackPlant<2, 1, 1> MakeShooterPlant() {
 
 StateFeedbackLoop<2, 1, 1> MakeShooterLoop() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 1.07156131086, 28.0940195016;
+  L << 1.08741790198, 29.5581442884;
   Eigen::Matrix<double, 1, 2> K;
-  K << 0.486400730028, 0.247515916371;
+  K << 1.19203233114, 0.631478943582;
   return StateFeedbackLoop<2, 1, 1>(L, K, MakeShooterPlant());
 }
 
