@@ -148,7 +148,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 }
 
 // Tests that it survives disabling.
-TEST_F(DrivetrainTest, SurvivesZeroing) {
+TEST_F(DrivetrainTest, SurvivesDisabling) {
   my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
       .left_goal(-1.0)
       .right_goal(1.0).Send();
