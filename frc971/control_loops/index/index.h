@@ -185,7 +185,7 @@ class IndexMotor
     // currently blocking the top sensor.  This knowledge can be used to move
     // this disc if it is believed to be blocking the top sensor.
     // Returns the amount that the disc moved due to this observation.
-    double ObserveNoTopDiscSensor(double index_position, double index_velocity);
+    double ObserveNoTopDiscSensor(double index_position);
 
     // Posedge and negedge disc times.
     ::aos::time::Time bottom_posedge_time_;
