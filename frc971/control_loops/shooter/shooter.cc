@@ -29,8 +29,8 @@ void ShooterMotor::RunIteration(
     ::aos::control_loops::Output *output,
     control_loops::ShooterLoop::Status *status) {
   const double velocity_goal = std::min(goal->velocity, kMaxSpeed);
-  const double current_position = 
-      (position == NULL ? loop_->X_hat[0] : position->position);
+  const double current_position =
+      (position == NULL ? loop_->X_hat(0, 0) : position->position);
   double output_voltage = 0.0;
 
   // Track the current position if the velocity goal is small.
@@ -48,19 +48,19 @@ void ShooterMotor::RunIteration(
   // error can't produce much more than full power.
   const double kVelocityWeightScalar = 0.35;
   const double max_reference =
-      (loop_->plant.U_max[0] - kVelocityWeightScalar * 
-       (velocity_goal - loop_->X_hat[1]) * loop_->K[1])
-      / loop_->K[0] + loop_->X_hat[0];
+      (loop_->U_max(0, 0) - kVelocityWeightScalar *
+       (velocity_goal - loop_->X_hat(1, 0)) * loop_->K(0, 1))
+      / loop_->K(0, 0) + loop_->X_hat(0, 0);
   const double min_reference =
-      (loop_->plant.U_min[0] - kVelocityWeightScalar * 
-       (velocity_goal - loop_->X_hat[1]) * loop_->K[1]) 
-      / loop_->K[0] + loop_->X_hat[0];
+      (loop_->U_min(0, 0) - kVelocityWeightScalar *
+       (velocity_goal - loop_->X_hat(1, 0)) * loop_->K(0, 1))
+      / loop_->K(0, 0) + loop_->X_hat(0, 0);
 
   position_goal_ = ::std::max(::std::min(position_goal_, max_reference),
                               min_reference);
   loop_->R << position_goal_, velocity_goal;
   position_goal_ += velocity_goal * dt;
-  
+
   loop_->Update(position, output == NULL);
 
   // Kill power at low velocity goals.

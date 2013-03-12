@@ -59,7 +59,7 @@ const double kCompAngleAdjustUpperLimit = 0.85;
 const double kPracticeAngleAdjustLowerLimit = 0.32;
 const double kCompAngleAdjustLowerLimit = 0.32;
 
-const double kAngleAdjustZeroingSpeed = -0.04;
+const double kAngleAdjustZeroingSpeed = -0.2;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;

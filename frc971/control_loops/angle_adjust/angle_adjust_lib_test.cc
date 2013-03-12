@@ -183,7 +183,7 @@ class AngleAdjustTest : public ::testing::Test {
 
 // Tests that the angle_adjust zeros correctly and goes to a position.
 TEST_F(AngleAdjustTest, ZerosCorrectly) {
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
   for (int i = 0; i < 400; ++i) {
     angle_adjust_motor_plant_.SendPositionMessage();
     angle_adjust_motor_.Iterate();
@@ -195,8 +195,8 @@ TEST_F(AngleAdjustTest, ZerosCorrectly) {
 
 // Tests that the angle_adjust zeros correctly starting on the sensor.
 TEST_F(AngleAdjustTest, ZerosStartingOn) {
-  angle_adjust_motor_plant_.Reinitialize(0.25);
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  angle_adjust_motor_plant_.Reinitialize(0.30);
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
   for (int i = 0; i < 500; ++i) {
     angle_adjust_motor_plant_.SendPositionMessage();
     angle_adjust_motor_.Iterate();
@@ -208,7 +208,7 @@ TEST_F(AngleAdjustTest, ZerosStartingOn) {
 
 // Tests that missing positions are correctly handled.
 TEST_F(AngleAdjustTest, HandleMissingPosition) {
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
   for (int i = 0; i < 400; ++i) {
     if (i % 23) {
       angle_adjust_motor_plant_.SendPositionMessage();
@@ -222,7 +222,7 @@ TEST_F(AngleAdjustTest, HandleMissingPosition) {
 
 // Tests that loosing the encoder for a second triggers a re-zero.
 TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
   for (int i = 0; i < 800; ++i) {
     // After 3 seconds, simulate the encoder going missing.
     // This should trigger a re-zero.  To make sure it works, change the goal as
@@ -234,7 +234,7 @@ TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
         // Should be re-zeroing now.
         EXPECT_TRUE(angle_adjust_motor_.is_uninitialized());
       }
-      my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.2).Send();
+      my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.5).Send();
     }
     if (i == 430) {
       EXPECT_TRUE(angle_adjust_motor_.is_zeroing() ||
@@ -251,7 +251,7 @@ TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
 // Tests that disabling while zeroing sends the state machine into the
 // uninitialized state.
 TEST_F(AngleAdjustTest, DisableGoesUninitialized) {
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
   for (int i = 0; i < 800; ++i) {
     angle_adjust_motor_plant_.SendPositionMessage();
     // After 0.5 seconds, disable the robot.
@@ -276,10 +276,12 @@ TEST_F(AngleAdjustTest, DisableGoesUninitialized) {
   VerifyNearGoal();
 }
 
+/*
+// TODO(aschuh): Enable these tests if we install a second hall effect sensor.
 // Tests that the angle_adjust zeros correctly from above the second sensor.
 TEST_F(AngleAdjustTest, ZerosCorrectlyAboveSecond) {
   angle_adjust_motor_plant_.Reinitialize(1.75);
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(2.0).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(1.0).Send();
   for (int i = 0; i < 400; ++i) {
     angle_adjust_motor_plant_.SendPositionMessage();
     angle_adjust_motor_.Iterate();
@@ -293,7 +295,7 @@ TEST_F(AngleAdjustTest, ZerosCorrectlyAboveSecond) {
 // the second hall effect sensor.
 TEST_F(AngleAdjustTest, ZerosStartingOnSecond) {
   angle_adjust_motor_plant_.Reinitialize(1.25);
-  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(2.0).Send();
+  my_angle_adjust_loop_.goal.MakeWithBuilder().goal(1.0).Send();
   for (int i = 0; i < 500; ++i) {
     angle_adjust_motor_plant_.SendPositionMessage();
     angle_adjust_motor_.Iterate();
@@ -302,6 +304,7 @@ TEST_F(AngleAdjustTest, ZerosStartingOnSecond) {
   }
   VerifyNearGoal();
 }
+*/
 
 }  // namespace testing
 }  // namespace control_loops

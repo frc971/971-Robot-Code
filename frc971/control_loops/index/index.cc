@@ -217,10 +217,10 @@ void IndexMotor::IndexStateFeedbackLoop::CapU() {
   }
 
   for (int i = 0; i < kNumOutputs; ++i) {
-    if (U[i] > plant.U_max[i]) {
-      U[i] = plant.U_max[i];
-    } else if (U[i] < plant.U_min[i]) {
-      U[i] = plant.U_min[i];
+    if (U(i, 0) > U_max(i, 0)) {
+      U(i, 0) = U_max(i, 0);
+    } else if (U(i, 0) < U_min(i, 0)) {
+      U(i, 0) = U_min(i, 0);
     }
   }
 }
