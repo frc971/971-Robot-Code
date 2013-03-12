@@ -113,7 +113,7 @@ const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 // TODO(aschuh): Tune these.
 /*static*/ const double
-    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 6.0;
+    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 11.0;
 /*static*/ const double
     IndexMotor::IndexStateFeedbackLoop::kNoMotionCuttoffCount = 20;
 
@@ -474,7 +474,7 @@ void IndexMotor::RunIteration(
   }
 
   // Bool to track if it is safe for the goal to change yet.
-  bool safe_to_change_state_ = true;
+  bool safe_to_change_state = true;
   switch (safe_goal_) {
     case Goal::HOLD:
       // The goal should already be good, so sit tight with everything the same
@@ -508,7 +508,7 @@ void IndexMotor::RunIteration(
           if (position->bottom_disc_detect) {
             intake_voltage = transfer_voltage = 12.0;
             // Must wait until the disc gets out before we can change state.
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
 
             // TODO(aschuh): A disc on the way through needs to start moving
             // the indexer if it isn't already moving.  Maybe?
@@ -548,7 +548,7 @@ void IndexMotor::RunIteration(
             }
             if (!frisbee->has_been_indexed_) {
               // All discs must be indexed before it is safe to stop indexing.
-              safe_to_change_state_ = false;
+              safe_to_change_state = false;
             }
           }
 
@@ -603,6 +603,11 @@ void IndexMotor::RunIteration(
       break;
     case Goal::READY_SHOOTER:
     case Goal::SHOOT:
+      // Don't let us leave the shoot or preload state if there are 4 discs in
+      // the hopper.
+      if (hopper_disc_count_ >= 4 && goal_enum != Goal::SHOOT) {
+        safe_to_change_state = false;
+      }
       // Check if we have any discs to shoot or load and handle them.
       double min_disc_position = 0;
       if (MinDiscPosition(&min_disc_position, NULL)) {
@@ -633,7 +638,7 @@ void IndexMotor::RunIteration(
 
           // Must wait until it has been grabbed to continue.
           if (loader_state_ == LoaderState::GRABBING) {
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
           }
         } else {
           // No disc up top right now.
@@ -642,7 +647,7 @@ void IndexMotor::RunIteration(
           // See if the disc has gotten pretty far up yet.
           if (wrist_loop_->X_hat(0, 0) > ready_disc_position) {
             // Point of no return.  We are committing to grabbing it now.
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
             const double robust_grabbed_disc_position =
                 (grabbed_disc_position -
                  ConvertDiscPositionToIndex(kGrabberLength));
@@ -684,6 +689,12 @@ void IndexMotor::RunIteration(
             // We are at the end of the range.  There are no more discs here.
             while (frisbees_.size() > 0) {
               LOG(ERROR, "Dropping an extra disc since it can't exist\n");
+              LOG(ERROR, "Upper is [%f %f]\n",
+                  upper_open_region_.upper_bound(),
+                  upper_open_region_.lower_bound());
+              LOG(ERROR, "Lower is [%f %f]\n",
+                  lower_open_region_.upper_bound(),
+                  lower_open_region_.lower_bound());
               frisbees_.pop_back();
               --hopper_disc_count_;
               --total_disc_count_;
@@ -727,6 +738,23 @@ void IndexMotor::RunIteration(
 
       LOG(DEBUG, "READY_SHOOTER or SHOOT\n");
       break;
+  }
+
+  // If we have 4 discs, it is time to preload.
+  if (safe_to_change_state && hopper_disc_count_ >= 4) {
+    switch (safe_goal_) {
+      case Goal::HOLD:
+      case Goal::READY_LOWER:
+      case Goal::INTAKE:
+        safe_goal_ = Goal::READY_SHOOTER;
+        safe_to_change_state = false;
+        LOG(INFO, "We have %d discs, time to preload automatically\n",
+            hopper_disc_count_);
+        break;
+      case Goal::READY_SHOOTER:
+      case Goal::SHOOT:
+        break;
+    }
   }
 
   // The only way out of the loader is to shoot the disc.  The FSM can only go
@@ -890,7 +918,7 @@ void IndexMotor::RunIteration(
     output->disc_ejected = disc_ejected_;
   }
 
-  if (safe_to_change_state_) {
+  if (safe_to_change_state) {
     safe_goal_ = goal_enum;
   }
   if (hopper_disc_count_ < 0) {

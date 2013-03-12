@@ -989,12 +989,13 @@ TEST_F(IndexTest, GrabFourDiscs) {
   EXPECT_FALSE(my_index_loop_.status->ready_to_intake);
   EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(
-      IndexMotor::kIndexStartPosition + IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
-      index_motor_plant_.frisbees[3].position(), 0.10);
+      IndexMotor::kReadyToLiftPosition,
+      index_motor_plant_.frisbees[0].position(), 0.001);
+
   EXPECT_NEAR(
-      IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
-      (index_motor_plant_.frisbees[0].position() -
-       index_motor_plant_.frisbees[1].position()), 0.10);
+      IndexMotor::kReadyToPreload,
+      index_motor_plant_.frisbees[1].position(), 0.01);
+
   EXPECT_NEAR(
       IndexMotor::ConvertDiscAngleToDiscPosition(M_PI),
       (index_motor_plant_.frisbees[1].position() -
