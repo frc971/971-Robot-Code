@@ -8,7 +8,6 @@
         'header_path': 'frc971/input',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:controls',
       ],
       'includes': ['../../aos/build/queues.gypi'],
@@ -20,9 +19,7 @@
         'JoystickReader.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/atom_code/input/input.gyp:joystick',
-        '<(AOS)/common/network/network.gyp:socket',
         'actions',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
@@ -36,10 +33,10 @@
         'SensorReader.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/common/network/network.gyp:socket',
+        '<(AOS)/common/input/input.gyp:sensor_input',
+        '<(AOS)/build/aos.gyp:aos_core',
       ],
       'conditions': [
         ['OS!="crio"', {
@@ -59,7 +56,6 @@
         '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
-        '<(AOS)/crio/shared_libs/shared_libs.gyp:limit_encoder_reader',
       ],
     },
     {

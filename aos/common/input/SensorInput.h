@@ -1,7 +1,6 @@
 #ifndef AOS_INPUT_SENSOR_INPUT_H_
 #define AOS_INPUT_SENSOR_INPUT_H_
 
-#include "aos/aos_core.h"
 #ifdef __VXWORKS__
 #include <vector>
 #include <semLib.h>

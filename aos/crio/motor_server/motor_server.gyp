@@ -36,11 +36,13 @@
         '<(EXTERNALS):WPILib',
         '<(AOS)/common/network/network.gyp:socket',
         '<(AOS)/common/common.gyp:common',
+        '<(AOS)/common/input/input.gyp:sensor_input',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
         '<(AOS)/common/network/network.gyp:socket',
         '<(AOS)/common/common.gyp:common',
+        '<(AOS)/common/input/input.gyp:sensor_input',
       ],
     },
     {
@@ -58,6 +60,7 @@
         'CRIOControlLoopRunner',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
         'output',
+        '<(AOS)/common/network/network.gyp:socket',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
@@ -67,6 +70,7 @@
         '<(AOS)/common/network/network.gyp:socket',
         'CRIOControlLoopRunner',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
+        '<(AOS)/common/network/network.gyp:socket',
       ],
     },
   ],

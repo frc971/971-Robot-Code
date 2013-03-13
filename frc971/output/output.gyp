@@ -32,6 +32,7 @@
               '<(AOS)/atom_code/output/output.gyp:motor_output',
               '<(AOS)/atom_code/messages/messages.gyp:messages',
               '<(AOS)/atom_code/atom_code.gyp:init',
+              '<(AOS)/common/network/network.gyp:socket',
             ],
           }, {
             'sources': ['CRIOMotorWriter.cc'],
@@ -43,7 +44,6 @@
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/common/network/network.gyp:socket',
       ],
     },
     {
@@ -54,7 +54,6 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
-        '<(AOS)/common/network/network.gyp:socket',
       ],
     },
   ],

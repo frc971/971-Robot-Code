@@ -1,5 +1,5 @@
-#ifndef AOS_NETWORK_SOCKET_H_
-#define AOS_NETWORK_SOCKET_H_
+#ifndef AOS_COMMON_NETWORK_SOCKET_H_
+#define AOS_COMMON_NETWORK_SOCKET_H_
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+
 #include "aos/common/Configuration.h"
+#include "aos/common/time.h"
 
 namespace aos {
 
@@ -27,16 +29,15 @@ class Socket {
   // Resets socket_ and last_ret_.
   void Reset();
 
-	union {
+  union {
     sockaddr_in in;
     sockaddr addr;
   } addr_; // filled in by Connect
 
-	int socket_;
+  int socket_;
   int last_ret_;
 };
 
-} // namespace aos
+}  // namespace aos
 
-#endif
-
+#endif  // AOS_COMMON_NETWORK_SOCKET_H_

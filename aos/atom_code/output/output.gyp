@@ -27,10 +27,10 @@
         'MotorOutput.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/common/network/network.gyp:socket',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/common/network/network.gyp:socket',
       ],
     },
   ],

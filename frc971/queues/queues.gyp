@@ -3,7 +3,6 @@
     'queue_files': [
       'GyroAngle.q',
       'Piston.q',
-      'Temp.q',
     ]
   },
   'targets': [

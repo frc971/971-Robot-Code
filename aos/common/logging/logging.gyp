@@ -8,7 +8,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

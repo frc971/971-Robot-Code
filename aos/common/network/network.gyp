@@ -47,9 +47,11 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
   ],

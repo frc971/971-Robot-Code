@@ -32,6 +32,8 @@
           ],
           'dependencies': [
             '<(EXTERNALS):WPILib',
+            # TODO(brians): socket should only depend on the interface
+            #'<(AOS)/common/network/network.gyp:socket',
           ]
         }, {
           'sources': [
@@ -67,6 +69,32 @@
         '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../build/swig.gypi'],
+    },
+    {
+      'target_name': 'aos_core',
+      'type': 'static_library',
+      'sources': [
+        #'<(AOS)/aos_core.h'
+      ],
+      'conditions': [
+        ['OS=="atom"', {
+          'dependencies': [
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/atom_code.gyp:init',
+          ],
+          'export_dependent_settings': [
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/atom_code.gyp:init',
+          ],
+        }, {
+          'dependencies': [
+            '<(EXTERNALS):WPILib',
+          ],
+          'export_dependent_settings': [
+            '<(EXTERNALS):WPILib',
+          ],
+        }]
+      ],
     },
     {
       'target_name': 'libaos',

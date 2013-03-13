@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 
-#include "aos/aos_core.h"
 #include "aos/common/inttypes.h"
 #include "aos/common/input/SensorInput.h"
 

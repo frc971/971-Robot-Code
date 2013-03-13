@@ -8,6 +8,7 @@
       ],
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/network/network.gyp:socket',
       ]
     },
   ],

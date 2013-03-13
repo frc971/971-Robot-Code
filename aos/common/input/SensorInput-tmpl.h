@@ -1,8 +1,8 @@
-#include "aos/common/input/SensorInput.h"
 #ifndef __VXWORKS__
 #include "aos/common/network/ReceiveSocket.h"
 #include "aos/common/Configuration.h"
 #endif
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 
