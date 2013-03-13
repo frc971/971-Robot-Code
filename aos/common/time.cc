@@ -8,21 +8,66 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/inttypes.h"
+#include "aos/common/mutex.h"
 
 namespace aos {
 namespace time {
 
-Time Time::Now(clockid_t clock) {
-  timespec temp;
-  if (clock_gettime(clock, &temp) != 0) {
-    // TODO(aschuh): There needs to be a pluggable low level logging interface
-    // so we can break this dependency loop.  This also would help during
-    // startup.
-    LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
-        static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
-  }
-  return Time(temp);
+// State required to enable and use mock time.
+namespace {
+// True if mock time is enabled.
+// This does not need to be checked with the mutex held because setting time to
+// be enabled or disabled is atomic, and all future operations are atomic
+// anyways.  If there is a race condition setting or clearing whether time is
+// enabled or not, it will still be a race condition if current_mock_time is
+// also set atomically with enabled.
+bool mock_time_enabled = false;
+// Mutex to make time reads and writes thread safe.
+Mutex time_mutex;
+// Current time when time is mocked.
+Time current_mock_time(0, 0);
+
+// TODO(aschuh): This doesn't include SleepFor and SleepUntil.
+// TODO(aschuh): Create a clock source object and change the default?
+//  That would let me create a MockTime clock source.
 }
+
+void Time::EnableMockTime(const Time now) {
+  mock_time_enabled = true;
+  MutexLocker time_mutex_locker(&time_mutex);
+  current_mock_time = now;
+}
+
+void Time::DisableMockTime() {
+  MutexLocker time_mutex_locker(&time_mutex);
+  mock_time_enabled = false;
+}
+
+void Time::SetMockTime(const Time now) {
+  MutexLocker time_mutex_locker(&time_mutex);
+  if (!mock_time_enabled) {
+    LOG(FATAL, "Tried to set mock time and mock time is not enabled\n");
+  }
+  current_mock_time = now;
+}
+
+Time Time::Now(clockid_t clock) {
+  if (mock_time_enabled) {
+    MutexLocker time_mutex_locker(&time_mutex);
+    return current_mock_time;
+  } else {
+    timespec temp;
+    if (clock_gettime(clock, &temp) != 0) {
+      // TODO(aschuh): There needs to be a pluggable low level logging interface
+      // so we can break this dependency loop.  This also would help during
+      // startup.
+      LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
+          static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
+    }
+    return Time(temp);
+  }
+}
+
 void Time::Check() {
   if (nsec_ >= kNSecInSec || nsec_ < 0) {
     LOG(FATAL, "0 <= nsec_(%"PRId32") < %"PRId32" isn't true.\n",

@@ -27,35 +27,44 @@
       ],
     },
     {
-      'target_name': 'SensorReader',
-      'type': '<(aos_target)',
+      'target_name': 'sensor_unpacker',
+      'type': 'static_library',
       'sources': [
-        'SensorReader.cc',
+        'sensor_unpacker.cc',
       ],
       'dependencies': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/common/input/input.gyp:sensor_input',
-        '<(AOS)/build/aos.gyp:aos_core',
-      ],
-      'conditions': [
-        ['OS!="crio"', {
-          'dependencies': [
-            '<(AOS)/atom_code/atom_code.gyp:init',
-          ],
-        }],
       ],
     },
     {
-      'target_name': 'SensorWriter',
-      'type': '<(aos_target)',
+      'target_name': 'sensor_receiver',
+      'type': 'executable',
       'sources': [
-        'SensorWriter.cc',
+        'sensor_receiver.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+        'sensor_unpacker',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_receiver',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+      ],
+    },
+    {
+      'target_name': 'sensor_packer',
+      'type': 'static_library',
+      'sources': [
+        'sensor_packer.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
+        '<(AOS)/common/common.gyp:mutex',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib',
+        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
+        '<(AOS)/common/common.gyp:mutex',
       ],
     },
     {

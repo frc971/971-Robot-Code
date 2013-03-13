@@ -14,7 +14,7 @@ class ByteBuffer {
    int m_i;
    char *m_buffer;
    bool recv_from_sock(ReceiveSocket *sock) {
-     m_length = sock->Recv(m_buffer, m_size, 40000);
+     m_length = sock->Receive(m_buffer, m_size, 40000);
      if (m_length < 0) {
        m_length = 0;
      }

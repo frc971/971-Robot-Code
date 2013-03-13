@@ -7,6 +7,7 @@ namespace aos {
 
 class SendSocket : public Socket {
  public:
+  //inline int Send(const void *buf, int length) { return Socket::Send(buf, length); }
   // Connect must be called before use.
   SendSocket() {}
   // Calls Connect automatically.

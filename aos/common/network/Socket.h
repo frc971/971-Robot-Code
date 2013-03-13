@@ -18,9 +18,21 @@ class Socket {
  public:
   int LastStatus() const { return last_ret_; }
 
-	int Send(const void *buf, int length);
-	int Recv(void *buf, int length);
-	int Recv(void *buf, int length, long usec); // returns 0 if timed out
+  int Send(const void *buf, int length);
+
+  // buf is where to put the data and length is the maximum amount of data to
+  // put in for all overloads.
+  // All overloads return how many bytes were received or -1 for error. 0 is a
+  // valid return value for all overloads.
+  // No timeout.
+  int Receive(void *buf, int length);
+  // DEPRECATED(brians): use the time::Time overload instead
+  int Receive(void *buf, int length, long usec_timeout) {
+    return Receive(buf, length, time::Time::InUS(usec_timeout));
+  }
+  // timeout is relative
+  int Receive(void *buf, int length, time::Time timeout);
+
  protected:
   int Connect(NetworkPort port, const char *address, int type = SOCK_DGRAM);
   Socket();

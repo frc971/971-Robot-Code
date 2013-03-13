@@ -7,6 +7,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/type_traits.h"
 #include "aos/common/queue.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace control_loops {
@@ -35,6 +36,9 @@ class SerializableControlLoop : public Runnable {
   // Most likely the hash of the queue group.
   virtual uint32_t UniqueID() = 0;
 };
+
+// Control loops run this often, "starting" at time 0.
+const time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 
 // Provides helper methods to assist in writing control loops.
 // This template expects to be constructed with a queue group as an argument

@@ -6,7 +6,6 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/crio/motor_server/MotorServer.h"
-#include "aos/common/time.h"
 
 extern "C" {
 // A really simple function implemented in a .c file because the header that
@@ -80,12 +79,14 @@ template<typename T>
 PeriodicNotifier<T>::PeriodicNotifier(
     typename InterruptBridge<T>::Handler handler,
     T *param, int priority)
-    : InterruptBridge<T>(handler, param, priority) {}
+    : InterruptBridge<T>(handler, param, priority),
+      period_(-1, -1) {}
 
 template<typename T>
-void PeriodicNotifier<T>::StartPeriodic(double period) {
+void PeriodicNotifier<T>::StartPeriodic(time::Time period) {
+  period_ = period;
   this->StartTask();
-  StartNotifications(period);
+  StartNotifications();
 }
 
 template<typename T>
@@ -128,11 +129,11 @@ TimerNotifier<T>::~TimerNotifier() {
 }
 
 template<typename T>
-void TimerNotifier<T>::StartNotifications(double period) {
+void TimerNotifier<T>::StartNotifications() {
   itimerspec timer_spec;
   timer_spec.it_value.tv_sec = 0;
   timer_spec.it_value.tv_nsec = 1;  // 0 would mean to disarm the timer
-  timer_spec.it_interval = time::Time::InSeconds(period).ToTimespec();
+  timer_spec.it_interval = this->period().ToTimespec();
   if (timer_settime(timer_, 0, &timer_spec, NULL) != OK) {
     LOG(FATAL, "timer_settime(%p, 0, %p, NULL) failed with %d: %s\n",
         timer_, &timer_spec, errno, strerror(errno));
@@ -163,8 +164,8 @@ WDInterruptNotifier<T>::~WDInterruptNotifier() {
 }
 
 template<typename T>
-void WDInterruptNotifier<T>::StartNotifications(double period) {
-  delay_ = time::Time::InSeconds(period).ToTicks();
+void WDInterruptNotifier<T>::StartNotifications() {
+  delay_ = this->period().ToTicks();
 
   if (wdStart(wd_,
               1,  // run it really soon

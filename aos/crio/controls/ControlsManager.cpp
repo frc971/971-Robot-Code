@@ -8,7 +8,6 @@
 #include "aos/crio/logging/crio_logging.h"
 #include "aos/common/Configuration.h"
 #include "aos/crio/aos_ctdt.h"
-#include "aos/crio/motor_server/CRIOControlLoopRunner.h"
 #include "aos/crio/motor_server/MotorServer.h"
 
 namespace aos {
@@ -29,19 +28,18 @@ void ControlsManager::StartCompetition() {
   GetWatchdog().SetEnabled(false);
   LOG(INFO, "disabled watchdog\n");
 
-  RegisterControlLoops();
-  LOG(INFO, "registered control loops\n");
-
-  // CRIOControlLoopRunner calls part of MotorServer, so MotorServer has to get
-  // initialized first.
   MotorServer::Start();
   LOG(INFO, "MotorServer started\n");
-  CRIOControlLoopRunner::Start();
-  LOG(INFO, "cRIO control loops started\n");
 
   LOG(INFO, "calling init functions\n");
   aos_call_init_functions();
   LOG(INFO, "initialized\n");
+
+  RegisterControlLoops();
+  LOG(INFO, "registered control loops\n");
+
+  StartSensorBroadcasters();
+  LOG(INFO, "started sensor broadcasters\n");
 
   // Wait forever so that this task doesn't end to avoid confusing any brittle
   // FIRST code that might be hiding somewhere.

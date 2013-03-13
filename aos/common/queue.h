@@ -9,7 +9,7 @@
 #undef USE_UNSAFE
 #endif
 
-#include "aos/aos_core.h"
+#include "aos/common/time.h"
 #include "aos/common/macros.h"
 #ifndef USE_UNSAFE
 #include "aos/atom_code/ipc_lib/queue.h"

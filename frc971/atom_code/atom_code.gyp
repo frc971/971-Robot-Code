@@ -7,7 +7,7 @@
         '<(AOS)/build/aos_all.gyp:Atom',
         '../control_loops/control_loops.gyp:DriveTrain',
         '../input/input.gyp:JoystickReader',
-        '../input/input.gyp:SensorReader',
+        '../input/input.gyp:sensor_receiver',
         '../input/input.gyp:GyroReader',
         '../input/input.gyp:AutoMode',
         '../output/output.gyp:MotorWriter',

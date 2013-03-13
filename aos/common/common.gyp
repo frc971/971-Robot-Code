@@ -83,9 +83,11 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:common',
+        'time',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:common',
+        'time',
       ],
     },
     {
@@ -142,11 +144,13 @@
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
+        'time',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
+        'time',
       ],
     },
     {

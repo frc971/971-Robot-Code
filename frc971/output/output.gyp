@@ -32,7 +32,6 @@
               '<(AOS)/atom_code/output/output.gyp:motor_output',
               '<(AOS)/atom_code/messages/messages.gyp:messages',
               '<(AOS)/atom_code/atom_code.gyp:init',
-              '<(AOS)/common/network/network.gyp:socket',
             ],
           }, {
             'sources': ['CRIOMotorWriter.cc'],
@@ -44,16 +43,6 @@
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-      ],
-    },
-    {
-      'target_name': 'SensorSender',
-      'type': '<(aos_target)',
-      'sources': [
-        'SensorSender.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
       ],
     },
   ],

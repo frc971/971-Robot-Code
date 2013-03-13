@@ -8,6 +8,7 @@
 
 #include "aos/common/scoped_ptr.h"
 
+#include "aos/common/time.h"
 #include "aos/common/macros.h"
 
 class Task;
@@ -61,8 +62,23 @@ class InterruptBridge {
 template<typename T>
 class PeriodicNotifier : public InterruptBridge<T> {
  public:
-  // Period is how much (in seconds) to wait between running the handler.
-  void StartPeriodic(double period);
+  // Period is how much to wait each time between running the handler.
+  void StartPeriodic(time::Time period);
+  // DEPRECATED(brians): use the overload that takes a time::Time
+  void StartPeriodic(double seconds) {
+    StartPeriodic(time::Time::InSeconds(seconds));
+  }
+  // After StartPeriodic is called, returns whether or not the subclass can
+  // actually call the callback exactly on those intervals or whether it will
+  // call it on some rounded amount.
+  //
+  // Default implementation assumes that the subclass has sysClockRateGet()
+  // resolution. Override if this is not true.
+  virtual bool IsExact() {
+    return period_ == time::Time::InTicks(period_.ToTicks());
+  }
+
+  time::Time period() { return period_; }
 
  protected:
   PeriodicNotifier(typename InterruptBridge<T>::Handler handler, T *param,
@@ -72,8 +88,10 @@ class PeriodicNotifier : public InterruptBridge<T> {
  private:
   virtual void StopNotifications() = 0;
   // Subclasses should do whatever they have to to start calling Notify() every
-  // period seconds.
-  virtual void StartNotifications(double period) = 0;
+  // period_.
+  virtual void StartNotifications() = 0;
+
+  time::Time period_;
 };
 
 // This one works accurately, but it has the potential to drift over time.
@@ -91,7 +109,7 @@ class WDInterruptNotifier : public PeriodicNotifier<T> {
   // an instance. This function calls Notify() on that instance.
   static void StaticNotify(void *self_in);
   virtual void StopNotifications();
-  virtual void StartNotifications(double period);
+  virtual void StartNotifications();
 
   WDOG_ID wd_;
   int delay_;  // what to pass to wdStart
@@ -122,7 +140,7 @@ class TimerNotifier : public PeriodicNotifier<T> {
   // and calls Notify() on that instance.
   static void StaticNotify(int signum);
   virtual void StopNotifications();
-  virtual void StartNotifications(double period);
+  virtual void StartNotifications();
 
   timer_t timer_;
   // Which signal timer_ will notify on.

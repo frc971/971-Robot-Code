@@ -141,6 +141,14 @@ TEST(TimeTest, ToMSec) {
   EXPECT_EQ(254971, t.ToMSec());
 }
 
+TEST(TimeTest, Abs) {
+  EXPECT_EQ(MACRO_DARG(Time(971, 1114)), MACRO_DARG(Time(971, 1114).abs()));
+  EXPECT_EQ(MACRO_DARG(Time(253, Time::kNSecInSec * 0.3)),
+            MACRO_DARG(Time(-254, Time::kNSecInSec * 0.7).abs()));
+  EXPECT_EQ(MACRO_DARG(-Time(-971, 973).ToNSec()),
+            MACRO_DARG(Time(970, Time::kNSecInSec - 973).ToNSec()));
+}
+
 }  // namespace testing
 }  // namespace time
 }  // namespace aos

@@ -44,7 +44,8 @@ void JoystickInput::SetupButtons() {
 void JoystickInput::Run() {
   ReceiveSocket sock(NetworkPort::kDS);
   while (true) {
-    if (sock.Recv(&control_data_, sizeof(control_data_)) == -1) {
+    if (sock.Receive(&control_data_, sizeof(control_data_)) !=
+        sizeof(control_data_)) {
       LOG(WARNING, "socket receive failed\n");
       continue;
     }

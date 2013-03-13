@@ -1,24 +1,29 @@
 {
   'targets': [
     {
-      'target_name': 'CRIOControlLoopRunner',
+      'target_name': 'crio_control_loop_runner',
       'type': 'static_library',
       'sources': [
-        # 'ControlLoopGoals.h'
-        'CRIOControlLoopRunner.cc',
+        #'ControlLoopGoals.h'
+        #'crio_control_loop_runner-tmpl.h',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
-        '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/common/common.gyp:controls',
-        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
-        'output',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_broadcaster',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_sink',
+        'output',
+        'MotorServer',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
-        '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_broadcaster',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_sink',
+        'output',
+        'MotorServer',
       ],
     },
     {
@@ -26,8 +31,6 @@
       'type': 'static_library',
       'sources': [
         # 'OutputDevice.h',
-        # 'SensorSender-tmpl.h',
-        'SensorOutput.cc',
         # 'SolenoidOutput.h'
         'MotorControllerOutput.cc',
         'MotorOutput.cc',
@@ -37,12 +40,14 @@
         '<(AOS)/common/network/network.gyp:socket',
         '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/input/input.gyp:sensor_input',
+        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
         '<(AOS)/common/network/network.gyp:socket',
         '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/input/input.gyp:sensor_input',
+        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
       ],
     },
     {
@@ -57,7 +62,6 @@
         '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/common/messages/messages.gyp:QueueHolder',
         '<(AOS)/common/network/network.gyp:socket',
-        'CRIOControlLoopRunner',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
         'output',
         '<(AOS)/common/network/network.gyp:socket',
@@ -68,7 +72,6 @@
         '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/common/messages/messages.gyp:QueueHolder',
         '<(AOS)/common/network/network.gyp:socket',
-        'CRIOControlLoopRunner',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
         '<(AOS)/common/network/network.gyp:socket',
       ],
