@@ -9,6 +9,7 @@ namespace aos {
 // cRIO.
 // Designed for a subclass that implements RunIteration to be instantiated and
 // Runed.
+// TODO(brians): rewrite this with OO buttons/fms state etc
 class JoystickInput {
  private:
   uint16_t buttons[4], old_buttons[4];
@@ -23,7 +24,6 @@ class JoystickInput {
   static const int ENABLED = 13;
   static const int AUTONOMOUS = 14;
   static const int FMS_ATTACHED = 15;
-  static const int TEST_MODE = 16;
   bool Pressed(int stick, int button) {
 	  return buttons[stick] & MASK(button);
   }
