@@ -1,12 +1,13 @@
 #include "frc971/control_loops/wrist/wrist_motor_plant.h"
 
+#include <vector>
+
 #include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
 
-
-StateFeedbackPlant<2, 1, 1> MakeWristPlant() {
+StateFeedbackPlantCoefficients<2, 1, 1> MakeWristPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
   A << 1.0, 0.00904786878843, 0.0, 0.815818233346;
   Eigen::Matrix<double, 2, 1> B;
@@ -19,16 +20,28 @@ StateFeedbackPlant<2, 1, 1> MakeWristPlant() {
   U_max << 12.0;
   Eigen::Matrix<double, 1, 1> U_min;
   U_min << -12.0;
-  return StateFeedbackPlant<2, 1, 1>(A, B, C, D, U_max, U_min);
+  return StateFeedbackPlantCoefficients<2, 1, 1>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackLoop<2, 1, 1> MakeWristLoop() {
+StateFeedbackController<2, 1, 1> MakeWristController() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.71581823335, 64.8264890043;
   Eigen::Matrix<double, 1, 2> K;
   K << 124.10047341, 5.30734038612;
-  return StateFeedbackLoop<2, 1, 1>(L, K, MakeWristPlant());
+  return StateFeedbackController<2, 1, 1>(L, K, MakeWristPlantCoefficients());
 }
 
-}  // namespace frc971
+StateFeedbackPlant<2, 1, 1> MakeWristPlant() {
+  ::std::vector<StateFeedbackPlantCoefficients<2, 1, 1> *> plants(1);
+  plants[0] = new StateFeedbackPlantCoefficients<2, 1, 1>(MakeWristPlantCoefficients());
+  return StateFeedbackPlant<2, 1, 1>(plants);
+}
+
+StateFeedbackLoop<2, 1, 1> MakeWristLoop() {
+  ::std::vector<StateFeedbackController<2, 1, 1> *> controllers(1);
+  controllers[0] = new StateFeedbackController<2, 1, 1>(MakeWristController());
+  return StateFeedbackLoop<2, 1, 1>(controllers);
+}
+
 }  // namespace control_loops
+}  // namespace frc971

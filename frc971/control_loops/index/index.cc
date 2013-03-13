@@ -253,6 +253,11 @@ void IndexMotor::RunIteration(
 
   status->ready_to_intake = false;
 
+  // Set the controller to use to be the one designed for the current number of
+  // discs in the hopper.  This is safe since the controller prevents the index
+  // from being set out of bounds and picks the closest controller.
+  wrist_loop_->set_controller_index(frisbees_.size());
+
   // Compute a safe index position that we can use.
   if (position) {
     wrist_loop_->Y << position->index_position;

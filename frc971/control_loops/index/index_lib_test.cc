@@ -588,6 +588,7 @@ class IndexMotorSimulation {
   void Simulate() {
     EXPECT_TRUE(my_index_loop_.output.FetchLatest());
 
+    index_plant_->set_plant_index(frisbees.size());
     index_plant_->U << my_index_loop_.output->index_voltage;
     index_plant_->Update();
 

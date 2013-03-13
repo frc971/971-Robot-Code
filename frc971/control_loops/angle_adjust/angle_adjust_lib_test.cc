@@ -40,7 +40,7 @@ class AngleAdjustMotorSimulation {
     initial_position_ = initial_position;
     angle_adjust_plant_->X(0, 0) = initial_position_;
     angle_adjust_plant_->X(1, 0) = 0.0;
-    angle_adjust_plant_->Y = angle_adjust_plant_->C * angle_adjust_plant_->X;
+    angle_adjust_plant_->Y = angle_adjust_plant_->C() * angle_adjust_plant_->X;
     last_position_ = angle_adjust_plant_->Y(0, 0);
     calibration_value_[0] = 0.0;
     calibration_value_[1] = 0.0;

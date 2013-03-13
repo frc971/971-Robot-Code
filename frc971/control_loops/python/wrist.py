@@ -85,11 +85,11 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter("Wrist", [wrist])
     if argv[1][-3:] == '.cc':
-      print '.cc file is second'
+      loop_writer.Write(argv[2], argv[1])
     else:
-      wrist.DumpHeaderFile(argv[1])
-      wrist.DumpCppFile(argv[2], argv[1])
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

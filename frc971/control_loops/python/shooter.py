@@ -17,7 +17,7 @@ class Shooter(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 1.4
     # Moment of inertia of the shooter wheel in kg m^2
-    self.J = 0.0040
+    self.J = 0.0032
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current / 2
     # Motor velocity constant
@@ -129,11 +129,11 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter("Shooter", [shooter])
     if argv[1][-3:] == '.cc':
-      print '.cc file is second'
+      loop_writer.Write(argv[2], argv[1])
     else:
-      shooter.DumpHeaderFile(argv[1])
-      shooter.DumpCppFile(argv[2], argv[1])
+      loop_writer.Write(argv[1], argv[2])
 
 
 if __name__ == '__main__':

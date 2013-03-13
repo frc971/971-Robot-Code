@@ -38,7 +38,7 @@ class WristMotorSimulation {
     initial_position_ = initial_position;
     wrist_plant_->X(0, 0) = initial_position_;
     wrist_plant_->X(1, 0) = 0.0;
-    wrist_plant_->Y = wrist_plant_->C * wrist_plant_->X;
+    wrist_plant_->Y = wrist_plant_->C() * wrist_plant_->X;
     last_position_ = wrist_plant_->Y(0, 0);
     calibration_value_ = 0.0;
   }
