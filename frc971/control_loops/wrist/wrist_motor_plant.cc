@@ -27,7 +27,7 @@ StateFeedbackController<2, 1, 1> MakeWristController() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.71581823335, 64.8264890043;
   Eigen::Matrix<double, 1, 2> K;
-  K << 124.10047341, 5.30734038612;
+  K << 119.668313646, 7.2297495639;
   return StateFeedbackController<2, 1, 1>(L, K, MakeWristPlantCoefficients());
 }
 

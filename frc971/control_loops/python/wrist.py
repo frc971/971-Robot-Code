@@ -45,7 +45,7 @@ class Wrist(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.72, .72])
+    self.PlaceControllerPoles([.86, .46])
 
     print self.K
 
