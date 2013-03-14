@@ -71,6 +71,9 @@ void log_uncork(int line, const char *function, log_level level,
 // would also work).
 #define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
 
+#undef LOG_SOURCENAME
+#define LOG_SOURCENAME __FILE__
+
 // The basic logging call.
 #define LOG(level, format, args...) do {\
   log_do(level, LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": %s: " format, \
