@@ -1,6 +1,136 @@
 import controls
 import numpy
 
+class ControlLoopWriter(object):
+  def __init__(self, gain_schedule_name, loops, namespaces=None):
+    """Constructs a control loop writer.
+
+    Args:
+      gain_schedule_name: string, Name of the overall controller.
+      loops: array[ControlLoop], a list of control loops to gain schedule
+        in order.
+      namespaces: array[string], a list of names of namespaces to nest in
+        order.  If None, the default will be used.
+    """
+    self._gain_schedule_name = gain_schedule_name
+    self._loops = loops
+    if namespaces:
+      self._namespaces = namespaces
+    else:
+      self._namespaces = ['frc971', 'control_loops']
+
+    self._namespace_start = '\n'.join(
+        ['namespace %s {' % name for name in self._namespaces])
+
+    self._namespace_end = '\n'.join(
+        ['}  // namespace %s' % name for name in reversed(self._namespaces)])
+
+  def _HeaderGuard(self, header_file):
+    return ('FRC971_CONTROL_LOOPS_' +
+            header_file.upper().replace('.', '_').replace('/', '_') +
+            '_')
+
+  def Write(self, header_file, cc_file):
+    """Writes the loops to the specified files."""
+    self.WriteHeader(header_file)
+    self.WriteCC(header_file, cc_file)
+
+  def _GenericType(self, typename):
+    """Returns a loop template using typename for the type."""
+    num_states = self._loops[0].A.shape[0]
+    num_inputs = self._loops[0].B.shape[1]
+    num_outputs = self._loops[0].C.shape[0]
+    return '%s<%d, %d, %d>' % (
+        typename, num_states, num_inputs, num_outputs)
+
+  def _ControllerType(self):
+    """Returns a template name for StateFeedbackController."""
+    return self._GenericType('StateFeedbackController')
+
+  def _LoopType(self):
+    """Returns a template name for StateFeedbackLoop."""
+    return self._GenericType('StateFeedbackLoop')
+
+  def _PlantType(self):
+    """Returns a template name for StateFeedbackPlant."""
+    return self._GenericType('StateFeedbackPlant')
+
+  def _CoeffType(self):
+    """Returns a template name for StateFeedbackPlantCoefficients."""
+    return self._GenericType('StateFeedbackPlantCoefficients')
+
+  def WriteHeader(self, header_file):
+    """Writes the header file to the file named header_file."""
+    with open(header_file, 'w') as fd:
+      header_guard = self._HeaderGuard(header_file)
+      fd.write('#ifndef %s\n'
+               '#define %s\n\n' % (header_guard, header_guard))
+      fd.write('#include \"frc971/control_loops/state_feedback_loop.h\"\n')
+      fd.write('\n')
+
+      fd.write(self._namespace_start)
+      fd.write('\n\n')
+      for loop in self._loops:
+        fd.write(loop.DumpPlantHeader())
+        fd.write('\n')
+        fd.write(loop.DumpControllerHeader())
+        fd.write('\n')
+
+      fd.write('%s Make%sPlant();\n\n' %
+               (self._PlantType(), self._gain_schedule_name))
+
+      fd.write('%s Make%sLoop();\n\n' %
+               (self._LoopType(), self._gain_schedule_name))
+
+      fd.write(self._namespace_end)
+      fd.write('\n\n')
+      fd.write("#endif  // %s\n" % header_guard)
+
+  def WriteCC(self, header_file_name, cc_file):
+    """Writes the cc file to the file named cc_file."""
+    with open(cc_file, 'w') as fd:
+      fd.write('#include \"frc971/control_loops/%s\"\n' % header_file_name)
+      fd.write('\n')
+      fd.write('#include <vector>\n')
+      fd.write('\n')
+      fd.write('#include \"frc971/control_loops/state_feedback_loop.h\"\n')
+      fd.write('\n')
+      fd.write(self._namespace_start)
+      fd.write('\n\n')
+      for loop in self._loops:
+        fd.write(loop.DumpPlant())
+        fd.write('\n')
+
+      for loop in self._loops:
+        fd.write(loop.DumpController())
+        fd.write('\n')
+
+      fd.write('%s Make%sPlant() {\n' %
+               (self._PlantType(), self._gain_schedule_name))
+      fd.write('  ::std::vector<%s *> plants(%d);\n' % (
+          self._CoeffType(), len(self._loops)))
+      for index, loop in enumerate(self._loops):
+        fd.write('  plants[%d] = new %s(%s);\n' %
+                 (index, self._CoeffType(),
+                  loop.PlantFunction()))
+      fd.write('  return %s(plants);\n' % self._PlantType())
+      fd.write('}\n\n')
+
+      fd.write('%s Make%sLoop() {\n' %
+               (self._LoopType(), self._gain_schedule_name))
+      fd.write('  ::std::vector<%s *> controllers(%d);\n' % (
+          self._ControllerType(), len(self._loops)))
+      for index, loop in enumerate(self._loops):
+        fd.write('  controllers[%d] = new %s(%s);\n' %
+                 (index, self._ControllerType(),
+                  loop.ControllerFunction()))
+      fd.write('  return %s(controllers);\n' % self._LoopType())
+      fd.write('}\n\n')
+
+      fd.write(self._namespace_end)
+      fd.write('\n')
+
+
 class ControlLoop(object):
   def __init__(self, name):
     """Constructs a control loop object.
@@ -9,20 +139,6 @@ class ControlLoop(object):
       name: string, The name of the loop to use when writing the C++ files.
     """
     self._name = name
-
-    self._namespace_start = ("namespace frc971 {\n"
-                             "namespace control_loops {\n\n")
-
-    self._namespace_end = ("}  // namespace frc971\n"
-                           "}  // namespace control_loops\n")
-
-    self._header_start = ("#ifndef FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n"
-                          "#define FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n\n"
-                          % (self._name.upper(), self._name.upper(),
-                             self._name.upper(), self._name.upper()))
-
-    self._header_end = ("#endif  // FRC971_CONTROL_LOOPS_%s_%s_MOTOR_PLANT_H_\n"
-                        % (self._name.upper(), self._name.upper()))
 
   def ContinuousToDiscrete(self, A_continuous, B_continuous, dt, C):
     """Calculates the discrete time values for A and B as well as initializing
@@ -80,44 +196,36 @@ class ControlLoop(object):
       string, The C++ commands required to populate a variable named matrix_name
         with the contents of matrix.
     """
-    ans = ["  Eigen::Matrix<double, %d, %d> %s;\n" % (
+    ans = ['  Eigen::Matrix<double, %d, %d> %s;\n' % (
         matrix.shape[0], matrix.shape[1], matrix_name)]
     first = True
     for x in xrange(matrix.shape[0]):
       for y in xrange(matrix.shape[1]):
 	element = matrix[x, y]
         if first:
-          ans.append("  %s << " % matrix_name)
+          ans.append('  %s << ' % matrix_name)
           first = False
         else:
-          ans.append(", ")
+          ans.append(', ')
         ans.append(str(element))
 
-    ans.append(";\n")
-    return "".join(ans)
+    ans.append(';\n')
+    return ''.join(ans)
 
-  def _DumpPlantHeader(self, plant_name):
+  def DumpPlantHeader(self):
     """Writes out a c++ header declaration which will create a Plant object.
 
-    Args:
-      plant_name: string, the name of the plant.  Used to create the name of the
-        function.  The function name will be Make<plant_name>Plant().
-
     Returns:
       string, The header declaration for the function.
     """
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    return "StateFeedbackPlant<%d, %d, %d> Make%sPlant();\n" % (
-        num_states, num_inputs, num_outputs, plant_name)
+    return 'StateFeedbackPlantCoefficients<%d, %d, %d> Make%sPlantCoefficients();\n' % (
+        num_states, num_inputs, num_outputs, self._name)
 
-  def _DumpPlant(self, plant_name):
-    """Writes out a c++ function which will create a Plant object.
-
-    Args:
-      plant_name: string, the name of the plant.  Used to create the name of the
-        function.  The function name will be Make<plant_name>Plant().
+  def DumpPlant(self):
+    """Writes out a c++ function which will create a PlantCoefficients object.
 
     Returns:
       string, The function which will create the object.
@@ -125,28 +233,33 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    ans = ["StateFeedbackPlant<%d, %d, %d> Make%sPlant() {\n" % (
-        num_states, num_inputs, num_outputs, plant_name)]
+    ans = ['StateFeedbackPlantCoefficients<%d, %d, %d>'
+           ' Make%sPlantCoefficients() {\n' % (
+        num_states, num_inputs, num_outputs, self._name)]
 
-    ans.append(self._DumpMatrix("A", self.A))
-    ans.append(self._DumpMatrix("B", self.B))
-    ans.append(self._DumpMatrix("C", self.C))
-    ans.append(self._DumpMatrix("D", self.D))
-    ans.append(self._DumpMatrix("U_max", self.U_max))
-    ans.append(self._DumpMatrix("U_min", self.U_min))
+    ans.append(self._DumpMatrix('A', self.A))
+    ans.append(self._DumpMatrix('B', self.B))
+    ans.append(self._DumpMatrix('C', self.C))
+    ans.append(self._DumpMatrix('D', self.D))
+    ans.append(self._DumpMatrix('U_max', self.U_max))
+    ans.append(self._DumpMatrix('U_min', self.U_min))
 
-    ans.append("  return StateFeedbackPlant<%d, %d, %d>"
-               "(A, B, C, D, U_max, U_min);\n" % (num_states, num_inputs,
+    ans.append('  return StateFeedbackPlantCoefficients<%d, %d, %d>'
+               '(A, B, C, D, U_max, U_min);\n' % (num_states, num_inputs,
                                                   num_outputs))
-    ans.append("}\n")
-    return "".join(ans)
+    ans.append('}\n')
+    return ''.join(ans)
 
-  def _DumpLoopHeader(self, loop_name):
-    """Writes out a c++ header declaration which will create a Loop object.
+  def PlantFunction(self):
+    """Returns the name of the plant coefficient function."""
+    return 'Make%sPlantCoefficients()' % self._name
 
-    Args:
-      loop_name: string, the name of the loop.  Used to create the name of the
-        function.  The function name will be Make<loop_name>Loop().
+  def ControllerFunction(self):
+    """Returns the name of the controller function."""
+    return 'Make%sController()' % self._name
+
+  def DumpControllerHeader(self):
+    """Writes out a c++ header declaration which will create a Controller object.
 
     Returns:
       string, The header declaration for the function.
@@ -154,16 +267,11 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    return "StateFeedbackLoop<%d, %d, %d> Make%sLoop();\n" % (
-        num_states, num_inputs, num_outputs, loop_name)
+    return 'StateFeedbackController<%d, %d, %d> %s;\n' % (
+        num_states, num_inputs, num_outputs, self.ControllerFunction())
 
-  def _DumpLoop(self, loop_name):
-    """Returns a c++ function which will create a Loop object.
-
-    Args:
-      loop_name: string, the name of the loop.  Used to create the name of the
-        function and create the plant.  The function name will be
-        Make<loop_name>Loop().
+  def DumpController(self):
+    """Returns a c++ function which will create a Controller object.
 
     Returns:
       string, The function which will create the object.
@@ -171,52 +279,14 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    ans = ["StateFeedbackLoop<%d, %d, %d> Make%sLoop() {\n" % (
-        num_states, num_inputs, num_outputs, loop_name)]
+    ans = ['StateFeedbackController<%d, %d, %d> %s {\n' % (
+        num_states, num_inputs, num_outputs, self.ControllerFunction())]
 
-    ans.append(self._DumpMatrix("L", self.L))
-    ans.append(self._DumpMatrix("K", self.K))
+    ans.append(self._DumpMatrix('L', self.L))
+    ans.append(self._DumpMatrix('K', self.K))
 
-    ans.append("  return StateFeedbackLoop<%d, %d, %d>"
-               "(L, K, Make%sPlant());\n" % (num_states, num_inputs,
-                                             num_outputs, loop_name))
-    ans.append("}\n")
-    return "".join(ans)
-
-  def DumpHeaderFile(self, file_name):
-    """Writes the header file for creating a Plant and Loop object.
-
-    Args:
-      file_name: string, name of the file to write the header file to.
-    """
-    with open(file_name, "w") as fd:
-      fd.write(self._header_start)
-      fd.write("#include \"frc971/control_loops/state_feedback_loop.h\"\n")
-      fd.write('\n')
-      fd.write(self._namespace_start)
-      fd.write(self._DumpPlantHeader(self._name))
-      fd.write('\n')
-      fd.write(self._DumpLoopHeader(self._name))
-      fd.write('\n')
-      fd.write(self._namespace_end)
-      fd.write('\n')
-      fd.write(self._header_end)
-
-  def DumpCppFile(self, file_name, header_file_name):
-    """Writes the C++ file for creating a Plant and Loop object.
-
-    Args:
-      file_name: string, name of the file to write the header file to.
-    """
-    with open(file_name, "w") as fd:
-      fd.write("#include \"frc971/control_loops/%s\"\n" % header_file_name)
-      fd.write('\n')
-      fd.write("#include \"frc971/control_loops/state_feedback_loop.h\"\n")
-      fd.write('\n')
-      fd.write(self._namespace_start)
-      fd.write('\n')
-      fd.write(self._DumpPlant(self._name))
-      fd.write('\n')
-      fd.write(self._DumpLoop(self._name))
-      fd.write('\n')
-      fd.write(self._namespace_end)
+    ans.append('  return StateFeedbackController<%d, %d, %d>'
+               '(L, K, Make%sPlantCoefficients());\n' % (num_states, num_inputs,
+                                             num_outputs, self._name))
+    ans.append('}\n')
+    return ''.join(ans)

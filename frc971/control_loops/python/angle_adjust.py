@@ -44,7 +44,7 @@ class AngleAdjust(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.5, .5])
+    self.PlaceControllerPoles([.45, .8])
 
     self.rpl = .05
     self.ipl = 0.008
@@ -92,11 +92,11 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .cc file name and .h file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter("AngleAdjust", [angle_adjust])
     if argv[1][-3:] == '.cc':
-      print '.cc file is second'
+      loop_writer.Write(argv[2], argv[1])
     else:
-      angle_adjust.DumpHeaderFile(argv[1])
-      angle_adjust.DumpCppFile(argv[2], argv[1])
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

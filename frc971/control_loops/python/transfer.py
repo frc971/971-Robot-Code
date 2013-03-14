@@ -84,8 +84,11 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .cc file name and .h file name"
   else:
-    transfer.DumpHeaderFile(argv[1])
-    transfer.DumpCppFile(argv[2], argv[1])
+    loop_writer = control_loop.ControlLoopWriter("Transfer", [transfer])
+    if argv[1][-3:] == '.cc':
+      loop_writer.Write(argv[2], argv[1])
+    else:
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

@@ -6,8 +6,8 @@ import sys
 from matplotlib import pylab
 
 class Index(control_loop.ControlLoop):
-  def __init__(self):
-    super(Index, self).__init__("Index")
+  def __init__(self, J=0.00013, name="Index"):
+    super(Index, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = 0.4862
     # Stall Current in Amps
@@ -17,7 +17,7 @@ class Index(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 1.5
     # Moment of inertia of the index in kg m^2
-    self.J = 0.00013
+    self.J = J
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -43,7 +43,7 @@ class Index(control_loop.ControlLoop):
     self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt, self.C)
 
-    self.PlaceControllerPoles([.5, .55])
+    self.PlaceControllerPoles([.40, .63])
 
     self.rpl = .05
     self.ipl = 0.008
@@ -80,15 +80,25 @@ def main(argv):
   pylab.plot(range(100), close_loop_x)
   pylab.show()
 
+  # Set the constants for the number of discs that we expect to see.
+  # The c++ code expects that the index in the array will be the number of
+  # discs.
+  index0 = Index(0.00010, "Index0Disc")
+  index1 = Index(0.00013, "Index1Disc")
+  index2 = Index(0.00013, "Index2Disc")
+  index3 = Index(0.00018, "Index3Disc")
+  index4 = Index(0.00025, "Index4Disc")
+
   # Write the generated constants out to a file.
   if len(argv) != 3:
     print "Expected .h file name and .c file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter(
+        "Index", [index0, index1, index2, index3, index4])
     if argv[1][-3:] == '.cc':
-      print '.cc file is second'
+      loop_writer.Write(argv[2], argv[1])
     else:
-      index.DumpHeaderFile(argv[1])
-      index.DumpCppFile(argv[2], argv[1])
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

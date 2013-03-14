@@ -20,8 +20,7 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace control_loops {
 
-double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
-    double index_position, double index_velocity) {
+double IndexMotor::Frisbee::ObserveNoTopDiscSensor(double index_position) {
   // The absolute disc position in meters.
   double disc_position = absolute_position(index_position);
   if (IndexMotor::kTopDiscDetectStart <= disc_position &&
@@ -32,36 +31,15 @@ double IndexMotor::Frisbee::ObserveNoTopDiscSensor(
         ::std::abs(disc_position - IndexMotor::kTopDiscDetectStop));
     double distance_to_below = IndexMotor::ConvertDiscPositionToIndex(
         ::std::abs(disc_position - IndexMotor::kTopDiscDetectStart));
-    if (::std::abs(index_velocity) < 100000) {
-      if (distance_to_above < distance_to_below) {
-        LOG(INFO, "Moving disc to top slow.\n");
-        // Move it up.
-        index_start_position_ -= distance_to_above;
-        return -distance_to_above;
-      } else {
-        LOG(INFO, "Moving disc to bottom slow.\n");
-        index_start_position_ += distance_to_below;
-        return distance_to_below;
-      }
+    if (distance_to_above < distance_to_below) {
+      LOG(INFO, "Moving disc to top slow.\n");
+      // Move it up.
+      index_start_position_ -= distance_to_above;
+      return -distance_to_above;
     } else {
-      if (index_velocity > 0) {
-        // Now going up.  If we didn't see it before, and we don't see it
-        // now but it should be in view, it must still be below.  If it were
-        // above, it would be going further away from us.
-        LOG(INFO, "Moving fast up, shifting disc down.  Disc was at %f\n",
-            absolute_position(index_position));
-        index_start_position_ += distance_to_below;
-        LOG(INFO, "Moving fast up, shifting disc down.  Disc now at %f\n",
-            absolute_position(index_position));
-        return distance_to_below;
-      } else {
-        LOG(INFO, "Moving fast down, shifting disc up.  Disc was at %f\n",
-            absolute_position(index_position));
-        index_start_position_ -= distance_to_above;
-        LOG(INFO, "Moving fast down, shifting disc up.  Disc now at %f\n",
-            absolute_position(index_position));
-        return -distance_to_above;
-      }
+      LOG(INFO, "Moving disc to bottom slow.\n");
+      index_start_position_ += distance_to_below;
+      return distance_to_below;
     }
   }
   return 0.0;
@@ -135,12 +113,9 @@ const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 // TODO(aschuh): Tune these.
 /*static*/ const double
-    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 6.0;
+    IndexMotor::IndexStateFeedbackLoop::kMinMotionVoltage = 11.0;
 /*static*/ const double
     IndexMotor::IndexStateFeedbackLoop::kNoMotionCuttoffCount = 20;
-
-// Distance to move the indexer when grabbing a disc.
-const double kNextPosition = 10.0;
 
 /*static*/ double IndexMotor::ConvertDiscAngleToIndex(const double angle) {
   return (angle * (1 + (kDiscRadius * 2 + kRollerRadius) / kRollerRadius));
@@ -242,10 +217,10 @@ void IndexMotor::IndexStateFeedbackLoop::CapU() {
   }
 
   for (int i = 0; i < kNumOutputs; ++i) {
-    if (U[i] > plant.U_max[i]) {
-      U[i] = plant.U_max[i];
-    } else if (U[i] < plant.U_min[i]) {
-      U[i] = plant.U_min[i];
+    if (U(i, 0) > U_max(i, 0)) {
+      U(i, 0) = U_max(i, 0);
+    } else if (U(i, 0) < U_min(i, 0)) {
+      U(i, 0) = U_min(i, 0);
     }
   }
 }
@@ -277,6 +252,11 @@ void IndexMotor::RunIteration(
   }
 
   status->ready_to_intake = false;
+
+  // Set the controller to use to be the one designed for the current number of
+  // discs in the hopper.  This is safe since the controller prevents the index
+  // from being set out of bounds and picks the closest controller.
+  wrist_loop_->set_controller_index(frisbees_.size());
 
   // Compute a safe index position that we can use.
   if (position) {
@@ -358,7 +338,7 @@ void IndexMotor::RunIteration(
            frisbee != rend; ++frisbee) {
         frisbee->OffsetDisc(cumulative_offset);
         double amount_moved = frisbee->ObserveNoTopDiscSensor(
-            wrist_loop_->X_hat(0, 0), wrist_loop_->X_hat(1, 0));
+            wrist_loop_->X_hat(0, 0));
         cumulative_offset += amount_moved;
       }
     }
@@ -499,7 +479,7 @@ void IndexMotor::RunIteration(
   }
 
   // Bool to track if it is safe for the goal to change yet.
-  bool safe_to_change_state_ = true;
+  bool safe_to_change_state = true;
   switch (safe_goal_) {
     case Goal::HOLD:
       // The goal should already be good, so sit tight with everything the same
@@ -533,7 +513,7 @@ void IndexMotor::RunIteration(
           if (position->bottom_disc_detect) {
             intake_voltage = transfer_voltage = 12.0;
             // Must wait until the disc gets out before we can change state.
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
 
             // TODO(aschuh): A disc on the way through needs to start moving
             // the indexer if it isn't already moving.  Maybe?
@@ -573,7 +553,7 @@ void IndexMotor::RunIteration(
             }
             if (!frisbee->has_been_indexed_) {
               // All discs must be indexed before it is safe to stop indexing.
-              safe_to_change_state_ = false;
+              safe_to_change_state = false;
             }
           }
 
@@ -628,6 +608,11 @@ void IndexMotor::RunIteration(
       break;
     case Goal::READY_SHOOTER:
     case Goal::SHOOT:
+      // Don't let us leave the shoot or preload state if there are 4 discs in
+      // the hopper.
+      if (hopper_disc_count_ >= 4 && goal_enum != Goal::SHOOT) {
+        safe_to_change_state = false;
+      }
       // Check if we have any discs to shoot or load and handle them.
       double min_disc_position = 0;
       if (MinDiscPosition(&min_disc_position, NULL)) {
@@ -658,7 +643,7 @@ void IndexMotor::RunIteration(
 
           // Must wait until it has been grabbed to continue.
           if (loader_state_ == LoaderState::GRABBING) {
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
           }
         } else {
           // No disc up top right now.
@@ -667,7 +652,7 @@ void IndexMotor::RunIteration(
           // See if the disc has gotten pretty far up yet.
           if (wrist_loop_->X_hat(0, 0) > ready_disc_position) {
             // Point of no return.  We are committing to grabbing it now.
-            safe_to_change_state_ = false;
+            safe_to_change_state = false;
             const double robust_grabbed_disc_position =
                 (grabbed_disc_position -
                  ConvertDiscPositionToIndex(kGrabberLength));
@@ -709,6 +694,12 @@ void IndexMotor::RunIteration(
             // We are at the end of the range.  There are no more discs here.
             while (frisbees_.size() > 0) {
               LOG(ERROR, "Dropping an extra disc since it can't exist\n");
+              LOG(ERROR, "Upper is [%f %f]\n",
+                  upper_open_region_.upper_bound(),
+                  upper_open_region_.lower_bound());
+              LOG(ERROR, "Lower is [%f %f]\n",
+                  lower_open_region_.upper_bound(),
+                  lower_open_region_.lower_bound());
               frisbees_.pop_back();
               --hopper_disc_count_;
               --total_disc_count_;
@@ -752,6 +743,23 @@ void IndexMotor::RunIteration(
 
       LOG(DEBUG, "READY_SHOOTER or SHOOT\n");
       break;
+  }
+
+  // If we have 4 discs, it is time to preload.
+  if (safe_to_change_state && hopper_disc_count_ >= 4) {
+    switch (safe_goal_) {
+      case Goal::HOLD:
+      case Goal::READY_LOWER:
+      case Goal::INTAKE:
+        safe_goal_ = Goal::READY_SHOOTER;
+        safe_to_change_state = false;
+        LOG(INFO, "We have %d discs, time to preload automatically\n",
+            hopper_disc_count_);
+        break;
+      case Goal::READY_SHOOTER:
+      case Goal::SHOOT:
+        break;
+    }
   }
 
   // The only way out of the loader is to shoot the disc.  The FSM can only go
@@ -915,7 +923,7 @@ void IndexMotor::RunIteration(
     output->disc_ejected = disc_ejected_;
   }
 
-  if (safe_to_change_state_) {
+  if (safe_to_change_state) {
     safe_goal_ = goal_enum;
   }
   if (hopper_disc_count_ < 0) {
