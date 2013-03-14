@@ -95,6 +95,10 @@ class IndexMotor
   // indexer.
   static const double kBottomDiscIndexDelay;
 
+  // Time after seeing the fourth disc that we need to wait before turning the
+  // transfer roller off.
+  static const ::aos::time::Time kTransferOffDelay;
+
   static const double kTopDiscDetectStart;
   static const double kTopDiscDetectStop;
 

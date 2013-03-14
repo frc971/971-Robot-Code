@@ -86,6 +86,8 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kBottomDiscDetectStart = 0.00;
 /*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.13;
 /*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.032;
+/*static*/ const ::aos::time::Time IndexMotor::kTransferOffDelay =
+    ::aos::time::Time::InSeconds(0.1);
 
 // TODO(aschuh): Verify these with the sensor actually on.
 /*static*/ const double IndexMotor::kTopDiscDetectStart =
@@ -232,6 +234,7 @@ void IndexMotor::RunIteration(
     const control_loops::IndexLoop::Position *position,
     control_loops::IndexLoop::Output *output,
     control_loops::IndexLoop::Status *status) {
+  Time now = Time::Now();
   // Make goal easy to work with and sanity check it.
   Goal goal_enum = static_cast<Goal>(goal->goal_state);
   if (goal->goal_state < 0 || goal->goal_state > 4) {
@@ -484,7 +487,6 @@ void IndexMotor::RunIteration(
     case Goal::READY_LOWER:
     case Goal::INTAKE:
       {
-        Time now = Time::Now();
         if (position) {
           // Posedge of the disc entering the beam break.
           if (position->bottom_disc_posedge_count !=
@@ -723,7 +725,7 @@ void IndexMotor::RunIteration(
             --hopper_disc_count_;
             --total_disc_count_;
           }
-          if (hopper_disc_count_ >= 0) {
+          if (hopper_disc_count_ > 0) {
             LOG(ERROR,
                 "Emptied the hopper out but there are still %d discs there\n",
                 hopper_disc_count_);
@@ -733,6 +735,15 @@ void IndexMotor::RunIteration(
 
       LOG(DEBUG, "READY_SHOOTER or SHOOT\n");
       break;
+  }
+
+  // Wait for a period of time to make sure that the disc gets sucked
+  // in properly.  We need to do this regardless of what the indexer is doing.
+  for (auto frisbee = frisbees_.begin();
+      frisbee != frisbees_.end(); ++frisbee) {
+    if (now - frisbee->bottom_negedge_time_ < kTransferOffDelay) {
+      transfer_voltage = 12.0;
+    }
   }
 
   // If we have 4 discs, it is time to preload.
