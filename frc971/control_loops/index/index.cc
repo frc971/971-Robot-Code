@@ -753,7 +753,7 @@ void IndexMotor::RunIteration(
       case Goal::INTAKE:
         safe_goal_ = Goal::READY_SHOOTER;
         safe_to_change_state = false;
-        LOG(INFO, "We have %d discs, time to preload automatically\n",
+        LOG(INFO, "We have %"PRId32" discs, time to preload automatically\n",
             hopper_disc_count_);
         break;
       case Goal::READY_SHOOTER:
