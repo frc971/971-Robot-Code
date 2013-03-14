@@ -209,7 +209,6 @@ void IndexMotor::IndexStateFeedbackLoop::CapU() {
   if (::std::abs(U(0, 0)) < kMinMotionVoltage) {
     ++low_voltage_count_;
     if (low_voltage_count_ > kNoMotionCuttoffCount) {
-      printf("Limiting power from %f to 0\n", U(0, 0));
       U(0, 0) = 0.0;
     }
   } else {
@@ -368,9 +367,6 @@ void IndexMotor::RunIteration(
             (upper_open_region_.upper_bound() - index_position) / open_width;
         const double relative_lower_open_precentage =
             (index_position - upper_open_region_.lower_bound()) / open_width;
-        printf("Width %f upper %f lower %f\n",
-               open_width, relative_upper_open_precentage,
-               relative_lower_open_precentage);
 
         if (ConvertIndexToDiscPosition(open_width) <
             kTopDiscDetectMinSeperation * 0.9) {
@@ -523,7 +519,6 @@ void IndexMotor::RunIteration(
             if (elapsed_posedge_time >= Time::InSeconds(0.3)) {
               // It has been too long.  The disc must be jammed.
               LOG(ERROR, "Been way too long.  Jammed disc?\n");
-              printf("Been way too long.  Jammed disc?\n");
             }
           }
 
@@ -545,7 +540,6 @@ void IndexMotor::RunIteration(
                 // Save the captured position as the position at which the disc
                 // touched the indexer.
                 LOG(INFO, "Grabbed on the index now at %f\n", index_position);
-                printf("Grabbed on the index now at %f\n", index_position);
                 frisbee->has_been_indexed_ = true;
                 frisbee->index_start_position_ =
                     position->bottom_disc_negedge_wait_position;
@@ -593,8 +587,6 @@ void IndexMotor::RunIteration(
             // No discs!  We are always ready for more if we aren't being
             // asked to change state.
             status->ready_to_intake = (safe_goal_ == goal_enum);
-            printf("Ready to intake, zero discs. %d %d %d\n",
-            status->ready_to_intake, hopper_disc_count_, safe_goal_);
           }
 
           // Turn on the transfer roller if we are ready.
@@ -633,7 +625,6 @@ void IndexMotor::RunIteration(
           // We already have a disc in the loader.
           // Stage the discs back a bit.
           wrist_loop_->R << ready_disc_position, 0.0;
-          printf("Loader not ready but asked to shoot\n");
 
           // Shoot if we are grabbed and being asked to shoot.
           if (loader_state_ == LoaderState::GRABBED &&
@@ -680,17 +671,15 @@ void IndexMotor::RunIteration(
         } else {
           // Ok, no discs in sight.  Spin the hopper up by 150% of it's full
           // range and verify that we don't see anything.
-          printf("Moving the indexer to verify that it is clear\n");
           const double hopper_clear_verification_position =
               ::std::max(upper_open_region_.lower_bound(),
                          lower_open_region_.lower_bound()) +
-              ConvertDiscPositionToIndex(kIndexFreeLength) * 2.5;
+              ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
 
           wrist_loop_->R << hopper_clear_verification_position, 0.0;
           if (::std::abs(wrist_loop_->X_hat(0, 0) -
                          hopper_clear_verification_position) <
               ConvertDiscPositionToIndex(0.05)) {
-            printf("Should be empty\n");
             // We are at the end of the range.  There are no more discs here.
             while (frisbees_.size() > 0) {
               LOG(ERROR, "Dropping an extra disc since it can't exist\n");
@@ -716,7 +705,7 @@ void IndexMotor::RunIteration(
         const double hopper_clear_verification_position =
             ::std::max(upper_open_region_.lower_bound(),
                        lower_open_region_.lower_bound()) +
-            ConvertDiscPositionToIndex(kIndexFreeLength) * 2.5;
+            ConvertDiscPositionToIndex(kIndexFreeLength) * 1.5;
 
         if (wrist_loop_->X_hat(0, 0) >
             hopper_clear_verification_position +
@@ -734,9 +723,10 @@ void IndexMotor::RunIteration(
             --hopper_disc_count_;
             --total_disc_count_;
           }
-          if (hopper_disc_count_ != 0) {
+          if (hopper_disc_count_ >= 0) {
             LOG(ERROR,
-                "Emptied the hopper out but there are still discs there\n");
+                "Emptied the hopper out but there are still %d discs there\n",
+                hopper_disc_count_);
           }
         }
       }
@@ -806,7 +796,7 @@ void IndexMotor::RunIteration(
         if (shooter.status.get()) {
           // TODO(aschuh): If we aren't shooting nicely, wait until the shooter
           // is up to speed rather than just spinning.
-          if (shooter.status->average_velocity > 130) {
+          if (shooter.status->average_velocity > 130 && shooter.status->ready) {
             loader_state_ = LoaderState::LIFTING;
             loader_countdown_ = kLiftingDelay;
             LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
@@ -822,7 +812,6 @@ void IndexMotor::RunIteration(
         }
       } else if (loader_goal_ == LoaderGoal::READY) {
         LOG(ERROR, "Can't go to ready when we have something grabbed.\n");
-        printf("Can't go to ready when we have something grabbed.\n");
         break;
       } else {
         break;
