@@ -186,7 +186,7 @@ class Frisbee {
     } else {
       position_ += disc_dx;
     }
-    printf("Transfer Roller: Disc is at %f\n", position_);
+    LOG(DEBUG, "Transfer Roller: Disc is at %f\n", position_);
     return time_left;
   }
 
@@ -223,7 +223,7 @@ class Frisbee {
           IndexMotor::ConvertDiscPositionToIndex(
           index_roller_velocity * (elapsed_time + disc_time));
       has_top_disc_posedge_position_ = true;
-      printf("Posedge on top sensor at %f\n", top_disc_posedge_position_);
+      LOG(INFO, "Posedge on top sensor at %f\n", top_disc_posedge_position_);
     }
 
     if (will_negedge_top_disc_detect(index_dx)) {
@@ -237,7 +237,7 @@ class Frisbee {
           IndexMotor::ConvertDiscPositionToIndex(
           index_roller_velocity * (elapsed_time + disc_time));
       has_top_disc_negedge_position_ = true;
-      printf("Negedge on top sensor at %f\n", top_disc_negedge_position_);
+      LOG(INFO, "Negedge on top sensor at %f\n", top_disc_negedge_position_);
     }
 
     if (shrunk_time) {
@@ -249,7 +249,7 @@ class Frisbee {
     } else {
       position_ += index_dx;
     }
-    printf("Index: Disc is at %f\n", position_);
+    LOG(DEBUG, "Index: Disc is at %f\n", position_);
     return time_left;
   }
 
@@ -292,7 +292,7 @@ class Frisbee {
       }
       EXPECT_FALSE(lifted) << "Can't lift while in grabber";
       EXPECT_FALSE(ejected) << "Can't eject while in grabber";
-      printf("Grabber: Disc is at %f\n", position_);
+      LOG(DEBUG, "Grabber: Disc is at %f\n", position_);
     } else if (IsTouchingLoader()) {
       if (lifted) {
         const double lifter_dx =
@@ -302,7 +302,7 @@ class Frisbee {
       }
       EXPECT_TRUE(clamped);
       EXPECT_FALSE(ejected);
-      printf("Loader: Disc is at %f\n", position_);
+      LOG(DEBUG, "Loader: Disc is at %f\n", position_);
     } else if (IsTouchingEjector()) {
       EXPECT_TRUE(lifted);
       if (ejected) {
@@ -312,9 +312,9 @@ class Frisbee {
                                IndexMotor::kEjectorStopPosition);
         EXPECT_FALSE(clamped);
       }
-      printf("Ejector: Disc is at %f\n", position_);
+      LOG(DEBUG, "Ejector: Disc is at %f\n", position_);
     } else if (position_ == IndexMotor::kEjectorStopPosition) {
-      printf("Shot: Disc is at %f\n", position_);
+      LOG(DEBUG, "Shot: Disc is at %f\n", position_);
       has_been_shot_ = true;
     }
   }
@@ -493,12 +493,12 @@ class IndexMotorSimulation {
       // Look for disc detect edges and report them.
       const bool bottom_disc_detect = frisbee->bottom_disc_detect();
       if (old_bottom_disc_detect && !bottom_disc_detect) {
-        printf("Negedge of disc\n");
+        LOG(INFO, "Negedge of disc\n");
         ++bottom_disc_negedge_count_;
       }
 
       if (!old_bottom_disc_detect && frisbee->bottom_disc_detect()) {
-        printf("Posedge of disc\n");
+        LOG(INFO, "Posedge of disc\n");
         ++bottom_disc_posedge_count_;
       }
 
@@ -568,19 +568,20 @@ class IndexMotorSimulation {
     position->top_disc_posedge_position = top_disc_posedge_position_;
     position->top_disc_negedge_count = top_disc_negedge_count_;
     position->top_disc_negedge_position = top_disc_negedge_position_;
-    printf("bdd: %x tdd: %x posedge %d negedge %d "
-           "delaycount %d delaypos %f topcount %d toppos %f "
-           "topcount %d toppos %f\n",
-           position->bottom_disc_detect,
-           position->top_disc_detect,
-           position->bottom_disc_posedge_count,
-           position->bottom_disc_negedge_count,
-           position->bottom_disc_negedge_wait_count,
-           position->bottom_disc_negedge_wait_position,
-           position->top_disc_posedge_count,
-           position->top_disc_posedge_position,
-           position->top_disc_negedge_count,
-           position->top_disc_negedge_position);
+    LOG(DEBUG,
+        "bdd: %x tdd: %x posedge %d negedge %d "
+        "delaycount %d delaypos %f topcount %d toppos %f "
+        "topcount %d toppos %f\n",
+        position->bottom_disc_detect,
+        position->top_disc_detect,
+        position->bottom_disc_posedge_count,
+        position->bottom_disc_negedge_count,
+        position->bottom_disc_negedge_wait_count,
+        position->bottom_disc_negedge_wait_position,
+        position->top_disc_posedge_count,
+        position->top_disc_posedge_position,
+        position->top_disc_negedge_count,
+        position->top_disc_negedge_position);
     position.Send();
   }
 
@@ -594,10 +595,10 @@ class IndexMotorSimulation {
 
     transfer_plant_->U << my_index_loop_.output->transfer_voltage;
     transfer_plant_->Update();
-    printf("tv: %f iv: %f tp : %f ip: %f\n",
-           my_index_loop_.output->transfer_voltage,
-           my_index_loop_.output->index_voltage,
-           transfer_roller_position(), index_roller_position());
+    LOG(DEBUG, "tv: %f iv: %f tp : %f ip: %f\n",
+        my_index_loop_.output->transfer_voltage,
+        my_index_loop_.output->index_voltage,
+        transfer_roller_position(), index_roller_position());
 
     UpdateDiscs(my_index_loop_.output->disc_clamped,
                 my_index_loop_.output->loader_up,
@@ -739,9 +740,18 @@ class IndexTest : public ::testing::Test {
     }
 
     // Settle.
+    int settling_time =
+        static_cast<int>(IndexMotor::kTransferOffDelay.ToSeconds() * 100.0) + 2;
     for (int i = 0; i < 100; ++i) {
       index_motor_plant_.SendPositionMessage();
       index_motor_.Iterate();
+      my_index_loop_.output.FetchLatest();
+      my_index_loop_.status.FetchLatest();
+      if (i <= settling_time || my_index_loop_.status->hopper_disc_count < 4) {
+        EXPECT_EQ(12.0, my_index_loop_.output->transfer_voltage);
+      } else {
+        EXPECT_EQ(0.0, my_index_loop_.output->transfer_voltage);
+      }
       index_motor_plant_.Simulate();
       SendDSPacket(true);
       UpdateTime();
@@ -874,7 +884,7 @@ TEST_F(IndexTest, GrabAndHold) {
 TEST_F(IndexTest, GrabTwoDiscs) {
   LoadNDiscs(2);
 
-  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
+  my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 2);
   EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(
@@ -933,14 +943,14 @@ TEST_F(IndexTest, ReadyGrabsOneDisc) {
   EXPECT_EQ(static_cast<size_t>(2), index_motor_plant_.frisbees.size());
   EXPECT_NEAR(IndexMotor::kReadyToLiftPosition,
       index_motor_plant_.frisbees[0].position(), 0.01);
-  printf("Top disc error is %f\n",
-         IndexMotor::kReadyToLiftPosition -
-         index_motor_plant_.frisbees[0].position());
+  LOG(INFO, "Top disc error is %f\n",
+      IndexMotor::kReadyToLiftPosition -
+      index_motor_plant_.frisbees[0].position());
   EXPECT_NEAR(
       (IndexMotor::kIndexStartPosition +
        IndexMotor::ConvertDiscAngleToDiscPosition(M_PI)),
       index_motor_plant_.frisbees[1].position(), 0.02);
-  printf("Bottom disc error is %f\n",
+  LOG(INFO, "Bottom disc error is %f\n",
       (IndexMotor::kIndexStartPosition +
        IndexMotor::ConvertDiscAngleToDiscPosition(M_PI))-
       index_motor_plant_.frisbees[1].position());
@@ -983,9 +993,9 @@ TEST_F(IndexTest, GrabAndReady) {
 TEST_F(IndexTest, GrabFourDiscs) {
   LoadNDiscs(4);
 
-  EXPECT_TRUE(my_index_loop_.output.FetchLatest());
+  my_index_loop_.output.FetchLatest();
+  my_index_loop_.status.FetchLatest();
   EXPECT_EQ(my_index_loop_.output->transfer_voltage, 0.0);
-  EXPECT_TRUE(my_index_loop_.status.FetchLatest());
   EXPECT_EQ(my_index_loop_.status->hopper_disc_count, 4);
   EXPECT_FALSE(my_index_loop_.status->ready_to_intake);
   EXPECT_EQ(static_cast<size_t>(4), index_motor_plant_.frisbees.size());

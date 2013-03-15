@@ -3,6 +3,8 @@
 
 #include <assert.h>
 
+#include <vector>
+
 // Stupid vxworks system headers define it which blows up Eigen...
 #undef m_data
 
