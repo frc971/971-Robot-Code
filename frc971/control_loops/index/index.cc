@@ -87,7 +87,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
 /*static*/ const double IndexMotor::kBottomDiscDetectStop = 0.13;
 /*static*/ const double IndexMotor::kBottomDiscIndexDelay = 0.032;
 /*static*/ const ::aos::time::Time IndexMotor::kTransferOffDelay =
-    ::aos::time::Time::InSeconds(0.1);
+    ::aos::time::Time::InSeconds(0.3);
 
 // TODO(aschuh): Verify these with the sensor actually on.
 /*static*/ const double IndexMotor::kTopDiscDetectStart =
@@ -616,7 +616,7 @@ void IndexMotor::RunIteration(
         const double grabbed_disc_position =
             min_disc_position +
             ConvertDiscPositionToIndex(kReadyToLiftPosition -
-                                       kIndexStartPosition + 0.03);
+                                       kIndexStartPosition + 0.10);
 
         // Check the state of the loader FSM.
         // If it is ready to load discs, position the disc so that it is ready
@@ -727,7 +727,7 @@ void IndexMotor::RunIteration(
           }
           if (hopper_disc_count_ > 0) {
             LOG(ERROR,
-                "Emptied the hopper out but there are still %d discs there\n",
+                "Emptied the hopper out but there are still %"PRId32" discs there\n",
                 hopper_disc_count_);
           }
         }
