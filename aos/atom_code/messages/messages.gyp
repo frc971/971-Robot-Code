@@ -9,6 +9,7 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:aos_shared_lib',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:aos_shared_lib',
@@ -28,10 +29,10 @@
         'DriverStationDisplay.cpp',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib'
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
       ],
       'export_dependent_settings': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib'
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
       ],
     },
   ],

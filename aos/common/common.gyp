@@ -97,6 +97,7 @@
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../build/queues.gypi'],
     },
