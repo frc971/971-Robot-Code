@@ -11,9 +11,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Note: So far, none of the Angle Adjust numbers have been measured.
-// Do not rely on them for real life.
-
 namespace frc971 {
 namespace constants {
 
@@ -49,17 +46,17 @@ const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305432, 1.5};
 const double kCompAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 const double kPracticeAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 
-const double kPracticeAngleAdjustUpperPhysicalLimit = 0.894481;
-const double kCompAngleAdjustUpperPhysicalLimit = 0.894481;
+const double kPracticeAngleAdjustUpperPhysicalLimit = 0.904737;
+const double kCompAngleAdjustUpperPhysicalLimit = 0.904737;
 
-const double kPracticeAngleAdjustLowerPhysicalLimit = 0.283616;
-const double kCompAngleAdjustLowerPhysicalLimit = 0.283616;
+const double kPracticeAngleAdjustLowerPhysicalLimit = 0.272451;
+const double kCompAngleAdjustLowerPhysicalLimit = 0.272451;
 
-const double kPracticeAngleAdjustUpperLimit = 0.85;
-const double kCompAngleAdjustUpperLimit = 0.85;
+const double kPracticeAngleAdjustUpperLimit = 0.87;
+const double kCompAngleAdjustUpperLimit = 0.87;
 
-const double kPracticeAngleAdjustLowerLimit = 0.32;
-const double kCompAngleAdjustLowerLimit = 0.32;
+const double kPracticeAngleAdjustLowerLimit = 0.30;
+const double kCompAngleAdjustLowerLimit = 0.30;
 
 const double kAngleAdjustZeroingSpeed = -0.2;
 const double kAngleAdjustZeroingOffSpeed = -0.5;

@@ -96,10 +96,11 @@ void AngleAdjustMotor::RunIteration(
       goal->goal, 0.0);
 
   if (position) {
-    LOG(DEBUG, "pos=%f bottom_hall: %s middle_hall: %s\n",
+    LOG(DEBUG, "pos: %f bottom_hall: %s middle_hall: %s absolute: %f\n",
         position->angle,
         position->bottom_hall_effect ? "true" : "false",
-        position->middle_hall_effect ? "true" : "false");
+        position->middle_hall_effect ? "true" : "false",
+        zeroed_joint_.absolute_position());
   }
 
   if (output) {
