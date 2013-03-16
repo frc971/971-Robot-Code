@@ -102,9 +102,10 @@ class JoystickReader : public aos::JoystickInput {
         is_high_gear = true;
       }
 
-      // frisbee pickup is -0.634
+      // frisbee pickup is -0.647
+      // up is 1.5
       wrist.goal.MakeWithBuilder().goal((Pressed(2, 10) || kWristAlwaysDown) ?
-                                        -0.634 : 1.5).Send();
+                                        -0.647 : 1.3).Send();
 
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
@@ -113,7 +114,7 @@ class JoystickReader : public aos::JoystickInput {
       if (Pressed(2, 3)) {
         // short shot
         shooter_goal->velocity = 200;
-        angle_adjust_goal = 0.435;
+        angle_adjust_goal = 0.42;
       } else if (Pressed(2, 5)) {
         // medium shot
         shooter_goal->velocity = 220;
