@@ -84,6 +84,13 @@ class JoystickRead {
   }
 };
 
+// Designed to be called from the console.
+extern "C" int battery_voltage() {
+  printf("battery is currently at %fV\n",
+         ControlsManager::GetInstance().GetDS()->GetBatteryVoltage());
+  return 0;
+}
+
 }  // namespace crio
 }  // namespace aos
 
