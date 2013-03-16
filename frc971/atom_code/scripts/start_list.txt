@@ -1,7 +1,6 @@
 MotorWriter
 JoystickReader
 sensor_receiver
-GyroReader
 DriveTrain
 AutoMode
 BinaryLogReader

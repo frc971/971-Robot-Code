@@ -11,10 +11,18 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
+#include "frc971/control_loops/wrist/wrist_motor.q.h"
+#include "frc971/control_loops/index/index_motor.q.h"
+#include "frc971/control_loops/shooter/shooter_motor.q.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::control_loops::shifters;
 using ::frc971::sensors::gyro;
+using ::frc971::control_loops::wrist;
+using ::frc971::control_loops::index_loop;
+using ::frc971::control_loops::shooter;
+using ::frc971::control_loops::angle_adjust;
 
 namespace frc971 {
 
@@ -91,6 +99,20 @@ class JoystickReader : public aos::JoystickInput {
       if (PosEdge(1, 3)) {
         is_high_gear = true;
       }
+
+      // frisbee pickup is -0.634
+      wrist.goal.MakeWithBuilder().goal(-0.634).Send();
+
+      index_loop.goal.MakeWithBuilder()
+          .goal_state(Pressed(1, 4) ? 2 :
+                      Pressed(1, 5) ? 3 :
+                      Pressed(1, 10) ? 4 : 1).Send();
+
+      angle_adjust.goal.MakeWithBuilder()
+          .goal(Pressed(3, 1) ? 0.6 : 0.35).Send();
+
+      shooter.goal.MakeWithBuilder()
+          .velocity(Pressed(2, 9) ? 325.0 : 0.0).Send();
     }
   }
 };

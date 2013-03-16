@@ -16,7 +16,11 @@
 #include "aos/common/sensors/sensor_packer.h"
 #include "aos/crio/hardware/counter.h"
 #include "aos/crio/hardware/digital_source.h"
+#include "aos/common/time.h"
+#include "aos/crio/hardware/counter.h"
+#include "aos/crio/hardware/digital_source.h"
 
+#include "frc971/control_loops/index/index.h"
 #include "frc971/queues/sensor_values.h"
 
 namespace frc971 {
