@@ -11,7 +11,9 @@ CRIOControlLoopRunner<Values>::CRIOControlLoopRunner(
     sensors::SensorBroadcaster<Values> *broadcaster,
     sensors::SensorUnpackerInterface<Values> *unpacker)
     : broadcaster_(broadcaster),
-      unpacker_(unpacker) {}
+      unpacker_(unpacker) {
+  broadcaster_->RegisterControlLoopRunner(this);
+}
 
 template<class Values>
 void CRIOControlLoopRunner<Values>::AddControlLoop(
@@ -22,7 +24,7 @@ void CRIOControlLoopRunner<Values>::AddControlLoop(
 
 template<class Values>
 void CRIOControlLoopRunner<Values>::Process(sensors::SensorData<Values> *data) {
-  unpacker_->UnpackFrom(&data.values);
+  unpacker_->UnpackFrom(&data->values);
   for (auto it = loops_.begin(); it != loops_.end(); ++it) {
     (*it)->Iterate();
   }

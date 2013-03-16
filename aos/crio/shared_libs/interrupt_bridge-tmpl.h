@@ -80,7 +80,7 @@ PeriodicNotifier<T>::PeriodicNotifier(
     typename InterruptBridge<T>::Handler handler,
     T *param, int priority)
     : InterruptBridge<T>(handler, param, priority),
-      period_(-1, -1) {}
+      period_(0, 0) {}
 
 template<typename T>
 void PeriodicNotifier<T>::StartPeriodic(time::Time period) {

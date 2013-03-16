@@ -13,6 +13,10 @@
 namespace aos {
 namespace crio {
 
+ControlsManager::ControlsManager() {
+  printf("aos::ControlsManager constructor done\n");
+}
+
 // Everything gets an explicit Start call here before calling all of the init
 // functions because it means that all static variables will be initialized
 // before anything actually starts running. It also means that everything will
@@ -34,6 +38,9 @@ void ControlsManager::StartCompetition() {
   LOG(INFO, "calling init functions\n");
   aos_call_init_functions();
   LOG(INFO, "initialized\n");
+
+  CreateObjects();
+  LOG(INFO, "created objects\n");
 
   RegisterControlLoops();
   LOG(INFO, "registered control loops\n");

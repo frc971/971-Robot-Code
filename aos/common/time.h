@@ -116,7 +116,7 @@ struct Time {
   }
   // Constructs a Time representing ticks.
   static Time InTicks(int ticks) {
-    return Time::InSeconds(ticks * sysClkRateGet());
+    return Time::InSeconds(static_cast<double>(ticks) / sysClkRateGet());
   }
 #endif
 

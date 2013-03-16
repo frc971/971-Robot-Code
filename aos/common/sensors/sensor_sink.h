@@ -12,7 +12,7 @@ class SensorSinkInterface {
  public:
   virtual ~SensorSinkInterface() {}
 
-  void Process(SensorData<Values> *data);
+  virtual void Process(SensorData<Values> *data) = 0;
 };
 
 }  // namespace sensors
