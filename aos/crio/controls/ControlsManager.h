@@ -8,6 +8,8 @@ namespace crio {
 // to be passed to START_ROBOT_CLASS (a WPILib macro) to start all of the code.
 class ControlsManager : public RobotBase {
  public:
+  ControlsManager();
+
   virtual void StartCompetition();
 
   static ControlsManager &GetInstance() {
@@ -20,6 +22,7 @@ class ControlsManager : public RobotBase {
  private:
   // Hooks that subclasses have to implement to do the correct things at the
   // correct times.
+  virtual void CreateObjects() = 0;
   virtual void RegisterControlLoops() = 0;
   virtual void StartSensorBroadcasters() = 0;
 };

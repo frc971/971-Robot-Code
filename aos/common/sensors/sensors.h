@@ -2,6 +2,7 @@
 #define AOS_COMMON_SENSORS_SENSORS_H_
 
 #include "aos/common/time.h"
+#include "aos/common/byteorder.h"
 
 #include "aos/common/control_loop/ControlLoop.h"
 
@@ -40,6 +41,10 @@ struct SensorData {
   Values values;
   // Starts at 0 and goes up.
   int32_t count;
+
+  void NetworkToHost() {
+    count = ntoh(count);
+  }
 } __attribute__((packed));
 
 }  // namespace sensors

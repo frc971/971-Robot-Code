@@ -115,8 +115,9 @@ struct Time {
     return ToNSec() / static_cast<int64_t>(kNSecInSec / sysClkRateGet());
   }
   // Constructs a Time representing ticks.
+  // TODO(brians): test this one too
   static Time InTicks(int ticks) {
-    return Time::InSeconds(ticks * sysClkRateGet());
+    return Time::InSeconds(static_cast<double>(ticks) / sysClkRateGet());
   }
 #endif
 
