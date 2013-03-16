@@ -116,6 +116,10 @@ TEST(TimeTest, ToTicks) {
   EXPECT_EQ(sysClkRateGet() / 100,
             MACRO_DARG(Time(0, Time::kNSecInSec / 100).ToTicks()));
 }
+TEST(TimeTest, InTicks) {
+  EXPECT_EQ(MACRO_DARG(Time(2, Time::kNSecInSec)),
+            Time::InTicks(sysClkRateGet() * 2.5));
+}
 #endif
 
 TEST(TimeTest, InMS) {
