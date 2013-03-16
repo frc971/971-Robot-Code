@@ -12,3 +12,4 @@ CameraHTTPStreamer
 angle_adjust
 wrist
 index
+shooter
