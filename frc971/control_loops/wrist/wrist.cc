@@ -87,9 +87,10 @@ void WristMotor::RunIteration(
     goal->goal, 0.0);
 
   if (position) {
-    //LOG(DEBUG, "pos=%f zero=%f currently %f hall: %s\n",
-        //position->pos, zero_offset_, absolute_position,
-        //position->hall_effect ? "true" : "false");
+    LOG(DEBUG, "pos: %f hall: %s absolute: %f\n",
+        position->pos,
+        position->hall_effect ? "true" : "false",
+        zeroed_joint_.absolute_position());
   }
 
   if (output) {

@@ -19,23 +19,24 @@ namespace constants {
 
 namespace {
 
-const double kCompWristHallEffectStartAngle = 72 * M_PI / 180.0;
-const double kPracticeWristHallEffectStartAngle = 72 * M_PI / 180.0;
+// It has about 0.029043 of gearbox slop.
+const double kCompWristHallEffectStartAngle = 1.0872860614359172;
+const double kPracticeWristHallEffectStartAngle = 1.0872860614359172;
 
 const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
 const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;
 
-const double kPracticeWristUpperPhysicalLimit = 95 * M_PI / 180.0;
-const double kCompWristUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kPracticeWristUpperPhysicalLimit = 1.677562;
+const double kCompWristUpperPhysicalLimit = 1.677562;
 
-const double kPracticeWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
-const double kCompWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kPracticeWristLowerPhysicalLimit = -0.746128;
+const double kCompWristLowerPhysicalLimit = -0.746128;
 
-const double kPracticeWristUpperLimit = 93 * M_PI / 180.0;
-const double kCompWristUpperLimit = 93 * M_PI / 180.0;
+const double kPracticeWristUpperLimit = 1.615385;
+const double kCompWristUpperLimit = 1.615385;
 
-const double kPracticeWristLowerLimit = -36 * M_PI / 180.0;
-const double kCompWristLowerLimit = -36 * M_PI / 180.0;
+const double kPracticeWristLowerLimit = -0.746128;
+const double kCompWristLowerLimit = -0.746128;
 
 const double kWristZeroingSpeed = 0.25;
 const double kWristZeroingOffSpeed = 1.0;
