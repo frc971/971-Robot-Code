@@ -174,6 +174,8 @@ class ZeroedJoint {
   // Timestamp
   static const double dt;
 
+  double absolute_position() const { return loop_->X_hat(0, 0); }
+
  private:
   friend class ZeroedStateFeedbackLoop<kNumZeroSensors>;
   // Friend the wrist test cases so that they can simulate windeup.
