@@ -28,10 +28,11 @@ namespace output {
 class MotorWriter : public aos::MotorOutput {
   // Maximum age of an output packet before the motors get zeroed instead.
   static const int kOutputMaxAgeMS = 20;
+  static const int kEnableDrivetrain = false;
 
   void RunIteration() {
     drivetrain.output.FetchLatest();
-    if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS) && false) {
+    if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS) && kEnableDrivetrain) {
       AddMotor(TALON, 2, drivetrain.output->right_voltage / 12.0);
       AddMotor(TALON, 3, drivetrain.output->right_voltage / 12.0);
       AddMotor(TALON, 5, -drivetrain.output->left_voltage / 12.0);
@@ -41,7 +42,9 @@ class MotorWriter : public aos::MotorOutput {
       AddMotor(TALON, 3, 0);
       AddMotor(TALON, 5, 0);
       AddMotor(TALON, 6, 0);
-      //LOG(WARNING, "drivetrain not new enough\n");
+      if (kEnableDrivetrain) {
+        LOG(WARNING, "drivetrain not new enough\n");
+      }
     }
     shifters.FetchLatest();
     if (shifters.IsNewerThanMS(kOutputMaxAgeMS)) {

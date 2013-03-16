@@ -28,6 +28,8 @@ namespace frc971 {
 
 class JoystickReader : public aos::JoystickInput {
  public:
+  static const bool kWristAlwaysDown = false;
+
   JoystickReader() : aos::JoystickInput() {
     shifters.MakeWithBuilder().set(true).Send();
   }
@@ -101,18 +103,47 @@ class JoystickReader : public aos::JoystickInput {
       }
 
       // frisbee pickup is -0.634
-      wrist.goal.MakeWithBuilder().goal(-0.634).Send();
+      wrist.goal.MakeWithBuilder().goal((Pressed(2, 10) || kWristAlwaysDown) ?
+                                        -0.634 : 1.5).Send();
 
-      index_loop.goal.MakeWithBuilder()
-          .goal_state(Pressed(1, 4) ? 2 :
-                      Pressed(1, 5) ? 3 :
-                      Pressed(1, 10) ? 4 : 1).Send();
+      ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
+          shooter.goal.MakeMessage();
+      shooter_goal->velocity = 0;
+      static double angle_adjust_goal = 0;
+      if (Pressed(2, 3)) {
+        // short shot
+        shooter_goal->velocity = 200;
+        angle_adjust_goal = 0.435;
+      } else if (Pressed(2, 5)) {
+        // medium shot
+        shooter_goal->velocity = 220;
+        angle_adjust_goal = 0.45;
+      } else if (Pressed(2, 6)) {
+        // long shot
+        shooter_goal->velocity = 240;
+        angle_adjust_goal = 0.55;
+      }
+      angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 
-      angle_adjust.goal.MakeWithBuilder()
-          .goal(Pressed(3, 1) ? 0.6 : 0.35).Send();
+      ::aos::ScopedMessagePtr<control_loops::IndexLoop::Goal> index_goal =
+          index_loop.goal.MakeMessage();
+      // TODO(brians): replace these with the enum values
+      if (Pressed(2, 11)) {
+        // FIRE
+        index_goal->goal_state = 4;
+      } else if (shooter_goal->velocity != 0) {
+        // get ready to shoot
+        index_goal->goal_state = 3;
+      } else if (Pressed(2, 9)) {
+        // intake
+        index_goal->goal_state = 2;
+      } else {
+        // get ready to intake
+        index_goal->goal_state = 1;
+      }
 
-      shooter.goal.MakeWithBuilder()
-          .velocity(Pressed(2, 9) ? 325.0 : 0.0).Send();
+      index_goal.Send();
+      shooter_goal.Send();
     }
   }
 };
