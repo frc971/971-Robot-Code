@@ -3,6 +3,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "aos/common/logging/logging.h"
+
 using namespace aos;
 
 static const aos_type_sig signature = {sizeof(DriverStationDisplay), 1234, 10};

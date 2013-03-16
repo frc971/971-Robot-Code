@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "aos/aos_core.h"
 #include "aos/common/type_traits.h"
+#include "aos/atom_code/ipc_lib/queue.h"
 
 namespace aos {
 const size_t kLineLength = 21;

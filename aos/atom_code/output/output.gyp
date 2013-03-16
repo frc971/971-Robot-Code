@@ -28,6 +28,7 @@
       ],
       'dependencies': [
         '<(AOS)/common/network/network.gyp:socket',
+        '<(AOS)/build/aos.gyp:aos_core',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/network/network.gyp:socket',
