@@ -5,7 +5,6 @@
 
 #include "aos/common/inttypes.h"
 #include "aos/common/messages/RobotState.q.h"
-#include "aos/atom_code/output/MotorOutput.h"
 #include "aos/common/logging/logging.h"
 
 #ifndef M_PI

@@ -83,10 +83,8 @@
         '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
         '<(AOS)/common/common.gyp:mutex',
-        '<(AOS)/common/common.gyp:time',
         '<(AOS)/crio/hardware/hardware.gyp:counter',
         '<(AOS)/crio/hardware/hardware.gyp:digital_source',
-        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_lib',
       ],
     },
     {
