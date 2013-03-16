@@ -1,5 +1,5 @@
-#ifndef __CRIO_MOTOR_SERVER_OUTPUT_DEVICE_H_
-#define __CRIO_MOTOR_SERVER_OUTPUT_DEVICE_H_
+#ifndef AOS_CRIO_MOTOR_SERVER_OUTPUT_DEVICE_H_
+#define AOS_CRIO_MOTOR_SERVER_OUTPUT_DEVICE_H_
 
 #include <stdint.h>
 #include "aos/crio/shared_libs/ByteBuffer.h"
@@ -20,7 +20,6 @@ class OutputDevice {
   virtual void NoValue() = 0;
 };
 
-} // namespace aos
+}  // namespace aos
 
-#endif
-
+#endif  // AOS_CRIO_MOTOR_SERVER_OUTPUT_DEVICE_H_

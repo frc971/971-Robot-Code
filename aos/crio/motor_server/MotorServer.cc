@@ -3,12 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "usrLib.h"
-#include "aos/common/inttypes.h"
 
 #include "WPILib/Timer.h"
 #include "WPILib/Task.h"
 
-#include "aos/aos_core.h"
+#include "aos/common/inttypes.h"
 #include "aos/crio/motor_server/MotorControllerOutput.h"
 #include "aos/crio/motor_server/SolenoidOutput.h"
 #include "aos/common/Configuration.h"

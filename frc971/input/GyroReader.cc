@@ -4,6 +4,7 @@
 #include <fcntl.h>
 
 #include "aos/common/logging/logging.h"
+#include "aos/atom_code/init.h"
 
 #include "frc971/queues/GyroAngle.q.h"
 

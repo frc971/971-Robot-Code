@@ -114,6 +114,10 @@ struct Time {
   int ToTicks() const {
     return ToNSec() / static_cast<int64_t>(kNSecInSec / sysClkRateGet());
   }
+  // Constructs a Time representing ticks.
+  static Time InTicks(int ticks) {
+    return Time::InSeconds(ticks * sysClkRateGet());
+  }
 #endif
 
   // Returns the time represented in milliseconds.
@@ -160,12 +164,22 @@ struct Time {
     Check();
   }
 
+  // Absolute value.
+  Time abs() const {
+    if (*this > Time(0, 0)) return *this;
+    return Time(-sec_ - 1, kNSecInSec - nsec_);
+  }
+
   // Enables returning the mock time value for Now instead of checking the
   // system clock.  This should only be used when testing things depending on
   // time, or many things may/will break.
   static void EnableMockTime(const Time now);
   // Sets now when time is being mocked.
   static void SetMockTime(const Time now);
+  // Convenience function to just increment the mock time by a certain amount.
+  static void IncrementMockTime(const Time amount) {
+    SetMockTime(Now() + amount);
+  }
   // Disables mocking time.
   static void DisableMockTime();
 

@@ -1,8 +1,9 @@
-#ifndef __CRIO_SHARED_LIBS_BYTE_BUFFER_H_
-#define __CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+#ifndef AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+#define AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_
+
+#include <algorithm>
 
 #include "aos/common/network/ReceiveSocket.h"
-#include <algorithm>
 
 namespace aos {
 
@@ -13,7 +14,7 @@ class ByteBuffer {
    int m_i;
    char *m_buffer;
    bool recv_from_sock(ReceiveSocket *sock) {
-     m_length = sock->Recv(m_buffer, m_size, 40000);
+     m_length = sock->Receive(m_buffer, m_size, 40000);
      if (m_length < 0) {
        m_length = 0;
      }
@@ -85,7 +86,6 @@ class ByteBuffer {
    }
 };
 
-} // namespace aos
+}  // namespace aos
 
-#endif
-
+#endif  // AOS_CRIO_SHARED_LIBS_BYTE_BUFFER_H_

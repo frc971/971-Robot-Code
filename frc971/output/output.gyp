@@ -43,18 +43,6 @@
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/common/network/network.gyp:socket',
-      ],
-    },
-    {
-      'target_name': 'SensorSender',
-      'type': '<(aos_target)',
-      'sources': [
-        'SensorSender.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        '<(AOS)/common/network/network.gyp:socket',
       ],
     },
   ],

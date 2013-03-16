@@ -1,6 +1,6 @@
 MotorWriter
 JoystickReader
-SensorReader
+sensor_receiver
 GyroReader
 DriveTrain
 AutoMode

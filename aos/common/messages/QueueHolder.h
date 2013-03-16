@@ -6,11 +6,14 @@
 
 #include <algorithm>
 
-#include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/byteorder.h"
 #include "aos/common/time.h"
 #include "aos/common/type_traits.h"
+#include "aos/common/logging/logging.h"
+#ifndef __VXWORKS__
+#include "aos/atom_code/ipc_lib/queue.h"
+#endif
 
 namespace aos {
 

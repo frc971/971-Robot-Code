@@ -16,7 +16,7 @@
         '../control_loops/shooter/shooter.gyp:shooter_lib_test',
         '../control_loops/shooter/shooter.gyp:shooter',
         '../input/input.gyp:JoystickReader',
-        '../input/input.gyp:SensorReader',
+        '../input/input.gyp:sensor_receiver',
         '../input/input.gyp:GyroReader',
         '../input/input.gyp:AutoMode',
         '../output/output.gyp:MotorWriter',

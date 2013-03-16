@@ -70,7 +70,30 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
              test_info.name());
       fputs("\tThis will include already printed WARNING and up messages.\n",
             stdout);
+      fputs("\tIt will also include duplicates of all gtest failures.\n",
+            stdout);
       TestLogImplementation::GetInstance()->PrintAllMessages();
+    }
+  }
+
+  virtual void OnTestPartResult( const ::testing::TestPartResult &result) {
+    if (result.failed()) {
+      const char *failure_type = "unknown";
+      switch (result.type()) {
+        case ::testing::TestPartResult::Type::kNonFatalFailure:
+          failure_type = "EXPECT";
+          break;
+        case ::testing::TestPartResult::Type::kFatalFailure:
+          failure_type = "ASSERT";
+          break;
+        case ::testing::TestPartResult::Type::kSuccess:
+          break;
+      }
+      log_do(ERROR, "%s: %d: gtest %s failure\n%s\n",
+             result.file_name(),
+             result.line_number(),
+             failure_type,
+             result.message());
     }
   }
 };

@@ -27,13 +27,13 @@
 #include "aos/common/network/SendSocket.h"
 #include "aos/crio/motor_server/ControlLoopGoals.h"
 #include "aos/crio/motor_server/OutputDevice.h"
-#include "aos/crio/motor_server/SensorSender.h"
 #include "aos/crio/shared_libs/ByteBuffer.h"
 #include "aos/map_utils.h"
 
 namespace aos {
 namespace crio {
 
+template<class Values>
 class CRIOControlLoopRunner;
 class MotorServer {
  public:
@@ -46,7 +46,9 @@ class MotorServer {
   static const int32_t WORK_PRIORITY = 100;
 
  private:
+  template<class Values>
   friend class CRIOControlLoopRunner;
+
   // Counter for how many times new values come in. Used to stop all the
   // outputs if values stop.
   // Would take days to overflow.

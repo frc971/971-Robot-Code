@@ -19,12 +19,12 @@ int ReceiveSocket::Connect(NetworkPort port) {
     return ret;
   }
 
-	if (bind(socket_, &addr_.addr,
+  if (bind(socket_, &addr_.addr,
            sizeof(addr_)) == -1) {
     LOG(ERROR, "failed to bind to address '%s' because of %d: %s\n", localhost,
         errno, strerror(errno));
     return last_ret_ = -1;
-	}
+  }
   return last_ret_ = 0;
 }
 

@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include "aos/aos_core.h"
-#include "aos/common/network/SendSocket.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/atom_code/output/MotorOutput.h"
