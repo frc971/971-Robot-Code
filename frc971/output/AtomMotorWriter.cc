@@ -28,7 +28,7 @@ namespace output {
 class MotorWriter : public aos::MotorOutput {
   // Maximum age of an output packet before the motors get zeroed instead.
   static const int kOutputMaxAgeMS = 20;
-  static const int kEnableDrivetrain = false;
+  static const int kEnableDrivetrain = true;
 
   void RunIteration() {
     drivetrain.output.FetchLatest();
