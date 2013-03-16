@@ -1,34 +1,36 @@
 Some us are using git for managing quickly changing code. This file has
-  directions/notes for setting that up.
+notes for setting that up.
+
+ssh to robotics.mvla.net and add the git executables to your .bashrc:
+  PATH=$PATH:/www/https/files/frc971/2013/brian/
 
 [Cloning]
 `git clone \
-    ssh://username@robotics.mvla.net/www/https/git/frc971/somebody/2013.git`
-  where username is your login on the server and somebody is whoever's git
+    ssh://USERNAME@robotics.mvla.net/www/https/git/frc971/SOMEBODY/2013.git`
+  where USERNAME is your login on the server and SOMEBODY is whoever's git
   repo you want to clone
 
 [Adding Other People's Repositories]
-`git remote add somebody \
-    ssh://username@robotics.mvla.net/www.https/git/frc971/somebody/2013.git`
-  where username is your login on the server and somebody is another person's
+`git remote add SOMEBODY \
+    ssh://USERNAME@robotics.mvla.net/www.https/git/frc971/SOMEBODY/2013.git`
+  where USERNAME is your login on the server and SOMEBODY is another person's
   git repository
 
 [Working with Other People's Repositories]
-`git fetch somebody` will pull their changes, and then you can rebase on top of
+`git fetch SOMEBODY` will pull their changes, and then you can rebase on top of
   them etc.
 `git push --mirror` will push all of your local branches so that everybody else
-  can see them.
+  can see them. (This is the default if the configuration option remote.<remote>.mirror is set.)
 
 [Synchronizing with SVN]
-In order to synchronize the git commits with svn, somebody has to get git-svn
-  set up in their local git repo and then push/pull commits.
-  To do that, `git svn init https://robotics.mvla.net/svn/frc971/2013/trunk/src`
-  Then, unless you want git-svn to pull down everything from SVN again, you have
-    to do `vim .git/refs/remotes/git-svn` (or whatever you name the remote) and
-    put in the commit ID of the latest commit in the repository that's from SVN.
-  After doing that (and a `git svn fetch`), git-svn works like usual.
-  To pull changes from svn, do `git-svn fetch`. To push changes to svn, do
-    `git svn dcommit`, which will take all of your git commits between the
-    latest commit from svn and your HEAD and make them into svn commits.
-  Multiple people dealing with svn works out because the git commit IDs end up
-    the same, so they all just become the same.
+In order to synchronize the git commits with svn, somebody has to set up git-svn in their local git repo and then push/pull commits.
+
+To do that, `git svn init https://robotics.mvla.net/svn/frc971/2013/trunk/src`
+
+Then, unless you want git-svn to pull down everything from SVN again, you have to edit .git/refs/remotes/git-svn (or whatever you name the remote) and put in the commit ID of the latest commit in the repository that's from SVN.
+
+After doing that (and a `git svn fetch`), git-svn works like usual.
+
+To pull changes from svn, do `git-svn fetch`. To push changes to svn, do `git svn dcommit`, which will take all of your git commits between the latest commit from svn and your HEAD and make them into svn commits.
+
+Multiple people dealing with svn works OK because the git commit SHAs end up the same so they all just become the same.

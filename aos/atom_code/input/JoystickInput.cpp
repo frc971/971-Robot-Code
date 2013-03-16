@@ -16,6 +16,11 @@ void JoystickInput::SetupButtons() {
   buttons[2] = control_data_.stick2Buttons;
   buttons[3] = control_data_.stick3Buttons;
 
+  // Put the ENABLED, AUTONOMOUS, and FMS_ATTACHED values into unused bits in
+  // the values for joystick 0 so that PosEdge and NegEdge can be used with
+  // them.
+  // Windows only supports 12 buttons, so we know there will never be any more.
+  // Not using MASK because it doesn't make it any cleaner.
   buttons[0] |= (control_data_.enabled << (ENABLED - 9)) |
       (control_data_.autonomous << (AUTONOMOUS - 9)) |
       (control_data_.fmsAttached << (FMS_ATTACHED - 9));

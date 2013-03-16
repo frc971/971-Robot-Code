@@ -9,6 +9,7 @@ namespace aos {
 // cRIO.
 // Designed for a subclass that implements RunIteration to be instantiated and
 // Runed.
+// TODO(brians): rewrite this with OO buttons/fms state etc
 class JoystickInput {
  private:
   uint16_t buttons[4], old_buttons[4];
