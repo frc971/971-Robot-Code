@@ -113,7 +113,7 @@ void FillInMessage(log_level level, const char *format, va_list ap,
 void PrintMessage(FILE *output, const LogMessage &message) {
   fprintf(output, "%s(%"PRId32")(%05"PRIu16"): %s at"
           " %010"PRId32".%09"PRId32"s: %s",
-          message.name, message.source, message.sequence,
+          message.name, static_cast<int32_t>(message.source), message.sequence,
           log_str(message.level), message.seconds, message.nseconds,
           message.message);
 }
