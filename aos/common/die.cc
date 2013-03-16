@@ -24,6 +24,7 @@ void Die(const char *format, ...) {
   va_list args;
   va_start(args, format);
   VDie(format, args);
+  // va_end(args)  // not because VDie never returns
 }
 
 namespace {
@@ -52,21 +53,21 @@ const std::string GetFilename() {
 }  // namespace
 
 void VDie(const char *format, va_list args_in) {
-  va_list args;
+  // We don't bother va_ending either of these because we're going nowhere and
+  // vxworks has some weird bugs that sometimes show up...
+  va_list args1, args2;
 
   fputs("aos fatal: ERROR!! details following\n", stderr);
-  va_copy(args, args_in);
-  vfprintf(stderr, format, args);
-  va_end(args);
+  va_copy(args1, args_in);
+  vfprintf(stderr, format, args1);
   fputs("aos fatal: ERROR!! see stderr for details\n", stdout);
 
   const std::string filename = GetFilename();
   if (!filename.empty()) {
     FILE *error_file = fopen(filename.c_str(), "w");
     if (error_file != NULL) {
-      va_copy(args, args_in);
-      vfprintf(error_file, format, args);
-      va_end(args);
+      va_copy(args2, args_in);
+      vfprintf(error_file, format, args2);
       fclose(error_file);
     } else {
       fprintf(stderr, "aos fatal: fopen('%s', \"w\") failed with %d (%s)\n",
