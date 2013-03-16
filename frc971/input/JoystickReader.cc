@@ -102,10 +102,22 @@ class JoystickReader : public aos::JoystickInput {
         is_high_gear = true;
       }
 
-      // frisbee pickup is -0.647
-      // up is 1.5
-      wrist.goal.MakeWithBuilder().goal((Pressed(2, 10) || kWristAlwaysDown) ?
-                                        -0.647 : 1.3).Send();
+      // Where the wrist should be to pick up a frisbee.
+      static const double kWristPickup = -0.674;
+      // Where the wrist gets stored when up.
+      // All the way up is 1.5.
+      static const double kWristUp = 1.43;
+      static double wrist_down_position = kWristPickup;
+      index_loop.status.FetchLatest();
+      if (index_loop.status.get()) {
+        if (index_loop.status->hopper_disc_count >= 4) {
+          wrist_down_position = -0.4;
+        } else {
+          wrist_down_position = kWristPickup;
+        }
+      }
+      wrist.goal.MakeWithBuilder()
+          .goal(Pressed(2, 10) ? wrist_down_position : kWristUp).Send();
 
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
