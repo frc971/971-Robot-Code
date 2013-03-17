@@ -88,7 +88,7 @@ class AngleAdjustDeltaU(AngleAdjust):
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl, 0.15])
+                             self.rpl - 1j * self.ipl, 0.85])
     print "Placed observer poles are"
     print numpy.linalg.eig(self.A - self.L * self.C)[0]
 

@@ -25,7 +25,7 @@ StateFeedbackPlantCoefficients<3, 1, 1> MakeAngleAdjustPlantCoefficients() {
 
 StateFeedbackController<3, 1, 1> MakeAngleAdjustController() {
   Eigen::Matrix<double, 3, 1> L;
-  L << 2.45656297069, 164.64938515, 2172.97100986;
+  L << 1.75656297069, 71.0838905921, 383.465472329;
   Eigen::Matrix<double, 1, 3> K;
   K << 147.285618609, 4.58304321916, 0.956562970689;
   return StateFeedbackController<3, 1, 1>(L, K, MakeAngleAdjustPlantCoefficients());
