@@ -129,18 +129,18 @@ class DrivetrainMotorsOL {
 
     double wheelNonLinearity;
     if (_highgear) {
-      wheelNonLinearity = 0.7;  // used to be csvReader->TURN_NONLIN_HIGH
+      wheelNonLinearity = 0.1;  // used to be csvReader->TURN_NONLIN_HIGH
       // Apply a sin function that's scaled to make it feel better.
       const double angular_range = M_PI / 2.0 * wheelNonLinearity;
       wheel = sin(angular_range * _wheel) / sin(angular_range);
-      wheel = sin(angular_range * _wheel) / sin(angular_range);
+      wheel = sin(angular_range * wheel) / sin(angular_range);
     } else {
-      wheelNonLinearity = 0.4;  // used to be csvReader->TURN_NONLIN_LOW
+      wheelNonLinearity = 0.1;  // used to be csvReader->TURN_NONLIN_LOW
       // Apply a sin function that's scaled to make it feel better.
       const double angular_range = M_PI / 2.0 * wheelNonLinearity;
       wheel = sin(angular_range * _wheel) / sin(angular_range);
-      wheel = sin(angular_range * _wheel) / sin(angular_range);
-      wheel = sin(angular_range * _wheel) / sin(angular_range);
+      wheel = sin(angular_range * wheel) / sin(angular_range);
+      wheel = sin(angular_range * wheel) / sin(angular_range);
     }
 
     double neg_inertia_scalar;
@@ -154,14 +154,10 @@ class DrivetrainMotorsOL {
         if (fabs(wheel) > 0.65) {
           neg_inertia_scalar = 16;  // used to be csvReader->NEG_INTERTIA_LOW_LESS_EXT
         } else {
-          neg_inertia_scalar = 5;  // used to be csvReader->NEG_INTERTIA_LOW_LESS
+          neg_inertia_scalar = 16;  // used to be csvReader->NEG_INTERTIA_LOW_LESS
         }
       }
       sensitivity = 1.24;  // used to be csvReader->SENSE_LOW
-
-      if (fabs(_throttle) > 0.1) {  // used to be csvReader->SENSE_CUTTOFF
-        sensitivity = 1 - (1 - sensitivity) / fabs(_throttle);
-      }
     }
     double neg_inertia_power = neg_inertia * neg_inertia_scalar;
     _neg_inertia_accumulator += neg_inertia_power;
@@ -199,6 +195,7 @@ class DrivetrainMotorsOL {
       overPower = 0.0;
       angular_power = fabs(_throttle) * wheel * sensitivity;
       angular_power -= quick_stop_accumulator;
+#if 0
       if (quick_stop_accumulator > 1) {
         quick_stop_accumulator -= 1;
       } else if (quick_stop_accumulator < -1) {
@@ -206,6 +203,7 @@ class DrivetrainMotorsOL {
       } else {
         quick_stop_accumulator = 0;
       }
+#endif
     }
 
     _right_pwm = _left_pwm = linear_power;
