@@ -63,6 +63,8 @@
       '-Wsign-compare',
       '-Wformat=2',
       '-Werror',
+
+      '-ggdb3',
     ],
     'cflags_c': [
       '-std=gnu99',
@@ -76,7 +78,6 @@
     'conditions': [
       ['DEBUG=="yes"', {
           'cflags': [
-            '-ggdb3',
             '-O0',
           ],
           'ldflags': [
