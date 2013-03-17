@@ -36,7 +36,7 @@ const double kPracticeWristLowerLimit = -0.746128;
 const double kCompWristLowerLimit = -0.746128;
 
 const double kWristZeroingSpeed = 0.25;
-const double kWristZeroingOffSpeed = 1.0;
+const double kWristZeroingOffSpeed = 0.35;
 
 const int kAngleAdjustHallEffect = 2;
 
