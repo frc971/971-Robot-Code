@@ -67,6 +67,8 @@ class ZeroedJoint {
     double upper_limit;
     // Speed (and direction) to move while zeroing.
     double zeroing_speed;
+    // Speed (and direction) to move while moving off the sensor.
+    double zeroing_off_speed;
     // Maximum voltage to apply when zeroing.
     double max_zeroing_voltage;
     // Angles where we see a positive edge from the hall effect sensors.
@@ -273,8 +275,8 @@ double ZeroedJoint<kNumZeroSensors>::Update(
           state_ = ZEROING;
         } else {
           // Slowly creep off the sensor.
-          zeroing_position_ -= config_data_.zeroing_speed * dt;
-          loop_->R << zeroing_position_, -config_data_.zeroing_speed;
+          zeroing_position_ -= config_data_.zeroing_off_speed * dt;
+          loop_->R << zeroing_position_, -config_data_.zeroing_off_speed;
           break;
         }
       }

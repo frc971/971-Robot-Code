@@ -36,6 +36,11 @@ bool WristMotor::FetchConstants(
     LOG(ERROR, "Failed to fetch the wrist start angle constant.\n");
     return false;
   }
+  if (!constants::wrist_zeroing_off_speed(&config_data->zeroing_off_speed)) {
+    LOG(ERROR, "Failed to fetch the wrist zeroing off speed constant.\n");
+    return false;
+  }
+
   if (!constants::wrist_zeroing_speed(&config_data->zeroing_speed)) {
     LOG(ERROR, "Failed to fetch the wrist zeroing speed constant.\n");
     return false;

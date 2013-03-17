@@ -38,6 +38,12 @@ bool AngleAdjustMotor::FetchConstants(
     LOG(ERROR, "Failed to fetch the hall effect start angle constants.\n");
     return false;
   }
+  if (!constants::angle_adjust_zeroing_off_speed(
+          &config_data->zeroing_off_speed)) {
+    LOG(ERROR,
+        "Failed to fetch the angle adjust zeroing off speed constant.\n");
+    return false;
+  }
   if (!constants::angle_adjust_zeroing_speed(
           &config_data->zeroing_speed)) {
     LOG(ERROR, "Failed to fetch the angle adjust zeroing speed constant.\n");

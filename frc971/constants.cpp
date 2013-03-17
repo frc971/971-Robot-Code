@@ -37,7 +37,8 @@ const double kCompWristUpperLimit = 93 * M_PI / 180.0;
 const double kPracticeWristLowerLimit = -36 * M_PI / 180.0;
 const double kCompWristLowerLimit = -36 * M_PI / 180.0;
 
-const double kWristZeroingSpeed = 1.0;
+const double kWristZeroingSpeed = 0.25;
+const double kWristZeroingOffSpeed = 1.0;
 
 const int kAngleAdjustHallEffect = 2;
 
@@ -60,6 +61,7 @@ const double kPracticeAngleAdjustLowerLimit = 0.32;
 const double kCompAngleAdjustLowerLimit = 0.32;
 
 const double kAngleAdjustZeroingSpeed = -0.2;
+const double kAngleAdjustZeroingOffSpeed = -0.5;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
@@ -79,6 +81,8 @@ struct Values {
 
   // Zeroing speed.
   double wrist_zeroing_speed;
+  // Zeroing off speed.
+  double wrist_zeroing_off_speed;
 
   // AngleAdjust hall effect positive and negative edges.
   const double *angle_adjust_hall_effect_start_angle;
@@ -93,6 +97,8 @@ struct Values {
 
   // Zeroing speed.
   double angle_adjust_zeroing_speed;
+  // Zeroing off speed.
+  double angle_adjust_zeroing_off_speed;
 
   // what camera_center returns
   int camera_center;
@@ -116,6 +122,7 @@ const Values *GetValues() {
                             kCompWristUpperPhysicalLimit,
                             kCompWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kWristZeroingOffSpeed,
                             kCompAngleAdjustHallEffectStartAngle,
                             kCompAngleAdjustHallEffectStopAngle,
                             kCompAngleAdjustUpperLimit,
@@ -123,6 +130,7 @@ const Values *GetValues() {
                             kCompAngleAdjustUpperPhysicalLimit,
                             kCompAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
+                            kAngleAdjustZeroingOffSpeed,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
@@ -133,6 +141,7 @@ const Values *GetValues() {
                             kPracticeWristUpperPhysicalLimit,
                             kPracticeWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kWristZeroingOffSpeed,
                             kPracticeAngleAdjustHallEffectStartAngle,
                             kPracticeAngleAdjustHallEffectStopAngle,
                             kPracticeAngleAdjustUpperLimit,
@@ -140,6 +149,7 @@ const Values *GetValues() {
                             kPracticeAngleAdjustUpperPhysicalLimit,
                             kPracticeAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
+                            kAngleAdjustZeroingOffSpeed,
                             kPracticeCameraCenter};
         break;
       default:
@@ -200,6 +210,13 @@ bool wrist_zeroing_speed(double *speed) {
   return true;
 }
 
+bool wrist_zeroing_off_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->wrist_zeroing_off_speed;
+  return true;
+}
+
 bool angle_adjust_hall_effect_start_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
@@ -246,6 +263,13 @@ bool angle_adjust_zeroing_speed(double *speed) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *speed = values->angle_adjust_zeroing_speed;
+  return true;
+}
+
+bool angle_adjust_zeroing_off_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->angle_adjust_zeroing_off_speed;
   return true;
 }
 
