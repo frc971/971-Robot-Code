@@ -296,12 +296,10 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   dt_closedloop.Update(!bad_pos, bad_pos || bad_output);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
-  if (!bad_output) {
-    if (control_loop_driving) {
-      dt_closedloop.SendMotors(output);
-    } else {
-      dt_openloop.SendMotors(output);
-    }
+  if (control_loop_driving) {
+    dt_closedloop.SendMotors(output);
+  } else {
+    dt_openloop.SendMotors(output);
   }
 }
 

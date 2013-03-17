@@ -8,12 +8,10 @@
         'header_path': 'frc971/control_loops/drivetrain',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
@@ -27,7 +25,6 @@
         'drivetrain_motor_plant.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         'drivetrain_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
