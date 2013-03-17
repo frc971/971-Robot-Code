@@ -7,40 +7,40 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<2, 1, 1> MakeAngleAdjustPlantCoefficients() {
-  Eigen::Matrix<double, 2, 2> A;
-  A << 1.0, 0.00844804908295, 0.0, 0.706562970689;
-  Eigen::Matrix<double, 2, 1> B;
-  B << 0.000186726546509, 0.0353055515475;
-  Eigen::Matrix<double, 1, 2> C;
-  C << 1, 0;
+StateFeedbackPlantCoefficients<3, 1, 1> MakeAngleAdjustPlantCoefficients() {
+  Eigen::Matrix<double, 3, 3> A;
+  A << 1.0, 0.00844804908295, 0.000186726546509, 0.0, 0.706562970689, 0.0353055515475, 0.0, 0.0, 1.0;
+  Eigen::Matrix<double, 3, 1> B;
+  B << 0.0, 0.0, 1.0;
+  Eigen::Matrix<double, 1, 3> C;
+  C << 1.0, 0.0, 0.0;
   Eigen::Matrix<double, 1, 1> D;
-  D << 0;
+  D << 0.0;
   Eigen::Matrix<double, 1, 1> U_max;
   U_max << 12.0;
   Eigen::Matrix<double, 1, 1> U_min;
   U_min << -12.0;
-  return StateFeedbackPlantCoefficients<2, 1, 1>(A, B, C, D, U_max, U_min);
+  return StateFeedbackPlantCoefficients<3, 1, 1>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackController<2, 1, 1> MakeAngleAdjustController() {
-  Eigen::Matrix<double, 2, 1> L;
-  L << 1.60656297069, 51.0341417582;
-  Eigen::Matrix<double, 1, 2> K;
-  K << 311.565731672, 11.2839301509;
-  return StateFeedbackController<2, 1, 1>(L, K, MakeAngleAdjustPlantCoefficients());
+StateFeedbackController<3, 1, 1> MakeAngleAdjustController() {
+  Eigen::Matrix<double, 3, 1> L;
+  L << 2.45656297069, 164.64938515, 2172.97100986;
+  Eigen::Matrix<double, 1, 3> K;
+  K << 147.285618609, 4.58304321916, 0.956562970689;
+  return StateFeedbackController<3, 1, 1>(L, K, MakeAngleAdjustPlantCoefficients());
 }
 
-StateFeedbackPlant<2, 1, 1> MakeAngleAdjustPlant() {
-  ::std::vector<StateFeedbackPlantCoefficients<2, 1, 1> *> plants(1);
-  plants[0] = new StateFeedbackPlantCoefficients<2, 1, 1>(MakeAngleAdjustPlantCoefficients());
-  return StateFeedbackPlant<2, 1, 1>(plants);
+StateFeedbackPlant<3, 1, 1> MakeAngleAdjustPlant() {
+  ::std::vector<StateFeedbackPlantCoefficients<3, 1, 1> *> plants(1);
+  plants[0] = new StateFeedbackPlantCoefficients<3, 1, 1>(MakeAngleAdjustPlantCoefficients());
+  return StateFeedbackPlant<3, 1, 1>(plants);
 }
 
-StateFeedbackLoop<2, 1, 1> MakeAngleAdjustLoop() {
-  ::std::vector<StateFeedbackController<2, 1, 1> *> controllers(1);
-  controllers[0] = new StateFeedbackController<2, 1, 1>(MakeAngleAdjustController());
-  return StateFeedbackLoop<2, 1, 1>(controllers);
+StateFeedbackLoop<3, 1, 1> MakeAngleAdjustLoop() {
+  ::std::vector<StateFeedbackController<3, 1, 1> *> controllers(1);
+  controllers[0] = new StateFeedbackController<3, 1, 1>(MakeAngleAdjustController());
+  return StateFeedbackLoop<3, 1, 1>(controllers);
 }
 
 }  // namespace control_loops

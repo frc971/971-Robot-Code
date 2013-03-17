@@ -7,6 +7,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
 #include "frc971/control_loops/wrist/wrist_motor_plant.h"
+#include "frc971/control_loops/wrist/unaugmented_wrist_motor_plant.h"
 
 #include "frc971/control_loops/zeroed_joint.h"
 

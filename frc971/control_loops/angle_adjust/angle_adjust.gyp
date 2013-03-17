@@ -21,6 +21,7 @@
       'sources': [
         'angle_adjust.cc',
         'angle_adjust_motor_plant.cc',
+        'unaugmented_angle_adjust_motor_plant.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',

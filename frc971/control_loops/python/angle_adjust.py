@@ -6,8 +6,8 @@ import sys
 from matplotlib import pylab
 
 class AngleAdjust(control_loop.ControlLoop):
-  def __init__(self):
-    super(AngleAdjust, self).__init__("AngleAdjust")
+  def __init__(self, name="AngleAdjustRaw"):
+    super(AngleAdjust, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = .428
     # Stall Current in Amps
@@ -41,10 +41,13 @@ class AngleAdjust(control_loop.ControlLoop):
     self.C = numpy.matrix([[1, 0]])
     self.D = numpy.matrix([[0]])
 
-    self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
-                              self.dt, self.C)
+    self.A, self.B = self.ContinuousToDiscrete(
+        self.A_continuous, self.B_continuous, self.dt)
 
     self.PlaceControllerPoles([.45, .8])
+
+    print "Unaugmented controller poles at"
+    print self.K
 
     self.rpl = .05
     self.ipl = 0.008
@@ -53,6 +56,47 @@ class AngleAdjust(control_loop.ControlLoop):
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
+
+    self.InitializeState()
+
+class AngleAdjustDeltaU(AngleAdjust):
+  def __init__(self, name="AngleAdjust"):
+    super(AngleAdjustDeltaU, self).__init__(name)
+    A_unaugmented = self.A
+    B_unaugmented = self.B
+
+    self.A = numpy.matrix([[0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0],
+                           [0.0, 0.0, 1.0]])
+    self.A[0:2, 0:2] = A_unaugmented
+    self.A[0:2, 2] = B_unaugmented
+
+    self.B = numpy.matrix([[0.0],
+                           [0.0],
+                           [1.0]])
+
+    self.C = numpy.matrix([[1.0, 0.0, 0.0]])
+    self.D = numpy.matrix([[0.0]])
+
+    self.PlaceControllerPoles([0.60, 0.35, 0.80])
+
+    print "K"
+    print self.K
+    print "Placed controller poles are"
+    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+
+    self.rpl = .05
+    self.ipl = 0.008
+    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
+                             self.rpl - 1j * self.ipl, 0.15])
+    print "Placed observer poles are"
+    print numpy.linalg.eig(self.A - self.L * self.C)[0]
+
+    self.U_max = numpy.matrix([[12.0]])
+    self.U_min = numpy.matrix([[-12.0]])
+
+    self.InitializeState()
+
 
 def main(argv):
   # Simulate the response of the system to a step input.
@@ -76,9 +120,9 @@ def main(argv):
   pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
-  angle_adjust = AngleAdjust()
+  angle_adjust = AngleAdjustDeltaU()
   close_loop_x = []
-  R = numpy.matrix([[1.0], [0.0]])
+  R = numpy.matrix([[1.0], [0.0], [0.0]])
   for _ in xrange(100):
     U = numpy.clip(angle_adjust.K * (R - angle_adjust.X_hat), angle_adjust.U_min, angle_adjust.U_max)
     angle_adjust.UpdateObserver(U)
@@ -89,9 +133,16 @@ def main(argv):
   pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 3:
+  if len(argv) != 5:
     print "Expected .cc file name and .h file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter("RawAngleAdjust",
+                                                 [AngleAdjust()])
+    if argv[3][-3:] == '.cc':
+      loop_writer.Write(argv[4], argv[3])
+    else:
+      loop_writer.Write(argv[3], argv[4])
+
     loop_writer = control_loop.ControlLoopWriter("AngleAdjust", [angle_adjust])
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])

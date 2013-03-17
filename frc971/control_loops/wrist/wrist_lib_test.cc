@@ -24,7 +24,7 @@ class WristMotorSimulation {
   // Constructs a motor simulation.  initial_position is the inital angle of the
   // wrist, which will be treated as 0 by the encoder.
   WristMotorSimulation(double initial_position)
-      : wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeWristPlant())),
+      : wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawWristPlant())),
         my_wrist_loop_(".frc971.control_loops.wrist",
                        0x1a7b7094, ".frc971.control_loops.wrist.goal",
                        ".frc971.control_loops.wrist.position",
@@ -41,6 +41,7 @@ class WristMotorSimulation {
     wrist_plant_->Y = wrist_plant_->C() * wrist_plant_->X;
     last_position_ = wrist_plant_->Y(0, 0);
     calibration_value_ = 0.0;
+    last_voltage_ = 0.0;
   }
 
   // Returns the absolute angle of the wrist.
@@ -95,7 +96,7 @@ class WristMotorSimulation {
   void Simulate() {
     last_position_ = wrist_plant_->Y(0, 0);
     EXPECT_TRUE(my_wrist_loop_.output.FetchLatest());
-    wrist_plant_->U << my_wrist_loop_.output->voltage;
+    wrist_plant_->U << last_voltage_;
     wrist_plant_->Update();
 
     // Assert that we are in the right physical range.
@@ -110,6 +111,7 @@ class WristMotorSimulation {
               wrist_plant_->Y(0, 0));
     EXPECT_LE(wrist_lower_physical_limit,
               wrist_plant_->Y(0, 0));
+    last_voltage_ = my_wrist_loop_.output->voltage;
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> wrist_plant_;
@@ -118,6 +120,7 @@ class WristMotorSimulation {
   double initial_position_;
   double last_position_;
   double calibration_value_;
+  double last_voltage_;
 };
 
 class WristTest : public ::testing::Test {
@@ -222,7 +225,7 @@ TEST_F(WristTest, RezeroWithMissingPos) {
       }
       my_wrist_loop_.goal.MakeWithBuilder().goal(0.2).Send();
     }
-    if (i == 430) {
+    if (i == 410) {
       EXPECT_TRUE(wrist_motor_.is_zeroing());
     }
 
