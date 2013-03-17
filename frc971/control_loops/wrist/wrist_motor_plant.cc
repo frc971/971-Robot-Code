@@ -25,7 +25,7 @@ StateFeedbackPlantCoefficients<3, 1, 1> MakeWristPlantCoefficients() {
 
 StateFeedbackController<3, 1, 1> MakeWristController() {
   Eigen::Matrix<double, 3, 1> L;
-  L << 1.86581823335, 85.5369356389, 214.302206027;
+  L << 1.81581823335, 78.6334534274, 142.868137351;
   Eigen::Matrix<double, 1, 3> K;
   K << 92.6004807973, 4.38063492858, 1.11581823335;
   return StateFeedbackController<3, 1, 1>(L, K, MakeWristPlantCoefficients());
