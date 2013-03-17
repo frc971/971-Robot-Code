@@ -52,6 +52,7 @@ class JoystickReader : public aos::JoystickInput {
       double right_goal = 0.0;
       const double wheel = control_data_.stick0Axis1 / 127.0;
       const double throttle = -control_data_.stick1Axis2 / 127.0;
+      LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
       const double kThrottleGain = 1.0 / 2.5;
       if (Pressed(0, 7) || Pressed(0, 11)) {
         static double distance = 0.0;
@@ -117,17 +118,17 @@ class JoystickReader : public aos::JoystickInput {
         }
       }
       wrist.goal.MakeWithBuilder()
-          .goal(Pressed(2, 10) ? wrist_down_position : kWristUp).Send();
+          .goal(Pressed(2, 8) ? wrist_down_position : kWristUp).Send();
 
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
-      static double angle_adjust_goal = 0;
-      if (Pressed(2, 3)) {
+      static double angle_adjust_goal = 0.42;
+      if (Pressed(2, 5)) {
         // short shot
         shooter_goal->velocity = 200;
         angle_adjust_goal = 0.42;
-      } else if (Pressed(2, 5)) {
+      } else if (Pressed(2, 3)) {
         // medium shot
         shooter_goal->velocity = 220;
         angle_adjust_goal = 0.45;
@@ -147,7 +148,7 @@ class JoystickReader : public aos::JoystickInput {
       } else if (shooter_goal->velocity != 0) {
         // get ready to shoot
         index_goal->goal_state = 3;
-      } else if (Pressed(2, 9)) {
+      } else if (Pressed(2, 10)) {
         // intake
         index_goal->goal_state = 2;
       } else {
