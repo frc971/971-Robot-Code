@@ -6,13 +6,13 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<2, 1, 1> MakeAngleAdjustPlantCoefficients();
+StateFeedbackPlantCoefficients<3, 1, 1> MakeAngleAdjustPlantCoefficients();
 
-StateFeedbackController<2, 1, 1> MakeAngleAdjustController();
+StateFeedbackController<3, 1, 1> MakeAngleAdjustController();
 
-StateFeedbackPlant<2, 1, 1> MakeAngleAdjustPlant();
+StateFeedbackPlant<3, 1, 1> MakeAngleAdjustPlant();
 
-StateFeedbackLoop<2, 1, 1> MakeAngleAdjustLoop();
+StateFeedbackLoop<3, 1, 1> MakeAngleAdjustLoop();
 
 }  // namespace control_loops
 }  // namespace frc971

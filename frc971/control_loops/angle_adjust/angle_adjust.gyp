@@ -21,9 +21,9 @@
       'sources': [
         'angle_adjust.cc',
         'angle_adjust_motor_plant.cc',
+        'unaugmented_angle_adjust_motor_plant.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
@@ -45,7 +45,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         'angle_adjust_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
@@ -59,11 +58,11 @@
         'angle_adjust_csv.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
         'angle_adjust_loop',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/common/common.gyp:queues',
       ],
     },
     {
@@ -73,7 +72,6 @@
         'angle_adjust_main.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         'angle_adjust_lib',
         'angle_adjust_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',

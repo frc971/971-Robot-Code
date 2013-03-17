@@ -25,6 +25,7 @@
       'sources': [
         'wrist.cc',
         'wrist_motor_plant.cc',
+        'unaugmented_wrist_motor_plant.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',

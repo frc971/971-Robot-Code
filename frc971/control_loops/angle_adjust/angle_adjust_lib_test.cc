@@ -8,6 +8,7 @@
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust.h"
+#include "frc971/control_loops/angle_adjust/unaugmented_angle_adjust_motor_plant.h"
 #include "frc971/constants.h"
 
 
@@ -26,7 +27,7 @@ class AngleAdjustMotorSimulation {
   // angle_adjust, which will be treated as 0 by the encoder.
   explicit AngleAdjustMotorSimulation(double initial_position)
       : angle_adjust_plant_(
-          new StateFeedbackPlant<2, 1, 1>(MakeAngleAdjustPlant())),
+          new StateFeedbackPlant<2, 1, 1>(MakeRawAngleAdjustPlant())),
         my_angle_adjust_loop_(".frc971.control_loops.angle_adjust",
                        0x65c7ef53, ".frc971.control_loops.angle_adjust.goal",
                        ".frc971.control_loops.angle_adjust.position",
@@ -42,6 +43,7 @@ class AngleAdjustMotorSimulation {
     angle_adjust_plant_->X(1, 0) = 0.0;
     angle_adjust_plant_->Y = angle_adjust_plant_->C() * angle_adjust_plant_->X;
     last_position_ = angle_adjust_plant_->Y(0, 0);
+    last_voltage_ = 0.0;
     calibration_value_[0] = 0.0;
     calibration_value_[1] = 0.0;
   }
@@ -110,7 +112,7 @@ class AngleAdjustMotorSimulation {
   void Simulate() {
     last_position_ = angle_adjust_plant_->Y(0, 0);
     EXPECT_TRUE(my_angle_adjust_loop_.output.FetchLatest());
-    angle_adjust_plant_->U << my_angle_adjust_loop_.output->voltage;
+    angle_adjust_plant_->U << last_voltage_;
     angle_adjust_plant_->Update();
 
     // Assert that we are in the right physical range.
@@ -123,6 +125,7 @@ class AngleAdjustMotorSimulation {
 
     EXPECT_GE(upper_physical_limit, angle_adjust_plant_->Y(0, 0));
     EXPECT_LE(lower_physical_limit, angle_adjust_plant_->Y(0, 0));
+    last_voltage_ = my_angle_adjust_loop_.output->voltage;
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> angle_adjust_plant_;
@@ -131,6 +134,7 @@ class AngleAdjustMotorSimulation {
   AngleAdjustLoop my_angle_adjust_loop_;
   double initial_position_;
   double last_position_;
+  double last_voltage_;
   double calibration_value_[2];
 };
 

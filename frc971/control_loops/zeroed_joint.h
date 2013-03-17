@@ -13,34 +13,62 @@ class WristTest_NoWindupPositive_Test;
 class WristTest_NoWindupNegative_Test;
 };
 
+// Note: Everything in this file assumes that there is a 1 cycle delay between
+// power being requested and it showing up at the motor.  It assumes that
+// X_hat(2, 1) is the voltage being applied as well.  It will go unstable if
+// that isn't true.
+
 template<int kNumZeroSensors>
 class ZeroedJoint;
 
 // This class implements the CapU function correctly given all the extra
 // information that we know about from the wrist motor.
 template<int kNumZeroSensors>
-class ZeroedStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
+class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  public:
-  ZeroedStateFeedbackLoop(StateFeedbackLoop<2, 1, 1> loop,
+  ZeroedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> loop,
                           ZeroedJoint<kNumZeroSensors> *zeroed_joint)
-      : StateFeedbackLoop<2, 1, 1>(loop),
-        zeroed_joint_(zeroed_joint) {
+      : StateFeedbackLoop<3, 1, 1>(loop),
+        zeroed_joint_(zeroed_joint),
+        voltage_(0.0),
+        last_voltage_(0.0) {
   }
 
   // Caps U, but this time respects the state of the wrist as well.
   virtual void CapU();
+
+  // Returns the accumulated voltage.
+  double voltage() const { return voltage_; }
+
+  // Returns the uncapped voltage.
+  double uncapped_voltage() const { return uncapped_voltage_; }
+
+  // Zeros the accumulator.
+  void ZeroPower() { voltage_ = 0.0; }
  private:
   ZeroedJoint<kNumZeroSensors> *zeroed_joint_;
+
+  // The accumulated voltage to apply to the motor.
+  double voltage_;
+  double last_voltage_;
+  double uncapped_voltage_;
 };
 
 template<int kNumZeroSensors>
 void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
+  const double old_voltage = voltage_;
+  voltage_ += U(0, 0);
+
+  uncapped_voltage_ = voltage_;
+
+  // Do all our computations with the voltage, and then compute what the delta
+  // is to make that happen.
   if (zeroed_joint_->state_ == ZeroedJoint<kNumZeroSensors>::READY) {
     if (Y(0, 0) >= zeroed_joint_->config_data_.upper_limit) {
-      U(0, 0) = std::min(0.0, U(0, 0));
+      voltage_ = std::min(0.0, voltage_);
     }
     if (Y(0, 0) <= zeroed_joint_->config_data_.lower_limit) {
-      U(0, 0) = std::max(0.0, U(0, 0));
+      voltage_ = std::max(0.0, voltage_);
     }
   }
 
@@ -49,8 +77,20 @@ void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
   double limit = is_ready ?
       12.0 : zeroed_joint_->config_data_.max_zeroing_voltage;
 
-  U(0, 0) = std::min(limit, U(0, 0));
-  U(0, 0) = std::max(-limit, U(0, 0));
+  voltage_ = std::min(limit, voltage_);
+  voltage_ = std::max(-limit, voltage_);
+  U(0, 0) = voltage_ - old_voltage;
+
+  // Make sure that reality and the observer can't get too far off.  There is a
+  // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
+  // against last cycle's voltage.
+  if (X_hat(2, 0) > last_voltage_ + 2.0) {
+    X_hat(2, 0) = last_voltage_ + 2.0;
+  } else if (X_hat(2, 0) < last_voltage_ -2.0) {
+    X_hat(2, 0) = last_voltage_ - 2.0;
+  }
+
+  last_voltage_ = voltage_;
 }
 
 
@@ -67,6 +107,8 @@ class ZeroedJoint {
     double upper_limit;
     // Speed (and direction) to move while zeroing.
     double zeroing_speed;
+    // Speed (and direction) to move while moving off the sensor.
+    double zeroing_off_speed;
     // Maximum voltage to apply when zeroing.
     double max_zeroing_voltage;
     // Angles where we see a positive edge from the hall effect sensors.
@@ -83,7 +125,7 @@ class ZeroedJoint {
     double hall_effect_positions[kNumZeroSensors];
   };
 
-  ZeroedJoint(StateFeedbackLoop<2, 1, 1> loop)
+  ZeroedJoint(StateFeedbackLoop<3, 1, 1> loop)
       : loop_(new ZeroedStateFeedbackLoop<kNumZeroSensors>(loop, this)),
         state_(UNINITIALIZED),
         error_count_(0),
@@ -131,6 +173,8 @@ class ZeroedJoint {
 
   // Timestamp
   static const double dt;
+
+  double absolute_position() const { return loop_->X_hat(0, 0); }
 
  private:
   friend class ZeroedStateFeedbackLoop<kNumZeroSensors>;
@@ -248,7 +292,8 @@ double ZeroedJoint<kNumZeroSensors>::Update(
         // Reset the zeroing goal.
         zeroing_position_ = absolute_position;
         // Clear the observer state.
-        loop_->X_hat << absolute_position, 0.0;
+        loop_->X_hat << absolute_position, 0.0, 0.0;
+        loop_->ZeroPower();
         // Set the goal to here to make it so it doesn't move when disabled.
         loop_->R = loop_->X_hat;
         // Only progress if we are enabled.
@@ -273,8 +318,8 @@ double ZeroedJoint<kNumZeroSensors>::Update(
           state_ = ZEROING;
         } else {
           // Slowly creep off the sensor.
-          zeroing_position_ -= config_data_.zeroing_speed * dt;
-          loop_->R << zeroing_position_, -config_data_.zeroing_speed;
+          zeroing_position_ -= config_data_.zeroing_off_speed * dt;
+          loop_->R << zeroing_position_, -config_data_.zeroing_off_speed, 0.0;
           break;
         }
       }
@@ -313,7 +358,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
         } else {
           // Slowly creep towards the sensor.
           zeroing_position_ += config_data_.zeroing_speed * dt;
-          loop_->R << zeroing_position_, config_data_.zeroing_speed;
+          loop_->R << zeroing_position_, config_data_.zeroing_speed, 0.0;
         }
         break;
       }
@@ -322,7 +367,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       LOG(DEBUG, "READY\n");
       {
         const double limited_goal = ClipGoal(goal_angle);
-        loop_->R << limited_goal, goal_velocity;
+        loop_->R << limited_goal, goal_velocity, 0.0;
         break;
       }
 
@@ -346,20 +391,20 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     case MOVING_OFF:
     case ZEROING:
       // Check if we have cliped and adjust the goal.
-      if (loop_->U_uncapped(0, 0) > config_data_.max_zeroing_voltage) {
-        double dx = (loop_->U_uncapped(0, 0) -
+      if (loop_->uncapped_voltage() > config_data_.max_zeroing_voltage) {
+        double dx = (loop_->uncapped_voltage() -
                      config_data_.max_zeroing_voltage) / loop_->K(0, 0);
         zeroing_position_ -= dx;
         capped_goal_ = true;
-      } else if(loop_->U_uncapped(0, 0) < -config_data_.max_zeroing_voltage) {
-        double dx = (loop_->U_uncapped(0, 0) +
+      } else if(loop_->uncapped_voltage() < -config_data_.max_zeroing_voltage) {
+        double dx = (loop_->uncapped_voltage() +
                      config_data_.max_zeroing_voltage) / loop_->K(0, 0);
         zeroing_position_ -= dx;
         capped_goal_ = true;
       }
       break;
   }
-  return loop_->U(0, 0);
+  return loop_->voltage();
 }
 
 }  // namespace control_loops

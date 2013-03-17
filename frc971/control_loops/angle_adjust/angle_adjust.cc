@@ -38,6 +38,12 @@ bool AngleAdjustMotor::FetchConstants(
     LOG(ERROR, "Failed to fetch the hall effect start angle constants.\n");
     return false;
   }
+  if (!constants::angle_adjust_zeroing_off_speed(
+          &config_data->zeroing_off_speed)) {
+    LOG(ERROR,
+        "Failed to fetch the angle adjust zeroing off speed constant.\n");
+    return false;
+  }
   if (!constants::angle_adjust_zeroing_speed(
           &config_data->zeroing_speed)) {
     LOG(ERROR, "Failed to fetch the angle adjust zeroing speed constant.\n");
@@ -90,10 +96,11 @@ void AngleAdjustMotor::RunIteration(
       goal->goal, 0.0);
 
   if (position) {
-    LOG(DEBUG, "pos=%f bottom_hall: %s middle_hall: %s\n",
+    LOG(DEBUG, "pos: %f bottom_hall: %s middle_hall: %s absolute: %f\n",
         position->angle,
         position->bottom_hall_effect ? "true" : "false",
-        position->middle_hall_effect ? "true" : "false");
+        position->middle_hall_effect ? "true" : "false",
+        zeroed_joint_.absolute_position());
   }
 
   if (output) {

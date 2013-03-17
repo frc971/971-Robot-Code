@@ -6,13 +6,13 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<2, 1, 1> MakeWristPlantCoefficients();
+StateFeedbackPlantCoefficients<3, 1, 1> MakeWristPlantCoefficients();
 
-StateFeedbackController<2, 1, 1> MakeWristController();
+StateFeedbackController<3, 1, 1> MakeWristController();
 
-StateFeedbackPlant<2, 1, 1> MakeWristPlant();
+StateFeedbackPlant<3, 1, 1> MakeWristPlant();
 
-StateFeedbackLoop<2, 1, 1> MakeWristLoop();
+StateFeedbackLoop<3, 1, 1> MakeWristLoop();
 
 }  // namespace control_loops
 }  // namespace frc971

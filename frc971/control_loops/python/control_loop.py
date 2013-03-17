@@ -140,20 +140,23 @@ class ControlLoop(object):
     """
     self._name = name
 
-  def ContinuousToDiscrete(self, A_continuous, B_continuous, dt, C):
-    """Calculates the discrete time values for A and B as well as initializing
-      X and Y to the correct sizes.
+  def ContinuousToDiscrete(self, A_continuous, B_continuous, dt):
+    """Calculates the discrete time values for A and B.
 
       Args:
         A_continuous: numpy.matrix, The continuous time A matrix
         B_continuous: numpy.matrix, The continuous time B matrix
         dt: float, The time step of the control loop
-        C: C
+
+      Returns:
+        (A, B), numpy.matrix, the control matricies.
     """
-    self.A, self.B = controls.c2d(
-        A_continuous, B_continuous, dt)
+    return controls.c2d(A_continuous, B_continuous, dt)
+
+  def InitializeState(self):
+    """Sets X, Y, and X_hat to zero defaults."""
     self.X = numpy.zeros((self.A.shape[0], 1))
-    self.Y = C * self.X
+    self.Y = self.C * self.X
     self.X_hat = numpy.zeros((self.A.shape[0], 1))
 
   def PlaceControllerPoles(self, poles):

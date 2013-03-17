@@ -12,33 +12,32 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Note: So far, none of the Angle Adjust numbers have been measured.
-// Do not rely on them for real life.
-
 namespace frc971 {
 namespace constants {
 
 namespace {
 
-const double kCompWristHallEffectStartAngle = 72 * M_PI / 180.0;
-const double kPracticeWristHallEffectStartAngle = 72 * M_PI / 180.0;
+// It has about 0.029043 of gearbox slop.
+const double kCompWristHallEffectStartAngle = 1.0872860614359172;
+const double kPracticeWristHallEffectStartAngle = 1.0872860614359172;
 
 const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
 const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;
 
-const double kPracticeWristUpperPhysicalLimit = 95 * M_PI / 180.0;
-const double kCompWristUpperPhysicalLimit = 95 * M_PI / 180.0;
+const double kPracticeWristUpperPhysicalLimit = 1.677562;
+const double kCompWristUpperPhysicalLimit = 1.677562;
 
-const double kPracticeWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
-const double kCompWristLowerPhysicalLimit = -37.5 * M_PI / 180.0;
+const double kPracticeWristLowerPhysicalLimit = -0.746128;
+const double kCompWristLowerPhysicalLimit = -0.746128;
 
-const double kPracticeWristUpperLimit = 93 * M_PI / 180.0;
-const double kCompWristUpperLimit = 93 * M_PI / 180.0;
+const double kPracticeWristUpperLimit = 1.615385;
+const double kCompWristUpperLimit = 1.615385;
 
-const double kPracticeWristLowerLimit = -36 * M_PI / 180.0;
-const double kCompWristLowerLimit = -36 * M_PI / 180.0;
+const double kPracticeWristLowerLimit = -0.746128;
+const double kCompWristLowerLimit = -0.746128;
 
-const double kWristZeroingSpeed = 1.0;
+const double kWristZeroingSpeed = 0.25;
+const double kWristZeroingOffSpeed = 1.0;
 
 const int kAngleAdjustHallEffect = 2;
 
@@ -48,19 +47,20 @@ const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305432, 1.5};
 const double kCompAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 const double kPracticeAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 
-const double kPracticeAngleAdjustUpperPhysicalLimit = 0.894481;
-const double kCompAngleAdjustUpperPhysicalLimit = 0.894481;
+const double kPracticeAngleAdjustUpperPhysicalLimit = 0.904737;
+const double kCompAngleAdjustUpperPhysicalLimit = 0.904737;
 
-const double kPracticeAngleAdjustLowerPhysicalLimit = 0.283616;
-const double kCompAngleAdjustLowerPhysicalLimit = 0.283616;
+const double kPracticeAngleAdjustLowerPhysicalLimit = 0.272451;
+const double kCompAngleAdjustLowerPhysicalLimit = 0.272451;
 
-const double kPracticeAngleAdjustUpperLimit = 0.85;
-const double kCompAngleAdjustUpperLimit = 0.85;
+const double kPracticeAngleAdjustUpperLimit = 0.87;
+const double kCompAngleAdjustUpperLimit = 0.87;
 
-const double kPracticeAngleAdjustLowerLimit = 0.32;
-const double kCompAngleAdjustLowerLimit = 0.32;
+const double kPracticeAngleAdjustLowerLimit = 0.30;
+const double kCompAngleAdjustLowerLimit = 0.30;
 
 const double kAngleAdjustZeroingSpeed = -0.2;
+const double kAngleAdjustZeroingOffSpeed = -0.5;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
@@ -80,6 +80,8 @@ struct Values {
 
   // Zeroing speed.
   double wrist_zeroing_speed;
+  // Zeroing off speed.
+  double wrist_zeroing_off_speed;
 
   // AngleAdjust hall effect positive and negative edges.
   const double *angle_adjust_hall_effect_start_angle;
@@ -94,6 +96,8 @@ struct Values {
 
   // Zeroing speed.
   double angle_adjust_zeroing_speed;
+  // Zeroing off speed.
+  double angle_adjust_zeroing_off_speed;
 
   // what camera_center returns
   int camera_center;
@@ -117,6 +121,7 @@ const Values *GetValues() {
                             kCompWristUpperPhysicalLimit,
                             kCompWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kWristZeroingOffSpeed,
                             kCompAngleAdjustHallEffectStartAngle,
                             kCompAngleAdjustHallEffectStopAngle,
                             kCompAngleAdjustUpperLimit,
@@ -124,6 +129,7 @@ const Values *GetValues() {
                             kCompAngleAdjustUpperPhysicalLimit,
                             kCompAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
+                            kAngleAdjustZeroingOffSpeed,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
@@ -134,6 +140,7 @@ const Values *GetValues() {
                             kPracticeWristUpperPhysicalLimit,
                             kPracticeWristLowerPhysicalLimit,
                             kWristZeroingSpeed,
+                            kWristZeroingOffSpeed,
                             kPracticeAngleAdjustHallEffectStartAngle,
                             kPracticeAngleAdjustHallEffectStopAngle,
                             kPracticeAngleAdjustUpperLimit,
@@ -141,6 +148,7 @@ const Values *GetValues() {
                             kPracticeAngleAdjustUpperPhysicalLimit,
                             kPracticeAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
+                            kAngleAdjustZeroingOffSpeed,
                             kPracticeCameraCenter};
         break;
       default:
@@ -201,6 +209,13 @@ bool wrist_zeroing_speed(double *speed) {
   return true;
 }
 
+bool wrist_zeroing_off_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->wrist_zeroing_off_speed;
+  return true;
+}
+
 bool angle_adjust_hall_effect_start_angle(double *angle) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
@@ -247,6 +262,13 @@ bool angle_adjust_zeroing_speed(double *speed) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *speed = values->angle_adjust_zeroing_speed;
+  return true;
+}
+
+bool angle_adjust_zeroing_off_speed(double *speed) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *speed = values->angle_adjust_zeroing_off_speed;
   return true;
 }
 
