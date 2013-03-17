@@ -1,5 +1,5 @@
-#ifndef FRC971_CONTROL_LOOPS_WRIST_H_
-#define FRC971_CONTROL_LOOPS_WRIST_H_
+#ifndef FRC971_CONTROL_LOOPS_INDEX_INDEX_H_
+#define FRC971_CONTROL_LOOPS_INDEX_INDEX_H_
 
 #include <deque>
 #include "aos/common/libstdc++/memory"
@@ -343,4 +343,4 @@ class IndexMotor
 }  // namespace control_loops
 }  // namespace frc971
 
-#endif  // FRC971_CONTROL_LOOPS_WRIST_H_
+#endif  // FRC971_CONTROL_LOOPS_INDEX_INDEX_H_

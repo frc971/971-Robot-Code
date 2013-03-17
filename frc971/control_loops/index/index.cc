@@ -266,6 +266,7 @@ void IndexMotor::RunIteration(
     // Set the goal to be the current position if this is the first time through
     // so we don't always spin the indexer to the 0 position before starting.
     if (no_prior_position_) {
+      LOG(INFO, "no prior position; resetting\n");
       wrist_loop_->R << wrist_loop_->Y(0, 0), 0.0;
       wrist_loop_->X_hat(0, 0) = wrist_loop_->Y(0, 0);
       no_prior_position_ = false;
@@ -282,6 +283,7 @@ void IndexMotor::RunIteration(
 
     // If the cRIO is gone for over 1/2 of a second, assume that it rebooted.
     if (missing_position_count_ > 50) {
+      LOG(INFO, "assuming cRIO rebooted\n");
       last_bottom_disc_posedge_count_ = position->bottom_disc_posedge_count;
       last_bottom_disc_negedge_count_ = position->bottom_disc_negedge_count;
       last_bottom_disc_negedge_wait_count_ =
@@ -442,11 +444,17 @@ void IndexMotor::RunIteration(
             frisbee->OffsetDisc(disc_delta);
           }
         }
-        LOG(INFO, "Currently have %d discs, saw posedge moving up.  "
-            "Moving down by %f to %f\n", frisbees_.size(),
-            ConvertIndexToDiscPosition(disc_delta),
-            highest_frisbee_below_sensor->absolute_position(
-                wrist_loop_->X_hat(0, 0)));
+        if (highest_frisbee_below_sensor) {
+          LOG(INFO, "Currently have %d discs, saw posedge moving up.  "
+              "Moving down by %f to %f\n", frisbees_.size(),
+              ConvertIndexToDiscPosition(disc_delta),
+              highest_frisbee_below_sensor->absolute_position(
+                  wrist_loop_->X_hat(0, 0)));
+        } else {
+          LOG(INFO, "Currently have %d discs, saw posedge moving up.  "
+              "Moving down by %f\n", frisbees_.size(),
+              ConvertIndexToDiscPosition(disc_delta));
+        }
       } else if (disc_direction < 0) {
         // Moving down at a reasonable clip.
         // There can only be 1 disc up top that would give us a posedge.
