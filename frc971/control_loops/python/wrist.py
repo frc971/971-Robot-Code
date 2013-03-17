@@ -77,7 +77,7 @@ class WristDeltaU(Wrist):
     self.C = numpy.matrix([[1.0, 0.0, 0.0]])
     self.D = numpy.matrix([[0.0]])
 
-    self.PlaceControllerPoles([0.60, 0.37, 0.80])
+    self.PlaceControllerPoles([0.55, 0.35, 0.80])
 
     print "K"
     print self.K
@@ -87,7 +87,7 @@ class WristDeltaU(Wrist):
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl, 0.15])
+                             self.rpl - 1j * self.ipl, 0.85])
     print "Placed observer poles are"
     print numpy.linalg.eig(self.A - self.L * self.C)[0]
 
