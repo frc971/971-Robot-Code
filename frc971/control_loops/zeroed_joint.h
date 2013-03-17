@@ -77,18 +77,24 @@ void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
   double limit = is_ready ?
       12.0 : zeroed_joint_->config_data_.max_zeroing_voltage;
 
-  voltage_ = std::min(limit, voltage_);
-  voltage_ = std::max(-limit, voltage_);
-  U(0, 0) = voltage_ - old_voltage;
-
   // Make sure that reality and the observer can't get too far off.  There is a
   // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
   // against last cycle's voltage.
   if (X_hat(2, 0) > last_voltage_ + 2.0) {
-    X_hat(2, 0) = last_voltage_ + 2.0;
+    //X_hat(2, 0) = last_voltage_ + 2.0;
+    voltage_ -= X_hat(2, 0) - (last_voltage_ + 2.0);
+    LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
   } else if (X_hat(2, 0) < last_voltage_ -2.0) {
-    X_hat(2, 0) = last_voltage_ - 2.0;
+    //X_hat(2, 0) = last_voltage_ - 2.0;
+    voltage_ += X_hat(2, 0) - (last_voltage_ - 2.0);
+    LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
   }
+
+  voltage_ = std::min(limit, voltage_);
+  voltage_ = std::max(-limit, voltage_);
+  U(0, 0) = voltage_ - old_voltage;
+  LOG(DEBUG, "abc %f\n", X_hat(2, 0) - voltage_);
+  LOG(DEBUG, "error %f\n", X_hat(0, 0) - R(0, 0));
 
   last_voltage_ = voltage_;
 }
@@ -379,6 +385,9 @@ double ZeroedJoint<kNumZeroSensors>::Update(
 
   // Update the observer.
   loop_->Update(position != NULL, !output_enabled);
+
+  LOG(DEBUG, "X_hat={%f, %f, %f}\n",
+      loop_->X_hat(0, 0), loop_->X_hat(1, 0), loop_->X_hat(2, 0));
 
   capped_goal_ = false;
   // Verify that the zeroing goal hasn't run away.
