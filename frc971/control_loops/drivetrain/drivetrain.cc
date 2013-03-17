@@ -48,7 +48,7 @@ class DrivetrainMotorsSS : public StateFeedbackLoop<4, 2, 2> {
     const double angle_error = (_right_goal - _left_goal) / width - (_raw_right - _offset - _raw_left - _offset) / width;
     if (!control_loop_driving) {
       _integral_offset = 0.0;
-    } else if (std::abs(angle_error) < M_PI / 10.0) {
+    } else if (::std::abs(angle_error) < M_PI / 10.0) {
       _integral_offset -= angle_error * 0.010;
     } else {
       _integral_offset *= 0.97;
@@ -100,7 +100,6 @@ class DrivetrainMotorsOL {
  public:
   DrivetrainMotorsOL() {
     _old_wheel = 0.0;
-    quick_stop_accumulator = 0.0;
     _wheel = 0.0;
     _throttle = 0.0;
     _quickturn = false;
@@ -135,7 +134,7 @@ class DrivetrainMotorsOL {
       wheel = sin(angular_range * _wheel) / sin(angular_range);
       wheel = sin(angular_range * wheel) / sin(angular_range);
     } else {
-      wheelNonLinearity = 0.1;  // used to be csvReader->TURN_NONLIN_LOW
+      wheelNonLinearity = 0.2;  // used to be csvReader->TURN_NONLIN_LOW
       // Apply a sin function that's scaled to make it feel better.
       const double angular_range = M_PI / 2.0 * wheelNonLinearity;
       wheel = sin(angular_range * _wheel) / sin(angular_range);
@@ -143,18 +142,26 @@ class DrivetrainMotorsOL {
       wheel = sin(angular_range * wheel) / sin(angular_range);
     }
 
+    static const double kThrottleDeadband = 0.05;
+    if (::std::abs(_throttle) < kThrottleDeadband) {
+      _throttle = 0;
+    } else {
+      _throttle = copysign((::std::abs(_throttle) - kThrottleDeadband) /
+                           (1.0 - kThrottleDeadband), _throttle);
+    }
+
     double neg_inertia_scalar;
     if (_highgear) {
-      neg_inertia_scalar = 20.0;  // used to be csvReader->NEG_INTERTIA_HIGH
+      neg_inertia_scalar = 8.0;  // used to be csvReader->NEG_INTERTIA_HIGH
       sensitivity = 1.22; // used to be csvReader->SENSE_HIGH
     } else {
       if (wheel * neg_inertia > 0) {
-        neg_inertia_scalar = 16;  // used to be csvReader->NEG_INERTIA_LOW_MORE
+        neg_inertia_scalar = 5;  // used to be csvReader->NEG_INERTIA_LOW_MORE
       } else {
-        if (fabs(wheel) > 0.65) {
-          neg_inertia_scalar = 16;  // used to be csvReader->NEG_INTERTIA_LOW_LESS_EXT
+        if (::std::abs(wheel) > 0.65) {
+          neg_inertia_scalar = 5;  // used to be csvReader->NEG_INTERTIA_LOW_LESS_EXT
         } else {
-          neg_inertia_scalar = 16;  // used to be csvReader->NEG_INTERTIA_LOW_LESS
+          neg_inertia_scalar = 5;  // used to be csvReader->NEG_INTERTIA_LOW_LESS
         }
       }
       sensitivity = 1.24;  // used to be csvReader->SENSE_LOW
@@ -173,17 +180,14 @@ class DrivetrainMotorsOL {
 
     linear_power = _throttle;
 
-    const double quickstop_scalar = 6;
     if (_quickturn) {
       double qt_angular_power = wheel;
-      const double alpha = 0.1;
-      if (fabs(linear_power) < 0.2) {
+      if (::std::abs(linear_power) < 0.2) {
         if (qt_angular_power > 1) qt_angular_power = 1.0;
         if (qt_angular_power < -1) qt_angular_power = -1.0;
       } else {
         qt_angular_power = 0.0;
       }
-      quick_stop_accumulator = (1 - alpha) * quick_stop_accumulator + alpha * qt_angular_power * quickstop_scalar;
       overPower = 1.0;
       if (_highgear) {
         sensitivity = 1.0;
@@ -193,17 +197,7 @@ class DrivetrainMotorsOL {
       angular_power = wheel;
     } else {
       overPower = 0.0;
-      angular_power = fabs(_throttle) * wheel * sensitivity;
-      angular_power -= quick_stop_accumulator;
-#if 0
-      if (quick_stop_accumulator > 1) {
-        quick_stop_accumulator -= 1;
-      } else if (quick_stop_accumulator < -1) {
-        quick_stop_accumulator += 1;
-      } else {
-        quick_stop_accumulator = 0;
-      }
-#endif
+      angular_power = ::std::abs(_throttle) * wheel * sensitivity;
     }
 
     _right_pwm = _left_pwm = linear_power;
@@ -226,8 +220,8 @@ class DrivetrainMotorsOL {
   }
 
   void SendMotors(Drivetrain::Output *output) {
-    LOG(DEBUG, "left pwm: %f right pwm: %f wheel: %f throttle: %f, qa %f\n",
-        _left_pwm, _right_pwm, _wheel, _throttle, quick_stop_accumulator);
+    LOG(DEBUG, "left pwm: %f right pwm: %f wheel: %f throttle: %f\n",
+        _left_pwm, _right_pwm, _wheel, _throttle);
     if (output) {
       output->left_voltage = _left_pwm * 12.0;
       output->right_voltage = _right_pwm * 12.0;
@@ -248,7 +242,6 @@ class DrivetrainMotorsOL {
   double _neg_inertia_accumulator;
   double _left_pwm;
   double _right_pwm;
-  double quick_stop_accumulator;
 };
 
 void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
