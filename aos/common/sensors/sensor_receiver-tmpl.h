@@ -6,7 +6,7 @@ namespace sensors {
 
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
-    time::Time::InSeconds(0.0025);
+    time::Time::InSeconds(0.0015);
 
 template<class Values>
 SensorReceiver<Values>::SensorReceiver(
@@ -113,10 +113,11 @@ bool SensorReceiver<Values>::ReceiveData() {
     LOG(FATAL, "data count overflowed. currently %"PRId32"\n", data_.count);
   }
   if (data_.count < old_count) {
-    LOG(INFO, "count reset. ws %"PRId32", now %"PRId32"\n",
+    LOG(INFO, "count reset. was %"PRId32", now %"PRId32"\n",
         old_count, data_.count);
     return true;
   }
+  LOG(DEBUG, "received data count %"PRId32"\n", data_.count);
   return false;
 }
 
