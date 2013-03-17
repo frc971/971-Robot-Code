@@ -75,8 +75,10 @@ class DrivetrainMotorsSS : public MatrixClass {
   }
 
   void SendMotors(Drivetrain::Output *status) {
-    status->left_voltage = UnDeadband(U[0]);
-    status->right_voltage = UnDeadband(U[1]);
+    if (status) {
+      status->left_voltage = UnDeadband(U[0]);
+      status->right_voltage = UnDeadband(U[1]);
+    }
   }
   void PrintMotors() const {
     // LOG(DEBUG, "Left Power %f Right Power %f lg %f rg %f le %f re %f gyro %f\n", U[0], U[1], R[0], R[2], Y[0], Y[1], _gyro);
@@ -227,8 +229,10 @@ class DrivetrainMotorsOL {
   void SendMotors(Drivetrain::Output *output) {
     LOG(DEBUG, "left pwm: %f right pwm: %f wheel: %f throttle: %f, qa %f\n",
         _left_pwm, _right_pwm, _wheel, _throttle, quick_stop_accumulator);
-    output->left_voltage = _left_pwm * 12.0;
-    output->right_voltage = _right_pwm * 12.0;
+    if (output) {
+      output->left_voltage = _left_pwm * 12.0;
+      output->right_voltage = _right_pwm * 12.0;
+    }
     if (_highgear) {
       shifters.MakeWithBuilder().set(false).Send();
     } else {

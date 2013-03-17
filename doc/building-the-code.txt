@@ -1,5 +1,8 @@
 This file contains instructions on how to set up a computer to build the code.
 
+[OS]
+Most of these instructions assume 64 bit Debian Squeeze.
+
 [Install Packages]
 First, you have to download and follow the directions in
   <http://robotics.mvla.net/files/frc971/packages/frc971.list>.
@@ -17,9 +20,14 @@ Then, run `apt-get install subversion git g++-multilib gcc-multilib ruby patch \
       libevent-extra-2.0-5 libevent-pthreads-2.0-5 libevent-openssl-2.0-5 \
       libevent-dev lib32event-extra-2.0-5 lib32event-pthreads-2.0-5 \
       lib32event-openssl-2.0-5 lib32event-dev" packages.
+
+(On 64-bit Ubuntu Precise Pangolin:
+`apt-get install subversion git g++-multilib gcc-multilib ruby patch \
+    make openjdk-6-jdk default-jdk libevent-dev:i386 libevent-2.0-5:i386`)
+
 Also run `apt-get install powerpc-wrs-vxworks` if you want to be able to build
   the cRIO code too.
-  NOTE: That is in *addition* to the above command.
+  NOTE: This is in *addition* to the above commands.
   You will have to accept the
     "WARNING: The following packages cannot be authenticated!" warning for the
     "powerpc-wrs-vxworks" package.

@@ -10,6 +10,8 @@
 #include <taskLib.h>
 // Have to re-declare it with __attribute__((noreturn)).
 extern "C" void abort() __attribute__((noreturn));
+#include <usrLib.h>
+#include <dbgLib.h>
 #endif
 
 #include <string>
@@ -72,6 +74,15 @@ void VDie(const char *format, va_list args_in) {
     }
   }
 
+#ifdef __VXWORKS__
+  printf("I am 0x%x suspending for debugging purposes.\n", taskIdSelf());
+  printf("\t`tt 0x%x` will give you a stack trace.\n", taskIdSelf());
+  fputs("\t`lkAddr` will reverse lookup a symbol for you.\n", stdout);
+  fputs("\t`dbgHelp` and `help` have some useful commands in them.\n", stdout);
+  taskSuspend(0);
+  printf("You weren't supposed to resume 0x%x!!. Going to really die now.\n",
+         taskIdSelf());
+#endif
   abort();
 }
 
