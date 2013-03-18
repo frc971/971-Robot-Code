@@ -39,6 +39,11 @@ class SensorReceiver {
   // (during this time, the code verifies that <= 1 cycle is not within 1
   // cycle's time of kJitterDelay).
   static const int kTestCycles = 10;
+  // How many cycles that we need (consecutively) of another packet being closer
+  // to the right time than the ones we're reading before we switch.
+  static const int kBadCyclesToSwitch = 10;
+  // If we don't get a good packet in this long, then we Synchronize() again.
+  static const time::Time kGiveupTime;
 
   FRIEND_TEST_NAMESPACE(SensorReceiverTest, Simple, testing);
 
@@ -54,6 +59,11 @@ class SensorReceiver {
   // Returns whether the current packet looks like a good one to use.
   bool GoodPacket();
 
+  // Updates start_count_ to new_start_count and changes start_time_
+  // accordingly. Does it relative to avoid resetting start_time_ based off of 1
+  // bad packet.
+  void UpdateStartTime(int new_start_count);
+
   // Synchronizes with incoming packets and sets start_count_ to where we
   // started reading.
   // Returns whether it succeeded in locking on.
@@ -61,6 +71,7 @@ class SensorReceiver {
   // Receives a set of values and makes sure that it's sane.
   // Returns whether to start over again with timing.
   bool ReceiveData();
+  void Unsynchronize();
 
   SensorUnpackerInterface<Values> *const unpacker_;
   SensorData<Values> data_;
@@ -71,6 +82,9 @@ class SensorReceiver {
   // sure that we don't send out a packet late.
   time::Time start_time_;
   bool synchronized_;
+  int before_better_cycles_, after_better_cycles_;
+  // The time of the last packet that we sent out.
+  time::Time last_good_time_;
 
   DISALLOW_COPY_AND_ASSIGN(SensorReceiver<Values>);
 };

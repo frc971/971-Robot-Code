@@ -7,24 +7,37 @@ namespace sensors {
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
     time::Time::InSeconds(0.002);
+template<class Values>
+const time::Time SensorReceiver<Values>::kGiveupTime =
+    time::Time::InSeconds(1.5);
 
 template<class Values>
 SensorReceiver<Values>::SensorReceiver(
     SensorUnpackerInterface<Values> *unpacker)
     : unpacker_(unpacker),
       start_time_(0, 0),
-      synchronized_(false) {}
+      synchronized_(false),
+      last_good_time_(0, 0) {}
 
 template<class Values>
 void SensorReceiver<Values>::RunIteration() {
   if (synchronized_) {
     if (ReceiveData()) {
       LOG(DEBUG, "receive said to try a reset\n");
-      synchronized_ = false;
-      return;
-    }
-    if (GoodPacket()) {
-      unpacker_->UnpackFrom(&data_.values);
+      Unsynchronize();
+    } else {
+      if (GoodPacket()) {
+        unpacker_->UnpackFrom(&data_.values);
+        last_good_time_ = time::Time::Now();
+        LOG(DEBUG, "set to now\n");
+      } else {
+        if ((time::Time::Now() - last_good_time_) > kGiveupTime) {
+          LOG(INFO, "resetting because didn't get a good one in too long\n");
+          Unsynchronize();
+        } else {
+          // We got a packet, but it wasn't an interesting one.
+        }
+      }
     }
   } else {
     LOG(INFO, "resetting to try receiving data\n");
@@ -32,25 +45,77 @@ void SensorReceiver<Values>::RunIteration() {
     if (Synchronize()) {
       LOG(INFO, "synchronized successfully\n");
       synchronized_ = true;
+      before_better_cycles_ = after_better_cycles_ = 0;
+      last_good_time_ = time::Time::Now();
     }
   }
 }
 
 template<class Values>
 bool SensorReceiver<Values>::GoodPacket() {
+  bool good;
   // If it's a multiple of kSensorSendFrequency from start_count_.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
     if (((data_.count - start_count_) / kSendsPerCycle) ==
         ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
-      return true;
+      good = true;
     } else {
       LOG(INFO, "not calling packet %"PRId32" good because it's late\n",
           data_.count);
-      return false;
+      good = false;
     }
   } else {
-    return false;
+    good = false;
   }
+
+  static time::Time last_time(0, 0);
+  time::Time now = time::Time::Now();
+  time::Time next_goal_time = NextLoopTime() - kJitterDelay;
+  // If this is the packet after the right one.
+  if (((data_.count - start_count_ - 1) % kSendsPerCycle) == 0) {
+    // If this one is closer than the last one (aka the one that we used).
+    if ((now - next_goal_time).abs() < (last_time - next_goal_time).abs()) {
+      LOG(DEBUG, "next one better than one being used %d\n",
+          after_better_cycles_);
+      if (after_better_cycles_ > kBadCyclesToSwitch) {
+        LOG(INFO, "switching to the packet after\n");
+        UpdateStartTime(data_.count);
+        before_better_cycles_ = after_better_cycles_ = 0;
+      } else {
+        ++after_better_cycles_;
+      }
+    } else {
+      after_better_cycles_ = 0;
+    }
+  }
+  // If this is the right packet.
+  if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
+    // If the last one was closer than this one (aka the one that we used).
+    if ((last_time - next_goal_time).abs() < (now - next_goal_time).abs()) {
+      LOG(DEBUG, "previous better than one being used %d\n",
+          before_better_cycles_);
+      if (before_better_cycles_ > kBadCyclesToSwitch) {
+        LOG(INFO, "switching to the packet before\n");
+        UpdateStartTime(data_.count - 1);
+        start_count_ = data_.count - 1;
+        start_time_ = last_time;
+        before_better_cycles_ = after_better_cycles_ = 0;
+      } else {
+        ++before_better_cycles_;
+      }
+    } else {
+      before_better_cycles_ = 0;
+    }
+  }
+  last_time = now;
+
+  return good;
+}
+
+template<class Values>
+void SensorReceiver<Values>::UpdateStartTime(int new_start_count) {
+  start_time_ += kSensorSendFrequency * (new_start_count - start_count_);
+  start_count_ = new_start_count;
 }
 
 // Looks for when the timestamps transition from before where we want to after
@@ -126,6 +191,12 @@ bool SensorReceiver<Values>::ReceiveData() {
   }
   LOG(DEBUG, "received data count %"PRId32"\n", data_.count);
   return false;
+}
+
+template<class Values>
+void SensorReceiver<Values>::Unsynchronize() {
+  synchronized_ = false;
+  before_better_cycles_ = after_better_cycles_ = 0;
 }
 
 template<class Values>
