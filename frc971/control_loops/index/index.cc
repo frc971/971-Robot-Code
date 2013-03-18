@@ -487,6 +487,14 @@ void IndexMotor::RunIteration(
 
   // Bool to track if it is safe for the goal to change yet.
   bool safe_to_change_state = true;
+  if (!position) {
+    // This fixes a nasty indexer bug.
+    // If we didn't get a position this cycle, we don't run the code below which
+    // checks the state of the disc detect sensor and whether all the discs are
+    // indexed.  It is therefore not safe to change state and loose track of
+    // that disc.
+    safe_to_change_state = false;
+  }
   switch (safe_goal_) {
     case Goal::HOLD:
       // The goal should already be good, so sit tight with everything the same
@@ -529,6 +537,8 @@ void IndexMotor::RunIteration(
             if (elapsed_posedge_time >= Time::InSeconds(0.3)) {
               // It has been too long.  The disc must be jammed.
               LOG(ERROR, "Been way too long.  Jammed disc?\n");
+              intake_voltage = 0.0;
+              transfer_voltage = -12.0;
             }
           }
 
@@ -706,6 +716,7 @@ void IndexMotor::RunIteration(
             if (hopper_disc_count_ != 0) {
               LOG(ERROR,
                   "Emptied the hopper out but there are still discs there\n");
+              hopper_disc_count_ = 0;
             }
           }
         }
@@ -733,10 +744,11 @@ void IndexMotor::RunIteration(
             --hopper_disc_count_;
             --total_disc_count_;
           }
-          if (hopper_disc_count_ > 0) {
+          if (hopper_disc_count_ != 0) {
             LOG(ERROR,
                 "Emptied the hopper out but there are still %"PRId32" discs there\n",
                 hopper_disc_count_);
+            hopper_disc_count_ = 0;
           }
         }
       }
