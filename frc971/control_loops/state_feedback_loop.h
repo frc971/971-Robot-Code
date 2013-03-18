@@ -96,7 +96,7 @@ class StateFeedbackPlant {
     if (plant_index < 0) {
       plant_index_ = 0;
     } else if (plant_index >= static_cast<int>(coefficients_.size())) {
-      plant_index_ = static_cast<int>(coefficients_.size());
+      plant_index_ = static_cast<int>(coefficients_.size()) - 1;
     } else {
       plant_index_ = plant_index;
     }
@@ -315,7 +315,7 @@ class StateFeedbackLoop {
     if (index < 0) {
       controller_index_ = 0;
     } else if (index >= static_cast<int>(controllers_.size())) {
-      controller_index_ = static_cast<int>(controllers_.size());
+      controller_index_ = static_cast<int>(controllers_.size()) - 1;
     } else {
       controller_index_ = index;
     }
