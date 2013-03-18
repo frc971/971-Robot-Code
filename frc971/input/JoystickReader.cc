@@ -105,39 +105,46 @@ class JoystickReader : public aos::JoystickInput {
 
       // Where the wrist should be to pick up a frisbee.
       static const double kWristPickup = -0.633;
+      static const double kWristNearGround = -0.4;
       // Where the wrist gets stored when up.
       // All the way up is 1.5.
       static const double kWristUp = 1.43;
       static double wrist_down_position = kWristPickup;
-      index_loop.status.FetchLatest();
-      if (index_loop.status.get()) {
-        if (index_loop.status->hopper_disc_count >= 4) {
-          wrist_down_position = -0.4;
-        } else {
-          wrist_down_position = kWristPickup;
-        }
-      }
-      wrist.goal.MakeWithBuilder()
-          .goal(Pressed(2, 8) ? wrist_down_position : kWristUp).Send();
+      double wrist_up_position = kWristUp;
 
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
       static double angle_adjust_goal = 0.42;
       if (Pressed(2, 5)) {
-        // short shot
-        shooter_goal->velocity = 200;
-        angle_adjust_goal = 0.42;
+        // long shot
+        shooter_goal->velocity = 375;
+        angle_adjust_goal = 0.70;
+        angle_adjust_goal = 0.564;
       } else if (Pressed(2, 3)) {
         // medium shot
-        shooter_goal->velocity = 220;
-        angle_adjust_goal = 0.45;
+        shooter_goal->velocity = 375;
+        wrist_up_position = 0.70;
+        angle_adjust_goal = 0.564;
       } else if (Pressed(2, 6)) {
-        // long shot
-        shooter_goal->velocity = 240;
-        angle_adjust_goal = 0.55;
+        // short shot
+        shooter_goal->velocity = 375;
+        angle_adjust_goal = 0.685;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
+
+      double wrist_pickup_position = Pressed(2, 10) /*intake*/ ?
+          kWristPickup : kWristNearGround;
+      index_loop.status.FetchLatest();
+      if (index_loop.status.get()) {
+        if (index_loop.status->hopper_disc_count >= 4) {
+          wrist_down_position = kWristNearGround;
+        } else {
+          wrist_down_position = wrist_pickup_position;
+        }
+      }
+      wrist.goal.MakeWithBuilder()
+          .goal(Pressed(2, 8) ? wrist_down_position : wrist_up_position).Send();
 
       ::aos::ScopedMessagePtr<control_loops::IndexLoop::Goal> index_goal =
           index_loop.goal.MakeMessage();
