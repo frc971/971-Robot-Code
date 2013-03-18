@@ -67,6 +67,9 @@ class SensorReceiver {
   // The count that we started out (all other sent packets will be multiples of
   // this).
   int32_t start_count_;
+  // When start_count_ "should" have been received. Used for checking to make
+  // sure that we don't send out a packet late.
+  time::Time start_time_;
   bool synchronized_;
 
   DISALLOW_COPY_AND_ASSIGN(SensorReceiver<Values>);

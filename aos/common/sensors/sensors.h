@@ -34,6 +34,7 @@ const int kSendsPerCycle = 10;
 // convenience.
 extern const time::Time kSensorSendFrequency;
 using ::aos::control_loops::kLoopFrequency;
+using ::aos::control_loops::NextLoopTime;
 
 // This is the struct that actually gets sent over the UDP socket.
 template<class Values>
@@ -44,6 +45,9 @@ struct SensorData {
 
   void NetworkToHost() {
     count = ntoh(count);
+  }
+  void HostToNetwork() {
+    count = hton(count);
   }
 } __attribute__((packed));
 

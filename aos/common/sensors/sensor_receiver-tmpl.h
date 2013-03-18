@@ -6,12 +6,13 @@ namespace sensors {
 
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
-    time::Time::InSeconds(0.0015);
+    time::Time::InSeconds(0.002);
 
 template<class Values>
 SensorReceiver<Values>::SensorReceiver(
     SensorUnpackerInterface<Values> *unpacker)
     : unpacker_(unpacker),
+      start_time_(0, 0),
       synchronized_(false) {}
 
 template<class Values>
@@ -39,7 +40,14 @@ template<class Values>
 bool SensorReceiver<Values>::GoodPacket() {
   // If it's a multiple of kSensorSendFrequency from start_count_.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
-    return true;
+    if (((data_.count - start_count_) / kSendsPerCycle) ==
+        ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
+      return true;
+    } else {
+      LOG(INFO, "not calling packet %"PRId32" good because it's late\n",
+          data_.count);
+      return false;
+    }
   } else {
     return false;
   }
@@ -53,9 +61,7 @@ bool SensorReceiver<Values>::Synchronize() {
   time::Time old_received_time(0, 0);
   time::Time start_time = time::Time::Now();
   // When we want to send out the next set of values.
-  time::Time goal_time = (start_time / kLoopFrequency.ToNSec()) *
-      kLoopFrequency.ToNSec() +
-      kLoopFrequency - kJitterDelay;
+  time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
   while (true) {
     if (ReceiveData()) return false;
     time::Time received_time = time::Time::Now();
@@ -72,6 +78,7 @@ bool SensorReceiver<Values>::Synchronize() {
       } else {
         start_count_ = data_.count - 1;
       }
+      start_time_ = goal_time;
 
       int bad_count = 0;
       for (int i = 0; i < kTestCycles;) {

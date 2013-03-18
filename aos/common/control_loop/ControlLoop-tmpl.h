@@ -115,7 +115,7 @@ void ControlLoop<T, has_position>::Iterate() {
 template <class T, bool has_position>
 void ControlLoop<T, has_position>::Run() {
   while (true) {
-    ::aos::time::PhasedLoopXMS(kLoopFrequency.ToMSec(), 0);
+    time::SleepUntil(NextLoopTime());
     Iterate();
   }
 }

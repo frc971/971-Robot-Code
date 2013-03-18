@@ -40,6 +40,9 @@ class SerializableControlLoop : public Runnable {
 // Control loops run this often, "starting" at time 0.
 const time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 
+// Calculates the next time to run control loops after start.
+time::Time NextLoopTime(time::Time start = time::Time::Now());
+
 // Provides helper methods to assist in writing control loops.
 // This template expects to be constructed with a queue group as an argument
 // that has a goal, position, status, and output queue.

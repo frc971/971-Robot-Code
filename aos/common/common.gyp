@@ -139,7 +139,7 @@
       'target_name': 'controls',
       'type': 'static_library',
       'sources': [
-        # 'control_loop/ControlLoop-tmpl.h',
+        'control_loop/ControlLoop.cc',
       ],
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',

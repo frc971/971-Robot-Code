@@ -33,6 +33,7 @@ class TestSensorReceiver : public SensorReceiver<TestValues>,
     last_received_count_ = ++data()->count;
     data()->values.count = last_received_count_;
     Time::IncrementMockTime(kSensorSendFrequency);
+    data()->HostToNetwork();
   }
 
   int resets() { return resets_; }
