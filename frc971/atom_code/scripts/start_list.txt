@@ -1,8 +1,8 @@
+BinaryLogReader
 MotorWriter
 JoystickReader
 sensor_receiver
 drivetrain
-BinaryLogReader
 CRIOLogReader
 CameraReader
 CameraServer
