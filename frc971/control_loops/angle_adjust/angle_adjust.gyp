@@ -24,7 +24,6 @@
         'unaugmented_angle_adjust_motor_plant.cc',
       ],
       'dependencies': [
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
@@ -33,7 +32,6 @@
       'export_dependent_settings': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         'angle_adjust_loop',
       ],
     },
@@ -45,7 +43,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         'angle_adjust_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
         'angle_adjust_loop',
@@ -74,7 +71,6 @@
       'dependencies': [
         'angle_adjust_lib',
         'angle_adjust_loop',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },

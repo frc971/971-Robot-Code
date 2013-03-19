@@ -35,7 +35,7 @@
               '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
               '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
               '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
-              '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+              '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
             ],
           }, {
             'sources': ['CRIOMotorWriter.cc'],

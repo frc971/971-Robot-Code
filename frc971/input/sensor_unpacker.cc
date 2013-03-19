@@ -5,7 +5,7 @@
 
 #include "aos/common/inttypes.h"
 
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
 #include "frc971/control_loops/index/index_motor.q.h"
