@@ -59,7 +59,7 @@ void AngleAdjustMotor::RunIteration(
     const ::aos::control_loops::Goal *goal,
     const control_loops::AngleAdjustLoop::Position *position,
     ::aos::control_loops::Output *output,
-    ::aos::control_loops::Status * /*status*/) {
+    ::aos::control_loops::Status *status) {
 
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
@@ -106,6 +106,7 @@ void AngleAdjustMotor::RunIteration(
   if (output) {
     output->voltage = voltage;
   }
+  status->done = ::std::abs(zeroed_joint_.absolute_position() - goal->goal) < 0.002;
 }
 
 }  // namespace control_loops
