@@ -12,6 +12,8 @@ namespace sensors {
 namespace testing {
 
 FORWARD_DECLARE_TEST_CASE(SensorReceiverTest, Simple);
+FORWARD_DECLARE_TEST_CASE(SensorReceiverTest, BadStartup2);
+FORWARD_DECLARE_TEST_CASE(SensorReceiverTest, StartTimeAndCountMismatch);
 
 }  // namespace testing
 
@@ -46,6 +48,8 @@ class SensorReceiver {
   static const time::Time kGiveupTime;
 
   FRIEND_TEST_NAMESPACE(SensorReceiverTest, Simple, testing);
+  FRIEND_TEST_NAMESPACE(SensorReceiverTest, BadStartup2, testing);
+  FRIEND_TEST_NAMESPACE(SensorReceiverTest, StartTimeAndCountMismatch, testing);
 
   // Subclasses need to implement this to read 1 set of data (blocking until it
   // is available) into data().

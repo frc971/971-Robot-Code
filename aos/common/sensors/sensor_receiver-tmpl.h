@@ -7,9 +7,11 @@ namespace sensors {
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
     time::Time::InSeconds(0.002);
+// Not a multiple of kSensorSendFrequency to unwedge ourself if we hit some bug
+// where it needs to get off of that frequency to work.
 template<class Values>
 const time::Time SensorReceiver<Values>::kGiveupTime =
-    time::Time::InSeconds(1.5);
+    time::Time::InSeconds(0.5555);
 
 template<class Values>
 SensorReceiver<Values>::SensorReceiver(
@@ -47,6 +49,8 @@ void SensorReceiver<Values>::RunIteration() {
       synchronized_ = true;
       before_better_cycles_ = after_better_cycles_ = 0;
       last_good_time_ = time::Time::Now();
+    } else {
+      LOG(INFO, "synchronization failed\n");
     }
   }
 }
@@ -98,8 +102,6 @@ bool SensorReceiver<Values>::GoodPacket() {
       if (before_better_cycles_ > kBadCyclesToSwitch) {
         LOG(INFO, "switching to the packet before\n");
         UpdateStartTime(data_.count - 1);
-        start_count_ = data_.count - 1;
-        start_time_ = last_time;
         before_better_cycles_ = after_better_cycles_ = 0;
       } else {
         ++before_better_cycles_;
@@ -127,13 +129,19 @@ bool SensorReceiver<Values>::Synchronize() {
   time::Time old_received_time(0, 0);
   const time::Time start_time = time::Time::Now();
   // When we want to send out the next set of values.
-  const time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
+  time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
+  if (goal_time < start_time) {
+    goal_time += kLoopFrequency;
+  }
   while (true) {
     if (ReceiveData()) return false;
     time::Time received_time = time::Time::Now();
-    if (received_time > goal_time) {
+    if (received_time >= goal_time) {
       // If this was the very first one we got, try again.
-      if (old_received_time == time::Time(0, 0)) return false;
+      if (old_received_time == time::Time(0, 0)){
+        LOG(INFO, "first one we got was too late\n");
+        return false;
+      }
 
       assert(old_received_time < goal_time);
 

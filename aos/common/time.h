@@ -167,6 +167,7 @@ struct Time {
   // Absolute value.
   Time abs() const {
     if (*this > Time(0, 0)) return *this;
+    if (nsec_ == 0) return Time(-sec_, 0);
     return Time(-sec_ - 1, kNSecInSec - nsec_);
   }
 
@@ -178,6 +179,7 @@ struct Time {
   static void SetMockTime(const Time now);
   // Convenience function to just increment the mock time by a certain amount.
   static void IncrementMockTime(const Time amount) {
+    // TODO(brians) make this thread safe so it's more useful?
     SetMockTime(Now() + amount);
   }
   // Disables mocking time.

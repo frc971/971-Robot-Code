@@ -106,6 +106,49 @@ TEST_F(SensorReceiverTest, CRIOSkew) {
   EXPECT_EQ(50, receiver().unpacks());
 }
 
+TEST_F(SensorReceiverTest, BadStartup1) {
+  time::Time::SetMockTime(NextLoopTime() - Time(0, 100));
+  for (int i = 0; i < 55; ++i) {
+    receiver().RunIteration();
+  }
+  EXPECT_EQ(1, receiver().resets());
+  EXPECT_EQ(5, receiver().unpacks());
+}
+
+TEST_F(SensorReceiverTest, BadStartup2) {
+  time::Time::SetMockTime(NextLoopTime() -
+                          SensorReceiver<TestValues>::kJitterDelay);
+  for (int i = 0; i < 55; ++i) {
+    receiver().RunIteration();
+  }
+  EXPECT_EQ(2, receiver().resets());
+  EXPECT_EQ(5, receiver().unpacks());
+}
+
+TEST_F(SensorReceiverTest, BadStartup3) {
+  time::Time::SetMockTime(NextLoopTime() -
+                          time::Time::InSeconds(0.002) +
+                          kLoopFrequency / 20);
+  for (int i = 0; i < 55; ++i) {
+    receiver().RunIteration();
+  }
+  EXPECT_EQ(1, receiver().resets());
+  EXPECT_EQ(5, receiver().unpacks());
+}
+
+// I think that it somehow got this way once and never recovered.
+// It should never get this way, but if it does, it should recover.
+TEST_F(SensorReceiverTest, StartTimeAndCountMismatch) {
+  for (int i = 0; i < 1005; ++i) {
+    receiver().RunIteration();
+    if (i == 3) {
+      receiver().start_count_ += 10;
+    }
+  }
+  EXPECT_EQ(2, receiver().resets());
+  EXPECT_GT(receiver().unpacks(), 30);
+}
+
 // TODO(brians) finish writing tests and commenting them and the code
 
 }  // namespace testing
