@@ -104,7 +104,6 @@ TEST_F(SensorReceiverTest, CRIOSkew) {
   // current constants)
   EXPECT_EQ(1, receiver().resets());
   EXPECT_EQ(50, receiver().unpacks());
-  EXPECT_TRUE(false);
 }
 
 // TODO(brians) finish writing tests and commenting them and the code

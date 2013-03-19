@@ -60,8 +60,9 @@ bool SensorReceiver<Values>::GoodPacket() {
         ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
       good = true;
     } else {
-      LOG(INFO, "not calling packet %"PRId32" good because it's late\n",
-          data_.count);
+      LOG(INFO, "packet %"PRId32" late. is packet #%d but wanted #%"PRId64"\n",
+          data_.count, (data_.count - start_count_) / kSendsPerCycle,
+          (NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec());
       good = false;
     }
   } else {
