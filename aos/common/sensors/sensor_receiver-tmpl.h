@@ -16,8 +16,9 @@ SensorReceiver<Values>::SensorReceiver(
     SensorUnpackerInterface<Values> *unpacker)
     : unpacker_(unpacker),
       start_time_(0, 0),
-      synchronized_(false),
-      last_good_time_(0, 0) {}
+      last_good_time_(0, 0) {
+  Unsynchronize();
+}
 
 template<class Values>
 void SensorReceiver<Values>::RunIteration() {
@@ -29,7 +30,6 @@ void SensorReceiver<Values>::RunIteration() {
       if (GoodPacket()) {
         unpacker_->UnpackFrom(&data_.values);
         last_good_time_ = time::Time::Now();
-        LOG(DEBUG, "set to now\n");
       } else {
         if ((time::Time::Now() - last_good_time_) > kGiveupTime) {
           LOG(INFO, "resetting because didn't get a good one in too long\n");
@@ -124,9 +124,9 @@ void SensorReceiver<Values>::UpdateStartTime(int new_start_count) {
 template<class Values>
 bool SensorReceiver<Values>::Synchronize() {
   time::Time old_received_time(0, 0);
-  time::Time start_time = time::Time::Now();
+  const time::Time start_time = time::Time::Now();
   // When we want to send out the next set of values.
-  time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
+  const time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
   while (true) {
     if (ReceiveData()) return false;
     time::Time received_time = time::Time::Now();
@@ -158,7 +158,10 @@ bool SensorReceiver<Values>::Synchronize() {
           if (((goal_time +
                 kSensorSendFrequency * (data_.count - start_count_)) -
                received_time).abs() > kSensorSendFrequency) {
-            LOG(INFO, "rejected time of the last good packet\n");
+            LOG(INFO, "rejected time of the last good packet. "
+                "got %"PRId32"s%"PRId32"ns. wanted %"PRId32"s%"PRId32"ns\n",
+                received_time.sec(), received_time.nsec(),
+                goal_time.sec(), goal_time.nsec());
             ++bad_count;
           }
           ++i;

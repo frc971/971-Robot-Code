@@ -40,10 +40,15 @@ class TestSensorReceiver : public SensorReceiver<TestValues>,
   int unpacks() { return unpacks_; }
   using SensorReceiver<TestValues>::data;
 
+  void ResetFakeData() {
+    data()->count = 0;
+  }
+
   void UnpackFrom(TestValues *data) {
-    // Make sure that it didn't lost one that we gave it.
+    // Make sure that it didn't lose one that we gave it.
     EXPECT_EQ(last_received_count_, data->count);
     ++unpacks_;
+    LOG(DEBUG, "%dth unpack\n", unpacks_);
   }
  
  private:
@@ -78,7 +83,31 @@ TEST_F(SensorReceiverTest, Simple) {
             receiver().unpacks());
 }
 
-// TODO(brians) finish writing tests
+TEST_F(SensorReceiverTest, CRIOReboot) {
+  for (int i = 0; i < 50; ++i) {
+    receiver().RunIteration();
+    if (i == 27) {
+      receiver().ResetFakeData();
+      time::Time::IncrementMockTime(time::Time::InSeconds(20));
+    }
+  }
+  EXPECT_EQ(2, receiver().resets());
+  EXPECT_GE(receiver().unpacks(), 4);
+}
+
+TEST_F(SensorReceiverTest, CRIOSkew) {
+  for (int i = 0; i < 505; ++i) {
+    receiver().RunIteration();
+    time::Time::IncrementMockTime(time::Time(0, 4000));
+  }
+  // TODO(brians) verify here that it actually corrects (happens twice with
+  // current constants)
+  EXPECT_EQ(1, receiver().resets());
+  EXPECT_EQ(50, receiver().unpacks());
+  EXPECT_TRUE(false);
+}
+
+// TODO(brians) finish writing tests and commenting them and the code
 
 }  // namespace testing
 }  // namespace sensors
