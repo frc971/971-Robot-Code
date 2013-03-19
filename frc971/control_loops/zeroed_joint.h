@@ -271,6 +271,9 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     error_count_ = 0;
   }
   if (error_count_ >= 4) {
+    output_enabled = false;
+    LOG(WARNING, "err_count is %d so disabling\n", error_count_);
+  } else if (error_count_ >= 200) {
     LOG(WARNING, "err_count is %d so forcing a re-zero\n", error_count_);
     state_ = UNINITIALIZED;
   }
@@ -413,7 +416,11 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       }
       break;
   }
-  return loop_->voltage();
+  if (output_enabled) {
+    return loop_->voltage();
+  } else {
+    return 0.0;
+  }
 }
 
 }  // namespace control_loops
