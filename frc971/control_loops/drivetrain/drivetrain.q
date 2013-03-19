@@ -12,7 +12,9 @@ queue_group Drivetrain {
     bool quickturn;
     bool control_loop_driving;
     float left_goal;
+    float left_velocity_goal;
     float right_goal;
+    float right_velocity_goal;
   };
 
   message Position {

@@ -18,7 +18,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
-    self.J = 7.0
+    self.J = 6.4
     # Mass of the robot, in kg.
     self.m = 68
     # Radius of the robot, in meters (from last year).
@@ -26,7 +26,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the wheels, in meters.
     self.r = .04445
     # Resistance of the motor, divided by the number of motors.
-    self.R = 12.0 / self.stall_current / 6
+    self.R = 12.0 / self.stall_current / 6 + 0.03
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (12.0 - self.R * self.free_current))
@@ -65,12 +65,12 @@ class Drivetrain(control_loop.ControlLoop):
     self.D = numpy.matrix([[0, 0],
                            [0, 0]])
 
-    self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
-                              self.dt, self.C)
+    self.A, self.B = self.ContinuousToDiscrete(
+        self.A_continuous, self.B_continuous, self.dt)
 
     # Poles from last year.
-    self.hp = 0.8
-    self.lp = 0.85
+    self.hp = 0.65
+    self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.hp, self.lp, self.lp])
 
     print self.K
@@ -81,6 +81,7 @@ class Drivetrain(control_loop.ControlLoop):
 
     self.U_max = numpy.matrix([[12.0], [12.0]])
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
+    self.InitializeState()
 
 def main(argv):
   # Simulate the response of the system to a step input.
@@ -92,9 +93,9 @@ def main(argv):
     simulated_left.append(drivetrain.X[0, 0])
     simulated_right.append(drivetrain.X[2, 0])
 
-  pylab.plot(range(100), simulated_left)
-  pylab.plot(range(100), simulated_right)
-  pylab.show()
+  #pylab.plot(range(100), simulated_left)
+  #pylab.plot(range(100), simulated_right)
+  #pylab.show()
 
   # Simulate forwards motion.
   drivetrain = Drivetrain()
@@ -109,9 +110,9 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  pylab.plot(range(100), close_loop_left)
-  pylab.plot(range(100), close_loop_right)
-  pylab.show()
+  #pylab.plot(range(100), close_loop_left)
+  #pylab.plot(range(100), close_loop_right)
+  #pylab.show()
 
   # Try turning in place
   drivetrain = Drivetrain()
@@ -126,9 +127,9 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  pylab.plot(range(100), close_loop_left)
-  pylab.plot(range(100), close_loop_right)
-  pylab.show()
+  #pylab.plot(range(100), close_loop_left)
+  #pylab.plot(range(100), close_loop_right)
+  #pylab.show()
 
   # Try turning just one side.
   drivetrain = Drivetrain()
@@ -143,19 +144,19 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  pylab.plot(range(100), close_loop_left)
-  pylab.plot(range(100), close_loop_right)
-  pylab.show()
+  #pylab.plot(range(100), close_loop_left)
+  #pylab.plot(range(100), close_loop_right)
+  #pylab.show()
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
     print "Expected .h file name and .cc file name"
   else:
+    loop_writer = control_loop.ControlLoopWriter("Drivetrain", [drivetrain])
     if argv[1][-3:] == '.cc':
-      print '.cc file is second'
+      loop_writer.Write(argv[2], argv[1])
     else:
-      drivetrain.DumpHeaderFile(argv[1])
-      drivetrain.DumpCppFile(argv[2], argv[1])
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

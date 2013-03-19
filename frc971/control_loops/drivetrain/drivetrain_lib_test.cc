@@ -39,7 +39,7 @@ class DrivetrainSimulation {
   void Reinitialize() {
     drivetrain_plant_->X(0, 0) = 0.0;
     drivetrain_plant_->X(1, 0) = 0.0;
-    drivetrain_plant_->Y = drivetrain_plant_->C * drivetrain_plant_->X;
+    drivetrain_plant_->Y = drivetrain_plant_->C() * drivetrain_plant_->X;
     last_left_position_ = drivetrain_plant_->Y(0, 0);
     last_right_position_ = drivetrain_plant_->Y(1, 0);
   }

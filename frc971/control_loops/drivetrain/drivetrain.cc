@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sched.h>
 #include <cmath>
+#include <memory>
 
 #include "aos/aos_core.h"
 #include "aos/common/logging/logging.h"
@@ -21,72 +22,61 @@ namespace control_loops {
 // Width of the robot.
 const double width = 22.0 / 100.0 * 2.54;
 
-class DrivetrainMotorsSS : public StateFeedbackLoop<4, 2, 2> {
+class DrivetrainMotorsSS {
  public:
-  DrivetrainMotorsSS (void)
-      : StateFeedbackLoop(MakeDrivetrainLoop()) {
+  DrivetrainMotorsSS ()
+      : loop_(new StateFeedbackLoop<4, 2, 2>(MakeDrivetrainLoop())) {
     _offset = 0;
     _integral_offset = 0;
     _left_goal = 0.0;
     _right_goal = 0.0;
     _raw_left = 0.0;
     _raw_right = 0.0;
+    _control_loop_driving = false;
   }
   void SetGoal(double left, double left_velocity, double right, double right_velocity) {
     _left_goal = left;
     _right_goal = right;
-    R << left + _integral_offset * width / 2.0, left_velocity, right - _integral_offset * width / 2.0, right_velocity;
+    loop_->R << left, left_velocity, right, right_velocity;
   }
   void SetRawPosition(double left, double right) {
     _raw_right = right;
     _raw_left = left;
-    Y << left + _offset + _integral_offset, right - _offset + _integral_offset;
+    loop_->Y << left, right;
   }
-  void SetPosition(double left, double right, double gyro, bool control_loop_driving) {
+  void SetPosition(
+      double left, double right, double gyro, bool control_loop_driving) {
     // Decay the offset quickly because this gyro is great.
     _offset = (0.25) * (right - left - gyro * width) / 2.0 + 0.75 * _offset;
     const double angle_error = (_right_goal - _left_goal) / width - (_raw_right - _offset - _raw_left - _offset) / width;
-    if (!control_loop_driving) {
-      _integral_offset = 0.0;
-    } else if (::std::abs(angle_error) < M_PI / 10.0) {
-      _integral_offset -= angle_error * 0.010;
-    } else {
-      _integral_offset *= 0.97;
-    }
+    // TODO(aschuh): Add in the gyro.
+    _integral_offset = 0.0;
+    _offset = 0.0;
     _gyro = gyro;
+    _control_loop_driving = control_loop_driving;
     SetRawPosition(left, right);
     LOG(DEBUG, "Left %f->%f Right %f->%f Gyro %f aerror %f ioff %f\n", left + _offset, _left_goal, right - _offset, _right_goal, gyro, angle_error, _integral_offset);
   }
-  double UnDeadband(double value) {
-    const double positive_deadband_power = 0.15 * 12;
-    const double negative_deadband_power = 0.09 * 12;
-    if (value > 0) {
-      value += positive_deadband_power;
-    }
-    if (value < 0) {
-      value -= negative_deadband_power;
-    }
-    if (value > 12.0) {
-      value = 12.0;
-    }
-    if (value < -12.0) {
-      value = -12.0;
-    }
-    return value;
+
+  void Update(bool update_observer, bool stop_motors) {
+    loop_->Update(update_observer, stop_motors);
   }
 
-  void SendMotors(Drivetrain::Output *status) {
-    if (status) {
-      status->left_voltage = UnDeadband(U[0]);
-      status->right_voltage = UnDeadband(U[1]);
+  void SendMotors(Drivetrain::Output *output) {
+    if (output) {
+      output->left_voltage = loop_->U(0, 0);
+      output->right_voltage = loop_->U(1, 0);
     }
   }
   void PrintMotors() const {
     // LOG(DEBUG, "Left Power %f Right Power %f lg %f rg %f le %f re %f gyro %f\n", U[0], U[1], R[0], R[2], Y[0], Y[1], _gyro);
-    LOG(DEBUG, "lg %f rg %f le %f re %f gyro %f off %f\n", R[0], R[2], Y[0], Y[1], _gyro * 180.0 / M_PI, _offset);
+    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
+    LOG(DEBUG, "E[0, 0]: %f E[1, 0] %f E[2, 0] %f E[3, 0] %f\n", E(0, 0), E(1, 0), E(2, 0), E(3, 0));
   }
 
  private:
+  ::std::unique_ptr<StateFeedbackLoop<4, 2, 2>> loop_;
+
   double _integral_offset;
   double _offset;
   double _gyro;
@@ -94,6 +84,7 @@ class DrivetrainMotorsSS : public StateFeedbackLoop<4, 2, 2> {
   double _right_goal;
   double _raw_left;
   double _raw_right;
+  bool _control_loop_driving;
 };
 
 class DrivetrainMotorsOL {
@@ -273,7 +264,8 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   double left_goal = goal->left_goal;
   double right_goal = goal->right_goal;
 
-  dt_closedloop.SetGoal(left_goal, 0.0, right_goal, 0.0);
+  dt_closedloop.SetGoal(left_goal, goal->left_velocity_goal,
+                        right_goal, goal->right_velocity_goal);
   if (!bad_pos) {
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
@@ -284,7 +276,8 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
   }
-  dt_closedloop.Update(!bad_pos, bad_pos || bad_output);
+  dt_closedloop.Update(position, output == NULL);
+  //dt_closedloop.PrintMotors();
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
   if (control_loop_driving) {
