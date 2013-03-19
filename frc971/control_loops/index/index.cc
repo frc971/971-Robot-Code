@@ -428,10 +428,23 @@ void IndexMotor::RunIteration(
             highest_position = disc_position;
           }
         }
+
+        if (!highest_frisbee_below_sensor) {
+          Frisbee new_frisbee;
+          new_frisbee.has_been_indexed_ = true;
+          new_frisbee.index_start_position_ = index_position -
+              ConvertDiscPositionToIndex(kTopDiscDetectStart -
+                                         kIndexStartPosition);
+          highest_position = kTopDiscDetectStart;
+          ++hopper_disc_count_;
+          ++total_disc_count_;
+          frisbees_.push_front(new_frisbee);
+          LOG(WARNING, "Added a disc to the hopper at the top sensor because the one we know about is up top\n");
+        }
+
         if (above_disc_count > 1) {
           LOG(ERROR, "We have 2 discs above the top sensor.\n");
         }
-
         // We now have the disc.  Shift all the ones below the sensor up by the
         // computed delta.
         const double disc_delta = IndexMotor::ConvertDiscPositionToIndex(
@@ -441,6 +454,8 @@ void IndexMotor::RunIteration(
           const double disc_position = frisbee->absolute_position(
               index_position);
           if (disc_position < kTopDiscDetectStop) {
+            LOG(INFO, "Moving disc down by %f, since it is at %f and top is %f\n",
+                disc_delta, disc_position, kTopDiscDetectStop);
             frisbee->OffsetDisc(disc_delta);
           }
         }
