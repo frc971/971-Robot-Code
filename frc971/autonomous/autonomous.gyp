@@ -31,10 +31,11 @@
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
         '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/frc971.gyp:common',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
+        '<(AOS)/common/util/util.gyp:trapezoid_profile',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:controls',

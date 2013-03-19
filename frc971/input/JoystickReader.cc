@@ -7,11 +7,11 @@
 #include "aos/atom_code/input/FRCComm.h"
 #include "aos/atom_code/input/JoystickInput.h"
 
-#include "frc971/input/AutoMode.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
+#include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/index/index_motor.q.h"
 #include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
@@ -40,11 +40,11 @@ class JoystickReader : public aos::JoystickInput {
     if (Pressed(0, AUTONOMOUS)) {
       if (PosEdge(0, ENABLED)){
         LOG(INFO, "Starting auto mode\n");
-        AutoMode.Start();
+        ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
       }
       if (NegEdge(0, ENABLED)) {
         LOG(INFO, "Stopping auto mode\n");
-        AutoMode.Stop();
+        ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
       }
     } else {  // teleop
       bool is_control_loop_driving = false;
@@ -104,6 +104,7 @@ class JoystickReader : public aos::JoystickInput {
       }
 
       // Where the wrist should be to pick up a frisbee.
+      // TODO(brians): Make these globally accessible and clean up auto.
       static const double kWristPickup = -0.633;
       static const double kWristNearGround = -0.4;
       // Where the wrist gets stored when up.

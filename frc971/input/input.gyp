@@ -28,7 +28,8 @@
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
       ],
     },
     {
@@ -47,7 +48,6 @@
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
       ],
     },
     {
@@ -97,20 +97,6 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
-      ],
-    },
-    {
-      'target_name': 'AutoMode',
-      'type': 'executable',
-      'sources': [
-        'AutoMode.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
-        '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        'actions',
-# TODO(brians) this shouldn't need to be here
-        '<(AOS)/atom_code/atom_code.gyp:init',
       ],
     },
   ],

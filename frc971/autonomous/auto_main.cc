@@ -13,18 +13,24 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
   ::frc971::autonomous::autonomous.FetchLatest();
   while (!::frc971::autonomous::autonomous.get()) {
-      ::frc971::autonomous::autonomous.FetchNextBlocking();
+    ::frc971::autonomous::autonomous.FetchNextBlocking();
+    LOG(INFO, "Got another auto packet\n");
   }
 
   while (true) {
     while (!::frc971::autonomous::autonomous->run_auto) {
       ::frc971::autonomous::autonomous.FetchNextBlocking();
+      LOG(INFO, "Got another auto packet\n");
     }
+    LOG(INFO, "Starting auto mode\n");
     ::frc971::autonomous::HandleAuto();
 
+    LOG(INFO, "Auto mode exited, waiting for it to finish.\n");
     while (::frc971::autonomous::autonomous->run_auto) {
       ::frc971::autonomous::autonomous.FetchNextBlocking();
+      LOG(INFO, "Got another auto packet\n");
     }
+    LOG(INFO, "Waiting for auto to start back up.\n");
   }
   ::aos::Cleanup();
   return 0;

@@ -2,7 +2,6 @@ MotorWriter
 JoystickReader
 sensor_receiver
 drivetrain
-AutoMode
 BinaryLogReader
 CRIOLogReader
 CameraReader
@@ -12,3 +11,4 @@ angle_adjust
 wrist
 index
 shooter
+auto

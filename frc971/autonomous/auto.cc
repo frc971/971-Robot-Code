@@ -3,8 +3,11 @@
 #include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "aos/common/messages/RobotState.q.h"
+#include "frc971/constants.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
 #include "frc971/control_loops/index/index_motor.q.h"
 #include "frc971/control_loops/shooter/shooter_motor.q.h"
@@ -15,63 +18,249 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace autonomous {
 
+bool ShouldExitAuto() {
+  ::frc971::autonomous::autonomous.FetchLatest();
+  bool ans = !::frc971::autonomous::autonomous->run_auto;
+  if (ans) {
+    LOG(INFO, "Time to exit auto mode\n");
+  }
+  return ans;
+}
+
 void SetShooterVelocity(double velocity) {
+  LOG(INFO, "Setting shooter velocity to %f\n", velocity);
   control_loops::shooter.goal.MakeWithBuilder()
     .velocity(velocity).Send();
 }
 
-void StartIntake() {
-  control_loops::intake.goal.MakeWithBuilder()
+void SetWristGoal(double goal) {
+  LOG(INFO, "Setting wrist to %f\n", goal);
+  control_loops::wrist.goal.MakeWithBuilder()
+    .goal(goal).Send();
+}
+
+void SetAngle_AdjustGoal(double goal) {
+  LOG(INFO, "Setting angle adjust to %f\n", goal);
+  control_loops::angle_adjust.goal.MakeWithBuilder()
+    .goal(goal).Send();
+}
+
+void StartIndex() {
+  LOG(INFO, "Starting index\n");
+  control_loops::index_loop.goal.MakeWithBuilder()
     .goal_state(2).Send();
 }
 
-void PreloadIntake() {
-  control_loops::intake.goal.MakeWithBuilder()
+void PreloadIndex() {
+  LOG(INFO, "Preloading index\n");
+  control_loops::index_loop.goal.MakeWithBuilder()
     .goal_state(3).Send();
 }
 
-void ShootIntake() {
-  control_loops::intake.goal.MakeWithBuilder()
+void ShootIndex() {
+  LOG(INFO, "Shooting index\n");
+  control_loops::index_loop.goal.MakeWithBuilder()
     .goal_state(4).Send();
 }
 
+void WaitForWrist() {
+  LOG(INFO, "Waiting for the wrist\n");
+  control_loops::wrist.status.FetchLatest();
+
+  while (!control_loops::wrist.status.get()) {
+    LOG(WARNING, "No previous wrist packet, trying to fetch again\n");
+    control_loops::wrist.status.FetchNextBlocking();
+  }
+
+  while (!control_loops::wrist.status->done) {
+    control_loops::wrist.status.FetchNextBlocking();
+    LOG(DEBUG, "Got a new wrist status packet\n");
+    if (ShouldExitAuto()) return;
+  }
+  LOG(INFO, "Done waiting for the wrist\n");
+}
+					// Index_loop has no FetchNextBlocking
+void WaitForIndex() {
+  LOG(INFO, "Waiting for the indexer to be ready to intake\n");
+  control_loops::index_loop.status.FetchLatest();
+
+  while (!control_loops::index_loop.status.get()) {
+    LOG(WARNING, "No previous index packet, trying to fetch again\n");
+    control_loops::index_loop.status.FetchNextBlocking();
+  }
+
+  while (!control_loops::index_loop.status->ready_to_intake) {
+    control_loops::index_loop.status.FetchNextBlocking();
+    if (ShouldExitAuto()) return;
+  }
+  LOG(INFO, "Indexer ready to intake\n");
+}
+
+void WaitForAngle_Adjust() {
+  LOG(INFO, "Waiting for the angle adjuster to finish\n");
+  control_loops::angle_adjust.status.FetchLatest();
+
+  while (!control_loops::angle_adjust.status.get()) {
+    LOG(WARNING, "No previous angle adjust packet, trying to fetch again\n");
+    control_loops::angle_adjust.status.FetchNextBlocking();
+  }
+
+  while (!control_loops::angle_adjust.status->done) {
+    control_loops::angle_adjust.status.FetchNextBlocking();
+    if (ShouldExitAuto()) return;
+  }
+  LOG(INFO, "Angle adjuster done\n");
+}
+
 void WaitForShooter() {
+  LOG(INFO, "Waiting for the shooter to spin up\n");
   control_loops::shooter.status.FetchLatest();
-  while (!control_loops::shooter.status->ready) {
+
+  while (!control_loops::shooter.status.get()) {
+    LOG(WARNING, "No previous shooteracket, trying to fetch again\n");
     control_loops::shooter.status.FetchNextBlocking();
   }
-}
 
-// TODO(aschuh): Send the number of discs shot in the status message.
-void ShootNDiscs(int n) {
-  control_loops::intake.status.FetchLatest();
-  while (!control_loops::intake.status->ready) {
-    control_loops::intake.status.FetchNextBlocking();
+  while (!control_loops::shooter.status->ready) {
+    control_loops::shooter.status.FetchNextBlocking();
+    if (ShouldExitAuto()) return;
   }
+  LOG(INFO, "Shooter ready to shoot\n");
 }
 
-bool ShouldExitAuto() {
-  ::frc971::autonomous::autonomous.FetchLatest();
-  return !::frc971::autonomous::autonomous->run_auto;
+void ShootNDiscs(int n) {
+  LOG(INFO, "Waiting until %d discs have been shot\n", n);
+  control_loops::index_loop.status.FetchLatest();
+
+  while (!control_loops::index_loop.status.get()) {
+    LOG(WARNING, "No previous index_loop packet, trying to fetch again\n");
+    control_loops::index_loop.status.FetchNextBlocking();
+  }
+
+  int final_disc_count = control_loops::index_loop.status->shot_disc_count + n;
+  LOG(DEBUG, "Disc count should be %d when done\n", final_disc_count);
+  while (final_disc_count > control_loops::index_loop.status->shot_disc_count) {
+    control_loops::index_loop.status.FetchNextBlocking();
+    if (ShouldExitAuto()) return;
+  }
+  LOG(INFO, "Shot %d discs\n", n);
 }
 
-// TODO(aschuh): Drivetrain needs a profile somewhere.
-// Here isn't the best spot.  It should be in another thread/process
-
-void HandleAuto() {
-  SetShooterVelocity(200.0);
-  PreloadIntake();
-
-  WaitForShooter();
-  ShootIntake();
-
-  // Wait for the wrist and angle adjust to finish zeroing before shooting.
-  // Sigh, constants go where?
-
+void StopDrivetrain() {
+  LOG(INFO, "Stopping the drivetrain\n");
   control_loops::drivetrain.goal.MakeWithBuilder()
-    .control_loop_driving(true)
-    .left_goal(0.0)
-    .right_goal(0.0).Send();
+      .control_loop_driving(false)
+      .highgear(false)
+      .steering(0.0)
+      .throttle(0.0)
+      .quickturn(false)
+      .Send();
+}
+
+void SetDriveGoal(double yoffset) {
+  LOG(INFO, "Going to move %f\n", yoffset);
+
+  // Measured conversion to get the distance right.
+  yoffset *= 0.73;
+  LOG(INFO, "Going to move an adjusted %f\n", yoffset);
+  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
+  ::Eigen::Matrix<double, 2, 1> driveTrainState;
+  const double goal_velocity = 0.0;
+  const double epsilon = 0.01;
+
+  profile.set_maximum_acceleration(2);
+  profile.set_maximum_velocity(0.8);
+ 
+  control_loops::drivetrain.position.FetchLatest();
+  while (!control_loops::drivetrain.position.get()) {
+    LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
+    control_loops::drivetrain.position.FetchNextBlocking();
+  }
+
+  const double left_initial_position =
+    control_loops::drivetrain.position->left_encoder;
+  const double right_initial_position =
+    control_loops::drivetrain.position->right_encoder;
+
+  while (true) {
+    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    driveTrainState = profile.Update(yoffset, goal_velocity);
+
+    if (::std::abs(driveTrainState(0, 0) - yoffset) < epsilon) return;
+    if (ShouldExitAuto()) return;
+
+    LOG(DEBUG, "Driving left to %f, right to %f\n",
+        driveTrainState(0, 0) + left_initial_position,
+        driveTrainState(0, 0) + right_initial_position);
+    control_loops::drivetrain.goal.MakeWithBuilder()
+        .control_loop_driving(true)
+        .highgear(false)
+        .left_goal(driveTrainState(0, 0) + left_initial_position)
+        .right_goal(driveTrainState(0, 0) + right_initial_position)
+        .left_velocity_goal(driveTrainState(1, 0))
+        .right_velocity_goal(driveTrainState(1, 0))
+        .Send();
+  }
+  LOG(INFO, "Done moving\n");
+}
+
+					// start with N discs in the indexer
+void HandleAuto() {
+  LOG(INFO, "Handling auto mode\n");
+  double WRIST_UP;
+  
+  ::aos::robot_state.FetchLatest();
+  if (::aos::robot_state.get() &&
+      !constants::wrist_hall_effect_start_angle(&WRIST_UP)) {
+    LOG(ERROR, "Constants not ready\n");
+    return;
+  }
+  WRIST_UP -= 0.4;
+  LOG(INFO, "Got constants\n");
+  const double WRIST_DOWN = -0.633;
+  const double ANGLE_ONE = 0.50;
+  const double ANGLE_TWO = 0.685;
+
+  StopDrivetrain();
+
+  SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
+  SetAngle_AdjustGoal(ANGLE_ONE);
+  SetShooterVelocity(405.0);
+  PreloadIndex();			// spin to top and put 1 disc into loader
+
+  if (ShouldExitAuto()) return;
+  WaitForWrist();
+  if (ShouldExitAuto()) return;
+  WaitForAngle_Adjust();
+  ShootIndex();				// tilt up, shoot, repeat until empty
+					// calls WaitForShooter
+  ShootNDiscs(3);			// ShootNDiscs returns if ShouldExitAuto
+  if (ShouldExitAuto()) return;
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+
+  SetWristGoal(WRIST_DOWN);
+  SetAngle_AdjustGoal(ANGLE_TWO);
+  SetShooterVelocity(375.0);
+  StartIndex();				// take in up to 4 discs
+
+  if (ShouldExitAuto()) return;
+  WaitForWrist();			// wrist must be down before moving
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+
+  if (ShouldExitAuto()) return; 
+  WaitForIndex();			// ready to pick up discs
+ 
+  SetDriveGoal(0.75);
+  SetDriveGoal(2.75);
+  if (ShouldExitAuto()) return;
+
+  PreloadIndex();
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.4));
+  SetDriveGoal(-1.3);
+
+  if (ShouldExitAuto()) return;
+  WaitForAngle_Adjust();
+  ShootIndex();	
 }
 
 }  // namespace autonomous
