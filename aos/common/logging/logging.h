@@ -37,7 +37,7 @@ DECL_LEVELS;
 #define TO_STRING(x) #x
 
 //not static const size_t for c code
-#define LOG_MESSAGE_LEN 500
+#define LOG_MESSAGE_LEN 400
 
 #ifdef __VXWORKS__
 // We're using ancient glibc, so sticking to just what the syscall can handle is
@@ -69,7 +69,8 @@ void log_uncork(int line, const char *function, log_level level,
 // It's currently using __PRETTY_FUNCTION__ because both GCC and Clang support
 // that and it gives nicer results in C++ than the standard __func__ (which
 // would also work).
-#define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
+//#define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
+#define LOG_CURRENT_FUNCTION __func__
 
 #undef LOG_SOURCENAME
 #define LOG_SOURCENAME __FILE__
