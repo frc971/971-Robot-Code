@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo '/home/driver/tmp/robot_logs/%e-%s-%p-%t.coredump' > /proc/sys/kernel/core_pattern
+
 #echo $$ > /var/run/`basename $0`.pid IT FORKS AFTER THIS!!!!
 insmod /home/driver/robot_code/bin/aos_module.ko
 #chrt -p 45 `pidof sshd`

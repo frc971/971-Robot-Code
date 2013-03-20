@@ -20,10 +20,9 @@ namespace aos {
 
 namespace {
 
-void SetSoftRLimit(int resource, rlim64_t soft) {
-  // If we're root, then we don't need to change the soft limits because none of
-  // the ones we care about get checked for root.
-  if (getuid() != 0) {
+void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
+  bool am_root = getuid() == 0;
+  if (set_for_root || !am_root) {
     struct rlimit64 rlim;
     if (getrlimit64(resource, &rlim) == -1) {
       Die("%s-init: getrlimit64(%d) failed with %d (%s)\n",
@@ -43,7 +42,10 @@ void SetSoftRLimit(int resource, rlim64_t soft) {
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
   // Allow locking as much as we want into RAM.
-  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY);
+  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
+
+  // Do create core files of unlimited size.
+  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, true);
 }
 
 int LockAllMemory() {
@@ -83,9 +85,9 @@ void Init() {
   if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
     LockAllMemory();
     // Only let rt processes run for 1 second straight.
-    SetSoftRLimit(RLIMIT_RTTIME, 1000000);
+    SetSoftRLimit(RLIMIT_RTTIME, 1000000, true);
     // Allow rt processes up to priority 40.
-    SetSoftRLimit(RLIMIT_RTPRIO, 40);
+    SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
     // Set our process to priority 40.
     struct sched_param param;
     param.sched_priority = 40;
