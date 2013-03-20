@@ -6,12 +6,12 @@ namespace sensors {
 
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
-    time::Time::InSeconds(0.002);
+    time::Time::InSeconds(0.0035);
 // Not a multiple of kSensorSendFrequency to unwedge ourself if we hit some bug
 // where it needs to get off of that frequency to work.
 template<class Values>
 const time::Time SensorReceiver<Values>::kGiveupTime =
-    time::Time::InSeconds(0.5555);
+    time::Time::InSeconds(0.1555);
 
 template<class Values>
 SensorReceiver<Values>::SensorReceiver(
@@ -64,7 +64,7 @@ bool SensorReceiver<Values>::GoodPacket() {
         ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
       good = true;
     } else {
-      LOG(INFO, "packet %"PRId32" late. is packet #%d but wanted #%"PRId64"\n",
+      LOG(INFO, "packet %"PRId32" late. is packet #%d, wanted #%"PRId64" now\n",
           data_.count, (data_.count - start_count_) / kSendsPerCycle,
           (NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec());
       good = false;
@@ -78,8 +78,9 @@ bool SensorReceiver<Values>::GoodPacket() {
   time::Time next_goal_time = NextLoopTime() - kJitterDelay;
   // If this is the packet after the right one.
   if (((data_.count - start_count_ - 1) % kSendsPerCycle) == 0) {
-    // If this one is closer than the last one (aka the one that we used).
-    if ((now - next_goal_time).abs() < (last_time - next_goal_time).abs()) {
+    // If this one is much closer than the last one (aka the one that we used).
+    if ((now - next_goal_time).abs() * 11 / 10 <
+        (last_time - next_goal_time).abs()) {
       LOG(DEBUG, "next one better than one being used %d\n",
           after_better_cycles_);
       if (after_better_cycles_ > kBadCyclesToSwitch) {
@@ -96,7 +97,8 @@ bool SensorReceiver<Values>::GoodPacket() {
   // If this is the right packet.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
     // If the last one was closer than this one (aka the one that we used).
-    if ((last_time - next_goal_time).abs() < (now - next_goal_time).abs()) {
+    if ((last_time - next_goal_time).abs() * 11 / 10 <
+        (now - next_goal_time).abs()) {
       LOG(DEBUG, "previous better than one being used %d\n",
           before_better_cycles_);
       if (before_better_cycles_ > kBadCyclesToSwitch) {
@@ -117,7 +119,7 @@ bool SensorReceiver<Values>::GoodPacket() {
 
 template<class Values>
 void SensorReceiver<Values>::UpdateStartTime(int new_start_count) {
-  start_time_ += kSensorSendFrequency * (new_start_count - start_count_);
+  start_time_ += kSensorSendFrequency * (new_start_count - start_count_ - 1);
   start_count_ = new_start_count;
 }
 
@@ -213,7 +215,7 @@ void SensorReceiver<Values>::Unsynchronize() {
 
 template<class Values>
 const time::Time NetworkSensorReceiver<Values>::kWarmupTime =
-    time::Time::InSeconds(0.125);
+    time::Time::InSeconds(0.075);
 
 template<class Values>
 NetworkSensorReceiver<Values>::NetworkSensorReceiver(

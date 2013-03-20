@@ -43,7 +43,7 @@ class SensorReceiver {
   static const int kTestCycles = 10;
   // How many cycles that we need (consecutively) of another packet being closer
   // to the right time than the ones we're reading before we switch.
-  static const int kBadCyclesToSwitch = 10;
+  static const int kBadCyclesToSwitch = 15;
   // If we don't get a good packet in this long, then we Synchronize() again.
   static const time::Time kGiveupTime;
 
