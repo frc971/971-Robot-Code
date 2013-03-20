@@ -63,6 +63,25 @@ void ShootIndex() {
     .goal_state(4).Send();
 }
 
+void ResetIndex() {
+  LOG(INFO, "Resetting index\n");
+  control_loops::index_loop.goal.MakeWithBuilder()
+    .goal_state(5).Send();
+}
+
+void WaitForIndexReset() {
+  LOG(INFO, "Waiting for the indexer to reset\n");
+  control_loops::index_loop.status.FetchLatest();
+
+  // Fetch a couple index status packets to make sure that the indexer has run.
+  for (int i = 0; i < 5; ++i) {
+    LOG(DEBUG, "Fetching another index status packet\n");
+    control_loops::index_loop.status.FetchNextBlocking();
+    if (ShouldExitAuto()) return;
+  }
+  LOG(INFO, "Indexer is now reset.\n");
+}
+
 void WaitForWrist() {
   LOG(INFO, "Waiting for the wrist\n");
   control_loops::wrist.status.FetchLatest();
@@ -222,10 +241,13 @@ void HandleAuto() {
   const double ANGLE_TWO = 0.685;
 
   StopDrivetrain();
+  ResetIndex();
 
   SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
   SetShooterVelocity(405.0);
+  WaitForIndexReset();
+  
   PreloadIndex();			// spin to top and put 1 disc into loader
 
   if (ShouldExitAuto()) return;

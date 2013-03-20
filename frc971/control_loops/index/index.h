@@ -262,7 +262,9 @@ class IndexMotor
     // Get ready to shoot, and place a disc in the loader.
     READY_SHOOTER = 3,
     // Shoot at will.
-    SHOOT = 4
+    SHOOT = 4,
+    // Reinitialize.
+    REINITIALIZE = 5
   };
 
   // These two enums command and track the loader loading discs into the

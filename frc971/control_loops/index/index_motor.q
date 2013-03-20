@@ -12,6 +12,7 @@ queue_group IndexLoop {
     // 2 means ready the discs, spin up the transfer roller, and accept discs.
     // 3 means get ready to shoot, and place a disc grabbed in the loader.
     // 4 means shoot at will.
+    // 5 means re-initialize
     int32_t goal_state;
   };
 

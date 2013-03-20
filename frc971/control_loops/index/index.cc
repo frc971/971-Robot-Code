@@ -237,7 +237,7 @@ void IndexMotor::RunIteration(
   Time now = Time::Now();
   // Make goal easy to work with and sanity check it.
   Goal goal_enum = static_cast<Goal>(goal->goal_state);
-  if (goal->goal_state < 0 || goal->goal_state > 4) {
+  if (goal->goal_state < 0 || goal->goal_state > 5) {
     LOG(ERROR, "Goal state is %"PRId32" which is out of range.  Going to HOLD.\n",
         goal->goal_state);
     goal_enum = Goal::HOLD;
@@ -638,6 +638,9 @@ void IndexMotor::RunIteration(
       }
       LOG(DEBUG, "INTAKE\n");
       break;
+    case Goal::REINITIALIZE:
+      LOG(WARNING, "Reinitializing the indexer\n");
+      break;
     case Goal::READY_SHOOTER:
     case Goal::SHOOT:
       // Don't let us leave the shoot or preload state if there are 4 discs in
@@ -799,6 +802,7 @@ void IndexMotor::RunIteration(
         break;
       case Goal::READY_SHOOTER:
       case Goal::SHOOT:
+      case Goal::REINITIALIZE:
         break;
     }
   }
@@ -947,6 +951,26 @@ void IndexMotor::RunIteration(
         position->bottom_disc_negedge_wait_count;
     last_top_disc_posedge_count_ = position->top_disc_posedge_count;
     last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+  }
+
+  // Clear everything if we are supposed to re-initialize.
+  if (goal_enum == Goal::REINITIALIZE) {
+    safe_goal_ = Goal::REINITIALIZE;
+    no_prior_position_ = true;
+    hopper_disc_count_ = 0;
+    total_disc_count_ = 0;
+    shot_disc_count_ = 0;
+    loader_state_ = LoaderState::READY;
+    loader_goal_ = LoaderGoal::READY;
+    loader_countdown_ = 0;
+    loader_up_ = false;
+    disc_clamped_ = false;
+    disc_ejected_ = false;
+
+    intake_voltage = 0.0;
+    transfer_voltage = 0.0;
+    wrist_loop_->U(0, 0) = 0.0;
+    frisbees_.clear();
   }
 
   status->hopper_disc_count = hopper_disc_count_;
