@@ -4,9 +4,6 @@ JoystickReader
 sensor_receiver
 drivetrain
 CRIOLogReader
-CameraReader
-CameraServer
-CameraHTTPStreamer
 angle_adjust
 wrist
 index
