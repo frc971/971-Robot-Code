@@ -63,11 +63,6 @@ class SensorReceiver {
   // Returns whether the current packet looks like a good one to use.
   bool GoodPacket();
 
-  // Updates start_count_ to new_start_count and changes start_time_
-  // accordingly. Does it relative to avoid resetting start_time_ based off of 1
-  // bad packet.
-  void UpdateStartTime(int new_start_count);
-
   // Synchronizes with incoming packets and sets start_count_ to where we
   // started reading.
   // Returns whether it succeeded in locking on.

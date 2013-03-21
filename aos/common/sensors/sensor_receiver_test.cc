@@ -117,7 +117,8 @@ TEST_F(SensorReceiverTest, BadStartup1) {
 
 TEST_F(SensorReceiverTest, BadStartup2) {
   time::Time::SetMockTime(NextLoopTime() -
-                          SensorReceiver<TestValues>::kJitterDelay);
+                          SensorReceiver<TestValues>::kJitterDelay -
+                          time::Time(0, 1));
   for (int i = 0; i < 55; ++i) {
     receiver().RunIteration();
   }

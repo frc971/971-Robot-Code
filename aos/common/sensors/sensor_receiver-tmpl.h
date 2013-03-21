@@ -60,10 +60,11 @@ bool SensorReceiver<Values>::GoodPacket() {
   bool good;
   // If it's a multiple of kSensorSendFrequency from start_count_.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
-    if (((data_.count - start_count_) / kSendsPerCycle) ==
+    if (((data_.count - start_count_) / kSendsPerCycle) >=
         ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
       good = true;
     } else {
+      // when it broke, it got #1 but wanted #0 (etc)
       LOG(INFO, "packet %"PRId32" late. is packet #%d, wanted #%"PRId64" now\n",
           data_.count, (data_.count - start_count_) / kSendsPerCycle,
           (NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec());
@@ -85,7 +86,7 @@ bool SensorReceiver<Values>::GoodPacket() {
           after_better_cycles_);
       if (after_better_cycles_ > kBadCyclesToSwitch) {
         LOG(INFO, "switching to the packet after\n");
-        UpdateStartTime(data_.count);
+        ++start_count_;
         before_better_cycles_ = after_better_cycles_ = 0;
       } else {
         ++after_better_cycles_;
@@ -103,7 +104,7 @@ bool SensorReceiver<Values>::GoodPacket() {
           before_better_cycles_);
       if (before_better_cycles_ > kBadCyclesToSwitch) {
         LOG(INFO, "switching to the packet before\n");
-        UpdateStartTime(data_.count - 1);
+        --start_count_;
         before_better_cycles_ = after_better_cycles_ = 0;
       } else {
         ++before_better_cycles_;
@@ -117,12 +118,6 @@ bool SensorReceiver<Values>::GoodPacket() {
   return good;
 }
 
-template<class Values>
-void SensorReceiver<Values>::UpdateStartTime(int new_start_count) {
-  start_time_ += kSensorSendFrequency * (new_start_count - start_count_ - 1);
-  start_count_ = new_start_count;
-}
-
 // Looks for when the timestamps transition from before where we want to after
 // and then picks whichever one was closer. After that, reads kTestCycles and
 // makes sure that at most 1 is bad.
@@ -132,9 +127,10 @@ bool SensorReceiver<Values>::Synchronize() {
   const time::Time start_time = time::Time::Now();
   // When we want to send out the next set of values.
   time::Time goal_time = NextLoopTime(start_time) - kJitterDelay;
-  if (goal_time < start_time) {
+  if (goal_time <= start_time) {
     goal_time += kLoopFrequency;
   }
+  assert(goal_time > start_time);
   while (true) {
     if (ReceiveData()) return false;
     time::Time received_time = time::Time::Now();
