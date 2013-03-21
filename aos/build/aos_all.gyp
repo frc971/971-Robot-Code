@@ -23,6 +23,8 @@
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/sensors/sensors.gyp:sensor_receiver_test',
         'Common',
+        # TODO(brians): move this to Common
+        '<(AOS)/common/sensors/sensors.gyp:sensors_test',
       ],
     },
     {

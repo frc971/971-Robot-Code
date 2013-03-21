@@ -38,6 +38,7 @@ void SensorBroadcaster<Values>::RegisterControlLoopRunner(
 template<class Values>
 void SensorBroadcaster<Values>::Notify() {
   packer_->PackInto(&data_.values);
+  data_.FillinChecksum();
   socket_.Send(&data_, sizeof(data_));
   ++data_.count;
 

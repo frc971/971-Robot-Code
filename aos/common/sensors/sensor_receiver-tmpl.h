@@ -57,6 +57,11 @@ void SensorReceiver<Values>::RunIteration() {
 
 template<class Values>
 bool SensorReceiver<Values>::GoodPacket() {
+  if (!data_.CheckChecksum()) {
+    LOG(WARNING, "got a bad packet\n");
+    return false;
+  }
+
   bool good;
   // If it's a multiple of kSensorSendFrequency from start_count_.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {

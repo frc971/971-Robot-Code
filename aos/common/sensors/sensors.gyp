@@ -28,6 +28,18 @@
       ],
     },
     {
+      'target_name': 'sensors_test',
+      'type': '<(aos_target)',
+      'sources': [
+        'sensors_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        'sensors',
+        '<(AOS)/common/common.gyp:queue_testutils',
+      ],
+    },
+    {
       'target_name': 'sensor_receiver',
       'type': 'static_library',
       'sources': [
