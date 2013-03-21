@@ -731,7 +731,7 @@ class IndexTest : public ::testing::Test {
         } else {
           index_motor_plant_.InsertDisc();
           ++num_grabbed;
-          wait_counter = 9;
+          wait_counter = 10;
         }
       }
       index_motor_plant_.Simulate();
@@ -1312,6 +1312,26 @@ TEST_F(IndexTest, CanShootIntakeAndShoot) {
     EXPECT_EQ(i, my_index_loop_.status->total_disc_count);
     EXPECT_EQ(0, my_index_loop_.status->hopper_disc_count);
     EXPECT_EQ(i, my_index_loop_.status->shot_disc_count);
+  }
+}
+
+// Tests that missing position packets don't cause the transfer motor
+// to turn off.
+TEST_F(IndexTest, NoPositionDoesNotTurnOff) {
+  my_index_loop_.goal.MakeWithBuilder().goal_state(2).Send();
+  for (int i = 0; i < 250; ++i) {
+    if (i % 10) {
+      index_motor_plant_.SendPositionMessage();
+    }
+    index_motor_.Iterate();
+
+    if (i > 1 && i % 10) {
+      EXPECT_TRUE(my_index_loop_.output.FetchLatest());
+      EXPECT_EQ(12.0, my_index_loop_.output->transfer_voltage);
+    }
+    index_motor_plant_.Simulate();
+    SendDSPacket(true);
+    UpdateTime();
   }
 }
 

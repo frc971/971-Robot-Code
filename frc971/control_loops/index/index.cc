@@ -454,8 +454,10 @@ void IndexMotor::RunIteration(
           const double disc_position = frisbee->absolute_position(
               index_position);
           if (disc_position < kTopDiscDetectStop) {
-            LOG(INFO, "Moving disc down by %f, since it is at %f and top is %f\n",
-                disc_delta, disc_position, kTopDiscDetectStop);
+            LOG(INFO, "Moving disc down by %f meters, since it is at %f and top is [%f, %f]\n",
+                ConvertIndexToDiscPosition(disc_delta),
+                disc_position, kTopDiscDetectStart,
+                kTopDiscDetectStop);
             frisbee->OffsetDisc(disc_delta);
           }
         }
@@ -561,8 +563,6 @@ void IndexMotor::RunIteration(
           for (auto frisbee = frisbees_.begin();
                frisbee != frisbees_.end(); ++frisbee) {
             if (!frisbee->has_been_indexed_) {
-              intake_voltage = transfer_voltage = 12.0;
-
               if (last_bottom_disc_negedge_wait_count_ !=
                   position->bottom_disc_negedge_wait_count) {
                 // We have an index difference.
@@ -580,58 +580,63 @@ void IndexMotor::RunIteration(
                     position->bottom_disc_negedge_wait_position;
               }
             }
-            if (!frisbee->has_been_indexed_) {
-              // All discs must be indexed before it is safe to stop indexing.
-              safe_to_change_state = false;
-            }
-          }
-
-          // Figure out where the indexer should be to move the discs down to
-          // the right position.
-          double max_disc_position = 0;
-          if (MaxDiscPosition(&max_disc_position, NULL)) {
-            LOG(DEBUG, "There is a disc down here!\n");
-            // TODO(aschuh): Figure out what to do if grabbing the next one
-            // would cause things to jam into the loader.
-            // Say we aren't ready any more.  Undefined behavior will result if
-            // that isn't observed.
-            double bottom_disc_position =
-                max_disc_position + ConvertDiscAngleToIndex(M_PI);
-            wrist_loop_->R << bottom_disc_position, 0.0;
-
-            // Verify that we are close enough to the goal so that we should be
-            // fine accepting the next disc.
-            double disc_error_meters = ConvertIndexToDiscPosition(
-                wrist_loop_->X_hat(0, 0) - bottom_disc_position);
-            // We are ready for the next disc if the first one is in the first
-            // half circle of the indexer.  It will take time for the disc to
-            // come into the indexer, so we will be able to move it out of the
-            // way in time.
-            // This choice also makes sure that we don't claim that we aren't
-            // ready between full speed intaking.
-            if (-ConvertDiscAngleToIndex(M_PI) < disc_error_meters &&
-                disc_error_meters < 0.04) {
-              // We are only ready if we aren't being asked to change state or
-              // are full.
-              status->ready_to_intake =
-                  (safe_goal_ == goal_enum) && hopper_disc_count_ < 4;
-            } else {
-              status->ready_to_intake = false;
-            }
-          } else {
-            // No discs!  We are always ready for more if we aren't being
-            // asked to change state.
-            status->ready_to_intake = (safe_goal_ == goal_enum);
-          }
-
-          // Turn on the transfer roller if we are ready.
-          if (status->ready_to_intake && hopper_disc_count_ < 4 &&
-              safe_goal_ == Goal::INTAKE) {
-            intake_voltage = transfer_voltage = 12.0;
           }
         }
-        LOG(DEBUG, "INTAKE\n");
+        for (auto frisbee = frisbees_.begin();
+             frisbee != frisbees_.end(); ++frisbee) {
+          if (!frisbee->has_been_indexed_) {
+            intake_voltage = transfer_voltage = 12.0;
+
+            // All discs must be indexed before it is safe to stop indexing.
+            safe_to_change_state = false;
+          }
+        }
+
+        // Figure out where the indexer should be to move the discs down to
+        // the right position.
+        double max_disc_position = 0;
+        if (MaxDiscPosition(&max_disc_position, NULL)) {
+          LOG(DEBUG, "There is a disc down here!\n");
+          // TODO(aschuh): Figure out what to do if grabbing the next one
+          // would cause things to jam into the loader.
+          // Say we aren't ready any more.  Undefined behavior will result if
+          // that isn't observed.
+          double bottom_disc_position =
+              max_disc_position + ConvertDiscAngleToIndex(M_PI);
+          wrist_loop_->R << bottom_disc_position, 0.0;
+
+          // Verify that we are close enough to the goal so that we should be
+          // fine accepting the next disc.
+          double disc_error_meters = ConvertIndexToDiscPosition(
+              wrist_loop_->X_hat(0, 0) - bottom_disc_position);
+          // We are ready for the next disc if the first one is in the first
+          // half circle of the indexer.  It will take time for the disc to
+          // come into the indexer, so we will be able to move it out of the
+          // way in time.
+          // This choice also makes sure that we don't claim that we aren't
+          // ready between full speed intaking.
+          if (-ConvertDiscAngleToIndex(M_PI) < disc_error_meters &&
+              disc_error_meters < 0.04) {
+            // We are only ready if we aren't being asked to change state or
+            // are full.
+            status->ready_to_intake =
+                (safe_goal_ == goal_enum) && hopper_disc_count_ < 4;
+          } else {
+            status->ready_to_intake = false;
+          }
+        } else {
+          // No discs!  We are always ready for more if we aren't being
+          // asked to change state.
+          status->ready_to_intake = (safe_goal_ == goal_enum);
+        }
+
+        // Turn on the transfer roller if we are ready.
+        if (status->ready_to_intake && hopper_disc_count_ < 4 &&
+            safe_goal_ == Goal::INTAKE) {
+          intake_voltage = transfer_voltage = 12.0;
+        }
       }
+      LOG(DEBUG, "INTAKE\n");
       break;
     case Goal::READY_SHOOTER:
     case Goal::SHOOT:
@@ -649,7 +654,7 @@ void IndexMotor::RunIteration(
         const double grabbed_disc_position =
             min_disc_position +
             ConvertDiscPositionToIndex(kReadyToLiftPosition -
-                                       kIndexStartPosition + 0.10);
+                                       kIndexStartPosition + 0.07);
 
         // Check the state of the loader FSM.
         // If it is ready to load discs, position the disc so that it is ready
