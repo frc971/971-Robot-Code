@@ -5,3 +5,4 @@ message Piston {
 };
 
 queue Piston shifters;
+queue Piston hangers;

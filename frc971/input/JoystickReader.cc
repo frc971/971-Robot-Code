@@ -23,6 +23,7 @@ using ::frc971::control_loops::wrist;
 using ::frc971::control_loops::index_loop;
 using ::frc971::control_loops::shooter;
 using ::frc971::control_loops::angle_adjust;
+using ::frc971::control_loops::hangers;
 
 namespace frc971 {
 
@@ -167,6 +168,14 @@ class JoystickReader : public aos::JoystickInput {
       index_goal.Send();
       shooter_goal.Send();
     }
+
+    static int hanger_cycles = 0;
+    if (Pressed(2, 13)) {
+      ++hanger_cycles;
+    } else {
+      hanger_cycles = 0;
+    }
+    hangers.MakeWithBuilder().set(hanger_cycles >= 10).Send();
   }
 };
 

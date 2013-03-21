@@ -21,6 +21,7 @@ using ::frc971::control_loops::wrist;
 using ::frc971::control_loops::shooter;
 using ::frc971::control_loops::index_loop;
 using ::frc971::control_loops::angle_adjust;
+using ::frc971::control_loops::hangers;
 
 namespace frc971 {
 namespace output {
@@ -90,6 +91,12 @@ class MotorWriter : public aos::MotorOutput {
       AddMotor(TALON, 9, 0);
       AddMotor(TALON, 7, 0);
       LOG(WARNING, "index not new enough\n");
+    }
+
+    hangers.FetchLatest();
+    if (hangers.IsNewerThanMS(kOutputMaxAgeMS)) {
+      AddSolenoid(4, hangers->set);
+      AddSolenoid(5, hangers->set);
     }
   }
 };
