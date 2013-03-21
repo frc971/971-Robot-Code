@@ -170,7 +170,7 @@ class JoystickReader : public aos::JoystickInput {
     }
 
     static int hanger_cycles = 0;
-    if (Pressed(2, 13)) {
+    if (Pressed(2, 1)) {
       ++hanger_cycles;
     } else {
       hanger_cycles = 0;

@@ -44,6 +44,7 @@ struct SensorData {
   // All of the other 4-byte chunks in the message bitwise-exclusive-ORed
   // together. Needed because it seems like nobody else checks... (vxworks not
   // sending the UDP checksum or (not very likely) linux not checking it).
+  // TODO(brians): static_assert that this is at the front
   uint32_t checksum;
 
   Values values;

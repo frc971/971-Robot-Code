@@ -57,19 +57,19 @@ void SensorReceiver<Values>::RunIteration() {
 
 template<class Values>
 bool SensorReceiver<Values>::GoodPacket() {
-  if (!data_.CheckChecksum()) {
-    LOG(WARNING, "got a bad packet\n");
-    return false;
-  }
-
   bool good;
   // If it's a multiple of kSensorSendFrequency from start_count_.
   if (((data_.count - start_count_) % kSendsPerCycle) == 0) {
     if (((data_.count - start_count_) / kSendsPerCycle) >=
         ((NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec())) {
       good = true;
+#if 0
+      if (((data_.count - start_count_) / kSendsPerCycle % 20) == 0) {
+        LOG(DEBUG, "dropping one for fun\n");
+        good = false;
+      }
+#endif
     } else {
-      // when it broke, it got #1 but wanted #0 (etc)
       LOG(INFO, "packet %"PRId32" late. is packet #%d, wanted #%"PRId64" now\n",
           data_.count, (data_.count - start_count_) / kSendsPerCycle,
           (NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec());
@@ -195,6 +195,13 @@ template<class Values>
 bool SensorReceiver<Values>::ReceiveData() {
   int old_count = data_.count;
   DoReceiveData();
+
+  data_.checksum = ntoh(data_.checksum);
+  if (!data_.CheckChecksum()) {
+    LOG(WARNING, "got a bad packet\n");
+    return ReceiveData();
+  }
+
   data_.NetworkToHost();
   if (data_.count < 0) {
     LOG(FATAL, "data count overflowed. currently %"PRId32"\n", data_.count);
