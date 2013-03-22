@@ -124,13 +124,19 @@ class JoystickReader : public aos::JoystickInput {
         angle_adjust_goal = 0.70;
       } else if (Pressed(2, 3)) {
         // medium shot
+#if 0
         shooter_goal->velocity = 375;
         wrist_up_position = 0.70;
         angle_adjust_goal = 0.564;
+#endif
+        // middle wheel on the back line (same as auto)
+        shooter_goal->velocity = 410;
+        wrist_up_position = 1.23 - 0.4;
+        angle_adjust_goal = 0.5101;
       } else if (Pressed(2, 6)) {
         // short shot
         shooter_goal->velocity = 375;
-        angle_adjust_goal = 0.685;
+        angle_adjust_goal = 0.7267;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 
