@@ -6,7 +6,6 @@
 
 #include "aos/aos_core.h"
 
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/inttypes.h"
@@ -542,7 +541,8 @@ void IndexMotor::RunIteration(
           }
 
           if (position->bottom_disc_detect) {
-            intake_voltage = transfer_voltage = 12.0;
+            intake_voltage = 0.0;
+            transfer_voltage = 12.0;
             // Must wait until the disc gets out before we can change state.
             safe_to_change_state = false;
 
@@ -585,7 +585,8 @@ void IndexMotor::RunIteration(
         for (auto frisbee = frisbees_.begin();
              frisbee != frisbees_.end(); ++frisbee) {
           if (!frisbee->has_been_indexed_) {
-            intake_voltage = transfer_voltage = 12.0;
+            intake_voltage = 0.0;
+            transfer_voltage = 12.0;
 
             // All discs must be indexed before it is safe to stop indexing.
             safe_to_change_state = false;

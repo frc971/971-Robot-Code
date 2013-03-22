@@ -187,8 +187,8 @@ void SetDriveGoal(double yoffset) {
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
 
-  profile.set_maximum_acceleration(2);
-  profile.set_maximum_velocity(0.8);
+  profile.set_maximum_acceleration(1);
+  profile.set_maximum_velocity(0.6);
  
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
@@ -229,7 +229,7 @@ void HandleAuto() {
   double WRIST_UP;
   
   ::aos::robot_state.FetchLatest();
-  if (::aos::robot_state.get() &&
+  if (!::aos::robot_state.get() ||
       !constants::wrist_hall_effect_start_angle(&WRIST_UP)) {
     LOG(ERROR, "Constants not ready\n");
     return;
@@ -237,7 +237,7 @@ void HandleAuto() {
   WRIST_UP -= 0.4;
   LOG(INFO, "Got constants\n");
   const double WRIST_DOWN = -0.633;
-  const double ANGLE_ONE = 0.50;
+  const double ANGLE_ONE = 0.5101;
   const double ANGLE_TWO = 0.685;
 
   StopDrivetrain();
@@ -245,8 +245,11 @@ void HandleAuto() {
 
   SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
-  SetShooterVelocity(405.0);
+  SetShooterVelocity(410.0);
   WaitForIndexReset();
+
+  // Wait to get some more air pressure in the thing.
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(5.0));
   
   PreloadIndex();			// spin to top and put 1 disc into loader
 
@@ -260,6 +263,8 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
   ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
 
+  return;
+
   SetWristGoal(WRIST_DOWN);
   SetAngle_AdjustGoal(ANGLE_TWO);
   SetShooterVelocity(375.0);
@@ -272,8 +277,10 @@ void HandleAuto() {
   if (ShouldExitAuto()) return; 
   WaitForIndex();			// ready to pick up discs
  
-  SetDriveGoal(0.75);
-  SetDriveGoal(2.75);
+  SetDriveGoal(3.5);
+  //SetDriveGoal(0.6);
+  //::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+  //SetDriveGoal(2.9);
   if (ShouldExitAuto()) return;
 
   PreloadIndex();

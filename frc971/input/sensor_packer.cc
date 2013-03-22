@@ -36,6 +36,7 @@ SensorPacker::SensorPacker()
               unique_ptr< ::AnalogTrigger>(
                   new ::AnalogTrigger(1)),
               ::AnalogTriggerOutput::Type::kState)),
+      wrist_edge_position_(0),
       wrist_notifier_(ReadEncoder, wrist_hall_effect_->source(),
                       new EncoderReadData(wrist_counter_.get(),
                       &wrist_edge_position_, &wrist_sync_)),

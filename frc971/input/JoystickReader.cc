@@ -120,9 +120,8 @@ class JoystickReader : public aos::JoystickInput {
       static double angle_adjust_goal = 0.42;
       if (Pressed(2, 5)) {
         // long shot
-        shooter_goal->velocity = 375;
+        shooter_goal->velocity = 131;
         angle_adjust_goal = 0.70;
-        angle_adjust_goal = 0.564;
       } else if (Pressed(2, 3)) {
         // medium shot
         shooter_goal->velocity = 375;
