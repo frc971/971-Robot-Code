@@ -20,6 +20,10 @@ namespace autonomous {
 
 static double left_initial_position, right_initial_position;
 
+// Multiply meters by this to get a drivetrain goal distance.
+static const double kDrivetrainCorrectionFactor =
+    ((32.0 / 44.0) / (64.0 /24.0 * 19.0 / 50.0));
+
 bool ShouldExitAuto() {
   ::frc971::autonomous::autonomous.FetchLatest();
   bool ans = !::frc971::autonomous::autonomous->run_auto;
@@ -218,6 +222,68 @@ void SetDriveGoal(double yoffset) {
   LOG(INFO, "Done moving\n");
 }
 
+// Drives forward while we can pick up discs up to max_distance (in meters).
+void DriveForwardPickUp(double max_distance) {
+  LOG(INFO, "going to pick up at a max distance of %f\n", max_distance);
+  max_distance *= kDrivetrainCorrectionFactor;
+
+  static const ::aos::time::Time kPeriod = ::aos::time::Time::InMS(10);
+  ::aos::util::TrapezoidProfile profile(kPeriod);
+  ::Eigen::Matrix<double, 2, 1> driveTrainState;
+  const double goal_velocity = 0.0;
+  const double epsilon = 0.01;
+  static const double kMaximumAcceleration = 1.0;
+
+  profile.set_maximum_acceleration(kMaximumAcceleration);
+  profile.set_maximum_velocity(0.6);
+
+  // Starts at our maximum distance and then gets changed back to the start once
+  // we're done getting discs or get to the initial goal.
+  double distance_goal = max_distance;
+  bool driving_back = false;
+
+  while (true) {
+    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    driveTrainState = profile.Update(distance_goal, goal_velocity);
+
+    if (ShouldExitAuto()) return;
+
+    // If we're where we want to be.
+    if (::std::abs(driveTrainState(0, 0) - distance_goal) < epsilon) {
+      if (driving_back) {
+        break;
+      } else {
+        LOG(INFO, "went the max distance; driving back\n");
+        driving_back = true;
+        distance_goal = 0;
+      }
+    }
+
+    if (control_loops::index_loop.status.FetchLatest()) {
+      if (control_loops::index_loop.status->hopper_disc_count >= 4) {
+        LOG(INFO, "done intaking; driving back\n");
+        driving_back = true;
+        distance_goal = 0;
+      }
+    } else {
+      LOG(WARNING, "getting index status failed\n");
+    }
+
+    LOG(DEBUG, "Driving left to %f, right to %f\n",
+        driveTrainState(0, 0) + left_initial_position,
+        driveTrainState(0, 0) + right_initial_position);
+    control_loops::drivetrain.goal.MakeWithBuilder()
+        .control_loop_driving(true)
+        .highgear(false)
+        .left_goal(driveTrainState(0, 0) + left_initial_position)
+        .right_goal(driveTrainState(0, 0) + right_initial_position)
+        .left_velocity_goal(driveTrainState(1, 0))
+        .right_velocity_goal(driveTrainState(1, 0))
+        .Send();
+  }
+  LOG(INFO, "Done moving\n");
+}
+
 void DriveSpin(double radians) {
   LOG(INFO, "going to spin %f\n", radians);
 
@@ -225,7 +291,7 @@ void DriveSpin(double radians) {
   ::Eigen::Matrix<double, 2, 1> driveTrainState;
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
-  // in meters
+  // in drivetrain "meters"
   const double kRobotWidth = 0.4544;
 
   profile.set_maximum_acceleration(1);
