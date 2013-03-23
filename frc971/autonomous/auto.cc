@@ -237,34 +237,27 @@ void DriveForwardPickUp(double max_distance) {
   profile.set_maximum_acceleration(kMaximumAcceleration);
   profile.set_maximum_velocity(0.6);
 
-  // Starts at our maximum distance and then gets changed back to the start once
-  // we're done getting discs or get to the initial goal.
-  double distance_goal = max_distance;
   bool driving_back = false;
   const double kDestination = -0.20 * kDrivetrainCorrectionFactor;
 
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
-    driveTrainState = profile.Update(distance_goal, goal_velocity);
+    driveTrainState = profile.Update(driving_back ? kDestination : max_distance,
+                                     goal_velocity);
 
     if (ShouldExitAuto()) return;
 
-    // If we're where we want to be.
-    if (::std::abs(driveTrainState(0, 0) - distance_goal) < epsilon) {
-      if (driving_back) {
-        break;
-      } else {
-        LOG(INFO, "went the max distance; driving back\n");
-        driving_back = true;
-        distance_goal = kDestination;
-      }
+    if (driving_back) {
+      if (::std::abs(driveTrainState(0, 0)) < epsilon) break;
+    } else if (::std::abs(driveTrainState(0, 0) - max_distance) < epsilon) {
+      LOG(INFO, "went the max distance; driving back\n");
+      driving_back = true;
     }
 
     if (control_loops::index_loop.status.FetchLatest()) {
       if (control_loops::index_loop.status->hopper_disc_count >= 4) {
         LOG(INFO, "done intaking; driving back\n");
         driving_back = true;
-        distance_goal = kDestination;
       }
     } else {
       LOG(WARNING, "getting index status failed\n");
