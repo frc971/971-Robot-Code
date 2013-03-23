@@ -188,15 +188,15 @@ void SetDriveGoal(double yoffset) {
   LOG(INFO, "Going to move %f\n", yoffset);
 
   // Measured conversion to get the distance right.
-  yoffset *= 0.73;
+  yoffset *= kDrivetrainCorrectionFactor;
   LOG(INFO, "Going to move an adjusted %f\n", yoffset);
   ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
   ::Eigen::Matrix<double, 2, 1> driveTrainState;
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
 
-  profile.set_maximum_acceleration(1);
-  profile.set_maximum_velocity(0.6);
+  profile.set_maximum_acceleration(2.0);
+  profile.set_maximum_velocity(2.0);
  
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
@@ -241,6 +241,7 @@ void DriveForwardPickUp(double max_distance) {
   // we're done getting discs or get to the initial goal.
   double distance_goal = max_distance;
   bool driving_back = false;
+  const double kDestination = -0.20 * kDrivetrainCorrectionFactor;
 
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
@@ -255,7 +256,7 @@ void DriveForwardPickUp(double max_distance) {
       } else {
         LOG(INFO, "went the max distance; driving back\n");
         driving_back = true;
-        distance_goal = 0;
+        distance_goal = kDestination;
       }
     }
 
@@ -263,7 +264,7 @@ void DriveForwardPickUp(double max_distance) {
       if (control_loops::index_loop.status->hopper_disc_count >= 4) {
         LOG(INFO, "done intaking; driving back\n");
         driving_back = true;
-        distance_goal = 0;
+        distance_goal = kDestination;
       }
     } else {
       LOG(WARNING, "getting index status failed\n");
@@ -281,6 +282,8 @@ void DriveForwardPickUp(double max_distance) {
         .right_velocity_goal(driveTrainState(1, 0))
         .Send();
   }
+  left_initial_position += kDestination;
+  right_initial_position += kDestination;
   LOG(INFO, "Done moving\n");
 }
 
@@ -357,10 +360,6 @@ void HandleAuto() {
   SetAngle_AdjustGoal(ANGLE_ONE);
   SetShooterVelocity(410.0);
   WaitForIndexReset();
-
-  // Wait to get some more air pressure in the thing.
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(5.0));
-  
   PreloadIndex();			// spin to top and put 1 disc into loader
 
   if (ShouldExitAuto()) return;
@@ -371,35 +370,36 @@ void HandleAuto() {
 					// calls WaitForShooter
   ShootNDiscs(3);			// ShootNDiscs returns if ShouldExitAuto
   if (ShouldExitAuto()) return;
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
 
-  return;
-
-  SetWristGoal(WRIST_DOWN);
-  SetAngle_AdjustGoal(ANGLE_TWO);
-  SetShooterVelocity(375.0);
   StartIndex();				// take in up to 4 discs
 
-  if (ShouldExitAuto()) return;
-  WaitForWrist();			// wrist must be down before moving
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+  const double kDistanceToCenterMeters = 3.11023;
+  const double kMaxPickupDistance = 2.5;
+  const double kTurnToCenterDegrees = 73.2;
 
-  if (ShouldExitAuto()) return; 
-  WaitForIndex();			// ready to pick up discs
- 
-  SetDriveGoal(3.5);
-  //SetDriveGoal(0.6);
-  //::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
-  //SetDriveGoal(2.9);
+  // Drive back to the center line.
+  SetDriveGoal(-kDistanceToCenterMeters);
   if (ShouldExitAuto()) return;
 
-  PreloadIndex();
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.4));
-  SetDriveGoal(-1.3);
-
+  SetWristGoal(WRIST_DOWN);
+  // Turn towards the center.
+  SetTurnGoal(kTurnToCenterDegrees * M_PI / 180.0);
   if (ShouldExitAuto()) return;
-  WaitForAngle_Adjust();
-  ShootIndex();	
+  WaitForWrist();
+  if (ShouldExitAuto()) return;
+
+  // Pick up at most 4 discs and drive at most kMaxPickupDistance.
+  DriveForwardPickUp(kMaxPickupDistance);
+
+  SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
+  SetTurnGoal(-kTurnToCenterDegrees * M_PI / 180.0);
+  if (ShouldExitAuto()) return;
+  // Drive back to where we were.
+  SetDriveGoal(kDistanceToCenterMeters);
+  if (ShouldExitAuto()) return;
+
+  ShootNDiscs(4);
+  if (ShouldExitAuto()) return;
 }
 
 }  // namespace autonomous
