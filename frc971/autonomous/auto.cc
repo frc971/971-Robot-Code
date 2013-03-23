@@ -104,7 +104,6 @@ void WaitForWrist() {
   }
   LOG(INFO, "Done waiting for the wrist\n");
 }
-					// Index_loop has no FetchNextBlocking
 void WaitForIndex() {
   LOG(INFO, "Waiting for the indexer to be ready to intake\n");
   control_loops::index_loop.status.FetchLatest();
@@ -199,7 +198,7 @@ void SetDriveGoal(double yoffset) {
   profile.set_maximum_velocity(2.0);
  
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
     driveTrainState = profile.Update(yoffset, goal_velocity);
 
     if (::std::abs(driveTrainState(0, 0) - yoffset) < epsilon) break;
@@ -241,7 +240,7 @@ void DriveForwardPickUp(double max_distance) {
   const double kDestination = -0.20 * kDrivetrainCorrectionFactor;
 
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
     driveTrainState = profile.Update(driving_back ? kDestination : max_distance,
                                      goal_velocity);
 
@@ -296,7 +295,7 @@ void DriveSpin(double radians) {
   const double side_offset = kRobotWidth * radians / 2.0;
 
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
     driveTrainState = profile.Update(side_offset, goal_velocity);
 
     if (::std::abs(driveTrainState(0, 0) - side_offset) < epsilon) break;
@@ -334,7 +333,7 @@ void HandleAuto() {
   LOG(INFO, "Got constants\n");
   const double WRIST_DOWN = -0.633;
   const double ANGLE_ONE = 0.5101;
-  const double ANGLE_TWO = 0.685;
+  //const double ANGLE_TWO = 0.685;
 
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
@@ -349,22 +348,23 @@ void HandleAuto() {
   ResetIndex();
   StopDrivetrain();
 
-  SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
+  SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
   SetShooterVelocity(410.0);
   WaitForIndexReset();
-  PreloadIndex();			// spin to top and put 1 disc into loader
+  if (ShouldExitAuto()) return;
+  PreloadIndex();      // spin to top and put 1 disc into loader
 
   if (ShouldExitAuto()) return;
   WaitForWrist();
   if (ShouldExitAuto()) return;
   WaitForAngle_Adjust();
-  ShootIndex();				// tilt up, shoot, repeat until empty
-					// calls WaitForShooter
-  ShootNDiscs(3);			// ShootNDiscs returns if ShouldExitAuto
+  ShootIndex();        // tilt up, shoot, repeat until empty
+          // calls WaitForShooter
+  ShootNDiscs(3);      // ShootNDiscs returns if ShouldExitAuto
   if (ShouldExitAuto()) return;
 
-  StartIndex();				// take in up to 4 discs
+  StartIndex();        // take in up to 4 discs
 
   const double kDistanceToCenterMeters = 3.11023;
   const double kMaxPickupDistance = 2.5;
@@ -376,7 +376,7 @@ void HandleAuto() {
 
   SetWristGoal(WRIST_DOWN);
   // Turn towards the center.
-  SetTurnGoal(kTurnToCenterDegrees * M_PI / 180.0);
+  DriveSpin(kTurnToCenterDegrees * M_PI / 180.0);
   if (ShouldExitAuto()) return;
   WaitForWrist();
   if (ShouldExitAuto()) return;
@@ -384,8 +384,8 @@ void HandleAuto() {
   // Pick up at most 4 discs and drive at most kMaxPickupDistance.
   DriveForwardPickUp(kMaxPickupDistance);
 
-  SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
-  SetTurnGoal(-kTurnToCenterDegrees * M_PI / 180.0);
+  SetWristGoal(WRIST_UP);
+  DriveSpin(-kTurnToCenterDegrees * M_PI / 180.0);
   if (ShouldExitAuto()) return;
   // Drive back to where we were.
   SetDriveGoal(kDistanceToCenterMeters);
