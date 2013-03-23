@@ -18,6 +18,8 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace autonomous {
 
+static double left_initial_position, right_initial_position;
+
 bool ShouldExitAuto() {
   ::frc971::autonomous::autonomous.FetchLatest();
   bool ans = !::frc971::autonomous::autonomous->run_auto;
@@ -168,10 +170,12 @@ void ShootNDiscs(int n) {
 void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
   control_loops::drivetrain.goal.MakeWithBuilder()
-      .control_loop_driving(false)
+      .control_loop_driving(true)
       .highgear(false)
       .steering(0.0)
       .throttle(0.0)
+      .left_goal(left_initial_position)
+      .right_goal(right_initial_position)
       .quickturn(false)
       .Send();
 }
@@ -190,22 +194,11 @@ void SetDriveGoal(double yoffset) {
   profile.set_maximum_acceleration(1);
   profile.set_maximum_velocity(0.6);
  
-  control_loops::drivetrain.position.FetchLatest();
-  while (!control_loops::drivetrain.position.get()) {
-    LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
-    control_loops::drivetrain.position.FetchNextBlocking();
-  }
-
-  const double left_initial_position =
-    control_loops::drivetrain.position->left_encoder;
-  const double right_initial_position =
-    control_loops::drivetrain.position->right_encoder;
-
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
     driveTrainState = profile.Update(yoffset, goal_velocity);
 
-    if (::std::abs(driveTrainState(0, 0) - yoffset) < epsilon) return;
+    if (::std::abs(driveTrainState(0, 0) - yoffset) < epsilon) break;
     if (ShouldExitAuto()) return;
 
     LOG(DEBUG, "Driving left to %f, right to %f\n",
@@ -220,10 +213,51 @@ void SetDriveGoal(double yoffset) {
         .right_velocity_goal(driveTrainState(1, 0))
         .Send();
   }
+  left_initial_position += yoffset;
+  right_initial_position += yoffset;
   LOG(INFO, "Done moving\n");
 }
 
-					// start with N discs in the indexer
+void DriveSpin(double radians) {
+  LOG(INFO, "going to spin %f\n", radians);
+
+  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
+  ::Eigen::Matrix<double, 2, 1> driveTrainState;
+  const double goal_velocity = 0.0;
+  const double epsilon = 0.01;
+  // in meters
+  const double kRobotWidth = 0.4544;
+
+  profile.set_maximum_acceleration(1);
+  profile.set_maximum_velocity(0.6);
+
+  const double side_offset = kRobotWidth * radians / 2.0;
+
+  while (true) {
+    ::aos::time::PhasedLoop10MS(5000);			// wait until next 10ms tick
+    driveTrainState = profile.Update(side_offset, goal_velocity);
+
+    if (::std::abs(driveTrainState(0, 0) - side_offset) < epsilon) break;
+    if (ShouldExitAuto()) return;
+
+    LOG(DEBUG, "Driving left to %f, right to %f\n",
+        left_initial_position + driveTrainState(0, 0),
+        right_initial_position - driveTrainState(0, 0));
+    control_loops::drivetrain.goal.MakeWithBuilder()
+        .control_loop_driving(true)
+        .highgear(false)
+        .left_goal(left_initial_position + driveTrainState(0, 0))
+        .right_goal(right_initial_position - driveTrainState(0, 0))
+        .left_velocity_goal(driveTrainState(1, 0))
+        .right_velocity_goal(-driveTrainState(1, 0))
+        .Send();
+  }
+  left_initial_position += side_offset;
+  right_initial_position -= side_offset;
+  LOG(INFO, "Done moving\n");
+}
+
+// start with N discs in the indexer
 void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
   double WRIST_UP;
@@ -240,8 +274,18 @@ void HandleAuto() {
   const double ANGLE_ONE = 0.5101;
   const double ANGLE_TWO = 0.685;
 
-  StopDrivetrain();
+  control_loops::drivetrain.position.FetchLatest();
+  while (!control_loops::drivetrain.position.get()) {
+    LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
+    control_loops::drivetrain.position.FetchNextBlocking();
+  }
+  left_initial_position =
+    control_loops::drivetrain.position->left_encoder;
+  right_initial_position =
+    control_loops::drivetrain.position->right_encoder;
+
   ResetIndex();
+  StopDrivetrain();
 
   SetWristGoal(WRIST_UP);		// wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
