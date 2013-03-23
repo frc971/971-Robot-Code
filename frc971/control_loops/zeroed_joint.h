@@ -133,6 +133,7 @@ class ZeroedJoint {
 
   ZeroedJoint(StateFeedbackLoop<3, 1, 1> loop)
       : loop_(new ZeroedStateFeedbackLoop<kNumZeroSensors>(loop, this)),
+        last_good_time_(0, 0),
         state_(UNINITIALIZED),
         error_count_(0),
         zero_offset_(0.0),
@@ -188,10 +189,14 @@ class ZeroedJoint {
   friend class testing::WristTest_NoWindupPositive_Test;
   friend class testing::WristTest_NoWindupNegative_Test;
 
+  static const ::aos::time::Time kRezeroTime;
+
   // The state feedback control loop to talk to.
   ::std::unique_ptr<ZeroedStateFeedbackLoop<kNumZeroSensors>> loop_;
 
   ConfigurationData config_data_;
+
+  ::aos::time::Time last_good_time_;
 
   // Returns the index of the first active sensor, or -1 if none are active.
   int ActiveSensorIndex(
@@ -255,6 +260,10 @@ class ZeroedJoint {
 };
 
 template <int kNumZeroSensors>
+const ::aos::time::Time ZeroedJoint<kNumZeroSensors>::kRezeroTime =
+    ::aos::time::Time::InSeconds(10);
+
+template <int kNumZeroSensors>
 /*static*/ const double ZeroedJoint<kNumZeroSensors>::dt = 0.01;
 
 // Updates the zeroed joint controller and state machine.
@@ -273,9 +282,13 @@ double ZeroedJoint<kNumZeroSensors>::Update(
   if (error_count_ >= 4) {
     output_enabled = false;
     LOG(WARNING, "err_count is %d so disabling\n", error_count_);
-  } else if (error_count_ >= 200) {
-    LOG(WARNING, "err_count is %d so forcing a re-zero\n", error_count_);
+  } else if ((::aos::time::Time::Now() - last_good_time_) > kRezeroTime) {
+    LOG(WARNING, "err_count is %d so forcing a re-zero (or 1st time)\n",
+        error_count_);
     state_ = UNINITIALIZED;
+  }
+  if (position) {
+    last_good_time_ = ::aos::time::Time::Now();
   }
 
   // Compute the absolute position of the wrist.
