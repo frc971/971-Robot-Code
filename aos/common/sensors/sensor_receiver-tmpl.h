@@ -29,6 +29,7 @@ void SensorReceiver<Values>::RunIteration() {
       LOG(DEBUG, "receive said to try a reset\n");
       Unsynchronize();
     } else {
+      // TODO(brians): resync on crio reboots (and update the times...)
       if (GoodPacket()) {
         unpacker_->UnpackFrom(&data_.values);
         last_good_time_ = time::Time::Now();
@@ -210,6 +211,10 @@ bool SensorReceiver<Values>::ReceiveData() {
     LOG(INFO, "count reset. was %"PRId32", now %"PRId32"\n",
         old_count, data_.count);
     return true;
+  }
+  if (data_.count < start_count_) {
+    LOG(INFO, "count reset. started at %"PRId32", now %"PRId32"\n",
+        start_count_, data_.count);
   }
   LOG(DEBUG, "received data count %"PRId32"\n", data_.count);
   return false;

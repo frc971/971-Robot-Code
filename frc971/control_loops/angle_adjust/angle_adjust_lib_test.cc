@@ -224,23 +224,23 @@ TEST_F(AngleAdjustTest, HandleMissingPosition) {
   VerifyNearGoal();
 }
 
-// Tests that loosing the encoder for a second triggers a re-zero.
+// Tests that losing the encoder for 11 seconds triggers a re-zero.
 TEST_F(AngleAdjustTest, RezeroWithMissingPos) {
   my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.4).Send();
-  for (int i = 0; i < 800; ++i) {
+  for (int i = 0; i < 1800; ++i) {
     // After 3 seconds, simulate the encoder going missing.
     // This should trigger a re-zero.  To make sure it works, change the goal as
     // well.
-    if (i < 300 || i > 400) {
+    if (i < 300 || i > 1400) {
       angle_adjust_motor_plant_.SendPositionMessage();
     } else {
-      if (i > 310) {
+      if (i > 1310) {
         // Should be re-zeroing now.
         EXPECT_TRUE(angle_adjust_motor_.is_uninitialized());
       }
       my_angle_adjust_loop_.goal.MakeWithBuilder().goal(0.5).Send();
     }
-    if (i == 430) {
+    if (i == 1430) {
       EXPECT_TRUE(angle_adjust_motor_.is_zeroing() ||
                   angle_adjust_motor_.is_moving_off());
     }

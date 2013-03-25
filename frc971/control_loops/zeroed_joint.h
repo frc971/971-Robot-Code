@@ -276,19 +276,21 @@ double ZeroedJoint<kNumZeroSensors>::Update(
   if (position == NULL) {
     LOG(WARNING, "no new pos given\n");
     error_count_++;
-  } else {
-    error_count_ = 0;
   }
   if (error_count_ >= 4) {
     output_enabled = false;
     LOG(WARNING, "err_count is %d so disabling\n", error_count_);
-  } else if ((::aos::time::Time::Now() - last_good_time_) > kRezeroTime) {
-    LOG(WARNING, "err_count is %d so forcing a re-zero (or 1st time)\n",
-        error_count_);
-    state_ = UNINITIALIZED;
+
+    if ((::aos::time::Time::Now() - last_good_time_) > kRezeroTime) {
+      LOG(WARNING, "err_count is %d (or 1st time) so forcing a re-zero\n",
+          error_count_);
+      state_ = UNINITIALIZED;
+      loop_->Reset();
+    }
   }
-  if (position) {
+  if (position != NULL) {
     last_good_time_ = ::aos::time::Time::Now();
+    error_count_ = 0;
   }
 
   // Compute the absolute position of the wrist.

@@ -195,7 +195,7 @@ void SetDriveGoal(double yoffset) {
   const double epsilon = 0.01;
 
   profile.set_maximum_acceleration(2.0);
-  profile.set_maximum_velocity(2.0);
+  profile.set_maximum_velocity(2.5);
  
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
@@ -222,7 +222,7 @@ void SetDriveGoal(double yoffset) {
 }
 
 // Drives forward while we can pick up discs up to max_distance (in meters).
-void DriveForwardPickUp(double max_distance) {
+void DriveForwardPickUp(double max_distance, double wrist_angle) {
   LOG(INFO, "going to pick up at a max distance of %f\n", max_distance);
   max_distance *= kDrivetrainCorrectionFactor;
 
@@ -251,12 +251,16 @@ void DriveForwardPickUp(double max_distance) {
     } else if (::std::abs(driveTrainState(0, 0) - max_distance) < epsilon) {
       LOG(INFO, "went the max distance; driving back\n");
       driving_back = true;
+      profile.set_maximum_velocity(2.5);
+      SetWristGoal(wrist_angle);
     }
 
     if (control_loops::index_loop.status.FetchLatest()) {
       if (control_loops::index_loop.status->hopper_disc_count >= 4) {
         LOG(INFO, "done intaking; driving back\n");
         driving_back = true;
+        profile.set_maximum_velocity(2.5);
+        SetWristGoal(wrist_angle);
       }
     } else {
       LOG(WARNING, "getting index status failed\n");
@@ -289,8 +293,8 @@ void DriveSpin(double radians) {
   // in drivetrain "meters"
   const double kRobotWidth = 0.4544;
 
-  profile.set_maximum_acceleration(1);
-  profile.set_maximum_velocity(0.6);
+  profile.set_maximum_acceleration(1.5);
+  profile.set_maximum_velocity(0.8);
 
   const double side_offset = kRobotWidth * radians / 2.0;
 
@@ -302,19 +306,19 @@ void DriveSpin(double radians) {
     if (ShouldExitAuto()) return;
 
     LOG(DEBUG, "Driving left to %f, right to %f\n",
-        left_initial_position + driveTrainState(0, 0),
-        right_initial_position - driveTrainState(0, 0));
+        left_initial_position - driveTrainState(0, 0),
+        right_initial_position + driveTrainState(0, 0));
     control_loops::drivetrain.goal.MakeWithBuilder()
         .control_loop_driving(true)
         .highgear(false)
-        .left_goal(left_initial_position + driveTrainState(0, 0))
-        .right_goal(right_initial_position - driveTrainState(0, 0))
-        .left_velocity_goal(driveTrainState(1, 0))
-        .right_velocity_goal(-driveTrainState(1, 0))
+        .left_goal(left_initial_position - driveTrainState(0, 0))
+        .right_goal(right_initial_position + driveTrainState(0, 0))
+        .left_velocity_goal(-driveTrainState(1, 0))
+        .right_velocity_goal(driveTrainState(1, 0))
         .Send();
   }
-  left_initial_position += side_offset;
-  right_initial_position -= side_offset;
+  left_initial_position -= side_offset;
+  right_initial_position += side_offset;
   LOG(INFO, "Done moving\n");
 }
 
@@ -333,7 +337,7 @@ void HandleAuto() {
   LOG(INFO, "Got constants\n");
   const double WRIST_DOWN = -0.633;
   const double ANGLE_ONE = 0.5101;
-  //const double ANGLE_TWO = 0.685;
+  //const double ANGLE_ONE = 0.70;
 
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
@@ -351,6 +355,7 @@ void HandleAuto() {
   SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
   SetShooterVelocity(410.0);
+  //SetShooterVelocity(131);
   WaitForIndexReset();
   if (ShouldExitAuto()) return;
   PreloadIndex();      // spin to top and put 1 disc into loader
@@ -368,7 +373,7 @@ void HandleAuto() {
 
   const double kDistanceToCenterMeters = 3.11023;
   const double kMaxPickupDistance = 2.5;
-  const double kTurnToCenterDegrees = 73.2;
+  const double kTurnToCenterDegrees = 78.2;
 
   // Drive back to the center line.
   SetDriveGoal(-kDistanceToCenterMeters);
@@ -382,7 +387,7 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
 
   // Pick up at most 4 discs and drive at most kMaxPickupDistance.
-  DriveForwardPickUp(kMaxPickupDistance);
+  DriveForwardPickUp(kMaxPickupDistance, WRIST_UP);
 
   SetWristGoal(WRIST_UP);
   DriveSpin(-kTurnToCenterDegrees * M_PI / 180.0);
@@ -390,6 +395,8 @@ void HandleAuto() {
   // Drive back to where we were.
   SetDriveGoal(kDistanceToCenterMeters);
   if (ShouldExitAuto()) return;
+
+  return;
 
   ShootNDiscs(4);
   if (ShouldExitAuto()) return;
