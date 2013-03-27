@@ -6,15 +6,16 @@ CSRC=main.c
 
 GCC_PATH=/usr/local/cortex-m3/bin
 
-PORT=/dev/ttyUSB0
+PORT=/dev/ttyS1
 
 CC=$(GCC_PATH)/arm-eabi-gcc
 LD=$(GCC_PATH)/arm-eabi-ld
 OBJCOPY=$(GCC_PATH)/arm-eabi-objcopy
+OBJDUMP=$(GCC_PATH)/arm-eabi-objdump
 AS=$(GCC_PATH)/arm-eabi-as
 FLASHER=lpc21isp
 
-CFLAGS=-I. -I./FreeRTOS/include -I./FreeRTOS/portable/GCC/ARM_CM3/ -I./CommonDemoTasks/include -Os -mcpu=cortex-m3 -mthumb -Wl,--gc-sections -ffunction-sections -Wl,-static -Werror
+CFLAGS=-I. -I./FreeRTOS/include -I./FreeRTOS/portable/GCC/ARM_CM3/ -I./CommonDemoTasks/include -O3 -mcpu=cortex-m3 -mthumb -Wl,--gc-sections -ffunction-sections -Wl,-static -Werror
 
 SPEED=38400
 OSC=12000
@@ -55,6 +56,9 @@ deploy: all $(NAME).hex
 
 cat:
 	@cd ../../bin; python serial_looper.py
+
+assm.S: $(NAME).elf
+	$(OBJDUMP) -D -S $(NAME).elf > assm.S
 
 %.hex: %.elf Makefile
 	$(OBJCOPY) -O ihex $< $@

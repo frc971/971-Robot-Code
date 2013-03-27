@@ -55,10 +55,10 @@ static xQueueHandle xRxedChars = NULL, xCharsForTx = NULL;
 
 static const unsigned char abDescriptors[] = {
 
-// device descriptor
+// Device descriptor
 	0x12,
 	DESC_DEVICE,
-	LE_WORD(0x0101),		// bcdUSB
+	LE_WORD(0x0200),		// bcdUSB
 	0xFF,				// bDeviceClass
 	0x00,				// bDeviceSubClass
 	0x00,				// bDeviceProtocol
@@ -67,20 +67,20 @@ static const unsigned char abDescriptors[] = {
 	LE_WORD(0xd243),		// idProduct
 	LE_WORD(0x0153),		// bcdDevice
 	0x03,				// iManufacturer
-	0x36,				// iProduct
-	0x33,				// iSerialNumber
+	0x02,				// iProduct
+	0x01,				// iSerialNumber
 	0x01,				// bNumConfigurations
 
-// configuration descriptor
+// Configuration descriptor
 	0x09,
 	DESC_CONFIGURATION,
-	LE_WORD(67),			// wTotalLength
+	LE_WORD(46),			// wTotalLength
 	0x01,				// bNumInterfaces
 	0x01,				// bConfigurationValue
 	0x00,				// iConfiguration
 	0xC0,				// bmAttributes
 	0x32,				// bMaxPower
-// data class interface descriptor
+// Data class interface descriptor
 	0x09,
 	DESC_INTERFACE,
 	0x00,				// bInterfaceNumber
@@ -90,28 +90,28 @@ static const unsigned char abDescriptors[] = {
 	0x00,				// bInterfaceSubClass
 	0x00,				// bInterfaceProtocol
 	0x00,				// iInterface
-// debug EP OUT
+// Debug EP OUT
 	0x07,
 	DESC_ENDPOINT,
 	BULK_OUT_EP,			// bEndpointAddress
 	0x02,				// bmAttributes = bulk
 	LE_WORD(MAX_PACKET_SIZE),	// wMaxPacketSize
 	0x00,				// bInterval
-// debug EP in
+// Debug EP in
 	0x07,
 	DESC_ENDPOINT,
 	BULK_IN_EP,			// bEndpointAddress
 	0x02,				// bmAttributes = bulk
 	LE_WORD(MAX_PACKET_SIZE),	// wMaxPacketSize
 	0x00,				// bInterval
-// data EP OUT
+// Data EP OUT
 	0x07,
 	DESC_ENDPOINT,
 	INT_OUT_EP,			// bEndpointAddress
 	0x03,				// bmAttributes = intr
 	LE_WORD(MAX_PACKET_SIZE),	// wMaxPacketSize
 	0x01,				// bInterval
-// data EP in
+// Data EP in
 	0x07,
 	DESC_ENDPOINT,
 	INT_IN_EP,			// bEndpointAddress
@@ -126,15 +126,15 @@ static const unsigned char abDescriptors[] = {
 
 	0x0E,
 	DESC_STRING,
-	'L', 0, 'P', 0, 'C', 0, 'U', 0, 'S', 0, 'B', 0,
+	'A', 0, 'S', 0, 'C', 0, 'H', 0, 'U', 0, 'H', 0,
 
 	0x14,
 	DESC_STRING,
-	'U', 0, 'S', 0, 'B', 0, 'S', 0, 'e', 0, 'r', 0, 'i', 0, 'a', 0, 'l', 0,
+	'U', 0, 'S', 0, 'B', 0, 'S', 0, 'e', 0, 'n', 0, 's', 0, 'o', 0, 'r', 0,
 
 	0x12,
 	DESC_STRING,
-	'A', 0, 'B', 0, 'S', 0, 'M', 0, 'o', 0, 't', 0, 'o', 0, 'r', 0,
+	'A', 0, 'O', 0, 'S', 0, '_', 0, 'G', 0, 'y', 0, 'r', 0, 'o', 0,
 
 // terminating zero
 	0
@@ -201,26 +201,29 @@ static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
   portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
 
-extern int64_t gyro_angle;
+
 static unsigned char abDataBuf[64];
 int VCOM_putcharFromISR(int c, long *woken);
 static void DataOut(unsigned char bEP, unsigned char bEPStatus) {
-  int iLen;
-  long lHigherPriorityTaskWoken = pdFALSE;
-  char *a = "hello\n";
-  while(*a){
-    VCOM_putcharFromISR(*a,&lHigherPriorityTaskWoken);
-    a ++;
-  }
-  iLen = USBHwEPRead(bEP, abDataBuf, sizeof(abDataBuf));
-  portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
+  	int iLen;
+  	long lHigherPriorityTaskWoken = pdFALSE;
+  	/*
+  	   char *a = "hello\n";
+  	   while(*a){
+    	   VCOM_putcharFromISR(*a,&lHigherPriorityTaskWoken);
+    	   a ++;
+  	   }
+  	   */
+  	iLen = USBHwEPRead(bEP, abDataBuf, sizeof(abDataBuf));
+  	portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
+#include "analog.h"
+static struct DataStruct usbPacket;
 static void DataIn(unsigned char bEP, unsigned char bEPStatus) {
-  long lHigherPriorityTaskWoken = pdFALSE;
-  unsigned char buff[16];
-  memcpy(buff, &gyro_angle, sizeof(gyro_angle));
-  USBHwEPWrite(bEP, buff, sizeof(gyro_angle));
-  portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
+  	long lHigherPriorityTaskWoken = pdFALSE;
+	fillSensorPacket(&usbPacket);
+  	USBHwEPWrite(bEP, (unsigned char *)&usbPacket, sizeof(usbPacket));
+  	portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
 
 /**
@@ -230,26 +233,26 @@ static void DataIn(unsigned char bEP, unsigned char bEPStatus) {
  * @returns character written, or EOF if character could not be written
  */
 int VCOM_putcharFromISR(int c, long *lHigherPriorityTaskWoken) {
-  char cc = (char) c;
+  	char cc = (char) c;
 
-  if (xQueueSendFromISR(xCharsForTx, &cc,
-                        lHigherPriorityTaskWoken) == pdPASS) {
-    return c;
-  } else {
-    return EOF;
-  }
+  	if (xQueueSendFromISR(xCharsForTx, &cc,
+                        	lHigherPriorityTaskWoken) == pdPASS) {
+    		return c;
+  	} else {
+    		return EOF;
+  	}
 }
 
 int VCOM_putchar(int c) {
-  char cc = (char) c;
+  	char cc = (char) c;
 
-  // Don't block if not connected to USB.
-  if (xQueueSend(xCharsForTx, &cc,
-                 USBIsConnected() ? usbMAX_SEND_BLOCK : 0) == pdPASS) {
-    return c;
-  } else {
-    return EOF;
-  }
+  	// Don't block if not connected to USB.
+  	if (xQueueSend(xCharsForTx, &cc,
+                 		USBIsConnected() ? usbMAX_SEND_BLOCK : 0) == pdPASS) {
+    		return c;
+  	} else {
+    		return EOF;
+  	}
 }
 
 
@@ -259,13 +262,13 @@ int VCOM_putchar(int c) {
  * @returns character read, or EOF if character could not be read
  */
 int VCOM_getchar(void) {
-  unsigned char c;
+  	unsigned char c;
 
-  /* Block the task until a character is available. */
-  if(xQueueReceive(xRxedChars, &c, 0) == pdTRUE){  //portMAX_DELAY);
-    return c;
-  }
-  return -1;
+  	/* Block the task until a character is available. */
+  	if(xQueueReceive(xRxedChars, &c, 0) == pdTRUE){  //portMAX_DELAY);
+    		return c;
+  	}
+  	return -1;
 }
 
 
@@ -281,11 +284,12 @@ void USB_IRQHandler(void) {
 
 static void USBFrameHandler(unsigned short wFrame) {
   (void) wFrame;
-
-	if (uxQueueMessagesWaitingFromISR(xCharsForTx) > 0) {
-		// data available, enable NAK interrupt on bulk in
-		USBHwNakIntEnable(INACK_BI);
-	}
+  if(uxQueueMessagesWaitingFromISR(xCharsForTx) > 0){
+    // data available, enable NAK interrupt on bulk in
+    USBHwNakIntEnable(INACK_BI | INACK_II);
+  }else{
+    USBHwNakIntEnable(INACK_BI);
+  }
 }
 
 void vUSBTask(void *pvParameters) {

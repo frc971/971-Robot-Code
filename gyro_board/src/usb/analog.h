@@ -1,6 +1,39 @@
 #ifndef __ANALOG_H__
 #define __ANALOG_H__
 
+extern int64_t gyro_angle;
+struct DataStruct{
+	int64_t gyro_angle;
+
+	int32_t right_drive;
+	int32_t left_drive;
+	int32_t shooter_angle;
+	int32_t shooter;
+	int32_t indexer;
+	int32_t wrist;
+
+	int32_t capture_top_rise;
+	int32_t capture_top_fall;
+	int32_t capture_bottom_fall_delay;
+	int32_t capture_wrist_rise;
+	int32_t capture_shooter_angle_rise;
+
+	int8_t  top_rise_count;
+
+	int8_t top_fall_count;
+
+	int8_t bottom_rise_count;
+
+	int8_t bottom_fall_delay_count;
+	int8_t bottom_fall_count;
+
+	int8_t wrist_rise_count;
+
+	int8_t shooter_angle_rise_count;
+}__attribute__((__packed__));
+void fillSensorPacket(struct DataStruct *packet);
+
+
 void analog_init (void);
 int analog(int chan);
 int digital(int chan);
