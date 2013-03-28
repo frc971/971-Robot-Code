@@ -200,8 +200,8 @@ static portTASK_FUNCTION(vSensorPoll, pvParameters)
 {
 	portTickType xLastFlashTime;
 	xLastFlashTime = xTaskGetTickCount();
-	
-	
+
+
 	vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS);
 
 	for(;;){

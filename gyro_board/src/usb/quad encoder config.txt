@@ -18,7 +18,7 @@
 
 
 
-// Specify Quadriture phase mode
+// Specify Quadrature phase mode
 
 	// QEI->QEICON &= 0xFFFFFFFE; 	/* Clears position counter */
 	QEI->QEICONF &= 0XFFFFFFFD;	/* Sets bit 1 to 0, Signal mode to Quad Phase */

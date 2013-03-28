@@ -2,7 +2,8 @@
 #define __ANALOG_H__
 
 extern int64_t gyro_angle;
-struct DataStruct{
+
+struct DataStruct {
 	int64_t gyro_angle;
 
 	int32_t right_drive;
@@ -30,15 +31,19 @@ struct DataStruct{
 	int8_t wrist_rise_count;
 
 	int8_t shooter_angle_rise_count;
-}__attribute__((__packed__));
+} __attribute__((__packed__));
 void fillSensorPacket(struct DataStruct *packet);
 
+void analog_init(void);
+int analog(int channel);
 
-void analog_init (void);
-int analog(int chan);
-int digital(int chan);
-int encoder_bits(int chan);
+int digital(int channel);
+
+// Returns the current values of the inputs for the given encoder (as the low 2
+// bits).
+int encoder_bits(int channel);
 void encoder_init(void);
-int32_t encoder_val(int chan);
-int dip(int chan);
-#endif // __ANALOG_H__
+int32_t encoder_val(int channel);
+
+int dip(int channel);
+#endif  // __ANALOG_H__
