@@ -151,6 +151,7 @@
         'queue_testutils',
         'common',
         'queue_test_queue',
+        '<(AOS)/common/util/util.gyp:thread',
       ],
     },
     {

@@ -3,11 +3,11 @@
 
 #include <sys/socket.h>
 #include <linux/can.h>
-#include <memory>
-#include <boost/thread/locks.hpp>
-#include <boost/thread.hpp>
 
-#include "thread.h"
+#include <memory>
+
+#include "aos/common/util/thread.h"
+
 #include "libusb_wrap.h"
 
 // Use a packed version of can_frame.
@@ -61,8 +61,6 @@ class GyroDriver {
   // Handle for the object run in the debug thread which prints out debug
   // information.
   std::unique_ptr<DbgReader> dbg_;
-  // Thread handle for the debug thread.
-  std::unique_ptr<boost::thread> debug_thread_;
 
   // Handle for the transmit object which runs in the transmit thread and also
   // handles priority queueing of packets.
@@ -73,16 +71,14 @@ class GyroDriver {
   // Handle for the rx object which runs in the rx thread and also
   // handles priority queueing of packets.
   std::unique_ptr<PacketReceiver> rx_;
-  // Thread handle for the receive thread.
-  std::unique_ptr<boost::thread> rx_thread_;
 };
 
-class DbgReader : public Thread {
+class DbgReader : public ::aos::util::Thread {
  public:
   explicit DbgReader(GyroDriver *dev_handle);
 
   // Serve.
-  void operator()();
+  virtual void Run();
 
  private:
   GyroDriver *gyro_;

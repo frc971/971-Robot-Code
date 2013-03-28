@@ -58,7 +58,7 @@ cat:
 	@cd ../../bin; python serial_looper.py
 
 assm.S: $(NAME).elf
-	$(OBJDUMP) -D -S $(NAME).elf > assm.S
+	$(OBJDUMP) -D -S $(NAME).elf > $@
 
 %.hex: %.elf Makefile
 	$(OBJCOPY) -O ihex $< $@

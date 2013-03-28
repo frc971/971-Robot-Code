@@ -1,7 +1,7 @@
 #ifndef LIBUSB_H_
 #define LIBUSB_H_
 
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
 class LibUSBDeviceHandle;
 

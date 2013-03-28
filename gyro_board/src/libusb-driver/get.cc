@@ -1,15 +1,17 @@
 #include "get.h"
 
-#include <google/gflags.h>
-#include <glog/logging.h>
-#include <iostream>
-#include <signal.h>
 #include <stdio.h>
-#include <queue>
 #include <unistd.h>
+#include <inttypes.h>
+#include <string.h>
+
+#include <queue>
+#include <iostream>
 #include <map>
 
-#include "signal_handler.h"
+#include <google/gflags.h>
+#include "aos/common/mutex.h"
+#include "aos/common/logging/logging_impl.h"
 
 DEFINE_int32(vid, 0x1424, "Vendor ID of the device.");
 DEFINE_int32(pid, 0xd243, "Product ID of the device.");
@@ -65,7 +67,7 @@ bool can_frame_priority_comparator::operator() (
   }
 }
 
-class GyroDriver::PacketReceiver : public Thread {
+class GyroDriver::PacketReceiver : public ::aos::util::Thread {
  public:
   // refusing to send any more frames.
   static const int kMaxRXFrames = 128;
@@ -74,7 +76,7 @@ class GyroDriver::PacketReceiver : public Thread {
       : Thread(), dev_handle_(dev_handle), rx_queue_(new can_priority_queue) {}
 
   // Serve.
-  void operator()();
+  virtual void Run();
 
   bool GetCanFrame(struct can_frame *msg);
 
@@ -84,16 +86,13 @@ class GyroDriver::PacketReceiver : public Thread {
                               can_frame_priority_comparator> can_priority_queue;
 
   LibUSBDeviceHandle *dev_handle_;
-  boost::mutex rx_mutex_;
+  ::aos::Mutex rx_mutex_;
   std::unique_ptr<can_priority_queue> rx_queue_;
-  //boost::condition_variable rx_cond_;
 };
 
 GyroDriver::GyroDriver(LibUSBDeviceHandle *dev_handle)
     : dev_handle_(dev_handle), dbg_(new DbgReader(this)),
-    debug_thread_(new boost::thread(boost::ref(*dbg_))),
-    rx_(new GyroDriver::PacketReceiver(dev_handle)),
-    rx_thread_(new boost::thread(boost::ref(*rx_))) { }
+    rx_(new GyroDriver::PacketReceiver(dev_handle)) {}
 
 
 std::string GyroDriver::GetDebugData() {
@@ -106,15 +105,9 @@ std::string GyroDriver::GetDebugData() {
   return std::string(data, transferred);
 }
 
-void GyroDriver::Terminate() {
-  rx_->Terminate();
-}
-
 GyroDriver::~GyroDriver() {
-  rx_->Terminate();
-  rx_thread_->join();
-  dbg_->Terminate();
-  debug_thread_->join();
+  rx_->Join();
+  dbg_->Join();
 }
 
 //bool GyroDriver::GetCanFrame(struct can_frame *msg) {
@@ -151,24 +144,29 @@ struct DataStruct{
 	int8_t shooter_angle_rise_count;
 } __attribute__((__packed__));
 
-void GyroDriver::PacketReceiver::operator()() {
-  	int r;
-  	int actual;
-  	uint8_t data[64];
+void GyroDriver::PacketReceiver::Run() {
+  int r;
+  int actual;
+  uint8_t data[64];
   DataStruct *real_data;
-  real_data = (DataStruct *)data;
+  static_assert(sizeof(*real_data) <= sizeof(data), "it doesn't fit");
+
+  uint8_t *data_pointer = data;
+  memcpy(&real_data, &data_pointer, sizeof(data_pointer));
   
-  while (should_run()) {
+  while (should_continue()) {
     r = dev_handle_->interrupt_transfer(
         0x81, data, sizeof(data), &actual, 1000);
     printf("size: %d\n",sizeof(DataStruct));
-    CHECK_GT(actual, 0);
-    
-    if (r != 0) {
-      LOG(ERROR) << "Read Error.  Read " << actual;
+    if (actual <= 0) {
+      LOG(FATAL, "didn't get any data\n");
     }
     
-    printf("angle: %d\n", real_data->gyro_angle);
+    if (r != 0) {
+      LOG(ERROR, "Read Error. Read %d\n", actual);
+    }
+    
+    printf("angle: %"PRId64"\n", real_data->gyro_angle);
     printf("drivel: %d\n", real_data->left_drive);
     printf("driver: %d\n", real_data->right_drive);
     printf("shooter: %d\n", real_data->shooter);
@@ -197,33 +195,33 @@ void GyroDriver::PacketReceiver::operator()() {
     //}
   }
   //rx_cond_.notify_all();
-  LOG(INFO) << "Receive thread down.";
+  LOG(INFO, "Receive thread down.");
 }
 
 DbgReader::DbgReader(GyroDriver *gyro)
     : Thread(), gyro_(gyro) {}
 
-void DbgReader::operator()() {
-  unsigned char data[64];
-  LOG(INFO) << "Running debug dump thread.";
-  while (should_run()) {
+void DbgReader::Run() {
+  LOG(INFO, "Running debug dump thread.");
+  while (should_continue()) {
     printf("%s", gyro_->GetDebugData().c_str());
   }
-  LOG(INFO) << "Exiting debug dump thread.";
+  LOG(INFO, "Exiting debug dump thread.");
 }
 
 
 int main(int argc, char ** argv) {
-  int r;
-  google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, true);
-  google::InstallFailureSignalHandler();
+  ::aos::logging::Init();
 
   LibUSB libusb;
 
   {
     std::unique_ptr<LibUSBDeviceHandle> dev_handle(
-        CHECK_NOTNULL(libusb.FindDeviceWithVIDPID(FLAGS_vid, FLAGS_pid)));
+        libusb.FindDeviceWithVIDPID(FLAGS_vid, FLAGS_pid));
+    if (!dev_handle) {
+      LOG(FATAL, "couldn't find device\n");
+    }
 
     GyroDriver gyro(dev_handle.release());
 
