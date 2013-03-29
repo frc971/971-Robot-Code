@@ -7,12 +7,14 @@
 // ****************************************************************************
 
 #include "FreeRTOS.h"
-/* Scheduler includes. */
-#include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
 
 #include "analog.h"
+
+// How long (in ms) to wait after a falling edge on the bottom indexer sensor
+// before reading the indexer encoder.
+static const int kBottomFallDelayTime = 32;
 
 void analog_init(void) {
   // b[1:0] CAN RD1 p0.0
@@ -79,7 +81,7 @@ int analog(int channel) {
 // DIP1 P2.13
 // DIP2 P0.11
 // DIP3 P0.10
-#define readGPIO(gpio,chan) ((((gpio)->FIOPIN) >> (chan)) & 1)
+#define readGPIO(gpio, chan) ((((gpio)->FIOPIN) >> (chan)) & 1)
 inline int readGPIO_inline(int major, int minor) {
   switch (major) {
     case 0:
@@ -97,10 +99,10 @@ int digital(int channel) {
     return -1;
   } else if (channel < 7) {
     int chan = channel + 3;
-    return readGPIO(GPIO0,chan);
+    return readGPIO(GPIO0, chan);
   } else if (channel < 13) {
     int chan = channel - 7;
-    return readGPIO(GPIO2,chan);
+    return readGPIO(GPIO2, chan);
   }
   return -1;
 }
@@ -116,19 +118,18 @@ int dip(int channel) {
       return readGPIO(GPIO0, 10);
     default:
       return -1;
-
   }
 }
-//ENC0A 1.20
-//ENC0B 1.23
-//ENC1A 2.11
-//ENC1B 2.12
-//ENC2A 0.21
-//ENC2B 0.22
-//ENC3A 0.19
-//ENC3B 0.20
+// ENC0A 1.20
+// ENC0B 1.23
+// ENC1A 2.11
+// ENC1B 2.12
+// ENC2A 0.21
+// ENC2B 0.22
+// ENC3A 0.19
+// ENC3B 0.20
 
-#define ENC(gpio,a,b) readGPIO(gpio,a) * 2 + readGPIO(gpio,b)
+#define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
   switch (channel) {
     case 0:
@@ -146,7 +147,7 @@ int encoder_bits(int channel) {
 }
 #undef ENC
 
-// Uses 2 EINT1 and EINT2 on 2.11 and 2.12.
+// Uses EINT1 and EINT2 on 2.11 and 2.12.
 volatile int32_t encoder1_val;
 // On GPIO pins 0.22 and 0.21.
 volatile int32_t encoder2_val;
@@ -158,8 +159,10 @@ volatile int32_t encoder4_val;
 volatile int32_t encoder5_val;
 
 // ENC1A 2.11
-void EINT1_IRQHandler(void) {
+static void EINT1_IRQHandler(void) {
   SC->EXTINT = 0x2;
+  // TODO(brians): figure out whether this style or the style in all the rest
+  // generates nicer code and then make them all the same
   int stored_val = encoder1_val;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -171,7 +174,7 @@ void EINT1_IRQHandler(void) {
   SC->EXTPOLAR ^= 0x2;
 }
 // ENC1B 2.12
-void EINT2_IRQHandler(void) {
+static void EINT2_IRQHandler(void) {
   SC->EXTINT = 0x4;
   int stored_val = encoder1_val;
   int fiopin = GPIO2->FIOPIN;
@@ -185,8 +188,8 @@ void EINT2_IRQHandler(void) {
 }
 
 // GPIO Interrupt handlers
-void NoGPIO() {}
-void Encoder2ARise() {
+static void NoGPIO() {}
+static void Encoder2ARise() {
   GPIOINT->IO0IntClr |= (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     ++encoder2_val;
@@ -194,7 +197,7 @@ void Encoder2ARise() {
     --encoder2_val;
   }
 }
-void Encoder2AFall() {
+static void Encoder2AFall() {
   GPIOINT->IO0IntClr |= (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     --encoder2_val;
@@ -202,7 +205,7 @@ void Encoder2AFall() {
     ++encoder2_val;
   }
 }
-void Encoder2BRise() {
+static void Encoder2BRise() {
   GPIOINT->IO0IntClr |= (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     --encoder2_val;
@@ -210,7 +213,7 @@ void Encoder2BRise() {
     ++encoder2_val;
   }
 }
-void Encoder2BFall() {
+static void Encoder2BFall() {
   GPIOINT->IO0IntClr |= (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     ++encoder2_val;
@@ -219,7 +222,7 @@ void Encoder2BFall() {
   }
 }
 
-void Encoder3ARise() {
+static void Encoder3ARise() {
   GPIOINT->IO0IntClr |= (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     ++encoder3_val;
@@ -227,7 +230,7 @@ void Encoder3ARise() {
     --encoder3_val;
   }
 }
-void Encoder3AFall() {
+static void Encoder3AFall() {
   GPIOINT->IO0IntClr |= (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     --encoder3_val;
@@ -235,7 +238,7 @@ void Encoder3AFall() {
     ++encoder3_val;
   }
 }
-void Encoder3BRise() {
+static void Encoder3BRise() {
   GPIOINT->IO0IntClr |= (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     --encoder3_val;
@@ -243,7 +246,7 @@ void Encoder3BRise() {
     ++encoder3_val;
   }
 }
-void Encoder3BFall() {
+static void Encoder3BFall() {
   GPIOINT->IO0IntClr |= (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     ++encoder3_val;
@@ -252,7 +255,7 @@ void Encoder3BFall() {
   }
 }
 
-void Encoder4ARise() {
+static void Encoder4ARise() {
   GPIOINT->IO2IntClr |= (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     ++encoder4_val;
@@ -260,7 +263,7 @@ void Encoder4ARise() {
     --encoder4_val;
   }
 }
-void Encoder4AFall() {
+static void Encoder4AFall() {
   GPIOINT->IO2IntClr |= (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     --encoder4_val;
@@ -268,7 +271,7 @@ void Encoder4AFall() {
     ++encoder4_val;
   }
 }
-void Encoder4BRise() {
+static void Encoder4BRise() {
   GPIOINT->IO2IntClr |= (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     --encoder4_val;
@@ -276,7 +279,7 @@ void Encoder4BRise() {
     ++encoder4_val;
   }
 }
-void Encoder4BFall() {
+static void Encoder4BFall() {
   GPIOINT->IO2IntClr |= (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     ++encoder4_val;
@@ -285,7 +288,7 @@ void Encoder4BFall() {
   }
 }
 
-void Encoder5ARise() {
+static void Encoder5ARise() {
   GPIOINT->IO2IntClr |= (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     ++encoder5_val;
@@ -293,7 +296,7 @@ void Encoder5ARise() {
     --encoder5_val;
   }
 }
-void Encoder5AFall() {
+static void Encoder5AFall() {
   GPIOINT->IO2IntClr |= (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     --encoder5_val;
@@ -301,7 +304,7 @@ void Encoder5AFall() {
     ++encoder5_val;
   }
 }
-void Encoder5BRise() {
+static void Encoder5BRise() {
   GPIOINT->IO2IntClr |= (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     --encoder5_val;
@@ -309,7 +312,7 @@ void Encoder5BRise() {
     ++encoder5_val;
   }
 }
-void Encoder5BFall() {
+static void Encoder5BFall() {
   GPIOINT->IO2IntClr |= (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     ++encoder5_val;
@@ -320,7 +323,7 @@ void Encoder5BFall() {
 
 volatile int32_t capture_top_rise;
 volatile int8_t top_rise_count;
-void IndexerTopRise() {
+static void IndexerTopRise() {
   GPIOINT->IO0IntClr |= (1 << 5);
   // edge counting   encoder capture
   ++top_rise_count;
@@ -328,14 +331,14 @@ void IndexerTopRise() {
 }
 volatile int32_t capture_top_fall;
 volatile int8_t top_fall_count;
-void IndexerTopFall() {
+static void IndexerTopFall() {
   GPIOINT->IO0IntClr |= (1 << 5);
   // edge counting   encoder capture
   ++top_fall_count;
   capture_top_fall = encoder3_val;
 }
 volatile int8_t bottom_rise_count;
-void IndexerBottomRise() {
+static void IndexerBottomRise() {
   GPIOINT->IO0IntClr |= (1 << 4);
   // edge counting
   ++bottom_rise_count;
@@ -346,20 +349,19 @@ volatile int32_t dirty_delay;
 portTickType xDelayTimeFrom;
 static portTASK_FUNCTION(vDelayCapture, pvParameters)
 {
-  portTickType xSleepFrom;
-  xSleepFrom = xTaskGetTickCount();
+  portTickType xSleepFrom = xTaskGetTickCount();
 
-  for(;;) {
+  for (;;) {
     NVIC_DisableIRQ(EINT3_IRQn);
-    if (dirty_delay) {
+    if (dirty_delay != 0) {
       xSleepFrom = xDelayTimeFrom;
       dirty_delay = 0;
       NVIC_EnableIRQ(EINT3_IRQn);
 
-      vTaskDelayUntil(&xSleepFrom, 32 / portTICK_RATE_MS);
+      vTaskDelayUntil(&xSleepFrom, kBottomFallDelayTime / portTICK_RATE_MS);
 
       NVIC_DisableIRQ(EINT3_IRQn);
-      bottom_fall_delay_count ++;
+      ++bottom_fall_delay_count;
       capture_bottom_fall_delay = encoder3_val;
       NVIC_EnableIRQ(EINT3_IRQn);
     } else {
@@ -369,29 +371,28 @@ static portTASK_FUNCTION(vDelayCapture, pvParameters)
   }
 }
 
-
 volatile int8_t bottom_fall_count;
-void IndexerBottomFall() {
+static void IndexerBottomFall() {
   GPIOINT->IO0IntClr |= (1 << 4);
-  bottom_fall_count ++;
+  ++bottom_fall_count;
   // edge counting   start delayed capture
   xDelayTimeFrom = xTaskGetTickCount();
   dirty_delay = 1;
 }
 volatile int32_t capture_wrist_rise;
 volatile int8_t wrist_rise_count;
-void WristHallRise() {
+static void WristHallRise() {
   GPIOINT->IO0IntClr |= (1 << 6);
   // edge counting   encoder capture
-  wrist_rise_count ++;
+  ++wrist_rise_count;
   capture_wrist_rise = (int32_t)QEI->QEIPOS;
 }
 volatile int32_t capture_shooter_angle_rise;
 volatile int8_t shooter_angle_rise_count;
-void ShooterHallRise() {
+static void ShooterHallRise() {
   GPIOINT->IO0IntClr |= (1 << 7);
   // edge counting   encoder capture
-  shooter_angle_rise_count ++;
+  ++shooter_angle_rise_count;
   capture_shooter_angle_rise = encoder2_val; 
 }
 
@@ -403,6 +404,8 @@ __attribute__((always_inline)) static __INLINE uint8_t __clz(uint32_t value) {
   return result;
 }
 inline static void IRQ_Dispatch(void) {
+  // TODO(brians): think about adding a loop here so that we can handle multiple
+  // interrupts right on top of each other faster
   uint8_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
       (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
 
@@ -443,177 +446,43 @@ inline static void IRQ_Dispatch(void) {
     NoGPIO             // index 32: NO BITS SET  #False Alarm
   };
   table[index]();
-
-/*
-  switch(index) {
-    case 0: //P2.3 Fall     #bit 31  //Encoder 5 B  //Dio 10
-      Encoder5BFall();
-      return;
-
-    case 1: //P2.2 Fall     #bit 30  //Encoder 5 A  //Dio 9
-      Encoder5AFall();
-      return;
-
-    case 2: //P2.1 Fall     #bit 29  //Encoder 4 B  //Dio 8
-      Encoder4BFall();
-      return;
-
-    case 3: //P2.0 Fall     #bit 28  //Encoder 4 A  //Dio 7
-      Encoder4AFall();
-      return;
-
-    case 4: //NO GPIO       #bit 27
-      NoGPIO();
-      return;
-
-    case 5: //P0.22 Fall    #bit 26  //Encoder 2 A
-      Encoder2AFall();
-      return;
-
-    case 6: //P0.21 Fall    #bit 25  //Encoder 2 B
-      Encoder2BFall();
-      return;
-
-    case 7: //P0.20 Fall    #bit 24  //Encoder 3 A
-      Encoder3AFall();
-      return;
-
-    case 8: //P0.19 Fall    #bit 23  //Encoder 3 B
-      Encoder3BFall();
-      return;
-
-    case 9: //P0.22 Rise    #bit 22  //Encoder 2 A
-      Encoder2ARise();
-      return;
-
-    case 10: //P0.21 Rise   #bit 21  //Encoder 2 B
-      Encoder2BRise();
-      return;
-
-    case 11: //P0.20 Rise   #bit 20  //Encoder 3 A
-      Encoder3ARise();
-      return;
-
-    case 12: //P0.19 Rise   #bit 19   //Encoder 3 B
-      Encoder3BRise();
-      return;
-
-    case 13: //NO GPIO      #bit 18
-      NoGPIO();
-      return;
-
-    case 14: //NO GPIO      #bit 17
-      NoGPIO();
-      return;
-
-    case 15: //NO GPIO      #bit 16
-      NoGPIO();
-      return;
-
-    case 16: //NO GPIO      #bit 15
-      NoGPIO();
-      return;
-
-    case 17: //NO GPIO      #bit 14
-      NoGPIO();
-      return;
-
-    case 18: //NO GPIO      #bit 13
-      NoGPIO();
-      return;
-
-    case 19: //NO GPIO      #bit 12
-      NoGPIO();
-      return;
-
-    case 20: //NO GPIO      #bit 11
-      NoGPIO();
-      return;
-
-    case 21: //NO GPIO      #bit 10
-      NoGPIO();
-      return;
-
-    case 22: //P0.3 Fall    #bit 9  //Indexer Top    //Dio 2
-      IndexerTopFall();
-      return;
-
-    case 23: //P0.4 Fall    #bit 8  //Indexer Bottom //Dio 1
-      IndexerBottomFall();
-      return;
-
-    case 24: //P0.7 Rise    #bit 7  //Shooter Hall   //Dio 4
-      ShooterHallRise();
-      return;
-
-    case 25: //P0.6 Rise    #bit 6  //Wrist Hall     //Dio 3
-      WristHallRise();
-      return;
-
-    case 26: //P0.5 Rise    #bit 5  //Indexer Top    //Dio 2
-      IndexerTopRise();
-      return;
-
-    case 27: //P0.4 Rise    #bit 4  //Indexer Bottom //Dio 1
-      IndexerBottomRise();
-      return;
-
-    case 28: //P2.3 Rise    #bit 3  //Encoder 5 B    //Dio 10
-      Encoder5BRise();
-      return;
-
-    case 29: //P2.2 Rise    #bit 2  //Encoder 5 A    //Dio 9
-      Encoder5ARise();
-      return;
-
-    case 30: //P2.1 Rise    #bit 1  //Encoder 4 B    //Dio 8
-      Encoder4BRise();
-      return;
-
-    case 31: //P2.0 Rise    #bit 0  //Encoder 4 A    //Dio 7
-      Encoder4ARise();
-      return;
-
-    case 32: //NO BITS SET  #False Alarm
-      NoGPIO();
-      return;
-  }
-  */
 }
 void EINT3_IRQHandler(void) {
+  // Have to disable it here or else it re-fires the interrupt while the code
+  // reads to figure out which pin the interrupt is for.
+  // TODO(brians): figure out details + look for an alternative
   NVIC_DisableIRQ(EINT3_IRQn);
   IRQ_Dispatch();
   NVIC_EnableIRQ(EINT3_IRQn);
 }
-int32_t encoder_val(int chan)
-{
+int32_t encoder_val(int chan) {
   int32_t val;
-  switch(chan) {
-    case 0: //Wrist
+  switch (chan) {
+    case 0: // Wrist
       return (int32_t)QEI->QEIPOS;
-    case 1: //Shooter Wheel
+    case 1: // Shooter Wheel
       NVIC_DisableIRQ(EINT1_IRQn);
       NVIC_DisableIRQ(EINT2_IRQn);
       val = encoder1_val;
       NVIC_EnableIRQ(EINT2_IRQn);
       NVIC_EnableIRQ(EINT1_IRQn);
       return val;
-    case 2: //Shooter Angle
+    case 2: // Shooter Angle
       NVIC_DisableIRQ(EINT3_IRQn);
       val = encoder2_val;
       NVIC_EnableIRQ(EINT3_IRQn);
       return val;
-    case 3: //Indexer
+    case 3: // Indexer
       NVIC_DisableIRQ(EINT3_IRQn);
       val = encoder3_val;
       NVIC_EnableIRQ(EINT3_IRQn);
       return val;
-    case 4: //Drive R
+    case 4: // Drive R
       NVIC_DisableIRQ(EINT3_IRQn);
       val = encoder4_val;
       NVIC_EnableIRQ(EINT3_IRQn);
       return val;
-    case 5: //Drive L
+    case 5: // Drive L
       NVIC_DisableIRQ(EINT3_IRQn);
       val = encoder5_val;
       NVIC_EnableIRQ(EINT3_IRQn);
@@ -625,26 +494,22 @@ int32_t encoder_val(int chan)
 void fillSensorPacket(struct DataStruct *packet) {
   packet->gyro_angle = gyro_angle;
 
-  NVIC_DisableIRQ(EINT1_IRQn);
-  NVIC_DisableIRQ(EINT2_IRQn);
   packet->shooter = encoder1_val;
-  NVIC_EnableIRQ(EINT2_IRQn);
-  NVIC_EnableIRQ(EINT1_IRQn);
-
-  NVIC_DisableIRQ(EINT3_IRQn);
-
   packet->right_drive = encoder4_val;
   packet->left_drive = encoder5_val;
   packet->shooter_angle = encoder2_val;
   packet->indexer = encoder3_val;
+  packet->wrist = (int32_t)QEI->QEIPOS;
+
+  // TODO(brians): should we re-enable it in between here so that it's disabled
+  // for shorter chunks?
+  NVIC_DisableIRQ(EINT3_IRQn);
 
   packet->capture_top_rise = capture_top_rise;
   packet->top_rise_count = top_rise_count;
 
   packet->capture_top_fall = capture_top_fall;
   packet->top_fall_count = top_fall_count;
-
-  packet->bottom_rise_count = bottom_rise_count;
 
   packet->capture_bottom_fall_delay = capture_bottom_fall_delay;
   packet->bottom_fall_delay_count = bottom_fall_delay_count;
@@ -658,11 +523,10 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   NVIC_EnableIRQ(EINT3_IRQn);
 
-  packet->wrist = (int32_t)QEI->QEIPOS;
+  packet->bottom_rise_count = bottom_rise_count;
 }
 
-void encoder_init(void)
-{
+void encoder_init(void) {
   // Setup the encoder interface.
   SC->PCONP |= PCONP_PCQEI;
   PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
@@ -690,6 +554,7 @@ void encoder_init(void)
   GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
   GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
   GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
+  // Make sure they're in mode 00 (the default, aka nothing special).
   PINCON->PINSEL1 &= ~(0x3 << 12);
   PINCON->PINSEL1 &= ~(0x3 << 10);
   encoder2_val = 0;
@@ -699,6 +564,7 @@ void encoder_init(void)
   GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
   GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
   GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
+  // Make sure they're in mode 00 (the default, aka nothing special).
   PINCON->PINSEL1 &= ~(0x3 << 8);
   PINCON->PINSEL1 &= ~(0x3 << 6);
   encoder3_val = 0;
@@ -708,6 +574,7 @@ void encoder_init(void)
   GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
   GPIOINT->IO2IntEnF |= (1 << 1);  // Set GPIO falling interrupt.
   GPIOINT->IO2IntEnR |= (1 << 1);  // Set GPIO rising interrupt.
+  // Make sure they're in mode 00 (the default, aka nothing special).
   PINCON->PINSEL4 &= ~(0x3 << 0);
   PINCON->PINSEL4 &= ~(0x3 << 2);
   encoder4_val = 0;
@@ -717,6 +584,7 @@ void encoder_init(void)
   GPIOINT->IO2IntEnR |= (1 << 2);  // Set GPIO rising interrupt.
   GPIOINT->IO2IntEnF |= (1 << 3);  // Set GPIO falling interrupt.
   GPIOINT->IO2IntEnR |= (1 << 3);  // Set GPIO rising interrupt.
+  // Make sure they're in mode 00 (the default, aka nothing special).
   PINCON->PINSEL4 &= ~(0x3 << 4);
   PINCON->PINSEL4 &= ~(0x3 << 6);
   encoder5_val = 0;

@@ -19,7 +19,7 @@ struct DataStruct {
 	int32_t capture_wrist_rise;
 	int32_t capture_shooter_angle_rise;
 
-	int8_t  top_rise_count;
+	int8_t top_rise_count;
 
 	int8_t top_fall_count;
 
@@ -32,6 +32,8 @@ struct DataStruct {
 
 	int8_t shooter_angle_rise_count;
 } __attribute__((__packed__));
+// Gets called in the USB data output ISR. Assumes that it will not be preempted
+// except by very high priority things.
 void fillSensorPacket(struct DataStruct *packet);
 
 void analog_init(void);
@@ -39,10 +41,12 @@ int analog(int channel);
 
 int digital(int channel);
 
+void encoder_init(void);
+// For debugging only.
 // Returns the current values of the inputs for the given encoder (as the low 2
 // bits).
 int encoder_bits(int channel);
-void encoder_init(void);
+// Returns the current position of the given encoder.
 int32_t encoder_val(int channel);
 
 int dip(int channel);
