@@ -612,9 +612,9 @@ void encoder_init(void) {
   GPIOINT->IO0IntEnR |= (1 << 5);  // Set GPIO rising interrupt
   PINCON->PINSEL0 &= ~(0x3 << 10);
 
-  GPIOINT->IO0IntEnF |= (1 << 6);  // Set GPIO rising interrupt
+  GPIOINT->IO0IntEnF |= (1 << 6);
   PINCON->PINSEL0 &= ~(0x3 << 12);
 
-  GPIOINT->IO0IntEnF |= (1 << 7);  // Set GPIO rising interrupt
+  GPIOINT->IO0IntEnF |= (1 << 7);
   PINCON->PINSEL0 &= ~(0x3 << 14);
 }
