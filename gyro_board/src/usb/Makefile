@@ -4,17 +4,25 @@ LDSCRIPT=lpc1758_Debug.ld
 
 CSRC=main.c
 
-GCC_PATH=/usr/local/cortex-m3/bin
+# See if /opt/cortex-m3 exists first, because that's the preferred location. If
+# not, fall back to /usr/local/cortex-m3.
+ifneq ($(wildcard /opt/cortex-m3),)
+	TOOLS_PREFIX=/opt/cortex-m3
+else
+	TOOLS_PREFIX=/usr/local/cortex-m3
+endif
+GCC_PATH=$(TOOLS_PREFIX)/bin
 
-PORT=/dev/ttyUSB0
+PORT=/dev/ttyS1
 
 CC=$(GCC_PATH)/arm-eabi-gcc
 LD=$(GCC_PATH)/arm-eabi-ld
 OBJCOPY=$(GCC_PATH)/arm-eabi-objcopy
+OBJDUMP=$(GCC_PATH)/arm-eabi-objdump
 AS=$(GCC_PATH)/arm-eabi-as
 FLASHER=lpc21isp
 
-CFLAGS=-I. -I./FreeRTOS/include -I./FreeRTOS/portable/GCC/ARM_CM3/ -I./CommonDemoTasks/include -Os -mcpu=cortex-m3 -mthumb -Wl,--gc-sections -ffunction-sections -Wl,-static -Werror
+CFLAGS=-I. -I./FreeRTOS/include -I./FreeRTOS/portable/GCC/ARM_CM3/ -I./CommonDemoTasks/include -O3 -mcpu=cortex-m3 -mthumb -Wl,--gc-sections -ffunction-sections -Wl,-static -Werror
 
 SPEED=38400
 OSC=12000
@@ -42,7 +50,7 @@ SOURCES=main.c \
 all: $(NAME).hex
 
 $(NAME).elf: Makefile $(SOURCES:.c=.o) $(LDSCRIPT)
-	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L/usr/local/cortex-m3/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L$(TOOLS_PREFIX)/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99
@@ -55,6 +63,12 @@ deploy: all $(NAME).hex
 
 cat:
 	@cd ../../bin; python serial_looper.py
+
+assm.S: $(NAME).elf
+	$(OBJDUMP) -D -S $(NAME).elf > $@
+# So that you can see the assembly for an individual file with any comments etc.
+%.s: %.c Makefile
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -S -o $@ $< -Wall -std=gnu99
 
 %.hex: %.elf Makefile
 	$(OBJCOPY) -O ihex $< $@

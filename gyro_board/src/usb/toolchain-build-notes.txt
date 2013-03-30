@@ -1,0 +1,23 @@
+These are Brian's notes from building a toolchain on 2013-03-29.
+It compiles the code successfully and lives in /opt/cortex-m3.
+The flags are from logic, Austin's gcc, and
+  <http://www.coactionos.com/getting-started/43-building-and-installing-a-cortex-m3-compiler-on-ubuntu.html>
+  (for some of the newlib flags).
+TODO(brians): make sure that it generates code that works and then update this
+
+binutils
+	../binutils-2.23.2/configure --prefix=/opt/cortex-m3 --target=arm-eabi
+	make -j6
+	make install
+gcc
+	Symlinked in gmp-4.3.2, mpc-0.8.1, and mpfr-2.4.2 first.
+	../gcc-4.5.4/configure --target=arm-eabi --prefix=/opt/cortex-m3 --enable-interwork --enable-multilib --enable-languages=c,c++ --with-newlib --with-headers --disable-shared --with-gnu-as --with-gnu-ld --with-cpu-cortex-m3 --disable-shared --with-float=soft --with-cpu=cortex-m3 --with-tune=cortex-m3 --disable-libmudflap --disable-libgomp --with-mode=thumb
+	make -j6 all-gcc
+	sudo make install-gcc
+newlib
+	../newlib-1.20.0/configure --target=arm-eabi --prefix=/opt/cortex-m3 --enable-interwork --enable-multilib --enable-languages=c,c++ --with-headers --disable-shared --with-gnu-as --with-gnu-ld --with-cpu-cortex-m3 --disable-shared --with-float=soft --with-cpu=cortex-m3 --with-tune=cortex-m3 --disable-libmudflap --disable-libgomp --with-mode=thumb --disable-werror --disable-newlib-supplied-syscalls --disable-nls --enable-target-optspace --disable-libssp --enable-newlib-reent-small --enable-newlib-multithread --disable-libgloss
+	make CFLAGS_FOR_TARGET="-D__IEEE_BIG_ENDIAN -D__IEEE_BYTES_LITTLE_ENDIAN -D__BUFSIZ__=128"
+	sudo make install
+gcc
+	make -j6
+	sudo make install

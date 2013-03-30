@@ -10,6 +10,9 @@
     'gtest_version': '1.6.0-p1',
     'onejar_version': '0.97',
     'ctemplate_version': '2.2',
+    'gflags_version': '2.0',
+    'libusb_version': '1.0.9',
+    'libusb_apiversion': '1.0',
   },
   'targets': [
     {
@@ -139,10 +142,30 @@
       'target_name': 'ctemplate',
       'type': 'none',
       'link_settings': {
-        'libraries': ['<(externals)/ctemplate-<(ctemplate_version)-prefix/lib/libctemplate.a'],
+        'libraries': ['<(externals_abs)/ctemplate-<(ctemplate_version)-prefix/lib/libctemplate.a'],
       },
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/ctemplate-<(ctemplate_version)-prefix/include'],
+      },
+    },
+    {
+      'target_name': 'gflags',
+      'type': 'none',
+      'link_settings': {
+        'libraries': ['<(externals_abs)/gflags-<(gflags_version)-prefix/lib/libgflags.a'],
+      },
+      'direct_dependent_settings': {
+        'include_dirs': ['<(externals)/gflags-<(gflags_version)-prefix/include'],
+      },
+    },
+    {
+      'target_name': 'libusb',
+      'type': 'none',
+      'link_settings': {
+        'libraries': ['<(externals_abs)/libusb-<(libusb_version)-prefix/lib/libusb-<(libusb_apiversion).a'],
+      },
+      'direct_dependent_settings': {
+        'include_dirs': ['<(externals)/libusb-<(libusb_version)-prefix/include'],
       },
     },
   ],

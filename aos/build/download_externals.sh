@@ -60,3 +60,32 @@ CTEMPLATE_URL=${CTEMPLATE_URL}/ctemplate-${CTEMPLATE_VERSION}.tar.gz
 	CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
 	bash -c "cd ${CTEMPLATE_DIR} && ./configure --disable-shared \
 	--prefix=`readlink -f ${CTEMPLATE_PREFIX}` && make && make install"
+
+# get and build gflags
+GFLAGS_VERSION=2.0
+GFLAGS_DIR=${EXTERNALS}/gflags-${GFLAGS_VERSION}
+GFLAGS_PREFIX=${GFLAGS_DIR}-prefix
+GFLAGS_LIB=${GFLAGS_PREFIX}/lib/libgflags.a
+GFLAGS_URL=https://gflags.googlecode.com/files/gflags-${GFLAGS_VERSION}.tar.gz
+[ -f ${GFLAGS_DIR}.tar.gz ] || wget ${GFLAGS_URL} -O ${GFLAGS_DIR}.tar.gz
+[ -d ${GFLAGS_DIR} ] || ( mkdir ${GFLAGS_DIR} && tar \
+  --strip-components=1 -C ${GFLAGS_DIR} -xf ${GFLAGS_DIR}.tar.gz )
+[ -f ${GFLAGS_LIB} ] || env -i PATH="${PATH}" \
+  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
+  bash -c "cd ${GFLAGS_DIR} && ./configure \
+  --prefix=`readlink -f ${GFLAGS_PREFIX}` && make && make install"
+
+# get and build libusb
+LIBUSB_VERSION=1.0.9
+LIBUSB_APIVERSION=1.0
+LIBUSB_DIR=${EXTERNALS}/libusb-${LIBUSB_VERSION}
+LIBUSB_PREFIX=${LIBUSB_DIR}-prefix
+LIBUSB_LIB=${LIBUSB_PREFIX}/lib/libusb-${LIBUSB_APIVERSION}.a
+LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-${LIBUSB_APIVERSION}/libusb-${LIBUSB_VERSION}/libusb-${LIBUSB_VERSION}.tar.bz2
+[ -f ${LIBUSB_DIR}.tar.bz2 ] || wget ${LIBUSB_URL} -O ${LIBUSB_DIR}.tar.bz2
+[ -d ${LIBUSB_DIR} ] || ( mkdir ${LIBUSB_DIR} && tar \
+  --strip-components=1 -C ${LIBUSB_DIR} -xf ${LIBUSB_DIR}.tar.bz2 )
+[ -f ${LIBUSB_LIB} ] || env -i PATH="${PATH}" \
+  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
+  bash -c "cd ${LIBUSB_DIR} && ./configure \
+  --prefix=`readlink -f ${LIBUSB_PREFIX}` && make && make install"

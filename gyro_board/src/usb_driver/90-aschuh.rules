@@ -1,1 +1,1 @@
-KERNEL=="aschuh[0-9]*",GROUP="dialout"
+SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="d243", ATTR{idProduct}=="1424", GROUP="dialout"

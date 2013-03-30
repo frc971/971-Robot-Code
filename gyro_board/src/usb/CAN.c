@@ -202,11 +202,10 @@ static portTASK_FUNCTION(vCAN1Write, pvParameters) {
   xLastFlashTime = xTaskGetTickCount();
 
   for (;;) {
-    printf("hello\n");
 
     int c = VCOM_getchar();
     while (c != -1) {
-      printf("hello\n");
+      printf("hello in write\n");
       int j = c;
       printf("Sending data 0x%x\n", j);
       message.data[0] = j++;

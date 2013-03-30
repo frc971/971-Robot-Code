@@ -1,6 +1,19 @@
 {
   'targets': [
     {
+      'target_name': 'thread',
+      'type': 'static_library',
+      'sources': [
+        'thread.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:mutex',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:mutex',
+      ],
+    },
+    {
       'target_name': 'trapezoid_profile',
       'type': 'static_library',
       'sources': [

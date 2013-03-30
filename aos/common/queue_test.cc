@@ -5,53 +5,12 @@
 #include "gtest/gtest.h"
 #include "aos/common/test_queue.q.h"
 #include "aos/common/queue_testutils.h"
-
+#include "aos/common/util/thread.h"
 
 using ::aos::time::Time;
 
 namespace aos {
 namespace common {
-
-// TODO(aschuh): Pull this out somewhere and test it.
-class Thread {
- public:
-  Thread () {
-    started_ = false;
-    joined_ = false;
-  }
-
-  ~Thread() {
-    if (!joined_ && started_) {
-      assert(false);
-    }
-  }
-
-  void Start() {
-    assert(!started_);
-    pthread_create(&thread_, NULL, &Thread::StaticRun, this);
-    started_ = true;
-  }
-
-  virtual void Run() = 0;
-
-  void Join() {
-    assert(!joined_);
-    pthread_join(thread_, NULL);
-    joined_ = true;
-  }
- private:
-  static void *StaticRun(void *thread_class) {
-    static_cast<Thread *>(thread_class)->Run();
-    return NULL;
-  }
-
-  pthread_t thread_;
-  bool started_;
-  bool joined_;
-
-  DISALLOW_COPY_AND_ASSIGN(Thread);
-};
-
 namespace testing {
 
 class QueueTest : public ::testing::Test {
@@ -65,7 +24,7 @@ class QueueTest : public ::testing::Test {
   QueueTest() : my_test_queue(".aos.common.testing.test_queue") {}
 };
 
-class MyThread : public Thread {
+class MyThread : public util::Thread {
  public:
   MyThread() : threaded_test_queue(".aos.common.testing.test_queue") {}
 

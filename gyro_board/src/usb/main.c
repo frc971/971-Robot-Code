@@ -196,24 +196,31 @@ static portTASK_FUNCTION(vPrintPeriodic, pvParameters)
 	}
 }
 
-#include "CAN.h"
-
-
-
-void motor(int32_t speed)
+static portTASK_FUNCTION(vSensorPoll, pvParameters)
 {
-	if (speed > 2047) speed = 2047;
-	if (speed < -2047) speed = -2047;
-	return;
-	if (speed > 0) {
-		MCPWM->MCMAT1 = 2047 - speed;
-		MCPWM->MCMAT0 = 2048;
-	} else {
-		MCPWM->MCMAT1 = 2048;
-		MCPWM->MCMAT0 = speed + 2047;
+	portTickType xLastFlashTime;
+	xLastFlashTime = xTaskGetTickCount();
+
+
+	vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS);
+
+	for(;;){
+
+		vTaskDelayUntil(&xLastFlashTime, 20 / portTICK_RATE_MS);
+	/*
+		printf("not realtime! e0:%d e1:%d e2:%d e3:%d e4:%d e5:%d angle:%d \n", (int)encoder_val(0),
+							           (int)encoder_val(1),
+								   (int)encoder_val(2),
+								   (int)encoder_val(3),
+								   (int)encoder_val(4),
+								   (int)encoder_val(5),
+								   (int)gyro_angle);
+*/
 	}
 }
 
+
+#include "CAN.h"
 
 
 /*-----------------------------------------------------------*/
@@ -231,6 +238,9 @@ int main(void)
         xTaskCreate(vUSBTask, (signed char *) "USB", configMINIMAL_STACK_SIZE + 1020, (void *) NULL, tskIDLE_PRIORITY + 3, NULL);
 
 	xTaskCreate(vPrintPeriodic, (signed char *) "PRINTx", configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 2, NULL);
+
+
+	xTaskCreate(vSensorPoll, (signed char *) "SENSORs", configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1, NULL);
 
 	initCAN();
 
