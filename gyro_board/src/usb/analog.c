@@ -159,31 +159,27 @@ volatile int32_t encoder4_val;
 volatile int32_t encoder5_val;
 
 // ENC1A 2.11
-static void EINT1_IRQHandler(void) {
+void EINT1_IRQHandler(void) {
+  // TODO(brians): need to test this on hardware, but I think this should be
+  // below the EXTPOLAR set
   SC->EXTINT = 0x2;
-  // TODO(brians): figure out whether this style or the style in all the rest
-  // generates nicer code and then make them all the same
-  int stored_val = encoder1_val;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
-    ++stored_val;
+    ++encoder1_val;
   } else {
-    --stored_val;
+    --encoder1_val;
   }
-  encoder1_val = stored_val;
   SC->EXTPOLAR ^= 0x2;
 }
 // ENC1B 2.12
-static void EINT2_IRQHandler(void) {
+void EINT2_IRQHandler(void) {
   SC->EXTINT = 0x4;
-  int stored_val = encoder1_val;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
-    --stored_val;
+    --encoder1_val;
   } else {
-    ++stored_val;
+    ++encoder1_val;
   }
-  encoder1_val = stored_val;
   SC->EXTPOLAR ^= 0x4;
 }
 
@@ -398,18 +394,18 @@ static void ShooterHallRise() {
 
 // Count leading zeros.
 // Returns 0 if bit 31 is set etc.
-__attribute__((always_inline)) static __INLINE uint8_t __clz(uint32_t value) {
-  uint8_t result;
-  __ASM volatile ("clz %0, %1" : "=r" (result) : "r" (value));
+__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
+  uint32_t result;
+  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
   return result;
 }
 inline static void IRQ_Dispatch(void) {
   // TODO(brians): think about adding a loop here so that we can handle multiple
   // interrupts right on top of each other faster
-  uint8_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
+  uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
       (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
 
-	typedef void (*Handler)(void);
+  typedef void (*Handler)(void);
   const static Handler table[] = {
     Encoder5BFall,     // index 0: P2.3 Fall     #bit 31  //Encoder 5 B  //Dio 10
     Encoder5AFall,     // index 1: P2.2 Fall     #bit 30  //Encoder 5 A  //Dio 9
@@ -594,10 +590,10 @@ void encoder_init(void) {
 
   xTaskCreate(vDelayCapture,
               (signed char *) "SENSORs",
-      				configMINIMAL_STACK_SIZE + 100,
-      				NULL /*parameters*/,
-      				tskIDLE_PRIORITY + 5,
-      				NULL /*return task handle*/);
+              configMINIMAL_STACK_SIZE + 100,
+              NULL /*parameters*/,
+              tskIDLE_PRIORITY + 5,
+              NULL /*return task handle*/);
 
   GPIOINT->IO0IntEnF |= (1 << 4);  // Set GPIO falling interrupt
   GPIOINT->IO0IntEnR |= (1 << 4);  // Set GPIO rising interrupt

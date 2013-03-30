@@ -4,7 +4,14 @@ LDSCRIPT=lpc1758_Debug.ld
 
 CSRC=main.c
 
-GCC_PATH=/usr/local/cortex-m3/bin
+# See if /opt/cortex-m3 exists first, because that's the preferred location. If
+# not, fall back to /usr/local/cortex-m3.
+ifneq ($(wildcard /opt/cortex-m3),)
+	TOOLS_PREFIX=/opt/cortex-m3
+else
+	TOOLS_PREFIX=/usr/local/cortex-m3
+endif
+GCC_PATH=$(TOOLS_PREFIX)/bin
 
 PORT=/dev/ttyS1
 
@@ -43,7 +50,7 @@ SOURCES=main.c \
 all: $(NAME).hex
 
 $(NAME).elf: Makefile $(SOURCES:.c=.o) $(LDSCRIPT)
-	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L/usr/local/cortex-m3/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L$(TOOLS_PREFIX)/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99
@@ -59,6 +66,9 @@ cat:
 
 assm.S: $(NAME).elf
 	$(OBJDUMP) -D -S $(NAME).elf > $@
+# So that you can see the assembly for an individual file with any comments etc.
+%.s: %.c Makefile
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -S -o $@ $< -Wall -std=gnu99
 
 %.hex: %.elf Makefile
 	$(OBJCOPY) -O ihex $< $@
