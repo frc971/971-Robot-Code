@@ -9,6 +9,8 @@ message CameraTarget {
 
 message TargetAngle {
   double target_angle;
+  double shooter_speed;
+  double shooter_angle;
 };
 
 queue TargetAngle target_angle;

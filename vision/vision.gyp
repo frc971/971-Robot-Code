@@ -25,6 +25,7 @@
       'type': 'executable',
       'sources': [
         'GoalMaster.cpp',
+        'SensorProcessor.cpp',
       ],
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:init',
