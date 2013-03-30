@@ -1,7 +1,10 @@
 {
   'variables': {
     'queue_files': [
+      'CameraEnableQueue.q',
       'GyroAngle.q',
+      'CameraTarget.q',
+      'PhotoSensor.q',
       'Piston.q',
     ]
   },
