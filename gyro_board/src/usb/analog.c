@@ -501,7 +501,7 @@ void fillSensorPacket(struct DataStruct *packet) {
   NVIC_DisableIRQ(EINT2_IRQn);
 
   packet->wrist = (int32_t)QEI->QEIPOS;
-  packet->wrist_hall_effect = digital(0);
+  packet->wrist_hall_effect = digital(3);
   packet->capture_wrist_rise = capture_wrist_rise;
   packet->wrist_rise_count = wrist_rise_count;
 
@@ -515,16 +515,16 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   packet->capture_top_fall = capture_top_fall;
   packet->top_fall_count = top_fall_count;
-  packet->top_disc = digital(4);
+  packet->top_disc = digital(2);
 
   packet->capture_bottom_fall_delay = capture_bottom_fall_delay;
   packet->bottom_fall_delay_count = bottom_fall_delay_count;
   packet->bottom_fall_count = bottom_fall_count;
-  packet->bottom_disc = digital(3);
+  packet->bottom_disc = digital(1);
 
   packet->capture_shooter_angle_rise = capture_shooter_angle_rise;
   packet->shooter_angle_rise_count = shooter_angle_rise_count;
-  packet->angle_adjust_bottom_hall_effect = digital(2);
+  packet->angle_adjust_bottom_hall_effect = digital(4);
 
   NVIC_EnableIRQ(EINT3_IRQn);
 

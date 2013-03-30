@@ -1,0 +1,18 @@
+Encoder 0: Wrist
+Encoder 1: Shooter
+Encoder 2: angle adjust
+Encoder 3: Indexer
+
+DIO 1: Bottom beam break
+DIO 2: Top beam break
+DIO 3: Wrist Hall Effect
+DIO 4: Angle Adjust Hall Effect
+DIO 5: NOP
+DIO 6: NOP
+DIO 7: Right Drive
+DIO 8: Right Drive
+DIO 9: Left Drive
+DIO 10: Left Drive
+DIO 11: NOP
+DIO 12: NOP
+
