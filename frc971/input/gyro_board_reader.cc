@@ -1,0 +1,163 @@
+#include <libusb-1.0/libusb.h>
+#include <memory>
+
+#include "aos/common/inttypes.h"
+#include "aos/atom_code/init.h"
+#include "aos/common/logging/logging.h"
+
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/wrist/wrist_motor.q.h"
+#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
+#include "frc971/control_loops/index/index_motor.q.h"
+#include "frc971/control_loops/shooter/shooter_motor.q.h"
+#include "frc971/input/gyro_board_data.h"
+#include "gyro_board/src/libusb-driver/libusb_wrap.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+using ::frc971::control_loops::drivetrain;
+using ::frc971::control_loops::wrist;
+using ::frc971::control_loops::angle_adjust;
+using ::frc971::control_loops::shooter;
+using ::frc971::control_loops::index_loop;
+
+namespace frc971 {
+namespace {
+
+inline double drivetrain_translate(int32_t in) {
+  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
+      (19.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/ *
+      (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+}
+
+inline double wrist_translate(int32_t in) {
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
+      (14.0 / 50.0 * 20.0 / 84.0) /*gears*/ * (2 * M_PI);
+}
+
+inline double angle_adjust_translate(int32_t in) {
+  static const double kCableDiameter = 0.060;
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 2.0 /*2x*/) *
+      ((0.75 + kCableDiameter) / (16.61125 + kCableDiameter)) /*pulleys*/ *
+      (2 * M_PI);
+}
+
+inline double shooter_translate(int32_t in) {
+ return -static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
+      (15.0 / 34.0) /*gears*/ * (2 * M_PI);
+}
+
+inline double index_translate(int32_t in) {
+  return -static_cast<double>(in) / (128.0 /*cpr*/ * 2.0 /*2x*/) *
+      (1.0) /*gears*/ * (2 * M_PI);
+}
+
+}  // namespace
+
+class GyroBoardReader {
+ public:
+  void Run() {
+    LibUSB libusb;
+
+    ::std::unique_ptr<LibUSBDeviceHandle> dev_handle(
+        libusb.FindDeviceWithVIDPID(kVid, kPid));
+    if (!dev_handle) {
+      LOG(FATAL, "couldn't find device\n");
+    }
+
+    uint8_t data[64];
+    GyroBoardData *real_data;
+    static_assert(sizeof(*real_data) <= sizeof(data), "it doesn't fit");
+
+    uint8_t *data_pointer = data;
+    memcpy(&real_data, &data_pointer, sizeof(data_pointer));
+    while (true) {
+      int read_bytes;
+      int r = dev_handle->interrupt_transfer(
+          kEndpoint, data, sizeof(data), &read_bytes, kReadTimeout);
+
+      if (r != 0) {
+        if (r == LIBUSB_ERROR_TIMEOUT) {
+          LOG(ERROR, "read timed out\n");
+          continue;
+        }
+        LOG(FATAL, "libusb gave error %d\n", r);
+      }
+
+      if (read_bytes != sizeof(data)) {
+        LOG(ERROR, "read %d bytes instead of %zu\n",
+            read_bytes, sizeof(data));
+        continue;
+      }
+
+      ProcessData(real_data);
+    }
+  }
+  
+ private:
+  static const unsigned char kEndpoint = 0x81;
+  // in ms
+  // 0 is unlimited
+  static const unsigned int kReadTimeout = 1000;
+
+  // vendor ID
+  static const int32_t kVid = 0x1424;
+  // product ID
+  static const int32_t kPid = 0xd243;
+
+  void ProcessData(GyroBoardData *data) {
+    data->NetworkToHost();
+
+    drivetrain.position.MakeWithBuilder()
+        .right_encoder(data->right_drive)
+        .left_encoder(data->left_drive)
+        .Send();
+
+    wrist.position.MakeWithBuilder()
+        .pos(wrist_translate(data->wrist))
+        .hall_effect(!data->wrist_hall_effect)
+        .calibration(wrist_translate(data->capture_wrist_rise))
+        .Send();
+
+    angle_adjust.position.MakeWithBuilder()
+        .angle(angle_adjust_translate(data->shooter_angle))
+        .bottom_hall_effect(!data->angle_adjust_bottom_hall_effect)
+        .middle_hall_effect(false)
+        .bottom_calibration(angle_adjust_translate(
+                data->capture_shooter_angle_rise))
+        .middle_calibration(angle_adjust_translate(
+                0))
+        .Send();
+
+    shooter.position.MakeWithBuilder()
+        .position(shooter_translate(data->shooter))
+        .Send();
+
+    index_loop.position.MakeWithBuilder()
+        .index_position(index_translate(data->indexer))
+        .top_disc_detect(!data->top_disc)
+        .top_disc_posedge_count(data->top_rise_count)
+        .top_disc_posedge_position(index_translate(data->capture_top_rise))
+        .top_disc_negedge_count(data->top_fall_count)
+        .top_disc_negedge_position(index_translate(data->capture_top_fall))
+        .bottom_disc_detect(!data->bottom_disc)
+        .bottom_disc_posedge_count(data->bottom_rise_count)
+        .bottom_disc_negedge_count(data->bottom_fall_count)
+        .bottom_disc_negedge_wait_position(index_translate(
+                data->capture_bottom_fall_delay))
+        .bottom_disc_negedge_wait_count(data->bottom_fall_delay_count)
+        .Send();
+  }
+};
+
+}  // namespace frc971
+
+int main() {
+  ::aos::Init();
+  ::frc971::GyroBoardReader reader;
+  reader.Run();
+  ::aos::Cleanup();
+  return 0;
+}

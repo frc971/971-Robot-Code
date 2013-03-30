@@ -1,7 +1,6 @@
 BinaryLogReader
 MotorWriter
 JoystickReader
-sensor_receiver
 drivetrain
 CRIOLogReader
 angle_adjust
@@ -9,3 +8,4 @@ wrist
 index
 shooter
 auto
+gyro_board_reader

@@ -80,7 +80,7 @@ void SensorUnpacker::UnpackFrom(sensor_values *values) {
 
   angle_adjust.position.MakeWithBuilder()
       .angle(angle_adjust_translate(values->angle_adjust_position))
-     .bottom_hall_effect(!values->angle_adjust_bottom_hall_effect)
+      .bottom_hall_effect(!values->angle_adjust_bottom_hall_effect)
       .middle_hall_effect(!values->angle_adjust_middle_hall_effect && false)
       .bottom_calibration(angle_adjust_translate(
               values->angle_adjust_bottom_edge_position))

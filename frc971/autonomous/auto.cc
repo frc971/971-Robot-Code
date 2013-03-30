@@ -22,7 +22,7 @@ static double left_initial_position, right_initial_position;
 
 // Multiply meters by this to get a drivetrain goal distance.
 static const double kDrivetrainCorrectionFactor =
-    ((32.0 / 44.0) / (64.0 /24.0 * 19.0 / 50.0));
+    ((32.0 / 44.0) / (64.0 / 24.0 * 19.0 / 50.0));
 
 bool ShouldExitAuto() {
   ::frc971::autonomous::autonomous.FetchLatest();
