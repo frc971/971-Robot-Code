@@ -12,6 +12,7 @@
 #include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/input/gyro_board_data.h"
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
+#include "frc971/queues/GyroAngle.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -22,6 +23,7 @@ using ::frc971::control_loops::wrist;
 using ::frc971::control_loops::angle_adjust;
 using ::frc971::control_loops::shooter;
 using ::frc971::control_loops::index_loop;
+using ::frc971::sensors::gyro;
 
 namespace frc971 {
 namespace {
@@ -135,6 +137,10 @@ class GyroBoardReader {
 
   void ProcessData(GyroBoardData *data) {
     data->NetworkToHost();
+
+    gyro.MakeWithBuilder()
+        .angle(data->gyro_angle / 16.0 / 1000.0 / 180.0 * M_PI)
+        .Send();
 
     UpdateWrappingCounter(data->top_rise_count,
         &last_top_rise_count_, &top_rise_count_);
