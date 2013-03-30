@@ -428,14 +428,14 @@ inline static void IRQ_Dispatch(void) {
     NoGPIO,            // index 17: NO GPIO      #bit 14
     NoGPIO,            // index 18: NO GPIO      #bit 13
     NoGPIO,            // index 19: NO GPIO      #bit 12
-    NoGPIO,            // index 20: NO GPIO      #bit 11
-    NoGPIO,            // index 21: NO GPIO      #bit 10
-    IndexerTopFall,    // index 22: P0.5 Fall    #bit 9   //Indexer Top    //Dio 2
-    IndexerBottomFall, // index 23: P0.4 Fall    #bit 8   //Indexer Bottom //Dio 1
-    ShooterHallRise,   // index 24: P0.7 Rise    #bit 7   //Shooter Hall   //Dio 4
-    WristHallRise,     // index 25: P0.6 Rise    #bit 6   //Wrist Hall     //Dio 3
-    IndexerTopRise,    // index 26: P0.5 Rise    #bit 5   //Indexer Top    //Dio 2
-    IndexerBottomRise, // index 27: P0.4 Rise    #bit 4   //Indexer Bottom //Dio 1
+    ShooterHallRise,   // index 20: P0.7 Fall    #bit 11  //Shooter Hall   //Dio 4
+    WristHallRise,     // index 21: P0.6 Fall    #bit 10  //Wrist Hall     //Dio 3
+    IndexerTopRise,    // index 22: P0.5 Fall    #bit 9   //Indexer Top    //Dio 2
+    IndexerBottomRise, // index 23: P0.4 Fall    #bit 8   //Indexer Bottom //Dio 1
+    NoGPIO,            // index 24: NO GPIO      #bit 7
+    NoGPIO,            // index 25: NO GPIO      #bit 6
+    IndexerTopFall,    // index 26: P0.5 Rise    #bit 5   //Indexer Top    //Dio 2
+    IndexerBottomFall, // index 27: P0.4 Rise    #bit 4   //Indexer Bottom //Dio 1
     Encoder5BRise,     // index 28: P2.3 Rise    #bit 3   //Encoder 5 B    //Dio 10
     Encoder5ARise,     // index 29: P2.2 Rise    #bit 2   //Encoder 5 A    //Dio 9
     Encoder4BRise,     // index 30: P2.1 Rise    #bit 1   //Encoder 4 B    //Dio 8
@@ -501,7 +501,7 @@ void fillSensorPacket(struct DataStruct *packet) {
   NVIC_DisableIRQ(EINT2_IRQn);
 
   packet->wrist = (int32_t)QEI->QEIPOS;
-  packet->wrist_hall_effect = digital(3);
+  packet->wrist_hall_effect = !digital(3);
   packet->capture_wrist_rise = capture_wrist_rise;
   packet->wrist_rise_count = wrist_rise_count;
 
@@ -515,16 +515,16 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   packet->capture_top_fall = capture_top_fall;
   packet->top_fall_count = top_fall_count;
-  packet->top_disc = digital(2);
+  packet->top_disc = !digital(2);
 
   packet->capture_bottom_fall_delay = capture_bottom_fall_delay;
   packet->bottom_fall_delay_count = bottom_fall_delay_count;
   packet->bottom_fall_count = bottom_fall_count;
-  packet->bottom_disc = digital(1);
+  packet->bottom_disc = !digital(1);
 
   packet->capture_shooter_angle_rise = capture_shooter_angle_rise;
   packet->shooter_angle_rise_count = shooter_angle_rise_count;
-  packet->angle_adjust_bottom_hall_effect = digital(4);
+  packet->angle_adjust_bottom_hall_effect = !digital(4);
 
   NVIC_EnableIRQ(EINT3_IRQn);
 
@@ -612,9 +612,9 @@ void encoder_init(void) {
   GPIOINT->IO0IntEnR |= (1 << 5);  // Set GPIO rising interrupt
   PINCON->PINSEL0 &= ~(0x3 << 10);
 
-  GPIOINT->IO0IntEnR |= (1 << 6);  // Set GPIO rising interrupt
+  GPIOINT->IO0IntEnF |= (1 << 6);  // Set GPIO rising interrupt
   PINCON->PINSEL0 &= ~(0x3 << 12);
 
-  GPIOINT->IO0IntEnR |= (1 << 7);  // Set GPIO rising interrupt
+  GPIOINT->IO0IntEnF |= (1 << 7);  // Set GPIO rising interrupt
   PINCON->PINSEL0 &= ~(0x3 << 14);
 }
