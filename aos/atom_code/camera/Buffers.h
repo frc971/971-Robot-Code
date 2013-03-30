@@ -83,7 +83,7 @@ class Buffers {
   void Release();
 
   // How big images are.
-  static const int32_t kWidth = 640, kHeight = 480;
+  static const int32_t kWidth = 320, kHeight = 240;
 };
 
 } // namespace camera

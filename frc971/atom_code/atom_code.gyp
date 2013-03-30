@@ -21,6 +21,8 @@
         '../input/input.gyp:sensor_receiver',
         '../input/input.gyp:GyroReader',
         '../input/input.gyp:AutoMode',
+        '../../vision/vision.gyp:OpenCVWorkTask',
+        '../../vision/vision.gyp:GoalMaster',
         '../output/output.gyp:MotorWriter',
         '../output/output.gyp:CameraServer',
         'camera/camera.gyp:frc971',

@@ -63,6 +63,16 @@
       },
     },
     {
+      'target_name': 'opencv',
+      'type': 'none',
+      'link_settings': {
+        'libraries': [
+          '-lopencv_core',
+          '-lopencv_imgproc',
+        ],
+      },
+    },
+    {
 # TODO(brians) convert this to downloading + building
       'target_name': 'libevent',
       'type': 'none',
