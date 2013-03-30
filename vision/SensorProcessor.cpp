@@ -1,6 +1,8 @@
+#include "vision/SensorProcessor.h"
 
-#include "SensorProcessor.h"
 #include <stdio.h>
+
+namespace frc971 {
 
 // give a set of x -> fx pairs find a range for our value
 // then interpolate between and return an interpolated fx.
@@ -48,3 +50,4 @@ double interpolate(int num_interp_vals,
 	return ( (dy/dx)*a + intercept );
 }
 
+}  // namespace frc971
