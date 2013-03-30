@@ -288,7 +288,7 @@ static void USBFrameHandler(unsigned short wFrame) {
     // data available, enable NAK interrupt on bulk in
     USBHwNakIntEnable(INACK_BI | INACK_II);
   }else{
-    USBHwNakIntEnable(INACK_BI);
+    USBHwNakIntEnable(INACK_II);
   }
 }
 
