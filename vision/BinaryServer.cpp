@@ -1,4 +1,5 @@
 #include "vision/BinaryServer.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -9,19 +10,14 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#include "aos/externals/libjpeg/include/jpeglib.h"
 
+#include "aos/externals/libjpeg/include/jpeglib.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/common/time.h"
 #include "opencv2/opencv.hpp"
 
-
-
-
 namespace frc971 {
 namespace vision {
-
-
 
 static void echo_read_cb(struct bufferevent *bev, void * /*ctx*/){
   struct evbuffer *input = bufferevent_get_input(bev);

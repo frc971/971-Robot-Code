@@ -20,6 +20,9 @@
         '<(AOS)/common/common.gyp:queues',
         '<(AOS)/build/aos.gyp:libaos',
       ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:queues',
+      ],
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
