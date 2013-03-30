@@ -13,24 +13,23 @@ using frc971::sensors::gyro;
 using frc971::vision::targets;
 using frc971::vision::target_angle;
 
-int main(){
-	RingBuffer< ::aos::time::Time,double> buff;
-	::aos::Init();
-	while (true) {
+int main() {
+  RingBuffer< ::aos::time::Time, double> buff;
+  ::aos::InitNRT();
+  while (true) {
     gyro.FetchNextBlocking();
-		buff.Sample(gyro->sent_time, gyro->angle);
-    if(targets.FetchNext()){
-      const frc971::vision::CameraTarget *goal = targets.get();
-			::aos::time::Time stamp = ::aos::time::Time::InNS(goal->timestamp);
-			double angle_goal = 
-				buff.ValueAt(stamp) - M_PI * goal->percent_azimuth_off_center / 4;
-			printf("%g ",angle_goal);
+    buff.Sample(gyro->sent_time, gyro->angle);
+    if (targets.FetchNext()) {
+      ::aos::time::Time stamp = ::aos::time::Time::InNS(targets->timestamp);
+      double angle_goal =
+          buff.ValueAt(stamp) -
+					M_PI / 2.0 * targets->percent_azimuth_off_center / 2.0;
+      printf("%g ",angle_goal);
       printf("%g\n",gyro->angle);
-			
-     target_angle.MakeWithBuilder()
-      .target_angle(angle_goal).Send();
+
+      target_angle.MakeWithBuilder()
+          .target_angle(angle_goal).Send();
     }
   }
-	::aos::Cleanup();
+  ::aos::Cleanup();
 }
-
