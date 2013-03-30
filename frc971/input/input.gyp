@@ -21,7 +21,7 @@
       'dependencies': [
         '<(AOS)/atom_code/input/input.gyp:joystick',
         'actions',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/atom_code/atom_code.gyp:init',
       ],
@@ -34,6 +34,8 @@
       ],
       'dependencies': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
+        '<(AOS)/build/aos.gyp:libaos',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],
     },
@@ -67,6 +69,7 @@
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
+        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
         '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/crio/hardware/hardware.gyp:counter',
@@ -93,7 +96,6 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:libaos',
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         'actions',
 # TODO(brians) this shouldn't need to be here

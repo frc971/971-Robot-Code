@@ -1,4 +1,4 @@
-#include "frc971/control_loops/DriveTrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
 
 #include <stdio.h>
 #include <sched.h>
@@ -7,8 +7,9 @@
 #include "aos/aos_core.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
-#include "frc971/control_loops/DriveTrain.mat"
-#include "frc971/control_loops/DriveTrain.q.h"
+#include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
 
@@ -20,10 +21,10 @@ namespace control_loops {
 // Width of the robot.
 const double width = 22.0 / 100.0 * 2.54;
 
-class DrivetrainMotorsSS : public MatrixClass {
+class DrivetrainMotorsSS : public StateFeedbackLoop<4, 2, 2> {
  public:
-  DrivetrainMotorsSS (void) {
-    MATRIX_INIT;
+  DrivetrainMotorsSS (void)
+      : StateFeedbackLoop(MakeDrivetrainLoop()) {
     _offset = 0;
     _integral_offset = 0;
     _left_goal = 0.0;
@@ -262,8 +263,14 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
   bool bad_pos = false;
   if (position == NULL) {
-    LOG(WARNING, "no pos\n");
+    LOG(WARNING, "no position\n");
     bad_pos = true;
+  }
+
+  bool bad_output = false;
+  if (output == NULL) {
+    LOG(WARNING, "no output\n");
+    bad_output = true;
   }
 
   double wheel = goal->steering;
@@ -286,7 +293,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
   }
-  dt_closedloop.Update(!bad_pos, bad_pos || (output == NULL));
+  dt_closedloop.Update(!bad_pos, bad_pos || bad_output);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
   if (control_loop_driving) {
@@ -298,5 +305,3 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
 }  // namespace control_loops
 }  // namespace frc971
-
-AOS_RUN_LOOP(frc971::control_loops::DrivetrainLoop)
