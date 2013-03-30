@@ -160,6 +160,8 @@ volatile int32_t encoder5_val;
 
 // ENC1A 2.11
 void EINT1_IRQHandler(void) {
+  // TODO(brians): figure out why this has to be up here too
+  SC->EXTINT = 0x2;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
     ++encoder1_val;
@@ -171,6 +173,7 @@ void EINT1_IRQHandler(void) {
 }
 // ENC1B 2.12
 void EINT2_IRQHandler(void) {
+  SC->EXTINT = 0x4;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
     --encoder1_val;
