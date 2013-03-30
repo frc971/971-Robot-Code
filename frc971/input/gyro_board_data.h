@@ -22,18 +22,18 @@ struct GyroBoardData {
 	int32_t capture_wrist_rise;
 	int32_t capture_shooter_angle_rise;
 
-	int8_t top_rise_count;
+	uint8_t top_rise_count;
 
-	int8_t top_fall_count;
+	uint8_t top_fall_count;
 
-	int8_t bottom_rise_count;
+	uint8_t bottom_rise_count;
 
-	int8_t bottom_fall_delay_count;
-	int8_t bottom_fall_count;
+	uint8_t bottom_fall_delay_count;
+	uint8_t bottom_fall_count;
 
-	int8_t wrist_rise_count;
+	uint8_t wrist_rise_count;
 
-	int8_t shooter_angle_rise_count;
+	uint8_t shooter_angle_rise_count;
 
   union {
     struct {

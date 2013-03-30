@@ -33,19 +33,19 @@ inline double drivetrain_translate(int32_t in) {
 }
 
 inline double wrist_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
+  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       (14.0 / 50.0 * 20.0 / 84.0) /*gears*/ * (2 * M_PI);
 }
 
 inline double angle_adjust_translate(int32_t in) {
   static const double kCableDiameter = 0.060;
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 2.0 /*2x*/) *
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
       ((0.75 + kCableDiameter) / (16.61125 + kCableDiameter)) /*pulleys*/ *
       (2 * M_PI);
 }
 
 inline double shooter_translate(int32_t in) {
- return -static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
+ return static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
       (15.0 / 34.0) /*gears*/ * (2 * M_PI);
 }
 
@@ -58,6 +58,23 @@ inline double index_translate(int32_t in) {
 
 class GyroBoardReader {
  public:
+  GyroBoardReader()
+      : top_rise_count_(0),
+        last_top_rise_count_(0),
+        top_fall_count_(0),
+        last_top_fall_count_(0),
+        bottom_rise_count_(0),
+        last_bottom_rise_count_(0),
+        bottom_fall_delay_count_(0),
+        last_bottom_fall_delay_count_(0),
+        bottom_fall_count_(0),
+        last_bottom_fall_count_(0),
+        wrist_rise_count_(0),
+        last_wrist_rise_count_(0),
+        shooter_angle_rise_count_(0),
+        last_shooter_angle_rise_count_(0) {
+  }
+
   void Run() {
     LibUSB libusb;
 
@@ -107,12 +124,36 @@ class GyroBoardReader {
   // product ID
   static const int32_t kPid = 0xd243;
 
+  void UpdateWrappingCounter(
+      uint8_t current, uint8_t *last, int32_t *counter) {
+    if (*last > current) {
+      *counter += 0x100;
+    }
+    *counter = (*counter & 0xffffff00) | current;
+    *last = current;
+  }
+
   void ProcessData(GyroBoardData *data) {
     data->NetworkToHost();
 
+    UpdateWrappingCounter(data->top_rise_count,
+        &last_top_rise_count_, &top_rise_count_);
+    UpdateWrappingCounter(data->top_fall_count,
+        &last_top_fall_count_, &top_fall_count_);
+    UpdateWrappingCounter(data->bottom_rise_count,
+        &last_bottom_rise_count_, &bottom_rise_count_);
+    UpdateWrappingCounter(data->bottom_fall_delay_count,
+        &last_bottom_fall_delay_count_, &bottom_fall_delay_count_);
+    UpdateWrappingCounter(data->bottom_fall_count,
+        &last_bottom_fall_count_, &bottom_fall_count_);
+    UpdateWrappingCounter(data->wrist_rise_count,
+        &last_wrist_rise_count_, &wrist_rise_count_);
+    UpdateWrappingCounter(data->shooter_angle_rise_count,
+        &last_shooter_angle_rise_count_, &shooter_angle_rise_count_);
+
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(data->right_drive)
-        .left_encoder(data->left_drive)
+        .right_encoder(-drivetrain_translate(data->right_drive))
+        .left_encoder(drivetrain_translate(data->left_drive))
         .Send();
 
     wrist.position.MakeWithBuilder()
@@ -138,18 +179,33 @@ class GyroBoardReader {
     index_loop.position.MakeWithBuilder()
         .index_position(index_translate(data->indexer))
         .top_disc_detect(!data->top_disc)
-        .top_disc_posedge_count(data->top_rise_count)
+        .top_disc_posedge_count(top_rise_count_)
         .top_disc_posedge_position(index_translate(data->capture_top_rise))
-        .top_disc_negedge_count(data->top_fall_count)
+        .top_disc_negedge_count(top_fall_count_)
         .top_disc_negedge_position(index_translate(data->capture_top_fall))
         .bottom_disc_detect(!data->bottom_disc)
-        .bottom_disc_posedge_count(data->bottom_rise_count)
-        .bottom_disc_negedge_count(data->bottom_fall_count)
+        .bottom_disc_posedge_count(bottom_rise_count_)
+        .bottom_disc_negedge_count(bottom_fall_count_)
         .bottom_disc_negedge_wait_position(index_translate(
                 data->capture_bottom_fall_delay))
-        .bottom_disc_negedge_wait_count(data->bottom_fall_delay_count)
+        .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
         .Send();
   }
+
+  int32_t top_rise_count_;
+  uint8_t last_top_rise_count_;
+  int32_t top_fall_count_;
+  uint8_t last_top_fall_count_;
+  int32_t bottom_rise_count_;
+  uint8_t last_bottom_rise_count_;
+  int32_t bottom_fall_delay_count_;
+  uint8_t last_bottom_fall_delay_count_;
+  int32_t bottom_fall_count_;
+  uint8_t last_bottom_fall_count_;
+  int32_t wrist_rise_count_;
+  uint8_t last_wrist_rise_count_;
+  int32_t shooter_angle_rise_count_;
+  uint8_t last_shooter_angle_rise_count_;
 };
 
 }  // namespace frc971
