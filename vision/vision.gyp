@@ -12,9 +12,11 @@
       ],
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/common/common.gyp:time',
         '<(EXTERNALS):libevent',
         '<(EXTERNALS):libjpeg',
         '<(EXTERNALS):opencv',
+        '<(AOS)/atom_code/camera/camera.gyp:buffers',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],
     },
@@ -26,6 +28,7 @@
       ],
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/common/common.gyp:time',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],
     },

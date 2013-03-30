@@ -1,14 +1,17 @@
 #ifndef FRC971_VISION_BINARY_SERVER_H_
 #define FRC971_VISION_BINARY_SERVER_H_
+
+#include <sys/types.h> 
+#include <sys/socket.h>
+
 #include "event2/buffer.h"
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
+
 #include "aos/common/mutex.h"
 
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include "PacketNotifier.h"
+#include "vision/PacketNotifier.h"
 
 namespace frc971 {
 namespace vision {

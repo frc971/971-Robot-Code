@@ -1,10 +1,10 @@
-
-#ifndef _CAMERA_PROCESSOR_H_
-#define _CAMERA_PROCESSOR_H_
+#ifndef VISION_CAMERA_PROCESSOR_H_
+#define VISION_CAMERA_PROCESSOR_H_
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <utility>
 #include <vector>
 
@@ -63,12 +63,12 @@ class ProcessorData {
 		cv::MemStorage g_storage; // opencv storage
 		static const int HIST_SIZE = 20; // dimension of histogram
 								 // ie number of scan lines
-		static constexpr double HIST_SIZE_F = 1.0/20.0; // step size
+		static const double HIST_SIZE_F = 1.0/20.0; // step size
 											// should be 1/HIST_SIZE
 		double vert_hist[HIST_SIZE]; // desired vertical histogram
 		double horz_hist[HIST_SIZE]; // desired horizontal histogram
 		// defines the minimum dist for a match
-		static constexpr double HIST_MATCH = 1.76;
+		static const double HIST_MATCH = 1.76;
 		double calcHistComponent(
 				cv::Point2i start,
 				cv::Point2i end,
@@ -85,5 +85,4 @@ class ProcessorData {
 		std::vector<Target> target_list; // list of found targets
 };
 
-#endif //_CAMERA_PROCESSOR_H_
-
+#endif  // VISION_CAMERA_PROCESSOR_H_

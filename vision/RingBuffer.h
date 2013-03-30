@@ -1,9 +1,11 @@
-#ifndef _FRC971_VISION_RINGBUFFER_H_
-#define _FRC971_VISION_RINGBUFFER_H_
+#ifndef VISION_RINGBUFFER_H_
+#define VISION_RINGBUFFER_H_
+
 #include <stdio.h>
 #include <stdlib.h>
-namespace frc971{
-namespace vision{
+
+namespace frc971 {
+namespace vision {
 
 template<class T,class V>
 class RingBuffer{
@@ -57,9 +59,9 @@ class RingBuffer{
 			}   
 		}
 		return value_at(min) + (value_at(max) - value_at(min)) *
-		((time - time_at(min)).FloatingPointSec()/(time_at(max) - time_at(min)).FloatingPointSec());
+		((time - time_at(min)).ToSeconds()/(time_at(max) - time_at(min)).ToSeconds());
 	}
 };
 };  // vision
 };  // frc971
-#endif // _FRC971_VISION_RINGBUFFER_H_
+#endif // VISION_RINGBUFFER_H_

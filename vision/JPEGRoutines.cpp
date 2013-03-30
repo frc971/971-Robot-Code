@@ -1,4 +1,5 @@
-#include "vision/OpenCVWorkTask.h"
+#include "vision/JPEGRoutines.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -8,14 +9,11 @@
 
 #include "aos/common/time.h"
 #include "opencv2/opencv.hpp"
-#include "vision/JPEGRoutines.h"
 
-
-
+#include "vision/OpenCVWorkTask.h"
 
 namespace frc971 {
 namespace vision {
-
 
 /* This is also adapted from libjpeg to be used on decompression tables rather than
  * compression tables as it was origionally intended

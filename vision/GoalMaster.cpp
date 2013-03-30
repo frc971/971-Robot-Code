@@ -1,9 +1,11 @@
-#include "aos/aos_core.h"
 #include "math.h"
+
+#include "aos/common/time.h"
+#include "aos/atom_code/init.h"
 
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/CameraTarget.q.h"
-#include "aos/common/time.h"
+
 #include "vision/RingBuffer.h"
 
 using frc971::vision::RingBuffer;
