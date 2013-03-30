@@ -39,8 +39,6 @@
         'sensor_unpacker.cc',
       ],
       'dependencies': [
-        '<(DEPTH)/frc971/control_loops/control_loops.gyp:control_loops',
-        '<(AOS)/build/aos.gyp:libaos',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/network/network.gyp:socket',
@@ -98,7 +96,6 @@
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
         '<(AOS)/common/common.gyp:mutex',
         '<(AOS)/crio/hardware/hardware.gyp:counter',
