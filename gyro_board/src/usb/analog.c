@@ -495,10 +495,18 @@ void fillSensorPacket(struct DataStruct *packet) {
   packet->left_drive = encoder5_val;
   packet->shooter_angle = encoder2_val;
   packet->indexer = encoder3_val;
-  packet->wrist = (int32_t)QEI->QEIPOS;
 
-  // TODO(brians): should we re-enable it in between here so that it's disabled
-  // for shorter chunks?
+  NVIC_DisableIRQ(EINT1_IRQn);
+  NVIC_DisableIRQ(EINT2_IRQn);
+
+  packet->wrist = (int32_t)QEI->QEIPOS;
+  packet->wrist_hall_effect = digital(0);
+  packet->capture_wrist_rise = capture_wrist_rise;
+  packet->wrist_rise_count = wrist_rise_count;
+
+  NVIC_EnableIRQ(EINT1_IRQn);
+  NVIC_EnableIRQ(EINT2_IRQn);
+
   NVIC_DisableIRQ(EINT3_IRQn);
 
   packet->capture_top_rise = capture_top_rise;
@@ -506,16 +514,16 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   packet->capture_top_fall = capture_top_fall;
   packet->top_fall_count = top_fall_count;
+  packet->top_disc = digital(4);
 
   packet->capture_bottom_fall_delay = capture_bottom_fall_delay;
   packet->bottom_fall_delay_count = bottom_fall_delay_count;
   packet->bottom_fall_count = bottom_fall_count;
-
-  packet->capture_wrist_rise = capture_wrist_rise;
-  packet->wrist_rise_count = wrist_rise_count;
+  packet->bottom_disc = digital(3);
 
   packet->capture_shooter_angle_rise = capture_shooter_angle_rise;
   packet->shooter_angle_rise_count = shooter_angle_rise_count;
+  packet->angle_adjust_bottom_hall_effect = digital(2);
 
   NVIC_EnableIRQ(EINT3_IRQn);
 
