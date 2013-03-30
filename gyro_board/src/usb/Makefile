@@ -13,7 +13,7 @@ else
 endif
 GCC_PATH=$(TOOLS_PREFIX)/bin
 
-PORT=/dev/ttyS1
+PORT=/dev/ttyUSB0
 
 CC=$(GCC_PATH)/arm-eabi-gcc
 LD=$(GCC_PATH)/arm-eabi-ld

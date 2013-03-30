@@ -154,6 +154,7 @@ void GyroDriver::PacketReceiver::Run() {
   uint8_t *data_pointer = data;
   memcpy(&real_data, &data_pointer, sizeof(data_pointer));
   
+  int count = 0;
   while (should_continue()) {
     r = dev_handle_->interrupt_transfer(
         0x81, data, sizeof(data), &actual, 1000);
@@ -165,6 +166,10 @@ void GyroDriver::PacketReceiver::Run() {
     if (r != 0) {
       LOG(ERROR, "Read Error. Read %d\n", actual);
     }
+
+    ++count;
+    if (count < 100) continue;
+    count = 0;
     
     printf("angle: %"PRId64"\n", real_data->gyro_angle);
     printf("drivel: %d\n", real_data->left_drive);
