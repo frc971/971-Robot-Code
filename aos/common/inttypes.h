@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #else
 #define PRId64 "lld"
+#define PRIu64 "llu"
 
 // It warns about just "d", but not this, which is kind of weird because
 // sizeof(int) == sizeof(long) == sizeof(int32_t) == 4, but oh well.

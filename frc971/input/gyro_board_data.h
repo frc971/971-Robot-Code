@@ -46,6 +46,8 @@ struct GyroBoardData {
   };
 
   void NetworkToHost() {
+    // Apparently it sends the information out in little endian.
+#if 0
     using ::aos::ntoh;
 
     gyro_angle = ntoh(gyro_angle);
@@ -64,6 +66,7 @@ struct GyroBoardData {
     capture_shooter_angle_rise = ntoh(capture_shooter_angle_rise);
 
     digitals = ntoh(digitals);
+#endif
   }
 } __attribute__((__packed__));
 

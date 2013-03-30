@@ -37,11 +37,11 @@ LibUSBDeviceHandle *LibUSB::FindDeviceWithVIDPID(int vid, int pid) {
           (int)libusb_get_device_address(devs[i]));
       r = libusb_open(devs[i], &dev_handle);
       if (libusb_kernel_driver_active(dev_handle, 0) == 1) {
-        LOG(INFO, "Device already in use, trying next one.");
+        LOG(INFO, "Device already in use, trying next one.\n");
         continue;
       }
       if (r < 0) {
-        LOG(WARNING, "Failed to open device.");
+        LOG(WARNING, "Failed to open device.\n");
       } else {
         found = true;
         break;
@@ -50,26 +50,26 @@ LibUSBDeviceHandle *LibUSB::FindDeviceWithVIDPID(int vid, int pid) {
   }
   libusb_free_device_list(devs, 1);
   if (!found) {
-    LOG(ERROR, "Couldn't open device.");
+    LOG(ERROR, "Couldn't open device.\n");
     return NULL;
   }
 
   if (libusb_kernel_driver_active(dev_handle, 0) == 1) {
-    LOG(INFO, "Kernel Driver Active");
+    LOG(INFO, "Kernel Driver Active\n");
     if (libusb_detach_kernel_driver(dev_handle, 0) == 0) {
-      LOG(INFO, "Kernel Driver Detached!");
+      LOG(INFO, "Kernel Driver Detached!\n");
     } else {
-      LOG(ERROR, "Couldn't detach kernel driver.");
+      LOG(ERROR, "Couldn't detach kernel driver.\n");
       return NULL;
     }
   }
 
   r = libusb_claim_interface(dev_handle, 0);
   if (r < 0) {
-    LOG(ERROR, "Cannot Claim Interface");
+    LOG(ERROR, "Cannot Claim Interface\n");
     return 0;
   }
-  LOG(INFO, "Claimed Interface");
+  LOG(INFO, "Claimed Interface\n");
   return new LibUSBDeviceHandle(dev_handle);
 }
 
@@ -84,9 +84,9 @@ LibUSBDeviceHandle::~LibUSBDeviceHandle() {
   int r;
   r = libusb_release_interface(dev_handle_, 0);
   if (r != 0) {
-    LOG(FATAL, "Cannot Release Interface");
+    LOG(FATAL, "Cannot Release Interface\n");
   }
-  LOG(INFO, "Released Interface");
+  LOG(INFO, "Released Interface\n");
 
   libusb_close(dev_handle_);
 }

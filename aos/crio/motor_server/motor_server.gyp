@@ -65,6 +65,7 @@
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
         'output',
         '<(AOS)/common/network/network.gyp:socket',
+        '<(AOS)/common/common.gyp:controls',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib',
@@ -74,6 +75,7 @@
         '<(AOS)/common/network/network.gyp:socket',
         '<(AOS)/crio/shared_libs/shared_libs.gyp:ByteBuffer',
         '<(AOS)/common/network/network.gyp:socket',
+        '<(AOS)/common/common.gyp:controls',
       ],
     },
   ],

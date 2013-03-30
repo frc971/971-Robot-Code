@@ -3,7 +3,7 @@
 echo '/home/driver/tmp/robot_logs/%e-%s-%p-%t.coredump' > /proc/sys/kernel/core_pattern
 
 #echo $$ > /var/run/`basename $0`.pid IT FORKS AFTER THIS!!!!
-insmod /home/driver/robot_code/bin/aos_module.ko
+#insmod /home/driver/robot_code/bin/aos_module.ko
 #chrt -p 45 `pidof sshd`
 chrt -o 0 bash -c "export PATH=$PATH:/home/driver/robot_code/bin; starter_loop.sh $*" &
 #chrt -o 0 bash -c "while true; do cd /home/driver/mjpg-streamer2; ./server.sh; sleep 5; done" &

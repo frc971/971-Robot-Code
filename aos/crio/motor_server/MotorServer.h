@@ -45,6 +45,10 @@ class MotorServer {
 
   static const int32_t WORK_PRIORITY = 100;
 
+  // Needs to be called by some other piece of code every 10ms (after any
+  // control loops have been run etc).
+  static void WriteOutputs();
+
  private:
   template<class Values>
   friend class CRIOControlLoopRunner;
@@ -54,9 +58,6 @@ class MotorServer {
   // Would take days to overflow.
   static int count;
   static SEM_ID motorSync;
-  // Gets called by CRIOControlLoopRunner every 10ms after it runs all of the
-  // control loops.
-  static void WriteOutputs();
 
   static void RunReaderTask();
   static Task *tcpTask;

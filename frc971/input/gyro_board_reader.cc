@@ -105,9 +105,9 @@ class GyroBoardReader {
         LOG(FATAL, "libusb gave error %d\n", r);
       }
 
-      if (read_bytes != sizeof(data)) {
-        LOG(ERROR, "read %d bytes instead of %zu\n",
-            read_bytes, sizeof(data));
+      if (read_bytes < static_cast<ssize_t>(sizeof(*real_data))) {
+        LOG(ERROR, "read %d bytes instead of at least %zd\n",
+            read_bytes, sizeof(*real_data));
         continue;
       }
 
