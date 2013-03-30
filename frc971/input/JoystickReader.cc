@@ -15,6 +15,7 @@
 #include "frc971/control_loops/index/index_motor.q.h"
 #include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
+#include "frc971/queues/CameraTarget.q.h"
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::control_loops::shifters;
@@ -24,6 +25,7 @@ using ::frc971::control_loops::index_loop;
 using ::frc971::control_loops::shooter;
 using ::frc971::control_loops::angle_adjust;
 using ::frc971::control_loops::hangers;
+using ::frc971::vision::target_angle;
 
 namespace frc971 {
 
@@ -119,10 +121,16 @@ class JoystickReader : public aos::JoystickInput {
       shooter_goal->velocity = 0;
       static double angle_adjust_goal = 0.42;
       if (Pressed(2, 5)) {
-        // middle wheel on the back line (same as auto)
-        shooter_goal->velocity = 410;
-        wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.5101;
+        target_angle.FetchLatest();
+        if (target_angle.IsNewerThanMS(500)) {
+          shooter_goal->velocity = target_angle->shooter_speed;
+          angle_adjust_goal = target_angle->shooter_angle;
+          // TODO(brians): do the math right here
+          wrist_up_position = 0.70;
+        } else {
+          LOG(WARNING, "camera frame too old\n");
+          // pretend like no button is pressed
+        }
       } else if (Pressed(2, 3)) {
         // medium shot
 #if 0
