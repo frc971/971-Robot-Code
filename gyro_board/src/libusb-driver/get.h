@@ -10,23 +10,7 @@
 
 #include "libusb_wrap.h"
 
-// Use a packed version of can_frame.
-// This allows for us to just transfer the data over the wire trivially.
-struct packed_can_frame {
-	canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-	uint8_t can_dlc; /* data length code: 0 .. 8 */
-	uint8_t data[8];
-} __attribute__((packed));
-
 class DbgReader;
-
-// Compare function for CAN IDs.
-struct can_frame_priority_comparator
-    : std::binary_function <struct can_frame,
-                            struct can_frame, bool> {
-  bool operator() (const struct can_frame& x,
-                   const struct can_frame& y) const;
-};
 
 class GyroDriver {
  public:

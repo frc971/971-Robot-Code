@@ -28,52 +28,13 @@ DEFINE_bool(send, true,
 // 0x82 Bulk IN endpoint with printf output.
 // 0x05 Bulk OUT endpoint for stdin.
 
-bool can_frame_priority_comparator::operator() (
-    const struct can_frame& x,
-    const struct can_frame& y) const {
-  // Error frames win first.
-  if (x.can_id & CAN_EFF_FLAG) {
-    return false;
-  }
-  if (y.can_id & CAN_EFF_FLAG) {
-    return true;
-  }
-  // Extended frames send the first 11 bits out just like a standard frame.
-  int x_standard_bits = (x.can_id & CAN_SFF_MASK);
-  int y_standard_bits = (y.can_id & CAN_SFF_MASK);
-  if (x_standard_bits == y_standard_bits) {
-    // RTR wins next.
-    bool x_rtr = (x.can_id & CAN_RTR_FLAG);
-    bool y_rtr = (y.can_id & CAN_RTR_FLAG);
-    if (x_rtr == y_rtr) {
-      // Now check if it is an EFF packet.
-      bool x_eff = (x.can_id & CAN_EFF_FLAG);
-      bool y_eff = (y.can_id & CAN_EFF_FLAG);
-      if (x_eff == y_eff) {
-        // Now compare the bits in the extended frame.
-        return (x.can_id & CAN_EFF_MASK) < (y.can_id & CAN_EFF_MASK);
-      } else if (x_eff < y_eff) {
-        return false;
-      } else {
-        return true;
-      }
-    } else if (x_rtr < y_rtr) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return x_standard_bits < y_standard_bits;
-  }
-}
-
 class GyroDriver::PacketReceiver : public ::aos::util::Thread {
  public:
   // refusing to send any more frames.
   static const int kMaxRXFrames = 128;
 
   explicit PacketReceiver(LibUSBDeviceHandle *dev_handle)
-      : Thread(), dev_handle_(dev_handle), rx_queue_(new can_priority_queue) {}
+      : Thread(), dev_handle_(dev_handle) {}
 
   // Serve.
   virtual void Run();
@@ -81,13 +42,8 @@ class GyroDriver::PacketReceiver : public ::aos::util::Thread {
   bool GetCanFrame(struct can_frame *msg);
 
  private:
-  typedef std::priority_queue<struct can_frame,
-                              std::vector<struct can_frame>,
-                              can_frame_priority_comparator> can_priority_queue;
-
   LibUSBDeviceHandle *dev_handle_;
   ::aos::Mutex rx_mutex_;
-  std::unique_ptr<can_priority_queue> rx_queue_;
 };
 
 GyroDriver::GyroDriver(LibUSBDeviceHandle *dev_handle)
