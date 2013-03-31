@@ -77,6 +77,13 @@ LibUSB::~LibUSB() {
   libusb_exit(ctx_);
 }
 
+void LibUSB::HandleEvents() {
+  int ret = libusb_handle_events(ctx_);
+  if (ret != 0) {
+    LOG(FATAL, "libusb_handle_events(%p) returned %d\n", ctx_, ret);
+  }
+}
+
 LibUSBDeviceHandle::LibUSBDeviceHandle(
     libusb_device_handle *dev_handle) : dev_handle_(dev_handle) { }
 
@@ -103,3 +110,57 @@ int LibUSBDeviceHandle::bulk_transfer(
   return libusb_bulk_transfer(dev_handle_, endpoint, data, length,
                               transferred, timeout);
 }
+
+namespace libusb {
+
+Transfer::Transfer(size_t data_length,
+                   void (*callback)(Transfer *, void *),
+                   void *user_data)
+    : transfer_(libusb_alloc_transfer(0)),
+      data_(new uint8_t[data_length]),
+      data_length_(data_length),
+      callback_(callback),
+      user_data_(user_data) {
+}
+Transfer::~Transfer() {
+  libusb_free_transfer(transfer_);
+  delete data_;
+}
+
+void Transfer::FillInterrupt(LibUSBDeviceHandle *device,
+                             unsigned char endpoint,
+                             unsigned int timeout) {
+  libusb_fill_interrupt_transfer(transfer_,
+                                 device->dev_handle_,
+                                 endpoint,
+                                 data_,
+                                 data_length_,
+                                 StaticTransferCallback,
+                                 this,
+                                 timeout);
+}
+
+void Transfer::Submit() {
+  int ret = libusb_submit_transfer(transfer_);
+  if (ret != 0) {
+    if (ret == LIBUSB_ERROR_BUSY) {
+      LOG(FATAL, "transfer %p already submitted\n", this);
+    }
+    LOG(FATAL, "libusb error %d submitting transfer %p\n",
+        ret, this);
+  }
+}
+
+void Transfer::Cancel() {
+  int ret = libusb_cancel_transfer(transfer_);
+  if (ret != 0) {
+    LOG(FATAL, "libusb error %d cancelling transfer %p\n",
+        ret, this);
+  }
+}
+
+void Transfer::TransferCallback() {
+  callback_(this, user_data_);
+}
+
+}  // namespace libusb

@@ -6,7 +6,7 @@ namespace sensors {
 
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
-    time::Time::InSeconds(0.00225);
+    time::Time::InSeconds(0.003);
 // Not a multiple of kSensorSendFrequency to unwedge ourself if we hit some bug
 // where it needs to get off of that frequency to work.
 template<class Values>

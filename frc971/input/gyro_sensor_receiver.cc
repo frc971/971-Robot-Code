@@ -203,6 +203,7 @@ class GyroSensorReceiver :
     // Loop and then return once we get a good one.
     while (true) {
       int read_bytes;
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.0005));
       int r = dev_handle_->interrupt_transfer(
           kEndpoint, data_, sizeof(data_), &read_bytes, kReadTimeout);
 

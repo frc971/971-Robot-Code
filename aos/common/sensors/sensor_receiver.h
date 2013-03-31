@@ -40,10 +40,10 @@ class SensorReceiver {
   // How many cycles not to send data out to make sure that we're in phase
   // (during this time, the code verifies that <= 1 cycle is not within 1
   // cycle's time of kJitterDelay).
-  static const int kTestCycles = 10;
+  static const int kTestCycles = 8;
   // How many cycles that we need (consecutively) of another packet being closer
   // to the right time than the ones we're reading before we switch.
-  static const int kBadCyclesToSwitch = 15;
+  static const int kBadCyclesToSwitch = 8;
   // If we don't get a good packet in this long, then we Synchronize() again.
   static const time::Time kGiveupTime;
 
