@@ -79,9 +79,15 @@ struct Time {
   static Time Now(clockid_t clock = kDefaultClock);
 
   // Constructs a Time representing seconds.
+  // TODO(brians): fix and test the negative cases for all of these
   static Time InSeconds(double seconds) {
-    return Time(static_cast<int32_t>(seconds),
-                (seconds - static_cast<int32_t>(seconds)) * kNSecInSec);
+    if (seconds < 0.0) {
+      return Time(static_cast<int32_t>(seconds) - 1,
+                  (seconds - static_cast<int32_t>(seconds) + 1.0) * kNSecInSec);
+    } else {
+      return Time(static_cast<int32_t>(seconds),
+                  (seconds - static_cast<int32_t>(seconds)) * kNSecInSec);
+    }
   }
 
   // Constructs a time representing microseconds.
@@ -92,7 +98,12 @@ struct Time {
 
   // Constructs a time representing microseconds.
   static Time InUS(int useconds) {
-    return Time(useconds / kUSecInSec, (useconds % kUSecInSec) * kNSecInUSec);
+    if (useconds < 0) {
+      return Time(useconds / kUSecInSec - 1,
+                  (useconds % kUSecInSec) * kNSecInUSec + kNSecInSec);
+    } else {
+      return Time(useconds / kUSecInSec, (useconds % kUSecInSec) * kNSecInUSec);
+    }
   }
 
   // Constructs a time representing mseconds.
@@ -124,6 +135,13 @@ struct Time {
   int64_t ToMSec() const {
     return static_cast<int64_t>(sec_) * static_cast<int64_t>(kMSecInSec) +
         (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInMSec));
+  }
+
+  // Returns the time represent in microseconds.
+  // TODO(brians): test this
+  int64_t ToUSec() const {
+    return static_cast<int64_t>(sec_) * static_cast<int64_t>(kUSecInSec) +
+        (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInUSec));
   }
 
   // Returns the time represented in fractional seconds.

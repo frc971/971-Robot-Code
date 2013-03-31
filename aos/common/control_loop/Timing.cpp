@@ -9,12 +9,11 @@ namespace aos {
 namespace time {
 
 void PhasedLoopXMS(int ms, int offset) {
-  // TODO(brians): Rewrite this cleaner.
   // TODO(brians): Tests!
-  int64_t period_nsec = Time::InMS(ms).nsec();
-  SleepUntil(Time::InNS((Time::Now().ToNSec() / period_nsec +
-                         static_cast<int64_t>(1)) * period_nsec +
-                        Time::InUS(offset).ToNSec()));
+  const Time frequency = Time::InMS(ms);
+  SleepUntil((Time::Now() / frequency.ToNSec()) *
+             frequency.ToNSec() +
+             frequency + Time::InUS(offset));
 }
 
 }  // namespace timing
