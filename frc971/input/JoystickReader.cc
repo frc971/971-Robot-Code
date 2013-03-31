@@ -108,7 +108,7 @@ class JoystickReader : public aos::JoystickInput {
 
       // Where the wrist should be to pick up a frisbee.
       // TODO(brians): Make these globally accessible and clean up auto.
-      static const double kWristPickup = -0.633;
+      static const double kWristPickup = -0.580;
       static const double kWristNearGround = -0.4;
       // Where the wrist gets stored when up.
       // All the way up is 1.5.
