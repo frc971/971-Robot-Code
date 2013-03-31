@@ -20,10 +20,6 @@ namespace autonomous {
 
 static double left_initial_position, right_initial_position;
 
-// Multiply meters by this to get a drivetrain goal distance.
-static const double kDrivetrainCorrectionFactor =
-    ((32.0 / 44.0) / (64.0 / 24.0 * 19.0 / 50.0));
-
 bool ShouldExitAuto() {
   ::frc971::autonomous::autonomous.FetchLatest();
   bool ans = !::frc971::autonomous::autonomous->run_auto;
@@ -183,19 +179,17 @@ void StopDrivetrain() {
       .Send();
 }
 
-void SetDriveGoal(double yoffset) {
+void SetDriveGoal(double yoffset, double maximum_velocity = 1.5) {
   LOG(INFO, "Going to move %f\n", yoffset);
 
   // Measured conversion to get the distance right.
-  yoffset *= kDrivetrainCorrectionFactor;
-  LOG(INFO, "Going to move an adjusted %f\n", yoffset);
   ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
   ::Eigen::Matrix<double, 2, 1> driveTrainState;
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
 
   profile.set_maximum_acceleration(2.0);
-  profile.set_maximum_velocity(2.5);
+  profile.set_maximum_velocity(maximum_velocity);
  
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
@@ -224,7 +218,6 @@ void SetDriveGoal(double yoffset) {
 // Drives forward while we can pick up discs up to max_distance (in meters).
 void DriveForwardPickUp(double max_distance, double wrist_angle) {
   LOG(INFO, "going to pick up at a max distance of %f\n", max_distance);
-  max_distance *= kDrivetrainCorrectionFactor;
 
   static const ::aos::time::Time kPeriod = ::aos::time::Time::InMS(10);
   ::aos::util::TrapezoidProfile profile(kPeriod);
@@ -237,7 +230,7 @@ void DriveForwardPickUp(double max_distance, double wrist_angle) {
   profile.set_maximum_velocity(0.6);
 
   bool driving_back = false;
-  const double kDestination = -0.20 * kDrivetrainCorrectionFactor;
+  const double kDestination = -0.20;
 
   while (true) {
     ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
@@ -326,6 +319,7 @@ void DriveSpin(double radians) {
 void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
   double WRIST_UP;
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
   
   ::aos::robot_state.FetchLatest();
   if (!::aos::robot_state.get() ||
@@ -336,8 +330,8 @@ void HandleAuto() {
   WRIST_UP -= 0.4;
   LOG(INFO, "Got constants\n");
   const double WRIST_DOWN = -0.633;
-  const double ANGLE_ONE = 0.5101;
-  //const double ANGLE_ONE = 0.70;
+  const double ANGLE_ONE = 0.5434;
+  const double ANGLE_TWO = 0.685;
 
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
@@ -354,8 +348,7 @@ void HandleAuto() {
 
   SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
-  SetShooterVelocity(410.0);
-  //SetShooterVelocity(131);
+  SetShooterVelocity(400.0);
   WaitForIndexReset();
   if (ShouldExitAuto()) return;
   PreloadIndex();      // spin to top and put 1 disc into loader
@@ -371,35 +364,66 @@ void HandleAuto() {
 
   StartIndex();        // take in up to 4 discs
 
-  const double kDistanceToCenterMeters = 3.11023;
-  const double kMaxPickupDistance = 2.5;
-  const double kTurnToCenterDegrees = 78.2;
+  if (false) {
+    const double kDistanceToCenterMeters = 3.11023;
+    const double kMaxPickupDistance = 2.5;
+    const double kTurnToCenterDegrees = 78.2;
 
-  // Drive back to the center line.
-  SetDriveGoal(-kDistanceToCenterMeters);
-  if (ShouldExitAuto()) return;
+    // Drive back to the center line.
+    SetDriveGoal(-kDistanceToCenterMeters);
+    if (ShouldExitAuto()) return;
 
-  SetWristGoal(WRIST_DOWN);
-  // Turn towards the center.
-  DriveSpin(kTurnToCenterDegrees * M_PI / 180.0);
-  if (ShouldExitAuto()) return;
-  WaitForWrist();
-  if (ShouldExitAuto()) return;
+    SetWristGoal(WRIST_DOWN);
+    // Turn towards the center.
+    DriveSpin(kTurnToCenterDegrees * M_PI / 180.0);
+    if (ShouldExitAuto()) return;
+    WaitForWrist();
+    if (ShouldExitAuto()) return;
 
-  // Pick up at most 4 discs and drive at most kMaxPickupDistance.
-  DriveForwardPickUp(kMaxPickupDistance, WRIST_UP);
+    // Pick up at most 4 discs and drive at most kMaxPickupDistance.
+    DriveForwardPickUp(kMaxPickupDistance, WRIST_UP);
 
-  SetWristGoal(WRIST_UP);
-  DriveSpin(-kTurnToCenterDegrees * M_PI / 180.0);
-  if (ShouldExitAuto()) return;
-  // Drive back to where we were.
-  SetDriveGoal(kDistanceToCenterMeters);
-  if (ShouldExitAuto()) return;
+    SetWristGoal(WRIST_UP);
+    DriveSpin(-kTurnToCenterDegrees * M_PI / 180.0);
+    if (ShouldExitAuto()) return;
+    // Drive back to where we were.
+    SetDriveGoal(kDistanceToCenterMeters);
+    if (ShouldExitAuto()) return;
 
-  return;
+    return;
 
-  ShootNDiscs(4);
-  if (ShouldExitAuto()) return;
+    ShootNDiscs(4);
+    if (ShouldExitAuto()) return;
+  } else {
+    SetWristGoal(WRIST_DOWN);
+    SetAngle_AdjustGoal(ANGLE_TWO);
+    SetShooterVelocity(375.0);
+    StartIndex();				// take in up to 4 discs
+
+    if (ShouldExitAuto()) return;
+    WaitForWrist();			// wrist must be down before moving
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+
+    if (ShouldExitAuto()) return; 
+    WaitForIndex();			// ready to pick up discs
+
+    static const double kDriveDistance = 3.2;
+    static const double kFirstDrive = 0.3;
+    SetDriveGoal(kFirstDrive, 0.6);
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+    SetDriveGoal(kDriveDistance - kFirstDrive, 0.6);
+    if (ShouldExitAuto()) return;
+
+    PreloadIndex();
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.4));
+    SetDriveGoal(-1.3);
+
+    if (ShouldExitAuto()) return;
+    WaitForAngle_Adjust();
+    if (ShouldExitAuto()) return;
+    ShootIndex();	
+    if (ShouldExitAuto()) return;
+  }
 }
 
 }  // namespace autonomous
