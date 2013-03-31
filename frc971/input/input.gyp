@@ -65,6 +65,8 @@
         '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
         '<(EXTERNALS):libusb',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:timing',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

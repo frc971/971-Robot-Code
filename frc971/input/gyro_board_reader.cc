@@ -4,6 +4,8 @@
 #include "aos/common/inttypes.h"
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/control_loop/Timing.h"
+#include "aos/common/time.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"
@@ -41,7 +43,7 @@ inline double wrist_translate(int32_t in) {
 
 inline double angle_adjust_translate(int32_t in) {
   static const double kCableDiameter = 0.060;
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       ((0.75 + kCableDiameter) / (16.61125 + kCableDiameter)) /*pulleys*/ *
       (2 * M_PI);
 }
@@ -52,7 +54,7 @@ inline double shooter_translate(int32_t in) {
 }
 
 inline double index_translate(int32_t in) {
-  return -static_cast<double>(in) / (128.0 /*cpr*/ * 2.0 /*2x*/) *
+  return -static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*quad*/) *
       (1.0) /*gears*/ * (2 * M_PI);
 }
 
@@ -80,9 +82,9 @@ class GyroBoardReader {
   void Run() {
     LibUSB libusb;
 
-    ::std::unique_ptr<LibUSBDeviceHandle> dev_handle(
+    dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
         libusb.FindDeviceWithVIDPID(kVid, kPid));
-    if (!dev_handle) {
+    if (!dev_handle_) {
       LOG(FATAL, "couldn't find device\n");
     }
 
@@ -93,25 +95,22 @@ class GyroBoardReader {
     uint8_t *data_pointer = data;
     memcpy(&real_data, &data_pointer, sizeof(data_pointer));
     while (true) {
-      int read_bytes;
-      int r = dev_handle->interrupt_transfer(
-          kEndpoint, data, sizeof(data), &read_bytes, kReadTimeout);
+      if (false) {
+        // Theoretically need -3ms of offset. Using a slightly larger one to avoid
+        // missing the first control loop in the worst case.
+        ::aos::time::PhasedLoop10MS(
+            ::aos::time::Time::InSeconds(-0.0031).ToUSec());
+        LOG(DEBUG, "starting now\n");
 
-      if (r != 0) {
-        if (r == LIBUSB_ERROR_TIMEOUT) {
-          LOG(ERROR, "read timed out\n");
-          continue;
-        }
-        LOG(FATAL, "libusb gave error %d\n", r);
+        // Read 2 to make sure that we get fresh data.
+        if (!ReadPacket(data, sizeof(data))) continue;
+        //LOG(DEBUG, "in between\n");
+        if (!ReadPacket(data, sizeof(data))) continue;
+      } else {
+        if (!ReadPacket(data, sizeof(data))) continue;
+
+        ProcessData(real_data);
       }
-
-      if (read_bytes < static_cast<ssize_t>(sizeof(*real_data))) {
-        LOG(ERROR, "read %d bytes instead of at least %zd\n",
-            read_bytes, sizeof(*real_data));
-        continue;
-      }
-
-      ProcessData(real_data);
     }
   }
   
@@ -126,6 +125,29 @@ class GyroBoardReader {
   // product ID
   static const int32_t kPid = 0xd243;
 
+  // Returns whether it read a good packet.
+  bool ReadPacket(uint8_t *data, size_t data_size) {
+    int read_bytes;
+    int r = dev_handle_->interrupt_transfer(
+        kEndpoint, data, data_size, &read_bytes, kReadTimeout);
+
+    if (r != 0) {
+      if (r == LIBUSB_ERROR_TIMEOUT) {
+        LOG(ERROR, "read timed out\n");
+        return false;
+      }
+      LOG(FATAL, "libusb gave error %d\n", r);
+    }
+
+    if (read_bytes < static_cast<ssize_t>(sizeof(GyroBoardData))) {
+      LOG(ERROR, "read %d bytes instead of at least %zd\n",
+          read_bytes, sizeof(GyroBoardData));
+      return false;
+    }
+
+    return true;
+  }
+
   void UpdateWrappingCounter(
       uint8_t current, uint8_t *last, int32_t *counter) {
     if (*last > current) {
@@ -137,6 +159,12 @@ class GyroBoardReader {
 
   void ProcessData(GyroBoardData *data) {
     data->NetworkToHost();
+    LOG(DEBUG, "processing a packet\n");
+    static ::aos::time::Time last_time = ::aos::time::Time::Now();
+    if ((last_time - ::aos::time::Time::Now()) >
+        ::aos::time::Time::InMS(0.00205)) {
+      LOG(INFO, "missed one\n");
+    }
 
     gyro.MakeWithBuilder()
         .angle(data->gyro_angle / 16.0 / 1000.0 / 180.0 * M_PI)
@@ -197,6 +225,8 @@ class GyroBoardReader {
         .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
         .Send();
   }
+
+  ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
 
   int32_t top_rise_count_;
   uint8_t last_top_rise_count_;
