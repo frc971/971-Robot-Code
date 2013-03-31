@@ -120,6 +120,9 @@ Time &Time::operator/=(int32_t rhs) {
 const Time Time::operator/(int32_t rhs) const {
   return Time(*this) /= rhs;
 }
+double Time::operator/(const Time &rhs) const {
+  return ToSeconds() / rhs.ToSeconds();
+}
 Time &Time::operator%=(int32_t rhs) {
   nsec_ = ToNSec() % rhs;
   const int wraps = nsec_ / kNSecInSec;

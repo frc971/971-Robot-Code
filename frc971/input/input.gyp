@@ -49,6 +49,27 @@
       ],
     },
     {
+      'target_name': 'gyro_sensor_receiver',
+      'type': 'executable',
+      'sources': [
+        'gyro_sensor_receiver.cc',
+      ],
+      'dependencies': [
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
+        '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
+        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
+        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
+        '<(EXTERNALS):libusb',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/sensors/sensors.gyp:sensor_receiver',
+      ],
+    },
+    {
       'target_name': 'gyro_board_reader',
       'type': 'executable',
       'sources': [
@@ -65,8 +86,8 @@
         '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
         '<(EXTERNALS):libusb',
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/common.gyp:timing',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:timing',
       ],
     },
     {

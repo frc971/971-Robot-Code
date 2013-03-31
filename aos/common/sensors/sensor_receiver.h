@@ -53,12 +53,18 @@ class SensorReceiver {
 
   // Subclasses need to implement this to read 1 set of data (blocking until it
   // is available) into data().
+  // It needs to have the correct byte order etc and not be corrupted
+  // (subclasses can check the checksum if they want).
   virtual void DoReceiveData() = 0;
 
   // Optional: if subclasses can do anything to reinitialize after there are
   // problems, they should do it here.
   // This will be called right before calling DoReceiveData() the first time.
   virtual void Reset() {}
+
+  // Optional: if subclasses want to be notified when this is first convinced
+  // that it has a good packet, they should do whatever here.
+  virtual void Synchronized(time::Time /*last_packet_ideal_time*/) {}
 
   // Returns whether the current packet looks like a good one to use.
   bool GoodPacket();

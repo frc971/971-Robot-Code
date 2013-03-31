@@ -160,6 +160,8 @@ struct Time {
   const Time operator-(const Time &rhs) const;
   const Time operator*(int32_t rhs) const;
   const Time operator/(int32_t rhs) const;
+  // TODO(brians) test this
+  double operator/(const Time &rhs) const;
   const Time operator%(int32_t rhs) const;
 
   bool operator==(const Time &rhs) const;

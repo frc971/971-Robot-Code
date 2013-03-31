@@ -28,6 +28,7 @@
         #'camera/camera.gyp:frc971',
         '../../gyro_board/src/libusb-driver/libusb-driver.gyp:get',
         '../input/input.gyp:gyro_board_reader',
+        '../input/input.gyp:gyro_sensor_receiver',
       ],
       'copies': [
         {

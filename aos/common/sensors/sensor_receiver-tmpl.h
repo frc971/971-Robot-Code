@@ -6,7 +6,7 @@ namespace sensors {
 
 template<class Values>
 const time::Time SensorReceiver<Values>::kJitterDelay =
-    time::Time::InSeconds(0.0035);
+    time::Time::InSeconds(0.00225);
 // Not a multiple of kSensorSendFrequency to unwedge ourself if we hit some bug
 // where it needs to get off of that frequency to work.
 template<class Values>
@@ -185,6 +185,7 @@ bool SensorReceiver<Values>::Synchronize() {
         }
       }
 
+      Synchronized(goal_time + kLoopFrequency * kTestCycles);
       return true;
     }
 
@@ -197,13 +198,6 @@ bool SensorReceiver<Values>::ReceiveData() {
   int old_count = data_.count;
   DoReceiveData();
 
-  data_.checksum = ntoh(data_.checksum);
-  if (!data_.CheckChecksum()) {
-    LOG(WARNING, "got a bad packet\n");
-    return ReceiveData();
-  }
-
-  data_.NetworkToHost();
   if (data_.count < 0) {
     LOG(FATAL, "data count overflowed. currently %"PRId32"\n", data_.count);
   }
@@ -251,6 +245,13 @@ void NetworkSensorReceiver<Values>::DoReceiveData() {
   while (true) {
     if (socket_.Receive(this->data(), sizeof(*this->data())) ==
         sizeof(*this->data())) {
+      this->data()->checksum = ntoh(this->data()->checksum);
+      if (!this->data()->CheckChecksum()) {
+        LOG(WARNING, "got a bad packet\n");
+        continue;
+      }
+
+      this->data()->NetworkToHost();
       return;
     }
     LOG(WARNING, "received incorrect amount of data\n");

@@ -81,8 +81,7 @@ LibUSBDeviceHandle::LibUSBDeviceHandle(
     libusb_device_handle *dev_handle) : dev_handle_(dev_handle) { }
 
 LibUSBDeviceHandle::~LibUSBDeviceHandle() {
-  int r;
-  r = libusb_release_interface(dev_handle_, 0);
+  int r = libusb_release_interface(dev_handle_, 0);
   if (r != 0) {
     LOG(FATAL, "Cannot Release Interface\n");
   }
