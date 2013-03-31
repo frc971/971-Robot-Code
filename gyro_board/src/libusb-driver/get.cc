@@ -100,6 +100,10 @@ struct DataStruct{
 	int8_t shooter_angle_rise_count;
 } __attribute__((__packed__));
 
+void GyroDriver::Start() {
+	rx_->Start();
+}
+
 void GyroDriver::PacketReceiver::Run() {
   int r;
   int actual;
@@ -114,7 +118,6 @@ void GyroDriver::PacketReceiver::Run() {
   while (should_continue()) {
     r = dev_handle_->interrupt_transfer(
         0x81, data, sizeof(data), &actual, 1000);
-    printf("size: %d\n",sizeof(DataStruct));
     if (actual <= 0) {
       LOG(FATAL, "didn't get any data\n");
     }
@@ -185,6 +188,7 @@ int main(int argc, char ** argv) {
     }
 
     GyroDriver gyro(dev_handle.release());
+		gyro.Start();
 
     while(true){
       	    sleep(50);

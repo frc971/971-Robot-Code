@@ -36,6 +36,8 @@ class GyroDriver {
   // Not safe for use in signal handlers.
   void Terminate();
 
+  void Start();
+
  private:
   // Class that runs in a seperate thread and receives and queues all messages.
   class PacketReceiver;
