@@ -184,8 +184,8 @@ class GyroSensorReceiver :
       ::aos::sensors::SensorUnpackerInterface<GyroBoardData> *unpacker)
       : ::aos::sensors::SensorReceiver<GyroBoardData>(unpacker),
         start_time_(0, 0) {
-    static_assert(sizeof(GyroBoardData) <= sizeof(data_),
-                  "the buffer is too small");
+    static_assert(sizeof(GyroBoardData) <= kDataLength,
+                  "the buffer will be too small");
   }
 
  private:
@@ -199,29 +199,27 @@ class GyroSensorReceiver :
   // product ID
   static const int32_t kPid = 0xd243;
 
+  // How big of a buffer to give the function.
+  static const size_t kDataLength = 64;
+
   virtual void DoReceiveData() {
     // Loop and then return once we get a good one.
     while (true) {
-      int read_bytes;
-      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.0005));
-      int r = dev_handle_->interrupt_transfer(
-          kEndpoint, data_, sizeof(data_), &read_bytes, kReadTimeout);
-
-      if (r != 0) {
-        if (r == LIBUSB_ERROR_TIMEOUT) {
-          LOG(ERROR, "read timed out\n");
-          continue;
-        }
-        LOG(FATAL, "libusb gave error %d\n", r);
+      completed_transfer_ = NULL;
+      while (completed_transfer_ == NULL) {
+        libusb_.HandleEvents();
       }
+      LOG(DEBUG, "processing transfer %p\n", completed_transfer_);
 
-      if (read_bytes < static_cast<ssize_t>(sizeof(GyroBoardData))) {
+      if (completed_transfer_->read_bytes() <
+          static_cast<ssize_t>(sizeof(GyroBoardData))) {
         LOG(ERROR, "read %d bytes instead of at least %zd\n",
-            read_bytes, sizeof(GyroBoardData));
+            completed_transfer_->read_bytes(), sizeof(GyroBoardData));
         continue;
       }
 
-      memcpy(&data()->values, data_, sizeof(GyroBoardData));
+      memcpy(&data()->values, completed_transfer_->data(),
+             sizeof(GyroBoardData));
       if (data()->count == 0) {
         start_time_ = ::aos::time::Time::Now();
         data()->count = 1;
@@ -235,27 +233,57 @@ class GyroSensorReceiver :
   }
 
   virtual void Reset() {
+    transfer1_.reset();
+    transfer2_.reset();
     dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
         libusb_.FindDeviceWithVIDPID(kVid, kPid));
     if (!dev_handle_) {
       LOG(FATAL, "couldn't find device\n");
     }
+    transfer1_ = ::std::unique_ptr<libusb::Transfer>(
+        new libusb::Transfer(kDataLength, StaticTransferCallback, this));
+    transfer2_ = ::std::unique_ptr<libusb::Transfer>(
+        new libusb::Transfer(kDataLength, StaticTransferCallback, this));
+    transfer1_->FillInterrupt(dev_handle_.get(), kEndpoint, kReadTimeout);
+    transfer2_->FillInterrupt(dev_handle_.get(), kEndpoint, kReadTimeout);
+    transfer1_->Submit();
+    transfer2_->Submit();
+
     data()->count = 0;
   }
 
+  static void StaticTransferCallback(libusb::Transfer *transfer, void *self) {
+    static_cast<GyroSensorReceiver *>(self)->TransferCallback(transfer);
+  }
+  void TransferCallback(libusb::Transfer *transfer) {
+    if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
+      LOG(DEBUG, "transfer %p completed\n", transfer);
+      completed_transfer_ = transfer;
+    } else if (transfer->status() == LIBUSB_TRANSFER_TIMED_OUT) {
+      LOG(WARNING, "transfer %p timed out\n", transfer);
+    } else if (transfer->status() == LIBUSB_TRANSFER_CANCELLED) {
+      LOG(DEBUG, "transfer %p cancelled\n", transfer);
+    } else {
+      LOG(FATAL, "transfer %p has status %d\n", transfer, transfer->status());
+    }
+    transfer->Submit();
+  }
+
   virtual void Synchronized(::aos::time::Time start_time) {
-    LOG(INFO, "offset %f\n", (::aos::time::Time::Now() - start_time).ToSeconds());
+    // Subtract off how many packets it read while synchronizing from the time.
     start_time_ = start_time -
         ::aos::sensors::kSensorSendFrequency * data()->count;
   }
 
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
+  ::std::unique_ptr<libusb::Transfer> transfer1_, transfer2_;
+  // Temporary variable for holding a completed transfer to communicate that
+  // information from the callback to the code that wants it.
+  libusb::Transfer *completed_transfer_;
 
   ::aos::time::Time start_time_;
 
   LibUSB libusb_;
-
-  uint8_t data_[64];
 };
 
 }  // namespace frc971
