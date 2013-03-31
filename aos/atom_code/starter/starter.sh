@@ -17,3 +17,4 @@ chrt -o 0 bash -c "export PATH=$PATH:/home/driver/robot_code/bin; starter_loop.s
 #DUMPCAP_STDOUT_FILE=$(date "/home/driver/tmp/robot_logs/stdout_dumpcap.%F_%H-%M-%S")
 #chrt -o 0 bash -c "dumpcap -i eth0 -w ${DUMPCAP_LOG_FILE} -f 'not port 8080 and not net 10.9.71.13' > ${DUMPCAP_STDOUT_FILE}" &
 
+chrt -o 0 bash -c 'while true; do socat UDP4-RECV:6666,reuseaddr STDIO > /home/driver/tmp/robot_logs/netconsole-`date +%s`; done' &
