@@ -38,18 +38,23 @@
 
 #include "LPC17xx.h"
 
+#include "analog.h"
+
 #define usbMAX_SEND_BLOCK    ( 20 / portTICK_RATE_MS )
 #define usbRXBUFFER_LEN      ( 80 )
 #define usbTXBUFFER_LEN      ( 600 )
 
-#define INT_IN_EP    0x81 //read manual for picking these...
+#define INT_IN_EP     0x81 //read manual for picking these...
 #define INT_OUT_EP    0x04
 #define BULK_IN_EP    0x82
-#define BULK_OUT_EP    0x05
+#define BULK_OUT_EP   0x05
+#define ISOC_IN_EP    0x83
 
 #define MAX_PACKET_SIZE  64
 
 #define LE_WORD(x)    ((x)&0xFF),((x)>>8)
+
+static struct DataStruct usbPacket;
 
 static xQueueHandle xRxedChars = NULL, xCharsForTx = NULL;
 
@@ -85,7 +90,7 @@ static const unsigned char abDescriptors[] = {
   DESC_INTERFACE,
   0x00,        // bInterfaceNumber
   0x00,        // bAlternateSetting
-  0x04,        // bNumEndPoints
+  0x05,        // bNumEndPoints
   0x0A,        // bInterfaceClass = data
   0x00,        // bInterfaceSubClass
   0x00,        // bInterfaceProtocol
@@ -118,6 +123,14 @@ static const unsigned char abDescriptors[] = {
   0x03,        // bmAttributes = intr
   LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
   0x01,        // bInterval
+  
+  // isoc data EP IN
+  0x07,
+  DESC_ENDPOINT,
+  ISOC_IN_EP,            // bEndpointAddress
+  0x0D,              // bmAttributes = isoc, synchronous, data endpoint
+  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
+  0x01,            // bInterval  
 
   // string descriptors
   0x04,
@@ -217,11 +230,10 @@ static void DataOut(unsigned char bEP, unsigned char bEPStatus) {
     iLen = USBHwEPRead(bEP, abDataBuf, sizeof(abDataBuf));
     portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
-#include "analog.h"
-static struct DataStruct usbPacket;
+
 static void DataIn(unsigned char bEP, unsigned char bEPStatus) {
     long lHigherPriorityTaskWoken = pdFALSE;
-  fillSensorPacket(&usbPacket);
+  	fillSensorPacket(&usbPacket);
     USBHwEPWrite(bEP, (unsigned char *)&usbPacket, sizeof(usbPacket));
     portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
@@ -248,7 +260,7 @@ int VCOM_putchar(int c) {
 
     // Don't block if not connected to USB.
     if (xQueueSend(xCharsForTx, &cc,
-                     USBIsConnected() ? usbMAX_SEND_BLOCK : 0) == pdPASS) {
+                   USBIsConnected() ? usbMAX_SEND_BLOCK : 0) == pdPASS) {
         return c;
     } else {
         return EOF;
@@ -271,7 +283,6 @@ int VCOM_getchar(void) {
     return -1;
 }
 
-
 /**
  * Interrupt handler
  *
@@ -281,21 +292,22 @@ void USB_IRQHandler(void) {
   USBHwISR();
 }
 
-
 static void USBFrameHandler(unsigned short wFrame) {
   (void) wFrame;
-  if(uxQueueMessagesWaitingFromISR(xCharsForTx) > 0){
-    // data available, enable NAK interrupt on bulk in
+  if (uxQueueMessagesWaitingFromISR(xCharsForTx) > 0) {
+    // data available, enable interrupt instead of NAK on bulk in too
     USBHwNakIntEnable(INACK_BI | INACK_II);
-  }else{
+  } else {
     USBHwNakIntEnable(INACK_II);
   }
+
+  fillSensorPacket(&usbPacket);
+  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, sizeof(usbPacket));
 }
 
 void vUSBTask(void *pvParameters) {
   portTickType xLastFlashTime;
 
-  /* Just to prevent compiler warnings about the unused parameter. */
   (void) pvParameters;
   DBG("Initialising USB stack\n");
 

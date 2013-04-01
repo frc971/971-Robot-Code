@@ -8,6 +8,7 @@
 class LibUSBDeviceHandle;
 namespace libusb {
 class Transfer;
+class IsochronousTransfer;
 }
 
 class LibUSB {
@@ -41,6 +42,7 @@ class LibUSBDeviceHandle {
  private:
   friend class LibUSB; // For constructor
   friend class libusb::Transfer;  // for access to dev_handle_
+  friend class libusb::IsochronousTransfer;  // for access to dev_handle_
   // Takes ownership of the device handle and frees it when destructed.
   explicit LibUSBDeviceHandle(libusb_device_handle *dev_handle);
   libusb_device_handle *dev_handle_;
@@ -74,10 +76,12 @@ class Transfer {
 
   const uint8_t *data() { return data_; }
 
- private:
+ protected:
   static void StaticTransferCallback(libusb_transfer *self) {
     static_cast<Transfer *>(self->user_data)->TransferCallback();
   }
+
+ private:
   void TransferCallback();
 
   libusb_transfer *const transfer_;
@@ -89,6 +93,21 @@ class Transfer {
   void *const user_data_;
 
   DISALLOW_COPY_AND_ASSIGN(Transfer);
+};
+
+class IsochronousTransfer : public Transfer {
+ public:
+  IsochronousTransfer(size_t packet_length,
+                      int num_packets,
+                      void (*callback)(Transfer *, void *),
+                      void *user_data);
+
+  void FillIsochronous(LibUSBDeviceHandle *device,
+                       unsigned char endpoint,
+                       unsigned int timeout);
+
+ private:
+  const int num_packets_;
 };
 
 }  // namespace libusb

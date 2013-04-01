@@ -163,4 +163,29 @@ void Transfer::TransferCallback() {
   callback_(this, user_data_);
 }
 
+IsochronousTransfer::IsochronousTransfer(size_t packet_length,
+                                         int num_packets,
+                                         void (*callback)(Transfer *, void *),
+                                         void *user_data)
+    : Transfer(packet_length * num_packets, callback, user_data),
+      num_packets_(num_packets) {
+}
+
+void IsochronousTransfer::FillIsochronous(LibUSBDeviceHandle *device,
+                               unsigned char endpoint,
+                               unsigned int timeout) {
+  (void)device;
+  (void)endpoint;
+  (void)timeout;
+  /*libusb_fill_iso_transfer(transfer_,
+                           device->dev_handle_,
+                           endpoint,
+                           data_,
+                           data_length_,
+                           num_packets_,
+                           StaticTransferCallback,
+                           this,
+                           timeout);*/
+}
+
 }  // namespace libusb
