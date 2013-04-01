@@ -275,6 +275,7 @@ void IndexMotor::RunIteration(
           position->bottom_disc_negedge_wait_count;
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
       last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+      last_top_disc_detect_ = position->top_disc_detect;
       // The open positions for the upper is right here and isn't a hard edge.
       upper_open_region_.Restart(wrist_loop_->Y(0, 0));
       lower_open_region_.Restart(wrist_loop_->Y(0, 0));
@@ -289,6 +290,7 @@ void IndexMotor::RunIteration(
           position->bottom_disc_negedge_wait_count;
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
       last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+      last_top_disc_detect_ = position->top_disc_detect;
       // We can't really trust the open range any more if the crio rebooted.
       upper_open_region_.Restart(wrist_loop_->Y(0, 0));
       lower_open_region_.Restart(wrist_loop_->Y(0, 0));
@@ -302,6 +304,12 @@ void IndexMotor::RunIteration(
       wrist_loop_->X_hat(0, 0) = wrist_loop_->Y(0, 0);
     }
     missing_position_count_ = 0;
+    if (last_top_disc_detect_ && position->top_disc_detect) {
+      last_top_disc_posedge_count_ = position->top_disc_posedge_count;
+    }
+    if (!last_top_disc_detect_ && !position->top_disc_detect) {
+      last_top_disc_negedge_count_ = position->top_disc_negedge_count;
+    }
   } else {
     ++missing_position_count_;
   }
@@ -554,7 +562,7 @@ void IndexMotor::RunIteration(
             if (elapsed_posedge_time >= Time::InSeconds(0.3)) {
               // It has been too long.  The disc must be jammed.
               LOG(ERROR, "Been way too long.  Jammed disc?\n");
-              intake_voltage = 0.0;
+              intake_voltage = -12.0;
               transfer_voltage = -12.0;
             }
           }

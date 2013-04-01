@@ -139,9 +139,9 @@ class JoystickReader : public aos::JoystickInput {
         angle_adjust_goal = 0.564;
 #endif
         // middle wheel on the back line (same as auto)
-        shooter_goal->velocity = 400;
+        shooter_goal->velocity = 360;
         wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.5434;
+        angle_adjust_goal = 0.586;
       } else if (Pressed(2, 6)) {
         // short shot
         shooter_goal->velocity = 375;

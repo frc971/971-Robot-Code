@@ -170,12 +170,21 @@ void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
   control_loops::drivetrain.goal.MakeWithBuilder()
       .control_loop_driving(true)
+      .left_goal(left_initial_position)
+      .left_velocity_goal(0)
+      .right_goal(right_initial_position)
+      .right_velocity_goal(0)
+      .quickturn(false)
+      .Send();
+}
+
+void ResetDrivetrain() {
+  LOG(INFO, "resetting the drivetrain\n");
+  control_loops::drivetrain.goal.MakeWithBuilder()
+      .control_loop_driving(false)
       .highgear(false)
       .steering(0.0)
       .throttle(0.0)
-      .left_goal(left_initial_position)
-      .right_goal(right_initial_position)
-      .quickturn(false)
       .Send();
 }
 
@@ -318,8 +327,21 @@ void DriveSpin(double radians) {
 // start with N discs in the indexer
 void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
+
   double WRIST_UP;
+  const double WRIST_DOWN = -0.580;
+  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.010;
+  const double ANGLE_ONE = 0.560;
+  const double ANGLE_TWO = 0.707;
+
+  ResetIndex();
+  SetWristGoal(1.0);  // wrist must calibrate itself on power-up
+  SetAngle_AdjustGoal(ANGLE_TWO);  // make it still move a bit
+  SetShooterVelocity(0.0);  // or else it keeps spinning from last time
+  ResetDrivetrain();
+
   ::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
+  if (ShouldExitAuto()) return;
   
   ::aos::robot_state.FetchLatest();
   if (!::aos::robot_state.get() ||
@@ -329,9 +351,6 @@ void HandleAuto() {
   }
   WRIST_UP -= 0.4;
   LOG(INFO, "Got constants\n");
-  const double WRIST_DOWN = -0.633;
-  const double ANGLE_ONE = 0.5434;
-  const double ANGLE_TWO = 0.685;
 
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
@@ -343,7 +362,6 @@ void HandleAuto() {
   right_initial_position =
     control_loops::drivetrain.position->right_encoder;
 
-  ResetIndex();
   StopDrivetrain();
 
   SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
@@ -407,16 +425,17 @@ void HandleAuto() {
     if (ShouldExitAuto()) return; 
     WaitForIndex();			// ready to pick up discs
 
-    static const double kDriveDistance = 3.2;
-    static const double kFirstDrive = 0.3;
+    static const double kDriveDistance = 2.8;
+    static const double kFirstDrive = 0.27;
+    static const double kSecondShootDistance = 2.0;
     SetDriveGoal(kFirstDrive, 0.6);
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
-    SetDriveGoal(kDriveDistance - kFirstDrive, 0.6);
+    SetWristGoal(WRIST_DOWN_TWO);
+    SetDriveGoal(kDriveDistance - kFirstDrive, 2.0);
     if (ShouldExitAuto()) return;
 
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
+    SetDriveGoal(kSecondShootDistance - kDriveDistance, 2.0);
     PreloadIndex();
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.4));
-    SetDriveGoal(-1.3);
 
     if (ShouldExitAuto()) return;
     WaitForAngle_Adjust();
