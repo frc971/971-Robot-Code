@@ -31,6 +31,7 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/common/common.gyp:time',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

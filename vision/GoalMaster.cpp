@@ -2,6 +2,7 @@
 
 #include "aos/common/time.h"
 #include "aos/atom_code/init.h"
+#include "aos/common/logging/logging.h"
 
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/CameraTarget.q.h"
@@ -36,9 +37,10 @@ int main() {
           sizeof(kPixelsToMeters) / sizeof(kPixelsToMeters[0]),
           kPixelsToMeters,
           targets->percent_elevation_off_center);
+      LOG(DEBUG, "think target is %f meters away\n", meters);
 
       target_angle.MakeWithBuilder()
-          .target_angle(/*angle_goal*/0)
+          /*.target_angle(angle_goal)*/
           .shooter_speed(interpolate(
                   sizeof(kMetersToShooterSpeeds) / sizeof(kMetersToShooterSpeeds[0]),
                   kMetersToShooterSpeeds,

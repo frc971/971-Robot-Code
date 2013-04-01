@@ -287,6 +287,9 @@ ProcessorData::ProcessorData(int width, int height, bool is_90_) {
 		}
 		j++;
 	}
+
+	src_header_image = cvCreateImage(cvSize(width, height),
+			                             IPL_DEPTH_8U, 3);
 }
 
 // throw stuff away
