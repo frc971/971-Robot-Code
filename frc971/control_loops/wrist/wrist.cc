@@ -48,6 +48,7 @@ bool WristMotor::FetchConstants(
   }
 
   config_data->max_zeroing_voltage = 5.0;
+  config_data->deadband_voltage = 0.0;
   return true;
 }
 

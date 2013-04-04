@@ -44,7 +44,7 @@ class AngleAdjust(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.PlaceControllerPoles([.45, .8])
+    self.PlaceControllerPoles([.45, .83])
 
     print "Unaugmented controller poles at"
     print self.K

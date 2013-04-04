@@ -117,6 +117,8 @@ class ZeroedJoint {
     double zeroing_off_speed;
     // Maximum voltage to apply when zeroing.
     double max_zeroing_voltage;
+    // Deadband voltage.
+    double deadband_voltage;
     // Angles where we see a positive edge from the hall effect sensors.
     double hall_effect_start_angle[kNumZeroSensors];
   };
@@ -432,7 +434,18 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       break;
   }
   if (output_enabled) {
-    return loop_->voltage();
+    double voltage = loop_->voltage();
+    if (voltage > 0) {
+      voltage += config_data_.deadband_voltage;
+    } else if (voltage < 0) {
+      voltage -= config_data_.deadband_voltage;
+    }
+    if (voltage > 12.0) {
+      voltage = 12.0;
+    } else if (voltage < -12.0) {
+      voltage = -12.0;
+    }
+    return voltage;
   } else {
     return 0.0;
   }

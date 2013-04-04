@@ -27,7 +27,7 @@ StateFeedbackController<2, 1, 1> MakeAngleAdjustRawController() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.60656297069, 51.0341417582;
   Eigen::Matrix<double, 1, 2> K;
-  K << 311.565731672, 11.2839301509;
+  K << 264.830871921, 10.681380124;
   return StateFeedbackController<2, 1, 1>(L, K, MakeAngleAdjustRawPlantCoefficients());
 }
 
