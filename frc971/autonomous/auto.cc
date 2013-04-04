@@ -413,14 +413,16 @@ void HandleAuto() {
     ShootNDiscs(4);
     if (ShouldExitAuto()) return;
   } else {
+    // Delay to let the disc out of the shooter.
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
     SetWristGoal(WRIST_DOWN);
-    SetAngle_AdjustGoal(ANGLE_TWO);
-    SetShooterVelocity(375.0);
     StartIndex();				// take in up to 4 discs
 
     if (ShouldExitAuto()) return;
     WaitForWrist();			// wrist must be down before moving
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
+    SetAngle_AdjustGoal(ANGLE_TWO);
+    SetShooterVelocity(375.0);
 
     if (ShouldExitAuto()) return; 
     WaitForIndex();			// ready to pick up discs
