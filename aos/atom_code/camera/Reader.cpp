@@ -203,6 +203,36 @@ class Reader {
     }
   }
 
+  // Sets one of the camera's user-control values.
+  // Prints the old and new values.
+  // Just prints a message if the camera doesn't support this control or value.
+  bool SetCameraControl(int id, const char *name, int value) {
+    struct v4l2_control getArg = {id, 0};
+    int r = xioctl(fd_, VIDIOC_G_CTRL, &getArg);
+    if (r == 0) {
+      if (getArg.value == value) {
+        printf("Camera control %s was already %d\n", name, getArg.value);
+        return true;
+      }
+    } else if (errno == EINVAL) {
+      printf("Camera control %s is invalid\n", name);
+      errno = 0;
+      return false;
+    }
+
+    struct v4l2_control setArg = {id, value};
+    r = xioctl(fd_, VIDIOC_S_CTRL, &setArg);
+    if (r == 0) {
+      printf("Set camera control %s from %d to %d\n", name, getArg.value, value);
+      return true;
+    }
+
+    printf("Couldn't set camera control %s to %d: %s (errno %d)\n",
+        name, value, strerror(errno), errno);
+    errno = 0;
+    return false;
+  }
+
   void Init() {
     v4l2_capability cap;
     if (xioctl(fd_, VIDIOC_QUERYCAP, &cap) == -1) {
@@ -269,6 +299,24 @@ class Reader {
     min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
     if (fmt.fmt.pix.sizeimage < min)
       fmt.fmt.pix.sizeimage = min;
+
+    if (!SetCameraControl(V4L2_CID_EXPOSURE_AUTO,
+                          "V4L2_CID_EXPOSURE_AUTO", V4L2_EXPOSURE_MANUAL)) {
+      LOG(FATAL, "Failed to set exposure\n");
+    }
+
+    if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
+                          "V4L2_CID_EXPOSURE_ABSOLUTE", 65)) {
+      LOG(FATAL, "Failed to set exposure\n");
+    }
+
+    if (!SetCameraControl(V4L2_CID_BRIGHTNESS, "V4L2_CID_BRIGHTNESS", 128)) {
+      LOG(FATAL, "Failed to set up camera\n");
+    }
+
+    if (!SetCameraControl(V4L2_CID_GAIN, "V4L2_CID_GAIN", 0)) {
+      LOG(FATAL, "Failed to set up camera\n");
+    }
 
 #if 0
     // set framerate
@@ -337,6 +385,7 @@ class Reader {
       }
 
       if (FD_ISSET(fd_, &fds)) {
+        LOG(INFO, "Got a frame\n");
         ReadFrame();
       }
       if (FD_ISSET(server_fd_, &fds)) {
