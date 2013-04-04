@@ -304,10 +304,16 @@ void IndexMotor::RunIteration(
       wrist_loop_->X_hat(0, 0) = wrist_loop_->Y(0, 0);
     }
     missing_position_count_ = 0;
-    if (last_top_disc_detect_ && position->top_disc_detect) {
+    if (last_top_disc_detect_) {
+      if (last_top_disc_posedge_count_ != position->top_disc_posedge_count) {
+        LOG(INFO, "Ignoring a top disc posedge\n");
+      }
       last_top_disc_posedge_count_ = position->top_disc_posedge_count;
     }
-    if (!last_top_disc_detect_ && !position->top_disc_detect) {
+    if (!last_top_disc_detect_) {
+      if (last_top_disc_negedge_count_ != position->top_disc_negedge_count) {
+        LOG(INFO, "Ignoring a top disc negedge\n");
+      }
       last_top_disc_negedge_count_ = position->top_disc_negedge_count;
     }
   } else {
@@ -355,6 +361,7 @@ void IndexMotor::RunIteration(
     }
 
     if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
+      LOG(INFO, "Saw a posedge\n");
       const double index_position = wrist_loop_->X_hat(0, 0) -
           position->index_position + position->top_disc_posedge_position;
       // TODO(aschuh): Sanity check this number...
@@ -364,9 +371,9 @@ void IndexMotor::RunIteration(
       // 1 if discs are going up, 0 if we have no clue, and -1 if they are going
       // down.
       int disc_direction = 0;
-      if (wrist_loop_->X_hat(1, 0) > 50.0) {
+      if (wrist_loop_->X_hat(1, 0) > 100.0) {
         disc_direction = 1;
-      } else if (wrist_loop_->X_hat(1, 0) < -50.0) {
+      } else if (wrist_loop_->X_hat(1, 0) < -100.0) {
         disc_direction = -1;
       } else {
         // Save the upper and lower positions that we last saw a disc at.
