@@ -12,13 +12,13 @@
 
 // an over described geometric representation of a rectangle
 class FullRect {
-	public:
-		FullRect();
-		cv::Point2f ur; // upper right
-		cv::Point2f ul; // upper left
-		cv::Point2f br; // bottom right
-		cv::Point2f bl; // bottom_left
-		cv::Point2f centroid; //centroid
+ public:
+  FullRect();
+  cv::Point2f ur; // upper right
+  cv::Point2f ul; // upper left
+  cv::Point2f br; // bottom right
+  cv::Point2f bl; // bottom_left
+  cv::Point2f centroid; //centroid
 };
 
 // All data needed once a target is found
@@ -68,7 +68,7 @@ class ProcessorData {
 		double vert_hist[HIST_SIZE]; // desired vertical histogram
 		double horz_hist[HIST_SIZE]; // desired horizontal histogram
 		// defines the minimum dist for a match
-		static const double HIST_MATCH = 1.76;
+		static const double HIST_MATCH = 1.9;
 		double calcHistComponent(
 				cv::Point2i start,
 				cv::Point2i end,

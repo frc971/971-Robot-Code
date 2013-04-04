@@ -148,7 +148,7 @@ void process_jpeg(unsigned char *out,unsigned char *image,size_t size){
 //  printf( "Image width and height: %d pixels and %d pixels.\n", cinfo.image_width, cinfo.image_height );
 //  printf( "Color components per pixel: %d.\n", cinfo.num_components );
 //  printf( "Color space: %d.\n", cinfo.jpeg_color_space );
-  printf("JpegDecompressed\n");
+  //printf("JpegDecompressed\n");
 
   jpeg_start_decompress( &cinfo );
 
@@ -180,10 +180,10 @@ void process_jpeg(unsigned char *out,unsigned char *image,size_t size){
 
   aos::time::Time timestamp_end = aos::time::Time::Now();
 
-  double jpeg_part = ((timestamp_end - timestamp_start).nsec()) / 1000000000.0;
-  double longer_part = ((timestamp_end - timestamp_old).nsec()) / 1000000000.0;
+  //double jpeg_part = ((timestamp_end - timestamp_start).nsec()) / 1000000000.0;
+  //double longer_part = ((timestamp_end - timestamp_old).nsec()) / 1000000000.0;
 
-  printf("%g %g\n",jpeg_part / longer_part,1.0 / longer_part);
+  //printf("%g %g\n",jpeg_part / longer_part,1.0 / longer_part);
 
   timestamp_old = timestamp_end;
 

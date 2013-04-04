@@ -1,4 +1,7 @@
 #include "vision/CameraProcessor.h"
+#include "aos/common/logging/logging.h"
+
+//#define LOCAL_DEBUG 1
 
 // create a new target
 Target::Target(std::vector<cv::Point> new_contour,
@@ -264,11 +267,11 @@ ProcessorData::ProcessorData(int width, int height, bool is_90_) {
 	img_height = height;
 	buffer_size = img_height * img_width * 3;
 #if LOCAL_DEBUG
-	global_display = cvCreateImage(cvSize(width, height),
-			IPL_DEPTH_8U, 3);
+        global_display = cvCreateImage(cvSize(width, height),
+                                       IPL_DEPTH_8U, 3);
 #endif
 	grey_image = cvCreateImage(cvSize(width, height),
-			IPL_DEPTH_8U, 1);
+			           IPL_DEPTH_8U, 1);
 	grey_mat = new cv::Mat(grey_image);
 	
 	// calculate a desired histogram before we start
@@ -288,8 +291,8 @@ ProcessorData::ProcessorData(int width, int height, bool is_90_) {
 		j++;
 	}
 
-	src_header_image = cvCreateImage(cvSize(width, height),
-			                             IPL_DEPTH_8U, 3);
+        src_header_image = cvCreateImage(cvSize(width, height),
+            IPL_DEPTH_8U, 3);
 }
 
 // throw stuff away
@@ -336,41 +339,52 @@ void ProcessorData::RGBtoHSV(uchar r, uchar g, uchar b,
 // by far the longest running function in this code
 void ProcessorData::threshold(uchar* buffer) {
 #if LOCAL_DEBUG
-	uchar * draw_buffer = (uchar *) global_display->imageData;
+  uchar * draw_buffer = (uchar *) global_display->imageData;
 #endif
-	for (int i = 0,j = 0;
-			i < (buffer_size);
-			i+= 3,j++) {
-		uchar r = buffer[i + 2];
-		uchar g = buffer[i + 1];
-		uchar b = buffer[i + 0];
-		uchar h, s, v;
+  for (int i = 0, j = 0; i < (buffer_size); i+= 3, j++) {
+    uchar r = buffer[i + 2];
+    uchar g = buffer[i + 1];
+    uchar b = buffer[i + 0];
+    uchar h, s, v;
 
-		RGBtoHSV(r, g, b, &h, &s, &v);
+    RGBtoHSV(r, g, b, &h, &s, &v);
 
-	/*	if (h == 0 && s == 0 && v >= v1 && v <= v2) { 
+    if (g > 128) {
 #if LOCAL_DEBUG
-			draw_buffer[i + 0] = 200;
-			draw_buffer[i + 1] = 50;
-			draw_buffer[i + 2] = 100;
+      draw_buffer[i + 0] = 120;
+      draw_buffer[i + 1] = 80;
+      draw_buffer[i + 2] = 70;
 #endif
-			grey_image->imageData[j] = 255;
-		} else */if(h >= h1 && h <= h2 && v >= v1 && v <= v2 && s >= s1 && s <= s2){
+      grey_image->imageData[j] = 255;
+    } else if (h == 0 && s == 0 && v >= v1 && v <= v2) { 
+      // Value thresholds invalid pixels.
 #if LOCAL_DEBUG
-/*			draw_buffer[i + 0] = 255;
-			draw_buffer[i + 1] = 0;
-			draw_buffer[i + 2] = 0;*/
+      draw_buffer[i + 0] = 200;
+      draw_buffer[i + 1] = 50;
+      draw_buffer[i + 2] = 100;
 #endif
-			grey_image->imageData[j] = 255;
-		}else{
+      grey_image->imageData[j] = 255;
+    } else if (h >= h1 && h <= h2 && v >= v1 &&
+               v <= v2 && s >= s1 && s <= s2){
+      // HSV Thresholded image.
 #if LOCAL_DEBUG
-/*			draw_buffer[i + 0] = buffer[i + 0];
-			draw_buffer[i + 1] = buffer[i + 1];
-			draw_buffer[i + 2] = buffer[i + 2];*/
+      draw_buffer[i + 0] = 255;
+      draw_buffer[i + 1] = 0;
+      draw_buffer[i + 2] = 0;
 #endif
-			grey_image->imageData[j] = 0;
-		}
-	}
+      grey_image->imageData[j] = 255;
+    } else {
+      // Display the unmodified image.
+#if LOCAL_DEBUG
+      draw_buffer[i + 0] = buffer[i + 0];
+      draw_buffer[i + 1] = buffer[i + 1];
+      draw_buffer[i + 2] = buffer[i + 2];
+#endif
+      grey_image->imageData[j] = 0;
+    }
+
+  }
+
 }
 
 // run find contours and try to make them squares
@@ -416,38 +430,37 @@ void ProcessorData::getContours() {
 
 // filter the contours down to a list of targets
 void ProcessorData::filterToTargets() {
-	std::vector<std::pair<
-		std::vector<cv::Point>,
-		std::vector<cv::Point> > >::iterator contour_it;
-	for(contour_it=contour_pairs.begin();
-			contour_it != contour_pairs.end();
-			contour_it++){
-		double check = 0;
-		std::vector<cv::Point> raw_contour = std::get<0>(*contour_it);
-		std::vector<cv::Point> contour = std::get<1>(*contour_it);
-		FullRect rect = calcFullRect(&contour);
-		if(contour.size() == 4 &&
-				cullObvious(rect, contourArea(contour)) &&
-				(check = checkHistogram(rect, *grey_mat)) <= HIST_MATCH){
-			// now we have a target, try to improve the square
+  std::vector<std::pair<
+    std::vector<cv::Point>,
+    std::vector<cv::Point> > >::iterator contour_it;
+  for(contour_it=contour_pairs.begin();
+      contour_it != contour_pairs.end();
+      contour_it++){
+    double check = 0;
+    std::vector<cv::Point> raw_contour = std::get<0>(*contour_it);
+    std::vector<cv::Point> contour = std::get<1>(*contour_it);
+    FullRect rect = calcFullRect(&contour);
+    if(contour.size() == 4 &&
+        cullObvious(rect, contourArea(contour)) &&
+        (check = checkHistogram(rect, *grey_mat)) <= HIST_MATCH){
+      // now we have a target, try to improve the square
 #if LOCAL_DEBUG
-		/*	printf("________\n");
-			printf("\tcont= %d raw= %d\n",
-					(int)contour.size(), (int)raw_contour.size());
-			std::vector<cv::Point2i>::iterator point_it;
-			for(point_it=raw_contour.begin();
-					point_it != raw_contour.end(); point_it++){
-				printf("(%d,%d)", point_it->x, point_it->y);
-			}
-			printf("\n");*/
+      /*	printf("________\n");
+                printf("\tcont= %d raw= %d\n",
+                (int)contour.size(), (int)raw_contour.size());
+                std::vector<cv::Point2i>::iterator point_it;
+                for(point_it=raw_contour.begin();
+                point_it != raw_contour.end(); point_it++){
+                printf("(%d,%d)", point_it->x, point_it->y);
+                }
+                printf("\n");*/
 #endif
-			target_list.push_back(Target(contour,
-						raw_contour, rect, check, is_90));
-		}
-		//if(contour.size() == 4 &&
-		//		cullObvious(rect, contourArea(contour)) ) {
-		//	printf("check= %.2f\n", check);
-		//}
-	}
+      target_list.push_back(Target(contour,
+            raw_contour, rect, check, is_90));
+    }
+    if (contour.size() == 4 && cullObvious(rect, contourArea(contour))) {
+    	LOG(INFO, "check= %.2f\n", check);
+    }
+  }
 }
 

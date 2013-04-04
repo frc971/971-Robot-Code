@@ -37,18 +37,22 @@ int main() {
           sizeof(kPixelsToMeters) / sizeof(kPixelsToMeters[0]),
           kPixelsToMeters,
           targets->percent_elevation_off_center);
-      LOG(DEBUG, "think target is %f meters away\n", meters);
+      const double shooter_speed = interpolate(
+          sizeof(kMetersToShooterSpeeds) / sizeof(kMetersToShooterSpeeds[0]),
+          kMetersToShooterSpeeds,
+          meters);
+      const double shooter_angle = interpolate(
+           sizeof(kMetersToShooterAngles) / sizeof(kMetersToShooterAngles[0]),
+           kMetersToShooterAngles,
+           meters);
+
+      LOG(DEBUG, "think target is %f meters away Speed %f Angle %f\n",
+          meters, shooter_speed, shooter_angle);
 
       target_angle.MakeWithBuilder()
           /*.target_angle(angle_goal)*/
-          .shooter_speed(interpolate(
-                  sizeof(kMetersToShooterSpeeds) / sizeof(kMetersToShooterSpeeds[0]),
-                  kMetersToShooterSpeeds,
-                  meters))
-          .shooter_angle(interpolate(
-                  sizeof(kMetersToShooterAngles) / sizeof(kMetersToShooterAngles[0]),
-                  kMetersToShooterAngles,
-                  meters))
+          .shooter_speed(shooter_speed)
+          .shooter_angle(shooter_angle)
           .Send();
     }
   }

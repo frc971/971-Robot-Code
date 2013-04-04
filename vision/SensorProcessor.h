@@ -16,14 +16,21 @@ static const Interpolation kPixelsToMeters[] = {
 	{216.75 / 320.0, 2.794},
 };
 
+// Must be in reverse order in meters.
 static const Interpolation kMetersToShooterSpeeds[] = {
-  {10.0, 200.0},
-  {5.0, 175.0},
+  {12.5, 375.0},
+  {21.0, 360.0},
+  {25.0, 375.0},
 };
 
 static const Interpolation kMetersToShooterAngles[] = {
-  {10.0, 0.7},
-  {5.0, 0.9},
+  {0.0, 0.7267},
+  {12.5, 0.7267},
+  {16.5, 0.604},
+  {18.0, 0.587},
+  {20.0, 0.576},
+  {21.0, 0.550},
+  {23.0, 0.540},
 };
 
 double interpolate(int num_interp_vals,

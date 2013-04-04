@@ -38,12 +38,12 @@ void *PacketNotifier::GetBuffer(){
 		if(i != sending && i != to_send){ //open
 			filling = i;
 			mutex.Unlock();
-			printf("leasing out to fill buff # %d\n",i);
+			//printf("leasing out to fill buff # %d\n",i);
 			return buffs[i];
 		}
 	}
 	mutex.Unlock();
-	printf("Error in the fabric of the universe\n");
+	//printf("Error in the fabric of the universe\n");
 	exit(-42);
 }
 void PacketNotifier::Notify(){
@@ -56,7 +56,7 @@ void PacketNotifier::Notify(){
 }
 
 void PacketNotifier::DataSent(const void * /*data*/, size_t /*datalen*/){
-	printf("packet_sent: %d; fill: %d; to_send: %d \n",sending,filling,to_send);
+	//printf("packet_sent: %d; fill: %d; to_send: %d \n",sending,filling,to_send);
 	mutex.Lock();
 	sending = -1;
 	mutex.Unlock();
