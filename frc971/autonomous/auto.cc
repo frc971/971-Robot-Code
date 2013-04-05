@@ -330,8 +330,8 @@ void HandleAuto() {
 
   double WRIST_UP;
   const double WRIST_DOWN = -0.580;
-  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.010;
-  const double ANGLE_ONE = 0.556;
+  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.005;
+  const double ANGLE_ONE = 0.520;
   const double ANGLE_TWO = 0.677;
 
   ResetIndex();
@@ -366,7 +366,7 @@ void HandleAuto() {
 
   SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
-  SetShooterVelocity(380.0);
+  SetShooterVelocity(395.0);
   WaitForIndexReset();
   if (ShouldExitAuto()) return;
   PreloadIndex();      // spin to top and put 1 disc into loader

@@ -133,9 +133,9 @@ class JoystickReader : public aos::JoystickInput {
           // pretend like no button is pressed
         }
 #endif
-        shooter_goal->velocity = 395;
+        shooter_goal->velocity = 360;
         wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.520;
+        angle_adjust_goal = 0.596;
       } else if (Pressed(2, 3)) {
         // medium shot
 #if 0
@@ -144,9 +144,9 @@ class JoystickReader : public aos::JoystickInput {
         angle_adjust_goal = 0.564;
 #endif
         // middle wheel on the back line (same as auto)
-        shooter_goal->velocity = 360;
+        shooter_goal->velocity = 395;
         wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.596;
+        angle_adjust_goal = 0.520;
       } else if (Pressed(2, 6)) {
         // short shot
         shooter_goal->velocity = 375;
