@@ -133,9 +133,9 @@ class JoystickReader : public aos::JoystickInput {
           // pretend like no button is pressed
         }
 #endif
-        shooter_goal->velocity = 400;
+        shooter_goal->velocity = 395;
         wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.586;
+        angle_adjust_goal = 0.520;
       } else if (Pressed(2, 3)) {
         // medium shot
 #if 0
