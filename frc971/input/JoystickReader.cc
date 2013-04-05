@@ -121,6 +121,7 @@ class JoystickReader : public aos::JoystickInput {
       shooter_goal->velocity = 0;
       static double angle_adjust_goal = 0.42;
       if (Pressed(2, 5)) {
+#if 0
         target_angle.FetchLatest();
         if (target_angle.IsNewerThanMS(500)) {
           shooter_goal->velocity = target_angle->shooter_speed;
@@ -131,6 +132,10 @@ class JoystickReader : public aos::JoystickInput {
           LOG(WARNING, "camera frame too old\n");
           // pretend like no button is pressed
         }
+#endif
+        shooter_goal->velocity = 400;
+        wrist_up_position = 1.23 - 0.4;
+        angle_adjust_goal = 0.586;
       } else if (Pressed(2, 3)) {
         // medium shot
 #if 0
@@ -141,7 +146,7 @@ class JoystickReader : public aos::JoystickInput {
         // middle wheel on the back line (same as auto)
         shooter_goal->velocity = 360;
         wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.586;
+        angle_adjust_goal = 0.596;
       } else if (Pressed(2, 6)) {
         // short shot
         shooter_goal->velocity = 375;

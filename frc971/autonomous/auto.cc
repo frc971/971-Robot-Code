@@ -331,8 +331,8 @@ void HandleAuto() {
   double WRIST_UP;
   const double WRIST_DOWN = -0.580;
   const double WRIST_DOWN_TWO = WRIST_DOWN - 0.010;
-  const double ANGLE_ONE = 0.560;
-  const double ANGLE_TWO = 0.707;
+  const double ANGLE_ONE = 0.556;
+  const double ANGLE_TWO = 0.677;
 
   ResetIndex();
   SetWristGoal(1.0);  // wrist must calibrate itself on power-up
@@ -340,7 +340,7 @@ void HandleAuto() {
   SetShooterVelocity(0.0);  // or else it keeps spinning from last time
   ResetDrivetrain();
 
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
+  //::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
   if (ShouldExitAuto()) return;
   
   ::aos::robot_state.FetchLatest();
@@ -366,7 +366,7 @@ void HandleAuto() {
 
   SetWristGoal(WRIST_UP);    // wrist must calibrate itself on power-up
   SetAngle_AdjustGoal(ANGLE_ONE);
-  SetShooterVelocity(400.0);
+  SetShooterVelocity(380.0);
   WaitForIndexReset();
   if (ShouldExitAuto()) return;
   PreloadIndex();      // spin to top and put 1 disc into loader
@@ -414,7 +414,7 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   } else {
     // Delay to let the disc out of the shooter.
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
     SetWristGoal(WRIST_DOWN);
     StartIndex();				// take in up to 4 discs
 

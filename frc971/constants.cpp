@@ -17,8 +17,8 @@ namespace constants {
 namespace {
 
 // It has about 0.029043 of gearbox slop.
-const double kCompWristHallEffectStartAngle = 1.230;
-const double kPracticeWristHallEffectStartAngle = 1.0872860614359172;
+const double kCompWristHallEffectStartAngle = 1.257;
+const double kPracticeWristHallEffectStartAngle = 1.230;
 
 const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
 const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;
@@ -40,8 +40,8 @@ const double kWristZeroingOffSpeed = 0.35;
 
 const int kAngleAdjustHallEffect = 2;
 
-const double kCompAngleAdjustHallEffectStartAngle[2] = {0.305172594, 1.5};
-const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305432, 1.5};
+const double kCompAngleAdjustHallEffectStartAngle[2] = {0.286375033, 1.5};
+const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305172594, 1.5};
 
 const double kCompAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 const double kPracticeAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};

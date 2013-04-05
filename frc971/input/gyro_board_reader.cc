@@ -186,19 +186,19 @@ class GyroBoardReader {
         &last_shooter_angle_rise_count_, &shooter_angle_rise_count_);
 
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(data->right_drive))
-        .left_encoder(-drivetrain_translate(data->left_drive))
+        .right_encoder(drivetrain_translate(data->left_drive))
+        .left_encoder(-drivetrain_translate(data->right_drive))
         .Send();
 
     wrist.position.MakeWithBuilder()
         .pos(wrist_translate(data->wrist))
-        .hall_effect(!data->wrist_hall_effect)
+        .hall_effect(data->wrist_hall_effect)
         .calibration(wrist_translate(data->capture_wrist_rise))
         .Send();
 
     angle_adjust.position.MakeWithBuilder()
         .angle(angle_adjust_translate(data->shooter_angle))
-        .bottom_hall_effect(!data->angle_adjust_bottom_hall_effect)
+        .bottom_hall_effect(data->angle_adjust_bottom_hall_effect)
         .middle_hall_effect(false)
         .bottom_calibration(angle_adjust_translate(
                 data->capture_shooter_angle_rise))
@@ -212,12 +212,12 @@ class GyroBoardReader {
 
     index_loop.position.MakeWithBuilder()
         .index_position(index_translate(data->indexer))
-        .top_disc_detect(!data->top_disc)
+        .top_disc_detect(data->top_disc)
         .top_disc_posedge_count(top_rise_count_)
         .top_disc_posedge_position(index_translate(data->capture_top_rise))
         .top_disc_negedge_count(top_fall_count_)
         .top_disc_negedge_position(index_translate(data->capture_top_fall))
-        .bottom_disc_detect(!data->bottom_disc)
+        .bottom_disc_detect(data->bottom_disc)
         .bottom_disc_posedge_count(bottom_rise_count_)
         .bottom_disc_negedge_count(bottom_fall_count_)
         .bottom_disc_negedge_wait_position(index_translate(
