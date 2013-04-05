@@ -14,6 +14,8 @@ queue_group IndexLoop {
     // 4 means shoot at will.
     // 5 means re-initialize
     int32_t goal_state;
+    // Forces the loader to fire.
+    bool force_fire;
   };
 
   message Position {

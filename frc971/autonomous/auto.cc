@@ -50,25 +50,25 @@ void SetAngle_AdjustGoal(double goal) {
 void StartIndex() {
   LOG(INFO, "Starting index\n");
   control_loops::index_loop.goal.MakeWithBuilder()
-    .goal_state(2).Send();
+    .goal_state(2).force_fire(false).Send();
 }
 
 void PreloadIndex() {
   LOG(INFO, "Preloading index\n");
   control_loops::index_loop.goal.MakeWithBuilder()
-    .goal_state(3).Send();
+    .goal_state(3).force_fire(false).Send();
 }
 
 void ShootIndex() {
   LOG(INFO, "Shooting index\n");
   control_loops::index_loop.goal.MakeWithBuilder()
-    .goal_state(4).Send();
+    .goal_state(4).force_fire(false).Send();
 }
 
 void ResetIndex() {
   LOG(INFO, "Resetting index\n");
   control_loops::index_loop.goal.MakeWithBuilder()
-    .goal_state(5).Send();
+    .goal_state(5).force_fire(false).Send();
 }
 
 void WaitForIndexReset() {

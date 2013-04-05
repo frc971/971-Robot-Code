@@ -833,8 +833,10 @@ void IndexMotor::RunIteration(
       disc_clamped_ = false;
       disc_ejected_ = false;
       if (loader_goal_ == LoaderGoal::GRAB ||
-          loader_goal_ == LoaderGoal::SHOOT_AND_RESET) {
-        if (loader_goal_ == LoaderGoal::GRAB) {
+          loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
+        if (goal->force_fire) {
+          LOG(INFO, "Told to force fire, moving on\n");
+        } else if (loader_goal_ == LoaderGoal::GRAB) {
           LOG(INFO, "Told to GRAB, moving on\n");
         } else {
           LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
@@ -862,7 +864,7 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = true;
       disc_ejected_ = false;
-      if (loader_goal_ == LoaderGoal::SHOOT_AND_RESET) {
+      if (loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
         shooter.status.FetchLatest();
         if (shooter.status.get()) {
           // TODO(aschuh): If we aren't shooting nicely, wait until the shooter

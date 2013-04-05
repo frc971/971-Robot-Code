@@ -187,6 +187,7 @@ class JoystickReader : public aos::JoystickInput {
         // get ready to intake
         index_goal->goal_state = 1;
       }
+      index_goal->force_fire = Pressed(2, 12);
 
       index_goal.Send();
       shooter_goal.Send();
