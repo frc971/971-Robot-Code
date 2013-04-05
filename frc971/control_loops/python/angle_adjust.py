@@ -78,7 +78,7 @@ class AngleAdjustDeltaU(AngleAdjust):
     self.C = numpy.matrix([[1.0, 0.0, 0.0]])
     self.D = numpy.matrix([[0.0]])
 
-    self.PlaceControllerPoles([0.60, 0.35, 0.80])
+    self.PlaceControllerPoles([0.60, 0.31, 0.78])
 
     print "K"
     print self.K
@@ -88,7 +88,7 @@ class AngleAdjustDeltaU(AngleAdjust):
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl, 0.85])
+                             self.rpl - 1j * self.ipl, 0.78])
     print "Placed observer poles are"
     print numpy.linalg.eig(self.A - self.L * self.C)[0]
 
