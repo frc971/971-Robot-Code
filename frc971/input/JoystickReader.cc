@@ -151,7 +151,7 @@ class JoystickReader : public aos::JoystickInput {
         // short shot
         shooter_goal->velocity = 375;
         angle_adjust_goal = 0.7267;
-      } else if (Pressed(2, 9)) {
+      } else if (Pressed(1, 7) && Pressed(1, 10)) {
         // pit shot
         shooter_goal->velocity = 131;
         angle_adjust_goal = 0.70;
