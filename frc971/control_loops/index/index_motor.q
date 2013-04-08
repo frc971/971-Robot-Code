@@ -16,6 +16,10 @@ queue_group IndexLoop {
     int32_t goal_state;
     // Forces the loader to fire.
     bool force_fire;
+
+    // If true, set the indexer voltage to index_voltage.
+    bool override_index;
+    double index_voltage;
   };
 
   message Position {

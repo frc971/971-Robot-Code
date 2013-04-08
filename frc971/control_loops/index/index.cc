@@ -999,7 +999,11 @@ void IndexMotor::RunIteration(
   if (output) {
     output->intake_voltage = intake_voltage;
     output->transfer_voltage = transfer_voltage;
-    output->index_voltage = wrist_loop_->U(0, 0);
+    if (goal->override_index) {
+      output->index_voltage = goal->index_voltage;
+    } else {
+      output->index_voltage = wrist_loop_->U(0, 0);
+    }
     output->loader_up = loader_up_;
     output->disc_clamped = disc_clamped_;
     output->disc_ejected = disc_ejected_;

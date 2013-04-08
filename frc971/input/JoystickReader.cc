@@ -189,6 +189,17 @@ class JoystickReader : public aos::JoystickInput {
       }
       index_goal->force_fire = Pressed(2, 12);
 
+      const bool index_up = Pressed(2, 9);
+      const bool index_down = Pressed(2, 7);
+      index_goal->override_index = index_up || index_down;
+      if (index_up && index_down) {
+        index_goal->index_voltage = 0.0;
+      } else if (index_up) {
+        index_goal->index_voltage = 12.0;
+      } else if (index_down) {
+        index_goal->index_voltage = -12.0;
+      }
+
       index_goal.Send();
       shooter_goal.Send();
     }
