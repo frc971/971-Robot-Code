@@ -37,6 +37,14 @@ class DriverStation;
 class RobotBase {
 	friend class RobotDeleter;
 public:
+  // Represents all of the states that FMS thinks of a robot as being in.
+  enum FMSState {
+    kDisabled,
+    kAutonomous,
+    kTeleop,
+    kTestMode,
+  };
+
 	static RobotBase &getInstance();
 	static void setInstance(RobotBase* robot);
 
@@ -44,9 +52,10 @@ public:
 	bool IsDisabled();
 	bool IsAutonomous();
 	bool IsOperatorControl();
-    bool IsTest();
+  bool IsTest();
 	bool IsSystemActive();
 	bool IsNewDataAvailable();
+  FMSState GetCurrentState();
 	Watchdog &GetWatchdog();
 	static void startRobotTask(FUNCPTR factory);
 	static void robotTask(FUNCPTR factory, Task *task);
