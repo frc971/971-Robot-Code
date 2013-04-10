@@ -9,6 +9,7 @@
 
 #include "SensorBase.h"
 #include "NetworkCommunication/LoadOut.h"
+#include "Synchronized.h"
 
 #define kMaxModules	(nLoadOut::kModuleType_Solenoid * kMaxModuleNumber + (kMaxModuleNumber - 1))
 
@@ -29,6 +30,7 @@ protected:
 private:
 	static UINT8 ToIndex(nLoadOut::tModuleType type, UINT8 number);
 	static Module* m_modules[kMaxModules];
+  static ReentrantSemaphore m_semaphore;
 };
 
 #endif
