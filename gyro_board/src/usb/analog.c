@@ -492,8 +492,8 @@ void fillSensorPacket(struct DataStruct *packet) {
   packet->gyro_angle = gyro_angle;
 
   packet->shooter = encoder1_val;
-  packet->right_drive = encoder4_val;
-  packet->left_drive = encoder5_val;
+  packet->left_drive = encoder4_val;
+  packet->right_drive = encoder5_val;
   packet->shooter_angle = encoder2_val;
   packet->indexer = encoder3_val;
 

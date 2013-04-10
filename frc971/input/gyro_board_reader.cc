@@ -186,8 +186,8 @@ class GyroBoardReader {
         &last_shooter_angle_rise_count_, &shooter_angle_rise_count_);
 
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(data->left_drive))
-        .left_encoder(-drivetrain_translate(data->right_drive))
+        .right_encoder(drivetrain_translate(data->right_drive))
+        .left_encoder(-drivetrain_translate(data->left_drive))
         .Send();
 
     wrist.position.MakeWithBuilder()

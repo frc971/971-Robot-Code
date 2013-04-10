@@ -9,8 +9,8 @@ namespace frc971 {
 struct GyroBoardData {
 	int64_t gyro_angle;
 
-	int32_t right_drive;
 	int32_t left_drive;
+	int32_t right_drive;
 	int32_t shooter_angle;
 	int32_t shooter;
 	int32_t indexer;
