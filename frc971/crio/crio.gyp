@@ -29,17 +29,35 @@
       ],
     },
     {
+      'target_name': 'dumb_main',
+      'type': 'static_library',
+      'sources': [
+        'dumb_main.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib',
+        '<(AOS)/common/common.gyp:common',
+      ],
+    },
+    {
       'target_name': 'FRC_UserProgram',
       'type': 'shared_library',
       'dependencies': [
-        'user_program'
+        'WPILib_changes',
+        'dumb_main',
+      ],
+    },
+    {
+      'target_name': 'FRC_UserProgram_old',
+      'type': 'shared_library',
+      'dependencies': [
+        'user_program',
       ],
     },
     {
       'target_name': 'FRC_UserProgram_WithTests',
       'type': 'shared_library',
       'dependencies': [
-        # For testing.
         '<(AOS)/build/aos_all.gyp:Crio',
       ],
     },

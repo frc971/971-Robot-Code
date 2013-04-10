@@ -43,6 +43,21 @@
       },
     },
     {
+      'target_name': 'WPILib-NetworkRobotValues',
+      'type': 'static_library',
+      'sources': [
+        '<(externals)/WPILib/WPILib/NetworkRobot/NetworkRobotValues.cpp'
+      ],
+      'include_dirs': [
+        '<(externals)/WPILib',
+      ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '<(externals)/WPILib',
+        ],
+      },
+    },
+    {
       'target_name': 'onejar',
       'type': 'none',
       'direct_dependent_settings': {

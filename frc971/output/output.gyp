@@ -29,8 +29,8 @@
             'sources': ['AtomMotorWriter.cc'],
             'dependencies': [
               '<(AOS)/atom_code/output/output.gyp:motor_output',
-              '<(AOS)/atom_code/messages/messages.gyp:messages',
               '<(AOS)/atom_code/atom_code.gyp:init',
+              '<(AOS)/build/aos.gyp:logging',
               '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
               '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
               '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
