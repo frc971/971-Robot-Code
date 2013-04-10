@@ -35,6 +35,7 @@ public:
 	UINT8 GetRelayReverse();
 	bool AllocateDIO(UINT32 channel, bool input);
 	void FreeDIO(UINT32 channel);
+  void SetDIOs(UINT16 mask, UINT16 values);
 	void SetDIO(UINT32 channel, short value);
 	bool GetDIO(UINT32 channel);
 	UINT16 GetDIO();

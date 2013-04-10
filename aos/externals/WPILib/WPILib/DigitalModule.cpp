@@ -280,6 +280,27 @@ void DigitalModule::FreeDIO(UINT32 channel)
 }
 
 /**
+ * Write multiple digital I/O bits to the FPGA at the same time.
+ * For both parameters, 0x0001 is channel 16 and 0x8000 is channel 1.
+ *
+ * @param mask Which bits to modify.
+ * @param values What to set all of the bits in mask to.
+ */
+void DigitalModule::SetDIOs(UINT16 mask, UINT16 values) {
+  tRioStatusCode localStatus = NiFpga_Status_Success;
+  {
+    Synchronized sync(m_digitalSemaphore);
+    UINT16 current = m_fpgaDIO->readDO(&localStatus);
+    // Clear all of the bits that we're messing with first.
+    current &= ~mask;
+    // Then set only the ones that are supposed to be set.
+    current |= (mask & values);
+    m_fpgaDIO->writeDO(current, &localStatus);
+  }
+  wpi_setError(localStatus);
+}
+
+/**
  * Write a digital I/O bit to the FPGA.
  * Set a single value on a digital I/O channel.
  * 
