@@ -50,7 +50,7 @@ SolenoidBase::~SolenoidBase()
 }
 
 /**
- * Set the value of a solenoid.
+ * Set the value of 1 or more solenoids at the same time.
  * 
  * @param value The value you want to set on the module.
  * @param mask The channels you want to be affected.

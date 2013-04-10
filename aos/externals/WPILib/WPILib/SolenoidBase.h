@@ -15,17 +15,25 @@
 /**
  * SolenoidBase class is the common base class for the Solenoid and
  * DoubleSolenoid classes.
+ * It also supports getting and setting the values of all solenoids on a given
+ * module at the same time directly.
  */
 class SolenoidBase : public SensorBase {
 public:
+	explicit SolenoidBase(UINT8 moduleNumber);
 	virtual ~SolenoidBase();
+
+	void Set(UINT8 value, UINT8 mask);
+
 	UINT8 GetAll();
+  /**
+   * Set the value of all of the solenoids at the same time.
+   *
+   * @param value The values you want to set all of the solenoids to.
+   */
+  void SetAll(UINT8 value) { Set(value, 0xFF); }
 
 protected:
-	explicit SolenoidBase(UINT8 moduleNumber);
-	void Set(UINT8 value, UINT8 mask);
-	virtual void InitSolenoid() = 0;
-
 	UINT32 m_moduleNumber; ///< Slot number where the module is plugged into the chassis.
 	static Resource *m_allocated;
 
