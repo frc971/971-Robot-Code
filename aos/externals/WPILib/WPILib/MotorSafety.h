@@ -16,6 +16,7 @@ public:
 	virtual void StopMotor() = 0;
 	virtual void SetSafetyEnabled(bool enabled) = 0;
 	virtual bool IsSafetyEnabled() = 0;
+  // desc is 64 bytes long.
 	virtual void GetDescription(char *desc) = 0;
 };
 

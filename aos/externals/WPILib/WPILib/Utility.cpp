@@ -34,7 +34,7 @@ char *wpi_getLabel(UINT addr, INT32 *found)
 		cplusDemangle(name, label, sizeof(label) - 11);
 		if ((UINT)pVal != addr)
 		{
-			sprintf(&label[strlen(label)], "+0x%04x", addr-pVal);
+			snprintf(label + strlen(label), sizeof(label) - strlen(label), "+0x%04x", addr-pVal);
 			if (found) *found = 2;
 		}
 		else
@@ -44,7 +44,7 @@ char *wpi_getLabel(UINT addr, INT32 *found)
 	}
 	else
 	{
-		sprintf(label, "0x%04x", addr);
+		snprintf(label, sizeof(label), "0x%04x", addr);
 		if (found) *found = 0;
 	}
 
@@ -56,15 +56,15 @@ static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, I
 	char buf [MAX_SYS_SYM_LEN * 2];
 	INT32 ix;
 	INT32 len = 0;
-	len += sprintf (&buf [len], "%s <%#010x>: ", wpi_getLabel((UINT)caller), (INT32)caller);
-	len += sprintf (&buf [len], "%s <%#010x> (", wpi_getLabel((UINT)func), func);
+	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x>: ", wpi_getLabel((UINT)caller), (INT32)caller);
+	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x> (", wpi_getLabel((UINT)func), func);
 	for (ix = 0; ix < nargs; ix++)
 	{
 		if (ix != 0)
-			len += sprintf (&buf [len], ", ");
-		len += sprintf (&buf [len], "%#x", args [ix]);
+			len += snprintf (&buf [len], sizeof(buf) - len, ", ");
+		len += snprintf (&buf [len], sizeof(buf) - len, "%#x", args [ix]);
 	}
-	len += sprintf (&buf [len], ")\n");
+	len += snprintf (&buf [len], sizeof(buf) - len, ")\n");
 
 	printf(buf);
 }
@@ -107,23 +107,23 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	}
 	char *funcNameEnd = strchr(funcName, '(');
 	*funcNameEnd = 0;
-	len += sprintf (&buf [len], funcName);
+	len += snprintf (buf + len, sizeof(buf) - len, funcName);
 
 	// If this is a member function, print out the this pointer value.
 	if (totalnargs - params == 1)
 	{
-		len += sprintf (&buf [len], "<this=%#x>", args [0]);
+		len += snprintf (buf + len, sizeof(buf) - len, "<this=%#x>", args [0]);
 	}
 
 	// Print out the argument values.
-	len += sprintf (&buf [len], "(");
+	len += snprintf (buf + len, sizeof(buf) - len, "(");
 	for (ix = totalnargs - params; ix < nargs; ix++)
 	{
 		if (ix != totalnargs - params)
-			len += sprintf (&buf [len], ", ");
-		len += sprintf (&buf [len], "%#x", args [ix]);
+			len += snprintf (buf + len, sizeof(buf) - len, ", ");
+		len += snprintf (buf + len, sizeof(buf) - len, "%#x", args [ix]);
 	}
-	len += sprintf (&buf [len], ")\n");
+	len += snprintf (buf + len, sizeof(buf) - len, ")\n");
 
 	printf(buf);
 }
@@ -212,10 +212,10 @@ bool wpi_assert_impl(bool conditionValue,
 		// If an error message was specified, include it
 		// Build error string
 		if(message != NULL) {
-			sprintf(error, "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %d\n", 
+			snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %d\n",
 							 message, conditionText, funcName, fileName, lineNumber);
 		} else {
-			sprintf(error, "Assertion failed: \"%s\" in %s() in %s at line %d\n", 
+			snprintf(error, sizeof(error), "Assertion failed: \"%s\" in %s() in %s at line %d\n",
 							 conditionText, funcName, fileName, lineNumber);
 		}
 		
@@ -248,10 +248,10 @@ void wpi_assertEqual_common_impl(int valueA,
 	// If an error message was specified, include it
 	// Build error string
 	if(message != NULL) {
-		sprintf(error, "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %d\n", 
+		snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %d\n",
 						 message, valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	} else {
-		sprintf(error, "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %d\n", 
+		snprintf(error, sizeof(error), "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %d\n",
 						 valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	}
 	
