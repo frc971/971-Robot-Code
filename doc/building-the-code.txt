@@ -9,7 +9,7 @@ First, you have to download and follow the directions in
 You also have to follow the directions at
   <http://backports-master.debian.org/Instructions/>.
 Then, run `apt-get install subversion git g++-multilib gcc-multilib ruby patch \
-    make openjdk-6-jdk lib32event-dev python unzip`
+    make openjdk-6-jdk lib32event-dev python unzip bzip2`
   and `apt-get install -t squeeze-backports swig` (package lists correct for
   amd64 Squeeze; you might be able to get it to build on other
   versions/platforms/distributions (Ubuntu, Mint, ...) if you can find the
