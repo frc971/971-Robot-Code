@@ -15,9 +15,32 @@
 #include <ifaddrs.h>
 #endif
 
-#include "aos/aos_core.h"
 #ifndef __VXWORKS__
+#include "aos/common/logging/logging.h"
 #include "aos/common/unique_malloc_ptr.h"
+#else
+#include <taskLib.h>
+#undef ERROR
+enum LogLevel {
+  DEBUG,
+  INFO,
+  WARNING,
+  ERROR = -1,
+  FATAL,
+};
+#define LOG(level, format, args...) do { \
+  fprintf(stderr, #level ": " format, ##args); \
+  if (level == FATAL) { \
+    printf("I am 0x%x suspending for debugging purposes.\n", taskIdSelf()); \
+    printf("\t`tt 0x%x` will give you a stack trace.\n", taskIdSelf()); \
+    fputs("\t`lkAddr` will reverse lookup a symbol for you.\n", stdout); \
+    fputs("\t`dbgHelp` and `help` have some useful commands in them.\n", stdout); \
+    taskSuspend(0); \
+    printf("You weren't supposed to resume 0x%x!!. Going to really die now.\n", \
+           taskIdSelf()); \
+    abort(); \
+  } \
+} while (0)
 #endif
 #include "aos/common/once.h"
 

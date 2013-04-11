@@ -47,7 +47,6 @@
         'Configuration.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:logging',
         'once',
       ],
       'export_dependent_settings': [
@@ -57,7 +56,12 @@
         ['OS=="crio"', {
           'dependencies': [
             '<(EXTERNALS):WPILib',
-        ]}],
+          ],
+        }, {
+          'dependencies': [
+            '<(AOS)/build/aos.gyp:logging',
+          ],
+        }],
       ],
     },
     {
