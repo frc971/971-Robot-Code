@@ -136,6 +136,7 @@ bool RobotBase::IsNewDataAvailable()
  */
 RobotBase::FMSState RobotBase::GetCurrentState() {
   if (m_ds->IsDisabled()) return FMSState::kDisabled;
+  // else it must be enabled
   if (m_ds->IsAutonomous()) return FMSState::kAutonomous;
   if (m_ds->IsOperatorControl()) return FMSState::kTeleop;
   if (m_ds->IsTest()) return FMSState::kTestMode;
