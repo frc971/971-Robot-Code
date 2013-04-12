@@ -60,8 +60,9 @@ static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, I
 	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x> (", wpi_getLabel((UINT)func), func);
 	for (ix = 0; ix < nargs; ix++)
 	{
-		if (ix != 0)
+		if (ix != 0) {
 			len += snprintf (&buf [len], sizeof(buf) - len, ", ");
+    }
 		len += snprintf (&buf [len], sizeof(buf) - len, "%#x", args [ix]);
 	}
 	len += snprintf (&buf [len], sizeof(buf) - len, ")\n");
@@ -119,8 +120,9 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	len += snprintf (buf + len, sizeof(buf) - len, "(");
 	for (ix = totalnargs - params; ix < nargs; ix++)
 	{
-		if (ix != totalnargs - params)
+		if (ix != totalnargs - params) {
 			len += snprintf (buf + len, sizeof(buf) - len, ", ");
+    }
 		len += snprintf (buf + len, sizeof(buf) - len, "%#x", args [ix]);
 	}
 	len += snprintf (buf + len, sizeof(buf) - len, ")\n");
