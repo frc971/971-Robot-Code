@@ -31,6 +31,8 @@ enum class NetworkDevice {
   // The computer that the cRIO talks to.
   kAtom,
   kCRIO,
+  // Whatever device this is being run on.
+  kSelf,
 };
 // Returns the IP address to get to the specified machine.
 // The return value should be passed to free(3) if it is no longer needed.

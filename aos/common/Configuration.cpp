@@ -142,6 +142,10 @@ const char *GetIPAddress(NetworkDevice device) {
       return RawIPAddress(179);
     case NetworkDevice::kCRIO:
       return RawIPAddress(2);
+    case NetworkDevice::kSelf:
+      char *ret = static_cast<char *>(malloc(kMaxAddrLength));
+      if (!GetOwnIPAddress(ret, kMaxAddrLength)) return NULL;
+      return ret;
   }
   LOG(FATAL, "Unknown network device.");
   return NULL;

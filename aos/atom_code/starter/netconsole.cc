@@ -18,6 +18,8 @@ namespace {
 struct FDsToCopy {
   const int input;
   const int output;
+
+  const struct sockaddr_in *const interface_address;
 };
 
 void *FDCopyThread(void *to_copy_in) {
@@ -29,19 +31,50 @@ void *FDCopyThread(void *to_copy_in) {
     assert(position >= 0);
     assert(position <= static_cast<ssize_t>(sizeof(buffer)));
     if (position != sizeof(buffer)) {
-      ssize_t read_bytes = read(to_copy->input,
-                                buffer + position, position - sizeof(buffer));
+      ssize_t read_bytes;
+      bool good_data = true;
+      if (to_copy->interface_address != NULL) {
+        char control_buffer[0x100];
+        struct msghdr header;
+        memset(static_cast<void *>(&header), 0, sizeof(header));
+        header.msg_control = control_buffer;
+        header.msg_controllen = sizeof(control_buffer);
+        struct iovec iovecs[1];
+        iovecs[0].iov_base = buffer + position;
+        iovecs[0].iov_len = position - sizeof(buffer);
+        header.msg_iov = iovecs;
+        header.msg_iovlen = sizeof(iovecs) / sizeof(iovecs[0]);
+        read_bytes = recvmsg(to_copy->input, &header, 0);
+        if (read_bytes != -1) {
+          for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&header);
+               cmsg != NULL;
+               cmsg = CMSG_NXTHDR(&header, cmsg)) {
+            if (cmsg->cmsg_level == IPPROTO_IP &&
+                cmsg->cmsg_type == IP_PKTINFO) {
+              struct in_pktinfo *pktinfo =
+                  reinterpret_cast<struct in_pktinfo *>(CMSG_DATA(cmsg));
+              good_data = pktinfo->ipi_spec_dst.s_addr ==
+                  to_copy->interface_address->sin_addr.s_addr;
+            }
+          }
+        }
+      } else {
+        read_bytes = read(to_copy->input,
+                          buffer + position, position - sizeof(buffer));
+      }
       if (read_bytes == -1) {
         if (errno != EINTR) {
           LOG(FATAL, "read(%d, %p, %zd) failed with %d: %s\n",
               to_copy->input, buffer + position, position - sizeof(buffer),
               errno, strerror(errno));
         }
-      } else if (read_bytes == 0) {
+      } else if (read_bytes == 0 && to_copy->interface_address == NULL) {
         // read(2) says that this means EOF
         return NULL;
       }
-      position += read_bytes;
+      if (good_data) {
+        position += read_bytes;
+      }
     }
 
     assert(position >= 0);
@@ -100,6 +133,10 @@ int NetconsoleMain(int argc, char **argv) {
     LOG(FATAL, "SOL_SOCKET::SO_BROADCAST=%d(%d) failed with %d: %s\n",
         on, from_crio, errno, strerror(errno));
   }
+  if (setsockopt(from_crio, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on)) == -1) {
+    LOG(FATAL, "IPROTO_IP::IP_PKTINFO=%d(%d) failed with %d: %s\n",
+        on, from_crio, errno, strerror(errno));
+  }
   union {
     struct sockaddr_in in;
     struct sockaddr addr;
@@ -137,13 +174,20 @@ int NetconsoleMain(int argc, char **argv) {
   fprintf(stderr, "Using cRIO IP %s.\n",
           configuration::GetIPAddress(configuration::NetworkDevice::kCRIO));
 
-  FDsToCopy output_fds{from_crio, output};
+  if (inet_aton(
+          configuration::GetIPAddress(configuration::NetworkDevice::kSelf),
+          &address.in.sin_addr) == 0) {
+    LOG(FATAL, "inet_aton(%s, %p) failed with %d: %s\n",
+        configuration::GetIPAddress(configuration::NetworkDevice::kSelf),
+        &address.in.sin_addr, errno, strerror(errno));
+  }
+  FDsToCopy output_fds{from_crio, output, &address.in};
   pthread_t output_thread;
   if (pthread_create(&output_thread, NULL, FDCopyThread, &output_fds) == -1) {
     LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
         &output_thread, FDCopyThread, &output_fds, errno, strerror(errno));
   }
-  FDsToCopy input_fds{input, to_crio};
+  FDsToCopy input_fds{input, to_crio, NULL};
   pthread_t input_thread;
   if (pthread_create(&input_thread, NULL, FDCopyThread, &input_fds) == -1) {
     LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
