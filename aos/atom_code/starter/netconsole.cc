@@ -97,9 +97,9 @@ void *FDCopyThread(void *to_copy_in) {
 int NetconsoleMain(int argc, char **argv) {
   logging::Init();
 
-  int output;
+  int input, output;
   if (argc > 1) {
-    output = open(argv[1], O_APPEND | O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    output = open(argv[1], O_APPEND | O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (output == -1) {
       if (errno == EACCES || errno == ELOOP || errno == ENOSPC ||
           errno == ENOTDIR || errno == EROFS || errno == ETXTBSY) {
@@ -111,12 +111,14 @@ int NetconsoleMain(int argc, char **argv) {
           errno, strerror(errno));
     }
     fprintf(stderr, "Writing output to '%s'.\n", argv[1]);
+    input = -1;
+    fprintf(stderr, "Not taking any input.\n");
   } else {
     output = STDOUT_FILENO;
     fprintf(stderr, "Writing output to stdout.\n");
+    input = STDIN_FILENO;
+    fprintf(stderr, "Reading stdin.\n");
   }
-
-  const int input = STDIN_FILENO;
 
   int on = 1;
 
@@ -149,26 +151,35 @@ int NetconsoleMain(int argc, char **argv) {
         from_crio, &address.addr, sizeof(address), errno, strerror(errno));
   }
 
-  int to_crio = socket(AF_INET, SOCK_DGRAM, 0);
-  if (to_crio == -1) {
-    LOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed with %d: %s\n",
-        errno, strerror(errno));
-  }
-  if (setsockopt(to_crio, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
-    LOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed with %d: %s\n",
-      on, to_crio, errno, strerror(errno));
-  }
-  address.in.sin_port = htons(6668);
-  if (inet_aton(
+  pthread_t input_thread, output_thread;
+
+  if (input != -1) {
+    int to_crio = socket(AF_INET, SOCK_DGRAM, 0);
+    if (to_crio == -1) {
+      LOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed with %d: %s\n",
+          errno, strerror(errno));
+    }
+    if (setsockopt(to_crio, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
+      LOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed with %d: %s\n",
+          on, to_crio, errno, strerror(errno));
+    }
+    address.in.sin_port = htons(6668);
+    if (inet_aton(
+            configuration::GetIPAddress(configuration::NetworkDevice::kCRIO),
+            &address.in.sin_addr) == 0) {
+      LOG(FATAL, "inet_aton(%s, %p) failed with %d: %s\n",
           configuration::GetIPAddress(configuration::NetworkDevice::kCRIO),
-          &address.in.sin_addr) == 0) {
-    LOG(FATAL, "inet_aton(%s, %p) failed with %d: %s\n",
-        configuration::GetIPAddress(configuration::NetworkDevice::kCRIO),
-        &address.in.sin_addr, errno, strerror(errno));
-  }
-  if (connect(to_crio, &address.addr, sizeof(address)) == -1) {
-    LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
-        to_crio, &address.addr, sizeof(address), errno, strerror(errno));
+          &address.in.sin_addr, errno, strerror(errno));
+    }
+    if (connect(to_crio, &address.addr, sizeof(address)) == -1) {
+      LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
+          to_crio, &address.addr, sizeof(address), errno, strerror(errno));
+    }
+    FDsToCopy input_fds{input, to_crio, NULL};
+    if (pthread_create(&input_thread, NULL, FDCopyThread, &input_fds) == -1) {
+      LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
+          &input_thread, FDCopyThread, &input_fds, errno, strerror(errno));
+    }
   }
 
   fprintf(stderr, "Using cRIO IP %s.\n",
@@ -182,21 +193,14 @@ int NetconsoleMain(int argc, char **argv) {
         &address.in.sin_addr, errno, strerror(errno));
   }
   FDsToCopy output_fds{from_crio, output, &address.in};
-  pthread_t output_thread;
   if (pthread_create(&output_thread, NULL, FDCopyThread, &output_fds) == -1) {
     LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
         &output_thread, FDCopyThread, &output_fds, errno, strerror(errno));
   }
-  FDsToCopy input_fds{input, to_crio, NULL};
-  pthread_t input_thread;
-  if (pthread_create(&input_thread, NULL, FDCopyThread, &input_fds) == -1) {
-    LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
-        &input_thread, FDCopyThread, &input_fds, errno, strerror(errno));
-  }
 
   // input_thread will finish when stdin gets an EOF
-  if (pthread_join(input_thread, NULL) == -1) {
-    LOG(FATAL, "pthread_join(input_thread, NULL) failed with %d: %s\n",
+  if (pthread_join((input == -1) ? output_thread : input_thread, NULL) == -1) {
+    LOG(FATAL, "pthread_join(a_thread, NULL) failed with %d: %s\n",
         errno, strerror(errno));
   }
   exit(EXIT_SUCCESS);
