@@ -51,8 +51,9 @@ void *FDCopyThread(void *to_copy_in) {
                cmsg = CMSG_NXTHDR(&header, cmsg)) {
             if (cmsg->cmsg_level == IPPROTO_IP &&
                 cmsg->cmsg_type == IP_PKTINFO) {
-              struct in_pktinfo *pktinfo =
-                  reinterpret_cast<struct in_pktinfo *>(CMSG_DATA(cmsg));
+              unsigned char *data = CMSG_DATA(cmsg);
+              struct in_pktinfo *pktinfo;
+              memcpy(&pktinfo, &data, sizeof(void *));
               good_data = pktinfo->ipi_spec_dst.s_addr ==
                   to_copy->interface_address->sin_addr.s_addr;
             }
@@ -87,8 +88,12 @@ void *FDCopyThread(void *to_copy_in) {
               to_copy->output, buffer, position, errno, strerror(errno));
         }
       } else if (sent_bytes != 0) {
-        memmove(buffer, buffer + sent_bytes, position - sent_bytes);
-        position -= sent_bytes;
+        if (sent_bytes == position) {
+          position = 0;
+        } else {
+          memmove(buffer, buffer + sent_bytes, position - sent_bytes);
+          position -= sent_bytes;
+        }
       }
     }
   }
