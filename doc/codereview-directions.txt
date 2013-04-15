@@ -1,0 +1,39 @@
+This file has some general information about how 971 does code reviews.
+
+We use Rietveld (<https://code.google.com/p/rietveld>) running in an app engine
+  app of ours. It is at <http://971code.appspot.com/>.
+
+[General Procedure]
+We try to code review all code before it gets checked in to svn. Code reviews
+  are also sometimes useful for getting feedback about documentation etc.
+First, somebody starts a code review and sends out emails to people asking them
+  to look. Then, other people look at it and make suggestions (in the form of
+  comments). The person who started the review (the owner of it) looks at the
+  comments and responds to them and/or changes their code and uploads new
+  versions for everybody to look at. Once all of the reviewers approve the code,
+  the owner checks it in and closes the code review (issue).
+
+[Reviewing]
+This is the section for people who have received emails about reviewing code
+  should look.
+The email that you receive will have a link to the issue (like
+  <http://971code.appspot.com/82001/>). Click on it to go to the issue page.
+  The most useful form of diff are the "Side-by-side diffs". Click the "View"
+  link in that column next to each file to look at it. After the first set of
+  comments, the "Delta from patch set" links are also helpful to see what got
+  changed so that you don't have to look at everything agin. While looking at
+  a diff, double-click on any line of code to leave a comment there. You can
+  also reply to existing comments. The web interface sometimes "eats" comments
+  right after you create/edit them. Refresh the page to fix that (don't just do
+  it again, or you'll end up with 2 identical comments). Once you are done
+  looking at all of the files and making comments, click the
+  "Publish+Mail Comments" link (at the top of each diff or on the left of the
+  main issue page) to send out your comments. You can also put general notes in
+  the "Message" box. If you think that it looks good, then put "LGTM" somewhere
+  in the message. The owner of the code review will keep looking at your
+  comments, making changes, and sending out more messages until it's finished.
+
+TODO(brians): add information about starting a review
+
+For more information about using Rietveld, see
+  <https://code.google.com/p/rietveld/wiki/CodeReviewHelp>.
