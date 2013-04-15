@@ -388,29 +388,64 @@ bool DriverStation::GetDigitalOut(UINT32 channel)
 	return ((m_digitalOut >> (channel-1)) & 0x1) ? true : false;;
 }
 
+/**
+ * @return Whether or not the robot is currently enabled by the field controls.
+ */
 bool DriverStation::IsEnabled()
 {
 	return m_controlData->enabled;
 }
 
+/**
+ * @return Whether or not the robot is currently disabled by the field controls.
+ */
 bool DriverStation::IsDisabled()
 {
 	return !m_controlData->enabled;
 }
 
+/**
+ * Determines if the robot is currently in autonomous mode. Does not check
+ * whether the robot is enabled.
+ * @return Whether or not the robot is currently in autonomous mode.
+ */
 bool DriverStation::IsAutonomous()
 {
 	return m_controlData->autonomous;
 }
 
+/**
+ * Determines if the robot is currently in teleoperated mode. Does not check
+ * whether the robot is enabled.
+ * @return Whether or not the robot is currently in teleoperated mode.
+ */
 bool DriverStation::IsOperatorControl()
 {
 	return !(m_controlData->autonomous || m_controlData->test);
 }
 
+/**
+ * Determines if the robot is currently in test mode. Does not check
+ * whether the robot is enabled.
+ * @return Whether or not the robot is currently in test mode.
+ */
 bool DriverStation::IsTest()
 {
 	return m_controlData->test;
+}
+
+/**
+ * @return What state the robot is currently in.
+ */
+DriverStation::FMSState DriverStation::GetCurrentState() {
+  if (IsDisabled()) return FMSState::kDisabled;
+  // else it must be enabled
+  if (IsAutonomous()) return FMSState::kAutonomous;
+  if (IsOperatorControl()) return FMSState::kTeleop;
+  if (IsTest()) return FMSState::kTestMode;
+
+  wpi_setWPIErrorWithContext(IncompatibleState, "Unknown FMS State");
+  return FMSState::kDisabled;
 }
 
 /**

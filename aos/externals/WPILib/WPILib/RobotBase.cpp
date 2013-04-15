@@ -11,7 +11,6 @@
 #include "NetworkCommunication/symModuleLink.h"
 #include "NetworkCommunication/UsageReporting.h"
 #include "Utility.h"
-#include "WPIErrors.h"
 #include <moduleLib.h>
 #include <taskLib.h>
 #include <unldLib.h>
@@ -96,7 +95,7 @@ bool RobotBase::IsDisabled()
 }
 
 /**
- * Determine if the robot is currently in Autonomous mode.
+ * Determine if the robot is currently in Autnomous mode.
  * @return True if the robot is currently operating Autonomously as determined by the field controls.
  */
 bool RobotBase::IsAutonomous()
@@ -129,21 +128,6 @@ bool RobotBase::IsTest()
 bool RobotBase::IsNewDataAvailable()
 {
 	return m_ds->IsNewControlData();
-}
-
-/**
- * @return What state the robot is currently in.
- */
-RobotBase::FMSState RobotBase::GetCurrentState() {
-  if (m_ds->IsDisabled()) return FMSState::kDisabled;
-  // else it must be enabled
-  if (m_ds->IsAutonomous()) return FMSState::kAutonomous;
-  if (m_ds->IsOperatorControl()) return FMSState::kTeleop;
-  if (m_ds->IsTest()) return FMSState::kTestMode;
-
-  wpi_setStaticWPIErrorWithContext(m_ds,
-                                   IncompatibleState, "Unknown FMS State");
-  return FMSState::kDisabled;
 }
 
 /**
