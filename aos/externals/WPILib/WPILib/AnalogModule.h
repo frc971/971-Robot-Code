@@ -48,7 +48,7 @@ protected:
 	virtual ~AnalogModule();
 
 private:
-	static SEM_ID m_registerWindowSemaphore;
+	static ReentrantSemaphore m_registerWindowSemaphore;
 
 	UINT32 GetNumActiveChannels();
 	UINT32 GetNumChannelsToActivate();
