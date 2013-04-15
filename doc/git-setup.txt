@@ -1,4 +1,4 @@
-Some us are using git for managing quickly changing code. This file has
+Some of us are using git for managing quickly changing code. This file has
 notes for setting that up.
 
 ssh to robotics.mvla.net and add the git executables to your .bashrc:
