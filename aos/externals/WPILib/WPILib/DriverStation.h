@@ -119,7 +119,10 @@ private:
 
 	void Run();
 
-	struct FRCCommonControlData *m_controlData;
+  // Volatile because it gets modified by GetData() in a separate task. Be
+  // careful using values out of here (2-byte accesses are safe as long as
+  // they're aligned, which all of the ones in here should be).
+	volatile struct FRCCommonControlData *m_controlData;
 	UINT8 m_digitalOut;
 	AnalogChannel *m_batteryChannel;
 	SEM_ID m_statusDataSemaphore;

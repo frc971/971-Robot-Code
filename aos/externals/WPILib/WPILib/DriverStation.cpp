@@ -159,7 +159,8 @@ DriverStation* DriverStation::GetInstance()
 void DriverStation::GetData()
 {
 	static bool lastEnabled = false;
-	getCommonControlData(m_controlData, WAIT_FOREVER);
+	// Have to const_cast away the volatile.
+	getCommonControlData(const_cast<FRCCommonControlData *>(m_controlData), WAIT_FOREVER);
 	if (!lastEnabled && IsEnabled()) 
 	{
 		// If starting teleop, assume that autonomous just took up 15 seconds
@@ -364,6 +365,7 @@ void DriverStation::SetDigitalOut(UINT32 channel, bool value)
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
+	// TODO: fix the lack of thread safety here
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
@@ -438,14 +440,26 @@ bool DriverStation::IsTest()
  * @return What state the robot is currently in.
  */
 DriverStation::FMSState DriverStation::GetCurrentState() {
-  if (IsDisabled()) return FMSState::kDisabled;
-  // else it must be enabled
-  if (IsAutonomous()) return FMSState::kAutonomous;
-  if (IsOperatorControl()) return FMSState::kTeleop;
-  if (IsTest()) return FMSState::kTestMode;
-
-  wpi_setWPIErrorWithContext(IncompatibleState, "Unknown FMS State");
-  return FMSState::kDisabled;
+  UINT8 control_at_start = m_controlData->control;
+  if (IsDisabled()) {
+    return FMSState::kDisabled;
+    // Or else it must be enabled (for all of the other ones).
+  } else if (IsAutonomous()) {
+    return FMSState::kAutonomous;
+  } else if (IsTest()) {
+    return FMSState::kTestMode;
+  } else if (IsOperatorControl()) {
+    return FMSState::kTeleop;
+  } else {
+    // If we didn't get another packet in the mean time.
+    if (m_controlData->control == control_at_start) {
+      wpi_setWPIErrorWithContext(IncompatibleState, "Unknown FMS State");
+      return FMSState::kDisabled;
+    } else {
+      // The data changed out from under us. Try again.
+      return GetCurrentState();
+    }
+  }
 }
 
 /**
