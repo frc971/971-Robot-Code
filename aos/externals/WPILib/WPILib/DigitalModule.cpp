@@ -248,7 +248,8 @@ bool DigitalModule::AllocateDIO(UINT32 channel, bool input)
 {
 	char buf[64];
 	snprintf(buf, 64, "DIO %d (Module %d)", channel, m_moduleNumber);
-	if (DIOChannels->Allocate(kDigitalChannels * (m_moduleNumber - 1) + channel - 1, buf) == ~0ul) return false;
+	if (DIOChannels->Allocate(kDigitalChannels * (m_moduleNumber - 1) +
+                            channel - 1, buf, this) == ~0ul) return false;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	{
 		Synchronized sync(m_digitalSemaphore);
@@ -276,7 +277,8 @@ bool DigitalModule::AllocateDIO(UINT32 channel, bool input)
  */
 void DigitalModule::FreeDIO(UINT32 channel)
 {
-	DIOChannels->Free(kDigitalChannels * (m_moduleNumber - 1) + channel - 1);
+	DIOChannels->Free(kDigitalChannels * (m_moduleNumber - 1) + channel - 1,
+                    this);
 }
 
 /**
@@ -429,7 +431,7 @@ UINT32 DigitalModule::AllocateDO_PWM()
 {
 	char buf[64];
 	snprintf(buf, 64, "DO_PWM (Module: %d)", m_moduleNumber);
-	return DO_PWMGenerators[(m_moduleNumber - 1)]->Allocate(buf);
+	return DO_PWMGenerators[(m_moduleNumber - 1)]->Allocate(buf, this);
 }
 
 /**
@@ -440,7 +442,7 @@ UINT32 DigitalModule::AllocateDO_PWM()
 void DigitalModule::FreeDO_PWM(UINT32 pwmGenerator)
 {
 	if (pwmGenerator == ~0ul) return;
-	DO_PWMGenerators[(m_moduleNumber - 1)]->Free(pwmGenerator);
+	DO_PWMGenerators[(m_moduleNumber - 1)]->Free(pwmGenerator, this);
 }
 
 /**

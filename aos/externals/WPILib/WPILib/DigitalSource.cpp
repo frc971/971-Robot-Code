@@ -24,7 +24,7 @@ DigitalSource::~DigitalSource()
 	{
 		delete m_manager;
 		delete m_interrupt;
-		interruptsResource->Free(m_interruptIndex);
+		interruptsResource->Free(m_interruptIndex, this);
 	}
 }
 
@@ -39,10 +39,9 @@ DigitalSource::~DigitalSource()
 void DigitalSource::RequestInterrupts(tInterruptHandler handler, void *param)
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Async Interrupt");
+	UINT32 index = interruptsResource->Allocate("Async Interrupt", this);
 	if (index == ~0ul)
 	{
-		CloneError(interruptsResource);
 		return;
 	}
 	m_interruptIndex = index;
@@ -70,10 +69,9 @@ void DigitalSource::RequestInterrupts(tInterruptHandler handler, void *param)
 void DigitalSource::RequestInterrupts()
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt");
+	UINT32 index = interruptsResource->Allocate("Sync Interrupt", this);
 	if (index == ~0ul)
 	{
-		CloneError(interruptsResource);
 		return;
 	}
 	m_interruptIndex = index;

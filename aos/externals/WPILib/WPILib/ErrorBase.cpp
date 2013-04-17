@@ -14,8 +14,8 @@
 #include <symLib.h>
 #include <sysSymTbl.h>
 
-SEM_ID ErrorBase::_globalErrorMutex = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE);
 Error ErrorBase::_globalError;
+
 /**
  * @brief Initialize the instance status to 0 for now.
  */
@@ -48,7 +48,9 @@ void ErrorBase::ClearError() const
 }
 
 /**
- * @brief Set error information associated with a C library call that set an error to the "errno" global variable.
+ * @brief Set error information associated with a C library call that set an
+ * error to the "errno" "global variable" (it's really a macro that calls a
+ * function so that it's thread safe).
  * 
  * @param contextMessage A custom message from the code that set the error.
  * @param filename Filename of the error source
@@ -71,20 +73,16 @@ void ErrorBase::SetErrnoError(const char *contextMessage,
 		SYM_TYPE ptype;
 		symFindByValue(statSymTbl, errNo, statName, &pval, &ptype);
 		if (pval != errNo)
-			snprintf(err, 256, "Unknown errno 0x%08X: %s", errNo, contextMessage);
+			snprintf(err, sizeof(err), "Unknown errno 0x%08X: %s", errNo, contextMessage);
 		else
-			snprintf(err, 256, "%s (0x%08X): %s", statName, errNo, contextMessage);
+			snprintf(err, sizeof(err), "%s (0x%08X): %s", statName, errNo, contextMessage);
 		delete [] statName;
 	}
 
 	//  Set the current error information for this object.
 	m_error.Set(-1, err, filename, function, lineNumber, this);
 
-	// Update the global error if there is not one already set.
-	Synchronized mutex(_globalErrorMutex);
-	if (_globalError.GetCode() == 0) {
-		_globalError.Clone(m_error);
-	}
+  _globalError.CloneIfClear(m_error);
 }
 
 /**
@@ -106,11 +104,7 @@ void ErrorBase::SetImaqError(int success, const char *contextMessage, const char
 		//  Set the current error information for this object.
 		m_error.Set(imaqGetLastError(), err, filename, function, lineNumber, this);
 
-		// Update the global error if there is not one already set.
-		Synchronized mutex(_globalErrorMutex);
-		if (_globalError.GetCode() == 0) {
-			_globalError.Clone(m_error);
-		}
+    _globalError.CloneIfClear(m_error);
 	}
 }
 
@@ -131,11 +125,7 @@ void ErrorBase::SetError(Error::Code code, const char *contextMessage,
 		//  Set the current error information for this object.
 		m_error.Set(code, contextMessage, filename, function, lineNumber, this);
 
-		// Update the global error if there is not one already set.
-		Synchronized mutex(_globalErrorMutex);
-		if (_globalError.GetCode() == 0) {
-			_globalError.Clone(m_error);
-		}
+    _globalError.CloneIfClear(m_error);
 	}
 }
 
@@ -157,14 +147,10 @@ void ErrorBase::SetWPIError(const char *errorMessage, const char *contextMessage
 	//  Set the current error information for this object.
 	m_error.Set(-1, err, filename, function, lineNumber, this);
 
-	// Update the global error if there is not one already set.
-	Synchronized mutex(_globalErrorMutex);
-	if (_globalError.GetCode() == 0) {
-		_globalError.Clone(m_error);
-	}
+  _globalError.CloneIfClear(m_error);
 }
 
-void ErrorBase::CloneError(ErrorBase *rhs) const
+void ErrorBase::CloneError(const ErrorBase *rhs) const
 {
 	m_error.Clone(rhs->GetError());
 }
@@ -182,13 +168,8 @@ bool ErrorBase::StatusIsFatal() const
 void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber)
 {
-	//  If there was an error
-	if (code != 0) {
-		Synchronized mutex(_globalErrorMutex);
-
-		//  Set the current error information for this object.
-		_globalError.Set(code, contextMessage, filename, function, lineNumber, NULL);
-	}
+	//  Set the current error information for this object.
+	_globalError.Set(code, contextMessage, filename, function, lineNumber, NULL);
 }
 
 void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextMessage,
@@ -197,19 +178,14 @@ void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextM
 	char err[256];
 	sprintf(err, "%s: %s", errorMessage, contextMessage);
 
-	Synchronized mutex(_globalErrorMutex);
-	if (_globalError.GetCode() != 0) {
-		_globalError.Clear();
-	}
 	_globalError.Set(-1, err, filename, function, lineNumber, NULL);
 }
 
 /**
   * Retrieve the current global error.    
 */
-Error& ErrorBase::GetGlobalError()
+const Error& ErrorBase::GetGlobalError()
 {
-	Synchronized mutex(_globalErrorMutex);
 	return _globalError;
 }
 

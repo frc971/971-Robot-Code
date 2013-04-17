@@ -20,7 +20,7 @@ Synchronized::Synchronized(SEM_ID semaphore)
 	semTake(m_semaphore, WAIT_FOREVER);
 }
 
-Synchronized::Synchronized(ReentrantSemaphore& semaphore)
+Synchronized::Synchronized(const ReentrantSemaphore& semaphore)
 {
 	m_semaphore = semaphore.m_semaphore;
 	semTake(m_semaphore, WAIT_FOREVER);

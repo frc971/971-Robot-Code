@@ -38,9 +38,9 @@ void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
 	}
 
 	snprintf(buf, 64, "Analog Input %d (Module: %d)", channel, moduleNumber);
-	if (channels->Allocate((moduleNumber - 1) * kAnalogChannels + channel - 1, buf) == ~0ul)
+	if (channels->Allocate((moduleNumber - 1) * kAnalogChannels +
+                         channel - 1, buf, this) == ~0ul)
 	{
-		CloneError(channels);
 		return;
 	}
 	m_channel = channel;
@@ -86,7 +86,8 @@ AnalogChannel::AnalogChannel(UINT32 channel)
  */
 AnalogChannel::~AnalogChannel()
 {
-	channels->Free((m_module->GetNumber() - 1) * kAnalogChannels + m_channel - 1);
+	channels->Free((m_module->GetNumber() - 1) * kAnalogChannels + m_channel - 1,
+                 this);
 }
 
 /**

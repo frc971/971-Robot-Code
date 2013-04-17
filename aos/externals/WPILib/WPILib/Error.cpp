@@ -25,8 +25,30 @@ Error::Error()
 Error::~Error()
 {}
 
-void Error::Clone(Error &error)
+/**
+ * Clones another error into this if this is currently clear. If not, does
+ * nothing.
+ * This is necessary because just using "if (!IsClear()) Clone(error)" has a
+ * race condition.
+ */
+void Error::CloneIfClear(const Error &error) {
+  Synchronized sync(m_semaphore);
+  if (IsClear()) {
+    DoClone(error);
+  }
+}
+
+/**
+ * Clones another error into this object.
+ */
+void Error::Clone(const Error &error) {
+  Synchronized sync(m_semaphore);
+  DoClone(error);
+}
+
+void Error::DoClone(const Error &error)
 {
+  Synchronized sync(error.m_semaphore);
 	m_code = error.m_code;
 	m_message = error.m_message;
 	m_filename = error.m_filename;
@@ -36,17 +58,19 @@ void Error::Clone(Error &error)
 	m_timestamp = error.m_timestamp;
 }
 
+bool Error::IsClear() const { return GetCode() == 0; }
+
 Error::Code Error::GetCode() const
 {	return m_code;  }
 
-const char * Error::GetMessage() const
-{	return m_message.c_str();  }
+std::string Error::GetMessage() const
+{	return m_message;  }
 
-const char * Error::GetFilename() const
-{	return m_filename.c_str();  }
+std::string Error::GetFilename() const
+{	return m_filename;  }
 
-const char * Error::GetFunction() const
-{	return m_function.c_str();  }
+std::string Error::GetFunction() const
+{	return m_function;  }
 
 UINT32 Error::GetLineNumber() const
 {	return m_lineNumber;  }
@@ -57,8 +81,10 @@ const ErrorBase* Error::GetOriginatingObject() const
 double Error::GetTime() const
 {	return m_timestamp;  }
 
-void Error::Set(Code code, const char* contextMessage, const char* filename, const char* function, UINT32 lineNumber, const ErrorBase* originatingObject)
-{
+void Error::Set(Code code, const char* contextMessage, const char* filename,
+                const char* function, UINT32 lineNumber,
+                const ErrorBase* originatingObject)  {
+  Synchronized sync(m_semaphore);
 	m_code = code;
 	m_message = contextMessage;
 	m_filename = filename;
@@ -69,25 +95,30 @@ void Error::Set(Code code, const char* contextMessage, const char* filename, con
 
 	Report();
 
-	if (m_suspendOnErrorEnabled) taskSuspend(0);
+	if (m_suspendOnErrorEnabled) taskSuspend(0 /*self*/);
 }
 
-void Error::Report()
+void Error::Report() const
 {
 	// Error string buffers
 	char *error = new char[256];
 	char *error_with_code = new char[256];
 
 	// Build error strings
-	if (m_code != -1)
+	if (m_code != -1 && m_code != 1)
 	{
-		snprintf(error, 256, "%s: status = %d (0x%08X) %s ...in %s() in %s at line %d\n",
-				m_code < 0 ? "ERROR" : "WARNING", (INT32)m_code, (UINT32)m_code, m_message.c_str(),
-				m_function.c_str(), m_filename.c_str(), m_lineNumber);
-		sprintf(error_with_code,"<Code>%d %s", (INT32)m_code, error);
+		snprintf(error, sizeof(error),
+             "%s: status = %d (0x%08X) %s ...in %s() in %s at line %d\n",
+				     m_code < 0 ? "ERROR" : "WARNING", (INT32)m_code,
+             (UINT32)m_code, m_message.c_str(),
+				     m_function.c_str(), m_filename.c_str(), m_lineNumber);
+		snprintf(error_with_code, sizeof(error_with_code),
+             "<Code>%d %s", (INT32)m_code, error);
 	} else {
-		snprintf(error, 256, "ERROR: %s ...in %s() in %s at line %d\n", m_message.c_str(),
-				m_function.c_str(), m_filename.c_str(), m_lineNumber);
+		snprintf(error, sizeof(error),
+             "%s: %s ...in %s() in %s at line %d\n",
+             m_code < 0 ? "ERROR" : "WARNING", m_message.c_str(),
+				     m_function.c_str(), m_filename.c_str(), m_lineNumber);
 		strcpy(error_with_code, error);
 	}
 	// TODO: Add logging to disk
@@ -111,6 +142,7 @@ void Error::Report()
 
 void Error::Clear()
 {
+  Synchronized sync(m_semaphore);
 	m_code = 0;
 	m_message = "";
 	m_filename = "";

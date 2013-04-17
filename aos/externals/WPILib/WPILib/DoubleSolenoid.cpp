@@ -37,15 +37,15 @@ void DoubleSolenoid::InitSolenoid()
 	Resource::CreateResourceObject(&m_allocated, tSolenoid::kNumDO7_0Elements * kSolenoidChannels);
 
 	snprintf(buf, 64, "Solenoid %d (Module %d)", m_forwardChannel, m_moduleNumber);
-	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels + m_forwardChannel - 1, buf) == ~0ul)
+	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels +
+                            m_forwardChannel - 1, buf, this) == ~0ul)
 	{
-		CloneError(m_allocated);
 		return;
 	}
 	snprintf(buf, 64, "Solenoid %d (Module %d)", m_reverseChannel, m_moduleNumber);
-	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels + m_reverseChannel - 1, buf) == ~0ul)
+	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels +
+                            m_reverseChannel - 1, buf, this) == ~0ul)
 	{
-		CloneError(m_allocated);
 		return;
 	}
 	m_forwardMask = 1 << (m_forwardChannel - 1);
@@ -90,11 +90,10 @@ DoubleSolenoid::DoubleSolenoid(UINT8 moduleNumber, UINT32 forwardChannel, UINT32
  */
 DoubleSolenoid::~DoubleSolenoid()
 {
-	if (CheckSolenoidModule(m_moduleNumber))
-	{
-		m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels + m_forwardChannel - 1);
-		m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels + m_reverseChannel - 1);
-	}
+	m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels +
+                    m_forwardChannel - 1, this);
+	m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels +
+                    m_reverseChannel - 1, this);
 }
 
 /**

@@ -20,10 +20,9 @@ static Resource *counters = NULL;
 void Counter::InitCounter(Mode mode)
 {
 	Resource::CreateResourceObject(&counters, tCounter::kNumSystems);
-	UINT32 index = counters->Allocate("Counter");
+	UINT32 index = counters->Allocate("Counter", this);
 	if (index == ~0ul)
 	{
-		CloneError(counters);
 		return;
 	}
 	m_index = index;
@@ -183,7 +182,7 @@ Counter::~Counter()
 	}
 	delete m_counter;
 	m_counter = NULL;
-	counters->Free(m_index);
+	counters->Free(m_index, this);
 }
 
 /**
