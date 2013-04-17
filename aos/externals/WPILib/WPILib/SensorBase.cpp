@@ -7,7 +7,6 @@
 #include "SensorBase.h"
 
 #include "NetworkCommunication/LoadOut.h"
-#include "WPIErrors.h"
 
 const UINT32 SensorBase::kSystemClockTicksPerMicrosecond;
 const UINT32 SensorBase::kDigitalChannels;
@@ -18,8 +17,8 @@ const UINT32 SensorBase::kSolenoidChannels;
 const UINT32 SensorBase::kSolenoidModules;
 const UINT32 SensorBase::kPwmChannels;
 const UINT32 SensorBase::kRelayChannels;
-const UINT32 SensorBase::kChassisSlots;
 SensorBase *SensorBase::m_singletonList = NULL;
+ReentrantSemaphore SensorBase::m_singletonListSemaphore;
 
 /**
  * Creates an instance of the sensor base and gets an FPGA handle
@@ -46,6 +45,7 @@ SensorBase::~SensorBase()
  */
 void SensorBase::AddToSingletonList()
 {
+  Synchronized sync(m_singletonListSemaphore);
 	m_nextSingleton = m_singletonList;
 	m_singletonList = this;
 }
@@ -57,6 +57,7 @@ void SensorBase::AddToSingletonList()
  */
 void SensorBase::DeleteSingletons()
 {
+  Synchronized sync(m_singletonListSemaphore);
 	for (SensorBase *next = m_singletonList; next != NULL;)
 	{
 		SensorBase *tmp = next;

@@ -7,10 +7,10 @@
 #ifndef SENSORBASE_H_
 #define SENSORBASE_H_
 
-#include "ChipObject/NiRio.h"
 #include "ErrorBase.h"
 #include <stdio.h>
 #include "Base.h"
+#include "Synchronized.h"
 
 /**
  * Base class for all sensors.
@@ -45,7 +45,7 @@ public:
 	static const UINT32 kSolenoidModules = 2;
 	static const UINT32 kPwmChannels = 10;
 	static const UINT32 kRelayChannels = 8;
-	static const UINT32 kChassisSlots = 8;
+
 protected:
 	void AddToSingletonList();
 
@@ -53,6 +53,7 @@ private:
 	DISALLOW_COPY_AND_ASSIGN(SensorBase);
 	static SensorBase *m_singletonList;
 	SensorBase *m_nextSingleton;
+  static ReentrantSemaphore m_singletonListSemaphore;
 };
 
 
