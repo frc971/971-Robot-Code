@@ -27,7 +27,7 @@
               ],
               'link_settings': {
                 'libraries': [
-                  '<(aos_abs)/externals/WPILib/WPILib.a',
+                  #'<(aos_abs)/externals/WPILib/WPILib.a',
                 ],
               },
             },

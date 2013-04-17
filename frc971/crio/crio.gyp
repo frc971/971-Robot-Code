@@ -5,15 +5,13 @@
       'target_name': 'WPILib_changes',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/externals/WPILib/WPILib/LiveWindow/LiveWindow.cpp',
-        '<(AOS)/externals/WPILib/WPILib/AnalogTriggerOutput.cpp',
-        '<(AOS)/externals/WPILib/WPILib/DigitalInput.cpp',
-        '<(AOS)/externals/WPILib/WPILib/DigitalSource.cpp',
+        '<!@(find <(AOS)/externals/WPILib/WPILib/ -name *.cpp)',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
       ],
-      'cflags!': ['-Werror'],
+      'cflags!': ['-Werror', '-ggdb3', '-O0'],
+      'cflags': ['-ggdb1', '-O3'],
     },
     {
       'target_name': 'user_program',
