@@ -52,6 +52,7 @@ Task::~Task()
 bool Task::Start(UINT32 arg0, UINT32 arg1, UINT32 arg2, UINT32 arg3, UINT32 arg4, 
 		UINT32 arg5, UINT32 arg6, UINT32 arg7, UINT32 arg8, UINT32 arg9)
 {
+  // Don't have to lock m_prioritySemaphore because this code isn't changing it.
 	m_taskID = taskSpawn(m_taskName,
 						m_priority,
 						VX_FP_TASK,							// options
@@ -140,6 +141,7 @@ bool Task::Verify()
  */
 INT32 Task::GetPriority()
 {
+  Synchronized sync(m_prioritySemaphore);
 	if (HandleError(taskPriorityGet(m_taskID, &m_priority)))
 		return m_priority;
 	else
@@ -155,6 +157,7 @@ INT32 Task::GetPriority()
  */
 bool Task::SetPriority(INT32 priority)
 {
+  Synchronized sync(m_prioritySemaphore);
 	m_priority = priority;
 	return HandleError(taskPrioritySet(m_taskID, m_priority));
 }
