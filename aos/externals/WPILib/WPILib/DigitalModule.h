@@ -29,6 +29,8 @@ public:
 	void SetPWMPeriodScale(UINT32 channel, UINT32 squelchMask);
 	void SetRelayForward(UINT32 channel, bool on);
 	void SetRelayReverse(UINT32 channel, bool on);
+  void SetRelaysForward(UINT8 mask, UINT8 values);
+  void SetRelaysReverse(UINT8 mask, UINT8 values);
 	bool GetRelayForward(UINT32 channel);
 	UINT8 GetRelayForward();
 	bool GetRelayReverse(UINT32 channel);

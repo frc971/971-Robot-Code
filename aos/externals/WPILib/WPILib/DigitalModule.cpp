@@ -168,6 +168,46 @@ void DigitalModule::SetRelayReverse(UINT32 channel, bool on)
 }
 
 /**
+ * Set the state of multiple relays at the same time.
+ * For both parameters, 0b100000000 is channel 1 and 0b00000001 is channel 8.
+ * @param mask which relays to set
+ * @param values what to set the relays to
+ */
+void DigitalModule::SetRelaysForward(UINT8 mask, UINT8 values) {
+  tRioStatusCode localStatus = NiFpga_Status_Success;
+  {
+    Synchronized sync(m_relaySemaphore);
+    UINT8 current = m_fpgaDIO->readSlowValue_RelayFwd(&localStatus);
+    // Clearr all of the bits that we're messing with first.
+    current &= ~mask;
+    // Then set only the ones that are supposed to be set.
+    current |= (mask & values);
+    m_fpgaDIO->writeSlowValue_RelayFwd(current, &localStatus);
+  }
+  wpi_setError(localStatus);
+}
+
+/**
+ * Set the state of multiple relays at the same time.
+ * For both parameters, 0b100000000 is channel 1 and 0b00000001 is channel 8.
+ * @param mask which relays to set
+ * @param values what to set the relays to
+ */
+void DigitalModule::SetRelaysReverse(UINT8 mask, UINT8 values) {
+  tRioStatusCode localStatus = NiFpga_Status_Success;
+  {
+    Synchronized sync(m_relaySemaphore);
+    UINT8 current = m_fpgaDIO->readSlowValue_RelayRev(&localStatus);
+    // Clearr all of the bits that we're messing with first.
+    current &= ~mask;
+    // Then set only the ones that are supposed to be set.
+    current |= (mask & values);
+    m_fpgaDIO->writeSlowValue_RelayRev(current, &localStatus);
+  }
+  wpi_setError(localStatus);
+}
+
+/**
  * Get the current state of the forward relay channel
  */
 bool DigitalModule::GetRelayForward(UINT32 channel)
