@@ -8,7 +8,6 @@
     'conditions': [
       ['OS=="crio"', {
           'libaos_source_files': [
-            '<(AOS)/crio/Talon.cpp',
           ],
         }, {
           'libaos_source_files': [

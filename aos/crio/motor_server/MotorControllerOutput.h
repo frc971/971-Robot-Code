@@ -3,8 +3,7 @@
 
 #include "aos/crio/motor_server/OutputDevice.h"
 
-#include "aos/crio/Talon.h"
-
+#include "WPILib/Talon.h"
 #include "WPILib/SpeedController.h"
 #include "WPILib/Jaguar.h"
 #include "WPILib/CANJaguar.h"
