@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #ifdef _WRS_KERNEL
-#include <iolib.h>
+#include <ioLib.h>
 #else
 #include <unistd.h>
 #endif
