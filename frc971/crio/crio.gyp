@@ -6,6 +6,7 @@
       'type': 'static_library',
       'sources': [
         '<!@(find <(AOS)/externals/WPILib/WPILib/ -name *.cpp)',
+        '<(AOS)/crio/floatundidf.c',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
