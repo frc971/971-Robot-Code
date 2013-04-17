@@ -11,30 +11,31 @@
 #include "Task.h"
 #include <dbgLib.h>
 #include <stdio.h>
+#include <taskLib.h>
 #include <sysSymTbl.h>
 #include "nivision.h"
 
-#define DBG_DEMANGLE_PRINT_LEN 256  /* Num chars of demangled names to print */
+#define DBG_DEMANGLE_PRINT_LEN MAX_SYS_SYM_LEN  /* Num chars of demangled names to print */
 
 extern "C"
 {
 	extern char * cplusDemangle (char *source, char *dest, INT32 n);
 }
 
-char *wpi_getLabel(UINT addr, INT32 *found)
+void wpi_getLabel(UINT addr, char *label, INT32 *found)
 {
 	INT32 pVal;
 	SYM_TYPE pType;
 	char name[MAX_SYS_SYM_LEN + 1];
-	static char label[DBG_DEMANGLE_PRINT_LEN + 1 + 11];
-	bzero(label, DBG_DEMANGLE_PRINT_LEN + 1 + 11);
+  static const size_t kLabelSize = DBG_DEMANGLE_PRINT_LEN + 1 + 11;
+	bzero(label, kLabelSize);
 
 	if (symFindByValue(sysSymTbl, addr, name, &pVal, &pType) == OK)
 	{
-		cplusDemangle(name, label, sizeof(label) - 11);
+		cplusDemangle(name, label, kLabelSize - 11);
 		if ((UINT)pVal != addr)
 		{
-			sprintf(&label[strlen(label)], "+0x%04x", addr-pVal);
+			snprintf(label + strlen(label), kLabelSize - strlen(label), "+0x%04x", addr-pVal);
 			if (found) *found = 2;
 		}
 		else
@@ -44,11 +45,9 @@ char *wpi_getLabel(UINT addr, INT32 *found)
 	}
 	else
 	{
-		sprintf(label, "0x%04x", addr);
+		snprintf(label, kLabelSize, "0x%04x", addr);
 		if (found) *found = 0;
 	}
-
-	return label;
 }
 /*
 static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, INT32 taskId, BOOL isKernelAdrs)
@@ -77,7 +76,8 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	INT32 nameFound = 0;
 	INT32 params = 0;
 	INT32 totalnargs = nargs;
-	char *funcName = wpi_getLabel((UINT)func, &nameFound);
+  char funcName[DBG_DEMANGLE_PRINT_LEN + 1 + 11];
+	wpi_getLabel((UINT)func, funcName, &nameFound);
 	// Ignore names that are not exact symbol address matches.
 	if (nameFound != 1) return;
 
@@ -135,7 +135,11 @@ extern "C"
 
 static INT32 wpiStackTask(INT32 taskId)
 {
-	taskDelay(1);
+  // Make sure it's suspended in spite of any scheduler weirdness or whatever.
+  while (!taskIsSuspended(taskId)) {
+	  taskDelay(1);
+  }
+
 	//tt(taskId);
 
 	REG_SET regs;

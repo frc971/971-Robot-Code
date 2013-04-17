@@ -22,7 +22,8 @@ bool wpi_assert_impl(bool conditionValue, const char *conditionText, const char 
 bool wpi_assertEqual_impl(int valueA, int valueB, const char *message, const char *fileName,UINT32 lineNumber, const char *funcName);
 bool wpi_assertNotEqual_impl(int valueA, int valueB, const char *message, const char *fileName,UINT32 lineNumber, const char *funcName);
 
-char *wpi_getLabel(UINT addr, INT32 *found = NULL);
+// Will use up to (DBG_DEMANGLE_PRINT_LEN + 1 + 11) of label.
+void wpi_getLabel(UINT addr, char *label, INT32 *found = NULL);
 void wpi_selfTrace();
 void wpi_suspendOnAssertEnabled(bool enabled);
 void wpi_stackTraceOnAssertEnable(bool enabled);
