@@ -20,7 +20,6 @@
 class SensorBase: public ErrorBase {
 public:
 	SensorBase();
-	virtual ~SensorBase();
 	static void DeleteSingletons();
 	static UINT32 GetDefaultAnalogModule() { return 1; }
 	static UINT32 GetDefaultDigitalModule() { return 1; }
@@ -48,6 +47,10 @@ public:
 	static const UINT32 kChassisSlots = 8;
 protected:
 	void AddToSingletonList();
+  // Subclasses that don't use the singleton list mechanism should make this
+  // public, but ones that do should keep it protected so that users can not
+  // delete the singleton instance(s).
+	virtual ~SensorBase();
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(SensorBase);
