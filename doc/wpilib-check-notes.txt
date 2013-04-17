@@ -1,0 +1,50 @@
+This file has the results of going through all of the WPILib code that we use.
+If you use any more parts of WPILib, then check them carefully (preferrably get
+multiple people to do it) and then add the results here.
+The notes are so that it is clear what has been checked and how things interact
+in nonintiutive ways to potentially create subtle bugs.
+
+DriverStationEnhancedIO
+  only checked what DriverStation does to it
+  the rest of it is implemented horribly
+DriverStation
+  GetMatchTime() is garbage (DriverStation shouldn't keep track of that
+    information and it does a bad job of it)
+  don't call Set*PriorityDashboardPackerToUse
+  IsNewControlData() and WaitForData() are OK
+  make sure to GetDataReadLock() correctly when you want to read data
+  GetStickAxis uses brain-dead math
+  most of the "helper" methods to retrieve parts of the control data have no
+    benefit and do other weird things besides just get the value
+Dashboard
+  GetStatusBuffer and Flush do get called from a separate task by DriverStation
+  only checked what DriverStation does to it
+MotorSafetyHelper
+  CheckMotors() does get called from a separate task by DriverStation
+RobotBase
+  the Is* methods are garbage (call them directly on the instances of the
+    objects that they forward too)
+Task
+  the constructor and Start get called in RobotBase in a task without the
+    floating point save flag set
+ReentrantSemaphore
+Synchronized
+Error
+  it synchronizes all of the non-const methods internally, and does it right
+  Do not use EnableStackTrace.
+ErrorBase
+  the mutable Error instance varible is weird, but safe
+Utility
+  it is a bad idea to use wpi_selfTrace()
+    That gets called if you use Error::EnableStackTrace or
+      wpi_stackOnAssertEnable, so don't call those.
+  The assertions NEVER stop on failure unless you wpi_SuspendOnAssertEnabled.
+Global
+Watchdog
+  the return value of Feed() is garbage
+Module
+DigitalModule
+  didn't look at I2C
+AnalogChannel
+AnalogModule
+NetworkRobot
