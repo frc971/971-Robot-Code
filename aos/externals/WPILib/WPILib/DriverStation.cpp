@@ -21,6 +21,7 @@ const UINT32 DriverStation::kJoystickPorts;
 const UINT32 DriverStation::kJoystickAxes;
 const float DriverStation::kUpdatePeriod;
 DriverStation* DriverStation::m_instance = NULL;
+ReentrantSemaphore DriverStation::m_instanceSemaphore;
 UINT8 DriverStation::m_updateNumber = 0;
 
 /**
@@ -58,32 +59,7 @@ DriverStation::DriverStation()
 
 	m_waitForDataSem = semBCreate (SEM_Q_PRIORITY, SEM_EMPTY);
 
-	m_controlData = new FRCCommonControlData;
-
-	// initialize packet number and control words to zero;
-	m_controlData->packetIndex = 0;
-	m_controlData->control = 0;
-
-	// set all joystick axis values to neutral; buttons to OFF
-	m_controlData->stick0Axis1 = m_controlData->stick0Axis2 = m_controlData->stick0Axis3 = 0;
-	m_controlData->stick1Axis1 = m_controlData->stick1Axis2 = m_controlData->stick1Axis3 = 0;
-	m_controlData->stick2Axis1 = m_controlData->stick2Axis2 = m_controlData->stick2Axis3 = 0;
-	m_controlData->stick3Axis1 = m_controlData->stick3Axis2 = m_controlData->stick3Axis3 = 0;
-	m_controlData->stick0Axis4 = m_controlData->stick0Axis5 = m_controlData->stick0Axis6 = 0;
-	m_controlData->stick1Axis4 = m_controlData->stick1Axis5 = m_controlData->stick1Axis6 = 0;
-	m_controlData->stick2Axis4 = m_controlData->stick2Axis5 = m_controlData->stick2Axis6 = 0;
-	m_controlData->stick3Axis4 = m_controlData->stick3Axis5 = m_controlData->stick3Axis6 = 0;
-	m_controlData->stick0Buttons = 0;
-	m_controlData->stick1Buttons = 0;
-	m_controlData->stick2Buttons = 0;
-	m_controlData->stick3Buttons = 0;
-
-	// initialize the analog and digital data.
-	m_controlData->analog1 = 0;
-	m_controlData->analog2 = 0;
-	m_controlData->analog3 = 0;
-	m_controlData->analog4 = 0;
-	m_controlData->dsDigitalIn = 0;
+	m_controlData = new FRCCommonControlData();
 
 	m_batteryChannel = new AnalogChannel(kBatteryModuleNumber, kBatteryChannel);
 
@@ -106,6 +82,7 @@ DriverStation::~DriverStation()
 	// Unregister our semaphore.
 	setNewDataSem(0);
 	semDelete(m_packetDataAvailableSem);
+  semDelete(m_newControlData);
 }
 
 void DriverStation::InitTask(DriverStation *ds)
@@ -144,6 +121,7 @@ void DriverStation::Run()
  */
 DriverStation* DriverStation::GetInstance()
 {
+  Synchronized sync(m_instanceSemaphore);
 	if (m_instance == NULL)
 	{
 		m_instance = new DriverStation();
@@ -159,7 +137,7 @@ DriverStation* DriverStation::GetInstance()
 void DriverStation::GetData()
 {
 	static bool lastEnabled = false;
-	// Have to const_cast away the volatile.
+	// Have to const_cast away the volatile and the const.
 	getCommonControlData(const_cast<FRCCommonControlData *>(m_controlData), WAIT_FOREVER);
 	if (!lastEnabled && IsEnabled()) 
 	{
@@ -365,7 +343,8 @@ void DriverStation::SetDigitalOut(UINT32 channel, bool value)
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
-	// TODO: fix the lack of thread safety here
+	// TODO: fix the lack of thread safety here (for both reported_mask and
+  // m_digitalOut).
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
@@ -501,8 +480,10 @@ UINT32 DriverStation::GetPacketNumber()
  */
 DriverStation::Alliance DriverStation::GetAlliance()
 {
-	if (m_controlData->dsID_Alliance == 'R') return kRed;
-	if (m_controlData->dsID_Alliance == 'B') return kBlue;
+  // Read it first to make sure that it doesn't change in between the checks.
+  char alliance = m_controlData->dsID_Alliance;
+	if (alliance == 'R') return kRed;
+	if (alliance == 'B') return kBlue;
 	wpi_assert(false);
 	return kInvalid;
 }

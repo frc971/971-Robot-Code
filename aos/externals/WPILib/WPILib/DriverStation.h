@@ -11,6 +11,7 @@
 #include "DriverStationEnhancedIO.h"
 #include "SensorBase.h"
 #include "Task.h"
+#include "Synchronized.h"
 
 struct FRCCommonControlData;
 class AnalogChannel;
@@ -113,6 +114,7 @@ protected:
 private:
 	static void InitTask(DriverStation *ds);
 	static DriverStation *m_instance;
+  static ReentrantSemaphore m_instanceSemaphore;
 	static UINT8 m_updateNumber;
 	///< TODO: Get rid of this and use the semaphore signaling
 	static const float kUpdatePeriod = 0.02;
@@ -122,7 +124,9 @@ private:
   // Volatile because it gets modified by GetData() in a separate task. Be
   // careful using values out of here (2-byte accesses are safe as long as
   // they're aligned, which all of the ones in here should be).
-	volatile struct FRCCommonControlData *m_controlData;
+  // Const because it should never be modifed except by getCommonControlData,
+  // and that call has to const_cast away the volatile anyways.
+  const volatile struct FRCCommonControlData *m_controlData;
 	UINT8 m_digitalOut;
 	AnalogChannel *m_batteryChannel;
 	SEM_ID m_statusDataSemaphore;
