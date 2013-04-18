@@ -124,7 +124,6 @@ struct FRCCommonControlData{
 	UINT32 FPGAChecksum3;
 
 	char versionData[8];
-};
-
+} __attribute__((packed));
 
 #endif
