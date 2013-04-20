@@ -154,18 +154,7 @@ void DigitalModule::SetPWMPeriodScale(UINT32 channel, UINT32 squelchMask)
  */
 void DigitalModule::SetRelayForward(UINT32 channel, bool on)
 {
-	tRioStatusCode localStatus = NiFpga_Status_Success;
-	CheckRelayChannel(channel);
-	{
-		Synchronized sync(m_relaySemaphore);
-		UINT8 forwardRelays = m_fpgaDIO->readSlowValue_RelayFwd(&localStatus);
-		if (on)
-			forwardRelays |= 1 << (channel - 1);
-		else
-			forwardRelays &= ~(1 << (channel - 1));
-		m_fpgaDIO->writeSlowValue_RelayFwd(forwardRelays, &localStatus);
-	}
-	wpi_setError(localStatus);
+  SetRelaysForward(1 << (channel - 1), on ? 0xFF : 0x00);
 }
 
 /**
@@ -175,18 +164,7 @@ void DigitalModule::SetRelayForward(UINT32 channel, bool on)
  */
 void DigitalModule::SetRelayReverse(UINT32 channel, bool on)
 {
-	tRioStatusCode localStatus = NiFpga_Status_Success;
-	CheckRelayChannel(channel);
-	{
-		Synchronized sync(m_relaySemaphore);
-		UINT8 reverseRelays = m_fpgaDIO->readSlowValue_RelayRev(&localStatus);
-		if (on)
-			reverseRelays |= 1 << (channel - 1);
-		else
-			reverseRelays &= ~(1 << (channel - 1));
-		m_fpgaDIO->writeSlowValue_RelayRev(reverseRelays, &localStatus);
-	}
-	wpi_setError(localStatus);
+  SetRelaysReverse(1 << (channel - 1), on ? 0xFF : 0x00);
 }
 
 /**
@@ -307,29 +285,9 @@ void DigitalModule::SetDIOs(UINT16 mask, UINT16 values) {
  * @param channel The Digital I/O channel
  * @param value The state to set the digital channel (if it is configured as an output)
  */
-void DigitalModule::SetDIO(UINT32 channel, short value)
+void DigitalModule::SetDIO(UINT32 channel, bool value)
 {
-	if (value != 0 && value != 1)
-	{
-		wpi_setWPIError(NonBinaryDigitalValue);
-		if (value != 0)
-			value = 1;
-	}
-	tRioStatusCode localStatus = NiFpga_Status_Success;
-	{
-		Synchronized sync(m_digitalSemaphore);
-		UINT16 currentDIO = m_fpgaDIO->readDO(&localStatus);
-		if(value == 0)
-		{
-			currentDIO = currentDIO & ~(1 << RemapDigitalChannel(channel - 1));
-		}
-		else if (value == 1)
-		{
-			currentDIO = currentDIO | (1 << RemapDigitalChannel(channel - 1));
-		} 
-		m_fpgaDIO->writeDO(currentDIO, &localStatus);
-	}
-	wpi_setError(localStatus);
+  SetDIOs(1 << RemapDigitalChannel(channel - 1), value ? 0xFFFF : 0x0000);
 }
 
 /**
@@ -442,7 +400,7 @@ bool DigitalModule::IsPulsing()
 
 /**
  * Allocate a DO PWM Generator.
- * Allocate PWM generators so that they are not accidently reused.
+ * Allocate PWM generators so that they are not accidentally reused.
  * 
  * @return PWM Generator refnum
  */
@@ -482,7 +440,7 @@ void DigitalModule::SetDO_PWMRate(float rate)
 }
 
 /**
- * Configure which DO channel the PWM siganl is output on
+ * Configure which DO channel the PWM signal is output on
  * 
  * @param pwmGenerator The generator index reserved by AllocateDO_PWM()
  * @param channel The Digital Output channel to output on
