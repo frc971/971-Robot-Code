@@ -176,8 +176,10 @@ bool ErrorBase::StatusIsFatal() const
 void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber)
 {
-	//  Set the current error information for this object.
-	_globalError.Set(code, contextMessage, filename, function, lineNumber, NULL);
+  if (code != 0) {
+	  //  Set the current error information for this object.
+	  _globalError.Set(code, contextMessage, filename, function, lineNumber, NULL);
+  }
 }
 
 /**
