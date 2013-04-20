@@ -20,7 +20,7 @@ public:
 	static Module *GetModule(nLoadOut::tModuleType type, UINT8 number);
 
 protected:
-	explicit Module(nLoadOut::tModuleType type, UINT8 number);
+	Module(nLoadOut::tModuleType type, UINT8 number);
 	virtual ~Module();
 
 	nLoadOut::tModuleType m_moduleType; ///< The type of module represented.

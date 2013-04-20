@@ -8,6 +8,7 @@
 #include "AnalogModule.h"
 #include "DigitalModule.h"
 //#include "SolenoidModule.h"
+#include "Utility.h"
 
 Module* Module::m_modules[kMaxModules] = {NULL};
 
@@ -29,6 +30,7 @@ Module::Module(nLoadOut::tModuleType type, UINT8 number)
  */
 Module::~Module()
 {
+  m_modules[ToIndex(m_moduleType, m_moduleNumber)] = NULL;
 }
 
 /**
@@ -70,7 +72,20 @@ Module* Module::GetModule(nLoadOut::tModuleType type, UINT8 number)
  */
 UINT8 Module::ToIndex(nLoadOut::tModuleType type, UINT8 number)
 {
-	if (number == 0 || number > kMaxModuleNumber) return 0;
-	if (type < nLoadOut::kModuleType_Analog || type > nLoadOut::kModuleType_Solenoid) return 0;
+	if (number == 0 || number > kMaxModuleNumber) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Trying to get index for invalid module %d",
+             static_cast<int>(number));
+    wpi_assertWithMessage(false, buf);
+    return 0;
+  }
+	if (type < nLoadOut::kModuleType_Analog ||
+      type > nLoadOut::kModuleType_Solenoid) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Trying to get index for invalid module type %d",
+             static_cast<int>(type));
+    wpi_assertWithMessage(false, buf);
+    return 0;
+  }
 	return (type * kMaxModuleNumber) + (number - 1);
 }
