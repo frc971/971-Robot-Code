@@ -63,8 +63,9 @@ void SolenoidBase::Set(UINT8 value, UINT8 mask)
 		Synchronized sync(m_semaphore);
 		UINT8 currentValue = m_fpgaSolenoidModule->readDO7_0(m_moduleNumber - 1, &localStatus);
 		// Zero out the values to change
-		currentValue = currentValue & ~mask;
-		currentValue = currentValue | (value & mask);
+		currentValue &= ~mask;
+    // Actually set the values.
+		currentValue |= value & mask;
 		m_fpgaSolenoidModule->writeDO7_0(m_moduleNumber - 1, currentValue, &localStatus);
 	}
 	wpi_setError(localStatus);
