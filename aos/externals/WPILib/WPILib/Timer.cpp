@@ -12,6 +12,7 @@
 
 #include "Synchronized.h"
 #include "Utility.h"
+#include "Global.h"
 
 /**
  * Pause the task for a specified time.
@@ -180,7 +181,7 @@ double Timer::GetFPGATimestamp()
 {
 	// FPGA returns the timestamp in microseconds
 	// Call the helper GetFPGATime() in Utility.cpp
-	return GetFPGATime() * 1.0e-6;
+	return Global::GetInstance()->GetFPGATime() * 1.0e-6;
 }
 
 // Internal function that reads the PPC timestamp counter.
