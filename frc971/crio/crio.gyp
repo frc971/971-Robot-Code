@@ -6,10 +6,10 @@
       'type': 'static_library',
       'sources': [
         '<!@(find <(AOS)/externals/WPILib/WPILib/ -name *.cpp)',
-        '<(AOS)/crio/floatundidf.c',
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
+        '<(EXTERNALS):libgcc-4.5.2',
       ],
       'cflags!': ['-Werror', '-ggdb3', '-O0'],
       'cflags': ['-ggdb1', '-O3'],

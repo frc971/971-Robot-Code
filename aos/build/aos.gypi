@@ -44,6 +44,8 @@
     'defines': [
       '__STDC_FORMAT_MACROS',
       '_FORTIFY_SOURCE=2',
+      '__STDC_CONSTANT_MACROS',
+      '__STDC_LIMIT_MACROS',
     ],
     'ldflags': [
       '-pipe',
