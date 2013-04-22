@@ -121,12 +121,14 @@
             ],
           ],
           'ldflags': [
-            '-mcpu=603',
+            '-mcpu=603e',
             '-mstrict-align',
             '-mlongcall',
           ],
           'cflags': [
-            '-mcpu=603',
+            # The Freescale MPC5200B (cRIO-FRC) and MPC5125 (cRIO-FRC II) both
+            # have MPC603e cores according to Freescale docs.
+            '-mcpu=603e',
             '-mstrict-align',
             '-mlongcall',
             '-isystem', '<(aos_abs)/externals/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/lib/gcc/powerpc-wrs-vxworks/3.4.4/include/',
