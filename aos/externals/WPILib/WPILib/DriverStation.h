@@ -106,6 +106,19 @@ public:
      *   for diagnostic purposes only
      * @param entering If true, starting test code; if false, leaving test code */
     void InTest(bool entering) {m_userInTest=entering;}
+  /**
+   * Get a pointer to the lock used for the data set by the In* methods.
+   * Creating write locks on this is useful if you want to atomically modify the
+   * information about what code you claim to be executing.
+   * @return A pointer to the lock. Be aware that the code that looks at this
+   * state (using a read lock) runs after the code that reads new packets and
+   * must finish before a new one can be read.
+   * @see #InDisabled(bool)
+   * @see #InAutonomous(bool)
+   * @see #InOperatorControl(bool)
+   * @see #InTest(bool)
+   */
+  RWLock *GetUserStateLock() { return &m_userStateLock; }
 
 protected:
 	DriverStation();
@@ -148,6 +161,8 @@ private:
 	DriverStationEnhancedIO m_enhancedIO;
 	SEM_ID m_waitForDataSem;
 	double m_approxMatchTimeOffset;
+
+  RWLock m_userStateLock;
 	bool m_userInDisabled;
 	bool m_userInAutonomous;
     bool m_userInTeleop;

@@ -113,14 +113,17 @@ void DriverStation::Run()
 			MotorSafetyHelper::CheckMotors();
 			period = 0;
 		}
-		if (m_userInDisabled)
-			FRC_NetworkCommunication_observeUserProgramDisabled();
-		if (m_userInAutonomous)
-			FRC_NetworkCommunication_observeUserProgramAutonomous();
-        if (m_userInTeleop)
-            FRC_NetworkCommunication_observeUserProgramTeleop();
-        if (m_userInTest)
-            FRC_NetworkCommunication_observeUserProgramTest();
+    {
+      RWLock::Locker userStateLocker(&m_userStateLock, false);
+		  if (m_userInDisabled)
+			  FRC_NetworkCommunication_observeUserProgramDisabled();
+		  if (m_userInAutonomous)
+			  FRC_NetworkCommunication_observeUserProgramAutonomous();
+      if (m_userInTeleop)
+        FRC_NetworkCommunication_observeUserProgramTeleop();
+      if (m_userInTest)
+        FRC_NetworkCommunication_observeUserProgramTest();
+    }
 	}
 }
 

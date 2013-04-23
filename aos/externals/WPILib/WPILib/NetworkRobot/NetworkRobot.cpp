@@ -261,10 +261,16 @@ void NetworkRobot::ProcessPacket() {
   // This code can only assume that whatever is sending it values knows what
   // state it should be in.
   DriverStation::FMSState state = m_ds->GetCurrentState();
-  m_ds->InDisabled(state == DriverStation::FMSState::kDisabled);
-  m_ds->InAutonomous(state == DriverStation::FMSState::kAutonomous);
-  m_ds->InOperatorControl(state == DriverStation::FMSState::kTeleop);
-  m_ds->InTest(state == DriverStation::FMSState::kTestMode);
+  {
+    // Don't have to synchronize around getting the current state too because
+    // it's ok if we're 1 cycle off. It would just be bad if we reported not
+    // being in any state or in 2 states at once.
+    RWLock::Locker state_locker(m_ds->GetUserStateLock(), true);
+    m_ds->InDisabled(state == DriverStation::FMSState::kDisabled);
+    m_ds->InAutonomous(state == DriverStation::FMSState::kAutonomous);
+    m_ds->InOperatorControl(state == DriverStation::FMSState::kTeleop);
+    m_ds->InTest(state == DriverStation::FMSState::kTestMode);
+  }
 
   m_watchdog.Feed();
   last_received_timestamp_ = Timer::GetPPCTimestamp();
