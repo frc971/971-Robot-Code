@@ -24,6 +24,10 @@ struct LiveWindowComponent
 		this->subsystem = subsystem;
 		this->name = name;
 		this->isSensor = isSensor;
+#else
+    (void)subsystem;
+    (void)name;
+    (void)isSensor;
 #endif
 	}
 };
