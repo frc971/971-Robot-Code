@@ -9,6 +9,8 @@
 #include "DigitalModule.h"
 //#include "SolenoidModule.h"
 
+ReentrantSemaphore Module::m_semaphore;
+
 Module* Module::m_modules[kMaxModules] = {NULL};
 
 /**
@@ -21,6 +23,7 @@ Module::Module(nLoadOut::tModuleType type, UINT8 number)
 	: m_moduleType (type)
 	, m_moduleNumber (number)
 {
+  Synchronized sync(m_semaphore);
 	m_modules[ToIndex(type, number)] = this;
 }
 
@@ -39,6 +42,7 @@ Module::~Module()
  */
 Module* Module::GetModule(nLoadOut::tModuleType type, UINT8 number)
 {
+  Synchronized sync(m_semaphore);
 	if (m_modules[ToIndex(type, number)] == NULL)
 	{
 		switch(type)
