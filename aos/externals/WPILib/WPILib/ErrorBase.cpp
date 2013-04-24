@@ -62,7 +62,7 @@ void ErrorBase::SetErrnoError(const char *contextMessage,
 	int errNo = errnoGet();
 	if (errNo == 0)
 	{
-		sprintf(err, "OK: %s", contextMessage);
+		snprintf(err, sizeof(err), "OK: %s", contextMessage);
 	}
 	else
 	{
@@ -101,7 +101,7 @@ void ErrorBase::SetImaqError(int success, const char *contextMessage, const char
 	//  If there was an error
 	if (success <= 0) {
 		char err[256];
-		sprintf(err, "%s: %s", contextMessage, imaqGetErrorText(imaqGetLastError()));
+		snprintf(err, sizeof(err), "%s: %s", contextMessage, imaqGetErrorText(imaqGetLastError()));
 
 		//  Set the current error information for this object.
 		m_error.Set(imaqGetLastError(), err, filename, function, lineNumber, this);
@@ -152,7 +152,7 @@ void ErrorBase::SetWPIError(const char *errorMessage, const char *contextMessage
 		const char* filename, const char* function, UINT32 lineNumber) const
 {
 	char err[256];
-	sprintf(err, "%s: %s", errorMessage, contextMessage);
+	snprintf(err, sizeof(err), "%s: %s", errorMessage, contextMessage);
 
 	//  Set the current error information for this object.
 	m_error.Set(-1, err, filename, function, lineNumber, this);
@@ -195,7 +195,7 @@ void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextM
         const char* filename, const char* function, UINT32 lineNumber)
 {
 	char err[256];
-	sprintf(err, "%s: %s", errorMessage, contextMessage);
+	snprintf(err, sizeof(err), "%s: %s", errorMessage, contextMessage);
 
 	Synchronized mutex(_globalErrorMutex);
 	if (_globalError.GetCode() != 0) {

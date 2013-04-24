@@ -63,7 +63,7 @@ DigitalModule::DigitalModule(UINT8 moduleNumber)
 	if (m_fpgaDIO->readLoopTiming(&localStatus) != kExpectedLoopTiming)
 	{
 		char err[128];
-		sprintf(err, "DIO LoopTiming: %d, expecting: %d\n", m_fpgaDIO->readLoopTiming(&localStatus), kExpectedLoopTiming);
+		snprintf(err, sizeof(err), "DIO LoopTiming: %d, expecting: %d\n", m_fpgaDIO->readLoopTiming(&localStatus), kExpectedLoopTiming);
 		wpi_setWPIErrorWithContext(LoopTimingError, err);
 	}
 	m_fpgaDIO->writePWMConfig_Period(PWM::kDefaultPwmPeriod, &localStatus);
