@@ -29,12 +29,7 @@ ErrorBase::~ErrorBase()
  * @brief Retrieve the current error.
  * Get the current error information associated with this sensor.
  */
-Error& ErrorBase::GetError()
-{
-	return m_error;
-}
-
-const Error& ErrorBase::GetError() const
+Error& ErrorBase::GetError() const
 {
 	return m_error;
 }

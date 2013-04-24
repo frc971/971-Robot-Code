@@ -64,8 +64,7 @@ public:
 	ErrorBase();
 	virtual ~ErrorBase();
 
-	Error& GetError();
-	const Error& GetError() const;
+	Error& GetError() const;
 	void SetErrnoError(const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber) const;
 	void SetImaqError(int success, const char *contextMessage,

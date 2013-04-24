@@ -119,7 +119,7 @@ void Error::Report() const
              "%s: %s ...in %s() in %s at line %d\n",
              m_code < 0 ? "ERROR" : "WARNING", m_message.c_str(),
 				     m_function.c_str(), m_filename.c_str(), m_lineNumber);
-		strcpy(error_with_code, error);
+		strncpy(error_with_code, error, sizeof(error_with_code));
 	}
 	// TODO: Add logging to disk
 
