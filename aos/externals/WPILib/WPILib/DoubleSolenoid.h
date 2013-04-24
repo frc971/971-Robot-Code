@@ -38,7 +38,7 @@ public:
 	ITable * GetTable();
 
 private:
-	virtual void InitSolenoid();
+	void InitSolenoid();
 
 	UINT32 m_forwardChannel; ///< The forward channel on the module to control.
 	UINT32 m_reverseChannel; ///< The reverse channel on the module to control.
