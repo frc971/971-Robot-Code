@@ -29,13 +29,16 @@ public:
 	void SetPWMPeriodScale(UINT32 channel, UINT32 squelchMask);
 	void SetRelayForward(UINT32 channel, bool on);
 	void SetRelayReverse(UINT32 channel, bool on);
+  void SetRelaysForward(UINT8 mask, UINT8 values);
+  void SetRelaysReverse(UINT8 mask, UINT8 values);
 	bool GetRelayForward(UINT32 channel);
 	UINT8 GetRelayForward();
 	bool GetRelayReverse(UINT32 channel);
 	UINT8 GetRelayReverse();
 	bool AllocateDIO(UINT32 channel, bool input);
 	void FreeDIO(UINT32 channel);
-	void SetDIO(UINT32 channel, short value);
+  void SetDIOs(UINT16 mask, UINT16 values);
+	void SetDIO(UINT32 channel, bool value);
 	bool GetDIO(UINT32 channel);
 	UINT16 GetDIO();
 	bool GetDIODirection(UINT32 channel);
