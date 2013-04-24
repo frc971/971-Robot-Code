@@ -38,7 +38,6 @@ class RobotBase {
 	friend class RobotDeleter;
 public:
 	static RobotBase &getInstance();
-	static void setInstance(RobotBase* robot);
 
 	bool IsEnabled();
 	bool IsDisabled();
@@ -49,12 +48,14 @@ public:
 	bool IsNewDataAvailable();
 	Watchdog &GetWatchdog();
 	static void startRobotTask(FUNCPTR factory);
-	static void robotTask(FUNCPTR factory, Task *task);
 
 protected:
 	virtual ~RobotBase();
 	virtual void StartCompetition() = 0;
 	RobotBase();
+
+	static void setInstance(RobotBase* robot);
+	static void robotTask(FUNCPTR factory, Task *task);
 
 	Task *m_task;
 	Watchdog m_watchdog;
