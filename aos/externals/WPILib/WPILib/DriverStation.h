@@ -13,6 +13,7 @@
 #include "Task.h"
 #include "Synchronized.h"
 #include "RWLock.h"
+#include "Base.h"
 
 struct FRCCommonControlData;
 class AnalogChannel;
@@ -42,6 +43,17 @@ public:
 	static const UINT32 kBatteryChannel = 8;
 	static const UINT32 kJoystickPorts = 4;
 	static const UINT32 kJoystickAxes = 6;
+
+  /**
+   * Returns the pointer to all of the data. This pointer will never change, but
+   * its contents will, so make sure to GetDataReadLock() if you want to make
+   * sure that it doesn't change while you're using it.
+   *
+   * You may NOT modify the contents!
+   */
+  const volatile struct FRCCommonControlData *GetControlData() {
+    return m_controlData;
+  }
 
 	float GetStickAxis(UINT32 stick, UINT32 axis);
 	short GetStickButtons(UINT32 stick);
@@ -128,13 +140,11 @@ protected:
 	void SetData();
 
 private:
-	static void InitTask(DriverStation *ds);
 	static DriverStation *m_instance;
   static ReentrantSemaphore m_instanceSemaphore;
 	static UINT8 m_updateNumber;
-	///< TODO: Get rid of this and use the semaphore signaling
-	static const float kUpdatePeriod = 0.02;
 
+	static void InitTask(DriverStation *ds);
 	void Run();
 
   // Volatile because it gets modified by GetData() in a separate task. Be
@@ -173,6 +183,8 @@ private:
 	bool m_userInAutonomous;
     bool m_userInTeleop;
     bool m_userInTest;
+
+  DISALLOW_COPY_AND_ASSIGN(DriverStation);
 };
 
 #endif

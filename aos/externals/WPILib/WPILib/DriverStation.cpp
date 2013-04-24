@@ -19,7 +19,6 @@ const UINT32 DriverStation::kBatteryModuleNumber;
 const UINT32 DriverStation::kBatteryChannel;
 const UINT32 DriverStation::kJoystickPorts;
 const UINT32 DriverStation::kJoystickAxes;
-const float DriverStation::kUpdatePeriod;
 DriverStation* DriverStation::m_instance = NULL;
 ReentrantSemaphore DriverStation::m_instanceSemaphore;
 UINT8 DriverStation::m_updateNumber = 0;
@@ -73,6 +72,7 @@ DriverStation::DriverStation()
 
 DriverStation::~DriverStation()
 {
+  Synchronized sync(m_instanceSemaphore);
 	m_task.Stop();
 	semDelete(m_statusDataSemaphore);
 	delete m_batteryChannel;
