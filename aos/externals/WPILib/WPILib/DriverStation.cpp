@@ -332,6 +332,7 @@ bool DriverStation::GetDigitalIn(UINT32 channel)
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
+	// TODO: fix the lack of thread safety here (for reported_mask)
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
@@ -500,8 +501,9 @@ DriverStation::Alliance DriverStation::GetAlliance()
  */
 UINT32 DriverStation::GetLocation()
 {
-	wpi_assert ((m_controlData->dsID_Position >= '1') && (m_controlData->dsID_Position <= '3'));
-	return m_controlData->dsID_Position - '0';
+  char position = m_controlData->dsID_Position;
+	wpi_assert ((position >= '1') && (position <= '3'));
+	return position - '0';
 }
 
 /**
