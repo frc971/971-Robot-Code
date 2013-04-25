@@ -22,7 +22,7 @@ const UINT32 SensorBase::kChassisSlots;
 SensorBase *SensorBase::m_singletonList = NULL;
 
 /**
- * Creates an instance of the sensor base and gets an FPGA handle
+ * Creates an instance of SensorBase.
  */
 SensorBase::SensorBase()
 {
@@ -36,13 +36,14 @@ SensorBase::~SensorBase()
 }
 
 /**
- * Add sensor to the singleton list.
- * Add this sensor to the list of singletons that need to be deleted when
- * the robot program exits. Each of the sensors on this list are singletons,
- * that is they aren't allocated directly with new, but instead are allocated
- * by the static GetInstance method. As a result, they are never deleted when
- * the program exits. Consequently these sensors may still be holding onto
- * resources and need to have their destructors called at the end of the program.
+ * @brief Add sensor to the singleton list.
+ * Add this object to the list of singletons that need to be deleted when
+ * the robot program exits. Each of the objects on this list are singletons,
+ * that is they aren't allocated directly by user code, but instead are
+ * allocated by (for example) a static GetInstance method. Because of this, they
+ * need some way to be freed when the module is unloaded so that they can free
+ * any resources that they are holding on to.
+ * @see #DeleteSingletons()
  */
 void SensorBase::AddToSingletonList()
 {
@@ -51,9 +52,10 @@ void SensorBase::AddToSingletonList()
 }
 
 /**
- * Delete all the singleton classes on the list.
- * All the classes that were allocated as singletons need to be deleted so
+ * @brief Delete all the singleton objects on the list.
+ * All the objects that were allocated as singletons need to be deleted so
  * their resources can be freed.
+ * @see #AddToSingletonList()
  */
 void SensorBase::DeleteSingletons()
 {

@@ -18,6 +18,7 @@ const INT32 Task::kInvalidTaskID;
 
 /**
  * Create but don't launch a task.
+ * Does not use any floating point registers.
  * @param name The name of the task.  "FRC_" will be prepended to the task name.
  * @param function The address of the function to run as the new task.
  * @param priority The VxWorks priority for the task.
@@ -38,6 +39,9 @@ Task::Task(const char* name, FUNCPTR function, INT32 priority, UINT32 stackSize)
 	nUsageReporting::report(nUsageReporting::kResourceType_Task, instances, 0, m_taskName);
 }
 
+/**
+ * Does not use any floating point registers.
+ */
 Task::~Task()
 {
 	if (m_taskID != kInvalidTaskID) Stop();
@@ -47,7 +51,8 @@ Task::~Task()
 
 /**
  * Starts this task.
- * If it is already running or unable to start, it fails and returns false.
+ * Does not use any floating point registers.
+ * @return true on success
  */
 bool Task::Start(UINT32 arg0, UINT32 arg1, UINT32 arg2, UINT32 arg3, UINT32 arg4, 
 		UINT32 arg5, UINT32 arg6, UINT32 arg7, UINT32 arg8, UINT32 arg9)
@@ -57,8 +62,8 @@ bool Task::Start(UINT32 arg0, UINT32 arg1, UINT32 arg2, UINT32 arg3, UINT32 arg4
 						VX_FP_TASK,							// options
 						m_stackSize,						// stack size
 						m_function,							// function to start
-						arg0, arg1, arg2, arg3, arg4,	// parameter 1 - pointer to this class
-						arg5, arg6, arg7, arg8, arg9);// additional unused parameters
+						arg0, arg1, arg2, arg3, arg4,	// parameters to pass to m_function
+						arg5, arg6, arg7, arg8, arg9);// additional parameters
 	bool ok = HandleError(m_taskID);
 	if (!ok) m_taskID = kInvalidTaskID;
 	return ok;
@@ -66,8 +71,7 @@ bool Task::Start(UINT32 arg0, UINT32 arg1, UINT32 arg2, UINT32 arg3, UINT32 arg4
 
 /**
  * Restarts a running task.
- * If the task isn't started, it starts it.
- * @return false if the task is running and we are unable to kill the previous instance
+ * @return true on success
  */
 bool Task::Restart()
 {
@@ -76,7 +80,7 @@ bool Task::Restart()
 
 /**
  * Kills the running task.
- * @returns true on success false if the task doesn't exist or we are unable to kill it.
+ * @returns true on success
  */
 bool Task::Stop()
 {
@@ -109,7 +113,7 @@ bool Task::IsSuspended()
 
 /**
  * Pauses a running task.
- * Returns true on success, false if unable to pause or the task isn't running.
+ * Returns true on success
  */
 bool Task::Suspend()
 {
@@ -118,7 +122,7 @@ bool Task::Suspend()
 
 /**
  * Resumes a paused task.
- * Returns true on success, false if unable to resume or if the task isn't running/paused.
+ * Returns true on success
  */
 bool Task::Resume()
 {

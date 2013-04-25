@@ -61,7 +61,7 @@ void IterativeRobot::SetPeriod(double period)
 
 /**
  * Get the period for the periodic functions.
- * Returns 0.0 if configured to syncronize with DS control data packets.
+ * Returns 0.0 if configured to synchronize with DS control data packets.
  * @return Period of the periodic function calls
  */
 double IterativeRobot::GetPeriod()
@@ -87,8 +87,7 @@ double IterativeRobot::GetLoopsPerSec()
  * 
  * This specific StartCompetition() implements "main loop" behavior like that of the FRC
  * control system in 2008 and earlier, with a primary (slow) loop that is
- * called periodically, and a "fast loop" (a.k.a. "spin loop") that is 
- * called as fast as possible with no delay between calls. 
+ * called periodically.
  */
 void IterativeRobot::StartCompetition()
 {

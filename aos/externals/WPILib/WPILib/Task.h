@@ -11,8 +11,11 @@
 #include <vxWorks.h>
 
 /**
- * WPI task is a wrapper for the native Task object.
- * All WPILib tasks are managed by a static task manager for simplified cleanup.
+ * WPI task is a wrapper for a native VxWorks task.
+ *
+ * Some functions (documented) are guaranteed not to use any floating point so
+ * that it is safe to use them from tasks that do not have the VX_FP_TASK flag
+ * set (like during startup).
  **/
 class Task : public ErrorBase
 {

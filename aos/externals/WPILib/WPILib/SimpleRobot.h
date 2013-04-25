@@ -11,6 +11,10 @@
 
 /**
  * @todo If this is going to last until release, it needs a better name.
+ * Overridden Autonomous() and OperatorControl() methods are called at the appropriate time
+ * as the match proceeds. In the current implementation, the Autonomous code will run to
+ * completion before the OperatorControl code could start. In the future the Autonomous code
+ * might be spawned as a task, then killed at the end of the Autonomous period.
  */
 class SimpleRobot: public RobotBase
 {
