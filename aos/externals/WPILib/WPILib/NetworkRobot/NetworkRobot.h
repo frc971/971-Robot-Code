@@ -21,14 +21,14 @@
 // You should not try to change any of the outputs on any of the modules that
 // you have this class control outside of this class.
 // This class takes care of disabling outputs when no packets are received in
-// kDisableTime and feeding the watchdog when appropriate.
+// kDisableTime and feeding the Watchdog correctly.
 //
 // The interface consists of receiving NetworkRobotValues structs on a given UDP
 // port from a given sender address. Each time a set of motor values is
 // received, this class will update all output values.
 class NetworkRobot : public RobotBase, public ErrorBase {
  protected:
-  // Does not take ownership of sender_address.
+  // Does not take ownership of *sender_address.
   NetworkRobot(UINT16 port, const char *sender_address);
   virtual ~NetworkRobot();
 
