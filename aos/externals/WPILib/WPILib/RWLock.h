@@ -19,9 +19,8 @@
  * this can be used.
  *
  * In this implementation, if there are any writers pending, then any new
- * attempts to acquire read locks will wait until all writers are done.
- *
- * TODO(brians): figure out the nested read-lock deadlock
+ * attempts to acquire read locks will wait until all writers are done unless a
+ * read lock is already held by that same task.
  */
 class RWLock {
  public:
@@ -31,6 +30,10 @@ class RWLock {
    * Intended to be used as an automatic (or local) variable so that the
    * compiler will ensure that the destructor gets called no matter how the
    * scope is exited.
+   *
+   * While it is possible to use new/delete to dynamically allocate an instance,
+   * the constructor and destructor still MUST still be called from the same
+   * task.
    *
    * Has a copy constructor which allows "copying" the lock that is held. Does
    * not have an assignment operator because assigning a lock doesn't make much
@@ -59,13 +62,19 @@ class RWLock {
 
    private:
     RWLock *const lock_;
+    const int num_;
 
     void operator=(const Locker &);
   };
 
+  /**
+   * The maximum number of read locks that can be held at the same time.
+   */
+  static const int kMaxReaders = 64;
+
   RWLock();
   /**
-   * Waits until there are no more read or write locks outstanding.
+   * Waits until there are no more read or write locks held.
    */
   ~RWLock();
 
@@ -79,6 +88,9 @@ class RWLock {
   // How many read locks are currently held.
   int number_of_readers_;
 
+  // The task ID of the task holding each read lock.
+  int reader_tasks_[kMaxReaders];
+
   // Always locked. Gets semFlushed when readers are allowed to take the lock
   // (after all writers are done).
   SEM_ID read_ready_;
@@ -88,17 +100,22 @@ class RWLock {
   SEM_ID write_ready_;
 
   // Acquires the appropriate kind of lock.
-  void Lock(bool write);
+  // Returns a value that must be passed to the corresponding Unlock call.
+  int Lock(bool write);
   // Unlocks 1 lock.
   // Does not need to know whether it is read or write because only one type of
   // lock can be held at a time.
-  void Unlock();
+  // num must be the return value from the corresponding Lock/AddLock call.
+  void Unlock(int num);
   // Increments the lock count by 1.
   // There must be at least 1 lock held during the execution of this method.
   // Use the regular Unlock() to unlock a lock acquired this way.
   // This is not the same as Lock(current_type) because this is the only way to
   // acquire multiple write locks at the same time.
-  void AddLock();
+  // Returns a value that must be passed to the corresponding Unlock call.
+  int AddLock();
+  // Checks whether task_id is in reader_tasks_.
+  bool TaskOwns(int task_id);
 
   friend class Locker;
 

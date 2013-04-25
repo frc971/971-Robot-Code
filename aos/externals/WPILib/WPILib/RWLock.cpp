@@ -42,33 +42,61 @@ class TaskSchedulerLocker {
   DISALLOW_COPY_AND_ASSIGN(TaskSchedulerLocker);
 };
 
-RWLock::Locker::Locker(RWLock *lock, bool write) : lock_(lock) {
-  lock_->Lock(write);
+RWLock::Locker::Locker(RWLock *lock, bool write)
+  : lock_(lock), num_(lock_->Lock(write)) {
 }
 
-RWLock::Locker::Locker(const Locker &other) : lock_(other.lock_) {
-  lock_->AddLock();
+RWLock::Locker::Locker(const Locker &other)
+  : lock_(other.lock_), num_(lock_->AddLock()) {
 }
 
 RWLock::Locker::~Locker() {
-  lock_->Unlock();
+  lock_->Unlock(num_);
 }
 
 // RWLock is implemented by just locking the scheduler while doing anything
 // because that is the only way under vxworks to do much of anything atomically.
 
-void RWLock::Lock(bool write) {
+RWLock::RWLock()
+  : number_of_write_locks_(0),
+    number_of_writers_pending_(0),
+    number_of_readers_(0),
+    reader_tasks_(),
+    read_ready_(semBCreate(SEM_Q_PRIORITY, SEM_EMPTY)),
+    write_ready_(semBCreate(SEM_Q_PRIORITY, SEM_EMPTY)) {
+  rwlock_assert(read_ready_ != NULL);
+  rwlock_assert(write_ready_ != NULL);
+}
+
+RWLock::~RWLock() {
+  // Make sure that nobody else currently has a lock or will ever be able to.
+  Lock(true);
+
+  rwlock_assert_success(semDelete(read_ready_));
+  rwlock_assert_success(semDelete(write_ready_));
+}
+
+int RWLock::Lock(bool write) {
   assert(!intContext());
+
+  int current_task = taskIdSelf();
+  // It's safe to do this check up here (outside of locking the scheduler)
+  // because we only care whether the current task is in there or not and that
+  // can't be changed because it's the task doing the checking.
+  bool current_task_holds_already = TaskOwns(current_task);
+
   TaskSchedulerLocker scheduler_locker;
 
   // We can't be reading and writing at the same time.
   rwlock_assert(!((number_of_write_locks_ > 0) && (number_of_readers_ > 0)));
 
   if (write) {
+    assert(!current_task_holds_already);
     // If somebody else already has it locked.
     // Don't have to worry about another task getting scheduled after
-    // write_ready_ gets given because nobody else (except another writer) will
-    // lock anything while there are pending writer(s).
+    // write_ready_ gets given because nobody else (except another writer, which
+    // would just block on it) will do anything while there are pending
+    // writer(s).
     if ((number_of_readers_ > 0) || (number_of_write_locks_ > 0)) {
       ++number_of_writers_pending_;
       // Wait for it to be our turn.
@@ -79,6 +107,7 @@ void RWLock::Lock(bool write) {
     }
     rwlock_assert((number_of_write_locks_ == 0) && (number_of_readers_ == 0));
     number_of_write_locks_ = 1;
+    return 0;
   } else {  // read
     // While there are one or more writers active or waiting.
     // Has to be a loop in case a writer gets scheduled between the time
@@ -87,12 +116,18 @@ void RWLock::Lock(bool write) {
       // Wait for the writer(s) to finish.
       rwlock_assert_success(semTake(read_ready_, WAIT_FOREVER));
     }
-    ++number_of_readers_;
+
+    int num = number_of_readers_;
+    number_of_readers_ = num + 1;
+    assert(num < kMaxReaders);
+    rwlock_assert(reader_tasks_[num] == 0);
+    reader_tasks_[num] = current_task;
     rwlock_assert((number_of_write_locks_ == 0) && (number_of_readers_ > 0));
+    return num;
   }
 }
 
-void RWLock::Unlock() {
+void RWLock::Unlock(int num) {
   assert(!intContext());
   TaskSchedulerLocker scheduler_locker;
 
@@ -100,6 +135,7 @@ void RWLock::Unlock() {
   rwlock_assert((number_of_write_locks_ > 0) != (number_of_readers_ > 0));
 
   if (number_of_write_locks_ > 0) {  // we're currently writing
+    rwlock_assert(num == 0);
     --number_of_write_locks_;
     rwlock_assert((number_of_write_locks_ >= 0) &&
                   (number_of_writers_pending_ >= 0));
@@ -113,11 +149,14 @@ void RWLock::Unlock() {
       } else {
         // Wake up a waiting writer.
         // Not a problem if somebody else already did this before the waiting
-        // writer got a chance to take it because it'll still return success.
+        // writer got a chance to take it because it'll do nothing and return
+        // success.
         rwlock_assert_success(semGive(write_ready_));
       }
     }
   } else {  // we're curently reading
+    rwlock_assert(reader_tasks_[num] == taskIdSelf());
+    reader_tasks_[num] = 0;
     --number_of_readers_;
     rwlock_assert(number_of_readers_ >= 0 &&
                   (number_of_writers_pending_ >= 0));
@@ -134,7 +173,7 @@ void RWLock::Unlock() {
   }
 }
 
-void RWLock::AddLock() {
+int RWLock::AddLock() {
   assert(!intContext());
   // TODO: Replace this with just atomically incrementing the right number once
   // we start using a GCC new enough to have the nice atomic builtins.
@@ -147,26 +186,17 @@ void RWLock::AddLock() {
 
   if (number_of_write_locks_ > 0) {  // we're currently writing
     ++number_of_write_locks_;
+    return 0;
   } else {  // we're currently reading
-    ++number_of_readers_;
+    return number_of_readers_++;
   }
 }
 
-RWLock::RWLock() {
-  number_of_write_locks_ = 0;
-  number_of_writers_pending_ = 0;
-  number_of_readers_ = 0;
-
-  read_ready_ = semBCreate(SEM_Q_PRIORITY, SEM_EMPTY);
-  rwlock_assert(read_ready_ != NULL);
-  write_ready_ = semBCreate(SEM_Q_PRIORITY, SEM_EMPTY);
-  rwlock_assert(write_ready_ != NULL);
-}
-
-RWLock::~RWLock() {
-  // Make sure that nobody else currently has a lock or will ever be able to.
-  Lock(true);
-
-  rwlock_assert_success(semDelete(read_ready_));
-  rwlock_assert_success(semDelete(write_ready_));
+bool RWLock::TaskOwns(int task_id) {
+  for (size_t i = 0;
+       i < sizeof(reader_tasks_) / sizeof(reader_tasks_[0]);
+       ++i) {
+    if (reader_tasks_[i] == task_id) return true;
+  }
+  return false;
 }
