@@ -12,6 +12,7 @@
 #include "SensorBase.h"
 #include "Task.h"
 #include "Synchronized.h"
+#include "RWLock.h"
 
 struct FRCCommonControlData;
 class AnalogChannel;
@@ -34,6 +35,8 @@ public:
   };
 
 	static DriverStation *GetInstance();
+
+  RWLock::Locker GetDataReadLock();
 
 	static const UINT32 kBatteryModuleNumber = 1;
 	static const UINT32 kBatteryChannel = 8;
@@ -127,6 +130,11 @@ private:
   // Const because it should never be modifed except by getCommonControlData,
   // and that call has to const_cast away the volatile anyways.
   const volatile struct FRCCommonControlData *m_controlData;
+  // A lock for *m_controlData.
+  // Read (not write) RWLock::Lockers for this get given out to callers so that
+  // they can prevent updates to the data while they are doing stuff with it.
+  RWLock m_dataLock;
+
 	UINT8 m_digitalOut;
 	AnalogChannel *m_batteryChannel;
 	SEM_ID m_statusDataSemaphore;

@@ -85,6 +85,14 @@ DriverStation::~DriverStation()
   semDelete(m_newControlData);
 }
 
+/**
+ * Gets a read lock on all of the data. Be careful with this; holding one of
+ * these locks prevents any new data from being read.
+ */
+RWLock::Locker DriverStation::GetDataReadLock() {
+  return RWLock::Locker(&m_dataLock, false);
+}
+
 void DriverStation::InitTask(DriverStation *ds)
 {
 	ds->Run();
@@ -137,8 +145,13 @@ DriverStation* DriverStation::GetInstance()
 void DriverStation::GetData()
 {
 	static bool lastEnabled = false;
-	// Have to const_cast away the volatile and the const.
-	getCommonControlData(const_cast<FRCCommonControlData *>(m_controlData), WAIT_FOREVER);
+  {
+    // Only have to lock right around reading the data because we're the only
+    // task that ever modifies it.
+    RWLock::Locker write_lock(&m_dataLock, true);
+	  // Have to const_cast away the volatile and the const.
+	  getCommonControlData(const_cast<FRCCommonControlData *>(m_controlData), WAIT_FOREVER);
+  }
 	if (!lastEnabled && IsEnabled()) 
 	{
 		// If starting teleop, assume that autonomous just took up 15 seconds
@@ -402,6 +415,7 @@ bool DriverStation::IsAutonomous()
  */
 bool DriverStation::IsOperatorControl()
 {
+  RWLock::Locker data_locker(GetDataReadLock());
 	return !(m_controlData->autonomous || m_controlData->test);
 }
 
@@ -419,7 +433,7 @@ bool DriverStation::IsTest()
  * @return What state the robot is currently in.
  */
 DriverStation::FMSState DriverStation::GetCurrentState() {
-  UINT8 control_at_start = m_controlData->control;
+  RWLock::Locker data_locker(GetDataReadLock());
   if (IsDisabled()) {
     return FMSState::kDisabled;
     // Or else it must be enabled (for all of the other ones).
@@ -427,17 +441,8 @@ DriverStation::FMSState DriverStation::GetCurrentState() {
     return FMSState::kAutonomous;
   } else if (IsTest()) {
     return FMSState::kTestMode;
-  } else if (IsOperatorControl()) {
+  } else {  // IsOperatorControl() has to return true now
     return FMSState::kTeleop;
-  } else {
-    // If we didn't get another packet in the mean time.
-    if (m_controlData->control == control_at_start) {
-      wpi_setWPIErrorWithContext(IncompatibleState, "Unknown FMS State");
-      return FMSState::kDisabled;
-    } else {
-      // The data changed out from under us. Try again.
-      return GetCurrentState();
-    }
   }
 }
 
