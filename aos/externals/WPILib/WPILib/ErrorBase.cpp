@@ -166,6 +166,7 @@ bool ErrorBase::StatusIsFatal() const
 /**
  * @brief Set the current global error information.
  * Does nothing if code is 0.
+ * TODO: think about getting rid of this because nothing uses it any more
  *
  * @param code The error code
  * @param contextMessage A custom message from the code that set the error.
