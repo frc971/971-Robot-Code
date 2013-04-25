@@ -138,13 +138,14 @@ private:
 	void Run();
 
   // Volatile because it gets modified by GetData() in a separate task. Be
-  // careful using values out of here (2-byte accesses are safe as long as
-  // they're aligned, which all of the ones in here should be).
+  // careful using values out of here (2-byte and 4-byte accesses are safe as
+  // long as they're aligned, which all of the ones in here should be). If you
+  // need consistent data, use m_dataLock.
   // Const because it should never be modifed except by getCommonControlData,
   // and that call has to const_cast away the volatile anyways.
   const volatile struct FRCCommonControlData *m_controlData;
   // A lock for *m_controlData.
-  // Read (not write) RWLock::Lockers for this get given out to callers so that
+  // Read (not write) RWLock::Lockers for this get given out to users so that
   // they can prevent updates to the data while they are doing stuff with it.
   RWLock m_dataLock;
 
@@ -156,9 +157,14 @@ private:
 	Dashboard m_dashboardLow;
 	DashboardBase* m_dashboardInUseHigh;  // the current dashboard packers in use
 	DashboardBase* m_dashboardInUseLow;
+  // Used to indicate when there is new control data available for
+  // IsNewControlData(). A semaphore instead of just a bool to avoid race
+  // conditions resulting in missed packets.
 	SEM_ID m_newControlData;
 	SEM_ID m_packetDataAvailableSem;
 	DriverStationEnhancedIO m_enhancedIO;
+  // Always empty. Gets semFlushed when there is new data available so that
+  // multiple tasks waiting for it can be woken at the same time.
 	SEM_ID m_waitForDataSem;
 	double m_approxMatchTimeOffset;
 

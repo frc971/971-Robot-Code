@@ -98,6 +98,9 @@ void DriverStation::InitTask(DriverStation *ds)
 	ds->Run();
 }
 
+/**
+ * Gets called in a separate task to deal with actually reading any new data.
+ */
 void DriverStation::Run()
 {
 	int period = 0;
@@ -141,9 +144,7 @@ DriverStation* DriverStation::GetInstance()
 }
 
 /**
- * Copy data from the DS task for the user.
- * If no new data exists, it will just be returned, otherwise
- * the data will be copied from the DS polling loop.
+ * Copy data from the DS task for the rest of the code to use.
  */
 void DriverStation::GetData()
 {
@@ -172,7 +173,7 @@ void DriverStation::GetData()
 }
 
 /**
- * Copy status data from the DS task for the user.
+ * Copy status data to the DS task from the user.
  */
 void DriverStation::SetData()
 {
@@ -303,6 +304,7 @@ float DriverStation::GetAnalogIn(UINT32 channel)
 	if (channel < 1 || channel > 4)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 4");
 
+	// TODO: Fix the lack of thread safety here (for reported_mask).
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
@@ -335,7 +337,7 @@ bool DriverStation::GetDigitalIn(UINT32 channel)
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
-	// TODO: fix the lack of thread safety here (for reported_mask)
+	// TODO: Fix the lack of thread safety here (for reported_mask).
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
@@ -360,7 +362,7 @@ void DriverStation::SetDigitalOut(UINT32 channel, bool value)
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
-	// TODO: fix the lack of thread safety here (for both reported_mask and
+	// TODO: Fix the lack of thread safety here (for both reported_mask and
   // m_digitalOut).
 	static UINT8 reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
@@ -453,7 +455,9 @@ DriverStation::FMSState DriverStation::GetCurrentState() {
 /**
  * Has a new control packet from the driver station arrived since the last time this function was called?
  * Warning: If you call this function from more than one place at the same time,
- * you will not get the get the intended behavior
+ * you will not get the get the intended behavior unless that behavior is
+ * exactly 1 of the places that you call it from getting a true after a packet
+ * arrives.
  * @return True if the control data has been updated since the last call.
  */
 bool DriverStation::IsNewControlData()
@@ -474,7 +478,6 @@ bool DriverStation::IsFMSAttached()
 /**
  * Return the DS packet number.
  * The packet number is the index of this set of data returned by the driver station.
- * Each time new data is received, the packet number (included with the sent data) is returned.
  * @return The driver station packet number
  */
 UINT32 DriverStation::GetPacketNumber()
@@ -484,7 +487,6 @@ UINT32 DriverStation::GetPacketNumber()
 
 /**
  * Return the alliance that the driver station says it is on.
- * This could return kRed or kBlue
  * @return The Alliance enum
  */
 DriverStation::Alliance DriverStation::GetAlliance()
