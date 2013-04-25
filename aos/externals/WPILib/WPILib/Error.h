@@ -18,7 +18,7 @@ class ErrorBase;
 /**
  * Represents an error or warning.
  *
- * All methods that can change instance variables are protected by a lock so
+ * All methods that can change instance data are protected by a lock so
  * that it is safe to call any methods from multiple tasks at the same time.
  */
 class Error
@@ -38,7 +38,8 @@ public:
 
   bool IsClear() const;
 	Code GetCode() const;
-  // Have to return by value to avoid race conditions using the result.
+  // Have to return by value to avoid race conditions using the result for all
+  // of these methods.
   std::string GetMessage() const;
   std::string GetFilename() const;
   std::string GetFunction() const;
@@ -66,6 +67,9 @@ private:
 	UINT32 m_lineNumber;
 	const ErrorBase* m_originatingObject;
 	double m_timestamp;
+  // Used for protecting all modifications to instance data.
+  // This means that all non-const methods should lock this for (at least most)
+  // of their implementations!
   ReentrantSemaphore m_semaphore;
 
 	static bool m_stackTraceEnabled;

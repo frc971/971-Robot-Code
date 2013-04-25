@@ -52,8 +52,8 @@
  *
  * BE AWARE: This does include a mutable instance variable! This means that even
  * if you make an object const it's not really. However, all modification to
- * that instance variable is protected by a semaphore, so it does not create
- * more thread safety issues.
+ * that instance variable is protected by a semaphore, so it does not create any
+ * thread safety issues.
  *
  * All of the Set*Error methods will update the global error if there is nothing
  * there already.
@@ -86,7 +86,8 @@ protected:
   // This mutable is safe because Error guarantees that all modifications are
   // protected with an internal lock.
 	mutable Error m_error;
-	// TODO: Replace globalError with a global list of all errors.
+	// TODO: Replace globalError with a global list of all errors, but make sure
+  // that it's thread safe.
 	static Error _globalError;
 
 private:

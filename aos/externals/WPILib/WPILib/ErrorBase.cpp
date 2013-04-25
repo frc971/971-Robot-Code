@@ -26,8 +26,8 @@ ErrorBase::~ErrorBase()
 {}
 
 /**
- * @brief Retrieve the current error.
- * Get the current error information associated with this sensor.
+ * @brief Retrieve the error associated this object.
+ * Get the error information associated with this sensor.
  */
 Error& ErrorBase::GetError() const
 {
@@ -45,7 +45,8 @@ void ErrorBase::ClearError() const
 /**
  * @brief Set error information associated with a C library call that set an
  * error to the "errno" "global variable" (it's really a macro that calls a
- * function so that it's thread safe).
+ * function under VxWorks so that it's thread safe).
+ * Will still set an error even if errno is 0.
  * 
  * @param contextMessage A custom message from the code that set the error.
  * @param filename Filename of the error source
@@ -82,6 +83,7 @@ void ErrorBase::SetErrnoError(const char *contextMessage,
 
 /**
  * @brief Set the current error information associated from the nivision Imaq API.
+ * Does nothing of success is > 0.
  * 
  * @param success The return from the function
  * @param contextMessage A custom message from the code that set the error.
@@ -104,7 +106,8 @@ void ErrorBase::SetImaqError(int success, const char *contextMessage, const char
 }
 
 /**
- * @brief Set the current error information associated with this sensor.
+ * @brief Set the current error information associated with this object.
+ * Does nothing if code is 0.
  * 
  * @param code The error code
  * @param contextMessage A custom message from the code that set the error.
@@ -125,7 +128,7 @@ void ErrorBase::SetError(Error::Code code, const char *contextMessage,
 }
 
 /**
- * @brief Set the current error information associated with this sensor.
+ * @brief Set the current error information associated with this object.
  * 
  * @param errorMessage The error message from WPIErrors.h
  * @param contextMessage A custom message from the code that set the error.
@@ -160,6 +163,16 @@ bool ErrorBase::StatusIsFatal() const
 	return m_error.GetCode() < 0;
 }
 
+/**
+ * @brief Set the current global error information.
+ * Does nothing if code is 0.
+ *
+ * @param code The error code
+ * @param contextMessage A custom message from the code that set the error.
+ * @param filename Filename of the error source
+ * @param function Function of the error source
+ * @param lineNumber Line number of the error source
+ */
 void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber)
 {
@@ -167,6 +180,15 @@ void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
 	_globalError.Set(code, contextMessage, filename, function, lineNumber, NULL);
 }
 
+/**
+ * @brief Set the current global error information.
+ *
+ * @param errorMessage The error message from WPIErrors.h
+ * @param contextMessage A custom message from the code that set the error.
+ * @param filename Filename of the error source
+ * @param function Function of the error source
+ * @param lineNumber Line number of the error source
+ */
 void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextMessage,
         const char* filename, const char* function, UINT32 lineNumber)
 {
@@ -177,7 +199,7 @@ void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextM
 }
 
 /**
-  * Retrieve the current global error.    
+  * Retrieve the global error.
 */
 const Error& ErrorBase::GetGlobalError()
 {

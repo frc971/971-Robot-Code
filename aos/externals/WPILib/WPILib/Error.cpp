@@ -29,7 +29,8 @@ Error::~Error()
  * Clones another error into this if this is currently clear. If not, does
  * nothing.
  * This is necessary because just using "if (!IsClear()) Clone(error)" has a
- * race condition.
+ * race condition which this method does not.
+ * Cloning 2 errors into each other at the same time can lead to deadlocks!
  */
 void Error::CloneIfClear(const Error &error) {
   Synchronized sync(m_semaphore);
@@ -40,6 +41,7 @@ void Error::CloneIfClear(const Error &error) {
 
 /**
  * Clones another error into this object.
+ * Cloning 2 errors into each other at the same time can lead to deadlocks!
  */
 void Error::Clone(const Error &error) {
   Synchronized sync(m_semaphore);
