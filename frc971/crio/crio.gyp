@@ -4,14 +4,9 @@
 # The WPILib code that we've modified.
       'target_name': 'WPILib_changes',
       'type': 'static_library',
-      'sources': [
-        '<!@(find <(AOS)/externals/WPILib/WPILib/ -name *.cpp)',
-      ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
       ],
-      'cflags!': ['-Werror', '-ggdb3', '-O0'],
-      'cflags': ['-ggdb1', '-O3'],
     },
     {
       'target_name': 'user_program',
