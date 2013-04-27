@@ -6,7 +6,6 @@
       'type': 'static_library',
       'dependencies': [
         '<(EXTERNALS):WPILib',
-        '<(EXTERNALS):libgcc-4.5.2',
       ],
     },
     {
@@ -43,7 +42,7 @@
       'target_name': 'FRC_UserProgram',
       'type': 'shared_library',
       'dependencies': [
-        'WPILib_changes',
+        '<(EXTERNALS):libgcc-4.5.2',
         'dumb_main',
       ],
     },
