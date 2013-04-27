@@ -31,3 +31,15 @@ bool NetworkRobotValues::CheckHashValue() const {
                                           sizeof(hash_value),
                                           sizeof(*this) - sizeof(hash_value));
 }
+
+void NetworkRobotJoysticks::FillInHashValue() {
+  hash_value = CalculateHashValue(reinterpret_cast<const char *>(this) +
+                                  sizeof(hash_value),
+                                  sizeof(*this) - sizeof(hash_value));
+}
+
+bool NetworkRobotJoysticks::CheckHashValue() const {
+  return hash_value == CalculateHashValue(reinterpret_cast<const char *>(this) +
+                                          sizeof(hash_value),
+                                          sizeof(*this) - sizeof(hash_value));
+}

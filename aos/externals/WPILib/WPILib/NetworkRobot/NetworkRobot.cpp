@@ -19,17 +19,27 @@
 
 const double NetworkRobot::kDisableTime = 0.15;
 
-NetworkRobot::NetworkRobot(UINT16 port, const char *sender_address)
-    : port_(port), sender_address_(sender_address), socket_(-1),
+NetworkRobot::NetworkRobot(UINT16 receive_port, const char *sender_address,
+                           UINT16 send_port, const char *receiver_address)
+    : receive_port_(receive_port), sender_address_(sender_address),
+      send_port_(send_port), receiver_address_(receiver_address),
+      receive_socket_(-1), send_socket_(-1),
+      joystick_values_(),
+      send_task_("DS_Send", reinterpret_cast<FUNCPTR>(StaticSendLoop)),
       last_received_timestamp_(0.0),
       digital_modules_(), solenoid_bases_(),
       allocated_digital_outputs_() {
 }
+
 NetworkRobot::~NetworkRobot() {
-  if (socket_ != -1) {
-    // Nothing we can do about any errors.
-    close(socket_);
+  // Nothing we can really do about any errors for either of these.
+  if (receive_socket_ != -1) {
+    close(receive_socket_);
   }
+  if (send_socket_ != -1) {
+    close(send_socket_);
+  }
+
   for (size_t i = 0;
        i < sizeof(solenoid_bases_) / sizeof(solenoid_bases_[0]);
        ++i) {
@@ -46,22 +56,46 @@ NetworkRobot::~NetworkRobot() {
   }
 }
 
+bool NetworkRobot::FillinInAddr(const char *const_ip, in_addr *inet_address) {
+  // A copy of the passed in address string because vxworks has the function
+  // signature without the const and I don't really trust it not to do something
+  // weird and change it.
+  // The size is the maximum length of an IP address (including the terminating
+  // NUL) (ie "123.456.789.123").
+  char non_const_ip[3 + 1 + 3 + 1 + 3 + 1 + 3 + 1];
+  size_t ip_length = strlen(const_ip);
+  if (ip_length >= sizeof(non_const_ip)) {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "IP address '%s' is %zd bytes long"
+             " but should only be %zd", const_ip,
+             ip_length, sizeof(non_const_ip) - 1);
+    wpi_setErrorWithContext(-1, buf);
+    return false;
+  }
+  memcpy(non_const_ip, const_ip, ip_length + 1);
+  errno = 0;
+  if (inet_aton(non_const_ip, inet_address) != 0) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "inet_aton(%s)", const_ip);
+    wpi_setErrnoErrorWithContext(buf);
+    return false;
+  }
+  return true;
+}
+
 void NetworkRobot::StartCompetition() {
-  // Give ourself plenty of time to get around to feeding it before it
-  // completely cuts out.
+  // Multiplied by 2 to give ourselves plenty of time to get around to feeding
+  // it before it completely cuts out everything.
   m_watchdog.SetExpiration(kDisableTime * 2);
 
-  CreateSocket();
+  CreateReceiveSocket();
+  if (StatusIsFatal()) return;
+  CreateSendSocket();
   if (StatusIsFatal()) return;
 
-  errno = 0;
-  if (inet_aton(const_cast<char *>(sender_address_),
-                &expected_sender_address_) == ERROR) {
-    char buf[64];
-    snprintf(buf, sizeof(buf), "Converting IP Address %s", sender_address_);
-    wpi_setErrnoErrorWithContext(buf);
-    return;
-  }
+  send_task_.Start(reinterpret_cast<uintptr_t>(this));
+
+  if (!FillinInAddr(sender_address_, &expected_sender_address_)) return;
 
   while (!StatusIsFatal()) {
     if ((Timer::GetPPCTimestamp() - last_received_timestamp_) > kDisableTime) {
@@ -112,9 +146,9 @@ bool NetworkRobot::WaitForData() {
 
   fd_set fds;
   FD_ZERO(&fds);
-  FD_SET(socket_, &fds);
+  FD_SET(receive_socket_, &fds);
 
-  int ret = select(socket_ + 1,
+  int ret = select(receive_socket_ + 1,
                    &fds, // read fds
                    NULL, // write fds
                    NULL, // exception fds (not supported)
@@ -137,7 +171,7 @@ void NetworkRobot::ReceivePacket() {
     sockaddr_in in;
   } sender_address;
   int sender_address_length = sizeof(sender_address);
-  int received = recvfrom(socket_,
+  int received = recvfrom(receive_socket_,
                           reinterpret_cast<char *>(&values_),
                           sizeof(values_),
                           0,
@@ -276,13 +310,56 @@ void NetworkRobot::ProcessPacket() {
   last_received_timestamp_ = Timer::GetPPCTimestamp();
 }
 
-void NetworkRobot::CreateSocket() {
-  wpi_assertEqual(socket_, -1);
+void NetworkRobot::SendLoop() {
+  while (!StatusIsFatal()) {
+    m_ds->WaitForData();
 
-  socket_ = socket(AF_INET, SOCK_DGRAM, 0);
-  if (socket_ < 0) {
+    {
+      RWLock::Locker data_locker(m_ds->GetDataReadLock());
+      // Get a pointer to the data and then cast away the volatile because it's
+      // annoying to propagate it all over and it's unnecessary here because
+      // we have a lock on the data so it's not going to change.
+      const FRCCommonControlData *data =
+          const_cast<const FRCCommonControlData *>(m_ds->GetControlData());
+      CopyStickValues(0, data->stick0Axes, data->stick0Buttons);
+      CopyStickValues(1, data->stick1Axes, data->stick1Buttons);
+      CopyStickValues(2, data->stick2Axes, data->stick2Buttons);
+      CopyStickValues(3, data->stick3Axes, data->stick3Buttons);
+
+      joystick_values_.control_packet_index = data->packetIndex;
+
+      joystick_values_.team_number = data->teamID;
+      joystick_values_.alliance = data->dsID_Alliance;
+      joystick_values_.position = data->dsID_Position;
+
+      joystick_values_.control.set_test_mode(data->test);
+      joystick_values_.control.set_fms_attached(data->fmsAttached);
+      joystick_values_.control.set_autonomous(data->autonomous);
+      joystick_values_.control.set_enabled(data->enabled);
+    }
+
+    ++joystick_values_.index;
+
+    joystick_values_.FillInHashValue();
+  }
+}
+
+void NetworkRobot::CopyStickValues(int number,
+                                   const INT8 (&axes)[6],
+                                   UINT16 buttons) {
+  for (int i = 0; i < 6; ++i) {
+    joystick_values_.joysticks[number].axes[i] = axes[i];
+  }
+  joystick_values_.joysticks[number].buttons = buttons;
+}
+
+void NetworkRobot::CreateReceiveSocket() {
+  wpi_assertEqual(receive_socket_, -1);
+
+  receive_socket_ = socket(AF_INET, SOCK_DGRAM, 0);
+  if (receive_socket_ < 0) {
     wpi_setErrnoErrorWithContext("Creating UDP Socket");
-    socket_ = -1;
+    receive_socket_ = -1;
     return;
   }
 
@@ -292,17 +369,42 @@ void NetworkRobot::CreateSocket() {
   } address;
   memset(&address, 0, sizeof(address));
   address.in.sin_family = AF_INET;
-  address.in.sin_port = port_;
+  address.in.sin_port = receive_port_;
   address.in.sin_addr.s_addr = INADDR_ANY;
-  if (bind(socket_, &address.addr, sizeof(address.addr)) == ERROR) {
+  if (bind(receive_socket_, &address.addr, sizeof(address.addr)) == ERROR) {
     wpi_setErrnoErrorWithContext("Binding Socket");
     return;
   }
 
   int on = 1;
   errno = 0;
-  if (ioctl(socket_, FIONBIO, reinterpret_cast<int>(&on)) < 0) {
+  if (ioctl(receive_socket_, FIONBIO, reinterpret_cast<int>(&on)) < 0) {
     wpi_setErrnoErrorWithContext("Setting Socket to Non-Blocking Mode");
+    return;
+  }
+}
+
+void NetworkRobot::CreateSendSocket() {
+  wpi_assertEqual(send_socket_, -1);
+
+  send_socket_ = socket(AF_INET, SOCK_DGRAM, 0);
+  if (send_socket_ < 0) {
+    wpi_setErrnoErrorWithContext("Creating UDP Socket");
+    send_socket_ = -1;
+    return;
+  }
+
+  union {
+    sockaddr_in in;
+    sockaddr addr;
+  } address;
+  memset(&address, 0, sizeof(address));
+  address.in.sin_family = AF_INET;
+  address.in.sin_port = send_port_;
+  if (!FillinInAddr(receiver_address_, &address.in.sin_addr)) return;
+
+  if (bind(send_socket_, &address.addr, sizeof(address.addr)) == ERROR) {
+    wpi_setErrnoErrorWithContext("Binding Socket");
     return;
   }
 }

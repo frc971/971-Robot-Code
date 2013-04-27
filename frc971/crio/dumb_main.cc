@@ -8,6 +8,9 @@ class MyRobot : public NetworkRobot {
  public:
   MyRobot() : NetworkRobot(static_cast<uint16_t>(::aos::NetworkPort::kMotors),
                            ::aos::configuration::GetIPAddress(
+                               ::aos::configuration::NetworkDevice::kAtom),
+                           static_cast<uint16_t>(::aos::NetworkPort::kDS),
+                           ::aos::configuration::GetIPAddress(
                                ::aos::configuration::NetworkDevice::kAtom)) {}
 };
 
