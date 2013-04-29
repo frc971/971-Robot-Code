@@ -87,6 +87,8 @@ int RWLock::Lock(bool write) {
 
   TaskSchedulerLocker scheduler_locker;
 
+  taskSafe();
+
   // We can't be reading and writing at the same time.
   rwlock_assert(!((number_of_write_locks_ > 0) && (number_of_readers_ > 0)));
 
@@ -130,6 +132,8 @@ int RWLock::Lock(bool write) {
 void RWLock::Unlock(int num) {
   assert(!intContext());
   TaskSchedulerLocker scheduler_locker;
+
+  taskUnsafe();
 
   // We have to be reading or writing right now, but not both.
   rwlock_assert((number_of_write_locks_ > 0) != (number_of_readers_ > 0));
@@ -200,3 +204,87 @@ bool RWLock::TaskOwns(int task_id) {
   }
   return false;
 }
+
+#include <stdint.h>
+
+#include "Task.h"
+
+namespace {
+namespace testing {
+
+// It's kind of hard to test for race conditions because (by definition) they
+// only happen with really specific (and uncommon) timing. However, what tests
+// can cover is "normal" functioning (locking/unlocking by multiple tasks).
+
+// How long to wait until "everything" will be done doing whatever it's going
+// to.
+const int kSettleTicks = 10;
+
+void SetUp() {
+}
+
+void TearDown() {
+}
+
+struct LockerConfig {
+  RWLock *const lock;
+  const bool write;
+
+  const int delay_ticks;
+
+  bool started;
+  bool locked;
+  bool done;
+  bool unlocked;
+
+  LockerConfig(RWLock *lock, bool write, int delay_ticks = kSettleTicks)
+      : lock(lock), write(write), delay_ticks(delay_ticks),
+        started(false), locked(false), done(false), unlocked(false) {}
+};
+void LockerTask(LockerConfig *config) {
+  config->started = true;
+  {
+    RWLock::Locker locker(config->lock, config->write);
+    config->locked = true;
+    taskDelay(config->delay_ticks);
+    config->done = true;
+  }
+  config->unlocked = true;
+}
+
+// A basic test to make sure that 2 readers can get to it at the same time.
+// Mostly just to make sure that the test setup etc works.
+bool TwoReaders() {
+  Task one("R1", reinterpret_cast<FUNCPTR>(LockerTask));
+  Task two("R2", reinterpret_cast<FUNCPTR>(LockerTask));
+  RWLock lock;
+
+  LockerConfig one_config(&lock, false), two_config(&lock, false);
+  one.Start(reinterpret_cast<uintptr_t>(&one_config));
+  two.Start(reinterpret_cast<uintptr_t>(&two_config));
+  while (!one_config.locked) taskDelay(1);
+  assert(!one_config.done);
+  while (!two_config.locked) taskDelay(1);
+  if (one_config.done) {
+    printf("It took too long for the second one to lock.\n");
+    return false;
+  }
+  return true;
+}
+
+#define RUN_TEST(name) do { \
+  SetUp(); \
+  bool test_succeeded = name(); \
+  TearDown(); \
+  if (!test_succeeded) successful = false; \
+} while (false)
+extern "C" int rwlock_test() {
+  bool successful = true;
+
+  RUN_TEST(TwoReaders);
+
+  return successful ? 0 : -1;
+}
+
+}  // namespace testing
+}  // namespace

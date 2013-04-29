@@ -21,6 +21,8 @@
  * In this implementation, if there are any writers pending, then any new
  * attempts to acquire read locks will wait until all writers are done unless a
  * read lock is already held by that same task.
+ *
+ * While a lock is held, the task holding it can not be deleted.
  */
 class RWLock {
  public:
