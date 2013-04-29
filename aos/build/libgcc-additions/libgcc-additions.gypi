@@ -27,6 +27,8 @@
         '_bswapdi2.o',
         '<(compiler-rt)/lib/floatundisf.c',
         '<(compiler-rt)/lib/floatundidf.c',
+
+        'libm.c',
       ],
     },
   ],
