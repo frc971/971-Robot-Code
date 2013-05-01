@@ -88,22 +88,28 @@ void NetworkRobot::StartCompetition() {
   // it before it completely cuts out everything.
   m_watchdog.SetExpiration(kDisableTime * 2);
 
-  CreateReceiveSocket();
-  if (StatusIsFatal()) return;
-  CreateSendSocket();
-  if (StatusIsFatal()) return;
+  // This outer loop is so that it will retry after encountering any errors.
+  while (true) {
+    CreateReceiveSocket();
+    if (StatusIsFatal()) return;
+    CreateSendSocket();
+    if (StatusIsFatal()) return;
 
-  send_task_.Start(reinterpret_cast<uintptr_t>(this));
+    send_task_.Start(reinterpret_cast<uintptr_t>(this));
 
-  if (!FillinInAddr(sender_address_, &expected_sender_address_)) return;
+    if (!FillinInAddr(sender_address_, &expected_sender_address_)) return;
 
-  while (!StatusIsFatal()) {
-    if ((Timer::GetPPCTimestamp() - last_received_timestamp_) > kDisableTime) {
-      StopOutputs();
+    while (!StatusIsFatal()) {
+      if ((Timer::GetPPCTimestamp() - last_received_timestamp_) > kDisableTime) {
+        StopOutputs();
+      }
+      ReceivePacket();
     }
-    ReceivePacket();
+    StopOutputs();
+
+    send_task_.Stop();
+    ClearError();
   }
-  StopOutputs();
 }
 
 void NetworkRobot::StopOutputs() {
