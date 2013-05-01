@@ -7,6 +7,7 @@
 #include <taskLib.h>
 #include <intLib.h>
 #include <assert.h>
+#include <tickLib.h>
 
 #include "RWLock.h"
 
@@ -272,6 +273,35 @@ bool TwoReaders() {
   return true;
 }
 
+// Makes sure that everything works correctly even if a task is deleted while
+// a lock is held.
+bool DeleteWhileLocked() {
+  Task reader("reader", reinterpret_cast<FUNCPTR>(LockerTask));
+  Task writer("writer", reinterpret_cast<FUNCPTR>(LockerTask));
+  static const unsigned int kDelayTicks = 15;
+  RWLock lock;
+
+  LockerConfig reader_config(&lock, false, kDelayTicks);
+  LockerConfig writer_config(&lock, true, kDelayTicks);
+
+  ULONG start = tickGet();
+  reader.Start(reinterpret_cast<uintptr_t>(&reader_config));
+  while (!reader_config.locked) taskDelay(1);
+  writer.Start(reinterpret_cast<uintptr_t>(&writer_config));
+  reader.Stop();
+  if (tickGet() - start < kDelayTicks) {
+    printf("Reader stopped too quickly.\n");
+    return false;
+  }
+
+  while (!writer_config.done) taskDelay(1);
+  if (tickGet() - start < kDelayTicks * 2) {
+    printf("Writer finished too quickly.\n");
+    return false;
+  }
+  return true;
+}
+
 #define RUN_TEST(name) do { \
   SetUp(); \
   bool test_succeeded = name(); \
@@ -282,9 +312,11 @@ extern "C" int rwlock_test() {
   bool successful = true;
 
   RUN_TEST(TwoReaders);
+  RUN_TEST(DeleteWhileLocked);
 
   return successful ? 0 : -1;
 }
+#undef RUN_TEST
 
 }  // namespace testing
 }  // namespace
