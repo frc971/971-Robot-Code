@@ -79,7 +79,7 @@ bool Task::Restart()
 }
 
 /**
- * Kills the running task.
+ * Makes sure that the task is not running.
  * @returns true on success
  */
 bool Task::Stop()
