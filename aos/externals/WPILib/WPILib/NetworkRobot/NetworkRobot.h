@@ -36,6 +36,8 @@
 class NetworkRobot : public RobotBase, public ErrorBase {
  protected:
   // Does not take ownership of *sender_address or *receiver_address.
+  // A NULL for either address means to not do anything with that part (sending
+  // or receiving).
   NetworkRobot(UINT16 receive_port, const char *sender_address,
                UINT16 send_port, const char *receiver_address);
   virtual ~NetworkRobot();
@@ -67,6 +69,10 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // error will have already been recorded.
   bool FillinInAddr(const char *const_ip, in_addr *inet_address);
 
+  // Cleans everything up after the main loop encounters an error so that it can
+  // try again.
+  void Cleanup();
+
   // Waits for receive_socket_ to become readable for up to kDisableTime.
   // Returns whether or not there is readable data available.
   bool WaitForData();
@@ -74,7 +80,7 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // Receives a packet and calls ProcessPacket() if it's a good one.
   void ReceivePacket();
 
-  // Gets run in a separate task to take DS data and send it out.
+  // Gets run in its own task to take DS data and send it out.
   void SendLoop();
   static void StaticSendLoop(void *self) {
     static_cast<NetworkRobot *>(self)->SendLoop();

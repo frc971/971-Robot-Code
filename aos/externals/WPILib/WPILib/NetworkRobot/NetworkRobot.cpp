@@ -90,25 +90,33 @@ void NetworkRobot::StartCompetition() {
 
   // This outer loop is so that it will retry after encountering any errors.
   while (true) {
-    CreateReceiveSocket();
-    if (StatusIsFatal()) return;
-    CreateSendSocket();
-    if (StatusIsFatal()) return;
-
-    send_task_.Start(reinterpret_cast<uintptr_t>(this));
-
-    if (!FillinInAddr(sender_address_, &expected_sender_address_)) return;
-
-    while (!StatusIsFatal()) {
-      if ((Timer::GetPPCTimestamp() - last_received_timestamp_) > kDisableTime) {
-        StopOutputs();
-      }
-      ReceivePacket();
+    if (sender_address_ != NULL) {
+      CreateReceiveSocket();
+      if (!FillinInAddr(sender_address_, &expected_sender_address_)) return;
     }
-    StopOutputs();
 
-    send_task_.Stop();
-    ClearError();
+    if (receiver_address_ != NULL) {
+      CreateSendSocket();
+    }
+
+    if (sender_address_ != NULL) {
+      if (receiver_address_ != NULL) {
+        send_task_.Start(reinterpret_cast<uintptr_t>(this));
+      }
+
+      while (!StatusIsFatal()) {
+        if ((Timer::GetPPCTimestamp() - last_received_timestamp_) >
+            kDisableTime) {
+          StopOutputs();
+        }
+        ReceivePacket();
+      }
+      StopOutputs();
+    } else {
+      SendLoop();
+    }
+
+    Cleanup();
   }
 }
 
@@ -134,11 +142,34 @@ void NetworkRobot::StopOutputs() {
   }
 
   // Can't do anything intelligent with solenoids. Turning them off can be just
-  // as dangerous as leaving them on.
+  // as dangerous as leaving them on, so just leave them alone.
 
   // We took care of it, so we don't want the watchdog to permanently disable
   // us.
   m_watchdog.Feed();
+}
+
+void NetworkRobot::Cleanup() {
+  send_task_.Stop();
+
+  if (receive_socket_ != -1) {
+    if (close(receive_socket_) == ERROR) {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "close(%d)", receive_socket_);
+      wpi_setErrnoErrorWithContext(buf);
+    }
+    receive_socket_ = -1;
+  }
+  if (send_socket_ != -1) {
+    if (close(send_socket_) == ERROR) {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "close(%d)", send_socket_);
+      wpi_setErrnoErrorWithContext(buf);
+    }
+    send_socket_ = -1;
+  }
+
+  ClearError();
 }
 
 bool NetworkRobot::WaitForData() {
