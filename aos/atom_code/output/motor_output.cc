@@ -45,14 +45,15 @@ void MotorOutput::Run() {
 
     RunIteration();
 
-    values_.digital_output_enables = hton(values_.digital_output_enables);
-    values_.digital_output_values = hton(values_.digital_output_values);
-
-    values_.FillInHashValue();
-    values_.hash_value = hton(values_.hash_value);
-
-    if (socket_.Send(&values_, sizeof(values_)) != sizeof(values_)) {
+    char buffer[sizeof(values_) + ::buffers::kOverhead];
+    ssize_t size = values_.SerializeTo(buffer, sizeof(buffer));
+    if (size <= 0) {
+      LOG(WARNING, "serializing outputs failed\n");
+      continue;
+    }
+    if (socket_.Send(buffer, size) != size) {
       LOG(WARNING, "sending outputs failed\n");
+      continue;
     } else {
       LOG(DEBUG, "sent outputs\n");
     }

@@ -54,7 +54,7 @@ class MotorOutput {
 
   // The struct that's going to get sent over.
   // Gets reset (everything set so that it won't do anything) each time through.
-  NetworkRobotValues values_;
+  NetworkRobotMotors values_;
 
  private:
   // Subclasses need to actually fill out values_ here.

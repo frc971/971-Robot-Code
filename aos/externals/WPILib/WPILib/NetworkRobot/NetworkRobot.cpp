@@ -208,9 +208,10 @@ void NetworkRobot::ReceivePacket() {
     sockaddr_in in;
   } sender_address;
   int sender_address_length = sizeof(sender_address);
+  char buffer[sizeof(values_) + buffers::kOverhead];
   int received = recvfrom(receive_socket_,
-                          reinterpret_cast<char *>(&values_),
-                          sizeof(values_),
+                          buffer,
+                          sizeof(buffer),
                           0,
                           &sender_address.addr,
                           &sender_address_length);
@@ -235,19 +236,12 @@ void NetworkRobot::ReceivePacket() {
     return;
   }
 
-  if (received != sizeof(values_)) {
-    char buf[64];
-    snprintf(buf, sizeof(buf),
-             "Got packet with %zd bytes but expected %zd\n",
-             received, sizeof(values_));
-    wpi_setErrorWithContext(1, buf);
-    return;
-  }
-  if (values_.CheckHashValue()) {
+  if (values_.DeserializeFrom(buffer, sizeof(buffer))) {
     ProcessPacket();
   } else {
     char buf[64];
-    snprintf(buf, sizeof(buf), "Hash Value Is %x", values_.hash_value);
+    snprintf(buf, sizeof(buf), "Deserializing from %d byte buffer",
+             sizeof(buffer));
     wpi_setErrorWithContext(1, buf);
     return;
   }
@@ -374,10 +368,37 @@ void NetworkRobot::SendLoop() {
       joystick_values_.control.set_autonomous(data->autonomous);
       joystick_values_.control.set_enabled(data->enabled);
     }
-
     ++joystick_values_.index;
 
-    joystick_values_.FillInHashValue();
+    char buffer[sizeof(joystick_values_) + buffers::kOverhead];
+    ssize_t size = joystick_values_.SerializeTo(buffer, sizeof(buffer));
+    if (size <= 0) {
+      char buf[64];
+      snprintf(buf, sizeof(buf),
+               "Serializing joystick values into %d byte buffer",
+               sizeof(buffer));
+      wpi_setErrorWithContext(-1, buf);
+      return;
+    }
+    ssize_t sent = send(send_socket_, buffer, size, 0);
+    if (sent != size) {
+      if (sent == -1) {
+        if (errno == EINTR || errno == ENOBUFS) {
+          // These are all errors that just mean it didn't manage to send this
+          // time.
+          continue;
+        } else {
+          wpi_setErrnoErrorWithContext("send to joystick output socket");
+          return;
+        }
+      } else {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Wanted to send %d bytes but only sent %d",
+                 size, sent);
+        wpi_setErrorWithContext(1, buf);
+        continue;
+      }
+    }
   }
 }
 

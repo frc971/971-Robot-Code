@@ -3,9 +3,9 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "aos/aos_core.h"
-#include "aos/atom_code/input/FRCComm.h"
-#include "aos/atom_code/input/JoystickInput.h"
+#include "aos/atom_code/init.h"
+#include "aos/atom_code/input/joystick_input.h"
+#include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
@@ -27,41 +27,70 @@ using ::frc971::control_loops::angle_adjust;
 using ::frc971::control_loops::hangers;
 using ::frc971::vision::target_angle;
 
-namespace frc971 {
+using ::aos::input::driver_station::ButtonLocation;
+using ::aos::input::driver_station::JoystickAxis;
+using ::aos::input::driver_station::ControlBit;
 
-class JoystickReader : public aos::JoystickInput {
+namespace frc971 {
+namespace input {
+namespace joysticks {
+
+const ButtonLocation kDriveControlLoopEnable1(1, 7),
+                     kDriveControlLoopEnable2(1, 11);
+const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
+const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
+const ButtonLocation kQuickTurn(1, 5);
+
+const ButtonLocation kLongShot(3, 5);
+const ButtonLocation kMediumShot(3, 3);
+const ButtonLocation kShortShot(3, 6);
+const ButtonLocation kPitShot1(2, 7), kPitShot2(2, 10);
+
+const ButtonLocation kWristDown(3, 8);
+
+const ButtonLocation kFire(3, 11);
+const ButtonLocation kIntake(3, 10);
+const ButtonLocation kForceFire(3, 12);
+const ButtonLocation kForceIndexUp(3, 9), kForceIndexDown(3, 7);
+
+const ButtonLocation kDeployHangers(3, 1);
+
+class Reader : public ::aos::input::JoystickInput {
  public:
   static const bool kWristAlwaysDown = false;
 
-  JoystickReader() : aos::JoystickInput() {
+  Reader() {
     shifters.MakeWithBuilder().set(true).Send();
   }
 
-  virtual void RunIteration() {
+  virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     static bool is_high_gear = false;
 
-    if (Pressed(0, AUTONOMOUS)) {
-      if (PosEdge(0, ENABLED)){
+    if (data.GetControlBit(ControlBit::kAutonomous)) {
+      if (data.PosEdge(ControlBit::kEnabled)){
         LOG(INFO, "Starting auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
-      }
-      if (NegEdge(0, ENABLED)) {
+        ::frc971::autonomous::autonomous.MakeWithBuilder()
+            .run_auto(true).Send();
+      } else if (data.NegEdge(ControlBit::kEnabled)) {
         LOG(INFO, "Stopping auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
+        ::frc971::autonomous::autonomous.MakeWithBuilder()
+            .run_auto(false).Send();
       }
     } else {  // teleop
       bool is_control_loop_driving = false;
       double left_goal = 0.0;
       double right_goal = 0.0;
-      const double wheel = control_data_.stick0Axis1 / 127.0;
-      const double throttle = -control_data_.stick1Axis2 / 127.0;
+      const double wheel = data.GetAxis(kSteeringWheel);
+      const double throttle = data.GetAxis(kDriveThrottle);
       LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
       const double kThrottleGain = 1.0 / 2.5;
-      if (Pressed(0, 7) || Pressed(0, 11)) {
+      if (data.IsPressed(kDriveControlLoopEnable1) ||
+          data.IsPressed(kDriveControlLoopEnable2)) {
         static double distance = 0.0;
         static double angle = 0.0;
         static double filtered_goal_distance = 0.0;
-        if (PosEdge(0, 7) || PosEdge(0, 11)) {
+        if (data.PosEdge(kDriveControlLoopEnable1) ||
+            data.PosEdge(kDriveControlLoopEnable2)) {
           if (drivetrain.position.FetchLatest() && gyro.FetchLatest()) {
             distance = (drivetrain.position->left_encoder +
                         drivetrain.position->right_encoder) / 2.0
@@ -79,7 +108,8 @@ class JoystickReader : public aos::JoystickInput {
         const double kMaxVelocity = 0.6;
         if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance) {
           filtered_goal_distance += kMaxVelocity * 0.02;
-        } else if (goal_distance < -kMaxVelocity * 0.02 + filtered_goal_distance) {
+        } else if (goal_distance < -kMaxVelocity * 0.02 +
+                   filtered_goal_distance) {
           filtered_goal_distance -= kMaxVelocity * 0.02;
         } else {
           filtered_goal_distance = goal_distance;
@@ -93,16 +123,16 @@ class JoystickReader : public aos::JoystickInput {
       if (!(drivetrain.goal.MakeWithBuilder()
                 .steering(wheel)
                 .throttle(throttle)
-                .highgear(is_high_gear).quickturn(Pressed(0, 5))
+                .highgear(is_high_gear).quickturn(data.IsPressed(kQuickTurn))
                 .control_loop_driving(is_control_loop_driving)
                 .left_goal(left_goal).right_goal(right_goal).Send())) {
         LOG(WARNING, "sending stick values failed\n");
       }
 
-      if (PosEdge(1, 1)) {
+      if (data.PosEdge(kShiftHigh)) {
         is_high_gear = false;
       }
-      if (PosEdge(1, 3)) {
+      if (data.PosEdge(kShiftLow)) {
         is_high_gear = true;
       }
 
@@ -120,7 +150,7 @@ class JoystickReader : public aos::JoystickInput {
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
       static double angle_adjust_goal = 0.42;
-      if (Pressed(2, 5)) {
+      if (data.IsPressed(kLongShot)) {
 #if 0
         target_angle.FetchLatest();
         if (target_angle.IsNewerThanMS(500)) {
@@ -136,8 +166,7 @@ class JoystickReader : public aos::JoystickInput {
         shooter_goal->velocity = 360;
         wrist_up_position = 1.23 - 0.4;
         angle_adjust_goal = 0.596;
-      } else if (Pressed(2, 3)) {
-        // medium shot
+      } else if (data.IsPressed(kMediumShot)) {
 #if 0
         shooter_goal->velocity = 375;
         wrist_up_position = 0.70;
@@ -147,18 +176,16 @@ class JoystickReader : public aos::JoystickInput {
         shooter_goal->velocity = 395;
         wrist_up_position = 1.23 - 0.4;
         angle_adjust_goal = 0.520;
-      } else if (Pressed(2, 6)) {
-        // short shot
+      } else if (data.IsPressed(kShortShot)) {
         shooter_goal->velocity = 375;
         angle_adjust_goal = 0.7267;
-      } else if (Pressed(1, 7) && Pressed(1, 10)) {
-        // pit shot
+      } else if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
         shooter_goal->velocity = 131;
         angle_adjust_goal = 0.70;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 
-      double wrist_pickup_position = Pressed(2, 10) /*intake*/ ?
+      double wrist_pickup_position = data.IsPressed(kIntake) ?
           kWristPickup : kWristNearGround;
       index_loop.status.FetchLatest();
       if (index_loop.status.get()) {
@@ -169,28 +196,30 @@ class JoystickReader : public aos::JoystickInput {
         }
       }
       wrist.goal.MakeWithBuilder()
-          .goal(Pressed(2, 8) ? wrist_down_position : wrist_up_position).Send();
+          .goal(data.IsPressed(kWristDown) ?
+                wrist_down_position :
+                wrist_up_position)
+          .Send();
 
       ::aos::ScopedMessagePtr<control_loops::IndexLoop::Goal> index_goal =
           index_loop.goal.MakeMessage();
-      // TODO(brians): replace these with the enum values
-      if (Pressed(2, 11)) {
+      if (data.IsPressed(kFire)) {
         // FIRE
         index_goal->goal_state = 4;
       } else if (shooter_goal->velocity != 0) {
         // get ready to shoot
         index_goal->goal_state = 3;
-      } else if (Pressed(2, 10)) {
+      } else if (data.IsPressed(kIntake)) {
         // intake
         index_goal->goal_state = 2;
       } else {
         // get ready to intake
         index_goal->goal_state = 1;
       }
-      index_goal->force_fire = Pressed(2, 12);
+      index_goal->force_fire = data.IsPressed(kForceFire);
 
-      const bool index_up = Pressed(2, 9);
-      const bool index_down = Pressed(2, 7);
+      const bool index_up = data.IsPressed(kForceIndexUp);
+      const bool index_down = data.IsPressed(kForceIndexDown);
       index_goal->override_index = index_up || index_down;
       if (index_up && index_down) {
         index_goal->index_voltage = 0.0;
@@ -205,7 +234,7 @@ class JoystickReader : public aos::JoystickInput {
     }
 
     static int hanger_cycles = 0;
-    if (Pressed(2, 1)) {
+    if (data.IsPressed(kDeployHangers)) {
       ++hanger_cycles;
     } else {
       hanger_cycles = 0;
@@ -214,6 +243,13 @@ class JoystickReader : public aos::JoystickInput {
   }
 };
 
+}  // namespace joysticks
+}  // namespace input
 }  // namespace frc971
 
-AOS_RUN(frc971::JoystickReader)
+int main() {
+  ::aos::Init();
+  ::frc971::input::joysticks::Reader reader;
+  reader.Run();
+  ::aos::Cleanup();
+}

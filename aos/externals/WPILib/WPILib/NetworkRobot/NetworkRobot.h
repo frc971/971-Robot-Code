@@ -101,7 +101,7 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   const char *const receiver_address_;
 
   int receive_socket_;
-  NetworkRobotValues values_;
+  NetworkRobotMotors values_;
 
   int send_socket_;
   NetworkRobotJoysticks joystick_values_;

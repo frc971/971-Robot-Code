@@ -19,11 +19,12 @@
         'JoystickReader.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/input/input.gyp:joystick',
-        'actions',
+        '<(AOS)/atom_code/input/input.gyp:joystick_input',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
+
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/atom_code/atom_code.gyp:init',
         '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
