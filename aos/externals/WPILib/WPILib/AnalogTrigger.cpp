@@ -21,10 +21,9 @@ static Resource *triggers = NULL;
 void AnalogTrigger::InitTrigger(UINT8 moduleNumber, UINT32 channel)
 {
 	Resource::CreateResourceObject(&triggers, tAnalogTrigger::kNumSystems);
-	UINT32 index = triggers->Allocate("Analog Trigger");
+	UINT32 index = triggers->Allocate("Analog Trigger", this);
 	if (index == ~0ul)
 	{
-		CloneError(triggers);
 		return;
 	}
 	m_index = (UINT8)index;
@@ -74,7 +73,7 @@ AnalogTrigger::AnalogTrigger(AnalogChannel *channel)
 
 AnalogTrigger::~AnalogTrigger()
 {
-	triggers->Free(m_index);
+	triggers->Free(m_index, this);
 	delete m_trigger;
 }
 

@@ -29,10 +29,9 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 	tRioStatusCode localStatus = NiFpga_Status_Success;
   if (encodingType == k4X) {
 		Resource::CreateResourceObject(&quadEncoders, tEncoder::kNumSystems);
-		UINT32 index = quadEncoders->Allocate("4X Encoder");
+		UINT32 index = quadEncoders->Allocate("4X Encoder", this);
 		if (index == ~0ul)
 		{
-			CloneError(quadEncoders);
 			return;
 		}
 		if (m_aSource->StatusIsFatal())
@@ -190,7 +189,7 @@ Encoder::~Encoder()
 	}
 	else
 	{
-		quadEncoders->Free(m_index);
+		quadEncoders->Free(m_index, this);
 		delete m_encoder;
 	}
 }

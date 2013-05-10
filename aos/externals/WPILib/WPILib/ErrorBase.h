@@ -10,59 +10,86 @@
 #include "Base.h"
 #include "ChipObject/NiRio.h"
 #include "Error.h"
-#include <semLib.h>
-#include <vxWorks.h>
 
-#define wpi_setErrnoErrorWithContext(context)   (this->SetErrnoError((context), __FILE__, __FUNCTION__, __LINE__))
-#define wpi_setErrnoError()   (wpi_setErrnoErrorWithContext(""))
-#define wpi_setImaqErrorWithContext(code, context)   (this->SetImaqError((code), (context), __FILE__, __FUNCTION__, __LINE__))
-#define wpi_setErrorWithContext(code, context)   (this->SetError((code), (context), __FILE__, __FUNCTION__, __LINE__))
+// Helper macros to fill in the context information for you. See the
+// documentation for the methods that they call for details.
+#define wpi_setErrnoErrorWithContext(context) \
+    (this->SetErrnoError((context), __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setErrnoError() \
+    (wpi_setErrnoErrorWithContext(""))
+#define wpi_setImaqErrorWithContext(code, context) \
+    (this->SetImaqError((code), (context), __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setErrorWithContext(code, context) \
+        (this->SetError((code), (context), __FILE__, __FUNCTION__, __LINE__))
 #define wpi_setError(code)   (wpi_setErrorWithContext(code, ""))
-#define wpi_setStaticErrorWithContext(object, code, context)   (object->SetError((code), (context), __FILE__, __FUNCTION__, __LINE__))
-#define wpi_setStaticError(object, code)   (wpi_setStaticErrorWithContext(object, code, ""))
-#define wpi_setGlobalErrorWithContext(code, context)   (ErrorBase::SetGlobalError((code), (context), __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setStaticErrorWithContext(object, code, context) \
+        (object->SetError((code), (context), __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setStaticError(object, code) \
+    (wpi_setStaticErrorWithContext(object, code, ""))
+#define wpi_setGlobalErrorWithContext(code, context) \
+        (ErrorBase::SetGlobalError((code), (context), \
+                                   __FILE__, __FUNCTION__, __LINE__))
 #define wpi_setGlobalError(code)   (wpi_setGlobalErrorWithContext(code, ""))
-#define wpi_setWPIErrorWithContext(error, context)   (this->SetWPIError((wpi_error_s_##error), (context), __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setWPIErrorWithContext(error, context) \
+        (this->SetWPIError((wpi_error_s_##error), (context), \
+                           __FILE__, __FUNCTION__, __LINE__))
 #define wpi_setWPIError(error)   (wpi_setWPIErrorWithContext(error, ""))
-#define wpi_setStaticWPIErrorWithContext(object, error, context)   (object->SetWPIError((wpi_error_s_##error), (context), __FILE__, __FUNCTION__, __LINE__))
-#define wpi_setStaticWPIError(object, error)   (wpi_setStaticWPIErrorWithContext(object, error, ""))
-#define wpi_setGlobalWPIErrorWithContext(error, context)   (ErrorBase::SetGlobalWPIError((wpi_error_s_##error), (context), __FILE__, __FUNCTION__, __LINE__))
-#define wpi_setGlobalWPIError(error)   (wpi_setGlobalWPIErrorWithContext(error, ""))
+#define wpi_setStaticWPIErrorWithContext(object, error, context) \
+        (object->SetWPIError((wpi_error_s_##error), (context), \
+                             __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setStaticWPIError(object, error) \
+    (wpi_setStaticWPIErrorWithContext(object, error, ""))
+#define wpi_setGlobalWPIErrorWithContext(error, context) \
+        (ErrorBase::SetGlobalWPIError((wpi_error_s_##error), (context), \
+                                      __FILE__, __FUNCTION__, __LINE__))
+#define wpi_setGlobalWPIError(error) \
+    (wpi_setGlobalWPIErrorWithContext(error, ""))
 
 /**
  * Base class for most objects.
  * ErrorBase is the base class for most objects since it holds the generated error
  * for that object. In addition, there is a single instance of a global error object
+ *
+ * BE AWARE: This does include a mutable instance variable! This means that even
+ * if you make an object const it's not really. However, all modification to
+ * that instance variable is protected by a semaphore, so it does not create any
+ * thread safety issues.
+ *
+ * All of the Set*Error methods will update the global error if there is nothing
+ * there already.
  */
 class ErrorBase
 {
-//TODO: Consider initializing instance variables and cleanup in destructor
 public:
+	ErrorBase();
 	virtual ~ErrorBase();
-	virtual Error& GetError();
-	virtual const Error& GetError() const;
-	virtual void SetErrnoError(const char *contextMessage,
+
+	Error& GetError() const;
+	void SetErrnoError(const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber) const;
-	virtual void SetImaqError(int success, const char *contextMessage,
+	void SetImaqError(int success, const char *contextMessage,
         const char* filename, const char* function, UINT32 lineNumber) const;
-	virtual void SetError(Error::Code code, const char *contextMessage,
+	void SetError(Error::Code code, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber) const;
-	virtual void SetWPIError(const char *errorMessage, const char *contextMessage,
+	void SetWPIError(const char *errorMessage, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber) const;
-	virtual void CloneError(ErrorBase *rhs) const;
-	virtual void ClearError() const;
-	virtual bool StatusIsFatal() const;
+	void CloneError(const ErrorBase *rhs) const;
+	void ClearError() const;
+	bool StatusIsFatal() const;
 	static void SetGlobalError(Error::Code code, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber);
 	static void SetGlobalWPIError(const char *errorMessage, const char *contextMessage,
 		const char* filename, const char* function, UINT32 lineNumber);
-	static Error& GetGlobalError();
+	static const Error& GetGlobalError();
+
 protected:
+  // This mutable is safe because Error guarantees that all modifications are
+  // protected with an internal lock.
 	mutable Error m_error;
-	// TODO: Replace globalError with a global list of all errors.
-	static SEM_ID _globalErrorMutex;
+	// TODO: Replace globalError with a global list of all errors, but make sure
+  // that it's thread safe.
 	static Error _globalError;
-	ErrorBase();
+
 private:
 	DISALLOW_COPY_AND_ASSIGN(ErrorBase);
 };

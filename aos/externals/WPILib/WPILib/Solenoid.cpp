@@ -30,9 +30,10 @@ void Solenoid::InitSolenoid()
 	Resource::CreateResourceObject(&m_allocated, tSolenoid::kNumDO7_0Elements * kSolenoidChannels);
 
 	snprintf(buf, 64, "Solenoid %d (Module: %d)", m_channel, m_moduleNumber);
-	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels + m_channel - 1, buf) == ~0ul)
+	if (m_allocated->Allocate((m_moduleNumber - 1) * kSolenoidChannels
+                            + m_channel - 1,
+                            buf, this) == ~0ul)
 	{
-		CloneError(m_allocated);
 		return;
 	}
 
@@ -72,7 +73,8 @@ Solenoid::~Solenoid()
 {
 	if (CheckSolenoidModule(m_moduleNumber))
 	{
-		m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels + m_channel - 1);
+		m_allocated->Free((m_moduleNumber - 1) * kSolenoidChannels + m_channel - 1,
+                      this);
 	}
 }
 

@@ -19,15 +19,18 @@
  * The Resource class does not allocate the hardware channels or other
  * resources; it just tracks which indices were marked in use by
  * Allocate and not yet freed by Free.
+ *
+ * Several methods require an ErrorBase* so that they can report any errors.
  */
-class Resource : public ErrorBase
+class Resource
 {
 public:
 	virtual ~Resource();
 	static void CreateResourceObject(Resource **r, UINT32 elements);
-	UINT32 Allocate(const char *resourceDesc);
-	UINT32 Allocate(UINT32 index, const char *resourceDesc);
-	void Free(UINT32 index);
+	UINT32 Allocate(const char *resourceDesc, const ErrorBase *error);
+	UINT32 Allocate(UINT32 index, const char *resourceDesc,
+                  const ErrorBase *error);
+	void Free(UINT32 index, const ErrorBase *error);
 
 private:
 	explicit Resource(UINT32 size);

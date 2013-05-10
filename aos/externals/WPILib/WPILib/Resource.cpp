@@ -6,7 +6,6 @@
 
 #include "Resource.h"
 #include "WPIErrors.h"
-#include "ErrorBase.h"
 
 ReentrantSemaphore Resource::m_createLock;
 
@@ -28,6 +27,7 @@ Resource::Resource(UINT32 elements)
 
 /**
  * Factory method to create a Resource allocation-tracker *if* needed.
+ * Handles the necessary synchronization internally.
  *
  * @param r -- address of the caller's Resource pointer. If *r == NULL, this
  *    will construct a Resource and make *r point to it. If *r != NULL, i.e.
@@ -59,7 +59,7 @@ Resource::~Resource()
  * When a resource is requested, mark it allocated. In this case, a free resource value
  * within the range is located and returned after it is marked allocated.
  */
-UINT32 Resource::Allocate(const char *resourceDesc)
+UINT32 Resource::Allocate(const char *resourceDesc, const ErrorBase *error)
 {
 	Synchronized sync(m_allocateLock);
 	for (UINT32 i=0; i < m_size; i++)
@@ -70,7 +70,7 @@ UINT32 Resource::Allocate(const char *resourceDesc)
 			return i;
 		}
 	}
-	wpi_setWPIErrorWithContext(NoAvailableResources, resourceDesc);
+	wpi_setStaticWPIErrorWithContext(error, NoAvailableResources, resourceDesc);
 	return ~0ul;
 }
 
@@ -79,17 +79,18 @@ UINT32 Resource::Allocate(const char *resourceDesc)
  * The user requests a specific resource value, i.e. channel number and it is verified
  * unallocated, then returned.
  */
-UINT32 Resource::Allocate(UINT32 index, const char *resourceDesc)
+UINT32 Resource::Allocate(UINT32 index, const char *resourceDesc,
+                          const ErrorBase *error)
 {
 	Synchronized sync(m_allocateLock);
 	if (index >= m_size)
 	{
-		wpi_setWPIErrorWithContext(ChannelIndexOutOfRange, resourceDesc);
+		wpi_setStaticWPIErrorWithContext(error, ChannelIndexOutOfRange, resourceDesc);
 		return ~0ul;
 	}
 	if ( m_isAllocated[index] )
 	{
-		wpi_setWPIErrorWithContext(ResourceAlreadyAllocated, resourceDesc);
+		wpi_setStaticWPIErrorWithContext(error, ResourceAlreadyAllocated, resourceDesc);
 		return ~0ul;
 	}
 	m_isAllocated[index] = true;
@@ -102,18 +103,18 @@ UINT32 Resource::Allocate(UINT32 index, const char *resourceDesc)
  * After a resource is no longer needed, for example a destructor is called for a channel assignment
  * class, Free will release the resource value so it can be reused somewhere else in the program.
  */
-void Resource::Free(UINT32 index)
+void Resource::Free(UINT32 index, const ErrorBase *error)
 {
 	Synchronized sync(m_allocateLock);
 	if (index == ~0ul) return;
 	if (index >= m_size)
 	{
-		wpi_setWPIError(NotAllocated);
+		wpi_setStaticWPIError(error, NotAllocated);
 		return;
 	}
 	if (!m_isAllocated[index])
 	{
-		wpi_setWPIError(NotAllocated);
+		wpi_setStaticWPIError(error, NotAllocated);
 		return;
 	}
 	m_isAllocated[index] = false;

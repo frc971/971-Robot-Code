@@ -27,11 +27,15 @@ class Synchronized;
  *
  * This class is safe to use in static variables because it does not depend on
  * any other C++ static constructors or destructors.
+ *
+ * The instance methods are marked const because using this class from multiple
+ * threads at once is safe and they don't actually modify the value of any of
+ * the instance variables.
  */
 class ReentrantSemaphore
 {
 public:
-	explicit ReentrantSemaphore() {
+	ReentrantSemaphore() {
 		m_semaphore = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE);
 	}
 	~ReentrantSemaphore() {
@@ -42,7 +46,7 @@ public:
 	 * Lock the semaphore, blocking until it's available.
 	 * @return 0 for success, -1 for error. If -1, the error will be in errno.
 	 */
-	int take() {
+	int take() const {
 		return semTake(m_semaphore, WAIT_FOREVER);
 	}
 
@@ -50,7 +54,7 @@ public:
 	 * Unlock the semaphore.
 	 * @return 0 for success, -1 for error. If -1, the error will be in errno.
 	 */
-	int give() {
+	int give() const {
 		return semGive(m_semaphore);
 	}
 
@@ -83,8 +87,8 @@ class Synchronized
 {
 public:
 	explicit Synchronized(SEM_ID);
-	explicit Synchronized(ReentrantSemaphore&);
-	virtual ~Synchronized();
+	explicit Synchronized(const ReentrantSemaphore&);
+	~Synchronized();
 private:
 	SEM_ID m_semaphore;
 

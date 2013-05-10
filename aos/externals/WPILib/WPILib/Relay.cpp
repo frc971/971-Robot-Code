@@ -43,9 +43,9 @@ void Relay::InitRelay (UINT8 moduleNumber)
 	if (m_direction == kBothDirections || m_direction == kForwardOnly)
 	{
 		snprintf(buf, 64, "Forward Relay %d (Module: %d)", m_channel, moduleNumber);
-		if (relayChannels->Allocate(((moduleNumber - 1) * kRelayChannels + m_channel - 1) * 2, buf) == ~0ul)
+		if (relayChannels->Allocate(((moduleNumber - 1) * kRelayChannels +
+                                 m_channel - 1) * 2, buf, this) == ~0ul)
 		{
-			CloneError(relayChannels);
 			return;
 		}
 
@@ -54,9 +54,9 @@ void Relay::InitRelay (UINT8 moduleNumber)
 	if (m_direction == kBothDirections || m_direction == kReverseOnly)
 	{
 		snprintf(buf, 64, "Reverse Relay %d (Module: %d)", m_channel, moduleNumber);
-		if (relayChannels->Allocate(((moduleNumber - 1) * kRelayChannels + m_channel - 1) * 2 + 1, buf) == ~0ul)
+		if (relayChannels->Allocate(((moduleNumber - 1) * kRelayChannels
+                                 + m_channel - 1) * 2 + 1, buf, this) == ~0ul)
 		{
-			CloneError(relayChannels);
 			return;
 		}
 
@@ -105,11 +105,13 @@ Relay::~Relay()
 
 	if (m_direction == kBothDirections || m_direction == kForwardOnly)
 	{
-		relayChannels->Free(((m_module->GetNumber() - 1) * kRelayChannels + m_channel - 1) * 2);
+		relayChannels->Free(((m_module->GetNumber() - 1) *
+                         kRelayChannels + m_channel - 1) * 2, this);
 	}
 	if (m_direction == kBothDirections || m_direction == kReverseOnly)
 	{
-		relayChannels->Free(((m_module->GetNumber() - 1) * kRelayChannels + m_channel - 1) * 2 + 1);
+		relayChannels->Free(((m_module->GetNumber() - 1) *
+                         kRelayChannels + m_channel - 1) * 2 + 1, this);
 	}
 }
 

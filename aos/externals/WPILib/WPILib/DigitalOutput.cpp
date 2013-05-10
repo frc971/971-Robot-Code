@@ -214,10 +214,9 @@ bool DigitalOutput::GetAnalogTriggerForRouting()
 void DigitalOutput::RequestInterrupts(tInterruptHandler handler, void *param)
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt");
+	UINT32 index = interruptsResource->Allocate("Sync Interrupt", this);
 	if (index == ~0ul)
 	{
-		CloneError(interruptsResource);
 		return;
 	}
 	m_interruptIndex = index;
@@ -245,10 +244,9 @@ void DigitalOutput::RequestInterrupts(tInterruptHandler handler, void *param)
 void DigitalOutput::RequestInterrupts()
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt");
+	UINT32 index = interruptsResource->Allocate("Sync Interrupt", this);
 	if (index == ~0ul)
 	{
-		CloneError(interruptsResource);
 		return;
 	}
 	m_interruptIndex = index;
