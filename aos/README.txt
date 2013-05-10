@@ -18,7 +18,6 @@ common/output/ is where the framework for writing things out of the queues syste
 common/messages is where the c++ wrappers for "queues" are
 
 [NOTES]
-C++ code should _only_ #include "aos/aos_core.h" because it has the extern "C" stuff etc. That should have all of the necessary header files #included, but if it doesn't, they should get added.
 Some functions need to be in separate translation units in order for them to be guaranteed to work. As the C standard says,
 	Alternatively, an implementation might perform various optimizations within each translation unit, such
 	that the actual semantics would agree with the abstract semantics only when making function calls across

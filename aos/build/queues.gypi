@@ -116,8 +116,5 @@
       'gen_srcdir_parents': ['<(out_dir)'],
     },
   },
-  'dependencies': [
-    '<(AOS)/build/aos.gyp:aos_internal_nolib',
-  ],
   'hard_dependency': 1,
 }

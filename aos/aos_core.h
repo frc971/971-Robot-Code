@@ -3,21 +3,11 @@
 
 #ifdef __VXWORKS__
 #include "WPILib/Task.h"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
+#else
+#include "aos/atom_code/init.h"
 #endif
 
 #ifndef __VXWORKS__
-#include "aos/atom_code/ipc_lib/resource.h"
-#include "aos/atom_code/ipc_lib/shared_mem.h"
-#include "aos/atom_code/ipc_lib/queue.h"
-#ifdef __cplusplus
-}
-#include "aos/atom_code/init.h"
-extern "C" {
-#endif
 
 // A macro that runs a control loop using AOS_RUN on linux, and lets the user
 // register the control loop on the cRIO.
@@ -71,11 +61,5 @@ extern "C" void AOS_INITNAME() { \
 }
 
 #endif // ifndef __VXWORKS__
-
-#ifdef __cplusplus
-}
-#endif
-
-#include "aos/common/logging/logging.h"
 
 #endif

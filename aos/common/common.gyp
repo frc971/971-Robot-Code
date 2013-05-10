@@ -37,7 +37,6 @@
         # TODO(aschuh): Fix this dependency loop by
         # providing a logging interface.
         # '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/build/aos.gyp:aos/ResourceList.h',
         'mutex',
       ],
     },
