@@ -50,6 +50,7 @@ public:
 	void Flush() {}
 private:
 	static const INT32 kMaxDashboardDataSize = USER_STATUS_DATA_SIZE - sizeof(UINT32) * 3 - sizeof(UINT8); // 13 bytes needed for 3 size parameters and the sequence number
+  static const size_t kLocalPrintBufferSize = kMaxDashboardDataSize * 2;
 
 	// Usage Guidelines...
 	DISALLOW_COPY_AND_ASSIGN(Dashboard);

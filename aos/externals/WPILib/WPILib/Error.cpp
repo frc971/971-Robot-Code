@@ -103,8 +103,8 @@ void Error::Set(Code code, const char* contextMessage, const char* filename,
 void Error::Report() const
 {
 	// Error string buffers
-	char *error = new char[256];
-	char *error_with_code = new char[256];
+	char error[256];
+	char error_with_code[256];
 
 	// Build error strings
 	if (m_code != -1 && m_code != 1)
@@ -128,12 +128,8 @@ void Error::Report() const
 	// Send to the DriverStation
 	setErrorData(error_with_code, strlen(error_with_code), 100);
 
-	delete [] error_with_code;
-
 	// Print to console
 	printf("\n\n>>>>%s", error);
-
-	delete [] error;
 
 	if (m_stackTraceEnabled)
 	{
