@@ -1,6 +1,17 @@
 {
   'targets': [
     {
+      'target_name': 'netconsole',
+      'type': 'executable',
+      'sources': [
+        'netconsole.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:common',
+      ],
+    },
+    {
       'target_name': 'starter_exe',
       'type': 'executable',
       'sources': [

@@ -58,24 +58,32 @@ fi
 if [ "${ACTION}" == "clean" ]; then
   rm -r ${OUTDIR}
 else
-  if [ "${ACTION}" != "deploy" -a "${ACTION}" != "tests" ]; then
-					GYP_ACTION=${ACTION}
-	else
-					GYP_ACTION=
-	fi
+  if [ "${ACTION}" != "deploy" -a "${ACTION}" != "tests" -a "${ACTION}" != "redeploy" ]; then
+    GYP_ACTION=${ACTION}
+  else
+    GYP_ACTION=
+  fi
   ${NINJA} -C ${OUTDIR}/Default ${GYP_ACTION}
-  case ${ACTION} in
-    deploy)
-      [ ${PLATFORM} == atom ] && \
-        rsync --progress -c -r --rsync-path=/home/driver/bin/rsync \
-        ${OUTDIR}/Default/outputs/* \
-        driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
-      [ ${PLATFORM} == crio ] && \
-        ncftpput `${AOS}/build/get_ip robot` / \
-        ${OUTDIR}/Default/lib/FRC_UserProgram.out
-      ;;
-    tests)
-      find ${OUTDIR}/Default/tests -executable -exec {} \;
-      ;;
-  esac
+  if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
+    [ ${PLATFORM} == atom ] && \
+      rsync --progress -c -r --rsync-path=/home/driver/bin/rsync \
+      ${OUTDIR}/Default/outputs/* \
+      driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
+    [ ${PLATFORM} == crio ] && \
+      ncftpput `${AOS}/build/get_ip robot` / \
+      ${OUTDIR}/Default/lib/FRC_UserProgram.out
+  fi
+  if [[ ${ACTION} == redeploy ]]; then
+    if [[ ${PLATFORM} != crio ]]; then
+      echo "Platform ${PLATFORM} does not support redeploy." 1>&2
+      exit 1
+    fi
+    ${OUTDIR}/../out_atom/Default/outputs/netconsole <<"END"
+unld "FRC_UserProgram.out"
+ld < FRC_UserProgram.out
+END
+  fi
+  if [[ ${ACTION} == tests ]]; then
+    find ${OUTDIR}/Default/tests -executable -exec {} \;
+  fi
 fi
