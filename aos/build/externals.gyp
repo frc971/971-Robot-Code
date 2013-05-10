@@ -17,22 +17,30 @@
   },
   'targets': [
     {
-# does nothing when OS!="crio"
       'target_name': 'WPILib',
-      'type': 'none',
-      'conditions': [['OS=="crio"', {
-            'direct_dependent_settings': {
-              'cflags': [
-                '-isystem', '<(aos_abs)/externals/WPILib',
-                '-isystem', '<(aos_abs)/externals/WPILib/WPILib',
-              ],
-              'link_settings': {
-                'libraries': [
-                  #'<(aos_abs)/externals/WPILib/WPILib.a',
-                ],
-              },
-            },
-        }]],
+      'type': 'static_library',
+      'sources': [
+        '<!@(find <(externals)/WPILib/WPILib/ -name *.cpp)',
+      ],
+      'cflags!': [
+        '-Werror',
+        '-ggdb3',
+        '-O0'
+      ],
+      'cflags': [
+        '-ggdb1',
+        '-O3'
+      ],
+      'include_dirs': [
+        '<(externals)/WPILib',
+        '<(externals)/WPILib/WPILib',
+      ],
+      'direct_dependent_settings': {
+        'cflags': [
+          '-isystem', '<(externals_abs)/WPILib',
+          '-isystem', '<(externals_abs)/WPILib/WPILib',
+        ],
+      },
     },
     {
       'target_name': 'onejar',

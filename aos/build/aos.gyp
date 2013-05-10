@@ -104,16 +104,21 @@
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         'logging',
-        '<(EXTERNALS):WPILib',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
-        '<(EXTERNALS):WPILib',
       ],
       'conditions': [
         ['OS=="atom"', {
           'dependencies': [
             '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+          ],
+        }, {
+          'dependencies': [
+            '<(EXTERNALS):WPILib',
+          ],
+          'export_dependent_settings': [
+            '<(EXTERNALS):WPILib',
           ],
         }]
       ],
@@ -128,12 +133,21 @@
         '<(AOS)/common/messages/messages.gyp:queues_so',
         '<(AOS)/common/common.gyp:queues',
         'aos_swig',
-        '<(EXTERNALS):WPILib',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:queues_so',
-        '<(EXTERNALS):WPILib',
         'aos_swig',
+      ],
+      'conditions': [
+        ['OS=="atom"', {
+        }, {
+          'dependencies': [
+            '<(EXTERNALS):WPILib',
+          ],
+          'export_dependent_settings': [
+            '<(EXTERNALS):WPILib',
+          ],
+        }]
       ],
       'direct_dependent_settings': {
         'variables': {
@@ -151,11 +165,9 @@
       'type': 'none',
       'dependencies': [
         'aos/ResourceList.h',
-        '<(EXTERNALS):WPILib',
       ],
       'export_dependent_settings': [
         'aos/ResourceList.h',
-        '<(EXTERNALS):WPILib',
       ],
     },
     {

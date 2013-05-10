@@ -37,11 +37,9 @@
         'header_path': 'aos/common/messages',
       },
       'dependencies': [
-        '<(EXTERNALS):WPILib',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):WPILib',
         '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../../build/queues.gypi'],
