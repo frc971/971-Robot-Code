@@ -32,7 +32,6 @@ public:
     kTestMode,
   };
 
-	virtual ~DriverStation();
 	static DriverStation *GetInstance();
 
 	static const UINT32 kBatteryModuleNumber = 1;
@@ -106,6 +105,7 @@ public:
 
 protected:
 	DriverStation();
+	virtual ~DriverStation();
 
 	void GetData();
 	void SetData();
