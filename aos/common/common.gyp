@@ -38,6 +38,7 @@
         # providing a logging interface.
         # '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/build/aos.gyp:aos/ResourceList.h',
+        'mutex',
       ],
     },
     {
@@ -95,6 +96,19 @@
       ],
     },
     {
+      'target_name': 'scoped_fd',
+      'type': 'static_library',
+      'sources': [
+        # 'scoped_fd.h'
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'control_loop_queues',
       'type': 'static_library',
       'sources': [ '<(AOS)/common/control_loop/control_loops.q' ],
@@ -102,7 +116,6 @@
         'header_path': 'aos/common/control_loop',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
         '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../build/queues.gypi'],
@@ -115,7 +128,6 @@
       ],
       'variables': {'no_rsync': 1},
       'dependencies': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
       ],
       'direct_dependent_settings': {
         'variables': {
@@ -125,7 +137,6 @@
         },
       },
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
       ],
     },
     {
@@ -135,8 +146,8 @@
         'control_loop/Timing.cpp'
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/build/aos.gyp:logging',
+        'time',
       ],
     },
     {
@@ -162,13 +173,11 @@
       'target_name': 'queue_test',
       'type': 'executable',
       'sources': [
-        '<(AOS)/common/queue_test.cc',
+        'queue_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
         'queue_testutils',
-        'common',
         'queue_test_queue',
         '<(AOS)/common/util/util.gyp:thread',
       ],
@@ -181,8 +190,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
-        ':common',
       ],
     },
     {
@@ -213,7 +220,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'once',
       ],
     },
     {
@@ -224,7 +231,8 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'time',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -254,6 +262,11 @@
           ],
         }],
       ],
+      'dependencies': [
+        # TODO(aschuh): Fix this dependency loop by
+        # providing a logging interface.
+        # '<(AOS)/build/aos.gyp:logging',
+      ],
     },
     {
       'target_name': 'mutex_test',
@@ -263,7 +276,8 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'mutex',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -274,7 +288,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'die',
       ],
     },
   ],

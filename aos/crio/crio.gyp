@@ -10,8 +10,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
-        '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/common.gyp:queue_test_queue',
       ],
     },

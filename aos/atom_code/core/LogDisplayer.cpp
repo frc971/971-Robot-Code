@@ -8,7 +8,6 @@
 #include <errno.h>
 
 #include "aos/atom_code/core/LogFileCommon.h"
-#include "aos/aos_core.h"
 #include "aos/common/logging/logging_impl.h"
 
 namespace {

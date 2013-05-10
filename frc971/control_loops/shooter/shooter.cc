@@ -1,7 +1,5 @@
 #include "frc971/control_loops/shooter/shooter.h"
 
-#include "aos/aos_core.h"
-
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 

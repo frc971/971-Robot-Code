@@ -1,6 +1,5 @@
 #include "stdio.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 #include "frc971/control_loops/shooter/shooter_motor.q.h"

@@ -1,6 +1,5 @@
 #include "aos/atom_code/input/JoystickInput.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/Configuration.h"
 #include "aos/common/network/ReceiveSocket.h"
 #include "aos/common/messages/RobotState.q.h"

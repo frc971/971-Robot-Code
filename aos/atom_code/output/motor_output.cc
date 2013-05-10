@@ -3,8 +3,8 @@
 #include <math.h>
 
 #include "aos/common/Configuration.h"
-#include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 

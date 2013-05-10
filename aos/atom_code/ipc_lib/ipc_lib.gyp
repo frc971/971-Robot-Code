@@ -26,7 +26,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'ipc_lib',
       ],
     },
     {
@@ -37,7 +37,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'ipc_lib',
       ],
     },
     {
@@ -48,7 +48,8 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'ipc_lib',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

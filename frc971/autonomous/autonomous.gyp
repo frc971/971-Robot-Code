@@ -8,11 +8,9 @@
         'header_path': 'frc971/autonomous',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:queues',
       ],
       'includes': ['../../aos/build/queues.gypi'],
@@ -24,7 +22,6 @@
         'auto.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         'auto_queue',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
@@ -36,6 +33,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:controls',

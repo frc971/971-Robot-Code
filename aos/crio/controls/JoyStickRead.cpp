@@ -2,6 +2,7 @@
 #include "WPILib/Timer.h"
 
 #include "aos/aos_core.h"
+#include "aos/common/logging/logging.h"
 #include "aos/crio/controls/ControlsManager.h"
 #include "aos/common/network/SendSocket.h"
 #include "aos/common/messages/RobotState.q.h"

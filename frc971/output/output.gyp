@@ -7,10 +7,11 @@
         'CameraServer.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/atom_code/output/output.gyp:http_server',
         '../frc971.gyp:common',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/messages/messages.gyp:aos_queues',
       ],
       'copies': [
         {
@@ -39,11 +40,14 @@
             ],
           }, {
             'sources': ['CRIOMotorWriter.cc'],
+            'dependencies': [
+              '<(EXTERNALS):WPILib',
+              '<(AOS)/build/aos.gyp:aos_core',
+            ],
           }
         ],
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',

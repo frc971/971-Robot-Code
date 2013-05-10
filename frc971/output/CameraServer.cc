@@ -1,12 +1,13 @@
 #include <string.h>
 
-#include "aos/aos_core.h"
 #include "aos/atom_code/output/HTTPServer.h"
 #include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
 #include "aos/atom_code/output/ctemplate_cache.h"
 #include "aos/common/Configuration.h"
 #include "aos/common/messages/RobotState.q.h"
 #include "ctemplate/template.h"
+#include "aos/atom_code/init.h"
+#include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
 
@@ -84,4 +85,9 @@ class CameraServer : public aos::http::HTTPServer {
 
 }  // namespace frc971
 
-AOS_RUN_NRT(frc971::CameraServer)
+int main() {
+  ::aos::InitNRT();
+  ::frc971::CameraServer server;
+  server.Run();
+  ::aos::Cleanup();
+}

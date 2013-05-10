@@ -5,7 +5,6 @@
 #include <cmath>
 #include <memory>
 
-#include "aos/aos_core.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
 #include "frc971/control_loops/state_feedback_loop.h"
