@@ -27,9 +27,7 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 {
 	m_encodingType = encodingType;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	switch (encodingType)
-	{
-	case k4X:
+  if (encodingType == k4X) {
 		Resource::CreateResourceObject(&quadEncoders, tEncoder::kNumSystems);
 		UINT32 index = quadEncoders->Allocate("4X Encoder");
 		if (index == ~0ul)
@@ -59,12 +57,9 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 		m_encoder->writeConfig_Reverse(reverseDirection, &localStatus);
 		m_encoder->writeTimerConfig_AverageSize(4, &localStatus);
 		m_counter = NULL;
-		break;
-	case k1X:
-	case k2X:
+  } else {
 		m_counter = new Counter(m_encodingType, m_aSource, m_bSource, reverseDirection);
 		m_index = m_counter->GetIndex();
-		break;
 	}
 	m_distancePerPulse = 1.0;
 	m_pidSource = kDistance;
