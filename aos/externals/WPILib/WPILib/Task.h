@@ -9,6 +9,7 @@
 
 #include "ErrorBase.h"
 #include <vxWorks.h>
+#include "Synchronized.h"
 
 /**
  * WPI task is a wrapper for the native Task object.
@@ -47,6 +48,7 @@ private:
 	INT32 m_taskID;
 	UINT32 m_stackSize;
 	INT32 m_priority;
+  ReentrantSemaphore m_prioritySemaphore;
 	bool HandleError(STATUS results);
 	DISALLOW_COPY_AND_ASSIGN(Task);
 };
