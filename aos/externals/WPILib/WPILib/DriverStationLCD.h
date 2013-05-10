@@ -25,7 +25,6 @@ public:
 	static const INT32 kNumLines = 6;
 	enum Line {kMain_Line6=0, kUser_Line1=0, kUser_Line2=1, kUser_Line3=2, kUser_Line4=3, kUser_Line5=4, kUser_Line6=5};
 
-	virtual ~DriverStationLCD();
 	static DriverStationLCD *GetInstance();
 
 	void UpdateLCD();
@@ -38,6 +37,7 @@ public:
 
 protected:
 	DriverStationLCD();
+	virtual ~DriverStationLCD();
 
 private:
 	static void InitTask(DriverStationLCD *ds);
