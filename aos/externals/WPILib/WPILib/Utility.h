@@ -27,15 +27,4 @@ void wpi_selfTrace();
 void wpi_suspendOnAssertEnabled(bool enabled);
 void wpi_stackTraceOnAssertEnable(bool enabled);
 
-UINT16 GetFPGAVersion();
-UINT32 GetFPGARevision();
-UINT32 GetFPGATime();
-INT32 GetRIOUserSwitch();
-void SetRIOUserLED(UINT32 state);
-INT32 GetRIOUserLED();
-INT32 ToggleRIOUserLED();
-void SetRIO_FPGA_LED(UINT32 state);
-INT32 GetRIO_FPGA_LED();
-INT32 ToggleRIO_FPGA_LED();
-
 #endif // UTILITY_H_
