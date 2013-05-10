@@ -19,6 +19,8 @@ RobotBase* RobotBase::m_instance = NULL;
 
 void RobotBase::setInstance(RobotBase* robot)
 {
+  // No point in synchronization here because it's private and it only gets
+  // called from robotTask.
 	wpi_assert(m_instance == NULL);
 	m_instance = robot;
 }
@@ -30,8 +32,9 @@ RobotBase &RobotBase::getInstance()
 
 /**
  * Constructor for a generic robot program.
- * User code should be placed in the constuctor that runs before the Autonomous or Operator
- * Control period starts. The constructor will run to completion before Autonomous is entered.
+ * User code that should run before the Autonomous or Operator Control period
+ * starts should be placed in the subclass constructor.
+ * The constructor must finish before Autonomous can be entered.
  * 
  * This must be used to ensure that the communications code starts. In the future it would be
  * nice to put this code into it's own task that loads on boot so ensure that it runs.
@@ -45,7 +48,7 @@ RobotBase::RobotBase()
 
 /**
  * Free the resources for a RobotBase class.
- * This includes deleting all classes that might have been allocated as Singletons to they
+ * This includes deleting all classes that might have been allocated as Singletons so they
  * would never be deleted except here.
  */
 RobotBase::~RobotBase()
@@ -95,7 +98,7 @@ bool RobotBase::IsDisabled()
 }
 
 /**
- * Determine if the robot is currently in Autnomous mode.
+ * Determine if the robot is currently in Autonomous mode.
  * @return True if the robot is currently operating Autonomously as determined by the field controls.
  */
 bool RobotBase::IsAutonomous()
@@ -135,18 +138,21 @@ bool RobotBase::IsNewDataAvailable()
  */
 void RobotBase::robotTask(FUNCPTR factory, Task *task)
 {
-	RobotBase::setInstance((RobotBase*)factory());
-	RobotBase::getInstance().m_task = task;
-	RobotBase::getInstance().StartCompetition();
+  RobotBase *instance = (RobotBase*)factory();
+  instance->m_task = task;
+  RobotBase::setInstance(instance);
+  instance->StartCompetition();
 }
 
 /**
  * 
  * Start the robot code.
- * This function starts the robot code running by spawning a task. Currently tasks seemed to be
- * started by LVRT without setting the VX_FP_TASK flag so floating point context is not saved on
- * interrupts. Therefore the program experiences hard to debug and unpredictable results. So the
- * LVRT code starts this function, and it, in turn, starts the actual user program.
+ * This function starts the robot code running by spawning a task. Currently
+ * tasks seem to be started by LVRT without setting the VX_FP_TASK flag which
+ * means that the floating point registers are not saved on interrupts and task
+ * switches. That causes the program to experience hard to debug and
+ * unpredictable results, so the LVRT code starts this function, so that it, in
+ * turn, can start the actual user program.
  */
 void RobotBase::startRobotTask(FUNCPTR factory)
 {
@@ -199,8 +205,7 @@ void RobotBase::startRobotTask(FUNCPTR factory)
 /**
  * This class exists for the sole purpose of getting its destructor called when the module unloads.
  * Before the module is done unloading, we need to delete the RobotBase derived singleton.  This should delete
- * the other remaining singletons that were registered.  This should also stop all tasks that are using
- * the Task class.
+ * the other remaining singletons that were registered.
  */
 class RobotDeleter
 {

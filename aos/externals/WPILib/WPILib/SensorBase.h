@@ -15,7 +15,7 @@
 /**
  * Base class for all sensors.
  * Stores most recent status information as well as containing utility functions for checking
- * channels and error processing.
+ * channels.
  */
 class SensorBase: public ErrorBase {
 public:
@@ -35,6 +35,9 @@ public:
 	static bool CheckAnalogChannel(UINT32 channel);
 	static bool CheckSolenoidChannel(UINT32 channel);
 
+  // NOT vxworks system clock ticks (returned by sysClkRateGet() from sysLib).
+  // TODO: Document what this actually is (has something to do with FPGA times).
+  // 40kHz clock?
 	static const UINT32 kSystemClockTicksPerMicrosecond = 40;
 	static const UINT32 kDigitalChannels = 14;
 	static const UINT32 kAnalogChannels = 8;
