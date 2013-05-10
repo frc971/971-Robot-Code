@@ -13,6 +13,7 @@
     'gflags_version': '2.0',
     'libusb_version': '1.0.9',
     'libusb_apiversion': '1.0',
+    'compiler_rt_version': 'RELEASE_32_final',
   },
   'targets': [
     {
@@ -178,5 +179,8 @@
         'include_dirs': ['<(externals)/libusb-<(libusb_version)-prefix/include'],
       },
     },
+  ],
+  'includes': [
+    'libgcc-additions/libgcc-additions.gypi',
   ],
 }

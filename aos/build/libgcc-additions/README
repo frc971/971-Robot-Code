@@ -1,0 +1,26 @@
+This directory contains the stuff necessary to deal with the fact that the
+  libgcc.a from the old GCC that the cRIO has doesn't have all of the functions
+  that newer GCCs expect from it.
+
+[extra functions necessary for 4.5.2]
+I generated this diff with `powerpc-wrs-vxworks-nm \
+  gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/lib/gcc/powerpc-wrs-vxworks/3.4.4/libgcc.a \
+  | fgrep '000 T' | awk ' { print $NF }'` (and using the same command with the
+  gccdist.a from the 4.5.2 GCC.
+  I then gave the outputs from both of those to diff and edited out by hand the
+  functions that just moved.
+__powisf2
+__powidf2
+__mulsc3
+__muldc3
+__divsc3
+__divdc3
+__bswapsi2
+__bswapdi2
+__floatundisf
+__floatundidf
+__eprintf
+
+eprintf looks like it's not needed.
+Compiler-RT thinks that bswapsi2 and bswapdi2 are only needed on arm, so it
+  only has arm assembly for them.

@@ -89,3 +89,10 @@ LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-${LIBUSB_APIVERSI
   CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
   bash -c "cd ${LIBUSB_DIR} && ./configure \
   --prefix=`readlink -f ${LIBUSB_PREFIX}` && make && make install"
+
+# get the LLVM Compiler-RT source
+COMPILER_RT_TAG=RELEASE_32/final
+COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
+COMPILER_RT_DIR=${EXTERNALS}/compiler-rt-${COMPILER_RT_VERSION}
+COMPILER_RT_URL=http://llvm.org/svn/llvm-project/compiler-rt/tags/${COMPILER_RT_TAG}
+[ -d ${COMPILER_RT_DIR} ] || svn checkout ${COMPILER_RT_URL} ${COMPILER_RT_DIR}
