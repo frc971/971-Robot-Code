@@ -52,7 +52,7 @@ class MotorOutput {
   void DisablePWMOutput(uint8_t channel);
   void SetDigitalOutput(uint8_t channel, bool value);
 
-  // The struct that's going to get sent over.
+  // The data that's going to get sent over.
   // Gets reset (everything set so that it won't do anything) each time through.
   NetworkRobotMotors values_;
 

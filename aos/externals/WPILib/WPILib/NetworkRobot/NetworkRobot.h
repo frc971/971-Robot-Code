@@ -16,6 +16,7 @@
 #include "WPILib/ErrorBase.h"
 #include "WPILib/SolenoidBase.h"
 #include "WPILib/Task.h"
+#include "WPILib/DriverStation.h"
 
 // A simple implementation of receiving motor values over UDP and sending
 // joystick data back out.
@@ -25,7 +26,7 @@
 // This class takes care of disabling outputs when no packets are received in
 // kDisableTime and feeding the Watchdog correctly.
 //
-// The receiving interface consists of receiving NetworkRobotValues structs on
+// The receiving interface consists of receiving NetworkRobotMotors structs on
 // a given UDP port from a given sender address. Each time a set of motor values
 // is received, this class will update all output values.
 //
@@ -42,9 +43,7 @@ class NetworkRobot : public RobotBase, public ErrorBase {
                UINT16 send_port, const char *receiver_address);
   virtual ~NetworkRobot();
 
-  virtual void StartCompetition();
-
-  // Called when a valid packet has been received into values_.
+  // Called when a valid packet has been received into motors_.
   // Subclasses can override if they want to do more, however they still need to
   // call this implementation.
   virtual void ProcessPacket();
@@ -64,10 +63,12 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // Deals with calling inet_aton and passing any errors on to the logging
   // system. A helper is necessary here because inet_aton is normally just kind
   // of annoying to deal with, but under vxworks, you have to make a copy of the
-  // string before doing anything with etc etc so it's really complicated.
+  // string before doing anything with it etc etc so it's really complicated.
   // Returns whether or not it was successful. If it returns false, then an
   // error will have already been recorded.
   bool FillinInAddr(const char *const_ip, in_addr *inet_address);
+
+  virtual void StartCompetition();
 
   // Cleans everything up after the main loop encounters an error so that it can
   // try again.
@@ -77,7 +78,8 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // Returns whether or not there is readable data available.
   bool WaitForData();
 
-  // Receives a packet and calls ProcessPacket() if it's a good one.
+  // Attempts to receive a packet (with WaitForData()) and calls ProcessPacket()
+  // if it's a good one.
   void ReceivePacket();
 
   // Gets run in its own task to take DS data and send it out.
@@ -101,10 +103,13 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   const char *const receiver_address_;
 
   int receive_socket_;
-  NetworkRobotMotors values_;
+  NetworkRobotMotors motors_;
 
   int send_socket_;
   NetworkRobotJoysticks joystick_values_;
+  // A task set up to run StaticSendLoop (aka SendLoop()).
+  // Only actually gets used if we're going to do both parts (sending and
+  // receiving).
   Task send_task_;
 
   // Helper function to copy all of the data for a single joystick into
@@ -114,6 +119,11 @@ class NetworkRobot : public RobotBase, public ErrorBase {
 
   // Using Timer::GetPPCTimestamp() values.
   double last_received_timestamp_;
+
+  // What the last state we sent out was.
+  // Kept track of so that we can more accurately report it back.
+  DriverStation::FMSState last_sent_state_;
+  bool last_sent_state_valid_;
 
   // Ownership of the pointers stored here stays in DigitalModule.
   DigitalModule *digital_modules_[2];

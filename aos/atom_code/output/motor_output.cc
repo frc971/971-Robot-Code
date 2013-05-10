@@ -63,6 +63,8 @@ void MotorOutput::Run() {
 void MotorOutput::SetSolenoid(uint8_t channel, bool set) {
   if (set) {
     values_.solenoid_values |= 1 << (channel - 1);
+  } else {
+    values_.solenoid_values &= ~(1 << (channel - 1));
   }
 }
 
@@ -80,6 +82,8 @@ void MotorOutput::SetDigitalOutput(uint8_t channel, bool value) {
   values_.digital_output_enables |= 1 << shift_amount;
   if (value) {
     values_.digital_output_values |= 1 << shift_amount;
+  } else {
+    values_.digital_output_values &= ~(1 << shift_amount);
   }
 }
 

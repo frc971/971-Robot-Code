@@ -4,6 +4,8 @@
 // This file defines several types to support nicely looking at the data
 // received from the driver's station.
 
+#include <assert.h>
+
 #include <memory>
 
 #include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
@@ -18,6 +20,10 @@ class JoystickFeature {
  public:
   JoystickFeature(int joystick, int number)
       : joystick_(joystick), number_(number) {}
+
+  // How many joysticks there are.
+  static const int kJoysticks = sizeof(NetworkRobotJoysticks::joysticks) /
+                                sizeof(NetworkRobotJoysticks::joysticks[0]);
 
   // Which joystick number this is (1-based).
   int joystick() const { return joystick_; }
@@ -35,6 +41,9 @@ class ButtonLocation : public JoystickFeature {
  public:
   ButtonLocation(int joystick, int number)
       : JoystickFeature(joystick, number) {}
+
+  // How many buttons there are available on each joystick.
+  static const int kButtons = 12;
 };
 
 // Represents various bits of control information that the DS sends.
@@ -50,6 +59,10 @@ class JoystickAxis : public JoystickFeature {
  public:
   JoystickAxis(int joystick, int number)
       : JoystickFeature(joystick, number) {}
+
+  // How many axes there are available on each joystick.
+  static const int kAxes = sizeof(NetworkRobotJoysticks::Joystick::axes) /
+                           sizeof(NetworkRobotJoysticks::Joystick::axes[0]);
 };
 
 class Data {

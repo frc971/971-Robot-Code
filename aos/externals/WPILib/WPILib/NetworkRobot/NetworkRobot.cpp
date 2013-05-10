@@ -14,7 +14,6 @@
 #include "WPILib/Utility.h"
 #include "WPILib/WPIErrors.h"
 #include "WPILib/SensorBase.h"
-#include "WPILib/DriverStation.h"
 #include "WPILib/Timer.h"
 
 const double NetworkRobot::kDisableTime = 0.15;
@@ -27,6 +26,7 @@ NetworkRobot::NetworkRobot(UINT16 receive_port, const char *sender_address,
       joystick_values_(),
       send_task_("DS_Send", reinterpret_cast<FUNCPTR>(StaticSendLoop)),
       last_received_timestamp_(0.0),
+      last_sent_state_valid_(false),
       digital_modules_(), solenoid_bases_(),
       allocated_digital_outputs_() {
 }
@@ -40,10 +40,10 @@ NetworkRobot::~NetworkRobot() {
     close(send_socket_);
   }
 
-  for (size_t i = 0;
-       i < sizeof(solenoid_bases_) / sizeof(solenoid_bases_[0]);
-       ++i) {
-    delete solenoid_bases_[i];
+  for (size_t module = 0;
+       module < sizeof(solenoid_bases_) / sizeof(solenoid_bases_[0]);
+       ++module) {
+    delete solenoid_bases_[module];
   }
   for (size_t module = 0;
        module < sizeof(digital_modules_) / sizeof(digital_modules_[0]);
@@ -100,6 +100,7 @@ void NetworkRobot::StartCompetition() {
     }
 
     if (sender_address_ != NULL) {
+      // We only need to do it in a separate task if we're doing both parts.
       if (receiver_address_ != NULL) {
         send_task_.Start(reinterpret_cast<uintptr_t>(this));
       }
@@ -145,7 +146,7 @@ void NetworkRobot::StopOutputs() {
   // as dangerous as leaving them on, so just leave them alone.
 
   // We took care of it, so we don't want the watchdog to permanently disable
-  // us.
+  // everything.
   m_watchdog.Feed();
 }
 
@@ -179,36 +180,42 @@ bool NetworkRobot::WaitForData() {
   timeout.tv_sec = 0;
   timeout.tv_usec = kDisableTime *
       1000.0 /*seconds to mseconds*/ *
-      1000.0 /*mseconds to useconds*/;
+      1000.0 /*mseconds to useconds*/ + 0.5;
 
   fd_set fds;
   FD_ZERO(&fds);
   FD_SET(receive_socket_, &fds);
 
   int ret = select(receive_socket_ + 1,
-                   &fds, // read fds
-                   NULL, // write fds
-                   NULL, // exception fds (not supported)
+                   &fds,  // read fds
+                   NULL,  // write fds
+                   NULL,  // exception fds (not supported)
                    &timeout);
   if (ret == 0) {
     // timeout
     return false;
   } else if (ret == 1) {
     return true;
+  } else if (ret != -1) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "select returned %d", ret);
+    wpi_setErrorWithContext(-1, buf);
+    return false;
+  } else {
+    wpi_setErrnoErrorWithContext("waiting until the socket has data");
+    return false;
   }
-  wpi_setErrnoErrorWithContext("waiting until the socket has data");
-  return false;
 }
 
 void NetworkRobot::ReceivePacket() {
   if (!WaitForData()) return;
 
+  char buffer[sizeof(motors_) + buffers::kOverhead];
   union {
     sockaddr addr;
     sockaddr_in in;
   } sender_address;
   int sender_address_length = sizeof(sender_address);
-  char buffer[sizeof(values_) + buffers::kOverhead];
   int received = recvfrom(receive_socket_,
                           buffer,
                           sizeof(buffer),
@@ -224,8 +231,8 @@ void NetworkRobot::ReceivePacket() {
     wpi_setErrnoErrorWithContext("recvfrom on motor value socket");
     return;
   }
-  wpi_assert(static_cast<size_t>(sender_address_length) >=
-             sizeof(sender_address.in));
+  assert(static_cast<size_t>(sender_address_length) >=
+         sizeof(sender_address.in));
   if (sender_address.in.sin_addr.s_addr !=
       expected_sender_address_.s_addr) {
     char address[INET_ADDR_LEN];
@@ -236,7 +243,7 @@ void NetworkRobot::ReceivePacket() {
     return;
   }
 
-  if (values_.DeserializeFrom(buffer, sizeof(buffer))) {
+  if (motors_.DeserializeFrom(buffer, sizeof(buffer))) {
     ProcessPacket();
   } else {
     char buf[64];
@@ -248,12 +255,13 @@ void NetworkRobot::ReceivePacket() {
 }
 
 void NetworkRobot::ProcessPacket() {
-  int8_t digital_number = values_.digital_module;
+  int8_t digital_number = motors_.digital_module;
   if (digital_number != -1) {
     if (digital_number == 0) {
       digital_number = SensorBase::GetDefaultDigitalModule();
     }
-    if (digital_number < 1 || digital_number > 2) {
+    if (digital_number < 1 ||
+        digital_number > static_cast<int32_t>(SensorBase::kDigitalModules)) {
       char buf[64];
       snprintf(buf, sizeof(buf), "Got Digital Module %d",
                static_cast<int>(digital_number));
@@ -270,7 +278,7 @@ void NetworkRobot::ProcessPacket() {
     }
 
     for (int i = 0; i < 10; ++i) {
-      digital_module->SetPWM(i + 1, values_.pwm_outputs[i]);
+      digital_module->SetPWM(i + 1, motors_.pwm_outputs[i]);
     }
 
     uint16_t old_allocated = allocated_digital_outputs_[digital_number - 1];
@@ -279,35 +287,36 @@ void NetworkRobot::ProcessPacket() {
     for (int i = 0; i < 16; ++i) {
       // If we have it allocated and this packet says we shouldn't.
       if ((old_allocated & (1 << i)) &&
-          !(values_.digital_output_enables & (1 << i))) {
+          !(motors_.digital_output_enables & (1 << i))) {
         digital_module->FreeDIO(15 - i);
         allocated_digital_outputs_[digital_number - 1] &= ~(1 << i);
       // If this packet says we should have it allocated and we don't.
-      } else if ((values_.digital_output_enables & (1 << i)) &&
+      } else if ((motors_.digital_output_enables & (1 << i)) &&
                  !(old_allocated & (1 << i))) {
         if (!digital_module->AllocateDIO(15 - i, false /*input*/)) return;
         allocated_digital_outputs_[digital_number - 1] |= 1 << i;
       }
     }
     wpi_assertEqual(allocated_digital_outputs_[digital_number - 1],
-                    values_.digital_output_enables);
-    digital_module->SetDIOs(values_.digital_output_enables,
-                            values_.digital_output_values);
+                    motors_.digital_output_enables);
+    digital_module->SetDIOs(motors_.digital_output_enables,
+                            motors_.digital_output_values);
 
-    if (values_.pressure_switch_channel != 0 &&
-        values_.compressor_channel != 0) {
-      digital_module->SetRelayForward(values_.compressor_channel,
+    if (motors_.pressure_switch_channel != 0 &&
+        motors_.compressor_channel != 0) {
+      digital_module->SetRelayForward(motors_.compressor_channel,
                                       !digital_module->GetDIO(
-                                          values_.pressure_switch_channel));
+                                          motors_.pressure_switch_channel));
     }
   }
 
-  int8_t solenoid_number = values_.solenoid_module;
+  int8_t solenoid_number = motors_.solenoid_module;
   if (solenoid_number != -1) {
     if (solenoid_number == 0) {
       solenoid_number = SensorBase::GetDefaultSolenoidModule();
     }
-    if (solenoid_number < 1 || solenoid_number > 2) {
+    if (solenoid_number < 1 ||
+        solenoid_number > static_cast<int32_t>(SensorBase::kSolenoidModules)) {
       char buf[64];
       snprintf(buf, sizeof(buf), "Got Solenoid Module %d",
                static_cast<int>(solenoid_number));
@@ -320,17 +329,17 @@ void NetworkRobot::ProcessPacket() {
           new SolenoidBase(solenoid_number);
     }
 
-    solenoid_base->SetAll(values_.solenoid_values);
+    solenoid_base->SetAll(motors_.solenoid_values);
   }
 
-  // This code can only assume that whatever is sending it values knows what
-  // state it should be in.
-  DriverStation::FMSState state = m_ds->GetCurrentState();
-  {
-    // Don't have to synchronize around getting the current state too because
+  // This code can only assume that whatever is sending it values received the
+  // most recent state that it sent out.
+  if (last_sent_state_valid_) {
+    // Don't have to synchronize with writing the last sent state too because
     // it's ok if we're 1 cycle off. It would just be bad if we reported not
     // being in any state or in 2 states at once.
     RWLock::Locker state_locker(m_ds->GetUserStateLock(), true);
+    const DriverStation::FMSState state = last_sent_state_;
     m_ds->InDisabled(state == DriverStation::FMSState::kDisabled);
     m_ds->InAutonomous(state == DriverStation::FMSState::kAutonomous);
     m_ds->InOperatorControl(state == DriverStation::FMSState::kTeleop);
@@ -367,6 +376,9 @@ void NetworkRobot::SendLoop() {
       joystick_values_.control.set_fms_attached(data->fmsAttached);
       joystick_values_.control.set_autonomous(data->autonomous);
       joystick_values_.control.set_enabled(data->enabled);
+
+      last_sent_state_ = m_ds->GetCurrentState();
+      last_sent_state_valid_ = true;
     }
     ++joystick_values_.index;
 
