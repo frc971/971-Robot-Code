@@ -29,7 +29,7 @@ Dashboard::Dashboard(SEM_ID statusDataSem)
 {
 	m_userStatusData = new char[kMaxDashboardDataSize];
 	m_localBuffer = new char[kMaxDashboardDataSize];
-	m_localPrintBuffer = new char[kMaxDashboardDataSize * 2];
+	m_localPrintBuffer = new char[kLocalPrintBufferSize];
 	m_localPrintBuffer[0] = 0;
 	m_packPtr = m_localBuffer;
 	m_printSemaphore = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE);
@@ -275,7 +275,7 @@ void Dashboard::Printf(const char *writeFmt, ...)
 	va_start (args, writeFmt);
 	{
 		Synchronized sync(m_printSemaphore);
-		vsprintf(m_localPrintBuffer + strlen(m_localPrintBuffer), writeFmt, args);
+		vsnprintf(m_localPrintBuffer + strlen(m_localPrintBuffer), kLocalPrintBufferSize - strlen(m_localPrintBuffer), writeFmt, args);
 		size = strlen(m_localPrintBuffer);
 	}
 	if (size > kMaxDashboardDataSize)

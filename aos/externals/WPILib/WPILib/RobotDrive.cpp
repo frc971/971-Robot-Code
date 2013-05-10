@@ -725,7 +725,7 @@ void RobotDrive::SetSafetyEnabled(bool enabled)
 
 void RobotDrive::GetDescription(char *desc)
 {
-	sprintf(desc, "RobotDrive");
+	snprintf(desc, 64, "RobotDrive");
 }
 
 void RobotDrive::StopMotor()

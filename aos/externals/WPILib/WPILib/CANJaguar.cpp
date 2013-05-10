@@ -1223,7 +1223,7 @@ void CANJaguar::SetSafetyEnabled(bool enabled)
 
 void CANJaguar::GetDescription(char *desc)
 {
-	sprintf(desc, "CANJaguar ID %d", m_deviceNumber);
+	snprintf(desc, 64, "CANJaguar ID %d", m_deviceNumber);
 }
 
 /**
