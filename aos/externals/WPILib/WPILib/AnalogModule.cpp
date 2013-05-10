@@ -14,7 +14,8 @@ const long AnalogModule::kTimebase; ///< 40 MHz clock
 const long AnalogModule::kDefaultOversampleBits;
 const long AnalogModule::kDefaultAverageBits;
 const float AnalogModule::kDefaultSampleRate;
-SEM_ID AnalogModule::m_registerWindowSemaphore = NULL;
+// Needs to be global since the protected resource spans both module singletons.
+ReentrantSemaphore AnalogModule::m_registerWindowSemaphore;
 
 /**
  * Get an instance of an Analog Module.
@@ -70,12 +71,6 @@ AnalogModule::AnalogModule(UINT8 moduleNumber)
 		wpi_setError(localStatus);
 		SetAverageBits(i + 1, kDefaultAverageBits);
 		SetOversampleBits(i + 1, kDefaultOversampleBits);
-	}
-
-	if (m_registerWindowSemaphore == NULL)
-	{
-		// Needs to be global since the protected resource spans both module singletons.
-		m_registerWindowSemaphore = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE);
 	}
 }
 
