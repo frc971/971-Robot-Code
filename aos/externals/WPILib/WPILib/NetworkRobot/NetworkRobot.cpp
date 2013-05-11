@@ -442,7 +442,9 @@ void NetworkRobot::CreateReceiveSocket() {
   address.in.sin_port = receive_port_;
   address.in.sin_addr.s_addr = INADDR_ANY;
   if (bind(receive_socket_, &address.addr, sizeof(address.addr)) == ERROR) {
-    wpi_setErrnoErrorWithContext("Binding Socket");
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Binding Socket to 0.0.0.0:%d", receive_port_);
+    wpi_setErrnoErrorWithContext(buf);
     return;
   }
 
@@ -473,8 +475,11 @@ void NetworkRobot::CreateSendSocket() {
   address.in.sin_port = send_port_;
   if (!FillinInAddr(receiver_address_, &address.in.sin_addr)) return;
 
-  if (bind(send_socket_, &address.addr, sizeof(address.addr)) == ERROR) {
-    wpi_setErrnoErrorWithContext("Binding Socket");
+  if (connect(send_socket_, &address.addr, sizeof(address.addr)) == ERROR) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Connecting Socket to %s:%d",
+             receiver_address_, send_port_);
+    wpi_setErrnoErrorWithContext(buf);
     return;
   }
 }
