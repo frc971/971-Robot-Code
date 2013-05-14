@@ -19,8 +19,5 @@ AOS=`dirname $0`/..
 powerpc-wrs-vxworks-nm ${INPUTS} | \
   tclsh ${WIND_BASE}/host/resource/hutils/tcl/munch.tcl -c ppc > ${TEMPDIR}/ctdt.c
 powerpc-wrs-vxworks-gcc -I${AOS}/.. -c ${TEMPDIR}/ctdt.c -o ${TEMPDIR}/ctdt.o
-powerpc-wrs-vxworks-nm ${INPUTS} | \
-  ${AOS}/build/create_aos_ctdt.sh > ${TEMPDIR}/aos_ctdt.c
-powerpc-wrs-vxworks-gcc -I${AOS}/.. -c ${TEMPDIR}/aos_ctdt.c -o ${TEMPDIR}/aos_ctdt.o
-powerpc-wrs-vxworks-g++ ${INPUTS_FLAGS} ${TEMPDIR}/ctdt.o ${TEMPDIR}/aos_ctdt.o
+powerpc-wrs-vxworks-g++ ${INPUTS_FLAGS} ${TEMPDIR}/ctdt.o
 ln -f ${OUTPUT} `echo ${OUTPUT} | sed 's/lib\([A-Za-z0-9_]*\)\.so$/\1.out/'`

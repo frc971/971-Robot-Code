@@ -1,11 +1,7 @@
 #ifndef AOS_COMMON_TYPE_TRAITS_
 #define AOS_COMMON_TYPE_TRAITS_
 
-#ifndef __VXWORKS__
-#include <type_traits>
-#else
-#include "aos/crio/type_traits/type_traits"
-#endif
+#include "aos/common/libstdc++/type_traits"
 
 namespace aos {
 

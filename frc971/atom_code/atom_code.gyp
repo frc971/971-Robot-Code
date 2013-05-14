@@ -18,7 +18,6 @@
         '../control_loops/shooter/shooter.gyp:shooter',
         '../autonomous/autonomous.gyp:auto',
         '../input/input.gyp:JoystickReader',
-        '../input/input.gyp:sensor_receiver',
         '../input/input.gyp:GyroReader',
         #'../input/input.gyp:AutoMode',
         '../../vision/vision.gyp:OpenCVWorkTask',

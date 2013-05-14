@@ -42,13 +42,13 @@
 #include <cstddef>
 
 #if defined(_GLIBCXX_INCLUDE_AS_CXX0X)
-#  include "aos/crio/type_traits/tr1_impl/type_traits"
+#  include "aos/crio/libstdc++/tr1_impl/type_traits"
 #else
 #  define _GLIBCXX_INCLUDE_AS_CXX0X
 #  define _GLIBCXX_BEGIN_NAMESPACE_TR1
 #  define _GLIBCXX_END_NAMESPACE_TR1
 #  define _GLIBCXX_TR1
-#  include "aos/crio/type_traits/tr1_impl/type_traits"
+#  include "aos/crio/libstdc++/tr1_impl/type_traits"
 #  undef _GLIBCXX_TR1
 #  undef _GLIBCXX_END_NAMESPACE_TR1
 #  undef _GLIBCXX_BEGIN_NAMESPACE_TR1

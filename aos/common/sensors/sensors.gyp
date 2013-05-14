@@ -74,26 +74,5 @@
         '<(AOS)/common/common.gyp:queue_testutils',
       ],
     },
-    {
-      'target_name': 'sensor_broadcaster',
-      'type': 'static_library',
-      'sources': [
-        #'sensor_broadcaster-tmpl.h',
-      ],
-      'dependencies': [
-        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
-        '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:common',
-        'sensors',
-        'sensor_sink',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/crio/shared_libs/shared_libs.gyp:interrupt_notifier',
-        '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:common',
-        'sensors',
-        'sensor_sink',
-      ],
-    },
   ],
 }
