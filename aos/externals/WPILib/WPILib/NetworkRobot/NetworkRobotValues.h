@@ -83,7 +83,7 @@ class Read {
   }
 
   // Returns whether or not we ran over the end.
-  bool overrun() const { return current_index_ >= data_size_; }
+  bool overrun() const { return current_index_ > data_size_; }
 
  private:
   // Where we are reading or writing from. Not owned by this object.

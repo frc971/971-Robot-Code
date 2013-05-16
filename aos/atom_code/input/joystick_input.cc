@@ -50,9 +50,9 @@ void JoystickInput::Run() {
     {
       using driver_station::JoystickFeature;
       using driver_station::ButtonLocation;
-      for (int joystick = 0; joystick < JoystickFeature::kJoysticks;
+      for (int joystick = 1; joystick <= JoystickFeature::kJoysticks;
            ++joystick) {
-        for (int button = 0; button < ButtonLocation::kButtons; ++button) {
+        for (int button = 1; button <= ButtonLocation::kButtons; ++button) {
           ButtonLocation location(joystick, button);
           if (data.PosEdge(location)) {
             LOG(INFO, "PosEdge(%d, %d)\n", joystick, button);

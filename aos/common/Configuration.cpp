@@ -26,7 +26,7 @@ enum LogLevel {
   INFO,
   WARNING,
   ERROR = -1,
-  FATAL,
+  FATAL = 4,
 };
 #define LOG(level, format, args...) do { \
   fprintf(stderr, #level ": " format, ##args); \
