@@ -18,7 +18,6 @@
         '../atom_code/starter/starter.gyp:starter_exe',
         '../atom_code/starter/starter.gyp:netconsole',
         '../common/common.gyp:queue_test',
-        #'../common/messages/messages.gyp:*', # TODO(brians) did this test ever exist?
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/sensors/sensors.gyp:sensor_receiver_test',
