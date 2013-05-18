@@ -8,7 +8,6 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/aos_core.h"
 #include "aos/atom_code/ipc_lib/sharedmem_test_setup.h"
 #include "aos/common/type_traits.h"
 

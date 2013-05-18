@@ -1,6 +1,6 @@
 #include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
 
-#include "aos/aos_core.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 namespace http {

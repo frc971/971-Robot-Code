@@ -1,8 +1,0 @@
-args resource_child_args{
-	// 1 = request, 2 = release
-	uint8_t actions;
-}
-status resource_child_status{
-	bool success;
-}
-priority 70;

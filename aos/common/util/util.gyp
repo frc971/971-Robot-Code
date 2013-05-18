@@ -39,9 +39,6 @@
         '<(EXTERNALS):gtest',
         # TODO(brians): remove this when time no longer requires it
         '<(AOS)/build/aos.gyp:logging',
-        # TODO(brians): remove this when logging no longer requires it
-        #'<(AOS)/common/common.gyp:die',
-        '<(AOS)/build/aos.gyp:libaos',
       ],
     },
   ],

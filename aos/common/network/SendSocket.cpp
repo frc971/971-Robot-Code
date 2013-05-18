@@ -6,8 +6,8 @@
 #include <stddef.h>
 #include <math.h>
 
-#include "aos/aos_core.h"
 #include "aos/common/network/SocketLibraries.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 

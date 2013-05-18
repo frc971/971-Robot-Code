@@ -8,12 +8,10 @@
         'header_path': 'frc971/control_loops/shooter',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
@@ -27,7 +25,6 @@
         'shooter_motor_plant.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         'shooter_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
@@ -47,7 +44,6 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
         'shooter_loop',
         'shooter_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
@@ -61,7 +57,6 @@
         'shooter_csv.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
         'shooter_loop',

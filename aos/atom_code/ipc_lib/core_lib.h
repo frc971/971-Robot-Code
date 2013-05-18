@@ -1,7 +1,6 @@
 #ifndef _AOS_CORE_LIB_H_
 #define _AOS_CORE_LIB_H_
 
-// required by resource.h
 // defined in shared_mem.c
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +13,6 @@ extern struct aos_core *global_core;
 #include "aos_sync.h"
 #include "queue.h"
 #include <stdint.h>
-#include "resource_core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +35,6 @@ typedef struct aos_shm_core_t {
   mutex msg_alloc_lock;
   void *msg_alloc;
   aos_queue_hash queues;
-  aos_resource_list resources;
 } aos_shm_core;
 
 void init_shared_mem_core(aos_shm_core *shm_core);

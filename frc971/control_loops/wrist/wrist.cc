@@ -4,12 +4,9 @@
 
 #include <algorithm>
 
-#include "aos/aos_core.h"
-
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
-#include "aos/atom_code/messages/DriverStationDisplay.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/wrist/wrist_motor_plant.h"
@@ -93,9 +90,6 @@ void WristMotor::RunIteration(
         position->pos,
         position->hall_effect ? "true" : "false",
         zeroed_joint_.absolute_position());
-
-    ::aos::DriverStationDisplay::Send(3, "wrist: %6.4f     ",
-                                      position->calibration);
   }
 
   if (output) {

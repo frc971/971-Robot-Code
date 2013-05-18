@@ -8,14 +8,11 @@
         'binheap.c',
         'core_lib.c',
         'queue.c',
-        'resource.c',
         'shared_mem.c',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:aos/ResourceList.h',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:aos/ResourceList.h',
+        # TODO(brians): fix this once there's a nice logging interface to use
+        # '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -26,18 +23,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
-      ],
-    },
-    {
-      'target_name': 'resource_test',
-      'type': 'executable',
-      'sources': [
-        'resource_test.cpp',
-      ],
-      'dependencies': [
-        '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'ipc_lib',
       ],
     },
     {
@@ -48,7 +34,8 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:libaos',
+        'ipc_lib',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

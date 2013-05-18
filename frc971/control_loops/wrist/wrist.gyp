@@ -8,12 +8,10 @@
         'header_path': 'frc971/control_loops/wrist',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(AOS)/common/common.gyp:control_loop_queues',
         '<(AOS)/common/common.gyp:queues',
       ],
@@ -28,12 +26,10 @@
         'unaugmented_wrist_motor_plant.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         'wrist_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:common',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
-        '<(AOS)/atom_code/messages/messages.gyp:messages',
       ],
       'export_dependent_settings': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',

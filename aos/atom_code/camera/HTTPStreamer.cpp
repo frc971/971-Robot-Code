@@ -16,8 +16,9 @@
 #include <vector>
 
 #include "aos/common/Configuration.h"
-#include "aos/aos_core.h"
+#include "aos/atom_code/init.h"
 #include "aos/atom_code/camera/Buffers.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 namespace camera {
@@ -385,4 +386,9 @@ class HTTPStreamer {
 }  // namespace camera
 }  // namespace aos
 
-AOS_RUN_NRT(aos::camera::HTTPStreamer)
+int main() {
+  ::aos::InitNRT();
+  ::aos::camera::HTTPStreamer streamer;
+  streamer.Run();
+  ::aos::Cleanup();
+}

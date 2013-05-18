@@ -1,11 +1,12 @@
 #include "stdio.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
-#include "frc971/autonomous/auto.q.h"
 #include "aos/common/messages/RobotState.q.h"
+#include "aos/common/logging/logging.h"
+
+#include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/wrist/wrist_motor.q.h"

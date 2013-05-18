@@ -13,9 +13,10 @@
 #include <string>
 #include <inttypes.h>
 
-#include "aos/aos_core.h"
+#include "aos/atom_code/init.h"
 #include "aos/atom_code/camera/V4L2.h"
 #include "aos/atom_code/camera/Buffers.h"
+#include "aos/common/logging/logging.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -407,5 +408,9 @@ const aos_type_sig Reader::kRecycleSignature{
 } // namespace camera
 } // namespace aos
 
-AOS_RUN_NRT(aos::camera::Reader)
-
+int main() {
+  ::aos::InitNRT();
+  ::aos::camera::Reader reader;
+  reader.Run();
+  ::aos::Cleanup();
+}

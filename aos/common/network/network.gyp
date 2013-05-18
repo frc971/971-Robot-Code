@@ -10,10 +10,9 @@
         'Socket.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
       ],
       'conditions': [
         ['OS=="crio"', {

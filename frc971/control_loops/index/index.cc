@@ -4,8 +4,6 @@
 
 #include <algorithm>
 
-#include "aos/aos_core.h"
-
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/inttypes.h"

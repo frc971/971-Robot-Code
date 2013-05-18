@@ -18,7 +18,6 @@
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:queues',
-        '<(AOS)/build/aos.gyp:libaos',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:queues',
@@ -33,7 +32,6 @@
         'header_path': 'frc971/queues',
       },
       'dependencies': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
       ],
       'direct_dependent_settings': {
         'variables': {

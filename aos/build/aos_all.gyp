@@ -17,9 +17,7 @@
         '../atom_code/ipc_lib/ipc_lib.gyp:*',
         '../atom_code/starter/starter.gyp:starter_exe',
         '../atom_code/starter/starter.gyp:netconsole',
-        '../crio/crio.gyp:unsafe_queue_test',
         '../common/common.gyp:queue_test',
-        #'../common/messages/messages.gyp:*', # TODO(brians) did this test ever exist?
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/sensors/sensors.gyp:sensor_receiver_test',
@@ -32,7 +30,6 @@
       'target_name': 'Crio',
       'type': 'none',
       'dependencies': [
-        '../crio/googletest/googletest.gyp:*',
         'Common',
       ],
     },

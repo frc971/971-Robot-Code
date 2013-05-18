@@ -9,13 +9,14 @@
         'ctemplate_cache.cc',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:libaos',
         '<(EXTERNALS):libevent',
         '<(EXTERNALS):ctemplate',
         '<(AOS)/common/common.gyp:once',
+        '<(AOS)/common/common.gyp:common',
+        '<(AOS)/common/common.gyp:scoped_fd',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
-# Our headers #include headers from both of these.
         '<(EXTERNALS):libevent',
         '<(EXTERNALS):ctemplate',
       ],
@@ -31,6 +32,7 @@
         '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/common.gyp:timing',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/network/network.gyp:socket',

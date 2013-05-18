@@ -7,18 +7,14 @@
         'jni.cpp',
       ],
       'dependencies': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
         '<(AOS)/common/network/network.gyp:socket_so',
         '<(AOS)/common/common.gyp:timing_so',
-        '<(AOS)/atom_code/messages/messages.gyp:messages_so',
         'private_aos_camera_jar',
         '<(EXTERNALS):libjpeg',
       ],
       'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:aos_shared_lib',
         '<(AOS)/common/network/network.gyp:socket_so',
         '<(AOS)/common/common.gyp:timing_so',
-        '<(AOS)/atom_code/messages/messages.gyp:messages_so',
         'private_aos_camera_jar',
       ],
     },
@@ -65,6 +61,7 @@
       'dependencies': [
         'buffers',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -76,6 +73,7 @@
       'dependencies': [
         'buffers',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

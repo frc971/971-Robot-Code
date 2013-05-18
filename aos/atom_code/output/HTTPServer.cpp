@@ -10,7 +10,6 @@
 
 #include "event2/event.h"
 
-#include "aos/aos_core.h"
 #include "aos/common/scoped_fd.h"
 #include "aos/common/unique_malloc_ptr.h"
 

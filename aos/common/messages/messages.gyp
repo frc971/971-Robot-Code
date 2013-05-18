@@ -53,12 +53,6 @@
       'variables': {
         'header_path': 'aos/common/messages',
       },
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:aos_internal_nolib',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/build/aos.gyp:aos_internal_nolib',
-      ],
       'direct_dependent_settings': {
         'variables': {
           'jni_libs': ['queues_so'],

@@ -10,10 +10,6 @@ void init_shared_mem_core(aos_shm_core *shm_core) {
 	shm_core->msg_alloc_lock = 0;
 	shm_core->queues.queue_list = NULL;
 	shm_core->queues.alloc_lock = 0;
-	aos_resource_entity_root_create();
-	for(int i = 0; i < AOS_RESOURCE_NUM; ++i){
-		aos_resource_init(i);
-	}
 }
 static inline uint8_t aos_8max(uint8_t l, uint8_t r) {
 	return (l > r) ? l : r;

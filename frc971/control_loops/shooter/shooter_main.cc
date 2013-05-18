@@ -1,6 +1,6 @@
 #include "frc971/control_loops/shooter/shooter.h"
 
-#include "aos/aos_core.h"
+#include "aos/atom_code/init.h"
 
 int main() {
   ::aos::Init();
