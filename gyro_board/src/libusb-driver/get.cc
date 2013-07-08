@@ -53,11 +53,10 @@ GyroDriver::GyroDriver(LibUSBDeviceHandle *dev_handle)
 
 std::string GyroDriver::GetDebugData() {
   char data[64];
-  int r;
   int transferred;
-  r = dev_handle_->bulk_transfer(0x82,
-      (unsigned char *)data, sizeof(data),
-      &transferred, 0);
+  dev_handle_->bulk_transfer(0x82,
+                             (unsigned char *)data, sizeof(data),
+                             &transferred, 0);
   return std::string(data, transferred);
 }
 
@@ -130,7 +129,7 @@ void GyroDriver::PacketReceiver::Run() {
     if (count < 100) continue;
     count = 0;
     
-    printf("angle: %"PRId64"\n", real_data->gyro_angle);
+    printf("angle: %" PRId64 "\n", real_data->gyro_angle);
     printf("drivel: %d\n", real_data->left_drive);
     printf("driver: %d\n", real_data->right_drive);
     printf("shooter: %d\n", real_data->shooter);

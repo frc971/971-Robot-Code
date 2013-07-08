@@ -225,7 +225,7 @@ class HTTPStreamer {
             to_write_ = snprintf(scratch_, sizeof(scratch_),
                                 "\r\n--boundarydonotcross\r\n"
                                 "Content-Type: image/jpeg\r\n"
-                                "Content-Length: %"PRId32"\r\n"
+                                "Content-Length: %" PRId32 "\r\n"
                                 "X-Timestamp: %ld.%06ld\r\n"
                                 "\r\n",
                                 size_,

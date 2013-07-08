@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "aos/common/macros.h"
 #include "aos/common/logging/logging.h"
 

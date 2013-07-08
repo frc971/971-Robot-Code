@@ -30,6 +30,8 @@ bool GetControlBitValue(const ControlBit bit,
       return values.control.autonomous();
     case ControlBit::kEnabled:
       return values.control.enabled();
+    default:
+      __builtin_unreachable();
   }
 }
 

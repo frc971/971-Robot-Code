@@ -187,7 +187,7 @@ class FileWatch {
       if (watchers.count(notifyevt->wd) != 1) {
         LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
       } else {
-        LOG(DEBUG, "mask=%"PRIu32"\n", notifyevt->mask);
+        LOG(DEBUG, "mask=%" PRIu32 "\n", notifyevt->mask);
         // If it was something that means the file got deleted.
         if (notifyevt->mask & (IN_MOVE_SELF | IN_DELETE_SELF | IN_IGNORED)) {
           watchers[notifyevt->wd]->WatchDeleted();

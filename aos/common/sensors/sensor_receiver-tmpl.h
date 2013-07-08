@@ -71,7 +71,8 @@ bool SensorReceiver<Values>::GoodPacket() {
       }
 #endif
     } else {
-      LOG(INFO, "packet %"PRId32" late. is packet #%d, wanted #%"PRId64" now\n",
+      LOG(INFO,
+          "packet %" PRId32 " late. is packet #%d, wanted #%" PRId64 " now\n",
           data_.count, (data_.count - start_count_) / kSendsPerCycle,
           (NextLoopTime() - start_time_).ToNSec() / kLoopFrequency.ToNSec());
       good = false;
@@ -163,8 +164,8 @@ bool SensorReceiver<Values>::Synchronize() {
         ReceiveData();
         received_time = time::Time::Now();
         if (GoodPacket()) {
-          LOG(DEBUG, "checking packet count=%"PRId32
-              " received at %"PRId32"s%"PRId32"ns\n",
+          LOG(DEBUG, "checking packet count=%" PRId32
+              " received at %" PRId32 "s%" PRId32 "ns\n",
               data_.count, received_time.sec(), received_time.nsec());
           // If |the difference between the goal time for this numbered packet
           // and the time we actually got this one| is too big.
@@ -172,7 +173,8 @@ bool SensorReceiver<Values>::Synchronize() {
                 kSensorSendFrequency * (data_.count - start_count_)) -
                received_time).abs() > kSensorSendFrequency) {
             LOG(INFO, "rejected time of the last good packet. "
-                "got %"PRId32"s%"PRId32"ns. wanted %"PRId32"s%"PRId32"ns\n",
+                "got %" PRId32 "s%" PRId32 "ns."
+                " wanted %" PRId32 "s%" PRId32 "ns\n",
                 received_time.sec(), received_time.nsec(),
                 goal_time.sec(), goal_time.nsec());
             ++bad_count;
@@ -199,18 +201,18 @@ bool SensorReceiver<Values>::ReceiveData() {
   DoReceiveData();
 
   if (data_.count < 0) {
-    LOG(FATAL, "data count overflowed. currently %"PRId32"\n", data_.count);
+    LOG(FATAL, "data count overflowed. currently %" PRId32 "\n", data_.count);
   }
   if (data_.count < old_count) {
-    LOG(INFO, "count reset. was %"PRId32", now %"PRId32"\n",
+    LOG(INFO, "count reset. was %" PRId32 ", now %" PRId32 "\n",
         old_count, data_.count);
     return true;
   }
   if (data_.count < start_count_) {
-    LOG(INFO, "count reset. started at %"PRId32", now %"PRId32"\n",
+    LOG(INFO, "count reset. started at %" PRId32 ", now %" PRId32 "\n",
         start_count_, data_.count);
   }
-  LOG(DEBUG, "received data count %"PRId32"\n", data_.count);
+  LOG(DEBUG, "received data count %" PRId32 "\n", data_.count);
   return false;
 }
 

@@ -38,14 +38,14 @@ ERROR_MSG
                        "float" => "%f",
                        "char" => "%c",
                        "double" => "%f",
-                       "uint8_t" => "%\"PRIu8\"",
-                       "uint16_t" => "%\"PRIu16\"",
-                       "uint32_t" => "%\"PRIu32\"",
-                       "uint64_t" => "%\"PRIu64\"",
-                       "int8_t" => "%\"PRId8\"",
-                       "int16_t" => "%\"PRId16\"",
-                       "int32_t" => "%\"PRId32\"",
-                       "int64_t" => "%\"PRId64\""}
+                       "uint8_t" => "%\" PRIu8 \"",
+                       "uint16_t" => "%\" PRIu16 \"",
+                       "uint32_t" => "%\" PRIu32 \"",
+                       "uint64_t" => "%\" PRIu64 \"",
+                       "int8_t" => "%\" PRId8 \"",
+                       "int16_t" => "%\" PRId16 \"",
+                       "int32_t" => "%\" PRId32 \"",
+                       "int64_t" => "%\" PRId64 \""}
         def toPrintFormat()
 		if(format = PrintFormat[@type])
 			return format;

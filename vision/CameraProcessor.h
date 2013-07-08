@@ -63,12 +63,12 @@ class ProcessorData {
 		cv::MemStorage g_storage; // opencv storage
 		static const int HIST_SIZE = 20; // dimension of histogram
 								 // ie number of scan lines
-		static const double HIST_SIZE_F = 1.0/20.0; // step size
+		static constexpr double HIST_SIZE_F = 1.0/20.0; // step size
 											// should be 1/HIST_SIZE
 		double vert_hist[HIST_SIZE]; // desired vertical histogram
 		double horz_hist[HIST_SIZE]; // desired horizontal histogram
 		// defines the minimum dist for a match
-		static const double HIST_MATCH = 1.9;
+		static constexpr double HIST_MATCH = 1.9;
 		double calcHistComponent(
 				cv::Point2i start,
 				cv::Point2i end,

@@ -26,7 +26,7 @@ int LogStreamerMain() {
   InitNRT();
 
   const time::Time now = time::Time::Now();
-  printf("starting at %"PRId32"s%"PRId32"ns---------------------------------\n",
+  printf("starting at %" PRId32 "s%" PRId32 "ns-----------------------------\n",
          now.sec(), now.nsec());
 
   int index = 0;

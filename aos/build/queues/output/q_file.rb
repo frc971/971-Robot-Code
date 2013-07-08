@@ -1,4 +1,9 @@
-require "sha1"
+begin
+  require "sha1"
+rescue LoadError
+  require "digest/sha1"
+end
+
 module Target
 end
 class Target::Node
@@ -76,7 +81,7 @@ class Target::QueueGroupDec < Target::Node
 		ts = (@queues.collect { |queue|
 			queue.msg_hash()
 		}).join("") + name
-		return "0x#{SHA1.hexdigest(ts)[-8..-1]}"
+		return "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
 	end
 	def create(cpp_tree)
 		return if(@extern)

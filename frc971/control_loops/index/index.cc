@@ -235,7 +235,8 @@ void IndexMotor::RunIteration(
   // Make goal easy to work with and sanity check it.
   Goal goal_enum = static_cast<Goal>(goal->goal_state);
   if (goal->goal_state < 0 || goal->goal_state > 5) {
-    LOG(ERROR, "Goal state is %"PRId32" which is out of range.  Going to HOLD.\n",
+    LOG(ERROR,
+        "Goal state is %" PRId32 " which is out of range.  Going to HOLD.\n",
         goal->goal_state);
     goal_enum = Goal::HOLD;
   }
@@ -783,7 +784,7 @@ void IndexMotor::RunIteration(
           }
           if (hopper_disc_count_ != 0) {
             LOG(ERROR,
-                "Emptied the hopper out but there are still %"PRId32" discs there\n",
+                "Emptied the hopper out but there are still %" PRId32 " discs there\n",
                 hopper_disc_count_);
             hopper_disc_count_ = 0;
           }
@@ -811,7 +812,7 @@ void IndexMotor::RunIteration(
       case Goal::INTAKE:
         safe_goal_ = Goal::READY_SHOOTER;
         safe_to_change_state = false;
-        LOG(INFO, "We have %"PRId32" discs, time to preload automatically\n",
+        LOG(INFO, "We have %" PRId32 " discs, time to preload automatically\n",
             hopper_disc_count_);
         break;
       case Goal::READY_SHOOTER:

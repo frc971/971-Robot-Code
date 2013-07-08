@@ -109,7 +109,7 @@ Values *values = NULL;
 const Values *GetValues() {
   // TODO(brians): Make this use the new Once construct.
   if (values == NULL) {
-    LOG(INFO, "creating a Constants for team %"PRIu16"\n",
+    LOG(INFO, "creating a Constants for team %" PRIu16 "\n",
         ::aos::robot_state->team_id);
     switch (::aos::robot_state->team_id) {
       case kCompTeamNumber:
@@ -151,7 +151,7 @@ const Values *GetValues() {
                             kPracticeCameraCenter};
         break;
       default:
-        LOG(ERROR, "unknown team #%"PRIu16"\n",
+        LOG(ERROR, "unknown team #%" PRIu16 "\n",
             aos::robot_state->team_id);
         return NULL;
     }

@@ -70,7 +70,7 @@ Time Time::Now(clockid_t clock) {
 
 void Time::Check() {
   if (nsec_ >= kNSecInSec || nsec_ < 0) {
-    LOG(FATAL, "0 <= nsec_(%"PRId32") < %"PRId32" isn't true.\n",
+    LOG(FATAL, "0 <= nsec_(%" PRId32 ") < %" PRId32 " isn't true.\n",
         nsec_, kNSecInSec);
   }
   static_assert(aos::shm_ok<Time>::value,

@@ -53,7 +53,7 @@ class LoggingTest : public ::testing::Test {
     }
     internal::Context *context = internal::Context::Get();
     if (log_implementation->message().source != context->source) {
-      Die("got a message from %"PRIu32", but we're %"PRIu32"\n",
+      Die("got a message from %" PRIu32 ", but we're %" PRIu32 "\n",
           static_cast<uint32_t>(log_implementation->message().source),
           static_cast<uint32_t>(context->source));
     }

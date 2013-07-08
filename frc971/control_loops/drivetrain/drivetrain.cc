@@ -248,12 +248,6 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     bad_pos = true;
   }
 
-  bool bad_output = false;
-  if (output == NULL) {
-    LOG(WARNING, "no output\n");
-    bad_output = true;
-  }
-
   double wheel = goal->steering;
   double throttle = goal->throttle;
   bool quickturn = goal->quickturn;

@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
 
 AOS=`dirname $0`/..
 EXTERNALS=${AOS}/externals
@@ -9,7 +11,7 @@ GCCDIST=${EXTERNALS}/gccdist
 [ -d ${GCCDIST} ] || ( cd ${EXTERNALS} && unzip -q ${GCCDIST}.zip )
 
 # get eigen
-EIGEN_VERSION=3.0.5
+EIGEN_VERSION=3.1.3
 EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
@@ -46,16 +48,24 @@ TMPDIR=/tmp/$$-aos-tmpdir
 [ -d ${GTEST_DIR} ] || ( unzip ${GTEST_ZIP} -d ${TMPDIR} && mv ${TMPDIR}/gtest-${GTEST_VERSION} ${GTEST_DIR} && cd ${GTEST_DIR} && patch -p1 < ../gtest.patch )
 
 # get and build ctemplate
-CTEMPLATE_VERSION=2.2
+# This is the next revision after the 2.2 release and it only adds spaces to
+# make gcc 4.7 with --std=c++11 happy (user-defined string literals...).
+CTEMPLATE_VERSION=129
 CTEMPLATE_DIR=${EXTERNALS}/ctemplate-${CTEMPLATE_VERSION}
 CTEMPLATE_PREFIX=${CTEMPLATE_DIR}-prefix
 CTEMPLATE_LIB=${CTEMPLATE_PREFIX}/lib/libctemplate.a
-CTEMPLATE_URL=http://ctemplate.googlecode.com/files
-CTEMPLATE_URL=${CTEMPLATE_URL}/ctemplate-${CTEMPLATE_VERSION}.tar.gz
-[ -f ${CTEMPLATE_DIR}.tar.gz ] || \
-	wget ${CTEMPLATE_URL} -O ${CTEMPLATE_DIR}.tar.gz
-[ -d ${CTEMPLATE_DIR} ] || ( mkdir ${CTEMPLATE_DIR} && tar \
-	--strip-components=1 -C ${CTEMPLATE_DIR} -xf ${CTEMPLATE_DIR}.tar.gz )
+CTEMPLATE_URL=http://ctemplate.googlecode.com
+if [[ "${CTEMPLATE_VERSION}" =~ /\./ ]]; then
+	CTEMPLATE_URL=${CTEMPLATE_URL}/files/ctemplate-${CTEMPLATE_VERSION}.tar.gz
+	[ -f ${CTEMPLATE_DIR}.tar.gz ] || \
+		wget ${CTEMPLATE_URL} -O ${CTEMPLATE_DIR}.tar.gz
+	[ -d ${CTEMPLATE_DIR} ] || ( mkdir ${CTEMPLATE_DIR} && tar \
+		--strip-components=1 -C ${CTEMPLATE_DIR} -xf ${CTEMPLATE_DIR}.tar.gz )
+else
+	CTEMPLATE_URL=${CTEMPLATE_URL}/svn/trunk
+	[ -d ${CTEMPLATE_DIR} ] || \
+		svn checkout ${CTEMPLATE_URL} -r ${CTEMPLATE_VERSION} ${CTEMPLATE_DIR}
+fi
 [ -f ${CTEMPLATE_LIB} ] || env -i PATH="${PATH}" \
 	CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
 	bash -c "cd ${CTEMPLATE_DIR} && ./configure --disable-shared \
@@ -96,3 +106,18 @@ COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
 COMPILER_RT_DIR=${EXTERNALS}/compiler-rt-${COMPILER_RT_VERSION}
 COMPILER_RT_URL=http://llvm.org/svn/llvm-project/compiler-rt/tags/${COMPILER_RT_TAG}
 [ -d ${COMPILER_RT_DIR} ] || svn checkout ${COMPILER_RT_URL} ${COMPILER_RT_DIR}
+
+# get and build libevent
+LIBEVENT_VERSION=2.0.21
+LIBEVENT_DIR=${EXTERNALS}/libevent-${LIBEVENT_VERSION}
+LIBEVENT_PREFIX=${LIBEVENT_DIR}-prefix
+LIBEVENT_LIB=${LIBEVENT_PREFIX}/lib/libevent.a
+LIBEVENT_URL=https://github.com/downloads/libevent/libevent
+LIBEVENT_URL=${LIBEVENT_URL}/libevent-${LIBEVENT_VERSION}-stable.tar.gz
+[ -f ${LIBEVENT_DIR}.tar.gz ] || wget ${LIBEVENT_URL} -O ${LIBEVENT_DIR}.tar.gz
+[ -d ${LIBEVENT_DIR} ] || ( mkdir ${LIBEVENT_DIR} && tar \
+  --strip-components=1 -C ${LIBEVENT_DIR} -xf ${LIBEVENT_DIR}.tar.gz )
+[ -f ${LIBEVENT_LIB} ] || env -i PATH="${PATH}" \
+  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
+  bash -c "cd ${LIBEVENT_DIR} && ./configure \
+  --prefix=`readlink -f ${LIBEVENT_PREFIX}` && make && make install"

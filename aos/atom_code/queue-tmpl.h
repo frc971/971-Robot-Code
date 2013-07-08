@@ -171,7 +171,8 @@ template <class T>
 void Queue<T>::Init() {
   if (queue_ == NULL) {
     // Signature of the message.
-    aos_type_sig kQueueSignature{sizeof(T), T::kHash, T::kQueueLength};
+    aos_type_sig kQueueSignature{sizeof(T), static_cast<int>(T::kHash),
+      T::kQueueLength};
 
     queue_ = aos_fetch_queue(queue_name_, &kQueueSignature);
     queue_msg_.set_queue(queue_);

@@ -258,13 +258,14 @@ class QueueTest : public SharedMemTestSetup {
         aos_queue_read_msg(args->queue, args->flags));
     if (msg == NULL) {
       if (args->data != -1) {
-        snprintf(failure, kFailureSize, "expected data of %"PRId16" but got NULL message",
+        snprintf(failure, kFailureSize,
+                 "expected data of %" PRId16 " but got NULL message",
                  args->data);
       }
     } else {
       if (args->data != msg->data) {
         snprintf(failure, kFailureSize,
-                 "expected data of %"PRId16" but got %"PRId16" instead",
+                 "expected data of %" PRId16 " but got %" PRId16 " instead",
                  args->data, msg->data);
       }
       aos_queue_free_msg(args->queue, msg);

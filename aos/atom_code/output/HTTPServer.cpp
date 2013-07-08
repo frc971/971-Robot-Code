@@ -25,7 +25,7 @@ HTTPServer::HTTPServer(const char *directory, uint16_t port) :
     LOG(FATAL, "couldn't create an evhttp\n");
   }
   if (evhttp_bind_socket(http_, "0.0.0.0", port) != 0) {
-    LOG(FATAL, "evhttp_bind_socket(%p, \"0.0.0.0\", %"PRIu16") failed\n",
+    LOG(FATAL, "evhttp_bind_socket(%p, \"0.0.0.0\", %" PRIu16 ") failed\n",
         http_, port);
   }
   evhttp_set_gencb(http_, StaticServeFile, this);

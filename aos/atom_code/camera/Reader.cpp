@@ -121,10 +121,11 @@ class Reader {
 
   void QueueBuffer(v4l2_buffer *buf) {
     if (xioctl(fd_, VIDIOC_QBUF, buf) == -1) {
-      LOG(WARNING, "ioctl VIDIOC_QBUF(%d, %p) failed with %d: %s. losing buf #%"PRIu32"\n",
+      LOG(WARNING, "ioctl VIDIOC_QBUF(%d, %p) failed with %d: %s."
+          " losing buf #%" PRIu32 "\n",
           fd_, &buf, errno, strerror(errno), buf->index);
     } else {
-      LOG(DEBUG, "put buf #%"PRIu32" into driver's queue\n", buf->index);
+      LOG(DEBUG, "put buf #%" PRIu32 " into driver's queue\n", buf->index);
       ++queued_;
     }
   }
@@ -156,7 +157,7 @@ class Reader {
     }
     --queued_;
     if (buf.index >= Buffers::kNumBuffers) {
-      LOG(ERROR, "buf.index (%"PRIu32") is >= kNumBuffers (%u)\n",
+      LOG(ERROR, "buf.index (%" PRIu32 ") is >= kNumBuffers (%u)\n",
           buf.index, Buffers::kNumBuffers);
       return;
     }
@@ -164,7 +165,8 @@ class Reader {
     Buffers::Message *const msg = static_cast<Buffers::Message *>(
         aos_queue_get_msg(queue_));
     if (msg == NULL) {
-      LOG(WARNING, "couldn't get a message to send buf #%"PRIu32" from queue %p."
+      LOG(WARNING,
+          "couldn't get a message to send buf #%" PRIu32 " from queue %p."
           " re-queueing now\n", buf.index, queue_);
       QueueBuffer(&buf);
       return;
@@ -174,12 +176,13 @@ class Reader {
     memcpy(&msg->timestamp, &buf.timestamp, sizeof(msg->timestamp));
     msg->sequence = buf.sequence;
     if (aos_queue_write_msg_free(queue_, msg, OVERRIDE) == -1) {
-      LOG(WARNING, "sending message %p with buf #%"PRIu32" to queue %p failed."
+      LOG(WARNING,
+          "sending message %p with buf #%" PRIu32 " to queue %p failed."
           " re-queueing now\n", msg, buf.index, queue_);
       QueueBuffer(&buf);
       return;
     } else {
-      LOG(DEBUG, "sent message off to queue %p with buffer #%"PRIu32"\n",
+      LOG(DEBUG, "sent message off to queue %p with buffer #%" PRIu32 "\n",
           queue_, buf.index);
     }
   }
@@ -207,8 +210,8 @@ class Reader {
   // Sets one of the camera's user-control values.
   // Prints the old and new values.
   // Just prints a message if the camera doesn't support this control or value.
-  bool SetCameraControl(int id, const char *name, int value) {
-    struct v4l2_control getArg = {id, 0};
+  bool SetCameraControl(uint32_t id, const char *name, int value) {
+    struct v4l2_control getArg = {id, 0U};
     int r = xioctl(fd_, VIDIOC_G_CTRL, &getArg);
     if (r == 0) {
       if (getArg.value == value) {

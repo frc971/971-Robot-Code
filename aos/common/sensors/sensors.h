@@ -69,7 +69,7 @@ struct SensorData {
                                           sizeof(checksum),
                                           sizeof(*this) - sizeof(checksum));
     if (checksum != expected) {
-      LOG(INFO, "expected %"PRIx32" but got %"PRIx32"\n",
+      LOG(INFO, "expected %" PRIx32 " but got %" PRIx32 "\n",
           expected, checksum);
       return false;
     }

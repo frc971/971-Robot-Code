@@ -1,4 +1,9 @@
-require "sha1"
+begin
+  require "sha1"
+rescue LoadError
+  require "digest/sha1"
+end
+
 class Target::MessageDec < Target::Node
 	attr_accessor :name,:loc,:parent,:msg_hash
 	def initialize(name)
@@ -118,7 +123,7 @@ class Target::MessageDec < Target::Node
 		ts = (@members.collect { |elem|
 			elem.type + " " + elem.name
 		}).join(";")
-		self.msg_hash = "0x#{SHA1.hexdigest(ts)[-8..-1]}"
+		self.msg_hash = "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
 		type_class.add_member("enum {kQueueLength = 1234, kHash = #{self.msg_hash}}")
 		@members.each do |elem|
 			type_class.add_member(elem.create_usage(cpp_tree))

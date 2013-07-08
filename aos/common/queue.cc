@@ -30,7 +30,7 @@ size_t Message::Serialize(char *buffer) const {
 }
 
 size_t Message::Print(char *buffer, int length) const {
-  return snprintf(buffer, length, "%"PRId32".%09"PRId32"s",
+  return snprintf(buffer, length, "%" PRId32 ".%09" PRId32 "s",
                   sent_time.sec(), sent_time.nsec());
 }
 

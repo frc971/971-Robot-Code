@@ -14,6 +14,7 @@
 #else
 #include <ifaddrs.h>
 #endif
+#include <unistd.h>
 
 #ifndef __VXWORKS__
 #include "aos/common/logging/logging.h"

@@ -6,14 +6,15 @@
     'externals_abs': '<!(readlink -f ../externals)',
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
-    'eigen_version': '3.0.5',
+    'eigen_version': '3.1.3',
     'gtest_version': '1.6.0-p1',
     'onejar_version': '0.97',
-    'ctemplate_version': '2.2',
+    'ctemplate_version': '129',
     'gflags_version': '2.0',
     'libusb_version': '1.0.9',
     'libusb_apiversion': '1.0',
     'compiler_rt_version': 'RELEASE_32_final',
+    'libevent_version': '2.0.21',
   },
   'targets': [
     {
@@ -97,11 +98,13 @@
       },
     },
     {
-# TODO(brians) convert this to downloading + building
       'target_name': 'libevent',
       'type': 'none',
       'link_settings': {
-        'libraries': ['-levent'],
+        'libraries': ['<(externals_abs)/libevent-<(libevent_version)-prefix/lib/libevent.a'],
+      },
+      'direct_dependent_settings': {
+        'include_dirs': ['<(externals)/libevent-<(libevent_version)-prefix/include'],
       },
     },
     {
