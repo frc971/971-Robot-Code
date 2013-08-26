@@ -3,11 +3,11 @@
 #include "aos/atom_code/output/HTTPServer.h"
 #include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
 #include "aos/atom_code/output/ctemplate_cache.h"
-#include "aos/common/Configuration.h"
 #include "aos/common/messages/RobotState.q.h"
 #include "ctemplate/template.h"
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
+#include "aos/atom_code/configuration.h"
 
 #include "frc971/constants.h"
 
@@ -17,7 +17,7 @@ namespace frc971 {
 
 class CameraServer : public aos::http::HTTPServer {
  public:
-  CameraServer() : HTTPServer(aos::configuration::GetRootDirectory(), 8080),
+  CameraServer() : HTTPServer(::aos::configuration::GetRootDirectory(), 8080),
       buf_(NULL) {
     AddPage<CameraServer>("/robot.html", &CameraServer::RobotHTML, this);
   }

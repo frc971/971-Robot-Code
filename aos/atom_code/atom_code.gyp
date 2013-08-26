@@ -12,5 +12,16 @@
         '<(AOS)/build/aos.gyp:logging',
       ],
     },
+    {
+      'target_name': 'configuration',
+      'type': 'static_library',
+      'sources': [
+        'configuration.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:once',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
   ],
 }

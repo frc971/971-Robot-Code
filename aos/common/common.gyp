@@ -41,30 +41,6 @@
       ],
     },
     {
-      'target_name': 'common',
-      'type': 'static_library',
-      'sources': [
-        'Configuration.cpp',
-      ],
-      'dependencies': [
-        'once',
-      ],
-      'export_dependent_settings': [
-        'once',
-      ],
-      'conditions': [
-        ['OS=="crio"', {
-          'dependencies': [
-            '<(EXTERNALS):WPILib',
-          ],
-        }, {
-          'dependencies': [
-            '<(AOS)/build/aos.gyp:logging',
-          ],
-        }],
-      ],
-    },
-    {
       'target_name': 'queues',
       'type': 'static_library',
       'sources': [
@@ -86,11 +62,9 @@
         }]
       ],
       'dependencies': [
-        '<(AOS)/common/common.gyp:common',
         'time',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:common',
         'time',
       ],
     },
@@ -288,6 +262,13 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'die',
+      ],
+    },
+    {
+      'target_name': 'util',
+      'type': 'static_library',
+      'sources': [
+        'util.cc',
       ],
     },
   ],

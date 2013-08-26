@@ -12,7 +12,6 @@
         '<(EXTERNALS):libevent',
         '<(EXTERNALS):ctemplate',
         '<(AOS)/common/common.gyp:once',
-        '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/common.gyp:scoped_fd',
         '<(AOS)/build/aos.gyp:logging',
       ],
@@ -29,7 +28,6 @@
       ],
       'dependencies': [
         '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:common',
         '<(AOS)/common/common.gyp:timing',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
         '<(AOS)/build/aos.gyp:logging',

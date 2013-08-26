@@ -14,9 +14,9 @@
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/atom_code/logging/atom_logging.h"
-#include "aos/common/Configuration.h"
 #include "aos/common/byteorder.h"
 #include "aos/atom_code/init.h"
+#include "aos/common/network_port.h"
 
 namespace aos {
 namespace logging {

@@ -4,7 +4,7 @@
 
 #include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
 
-#include "aos/common/Configuration.h"
+#include "aos/common/network_port.h"
 #include "aos/common/network/ReceiveSocket.h"
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/common/logging/logging.h"

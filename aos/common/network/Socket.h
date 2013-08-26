@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "aos/common/Configuration.h"
 #include "aos/common/time.h"
+#include "aos/common/network_port.h"
 
 namespace aos {
 

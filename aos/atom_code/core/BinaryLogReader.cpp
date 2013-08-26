@@ -13,8 +13,8 @@
 
 #include "aos/atom_code/logging/atom_logging.h"
 #include "aos/atom_code/core/LogFileCommon.h"
-#include "aos/common/Configuration.h"
 #include "aos/atom_code/init.h"
+#include "aos/atom_code/configuration.h"
 
 namespace aos {
 namespace logging {

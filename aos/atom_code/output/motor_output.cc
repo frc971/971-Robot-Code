@@ -2,9 +2,9 @@
 
 #include <math.h>
 
-#include "aos/common/Configuration.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/network_port.h"
 
 namespace aos {
 
@@ -26,8 +26,9 @@ uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
   }
 }
 
-MotorOutput::MotorOutput() : socket_(NetworkPort::kMotors,
-          configuration::GetIPAddress(configuration::NetworkDevice::kCRIO)) {}
+MotorOutput::MotorOutput()
+  : socket_(NetworkPort::kMotors, ::aos::NetworkAddress::kCRIO) {
+}
 
 void MotorOutput::Run() {
   while (true) {

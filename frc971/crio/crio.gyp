@@ -8,7 +8,8 @@
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib',
-        '<(AOS)/common/common.gyp:common',
+        '<(AOS)/crio/crio.gyp:ip',
+        '<(AOS)/common/common.gyp:util',
       ],
     },
     {

@@ -1,5 +1,5 @@
-#include "aos/common/Configuration.h"
 #include "aos/common/inttypes.h"
+#include "aos/common/network_port.h"
 
 namespace aos {
 namespace sensors {

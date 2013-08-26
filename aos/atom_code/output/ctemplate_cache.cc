@@ -1,6 +1,6 @@
 #include "aos/atom_code/output/ctemplate_cache.h"
 
-#include "aos/common/Configuration.h"
+#include "aos/atom_code/configuration.h"
 #include "aos/common/once.h"
 
 namespace aos {

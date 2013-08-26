@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#include "aos/common/Configuration.h"
+#include "aos/common/network_port.h"
 #include "aos/atom_code/init.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/common/logging/logging.h"

@@ -37,16 +37,11 @@
         'SendSocket.cpp',
         'Socket.cpp',
       ],
-      'conditions': [
-        ['OS=="crio"', {
-          'dependencies': [
-            '<(EXTERNALS):WPILib',
-          ]}
-        ],
-      ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:util',
+        '<(AOS)/atom_code/atom_code.gyp:configuration',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',

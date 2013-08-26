@@ -47,14 +47,12 @@
       ],
       'dependencies': [
         '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:common',
         'sensors',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:gtest_prod',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:common',
         'sensors',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:gtest_prod',

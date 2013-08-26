@@ -10,7 +10,8 @@
 #include <assert.h>
 
 #include "aos/common/logging/logging_impl.h"
-#include "aos/common/Configuration.h"
+#include "aos/common/util.h"
+#include "aos/atom_code/configuration.h"
 
 namespace aos {
 namespace {
@@ -158,6 +159,11 @@ int NetconsoleMain(int argc, char **argv) {
 
   pthread_t input_thread, output_thread;
 
+  address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
+  ::aos::util::SetLastSegment(&address.in.sin_addr, NetworkAddress::kCRIO);
+  fprintf(stderr, "Using cRIO IP %s.\n",
+          inet_ntoa(address.in.sin_addr));
+
   if (input != -1) {
     int to_crio = socket(AF_INET, SOCK_DGRAM, 0);
     if (to_crio == -1) {
@@ -169,13 +175,6 @@ int NetconsoleMain(int argc, char **argv) {
           on, to_crio, errno, strerror(errno));
     }
     address.in.sin_port = htons(6668);
-    if (inet_aton(
-            configuration::GetIPAddress(configuration::NetworkDevice::kCRIO),
-            &address.in.sin_addr) == 0) {
-      LOG(FATAL, "inet_aton(%s, %p) failed with %d: %s\n",
-          configuration::GetIPAddress(configuration::NetworkDevice::kCRIO),
-          &address.in.sin_addr, errno, strerror(errno));
-    }
     if (connect(to_crio, &address.addr, sizeof(address)) == -1) {
       LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
           to_crio, &address.addr, sizeof(address), errno, strerror(errno));
@@ -187,16 +186,7 @@ int NetconsoleMain(int argc, char **argv) {
     }
   }
 
-  fprintf(stderr, "Using cRIO IP %s.\n",
-          configuration::GetIPAddress(configuration::NetworkDevice::kCRIO));
-
-  if (inet_aton(
-          configuration::GetIPAddress(configuration::NetworkDevice::kSelf),
-          &address.in.sin_addr) == 0) {
-    LOG(FATAL, "inet_aton(%s, %p) failed with %d: %s\n",
-        configuration::GetIPAddress(configuration::NetworkDevice::kSelf),
-        &address.in.sin_addr, errno, strerror(errno));
-  }
+  address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
   FDsToCopy output_fds{from_crio, output, &address.in};
   if (pthread_create(&output_thread, NULL, FDCopyThread, &output_fds) == -1) {
     LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",

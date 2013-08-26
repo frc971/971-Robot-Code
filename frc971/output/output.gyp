@@ -12,6 +12,7 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/atom_code/atom_code.gyp:configuration',
       ],
       'copies': [
         {
