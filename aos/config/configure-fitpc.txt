@@ -1,0 +1,34 @@
+This file contains notes on setting up a new fit-pc image.
+Doing it right requires knowing what you're doing as a Debian sysadmin, so the
+main goal of this file is to avoid forgetting anything.
+
+Brian last updated this on 2013-08-28 with Debian Wheezy.
+
+1.  Install Debian stable.
+      It will need firmware during the installation.
+	  I partitioned it with (in order) a 0.5G ext2 /boot, a 2G swap, a 3.0G xfs
+	    /, and then an xfs /home on the rest of the SSD.
+      Create 1 user named "driver".
+	  Select only "SSH Server" and
+	    "Basic System Utilities"(or something like that) in tasksel.
+2.  Install aos.conf and starter.
+	  I just changed aos.conf to give driver permissions instead of the group.
+3.  Make exim4 start faster.
+      `dpkg-reconfigure exim4-config` and select the option for making minimal
+	    DNS queries (it also says some junk about modems).
+4.  Configure the network.
+      Edit /etc/network/interfaces to give it the right static IP address.
+5.  Install stuff.
+      firmware-linux-nonfree is always a good one to get.
+	  Remember to add
+	    <http://robotics.mvla.net/files/frc971/packages/frc971.list>.
+      Besides the custom linux-image package, you'll figure everything else out
+	    as you start trying to run stuff.
+6.  Make SSH logins faster.
+      Add the line "UseDNS no" to /etc/ssh/sshd_config.
+7.  Make it so that the programming team can log in without passwords.
+      Everybody will have to run `ssh-copy-id -i ~/.ssh/id_rsa.pub fitpc` (see
+	    <http://www.debian-administration.org/articles/152> for details).
+8.  Download the code!
+      In order for it to actually run, you'll have to
+	    `mkdir -p ~driver/tmp/robot_logs`.

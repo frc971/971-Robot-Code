@@ -8,4 +8,3 @@ fitpc_kernel.config is a kernel configuration file for a fit-pc2
 		if on a 64-bit x86 machine, create a 32-bit chroot to build in
 		make sure fakeroot and kernel-package are installed
 		in the linux-x.x.x directory: fakeroot make-kpkg --jobs=4 kernel_image
-

@@ -12,6 +12,8 @@
 
 # Author: Spartan Robotics <spartanrobotics.org>
 
+# Install by placing in /etc/init.d/ and then `update-rc.d starter defaults`.
+
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
