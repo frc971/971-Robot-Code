@@ -66,7 +66,7 @@ else
   ${NINJA} -C ${OUTDIR}/Default ${GYP_ACTION}
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
     [ ${PLATFORM} == atom ] && \
-      rsync --progress -c -r --rsync-path=/home/driver/bin/rsync \
+      rsync --progress -c -r \
       ${OUTDIR}/Default/outputs/* \
       driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
     [ ${PLATFORM} == crio ] && \
