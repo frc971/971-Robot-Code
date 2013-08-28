@@ -384,19 +384,19 @@ class Child {
   };
 
   // How long to wait for a child to die nicely.
-  static const time::Time kProcessDieTime;
+  static constexpr time::Time kProcessDieTime = time::Time::InSeconds(0.75);
 
   // How long to wait after the file is modified to restart it.
   // This is important because some programs like modifying the binaries by
   // writing them in little bits, which results in attempting to start partial
   // binaries without this.
-  static const time::Time kRestartWaitTime;
+  static constexpr time::Time kRestartWaitTime = time::Time::InSeconds(1.5);
 
   // Only kMaxRestartsNumber restarts will be allowed in kMaxRestartsTime.
-  static const time::Time kMaxRestartsTime;
-  static const size_t kMaxRestartsNumber = 4;
+  static constexpr time::Time kMaxRestartsTime = time::Time::InSeconds(4);
+  static const size_t kMaxRestartsNumber = 3;
   // How long to wait if it gets restarted too many times.
-  static const time::Time kResumeWait;
+  static constexpr time::Time kResumeWait = time::Time::InSeconds(5);
 
   static void StaticFileModified(void *self) {
     static_cast<Child *>(self)->FileModified();
@@ -545,10 +545,11 @@ class Child {
 
   DISALLOW_COPY_AND_ASSIGN(Child);
 };
-const time::Time Child::kProcessDieTime = time::Time::InSeconds(0.5);
-const time::Time Child::kMaxRestartsTime = time::Time::InSeconds(4);
-const time::Time Child::kResumeWait = time::Time::InSeconds(2);
-const time::Time Child::kRestartWaitTime = time::Time::InSeconds(1.5);
+
+constexpr time::Time Child::kProcessDieTime;
+constexpr time::Time Child::kRestartWaitTime;
+constexpr time::Time Child::kMaxRestartsTime;
+constexpr time::Time Child::kResumeWait;
 
 // This is where all of the Child instances except core live.
 std::vector<unique_ptr<Child>> children;

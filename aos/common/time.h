@@ -29,19 +29,24 @@ namespace time {
 // not implemented because I can't think of any uses for them and there are
 // multiple ways to do it.
 struct Time {
+#ifdef SWIG
+// All of the uses of constexpr here can safely be simply removed.
+// NOTE: This means that relying on the fact that constexpr implicitly makes
+// member functions const is not safe.
+#define constexpr
+#endif  // SWIG
  public:
   static const int32_t kNSecInSec = 1000000000;
   static const int32_t kNSecInMSec = 1000000;
   static const int32_t kNSecInUSec = 1000;
   static const int32_t kMSecInSec = 1000;
   static const int32_t kUSecInSec = 1000000;
-  Time(int32_t sec, int32_t nsec) : sec_(sec), nsec_(nsec) {
-    Check();
+  constexpr Time(int32_t sec, int32_t nsec)
+      : sec_(sec), nsec_(CheckConstexpr(nsec)) {
   }
   #ifndef SWIG
-  explicit Time(const struct timespec &value)
-      : sec_(value.tv_sec), nsec_(value.tv_nsec) {
-    Check();
+  explicit constexpr Time(const struct timespec &value)
+      : sec_(value.tv_sec), nsec_(CheckConstexpr(value.tv_nsec)) {
   }
   struct timespec ToTimespec() const {
     struct timespec ans;
@@ -49,9 +54,8 @@ struct Time {
     ans.tv_nsec = nsec_;
     return ans;
   }
-  explicit Time(const struct timeval &value)
-      : sec_(value.tv_sec), nsec_(value.tv_usec * kNSecInUSec) {
-    Check();
+  explicit constexpr Time(const struct timeval &value)
+      : sec_(value.tv_sec), nsec_(CheckConstexpr(value.tv_usec * kNSecInUSec)) {
   }
   struct timeval ToTimeval() const {
     struct timeval ans;
@@ -80,34 +84,30 @@ struct Time {
 
   // Constructs a Time representing seconds.
   // TODO(brians): fix and test the negative cases for all of these
-  static Time InSeconds(double seconds) {
-    if (seconds < 0.0) {
-      return Time(static_cast<int32_t>(seconds) - 1,
-                  (seconds - static_cast<int32_t>(seconds) + 1.0) * kNSecInSec);
-    } else {
-      return Time(static_cast<int32_t>(seconds),
-                  (seconds - static_cast<int32_t>(seconds)) * kNSecInSec);
-    }
+  static constexpr Time InSeconds(double seconds) {
+    return (seconds < 0.0) ?
+        Time(static_cast<int32_t>(seconds) - 1,
+             (seconds - static_cast<int32_t>(seconds) + 1.0) * kNSecInSec) :
+        Time(static_cast<int32_t>(seconds),
+             (seconds - static_cast<int32_t>(seconds)) * kNSecInSec);
   }
 
   // Constructs a time representing microseconds.
-  static Time InNS(int64_t nseconds) {
+  static constexpr Time InNS(int64_t nseconds) {
     return Time(nseconds / static_cast<int64_t>(kNSecInSec),
                 nseconds % kNSecInSec);
   }
 
   // Constructs a time representing microseconds.
-  static Time InUS(int useconds) {
-    if (useconds < 0) {
-      return Time(useconds / kUSecInSec - 1,
-                  (useconds % kUSecInSec) * kNSecInUSec + kNSecInSec);
-    } else {
-      return Time(useconds / kUSecInSec, (useconds % kUSecInSec) * kNSecInUSec);
-    }
+  static constexpr Time InUS(int useconds) {
+    return (useconds < 0) ?
+        Time(useconds / kUSecInSec - 1,
+             (useconds % kUSecInSec) * kNSecInUSec + kNSecInSec) :
+      Time(useconds / kUSecInSec, (useconds % kUSecInSec) * kNSecInUSec);
   }
 
   // Constructs a time representing mseconds.
-  static Time InMS(int mseconds) {
+  static constexpr Time InMS(int mseconds) {
     return Time(mseconds / kMSecInSec, (mseconds % kMSecInSec) * kNSecInMSec);
   }
 
@@ -115,7 +115,7 @@ struct Time {
   bool IsWithin(const Time &other, int64_t amount) const;
 
   // Returns the time represented all in nanoseconds.
-  int64_t ToNSec() const {
+  int64_t constexpr ToNSec() const {
     return static_cast<int64_t>(sec_) * static_cast<int64_t>(kNSecInSec) +
         static_cast<int64_t>(nsec_);
   }
@@ -132,20 +132,20 @@ struct Time {
 #endif
 
   // Returns the time represented in milliseconds.
-  int64_t ToMSec() const {
+  int64_t constexpr ToMSec() const {
     return static_cast<int64_t>(sec_) * static_cast<int64_t>(kMSecInSec) +
         (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInMSec));
   }
 
   // Returns the time represent in microseconds.
   // TODO(brians): test this
-  int64_t ToUSec() const {
+  int64_t constexpr ToUSec() const {
     return static_cast<int64_t>(sec_) * static_cast<int64_t>(kUSecInSec) +
         (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInUSec));
   }
 
   // Returns the time represented in fractional seconds.
-  double ToSeconds() const {
+  double constexpr ToSeconds() const {
     return static_cast<double>(sec_) + static_cast<double>(nsec_) / kNSecInSec;
   }
 
@@ -176,9 +176,9 @@ struct Time {
   friend std::ostream &operator<<(std::ostream &os, const Time &time);
   #endif  // SWIG
 
-  int32_t sec() const { return sec_; }
+  int32_t constexpr sec() const { return sec_; }
   void set_sec(int32_t sec) { sec_ = sec; }
-  int32_t nsec() const { return nsec_; }
+  int32_t constexpr nsec() const { return nsec_; }
   void set_nsec(int32_t nsec) {
     nsec_ = nsec;
     Check();
@@ -207,8 +207,19 @@ struct Time {
 
  private:
   int32_t sec_, nsec_;
-  // LOG(FATAL)s if nsec_ is >= kNSecInSec.
-  void Check();
+
+  // LOG(FATAL)s if nsec is >= kNSecInSec or negative.
+  static void CheckImpl(int32_t nsec);
+  void Check() { CheckImpl(nsec_); }
+  // A constexpr version of CheckImpl that returns the given value when it
+  // succeeds.
+  static constexpr int32_t CheckConstexpr(int32_t nsec) {
+    return (nsec >= kNSecInSec || nsec < 0) ? CheckImpl(nsec), 0 : nsec;
+  }
+
+#ifdef SWIG
+#undef constexpr
+#endif  // SWIG
 };
 
 // Sleeps for the amount of time represented by time counted by clock.

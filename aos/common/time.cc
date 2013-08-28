@@ -68,13 +68,13 @@ Time Time::Now(clockid_t clock) {
   }
 }
 
-void Time::Check() {
-  if (nsec_ >= kNSecInSec || nsec_ < 0) {
-    LOG(FATAL, "0 <= nsec_(%" PRId32 ") < %" PRId32 " isn't true.\n",
-        nsec_, kNSecInSec);
-  }
+void Time::CheckImpl(int32_t nsec) {
   static_assert(aos::shm_ok<Time>::value,
                 "it should be able to go through shared memory");
+  if (nsec >= kNSecInSec || nsec < 0) {
+    LOG(FATAL, "0 <= nsec(%" PRId32 ") < %" PRId32 " isn't true.\n",
+        nsec, kNSecInSec);
+  }
 }
 
 Time &Time::operator+=(const Time &rhs) {
