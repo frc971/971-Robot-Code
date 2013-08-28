@@ -8,7 +8,6 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#include "opencv2/opencv.hpp"
 
 #include "aos/common/time.h"
 #include "aos/atom_code/camera/Buffers.h"
@@ -82,7 +81,9 @@ void sender_main(frc971::vision::PacketNotifier *notify){
     // parker you prolly want const_cast<type>(var);
     LOG(INFO, "Got new image\n");
     unsigned char *buffer = (unsigned char *)notify->GetBuffer();
-    frc971::vision::process_jpeg(buffer, (unsigned char *)image, data_size);
+    frc971::vision::process_jpeg(buffer,
+                                 (unsigned char *)const_cast<void *>(image),
+                                 data_size);
 
     // build the headers on top of the buffer
     cvSetData(processor.src_header_image,

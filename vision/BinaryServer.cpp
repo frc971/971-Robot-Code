@@ -14,7 +14,6 @@
 #include "aos/externals/libjpeg/include/jpeglib.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/common/time.h"
-#include "opencv2/opencv.hpp"
 
 namespace frc971 {
 namespace vision {

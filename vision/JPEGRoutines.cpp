@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "aos/common/time.h"
-#include "opencv2/opencv.hpp"
 
 #include "vision/OpenCVWorkTask.h"
 
@@ -131,8 +130,7 @@ void process_jpeg(unsigned char *out,unsigned char *image,size_t size){
   struct jpeg_error_mgr jerr;
 
   static aos::time::Time timestamp_old = aos::time::Time::Now();
-  aos::time::Time timestamp_start = aos::time::Time::Now();
-
+  //aos::time::Time timestamp_start = aos::time::Time::Now();
   
   cinfo.err = jpeg_std_error( &jerr );
   cinfo.out_color_space = JCS_RGB;
