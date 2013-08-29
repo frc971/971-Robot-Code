@@ -85,7 +85,8 @@ class GyroBoardReader {
     dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
         libusb.FindDeviceWithVIDPID(kVid, kPid));
     if (!dev_handle_) {
-      LOG(FATAL, "couldn't find device\n");
+      LOG(ERROR, "couldn't find device. exiting\n");
+      exit(1);
     }
 
     uint8_t data[64];

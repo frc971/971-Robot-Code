@@ -238,7 +238,8 @@ class GyroSensorReceiver :
     dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
         libusb_.FindDeviceWithVIDPID(kVid, kPid));
     if (!dev_handle_) {
-      LOG(FATAL, "couldn't find device\n");
+      LOG(ERROR, "couldn't find device. exiting\n");
+      exit(1);
     }
     transfer1_ = ::std::unique_ptr<libusb::Transfer>(
         new libusb::Transfer(kDataLength, StaticTransferCallback, this));
