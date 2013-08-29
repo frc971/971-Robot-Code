@@ -18,6 +18,8 @@ Brian last updated this on 2013-08-28 with Debian Wheezy.
 	    DNS queries (it also says some junk about modems).
 4.  Configure the network.
       Edit /etc/network/interfaces to give it the right static IP address.
+	  Set up eth1 like the default eth0 in case the NIC gets assigned that (see
+	    #51 below).
 5.  Install stuff.
       firmware-linux-nonfree is always a good one to get.
 	  Remember to add
@@ -32,3 +34,21 @@ Brian last updated this on 2013-08-28 with Debian Wheezy.
 8.  Download the code!
       In order for it to actually run, you'll have to
 	    `mkdir -p ~driver/tmp/robot_logs`.
+50. Clone the image to the rest of the disks.
+      I've had good luck with `dd if=/dev/sdx of=/dev/sdx bs=16384` before, but
+	    that didn't work this time...
+      Using gparted's copy/paste feature for each partition worked this time.
+	    A bug in the gparted version I used meant that it wouldn't copy an XFS
+		  partition to a smaller destination, so I had to manually mount both of
+		  them and `xfsdump -J - /path/to/src | xfsrestore -J - /path/to/dest`.
+		Doing it that way changes the UUIDs on the XFS partitions.
+		  To deal with that, I edited the UUIDs in the /etc/fstab of the clone.
+		  I also had to manually install grub on the clone, which meant mounting
+		    the clone's /boot, `grub-install --boot-directory=bla /dev/sdx`, and
+			then using sed to switch the UUIDs in the clone's
+			/boot/grub/grub.cfg.
+51. Fix the ethernet setup each time you move a disk.
+      udev remembers the ethernet NIC from each device, so it assigns the one in
+	    a new fitpc to eth1 which breaks stuff. To fix it, remove
+		/etc/udev/rules.d/70-persistent-net.rules so it'll autogenerate a new
+		one.
