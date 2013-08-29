@@ -68,7 +68,7 @@ bool Data::NegEdge(const ControlBit bit) const {
 float Data::GetAxis(JoystickAxis axis) const {
   // TODO(brians): check this math against what our joysticks report as their
   // logical minimums and maximums
-  return current_values_.joysticks[axis.joystick()].axes[axis.number()] / 127.0;
+  return current_values_.joysticks[axis.joystick() - 1].axes[axis.number() - 1] / 127.0;
 }
 
 }  // namespace driver_station
