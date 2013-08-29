@@ -23,8 +23,8 @@ const char *MakeIPAddress(const in_addr &base_address,
 }
 
 void SetLastSegment(in_addr *address, ::aos::NetworkAddress last_segment) {
-  address->s_addr &= ~0xFF;
-  address->s_addr |= static_cast<uint8_t>(last_segment);
+  address->s_addr &= ~(htonl(0xFF));
+  address->s_addr |= htonl(static_cast<uint8_t>(last_segment));
 }
 
 }  // namespace util
