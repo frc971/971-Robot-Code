@@ -49,7 +49,10 @@ bool AngleAdjustMotor::FetchConstants(
   }
 
   config_data->max_zeroing_voltage = 4.0;
-  config_data->deadband_voltage = 0.825;
+  if (!constants::angle_adjust_deadband(&config_data->deadband_voltage)) {
+    LOG(ERROR, "Failed to fetch the angle adjust deadband voltage constant.\n");
+    return false;
+  }
   return true;
 }
 

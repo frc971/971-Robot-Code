@@ -40,6 +40,9 @@ bool angle_adjust_upper_physical_limit(double *angle);
 bool angle_adjust_zeroing_speed(double *speed);
 bool angle_adjust_zeroing_off_speed(double *speed);
 
+// Returns the deadband voltage to use.
+bool angle_adjust_deadband(double *voltage);
+
 // Sets *center to how many pixels off center the vertical line
 // on the camera view is.
 bool camera_center(int *center);

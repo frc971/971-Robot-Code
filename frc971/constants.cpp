@@ -61,6 +61,9 @@ const double kCompAngleAdjustLowerLimit = 0.27;
 const double kAngleAdjustZeroingSpeed = -0.2;
 const double kAngleAdjustZeroingOffSpeed = -0.5;
 
+const double kPracticeAngleAdjustDeadband = 0.825;
+const double kCompAngleAdjustDeadband = 0.825;
+
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
@@ -98,6 +101,9 @@ struct Values {
   // Zeroing off speed.
   double angle_adjust_zeroing_off_speed;
 
+  // Deadband voltage.
+  double angle_adjust_deadband;
+
   // what camera_center returns
   int camera_center;
 };
@@ -129,6 +135,7 @@ const Values *GetValues() {
                             kCompAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
                             kAngleAdjustZeroingOffSpeed,
+                            kCompAngleAdjustDeadband,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
@@ -148,6 +155,7 @@ const Values *GetValues() {
                             kPracticeAngleAdjustLowerPhysicalLimit,
                             kAngleAdjustZeroingSpeed,
                             kAngleAdjustZeroingOffSpeed,
+                            kPracticeAngleAdjustDeadband,
                             kPracticeCameraCenter};
         break;
       default:
@@ -268,6 +276,13 @@ bool angle_adjust_zeroing_off_speed(double *speed) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *speed = values->angle_adjust_zeroing_off_speed;
+  return true;
+}
+
+bool angle_adjust_deadband(double *voltage) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *voltage = values->angle_adjust_deadband;
   return true;
 }
 
