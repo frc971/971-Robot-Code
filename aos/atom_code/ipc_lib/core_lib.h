@@ -39,8 +39,9 @@ typedef struct aos_shm_core_t {
 
 void init_shared_mem_core(aos_shm_core *shm_core);
 
-void *shm_malloc_aligned(size_t length, uint8_t alignment);
-static void *shm_malloc(size_t length);
+void *shm_malloc_aligned(size_t length, uint8_t alignment)
+    __attribute__((alloc_size(1)));
+static void *shm_malloc(size_t length) __attribute__((alloc_size(1)));
 static inline void *shm_malloc(size_t length) {
   return shm_malloc_aligned(length, 0);
 }
