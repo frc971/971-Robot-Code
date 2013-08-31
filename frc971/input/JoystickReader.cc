@@ -81,7 +81,7 @@ class Reader : public ::aos::input::JoystickInput {
       double left_goal = 0.0;
       double right_goal = 0.0;
       const double wheel = data.GetAxis(kSteeringWheel);
-      const double throttle = data.GetAxis(kDriveThrottle);
+      const double throttle = -data.GetAxis(kDriveThrottle);
       LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
       const double kThrottleGain = 1.0 / 2.5;
       if (data.IsPressed(kDriveControlLoopEnable1) ||
