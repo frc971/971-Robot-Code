@@ -65,18 +65,11 @@
       '-Wsign-compare',
       '-Wformat=2',
       '-Werror',
-      '-Wunused-local-typedefs',
-
-      # Give macro stack traces when they blow up.
-      '-ftrack-macro-expansion',
 
       '-ggdb3',
     ],
     'cflags_c': [
       '-std=gnu99',
-    ],
-    'cflags_cc': [
-      '-std=gnu++11',
     ],
     'include_dirs': [
       '<(DEPTH)',
@@ -139,6 +132,9 @@
             '-isystem', '<(WIND_BASE)/target/h',
             '-isystem', '<(WIND_BASE)/target/h/wrn/coreip',
           ],
+          'cflags_cc': [
+            '-std=gnu++0x',
+          ],
           'defines': [
             'CPU=PPC603',
             'TOOL_FAMILY=gnu',
@@ -185,6 +181,14 @@
           'cflags': [
             '-pthread',
             '-m32',
+
+            '-Wunused-local-typedefs',
+
+            # Give macro stack traces when they blow up.
+            '-ftrack-macro-expansion',
+          ],
+          'cflags_cc': [
+            '-std=gnu++11',
           ],
           'defines': [
             '_FILE_OFFSET_BITS=64',
