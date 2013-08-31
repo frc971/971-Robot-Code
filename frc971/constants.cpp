@@ -40,7 +40,10 @@ const double kWristZeroingOffSpeed = 0.35;
 
 const int kAngleAdjustHallEffect = 2;
 
-const double kCompAngleAdjustHallEffectStartAngle[2] = {0.286375033, 1.5};
+// Angle measured from CAD with the top of the angle adjust at the top of the
+// wire guide is 0.773652098 radians.
+
+const double kCompAngleAdjustHallEffectStartAngle[2] = {0.301170496, 1.5};
 const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305172594, 1.5};
 
 const double kCompAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
@@ -49,19 +52,19 @@ const double kPracticeAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 const double kPracticeAngleAdjustUpperPhysicalLimit = 0.904737;
 const double kCompAngleAdjustUpperPhysicalLimit = 0.904737;
 
-const double kPracticeAngleAdjustLowerPhysicalLimit = 0.272451;
+const double kPracticeAngleAdjustLowerPhysicalLimit = 0.270;
 const double kCompAngleAdjustLowerPhysicalLimit = 0.302;
 
 const double kPracticeAngleAdjustUpperLimit = 0.87;
 const double kCompAngleAdjustUpperLimit = 0.87;
 
-const double kPracticeAngleAdjustLowerLimit = 0.30;
-const double kCompAngleAdjustLowerLimit = 0.27;
+const double kPracticeAngleAdjustLowerLimit = 0.31;
+const double kCompAngleAdjustLowerLimit = 0.28;
 
 const double kAngleAdjustZeroingSpeed = -0.2;
 const double kAngleAdjustZeroingOffSpeed = -0.5;
 
-const double kPracticeAngleAdjustDeadband = 0.825;
+const double kPracticeAngleAdjustDeadband = 0.4;
 const double kCompAngleAdjustDeadband = 0.825;
 
 const int kCompCameraCenter = -2;
