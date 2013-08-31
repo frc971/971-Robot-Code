@@ -111,7 +111,9 @@
       'target_name': 'eigen',
       'type': 'none',
       'direct_dependent_settings': {
-        'include_dirs': ['<(externals)/eigen-<(eigen_version)'],
+        'cflags': [
+          '-isystem', '<(externals)/eigen-<(eigen_version)'
+        ],
       },
     },
     {

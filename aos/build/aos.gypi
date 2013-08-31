@@ -65,6 +65,10 @@
       '-Wsign-compare',
       '-Wformat=2',
       '-Werror',
+      '-Wunused-local-typedefs',
+
+      # Give macro stack traces when they blow up.
+      '-ftrack-macro-expansion',
 
       '-ggdb3',
     ],
@@ -72,7 +76,7 @@
       '-std=gnu99',
     ],
     'cflags_cc': [
-      '-std=gnu++0x',
+      '-std=gnu++11',
     ],
     'include_dirs': [
       '<(DEPTH)',
@@ -82,11 +86,11 @@
           'cflags': [
             '-O0',
           ],
-          'ldflags': [
-            '-O3',
-          ],
         }, {
           'cflags': [
+            '-O3',
+          ],
+          'ldflags': [
             '-O3',
           ],
           'conditions': [['OS=="crio"', {
@@ -97,10 +101,7 @@
               ],
             }, {
               'cflags': [
-                # core2 says the same stuff as atom in the gcc docs but is supported by 4.4.5
-                '-march=core2',
-                '-mtune=generic',
-                '-msse3',
+                '-march=atom',
                 '-mfpmath=sse',
 
                 '-fstack-protector',
@@ -186,7 +187,7 @@
             '-m32',
           ],
           'defines': [
-            '_LARGEFILE64_SOURCE',
+            '_FILE_OFFSET_BITS=64',
           ],
           'libraries': [
             '-lm',
