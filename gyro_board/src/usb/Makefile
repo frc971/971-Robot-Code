@@ -56,10 +56,10 @@ $(NAME).elf: Makefile $(SOURCES:.c=.o) $(LDSCRIPT)
 	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99
 
 run: deploy
-	$(FLASHER) -termonly $(NAME).hex $(PORT) $(SPEED) $(OSC)
+	$(FLASHER) -termonly -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
 
 deploy: all $(NAME).hex
-	$(FLASHER) -hex -verify $(NAME).hex $(PORT) $(SPEED) $(OSC)
+	$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
 
 cat:
 	@cd ../../bin; python serial_looper.py
