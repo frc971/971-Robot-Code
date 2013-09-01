@@ -18,12 +18,10 @@ extern struct aos_core *global_core;
 extern "C" {
 #endif  // __cplusplus
 
-struct aos_queue_list_t;
-typedef struct aos_queue_hash_t {
-	int alloc_flag;
+typedef struct aos_queue_global_t {
 	mutex alloc_lock;
-	struct aos_queue_list_t *queue_list;
-} aos_queue_hash;
+	void *queue_list;  // an aos::Queue* declared in C code
+} aos_queue_global;
 
 typedef struct aos_shm_core_t {
   // clock_gettime(CLOCK_REALTIME, &identifier) gets called to identify
@@ -34,7 +32,7 @@ typedef struct aos_shm_core_t {
   mutex creation_condition;
   mutex msg_alloc_lock;
   void *msg_alloc;
-  aos_queue_hash queues;
+  aos_queue_global queues;
 } aos_shm_core;
 
 void init_shared_mem_core(aos_shm_core *shm_core);

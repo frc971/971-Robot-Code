@@ -1,3 +1,5 @@
+#include "aos/common/queue.h"
+
 #include <unistd.h>
 #include <sys/mman.h>
 #include <inttypes.h>
@@ -11,9 +13,12 @@
 #include "aos/atom_code/ipc_lib/sharedmem_test_setup.h"
 #include "aos/common/type_traits.h"
 
-using testing::AssertionResult;
-using testing::AssertionSuccess;
-using testing::AssertionFailure;
+using ::testing::AssertionResult;
+using ::testing::AssertionSuccess;
+using ::testing::AssertionFailure;
+
+namespace aos {
+namespace testing {
 
 // IMPORTANT: Some of the functions that do test predicate functions allocate
 // shared memory (and don't free it).
@@ -44,16 +49,19 @@ class QueueTest : public SharedMemTestSetup {
         return std::string("unknown(" + static_cast<uint8_t>(result)) + ")";
     }
   }
-  static_assert(aos::shm_ok<ResultType>::value, "this will get put in shared memory");
+  static_assert(aos::shm_ok<ResultType>::value,
+                "this will get put in shared memory");
   // Gets allocated in shared memory so it has to be volatile.
-  template<typename T> struct FunctionToCall {
+  template<typename T>
+  struct FunctionToCall {
     ResultType result;
     bool expected;
     void (*function)(T*, char*);
     T *arg;
     volatile char failure[kFailureSize];
   };
-  template<typename T> static void Hangs_(volatile FunctionToCall<T> *const to_call) {
+  template<typename T>
+  static void Hangs_(volatile FunctionToCall<T> *const to_call) {
     to_call->result = ResultType::Called;
     to_call->function(to_call->arg, const_cast<char *>(to_call->failure));
     to_call->result = ResultType::Returned;
@@ -124,7 +132,7 @@ class QueueTest : public SharedMemTestSetup {
 
   void SetUp() {
     SharedMemTestSetup::SetUp();
-    fatal_failure = reinterpret_cast<char *>(shm_malloc(sizeof(fatal_failure)));
+    fatal_failure = static_cast<char *>(shm_malloc(sizeof(fatal_failure)));
     static bool registered = false;
     if (!registered) {
       atexit(ReapExitHandler);
@@ -138,7 +146,7 @@ class QueueTest : public SharedMemTestSetup {
   // the attribute is in the middle to make gcc happy
   template<typename T> __attribute__((warn_unused_result))
       std::unique_ptr<ForkedProcess> ForkExecute(void (*function)(T*), T *arg) {
-    mutex *lock = reinterpret_cast<mutex *>(shm_malloc_aligned(
+    mutex *lock = static_cast<mutex *>(shm_malloc_aligned(
             sizeof(*lock), sizeof(int)));
     *lock = 1;
     const pid_t pid = fork();
@@ -182,7 +190,7 @@ class QueueTest : public SharedMemTestSetup {
                                                  bool expected, ChildID id) {
     static_assert(aos::shm_ok<FunctionToCall<T>>::value,
                   "this is going into shared memory");
-    volatile FunctionToCall<T> *const to_call = reinterpret_cast<FunctionToCall<T> *>(
+    volatile FunctionToCall<T> *const to_call = static_cast<FunctionToCall<T> *>(
         shm_malloc_aligned(sizeof(*to_call), sizeof(int)));
     to_call->result = ResultType::NotCalled;
     to_call->function = function;
@@ -237,38 +245,37 @@ class QueueTest : public SharedMemTestSetup {
     int16_t data; // don't really want to test empty messages
   };
   struct MessageArgs {
-    aos_queue *const queue;
+    Queue *const queue;
     int flags;
     int16_t data; // -1 means NULL expected
   };
   static void WriteTestMessage(MessageArgs *args, char *failure) {
-    TestMessage *msg = reinterpret_cast<TestMessage *>(aos_queue_get_msg(args->queue));
+    TestMessage *msg = static_cast<TestMessage *>(args->queue->GetMessage());
     if (msg == NULL) {
       snprintf(fatal_failure, kFailureSize, "couldn't get_msg from %p", args->queue);
       return;
     }
     msg->data = args->data;
-    if (aos_queue_write_msg_free(args->queue, msg, args->flags) == -1) {
+    if (!args->queue->WriteMessage(msg, args->flags)) {
       snprintf(failure, kFailureSize, "write_msg_free(%p, %p, %d) failed",
                args->queue, msg, args->flags);
     }
   }
   static void ReadTestMessage(MessageArgs *args, char *failure) {
-    const TestMessage *msg = reinterpret_cast<const TestMessage *>(
-        aos_queue_read_msg(args->queue, args->flags));
+    const TestMessage *msg = static_cast<const TestMessage *>(
+        args->queue->ReadMessage(args->flags));
     if (msg == NULL) {
       if (args->data != -1) {
-        snprintf(failure, kFailureSize,
-                 "expected data of %" PRId16 " but got NULL message",
+        snprintf(failure, kFailureSize, "expected data of %"PRId16" but got NULL message",
                  args->data);
       }
     } else {
       if (args->data != msg->data) {
         snprintf(failure, kFailureSize,
-                 "expected data of %" PRId16 " but got %" PRId16 " instead",
+                 "expected data of %"PRId16" but got %"PRId16" instead",
                  args->data, msg->data);
       }
-      aos_queue_free_msg(args->queue, msg);
+      args->queue->FreeMessage(msg);
     }
   }
 };
@@ -276,81 +283,75 @@ char *QueueTest::fatal_failure;
 std::map<QueueTest::ChildID, QueueTest::ForkedProcess *> QueueTest::children_;
 
 TEST_F(QueueTest, Reading) {
-  static const aos_type_sig signature{sizeof(TestMessage), 1, 1};
-  aos_queue *const queue = aos_fetch_queue("Queue", &signature);
+  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, -1};
 
-  EXPECT_EQ(BLOCK, 0);
-  EXPECT_EQ(BLOCK | FROM_END, FROM_END);
-
-  args.flags = NON_BLOCK;
+  args.flags = Queue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = NON_BLOCK | PEEK;
+  args.flags = Queue::kNonBlock | Queue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   EXPECT_HANGS(ReadTestMessage, &args);
-  args.flags = PEEK;
+  args.flags = Queue::kPeek;
   EXPECT_HANGS(ReadTestMessage, &args);
   args.data = 254;
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = PEEK;
+  args.flags = Queue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = PEEK;
+  args.flags = Queue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = PEEK | NON_BLOCK;
+  args.flags = Queue::kPeek | Queue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   args.data = -1;
   EXPECT_HANGS(ReadTestMessage, &args);
-  args.flags = NON_BLOCK;
+  args.flags = Queue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   args.data = 971;
   EXPECT_RETURNS_FAILS(ReadTestMessage, &args);
 }
 TEST_F(QueueTest, Writing) {
-  static const aos_type_sig signature{sizeof(TestMessage), 1, 1};
-  aos_queue *const queue = aos_fetch_queue("Queue", &signature);
+  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 973};
 
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_HANGS(WriteTestMessage, &args);
-  args.flags = NON_BLOCK;
+  args.flags = Queue::kNonBlock;
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
-  args.flags = NON_BLOCK;
+  args.flags = Queue::kNonBlock;
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
-  args.flags = PEEK;
+  args.flags = Queue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.data = 971;
-  args.flags = OVERRIDE;
+  args.flags = Queue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = OVERRIDE;
-  EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = 0;
-  EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = NON_BLOCK;
+  args.flags = Queue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = OVERRIDE;
+  args.flags = Queue::kNonBlock;
+  EXPECT_RETURNS(WriteTestMessage, &args);
+  args.flags = 0;
+  EXPECT_RETURNS(ReadTestMessage, &args);
+  args.flags = Queue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
 }
 
 TEST_F(QueueTest, MultiRead) {
-  static const aos_type_sig signature{sizeof(TestMessage), 1, 1};
-  aos_queue *const queue = aos_fetch_queue("Queue", &signature);
+  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 1323};
 
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 1));
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 2));
   EXPECT_TRUE(HangsCheck(1) != HangsCheck(2));
@@ -360,45 +361,45 @@ TEST_F(QueueTest, MultiRead) {
 TEST_F(QueueTest, Recycle) {
   // TODO(brians) basic test of recycle queue
   // include all of the ways a message can get into the recycle queue
-  static const aos_type_sig signature{sizeof(TestMessage), 1, 2},
-               recycle_signature{sizeof(TestMessage), 2, 2};
-  aos_queue *recycle_queue = reinterpret_cast<aos_queue *>(23);
-  aos_queue *const queue = aos_fetch_queue_recycle("Queue", &signature,
-                                                   &recycle_signature, &recycle_queue);
-  ASSERT_NE(reinterpret_cast<aos_queue *>(23), recycle_queue);
+  Queue *recycle_queue = reinterpret_cast<Queue *>(23);
+  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 2, 2, 2,
+                                    &recycle_queue);
+  ASSERT_NE(reinterpret_cast<Queue *>(23), recycle_queue);
   MessageArgs args{queue, 0, 973}, recycle{recycle_queue, 0, 973};
 
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
   EXPECT_HANGS(ReadTestMessage, &recycle);
   args.data = 254;
   EXPECT_RETURNS(WriteTestMessage, &args);
   EXPECT_HANGS(ReadTestMessage, &recycle);
   args.data = 971;
-  args.flags = OVERRIDE;
+  args.flags = Queue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  recycle.flags = BLOCK;
+  recycle.flags = Queue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &recycle);
 
   EXPECT_HANGS(ReadTestMessage, &recycle);
 
-  TestMessage *msg = static_cast<TestMessage *>(aos_queue_get_msg(queue));
+  TestMessage *msg = static_cast<TestMessage *>(queue->GetMessage());
   ASSERT_TRUE(msg != NULL);
   msg->data = 341;
-  aos_queue_free_msg(queue, msg);
+  queue->FreeMessage(msg);
   recycle.data = 341;
   EXPECT_RETURNS(ReadTestMessage, &recycle);
 
   EXPECT_HANGS(ReadTestMessage, &recycle);
 
   args.data = 254;
-  args.flags = PEEK;
+  args.flags = Queue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  recycle.flags = BLOCK;
+  recycle.flags = Queue::kBlock;
   EXPECT_HANGS(ReadTestMessage, &recycle);
-  args.flags = BLOCK;
+  args.flags = Queue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   recycle.data = 254;
   EXPECT_RETURNS(ReadTestMessage, &recycle);
 }
 
+}  // namespace testing
+}  // namespace aos

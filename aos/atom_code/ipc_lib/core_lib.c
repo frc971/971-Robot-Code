@@ -6,7 +6,6 @@
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
 	clock_gettime(CLOCK_REALTIME, &shm_core->identifier);
-	shm_core->queues.alloc_flag = 0;
 	shm_core->msg_alloc_lock = 0;
 	shm_core->queues.queue_list = NULL;
 	shm_core->queues.alloc_lock = 0;

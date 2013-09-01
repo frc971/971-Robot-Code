@@ -17,6 +17,8 @@
 #include "aos/atom_code/thread_local.h"
 #include "aos/atom_code/ipc_lib/queue.h"
 
+using ::aos::Queue;
+
 namespace aos {
 namespace logging {
 namespace {
@@ -53,8 +55,7 @@ AOS_THREAD_LOCAL Context *my_context(NULL);
   return process_name + '.' + thread_name;
 }
 
-static const aos_type_sig message_sig = {sizeof(LogMessage), 1323, 1500};
-static aos_queue *queue;
+static Queue *queue;
 
 }  // namespace
 namespace internal {
@@ -83,7 +84,7 @@ namespace {
 
 class AtomQueueLogImplementation : public LogImplementation {
   virtual void DoLog(log_level level, const char *format, va_list ap) {
-    LogMessage *message = static_cast<LogMessage *>(aos_queue_get_msg(queue));
+    LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
     if (message == NULL) {
       LOG(FATAL, "queue get message failed\n");
     }
@@ -99,7 +100,7 @@ class AtomQueueLogImplementation : public LogImplementation {
 void Register() {
   Init();
 
-  queue = aos_fetch_queue("LoggingQueue", &message_sig);
+  queue = Queue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 1500);
   if (queue == NULL) {
     Die("logging: couldn't fetch queue\n");
   }
@@ -108,33 +109,32 @@ void Register() {
 }
 
 const LogMessage *ReadNext(int flags, int *index) {
-  return static_cast<const LogMessage *>(
-      aos_queue_read_msg_index(queue, flags, index));
+  return static_cast<const LogMessage *>(queue->ReadMessageIndex(flags, index));
 }
 
 const LogMessage *ReadNext() {
-  return ReadNext(BLOCK);
+  return ReadNext(Queue::kBlock);
 }
 
 const LogMessage *ReadNext(int flags) {
   const LogMessage *r = NULL;
   do {
-    r = static_cast<const LogMessage *>(aos_queue_read_msg(queue, flags));
+    r = static_cast<const LogMessage *>(queue->ReadMessage(flags));
     // not blocking means return a NULL if that's what it gets
-  } while ((flags & BLOCK) && r == NULL);
+  } while ((flags & Queue::kBlock) && r == NULL);
   return r;
 }
 
 LogMessage *Get() {
-  return static_cast<LogMessage *>(aos_queue_get_msg(queue));
+  return static_cast<LogMessage *>(queue->GetMessage());
 }
 
 void Free(const LogMessage *msg) {
-  aos_queue_free_msg(queue, msg);
+  queue->FreeMessage(msg);
 }
 
 void Write(LogMessage *msg) {
-  if (aos_queue_write_msg_free(queue, msg, OVERRIDE) < 0) {
+  if (!queue->WriteMessage(msg, Queue::kOverride)) {
     LOG(FATAL, "writing failed");
   }
 }

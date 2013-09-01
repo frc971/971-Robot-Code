@@ -15,7 +15,6 @@ struct Buffers::Buffer {
 };
 const std::string Buffers::kFDServerName("/tmp/aos_fd_server");
 const std::string Buffers::kQueueName("CameraBufferQueue");
-const aos_type_sig Buffers::kSignature{sizeof(Message), 971, 1};
 
 int Buffers::CreateSocket(int (*bind_connect)(int, const sockaddr *, socklen_t)) {
   union af_unix_sockaddr {
@@ -66,7 +65,7 @@ void Buffers::MMap() {
 
 void Buffers::Release() {
   if (message_ != NULL) {
-    aos_queue_free_msg(queue_, message_);
+    queue_->FreeMessage(message_);
     message_ = NULL;
   }
 }
@@ -77,11 +76,12 @@ const void *Buffers::GetNext(bool block,
   // TODO(brians) make sure the camera reader process hasn't died
   do {
     if (block) {
-      message_ = static_cast<const Message *>(aos_queue_read_msg(queue_, PEEK | BLOCK));
+      message_ = static_cast<const Message *>(queue_->ReadMessage(
+              Queue::kPeek | Queue::kBlock));
     } else {
       static int index = 0;
-      message_ = static_cast<const Message *>(aos_queue_read_msg_index(queue_, BLOCK,
-                                                                       &index));
+      message_ = static_cast<const Message *>(queue_->ReadMessageIndex(
+              Queue::kBlock, &index));
     }
   } while (block && message_ == NULL);
   if (message_ != NULL) {
@@ -137,7 +137,7 @@ int Buffers::FetchFD() {
 }
 Buffers::Buffers() : server_(CreateSocket(connect)), fd_(FetchFD()), message_(NULL) {
   MMap();
-  queue_ = aos_fetch_queue(kQueueName.c_str(), &kSignature);
+  queue_ = Queue::Fetch(kQueueName.c_str(), sizeof(Message), 971, 1);
 }
 
 Buffers::~Buffers() {
@@ -157,6 +157,5 @@ Buffers::~Buffers() {
   }
 }
 
-} // namespace camera
-} // namespace aos
-
+}  // namespace camera
+}  // namespace aos

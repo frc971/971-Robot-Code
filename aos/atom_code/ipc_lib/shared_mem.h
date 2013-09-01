@@ -1,13 +1,13 @@
 #ifndef _SHARED_MEM_H_
 #define _SHARED_MEM_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core_lib.h"
 #include <stddef.h>
 #include <unistd.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Where the shared memory segment starts in each process's address space.
 // Has to be the same in all of them so that stuff in shared memory
