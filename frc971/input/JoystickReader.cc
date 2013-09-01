@@ -150,7 +150,10 @@ class Reader : public ::aos::input::JoystickInput {
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
       static double angle_adjust_goal = 0.42;
-      if (data.IsPressed(kLongShot)) {
+      if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
+        shooter_goal->velocity = 131;
+        angle_adjust_goal = 0.70;
+      } else if (data.IsPressed(kLongShot)) {
 #if 0
         target_angle.FetchLatest();
         if (target_angle.IsNewerThanMS(500)) {
@@ -179,9 +182,6 @@ class Reader : public ::aos::input::JoystickInput {
       } else if (data.IsPressed(kShortShot)) {
         shooter_goal->velocity = 375;
         angle_adjust_goal = 0.7267;
-      } else if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
-        shooter_goal->velocity = 131;
-        angle_adjust_goal = 0.70;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 
