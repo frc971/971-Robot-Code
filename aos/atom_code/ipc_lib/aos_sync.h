@@ -32,8 +32,15 @@ typedef struct {
 } condition_variable;
 
 // All return -1 for other error (which will be in errno from futex(2)).
+//
+// There is no priority inversion protection.
+// TODO(brians) look at using
+// <http://www.kernel.org/doc/Documentation/pi-futex.txt>
 
 // Returns 1 if interrupted by a signal.
+//
+// One of the highest priority processes blocked on a given mutex will be the
+// one to lock it when it is unlocked.
 int mutex_lock(mutex *m) __attribute__((warn_unused_result));
 // Returns 2 if it timed out or 1 if interrupted by a signal.
 int mutex_lock_timeout(mutex *m, const struct timespec *timeout)
@@ -55,11 +62,14 @@ int mutex_trylock(mutex *m) __attribute__((warn_unused_result));
 int futex_wait(mutex *m) __attribute__((warn_unused_result));
 // Set the futex and wake up anybody waiting on it.
 // Returns the number that were woken or -1.
+//
+// This will always wake up all waiters at the same time.
 int futex_set(mutex *m);
 // Same as above except lets something other than 1 be used as the final value.
 int futex_set_value(mutex *m, mutex value);
 // Unsets the futex.
 // Returns 0 if it was set before and 1 if it wasn't.
+// Can not fail.
 int futex_unset(mutex *m);
 
 // The condition_ functions implement condition variable support. The API is

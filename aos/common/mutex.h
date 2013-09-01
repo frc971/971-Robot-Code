@@ -64,6 +64,20 @@ class MutexLocker {
   Mutex *mutex_;
   DISALLOW_COPY_AND_ASSIGN(MutexLocker);
 };
+// The inverse of MutexLocker.
+class MutexUnlocker {
+ public:
+  explicit MutexUnlocker(Mutex *mutex) : mutex_(mutex) {
+    mutex_->Unlock();
+  }
+  ~MutexUnlocker() {
+    mutex_->Lock();
+  }
+
+ private:
+  Mutex *mutex_;
+  DISALLOW_COPY_AND_ASSIGN(MutexUnlocker);
+};
 
 }  // namespace aos
 
