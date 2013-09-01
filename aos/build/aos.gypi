@@ -97,7 +97,7 @@
                 '-march=atom',
                 '-mfpmath=sse',
 
-                '-fstack-protector',
+                '-fstack-protector-all',
               ],
             }
           ]],
