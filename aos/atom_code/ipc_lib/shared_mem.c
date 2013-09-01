@@ -46,8 +46,8 @@ before:
   }
   if (shm == -1) {
     fprintf(stderr, "shared_mem:"
-        " shm_open(" AOS_SHM_NAME ", O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
-        " failed with %d: %s\n", errno, strerror(errno));
+            " shm_open(" AOS_SHM_NAME ", O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
+            " failed with %d: %s\n", errno, strerror(errno));
     return -1;
   }
   if (global_core->owner) {
@@ -62,8 +62,8 @@ before:
       MAP_SHARED | MAP_FIXED | MAP_LOCKED | MAP_POPULATE, shm, 0);
   if (shm_address == MAP_FAILED) {
     fprintf(stderr, "shared_mem: mmap(%p, 0x%zx, stuff, stuff, %d, 0) failed"
-        " with %d: %s\n",
-        (void *)SHM_START, SIZEOFSHMSEG, shm, errno, strerror(errno));
+            " with %d: %s\n",
+            (void *)SHM_START, SIZEOFSHMSEG, shm, errno, strerror(errno));
     return -1;
   }
   printf("shared_mem: shm at: %p\n", shm_address);
@@ -88,9 +88,9 @@ int aos_core_use_address_as_shared_mem(void *address, size_t size) {
     init_shared_mem_core(global_core->mem_struct);
   }
   if (global_core->owner) {
-    condition_set(&global_core->mem_struct->creation_condition);
+    futex_set(&global_core->mem_struct->creation_condition);
   } else {
-    if (condition_wait(&global_core->mem_struct->creation_condition) != 0) {
+    if (futex_wait(&global_core->mem_struct->creation_condition) != 0) {
       fprintf(stderr, "waiting on creation_condition failed\n");
       return -1;
     }
@@ -116,4 +116,3 @@ int aos_core_free_shared_mem(){
   }
   return 0;
 }
-

@@ -144,8 +144,8 @@ static inline aos_queue *aos_create_queue(const aos_type_sig *sig) {
 	buf->start = 0;
 	buf->end = 0;
 	buf->msgs = 0;
-	buf->writable = 1;
-	buf->readable = 0;
+	memset(&buf->writable, 0, sizeof(buf->writable));
+	memset(&buf->readable, 0, sizeof(buf->readable));
 	buf->buff_lock = 0;
 	pool->pool_lock = 0;
 	queue->recycle = NULL;
@@ -236,30 +236,18 @@ int aos_queue_write_msg(aos_queue *queue, void *msg, int opts) {
       msg_ref_dec(buf->data[buf->start], &queue->pool, queue);
       buf->start = (buf->start + 1) % buf->length;
     } else { // BLOCK
-      mutex_unlock(&buf->buff_lock);
 #if WRITE_DEBUG
       printf("queue: going to wait for writable(=%p) of %p\n",
           &buf->writable, queue);
 #endif
-      if (condition_wait(&buf->writable)) {
+       condition_wait(&buf->writable, &buf->buff_lock);
 #if WRITE_DEBUG
-        printf("queue: waiting for writable(=%p) of %p failed\n",
-            &buf->writable, queue);
+       printf("queue: done waiting for writable(=%p) of %p\n",
+              &buf->writable, queue);
 #endif
-        return -1;
-      }
-#if WRITE_DEBUG
-      printf("queue: going to re-lock buff_lock of %p to write\n", queue);
-#endif
-      if (mutex_lock(&buf->buff_lock)) {
-#if WRITE_DEBUG
-        printf("queue: error locking buff_lock of %p\n", queue);
-#endif
-        return -1;
-      }
-    }
-    new_end = (buf->end + 1) % buf->length;
-  }
+     }
+     new_end = (buf->end + 1) % buf->length;
+   }
   buf->data[buf->end] = msg;
   ++buf->msgs;
   buf->end = new_end;
@@ -267,10 +255,7 @@ int aos_queue_write_msg(aos_queue *queue, void *msg, int opts) {
 #if WRITE_DEBUG
   printf("queue: setting readable(=%p) of %p\n", &buf->readable, queue);
 #endif
-  condition_set(&buf->readable);
-  if (((buf->end + 1) % buf->length) == buf->start) { // if it's now full
-    condition_unset(&buf->writable);
-  }
+  condition_signal(&buf->readable);
 #if WRITE_DEBUG
   printf("queue: write returning %d on queue %p\n", rv, queue);
 #endif
@@ -288,10 +273,7 @@ int aos_queue_free_msg(aos_queue *queue, const void *msg) {
 // read is whether or not this read call read one off the queue
 static inline void aos_read_msg_common_end(aos_ring_buf *const buf, int read) {
 	if (read) {
-		condition_set(&buf->writable);
-		if (buf->start == buf->end) {
-			condition_unset(&buf->readable);
-		}
+		condition_signal(&buf->writable);
 	}
 }
 // Returns with buff_lock locked and a readable message in buf.
@@ -308,8 +290,8 @@ static inline int aos_queue_read_msg_common(int opts, aos_ring_buf *const buf,
 		return -1;
 	}
 	while (buf->start == buf->end || ((index != NULL) && buf->msgs <= *index)) {
-		mutex_unlock(&buf->buff_lock);
 		if (opts & NON_BLOCK) {
+			mutex_unlock(&buf->buff_lock);
 #if READ_DEBUG
 			printf("queue: not going to block waiting on %p\n", queue);
 #endif
@@ -320,23 +302,11 @@ static inline int aos_queue_read_msg_common(int opts, aos_ring_buf *const buf,
 					&buf->readable, queue);
 #endif
 			// wait for a message to become readable
-			if ((index == NULL) ? condition_wait(&buf->readable) :
-					condition_wait_force(&buf->readable)) {
+			condition_wait(&buf->readable, &buf->buff_lock);
 #if READ_DEBUG
-				printf("queue: waiting for readable(=%p) of %p failed\n",
-						&buf->readable, queue);
+			printf("queue: done waiting for readable(=%p) of %p\n",
+					&buf->readable, queue);
 #endif
-				return -1;
-			}
-		}
-#if READ_DEBUG
-		printf("queue: going to re-lock buff_lock of %p to read\n", queue);
-#endif
-		if (mutex_lock(&buf->buff_lock)) {
-#if READ_DEBUG
-			printf("couldn't re-lock buff_lock of %p\n", queue);
-#endif
-			return -1;
 		}
 	}
 #if READ_DEBUG

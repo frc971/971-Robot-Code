@@ -35,8 +35,8 @@ struct aos_queue_list_t {
 typedef struct aos_ring_buf_t {
 	mutex buff_lock; // the main lock protecting operations on this buffer
   // conditions
-	mutex writable;
-	mutex readable;
+	condition_variable writable;
+	condition_variable readable;
 	int length; // max index into data + 1
 	int start; // is an index into data
 	int end; // is an index into data

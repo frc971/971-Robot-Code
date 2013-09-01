@@ -14,12 +14,22 @@ extern "C" {
 // and <http://www.valgrind.org/docs/manual/drd-manual.html#drd-manual.clientreqs>
 // list the interesting ones
 
-// Have to align structs containing it to to sizeof(int).
+// Have to align structs containing it to sizeof(int).
 // Valid initial values for use with mutex_ functions are 0 (unlocked) and 1 (locked).
-// Valid initial values for use with condition_ functions are 0 (unset) and 1 (set).
+// Valid initial values for use with futex_ functions are 0 (unset) and 1 (set).
 // The value should not be changed after multiple processes have started
 // accessing an instance except through the functions declared in this file.
 typedef volatile uint32_t mutex __attribute__((aligned(sizeof(int))));
+
+// Have to align structs containing it to sizeof(int).
+// Used with the condition_ functions.
+// It should be 0-initialized.
+typedef struct {
+  // The futex that is actually used to wait.
+  mutex wait;
+  // The mutex associated with this condition variable.
+  mutex *m;
+} condition_variable;
 
 // All return -1 for other error (which will be in errno from futex(2)).
 
@@ -30,31 +40,41 @@ int mutex_lock_timeout(mutex *m, const struct timespec *timeout)
   __attribute__((warn_unused_result));
 // Ignores signals. Can not fail.
 int mutex_grab(mutex *m);
-// Returns 1 for multiple unlocking and -1 if something bad happened and
-// whoever's waiting didn't get woken up.
-int mutex_unlock(mutex *m);
+// abort(2)s for multiple unlocking.
+void mutex_unlock(mutex *m);
 // Returns 0 when successful in locking the mutex and 1 if somebody else has it
 // locked.
 int mutex_trylock(mutex *m) __attribute__((warn_unused_result));
 
-// The condition_ functions are similar to the mutex_ ones but different.
+// The futex_ functions are similar to the mutex_ ones but different.
 // They are designed for signalling when something happens (possibly to
 // multiple listeners). A mutex manipulated with them can only be set or unset.
 
-// Wait for the condition to be set. Will return immediately if it's already set.
+// Wait for the futex to be set. Will return immediately if it's already set.
 // Returns 0 if successful or it was already set, 1 if interrupted by a signal, or -1.
-int condition_wait(mutex *m) __attribute__((warn_unused_result));
-// Will wait for the next condition_set, even if the condition is already set.
-// Returns 0 if successful, 1 if interrupted by a signal, or -1.
-int condition_wait_force(mutex *m) __attribute__((warn_unused_result));
-// Set the condition and wake up anybody waiting on it.
+int futex_wait(mutex *m) __attribute__((warn_unused_result));
+// Set the futex and wake up anybody waiting on it.
 // Returns the number that were woken or -1.
-int condition_set(mutex *m);
+int futex_set(mutex *m);
 // Same as above except lets something other than 1 be used as the final value.
-int condition_set_value(mutex *m, mutex value);
-// Unsets the condition.
+int futex_set_value(mutex *m, mutex value);
+// Unsets the futex.
 // Returns 0 if it was set before and 1 if it wasn't.
-int condition_unset(mutex *m);
+int futex_unset(mutex *m);
+
+// The condition_ functions implement condition variable support. The API is
+// similar to the pthreads api and works the same way.
+
+// Wait for the condition variable to be signalled. m will be unlocked
+// atomically with actually starting to wait. The same m argument must be used
+// for all calls with a given c.
+void condition_wait(condition_variable *c, mutex *m);
+// If any other processes are condition_waiting on c, wake 1 of them. Does not
+// require the m used with condition_wait on this c to be locked.
+void condition_signal(condition_variable *c);
+// Wakes all processes that are condition_waiting on c. Does not require the m
+// used with the condition_wait on this c to be locked.
+void condition_broadcast(condition_variable *c);
 
 #ifdef __cplusplus
 }
