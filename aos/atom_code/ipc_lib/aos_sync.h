@@ -1,5 +1,5 @@
-#ifndef AOS_IPC_LIB_SYNC_H_
-#define AOS_IPC_LIB_SYNC_H_
+#ifndef AOS_ATOM_CODE_IPC_LIB_SYNC_H_
+#define AOS_ATOM_CODE_IPC_LIB_SYNC_H_
 
 #include <stdlib.h>
 #include <signal.h>
@@ -90,4 +90,4 @@ void condition_broadcast(condition_variable *c);
 }
 #endif  // __cplusplus
 
-#endif
+#endif  // AOS_ATOM_CODE_IPC_LIB_SYNC_H_

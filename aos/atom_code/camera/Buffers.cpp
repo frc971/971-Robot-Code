@@ -77,11 +77,11 @@ const void *Buffers::GetNext(bool block,
   do {
     if (block) {
       message_ = static_cast<const Message *>(queue_->ReadMessage(
-              Queue::kPeek | Queue::kBlock));
+              RawQueue::kPeek | RawQueue::kBlock));
     } else {
       static int index = 0;
       message_ = static_cast<const Message *>(queue_->ReadMessageIndex(
-              Queue::kBlock, &index));
+              RawQueue::kBlock, &index));
     }
   } while (block && message_ == NULL);
   if (message_ != NULL) {
@@ -137,7 +137,7 @@ int Buffers::FetchFD() {
 }
 Buffers::Buffers() : server_(CreateSocket(connect)), fd_(FetchFD()), message_(NULL) {
   MMap();
-  queue_ = Queue::Fetch(kQueueName.c_str(), sizeof(Message), 971, 1);
+  queue_ = RawQueue::Fetch(kQueueName.c_str(), sizeof(Message), 971, 1);
 }
 
 Buffers::~Buffers() {

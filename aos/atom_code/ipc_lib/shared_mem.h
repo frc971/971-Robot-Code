@@ -1,18 +1,39 @@
 #ifndef _SHARED_MEM_H_
 #define _SHARED_MEM_H_
 
-#include "core_lib.h"
 #include <stddef.h>
 #include <unistd.h>
+#include <time.h>
+
+#include "aos/atom_code/ipc_lib/aos_sync.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern struct aos_core *global_core;
+
 // Where the shared memory segment starts in each process's address space.
 // Has to be the same in all of them so that stuff in shared memory
 // can have regular pointers to other stuff in shared memory.
 #define SHM_START 0x20000000
+
+typedef struct aos_queue_global_t {
+  mutex alloc_lock;
+  void *queue_list;  // an aos::Queue* declared in C code
+} aos_queue_global;
+
+typedef struct aos_shm_core_t {
+  // clock_gettime(CLOCK_REALTIME, &identifier) gets called to identify
+  // this shared memory area
+  struct timespec identifier;
+  // gets 0-initialized at the start (as part of shared memory) and
+  // the owner sets as soon as it finishes setting stuff up
+  mutex creation_condition;
+  mutex msg_alloc_lock;
+  void *msg_alloc;
+  aos_queue_global queues;
+} aos_shm_core;
 
 enum aos_core_create {
   create,
@@ -25,6 +46,8 @@ struct aos_core {
   ptrdiff_t size;
   aos_shm_core *mem_struct;
 };
+
+void init_shared_mem_core(aos_shm_core *shm_core);
 
 ptrdiff_t aos_core_get_mem_usage(void);
 

@@ -54,7 +54,7 @@ class Buffers {
   const Message *message_;
   static const std::string kQueueName;
   // NULL for the Reader one.
-  Queue *queue_;
+  RawQueue *queue_;
   // Make the actual mmap calls.
   // Called by Buffers() automatically.
   void MMap();

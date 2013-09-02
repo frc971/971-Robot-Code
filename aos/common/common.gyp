@@ -21,7 +21,6 @@
         'queue_testutils.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
         '<(AOS)/build/aos.gyp:logging',
         'once',
         '<(EXTERNALS):gtest',
@@ -54,10 +53,10 @@
         },
         {
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ],
         }]
       ],
@@ -216,6 +215,24 @@
       ],
     },
     {
+      'target_name': 'condition',
+      'type': 'static_library',
+      'sources': [
+        '<(AOS)/atom_code/ipc_lib/condition.cc',
+      ],
+      'dependencies': [
+        'mutex',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        # TODO(aschuh): Fix this dependency loop by
+        # providing a logging interface.
+        # '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        'mutex',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+      ],
+    },
+    {
       'target_name': 'mutex',
       'type': 'static_library',
       'conditions': [
@@ -228,10 +245,10 @@
             '<(AOS)/atom_code/ipc_lib/mutex.cpp',
           ],
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
         }],
       ],

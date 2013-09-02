@@ -1,4 +1,4 @@
-#include "aos_sync.h"
+#include "aos/atom_code/ipc_lib/aos_sync.h"
 
 #include <stdio.h>
 #include <linux/futex.h>

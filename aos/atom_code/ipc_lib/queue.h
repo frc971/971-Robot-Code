@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_QUEUE_H_
-#define AOS_COMMON_QUEUE_H_
+#ifndef AOS_ATOM_CODE_IPC_LIB_QUEUE_H_
+#define AOS_ATOM_CODE_IPC_LIB_QUEUE_H_
 
 #include "aos/atom_code/ipc_lib/shared_mem.h"
 #include "aos/common/mutex.h"
@@ -26,14 +26,14 @@ namespace aos {
 // of name and type signature will result in a different queue, which means
 // that if you only recompile some code that uses differently sized messages,
 // it will simply use a different queue than the old code.
-class Queue {
+class RawQueue {
  public:
   // Retrieves (and creates if necessary) a queue. Each combination of name and
   // signature refers to a completely independent queue.
   // length is how large each message will be
   // hash can differentiate multiple otherwise identical queues
   // queue_length is how many messages the queue will be able to hold
-  static Queue *Fetch(const char *name, size_t length, int hash,
+  static RawQueue *Fetch(const char *name, size_t length, int hash,
                       int queue_length);
   // Same as above, except sets up the returned queue so that it will put
   // messages on *recycle when they are freed (after they have been released by
@@ -47,10 +47,10 @@ class Queue {
   // NOTE: calling this function with the same (name,length,hash,queue_length)
   // but multiple recycle_queue_lengths will result in each freed message being
   // put onto an undefined one of the recycle queues.
-  static Queue *Fetch(const char *name, size_t length, int hash,
+  static RawQueue *Fetch(const char *name, size_t length, int hash,
                       int queue_length,
                       int recycle_hash, int recycle_queue_length,
-                      Queue **recycle);
+                      RawQueue **recycle);
 
   // Constants for passing to options arguments.
   // The non-conflicting ones can be combined with bitwise-or.
@@ -79,6 +79,7 @@ class Queue {
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
+  // Returns truen on success.
   bool WriteMessage(void *msg, int options);
 
   // Reads a message out of the queue.
@@ -105,6 +106,7 @@ class Queue {
   // FreeMessage.
   void *GetMessage();
 
+  // It is ok to call this with msg == NULL.
   void FreeMessage(const void *msg) { DecrementMessageReferenceCount(msg); }
 
  private:
@@ -116,9 +118,9 @@ class Queue {
   int hash_;
   int queue_length_;
   // The next one in the linked list of queues.
-  Queue *next_;
+  RawQueue *next_;
 
-  Queue *recycle_;
+  RawQueue *recycle_;
 
   Mutex data_lock_;  // protects operations on data_ etc
   Condition readable_;
@@ -152,9 +154,9 @@ class Queue {
   void *ReadPeek(int options, int start);
 
   // Gets called by Fetch when necessary (with placement new).
-  Queue(const char *name, size_t length, int hash, int queue_length);
+  RawQueue(const char *name, size_t length, int hash, int queue_length);
 };
 
 }  // namespace aos
 
-#endif  // AOS_COMMONG_QUEUE_H_
+#endif  // AOS_ATOM_CODE_IPC_LIB_QUEUE_H_

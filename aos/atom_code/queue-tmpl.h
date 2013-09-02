@@ -5,7 +5,7 @@ bool ScopedMessagePtr<T>::Send() {
   assert(msg_ != NULL);
   msg_->SetTimeToNow();
   assert(queue_ != NULL);
-  bool return_value = aos_queue_write_msg_free(queue_, msg_, OVERRIDE) == 0;
+  bool return_value = queue_->WriteMessage(msg_, RawQueue::kOverride);
   msg_ = NULL;
   return return_value;
 }
@@ -15,7 +15,7 @@ bool ScopedMessagePtr<T>::SendBlocking() {
   assert(msg_ != NULL);
   msg_->SetTimeToNow();
   assert(queue_ != NULL);
-  bool return_value = aos_queue_write_msg_free(queue_, msg_, BLOCK) == 0;
+  bool return_value = queue_->WriteMessage(msg_, RawQueue::kBlock);
   msg_ = NULL;
   return return_value;
 }
@@ -23,7 +23,7 @@ bool ScopedMessagePtr<T>::SendBlocking() {
 template <class T>
 void ScopedMessagePtr<T>::reset(T *msg) {
   if (queue_ != NULL && msg_ != NULL) {
-    aos_queue_free_msg(queue_, msg_);
+    queue_->FreeMessage(msg);
   }
   msg_ = msg;
 }
@@ -81,13 +81,12 @@ class SafeScopedMessagePtr {
     assert(msg_ != NULL);
     assert(queue_ != NULL);
     msg_->SetTimeToNow();
-    T *shm_msg = static_cast<T *>(aos_queue_get_msg(queue_));
+    T *shm_msg = static_cast<T *>(queue_->GetMessage());
     if (shm_msg == NULL) {
       return false;
     }
     *shm_msg = *msg_;
-    bool return_value =
-        aos_queue_write_msg_free(queue_, shm_msg, OVERRIDE) == 0;
+    bool return_value = queue_->WriteMessage(shm_msg, RawQueue::kOverride);
     reset();
     return return_value;
   }
@@ -100,12 +99,12 @@ class SafeScopedMessagePtr {
     assert(msg_ != NULL);
     assert(queue_ != NULL);
     msg_->SetTimeToNow();
-    T *shm_msg = static_cast<T *>(aos_queue_get_msg(queue_));
+    T *shm_msg = static_cast<T *>(queue_->GetMessage());
     if (shm_msg == NULL) {
       return false;
     }
     *shm_msg = *msg_;
-    bool return_value = aos_queue_write_msg_free(queue_, shm_msg, BLOCK) == 0;
+    bool return_value = queue_->WriteMessage(shm_msg, RawQueue::kBlock);
     reset();
     return return_value;
   }
@@ -145,7 +144,7 @@ class SafeScopedMessagePtr {
   friend class aos::SafeMessageBuilder<T>;
 
   // Only Queue should be able to build a message pointer.
-  SafeScopedMessagePtr(aos_queue *queue)
+  SafeScopedMessagePtr(RawQueue *queue)
       : queue_(queue), msg_(new T()) {}
 
   // Sets the pointer to msg, freeing the old value if it was there.
@@ -159,10 +158,10 @@ class SafeScopedMessagePtr {
   }
 
   // Sets the queue that owns this message.
-  void set_queue(aos_queue *queue) { queue_ = queue; }
+  void set_queue(RawQueue *queue) { queue_ = queue; }
 
   // The queue that the message is a part of.
-  aos_queue *queue_;
+  RawQueue *queue_;
   // The message or NULL.
   T *msg_;
 };
@@ -170,11 +169,9 @@ class SafeScopedMessagePtr {
 template <class T>
 void Queue<T>::Init() {
   if (queue_ == NULL) {
-    // Signature of the message.
-    aos_type_sig kQueueSignature{sizeof(T), static_cast<int>(T::kHash),
-      T::kQueueLength};
-
-    queue_ = aos_fetch_queue(queue_name_, &kQueueSignature);
+    queue_ = RawQueue::Fetch(queue_name_, sizeof(T),
+                             static_cast<int>(T::kHash),
+                             T::kQueueLength);
     queue_msg_.set_queue(queue_);
   }
 }
@@ -191,11 +188,11 @@ void Queue<T>::Clear() {
 template <class T>
 bool Queue<T>::FetchNext() {
   Init();
-  // TODO(aschuh): Use aos_queue_read_msg_index so that multiple readers
+  // TODO(aschuh): Use RawQueue::ReadMessageIndex so that multiple readers
   // reading don't randomly get only part of the messages.
   // Document here the tradoffs that are part of each method.
-  const T *msg = static_cast<const T *>(aos_queue_read_msg(queue_,
-        NON_BLOCK));
+  const T *msg = static_cast<const T *>(
+      queue_->ReadMessage(RawQueue::kNonBlock));
   // Only update the internal pointer if we got a new message.
   if (msg != NULL) {
     queue_msg_.reset(msg);
@@ -206,7 +203,7 @@ bool Queue<T>::FetchNext() {
 template <class T>
 bool Queue<T>::FetchNextBlocking() {
   Init();
-  const T *msg = static_cast<const T *>(aos_queue_read_msg(queue_, BLOCK));
+  const T *msg = static_cast<const T *>(queue_->ReadMessage(RawQueue::kBlock));
   queue_msg_.reset(msg);
   assert (msg != NULL);
   return true;
@@ -215,16 +212,16 @@ bool Queue<T>::FetchNextBlocking() {
 template <class T>
 bool Queue<T>::FetchLatest() {
   Init();
-  const T *msg = static_cast<const T *>(aos_queue_read_msg(queue_,
-        FROM_END | NON_BLOCK | PEEK));
+  const T *msg = static_cast<const T *>(queue_->ReadMessage(
+          RawQueue::kFromEnd | RawQueue::kNonBlock | RawQueue::kPeek));
   // Only update the internal pointer if we got a new message.
   if (msg != NULL && msg != queue_msg_.get()) {
     queue_msg_.reset(msg);
     return true;
   }
-  // The message has to get freed if we didn't use it (and aos_queue_free_msg is
-  // ok to call on NULL).
-  aos_queue_free_msg(queue_, msg);
+  // The message has to get freed if we didn't use it (and RawQueue::FreeMessage
+  // is ok to call on NULL).
+  queue_->FreeMessage(msg);
   return false;
 }
 
@@ -244,7 +241,7 @@ ScopedMessagePtr<T> Queue<T>::MakeMessage() {
 
 template <class T>
 T *Queue<T>::MakeRawMessage() {
-  T *ret = static_cast<T *>(aos_queue_get_msg(queue_));
+  T *ret = static_cast<T *>(queue_->GetMessage());
   assert(ret != NULL);
   return ret;
 }

@@ -9,7 +9,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/condition.h"
+#include "aos/atom_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 namespace testing {
@@ -68,15 +68,15 @@ TEST_F(MutexTest, MutexUnlocker) {
     ASSERT_TRUE(test_mutex.TryLock());
     test_mutex.Unlock();
   }
-  EXPECT_TRUE(test_mutex.TryLock());
+  EXPECT_FALSE(test_mutex.TryLock());
 }
 
 // A worker thread for testing the fairness of the mutex implementation.
 class MutexFairnessWorkerThread {
  public:
   MutexFairnessWorkerThread(int *cycles, int index,
-                            Mutex *mutex, Condition *start)
-      : cycles_(cycles), index_(index), mutex_(mutex), start_(start) {}
+                            Mutex *in_mutex, mutex *start)
+      : cycles_(cycles), index_(index), mutex_(in_mutex), start_(start) {}
 
   static void *RunStatic(void *self_in) {
     MutexFairnessWorkerThread *self =
@@ -94,7 +94,7 @@ class MutexFairnessWorkerThread {
  private:
   void Run() {
     cycles_[index_] = 0;
-    start_->Wait();
+    ASSERT_EQ(futex_wait(start_), 0);
     while (cyclesRun < totalCycles) {
       {
         MutexLocker locker(mutex_);
@@ -117,7 +117,7 @@ class MutexFairnessWorkerThread {
   int *cycles_;
   int index_;
   Mutex *mutex_;
-  Condition *start_;
+  mutex *start_;
   static int cyclesRun, totalCycles;
 };
 int MutexFairnessWorkerThread::cyclesRun;
@@ -141,11 +141,11 @@ TEST_F(MutexTest, Fairness) {
 
   int cycles[kThreads];
   pthread_t workers[kThreads];
-  Condition start;
+  mutex start = 0;
 
   for (int repeats = 0; repeats < 2; ++repeats) {
+    futex_unset(&start);
     MutexFairnessWorkerThread::Reset(repeats ? kRunCycles : kWarmupCycles);
-    start.Unset();
     for (int i = 0; i < kThreads; ++i) {
       MutexFairnessWorkerThread *c = new MutexFairnessWorkerThread(cycles, i,
                                                                    &test_mutex,
@@ -153,7 +153,7 @@ TEST_F(MutexTest, Fairness) {
       ASSERT_EQ(0, pthread_create(&workers[i], NULL,
                                   MutexFairnessWorkerThread::RunStatic, c));
     }
-    start.Set();
+    futex_set(&start);
     for (int i = 0; i < kThreads; ++i) {
       ASSERT_EQ(0, pthread_join(workers[i], NULL));
     }

@@ -31,7 +31,7 @@ int LogStreamerMain() {
 
   int index = 0;
   while (true) {
-    const LogMessage *const msg = ReadNext(Queue::kBlock, &index);
+    const LogMessage *const msg = ReadNext(RawQueue::kBlock, &index);
     if (msg == NULL) continue;
 
     internal::PrintMessage(stdout, *msg);

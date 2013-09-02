@@ -1,48 +1,43 @@
+#include "aos/atom_code/ipc_lib/core_lib.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "shared_mem.h"
-#include "core_lib.h"
-#include <time.h>
 
-void init_shared_mem_core(aos_shm_core *shm_core) {
-	clock_gettime(CLOCK_REALTIME, &shm_core->identifier);
-	shm_core->msg_alloc_lock = 0;
-	shm_core->queues.queue_list = NULL;
-	shm_core->queues.alloc_lock = 0;
-}
+#include "aos/atom_code/ipc_lib/shared_mem.h"
+
 static inline uint8_t aos_8max(uint8_t l, uint8_t r) {
-	return (l > r) ? l : r;
+  return (l > r) ? l : r;
 }
 void *shm_malloc_aligned(size_t length, uint8_t alignment) {
-	// minimum alignments from <http://software.intel.com/en-us/articles/data-alignment-when-migrating-to-64-bit-intel-architecture/>
-	if (length <= 1) {
-		alignment = aos_8max(alignment, 1);
-	} else if (length <= 2) {
-		alignment = aos_8max(alignment, 2);
-	} else if (length <= 4) {
-		alignment = aos_8max(alignment, 4);
-	} else if (length <= 8) {
-		alignment = aos_8max(alignment, 8);
-	} else if (length <= 16) {
-		alignment = aos_8max(alignment, 16);
-	} else {
-		alignment = aos_8max(alignment, (length >= 64) ? 64 : 16);
-	}
+  // minimum alignments from <http://software.intel.com/en-us/articles/data-alignment-when-migrating-to-64-bit-intel-architecture/>
+  if (length <= 1) {
+    alignment = aos_8max(alignment, 1);
+  } else if (length <= 2) {
+    alignment = aos_8max(alignment, 2);
+  } else if (length <= 4) {
+    alignment = aos_8max(alignment, 4);
+  } else if (length <= 8) {
+    alignment = aos_8max(alignment, 8);
+  } else if (length <= 16) {
+    alignment = aos_8max(alignment, 16);
+  } else {
+    alignment = aos_8max(alignment, (length >= 64) ? 64 : 16);
+  }
 
-	void *msg = NULL;
-	aos_shm_core *shm_core = global_core->mem_struct;
-	mutex_grab(&shm_core->msg_alloc_lock);
-	shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - length;
-	const uint8_t align_extra = (uintptr_t)shm_core->msg_alloc % alignment;
-	shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - align_extra;
-	msg = shm_core->msg_alloc;
-	if (msg <= global_core->shared_mem) {
-		fprintf(stderr, "core_lib: RAN OUT OF SHARED MEMORY!!!----------------------------------------------------------\n");
-		printf("if you didn't see the stderr output just then, you should\n");
-		abort();
-	}
-	//printf("alloc %p\n", msg);
-	mutex_unlock(&shm_core->msg_alloc_lock);
-	return msg;
+  void *msg = NULL;
+  aos_shm_core *shm_core = global_core->mem_struct;
+  mutex_grab(&shm_core->msg_alloc_lock);
+  shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - length;
+  const uint8_t align_extra = (uintptr_t)shm_core->msg_alloc % alignment;
+  shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - align_extra;
+  msg = shm_core->msg_alloc;
+  if (msg <= global_core->shared_mem) {
+    fprintf(stderr, "core_lib: RAN OUT OF SHARED MEMORY!!!----------------------------------------------------------\n");
+    printf("if you didn't see the stderr output just then, you should have\n");
+    abort();
+  }
+  //printf("alloc %p\n", msg);
+  mutex_unlock(&shm_core->msg_alloc_lock);
+  return msg;
 }
 

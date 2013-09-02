@@ -17,6 +17,7 @@
 #include "aos/atom_code/camera/V4L2.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/common/logging/logging.h"
+#include "aos/atom_code/ipc_lib/queue.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -31,7 +32,7 @@ class Reader {
   // the bound socket listening for fd requests
   int server_fd_;
 
-  Queue *queue_, *recycle_queue_;
+  RawQueue *queue_, *recycle_queue_;
   // the number of buffers currently queued in v4l2
   uint32_t queued_;
  public:
@@ -51,11 +52,11 @@ class Reader {
               dev_name, errno, strerror(errno));
     }
 
-    queue_ = Queue::Fetch(Buffers::kQueueName.c_str(),
+    queue_ = RawQueue::Fetch(Buffers::kQueueName.c_str(),
                           sizeof(Buffers::Message), 971, 1,
                           1, Buffers::kNumBuffers, &recycle_queue_);
     // read off any existing recycled messages
-    while (recycle_queue_->ReadMessage(Queue::kNonBlock) != NULL);
+    while (recycle_queue_->ReadMessage(RawQueue::kNonBlock) != NULL);
     queued_ = 0;
 
     InitServer();
@@ -141,7 +142,7 @@ class Reader {
           // we block waiting for one if we can't dequeue one without leaving
           // the driver <= 2 (to be safe)
           recycle_queue_->ReadMessage((queued_ <= 2) ?
-                                      Queue::kBlock : Queue::kNonBlock));
+                                      RawQueue::kBlock : RawQueue::kNonBlock));
       if (read != NULL) {
         buf.index = read->index;
         recycle_queue_->FreeMessage(read);
@@ -176,7 +177,7 @@ class Reader {
     msg->bytesused = buf.bytesused;
     memcpy(&msg->timestamp, &buf.timestamp, sizeof(msg->timestamp));
     msg->sequence = buf.sequence;
-    if (!queue->WriteMessage(msg, Queue::kOverride)) {
+    if (!queue_->WriteMessage(msg, RawQueue::kOverride)) {
       LOG(WARNING,
           "sending message %p with buf #%" PRIu32 " to queue %p failed."
           " re-queueing now\n", msg, buf.index, queue_);

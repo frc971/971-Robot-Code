@@ -11,6 +11,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/atom_code/ipc_lib/sharedmem_test_setup.h"
+#include "aos/atom_code/ipc_lib/core_lib.h"
 #include "aos/common/type_traits.h"
 
 using ::testing::AssertionResult;
@@ -245,7 +246,7 @@ class QueueTest : public SharedMemTestSetup {
     int16_t data; // don't really want to test empty messages
   };
   struct MessageArgs {
-    Queue *const queue;
+    RawQueue *const queue;
     int flags;
     int16_t data; // -1 means NULL expected
   };
@@ -266,13 +267,14 @@ class QueueTest : public SharedMemTestSetup {
         args->queue->ReadMessage(args->flags));
     if (msg == NULL) {
       if (args->data != -1) {
-        snprintf(failure, kFailureSize, "expected data of %"PRId16" but got NULL message",
+        snprintf(failure, kFailureSize,
+                 "expected data of %" PRId16 " but got NULL message",
                  args->data);
       }
     } else {
       if (args->data != msg->data) {
         snprintf(failure, kFailureSize,
-                 "expected data of %"PRId16" but got %"PRId16" instead",
+                 "expected data of %" PRId16 " but got %" PRId16 " instead",
                  args->data, msg->data);
       }
       args->queue->FreeMessage(msg);
@@ -283,75 +285,75 @@ char *QueueTest::fatal_failure;
 std::map<QueueTest::ChildID, QueueTest::ForkedProcess *> QueueTest::children_;
 
 TEST_F(QueueTest, Reading) {
-  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, -1};
 
-  args.flags = Queue::kNonBlock;
+  args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = Queue::kNonBlock | Queue::kPeek;
+  args.flags = RawQueue::kNonBlock | RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   EXPECT_HANGS(ReadTestMessage, &args);
-  args.flags = Queue::kPeek;
+  args.flags = RawQueue::kPeek;
   EXPECT_HANGS(ReadTestMessage, &args);
   args.data = 254;
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = Queue::kPeek;
+  args.flags = RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = Queue::kPeek;
+  args.flags = RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = Queue::kPeek | Queue::kNonBlock;
+  args.flags = RawQueue::kPeek | RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   args.data = -1;
   EXPECT_HANGS(ReadTestMessage, &args);
-  args.flags = Queue::kNonBlock;
+  args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = 0;
   args.data = 971;
   EXPECT_RETURNS_FAILS(ReadTestMessage, &args);
 }
 TEST_F(QueueTest, Writing) {
-  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 973};
 
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_HANGS(WriteTestMessage, &args);
-  args.flags = Queue::kNonBlock;
+  args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
-  args.flags = Queue::kNonBlock;
+  args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
-  args.flags = Queue::kPeek;
+  args.flags = RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.data = 971;
-  args.flags = Queue::kOverride;
+  args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = Queue::kOverride;
-  EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = 0;
-  EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = Queue::kNonBlock;
+  args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = Queue::kOverride;
+  args.flags = RawQueue::kNonBlock;
+  EXPECT_RETURNS(WriteTestMessage, &args);
+  args.flags = 0;
+  EXPECT_RETURNS(ReadTestMessage, &args);
+  args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
   args.flags = 0;
   EXPECT_RETURNS(ReadTestMessage, &args);
 }
 
 TEST_F(QueueTest, MultiRead) {
-  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 1323};
 
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 1));
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 2));
   EXPECT_TRUE(HangsCheck(1) != HangsCheck(2));
@@ -361,22 +363,22 @@ TEST_F(QueueTest, MultiRead) {
 TEST_F(QueueTest, Recycle) {
   // TODO(brians) basic test of recycle queue
   // include all of the ways a message can get into the recycle queue
-  Queue *recycle_queue = reinterpret_cast<Queue *>(23);
-  Queue *const queue = Queue::Fetch("Queue", sizeof(TestMessage), 1, 2, 2, 2,
+  RawQueue *recycle_queue = reinterpret_cast<RawQueue *>(23);
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2, 2, 2,
                                     &recycle_queue);
-  ASSERT_NE(reinterpret_cast<Queue *>(23), recycle_queue);
+  ASSERT_NE(reinterpret_cast<RawQueue *>(23), recycle_queue);
   MessageArgs args{queue, 0, 973}, recycle{recycle_queue, 0, 973};
 
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
   EXPECT_HANGS(ReadTestMessage, &recycle);
   args.data = 254;
   EXPECT_RETURNS(WriteTestMessage, &args);
   EXPECT_HANGS(ReadTestMessage, &recycle);
   args.data = 971;
-  args.flags = Queue::kOverride;
+  args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  recycle.flags = Queue::kBlock;
+  recycle.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &recycle);
 
   EXPECT_HANGS(ReadTestMessage, &recycle);
@@ -391,11 +393,11 @@ TEST_F(QueueTest, Recycle) {
   EXPECT_HANGS(ReadTestMessage, &recycle);
 
   args.data = 254;
-  args.flags = Queue::kPeek;
+  args.flags = RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  recycle.flags = Queue::kBlock;
+  recycle.flags = RawQueue::kBlock;
   EXPECT_HANGS(ReadTestMessage, &recycle);
-  args.flags = Queue::kBlock;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   recycle.data = 254;
   EXPECT_RETURNS(ReadTestMessage, &recycle);

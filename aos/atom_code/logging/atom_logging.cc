@@ -17,8 +17,6 @@
 #include "aos/atom_code/thread_local.h"
 #include "aos/atom_code/ipc_lib/queue.h"
 
-using ::aos::Queue;
-
 namespace aos {
 namespace logging {
 namespace {
@@ -55,7 +53,7 @@ AOS_THREAD_LOCAL Context *my_context(NULL);
   return process_name + '.' + thread_name;
 }
 
-static Queue *queue;
+RawQueue *queue;
 
 }  // namespace
 namespace internal {
@@ -100,7 +98,7 @@ class AtomQueueLogImplementation : public LogImplementation {
 void Register() {
   Init();
 
-  queue = Queue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 1500);
+  queue = RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 1500);
   if (queue == NULL) {
     Die("logging: couldn't fetch queue\n");
   }
@@ -113,7 +111,7 @@ const LogMessage *ReadNext(int flags, int *index) {
 }
 
 const LogMessage *ReadNext() {
-  return ReadNext(Queue::kBlock);
+  return ReadNext(RawQueue::kBlock);
 }
 
 const LogMessage *ReadNext(int flags) {
@@ -121,7 +119,7 @@ const LogMessage *ReadNext(int flags) {
   do {
     r = static_cast<const LogMessage *>(queue->ReadMessage(flags));
     // not blocking means return a NULL if that's what it gets
-  } while ((flags & Queue::kBlock) && r == NULL);
+  } while ((flags & RawQueue::kBlock) && r == NULL);
   return r;
 }
 
@@ -134,7 +132,7 @@ void Free(const LogMessage *msg) {
 }
 
 void Write(LogMessage *msg) {
-  if (!queue->WriteMessage(msg, Queue::kOverride)) {
+  if (!queue->WriteMessage(msg, RawQueue::kOverride)) {
     LOG(FATAL, "writing failed");
   }
 }
