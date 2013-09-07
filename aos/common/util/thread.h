@@ -12,7 +12,7 @@ namespace util {
 class Thread {
  public:
   Thread();
-  ~Thread();
+  virtual ~Thread();
 
   // Actually creates the thread.
   void Start();
