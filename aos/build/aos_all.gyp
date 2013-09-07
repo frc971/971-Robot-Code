@@ -42,6 +42,7 @@
         '<(AOS)/common/common.gyp:type_traits_test',
         '<(AOS)/common/common.gyp:time_test',
         '<(AOS)/common/common.gyp:mutex_test',
+        '<(AOS)/common/common.gyp:condition_test',
         '<(AOS)/common/common.gyp:once_test',
         '<(AOS)/common/logging/logging.gyp:logging_impl_test',
       ],

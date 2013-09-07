@@ -271,6 +271,23 @@
       ],
     },
     {
+      'target_name': 'condition_test',
+      'type': 'executable',
+      'sources': [
+        'condition_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        'condition',
+        '<(AOS)/common/util/util.gyp:thread',
+        'time',
+        'mutex',
+        '<(AOS)/build/aos.gyp:logging',
+        'queue_testutils',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:core_lib',
+       ],
+    },
+    {
       'target_name': 'die_test',
       'type': 'executable',
       'sources': [

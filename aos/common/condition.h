@@ -14,7 +14,8 @@ namespace aos {
 // exactly 1 mutex must be associated with each condition variable.
 class Condition {
  public:
-  // m is the mutex that will be associated with this condition variable.
+  // m is the mutex that will be associated with this condition variable. This
+  // object will hold on to a reference to it but does not take ownership.
   explicit Condition(Mutex *m);
 
   // Waits for the condition variable to be signalled, atomically unlocking m at
@@ -25,16 +26,18 @@ class Condition {
   // Signals at most 1 other process currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this
   // condition variable to be locked.
-  // One of the processes with the highest priority level will be woken if there
-  // are multiple ones.
+  // One of the processes with the highest priority level will be woken.
   void Signal();
   // Wakes all processes that are currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this
   // condition variable to be locked.
   void Broadcast();
 
+  // Retrieves the mutex associated with this condition variable.
+  Mutex *m() { return m_; }
+
  private:
-  condition_variable impl_;
+  mutex impl_;
   Mutex *m_;
 };
 

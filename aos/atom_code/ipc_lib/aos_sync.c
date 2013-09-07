@@ -15,15 +15,19 @@
 // this code is based on something that appears to be based on <http://www.akkadia.org/drepper/futex.pdf>, which also has a lot of useful information
 // should probably use <http://lxr.linux.no/linux+v2.6.34/Documentation/robust-futexes.txt> once it becomes available
 //   (sys_set_robust_list appears to be the function name)
-// <http://locklessinc.com/articles/futex_cheat_sheet/> and <http://locklessinc.com/articles/mutex_cv_futex/> are useful
+// <http://locklessinc.com/articles/futex_cheat_sheet/> and
+//   <http://locklessinc.com/articles/mutex_cv_futex/> are useful
 // <http://lwn.net/Articles/360699/> has a nice overview of futexes in late 2009 (fairly recent compared to everything else...)
 // can't use PRIVATE futex operations because they use the pid (or something) as part of the hash
+//
+// Remember that EAGAIN and EWOUDBLOCK are the same! (ie if you get EAGAIN from
+// FUTEX_WAIT, the docs call it EWOULDBLOCK...)
 //
 // Values for a mutex:
 // 0 = unlocked
 // 1 = locked, not contended
 // 2 = locked, probably contended
-// Values for a condition:
+// Values for a "futex":
 // 0 = unset
 // 1 = set
 
@@ -42,7 +46,7 @@ static inline int sys_futex_op(mutex *addr1, int op, int num_waiters1,
 }
 
 static inline int mutex_get(mutex *m, uint8_t signals_fail, const
-    struct timespec *timeout) {
+                            struct timespec *timeout) {
   int c;
   c = cmpxchg(m, 0, 1);
   if (!c) return 0;
@@ -132,77 +136,61 @@ int futex_unset(mutex *m) {
   return !xchg(m, 0);
 }
 
-void condition_wait(condition_variable *c, mutex *m) {
-  if (__builtin_expect(c->m != m, 0)) {
-    if (c->m != NULL) {
-      fprintf(stderr, "sync: c(=%p)->m(=%p) != m(=%p)\n",
-          c, c->m, m);
-      printf("see stderr\n");
-      abort();
-    }
-    (void)cmpxchg(&c->m, NULL, m);
-    if (c->m != m) {
-      fprintf(stderr, "sync: c(=%p)->m(=%p) != m(=%p)"
-          " after trying to set it\n",
-          c, c->m, m);
-      printf("see stderr\n");
-      abort();
-    }
-  }
-
-  const mutex wait_start = c->wait;
+void condition_wait(mutex *c, mutex *m) {
+  const mutex wait_start = *c;
 
   mutex_unlock(m);
 
-  errno = 0;
-  do {
-    // If the syscall succeeded or somebody did a wake before we
-    // actually made it to sleep.
-    if (sys_futex(&c->wait, FUTEX_WAIT, wait_start, NULL, NULL, 0) == 0 ||
-        c->wait != wait_start) {
-      // Simplified mutex_lock that always leaves it
-      // contended in case anybody else got requeued.
-      while (xchg(&c->m, 2) != 0) {
-        // If the syscall failed and it wasn't
-        // because of a signal or a wake.
-        if (sys_futex(c->m, FUTEX_WAIT, 2, NULL, NULL, 0) == -1 &&
-            errno != EINTR) {
-          fprintf(stderr, "sync: FUTEX_WAIT(%p, 2, NULL, NULL, 0)"
-              " failed with %d: %s\n",
-              c->m, errno, strerror(errno));
-          printf("see stderr\n");
-          abort();
-        }
+  while (1) {
+    if (sys_futex(c, FUTEX_WAIT, wait_start, NULL, NULL, 0) == -1) {
+      // If it failed for some reason other than somebody else doing a wake
+      // before we actually made it to sleep.
+      if (__builtin_expect(*c == wait_start, 0)) {
+        // Try again if it was because of a signal.
+        if (errno == EINTR) continue;
+        fprintf(stderr, "FUTEX_WAIT(%p, %"PRIu32", NULL, NULL, 0) failed"
+                " with %d: %s\n",
+                c, wait_start, errno, strerror(errno));
+        printf("see stderr\n");
+        abort();
       }
     }
-  } while (__builtin_expect(errno == EINTR, 1));
-  fprintf(stderr, "FUTEX_WAIT(%p, %"PRIu32", NULL, NULL, 0) failed"
-      " with %d: %s\n",
-      &c->wait, wait_start, errno, strerror(errno));
-  printf("see stderr\n");
-  abort();
+    // Simplified mutex_lock that always leaves it
+    // contended in case anybody else got requeued.
+    while (xchg(m, 2) != 0) {
+      if (sys_futex(m, FUTEX_WAIT, 2, NULL, NULL, 0) == -1) {
+        // Try again if it was because of a signal or somebody else unlocked it
+        // before we went to sleep.
+        if (errno == EINTR || errno == EWOULDBLOCK) continue;
+        fprintf(stderr, "sync: FUTEX_WAIT(%p, 2, NULL, NULL, 0)"
+                " failed with %d: %s\n",
+                m, errno, strerror(errno));
+        printf("see stderr\n");
+        abort();
+      }
+    }
+    return;
+  }
 }
 
-void condition_signal(condition_variable *c) {
-  __sync_fetch_and_add(&c->wait, 1);
-  if (sys_futex(&c->wait, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
+void condition_signal(mutex *c, mutex *m __attribute__((unused))) {
+  __sync_fetch_and_add(c, 1);
+  if (sys_futex(c, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
     fprintf(stderr, "sync: FUTEX_WAKE(%p, 1, NULL, NULL, 0)"
         " failed with %d: %s\n",
-        &c->wait, errno, strerror(errno));
+        c, errno, strerror(errno));
     printf("see stderr\n");
     abort();
   }
 }
 
-void condition_broadcast(condition_variable *c) {
-  // Have to check or else the wake syscall would fail.
-  if (__builtin_expect(c->m == NULL, 0)) return;
-  __sync_fetch_and_add(&c->wait, 1);
+void condition_broadcast(mutex *c, mutex *m) {
+  __sync_fetch_and_add(c, 1);
   // Wake 1 waiter and requeue the rest.
-  if (sys_futex_requeue(&c->wait, FUTEX_REQUEUE, 1, INT_MAX, c->m) == -1) {
+  if (sys_futex_requeue(c, FUTEX_REQUEUE, 1, INT_MAX, m) == -1) {
     fprintf(stderr, "sync: FUTEX_REQUEUE(%p, 1, INT_MAX, %p, 0)"
         " failed with %d: %s\n",
-        &c->wait, c->m, errno, strerror(errno));
+        c, m, errno, strerror(errno));
     printf("see stderr\n");
     abort();
   }

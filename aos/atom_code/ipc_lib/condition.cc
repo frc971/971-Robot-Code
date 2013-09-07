@@ -6,8 +6,6 @@
 
 namespace aos {
 
-static_assert(shm_ok<condition_variable>::value,
-              "all C structs really should work in shared memory");
 static_assert(shm_ok<Condition>::value, "Condition should work"
               " in shared memory");
 
@@ -18,11 +16,11 @@ void Condition::Wait() {
 }
 
 void Condition::Signal() {
-  condition_signal(&impl_);
+  condition_signal(&impl_, &m_->impl_);
 }
 
 void Condition::Broadcast() {
-  condition_broadcast(&impl_);
+  condition_broadcast(&impl_, &m_->impl_);
 }
 
 }  // namespace aos

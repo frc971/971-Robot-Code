@@ -106,11 +106,17 @@ class RawQueue {
   // FreeMessage.
   void *GetMessage();
 
-  // It is ok to call this with msg == NULL.
-  void FreeMessage(const void *msg) { DecrementMessageReferenceCount(msg); }
+  // It is ok to call this method with a NULL msg.
+  void FreeMessage(const void *msg) {
+    if (msg != NULL) DecrementMessageReferenceCount(msg);
+  }
 
  private:
   struct MessageHeader;
+  struct ReadData;
+
+  bool is_readable() { return data_end_ != data_start_; }
+  bool is_writable() { return ((data_end_ + 1) % data_length_) != data_start_; }
 
   // These next 4 allow finding the right one.
   const char *name_;
@@ -123,6 +129,8 @@ class RawQueue {
   RawQueue *recycle_;
 
   Mutex data_lock_;  // protects operations on data_ etc
+  // Always gets broadcasted to because different readers might have different
+  // ideas of what "readable" means (ie ones using separated indices).
   Condition readable_;
   Condition writable_;
   int data_length_;  // max length into data + 1
@@ -144,12 +152,13 @@ class RawQueue {
   void DecrementMessageReferenceCount(const void *msg);
 
   // Should be called with data_lock_ locked.
+  // *read_data will be initialized.
   // Returns with a readable message in data_ or false.
-  bool ReadCommonStart(int options, int *index);
+  bool ReadCommonStart(int options, int *index, ReadData *read_data);
   // Deals with setting/unsetting readable_ and writable_.
   // Should be called after data_lock_ has been unlocked.
-  // read is whether or not this read call read one off the queue
-  void ReadCommonEnd(bool read);
+  // read_data should be the same thing that was passed in to ReadCommonStart.
+  void ReadCommonEnd(ReadData *read_data);
   // Handles reading with kPeek.
   void *ReadPeek(int options, int start);
 

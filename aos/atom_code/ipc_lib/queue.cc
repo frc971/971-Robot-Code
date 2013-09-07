@@ -53,6 +53,10 @@ struct RawQueue::MessageHeader {
 static_assert(shm_ok<RawQueue::MessageHeader>::value, "the whole point"
               " is to stick it in shared memory");
 
+struct RawQueue::ReadData {
+  bool writable_start;
+};
+
 // TODO(brians) maybe do this with atomic integer instructions so it doesn't
 //   have to lock/unlock pool_lock_
 void RawQueue::DecrementMessageReferenceCount(const void *msg) {
@@ -116,32 +120,35 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   }
   RawQueue *current = static_cast<RawQueue *>(
       global_core->mem_struct->queues.queue_list);
-  RawQueue *last = NULL;
-  while (current != NULL) {
-    // if we found a matching queue
-    if (strcmp(current->name_, name) == 0 && current->length_ == length &&
-        current->hash_ == hash && current->queue_length_ == queue_length) {
-      mutex_unlock(&global_core->mem_struct->queues.alloc_lock);
-      return current;
-    } else {
-      if (kFetchDebug) {
-        printf("rejected queue %s strcmp=%d target=%s\n", current->name_,
-               strcmp(current->name_, name), name);
+  if (current != NULL) {
+    while (true) {
+      // If we found a matching queue.
+      if (strcmp(current->name_, name) == 0 && current->length_ == length &&
+          current->hash_ == hash && current->queue_length_ == queue_length) {
+        mutex_unlock(&global_core->mem_struct->queues.alloc_lock);
+        return current;
+      } else {
+        if (kFetchDebug) {
+          printf("rejected queue %s strcmp=%d target=%s\n", current->name_,
+                 strcmp(current->name_, name), name);
+        }
       }
+      // If this is the last one.
+      if (current->next_ == NULL) break;
+      current = current->next_;
     }
-    current = current->next_;
   }
 
-  void *temp = shm_malloc(sizeof(RawQueue));
-  current = new (temp) RawQueue(name, length, hash, queue_length);
-  if (last == NULL) {  // if we don't have one to tack the new one on to
-    global_core->mem_struct->queues.queue_list = current;
+  RawQueue *r = new (shm_malloc(sizeof(RawQueue)))
+      RawQueue(name, length, hash, queue_length);
+  if (current == NULL) {  // if we don't already have one
+    global_core->mem_struct->queues.queue_list = r;
   } else {
-    last->next_ = current;
+    current->next_ = r;
   }
 
   mutex_unlock(&global_core->mem_struct->queues.alloc_lock);
-  return current;
+  return r;
 }
 RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
                     int queue_length,
@@ -151,6 +158,7 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   if (r == r->recycle_) {
     fprintf(stderr, "queue: r->recycle_(=%p) == r(=%p)\n", r->recycle_, r);
     printf("see stderr\n");
+    r->recycle_ = NULL;
     abort();
   }
   *recycle = r->recycle_;
@@ -181,14 +189,14 @@ void RawQueue::DoFreeMessage(const void *msg) {
       // header with the one being freed, which effectively
       // switches which queue each message belongs to.
       MessageHeader *const new_header = MessageHeader::Get(new_msg);
-      // also switch the messages between the pools
+      // Also switch the messages between the pools.
       pool_[header->index] = new_header;
       {
         MutexLocker locker(&recycle_->pool_lock_);
         recycle_->pool_[new_header->index] = header;
-        // swap the information in both headers
+        // Swap the information in both headers.
         header->Swap(new_header);
-        // don't unlock the other pool until all of its messages are valid
+        // Don't unlock the other pool until all of its messages are valid.
       }
       // use the header for new_msg which is now for this pool
       header = new_header;
@@ -202,22 +210,22 @@ void RawQueue::DoFreeMessage(const void *msg) {
     }
   }
 
-  // where the one we're freeing was
+  // Where the one we're freeing was.
   int index = header->index;
   header->index = -1;
   if (index != messages_used_) {  // if we're not freeing the one on the end
-    // put the last one where the one we're freeing was
+    // Put the last one where the one we're freeing was.
     header = pool_[index] = pool_[messages_used_];
-    // put the one we're freeing at the end
+    // Put the one we're freeing at the end.
     pool_[messages_used_] = MessageHeader::Get(msg);
-    // update the former last one's index
+    // Update the former last one's index.
     header->index = index;
   }
 }
 
 bool RawQueue::WriteMessage(void *msg, int options) {
   if (kWriteDebug) {
-    printf("queue: %p->WriteMessage(%p, %d)\n", this, msg, options);
+    printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
   }
   if (msg == NULL || msg < reinterpret_cast<void *>(global_core->mem_struct) ||
       msg > static_cast<void *>((
@@ -230,18 +238,23 @@ bool RawQueue::WriteMessage(void *msg, int options) {
   }
   {
     MutexLocker locker(&data_lock_);
-    int new_end = (data_end_ + 1) % data_length_;
-    while (new_end == data_start_) {
+    bool writable_waited = false;
+
+    int new_end;
+    while (true) {
+      new_end = (data_end_ + 1) % data_length_;
+      // If there is room in the queue right now.
+      if (new_end != data_start_) break;
       if (options & kNonBlock) {
         if (kWriteDebug) {
-          printf("queue: not blocking on %p. returning -1\n", this);
+          printf("queue: not blocking on %p. returning false\n", this);
         }
         return false;
       } else if (options & kOverride) {
         if (kWriteDebug) {
           printf("queue: overriding on %p\n", this);
         }
-        // avoid leaking the message that we're going to overwrite
+        // Avoid leaking the message that we're going to overwrite.
         DecrementMessageReferenceCount(data_[data_start_]);
         data_start_ = (data_start_ + 1) % data_length_;
       } else {  // kBlock
@@ -249,29 +262,44 @@ bool RawQueue::WriteMessage(void *msg, int options) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
         writable_.Wait();
+        writable_waited = true;
       }
-      new_end = (data_end_ + 1) % data_length_;
     }
     data_[data_end_] = msg;
     ++messages_;
     data_end_ = new_end;
+
+    if (kWriteDebug) {
+      printf("queue: broadcasting to readable_ of %p\n", this);
+    }
+    readable_.Broadcast();
+
+    // If we got a signal on writable_ here and it's still writable, then we
+    // need to signal the next person in line (if any).
+    if (writable_waited && is_writable()) {
+      if (kWriteDebug) {
+        printf("queue: resignalling writable_ of %p\n", this);
+      }
+      writable_.Signal();
+    }
   }
-  if (kWriteDebug) {
-    printf("queue: setting readable of %p\n", this);
-  }
-  readable_.Signal();
   if (kWriteDebug) {
     printf("queue: write returning true on queue %p\n", this);
   }
   return true;
 }
 
-void RawQueue::ReadCommonEnd(bool read) {
-  if (read) {
-    writable_.Signal();
+void RawQueue::ReadCommonEnd(ReadData *read_data) {
+  if (is_writable()) {
+    if (kReadDebug) {
+      printf("queue: %ssignalling writable_ of %p\n",
+             read_data->writable_start ? "not " : "", this);
+    }
+    if (!read_data->writable_start) writable_.Signal();
   }
 }
-bool RawQueue::ReadCommonStart(int options, int *index) {
+bool RawQueue::ReadCommonStart(int options, int *index, ReadData *read_data) {
+  read_data->writable_start = is_writable();
   while (data_start_ == data_end_ || ((index != NULL) && messages_ <= *index)) {
     if (options & kNonBlock) {
       if (kReadDebug) {
@@ -280,15 +308,13 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       return false;
     } else {  // kBlock
       if (kReadDebug) {
-        printf("queue: going to wait for readable of %p\n", this);
+        printf("queue: going to wait for readable_ of %p\n", this);
       }
-      data_lock_.Unlock();
-      // wait for a message to become readable
+      // Wait for a message to become readable.
       readable_.Wait();
       if (kReadDebug) {
-        printf("queue: done waiting for readable of %p\n", this);
+        printf("queue: done waiting for readable_ of %p\n", this);
       }
-      data_lock_.Lock();
     }
   }
   if (kReadDebug) {
@@ -304,12 +330,12 @@ void *RawQueue::ReadPeek(int options, int start) {
       pos = data_length_ - 1;
     }
     if (kReadDebug) {
-      printf("queue: reading from line %d: %d\n", __LINE__, pos);
+      printf("queue: %p reading from line %d: %d\n", this, __LINE__, pos);
     }
     ret = data_[pos];
   } else {
     if (kReadDebug) {
-      printf("queue: reading from line %d: %d\n", __LINE__, start);
+      printf("queue: %p reading from line %d: %d\n", this, __LINE__, start);
     }
     ret = data_[start];
   }
@@ -322,111 +348,120 @@ void *RawQueue::ReadPeek(int options, int start) {
 }
 const void *RawQueue::ReadMessage(int options) {
   if (kReadDebug) {
-    printf("queue: %p->ReadMessage(%d)\n", this, options);
+    printf("queue: %p->ReadMessage(%x)\n", this, options);
   }
   void *msg = NULL;
+
   MutexLocker locker(&data_lock_);
-  if (!ReadCommonStart(options, NULL)) {
+
+  ReadData read_data;
+  if (!ReadCommonStart(options, NULL, &read_data)) {
     if (kReadDebug) {
-      printf("queue: common returned false for %p\n", this);
+      printf("queue: %p common returned false\n", this);
     }
     return NULL;
   }
+
   if (options & kPeek) {
     msg = ReadPeek(options, data_start_);
   } else {
     if (options & kFromEnd) {
-      while (1) {
+      while (true) {
         if (kReadDebug) {
-          printf("queue: start of c2 of %p\n", this);
+          printf("queue: %p start of c2\n", this);
         }
         // This loop pulls each message out of the buffer.
         const int pos = data_start_;
         data_start_ = (data_start_ + 1) % data_length_;
-        // if this is the last one
+        // If this is the last one.
         if (data_start_ == data_end_) {
           if (kReadDebug) {
-            printf("queue: reading from c2: %d\n", pos);
+            printf("queue: %p reading from c2: %d\n", this, pos);
           }
           msg = data_[pos];
           break;
         }
-        // it's not going to be in the queue any more
+        // This message is not going to be in the queue any more.
         DecrementMessageReferenceCount(data_[pos]);
       }
     } else {
       if (kReadDebug) {
-        printf("queue: reading from d2: %d\n", data_start_);
+        printf("queue: %p reading from d2: %d\n", this, data_start_);
       }
       msg = data_[data_start_];
+      // TODO(brians): Doesn't this need to increment the ref count?
       data_start_ = (data_start_ + 1) % data_length_;
     }
   }
-  ReadCommonEnd(!(options & kPeek));
+  ReadCommonEnd(&read_data);
   if (kReadDebug) {
-    printf("queue: read returning %p\n", msg);
+    printf("queue: %p read returning %p\n", this, msg);
   }
   return msg;
 }
 const void *RawQueue::ReadMessageIndex(int options, int *index) {
   if (kReadDebug) {
-    printf("queue: %p->ReadMessageIndex(%d, %p(*=%d))\n",
+    printf("queue: %p->ReadMessageIndex(%x, %p(*=%d))\n",
            this, options, index, *index);
   }
   void *msg = NULL;
-  {
-    MutexLocker locker(&data_lock_);
-    if (!ReadCommonStart(options, index)) {
+
+  MutexLocker locker(&data_lock_);
+
+  ReadData read_data;
+  if (!ReadCommonStart(options, index, &read_data)) {
+    if (kReadDebug) {
+      printf("queue: %p common returned false\n", this);
+    }
+    return NULL;
+  }
+
+  // TODO(parker): Handle integer wrap on the index.
+
+  // How many unread messages we have.
+  const int offset = messages_ - *index;
+  // Where we're going to start reading.
+  int my_start = data_end_ - offset;
+  if (my_start < 0) {  // If we want to read off the end of the buffer.
+    // Unwrap it.
+    my_start += data_length_;
+  }
+  if (offset >= data_length_) {  // If we're behind the available messages.
+    // Catch index up to the last available message.
+    *index += data_start_ - my_start;
+    // And that's the one we're going to read.
+    my_start = data_start_;
+  }
+  if (options & kPeek) {
+    msg = ReadPeek(options, my_start);
+  } else {
+    if (options & kFromEnd) {
       if (kReadDebug) {
-        printf("queue: common returned false for %p\n", this);
+        printf("queue: %p start of c1\n", this);
       }
-      return NULL;
-    }
-    // TODO(parker): Handle integer wrap on the index.
-    const int offset = messages_ - *index;
-    int my_start = data_end_ - offset;
-    if (offset >= data_length_) {  // if we're behind the available messages
-      // catch index up to the last available message
-      *index += data_start_ - my_start;
-      // and that's the one we're going to read
-      my_start = data_start_;
-    }
-    if (my_start < 0) {  // if we want to read off the end of the buffer
-      // unwrap where we're going to read from
-      my_start += data_length_;
-    }
-    if (options & kPeek) {
-      msg = ReadPeek(options, my_start);
+      int pos = data_end_ - 1;
+      if (pos < 0) {  // If it wrapped.
+        pos = data_length_ - 1;  // Unwrap it.
+      }
+      if (kReadDebug) {
+        printf("queue: %p reading from c1: %d\n", this, pos);
+      }
+      msg = data_[pos];
+      *index = messages_;
     } else {
-      if (options & kFromEnd) {
-        if (kReadDebug) {
-          printf("queue: start of c1 of %p\n", this);
-        }
-        int pos = data_end_ - 1;
-        if (pos < 0) {  // if it wrapped
-          pos = data_length_ - 1;  // unwrap it
-        }
-        if (kReadDebug) {
-          printf("queue: reading from c1: %d\n", pos);
-        }
-        msg = data_[pos];
-        *index = messages_;
-      } else {
-        if (kReadDebug) {
-          printf("queue: reading from d1: %d\n", my_start);
-        }
-        msg = data_[my_start];
-        ++(*index);
+      if (kReadDebug) {
+        printf("queue: %p reading from d1: %d\n", this, my_start);
       }
-      MessageHeader *const header = MessageHeader::Get(msg);
-      ++header->ref_count;
-      if (kRefDebug) {
-        printf("ref_inc_count: %p\n", msg);
-      }
+      msg = data_[my_start];
+      ++(*index);
+    }
+    MessageHeader *const header = MessageHeader::Get(msg);
+    ++header->ref_count;
+    if (kRefDebug) {
+      printf("ref_inc_count: %p\n", msg);
     }
   }
-  // this function never consumes one off the queue
-  ReadCommonEnd(false);
+  ReadCommonEnd(&read_data);
   return msg;
 }
 
@@ -446,7 +481,7 @@ void *RawQueue::GetMessage() {
   void *msg = reinterpret_cast<uint8_t *>(header) + sizeof(MessageHeader);
   header->ref_count = 1;
   if (kRefDebug) {
-    printf("ref alloc: %p\n", msg);
+    printf("%p ref alloc: %p\n", this, msg);
   }
   header->index = messages_used_;
   ++messages_used_;

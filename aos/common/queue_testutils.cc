@@ -1,6 +1,7 @@
 #include "aos/common/queue_testutils.h"
 
 #include <string.h>
+#include <sys/mman.h>
 
 #include "gtest/gtest.h"
 
@@ -110,15 +111,18 @@ void *DoEnableTestLogging() {
 
 Once<void> enable_test_logging_once(DoEnableTestLogging);
 
+const size_t kCoreSize = 0x100000;
+
 }  // namespace
 
 GlobalCoreInstance::GlobalCoreInstance() {
-  const size_t kCoreSize = 0x100000;
   global_core = &global_core_data_;
   global_core->owner = 1;
-  void *memory = malloc(kCoreSize);
-  assert(memory != NULL);
-  memset(memory, 0, kCoreSize);
+  // Use mmap(2) manually so that we can pass MAP_SHARED so that forked
+  // processes can still communicate using the "shared" memory.
+  void *memory = mmap(NULL, kCoreSize, PROT_READ | PROT_WRITE,
+                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  assert(memory != MAP_FAILED);
 
   assert(aos_core_use_address_as_shared_mem(memory, kCoreSize) == 0);
 
@@ -126,7 +130,7 @@ GlobalCoreInstance::GlobalCoreInstance() {
 }
 
 GlobalCoreInstance::~GlobalCoreInstance() {
-  free(global_core->mem_struct);
+  assert(munmap(global_core->mem_struct, kCoreSize) == 0);
   global_core = NULL;
 }
 

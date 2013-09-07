@@ -142,9 +142,8 @@ class QueueTest : public SharedMemTestSetup {
   }
 
  protected:
-  // Function gets called with arg in a forked process.
+  // function gets called with arg in a forked process.
   // Leaks shared memory.
-  // the attribute is in the middle to make gcc happy
   template<typename T> __attribute__((warn_unused_result))
       std::unique_ptr<ForkedProcess> ForkExecute(void (*function)(T*), T *arg) {
     mutex *lock = static_cast<mutex *>(shm_malloc_aligned(
@@ -152,7 +151,7 @@ class QueueTest : public SharedMemTestSetup {
     *lock = 1;
     const pid_t pid = fork();
     switch (pid) {
-      case 0: // child
+      case 0:  // child
         if (kForkSleep != 0) {
           printf("pid %jd sleeping for %u\n", static_cast<intmax_t>(getpid()),
                  kForkSleep);
@@ -162,10 +161,10 @@ class QueueTest : public SharedMemTestSetup {
         function(arg);
         mutex_unlock(lock);
         exit(EXIT_SUCCESS);
-      case -1: // parent failure
+      case -1:  // parent failure
         printf("fork() failed with %d: %s\n", errno, strerror(errno));
         return std::unique_ptr<ForkedProcess>();
-      default: // parent
+      default:  // parent
         return std::unique_ptr<ForkedProcess>(new ForkedProcess(pid, lock));
     }
   }
@@ -243,12 +242,12 @@ class QueueTest : public SharedMemTestSetup {
 } while (false)
 
   struct TestMessage {
-    int16_t data; // don't really want to test empty messages
+    int16_t data;  // don't really want to test empty messages
   };
   struct MessageArgs {
     RawQueue *const queue;
     int flags;
-    int16_t data; // -1 means NULL expected
+    int16_t data;  // -1 means NULL expected
   };
   static void WriteTestMessage(MessageArgs *args, char *failure) {
     TestMessage *msg = static_cast<TestMessage *>(args->queue->GetMessage());

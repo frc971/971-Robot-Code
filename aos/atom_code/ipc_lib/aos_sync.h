@@ -17,19 +17,10 @@ extern "C" {
 // Have to align structs containing it to sizeof(int).
 // Valid initial values for use with mutex_ functions are 0 (unlocked) and 1 (locked).
 // Valid initial values for use with futex_ functions are 0 (unset) and 1 (set).
+// No initialization is necessary for use as c with the condition_ functions.
 // The value should not be changed after multiple processes have started
 // accessing an instance except through the functions declared in this file.
 typedef volatile uint32_t mutex __attribute__((aligned(sizeof(int))));
-
-// Have to align structs containing it to sizeof(int).
-// Used with the condition_ functions.
-// It should be 0-initialized.
-typedef struct {
-  // The futex that is actually used to wait.
-  mutex wait;
-  // The mutex associated with this condition variable.
-  mutex *m;
-} condition_variable;
 
 // All return -1 for other error (which will be in errno from futex(2)).
 //
@@ -73,18 +64,18 @@ int futex_set_value(mutex *m, mutex value);
 int futex_unset(mutex *m);
 
 // The condition_ functions implement condition variable support. The API is
-// similar to the pthreads api and works the same way.
+// similar to the pthreads api and works the same way. The same m argument must
+// be passed in for all calls to all of the functions with a given c.
 
 // Wait for the condition variable to be signalled. m will be unlocked
-// atomically with actually starting to wait. The same m argument must be used
-// for all calls with a given c.
-void condition_wait(condition_variable *c, mutex *m);
+// atomically with actually starting to wait.
+void condition_wait(mutex *c, mutex *m);
 // If any other processes are condition_waiting on c, wake 1 of them. Does not
-// require the m used with condition_wait on this c to be locked.
-void condition_signal(condition_variable *c);
-// Wakes all processes that are condition_waiting on c. Does not require the m
-// used with the condition_wait on this c to be locked.
-void condition_broadcast(condition_variable *c);
+// require m to be locked.
+void condition_signal(mutex *c, mutex *m);
+// Wakes all processes that are condition_waiting on c. Does not require m to be
+// locked.
+void condition_broadcast(mutex *c, mutex *m);
 
 #ifdef __cplusplus
 }

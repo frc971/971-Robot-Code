@@ -59,12 +59,13 @@ TEST_F(MutexTest, MutexLocker) {
   }
   EXPECT_TRUE(test_mutex.TryLock());
 }
+
 TEST_F(MutexTest, MutexUnlocker) {
   test_mutex.Lock();
   {
     aos::MutexUnlocker unlocker(&test_mutex);
     // If this fails, then something weird is going on and the next line might
-    // hang.
+    // hang, so fail immediately.
     ASSERT_TRUE(test_mutex.TryLock());
     test_mutex.Unlock();
   }
@@ -122,6 +123,7 @@ class MutexFairnessWorkerThread {
 };
 int MutexFairnessWorkerThread::cyclesRun;
 int MutexFairnessWorkerThread::totalCycles;
+
 // Tests the fairness of the implementation. It does this by repeatedly locking
 // and unlocking a mutex in multiple threads and then checking the standard
 // deviation of the number of times each one locks.
