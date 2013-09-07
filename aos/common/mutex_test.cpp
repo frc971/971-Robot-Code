@@ -110,7 +110,7 @@ class MutexFairnessWorkerThread {
 #ifdef __VXWORKS__
     // Without this, all of the "task ... deleted ..." messages come out at
     // once, and it looks weird and triggers an socat bug (at least for
-    // Squeeze's version 1.7.1.3-1).
+    // Squeeze's version 1.7.1.3-1) which locks it up and is very annoying.
     taskDelay(index_);
 #endif
   }
@@ -138,7 +138,7 @@ TEST_F(MutexTest, Fairness) {
 #ifdef __VXWORKS__
   static const int kWarmupCycles = 1000, kRunCycles = 60000, kMaxDeviation = 20;
 #else
-  static const int kWarmupCycles = 30000, kRunCycles = 3000000, kMaxDeviation = 10000;
+  static const int kWarmupCycles = 30000, kRunCycles = 3000000, kMaxDeviation = 20000;
 #endif
 
   int cycles[kThreads];
@@ -166,8 +166,8 @@ TEST_F(MutexTest, Fairness) {
   for (int i = 0; i < kThreads; ++i) {
     variance += (cycles[i] - expected) * (cycles[i] - expected);
   }
+  ASSERT_GT(variance, 0);
   double deviation = sqrt(variance / kThreads);
-  printf("deviation=%f\n", deviation);
   ASSERT_GT(deviation, 0);
   EXPECT_LT(deviation, kMaxDeviation);
 }

@@ -40,7 +40,7 @@ class ConditionTest : public ::testing::Test {
   Shared *const shared_;
 
   void Settle() {
-    time::SleepFor(::Time::InSeconds(0.009));
+    time::SleepFor(::Time::InSeconds(0.008));
   }
 };
 
@@ -56,7 +56,7 @@ class ConditionTestProcess {
 
   // This amount gets added to any passed in delay to make the test repeatable.
   static constexpr ::Time kMinimumDelay = ::Time::InSeconds(0.015);
-  static constexpr ::Time kDefaultTimeout = ::Time::InSeconds(0.06);
+  static constexpr ::Time kDefaultTimeout = ::Time::InSeconds(0.09);
 
   // delay is how long to wait before doing action to condition.
   // timeout is how long to wait after delay before deciding that it's hung.
