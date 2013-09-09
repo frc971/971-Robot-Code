@@ -19,7 +19,9 @@ Brian last updated this on 2013-08-28 with Debian Wheezy.
 4.  Configure the network.
       Edit /etc/network/interfaces to give it the right static IP address.
 	  Set up eth1 like the default eth0 in case the NIC gets assigned that (see
-	    #51 below).
+	    #8 below). That shouldn't be a problem any more, but it's probably good
+		to be on the safe side because it can be a pain to find a screen to fix
+		it otherwise.
 5.  Install stuff.
       firmware-linux-nonfree is always a good one to get.
 	  Remember to add
@@ -31,7 +33,14 @@ Brian last updated this on 2013-08-28 with Debian Wheezy.
 7.  Make it so that the programming team can log in without passwords.
       Everybody will have to run `ssh-copy-id -i ~/.ssh/id_rsa.pub fitpc` (see
 	    <http://www.debian-administration.org/articles/152> for details).
-8.  Download the code!
+8.  Make udev to stop being annoying and naming NICs eth1.
+      udev want to remember the ethernet NIC from each device and name the one
+	    in a new fitpc eth1, which breaks stuff. If that happens, removing
+		/etc/udev/rules.d/70-persistent-net.rules will make it autogenerate a
+		new one and fix it.
+	  To prevent this problem from happening in the first place, follow the
+	    directions in 10-net-eth0.rules.
+9.  Download the code!
       In order for it to actually run, you'll have to
 	    `mkdir -p ~driver/tmp/robot_logs`.
 50. Clone the image to the rest of the disks.
@@ -47,8 +56,3 @@ Brian last updated this on 2013-08-28 with Debian Wheezy.
 		    the clone's /boot, `grub-install --boot-directory=bla /dev/sdx`, and
 			then using sed to switch the UUIDs in the clone's
 			/boot/grub/grub.cfg.
-51. Fix the ethernet setup each time you move a disk.
-      udev remembers the ethernet NIC from each device, so it assigns the one in
-	    a new fitpc to eth1 which breaks stuff. To fix it, remove
-		/etc/udev/rules.d/70-persistent-net.rules so it'll autogenerate a new
-		one.

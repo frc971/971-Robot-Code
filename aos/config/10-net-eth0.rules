@@ -1,0 +1,6 @@
+# This is a file that will make any NIC eth0.
+# It prevents the persistent net rules generator from running because that ends
+# up naming the 1 NIC eth1 instead of when you move a disk between fit-pcs.
+# Put it in /etc/udev/rules.d/ to use it.
+
+SUBSYSTEM=="net", ACTION=="add", ATTR{type}=="1", KERNEL=="eth*", NAME="eth0"
