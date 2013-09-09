@@ -1,7 +1,0 @@
-args automode_args {
-};
-status automode_status {
-};
-//has OnEnd;
-//has OnStart;
-priority 99;

@@ -13,7 +13,6 @@
         '../atom_code/camera/camera.gyp:CameraHTTPStreamer',
         '../atom_code/camera/camera.gyp:CameraReader',
         '../atom_code/core/core.gyp:*',
-        #'../atom_code/async_action:*', # TODO(brians) fix this broken test
         '../atom_code/ipc_lib/ipc_lib.gyp:*',
         '../atom_code/starter/starter.gyp:starter_exe',
         '../atom_code/starter/starter.gyp:netconsole',
