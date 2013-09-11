@@ -47,32 +47,44 @@ int mutex_trylock(mutex *m) __attribute__((warn_unused_result));
 // The futex_ functions are similar to the mutex_ ones but different.
 // They are designed for signalling when something happens (possibly to
 // multiple listeners). A mutex manipulated with them can only be set or unset.
+//
+// They are different from the condition_ functions in that they do NOT work
+// correctly as standard condition variables. While it is possible to keep
+// track of the "condition" using the value part of the futex_* functions, the
+// obvious implementation has basically the same race condition that condition
+// variables are designed to prevent between somebody else grabbing the mutex
+// and changing whether it's set or not and the futex_ function changing the
+// futex's value.
 
 // Wait for the futex to be set. Will return immediately if it's already set.
-// Returns 0 if successful or it was already set, 1 if interrupted by a signal, or -1.
+// Returns 0 if successful or it was already set, 1 if interrupted by a signal,
+// or -1.
 int futex_wait(mutex *m) __attribute__((warn_unused_result));
 // Set the futex and wake up anybody waiting on it.
 // Returns the number that were woken or -1.
 //
-// This will always wake up all waiters at the same time.
+// This will always wake up all waiters at the same time and set the value to 1.
 int futex_set(mutex *m);
 // Same as above except lets something other than 1 be used as the final value.
 int futex_set_value(mutex *m, mutex value);
-// Unsets the futex.
+// Unsets the futex (sets the value to 0).
 // Returns 0 if it was set before and 1 if it wasn't.
 // Can not fail.
 int futex_unset(mutex *m);
 
 // The condition_ functions implement condition variable support. The API is
 // similar to the pthreads api and works the same way. The same m argument must
-// be passed in for all calls to all of the functions with a given c.
+// be passed in for all calls to all of the condition_ functions with a given c.
 
 // Wait for the condition variable to be signalled. m will be unlocked
-// atomically with actually starting to wait.
+// atomically with actually starting to wait. m is guaranteed to be locked when
+// this function returns.
+// NOTE: The relocking of m is not atomic with stopping the actual wait and
+// other process(es) may lock (+unlock) the mutex first.
 void condition_wait(mutex *c, mutex *m);
 // If any other processes are condition_waiting on c, wake 1 of them. Does not
 // require m to be locked.
-void condition_signal(mutex *c, mutex *m);
+void condition_signal(mutex *c);
 // Wakes all processes that are condition_waiting on c. Does not require m to be
 // locked.
 void condition_broadcast(mutex *c, mutex *m);

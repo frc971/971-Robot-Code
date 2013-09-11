@@ -49,7 +49,7 @@
       ],
     },
     {
-      'target_name': 'ipc_queue_test',
+      'target_name': 'raw_queue_test',
       'type': 'executable',
       'sources': [
         'queue_test.cc',
@@ -59,6 +59,8 @@
         'queue',
         '<(AOS)/build/aos.gyp:logging',
         'core_lib',
+        '<(AOS)/common/common.gyp:queue_testutils',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {
@@ -74,12 +76,6 @@
         '<(AOS)/common/common.gyp:mutex',
         'core_lib',
         '<(AOS)/common/common.gyp:die',
-
-        # These are the binaries that it runs.
-        'ipc_queue_test',
-        '<(AOS)/common/common.gyp:queue_test',
-        '<(AOS)/common/common.gyp:condition_test',
-        '<(AOS)/common/common.gyp:mutex_test',
       ],
     },
   ],

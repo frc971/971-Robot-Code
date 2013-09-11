@@ -173,7 +173,7 @@ void condition_wait(mutex *c, mutex *m) {
   }
 }
 
-void condition_signal(mutex *c, mutex *m __attribute__((unused))) {
+void condition_signal(mutex *c) {
   __sync_fetch_and_add(c, 1);
   if (sys_futex(c, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
     fprintf(stderr, "sync: FUTEX_WAKE(%p, 1, NULL, NULL, 0)"

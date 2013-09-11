@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <libgen.h>
+#include <assert.h>
 
 #include <vector>
 #include <string>
@@ -21,34 +22,33 @@
 // stderr output from each test run and only prints it out (not interleaved with
 // the output from any other run) if the test fails.
 //
-// It's written in C++ for performance. You need actual OS-level parallelism for
+// It's written in C++ for performance. We need actual OS-level parallelism for
 // this to work, which means that Ruby's out because it doesn't have good
 // support for doing that. My Python implementation ended up pretty heavily disk
-// IO-bound which isn't a very good way to test CPU contention.
+// IO-bound, which is a bad way to test CPU contention.
 
 namespace aos {
 
 // Each test is represented by the name of the test binary and then any
 // arguments to pass to it.
 // Using --gtest_filter is a bad idea because it seems to result in a lot of
-// swapping which causes everything to be disk-bound (at least on my computer).
+// swapping which causes everything to be disk-bound (at least for me).
 static const ::std::vector< ::std::vector< ::std::string>> kTests = {
   {"queue_test"},
   {"condition_test"},
   {"mutex_test"},
-  // TODO(brians): Enable this one once it supports running in parallel.
-  //{"ipc_queue_test"},
+  {"raw_queue_test"},
 };
 // These arguments get inserted before any per-test arguments.
 static const ::std::vector< ::std::string> kDefaultArgs = {
-  "--gtest_repeat=35",
+  "--gtest_repeat=30",
   "--gtest_shuffle",
 };
 
 // How many test processes to run at a time.
-static const int kTesters = 12;
+static const int kTesters = 100;
 // How long to test for.
-static constexpr time::Time kTestTime = time::Time::InSeconds(20);
+static constexpr time::Time kTestTime = time::Time::InSeconds(30);
 
 // The structure that gets put into shared memory and then referenced by all of
 // the child processes.
@@ -104,7 +104,7 @@ void __attribute__((noreturn)) DoRunTest(
       executable = ::std::string(shared->path) + "/" + c;
       args[0] = executable.c_str();
       for (const ::std::string &ci : kDefaultArgs) {
-        args[i++] = ci.c_str();
+        args[++i] = ci.c_str();
       }
     } else {
       args[i] = c.c_str();

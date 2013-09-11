@@ -24,7 +24,11 @@
         '<(AOS)/build/aos.gyp:logging',
         'once',
         '<(EXTERNALS):gtest',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
       ],
+      'export_dependent_settings': [
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
+       ],
     },
     {
       'target_name': 'time',

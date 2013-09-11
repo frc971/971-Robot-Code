@@ -16,7 +16,7 @@ void Condition::Wait() {
 }
 
 void Condition::Signal() {
-  condition_signal(&impl_, &m_->impl_);
+  condition_signal(&impl_);
 }
 
 void Condition::Broadcast() {

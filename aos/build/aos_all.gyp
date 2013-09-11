@@ -13,7 +13,7 @@
         '../atom_code/camera/camera.gyp:CameraHTTPStreamer',
         '../atom_code/camera/camera.gyp:CameraReader',
         '../atom_code/core/core.gyp:*',
-        '../atom_code/ipc_lib/ipc_lib.gyp:ipc_queue_test',
+        '../atom_code/ipc_lib/ipc_lib.gyp:raw_queue_test',
         '../atom_code/ipc_lib/ipc_lib.gyp:ipc_stress_test',
         '../atom_code/starter/starter.gyp:starter_exe',
         '../atom_code/starter/starter.gyp:netconsole',

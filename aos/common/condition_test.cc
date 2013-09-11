@@ -76,6 +76,7 @@ class ConditionTestProcess {
 
     child_ = fork();
     if (child_ == 0) {  // in child
+      ::aos::common::testing::PreventExit();
       Run();
       exit(EXIT_SUCCESS);
     } else {  // in parent
@@ -131,11 +132,11 @@ class ConditionTestProcess {
       ready.Lock();
     }
 
-    bool started;
-    bool delayed;
+    volatile bool started;
+    volatile bool delayed;
     Mutex done_delaying;
     ::Time start_time;
-    bool finished;
+    volatile bool finished;
     Mutex ready;
   };
   static_assert(shm_ok<Shared>::value,
