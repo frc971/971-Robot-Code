@@ -65,7 +65,7 @@ const double kAngleAdjustZeroingSpeed = -0.2;
 const double kAngleAdjustZeroingOffSpeed = -0.5;
 
 const double kPracticeAngleAdjustDeadband = 0.4;
-const double kCompAngleAdjustDeadband = 0.825;
+const double kCompAngleAdjustDeadband = 0.65;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
