@@ -81,3 +81,10 @@ struct DATA_STRUCT_NAME {
   };
 };
 #pragma pack(pop)
+
+#ifdef __cplusplus
+// TODO(brians): Consider using C1X's _Static_assert once we have a compiler
+// (GCC 4.6) + flags that support it.
+static_assert(sizeof(DATA_STRUCT_NAME) <= 64,
+              "We only have room for 64 bytes in the USB packet.");
+#endif  // defined(__cplusplus)
