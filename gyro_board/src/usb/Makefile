@@ -35,6 +35,8 @@ SOURCES=main.c \
 	FreeRTOS/portable/MemMang/heap_2.c \
 	alloc.c \
 	analog.c \
+	digital.c \
+	encoder.c \
 	FreeRTOS/portable/GCC/ARM_CM3/port.c \
 	FreeRTOS/tasks.c \
 	FreeRTOS/list.c \

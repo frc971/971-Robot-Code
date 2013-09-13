@@ -31,9 +31,12 @@
 /* Demo app includes. */
 #include "flash.h"
 #include "partest.h"
-#include "analog.h"
 #include "spi.h"
 #include "LPCUSB/usbapi.h"
+
+#include "analog.h"
+#include "digital.h"
+#include "encoder.h"
 
 /*-----------------------------------------------------------*/
 
@@ -85,6 +88,8 @@ static portTASK_FUNCTION(vPrintPeriodic, pvParameters)
 	/* We need to initialise xLastFlashTime prior to the first call to
 	vTaskDelayUntil(). */
 	xLastFlashTime = xTaskGetTickCount();
+
+  digital_init();
 
 	analog_init();
 

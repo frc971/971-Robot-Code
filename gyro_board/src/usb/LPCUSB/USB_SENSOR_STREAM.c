@@ -38,7 +38,7 @@
 
 #include "LPC17xx.h"
 
-#include "analog.h"
+#include "fill_packet.h"
 
 #define usbMAX_SEND_BLOCK    ( 20 / portTICK_RATE_MS )
 #define usbRXBUFFER_LEN      ( 80 )
