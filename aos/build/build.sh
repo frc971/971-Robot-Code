@@ -8,6 +8,7 @@ PLATFORM=$1
 GYP_MAIN=$2
 DEBUG=$3
 ACTION=$4
+OUT_NAME=$5
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
@@ -22,7 +23,7 @@ GYP_REVISION=1488
 GYP_DIR=${AOS}/externals/gyp-${GYP_REVISION}
 GYP=${GYP_DIR}/gyp
 
-OUTDIR=${AOS}/../out_${PLATFORM}
+OUTDIR=${AOS}/../out_${OUT_NAME}
 BUILD_NINJA=${OUTDIR}/Default/build.ninja
 
 [ -d ${NINJA_DIR} ] || git clone --branch release https://github.com/martine/ninja.git ${NINJA_DIR}
@@ -42,7 +43,7 @@ if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
   			"`find ${AOS}/.. -newer ${BUILD_NINJA} \( -name '*.gyp' -or -name '*.gypi' \)`" ) ]]; then
   ${GYP} \
     --check --depth=${AOS}/.. --no-circular-check -f ninja \
-    -I${AOS}/build/aos.gypi -Goutput_dir=out_${PLATFORM} \
+    -I${AOS}/build/aos.gypi -Goutput_dir=out_${OUT_NAME} \
     -DOS=${PLATFORM} -DWIND_BASE=${WIND_BASE} -DDEBUG=${DEBUG} \
     ${GYP_MAIN}
   # Have to substitute "command = $compiler" so that it doesn't try to

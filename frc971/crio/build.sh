@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../../aos/build/build.sh crio crio.gyp no $1
+../../aos/build/build.sh crio crio.gyp no FRC_UserProgram out_crio
