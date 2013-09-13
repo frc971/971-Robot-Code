@@ -1,18 +1,6 @@
 {
   'targets': [
     {
-      'target_name': 'actions',
-      'type': 'static_library',
-      'sources': ['AutoMode.act'],
-      'variables': {
-        'header_path': 'frc971/input',
-      },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:controls',
-      ],
-      'includes': ['../../aos/build/queues.gypi'],
-    },
-    {
       'target_name': 'JoystickReader',
       'type': 'executable',
       'sources': [
