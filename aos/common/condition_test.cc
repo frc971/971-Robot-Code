@@ -6,13 +6,13 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/util/thread.h"
 #include "aos/common/time.h"
 #include "aos/common/mutex.h"
 #include "aos/common/queue_testutils.h"
 #include "aos/common/type_traits.h"
 #include "aos/atom_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/macros.h"
 
 using ::aos::time::Time;
 using ::aos::common::testing::GlobalCoreInstance;
@@ -42,6 +42,9 @@ class ConditionTest : public ::testing::Test {
   void Settle() {
     time::SleepFor(::Time::InSeconds(0.008));
   }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ConditionTest);
 };
 
 class ConditionTestProcess {
@@ -50,8 +53,6 @@ class ConditionTestProcess {
     kWaitLockStart,  // lock, delay, wait, unlock
     kWait,  // delay, lock, wait, unlock
     kWaitNoUnlock,  // delay, lock, wait
-    kSignal,  // delay, signal
-    kBroadcast,  // delay, broadcast
   };
 
   // This amount gets added to any passed in delay to make the test repeatable.
@@ -151,25 +152,13 @@ class ConditionTestProcess {
     shared_->start_time = ::Time::Now();
     shared_->delayed = true;
     shared_->done_delaying.Unlock();
-    switch (action_) {
-      case Action::kWait:
-      case Action::kWaitNoUnlock:
-        shared_->ready.Unlock();
-        condition_->m()->Lock();
-      case Action::kWaitLockStart:
-        condition_->Wait();
-        break;
-      case Action::kSignal:
-        shared_->ready.Unlock();
-        condition_->Signal();
-        break;
-      case Action::kBroadcast:
-        shared_->ready.Unlock();
-        condition_->Broadcast();
-        break;
+    if (action_ != Action::kWaitLockStart) {
+      shared_->ready.Unlock();
+      condition_->m()->Lock();
     }
+    condition_->Wait();
     shared_->finished = true;
-    if (action_ == Action::kWait || action_ == Action::kWaitLockStart) {
+    if (action_ != Action::kWaitNoUnlock) {
       condition_->m()->Unlock();
     }
   }
@@ -196,6 +185,8 @@ class ConditionTestProcess {
   pid_t child_;
 
   Shared *const shared_;
+
+  DISALLOW_COPY_AND_ASSIGN(ConditionTestProcess);
 };
 constexpr ::Time ConditionTestProcess::kMinimumDelay;
 constexpr ::Time ConditionTestProcess::kDefaultTimeout;
@@ -203,61 +194,114 @@ constexpr ::Time ConditionTestProcess::kDefaultTimeout;
 // Makes sure that the testing framework and everything work for a really simple
 // Wait() and then Signal().
 TEST_F(ConditionTest, Basic) {
-  ConditionTestProcess thread(::Time(0, 0),
-                              ConditionTestProcess::Action::kWait,
-                              &shared_->condition);
-  thread.Start();
+  ConditionTestProcess child(::Time(0, 0),
+                             ConditionTestProcess::Action::kWait,
+                             &shared_->condition);
+  child.Start();
   Settle();
-  EXPECT_FALSE(thread.IsFinished());
+  EXPECT_FALSE(child.IsFinished());
   shared_->condition.Signal();
-  EXPECT_FALSE(thread.Hung());
+  EXPECT_FALSE(child.Hung());
 }
 
-// Makes sure that the worker thread locks before it tries to Wait() etc.
+// Makes sure that the worker child locks before it tries to Wait() etc.
 TEST_F(ConditionTest, Locking) {
-  ConditionTestProcess thread(::Time(0, 0),
-                              ConditionTestProcess::Action::kWait,
-                              &shared_->condition);
+  ConditionTestProcess child(::Time(0, 0),
+                             ConditionTestProcess::Action::kWait,
+                             &shared_->condition);
   shared_->mutex.Lock();
-  thread.Start();
+  child.Start();
   Settle();
-  // This Signal() shouldn't do anything because the thread should still be
+  // This Signal() shouldn't do anything because the child should still be
   // waiting to lock the mutex.
   shared_->condition.Signal();
   Settle();
   shared_->mutex.Unlock();
-  EXPECT_TRUE(thread.Hung());
+  EXPECT_TRUE(child.Hung());
 }
 
-// Tests that the work thread only catches a Signal() after the mutex gets
+// Tests that the work child only catches a Signal() after the mutex gets
 // unlocked.
 TEST_F(ConditionTest, LockFirst) {
-  ConditionTestProcess thread(::Time(0, 0),
-                              ConditionTestProcess::Action::kWait,
-                              &shared_->condition);
+  ConditionTestProcess child(::Time(0, 0),
+                             ConditionTestProcess::Action::kWait,
+                             &shared_->condition);
   shared_->mutex.Lock();
-  thread.Start();
+  child.Start();
   Settle();
   shared_->condition.Signal();
   Settle();
-  EXPECT_FALSE(thread.IsFinished());
+  EXPECT_FALSE(child.IsFinished());
   shared_->mutex.Unlock();
   Settle();
-  EXPECT_FALSE(thread.IsFinished());
+  EXPECT_FALSE(child.IsFinished());
   shared_->condition.Signal();
-  EXPECT_FALSE(thread.Hung());
+  EXPECT_FALSE(child.Hung());
 }
 
 // Tests that the mutex gets relocked after Wait() returns.
 TEST_F(ConditionTest, Relocking) {
-  ConditionTestProcess thread(::Time(0, 0),
-                              ConditionTestProcess::Action::kWaitNoUnlock,
-                              &shared_->condition);
-  thread.Start();
+  ConditionTestProcess child(::Time(0, 0),
+                             ConditionTestProcess::Action::kWaitNoUnlock,
+                             &shared_->condition);
+  child.Start();
   Settle();
   shared_->condition.Signal();
-  EXPECT_FALSE(thread.Hung());
+  EXPECT_FALSE(child.Hung());
   EXPECT_FALSE(shared_->mutex.TryLock());
+}
+
+// Tests that Signal() stops exactly 1 Wait()er.
+TEST_F(ConditionTest, SignalOne) {
+  ConditionTestProcess child1(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  ConditionTestProcess child2(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  ConditionTestProcess child3(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  auto number_finished = [&]() { return (child1.IsFinished() ? 1 : 0) +
+    (child2.IsFinished() ? 1 : 0) + (child3.IsFinished() ? 1 : 0); };
+  child1.Start();
+  child2.Start();
+  child3.Start();
+  Settle();
+  EXPECT_EQ(0, number_finished());
+  shared_->condition.Signal();
+  Settle();
+  EXPECT_EQ(1, number_finished());
+  shared_->condition.Signal();
+  Settle();
+  EXPECT_EQ(2, number_finished());
+  shared_->condition.Signal();
+  Settle();
+  EXPECT_EQ(3, number_finished());
+  EXPECT_FALSE(child1.Hung());
+  EXPECT_FALSE(child2.Hung());
+  EXPECT_FALSE(child3.Hung());
+}
+
+// Tests that Brodcast() wakes multiple Wait()ers.
+TEST_F(ConditionTest, Broadcast) {
+  ConditionTestProcess child1(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  ConditionTestProcess child2(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  ConditionTestProcess child3(::Time(0, 0),
+                              ConditionTestProcess::Action::kWait,
+                              &shared_->condition);
+  child1.Start();
+  child2.Start();
+  child3.Start();
+  Settle();
+  shared_->condition.Broadcast();
+  EXPECT_FALSE(child1.Hung());
+  EXPECT_FALSE(child2.Hung());
+  EXPECT_FALSE(child3.Hung());
 }
 
 }  // namespace testing
