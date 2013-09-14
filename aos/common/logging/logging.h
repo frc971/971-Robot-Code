@@ -156,6 +156,15 @@ namespace aos {
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// CHECK dies with a fatal error if condition is not true.  It is *not*
+// controlled by NDEBUG, so the check will be executed regardless of
+// compilation mode.  Therefore, it is safe to do things like:
+//    CHECK(fp->Write(x) == 4)
+#define CHECK(condition)  \
+  if (__builtin_expect(!(condition), 0)) { \
+    LOG(FATAL, "CHECK(" #condition ") failed\n"); \
+  }
+
 // Helper functions for CHECK_OP macro.
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
