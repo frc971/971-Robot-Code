@@ -1,14 +1,17 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
+//
+// Modified by FRC Team 971.
 
 #include "glibusb.h"
 
+#include <inttypes.h>
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
 #include <string>
-#include <glog/logging.h>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
+#include "aos/common/logging/logging.h"
 #include "glibusb_device_internal.h"
 
 namespace glibusb {
@@ -102,8 +105,8 @@ void Libusb::FindDeviceLocationAndId(std::vector<DeviceLocationAndId> *result) {
        *devices != NULL; ++devices) {
     struct libusb_device_descriptor descriptor;
     CHECK_GE(libusb_get_device_descriptor(*devices, &descriptor), 0);
-    VLOG(2) << "idVendor = 0x" << std::hex << descriptor.idVendor
-            << " idProduct = 0x" << std::hex << descriptor.idProduct;
+    LOG(DEBUG, "idVendor = 0x%" PRIx16 " idProduct = 0x%" PRIx16 "\n",
+        descriptor.idVendor, descriptor.idProduct);
     DeviceLocationAndId dev_location_id;
     dev_location_id.location.bus_number = libusb_get_bus_number(*devices);
     dev_location_id.location.device_address =
@@ -142,11 +145,13 @@ static libusb_device_handle *FindSingleDevice(
 
     struct libusb_device_descriptor descriptor;
     CHECK_GE(libusb_get_device_descriptor(*devices, &descriptor), 0);
-    VLOG(2) << "idVendor = 0x" << std::hex << descriptor.idVendor
-            << " idProduct = 0x" << std::hex << descriptor.idProduct;
+    LOG(DEBUG, "idVendor = 0x%" PRIx16 " idProduct = 0x%" PRIx16 "\n",
+        descriptor.idVendor, descriptor.idProduct);
     if (descriptor.idVendor == dev_location_id.id.vendor_id &&
         descriptor.idProduct == dev_location_id.id.product_id) {
-      CHECK(matching_device == NULL) << ": found multiple matching devices";
+      if (matching_device != NULL) {
+        LOG(FATAL, "found multiple matching devices\n");
+      }
       matching_device = *devices;
     }
   }
@@ -154,27 +159,27 @@ static libusb_device_handle *FindSingleDevice(
     int bus_number = static_cast<int>(dev_location_id.location.bus_number);
     int device_address =
         static_cast<int>(dev_location_id.location.device_address);
-    CHECK(matching_device != NULL)
-        << ": no matching device found for "
-        << "vid=" << std::hex << dev_location_id.id.vendor_id << ", "
-        << "pid=" << std::hex << dev_location_id.id.product_id << ", "
-        << "bus_number=" << std::dec << bus_number << ", "
-        << "device_address=" << std::dec << device_address;
+    if (matching_device == NULL) {
+      LOG(FATAL, "no matching device found for vid=%" PRIx16 ", pid=%" PRIx16
+          ", bus_number=%d, device_address=%d\n",
+          dev_location_id.id.vendor_id, dev_location_id.id.product_id,
+          bus_number, device_address);
+    }
   } else {
     const int vendor_id = dev_location_id.id.vendor_id;
     const int product_id = dev_location_id.id.product_id;
-    CHECK(matching_device != NULL) << ": no matching device found for "
-                                   << "vid=" << std::hex << vendor_id << ", "
-                                   << "pid=" << std::hex << product_id;
+    if (matching_device == NULL) {
+      LOG(FATAL, "no matching device found for vid=%d, pid=%d\n",
+          vendor_id, product_id);
+    }
   }
 
   struct libusb_device_handle *handle = NULL;
   if (matching_device != NULL) {
     int return_value = libusb_open(matching_device, &handle);
     if (return_value < 0) {
-      // TODO(charliehotel): this must not be FATAL.
-      LOG(FATAL) << "Failed to open device: "
-                 << libusb_error_name(return_value);
+      LOG(FATAL, "Failed to open device: %s\n",
+          libusb_error_name(return_value));
     }
     CHECK_NOTNULL(handle);           // should never happen
   }
@@ -232,7 +237,7 @@ void Libusb::FindDeviceBySpecification(
     const std::string &target_vendor_product_id,
     std::vector<VendorProductId> *target_ids) {
   CHECK_NE(target_vendor_product_id, "");
-  CHECK_EQ(target_vendor_product_id.size(), 9);
+  CHECK_EQ(target_vendor_product_id.size(), 9u);
   CHECK_EQ(target_vendor_product_id[4], ':');
   uint32_t vendor_id;
   CHECK(safe_strtou32_hex(
@@ -248,7 +253,7 @@ void Libusb::FindDeviceBySpecification(
 
 /*static*/ void Libusb::ParseDeviceLocationString(
     const std::string &target_device_location, DeviceLocation *location) {
-  CHECK_EQ(target_device_location.size(), 7);
+  CHECK_EQ(target_device_location.size(), 7u);
   CHECK_EQ(target_device_location[3], ':');
   uint32_t parsed_bus_number;
   CHECK(safe_strtou32(

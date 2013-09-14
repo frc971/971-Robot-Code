@@ -1,10 +1,12 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
+//
+// Modified by FRC Team 971.
 
 #include "glibusb_internal.h"
 
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
-#include "glog/logging.h"
+#include "aos/common/logging/logging.h"
 #include "glibusb_endpoint.h"
 
 namespace glibusb {
@@ -42,7 +44,7 @@ UsbEndpoint::TransferType DescriptorToTransfer(
       return UsbEndpoint::kInterrupt;
       break;
     default:
-      LOG(FATAL) << "bogus transfer type";
+      LOG(FATAL, "bogus transfer type\n");
   }
 }
 

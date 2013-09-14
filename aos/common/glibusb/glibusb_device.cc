@@ -1,11 +1,12 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
+//
+// Modified by FRC Team 971.
 
 #include <stddef.h>
-#include <glog/logging.h>
-#include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <libusb.h>
+#include <inttypes.h>
+#include <libusb-1.0/libusb.h>
 
+#include "aos/common/logging/logging.h"
 #include "glibusb.h"
 #include "glibusb_device_internal.h"
 #include "glibusb_endpoint.h"
@@ -31,81 +32,85 @@ PhysicalUsbDevice::PhysicalUsbDevice(struct libusb_context *context,
       libusb_context_(CHECK_NOTNULL(context)),
       device_handle_(CHECK_NOTNULL(handle)) {
   int r = libusb_claim_interface(device_handle_, 0);
-  // TODO(charliehotel): this must not be FATAL.
-  CHECK_GE(r, 0) << ": libusb_claim_interface failed, r=" << std::dec << r;
+  if (r < 0) {
+    // TODO(charliehotel): this must not be FATAL.
+    LOG(FATAL, "libusb_claim_interface failed with %d: %s\n",
+        r, libusb_error_name(r));
+  }
 
   struct libusb_device *dev = libusb_get_device(device_handle_);
-  // TODO(charliehotel): this must not be FATAL.
-  CHECK(dev != NULL) << ": libusb_get_device failed";
+  if (dev == NULL) {
+    // TODO(charliehotel): this must not be FATAL.
+    LOG(FATAL, "libusb_get_device failed\n");
+  }
 
   struct libusb_device_descriptor desc;
   r = libusb_get_device_descriptor(dev, &desc);
-  // TODO(charliehotel): this must not be FATAL.
-  CHECK_GE(r, 0) << ": libusb_get_device_descriptor failed";
+  if (r < 0) {
+    // TODO(charliehotel): this must not be FATAL.
+    LOG(FATAL, "libusb_get_device_descriptor failed with %d: %s\n",
+        r, libusb_error_name(r));
+  }
 
-  VLOG(2) << "vid=0x" << std::hex << desc.idVendor
-	  << ", pid=0x" << desc.idProduct;
-  VLOG(2) << "  # of configurations = "
-	  << static_cast<int>(desc.bNumConfigurations);
+  LOG(DEBUG, "vid=0x%" PRIx16 ", pid=0x%" PRIx16 ", # of configurations = %d\n",
+      desc.idVendor, desc.idProduct, static_cast<int>(desc.bNumConfigurations));
 
   struct libusb_config_descriptor *config;
   r = libusb_get_active_config_descriptor(dev, &config);
-  // TODO(charliehotel): this must not be FATAL.
-  CHECK_GE(r, 0) << ": libusb_get_active_config_descriptor failed";
+  if (r < 0) {
+    // TODO(charliehotel): this must not be FATAL.
+    LOG(FATAL, "libusb_get_active_config_descriptor failed with %d: %s\n",
+        r, libusb_error_name(r));
+  }
   // TODO(charliehotel): this must not be FATAL.
   CHECK_NOTNULL(config);
 
   if (config->bNumInterfaces != 1) {
-    VLOG(2) << "config->bNumInterfaces="
-	    << static_cast<int>(config->bNumInterfaces)
-	    << ", expected ony one";
+    LOG(DEBUG, "config->bNumInterfaces=%d, expected only one\n",
+        static_cast<int>(config->bNumInterfaces));
   }
 
-  if (VLOG_IS_ON(2)) {
+  // TODO(brians): Make this enableable through the logging stuff.
+  if (false) {
     for (int i = 0; i < config->bNumInterfaces; ++i) {
       const struct libusb_interface *interface = config->interface + i;
       const struct libusb_interface_descriptor *setting = interface->altsetting;
 
-      VLOG(2) << "bInterfaceNumber="
-              << static_cast<int>(setting->bInterfaceNumber);
-      VLOG(2) << "bAlternateSetting="
-              << static_cast<int>(setting->bAlternateSetting);
-      VLOG(2) << "bNumEndpoints="
-              << static_cast<int>(setting->bNumEndpoints);
+      LOG(DEBUG, "bInterfaceNumber=%d bAlternateSetting=%d bNumEndpoints=%d\n",
+          static_cast<int>(setting->bInterfaceNumber),
+          static_cast<int>(setting->bAlternateSetting),
+          static_cast<int>(setting->bNumEndpoints));
 
       for (int j = 0; j < setting->bNumEndpoints; ++j) {
         const struct libusb_endpoint_descriptor *endpoint =
             setting->endpoint + j;
         switch (endpoint->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) {
           case LIBUSB_TRANSFER_TYPE_CONTROL:
-            VLOG(2) << "control";
+            LOG(DEBUG, "control\n");
             break;
           case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
-            VLOG(2) << "iso";
+            LOG(DEBUG, "iso\n");
             break;
           case LIBUSB_TRANSFER_TYPE_BULK:
-            VLOG(2) << "bulk";
+            LOG(DEBUG, "bulk\n");
             break;
           case LIBUSB_TRANSFER_TYPE_INTERRUPT:
-            VLOG(2) << "interrupt";
+            LOG(DEBUG, "interrupt\n");
             break;
           default:
-            LOG(FATAL) << "unknown transfer type";
+            LOG(FATAL, "unknown transfer type\n");
         }
         if ((endpoint->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) ==
             LIBUSB_ENDPOINT_IN) {
-          VLOG(2) << " ep: 0x"
-                  << std::hex << static_cast<int>(endpoint->bEndpointAddress)
-                  << " (in)";
+          LOG(DEBUG, " ep: 0x%x (in)\n",
+              static_cast<int>(endpoint->bEndpointAddress));
         } else {
-          VLOG(2) << " ep: 0x"
-                  << std::hex << static_cast<int>(endpoint->bEndpointAddress)
-                  << " (out)";
+          LOG(DEBUG, " ep: 0x%x (out)\n",
+              static_cast<int>(endpoint->bEndpointAddress));
         }
-        VLOG(2) << "   packet size="
-                << std::dec << static_cast<int>(endpoint->wMaxPacketSize);
-        VLOG(2) << "   interval="
-                << std::dec << static_cast<int>(endpoint->bInterval);
+        LOG(DEBUG, "  packet size=%d interval=%d\n",
+            static_cast<int>(endpoint->wMaxPacketSize),
+            static_cast<int>(endpoint->bInterval));
       }
     }
   }
@@ -130,8 +135,11 @@ UsbEndpointType *PhysicalUsbDevice::MatchEndpoint(EndpointMatcher matcher) {
   struct libusb_config_descriptor *config;
   libusb_device *dev = libusb_get_device(device_handle_);
   const int r = libusb_get_active_config_descriptor(dev, &config);
-  // TODO(charliehotel): this must not be FATAL.
-  CHECK_GE(r, 0) << ": libusb_get_active_config_descriptor failed";
+  if (r < 0) {
+    // TODO(charliehotel): this must not be FATAL.
+    LOG(FATAL, "libusb_get_active_config_descriptor failed with %d: %s\n",
+        r, libusb_error_name(r));
+  }
   // TODO(charliehotel): this must not be FATAL.
   CHECK_NOTNULL(config);
   const struct libusb_interface *interface = config->interface;
@@ -184,16 +192,18 @@ struct DescriptorIsOfTypeAndDirection {
 }  // namespace
 
 UsbInEndpoint *PhysicalUsbDevice::DoInEndpoint(int number) {
-  CHECK_EQ(number & LIBUSB_ENDPOINT_ADDRESS_MASK, number)
-      << ": Endpoint out of range.";
+  if ((number & LIBUSB_ENDPOINT_ADDRESS_MASK) != number) {
+    LOG(FATAL, "Endpoint %d out of range.\n", number);
+  }
 
   DescriptorHasAddressAndDirection matcher(number, UsbEndpoint::kIn);
   return MatchEndpoint<PhysicalUsbInEndpoint>(matcher);
 }
 
 UsbOutEndpoint *PhysicalUsbDevice::DoOutEndpoint(int number) {
-  CHECK_EQ(number & LIBUSB_ENDPOINT_ADDRESS_MASK, number)
-      << ": Endpoint out of range.";
+  if ((number & LIBUSB_ENDPOINT_ADDRESS_MASK) != number) {
+    LOG(FATAL, "Endpoint %d out of range.\n", number);
+  }
 
   DescriptorHasAddressAndDirection matcher(number, UsbEndpoint::kOut);
   return MatchEndpoint<PhysicalUsbOutEndpoint>(matcher);

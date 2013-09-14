@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // Alternative libusb call to do transfers that quits when
 // a notification is notified.
 //
@@ -12,33 +14,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <gflags/gflags.h>
-#include <glog/logging.h>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
+#include "aos/common/logging/logging.h"
 #include "glibusb_endpoint.h"
-
-
-DEFINE_int32(notification_poll,
-             60,
-             "Time in seconds to wait between checking the quit notification "
-             "when waiting for USB messages.");
-
-namespace {
-
-static bool GEQZero(const char* flagname, int32_t value) {
-  if (value < 0) {
-    printf("Invalid value for --%s: %d\n", flagname, value);
-    return false;
-  }
-  return true;
-}
-
-static const bool notification_poll_dummy = google::RegisterFlagValidator(
-  &FLAGS_notification_poll, &GEQZero);
-
-}  // namespace
-
 
 namespace glibusb {
 
@@ -47,7 +26,7 @@ namespace {
 void bulk_transfer_cb(struct libusb_transfer *transfer) {
   int *completed = static_cast<int*>(transfer->user_data);
   *completed = 1;
-  VLOG(3) << "actual_length=" << transfer->actual_length;
+  LOG(DEBUG, "actual_length=%d\n", transfer->actual_length);
   /* caller interprets results and frees transfer */
 }
 }  // namespace
@@ -81,7 +60,7 @@ int do_sync_bulk_transfer(
     tv.tv_usec = 0;
     r = libusb_handle_events_timeout_completed(context, &tv, &completed);
     if (quit != NULL && quit->HasBeenNotified()) {
-      LOG(WARNING) << "Caught quit notification.  Canceling transfer.";
+      LOG(WARNING, "Caught quit notification.  Canceling transfer.\n");
       r = LIBUSB_ERROR_TIMEOUT;
     }
     if (r < 0) {
@@ -91,7 +70,7 @@ int do_sync_bulk_transfer(
       libusb_cancel_transfer(transfer);
       while (!completed) {
         struct timeval cancel_tv;
-        cancel_tv.tv_sec = (quit == NULL ? FLAGS_notification_poll : 60);
+        cancel_tv.tv_sec = 60;
         cancel_tv.tv_usec = 0;
         if (libusb_handle_events_timeout_completed(context, &cancel_tv,
                                                    &completed) < 0) {
@@ -125,7 +104,8 @@ int do_sync_bulk_transfer(
       r = LIBUSB_ERROR_IO;
       break;
     default:
-      LOG(WARNING) << "unrecognised status code " << transfer->status;
+      LOG(WARNING, "unrecognised status code %d\n",
+          static_cast<int>(transfer->status));
       r = LIBUSB_ERROR_OTHER;
   }
 

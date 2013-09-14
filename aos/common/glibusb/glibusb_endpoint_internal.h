@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // Wrapper for libusb's endpoints.
 
 #ifndef _GLIBUSB_GLIBUSB_ENDPOINT_INTERNAL_H_
@@ -7,7 +9,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
 #include "glibusb_endpoint.h"
 

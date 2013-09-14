@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // Usb Endpoint Interfaces.
 
 #ifndef _GLIBUSB_GLIBUSB_ENDPOINT_H_
@@ -8,11 +10,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <libusb.h>
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/condition.hpp>
+#include <libusb-1.0/libusb.h>
 
+#include "aos/common/mutex.h"
+#include "aos/common/condition.h"
 #include "gbuffer.h"
 
 #ifndef MAX_ISO_BUFFER_LENGTH
@@ -37,14 +38,13 @@ class Notification {
   explicit Notification(bool prenotify = false);
   bool HasBeenNotified() const;
   void WaitForNotification() const;
-  bool WaitForNotificationWithTimeout(int64_t milliseconds) const;
   void Notify();
 
  private:
   bool HasBeenNotifiedUnlocked() const;
 
-  mutable boost::mutex mutex_;
-  mutable boost::condition notified_changed_;
+  mutable ::aos::Mutex mutex_;
+  mutable ::aos::Condition notified_changed_;
   bool notified_;
 
   Notification(const Notification &) = delete;

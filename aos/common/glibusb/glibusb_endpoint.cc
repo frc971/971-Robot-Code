@@ -1,12 +1,14 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
+//
+// Modified by FRC Team 971.
 
 #include "glibusb_endpoint.h"
 
 #include <stddef.h>
-#include <glog/logging.h>
-#include <boost/scoped_ptr.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <inttypes.h>
+#include <memory>
 
+#include "aos/common/logging/logging.h"
 #include "gbuffer.h"
 #include "glibusb_endpoint_internal.h"
 #include "glibusb_internal.h"
@@ -31,34 +33,25 @@ int LibusbGetMaxIsoPacketSize(libusb_device_handle *handle,
 }  // namespace
 
 Notification::Notification(bool prenotify)
-  : notified_(prenotify) {}
+  : notified_changed_(&mutex_), notified_(prenotify) {}
 
 bool Notification::HasBeenNotified() const {
-  boost::lock_guard<boost::mutex> lock(mutex_);
+  ::aos::MutexLocker lock(&mutex_);
   return notified_;
 }
 
 void Notification::WaitForNotification() const {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  notified_changed_.wait(
-      lock, 
-      boost::bind(&Notification::HasBeenNotifiedUnlocked, this));
-}
-
-bool Notification::WaitForNotificationWithTimeout(int64_t milliseconds) const {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  auto timeout = boost::posix_time::milliseconds(milliseconds);
-  notified_changed_.timed_wait(
-      lock, timeout,
-      boost::bind(&Notification::HasBeenNotifiedUnlocked, this));
-  return notified_;
+  ::aos::MutexLocker lock(&mutex_);
+  while (HasBeenNotifiedUnlocked()) notified_changed_.Wait();
 }
 
 void Notification::Notify() {
-  boost::lock_guard<boost::mutex> lock(mutex_);
-  CHECK(!notified_) << ": already notified";
+  ::aos::MutexLocker lock(&mutex_);
+  if (notified_) {
+    LOG(FATAL, "already notified\n");
+  }
   notified_ = true;
-  notified_changed_.notify_all();
+  notified_changed_.Broadcast();
 }
 
 bool Notification::HasBeenNotifiedUnlocked() const {
@@ -74,11 +67,15 @@ UsbEndpoint::UsbEndpoint(DirectionType direction, TransferType transfer,
     : direction_(direction),
       transfer_(transfer),
       endpoint_address_and_direction_(endpoint_address | direction) {
-  CHECK_EQ(endpoint_address_and_direction_ & 0x80, direction)
-      << ": Direction in address doesn't match specified direction.";
-  CHECK_EQ(endpoint_address_and_direction_ & 0x8f,
-           endpoint_address_and_direction_)
-      << ": Invalid endpoint address.";
+  if ((endpoint_address_and_direction_ & 0x80) != direction) {
+    LOG(FATAL, "Direction in address %x doesn't match direction %x.\n",
+        endpoint_address_and_direction_, direction);
+  }
+  if ((endpoint_address_and_direction_ & 0x8f) !=
+      endpoint_address_and_direction_) {
+    LOG(FATAL, "Invalid endpoint address %x.\n",
+        endpoint_address_and_direction_);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -142,8 +139,9 @@ PhysicalUsbInEndpoint::PhysicalUsbInEndpoint(
                     DescriptorToAddress(descriptor)),
       libusb_context_(CHECK_NOTNULL(context)),
       handle_(CHECK_NOTNULL(handle)) {
-  VLOG(1) << "0x" << std::hex << static_cast<int>(endpoint_address_and_direction())
-          << ", max_packet_size " << std::dec << descriptor->wMaxPacketSize;
+  LOG(DEBUG, "0x%x, max_packet_size=%" PRId16 "\n",
+      static_cast<int>(endpoint_address_and_direction()),
+      descriptor->wMaxPacketSize);
   CHECK_EQ(DescriptorToDirection(descriptor), UsbEndpoint::kIn);
 }
 
@@ -175,7 +173,7 @@ unsigned char LibUsbTransferType(int transfer_type) {
   case UsbEndpoint::kIsochronous:
     return LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
   default:
-    LOG(FATAL) << "transfer_type " << transfer_type << " is bogus";
+    LOG(FATAL, "transfer_type %d is bogus", transfer_type);
   }
 }
 
@@ -195,7 +193,7 @@ const char *TransferTypeName(int transfer_type) {
   case UsbEndpoint::kIsochronous:
     return kTransferTypeNameIsochronous;
   default:
-    LOG(FATAL) << "transfer_type " << transfer_type << " is bogus";
+    LOG(FATAL, "transfer_type %d is bogus", transfer_type);
   }
 }
 }  // namespace
@@ -207,11 +205,11 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
   CHECK_GE(timeout_milliseconds, 0);
   CHECK_NOTNULL(out);
 
-  VLOG(2) << "read on 0x" << std::hex << endpoint_address_and_direction()
-          <<  ", size 0x" << std::hex << length
-          << ", timeout " << std::dec << timeout_milliseconds << " [ms]";
+  // TODO(brians): Conditionally enable this.
+  LOG(DEBUG, "read on 0x%x, size 0x%x, timeout %" PRId32 " [ms]\n",
+      endpoint_address_and_direction(), length, timeout_milliseconds);
 
-  boost::scoped_ptr<Buffer> whole_buffer(new Buffer());
+  ::std::unique_ptr<Buffer> whole_buffer(new Buffer());
   whole_buffer->Resize(length);
   void *p = whole_buffer->GetBufferPointer(length);
   int transferred;
@@ -231,31 +229,29 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
       size_t size_transferred = static_cast<size_t>(transferred);
       whole_buffer->Resize(size_transferred);
 
-      VLOG(2)
-        << "read on 0x"
-        << std::hex << static_cast<int>(endpoint_address_and_direction())
-        << ", size_transferred=0x" << std::hex << size_transferred;
+      // TODO(brians): Conditionally enable this.
+      LOG(DEBUG, "read on 0x%x, size_transferred=%zx\n",
+          endpoint_address_and_direction(), size_transferred);
       out->Copy(*whole_buffer);
       return kSuccess;
     }
   case LIBUSB_ERROR_TIMEOUT:
-    VLOG(2) << "libusb_" << TransferTypeName(transfer())
-	    << "_transfer timeout";
+    LOG(DEBUG, "libusb_%s_transfer timeout\n",
+        TransferTypeName(transfer()));
     return kTimeout;
   case LIBUSB_ERROR_IO:
-    VLOG(1) << "Device i/o error.";
+    LOG(DEBUG, "device I/O error\n");
     return kFail;
   case LIBUSB_ERROR_NO_DEVICE:
-    VLOG(1) << "Device disconnected.";
+    LOG(DEBUG, "device disconnected\n");
     return kNoDevice;
   case LIBUSB_ERROR_OTHER:
-    LOG(INFO) << "libusb_" << TransferTypeName(transfer())
-	      << "_transfer failed with r=" << std::dec << r;
+    LOG(INFO, "libusb_%s_transfer other error\n", TransferTypeName(transfer()));
     return kUnknown;
   default:
     // Most of these are more esoteric.
-    LOG(INFO) << "libusb_" << TransferTypeName(transfer())
-	      << "_transfer failed with r=" << std::dec << r;
+    LOG(INFO, "libusb_%s_transfer failed with %d: %s\n",
+        TransferTypeName(transfer()), r, libusb_error_name(r));
     return kFail;
   }
 }
@@ -270,8 +266,9 @@ PhysicalUsbOutEndpoint::PhysicalUsbOutEndpoint(
                      DescriptorToAddress(descriptor)),
       libusb_context_(CHECK_NOTNULL(context)),
       handle_(CHECK_NOTNULL(handle)) {
-  VLOG(1) << "0x" << std::hex << static_cast<int>(endpoint_address_and_direction())
-          << ", max_packet_size " << std::dec << descriptor->wMaxPacketSize;
+  LOG(DEBUG, "0x%x, max_packet_size=%" PRId16 "\n",
+      static_cast<int>(endpoint_address_and_direction()),
+      descriptor->wMaxPacketSize);
   CHECK_EQ(DescriptorToDirection(descriptor), UsbEndpoint::kOut);
 }
 
@@ -296,9 +293,8 @@ UsbEndpoint::IoStatus PhysicalUsbOutEndpoint::DoWrite(
   CHECK_NOTNULL(handle_);
   CHECK_EQ(direction(), kOut);
 
-  VLOG(2) << "writing on 0x" << std::hex << endpoint_address_and_direction()
-          << ", length=" << std::dec << buffer.Length()
-	  << ", timeout " << std::dec << timeout_milliseconds << " [ms]";
+  LOG(DEBUG, "writing on 0x%x, length=%zd, timeout %d [ms]\n",
+      endpoint_address_and_direction(), buffer.Length(), timeout_milliseconds);
 
   size_t length = buffer.Length();
   const unsigned char *p =
@@ -308,29 +304,30 @@ UsbEndpoint::IoStatus PhysicalUsbOutEndpoint::DoWrite(
   int transferred;
   int r;
 
+  // TODO(brians): Conditionally enable this.
+  LOG(DEBUG, "libusb_%s_transfer, length=%d\n",
+      TransferTypeName(transfer()), length);
   switch (transfer()) {
     case kBulk:
-      VLOG(2) << "libusb_bulk_transfer, length=" << std::dec << length;
       r = libusb_bulk_transfer(handle_, endpoint_address_and_direction(),
                                const_cast<unsigned char *>(p),
                                length, &transferred,
                                timeout);
-      VLOG(2) << "libusb_bulk_transfer, r=" << std::dec << r
-              << ", transferred=" << std::dec << transferred;
       break;
     case kInterrupt:
-      VLOG(2) << "libusb_interrupt_transfer, length="
-              << std::dec << length;
       r = libusb_interrupt_transfer(handle_, endpoint_address_and_direction(),
                                     const_cast<unsigned char *>(p),
                                     length, &transferred,
                                     timeout);
-      VLOG(2) << "libusb_interrupt_transfer, r=" << std::dec << r
-              << ", transferred=" << std::dec << transferred;
       break;
+    case kControl:
+    case kIsochronous:
     default:
-      LOG(FATAL) << "bogus transfer() value";
+      LOG(FATAL, "bogus transfer() value\n");
   }
+  // TODO(brians): Conditionally enable this.
+  LOG(DEBUG, "libusb_%s_transfer, r=%d (%s), transferred=%d\n",
+      TransferTypeName(transfer()), r, libusb_error_name(r), transferred);
 
   size_t size_transferred;
 
@@ -340,21 +337,21 @@ UsbEndpoint::IoStatus PhysicalUsbOutEndpoint::DoWrite(
     CHECK_EQ(size_transferred, length);
     return kSuccess;
   case LIBUSB_ERROR_TIMEOUT:
-    VLOG(2) << "libusb_" << TransferTypeName(transfer()) << "_transfer timeout";
+    LOG(DEBUG, "libusb_%s_transfer timeout\n",
+        TransferTypeName(transfer()));
     return kTimeout;
   case LIBUSB_ERROR_IO:
-    VLOG(1) << "Device i/o error.";
+    LOG(DEBUG, "device I/O error\n");
     return kFail;
   case LIBUSB_ERROR_NO_DEVICE:
-    VLOG(1) << "Device disconnected.";
+    LOG(DEBUG, "device disconnected\n");
     return kNoDevice;
   case LIBUSB_ERROR_OTHER:
-    LOG(INFO) << "libusb_" << TransferTypeName(transfer())
-	      << "_transfer failed with r=" << std::dec << r;
+    LOG(INFO, "libusb_%s_transfer other error\n", TransferTypeName(transfer()));
     return kUnknown;
   default:
-    VLOG(1) << "libusb_" << TransferTypeName(transfer())
-	    << "_transfer failed, r=" << std::dec << r;
+    LOG(INFO, "libusb_%s_transfer failed with %d: %s\n",
+        TransferTypeName(transfer()), r, libusb_error_name(r));
     return kFail;
   }
 }

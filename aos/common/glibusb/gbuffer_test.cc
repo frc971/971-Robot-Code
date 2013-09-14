@@ -9,8 +9,8 @@
 
 #include <stdint.h>
 #include <limits>
+#include <memory>
 
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
 #include "aos/common/queue_testutils.h"
@@ -171,7 +171,7 @@ TEST_F(BufferTest, EmptyBufferDump) {
 // Tests slicing an empty buffer.
 TEST_F(BufferTest, EmptyBufferSlice) {
   Buffer buffer;
-  boost::scoped_ptr<Buffer> slice(buffer.MakeSlice(0, 0));
+  ::std::unique_ptr<Buffer> slice(buffer.MakeSlice(0, 0));
   EXPECT_EQ(0u, slice->Length());
 }
 
@@ -229,7 +229,7 @@ class ConstructedFromDataBufferTest : public testing::Test {
     buffer.reset(new Buffer(kDeadBeef, sizeof(kDeadBeef)));
   }
 
-  boost::scoped_ptr<Buffer> buffer;
+  ::std::unique_ptr<Buffer> buffer;
 };
 
 typedef ConstructedFromDataBufferTest ConstructedFromDataBufferDeathTest;
@@ -302,7 +302,7 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataGetPointer) {
 
 // Tests that Get{S,U}{8,16,32,64} work on zero.
 TEST_F(BufferTest, GetZero) {
-  boost::scoped_ptr<Buffer> buffer(new Buffer());
+  ::std::unique_ptr<Buffer> buffer(new Buffer());
   for (int i = 0; i < 8; ++i) {
     buffer->Append(uint8_t(0));
   }
@@ -334,7 +334,7 @@ TEST_F(BufferTest, GetZero) {
 
 // Tests that GetU{8,16,32,64} work.
 TEST_F(BufferTest, GetUXX) {
-  boost::scoped_ptr<Buffer> buffer(new Buffer());
+  ::std::unique_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0x88));
   buffer->Append(uint8_t(0x77));
   buffer->Append(uint8_t(0x66));
@@ -359,7 +359,7 @@ TEST_F(BufferTest, GetUXX) {
 
 // Tests that GetS{8,16,32,64} work for positive values.
 TEST_F(BufferTest, GetSXXPositive) {
-  boost::scoped_ptr<Buffer> buffer(new Buffer());
+  ::std::unique_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0x08));
   buffer->Append(uint8_t(0x07));
   buffer->Append(uint8_t(0x06));
@@ -384,7 +384,7 @@ TEST_F(BufferTest, GetSXXPositive) {
 
 // Tests that GetS{8,16,32,64} work for negative values.
 TEST_F(BufferTest, GetSXXNegative) {
-  boost::scoped_ptr<Buffer> buffer(new Buffer());
+  ::std::unique_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0xF8));
   buffer->Append(uint8_t(0xF7));
   buffer->Append(uint8_t(0x06));
@@ -483,13 +483,13 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataDump) {
 
 // Tests emtpy slicing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataSlice) {
-  boost::scoped_ptr<Buffer> slice(buffer->MakeSlice(0, 0));
+  ::std::unique_ptr<Buffer> slice(buffer->MakeSlice(0, 0));
   EXPECT_EQ(0u, slice->Length());
 }
 
 // Tests slicing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataSlice2) {
-  boost::scoped_ptr<Buffer> slice(buffer->MakeSlice(0, 2));
+  ::std::unique_ptr<Buffer> slice(buffer->MakeSlice(0, 2));
   EXPECT_EQ(2u, slice->Length());
   uint16_t u16;
   slice->Get(0, &u16);

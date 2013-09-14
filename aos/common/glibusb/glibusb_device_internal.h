@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // Wrapper for libusb's device that implements the UsbDevice interface.
 
 #ifndef _GLIBUSB_GLIBUSB_DEVICE_INTERNAL_H_
@@ -7,7 +9,7 @@
 
 #include <stdint.h>
 #include <utility>
-#include <boost/function.hpp>
+#include <functional>
 
 #include "glibusb.h"
 #include "glibusb_endpoint.h"
@@ -26,12 +28,12 @@ class PhysicalUsbDevice : public UsbDevice {
   PhysicalUsbDevice(struct libusb_context *context,
                     struct libusb_device_handle *handle);
 
-  typedef boost::function<bool(const struct libusb_endpoint_descriptor *)>
+  typedef ::std::function<bool(const struct libusb_endpoint_descriptor *)>
     EndpointMatcher;
 
   // Iterates through all the endpoint descriptors for this device
-  // and allocates and allocates a UsbEndpointType for the first
-  // endpoint for which the matcher returns true.
+  // and allocates and returns a UsbEndpointType for the first
+  // endpoint for which the matcher returns true or NULL.
   template <class UsbEndpointType>
     UsbEndpointType *MatchEndpoint(EndpointMatcher matcher);
 
