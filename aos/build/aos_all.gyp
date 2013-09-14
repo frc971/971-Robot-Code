@@ -20,6 +20,7 @@
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/sensors/sensors.gyp:sensor_receiver_test',
+        '../common/glibusb/glibusb.gyp:gbuffer_test',
         'Common',
         # TODO(brians): move this to Common
         '<(AOS)/common/sensors/sensors.gyp:sensors_test',
