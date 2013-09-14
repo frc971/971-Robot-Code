@@ -7,7 +7,7 @@
         '<(AOS)/atom_code/init.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
         '<(AOS)/common/common.gyp:die',
         '<(AOS)/build/aos.gyp:logging',
       ],

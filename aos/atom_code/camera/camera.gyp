@@ -45,11 +45,11 @@
         'Buffers.cpp',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
         '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
       ],
     },
     {
@@ -74,6 +74,7 @@
         'buffers',
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
       ],
     },
   ],

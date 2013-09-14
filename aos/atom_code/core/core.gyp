@@ -32,6 +32,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
       ],
     },
     {

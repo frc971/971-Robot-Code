@@ -26,10 +26,7 @@ void Mutex::Lock() {
 }
 
 void Mutex::Unlock() {
-  if (mutex_unlock(&impl_) != 0) {
-    LOG(FATAL, "mutex_unlock(%p(=%" PRIu32 ")) failed because of %d: %s\n",
-        &impl_, impl_, errno, strerror(errno));
-  }
+  mutex_unlock(&impl_);
 }
 
 bool Mutex::TryLock() {

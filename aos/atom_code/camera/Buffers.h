@@ -53,9 +53,8 @@ class Buffers {
   // The current one. Sometimes NULL.
   const Message *message_;
   static const std::string kQueueName;
-  static const aos_type_sig kSignature;
   // NULL for the Reader one.
-  aos_queue *queue_;
+  RawQueue *queue_;
   // Make the actual mmap calls.
   // Called by Buffers() automatically.
   void MMap();
