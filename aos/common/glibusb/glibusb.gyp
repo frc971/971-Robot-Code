@@ -20,6 +20,7 @@
       'dependencies': [
         'gbuffer',
         '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:queue_testutils',
       ],
     },
   ],

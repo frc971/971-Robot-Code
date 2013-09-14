@@ -1,7 +1,9 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 // Author: charliehotel@google.com (Christopher Hoover)
+//
+// Modified by FRC Team 971.
 
-#include "../glibusb.h"
+#include "glibusb.h"
 
 #include <sstream>
 #include <gtest/gtest.h>

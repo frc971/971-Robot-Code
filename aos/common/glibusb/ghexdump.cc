@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <cstring>
 
+#include "aos/common/logging/logging.h"
+
 namespace glibusb {
 
 std::string Dump(const void *buf, size_t n) {

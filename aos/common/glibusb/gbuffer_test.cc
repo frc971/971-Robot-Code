@@ -1,15 +1,19 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 // Author: charliehotel@google.com (Christopher Hoover)
 //
+// Modified by FRC Team 971.
+//
 // Tests for Buffer.
 
-#include "../gbuffer.h"
+#include "gbuffer.h"
 
 #include <stdint.h>
 #include <limits>
 
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
+
+#include "aos/common/queue_testutils.h"
 
 #define GG_LONGLONG(x) x##LL
 #define GG_ULONGLONG(x) x##ULL
@@ -21,30 +25,38 @@ namespace {
 typedef ::testing::Types<int8_t, int16_t, int32_t, int64_t,
                          uint8_t, uint16_t, uint32_t, uint64_t> AllIntegerTypes;
 
+class BufferTest : public ::testing::Test {
+ public:
+  BufferTest() {
+    ::aos::common::testing::EnableTestLogging();
+  }
+};
+typedef BufferTest BufferDeathTest;
+
 // Tests that a newly constructed buffer is empty.
-TEST(BufferTest, EmptyBufferLength) {
+TEST_F(BufferTest, EmptyBufferLength) {
   Buffer buffer;
-  EXPECT_EQ(0, buffer.Length());
+  EXPECT_EQ(0u, buffer.Length());
 }
 
 // Tests clearing.
-TEST(BufferTest, EmptyBufferClear) {
+TEST_F(BufferTest, EmptyBufferClear) {
   Buffer buffer;
   buffer.Append(uint8_t(1));
   buffer.Clear();
-  EXPECT_EQ(0, buffer.Length());
+  EXPECT_EQ(0u, buffer.Length());
 }
 
 // Tests resizing.
-TEST(BufferTest, EmptyBufferResize) {
+TEST_F(BufferTest, EmptyBufferResize) {
   Buffer buffer;
-  const int kSize = 100;
+  const Buffer::size_type kSize = 100;
   buffer.Resize(kSize);
   EXPECT_EQ(kSize, buffer.Length());
 }
 
 // Tests getting a pointer on an empty buffer.
-TEST(BufferTest, EmptyBufferGetPointer) {
+TEST_F(BufferTest, EmptyBufferGetPointer) {
   Buffer buffer;
   void *p;
   const void *cp;
@@ -59,7 +71,7 @@ TEST(BufferTest, EmptyBufferGetPointer) {
 }
 
 // Tests getting a pointer on an empty buffer.
-TEST(BufferTest, ConstEmptyBufferGetPointer) {
+TEST_F(BufferTest, ConstEmptyBufferGetPointer) {
   const Buffer buffer;
   const void *cp;
   cp = buffer.GetBufferPointer(0);
@@ -71,12 +83,12 @@ TEST(BufferTest, ConstEmptyBufferGetPointer) {
 
 // Tests Get on an empty buffer.
 template <typename T>
-class EmptyBufferGetDeathTest : public ::testing::Test {
+class EmptyBufferGetDeathTest : public BufferTest {
  public:
   void Check() {
     Buffer buffer;
     T value;
-    EXPECT_DEATH(buffer.Get(0, &value), "Check failed");
+    EXPECT_DEATH(buffer.Get(0, &value), "CHECK(.*) failed");
   }
 };
 
@@ -89,12 +101,12 @@ TYPED_TEST(EmptyBufferGetDeathTest, Check) {
 
 // Tests Put on an empty buffer.
 template <typename T>
-class EmptyBufferPutDeathTest : public ::testing::Test {
+class EmptyBufferPutDeathTest : public BufferTest {
  public:
   void Check() {
     Buffer buffer;
     T value(0);
-    EXPECT_DEATH(buffer.Put(0, value), "Check failed");
+    EXPECT_DEATH(buffer.Put(0, value), "CHECK(.*) failed");
   }
 };
 
@@ -106,50 +118,50 @@ TYPED_TEST(EmptyBufferPutDeathTest, Check) {
 
 
 // Tests getting a string on an empty buffer.
-TEST(BufferDeathTest, EmptyBufferGetString) {
+TEST_F(BufferDeathTest, EmptyBufferGetString) {
   Buffer buffer;
   std::string s;
-  EXPECT_DEATH(buffer.Get(0, &s), "Check failed");
+  EXPECT_DEATH(buffer.Get(0, &s), "CHECK(.*) failed");
 }
 
 
 // Tests removing the header from an empty buffer.
-TEST(BufferDeathTest, EmptyBufferRemoveHeader) {
+TEST_F(BufferDeathTest, EmptyBufferRemoveHeader) {
   Buffer buffer;
   buffer.RemoveHeader(0);
-  EXPECT_EQ(0, buffer.Length());
-  EXPECT_DEATH(buffer.RemoveHeader(1), "Check failed");
+  EXPECT_EQ(0u, buffer.Length());
+  EXPECT_DEATH(buffer.RemoveHeader(1), "CHECK(.*) failed");
 }
 
 
 // Tests adding a header of size 0.
-TEST(BufferTest, EmptyBufferAddHeader) {
+TEST_F(BufferTest, EmptyBufferAddHeader) {
   Buffer buffer;
   buffer.AddHeader(0);
-  EXPECT_EQ(0, buffer.Length());
+  EXPECT_EQ(0u, buffer.Length());
 }
 
 
 // Tests adding a header of size > 0.
-TEST(BufferTest, EmptyBufferAddHeader2) {
+TEST_F(BufferTest, EmptyBufferAddHeader2) {
   Buffer buffer;
-  const int kSize = 100;
+  const Buffer::size_type kSize = 100;
   buffer.AddHeader(kSize);
   EXPECT_EQ(kSize, buffer.Length());
 }
 
 
 // Tests copying an empty buffer.
-TEST(BufferTest, EmptyBufferCopy) {
+TEST_F(BufferTest, EmptyBufferCopy) {
   Buffer buffer;
   Buffer buffer2;
   buffer2.Append(uint8_t(1));
   buffer2.Copy(buffer);
-  EXPECT_EQ(0, buffer2.Length());
+  EXPECT_EQ(0u, buffer2.Length());
 }
 
 // Tests dumping an empty buffer.
-TEST(BufferTest, EmptyBufferDump) {
+TEST_F(BufferTest, EmptyBufferDump) {
   Buffer buffer;
   std::string s = buffer.Dump();
   EXPECT_EQ("", s);
@@ -157,16 +169,16 @@ TEST(BufferTest, EmptyBufferDump) {
 
 
 // Tests slicing an empty buffer.
-TEST(BufferTest, EmptyBufferSlice) {
+TEST_F(BufferTest, EmptyBufferSlice) {
   Buffer buffer;
   boost::scoped_ptr<Buffer> slice(buffer.MakeSlice(0, 0));
-  EXPECT_EQ(slice->Length(), 0);
+  EXPECT_EQ(0u, slice->Length());
 }
 
 
 // Tests Get, Put and Append for signed and unsigned integers.
 template <typename T>
-class PutGetAppendIntegerTest : public ::testing::Test {
+class PutGetAppendIntegerTest : public BufferTest {
  public:
   void Check() {
     static const T kValues[] = {
@@ -240,12 +252,12 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataByteAccess) {
 // Tests clearing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataClear) {
   buffer->Clear();
-  EXPECT_EQ(0, buffer->Length());
+  EXPECT_EQ(0u, buffer->Length());
 }
 
 // Tests resizing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataResize) {
-  const int kSize = 100;
+  const Buffer::size_type kSize = 100;
   buffer->Resize(kSize);
   EXPECT_EQ(kSize, buffer->Length());
 }
@@ -289,7 +301,7 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataGetPointer) {
 }
 
 // Tests that Get{S,U}{8,16,32,64} work on zero.
-TEST(BufferTest, GetZero) {
+TEST_F(BufferTest, GetZero) {
   boost::scoped_ptr<Buffer> buffer(new Buffer());
   for (int i = 0; i < 8; ++i) {
     buffer->Append(uint8_t(0));
@@ -305,23 +317,23 @@ TEST(BufferTest, GetZero) {
   buffer->Get(0, &s8);
   EXPECT_EQ(0, s8);
   buffer->Get(0, &u8);
-  EXPECT_EQ(0, u8);
+  EXPECT_EQ(0u, u8);
   buffer->Get(0, &s16);
   EXPECT_EQ(0, s16);
   buffer->Get(0, &u16);
-  EXPECT_EQ(0, u16);
+  EXPECT_EQ(0u, u16);
   buffer->Get(0, &s32);
   EXPECT_EQ(0, s32);
   buffer->Get(0, &u32);
-  EXPECT_EQ(0, u32);
+  EXPECT_EQ(0u, u32);
   buffer->Get(0, &s64);
   EXPECT_EQ(0, s64);
   buffer->Get(0, &u64);
-  EXPECT_EQ(0, u64);
+  EXPECT_EQ(0u, u64);
 }
 
 // Tests that GetU{8,16,32,64} work.
-TEST(BufferTest, GetUXX) {
+TEST_F(BufferTest, GetUXX) {
   boost::scoped_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0x88));
   buffer->Append(uint8_t(0x77));
@@ -336,17 +348,17 @@ TEST(BufferTest, GetUXX) {
   uint32_t u32;
   uint64_t u64;
   buffer->Get(0, &u8);
-  EXPECT_EQ(0x88, u8);
+  EXPECT_EQ(0x88u, u8);
   buffer->Get(0, &u16);
-  EXPECT_EQ(0x7788, u16);
+  EXPECT_EQ(0x7788u, u16);
   buffer->Get(0, &u32);
-  EXPECT_EQ(0x55667788, u32);
+  EXPECT_EQ(0x55667788u, u32);
   buffer->Get(0, &u64);
   EXPECT_EQ(GG_ULONGLONG(0x1122334455667788), u64);
 }
 
 // Tests that GetS{8,16,32,64} work for positive values.
-TEST(BufferTest, GetSXXPositive) {
+TEST_F(BufferTest, GetSXXPositive) {
   boost::scoped_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0x08));
   buffer->Append(uint8_t(0x07));
@@ -367,11 +379,11 @@ TEST(BufferTest, GetSXXPositive) {
   buffer->Get(0, &s32);
   EXPECT_EQ(0x05060708, s32);
   buffer->Get(0, &s64);
-  EXPECT_EQ(GG_ULONGLONG(0x0102030405060708), s64);
+  EXPECT_EQ(GG_LONGLONG(0x0102030405060708), s64);
 }
 
 // Tests that GetS{8,16,32,64} work for negative values.
-TEST(BufferTest, GetSXXNegative) {
+TEST_F(BufferTest, GetSXXNegative) {
   boost::scoped_ptr<Buffer> buffer(new Buffer());
   buffer->Append(uint8_t(0xF8));
   buffer->Append(uint8_t(0xF7));
@@ -410,14 +422,14 @@ TEST(BufferTest, GetSXXNegative) {
 // Tests that getting a string works.
 TEST_F(ConstructedFromDataBufferDeathTest, ConstructedFromDataGetString) {
   std::string s;
-  EXPECT_DEATH(buffer->Get(0, &s), "Check failed");
+  EXPECT_DEATH(buffer->Get(0, &s), "CHECK(.*) failed");
   buffer->Append(uint8_t(0));
   Buffer::size_type n = buffer->Get(0, &s);
   EXPECT_STREQ("\xEF\xBE\xAD\xDE", s.c_str());
-  EXPECT_EQ(4, n);
+  EXPECT_EQ(4u, n);
   n = buffer->Get(1, &s);
   EXPECT_STREQ("\xBE\xAD\xDE", s.c_str());
-  EXPECT_EQ(4, n);
+  EXPECT_EQ(4u, n);
 }
 
 // Tests removing a header.
@@ -428,7 +440,7 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataRemoveHeader) {
   EXPECT_EQ(sizeof(kDeadBeef) - 2, buffer->Length());
   uint16_t u16;
   buffer->Get(0, &u16);
-  EXPECT_EQ(0xdead, u16);
+  EXPECT_EQ(0xdeadu, u16);
 }
 
 // Tests adding a zero-length header.
@@ -444,7 +456,7 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataAddHeader2) {
   EXPECT_EQ(sizeof(kDeadBeef) + kSize, buffer->Length());
   uint32_t u32;
   buffer->Get(kSize, &u32);
-  EXPECT_EQ(0xdeadbeef, u32);
+  EXPECT_EQ(0xdeadbeefu, u32);
 }
 
 // Tests copying.
@@ -472,20 +484,20 @@ TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataDump) {
 // Tests emtpy slicing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataSlice) {
   boost::scoped_ptr<Buffer> slice(buffer->MakeSlice(0, 0));
-  EXPECT_EQ(slice->Length(), 0);
+  EXPECT_EQ(0u, slice->Length());
 }
 
 // Tests slicing.
 TEST_F(ConstructedFromDataBufferTest, ConstructedFromDataSlice2) {
   boost::scoped_ptr<Buffer> slice(buffer->MakeSlice(0, 2));
-  EXPECT_EQ(slice->Length(), 2);
+  EXPECT_EQ(2u, slice->Length());
   uint16_t u16;
   slice->Get(0, &u16);
-  EXPECT_EQ(0xbeef, u16);
+  EXPECT_EQ(0xbeefu, u16);
 }
 
 // Tests dumping.
-TEST(BufferTest, DumpTest) {
+TEST_F(BufferTest, DumpTest) {
   const char kData[] = "Hello";
   const char kExpected[] =
       "0x00000000: 48 65 6c 6c 6f 00                       "
@@ -497,7 +509,7 @@ TEST(BufferTest, DumpTest) {
 
 #if 0
 // Tests writing to a file.
-TEST(BufferTest, FileTest) {
+TEST_F(BufferTest, FileTest) {
   const char kData[] = "Hello";
   Buffer buffer(kData, sizeof(kData));
   string out;
@@ -508,7 +520,7 @@ TEST(BufferTest, FileTest) {
   EXPECT_STREQ(kData, out.c_str());
 }
 
-TEST(BufferTest, WritePathOrDieTest) {
+TEST_F(BufferTest, WritePathOrDieTest) {
   const char kData[] = "Hello";
   Buffer buffer(kData, sizeof(kData));
   buffer.WriteToPathOrDie("/dev/null");
@@ -516,7 +528,7 @@ TEST(BufferTest, WritePathOrDieTest) {
 #endif
 
 // Tests appending.
-TEST(BufferTest, AppendBuffer) {
+TEST_F(BufferTest, AppendBuffer) {
   const char kData1[] = "Hello ";
   const char kData2[] = "World";
   Buffer buffer1(kData1, sizeof(kData1) - 1);
@@ -524,7 +536,7 @@ TEST(BufferTest, AppendBuffer) {
   Buffer buffer2(kData2, sizeof(kData2));
   EXPECT_EQ(sizeof(kData2), buffer2.Length());
   Buffer buffer;
-  EXPECT_EQ(0, buffer.Length());
+  EXPECT_EQ(0u, buffer.Length());
   buffer.Append(Buffer());
   buffer.Append(buffer1);
   buffer.Append(buffer2);
@@ -534,7 +546,7 @@ TEST(BufferTest, AppendBuffer) {
 }
 
 // Tests operator==
-TEST(Buffer, OpEqualTrue) {
+TEST_F(BufferTest, OpEqualTrue) {
   Buffer b1;
   Buffer b2;
   EXPECT_EQ(b1, b2);
@@ -544,7 +556,7 @@ TEST(Buffer, OpEqualTrue) {
 }
 
 // Tests operator==
-TEST(Buffer, OpEqualFalse) {
+TEST_F(BufferTest, OpEqualFalse) {
   Buffer empty;
   Buffer b1;
   Buffer b2;
@@ -560,7 +572,7 @@ TEST(Buffer, OpEqualFalse) {
   EXPECT_NE(b12, b1);
 }
 
-TEST(Buffer, Dump) {
+TEST_F(BufferTest, Dump) {
   Buffer b;
   b.Append(uint8_t(1));
   std::string s = b.Dump();
