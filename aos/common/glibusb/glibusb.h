@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // Wrapper for libusb.
 
 #ifndef _GLIBUSB_GLIBUSB_H_
@@ -43,8 +45,8 @@ std::ostream &operator <<(std::ostream &out,
 
 // Structure to hold the USB vendor and product ids for a device.
 struct VendorProductId {
-  VendorProductId() : vendor_id(0), product_id(0) {}
-  VendorProductId(uint16_t new_vendor_id, uint16_t new_product_id)
+  constexpr VendorProductId() : vendor_id(0), product_id(0) {}
+  constexpr VendorProductId(uint16_t new_vendor_id, uint16_t new_product_id)
       : vendor_id(new_vendor_id), product_id(new_product_id) {}
 
   bool operator==(const struct VendorProductId &rhs) const {

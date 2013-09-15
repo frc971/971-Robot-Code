@@ -55,7 +55,8 @@ class SensorReceiver {
   // is available) into data().
   // It needs to have the correct byte order etc and not be corrupted
   // (subclasses can check the checksum if they want).
-  virtual void DoReceiveData() = 0;
+  // Returns whether or not to Reset() and try synchronizing again.
+  virtual bool DoReceiveData() = 0;
 
   // Optional: if subclasses can do anything to reinitialize after there are
   // problems, they should do it here.
@@ -104,7 +105,7 @@ class NetworkSensorReceiver : public SensorReceiver<Values> {
   // How long to read data as fast as possible for (to clear out buffers etc).
   static const time::Time kWarmupTime;
 
-  virtual void DoReceiveData();
+  virtual bool DoReceiveData();
   virtual void Reset();
 
   ReceiveSocket socket_;

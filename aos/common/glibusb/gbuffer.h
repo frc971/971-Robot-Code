@@ -1,5 +1,7 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 //
+// Modified by FRC Team 971.
+//
 // A buffer for dealing with data.  Some special support for PTP is
 // available.
 
@@ -8,16 +10,15 @@
 
 #include <stdint.h>
 #include <string>
-#include <vector>
 
 namespace glibusb {
 
 // Buffer of bytes.
+// Only allocates memory when increasing the length beyond what the maximum
+// length for the lifetime of an instance.
 class Buffer {
  public:
-  // Underlying byte store type.
-  typedef std::vector<uint8_t> ByteBuffer;
-  typedef ByteBuffer::size_type size_type;
+  typedef size_t size_type;
 
   // Destructor.
   ~Buffer();
@@ -40,7 +41,7 @@ class Buffer {
   Buffer *MakeSlice(size_type offset, size_type length) const;
 
   // Returns the length.
-  size_type Length() const { return buffer_.size(); }
+  size_type Length() const { return length_; }
 
   // Clears (as in std::vector) the buffer.
   void Clear();
@@ -110,7 +111,12 @@ class Buffer {
 
  private:
   // The underlying byte store.
-  ByteBuffer buffer_;
+  // An operator new[]-allocated array.
+  uint8_t *buffer_;
+  // How many bytes of buffer_ are valid. If this is 0, buffer_ might be NULL.
+  size_type length_;
+  // How many bytes long buffer_ is currently allocated as.
+  size_type allocated_length_;
 
   Buffer(const Buffer &) = delete;
   void operator=(const Buffer &) = delete;

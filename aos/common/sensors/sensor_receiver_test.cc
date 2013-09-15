@@ -29,12 +29,13 @@ class TestSensorReceiver : public SensorReceiver<TestValues>,
   void Reset() {
     LOG(DEBUG, "reset for the %dth time\n", ++resets_);
   }
-  void DoReceiveData() {
+  bool DoReceiveData() {
     last_received_count_ = ++data()->count;
     data()->values.count = last_received_count_;
     Time::IncrementMockTime(kSensorSendFrequency);
     data()->FillinChecksum();
     data()->HostToNetwork();
+    return false;
   }
 
   int resets() { return resets_; }

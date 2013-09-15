@@ -209,9 +209,8 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
   LOG(DEBUG, "read on 0x%x, size 0x%x, timeout %" PRId32 " [ms]\n",
       endpoint_address_and_direction(), length, timeout_milliseconds);
 
-  ::std::unique_ptr<Buffer> whole_buffer(new Buffer());
-  whole_buffer->Resize(length);
-  void *p = whole_buffer->GetBufferPointer(length);
+  out->Resize(length);
+  void *p = out->GetBufferPointer(length);
   int transferred;
   const unsigned int timeout = static_cast<unsigned int>(timeout_milliseconds);
   int r;
@@ -227,12 +226,11 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
   case LIBUSB_SUCCESS:
     {
       size_t size_transferred = static_cast<size_t>(transferred);
-      whole_buffer->Resize(size_transferred);
+      out->Resize(size_transferred);
 
       // TODO(brians): Conditionally enable this.
       LOG(DEBUG, "read on 0x%x, size_transferred=%zx\n",
           endpoint_address_and_direction(), size_transferred);
-      out->Copy(*whole_buffer);
       return kSuccess;
     }
   case LIBUSB_ERROR_TIMEOUT:

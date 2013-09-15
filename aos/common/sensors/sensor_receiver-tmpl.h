@@ -198,7 +198,7 @@ bool SensorReceiver<Values>::Synchronize() {
 template<class Values>
 bool SensorReceiver<Values>::ReceiveData() {
   int old_count = data_.count;
-  DoReceiveData();
+  if (DoReceiveData()) return true;
 
   if (data_.count < 0) {
     LOG(FATAL, "data count overflowed. currently %" PRId32 "\n", data_.count);
@@ -243,7 +243,7 @@ void NetworkSensorReceiver<Values>::Reset() {
 }
 
 template<class Values>
-void NetworkSensorReceiver<Values>::DoReceiveData() {
+bool NetworkSensorReceiver<Values>::DoReceiveData() {
   while (true) {
     if (socket_.Receive(this->data(), sizeof(*this->data())) ==
         sizeof(*this->data())) {
@@ -254,7 +254,7 @@ void NetworkSensorReceiver<Values>::DoReceiveData() {
       }
 
       this->data()->NetworkToHost();
-      return;
+      return false;
     }
     LOG(WARNING, "received incorrect amount of data\n");
   }

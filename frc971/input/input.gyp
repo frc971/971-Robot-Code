@@ -35,11 +35,11 @@
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(AOS)/atom_code/atom_code.gyp:init',
-        '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
-        '<(EXTERNALS):libusb',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/sensors/sensors.gyp:sensor_receiver',
+        '<(AOS)/common/glibusb/glibusb.gyp:glibusb',
+        '<(AOS)/common/glibusb/glibusb.gyp:gbuffer',
       ],
     },
     {

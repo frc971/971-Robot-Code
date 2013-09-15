@@ -15,20 +15,23 @@
 
 namespace glibusb {
 
-Buffer::Buffer() {}
+Buffer::Buffer() {
+  buffer_ = NULL;
+  length_ = allocated_length_ = 0;
+}
 
 Buffer::~Buffer() {}
 
-Buffer::Buffer(const void *src, Buffer::size_type length) {
-  buffer_.resize(length);
+Buffer::Buffer(const void *src, Buffer::size_type length) : Buffer() {
+  Resize(length);
   if (length > 0) {
-    uint8_t *dst = &(buffer_[0]);
-    memcpy(dst, src, length);
+    memcpy(buffer_, src, length);
   }
 }
 
 bool Buffer::operator==(const Buffer &other) const {
-  return buffer_ == other.buffer_;
+  return length_ == other.length_ &&
+      memcmp(buffer_, other.buffer_, length_) == 0;
 }
 
 bool Buffer::operator!=(const Buffer &other) const {
@@ -37,7 +40,7 @@ bool Buffer::operator!=(const Buffer &other) const {
 
 Buffer *Buffer::MakeSlice(Buffer::size_type offset,
                           Buffer::size_type length) const {
-  CHECK_LE(offset + length, buffer_.size());
+  CHECK_LE(offset + length, length_);
   if (length == 0) {
     return new Buffer();
   } else {
@@ -47,11 +50,24 @@ Buffer *Buffer::MakeSlice(Buffer::size_type offset,
 }
 
 void Buffer::Clear() {
-  buffer_.clear();
+  length_ = 0;
 }
 
 void Buffer::Resize(Buffer::size_type length) {
-  buffer_.resize(length);
+  if (length > allocated_length_) {
+    if (length_ > 0) {
+      uint8_t *old = buffer_;
+      buffer_ = new uint8_t[length];
+      memcpy(buffer_, old, length_);
+      delete[] old;
+    } else {
+      delete[] buffer_;
+      buffer_ = new uint8_t[length];
+    }
+  } else {
+    memset(&buffer_[length_], 0, length_ - length);
+  }
+  length_ = length;
 }
 
 void *Buffer::GetBufferPointer(Buffer::size_type length) {
@@ -67,7 +83,7 @@ void *Buffer::GetBufferPointer(Buffer::size_type offset,
   if (length == 0) {
     return NULL;
   } else {
-    CHECK_LE(offset + length, buffer_.size());
+    CHECK_LE(offset + length, length_);
     uint8_t *p = &(buffer_[offset]);
     return static_cast<void *>(p);
   }
@@ -78,7 +94,7 @@ const void *Buffer::GetBufferPointer(Buffer::size_type offset,
   if (length == 0) {
     return NULL;
   } else {
-    CHECK_LE(offset + length, buffer_.size());
+    CHECK_LE(offset + length, length_);
     const uint8_t *p = &(buffer_[offset]);
     return static_cast<const void *>(p);
   }
@@ -88,7 +104,7 @@ const void *Buffer::GetBufferPointer(Buffer::size_type offset,
 template <>
 Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
                               uint8_t *value_out) const {
-  CHECK_LT(byte_offset, buffer_.size());
+  CHECK_LT(byte_offset, length_);
   *CHECK_NOTNULL(value_out) = buffer_[byte_offset];
   return sizeof(uint8_t);
 }
@@ -107,7 +123,7 @@ Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
 template <>
 Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
                               uint16_t *value_out) const {
-  CHECK_LT(byte_offset + 1, buffer_.size());
+  CHECK_LT(byte_offset + 1, length_);
   uint16_t byte0 = static_cast<uint16_t>(buffer_[byte_offset]);
   uint16_t byte1 = static_cast<uint16_t>(buffer_[byte_offset + 1]);
   uint16_t value = byte0 | (byte1 << 8);
@@ -129,7 +145,7 @@ Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
 template <>
 Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
                               uint32_t *value_out) const {
-  CHECK_LT(byte_offset + 3, buffer_.size());
+  CHECK_LT(byte_offset + 3, length_);
   uint32_t byte0 = static_cast<uint32_t>(buffer_[byte_offset]);
   uint32_t byte1 = static_cast<uint32_t>(buffer_[byte_offset + 1]);
   uint32_t byte2 = static_cast<uint32_t>(buffer_[byte_offset + 2]);
@@ -153,7 +169,7 @@ Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
 template <>
 Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
                               uint64_t *value_out) const {
-  CHECK_LT(byte_offset + 7, buffer_.size());
+  CHECK_LT(byte_offset + 7, length_);
   uint64_t byte0 = static_cast<uint64_t>(buffer_[byte_offset]);
   uint64_t byte1 = static_cast<uint64_t>(buffer_[byte_offset + 1]);
   uint64_t byte2 = static_cast<uint64_t>(buffer_[byte_offset + 2]);
@@ -201,7 +217,7 @@ Buffer::size_type Buffer::Get(Buffer::size_type byte_offset,
 // Specialized template for Put
 template <>
 Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, uint8_t value) {
-  CHECK_LT(byte_offset, buffer_.size());
+  CHECK_LT(byte_offset, length_);
   buffer_[byte_offset] = value;
   return sizeof(uint8_t);
 }
@@ -215,7 +231,7 @@ Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, int8_t value) {
 // Specialized template for Put
 template <>
 Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, uint16_t value) {
-  CHECK_LT(byte_offset + 1, buffer_.size());
+  CHECK_LT(byte_offset + 1, length_);
   uint8_t byte_0 = static_cast<uint8_t>(value & 0xff);
   uint8_t byte_1 = static_cast<uint8_t>((value >> 8) & 0xff);
   buffer_[byte_offset] = byte_0;
@@ -232,7 +248,7 @@ Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, int16_t value) {
 // Specialized template for Put
 template <>
 Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, uint32_t value) {
-  CHECK_LT(byte_offset + 3, buffer_.size());
+  CHECK_LT(byte_offset + 3, length_);
   uint8_t byte_0 = static_cast<uint8_t>(value & 0xff);
   uint8_t byte_1 = static_cast<uint8_t>((value >> 8) & 0xff);
   uint8_t byte_2 = static_cast<uint8_t>((value >> 16) & 0xff);
@@ -253,7 +269,7 @@ Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, int32_t value) {
 // Specialized template for Put
 template <>
 Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, uint64_t value) {
-  CHECK_LT(byte_offset + 7, buffer_.size());
+  CHECK_LT(byte_offset + 7, length_);
   uint8_t byte_0 = static_cast<uint8_t>(value & 0xff);
   uint8_t byte_1 = static_cast<uint8_t>((value >> 8) & 0xff);
   uint8_t byte_2 = static_cast<uint8_t>((value >> 16) & 0xff);
@@ -280,22 +296,31 @@ Buffer::size_type Buffer::Put(Buffer::size_type byte_offset, int64_t value) {
 }
 
 void Buffer::Append(const Buffer &source) {
-  buffer_.insert(buffer_.end(), source.buffer_.begin(), source.buffer_.end());
+  if (source.length_ == 0) return;
+  size_type start_length = length_;
+  Resize(length_ + source.length_);
+  memcpy(&buffer_[start_length], source.buffer_, source.length_);
 }
 
 void Buffer::AddHeader(Buffer::size_type length) {
-  buffer_.insert(buffer_.begin(), length, 0);
+  size_type start_length = length_;
+  Resize(length_ + length);
+  memmove(&buffer_[length], buffer_, start_length);
+  memset(buffer_, 0, length);
 }
 
 void Buffer::RemoveHeader(Buffer::size_type length) {
   if (length > 0) {
-    CHECK_LE(length, buffer_.size());
-    buffer_.erase(buffer_.begin(), buffer_.begin() + length);
+    CHECK_LE(length, length_);
+    size_type end_length = length_ - length;
+    memmove(buffer_, &buffer_[length], end_length);
+    Resize(end_length);
   }
 }
 
 void Buffer::Copy(const Buffer &source) {
-  buffer_.assign(source.buffer_.begin(), source.buffer_.end());
+  Resize(source.length_);
+  memcpy(buffer_, source.buffer_, length_);
 }
 
 #if 0
