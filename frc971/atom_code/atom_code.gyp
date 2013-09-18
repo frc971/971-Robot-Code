@@ -32,7 +32,6 @@
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'scripts/aos_module.ko',
             'scripts/start_list.txt',
           ],
         },
