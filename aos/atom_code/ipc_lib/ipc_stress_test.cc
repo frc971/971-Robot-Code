@@ -212,7 +212,10 @@ int Main(int argc, char **argv) {
   new (shared) Shared(time::Time::Now() + kTestTime);
 
   char *temp = strdup(argv[0]);
-  shared->path = strdup(dirname(temp));
+  if (asprintf(const_cast<char **>(&shared->path),
+               "%s/../tests", dirname(temp)) == -1) {
+    Die("asprintf failed with %d: %s\n", errno, strerror(errno));
+  }
   free(temp);
 
   for (int i = 0; i < kTesters; ++i) {

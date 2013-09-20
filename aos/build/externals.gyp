@@ -170,8 +170,11 @@
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/gtest-<(gtest_version)/include'],
         'target_conditions': [
-          ['_type=="executable"', {
+          ['_type=="executable" and is_special_test==0', {
               'product_dir': '<(test_dir)',
+            },
+          ], ['_type=="executable" and is_special_test==1', {
+              'product_dir': '<(test_dir)-special',
             },
           ],
         ],

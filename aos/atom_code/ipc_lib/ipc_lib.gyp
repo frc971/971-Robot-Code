@@ -77,6 +77,9 @@
         'core_lib',
         '<(AOS)/common/common.gyp:die',
       ],
+      'variables': {
+        'is_special_test': 1,
+      },
     },
   ],
 }
