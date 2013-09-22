@@ -224,6 +224,7 @@ class GyroBoardReader {
         .bottom_disc_negedge_wait_position(index_translate(
                 data->capture_bottom_fall_delay))
         .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
+        .loader_top(data->loader_top)
         .Send();
   }
 

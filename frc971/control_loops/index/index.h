@@ -136,7 +136,8 @@ class IndexMotor
 
   // Time that it takes to grab the disc in cycles.
   static const int kGrabbingDelay;
-  // Time that it takes to lift the loader in cycles.
+  // Time that it takes to finish lifting the loader after the sensor is
+  // triggered in cycles.
   static const int kLiftingDelay;
   // Time that it takes to shoot the disc in cycles.
   static const int kShootingDelay;

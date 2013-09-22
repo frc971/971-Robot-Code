@@ -512,7 +512,6 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   packet->capture_top_rise = capture_top_rise;
   packet->top_rise_count = top_rise_count;
-
   packet->capture_top_fall = capture_top_fall;
   packet->top_fall_count = top_fall_count;
   packet->top_disc = !digital(2);
@@ -521,6 +520,8 @@ void fillSensorPacket(struct DataStruct *packet) {
   packet->bottom_fall_delay_count = bottom_fall_delay_count;
   packet->bottom_fall_count = bottom_fall_count;
   packet->bottom_disc = !digital(1);
+
+  packet->loader_top = !digital(5);
 
   packet->capture_shooter_angle_rise = capture_shooter_angle_rise;
   packet->shooter_angle_rise_count = shooter_angle_rise_count;

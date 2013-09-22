@@ -106,8 +106,8 @@ const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 /*static*/ const int IndexMotor::kGrabbingDelay = 5;
-/*static*/ const int IndexMotor::kLiftingDelay = 30;
-/*static*/ const int IndexMotor::kShootingDelay = 5;
+/*static*/ const int IndexMotor::kLiftingDelay = 2;
+/*static*/ const int IndexMotor::kShootingDelay = 10;
 /*static*/ const int IndexMotor::kLoweringDelay = 20;
 
 // TODO(aschuh): Tune these.
@@ -894,12 +894,17 @@ void IndexMotor::RunIteration(
       loader_up_ = true;
       disc_clamped_ = true;
       disc_ejected_ = false;
-      if (loader_countdown_ > 0) {
-        --loader_countdown_;
-        break;
+      if (position->loader_top) {
+        if (loader_countdown_ > 0) {
+          --loader_countdown_;
+        } else {
+          loader_state_ = LoaderState::LIFTED;
+        }
       } else {
-        loader_state_ = LoaderState::LIFTED;
+        // Restart the countdown if it bounces back down or whatever.
+        loader_countdown_ = kLiftingDelay;
       }
+      break;
     case LoaderState::LIFTED:
       LOG(DEBUG, "Loader LIFTED\n");
       // Disc lifted.  Time to eject it out.
