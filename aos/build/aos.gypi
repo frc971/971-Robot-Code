@@ -185,7 +185,10 @@
             '-Wunused-local-typedefs',
 
             # Give macro stack traces when they blow up.
-            '-ftrack-macro-expansion',
+            # TODO(brians): Re-enable this once they fix the bug where it
+            # sometimes doesn't show you the top-most (aka most useful)
+            # line of code.
+            #'-ftrack-macro-expansion',
           ],
           'cflags_cc': [
             '-std=gnu++11',
