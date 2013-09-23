@@ -343,9 +343,9 @@ void HandleAuto() {
 
   double WRIST_UP;
   const double WRIST_DOWN = -0.580;
-  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.005;
-  const double ANGLE_ONE = 0.520;
-  const double ANGLE_TWO = 0.677;
+  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.012;
+  const double ANGLE_ONE = 0.509;
+  const double ANGLE_TWO = 0.673;
 
   ResetIndex();
   SetWristGoal(1.0);  // wrist must calibrate itself on power-up
@@ -440,12 +440,24 @@ void HandleAuto() {
     if (ShouldExitAuto()) return; 
     WaitForIndex();			// ready to pick up discs
 
+    // How long we're going to drive in total.
     static const double kDriveDistance = 2.8;
-    static const double kFirstDrive = 0.27;
+    // How long to drive slowly to pick up the 2 disks under the pyramid.
+    static const double kFirstDrive = 0.4;
+    // How long to drive slowly to pick up the last 2 disks.
+    static const double kLastDrive = 0.3;
+    // How fast to drive when picking up disks.
+    static const double kPickupVelocity = 0.6;
+    // Where to take the second set of shots from.
     static const double kSecondShootDistance = 2.0;
-    SetDriveGoal(kFirstDrive, 0.6);
+
+    // Go slowly to grab the 2 disks under the pyramid.
+    SetDriveGoal(kFirstDrive, kPickupVelocity);
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+    SetDriveGoal(kDriveDistance - kFirstDrive - kLastDrive, 2.0);
     SetWristGoal(WRIST_DOWN_TWO);
-    SetDriveGoal(kDriveDistance - kFirstDrive, 2.0);
+    // Go slowly at the end to pick up the last 2 disks.
+    SetDriveGoal(kLastDrive, kPickupVelocity);
     if (ShouldExitAuto()) return;
 
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
