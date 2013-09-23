@@ -160,7 +160,6 @@ volatile int32_t encoder5_val;
 
 // ENC1A 2.11
 void EINT1_IRQHandler(void) {
-  // TODO(brians): figure out why this has to be up here too
   SC->EXTINT = 0x2;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -169,7 +168,6 @@ void EINT1_IRQHandler(void) {
     --encoder1_val;
   }
   SC->EXTPOLAR ^= 0x2;
-  SC->EXTINT = 0x2;
 }
 // ENC1B 2.12
 void EINT2_IRQHandler(void) {
@@ -181,7 +179,6 @@ void EINT2_IRQHandler(void) {
     ++encoder1_val;
   }
   SC->EXTPOLAR ^= 0x4;
-  SC->EXTINT = 0x4;
 }
 
 // GPIO Interrupt handlers
@@ -445,12 +442,7 @@ inline static void IRQ_Dispatch(void) {
   table[index]();
 }
 void EINT3_IRQHandler(void) {
-  // Have to disable it here or else it re-fires the interrupt while the code
-  // reads to figure out which pin the interrupt is for.
-  // TODO(brians): figure out details + look for an alternative
-  NVIC_DisableIRQ(EINT3_IRQn);
   IRQ_Dispatch();
-  NVIC_EnableIRQ(EINT3_IRQn);
 }
 int32_t encoder_val(int chan) {
   int32_t val;
