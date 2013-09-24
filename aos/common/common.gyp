@@ -156,6 +156,7 @@
         'queue_testutils',
         'queue_test_queue',
         '<(AOS)/common/util/util.gyp:thread',
+        'die',
       ],
     },
     {
@@ -272,6 +273,7 @@
         '<(EXTERNALS):gtest',
         'mutex',
         '<(AOS)/build/aos.gyp:logging',
+        'die',
       ],
     },
     {
@@ -289,6 +291,7 @@
         '<(AOS)/build/aos.gyp:logging',
         'queue_testutils',
         '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:core_lib',
+        'die',
        ],
     },
     {

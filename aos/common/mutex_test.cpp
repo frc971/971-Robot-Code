@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/atom_code/ipc_lib/aos_sync.h"
+#include "aos/common/die.h"
 
 namespace aos {
 namespace testing {
@@ -17,6 +18,11 @@ namespace testing {
 class MutexTest : public ::testing::Test {
  public:
   Mutex test_mutex;
+
+ protected:
+  void SetUp() override {
+    SetDieTestMode(true);
+  }
 };
 
 typedef MutexTest MutexDeathTest;

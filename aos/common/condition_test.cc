@@ -13,6 +13,7 @@
 #include "aos/atom_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
+#include "aos/common/die.h"
 
 using ::aos::time::Time;
 using ::aos::common::testing::GlobalCoreInstance;
@@ -41,6 +42,11 @@ class ConditionTest : public ::testing::Test {
 
   void Settle() {
     time::SleepFor(::Time::InSeconds(0.008));
+  }
+
+ protected:
+  void SetUp() override {
+    SetDieTestMode(true);
   }
 
  private:
