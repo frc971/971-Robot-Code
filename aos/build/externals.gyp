@@ -7,7 +7,7 @@
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.1.3',
-    'gtest_version': '1.6.0-p1',
+    'gtest_version': '1.6.0-p2',
     'onejar_version': '0.97',
     'ctemplate_version': '129',
     'gflags_version': '2.0',

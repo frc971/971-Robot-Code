@@ -41,7 +41,7 @@ LIBJPEG_TAR=${EXTERNALS}/jpegsrc.v${LIBJPEG_VERSION}.tar.gz
 
 # get gtest
 GTEST_VERSION=1.6.0
-GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p1
+GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p2
 GTEST_ZIP=${EXTERNALS}/gtest-${GTEST_VERSION}.zip
 TMPDIR=/tmp/$$-aos-tmpdir
 [ -f ${GTEST_ZIP} ] || wget http://googletest.googlecode.com/files/gtest-${GTEST_VERSION}.zip -O ${GTEST_ZIP}

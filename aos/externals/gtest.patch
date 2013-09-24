@@ -1,63 +1,50 @@
-diff -rupN gtest-1.6.0-p1/fused-src/gtest/gtest-all.cc gtest-1.6.0/fused-src/gtest/gtest-all.cc
---- gtest-1.6.0-p1/fused-src/gtest/gtest-all.cc	2011-04-15 12:54:57.000000000 -0700
-+++ gtest-1.6.0/fused-src/gtest/gtest-all.cc	2012-11-12 17:42:37.881573135 -0800
-@@ -379,7 +379,25 @@ class GTEST_API_ SingleFailureChecker {
+diff --git src/gtest-port.cc b/src/gtest-port.cc
+index b860d48..acb459b 100644
+--- a/src/gtest-port.cc
++++ b/src/gtest-port.cc
+@@ -98,6 +98,21 @@ size_t GetThreadCount() {
+   }
+ }
  
- // cpplint thinks that the header is already included, so we want to
- // silence it.
-+#ifdef __VXWORKS__
-+# include <time.h>  // NOLINT
-+# include <sys/times.h>  // NOLINT
-+static inline int gettimeofday(struct timeval *tv, void *) {
-+  struct timespec ts;
++#elif GTEST_OS_LINUX
 +
-+  if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
-+    printf("Gettimeofday error\n");
-+    tv->tv_sec = 0;
-+    tv->tv_usec = 0;
-+    return -1;
++size_t GetThreadCount() {
++  size_t thread_count = 0;
++  if (DIR *dir = opendir("/proc/self/task")) {
++    while (dirent *entry = readdir(dir)) {
++      if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
++        ++thread_count;
++      }
++    }
++    closedir(dir);
 +  }
-+  tv->tv_sec  = ts.tv_sec;
-+  tv->tv_usec = ts.tv_nsec/1000;
-+  return 0;
++  return thread_count;
 +}
-+#else
- # include <sys/time.h>  // NOLINT
-+#endif
- # include <unistd.h>  // NOLINT
- 
- #endif  // GTEST_OS_LINUX
-@@ -7751,6 +7769,8 @@ bool FilePath::CreateFolder() const {
-   delete [] unicode;
- #elif GTEST_OS_WINDOWS
-   int result = _mkdir(pathname_.c_str());
-+#elif defined(__VXWORKS__)
-+  int result = mkdir(pathname_.c_str());
- #else
-   int result = mkdir(pathname_.c_str(), 0777);
- #endif  // GTEST_OS_WINDOWS_MOBILE
-@@ -7870,7 +7890,7 @@ void FilePath::Normalize() {
- namespace testing {
- namespace internal {
- 
--#if defined(_MSC_VER) || defined(__BORLANDC__)
-+#if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__VXWORKS__)
- // MSVC and C++Builder do not provide a definition of STDERR_FILENO.
- const int kStdOutFileno = 1;
- const int kStdErrFileno = 2;
-diff -rupN gtest-1.6.0-p1/include/gtest/internal/gtest-port.h gtest-1.6.0/include/gtest/internal/gtest-port.h
---- gtest-1.6.0-p1/include/gtest/internal/gtest-port.h	2011-04-15 12:49:10.000000000 -0700
-+++ gtest-1.6.0/include/gtest/internal/gtest-port.h	2012-11-12 17:27:33.536801263 -0800
-@@ -197,6 +197,12 @@
- #include <sstream>  // NOLINT
- #include <string>  // NOLINT
- 
-+#ifdef __VXWORKS__
-+int read(int fd, void *buf, size_t count);
-+int write(int fd, const void *buf, size_t count);
-+int close(int fd);
-+#endif
 +
- #define GTEST_DEV_EMAIL_ "googletestframework@@googlegroups.com"
- #define GTEST_FLAG_PREFIX_ "gtest_"
- #define GTEST_FLAG_PREFIX_DASH_ "gtest-"
+ #else
+ 
+ size_t GetThreadCount() {
+diff --git a/src/gtest-death-test.cc b/src/gtest-death-test.cc
+index 8b2e413..faad3a4 100644
+--- a/src/gtest-death-test.cc
++++ b/src/gtest-death-test.cc
+@@ -44,6 +44,8 @@
+ # include <fcntl.h>
+ # include <limits.h>
+ # include <stdarg.h>
++# include <sys/time.h>
++# include <sys/resource.h>
+ 
+ # if GTEST_OS_WINDOWS
+ #  include <windows.h>
+@@ -898,6 +900,11 @@ inline char** GetEnviron() { return environ; }
+ // This function is called in a clone()-ed process and thus must avoid
+ // any potentially unsafe operations like malloc or libc functions.
+ static int ExecDeathTestChildMain(void* child_arg) {
++  rlimit core_rlimit;
++  core_rlimit.rlim_cur = 0;
++  core_rlimit.rlim_max = 0;
++  GTEST_DEATH_TEST_CHECK_SYSCALL_(setrlimit(RLIMIT_CORE, &core_limit));
++
+   ExecDeathTestArgs* const args = static_cast<ExecDeathTestArgs*>(child_arg);
+   GTEST_DEATH_TEST_CHECK_SYSCALL_(close(args->close_fd));
