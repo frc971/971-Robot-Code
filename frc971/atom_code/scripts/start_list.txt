@@ -1,6 +1,6 @@
 BinaryLogReader
 MotorWriter
-JoystickReader
+joystick_reader
 drivetrain
 CRIOLogReader
 angle_adjust
