@@ -109,7 +109,8 @@ const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 /*static*/ const int IndexMotor::kLiftingDelay = 2;
 /*static*/ const int IndexMotor::kLiftingTimeout = 65;
 /*static*/ const int IndexMotor::kShootingDelay = 10;
-/*static*/ const int IndexMotor::kLoweringDelay = 20;
+/*static*/ const int IndexMotor::kLoweringDelay = 4;
+/*static*/ const int IndexMotor::kLoweringTimeout = 120;
 
 // TODO(aschuh): Tune these.
 /*static*/ const double
@@ -900,6 +901,8 @@ void IndexMotor::RunIteration(
       if (position->loader_top) {
         if (loader_countdown_ > 0) {
           --loader_countdown_;
+          loader_timeout_ = 0;
+          break;
         } else {
           loader_state_ = LoaderState::LIFTED;
         }
@@ -910,9 +913,10 @@ void IndexMotor::RunIteration(
         if (loader_timeout_ > kLiftingTimeout) {
           LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
           loader_state_ = LoaderState::LIFTED;
+        } else {
+          break;
         }
       }
-      break;
     case LoaderState::LIFTED:
       LOG(DEBUG, "Loader LIFTED\n");
       // Disc lifted.  Time to eject it out.
@@ -941,6 +945,7 @@ void IndexMotor::RunIteration(
       disc_ejected_ = true;
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
+      loader_timeout_ = 0;
       --hopper_disc_count_;
       ++shot_disc_count_;
     case LoaderState::LOWERING:
@@ -949,11 +954,24 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = false;
       disc_ejected_ = true;
-      if (loader_countdown_ > 0) {
-        --loader_countdown_;
-        break;
+      if (position->loader_bottom) {
+        if (loader_countdown_ > 0) {
+          --loader_countdown_;
+          loader_timeout_ = 0;
+          break;
+        } else {
+          loader_state_ = LoaderState::LOWERED;
+        }
       } else {
-        loader_state_ = LoaderState::LOWERED;
+        // Restart the countdown if it bounces back up or something.
+        loader_countdown_ = kLoweringDelay;
+        ++loader_timeout_;
+        if (loader_timeout_ > kLoweringTimeout) {
+          LOG(ERROR, "Loader timeout while LOWERING %d\n", loader_timeout_);
+          loader_state_ = LoaderState::LOWERED;
+        } else {
+          break;
+        }
       }
     case LoaderState::LOWERED:
       LOG(DEBUG, "Loader LOWERED\n");

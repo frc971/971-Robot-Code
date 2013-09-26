@@ -39,6 +39,7 @@ struct DataStruct {
       uint8_t top_disc : 1;
       uint8_t bottom_disc : 1;
       uint8_t loader_top : 1;
+      uint8_t loader_bottom : 1;
     };
     uint32_t digitals;
   };

@@ -45,8 +45,10 @@ queue_group IndexLoop {
     int32_t top_disc_negedge_count;
     double top_disc_negedge_position;
 
-    // Whether the hall effect for the loader being at the top is triggered.
+    // Whether the hall effects for the loader are triggered (have a magnet in
+	// front of them).
 	bool loader_top;
+	bool loader_bottom;
   };
 
   message Output {
