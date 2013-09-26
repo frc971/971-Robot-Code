@@ -143,8 +143,12 @@ class IndexMotor
   static const int kLiftingTimeout;
   // Time that it takes to shoot the disc in cycles.
   static const int kShootingDelay;
-  // Time that it takes to lower the loader in cycles.
+  // Time that it takes to finish lowering the loader after the sensor is
+  // triggered in cycles.
   static const int kLoweringDelay;
+  // Time until we give up lowering and move on in cycles.
+  // It's a long time because we really don't want to ever hit this.
+  static const int kLoweringTimeout;
 
   // Object representing a Frisbee tracked by the indexer.
   class Frisbee {
