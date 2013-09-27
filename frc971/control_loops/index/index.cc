@@ -106,8 +106,9 @@ const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 /*static*/ const int IndexMotor::kGrabbingDelay = 5;
-/*static*/ const int IndexMotor::kLiftingDelay = 30;
-/*static*/ const int IndexMotor::kShootingDelay = 5;
+/*static*/ const int IndexMotor::kLiftingDelay = 2;
+/*static*/ const int IndexMotor::kLiftingTimeout = 65;
+/*static*/ const int IndexMotor::kShootingDelay = 10;
 /*static*/ const int IndexMotor::kLoweringDelay = 20;
 
 // TODO(aschuh): Tune these.
@@ -871,6 +872,7 @@ void IndexMotor::RunIteration(
           if (shooter.status->average_velocity > 130 && shooter.status->ready) {
             loader_state_ = LoaderState::LIFTING;
             loader_countdown_ = kLiftingDelay;
+            loader_timeout_ = 0;
             LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
           } else {
             LOG(WARNING, "Told to SHOOT_AND_RESET, shooter too slow at %f\n",
@@ -881,6 +883,7 @@ void IndexMotor::RunIteration(
           LOG(ERROR, "Told to SHOOT_AND_RESET, no shooter data, moving on.\n");
           loader_state_ = LoaderState::LIFTING;
           loader_countdown_ = kLiftingDelay;
+          loader_timeout_ = 0;
         }
       } else if (loader_goal_ == LoaderGoal::READY) {
         LOG(ERROR, "Can't go to ready when we have something grabbed.\n");
@@ -894,12 +897,22 @@ void IndexMotor::RunIteration(
       loader_up_ = true;
       disc_clamped_ = true;
       disc_ejected_ = false;
-      if (loader_countdown_ > 0) {
-        --loader_countdown_;
-        break;
+      if (position->loader_top) {
+        if (loader_countdown_ > 0) {
+          --loader_countdown_;
+        } else {
+          loader_state_ = LoaderState::LIFTED;
+        }
       } else {
-        loader_state_ = LoaderState::LIFTED;
+        // Restart the countdown if it bounces back down or whatever.
+        loader_countdown_ = kLiftingDelay;
+        ++loader_timeout_;
+        if (loader_timeout_ > kLiftingTimeout) {
+          LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
+          loader_state_ = LoaderState::LIFTED;
+        }
       }
+      break;
     case LoaderState::LIFTED:
       LOG(DEBUG, "Loader LIFTED\n");
       // Disc lifted.  Time to eject it out.

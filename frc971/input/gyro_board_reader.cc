@@ -15,6 +15,8 @@
 #include "frc971/input/gyro_board_data.h"
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/queues/GyroAngle.q.h"
+#include "frc971/constants.h"
+#include "aos/common/messages/RobotState.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -31,8 +33,17 @@ namespace frc971 {
 namespace {
 
 inline double drivetrain_translate(int32_t in) {
+  int pinion_size;
+  if (::aos::robot_state.get() == NULL) {
+    if (!::aos::robot_state.FetchNext()) {
+      LOG(WARNING, "couldn't fetch robot state\n");
+      return 0;
+    }
+  }
+  if (!constants::drivetrain_gearbox_pinion(&pinion_size)) return 0;
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (19.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/ *
+      (pinion_size / 50.0) /*output reduction*/ *
+      (64.0 / 24.0) /*encoder gears*/ *
       (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
@@ -224,6 +235,7 @@ class GyroBoardReader {
         .bottom_disc_negedge_wait_position(index_translate(
                 data->capture_bottom_fall_delay))
         .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
+        .loader_top(data->loader_top)
         .Send();
   }
 

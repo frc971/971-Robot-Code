@@ -44,6 +44,9 @@ queue_group IndexLoop {
     // and a count of how many edges have been seen.
     int32_t top_disc_negedge_count;
     double top_disc_negedge_position;
+
+    // Whether the hall effect for the loader being at the top is triggered.
+	bool loader_top;
   };
 
   message Output {

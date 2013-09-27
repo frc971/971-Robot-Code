@@ -136,8 +136,11 @@ class IndexMotor
 
   // Time that it takes to grab the disc in cycles.
   static const int kGrabbingDelay;
-  // Time that it takes to lift the loader in cycles.
+  // Time that it takes to finish lifting the loader after the sensor is
+  // triggered in cycles.
   static const int kLiftingDelay;
+  // Time until we give up lifting and move on in cycles.
+  static const int kLiftingTimeout;
   // Time that it takes to shoot the disc in cycles.
   static const int kShootingDelay;
   // Time that it takes to lower the loader in cycles.
@@ -309,7 +312,7 @@ class IndexMotor
   // Loader goal, state, and counter.
   LoaderGoal loader_goal_;
   LoaderState loader_state_;
-  int loader_countdown_;
+  int loader_countdown_, loader_timeout_;
 
   // Current state of the pistons.
   bool loader_up_;

@@ -43,6 +43,10 @@ bool angle_adjust_zeroing_off_speed(double *speed);
 // Returns the deadband voltage to use.
 bool angle_adjust_deadband(double *voltage);
 
+// Sets *pinion to the number of teeth on the pinion that drives the drivetrain
+// wheels.
+bool drivetrain_gearbox_pinion(int *pinion);
+
 // Sets *center to how many pixels off center the vertical line
 // on the camera view is.
 bool camera_center(int *center);
