@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../../aos/build/build.sh atom atom_code.gyp no All atom
+../../aos/build/build.sh atom atom_code.gyp no atom $1

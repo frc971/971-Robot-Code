@@ -7,8 +7,8 @@
 PLATFORM=$1
 GYP_MAIN=$2
 DEBUG=$3
-ACTION=$4
-OUT_NAME=$5
+OUT_NAME=$4
+ACTION=$5
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
