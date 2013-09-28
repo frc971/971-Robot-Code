@@ -1,7 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash
+#set -x
 
-# This is a helper script that compiles .out files for the cRIO. It is designed
-# to be called as a replacement for g++ being used as a linker.
+set -e
+
+# This is a helper script that compiles .out files for the cRIO. It gets called
+# by the gcc and g++ wrapper scripts if they detect that the tool is being used
+# as a shared linker.
 
 # All the flags except -shared.
 INPUTS_FLAGS=`echo "$@" | sed 's/-shared//g'`
@@ -9,7 +13,6 @@ INPUTS_FLAGS=`echo "$@" | sed 's/-shared//g'`
 OUTPUT=`echo ${INPUTS_FLAGS} | awk \
   'BEGIN { RS=" " }; output { print ; output = 0 }; /-o/ { output = 1 }'`
 # All arguments that don't start with a - and aren't ${OUTPUT}.
-#INPUTS=`echo ${INPUTS_FLAGS} | sed "s:-[^ ]*::g; s:${OUTPUT}::g;"`
 INPUTS=`echo ${INPUTS_FLAGS} | awk \
   'BEGIN { RS=" " }; /-Wl,--no-whole-archive/ { output = 0 }; \
   output { print }; \
@@ -17,7 +20,8 @@ INPUTS=`echo ${INPUTS_FLAGS} | awk \
 TEMPDIR=`dirname ${OUTPUT}`
 AOS=`dirname $0`/..
 powerpc-wrs-vxworks-nm ${INPUTS} | \
-  tclsh ${WIND_BASE}/host/resource/hutils/tcl/munch.tcl -c ppc > ${TEMPDIR}/ctdt.c
+  tclsh ${WIND_BASE}/host/resource/hutils/tcl/munch.tcl -c ppc > \
+    ${TEMPDIR}/ctdt.c
 powerpc-wrs-vxworks-gcc -I${AOS}/.. -c ${TEMPDIR}/ctdt.c -o ${TEMPDIR}/ctdt.o
 powerpc-wrs-vxworks-g++ ${INPUTS_FLAGS} ${TEMPDIR}/ctdt.o
 ln -f ${OUTPUT} `echo ${OUTPUT} | sed 's/lib\([A-Za-z0-9_]*\)\.so$/\1.out/'`
