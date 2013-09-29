@@ -363,7 +363,7 @@ void IndexMotor::RunIteration(
     }
 
     if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
-      LOG(INFO, "Saw a posedge\n");
+      LOG(INFO, "Saw a top posedge\n");
       const double index_position = wrist_loop_->X_hat(0, 0) -
           position->index_position + position->top_disc_posedge_position;
       // TODO(aschuh): Sanity check this number...
@@ -835,6 +835,7 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = false;
       disc_ejected_ = false;
+      disk_stuck_in_loader_ = false;
       if (loader_goal_ == LoaderGoal::GRAB ||
           loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
         if (goal->force_fire) {
@@ -868,8 +869,7 @@ void IndexMotor::RunIteration(
       disc_clamped_ = true;
       disc_ejected_ = false;
       if (loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
-        shooter.status.FetchLatest();
-        if (shooter.status.get()) {
+        if (shooter.status.FetchLatest() || shooter.status.get()) {
           // TODO(aschuh): If we aren't shooting nicely, wait until the shooter
           // is up to speed rather than just spinning.
           if (shooter.status->average_velocity > 130 && shooter.status->ready) {
@@ -915,6 +915,7 @@ void IndexMotor::RunIteration(
         if (loader_timeout_ > kLiftingTimeout) {
           LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
           loader_state_ = LoaderState::LIFTED;
+          disk_stuck_in_loader_ = true;
         } else {
           break;
         }
@@ -971,21 +972,27 @@ void IndexMotor::RunIteration(
         if (loader_timeout_ > kLoweringTimeout) {
           LOG(ERROR, "Loader timeout while LOWERING %d\n", loader_timeout_);
           loader_state_ = LoaderState::LOWERED;
+          disk_stuck_in_loader_ = true;
         } else {
           break;
         }
       }
     case LoaderState::LOWERED:
       LOG(DEBUG, "Loader LOWERED\n");
-      // The indexer is lowered.
       loader_up_ = false;
-      disc_clamped_ = false;
       disc_ejected_ = false;
-      loader_state_ = LoaderState::READY;
-      // Once we have shot, we need to hang out in READY until otherwise
-      // notified.
-      loader_goal_ = LoaderGoal::READY;
       is_shooting_ = false;
+      if (disk_stuck_in_loader_) {
+        disk_stuck_in_loader_ = false;
+        disc_clamped_ = true;
+        loader_state_ = LoaderState::GRABBED;
+      } else {
+        disc_clamped_ = false;
+        loader_state_ = LoaderState::READY;
+        // Once we have shot, we need to hang out in READY until otherwise
+        // notified.
+        loader_goal_ = LoaderGoal::READY;
+      }
       break;
   }
 

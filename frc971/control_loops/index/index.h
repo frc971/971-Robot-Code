@@ -317,6 +317,9 @@ class IndexMotor
   LoaderGoal loader_goal_;
   LoaderState loader_state_;
   int loader_countdown_, loader_timeout_;
+  // Whether or not we (might have) failed to shoot a disk that's now (probably)
+  // still in the loader.
+  bool disk_stuck_in_loader_;
 
   // Current state of the pistons.
   bool loader_up_;
