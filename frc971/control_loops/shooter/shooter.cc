@@ -4,6 +4,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/shooter/shooter_motor_plant.h"
+#include "frc971/control_loops/index/index_motor.q.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -13,7 +14,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
     loop_(new StateFeedbackLoop<2, 1, 1>(MakeShooterLoop())),
     history_position_(0),
     position_goal_(0.0),
-    last_position_(0.0) {
+    last_position_(0.0),
+    last_velocity_goal_(0) {
   memset(history_, 0, sizeof(history_));
 }
 
@@ -26,10 +28,22 @@ void ShooterMotor::RunIteration(
     const control_loops::ShooterLoop::Position *position,
     ::aos::control_loops::Output *output,
     control_loops::ShooterLoop::Status *status) {
-  const double velocity_goal = std::min(goal->velocity, kMaxSpeed);
+  double velocity_goal = std::min(goal->velocity, kMaxSpeed);
   const double current_position =
       (position == NULL ? loop_->X_hat(0, 0) : position->position);
   double output_voltage = 0.0;
+
+  if (index_loop.status.FetchLatest() || index_loop.status.get()) {
+    if (index_loop.status->is_shooting) {
+      if (velocity_goal != last_velocity_goal_ &&
+          velocity_goal < 130) {
+        velocity_goal = last_velocity_goal_;
+      }
+    }
+  } else {
+    LOG(WARNING, "assuming index isn't shooting\n");
+  }
+  last_velocity_goal_ = velocity_goal;
 
   // Track the current position if the velocity goal is small.
   if (velocity_goal <= 1.0) {

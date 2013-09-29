@@ -54,6 +54,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       loader_up_(false),
       disc_clamped_(false),
       disc_ejected_(false),
+      is_shooting_(false),
       last_bottom_disc_detect_(false),
       last_top_disc_detect_(false),
       no_prior_position_(true),
@@ -690,6 +691,7 @@ void IndexMotor::RunIteration(
           if (loader_state_ == LoaderState::GRABBED &&
               safe_goal_ == Goal::SHOOT) {
             loader_goal_ = LoaderGoal::SHOOT_AND_RESET;
+            is_shooting_ = true;
           }
 
           // Must wait until it has been grabbed to continue.
@@ -983,6 +985,7 @@ void IndexMotor::RunIteration(
       // Once we have shot, we need to hang out in READY until otherwise
       // notified.
       loader_goal_ = LoaderGoal::READY;
+      is_shooting_ = false;
       break;
   }
 
@@ -1025,6 +1028,7 @@ void IndexMotor::RunIteration(
   status->total_disc_count = total_disc_count_;
   status->shot_disc_count = shot_disc_count_;
   status->preloaded = (loader_state_ != LoaderState::READY);
+  status->is_shooting = is_shooting_;
 
   if (output) {
     output->intake_voltage = intake_voltage;

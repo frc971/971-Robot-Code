@@ -77,6 +77,9 @@ queue_group IndexLoop {
     bool preloaded;
     // Indexer ready to accept more discs.
     bool ready_to_intake;
+	// True from when we're committed to shooting util after the disk is clear
+	// of the robot.
+	bool is_shooting;
   };
 
   queue Goal goal;

@@ -323,6 +323,8 @@ class IndexMotor
   bool disc_clamped_;
   bool disc_ejected_;
 
+  bool is_shooting_;
+
   // The frisbee that is flying through the transfer rollers.
   Frisbee transfer_frisbee_;
 
