@@ -65,7 +65,7 @@ deploy: all $(NAME).hex
 
 reset: deploy
 	# Echo an ESC into it to immediately exit the terminal.
-	echo -e '\x1B' | $(FLASHER) -termonly -control $(PORT) $(SPEED) $(OSC)
+	`which echo` -e '\e' | $(FLASHER) -termonly -control $(PORT) $(SPEED) $(OSC)
 
 cat:
 	@cd ../../bin; python serial_looper.py
