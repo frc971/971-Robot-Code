@@ -73,8 +73,9 @@ else
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
     [ ${PLATFORM} == atom ] && \
       rsync --progress -c -r \
-      ${OUTDIR}/Default/outputs/* \
-      driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
+        ${OUTDIR}/Default/outputs/* \
+        driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
+	  ssh driver@`${AOS}/build/get_ip fitpc` "sync; sync; sync"
     [ ${PLATFORM} == crio ] && \
       ncftpput `${AOS}/build/get_ip robot` / \
       ${OUTDIR}/Default/lib/FRC_UserProgram.out
