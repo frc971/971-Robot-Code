@@ -334,6 +334,7 @@ class IndexMotor
   // Bottom disc detect from the last valid packet for detecting edges.
   bool last_bottom_disc_detect_;
   bool last_top_disc_detect_;
+  bool hopper_clear_;
   int32_t last_bottom_disc_posedge_count_;
   int32_t last_bottom_disc_negedge_count_;
   int32_t last_bottom_disc_negedge_wait_count_;

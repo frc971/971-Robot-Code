@@ -136,6 +136,10 @@ class Reader : public ::aos::input::JoystickInput {
         is_high_gear = true;
       }
 
+      // Whether we should change wrist positions to indicate that the hopper is
+      // clear.
+      bool hopper_clear = false;
+
       // Where the wrist should be to pick up a frisbee.
       // TODO(brians): Make these globally accessible and clean up auto.
       static const double kWristPickup = -0.580;
@@ -143,8 +147,19 @@ class Reader : public ::aos::input::JoystickInput {
       // Where the wrist gets stored when up.
       // All the way up is 1.5.
       static const double kWristUp = 1.43;
+      static const double kWristCleared = kWristUp - 0.2;
       static double wrist_down_position = kWristPickup;
       double wrist_up_position = kWristUp;
+      double wrist_pickup_position = data.IsPressed(kIntake) ?
+          kWristPickup : kWristNearGround;
+      if (index_loop.status.FetchLatest() || index_loop.status.get()) {
+        if (index_loop.status->hopper_disc_count >= 4) {
+          wrist_down_position = kWristNearGround;
+        } else {
+          wrist_down_position = wrist_pickup_position;
+        }
+        hopper_clear = index_loop.status->hopper_clear;
+      }
 
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
@@ -152,6 +167,7 @@ class Reader : public ::aos::input::JoystickInput {
       static double angle_adjust_goal = 0.42;
       if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
         shooter_goal->velocity = 131;
+        if (hopper_clear) wrist_up_position = kWristCleared;
         angle_adjust_goal = 0.70;
       } else if (data.IsPressed(kLongShot)) {
 #if 0
@@ -167,7 +183,7 @@ class Reader : public ::aos::input::JoystickInput {
         }
 #endif
         shooter_goal->velocity = 360;
-        wrist_up_position = 1.23 - 0.4;
+        if (!hopper_clear) wrist_up_position = 1.23 - 0.4;
         angle_adjust_goal = 0.596;
       } else if (data.IsPressed(kMediumShot)) {
 #if 0
@@ -177,24 +193,15 @@ class Reader : public ::aos::input::JoystickInput {
 #endif
         // middle wheel on the back line (same as auto)
         shooter_goal->velocity = 395;
-        wrist_up_position = 1.23 - 0.4;
+        if (!hopper_clear) wrist_up_position = 1.23 - 0.4;
         angle_adjust_goal = 0.520;
       } else if (data.IsPressed(kShortShot)) {
         shooter_goal->velocity = 375;
+        if (hopper_clear) wrist_up_position = kWristCleared;
         angle_adjust_goal = 0.671;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 
-      double wrist_pickup_position = data.IsPressed(kIntake) ?
-          kWristPickup : kWristNearGround;
-      index_loop.status.FetchLatest();
-      if (index_loop.status.get()) {
-        if (index_loop.status->hopper_disc_count >= 4) {
-          wrist_down_position = kWristNearGround;
-        } else {
-          wrist_down_position = wrist_pickup_position;
-        }
-      }
       wrist.goal.MakeWithBuilder()
           .goal(data.IsPressed(kWristDown) ?
                 wrist_down_position :

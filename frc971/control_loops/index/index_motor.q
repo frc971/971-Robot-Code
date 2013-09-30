@@ -80,6 +80,9 @@ queue_group IndexLoop {
 	// True from when we're committed to shooting util after the disk is clear
 	// of the robot.
 	bool is_shooting;
+	// Goes false when we first get a disk and back true after we finish
+	// clearing.
+	bool hopper_clear;
   };
 
   queue Goal goal;

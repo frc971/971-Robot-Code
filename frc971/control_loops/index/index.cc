@@ -57,6 +57,7 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       is_shooting_(false),
       last_bottom_disc_detect_(false),
       last_top_disc_detect_(false),
+      hopper_clear_(true),
       no_prior_position_(true),
       missing_position_count_(0) {
 }
@@ -535,6 +536,7 @@ void IndexMotor::RunIteration(
       break;
     case Goal::READY_LOWER:
     case Goal::INTAKE:
+      hopper_clear_ = false;
       {
         if (position) {
           // Posedge of the disc entering the beam break.
@@ -760,6 +762,7 @@ void IndexMotor::RunIteration(
                   "Emptied the hopper out but there are still discs there\n");
               hopper_disc_count_ = 0;
             }
+            hopper_clear_ = true;
           }
         }
       }
@@ -792,6 +795,7 @@ void IndexMotor::RunIteration(
                 hopper_disc_count_);
             hopper_disc_count_ = 0;
           }
+          hopper_clear_ = true;
         }
       }
 
@@ -1036,6 +1040,7 @@ void IndexMotor::RunIteration(
   status->shot_disc_count = shot_disc_count_;
   status->preloaded = (loader_state_ != LoaderState::READY);
   status->is_shooting = is_shooting_;
+  status->hopper_clear = hopper_clear_;
 
   if (output) {
     output->intake_voltage = intake_voltage;
