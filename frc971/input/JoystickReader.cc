@@ -65,6 +65,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     static bool is_high_gear = false;
+    static double angle_adjust_goal = 0.42;
 
     if (data.GetControlBit(ControlBit::kAutonomous)) {
       if (data.PosEdge(ControlBit::kEnabled)){
@@ -164,7 +165,6 @@ class Reader : public ::aos::input::JoystickInput {
       ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
-      static double angle_adjust_goal = 0.42;
       if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
         shooter_goal->velocity = 131;
         if (hopper_clear) wrist_up_position = kWristCleared;
@@ -243,6 +243,7 @@ class Reader : public ::aos::input::JoystickInput {
     static int hanger_cycles = 0;
     if (data.IsPressed(kDeployHangers)) {
       ++hanger_cycles;
+      angle_adjust_goal = 0.4;
     } else {
       hanger_cycles = 0;
     }
