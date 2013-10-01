@@ -160,6 +160,7 @@ volatile int32_t encoder5_val;
 
 // ENC1A 2.11
 void EINT1_IRQHandler(void) {
+  SC->EXTPOLAR ^= 0x2;
   SC->EXTINT = 0x2;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -167,10 +168,10 @@ void EINT1_IRQHandler(void) {
   } else {
     --encoder1_val;
   }
-  SC->EXTPOLAR ^= 0x2;
 }
 // ENC1B 2.12
 void EINT2_IRQHandler(void) {
+  SC->EXTPOLAR ^= 0x4;
   SC->EXTINT = 0x4;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -178,12 +179,12 @@ void EINT2_IRQHandler(void) {
   } else {
     ++encoder1_val;
   }
-  SC->EXTPOLAR ^= 0x4;
 }
 
-// GPIO Interrupt handlers
-static void NoGPIO() {}
-static void Encoder2ARise() {
+// TODO(brians): Have this indicate some kind of error instead of just looping
+// infinitely in the ISR because it never clears it.
+static void NoGPIO(void) {}
+static void Encoder2ARise(void) {
   GPIOINT->IO0IntClr = (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     ++encoder2_val;
@@ -191,7 +192,7 @@ static void Encoder2ARise() {
     --encoder2_val;
   }
 }
-static void Encoder2AFall() {
+static void Encoder2AFall(void) {
   GPIOINT->IO0IntClr = (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     --encoder2_val;
@@ -199,7 +200,7 @@ static void Encoder2AFall() {
     ++encoder2_val;
   }
 }
-static void Encoder2BRise() {
+static void Encoder2BRise(void) {
   GPIOINT->IO0IntClr = (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     --encoder2_val;
@@ -207,7 +208,7 @@ static void Encoder2BRise() {
     ++encoder2_val;
   }
 }
-static void Encoder2BFall() {
+static void Encoder2BFall(void) {
   GPIOINT->IO0IntClr = (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     ++encoder2_val;
@@ -216,7 +217,7 @@ static void Encoder2BFall() {
   }
 }
 
-static void Encoder3ARise() {
+static void Encoder3ARise(void) {
   GPIOINT->IO0IntClr = (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     ++encoder3_val;
@@ -224,7 +225,7 @@ static void Encoder3ARise() {
     --encoder3_val;
   }
 }
-static void Encoder3AFall() {
+static void Encoder3AFall(void) {
   GPIOINT->IO0IntClr = (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     --encoder3_val;
@@ -232,7 +233,7 @@ static void Encoder3AFall() {
     ++encoder3_val;
   }
 }
-static void Encoder3BRise() {
+static void Encoder3BRise(void) {
   GPIOINT->IO0IntClr = (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     --encoder3_val;
@@ -240,7 +241,7 @@ static void Encoder3BRise() {
     ++encoder3_val;
   }
 }
-static void Encoder3BFall() {
+static void Encoder3BFall(void) {
   GPIOINT->IO0IntClr = (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     ++encoder3_val;
@@ -249,7 +250,7 @@ static void Encoder3BFall() {
   }
 }
 
-static void Encoder4ARise() {
+static void Encoder4ARise(void) {
   GPIOINT->IO2IntClr = (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     ++encoder4_val;
@@ -257,7 +258,7 @@ static void Encoder4ARise() {
     --encoder4_val;
   }
 }
-static void Encoder4AFall() {
+static void Encoder4AFall(void) {
   GPIOINT->IO2IntClr = (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     --encoder4_val;
@@ -265,7 +266,7 @@ static void Encoder4AFall() {
     ++encoder4_val;
   }
 }
-static void Encoder4BRise() {
+static void Encoder4BRise(void) {
   GPIOINT->IO2IntClr = (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     --encoder4_val;
@@ -273,7 +274,7 @@ static void Encoder4BRise() {
     ++encoder4_val;
   }
 }
-static void Encoder4BFall() {
+static void Encoder4BFall(void) {
   GPIOINT->IO2IntClr = (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     ++encoder4_val;
@@ -282,7 +283,7 @@ static void Encoder4BFall() {
   }
 }
 
-static void Encoder5ARise() {
+static void Encoder5ARise(void) {
   GPIOINT->IO2IntClr = (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     ++encoder5_val;
@@ -290,7 +291,7 @@ static void Encoder5ARise() {
     --encoder5_val;
   }
 }
-static void Encoder5AFall() {
+static void Encoder5AFall(void) {
   GPIOINT->IO2IntClr = (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     --encoder5_val;
@@ -298,7 +299,7 @@ static void Encoder5AFall() {
     ++encoder5_val;
   }
 }
-static void Encoder5BRise() {
+static void Encoder5BRise(void) {
   GPIOINT->IO2IntClr = (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     --encoder5_val;
@@ -306,7 +307,7 @@ static void Encoder5BRise() {
     ++encoder5_val;
   }
 }
-static void Encoder5BFall() {
+static void Encoder5BFall(void) {
   GPIOINT->IO2IntClr = (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     ++encoder5_val;
@@ -317,7 +318,7 @@ static void Encoder5BFall() {
 
 volatile int32_t capture_top_rise;
 volatile int8_t top_rise_count;
-static void IndexerTopRise() {
+static void IndexerTopRise(void) {
   GPIOINT->IO0IntClr = (1 << 5);
   // edge counting   encoder capture
   ++top_rise_count;
@@ -325,14 +326,14 @@ static void IndexerTopRise() {
 }
 volatile int32_t capture_top_fall;
 volatile int8_t top_fall_count;
-static void IndexerTopFall() {
+static void IndexerTopFall(void) {
   GPIOINT->IO0IntClr = (1 << 5);
   // edge counting   encoder capture
   ++top_fall_count;
   capture_top_fall = encoder3_val;
 }
 volatile int8_t bottom_rise_count;
-static void IndexerBottomRise() {
+static void IndexerBottomRise(void) {
   GPIOINT->IO0IntClr = (1 << 4);
   // edge counting
   ++bottom_rise_count;
@@ -366,7 +367,7 @@ static portTASK_FUNCTION(vDelayCapture, pvParameters)
 }
 
 volatile int8_t bottom_fall_count;
-static void IndexerBottomFall() {
+static void IndexerBottomFall(void) {
   GPIOINT->IO0IntClr = (1 << 4);
   ++bottom_fall_count;
   // edge counting   start delayed capture
@@ -375,7 +376,7 @@ static void IndexerBottomFall() {
 }
 volatile int32_t capture_wrist_rise;
 volatile int8_t wrist_rise_count;
-static void WristHallRise() {
+static void WristHallRise(void) {
   GPIOINT->IO0IntClr = (1 << 6);
   // edge counting   encoder capture
   ++wrist_rise_count;
@@ -383,7 +384,7 @@ static void WristHallRise() {
 }
 volatile int32_t capture_shooter_angle_rise;
 volatile int8_t shooter_angle_rise_count;
-static void ShooterHallRise() {
+static void ShooterHallRise(void) {
   GPIOINT->IO0IntClr = (1 << 7);
   // edge counting   encoder capture
   ++shooter_angle_rise_count;
