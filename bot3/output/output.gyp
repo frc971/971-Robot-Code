@@ -8,7 +8,7 @@
       ],
       'dependencies': [
         '<(AOS)/atom_code/output/output.gyp:http_server',
-        '../frc971.gyp:common',
+        '<(DEPTH)/frc971/frc971.gyp:common',
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/messages/messages.gyp:aos_queues',

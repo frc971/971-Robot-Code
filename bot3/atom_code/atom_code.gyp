@@ -13,8 +13,8 @@
         '<(DEPTH)/bot3/input/input.gyp:joystick_reader',
         '<(DEPTH)/bot3/input/input.gyp:gyro_reader',
         #'../input/input.gyp:AutoMode',
-        '<(DEPTH)/frc971/output/output.gyp:MotorWriter',
-        '<(DEPTH)/frc971/output/output.gyp:CameraServer',
+        '<(DEPTH)/bot3/output/output.gyp:MotorWriter',
+        '<(DEPTH)/bot3/output/output.gyp:CameraServer',
         #'camera/camera.gyp:frc971',
         '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:get',
         '<(DEPTH)/bot3/input/input.gyp:gyro_board_reader',
@@ -24,7 +24,6 @@
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'scripts/aos_module.ko',
             'scripts/start_list.txt',
           ],
         },
