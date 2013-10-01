@@ -181,7 +181,7 @@ class Reader : public ::aos::input::JoystickInput {
         angle_adjust_goal = 0.520;
       } else if (data.IsPressed(kShortShot)) {
         shooter_goal->velocity = 375;
-        angle_adjust_goal = 0.7267;
+        angle_adjust_goal = 0.671;
       }
       angle_adjust.goal.MakeWithBuilder().goal(angle_adjust_goal).Send();
 

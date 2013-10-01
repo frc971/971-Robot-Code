@@ -59,7 +59,13 @@ run: deploy
 	$(FLASHER) -termonly -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
 
 deploy: all $(NAME).hex
-	$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+	# TODO(aschuh): Figure out why the verify fails (or remove it) and then
+	# remove the -.
+	-$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+
+reset: deploy
+	# Echo an ESC into it to immediately exit the terminal.
+	echo -e '\x1B' | $(FLASHER) -termonly -control $(PORT) $(SPEED) $(OSC)
 
 cat:
 	@cd ../../bin; python serial_looper.py

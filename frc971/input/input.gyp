@@ -61,6 +61,8 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
+        '<(DEPTH)/frc971/frc971.gyp:common',
+        '<(AOS)/common/messages/messages.gyp:aos_queues',
       ],
     },
     {

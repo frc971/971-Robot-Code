@@ -18,7 +18,7 @@ namespace {
 
 // It has about 0.029043 of gearbox slop.
 const double kCompWristHallEffectStartAngle = 1.285;
-const double kPracticeWristHallEffectStartAngle = 1.171;
+const double kPracticeWristHallEffectStartAngle = 1.164;
 
 const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
 const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;
@@ -70,6 +70,9 @@ const double kCompAngleAdjustDeadband = 0.65;
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
+const int kCompDrivetrainGearboxPinion = 19;
+const int kPracticeDrivetrainGearboxPinion = 17;
+
 struct Values {
   // Wrist hall effect positive and negative edges.
   double wrist_hall_effect_start_angle;
@@ -107,6 +110,8 @@ struct Values {
   // Deadband voltage.
   double angle_adjust_deadband;
 
+  int drivetrain_gearbox_pinion;
+
   // what camera_center returns
   int camera_center;
 };
@@ -139,6 +144,7 @@ const Values *GetValues() {
                             kAngleAdjustZeroingSpeed,
                             kAngleAdjustZeroingOffSpeed,
                             kCompAngleAdjustDeadband,
+                            kCompDrivetrainGearboxPinion,
                             kCompCameraCenter};
         break;
       case kPracticeTeamNumber:
@@ -159,6 +165,7 @@ const Values *GetValues() {
                             kAngleAdjustZeroingSpeed,
                             kAngleAdjustZeroingOffSpeed,
                             kPracticeAngleAdjustDeadband,
+                            kPracticeDrivetrainGearboxPinion,
                             kPracticeCameraCenter};
         break;
       default:
@@ -286,6 +293,13 @@ bool angle_adjust_deadband(double *voltage) {
   const Values *const values = GetValues();
   if (values == NULL) return false;
   *voltage = values->angle_adjust_deadband;
+  return true;
+}
+
+bool drivetrain_gearbox_pinion(int *pinion) {
+  const Values *const values = GetValues();
+  if (values == NULL) return false;
+  *pinion = values->drivetrain_gearbox_pinion;
   return true;
 }
 
