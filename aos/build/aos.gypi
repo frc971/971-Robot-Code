@@ -23,12 +23,8 @@
   'conditions': [
     ['OS=="crio"', {
         'make_global_settings': [
-          ['CC', '<!(which powerpc-wrs-vxworks-gcc)'],
-          ['CXX', '<!(which powerpc-wrs-vxworks-g++)'],
-          ['LD', '<!(readlink -f <(AOS)/build/crio_link_out)'],
-          #['LD', 'powerpc-wrs-vxworks-ld'],
-          #['AR', '<!(which powerpc-wrs-vxworks-ar)'],
-          #['NM', '<!(which powerpc-wrs-vxworks-nm)'],
+          ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
+          ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
         'variables': {
           'aos_target': 'static_library',
@@ -185,7 +181,10 @@
             '-Wunused-local-typedefs',
 
             # Give macro stack traces when they blow up.
-            '-ftrack-macro-expansion',
+            # TODO(brians): Re-enable this once they fix the bug where it
+            # sometimes doesn't show you the top-most (aka most useful)
+            # line of code.
+            #'-ftrack-macro-expansion',
           ],
           'cflags_cc': [
             '-std=gnu++11',

@@ -125,7 +125,7 @@ TEST_F(LoggingTest, Cork) {
   expected << "-";
   expected << (end_line + 1);
   expected << ": ";
-  expected << __PRETTY_FUNCTION__;
+  expected << __func__;
   expected << ": first part second part (=19) third part last part 5\n";
   EXPECT_TRUE(WasLogged(WARNING, expected.str()));
 }

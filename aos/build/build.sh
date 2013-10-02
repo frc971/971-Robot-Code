@@ -1,31 +1,37 @@
-#!/bin/bash -e
+#!/bin/bash
 #set -x
 
+set -e
+
 # This file should be called to build the code.
-# Usage: build.sh platform main_file.gyp debug [action]
+# Usage: build.sh platform main_file.gyp debug [action]...
 
 PLATFORM=$1
 GYP_MAIN=$2
 DEBUG=$3
 ACTION=$4
 
+shift 3
+shift || true # We might not have a 4th argument if ACTION is empty.
+
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
-[ ${PLATFORM} == "crio" -o ${PLATFORM} == "atom" ] || ( echo Platform "(${PLATFORM})" must be '"crio" or "atom"'. ; exit 1 )
-[ ${DEBUG} == "yes" -o ${DEBUG} == "no" ] || ( echo Debug "(${DEBUG})" must be '"yes" or "no"'. ; exit 1 )
+[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "atom" ] || ( echo Platform "(${PLATFORM})" must be '"crio" or "atom"'. ; exit 1 )
+[ "${DEBUG}" == "yes" -o "${DEBUG}" == "no" ] || ( echo Debug "(${DEBUG})" must be '"yes" or "no"'. ; exit 1 )
 
 AOS=`dirname $0`/..
-NINJA_DIR=${AOS}/externals/ninja
+NINJA_RELEASE=v1.4.0
+NINJA_DIR=${AOS}/externals/ninja-${NINJA_RELEASE}
 NINJA=${NINJA_DIR}/ninja
 # From chromium@154360:trunk/src/DEPS.
-GYP_REVISION=1488
+GYP_REVISION=1738
 GYP_DIR=${AOS}/externals/gyp-${GYP_REVISION}
 GYP=${GYP_DIR}/gyp
 
 OUTDIR=${AOS}/../out_${PLATFORM}
 BUILD_NINJA=${OUTDIR}/Default/build.ninja
 
-[ -d ${NINJA_DIR} ] || git clone --branch release https://github.com/martine/ninja.git ${NINJA_DIR}
+[ -d ${NINJA_DIR} ] || git clone --branch ${NINJA_RELEASE} https://github.com/martine/ninja.git ${NINJA_DIR}
 [ -x ${NINJA} ] || ${NINJA_DIR}/bootstrap.py
 [ -d ${GYP_DIR} ] || ( svn co http://gyp.googlecode.com/svn/trunk -r ${GYP_REVISION} ${GYP_DIR} && patch -p1 -d ${GYP_DIR} < ${AOS}/externals/gyp.patch )
 ${AOS}/build/download_externals.sh
@@ -56,19 +62,20 @@ if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
 fi
 
 if [ "${ACTION}" == "clean" ]; then
-  rm -r ${OUTDIR}
+  rm -r ${OUTDIR} || true
 else
   if [ "${ACTION}" != "deploy" -a "${ACTION}" != "tests" -a "${ACTION}" != "redeploy" ]; then
-    GYP_ACTION=${ACTION}
+    NINJA_ACTION=${ACTION}
   else
-    GYP_ACTION=
+    NINJA_ACTION=
   fi
-  ${NINJA} -C ${OUTDIR}/Default ${GYP_ACTION}
+  ${NINJA} -C ${OUTDIR}/Default ${NINJA_ACTION} "$@"
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
     [ ${PLATFORM} == atom ] && \
       rsync --progress -c -r \
-      ${OUTDIR}/Default/outputs/* \
-      driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
+        ${OUTDIR}/Default/outputs/* \
+        driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
+	  ssh driver@`${AOS}/build/get_ip fitpc` "sync; sync; sync"
     [ ${PLATFORM} == crio ] && \
       ncftpput `${AOS}/build/get_ip robot` / \
       ${OUTDIR}/Default/lib/FRC_UserProgram.out

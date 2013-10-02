@@ -42,7 +42,7 @@ volatile int32_t encoder5_val;
 
 // ENC1A 2.11
 void EINT1_IRQHandler(void) {
-  // TODO(brians): figure out why this has to be up here too
+  SC->EXTPOLAR ^= 0x2;
   SC->EXTINT = 0x2;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -50,11 +50,10 @@ void EINT1_IRQHandler(void) {
   } else {
     --encoder1_val;
   }
-  SC->EXTPOLAR ^= 0x2;
-  SC->EXTINT = 0x2;
 }
 // ENC1B 2.12
 void EINT2_IRQHandler(void) {
+  SC->EXTPOLAR ^= 0x4;
   SC->EXTINT = 0x4;
   int fiopin = GPIO2->FIOPIN;
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
@@ -62,38 +61,37 @@ void EINT2_IRQHandler(void) {
   } else {
     ++encoder1_val;
   }
-  SC->EXTPOLAR ^= 0x4;
-  SC->EXTINT = 0x4;
 }
 
-// GPIO Interrupt handlers
-static void NoGPIO() {}
-static void Encoder2ARise() {
-  GPIOINT->IO0IntClr |= (1 << 22);
+// TODO(brians): Have this indicate some kind of error instead of just looping
+// infinitely in the ISR because it never clears it.
+static void NoGPIO(void) {}
+static void Encoder2ARise(void) {
+  GPIOINT->IO0IntClr = (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     ++encoder2_val;
   } else {
     --encoder2_val;
   }
 }
-static void Encoder2AFall() {
-  GPIOINT->IO0IntClr |= (1 << 22);
+static void Encoder2AFall(void) {
+  GPIOINT->IO0IntClr = (1 << 22);
   if (GPIO0->FIOPIN & (1 << 21)) {
     --encoder2_val;
   } else {
     ++encoder2_val;
   }
 }
-static void Encoder2BRise() {
-  GPIOINT->IO0IntClr |= (1 << 21);
+static void Encoder2BRise(void) {
+  GPIOINT->IO0IntClr = (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     --encoder2_val;
   } else {
     ++encoder2_val;
   }
 }
-static void Encoder2BFall() {
-  GPIOINT->IO0IntClr |= (1 << 21);
+static void Encoder2BFall(void) {
+  GPIOINT->IO0IntClr = (1 << 21);
   if (GPIO0->FIOPIN & (1 << 22)) {
     ++encoder2_val;
   } else {
@@ -101,32 +99,32 @@ static void Encoder2BFall() {
   }
 }
 
-static void Encoder3ARise() {
-  GPIOINT->IO0IntClr |= (1 << 20);
+static void Encoder3ARise(void) {
+  GPIOINT->IO0IntClr = (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     ++encoder3_val;
   } else {
     --encoder3_val;
   }
 }
-static void Encoder3AFall() {
-  GPIOINT->IO0IntClr |= (1 << 20);
+static void Encoder3AFall(void) {
+  GPIOINT->IO0IntClr = (1 << 20);
   if (GPIO0->FIOPIN & (1 << 19)) {
     --encoder3_val;
   } else {
     ++encoder3_val;
   }
 }
-static void Encoder3BRise() {
-  GPIOINT->IO0IntClr |= (1 << 19);
+static void Encoder3BRise(void) {
+  GPIOINT->IO0IntClr = (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     --encoder3_val;
   } else {
     ++encoder3_val;
   }
 }
-static void Encoder3BFall() {
-  GPIOINT->IO0IntClr |= (1 << 19);
+static void Encoder3BFall(void) {
+  GPIOINT->IO0IntClr = (1 << 19);
   if (GPIO0->FIOPIN & (1 << 20)) {
     ++encoder3_val;
   } else {
@@ -134,32 +132,32 @@ static void Encoder3BFall() {
   }
 }
 
-static void Encoder4ARise() {
-  GPIOINT->IO2IntClr |= (1 << 0);
+static void Encoder4ARise(void) {
+  GPIOINT->IO2IntClr = (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     ++encoder4_val;
   } else {
     --encoder4_val;
   }
 }
-static void Encoder4AFall() {
-  GPIOINT->IO2IntClr |= (1 << 0);
+static void Encoder4AFall(void) {
+  GPIOINT->IO2IntClr = (1 << 0);
   if (GPIO2->FIOPIN & (1 << 1)) {
     --encoder4_val;
   } else {
     ++encoder4_val;
   }
 }
-static void Encoder4BRise() {
-  GPIOINT->IO2IntClr |= (1 << 1);
+static void Encoder4BRise(void) {
+  GPIOINT->IO2IntClr = (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     --encoder4_val;
   } else {
     ++encoder4_val;
   }
 }
-static void Encoder4BFall() {
-  GPIOINT->IO2IntClr |= (1 << 1);
+static void Encoder4BFall(void) {
+  GPIOINT->IO2IntClr = (1 << 1);
   if (GPIO2->FIOPIN & (1 << 0)) {
     ++encoder4_val;
   } else {
@@ -167,32 +165,32 @@ static void Encoder4BFall() {
   }
 }
 
-static void Encoder5ARise() {
-  GPIOINT->IO2IntClr |= (1 << 2);
+static void Encoder5ARise(void) {
+  GPIOINT->IO2IntClr = (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     ++encoder5_val;
   } else {
     --encoder5_val;
   }
 }
-static void Encoder5AFall() {
-  GPIOINT->IO2IntClr |= (1 << 2);
+static void Encoder5AFall(void) {
+  GPIOINT->IO2IntClr = (1 << 2);
   if (GPIO2->FIOPIN & (1 << 3)) {
     --encoder5_val;
   } else {
     ++encoder5_val;
   }
 }
-static void Encoder5BRise() {
-  GPIOINT->IO2IntClr |= (1 << 3);
+static void Encoder5BRise(void) {
+  GPIOINT->IO2IntClr = (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     --encoder5_val;
   } else {
     ++encoder5_val;
   }
 }
-static void Encoder5BFall() {
-  GPIOINT->IO2IntClr |= (1 << 3);
+static void Encoder5BFall(void) {
+  GPIOINT->IO2IntClr = (1 << 3);
   if (GPIO2->FIOPIN & (1 << 2)) {
     ++encoder5_val;
   } else {
@@ -202,23 +200,23 @@ static void Encoder5BFall() {
 
 volatile int32_t capture_top_rise;
 volatile int8_t top_rise_count;
-static void IndexerTopRise() {
-  GPIOINT->IO0IntClr |= (1 << 5);
+static void IndexerTopRise(void) {
+  GPIOINT->IO0IntClr = (1 << 5);
   // edge counting   encoder capture
   ++top_rise_count;
   capture_top_rise = encoder3_val;
 }
 volatile int32_t capture_top_fall;
 volatile int8_t top_fall_count;
-static void IndexerTopFall() {
-  GPIOINT->IO0IntClr |= (1 << 5);
+static void IndexerTopFall(void) {
+  GPIOINT->IO0IntClr = (1 << 5);
   // edge counting   encoder capture
   ++top_fall_count;
   capture_top_fall = encoder3_val;
 }
 volatile int8_t bottom_rise_count;
-static void IndexerBottomRise() {
-  GPIOINT->IO0IntClr |= (1 << 4);
+static void IndexerBottomRise(void) {
+  GPIOINT->IO0IntClr = (1 << 4);
   // edge counting
   ++bottom_rise_count;
 }
@@ -239,10 +237,10 @@ static portTASK_FUNCTION(vDelayCapture, pvParameters)
 
       vTaskDelayUntil(&xSleepFrom, kBottomFallDelayTime / portTICK_RATE_MS);
 
-      NVIC_DisableIRQ(EINT3_IRQn);
-      ++bottom_fall_delay_count;
+      NVIC_DisableIRQ(USB_IRQn);
       capture_bottom_fall_delay = encoder3_val;
-      NVIC_EnableIRQ(EINT3_IRQn);
+      ++bottom_fall_delay_count;
+      NVIC_EnableIRQ(USB_IRQn);
     } else {
       NVIC_EnableIRQ(EINT3_IRQn);
       vTaskDelayUntil(&xSleepFrom, 10 / portTICK_RATE_MS);
@@ -251,8 +249,8 @@ static portTASK_FUNCTION(vDelayCapture, pvParameters)
 }
 
 volatile int8_t bottom_fall_count;
-static void IndexerBottomFall() {
-  GPIOINT->IO0IntClr |= (1 << 4);
+static void IndexerBottomFall(void) {
+  GPIOINT->IO0IntClr = (1 << 4);
   ++bottom_fall_count;
   // edge counting   start delayed capture
   xDelayTimeFrom = xTaskGetTickCount();
@@ -260,16 +258,16 @@ static void IndexerBottomFall() {
 }
 volatile int32_t capture_wrist_rise;
 volatile int8_t wrist_rise_count;
-static void WristHallRise() {
-  GPIOINT->IO0IntClr |= (1 << 6);
+static void WristHallRise(void) {
+  GPIOINT->IO0IntClr = (1 << 6);
   // edge counting   encoder capture
   ++wrist_rise_count;
   capture_wrist_rise = (int32_t)QEI->QEIPOS;
 }
 volatile int32_t capture_shooter_angle_rise;
 volatile int8_t shooter_angle_rise_count;
-static void ShooterHallRise() {
-  GPIOINT->IO0IntClr |= (1 << 7);
+static void ShooterHallRise(void) {
+  GPIOINT->IO0IntClr = (1 << 7);
   // edge counting   encoder capture
   ++shooter_angle_rise_count;
   capture_shooter_angle_rise = encoder2_val; 
@@ -327,12 +325,7 @@ inline static void IRQ_Dispatch(void) {
   table[index]();
 }
 void EINT3_IRQHandler(void) {
-  // Have to disable it here or else it re-fires the interrupt while the code
-  // reads to figure out which pin the interrupt is for.
-  // TODO(brians): figure out details + look for an alternative
-  NVIC_DisableIRQ(EINT3_IRQn);
   IRQ_Dispatch();
-  NVIC_EnableIRQ(EINT3_IRQn);
 }
 int32_t encoder_val(int chan) {
   int32_t val;
@@ -476,8 +469,8 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->robot_id = 0;
 
     packet->main.shooter = encoder1_val;
-    packet->main.left_drive = encoder4_val;
-    packet->main.right_drive = encoder5_val;
+    packet->main.left_drive = encoder5_val;
+    packet->main.right_drive = encoder4_val;
     packet->main.shooter_angle = encoder2_val;
     packet->main.indexer = encoder3_val;
 
@@ -496,7 +489,6 @@ void fillSensorPacket(struct DataStruct *packet) {
 
     packet->main.capture_top_rise = capture_top_rise;
     packet->main.top_rise_count = top_rise_count;
-
     packet->main.capture_top_fall = capture_top_fall;
     packet->main.top_fall_count = top_fall_count;
     packet->main.top_disc = !digital(2);
@@ -505,6 +497,9 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.bottom_fall_delay_count = bottom_fall_delay_count;
     packet->main.bottom_fall_count = bottom_fall_count;
     packet->main.bottom_disc = !digital(1);
+
+    packet->main.loader_top = !digital(5);
+    packet->main.loader_bottom = !digital(6);
 
     packet->main.capture_shooter_angle_rise = capture_shooter_angle_rise;
     packet->main.shooter_angle_rise_count = shooter_angle_rise_count;

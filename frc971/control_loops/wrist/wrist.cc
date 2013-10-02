@@ -21,6 +21,12 @@ WristMotor::WristMotor(control_loops::WristLoop *my_wrist)
 
 bool WristMotor::FetchConstants(
     ZeroedJoint<1>::ConfigurationData *config_data) {
+  if (::aos::robot_state.get() == NULL) {
+    if (!::aos::robot_state.FetchNext()) {
+      LOG(ERROR, "Failed to fetch robot state to get constants.\n");
+      return false;
+    }
+  }
   if (!constants::wrist_lower_limit(&config_data->lower_limit)) {
     LOG(ERROR, "Failed to fetch the wrist lower limit constant.\n");
     return false;
