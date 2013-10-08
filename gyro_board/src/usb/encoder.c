@@ -40,11 +40,22 @@ volatile int32_t encoder4_val;
 // On GPIO pins 2.2 and 2.3.
 volatile int32_t encoder5_val;
 
+// It is important to clear the various interrupt flags first thing in the ISRs.
+// It doesn't seem to work otherwise, possibly because of the reason that Brian
+// found poking around online: caches on the bus make it so that the clearing of
+// the interrupt gets to the NVIC after the ISR returns, so it runs the ISR a
+// second time. Also, by clearing them early, if a second interrupt arrives from
+// the same source it will still get handled instead of getting lost.
+
 // ENC1A 2.11
 void EINT1_IRQHandler(void) {
+  // Make sure to change this BEFORE clearing the interrupt like the datasheet
+  // says you have to.
   SC->EXTPOLAR ^= 0x2;
   SC->EXTINT = 0x2;
   int fiopin = GPIO2->FIOPIN;
+  // This looks like a weird way to XOR the 2 inputs, but it compiles down to
+  // just 2 instructions, which is hard to beat.
   if (((fiopin >> 1) ^ fiopin) & 0x800) {
     ++encoder1_val;
   } else {
@@ -222,27 +233,31 @@ static void IndexerBottomRise(void) {
 }
 volatile int32_t capture_bottom_fall_delay;
 volatile int8_t bottom_fall_delay_count;
-volatile int32_t dirty_delay;
 portTickType xDelayTimeFrom;
 static portTASK_FUNCTION(vDelayCapture, pvParameters)
 {
   portTickType xSleepFrom = xTaskGetTickCount();
 
   for (;;) {
+    // Atomically (wrt the ISR) switch xDelayTimeFrom to 0 and store its old
+    // value to use later.
     NVIC_DisableIRQ(EINT3_IRQn);
-    if (dirty_delay != 0) {
-      xSleepFrom = xDelayTimeFrom;
-      dirty_delay = 0;
-      NVIC_EnableIRQ(EINT3_IRQn);
+    portTickType new_time = xDelayTimeFrom;
+    xDelayTimeFrom = 0;
+    NVIC_EnableIRQ(EINT3_IRQn);
+
+    if (new_time != 0) {
+      xSleepFrom = new_time;
 
       vTaskDelayUntil(&xSleepFrom, kBottomFallDelayTime / portTICK_RATE_MS);
 
+      // Make sure that the USB ISR doesn't look at inconsistent values.
       NVIC_DisableIRQ(USB_IRQn);
       capture_bottom_fall_delay = encoder3_val;
       ++bottom_fall_delay_count;
       NVIC_EnableIRQ(USB_IRQn);
     } else {
-      NVIC_EnableIRQ(EINT3_IRQn);
+      // Wait 10ms and then check again.
       vTaskDelayUntil(&xSleepFrom, 10 / portTICK_RATE_MS);
     }
   }
@@ -254,7 +269,6 @@ static void IndexerBottomFall(void) {
   ++bottom_fall_count;
   // edge counting   start delayed capture
   xDelayTimeFrom = xTaskGetTickCount();
-  dirty_delay = 1;
 }
 volatile int32_t capture_wrist_rise;
 volatile int8_t wrist_rise_count;
@@ -281,8 +295,12 @@ __attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
   return result;
 }
 inline static void IRQ_Dispatch(void) {
-  // TODO(brians): think about adding a loop here so that we can handle multiple
-  // interrupts right on top of each other faster
+  // There is no need to add a loop here to handle multiple interrupts at the
+  // same time because the processor has tail chaining of interrupts which we
+  // can't really beat with our own loop.
+  // It would actually be bad because a loop here would block EINT1/2 for longer
+  // lengths of time.
+
   uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
       (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
 
@@ -463,6 +481,12 @@ void fillSensorPacket(struct DataStruct *packet) {
   packet->dip_switch2 = dip_switch(2);
   packet->dip_switch3 = dip_switch(3);
 
+  // We disable EINT3 to avoid sending back inconsistent values. All of the
+  // aligned reads from the variables are atomic, so disabling it isn't
+  // necessary for just reading encoder values. We re-enable it periodically
+  // because disabling and enabling is cheap (2 instructions) and we really rely
+  // on low interrupt latencies.
+
   if (is_bot3) {
     packet->robot_id = 1;
   } else {  // is main robot
@@ -471,20 +495,16 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.shooter = encoder1_val;
     packet->main.left_drive = encoder5_val;
     packet->main.right_drive = encoder4_val;
-    packet->main.shooter_angle = encoder2_val;
     packet->main.indexer = encoder3_val;
 
-    NVIC_DisableIRQ(EINT1_IRQn);
-    NVIC_DisableIRQ(EINT2_IRQn);
+    NVIC_DisableIRQ(EINT3_IRQn);
 
     packet->main.wrist = (int32_t)QEI->QEIPOS;
     packet->main.wrist_hall_effect = !digital(3);
     packet->main.capture_wrist_rise = capture_wrist_rise;
     packet->main.wrist_rise_count = wrist_rise_count;
 
-    NVIC_EnableIRQ(EINT1_IRQn);
-    NVIC_EnableIRQ(EINT2_IRQn);
-
+    NVIC_EnableIRQ(EINT3_IRQn);
     NVIC_DisableIRQ(EINT3_IRQn);
 
     packet->main.capture_top_rise = capture_top_rise;
@@ -493,14 +513,24 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.top_fall_count = top_fall_count;
     packet->main.top_disc = !digital(2);
 
+    NVIC_EnableIRQ(EINT3_IRQn);
+    NVIC_DisableIRQ(EINT3_IRQn);
+
     packet->main.capture_bottom_fall_delay = capture_bottom_fall_delay;
     packet->main.bottom_fall_delay_count = bottom_fall_delay_count;
     packet->main.bottom_fall_count = bottom_fall_count;
     packet->main.bottom_disc = !digital(1);
 
+    NVIC_EnableIRQ(EINT3_IRQn);
+    NVIC_DisableIRQ(EINT3_IRQn);
+
     packet->main.loader_top = !digital(5);
     packet->main.loader_bottom = !digital(6);
 
+    NVIC_EnableIRQ(EINT3_IRQn);
+    NVIC_DisableIRQ(EINT3_IRQn);
+
+    packet->main.shooter_angle = encoder2_val;
     packet->main.capture_shooter_angle_rise = capture_shooter_angle_rise;
     packet->main.shooter_angle_rise_count = shooter_angle_rise_count;
     packet->main.angle_adjust_bottom_hall_effect = !digital(4);
