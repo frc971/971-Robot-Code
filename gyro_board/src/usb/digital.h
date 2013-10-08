@@ -1,6 +1,8 @@
 #ifndef GYRO_BOARD_USB_DIGITAL_H_
 #define GYRO_BOARD_USB_DIGITAL_H_
 
+#include "FreeRTOS.h"
+
 #define readGPIO(gpio, chan) ((((gpio)->FIOPIN) >> (chan)) & 1)
 
 // These are the actual pin numbers for all of the digital I(/0) pins on the
@@ -35,7 +37,18 @@
 
 void digital_init(void);
 
-int digital(int channel);
+inline int digital(int channel) {
+  if (channel < 1) {
+    return -1;
+  } else if (channel < 7) {
+    int chan = channel + 3;
+    return readGPIO(GPIO0, chan);
+  } else if (channel < 13) {
+    int chan = channel - 7;
+    return readGPIO(GPIO2, chan);
+  }
+  return -1;
+}
 
 int dip_switch(int channel);
 

@@ -74,12 +74,9 @@ void vParTestInitialise(void)
 {
         /* LEDs on port 2. */
         GPIO2->FIODIR |= partstFIO1_BITS;
-        //GPIO0->FIODIR = LED_4;
 
         /* Start will all LEDs off. */
         GPIO2->FIOCLR = partstFIO1_BITS;
-        //GPIO0->FIOSET = LED_4;
-	//PINCON->PINMODE0 = (PINCON->PINMODE0 & 0xfffffff0) | 0x00000001;
 }
 /*-----------------------------------------------------------*/
 
@@ -116,4 +113,3 @@ unsigned portBASE_TYPE uxParTextGetLED(unsigned portBASE_TYPE uxLED)
         }
 }
 /*-----------------------------------------------------------*/
-
