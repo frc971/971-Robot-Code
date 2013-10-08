@@ -73,8 +73,6 @@ class Drivetrain(control_loop.ControlLoop):
     self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.hp, self.lp, self.lp])
 
-    print self.K
-
     self.hlp = 0.07
     self.llp = 0.09
     self.PlaceObserverPoles([self.hlp, self.hlp, self.llp, self.llp])
