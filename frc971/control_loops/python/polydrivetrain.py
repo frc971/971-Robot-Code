@@ -94,25 +94,35 @@ def CoerceGoal(region, K, w, R):
     return closest_point
 
 
+class VelocityDrivetrainModel(object):
+  def __init__(self, left_low=True, right_low=True):
+    self._drivetrain = drivetrain.Drivetrain(left_low=left_low,
+                                             right_low=right_low)
+    self.A = numpy.matrix(
+        [[self._drivetrain.A[1, 1], self._drivetrain.A[1, 3]],
+         [self._drivetrain.A[3, 1], self._drivetrain.A[3, 3]]])
+
+    self.B = numpy.matrix(
+        [[self._drivetrain.B[1, 0], self._drivetrain.B[1, 1]],
+         [self._drivetrain.B[3, 0], self._drivetrain.B[3, 1]]])
+
+    # FF * X = U (steady state)
+    self.FF = self.B.I * (numpy.eye(2) - self.A)
+
+    self.K = controls.dplace(self.A, self.B, [0.3, 0.3])
+
+
 class VelocityDrivetrain(object):
   def __init__(self):
-    self.drivetrain = drivetrain.Drivetrain()
+    self.drivetrain_low_low = VelocityDrivetrainModel(left_low=True, right_low=True)
+    self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False)
+    self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True)
+    self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False)
 
     # X is [lvel, rvel]
     self.X = numpy.matrix(
         [[0.0],
          [0.0]])
-
-    self.A = numpy.matrix(
-        [[self.drivetrain.A[1, 1], self.drivetrain.A[1, 3]],
-         [self.drivetrain.A[3, 1], self.drivetrain.A[3, 3]]])
-
-    self.B = numpy.matrix(
-        [[self.drivetrain.B[1, 0], self.drivetrain.B[1, 1]],
-         [self.drivetrain.B[3, 0], self.drivetrain.B[3, 1]]])
-
-    # FF * X = U (steady state)
-    self.FF = self.B.I * (numpy.eye(2) - self.A)
 
     self.U_poly = polytope.HPolytope(
         numpy.matrix([[1, 0],
@@ -131,16 +141,11 @@ class VelocityDrivetrain(object):
         [[-12.0000000000],
          [-12.0000000000]])
 
-    self.K = controls.dplace(self.A, self.B, [0.3, 0.3])
-
     self.dt = 0.01
 
     self.R = numpy.matrix(
         [[0.0],
          [0.0]])
-
-    self.vmax = (
-        self.U_max[0, 0] * self.B[0, :].sum() / (1 - self.A[0, :].sum()))
 
     self.xfiltered = 0.0
 
@@ -158,21 +163,36 @@ class VelocityDrivetrain(object):
     # Xn+1 = A * X + B * (throttle * 12.0)
 
     # xfiltered = self.A[0, :].sum() + B[0, :].sum() * throttle * 12.0
-    self.ttrust = 1.1
+    self.ttrust = 1.0
+
+    self.left_high = False
+    self.right_high = False
+
+  def CurrentDrivetrain(self):
+    if self.left_high:
+      if self.right_high:
+        return self.drivetrain_high_high
+      else:
+        return self.drivetrain_high_low
+    else:
+      if self.right_high:
+        return self.drivetrain_low_high
+      else:
+        return self.drivetrain_low_low
 
   def Update(self, throttle, steering):
     # Invert the plant to figure out how the velocity filter would have to work
     # out in order to filter out the forwards negative inertia.
     # This math assumes that the left and right power and velocity are equals,
     # and that the plant is the same on the left and right.
-    # TODO(aschuh): Prove that this is right again and figure out what ttrust
-    # means...
-    fvel = ((throttle * 12.0 + self.ttrust * self.K[0, :].sum() * self.xfiltered)
-            / (self.ttrust * self.K[0, :].sum() + self.FF[0, :].sum()))
-    self.xfiltered = (self.A[0, :].sum() * self.xfiltered +
-                      self.B[0, :].sum() * throttle * 12.0)
 
-    fvel = 12 / self.FF[0, :].sum() * throttle
+    # TODO(aschuh): Rederive this assuming G_left != G_right.
+    # TODO(aschuh): Figure out the correct throttle if we start in low gear and
+    # then let it shift up.  This isn't it.
+    fvel = ((throttle * 12.0 + self.ttrust * self.CurrentDrivetrain().K[0, :].sum() * self.xfiltered)
+            / (self.ttrust * self.CurrentDrivetrain().K[0, :].sum() + self.CurrentDrivetrain().FF[0, :].sum()))
+    self.xfiltered = (self.CurrentDrivetrain().A[0, :].sum() * self.xfiltered +
+                      self.CurrentDrivetrain().B[0, :].sum() * throttle * 12.0)
 
     # Constant radius means that angualar_velocity / linear_velocity = constant.
     # Compute the left and right velocities.
@@ -205,20 +225,17 @@ class VelocityDrivetrain(object):
     # H * (FF * R + K * R - K * X) <= k
     # H * (FF + K) * R <= k + H * K * X
     R_poly = polytope.HPolytope(
-        self.U_poly.H * (self.K + self.FF),
-        self.U_poly.k + self.U_poly.H * self.K * self.X)
+        self.U_poly.H * (self.CurrentDrivetrain().K + self.CurrentDrivetrain().FF),
+        self.U_poly.k + self.U_poly.H * self.CurrentDrivetrain().K * self.X)
 
     # Limit R back inside the box.
     self.boxed_R = CoerceGoal(R_poly, equality_k, equality_w, self.R)
 
-    FF_volts = self.FF * self.boxed_R
-    self.U_ideal = self.K * (self.boxed_R - self.X) + FF_volts
-
-    # Verify that the steering angle has not flipped.
-    assert((self.boxed_R[1, 0] - self.boxed_R[0, 0]) * steering >= 0)
+    FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
+    self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R - self.X) + FF_volts
 
     self.U = numpy.clip(self.U_ideal, self.U_min, self.U_max)
-    self.X = self.A * self.X + self.B * self.U
+    self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
 
 
 def main(argv):
@@ -234,6 +251,10 @@ def main(argv):
     if t < 0.5:
       drivetrain.Update(throttle=0.60, steering=0.3)
     elif t < 1.0:
+      if t > 0.7:
+        drivetrain.left_high = False
+        drivetrain.right_high = True
+
       drivetrain.Update(throttle=0.60, steering=-0.3)
     else:
       drivetrain.Update(throttle=0.00, steering=0.3)
