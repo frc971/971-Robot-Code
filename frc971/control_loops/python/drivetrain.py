@@ -6,7 +6,7 @@ import sys
 from matplotlib import pylab
 
 class Drivetrain(control_loop.ControlLoop):
-  def __init__(self):
+  def __init__(self, left_low=True, right_low=True):
     super(Drivetrain, self).__init__("Drivetrain")
     # Stall Torque in N m
     self.stall_torque = 2.42
@@ -35,7 +35,14 @@ class Drivetrain(control_loop.ControlLoop):
     # Gear ratios
     self.G_low = 16.0 / 60.0 * 19.0 / 50.0
     self.G_high = 28.0 / 48.0 * 19.0 / 50.0
-    self.G = self.G_low
+    if left_low:
+      self.Gl = self.G_low
+    else:
+      self.Gl = self.G_high
+    if right_low:
+      self.Gr = self.G_low
+    else:
+      self.Gr = self.G_high
     # Control loop time step
     self.dt = 0.01
 
@@ -44,22 +51,24 @@ class Drivetrain(control_loop.ControlLoop):
     self.msp = 1.0 / self.m + self.rb * self.rb / self.J
     self.msn = 1.0 / self.m - self.rb * self.rb / self.J
     # The calculations which we will need for A and B.
-    self.tc = -self.Kt / self.Kv / (self.G * self.G * self.R * self.r * self.r)
-    self.mp = self.Kt / (self.G * self.R * self.r)
+    self.tcl = -self.Kt / self.Kv / (self.Gl * self.Gl * self.R * self.r * self.r)
+    self.tcr = -self.Kt / self.Kv / (self.Gr * self.Gr * self.R * self.r * self.r)
+    self.mpl = self.Kt / (self.Gl * self.R * self.r)
+    self.mpr = self.Kt / (self.Gr * self.R * self.r)
 
     # State feedback matrices
     # X will be of the format
-    # [[position1], [velocity1], [position2], velocity2]]
+    # [[positionl], [velocityl], [positionr], velocityr]]
     self.A_continuous = numpy.matrix(
         [[0, 1, 0, 0],
-         [0, self.msp * self.tc, 0, self.msn * self.tc],
+         [0, self.msp * self.tcl, 0, self.msn * self.tcr],
          [0, 0, 0, 1],
-         [0, self.msn * self.tc, 0, self.msp * self.tc]])
+         [0, self.msn * self.tcl, 0, self.msp * self.tcr]])
     self.B_continuous = numpy.matrix(
         [[0, 0],
-         [self.msp * self.mp, self.msn * self.mp],
+         [self.msp * self.mpl, self.msn * self.mpr],
          [0, 0],
-         [self.msn * self.mp, self.msp * self.mp]])
+         [self.msn * self.mpl, self.msp * self.mpr]])
     self.C = numpy.matrix([[1, 0, 0, 0],
                            [0, 0, 1, 0]])
     self.D = numpy.matrix([[0, 0],
