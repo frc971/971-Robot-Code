@@ -207,7 +207,7 @@ class VelocityDrivetrain(object):
     # Do this by finding the index of FF that has the lowest value, and computing
     # the sums using that index.
     FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
-    max_FF_sum_index = numpy.argmax(FF_sum)
+    max_FF_sum_index = numpy.argmin(FF_sum)
     max_FF_sum = FF_sum[max_FF_sum_index, 0]
     max_K_sum = self.CurrentDrivetrain().K[max_FF_sum_index, :].sum()
     max_A_sum = self.CurrentDrivetrain().A[max_FF_sum_index, :].sum()
@@ -321,7 +321,7 @@ def main(argv):
     elif t < 1.5:
       drivetrain.Update(throttle=0.60, steering=-0.3)
     else:
-      drivetrain.Update(throttle=0.60, steering=0.3)
+      drivetrain.Update(throttle=0.0, steering=0.3)
     t_plot.append(t)
     vl_plot.append(drivetrain.X[0, 0])
     vr_plot.append(drivetrain.X[1, 0])
