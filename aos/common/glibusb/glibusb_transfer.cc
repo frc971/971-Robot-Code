@@ -22,31 +22,49 @@
 namespace glibusb {
 
 namespace {
+
 // Static code from libusb1/sync.c
-void bulk_transfer_cb(struct libusb_transfer *transfer) {
+void transfer_cb(struct libusb_transfer *transfer) {
   int *completed = static_cast<int*>(transfer->user_data);
   *completed = 1;
   LOG(DEBUG, "actual_length=%d\n", transfer->actual_length);
   /* caller interprets results and frees transfer */
 }
+
+// How many isochronous packets we're going to deal with.
+// TODO(brians): Make this settable per endpoint instead of a constant.
+const int kNumIsoPackets = 1;
+
 }  // namespace
 
-int do_sync_bulk_transfer(
+int do_sync_transfer(
     struct libusb_context *context,
     struct libusb_device_handle *dev_handle,
     unsigned char endpoint, unsigned char *buffer, int length,
     int *transferred, unsigned int timeout, unsigned char type,
     Notification *quit) {
-  struct libusb_transfer *transfer = libusb_alloc_transfer(0);
+  bool isochronous = type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
+  struct libusb_transfer *transfer =
+      libusb_alloc_transfer(isochronous ? kNumIsoPackets : 0);
   int completed = 0;
   int r;
 
   if (!transfer)
     return LIBUSB_ERROR_NO_MEM;
 
-  libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
-    bulk_transfer_cb, &completed, timeout);
-  transfer->type = type;
+  switch (type) {
+    case LIBUSB_TRANSFER_TYPE_BULK:
+    case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+      libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
+                                transfer_cb, &completed, timeout);
+    case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+      libusb_fill_iso_transfer(transfer, dev_handle, endpoint, buffer, length,
+                               kNumIsoPackets, transfer_cb, &completed,
+                               timeout);
+      transfer->iso_packet_desc[0].length = length;
+    default:
+      LOG(FATAL, "unhandled transfer type %hhd\n", type);
+  }
 
   r = libusb_submit_transfer(transfer);
   if (r < 0) {
@@ -82,7 +100,8 @@ int do_sync_bulk_transfer(
     }
   }
 
-  *transferred = transfer->actual_length;
+  *transferred = isochronous ? transfer->iso_packet_desc[0].actual_length :
+      transfer->actual_length;
   switch (transfer->status) {
     case LIBUSB_TRANSFER_COMPLETED:
       r = 0;

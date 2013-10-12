@@ -216,11 +216,11 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
   int r;
 
   unsigned char transfer_type = LibUsbTransferType(transfer());
-  r = do_sync_bulk_transfer(libusb_context_,
-                            handle_, endpoint_address_and_direction(),
-                            static_cast<unsigned char *>(p), length,
-                            &transferred, timeout, transfer_type,
-                            quit);
+  r = do_sync_transfer(libusb_context_,
+                       handle_, endpoint_address_and_direction(),
+                       static_cast<unsigned char *>(p), length,
+                       &transferred, timeout, transfer_type,
+                       quit);
 
   switch (r) {
   case LIBUSB_SUCCESS:
@@ -236,20 +236,25 @@ UsbEndpoint::IoStatus PhysicalUsbInEndpoint::DoRead(
   case LIBUSB_ERROR_TIMEOUT:
     LOG(DEBUG, "libusb_%s_transfer timeout\n",
         TransferTypeName(transfer()));
+    out->Resize(0);
     return kTimeout;
   case LIBUSB_ERROR_IO:
     LOG(DEBUG, "device I/O error\n");
+    out->Resize(0);
     return kFail;
   case LIBUSB_ERROR_NO_DEVICE:
     LOG(DEBUG, "device disconnected\n");
+    out->Resize(0);
     return kNoDevice;
   case LIBUSB_ERROR_OTHER:
     LOG(INFO, "libusb_%s_transfer other error\n", TransferTypeName(transfer()));
+    out->Resize(0);
     return kUnknown;
   default:
     // Most of these are more esoteric.
     LOG(INFO, "libusb_%s_transfer failed with %d: %s\n",
         TransferTypeName(transfer()), r, libusb_error_name(r));
+    out->Resize(0);
     return kFail;
   }
 }
