@@ -111,6 +111,13 @@ class VelocityDrivetrainModel(object):
 
     self.K = controls.dplace(self.A, self.B, [0.3, 0.3])
 
+    self.G_high = self._drivetrain.G_high
+    self.G_low = self._drivetrain.G_low
+    self.R = self._drivetrain.R
+    self.r = self._drivetrain.r
+    self.Kv = self._drivetrain.Kv
+    self.Kt = self._drivetrain.Kt
+
 
 class VelocityDrivetrain(object):
   def __init__(self):
@@ -149,20 +156,9 @@ class VelocityDrivetrain(object):
 
     self.xfiltered = 0.0
 
-    # U = self.K[0, :].sum() * (R - xfiltered) + self.FF[0, :].sum() * R
-    # throttle * 12.0 = (self.K[0, :].sum() + self.FF[0, :].sum()) * R
-    #                   - self.K[0, :].sum() * xfiltered
-
-    # R = (throttle * 12.0 + self.K[0, :].sum() * xfiltered) /
-    #     (self.K[0, :].sum() + self.FF[0, :].sum())
-
-    # U = (K + FF) * R - K * X
-    # (K + FF) ^-1 * (U + K * X) = R
-
-    # (K + FF) ^-1 * (throttle * 12.0 + K * throttle * self.vmax) = R
-    # Xn+1 = A * X + B * (throttle * 12.0)
-
-    # xfiltered = self.A[0, :].sum() + B[0, :].sum() * throttle * 12.0
+    # ttrust is the comprimise between having full throttle negative inertia,
+    # and having no throttle negative inertia.  A value of 0 is full throttle
+    # inertia.  A value of 1 is no throttle negative inertia.
     self.ttrust = 1.0
 
     self.left_high = False
@@ -180,19 +176,79 @@ class VelocityDrivetrain(object):
       else:
         return self.drivetrain_low_low
 
+  def ComputeGear(self, wheel_velocity, should_print=False, current_gear=False, gear_name=None):
+    high_omega = (wheel_velocity / self.CurrentDrivetrain().G_high /
+                  self.CurrentDrivetrain().r)
+    low_omega = (wheel_velocity / self.CurrentDrivetrain().G_low /
+                 self.CurrentDrivetrain().r)
+    high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
+                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+    low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
+                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+    high_power = high_torque * high_omega
+    low_power = low_torque * low_omega
+    if should_print:
+      print gear_name, "High omega", high_omega, "Low omega", low_omega
+      print gear_name, "High torque", high_torque, "Low torque", low_torque
+      print gear_name, "High power", high_power, "Low power", low_power
+      if (high_power > low_power) != current_gear:
+        if high_power > low_power:
+          print gear_name, "Shifting to high"
+        else:
+          print gear_name, "Shifting to low"
+
+    return high_power > low_power
+
   def Update(self, throttle, steering):
+    # Shift into the gear which sends the most power to the floor.
+    # This is the same as sending the most torque down to the floor at the
+    # wheel.
+
+    self.left_high = self.ComputeGear(self.X[0, 0], should_print=True, current_gear=self.left_high, gear_name="left")
+    self.right_high = self.ComputeGear(self.X[1, 0], should_print=True, current_gear=self.right_high, gear_name="right")
+
+    FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
+
+    # Filter the throttle to provide a nicer response.
+
+    # TODO(austin): fn
     # Invert the plant to figure out how the velocity filter would have to work
     # out in order to filter out the forwards negative inertia.
-    # This math assumes that the left and right power and velocity are equals,
-    # and that the plant is the same on the left and right.
+    # This math assumes that the left and right power and velocity are equal.
 
-    # TODO(aschuh): Rederive this assuming G_left != G_right.
-    # TODO(aschuh): Figure out the correct throttle if we start in low gear and
-    # then let it shift up.  This isn't it.
-    fvel = ((throttle * 12.0 + self.ttrust * self.CurrentDrivetrain().K[0, :].sum() * self.xfiltered)
-            / (self.ttrust * self.CurrentDrivetrain().K[0, :].sum() + self.CurrentDrivetrain().FF[0, :].sum()))
-    self.xfiltered = (self.CurrentDrivetrain().A[0, :].sum() * self.xfiltered +
-                      self.CurrentDrivetrain().B[0, :].sum() * throttle * 12.0)
+    # The throttle filter should filter such that the motor in the highest gear
+    # should be controlling the time constant.
+    # Do this by finding the index of FF that has the lowest value, and computing
+    # the sums using that index.
+    FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
+    max_FF_sum_index = numpy.argmax(FF_sum)
+    max_FF_sum = FF_sum[max_FF_sum_index, 0]
+    max_K_sum = self.CurrentDrivetrain().K[max_FF_sum_index, :].sum()
+    max_A_sum = self.CurrentDrivetrain().A[max_FF_sum_index, :].sum()
+    max_B_sum = self.CurrentDrivetrain().B[max_FF_sum_index, :].sum()
+    # Compute the FF sum for high gear.
+    high_max_FF_sum = self.drivetrain_high_high.FF[0, :].sum()
+
+    # U = self.K[0, :].sum() * (R - xfiltered) + self.FF[0, :].sum() * R
+    # throttle * 12.0 = (self.K[0, :].sum() + self.FF[0, :].sum()) * R
+    #                   - self.K[0, :].sum() * xfiltered
+
+    # R = (throttle * 12.0 + self.K[0, :].sum() * xfiltered) /
+    #     (self.K[0, :].sum() + self.FF[0, :].sum())
+
+    # U = (K + FF) * R - K * X
+    # (K + FF) ^-1 * (U + K * X) = R
+
+    # Xn+1 = A * X + B * (throttle * 12.0)
+    # xfiltered = self.A[0, :].sum() + B[0, :].sum() * throttle * 12.0
+
+    # Scale throttle by max_FF_sum / high_max_FF_sum.  This will make low gear
+    # have the same velocity goal as high gear, and so that the robot will hold
+    # the same speed for the same throttle for all gears.
+    adjusted_ff_voltage = numpy.clip(throttle * 12.0 * max_FF_sum / high_max_FF_sum, -12.0, 12.0)
+    fvel = ((adjusted_ff_voltage + self.ttrust * max_K_sum * self.xfiltered)
+            / (self.ttrust * max_K_sum + max_FF_sum))
+    self.xfiltered = (max_A_sum * self.xfiltered + max_B_sum * adjusted_ff_voltage)
 
     # Constant radius means that angualar_velocity / linear_velocity = constant.
     # Compute the left and right velocities.
@@ -236,6 +292,7 @@ class VelocityDrivetrain(object):
 
     self.U = numpy.clip(self.U_ideal, self.U_min, self.U_max)
     self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
+    print "U is", self.U[0, 0], self.U[1, 0]
 
 
 def main(argv):
@@ -247,22 +304,34 @@ def main(argv):
   ur_plot = []
   radius_plot = []
   t_plot = []
-  for t in numpy.arange(0, 1.5, drivetrain.dt):
-    if t < 0.5:
-      drivetrain.Update(throttle=0.60, steering=0.3)
-    elif t < 1.0:
-      if t > 0.7:
-        drivetrain.left_high = False
-        drivetrain.right_high = True
+  left_gear_plot = []
+  right_gear_plot = []
+  drivetrain.left_high = True
+  drivetrain.right_high = True
 
+  if drivetrain.left_high:
+    print "Left is high"
+  else:
+    print "Left is low"
+  if drivetrain.right_high:
+    print "Right is high"
+  else:
+    print "Right is low"
+
+  for t in numpy.arange(0, 2.0, drivetrain.dt):
+    if t < 1.0:
+      drivetrain.Update(throttle=0.60, steering=0.3)
+    elif t < 1.5:
       drivetrain.Update(throttle=0.60, steering=-0.3)
     else:
-      drivetrain.Update(throttle=0.00, steering=0.3)
+      drivetrain.Update(throttle=0.60, steering=0.3)
     t_plot.append(t)
     vl_plot.append(drivetrain.X[0, 0])
     vr_plot.append(drivetrain.X[1, 0])
     ul_plot.append(drivetrain.U[0, 0])
     ur_plot.append(drivetrain.U[1, 0])
+    left_gear_plot.append(drivetrain.left_high * 2.0 - 10.0)
+    right_gear_plot.append(drivetrain.right_high * 2.0 - 10.0)
 
     fwd_velocity = (drivetrain.X[1, 0] + drivetrain.X[0, 0]) / 2
     turn_velocity = (drivetrain.X[1, 0] - drivetrain.X[0, 0])
@@ -276,6 +345,8 @@ def main(argv):
   pylab.plot(t_plot, ul_plot, label='left power')
   pylab.plot(t_plot, ur_plot, label='right power')
   pylab.plot(t_plot, radius_plot, label='radius')
+  pylab.plot(t_plot, left_gear_plot, label='left_gear')
+  pylab.plot(t_plot, right_gear_plot, label='right_gear')
   pylab.legend()
   pylab.show()
   return 0
