@@ -6,6 +6,7 @@
 
 #include "digital.h"
 #include "analog.h"
+#include "gyro.h"
 
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
@@ -474,7 +475,9 @@ void encoder_init(void) {
 }
 
 void fillSensorPacket(struct DataStruct *packet) {
-  packet->gyro_angle = gyro_angle;
+  packet->gyro_angle = gyro_output.angle;
+  packet->old_gyro_reading = gyro_output.last_reading_bad;
+  packet->bad_gyro = gyro_output.gyro_bad;
 
   packet->dip_switch0 = dip_switch(0);
   packet->dip_switch1 = dip_switch(1);

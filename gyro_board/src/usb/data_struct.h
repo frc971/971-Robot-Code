@@ -5,6 +5,8 @@
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
 #pragma pack(push, 1)
+// Be careful with declaration order in here. ARM doesn't like unaligned
+// accesses!
 struct DATA_STRUCT_NAME {
   int64_t gyro_angle;
 
@@ -26,8 +28,13 @@ struct DATA_STRUCT_NAME {
           uint8_t dip_switch1 : 1;
           uint8_t dip_switch2 : 1;
           uint8_t dip_switch3 : 1;
+          // If the current gyro_angle has been not updated because of a bad
+          // reading from the sensor.
+          uint8_t old_gyro_reading : 1;
+          // If we're not going to get any more good gyro_angles.
+          uint8_t bad_gyro : 1;
         };
-        uint8_t dip_switches;
+        uint8_t base_status;
       };
     };
     uint16_t header;

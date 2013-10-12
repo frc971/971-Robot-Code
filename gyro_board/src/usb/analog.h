@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-extern int64_t gyro_angle;
-
 void analog_init(void);
 int analog(int channel);
 
