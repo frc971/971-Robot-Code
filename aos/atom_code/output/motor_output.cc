@@ -17,13 +17,19 @@ const MotorOutput::MotorControllerBounds MotorOutput::kTalonBounds
 
 uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
   if (value == 0.0) return kCenter;
+  if (value > 12.0) return Map(12.0);
+  if (value < -12.0) return Map(-12.0);
+  uint8_t r;
   if (value > 0.0) {
-    return static_cast<uint8_t>(kDeadbandMax + (value * (kMax - kDeadbandMax)) +
-                                0.5);
+    r = static_cast<uint8_t>(kDeadbandMax + (value * (kMax - kDeadbandMax)) +
+                             0.5);
   } else {
-    return static_cast<uint8_t>(kDeadbandMin + (value * (kDeadbandMin - kMin)) +
-                                0.5);
+    r = static_cast<uint8_t>(kDeadbandMin + (value * (kDeadbandMin - kMin)) +
+                             0.5);
   }
+  if (r < kMin) return kMin;
+  if (r > kMax) return kMax;
+  return r;
 }
 
 MotorOutput::MotorOutput()

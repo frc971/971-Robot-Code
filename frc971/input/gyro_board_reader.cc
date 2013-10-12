@@ -15,6 +15,8 @@
 #include "frc971/input/gyro_board_data.h"
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/queues/GyroAngle.q.h"
+#include "frc971/constants.h"
+#include "aos/common/messages/RobotState.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -31,8 +33,17 @@ namespace frc971 {
 namespace {
 
 inline double drivetrain_translate(int32_t in) {
+  int pinion_size;
+  if (::aos::robot_state.get() == NULL) {
+    if (!::aos::robot_state.FetchNext()) {
+      LOG(WARNING, "couldn't fetch robot state\n");
+      return 0;
+    }
+  }
+  if (!constants::drivetrain_gearbox_pinion(&pinion_size)) return 0;
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (19.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/ *
+      (pinion_size / 50.0) /*output reduction*/ *
+      (64.0 / 24.0) /*encoder gears*/ *
       (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
@@ -159,8 +170,14 @@ class GyroBoardReader {
   }
 
   void ProcessData(GyroBoardData *data) {
-    data->NetworkToHost();
-    LOG(DEBUG, "processing a packet\n");
+    if (data->robot_id != 0) {
+      LOG(ERROR, "gyro board sent data for robot id %hhd!"
+          " dip switches are %x\n", data->robot_id, data->dip_switches);
+      return;
+    } else {
+      LOG(DEBUG, "processing a packet dip switches %x\n", data->dip_switches);
+    }
+
     static ::aos::time::Time last_time = ::aos::time::Time::Now();
     if ((last_time - ::aos::time::Time::Now()) >
         ::aos::time::Time::InMS(0.00205)) {
@@ -171,59 +188,61 @@ class GyroBoardReader {
         .angle(data->gyro_angle / 16.0 / 1000.0 / 180.0 * M_PI)
         .Send();
 
-    UpdateWrappingCounter(data->top_rise_count,
+    UpdateWrappingCounter(data->main.top_rise_count,
         &last_top_rise_count_, &top_rise_count_);
-    UpdateWrappingCounter(data->top_fall_count,
+    UpdateWrappingCounter(data->main.top_fall_count,
         &last_top_fall_count_, &top_fall_count_);
-    UpdateWrappingCounter(data->bottom_rise_count,
+    UpdateWrappingCounter(data->main.bottom_rise_count,
         &last_bottom_rise_count_, &bottom_rise_count_);
-    UpdateWrappingCounter(data->bottom_fall_delay_count,
+    UpdateWrappingCounter(data->main.bottom_fall_delay_count,
         &last_bottom_fall_delay_count_, &bottom_fall_delay_count_);
-    UpdateWrappingCounter(data->bottom_fall_count,
+    UpdateWrappingCounter(data->main.bottom_fall_count,
         &last_bottom_fall_count_, &bottom_fall_count_);
-    UpdateWrappingCounter(data->wrist_rise_count,
+    UpdateWrappingCounter(data->main.wrist_rise_count,
         &last_wrist_rise_count_, &wrist_rise_count_);
-    UpdateWrappingCounter(data->shooter_angle_rise_count,
+    UpdateWrappingCounter(data->main.shooter_angle_rise_count,
         &last_shooter_angle_rise_count_, &shooter_angle_rise_count_);
 
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(data->right_drive))
-        .left_encoder(-drivetrain_translate(data->left_drive))
+        .right_encoder(drivetrain_translate(data->main.right_drive))
+        .left_encoder(-drivetrain_translate(data->main.left_drive))
         .Send();
 
     wrist.position.MakeWithBuilder()
-        .pos(wrist_translate(data->wrist))
-        .hall_effect(data->wrist_hall_effect)
-        .calibration(wrist_translate(data->capture_wrist_rise))
+        .pos(wrist_translate(data->main.wrist))
+        .hall_effect(data->main.wrist_hall_effect)
+        .calibration(wrist_translate(data->main.capture_wrist_rise))
         .Send();
 
     angle_adjust.position.MakeWithBuilder()
-        .angle(angle_adjust_translate(data->shooter_angle))
-        .bottom_hall_effect(data->angle_adjust_bottom_hall_effect)
+        .angle(angle_adjust_translate(data->main.shooter_angle))
+        .bottom_hall_effect(data->main.angle_adjust_bottom_hall_effect)
         .middle_hall_effect(false)
         .bottom_calibration(angle_adjust_translate(
-                data->capture_shooter_angle_rise))
+                data->main.capture_shooter_angle_rise))
         .middle_calibration(angle_adjust_translate(
                 0))
         .Send();
 
     shooter.position.MakeWithBuilder()
-        .position(shooter_translate(data->shooter))
+        .position(shooter_translate(data->main.shooter))
         .Send();
 
     index_loop.position.MakeWithBuilder()
-        .index_position(index_translate(data->indexer))
-        .top_disc_detect(data->top_disc)
+        .index_position(index_translate(data->main.indexer))
+        .top_disc_detect(data->main.top_disc)
         .top_disc_posedge_count(top_rise_count_)
-        .top_disc_posedge_position(index_translate(data->capture_top_rise))
+        .top_disc_posedge_position(index_translate(data->main.capture_top_rise))
         .top_disc_negedge_count(top_fall_count_)
-        .top_disc_negedge_position(index_translate(data->capture_top_fall))
-        .bottom_disc_detect(data->bottom_disc)
+        .top_disc_negedge_position(index_translate(data->main.capture_top_fall))
+        .bottom_disc_detect(data->main.bottom_disc)
         .bottom_disc_posedge_count(bottom_rise_count_)
         .bottom_disc_negedge_count(bottom_fall_count_)
         .bottom_disc_negedge_wait_position(index_translate(
-                data->capture_bottom_fall_delay))
+                data->main.capture_bottom_fall_delay))
         .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
+        .loader_top(data->loader_top)
+        .loader_bottom(data->loader_bottom)
         .Send();
   }
 

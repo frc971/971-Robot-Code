@@ -35,6 +35,8 @@ SOURCES=main.c \
 	FreeRTOS/portable/MemMang/heap_2.c \
 	alloc.c \
 	analog.c \
+	digital.c \
+	encoder.c \
 	FreeRTOS/portable/GCC/ARM_CM3/port.c \
 	FreeRTOS/tasks.c \
 	FreeRTOS/list.c \
@@ -44,7 +46,7 @@ SOURCES=main.c \
 	LPCUSB/usbcontrol.c \
 	LPCUSB/USB_SENSOR_STREAM.c \
 	LPCUSB/usbhw_lpc.c \
-	spi.c \
+	gyro.c \
 	LPCUSB/usbstdreq.c
 
 all: $(NAME).hex
@@ -59,7 +61,13 @@ run: deploy
 	$(FLASHER) -termonly -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
 
 deploy: all $(NAME).hex
-	$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+	# TODO(aschuh): Figure out why the verify fails (or remove it) and then
+	# remove the -.
+	-$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+
+reset: deploy
+	# Echo an ESC into it to immediately exit the terminal.
+	`which echo` -e '\e' | $(FLASHER) -termonly -control $(PORT) $(SPEED) $(OSC)
 
 cat:
 	@cd ../../bin; python serial_looper.py

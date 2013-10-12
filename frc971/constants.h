@@ -10,8 +10,8 @@ namespace constants {
 // store their output value into and assume that aos::robot_state->get() is
 // not null and is correct.  They return true on success.
 
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 5971;
+const uint16_t kCompTeamNumber = 5971;
+const uint16_t kPracticeTeamNumber = 971;
 
 // Sets *angle to how many radians from horizontal to the location of interest.
 bool wrist_hall_effect_start_angle(double *angle);
@@ -42,6 +42,10 @@ bool angle_adjust_zeroing_off_speed(double *speed);
 
 // Returns the deadband voltage to use.
 bool angle_adjust_deadband(double *voltage);
+
+// Sets *pinion to the number of teeth on the pinion that drives the drivetrain
+// wheels.
+bool drivetrain_gearbox_pinion(int *pinion);
 
 // Sets *center to how many pixels off center the vertical line
 // on the camera view is.

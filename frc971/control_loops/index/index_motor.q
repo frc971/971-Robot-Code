@@ -44,6 +44,11 @@ queue_group IndexLoop {
     // and a count of how many edges have been seen.
     int32_t top_disc_negedge_count;
     double top_disc_negedge_position;
+
+    // Whether the hall effects for the loader are triggered (have a magnet in
+	// front of them).
+	bool loader_top;
+	bool loader_bottom;
   };
 
   message Output {
@@ -72,6 +77,12 @@ queue_group IndexLoop {
     bool preloaded;
     // Indexer ready to accept more discs.
     bool ready_to_intake;
+	// True from when we're committed to shooting util after the disk is clear
+	// of the robot.
+	bool is_shooting;
+	// Goes false when we first get a disk and back true after we finish
+	// clearing.
+	bool hopper_clear;
   };
 
   queue Goal goal;
