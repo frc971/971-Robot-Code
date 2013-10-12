@@ -84,10 +84,11 @@ class GyroSensorUnpacker :
   void UnpackFrom(GyroBoardData *data) {
     if (data->robot_id != 0) {
       LOG(ERROR, "gyro board sent data for robot id %hhd!"
-          " dip switches are %x\n", data->robot_id, data->dip_switches);
+          " dip switches are %x\n", data->robot_id, data->base_status & 0xF);
       return;
     } else {
-      LOG(DEBUG, "processing a packet dip switches %x\n", data->dip_switches);
+      LOG(DEBUG, "processing a packet dip switches %x\n",
+          data->base_status & 0xF);
     }
 
     static ::aos::time::Time last_time = ::aos::time::Time::Now();
@@ -153,8 +154,8 @@ class GyroSensorUnpacker :
         .bottom_disc_negedge_wait_position(index_translate(
                 data->main.capture_bottom_fall_delay))
         .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
-        .loader_top(data->loader_top)
-        .loader_bottom(data->loader_bottom)
+        .loader_top(data->main.loader_top)
+        .loader_bottom(data->main.loader_bottom)
         .Send();
   }
 
