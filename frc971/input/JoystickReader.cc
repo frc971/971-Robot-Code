@@ -182,9 +182,10 @@ class Reader : public ::aos::input::JoystickInput {
           // pretend like no button is pressed
         }
 #endif
+        // This shot is from 30'.
         shooter_goal->velocity = 360;
         if (!hopper_clear) wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.596;
+        angle_adjust_goal = 0.630;
       } else if (data.IsPressed(kMediumShot)) {
 #if 0
         shooter_goal->velocity = 375;
