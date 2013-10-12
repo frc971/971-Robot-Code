@@ -154,8 +154,6 @@ class VelocityDrivetrain(object):
         [[0.0],
          [0.0]])
 
-    self.xfiltered = 0.0
-
     # ttrust is the comprimise between having full throttle negative inertia,
     # and having no throttle negative inertia.  A value of 0 is full throttle
     # inertia.  A value of 1 is no throttle negative inertia.
@@ -199,19 +197,7 @@ class VelocityDrivetrain(object):
 
     return high_power > low_power
 
-  def Update(self, throttle, steering):
-    # Shift into the gear which sends the most power to the floor.
-    # This is the same as sending the most torque down to the floor at the
-    # wheel.
-
-    self.left_high = self.ComputeGear(self.X[0, 0], should_print=True, current_gear=self.left_high, gear_name="left")
-    self.right_high = self.ComputeGear(self.X[1, 0], should_print=True, current_gear=self.right_high, gear_name="right")
-
-    FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
-
-    # Filter the throttle to provide a nicer response.
-
-    # TODO(austin): fn
+  def FilterVelocity(self, throttle):
     # Invert the plant to figure out how the velocity filter would have to work
     # out in order to filter out the forwards negative inertia.
     # This math assumes that the left and right power and velocity are equal.
@@ -229,26 +215,37 @@ class VelocityDrivetrain(object):
     # Compute the FF sum for high gear.
     high_max_FF_sum = self.drivetrain_high_high.FF[0, :].sum()
 
-    # U = self.K[0, :].sum() * (R - xfiltered) + self.FF[0, :].sum() * R
+    # U = self.K[0, :].sum() * (R - x_avg) + self.FF[0, :].sum() * R
     # throttle * 12.0 = (self.K[0, :].sum() + self.FF[0, :].sum()) * R
-    #                   - self.K[0, :].sum() * xfiltered
+    #                   - self.K[0, :].sum() * x_avg
 
-    # R = (throttle * 12.0 + self.K[0, :].sum() * xfiltered) /
+    # R = (throttle * 12.0 + self.K[0, :].sum() * x_avg) /
     #     (self.K[0, :].sum() + self.FF[0, :].sum())
 
     # U = (K + FF) * R - K * X
     # (K + FF) ^-1 * (U + K * X) = R
 
-    # Xn+1 = A * X + B * (throttle * 12.0)
-    # xfiltered = self.A[0, :].sum() + B[0, :].sum() * throttle * 12.0
-
     # Scale throttle by max_FF_sum / high_max_FF_sum.  This will make low gear
     # have the same velocity goal as high gear, and so that the robot will hold
     # the same speed for the same throttle for all gears.
     adjusted_ff_voltage = numpy.clip(throttle * 12.0 * max_FF_sum / high_max_FF_sum, -12.0, 12.0)
-    fvel = ((adjusted_ff_voltage + self.ttrust * max_K_sum * self.xfiltered)
+    return ((adjusted_ff_voltage + self.ttrust * max_K_sum * (self.X[0, 0] + self.X[1, 0]) / 2.0)
             / (self.ttrust * max_K_sum + max_FF_sum))
-    self.xfiltered = (max_A_sum * self.xfiltered + max_B_sum * adjusted_ff_voltage)
+
+  def Update(self, throttle, steering):
+    # Shift into the gear which sends the most power to the floor.
+    # This is the same as sending the most torque down to the floor at the
+    # wheel.
+
+    self.left_high = self.ComputeGear(self.X[0, 0], should_print=True, current_gear=self.left_high, gear_name="left")
+    self.right_high = self.ComputeGear(self.X[1, 0], should_print=True, current_gear=self.right_high, gear_name="right")
+
+    FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
+
+    # Filter the throttle to provide a nicer response.
+
+    # TODO(austin): fn
+    fvel = self.FilterVelocity(throttle)
 
     # Constant radius means that angualar_velocity / linear_velocity = constant.
     # Compute the left and right velocities.
