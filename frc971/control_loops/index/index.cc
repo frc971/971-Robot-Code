@@ -1044,7 +1044,11 @@ void IndexMotor::RunIteration(
 
   if (output) {
     output->intake_voltage = intake_voltage;
-    output->transfer_voltage = transfer_voltage;
+    if (goal->override_transfer) {
+      output->transfer_voltage = goal->transfer_voltage;
+    } else {
+      output->transfer_voltage = transfer_voltage;
+    }
     if (goal->override_index) {
       output->index_voltage = goal->index_voltage;
     } else {

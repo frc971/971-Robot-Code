@@ -52,6 +52,7 @@ const ButtonLocation kFire(3, 11);
 const ButtonLocation kIntake(3, 10);
 const ButtonLocation kForceFire(3, 12);
 const ButtonLocation kForceIndexUp(3, 9), kForceIndexDown(3, 7);
+const ButtonLocation kForceSpitOut(2, 11);
 
 const ButtonLocation kDeployHangers(3, 1);
 
@@ -228,13 +229,19 @@ class Reader : public ::aos::input::JoystickInput {
 
       const bool index_up = data.IsPressed(kForceIndexUp);
       const bool index_down = data.IsPressed(kForceIndexDown);
-      index_goal->override_index = index_up || index_down;
+      const bool spit_out = data.IsPressed(kForceSpitOut);
+      index_goal->override_index = index_up || index_down || spit_out;
+      index_goal->override_transfer = spit_out;
       if (index_up && index_down) {
         index_goal->index_voltage = 0.0;
       } else if (index_up) {
         index_goal->index_voltage = 12.0;
       } else if (index_down) {
         index_goal->index_voltage = -12.0;
+      }
+      if (spit_out) {
+        index_goal->index_voltage = -12.0;
+        index_goal->transfer_voltage = -12.0;
       }
 
       index_goal.Send();
