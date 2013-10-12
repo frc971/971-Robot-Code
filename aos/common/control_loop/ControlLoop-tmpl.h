@@ -9,16 +9,16 @@ namespace control_loops {
 
 // TODO(aschuh): Tests.
 
-template <class T, bool has_position>
-void ControlLoop<T, has_position>::ZeroOutputs() {
+template <class T, bool has_position, bool fail_no_position>
+void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
-template <class T, bool has_position>
-void ControlLoop<T, has_position>::Iterate() {
+template <class T, bool has_position, bool fail_no_position>
+void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   // Temporary storage for printing out inputs and outputs.
   char state[1024];
 
@@ -60,8 +60,10 @@ void ControlLoop<T, has_position>::Iterate() {
         }
       } else {
         LOG(ERROR, "Never had a position.\n");
-        ZeroOutputs();
-        return;
+        if (fail_no_position) {
+          ZeroOutputs();
+          return;
+        }
       }
     }
     if (position) {
@@ -112,8 +114,8 @@ void ControlLoop<T, has_position>::Iterate() {
   status.Send();
 }
 
-template <class T, bool has_position>
-void ControlLoop<T, has_position>::Run() {
+template <class T, bool has_position, bool fail_no_position>
+void ControlLoop<T, has_position, fail_no_position>::Run() {
   while (true) {
     time::SleepUntil(NextLoopTime());
     Iterate();

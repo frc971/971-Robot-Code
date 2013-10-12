@@ -899,7 +899,7 @@ void IndexMotor::RunIteration(
         break;
       }
     case LoaderState::LIFTING:
-      LOG(DEBUG, "Loader LIFTING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LIFTING %d %d\n", loader_countdown_, loader_timeout_);
       // Lifting the disc.
       loader_up_ = true;
       disc_clamped_ = true;
@@ -953,10 +953,8 @@ void IndexMotor::RunIteration(
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
       loader_timeout_ = 0;
-      --hopper_disc_count_;
-      ++shot_disc_count_;
     case LoaderState::LOWERING:
-      LOG(DEBUG, "Loader LOWERING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LOWERING %d %d\n", loader_countdown_, loader_timeout_);
       // Lowering the loader back down.
       loader_up_ = false;
       disc_clamped_ = false;
@@ -968,6 +966,8 @@ void IndexMotor::RunIteration(
           break;
         } else {
           loader_state_ = LoaderState::LOWERED;
+          --hopper_disc_count_;
+          ++shot_disc_count_;
         }
       } else {
         // Restart the countdown if it bounces back up or something.
@@ -1044,7 +1044,11 @@ void IndexMotor::RunIteration(
 
   if (output) {
     output->intake_voltage = intake_voltage;
-    output->transfer_voltage = transfer_voltage;
+    if (goal->override_transfer) {
+      output->transfer_voltage = goal->transfer_voltage;
+    } else {
+      output->transfer_voltage = transfer_voltage;
+    }
     if (goal->override_index) {
       output->index_voltage = goal->index_voltage;
     } else {
