@@ -63,17 +63,5 @@
         '<(AOS)/common/common.gyp:timing',
       ],
     },
-    {
-      'target_name': 'GyroReader',
-      'type': 'executable',
-      'sources': [
-        'GyroReader.cc',
-      ],
-      'dependencies': [
-        '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(AOS)/atom_code/atom_code.gyp:init',
-        '<(AOS)/build/aos.gyp:logging',
-      ],
-    },
   ],
 }
