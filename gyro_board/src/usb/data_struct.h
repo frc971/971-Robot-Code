@@ -1,6 +1,8 @@
 // This isn't really a header file. It's designed to be #included directly into
 // other code (possibly in a namespace or whatever), so it doesn't have include
 // guards.
+// This means that it can not #include anything else because it (sometimes) gets
+// #included inside a namespace.
 // In the gyro board code, fill_packet.h #includes this file.
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
