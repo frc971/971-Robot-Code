@@ -40,6 +40,10 @@ struct DATA_STRUCT_NAME {
     uint16_t header;
   };
 
+  // This is a counter that gets incremented with each packet sent (and wraps
+  // around when it reaches 255).
+  uint8_t sequence;
+
   union {
     struct {
       union {
