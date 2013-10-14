@@ -1,7 +1,5 @@
 #include "digital.h"
 
-#include "FreeRTOS.h"
-
 inline int readGPIO_inline(int major, int minor) {
   switch (major) {
     case 0:
@@ -13,19 +11,6 @@ inline int readGPIO_inline(int major, int minor) {
     default:
       return -1;
   }
-}
-
-int digital(int channel) {
-  if (channel < 1) {
-    return -1;
-  } else if (channel < 7) {
-    int chan = channel + 3;
-    return readGPIO(GPIO0, chan);
-  } else if (channel < 13) {
-    int chan = channel - 7;
-    return readGPIO(GPIO2, chan);
-  }
-  return -1;
 }
 
 int dip_switch(int channel) {

@@ -10,7 +10,6 @@
 #include "flash.h"
 #include "partest.h"
 #include "analog.h"
-#include "spi.h"
 #include "LPCUSB/usbapi.h"
 #include "CAN.h"
 

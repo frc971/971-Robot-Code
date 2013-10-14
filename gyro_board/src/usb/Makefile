@@ -46,7 +46,7 @@ SOURCES=main.c \
 	LPCUSB/usbcontrol.c \
 	LPCUSB/USB_SENSOR_STREAM.c \
 	LPCUSB/usbhw_lpc.c \
-	spi.c \
+	gyro.c \
 	LPCUSB/usbstdreq.c
 
 all: $(NAME).hex
