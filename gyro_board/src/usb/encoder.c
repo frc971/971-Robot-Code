@@ -10,6 +10,9 @@
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
+// How long to wait for a revolution of the shooter wheel (on the third robot)
+// before said wheel is deemed "stopped". (In secs)
+static const uint8_t kWheelStopThreshold = 1;
 
 #define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
@@ -61,6 +64,44 @@ void EINT2_IRQHandler(void) {
   } else {
     ++encoder1_val;
   }
+}
+
+static inline void reset_TC(void) {
+  TIM3->TCR |= (1 << 1); // Put it into reset.
+  while (TIM3->TC != 0) { // Wait for reset.
+    continue;
+  }
+  TIM3->TCR = 1; // Take it out of reset + make sure it's enabled.
+}
+
+// TIM3
+uint32_t shooter_cycle_ticks;
+void TIMER3_IRQHandler(void) {
+  // Apparently, this handler runs regardless of a match or capture event.
+  if (TIM3->IR & (1 << 4)) {
+    // Capture
+    TIM3->IR = (1 << 3); // Clear the interrupt.
+    
+    shooter_cycle_ticks = TIM3->CR0;
+  
+    reset_TC();
+  } else if (TIM3->IR & 1) {
+    // Match
+    TIM3->IR = 1; // Clear the interrupt
+
+    // Assume shooter is stopped.
+    shooter_cycle_ticks = 0;
+
+    // Disable timer.
+    TIM3->TCR = 0;
+  } else {
+    // TODO (danielp): This should not happen.
+    // Indicate that something strange occurred, and perhaps clear interrupts.
+  }
+
+  // It will only handle one interrupt per run.
+  // If there is another interrupt pending, it won't be cleared, and the ISR 
+  // will be run again to handle it.
 }
 
 // TODO(brians): Have this indicate some kind of error instead of just looping
@@ -272,6 +313,13 @@ static void ShooterHallRise(void) {
   ++shooter_angle_rise_count;
   capture_shooter_angle_rise = encoder2_val; 
 }
+static void ShooterPhotoFall(void) {
+  GPIOINT->IO0IntClr = (1 << 23);
+  // We reset TC to make sure we don't get a crap
+  // value from CR0 when the capture interrupt occurs
+  // if the shooter is just starting up again.
+  reset_TC();
+}
 
 // Count leading zeros.
 // Returns 0 if bit 31 is set etc.
@@ -292,7 +340,7 @@ inline static void IRQ_Dispatch(void) {
     Encoder5AFall,     // index 1: P2.2 Fall     #bit 30  //Encoder 5 A  //Dio 9
     Encoder4BFall,     // index 2: P2.1 Fall     #bit 29  //Encoder 4 B  //Dio 8
     Encoder4AFall,     // index 3: P2.0 Fall     #bit 28  //Encoder 4 A  //Dio 7
-    NoGPIO,            // index 4: NO GPIO       #bit 27
+    ShooterPhotoFall,  // index 4: P0.23 Fall    #bit 27  //Bot3 Shooter
     Encoder2AFall,     // index 5: P0.22 Fall    #bit 26  //Encoder 2 A
     Encoder2BFall,     // index 6: P0.21 Fall    #bit 25  //Encoder 2 B
     Encoder3AFall,     // index 7: P0.20 Fall    #bit 24  //Encoder 3 A
@@ -431,6 +479,28 @@ void encoder_init(void) {
   NVIC_EnableIRQ(EINT3_IRQn);
 
   if (is_bot3) {
+    // Set up timer for bot3 photosensor.
+    // Make sure timer three is powered.
+    SC->PCONP |= (1 << 23);
+    // We don't need all the precision the CCLK can provide.
+    // We'll use CCLK/8. (12.5 mhz).
+    SC->PCLKSEL1 |= (0x3 << 14);
+    // Use timer prescale to get that freq down to 500 hz.
+    TIM3->PR = 25000;
+    // Select capture 3.0 function on pin 0.23.
+    PINCON->PINSEL1 |= (0x3 << 14);
+    // Set timer to capture and interrupt on rising edge.
+    TIM3->CCR = 0x5;
+    // Set up match interrupt.
+    TIM3->MR0 = kWheelStopThreshold * 500;
+    TIM3->MCR = 1;
+    // Enable timer IRQ, and make it lower priority than the encoders.
+    NVIC_SetPriority(TIMER3_IRQn, 1);
+    NVIC_EnableIRQ(TIMER3_IRQn);
+    // Set up GPIO interrupt on other edge.
+    NVIC_DisableIRQ(EINT3_IRQn);
+    GPIOINT->IO0IntEnF |= (1 << 23);
+    NVIC_EnableIRQ(EINT3_IRQn);
   } else {  // is main robot
     xTaskCreate(vDelayCapture,
                 (signed char *) "SENSORs",
