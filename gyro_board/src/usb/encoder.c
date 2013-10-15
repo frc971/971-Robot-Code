@@ -87,7 +87,7 @@ static inline void reset_TC(void) {
 }
 
 // TIM3
-uint32_t shooter_cycle_ticks;
+volatile uint32_t shooter_cycle_ticks;
 void TIMER3_IRQHandler(void) {
   // Apparently, this handler runs regardless of a match or capture event.
   if (TIM3->IR & (1 << 4)) {
@@ -440,40 +440,7 @@ void encoder_init(void) {
   QEI->QEICONF = 0x00000004;
   // Wrap back to 0 when we wrap the int and vice versa.
   QEI->QEIMAXPOS = 0xFFFFFFFF;
-
-  // Set up encoder 1.
-  // Make GPIOs 2.11 and 2.12 trigger EINT1 and EINT2 (respectively).
-  // PINSEL4[23:22] = {0 1}
-  // PINSEL4[25:24] = {0 1}
-  PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 22)) | (0x1 << 22);
-  PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 24)) | (0x1 << 24);
-  // Clear the interrupt flags for EINT1 and EINT2 (0x6 = 0b0110).
-  SC->EXTMODE = 0x6;
-  SC->EXTINT = 0x6;
-  NVIC_EnableIRQ(EINT1_IRQn);
-  NVIC_EnableIRQ(EINT2_IRQn);
-  encoder1_val = 0;
-
-  // Set up encoder 2.
-  GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 12);
-  PINCON->PINSEL1 &= ~(0x3 << 10);
-  encoder2_val = 0;
-
-  // Set up encoder 3.
-  GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 8);
-  PINCON->PINSEL1 &= ~(0x3 << 6);
-  encoder3_val = 0;
-
+  
   // Set up encoder 4.
   GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
   GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
@@ -520,7 +487,41 @@ void encoder_init(void) {
     NVIC_DisableIRQ(EINT3_IRQn);
     GPIOINT->IO0IntEnF |= (1 << 23);
     NVIC_EnableIRQ(EINT3_IRQn);
+
   } else {  // is main robot
+    // Set up encoder 1.
+    // Make GPIOs 2.11 and 2.12 trigger EINT1 and EINT2 (respectively).
+    // PINSEL4[23:22] = {0 1}
+    // PINSEL4[25:24] = {0 1}
+    PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 22)) | (0x1 << 22);
+    PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 24)) | (0x1 << 24);
+    // Clear the interrupt flags for EINT1 and EINT2 (0x6 = 0b0110).
+    SC->EXTMODE = 0x6;
+    SC->EXTINT = 0x6;
+    NVIC_EnableIRQ(EINT1_IRQn);
+    NVIC_EnableIRQ(EINT2_IRQn);
+    encoder1_val = 0;
+
+    // Set up encoder 2.
+    GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 12);
+    PINCON->PINSEL1 &= ~(0x3 << 10);
+    encoder2_val = 0;
+
+    // Set up encoder 3.
+    GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 8);
+    PINCON->PINSEL1 &= ~(0x3 << 6);
+    encoder3_val = 0;
+
     xTaskCreate(vDelayCapture,
                 (signed char *) "SENSORs",
                 configMINIMAL_STACK_SIZE + 100,
@@ -560,14 +561,17 @@ void fillSensorPacket(struct DataStruct *packet) {
   // because disabling and enabling is cheap (2 instructions) and we really rely
   // on low interrupt latencies.
 
+  packet->main.left_drive = encoder5_val;
+  packet->main.right_drive = encoder4_val;
+
   if (is_bot3) {
     packet->robot_id = 1;
+
+    packet->bot3.shooter_cycle_ticks = shooter_cycle_ticks;
   } else {  // is main robot
     packet->robot_id = 0;
 
     packet->main.shooter = encoder1_val;
-    packet->main.left_drive = encoder5_val;
-    packet->main.right_drive = encoder4_val;
     packet->main.indexer = encoder3_val;
 
     NVIC_DisableIRQ(EINT3_IRQn);
