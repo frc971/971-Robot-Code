@@ -1,6 +1,7 @@
 #include <libusb-1.0/libusb.h>
-#include <memory>
 #include <string.h>
+
+#include <memory>
 
 #include "aos/common/inttypes.h"
 #include "aos/atom_code/init.h"

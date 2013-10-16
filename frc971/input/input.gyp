@@ -37,7 +37,6 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/sensors/sensors.gyp:sensor_receiver',
         '<(AOS)/common/glibusb/glibusb.gyp:glibusb',
         '<(AOS)/common/glibusb/glibusb.gyp:gbuffer',
       ],
