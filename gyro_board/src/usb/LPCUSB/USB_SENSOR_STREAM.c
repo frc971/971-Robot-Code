@@ -127,9 +127,7 @@ static const unsigned char abDescriptors[] = {
   DESC_ENDPOINT,
   ISOC_IN_EP,            // bEndpointAddress
   0x0D,              // bmAttributes = isoc, synchronous, data endpoint
-  // TODO(brians): I think that we can make this 1023 and then send
-  // smaller packets.
-  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
+  LE_WORD(1023),  // wMaxPacketSize
   0x01,            // bInterval
 
   // string descriptors
