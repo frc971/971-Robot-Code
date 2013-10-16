@@ -32,7 +32,7 @@ Time current_mock_time(0, 0);
 //  That would let me create a MockTime clock source.
 }
 
-void Time::EnableMockTime(const Time now) {
+void Time::EnableMockTime(const Time &now) {
   mock_time_enabled = true;
   MutexLocker time_mutex_locker(&time_mutex);
   current_mock_time = now;
@@ -43,12 +43,18 @@ void Time::DisableMockTime() {
   mock_time_enabled = false;
 }
 
-void Time::SetMockTime(const Time now) {
+void Time::SetMockTime(const Time &now) {
   MutexLocker time_mutex_locker(&time_mutex);
   if (!mock_time_enabled) {
     LOG(FATAL, "Tried to set mock time and mock time is not enabled\n");
   }
   current_mock_time = now;
+}
+
+void Time::IncrementMockTime(const Time &amount) {
+  static ::aos::Mutex mutex;
+  ::aos::MutexLocker sync(&mutex);
+  SetMockTime(Now() + amount);
 }
 
 Time Time::Now(clockid_t clock) {
@@ -58,9 +64,6 @@ Time Time::Now(clockid_t clock) {
   } else {
     timespec temp;
     if (clock_gettime(clock, &temp) != 0) {
-      // TODO(aschuh): There needs to be a pluggable low level logging interface
-      // so we can break this dependency loop.  This also would help during
-      // startup.
       LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
           static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
     }
@@ -107,6 +110,10 @@ Time &Time::operator*=(int32_t rhs) {
   sec_ *= rhs;  // better not overflow, or the result is just too big
   nsec_ = temp % kNSecInSec;
   sec_ += (temp - nsec_) / kNSecInSec;
+  if (nsec_ < 0) {
+    nsec_ += kNSecInSec;
+    sec_ -= 1;
+  }
   return *this;
 }
 const Time Time::operator*(int32_t rhs) const {
@@ -115,6 +122,10 @@ const Time Time::operator*(int32_t rhs) const {
 Time &Time::operator/=(int32_t rhs) {
   nsec_ = (sec_ % rhs) * (kNSecInSec / rhs) + nsec_ / rhs;
   sec_ /= rhs;
+  if (nsec_ < 0) {
+    nsec_ += kNSecInSec;
+    sec_ -= 1;
+  }
   return *this;
 }
 const Time Time::operator/(int32_t rhs) const {
@@ -128,6 +139,10 @@ Time &Time::operator%=(int32_t rhs) {
   const int wraps = nsec_ / kNSecInSec;
   sec_ = wraps;
   nsec_ -= kNSecInSec * wraps;
+  if (nsec_ < 0) {
+    nsec_ += kNSecInSec;
+    sec_ -= 1;
+  }
   return *this;
 }
 const Time Time::operator%(int32_t rhs) const {

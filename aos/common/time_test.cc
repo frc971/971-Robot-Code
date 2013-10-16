@@ -56,6 +56,9 @@ TEST(TimeTest, Addition) {
   EXPECT_EQ(MACRO_DARG(Time(57, 6500)), t + MACRO_DARG(Time(3, 6000)));
   EXPECT_EQ(MACRO_DARG(Time(50, 300)),
             t + MACRO_DARG(Time(-5, Time::kNSecInSec - 200)));
+  EXPECT_EQ(Time(-46, 500), t + Time(-100, 0));
+  EXPECT_EQ(Time(-47, Time::kNSecInSec - 500),
+            Time(-101, Time::kNSecInSec - 1000) + t);
 }
 TEST(TimeTest, Subtraction) {
   Time t(54, 500);
@@ -66,28 +69,55 @@ TEST(TimeTest, Subtraction) {
             t - MACRO_DARG(Time(0, Time::kNSecInSec - 100)));
   EXPECT_EQ(MACRO_DARG(Time(55, 800)),
             t - MACRO_DARG(Time(-2, Time::kNSecInSec - 300)));
+  EXPECT_EQ(Time(54, 5500), t - Time(-1, Time::kNSecInSec - 5000));
+  EXPECT_EQ(Time(-50, Time::kNSecInSec - 300),
+            Time(5, 200) - t);
 }
 
 TEST(TimeTest, Multiplication) {
   Time t(54, Time::kNSecInSec / 3);
   EXPECT_EQ(MACRO_DARG(Time(108, Time::kNSecInSec / 3 * 2)), t * 2);
   EXPECT_EQ(MACRO_DARG(Time(271, Time::kNSecInSec / 3 * 2 - 1)), t * 5);
+  EXPECT_EQ(Time(-109, Time::kNSecInSec / 3 + 1), t * -2);
+  EXPECT_EQ(Time(-55, Time::kNSecInSec / 3 * 2 + 1), t * -1);
+  EXPECT_EQ(Time(-218, Time::kNSecInSec / 3 * 2 + 2), (t * -1) * 4);
 }
-TEST(TimeTest, Division) {
-  EXPECT_EQ(MACRO_DARG(Time(5, Time::kNSecInSec / 10 * 4 + 50)),
-            MACRO_DARG(Time(54, 500)) / 10);
+TEST(TimeTest, DivisionByInt) {
+  EXPECT_EQ(Time(5, Time::kNSecInSec / 10 * 4 + 50), Time(54, 500) / 10);
+  EXPECT_EQ(Time(2, Time::kNSecInSec / 4 * 3),
+            Time(5, Time::kNSecInSec / 2) / 2);
+  EXPECT_EQ(Time(-3, Time::kNSecInSec / 4 * 3),
+            Time(-5, Time::kNSecInSec / 2) / 2);
+}
+TEST(TimeTest, DivisionByTime) {
+  EXPECT_DOUBLE_EQ(2, Time(10, 0) / Time(5, 0));
+  EXPECT_DOUBLE_EQ(9, Time(27, 0) / Time(3, 0));
+  EXPECT_DOUBLE_EQ(9.25, Time(37, 0) / Time(4, 0));
+  EXPECT_DOUBLE_EQ(5.25, Time(36, Time::kNSecInSec / 4 * 3) / Time(7, 0));
+  EXPECT_DOUBLE_EQ(-5.25, Time(-37, Time::kNSecInSec / 4) / Time(7, 0));
+  EXPECT_DOUBLE_EQ(-5.25, Time(36, Time::kNSecInSec / 4 * 3) / Time(-7, 0));
 }
 
 TEST(TimeTest, Comparisons) {
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) > Time(971, 253)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) >= Time(971, 253)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) < Time(971, 255)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) <= Time(971, 255)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) >= Time(971, 253)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) <= Time(971, 254)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) >= Time(971, 254)));
-  EXPECT_TRUE(MACRO_DARG(Time(972, 254) > Time(971, 254)));
-  EXPECT_TRUE(MACRO_DARG(Time(971, 254) < Time(972, 254)));
+  EXPECT_TRUE(Time(971, 254) > Time(971, 253));
+  EXPECT_TRUE(Time(971, 254) >= Time(971, 253));
+  EXPECT_TRUE(Time(971, 254) < Time(971, 255));
+  EXPECT_TRUE(Time(971, 254) <= Time(971, 255));
+  EXPECT_TRUE(Time(971, 254) >= Time(971, 253));
+  EXPECT_TRUE(Time(971, 254) <= Time(971, 254));
+  EXPECT_TRUE(Time(971, 254) >= Time(971, 254));
+  EXPECT_TRUE(Time(972, 254) > Time(971, 254));
+  EXPECT_TRUE(Time(971, 254) < Time(972, 254));
+
+  EXPECT_TRUE(Time(-971, 254) > Time(-971, 253));
+  EXPECT_TRUE(Time(-971, 254) >= Time(-971, 253));
+  EXPECT_TRUE(Time(-971, 254) < Time(-971, 255));
+  EXPECT_TRUE(Time(-971, 254) <= Time(-971, 255));
+  EXPECT_TRUE(Time(-971, 254) >= Time(-971, 253));
+  EXPECT_TRUE(Time(-971, 254) <= Time(-971, 254));
+  EXPECT_TRUE(Time(-971, 254) >= Time(-971, 254));
+  EXPECT_TRUE(Time(-972, 254) < Time(-971, 254));
+  EXPECT_TRUE(Time(-971, 254) > Time(-972, 254));
 }
 
 TEST(TimeTest, Within) {
@@ -95,54 +125,73 @@ TEST(TimeTest, Within) {
   EXPECT_FALSE(MACRO_DARG(Time(55, 5000).IsWithin(Time(55, 4900), 99)));
   EXPECT_TRUE(MACRO_DARG(Time(5, 0).IsWithin(Time(4, Time::kNSecInSec - 200),
                                              250)));
+  EXPECT_TRUE(Time(-5, Time::kNSecInSec - 200).IsWithin(Time(-4, 0), 250));
+  EXPECT_TRUE(Time(-5, 200).IsWithin(Time(-5, 0), 250));
 }
 
-TEST(TimeTest, Modulo) {
+TEST(TimeTest, Modulus) {
   EXPECT_EQ(MACRO_DARG(Time(0, Time::kNSecInSec / 10 * 2)),
             MACRO_DARG(Time(50, 0) % (Time::kNSecInSec / 10 * 3)));
+  EXPECT_EQ(Time(-1, Time::kNSecInSec / 10 * 8),
+            Time(-50, 0) % (Time::kNSecInSec / 10 * 3));
+  EXPECT_EQ(Time(-1, Time::kNSecInSec / 10 * 8),
+            Time(-50, 0) % (-Time::kNSecInSec / 10 * 3));
+  EXPECT_EQ(Time(0, Time::kNSecInSec / 10 * 2),
+            Time(50, 0) % (-Time::kNSecInSec / 10 * 3));
 }
 
+// TODO(brians): Finish tests for negatives from here on.
 TEST(TimeTest, InSeconds) {
   EXPECT_EQ(MACRO_DARG(Time(2, Time::kNSecInSec / 100 * 55 - 1)),
             Time::InSeconds(2.55));
+  EXPECT_EQ(MACRO_DARG(Time(-3, Time::kNSecInSec / 100 * 45)),
+            Time::InSeconds(-2.55));
 }
 
 TEST(TimeTest, ToSeconds) {
-  EXPECT_EQ(13.23, Time::InSeconds(13.23).ToSeconds());
+  EXPECT_DOUBLE_EQ(13.23, Time::InSeconds(13.23).ToSeconds());
+  EXPECT_NEAR(-13.23, Time::InSeconds(-13.23).ToSeconds(),
+              1.0 / Time::kNSecInSec * 2);
 }
-
-#ifdef __VXWORKS__
-TEST(TimeTest, ToTicks) {
-  EXPECT_EQ(sysClkRateGet() / 100,
-            MACRO_DARG(Time(0, Time::kNSecInSec / 100).ToTicks()));
-}
-TEST(TimeTest, InTicks) {
-  EXPECT_EQ(MACRO_DARG(Time(2, Time::kNSecInSec)),
-            Time::InTicks(sysClkRateGet() * 2.5));
-}
-#endif
 
 TEST(TimeTest, InMS) {
   Time t = Time::InMS(254971);
   EXPECT_EQ(254, t.sec());
   EXPECT_EQ(971000000, t.nsec());
+
+  Time t2 = Time::InMS(-254971);
+  EXPECT_EQ(-255, t2.sec());
+  EXPECT_EQ(Time::kNSecInSec - 971000000, t2.nsec());
+}
+
+TEST(TimeTest, ToMSec) {
+  EXPECT_EQ(254971, Time(254, 971000000).ToMSec());
+  EXPECT_EQ(-254971, Time(-255, Time::kNSecInSec - 971000000).ToMSec());
 }
 
 TEST(TimeTest, InNS) {
   Time t = Time::InNS(static_cast<int64_t>(973254111971ll));
   EXPECT_EQ(973, t.sec());
   EXPECT_EQ(254111971, t.nsec());
+
+  Time t2 = Time::InNS(static_cast<int64_t>(-973254111971ll));
+  EXPECT_EQ(-974, t2.sec());
+  EXPECT_EQ(Time::kNSecInSec - 254111971, t2.nsec());
 }
 
 TEST(TimeTest, InUS) {
   Time t = Time::InUS(254111971);
   EXPECT_EQ(254, t.sec());
   EXPECT_EQ(111971000, t.nsec());
+
+  Time t2 = Time::InUS(-254111971);
+  EXPECT_EQ(-255, t2.sec());
+  EXPECT_EQ(Time::kNSecInSec - 111971000, t2.nsec());
 }
 
-TEST(TimeTest, ToMSec) {
-  Time t(254, 971000000);
-  EXPECT_EQ(254971, t.ToMSec());
+TEST(TimeTest, ToUSec) {
+  EXPECT_EQ(254000971, Time(254, 971000).ToUSec());
+  EXPECT_EQ(-254000971, Time(-255, Time::kNSecInSec - 971000).ToUSec());
 }
 
 TEST(TimeTest, Abs) {
