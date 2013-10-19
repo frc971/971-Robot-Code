@@ -8,11 +8,7 @@
 #include "aos/common/sensors/sensor_unpacker.h"
 #include "aos/common/sensors/sensor_receiver.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/control_loops/wrist/wrist_motor.q.h"
-#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
-#include "frc971/control_loops/index/index_motor.q.h"
-#include "frc971/control_loops/shooter/shooter_motor.q.h"
+#include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/input/gyro_board_data.h"
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/queues/GyroAngle.q.h"
@@ -21,14 +17,11 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain;
-using ::frc971::control_loops::wrist;
-using ::frc971::control_loops::angle_adjust;
-using ::frc971::control_loops::shooter;
-using ::frc971::control_loops::index_loop;
+using ::bot3::control_loops::drivetrain;
 using ::frc971::sensors::gyro;
+using ::frc971::GyroBoardData;
 
-namespace frc971 {
+namespace bot3 {
 namespace {
 
 inline double drivetrain_translate(int32_t in) {
@@ -113,41 +106,6 @@ class GyroSensorUnpacker :
     drivetrain.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(data->right_drive))
         .left_encoder(-drivetrain_translate(data->left_drive))
-        .Send();
-
-    wrist.position.MakeWithBuilder()
-        .pos(wrist_translate(data->wrist))
-        .hall_effect(!data->wrist_hall_effect)
-        .calibration(wrist_translate(data->capture_wrist_rise))
-        .Send();
-
-    angle_adjust.position.MakeWithBuilder()
-        .angle(angle_adjust_translate(data->shooter_angle))
-        .bottom_hall_effect(!data->angle_adjust_bottom_hall_effect)
-        .middle_hall_effect(false)
-        .bottom_calibration(angle_adjust_translate(
-                data->capture_shooter_angle_rise))
-        .middle_calibration(angle_adjust_translate(
-                0))
-        .Send();
-
-    shooter.position.MakeWithBuilder()
-        .position(shooter_translate(data->shooter))
-        .Send();
-
-    index_loop.position.MakeWithBuilder()
-        .index_position(index_translate(data->indexer))
-        .top_disc_detect(!data->top_disc)
-        .top_disc_posedge_count(top_rise_count_)
-        .top_disc_posedge_position(index_translate(data->capture_top_rise))
-        .top_disc_negedge_count(top_fall_count_)
-        .top_disc_negedge_position(index_translate(data->capture_top_fall))
-        .bottom_disc_detect(!data->bottom_disc)
-        .bottom_disc_posedge_count(bottom_rise_count_)
-        .bottom_disc_negedge_count(bottom_fall_count_)
-        .bottom_disc_negedge_wait_position(index_translate(
-                data->capture_bottom_fall_delay))
-        .bottom_disc_negedge_wait_count(bottom_fall_delay_count_)
         .Send();
   }
 
@@ -287,12 +245,12 @@ class GyroSensorReceiver :
   LibUSB libusb_;
 };
 
-}  // namespace frc971
+}  // namespace bot3
 
 int main() {
   ::aos::Init();
-  ::frc971::GyroSensorUnpacker unpacker;
-  ::frc971::GyroSensorReceiver receiver(&unpacker);
+  ::bot3::GyroSensorUnpacker unpacker;
+  ::bot3::GyroSensorReceiver receiver(&unpacker);
   while (true) {
     receiver.RunIteration();
   }

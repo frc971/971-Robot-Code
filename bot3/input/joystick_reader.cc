@@ -7,21 +7,16 @@
 #include "aos/atom_code/input/joystick_input.h"
 #include "aos/common/logging/logging.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/autonomous/auto.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
-#include "frc971/autonomous/auto.q.h"
-#include "frc971/control_loops/index/index_motor.q.h"
-#include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/queues/CameraTarget.q.h"
 
-using ::frc971::control_loops::drivetrain;
+using ::bot3::control_loops::drivetrain;
 using ::frc971::control_loops::shifters;
 using ::frc971::sensors::gyro;
-using ::frc971::control_loops::index_loop;
-using ::frc971::control_loops::shooter;
-using ::frc971::control_loops::hangers;
-using ::frc971::vision::target_angle;
+// using ::frc971::vision::target_angle;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -47,8 +42,6 @@ const ButtonLocation kIntake(3, 10);
 const ButtonLocation kForceFire(3, 12);
 const ButtonLocation kForceIndexUp(3, 9), kForceIndexDown(3, 7);
 
-const ButtonLocation kDeployHangers(3, 1);
-
 class Reader : public ::aos::input::JoystickInput {
  public:
   static const bool kWristAlwaysDown = false;
@@ -64,11 +57,11 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.GetControlBit(ControlBit::kAutonomous)) {
       if (data.PosEdge(ControlBit::kEnabled)){
         LOG(INFO, "Starting auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder()
+        ::bot3::autonomous::autonomous.MakeWithBuilder()
             .run_auto(true).Send();
       } else if (data.NegEdge(ControlBit::kEnabled)) {
         LOG(INFO, "Stopping auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder()
+        ::bot3::autonomous::autonomous.MakeWithBuilder()
             .run_auto(false).Send();
       }
     } else {  // teleop
@@ -78,9 +71,11 @@ class Reader : public ::aos::input::JoystickInput {
       const double wheel = data.GetAxis(kSteeringWheel);
       const double throttle = -data.GetAxis(kDriveThrottle);
       LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
-      const double kThrottleGain = 1.0 / 2.5;
+      //const double kThrottleGain = 1.0 / 2.5;
       if (data.IsPressed(kDriveControlLoopEnable1) ||
           data.IsPressed(kDriveControlLoopEnable2)) {
+          LOG(INFO, "Control loop driving is currently not supported by this robot.\n");
+#if 0
         static double distance = 0.0;
         static double angle = 0.0;
         static double filtered_goal_distance = 0.0;
@@ -99,7 +94,6 @@ class Reader : public ::aos::input::JoystickInput {
         //const double gyro_angle = Gyro.View().angle;
         const double goal_theta = angle - wheel * 0.27;
         const double goal_distance = distance + throttle * kThrottleGain;
-        //TODO(danielp) Change this after a look in the CAD.
         const double robot_width = 22.0 / 100.0 * 2.54;
         const double kMaxVelocity = 0.6;
         if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance) {
@@ -115,6 +109,7 @@ class Reader : public ::aos::input::JoystickInput {
         is_high_gear = false;
 
         LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
+#endif
       }
       if (!(drivetrain.goal.MakeWithBuilder()
                 .steering(wheel)
@@ -131,7 +126,7 @@ class Reader : public ::aos::input::JoystickInput {
       if (data.PosEdge(kShiftLow)) {
         is_high_gear = true;
       }
-
+#if 0
       ::aos::ScopedMessagePtr<frc971::control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();
       shooter_goal->velocity = 0;
@@ -163,7 +158,7 @@ class Reader : public ::aos::input::JoystickInput {
         shooter_goal->velocity = 375;
       }
 
-      //TODO (daniel) Modify this for hopper.
+      //TODO (daniel) Modify this for hopper and shooter.
       ::aos::ScopedMessagePtr<frc971::control_loops::IndexLoop::Goal> index_goal =
           index_loop.goal.MakeMessage();
       if (data.IsPressed(kFire)) {
@@ -194,15 +189,8 @@ class Reader : public ::aos::input::JoystickInput {
 
       index_goal.Send();
       shooter_goal.Send();
+#endif
     }
-
-    static int hanger_cycles = 0;
-    if (data.IsPressed(kDeployHangers)) {
-      ++hanger_cycles;
-    } else {
-      hanger_cycles = 0;
-    }
-    hangers.MakeWithBuilder().set(hanger_cycles >= 10).Send();
   }
 };
 

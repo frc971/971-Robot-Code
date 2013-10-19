@@ -7,11 +7,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/control_loops/wrist/wrist_motor.q.h"
-#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
-#include "frc971/control_loops/index/index_motor.q.h"
-#include "frc971/control_loops/shooter/shooter_motor.q.h"
+#include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/input/gyro_board_data.h"
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/queues/GyroAngle.q.h"
@@ -20,8 +16,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain;
-using ::frc971::control_loops::shooter;
+using ::bot3::control_loops::drivetrain;
 using ::frc971::sensors::gyro;
 
 namespace bot3 {
@@ -35,7 +30,7 @@ inline double drivetrain_translate(int32_t in) {
 
 // TODO(daniel): This might have to change if I find out that the gear ratios are different.
 inline double shooter_translate(int32_t in) {
- return static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
+ return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       (15.0 / 34.0) /*gears*/ * (2 * M_PI);
 }
 
@@ -164,9 +159,7 @@ class GyroBoardReader {
         .left_encoder(-drivetrain_translate(data->left_drive))
         .Send();
 
-    shooter.position.MakeWithBuilder()
-        .position(shooter_translate(data->shooter))
-        .Send();
+    //TODO (danielp): Add stuff for bot3 shooter.
   }
 
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
