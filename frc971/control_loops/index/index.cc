@@ -839,7 +839,7 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = false;
       disc_ejected_ = false;
-      disk_stuck_in_loader_ = false;
+      disc_stuck_in_loader_ = false;
       if (loader_goal_ == LoaderGoal::GRAB ||
           loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
         if (goal->force_fire) {
@@ -921,7 +921,7 @@ void IndexMotor::RunIteration(
           loader_state_ = LoaderState::LOWERING;
           loader_countdown_ = kLoweringDelay;
           loader_timeout_ = 0;
-          disk_stuck_in_loader_ = true;
+          disc_stuck_in_loader_ = true;
         } else {
           break;
         }
@@ -962,7 +962,7 @@ void IndexMotor::RunIteration(
       disc_clamped_ = false;
       // We don't want to eject if we're stuck because it will force the disc
       // into the green loader wheel.
-      disc_ejected_ = disk_stuck_in_loader_ ? false : true;
+      disc_ejected_ = disc_stuck_in_loader_ ? false : true;
       if (position->loader_bottom) {
         if (loader_countdown_ > 0) {
           --loader_countdown_;
@@ -980,7 +980,7 @@ void IndexMotor::RunIteration(
         if (loader_timeout_ > kLoweringTimeout) {
           LOG(ERROR, "Loader timeout while LOWERING %d\n", loader_timeout_);
           loader_state_ = LoaderState::LOWERED;
-          disk_stuck_in_loader_ = true;
+          disc_stuck_in_loader_ = true;
         } else {
           break;
         }
@@ -990,8 +990,8 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_ejected_ = false;
       is_shooting_ = false;
-      if (disk_stuck_in_loader_) {
-        disk_stuck_in_loader_ = false;
+      if (disc_stuck_in_loader_) {
+        disc_stuck_in_loader_ = false;
         disc_clamped_ = true;
         loader_state_ = LoaderState::GRABBED;
       } else {
