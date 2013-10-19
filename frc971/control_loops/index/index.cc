@@ -918,7 +918,9 @@ void IndexMotor::RunIteration(
         ++loader_timeout_;
         if (loader_timeout_ > kLiftingTimeout) {
           LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
-          loader_state_ = LoaderState::LIFTED;
+          loader_state_ = LoaderState::LOWERING;
+          loader_countdown_ = kLoweringDelay;
+          loader_timeout_ = 0;
           disk_stuck_in_loader_ = true;
         } else {
           break;
@@ -958,7 +960,9 @@ void IndexMotor::RunIteration(
       // Lowering the loader back down.
       loader_up_ = false;
       disc_clamped_ = false;
-      disc_ejected_ = true;
+      // We don't want to eject if we're stuck because it will force the disc
+      // into the green loader wheel.
+      disc_ejected_ = disk_stuck_in_loader_ ? false : true;
       if (position->loader_bottom) {
         if (loader_countdown_ > 0) {
           --loader_countdown_;
