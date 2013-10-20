@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "fill_packet.h"
 #include "encoder.h"
 
@@ -79,36 +81,33 @@ void EINT2_IRQHandler(void) {
 }
 
 static inline void reset_TC(void) {
-  TIM3->TCR |= (1 << 1); // Put it into reset.
-  while (TIM3->TC != 0) { // Wait for reset.
+  TIM2->TCR |= (1 << 1); // Put it into reset.
+  while (TIM2->TC != 0) { // Wait for reset.
     continue;
   }
-  TIM3->TCR = 1; // Take it out of reset + make sure it's enabled.
+  TIM2->TCR = 1; // Take it out of reset + make sure it's enabled.
 }
 
-// TIM3
+// TIM2
 volatile uint32_t shooter_cycle_ticks;
-void TIMER3_IRQHandler(void) {
+void TIMER2_IRQHandler(void) {
   // Apparently, this handler runs regardless of a match or capture event.
-  if (TIM3->IR & (1 << 4)) {
+  if (TIM2->IR & (1 << 4)) {
     // Capture
-    TIM3->IR = (1 << 3); // Clear the interrupt.
+    TIM2->IR = (1 << 3); // Clear the interrupt.
     
-    shooter_cycle_ticks = TIM3->CR0;
+    shooter_cycle_ticks = TIM2->CR0;
   
     reset_TC();
-  } else if (TIM3->IR & 1) {
+  } else if (TIM2->IR & 1) {
     // Match
-    TIM3->IR = 1; // Clear the interrupt
+    TIM2->IR = 1; // Clear the interrupt
 
     // Assume shooter is stopped.
     shooter_cycle_ticks = 0;
 
     // Disable timer.
-    TIM3->TCR = 0;
-  } else {
-    // TODO (danielp): This should not happen.
-    // Indicate that something strange occurred, and perhaps clear interrupts.
+    TIM2->TCR = 0;
   }
 
   // It will only handle one interrupt per run.
@@ -328,38 +327,26 @@ static void ShooterHallRise(void) {
   ++shooter_angle_rise_count;
   capture_shooter_angle_rise = encoder2_val; 
 }
+
+// Third robot shooter.
 static void ShooterPhotoFall(void) {
   GPIOINT->IO0IntClr = (1 << 23);
   // We reset TC to make sure we don't get a crap
   // value from CR0 when the capture interrupt occurs
-  // if the shooter is just starting up again.
+  // if the shooter is just starting up again, and so
+  // that the match interrupt thing works right.
   reset_TC();
 }
 
-// Count leading zeros.
-// Returns 0 if bit 31 is set etc.
-__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
-  uint32_t result;
-  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
-  return result;
-}
-inline static void IRQ_Dispatch(void) {
-  // There is no need to add a loop here to handle multiple interrupts at the
-  // same time because the processor has tail chaining of interrupts which we
-  // can't really beat with our own loop.
-  // It would actually be bad because a loop here would block EINT1/2 for longer
-  // lengths of time.
-
-  uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
-      (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
-
-  typedef void (*Handler)(void);
-  const static Handler table[] = {
+typedef void (*Handler)(void);
+// Contains default pointers for ISR functions.
+// (These can be used without modifications on the comp/practice bots.)
+Handler ISRTable[] = {
     Encoder5BFall,     // index 0: P2.3 Fall     #bit 31  //Encoder 5 B  //Dio 10
     Encoder5AFall,     // index 1: P2.2 Fall     #bit 30  //Encoder 5 A  //Dio 9
     Encoder4BFall,     // index 2: P2.1 Fall     #bit 29  //Encoder 4 B  //Dio 8
     Encoder4AFall,     // index 3: P2.0 Fall     #bit 28  //Encoder 4 A  //Dio 7
-    ShooterPhotoFall,  // index 4: P0.23 Fall    #bit 27  //Bot3 Shooter
+    NoGPIO,            // index 4: NO GPIO       #bit 27  
     Encoder2AFall,     // index 5: P0.22 Fall    #bit 26  //Encoder 2 A
     Encoder2BFall,     // index 6: P0.21 Fall    #bit 25  //Encoder 2 B
     Encoder3AFall,     // index 7: P0.20 Fall    #bit 24  //Encoder 3 A
@@ -388,12 +375,31 @@ inline static void IRQ_Dispatch(void) {
     Encoder4BRise,     // index 30: P2.1 Rise    #bit 1   //Encoder 4 B    //Dio 8
     Encoder4ARise,     // index 31: P2.0 Rise    #bit 0   //Encoder 4 A    //Dio 7
     NoGPIO             // index 32: NO BITS SET  #False Alarm
-  };
-  table[index]();
+};
+
+// Count leading zeros.
+// Returns 0 if bit 31 is set etc.
+__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
+  uint32_t result;
+  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
+  return result;
+}
+inline static void IRQ_Dispatch(void) {
+  // There is no need to add a loop here to handle multiple interrupts at the
+  // same time because the processor has tail chaining of interrupts which we
+  // can't really beat with our own loop.
+  // It would actually be bad because a loop here would block EINT1/2 for longer
+  // lengths of time.
+
+  uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
+      (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
+
+  ISRTable[index]();
 }
 void EINT3_IRQHandler(void) {
   IRQ_Dispatch();
 }
+
 int32_t encoder_val(int chan) {
   int32_t val;
   switch (chan) {
@@ -465,28 +471,29 @@ void encoder_init(void) {
   NVIC_EnableIRQ(EINT3_IRQn);
 
   if (is_bot3) {
+    // Modify robot handler table for third robot.
+    ISRTable[23] = ShooterPhotoFall;
+
     // Set up timer for bot3 photosensor.
-    // Make sure timer three is powered.
-    SC->PCONP |= (1 << 23);
+    // Make sure timer two is powered.
+    SC->PCONP |= (1 << 22);
     // We don't need all the precision the CCLK can provide.
     // We'll use CCLK/8. (12.5 mhz).
-    SC->PCLKSEL1 |= (0x3 << 14);
+    SC->PCLKSEL1 |= (0x3 << 12);
     // Use timer prescale to get that freq down to 500 hz.
-    TIM3->PR = 25000;
-    // Select capture 3.0 function on pin 0.23.
-    PINCON->PINSEL1 |= (0x3 << 14);
+    TIM2->PR = 25000;
+    // Select capture 2.0 function on pin 0.4.
+    PINCON->PINSEL0 |= (0x3 << 8);
     // Set timer to capture and interrupt on rising edge.
-    TIM3->CCR = 0x5;
+    TIM2->CCR = 0x5;
     // Set up match interrupt.
-    TIM3->MR0 = kWheelStopThreshold * 500;
-    TIM3->MCR = 1;
+    TIM2->MR0 = kWheelStopThreshold * 500;
+    TIM2->MCR = 1;
     // Enable timer IRQ, and make it lower priority than the encoders.
     NVIC_SetPriority(TIMER3_IRQn, 1);
     NVIC_EnableIRQ(TIMER3_IRQn);
     // Set up GPIO interrupt on other edge.
-    NVIC_DisableIRQ(EINT3_IRQn);
     GPIOINT->IO0IntEnF |= (1 << 23);
-    NVIC_EnableIRQ(EINT3_IRQn);
 
   } else {  // is main robot
     // Set up encoder 1.
