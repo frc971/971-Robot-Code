@@ -206,7 +206,7 @@ UsbDevice *Libusb::FindSingleMatchingDeviceAtLocation(
 
 UsbDevice *Libusb::FindSingleMatchingDeviceOrLose(
     const VendorProductId &id) {
-  return CHECK_NOTNULL(FindSingleMatchingDeviceOrLose(id));
+  return CHECK_NOTNULL(FindSingleMatchingDevice(id));
 }
 
 UsbDevice *Libusb::FindSingleMatchingDevice(

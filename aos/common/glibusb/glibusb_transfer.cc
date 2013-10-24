@@ -57,11 +57,13 @@ int do_sync_transfer(
     case LIBUSB_TRANSFER_TYPE_INTERRUPT:
       libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
                                 transfer_cb, &completed, timeout);
+      break;
     case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
       libusb_fill_iso_transfer(transfer, dev_handle, endpoint, buffer, length,
                                kNumIsoPackets, transfer_cb, &completed,
                                timeout);
       transfer->iso_packet_desc[0].length = length;
+      break;
     default:
       LOG(FATAL, "unhandled transfer type %hhd\n", type);
   }
