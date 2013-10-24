@@ -286,10 +286,7 @@ static void USBFrameHandler(unsigned short wFrame) {
   USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, sizeof(usbPacket));
 }
 
-void vUSBTask(void *pvParameters) {
-  portTickType xLastFlashTime;
-
-  (void) pvParameters;
+void usb_init(void) {
   DBG("Initialising USB stack\n");
 
   xRxedChars = xQueueCreate(usbRXBUFFER_LEN, sizeof(char));
@@ -329,20 +326,6 @@ void vUSBTask(void *pvParameters) {
   DBG("Connecting to USB bus\n");
   USBHwConnect(TRUE);
 
-  xLastFlashTime = xTaskGetTickCount();
-
-  vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS * 100);
-
-  //USBHwAllowConnect();
-  // echo any character received (do USB stuff in interrupt)
-  for (;;) {
-    //  c = VCOM_getchar();
-    //  if (c != EOF) {
-    //    // Echo character back with INCREMENT_ECHO_BY offset, so for example if
-    //    // INCREMENT_ECHO_BY is 1 and 'A' is received, 'B' will be echoed back.
-    //    VCOM_putchar(c + INCREMENT_ECHO_BY);
-    //  }
-    vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS);
-  }
+  // Enable USB.  The PC has probably disconnected it now.
+  USBHwAllowConnect();
 }
-

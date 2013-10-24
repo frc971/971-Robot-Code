@@ -475,9 +475,15 @@ void encoder_init(void) {
 }
 
 void fillSensorPacket(struct DataStruct *packet) {
-  packet->gyro_angle = gyro_output.angle;
-  packet->old_gyro_reading = gyro_output.last_reading_bad;
-  packet->bad_gyro = gyro_output.gyro_bad;
+  if (gyro_output.initialized) {
+    packet->gyro_angle = gyro_output.angle;
+    packet->old_gyro_reading = gyro_output.last_reading_bad;
+    packet->bad_gyro = gyro_output.gyro_bad;
+  } else {
+    packet->gyro_angle = 0;
+    packet->old_gyro_reading = 1;
+    packet->bad_gyro = 0;
+  }
 
   packet->dip_switch0 = dip_switch(0);
   packet->dip_switch1 = dip_switch(1);
