@@ -98,6 +98,12 @@ TEST(TimeTest, DivisionByTime) {
   EXPECT_DOUBLE_EQ(-5.25, Time(36, Time::kNSecInSec / 4 * 3) / Time(-7, 0));
 }
 
+TEST(TimeTest, Negation) {
+  EXPECT_EQ(Time(-5, 1234), -Time(4, Time::kNSecInSec - 1234));
+  EXPECT_EQ(Time(5, Time::kNSecInSec * 2 / 3 + 1),
+            -Time(-6, Time::kNSecInSec / 3));
+}
+
 TEST(TimeTest, Comparisons) {
   EXPECT_TRUE(Time(971, 254) > Time(971, 253));
   EXPECT_TRUE(Time(971, 254) >= Time(971, 253));

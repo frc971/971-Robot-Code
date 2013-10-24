@@ -165,6 +165,12 @@ struct Time {
   Time &operator*=(int32_t rhs);
   Time &operator/=(int32_t rhs);
   Time &operator%=(int32_t rhs);
+  Time &operator%=(double rhs) = delete;
+  Time &operator*=(double rhs) = delete;
+  Time &operator/=(double rhs) = delete;
+  const Time operator*(double rhs) const = delete;
+  const Time operator/(double rhs) const = delete;
+  const Time operator%(double rhs) const = delete;
   #endif
   const Time operator+(const Time &rhs) const;
   const Time operator-(const Time &rhs) const;
@@ -172,6 +178,8 @@ struct Time {
   const Time operator/(int32_t rhs) const;
   double operator/(const Time &rhs) const;
   const Time operator%(int32_t rhs) const;
+
+  const Time operator-() const;
 
   bool operator==(const Time &rhs) const;
   bool operator!=(const Time &rhs) const;

@@ -149,6 +149,10 @@ const Time Time::operator%(int32_t rhs) const {
   return Time(*this) %= rhs;
 }
 
+const Time Time::operator-() const {
+  return Time(-sec_ - 1, kNSecInSec - nsec_);
+}
+
 bool Time::operator==(const Time &rhs) const {
   return sec_ == rhs.sec_ && nsec_ == rhs.nsec_;
 }
