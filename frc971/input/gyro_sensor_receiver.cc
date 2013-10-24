@@ -76,13 +76,16 @@ class GyroSensorReceiver {
     } else {
       const ::aos::time::Time received_time = ::aos::time::Time::Now();
       if (phase_locker_.IsCurrentPacketGood(received_time, sequence_.count())) {
+        LOG(DEBUG, "processing data\n");
         ProcessData();
+      } else {
+        LOG(DEBUG, "not processing\n");
       }
     }
   }
 
  private:
-  static const unsigned char kEndpoint = 0x83;
+  static const unsigned char kEndpoint = 0x3;
   // 0 is unlimited
   static constexpr ::aos::time::Time kReadTimeout =
       ::aos::time::Time::InSeconds(1.5);
@@ -92,11 +95,16 @@ class GyroSensorReceiver {
 
   static const int kPacketsPerLoopCycle = 10;
 
+  // How long before the control loops run we want to use a packet.
+  static constexpr ::aos::time::Time kDesiredOffset =
+      ::aos::time::Time::InSeconds(-0.0025);
+
   // Contains all of the complicated state and logic for locking onto the the
   // correct phase.
   class {
    public:
     void Reset() {
+      LOG(INFO, "resetting\n");
       last_guessed_time_ = ::aos::time::Time(0, 0);
       good_phase_ = guess_phase_ = kUnknownPhase;
       guess_phase_good_ = guess_phase_bad_ = 0;
@@ -110,6 +118,10 @@ class GyroSensorReceiver {
       // How often we (should) receive packets.
       static const ::aos::time::Time kPacketFrequency =
           ::aos::control_loops::kLoopFrequency / kPacketsPerLoopCycle;
+      static const ::aos::time::Time kPacketClose =
+          kPacketFrequency * 65 / 100;
+      static const ::aos::time::Time kSwitchOffset =
+          kPacketFrequency * 6 / 10;
 
       // When we want to receive a packet for the next cycle of control loops.
       const ::aos::time::Time next_desired =
@@ -123,9 +135,9 @@ class GyroSensorReceiver {
 
       if (guess_phase_good_ > kMinGoodGuessCycles) {
         good_phase_ = guess_phase_;
-        if (guess_phase_offset_ < kPacketFrequency * -0.5) {
+        if (guess_phase_offset_ < kPacketFrequency / -2) {
           ++good_phase_;
-        } else if (guess_phase_offset_ > kPacketFrequency * 0.5) {
+        } else if (guess_phase_offset_ > kPacketFrequency / 2) {
           --good_phase_;
         }
       } else if (guess_phase_bad_ > kMaxBadGuessCycles) {
@@ -133,9 +145,11 @@ class GyroSensorReceiver {
       }
       if (good_phase_early_ > kSwitchCycles) {
         good_phase_early_ = 0;
+        LOG(INFO, "switching to 1 phase earlier\n");
         --good_phase_;
       } else if (good_phase_late_ > kSwitchCycles) {
         good_phase_late_ = 0;
+        LOG(INFO, "switching to 1 phase later\n");
         ++good_phase_;
       }
       if (good_phase_ == kUnknownPhase) {
@@ -144,13 +158,16 @@ class GyroSensorReceiver {
         // If we're going to call this packet a good guess.
         bool guess_is_good = false;
         // If it's close to the right time.
-        if (offset.abs() < kPacketFrequency * 0.65) {
+        if (offset.abs() < kPacketClose) {
           // If we didn't (also) guess that the previous one was good.
           if (received_time - last_guessed_time_ > kPacketFrequency * 2) {
+            LOG(DEBUG, "guessing this one is good\n");
             guess_is_good = true;
+          } else {
+            LOG(DEBUG, "just guessed\n");
           }
           if (guess_phase_ == kUnknownPhase) {
-            if (offset.abs() < kPacketFrequency * 0.55) {
+            if (offset.abs() < kPacketFrequency * 55 / 100) {
               guess_phase_ = received_phase;
               guess_phase_offset_ = offset;
             }
@@ -183,10 +200,10 @@ class GyroSensorReceiver {
         assert(good_phase_ < kPacketsPerLoopCycle);
 
         if (received_phase == good_phase_) {
-          if (offset < kPacketFrequency * -0.6) {
+          if (offset < -kSwitchOffset) {
             ++good_phase_early_;
             good_phase_late_ = 0;
-          } else if (offset > kPacketFrequency * 0.6) {
+          } else if (offset > kSwitchOffset) {
             ++good_phase_late_;
             good_phase_early_ = 0;
           } else {
@@ -200,10 +217,6 @@ class GyroSensorReceiver {
     }
 
    private:
-    // How long before the control loops run we want to use a packet.
-    static constexpr ::aos::time::Time kDesiredOffset =
-        ::aos::time::Time::InSeconds(-0.0025);
-
     // How many times the packet we guessed has to be close to right to use the
     // guess.
     static const int kMinGoodGuessCycles = 30;
@@ -238,7 +251,8 @@ class GyroSensorReceiver {
                                            &buffer_);
       switch (result) {
         case UsbEndpoint::kSuccess:
-          break;
+          sequence_.Update(data()->sequence);
+          return false;
         case UsbEndpoint::kTimeout:
           LOG(WARNING, "read timed out\n");
           return true;
@@ -252,8 +266,6 @@ class GyroSensorReceiver {
           continue;
       }
     }
-    sequence_.Update(data()->sequence);
-    return false;
   }
 
   GyroBoardData *data() {
@@ -358,6 +370,7 @@ class GyroSensorReceiver {
 };
 constexpr ::glibusb::VendorProductId GyroSensorReceiver::kDeviceId;
 constexpr ::aos::time::Time GyroSensorReceiver::kReadTimeout;
+constexpr ::aos::time::Time GyroSensorReceiver::kDesiredOffset;
 
 }  // namespace frc971
 
