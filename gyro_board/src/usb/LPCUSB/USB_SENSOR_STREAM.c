@@ -45,13 +45,13 @@
 #define usbTXBUFFER_LEN      ( 600 )
 
 // Read the processor manual for picking these.
-#define INT_IN_EP     0x81
 #define BULK_IN_EP    0x82
 #define BULK_OUT_EP   0x05
 #define ISOC_IN_EP    0x83
-#define NUM_ENDPOINTS 4
+#define NUM_ENDPOINTS 3
 
 #define MAX_PACKET_SIZE  64
+#define DATA_PACKET_SIZE DATA_STRUCT_SEND_SIZE
 
 #define LE_WORD(x)    ((x)&0xFF),((x)>>8)
 
@@ -115,19 +115,12 @@ static const unsigned char abDescriptors[] = {
   0x02,        // bmAttributes = bulk
   LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
   0x00,        // bInterval
-// Data EP in
-  0x07,
-  DESC_ENDPOINT,
-  INT_IN_EP,      // bEndpointAddress
-  0x03,        // bmAttributes = intr
-  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
-  0x01,        // bInterval
   // isoc data EP IN
   0x07,
   DESC_ENDPOINT,
   ISOC_IN_EP,            // bEndpointAddress
   0x0D,              // bmAttributes = isoc, synchronous, data endpoint
-  LE_WORD(1023),  // wMaxPacketSize
+  LE_WORD(DATA_PACKET_SIZE),  // wMaxPacketSize
   0x01,            // bInterval
 
   // string descriptors
@@ -207,13 +200,6 @@ static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
 }
 
 
-static void DataIn(unsigned char bEP, unsigned char bEPStatus) {
-  fillSensorPacket(&usbPacket);
-  static uint8_t sequence = 0;
-  usbPacket.sequence = sequence++;
-  USBHwEPWrite(bEP, (unsigned char *)&usbPacket, sizeof(usbPacket));
-}
-
 /**
  * Writes one character to VCOM port
  *
@@ -283,7 +269,7 @@ static void USBFrameHandler(unsigned short wFrame) {
   fillSensorPacket(&usbPacket);
   static uint8_t sequence = 0;
   usbPacket.sequence = sequence++;
-  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, sizeof(usbPacket));
+  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, DATA_PACKET_SIZE);
 }
 
 void usb_init(void) {
@@ -309,7 +295,6 @@ void usb_init(void) {
   //                          HandleClassRequest, abClassReqData);
 
   // register endpoint handlers
-  USBHwRegisterEPIntHandler(INT_IN_EP, DataIn);
   USBHwRegisterEPIntHandler(BULK_IN_EP, DebugIn);
   USBHwRegisterEPIntHandler(BULK_OUT_EP, DebugOut);
 

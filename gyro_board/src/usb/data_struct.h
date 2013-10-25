@@ -97,9 +97,16 @@ struct DATA_STRUCT_NAME {
 };
 #pragma pack(pop)
 
+// This is how big the isochronous packets that we're going to send are.
+// This number is more painful to change than the actual size of the struct
+// because the code on both ends has to agree on this (or at least that's what
+// Brian found empirically 2013-10-24).
+#define DATA_STRUCT_SEND_SIZE 128
+
 #ifdef __cplusplus
 // TODO(brians): Consider using C1X's _Static_assert once we have a compiler
 // (GCC 4.6) + flags that support it.
-static_assert(sizeof(DATA_STRUCT_NAME) <= 64,
-              "We only have room for 64 bytes in the USB packet.");
+static_assert(sizeof(DATA_STRUCT_NAME) <= DATA_STRUCT_SEND_SIZE,
+              "We only have room for " STRINGIFY(DATA_STRUCT_SEND_SIZE)
+              " bytes in the USB packet.");
 #endif  // defined(__cplusplus)
