@@ -6,8 +6,6 @@
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
-#include "aos/common/glibusb/glibusb.h"
-#include "aos/common/glibusb/gbuffer.h"
 #include "aos/common/util/wrapping_counter.h"
 #include "aos/common/control_loop/ControlLoop.h"
 
@@ -18,6 +16,7 @@
 #include "frc971/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/input/gyro_board_data.h"
 #include "frc971/queues/GyroAngle.q.h"
+#include "gyro_board/src/libusb-driver/libusb_wrap.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -78,20 +77,27 @@ class GyroSensorReceiver {
       if (phase_locker_.IsCurrentPacketGood(received_time, sequence_.count())) {
         LOG(DEBUG, "processing data\n");
         ProcessData();
-      } else {
-        LOG(DEBUG, "not processing\n");
       }
     }
   }
 
  private:
-  static const unsigned char kEndpoint = 0x3;
+  static const unsigned char kEndpoint = 0x83;
   // 0 is unlimited
   static constexpr ::aos::time::Time kReadTimeout =
       ::aos::time::Time::InSeconds(1.5);
-  static constexpr ::glibusb::VendorProductId kDeviceId = 
-      ::glibusb::VendorProductId(0x1424  /* vendor ID */,
-                                 0xd243  /* product ID */);
+  // vendor ID
+  static const int32_t kVid = 0x1424;
+  // product ID
+  static const int32_t kPid = 0xd243;
+
+  // A value to put into completed_transfer_ to indicate that it failed.
+  static constexpr libusb::Transfer *kTransferFailed =
+      reinterpret_cast<libusb::Transfer *>(-1);
+
+  // How big of a buffer we're going to give the usb transfer stuff.
+  static const size_t kDataLength = 128;
+  static_assert(kDataLength >= sizeof(GyroBoardData), "buffer is too small");
 
   static const int kPacketsPerLoopCycle = 10;
 
@@ -141,6 +147,7 @@ class GyroSensorReceiver {
           --good_phase_;
         }
       } else if (guess_phase_bad_ > kMaxBadGuessCycles) {
+        LOG(INFO, "guessed wrong phase too many times\n");
         Reset();
       }
       if (good_phase_early_ > kSwitchCycles) {
@@ -172,12 +179,14 @@ class GyroSensorReceiver {
               guess_phase_offset_ = offset;
             }
           } else if (received_phase == guess_phase_) {
+            LOG(DEBUG, "guessed right phase %d\n", received_phase);
             ++guess_phase_good_;
             guess_phase_bad_ = 0;
             guess_phase_offset_ = (guess_phase_offset_ * 9 + offset) / 10;
           }
         } else if (guess_phase_ != kUnknownPhase &&
                    received_phase == guess_phase_) {
+          LOG(DEBUG, "guessed wrong phase %d\n", received_phase);
           ++guess_phase_bad_;
           guess_phase_good_ = ::std::max(0, guess_phase_good_ -
                                          (kMinGoodGuessCycles / 10));
@@ -240,47 +249,75 @@ class GyroSensorReceiver {
     int good_phase_early_, good_phase_late_;
   } phase_locker_;
 
+  static void StaticTransferCallback(libusb::Transfer *transfer, void *self) {
+    static_cast<GyroSensorReceiver *>(self)->TransferCallback(transfer);
+  }
+  void TransferCallback(libusb::Transfer *transfer) {
+    if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
+      LOG(DEBUG, "transfer %p completed\n", transfer);
+      completed_transfer_ = transfer;
+    } else if (transfer->status() == LIBUSB_TRANSFER_TIMED_OUT) {
+      LOG(WARNING, "transfer %p timed out\n", transfer);
+      completed_transfer_ = kTransferFailed;
+    } else if (transfer->status() == LIBUSB_TRANSFER_CANCELLED) {
+      LOG(DEBUG, "transfer %p cancelled\n", transfer);
+    } else {
+      LOG(FATAL, "transfer %p has status %d\n", transfer, transfer->status());
+    }
+    transfer->Submit();
+  }
+
   // Returns true if receiving failed and we should try a Reset().
   bool ReceiveData() {
     // Loop and then return once we get a good one.
     while (true) {
-      using ::glibusb::UsbEndpoint;
-      UsbEndpoint::IoStatus result =
-          endpoint_->ReadAtMostWithTimeout(sizeof(GyroBoardData),
-                                           kReadTimeout.ToMSec(),
-                                           &buffer_);
-      switch (result) {
-        case UsbEndpoint::kSuccess:
-          sequence_.Update(data()->sequence);
-          return false;
-        case UsbEndpoint::kTimeout:
-          LOG(WARNING, "read timed out\n");
-          return true;
-        case UsbEndpoint::kNoDevice:
-          LOG(ERROR, "no device\n");
-          return true;
-        case UsbEndpoint::kUnknown:
-        case UsbEndpoint::kFail:
-        case UsbEndpoint::kAbort:
-          LOG(ERROR, "read failed\n");
-          continue;
+      completed_transfer_ = NULL;
+      while (completed_transfer_ == NULL) {
+        libusb_.HandleEvents();
       }
+      if (completed_transfer_ == kTransferFailed) {
+        LOG(WARNING, "transfer failed\n");
+        return true;
+      }
+
+      if (completed_transfer_->read_bytes() <
+          static_cast<ssize_t>(sizeof(GyroBoardData))) {
+        LOG(ERROR, "read %d bytes instead of at least %zd\n",
+            completed_transfer_->read_bytes(), sizeof(GyroBoardData));
+        continue;
+      }
+
+      memcpy(data(), completed_transfer_->data(),
+             sizeof(GyroBoardData));
+      sequence_.Update(data()->sequence);
+      return false;
     }
   }
 
   GyroBoardData *data() {
-    return static_cast<GyroBoardData *>(
-        buffer_.GetBufferPointer(sizeof(GyroBoardData)));
+    return &data_;
   }
 
   void Reset() {
-    // Make sure to delete the endpoint before its device.
-    endpoint_.reset();
-    device_ = ::std::unique_ptr< ::glibusb::UsbDevice>(
-        libusb_.FindSingleMatchingDeviceOrLose(kDeviceId));
-    CHECK(device_);
-    endpoint_ = ::std::unique_ptr< ::glibusb::UsbInEndpoint>(
-        device_->InEndpoint(kEndpoint));
+    transfer1_.reset();
+    transfer2_.reset();
+    dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
+        libusb_.FindDeviceWithVIDPID(kVid, kPid));
+    if (!dev_handle_) {
+      LOG(ERROR, "couldn't find device. exiting\n");
+      exit(1);
+    }
+    transfer1_ = ::std::unique_ptr<libusb::IsochronousTransfer>(
+        new libusb::IsochronousTransfer(kDataLength, 1,
+                                        StaticTransferCallback, this));
+    transfer2_ = ::std::unique_ptr<libusb::IsochronousTransfer>(
+        new libusb::IsochronousTransfer(kDataLength, 1,
+                                        StaticTransferCallback, this));
+    transfer1_->FillIsochronous(dev_handle_.get(), kEndpoint, kReadTimeout);
+    transfer2_->FillIsochronous(dev_handle_.get(), kEndpoint, kReadTimeout);
+    transfer1_->Submit();
+    transfer2_->Submit();
+
     sequence_.Reset();
     phase_locker_.Reset();
   }
@@ -354,13 +391,16 @@ class GyroSensorReceiver {
         .Send();
   }
 
-  ::std::unique_ptr< ::glibusb::UsbDevice> device_;
-  ::std::unique_ptr< ::glibusb::UsbInEndpoint> endpoint_;
-  ::glibusb::Buffer buffer_;
+  GyroBoardData data_;
 
   WrappingCounter sequence_;
 
-  ::glibusb::Libusb libusb_;
+  LibUSB libusb_;
+  ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
+  ::std::unique_ptr<libusb::IsochronousTransfer> transfer1_, transfer2_;
+  // Temporary variable for holding a completed transfer to communicate that
+  // information from the callback to the code that wants it.
+  libusb::Transfer *completed_transfer_;
 
   WrappingCounter top_rise_;
   WrappingCounter top_fall_;
@@ -368,7 +408,6 @@ class GyroSensorReceiver {
   WrappingCounter bottom_fall_delay_;
   WrappingCounter bottom_fall_;
 };
-constexpr ::glibusb::VendorProductId GyroSensorReceiver::kDeviceId;
 constexpr ::aos::time::Time GyroSensorReceiver::kReadTimeout;
 constexpr ::aos::time::Time GyroSensorReceiver::kDesiredOffset;
 

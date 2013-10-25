@@ -37,10 +37,9 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/glibusb/glibusb.gyp:glibusb',
-        '<(AOS)/common/glibusb/glibusb.gyp:gbuffer',
         '<(AOS)/common/util/util.gyp:wrapping_counter',
         '<(AOS)/common/common.gyp:controls',
+        '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
       ],
     },
     {
