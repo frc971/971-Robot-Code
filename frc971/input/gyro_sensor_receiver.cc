@@ -94,6 +94,9 @@ class GyroSensorReceiver {
   // A value to put into completed_transfer_ to indicate that it failed.
   static constexpr libusb::Transfer *kTransferFailed =
       reinterpret_cast<libusb::Transfer *>(-1);
+  // The kernel on the fitpc seems to miss ~11-15 packets in a row if it misses
+  // any with just 2, so 25 should be enough to ride over any holes.
+  static const int kNumTransfers = 25;
 
   // How big of a buffer we're going to give the usb transfer stuff.
   static const size_t kDataLength = 128;
@@ -101,9 +104,16 @@ class GyroSensorReceiver {
 
   static const int kPacketsPerLoopCycle = 10;
 
-  // How long before the control loops run we want to use a packet.
+  // How long "after" the control loops run we want to use a packet.
   static constexpr ::aos::time::Time kDesiredOffset =
       ::aos::time::Time::InSeconds(-0.0025);
+
+  // How long without a good packet until we give up and Reset().
+  static constexpr ::aos::time::Time kResetTime =
+      ::aos::time::Time::InSeconds(0.75);
+  // How old of a packet we log about.
+  static constexpr ::aos::time::Time kStaleTime =
+      ::aos::time::Time::InSeconds(0.005);
 
   // Contains all of the complicated state and logic for locking onto the the
   // correct phase.
@@ -111,7 +121,7 @@ class GyroSensorReceiver {
    public:
     void Reset() {
       LOG(INFO, "resetting\n");
-      last_guessed_time_ = ::aos::time::Time(0, 0);
+      last_good_packet_time_ = ::aos::time::Time(0, 0);
       good_phase_ = guess_phase_ = kUnknownPhase;
       guess_phase_good_ = guess_phase_bad_ = 0;
       good_phase_early_ = good_phase_late_ = 0;
@@ -121,17 +131,29 @@ class GyroSensorReceiver {
     // Returns whether or not to process the values from this packet.
     bool IsCurrentPacketGood(const ::aos::time::Time &received_time,
                              int32_t sequence) {
+      if (last_good_packet_time_ != ::aos::time::Time(0, 0) &&
+          received_time - last_good_packet_time_ > kResetTime) {
+        LOG(WARNING, "no good packet received in too long\n");
+        Reset();
+        return false;
+      }
+
+      using ::aos::control_loops::kLoopFrequency;
       // How often we (should) receive packets.
       static const ::aos::time::Time kPacketFrequency =
-          ::aos::control_loops::kLoopFrequency / kPacketsPerLoopCycle;
+          kLoopFrequency / kPacketsPerLoopCycle;
       static const ::aos::time::Time kPacketClose =
           kPacketFrequency * 65 / 100;
       static const ::aos::time::Time kSwitchOffset =
           kPacketFrequency * 6 / 10;
 
       // When we want to receive a packet for the next cycle of control loops.
-      const ::aos::time::Time next_desired =
-          ::aos::control_loops::NextLoopTime(received_time + kDesiredOffset);
+      ::aos::time::Time next_desired =
+          ::aos::control_loops::NextLoopTime(received_time) + kDesiredOffset;
+      // If we came up with something more than 1 packet in the past.
+      if (next_desired - received_time < -kPacketFrequency) {
+        next_desired += kLoopFrequency;
+      }
       // How far off of when we want the next packet this one is.
       const ::aos::time::Time offset = next_desired - received_time;
 
@@ -139,40 +161,35 @@ class GyroSensorReceiver {
 
       assert(!(good_phase_early_ != 0 && good_phase_late_ != 0));
 
-      if (guess_phase_good_ > kMinGoodGuessCycles) {
+      if (good_phase_ == kUnknownPhase &&
+          guess_phase_good_ > kMinGoodGuessCycles) {
         good_phase_ = guess_phase_;
         if (guess_phase_offset_ < kPacketFrequency / -2) {
           ++good_phase_;
         } else if (guess_phase_offset_ > kPacketFrequency / 2) {
           --good_phase_;
         }
+        LOG(INFO, "locked on to phase %d\n", good_phase_);
       } else if (guess_phase_bad_ > kMaxBadGuessCycles) {
         LOG(INFO, "guessed wrong phase too many times\n");
         Reset();
       }
       if (good_phase_early_ > kSwitchCycles) {
         good_phase_early_ = 0;
-        LOG(INFO, "switching to 1 phase earlier\n");
+        LOG(INFO, "switching from phase %d to %d-1\n",
+            good_phase_, good_phase_);
         --good_phase_;
       } else if (good_phase_late_ > kSwitchCycles) {
         good_phase_late_ = 0;
-        LOG(INFO, "switching to 1 phase later\n");
+        LOG(INFO, "switching from phase %d to %d+1\n",
+            good_phase_, good_phase_);
         ++good_phase_;
       }
       if (good_phase_ == kUnknownPhase) {
         LOG(INFO, "guessing which packet is good\n");
 
-        // If we're going to call this packet a good guess.
-        bool guess_is_good = false;
         // If it's close to the right time.
         if (offset.abs() < kPacketClose) {
-          // If we didn't (also) guess that the previous one was good.
-          if (received_time - last_guessed_time_ > kPacketFrequency * 2) {
-            LOG(DEBUG, "guessing this one is good\n");
-            guess_is_good = true;
-          } else {
-            LOG(DEBUG, "just guessed\n");
-          }
           if (guess_phase_ == kUnknownPhase) {
             if (offset.abs() < kPacketFrequency * 55 / 100) {
               guess_phase_ = received_phase;
@@ -191,18 +208,14 @@ class GyroSensorReceiver {
           guess_phase_good_ = ::std::max(0, guess_phase_good_ -
                                          (kMinGoodGuessCycles / 10));
         }
-        if (guess_is_good) {
-          last_guessed_time_ = received_time;
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       } else {  // we know what phase we're looking for
         // Deal with it if the above logic for tweaking the phase that we're
         // using wrapped it around.
         if (good_phase_ == -1) {
           good_phase_ = kPacketsPerLoopCycle;
         } else if (good_phase_ == kPacketsPerLoopCycle) {
+          LOG(DEBUG, "dewrapping\n");
           good_phase_ = 0;
         }
         assert(good_phase_ >= 0);
@@ -218,6 +231,13 @@ class GyroSensorReceiver {
           } else {
             good_phase_early_ = good_phase_late_ = 0;
           }
+          last_good_packet_time_ = received_time;
+
+          if (::aos::time::Time::Now() - received_time > kStaleTime) {
+            // TODO(brians): Do we actually want to use this one or what?
+            LOG(WARNING, "received a stale packet\n");
+          }
+
           return true;
         } else {
           return false;
@@ -237,7 +257,7 @@ class GyroSensorReceiver {
     // that we're using befor switching to it.
     static const int kSwitchCycles = 15;
 
-    ::aos::time::Time last_guessed_time_{0, 0};
+    ::aos::time::Time last_good_packet_time_{0, 0};
 
     const int kUnknownPhase = -11;
     // kUnknownPhase or the sequence number (%kPacketsPerLoopCycle) to
@@ -289,7 +309,14 @@ class GyroSensorReceiver {
 
       memcpy(data(), completed_transfer_->data(),
              sizeof(GyroBoardData));
+
+      int32_t count_before = sequence_.count();
       sequence_.Update(data()->sequence);
+      if (sequence_.count() - count_before != 1) {
+        LOG(WARNING, "count went from %" PRId32" to %" PRId32 "\n",
+            count_before, sequence_.count());
+      }
+
       return false;
     }
   }
@@ -299,24 +326,22 @@ class GyroSensorReceiver {
   }
 
   void Reset() {
-    transfer1_.reset();
-    transfer2_.reset();
+    typedef ::std::unique_ptr<libusb::IsochronousTransfer> TransferType;
+    for (TransferType &c : transfers_) {
+      c.reset();
+    }
     dev_handle_ = ::std::unique_ptr<LibUSBDeviceHandle>(
         libusb_.FindDeviceWithVIDPID(kVid, kPid));
     if (!dev_handle_) {
       LOG(ERROR, "couldn't find device. exiting\n");
       exit(1);
     }
-    transfer1_ = ::std::unique_ptr<libusb::IsochronousTransfer>(
-        new libusb::IsochronousTransfer(kDataLength, 1,
-                                        StaticTransferCallback, this));
-    transfer2_ = ::std::unique_ptr<libusb::IsochronousTransfer>(
-        new libusb::IsochronousTransfer(kDataLength, 1,
-                                        StaticTransferCallback, this));
-    transfer1_->FillIsochronous(dev_handle_.get(), kEndpoint, kReadTimeout);
-    transfer2_->FillIsochronous(dev_handle_.get(), kEndpoint, kReadTimeout);
-    transfer1_->Submit();
-    transfer2_->Submit();
+    for (TransferType &c : transfers_) {
+      c.reset(new libusb::IsochronousTransfer(kDataLength, 1,
+                                              StaticTransferCallback, this));
+      c->FillIsochronous(dev_handle_.get(), kEndpoint, kReadTimeout);
+      c->Submit();
+    }
 
     sequence_.Reset();
     phase_locker_.Reset();
@@ -397,7 +422,7 @@ class GyroSensorReceiver {
 
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
-  ::std::unique_ptr<libusb::IsochronousTransfer> transfer1_, transfer2_;
+  ::std::unique_ptr<libusb::IsochronousTransfer> transfers_[kNumTransfers];
   // Temporary variable for holding a completed transfer to communicate that
   // information from the callback to the code that wants it.
   libusb::Transfer *completed_transfer_;
@@ -410,6 +435,8 @@ class GyroSensorReceiver {
 };
 constexpr ::aos::time::Time GyroSensorReceiver::kReadTimeout;
 constexpr ::aos::time::Time GyroSensorReceiver::kDesiredOffset;
+constexpr ::aos::time::Time GyroSensorReceiver::kResetTime;
+constexpr ::aos::time::Time GyroSensorReceiver::kStaleTime;
 
 }  // namespace frc971
 
