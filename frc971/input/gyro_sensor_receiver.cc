@@ -63,6 +63,8 @@ inline double index_translate(int32_t in) {
 
 }  // namespace
 
+// TODO(brians): Figure out how to deal with the kernel bunching packets up on
+// us.
 class GyroSensorReceiver {
  public:
   GyroSensorReceiver() {
@@ -106,14 +108,11 @@ class GyroSensorReceiver {
 
   // How long "after" the control loops run we want to use a packet.
   static constexpr ::aos::time::Time kDesiredOffset =
-      ::aos::time::Time::InSeconds(-0.0025);
+      ::aos::time::Time::InSeconds(-0.003);
 
   // How long without a good packet until we give up and Reset().
   static constexpr ::aos::time::Time kResetTime =
-      ::aos::time::Time::InSeconds(0.75);
-  // How old of a packet we log about.
-  static constexpr ::aos::time::Time kStaleTime =
-      ::aos::time::Time::InSeconds(0.005);
+      ::aos::time::Time::InSeconds(0.25);
 
   // Contains all of the complicated state and logic for locking onto the the
   // correct phase.
@@ -122,6 +121,7 @@ class GyroSensorReceiver {
     void Reset() {
       LOG(INFO, "resetting\n");
       last_good_packet_time_ = ::aos::time::Time(0, 0);
+      last_good_sequence_ = -1;
       good_phase_ = guess_phase_ = kUnknownPhase;
       guess_phase_good_ = guess_phase_bad_ = 0;
       good_phase_early_ = good_phase_late_ = 0;
@@ -134,6 +134,11 @@ class GyroSensorReceiver {
       if (last_good_packet_time_ != ::aos::time::Time(0, 0) &&
           received_time - last_good_packet_time_ > kResetTime) {
         LOG(WARNING, "no good packet received in too long\n");
+        Reset();
+        return false;
+      }
+      if (last_good_sequence_ != -1 && sequence - last_good_sequence_ > 100) {
+        LOG(WARNING, "skipped too many packets\n");
         Reset();
         return false;
       }
@@ -186,7 +191,7 @@ class GyroSensorReceiver {
         ++good_phase_;
       }
       if (good_phase_ == kUnknownPhase) {
-        LOG(INFO, "guessing which packet is good\n");
+        LOG(DEBUG, "guessing which packet is good\n");
 
         // If it's close to the right time.
         if (offset.abs() < kPacketClose) {
@@ -232,11 +237,7 @@ class GyroSensorReceiver {
             good_phase_early_ = good_phase_late_ = 0;
           }
           last_good_packet_time_ = received_time;
-
-          if (::aos::time::Time::Now() - received_time > kStaleTime) {
-            // TODO(brians): Do we actually want to use this one or what?
-            LOG(WARNING, "received a stale packet\n");
-          }
+          last_good_sequence_ = sequence;
 
           return true;
         } else {
@@ -258,6 +259,8 @@ class GyroSensorReceiver {
     static const int kSwitchCycles = 15;
 
     ::aos::time::Time last_good_packet_time_{0, 0};
+
+    int32_t last_good_sequence_;
 
     const int kUnknownPhase = -11;
     // kUnknownPhase or the sequence number (%kPacketsPerLoopCycle) to
@@ -312,7 +315,9 @@ class GyroSensorReceiver {
 
       int32_t count_before = sequence_.count();
       sequence_.Update(data()->sequence);
-      if (sequence_.count() - count_before != 1) {
+      if (count_before == 0) {
+        LOG(INFO, "count starting at %" PRId32 "\n", sequence_.count());
+      } else if (sequence_.count() - count_before != 1) {
         LOG(WARNING, "count went from %" PRId32" to %" PRId32 "\n",
             count_before, sequence_.count());
       }
@@ -375,13 +380,13 @@ class GyroSensorReceiver {
 
     wrist.position.MakeWithBuilder()
         .pos(wrist_translate(data()->main.wrist))
-        .hall_effect(!data()->main.wrist_hall_effect)
+        .hall_effect(data()->main.wrist_hall_effect)
         .calibration(wrist_translate(data()->main.capture_wrist_rise))
         .Send();
 
     angle_adjust.position.MakeWithBuilder()
         .angle(angle_adjust_translate(data()->main.shooter_angle))
-        .bottom_hall_effect(!data()->main.angle_adjust_bottom_hall_effect)
+        .bottom_hall_effect(data()->main.angle_adjust_bottom_hall_effect)
         .middle_hall_effect(false)
         .bottom_calibration(angle_adjust_translate(
                 data()->main.capture_shooter_angle_rise))
@@ -395,14 +400,14 @@ class GyroSensorReceiver {
 
     index_loop.position.MakeWithBuilder()
         .index_position(index_translate(data()->main.indexer))
-        .top_disc_detect(!data()->main.top_disc)
+        .top_disc_detect(data()->main.top_disc)
         .top_disc_posedge_count(top_rise_.Update(data()->main.top_rise_count))
         .top_disc_posedge_position(
             index_translate(data()->main.capture_top_rise))
         .top_disc_negedge_count(top_fall_.Update(data()->main.top_fall_count))
         .top_disc_negedge_position(
             index_translate(data()->main.capture_top_fall))
-        .bottom_disc_detect(!data()->main.bottom_disc)
+        .bottom_disc_detect(data()->main.bottom_disc)
         .bottom_disc_posedge_count(
             bottom_rise_.Update(data()->main.bottom_rise_count))
         .bottom_disc_negedge_count(
@@ -436,7 +441,6 @@ class GyroSensorReceiver {
 constexpr ::aos::time::Time GyroSensorReceiver::kReadTimeout;
 constexpr ::aos::time::Time GyroSensorReceiver::kDesiredOffset;
 constexpr ::aos::time::Time GyroSensorReceiver::kResetTime;
-constexpr ::aos::time::Time GyroSensorReceiver::kStaleTime;
 
 }  // namespace frc971
 
