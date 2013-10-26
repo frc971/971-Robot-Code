@@ -161,13 +161,13 @@ class Target::MessageDec < Target::Node
 		cons_ifdef_statement = CPP::PreprocessorIf.new(cons, unsafe_cons)
 		cons_ifdef_statement.name = "!defined(__VXWORKS__) && !defined(__TEST_VXWORKS__)"
 		template.add_member(:private,cons_ifdef_statement)
-		cons.args << "aos_queue *queue"
+		cons.args << "RawQueue *queue"
 		cons.args << "#{t} *msg"
 		unsafe_cons.args << "#{t} *msg"
 		cons.add_cons("msg_ptr_","queue","msg")
 		unsafe_cons.add_cons("msg_ptr_","msg")
 		cons = safetemplate.add_member(:private,CPP::Constructor.new(safetemplate))
-		cons.args << "aos_queue *queue"
+		cons.args << "RawQueue *queue"
 		cons.add_cons("msg_ptr_","queue")
 		safetemplate.public
 		template.public

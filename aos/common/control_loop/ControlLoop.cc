@@ -4,8 +4,8 @@ namespace aos {
 namespace control_loops {
 
 time::Time NextLoopTime(time::Time start) {
-  return (start / kLoopFrequency.ToNSec()) *
-      kLoopFrequency.ToNSec() +
+  return (start / static_cast<int32_t>(kLoopFrequency.ToNSec())) *
+      static_cast<int32_t>(kLoopFrequency.ToNSec()) +
       kLoopFrequency;
 }
 

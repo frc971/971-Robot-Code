@@ -21,11 +21,14 @@
         'queue_testutils.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
         '<(AOS)/build/aos.gyp:logging',
         'once',
         '<(EXTERNALS):gtest',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
       ],
+      'export_dependent_settings': [
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
+       ],
     },
     {
       'target_name': 'time',
@@ -54,10 +57,10 @@
         },
         {
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ],
         }]
       ],
@@ -134,12 +137,14 @@
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',
+        'control_loop_queues',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',
+        'control_loop_queues',
       ],
     },
     {
@@ -216,6 +221,24 @@
       ],
     },
     {
+      'target_name': 'condition',
+      'type': 'static_library',
+      'sources': [
+        '<(AOS)/atom_code/ipc_lib/condition.cc',
+      ],
+      'dependencies': [
+        'mutex',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        # TODO(aschuh): Fix this dependency loop by
+        # providing a logging interface.
+        # '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        'mutex',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+      ],
+    },
+    {
       'target_name': 'mutex',
       'type': 'static_library',
       'conditions': [
@@ -228,10 +251,10 @@
             '<(AOS)/atom_code/ipc_lib/mutex.cpp',
           ],
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
         }],
       ],
@@ -252,6 +275,23 @@
         'mutex',
         '<(AOS)/build/aos.gyp:logging',
       ],
+    },
+    {
+      'target_name': 'condition_test',
+      'type': 'executable',
+      'sources': [
+        'condition_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        'condition',
+        '<(AOS)/common/util/util.gyp:thread',
+        'time',
+        'mutex',
+        '<(AOS)/build/aos.gyp:logging',
+        'queue_testutils',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:core_lib',
+       ],
     },
     {
       'target_name': 'die_test',

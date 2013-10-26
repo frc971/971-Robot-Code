@@ -138,7 +138,7 @@ class ScopedMessagePtr {
 
 #ifndef USE_UNSAFE
   // Only Queue should be able to build a queue.
-  ScopedMessagePtr(aos_queue *queue, T *msg)
+  ScopedMessagePtr(RawQueue *queue, T *msg)
       : queue_(queue), msg_(msg) {}
 #else
   ScopedMessagePtr(T *msg)
@@ -152,10 +152,10 @@ class ScopedMessagePtr {
 
 #ifndef USE_UNSAFE
   // Sets the queue that owns this message.
-  void set_queue(aos_queue *queue) { queue_ = queue; }
+  void set_queue(RawQueue *queue) { queue_ = queue; }
 
   // The queue that the message is a part of.
-  aos_queue *queue_;
+  RawQueue *queue_;
 #endif  // USE_UNSAFE
   // The message or NULL.
   T *msg_;
@@ -281,7 +281,7 @@ class Queue {
 #else
   T *MakeRawMessage();
   // Pointer to the queue that this object fetches from.
-  aos_queue *queue_;
+  RawQueue *queue_;
 #endif
   // Scoped pointer holding the latest message or NULL.
   ScopedMessagePtr<const T> queue_msg_;

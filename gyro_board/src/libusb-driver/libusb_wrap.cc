@@ -1,5 +1,7 @@
 #include "libusb_wrap.h"
 
+#include <string.h>
+
 #include <iostream>
 
 #include "aos/common/logging/logging.h"
@@ -115,8 +117,9 @@ namespace libusb {
 
 Transfer::Transfer(size_t data_length,
                    void (*callback)(Transfer *, void *),
-                   void *user_data)
-    : transfer_(libusb_alloc_transfer(0)),
+                   void *user_data,
+                   int num_iso_packets)
+    : transfer_(libusb_alloc_transfer(num_iso_packets)),
       data_(new uint8_t[data_length]),
       data_length_(data_length),
       callback_(callback),
@@ -146,16 +149,16 @@ void Transfer::Submit() {
     if (ret == LIBUSB_ERROR_BUSY) {
       LOG(FATAL, "transfer %p already submitted\n", this);
     }
-    LOG(FATAL, "libusb error %d submitting transfer %p\n",
-        ret, this);
+    LOG(FATAL, "libusb error %d submitting transfer %p. errno %d: %s\n",
+        ret, this, errno, strerror(errno));
   }
 }
 
 void Transfer::Cancel() {
   int ret = libusb_cancel_transfer(transfer_);
   if (ret != 0) {
-    LOG(FATAL, "libusb error %d cancelling transfer %p\n",
-        ret, this);
+    LOG(FATAL, "libusb error %d cancelling transfer %p. errno %d: %s\n",
+        ret, this, errno, strerror(errno));
   }
 }
 
@@ -167,17 +170,14 @@ IsochronousTransfer::IsochronousTransfer(size_t packet_length,
                                          int num_packets,
                                          void (*callback)(Transfer *, void *),
                                          void *user_data)
-    : Transfer(packet_length * num_packets, callback, user_data),
+    : Transfer(packet_length * num_packets, callback, user_data, num_packets),
       num_packets_(num_packets) {
 }
 
 void IsochronousTransfer::FillIsochronous(LibUSBDeviceHandle *device,
                                unsigned char endpoint,
-                               unsigned int timeout) {
-  (void)device;
-  (void)endpoint;
-  (void)timeout;
-  /*libusb_fill_iso_transfer(transfer_,
+                               const ::aos::time::Time &timeout) {
+  libusb_fill_iso_transfer(transfer_,
                            device->dev_handle_,
                            endpoint,
                            data_,
@@ -185,7 +185,8 @@ void IsochronousTransfer::FillIsochronous(LibUSBDeviceHandle *device,
                            num_packets_,
                            StaticTransferCallback,
                            this,
-                           timeout);*/
+                           timeout.ToMSec());
+  transfer_->iso_packet_desc[0].length = data_length_;
 }
 
 }  // namespace libusb

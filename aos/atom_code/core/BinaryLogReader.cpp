@@ -97,7 +97,7 @@ int BinaryLogReaderMain() {
     output->sequence = msg->sequence;
     memcpy(output_strings, msg->name, name_size);
     memcpy(output_strings + name_size, msg->message, message_size);
-    condition_set(&output->marker);
+    futex_set(&output->marker);
 
     logging::atom::Free(msg);
   }
