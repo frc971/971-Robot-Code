@@ -20,8 +20,6 @@
         '../common/common.gyp:queue_test',
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
-        '../common/glibusb/glibusb.gyp:gbuffer_test',
-        '../common/glibusb/glibusb.gyp:glibusb_test',
         '../common/util/util.gyp:wrapping_counter_test',
         'Common',
       ],
