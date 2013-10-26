@@ -107,6 +107,5 @@ struct DATA_STRUCT_NAME {
 // TODO(brians): Consider using C1X's _Static_assert once we have a compiler
 // (GCC 4.6) + flags that support it.
 static_assert(sizeof(DATA_STRUCT_NAME) <= DATA_STRUCT_SEND_SIZE,
-              "We only have room for " STRINGIFY(DATA_STRUCT_SEND_SIZE)
-              " bytes in the USB packet.");
+              "The sensor data structure is too big.");
 #endif  // defined(__cplusplus)
