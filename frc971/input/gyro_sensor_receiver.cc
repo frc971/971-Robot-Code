@@ -53,11 +53,21 @@ inline double index_translate(int32_t in) {
       (1.0) /*gears*/ * (2 * M_PI);
 }
 
+// Translates values from the ADC into voltage.
+inline double adc_translate(uint16_t in) {
+  static const double kVRefN = 0;
+  static const double kVRefP = 3.3;
+  static const int kMaximumValue = 0x3FF;
+  return kVRefN +
+      (static_cast<double>(in) / static_cast<double>(kMaximumValue) *
+       (kVRefP - kVRefN));
+}
+
 }  // namespace
 
 class GyroSensorReceiver : public USBReceiver {
   virtual void ProcessData() override {
-    if (data()->robot_id != 0) {
+    if (data()->robot_id != 2) {
       LOG(ERROR, "gyro board sent data for robot id %hhd!"
           " dip switches are %x\n",
           data()->robot_id, data()->base_status & 0xF);

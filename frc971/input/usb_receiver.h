@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "aos/common/time.h"
-#include "aos/common/util/wrapping_counter.h"
 
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/input/gyro_board_data.h"
@@ -62,7 +61,7 @@ class USBReceiver {
     // Gets called for every packet received.
     // Returns whether or not to process the values from this packet.
     bool IsCurrentPacketGood(const ::aos::time::Time &received_time,
-                             int32_t sequence);
+                             uint32_t sequence);
 
    private:
     // How many times the packet we guessed has to be close to right to use the
@@ -78,7 +77,7 @@ class USBReceiver {
 
     ::aos::time::Time last_good_packet_time_{0, 0};
 
-    int32_t last_good_sequence_;
+    uint32_t last_good_sequence_;
 
     const int kUnknownPhase = -11;
     // kUnknownPhase or the sequence number (%kPacketsPerLoopCycle) to
@@ -102,7 +101,7 @@ class USBReceiver {
 
   GyroBoardData data_;
 
-  ::aos::util::WrappingCounter sequence_;
+  uint32_t sequence_;
 
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;

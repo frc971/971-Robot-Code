@@ -18,8 +18,8 @@ void USBReceiver::RunIteration() {
     Reset();
   } else {
     const ::aos::time::Time received_time = ::aos::time::Time::Now();
-    if (phase_locker_.IsCurrentPacketGood(received_time, sequence_.count())) {
-      LOG(DEBUG, "processing data\n");
+    if (phase_locker_.IsCurrentPacketGood(received_time, sequence_)) {
+      LOG(DEBUG, "processing data %" PRIu32 "\n", sequence_);
       ProcessData();
     }
   }
@@ -28,7 +28,7 @@ void USBReceiver::RunIteration() {
 void USBReceiver::PhaseLocker::Reset() {
   LOG(INFO, "resetting\n");
   last_good_packet_time_ = ::aos::time::Time(0, 0);
-  last_good_sequence_ = -1;
+  last_good_sequence_ = 0;
   good_phase_ = guess_phase_ = kUnknownPhase;
   guess_phase_good_ = guess_phase_bad_ = 0;
   good_phase_early_ = good_phase_late_ = 0;
@@ -36,15 +36,20 @@ void USBReceiver::PhaseLocker::Reset() {
 
 bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
     const ::aos::time::Time &received_time,
-    int32_t sequence) {
+    uint32_t sequence) {
   if (last_good_packet_time_ != ::aos::time::Time(0, 0) &&
       received_time - last_good_packet_time_ > kResetTime) {
     LOG(WARNING, "no good packet received in too long\n");
     Reset();
     return false;
   }
-  if (last_good_sequence_ != -1 && sequence - last_good_sequence_ > 100) {
+  if (last_good_sequence_ != 0 && sequence - last_good_sequence_ > 100) {
     LOG(WARNING, "skipped too many packets\n");
+    Reset();
+    return false;
+  }
+  if (sequence < last_good_sequence_) {
+    LOG(WARNING, "sequence went down. gyro board reset?\n");
     Reset();
     return false;
   }
@@ -194,13 +199,13 @@ bool USBReceiver::ReceiveData() {
     memcpy(data(), completed_transfer_->data(),
            sizeof(GyroBoardData));
 
-    int32_t count_before = sequence_.count();
-    sequence_.Update(data()->sequence);
-    if (count_before == 0) {
-      LOG(INFO, "count starting at %" PRId32 "\n", sequence_.count());
-    } else if (sequence_.count() - count_before != 1) {
-      LOG(WARNING, "count went from %" PRId32" to %" PRId32 "\n",
-          count_before, sequence_.count());
+    uint32_t sequence_before = sequence_;
+    sequence_ = data()->sequence;
+    if (sequence_before == 0) {
+      LOG(INFO, "count starting at %" PRIu32 "\n", sequence_);
+    } else if (sequence_ - sequence_before != 1) {
+      LOG(WARNING, "count went from %" PRIu32" to %" PRIu32 "\n",
+          sequence_before, sequence_);
     }
 
     return false;
@@ -225,7 +230,7 @@ void USBReceiver::Reset() {
     c->Submit();
   }
 
-  sequence_.Reset();
+  sequence_ = 0;
   phase_locker_.Reset();
 }
 

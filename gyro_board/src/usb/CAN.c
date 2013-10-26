@@ -231,6 +231,10 @@ static portTASK_FUNCTION(vCAN1, pvParameters) {
     vTaskDelete(NULL);
   }
 
+  // Set all of the CAN stuff to run at CCLK/6, which translates to about 1 Mbit
+  // (1.042).
+  SC->PCLKSEL0 |= 3 << 26 | 3 << 28 | 3 << 30;
+
   // Enable CAN
   SC->PCONP |= PCONP_PCCAN1;
 

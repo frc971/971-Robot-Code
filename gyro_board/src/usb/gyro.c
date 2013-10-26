@@ -185,8 +185,9 @@ static int gyro_setup(void) {
 }
 
 static portTASK_FUNCTION(gyro_read_task, pvParameters) {
-  // Connect power and clock.
   SC->PCONP |= PCONP_PCSSP0;
+
+  // Make sure that the clock is set up right.
   SC->PCLKSEL1 &= ~(3 << 10);
   SC->PCLKSEL1 |= 1 << 10;
 

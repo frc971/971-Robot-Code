@@ -499,12 +499,15 @@ void fillSensorPacket(struct DataStruct *packet) {
   if (is_bot3) {
     packet->robot_id = 1;
   } else {  // is main robot
-    packet->robot_id = 0;
+    packet->robot_id = 2;
 
     packet->main.shooter = encoder1_val;
     packet->main.left_drive = encoder5_val;
     packet->main.right_drive = encoder4_val;
     packet->main.indexer = encoder3_val;
+    packet->main.battery_voltage = analog(0);
+    packet->main.left_drive_hall = analog(1);
+    packet->main.right_drive_hall = analog(3);
 
     NVIC_DisableIRQ(EINT3_IRQn);
 
