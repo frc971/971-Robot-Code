@@ -179,6 +179,7 @@ class VelocityDrivetrain(object):
                   self.CurrentDrivetrain().r)
     low_omega = (wheel_velocity / self.CurrentDrivetrain().G_low /
                  self.CurrentDrivetrain().r)
+    print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
     high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
                    self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
     low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
@@ -195,6 +196,13 @@ class VelocityDrivetrain(object):
         else:
           print gear_name, "Shifting to low"
 
+    # Shift algorithm improvements.
+    # TODO(aschuh):
+    # It takes time to shift.  Shifting down for 1 cycle doesn't make sense
+    # because you will end up slower than without shifting.  Figure out how
+    # to include that info.
+    # If the driver is still in high gear, but isn't asking for the extra power
+    # from low gear, don't shift until he asks for it.
     return high_power > low_power
 
   def FilterVelocity(self, throttle):
@@ -293,7 +301,7 @@ class VelocityDrivetrain(object):
 
 
 def main(argv):
-  drivetrain = VelocityDrivetrain()
+  vdrivetrain = VelocityDrivetrain()
 
   vl_plot = []
   vr_plot = []
@@ -303,47 +311,66 @@ def main(argv):
   t_plot = []
   left_gear_plot = []
   right_gear_plot = []
-  drivetrain.left_high = True
-  drivetrain.right_high = True
+  vdrivetrain.left_high = True
+  vdrivetrain.right_high = True
 
-  if drivetrain.left_high:
+  print "K is", vdrivetrain.CurrentDrivetrain().K
+
+  if vdrivetrain.left_high:
     print "Left is high"
   else:
     print "Left is low"
-  if drivetrain.right_high:
+  if vdrivetrain.right_high:
     print "Right is high"
   else:
     print "Right is low"
 
-  for t in numpy.arange(0, 2.0, drivetrain.dt):
+  for t in numpy.arange(0, 2.0, vdrivetrain.dt):
     if t < 1.0:
-      drivetrain.Update(throttle=0.60, steering=0.3)
+      vdrivetrain.Update(throttle=0.60, steering=0.3)
     elif t < 1.5:
-      drivetrain.Update(throttle=0.60, steering=-0.3)
+      vdrivetrain.Update(throttle=0.60, steering=-0.3)
     else:
-      drivetrain.Update(throttle=0.0, steering=0.3)
+      vdrivetrain.Update(throttle=0.0, steering=0.3)
     t_plot.append(t)
-    vl_plot.append(drivetrain.X[0, 0])
-    vr_plot.append(drivetrain.X[1, 0])
-    ul_plot.append(drivetrain.U[0, 0])
-    ur_plot.append(drivetrain.U[1, 0])
-    left_gear_plot.append(drivetrain.left_high * 2.0 - 10.0)
-    right_gear_plot.append(drivetrain.right_high * 2.0 - 10.0)
+    vl_plot.append(vdrivetrain.X[0, 0])
+    vr_plot.append(vdrivetrain.X[1, 0])
+    ul_plot.append(vdrivetrain.U[0, 0])
+    ur_plot.append(vdrivetrain.U[1, 0])
+    left_gear_plot.append(vdrivetrain.left_high * 2.0 - 10.0)
+    right_gear_plot.append(vdrivetrain.right_high * 2.0 - 10.0)
 
-    fwd_velocity = (drivetrain.X[1, 0] + drivetrain.X[0, 0]) / 2
-    turn_velocity = (drivetrain.X[1, 0] - drivetrain.X[0, 0])
+    fwd_velocity = (vdrivetrain.X[1, 0] + vdrivetrain.X[0, 0]) / 2
+    turn_velocity = (vdrivetrain.X[1, 0] - vdrivetrain.X[0, 0])
     if fwd_velocity < 0.0000001:
       radius_plot.append(turn_velocity)
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
 
+  cim_velocity_plot = []
+  cim_voltage_plot = []
+  cim_time = []
+  cim = drivetrain.CIM()
+  R = numpy.matrix([[300]])
+  for t in numpy.arange(0, 0.5, cim.dt):
+    U = numpy.clip(cim.K * (R - cim.X) + R / cim.Kv, cim.U_min, cim.U_max)
+    cim.Update(U)
+    cim_velocity_plot.append(cim.X[0, 0])
+    cim_voltage_plot.append(U[0, 0] * 10)
+    cim_time.append(t)
+  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
+  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
+  pylab.legend()
+  pylab.show()
+
+
   pylab.plot(t_plot, vl_plot, label='left velocity')
   pylab.plot(t_plot, vr_plot, label='right velocity')
-  pylab.plot(t_plot, ul_plot, label='left power')
-  pylab.plot(t_plot, ur_plot, label='right power')
+  pylab.plot(t_plot, ul_plot, label='left voltage')
+  pylab.plot(t_plot, ur_plot, label='right voltage')
   pylab.plot(t_plot, radius_plot, label='radius')
-  pylab.plot(t_plot, left_gear_plot, label='left_gear')
-  pylab.plot(t_plot, right_gear_plot, label='right_gear')
+  pylab.plot(t_plot, left_gear_plot, label='left gear high')
+  pylab.plot(t_plot, right_gear_plot, label='right gear high')
   pylab.legend()
   pylab.show()
   return 0
