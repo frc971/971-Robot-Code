@@ -76,7 +76,7 @@ void vParTestInitialise(void)
         GPIO2->FIODIR |= partstFIO1_BITS;
 
         /* Start will all LEDs off. */
-        GPIO2->FIOCLR = partstFIO1_BITS;
+        GPIO2->FIOSET = partstFIO1_BITS;
 }
 /*-----------------------------------------------------------*/
 

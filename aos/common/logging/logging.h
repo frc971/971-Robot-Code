@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __VXWORKS__
 // Because the vxworks system headers miss the noreturn...
@@ -112,12 +113,112 @@ void log_uncork(int line, const char *function, log_level level,
              format, ##args); \
 } while (0)
 
-// TODO(brians) add CHECK macros like glog
-// (<http://google-glog.googlecode.com/svn/trunk/doc/glog.html>)
-// and replace assert with one
-
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+
+namespace aos {
+
+// CHECK* macros, similar to glog
+// (<http://google-glog.googlecode.com/svn/trunk/doc/glog.html>)'s, except they
+// don't support streaming in extra text. Some of the implementation is borrowed
+// from there too.
+// They all LOG(FATAL) with a helpful message when the check fails.
+// TODO(brians): Replace assert with CHECK
+// Portions copyright (c) 1999, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// CHECK dies with a fatal error if condition is not true.  It is *not*
+// controlled by NDEBUG, so the check will be executed regardless of
+// compilation mode.  Therefore, it is safe to do things like:
+//    CHECK(fp->Write(x) == 4)
+#define CHECK(condition)  \
+  if (__builtin_expect(!(condition), 0)) { \
+    LOG(FATAL, "CHECK(" #condition ") failed\n"); \
+  }
+
+// Helper functions for CHECK_OP macro.
+// The (int, int) specialization works around the issue that the compiler
+// will not instantiate the template version of the function on values of
+// unnamed enum type.
+#define DEFINE_CHECK_OP_IMPL(name, op) \
+  template <typename T1, typename T2> \
+  inline void LogImpl##name(const T1& v1, const T2& v2,    \
+                            const char* exprtext) { \
+    if (!__builtin_expect(v1 op v2, 1)) { \
+      LOG(FATAL, "CHECK(%s) failed\n", exprtext); \
+    } \
+  } \
+  inline void LogImpl##name(int v1, int v2, const char* exprtext) { \
+    ::aos::LogImpl##name<int, int>(v1, v2, exprtext); \
+  }
+
+// We use the full name Check_EQ, Check_NE, etc. in case the file including
+// base/logging.h provides its own #defines for the simpler names EQ, NE, etc.
+// This happens if, for example, those are used as token names in a
+// yacc grammar.
+DEFINE_CHECK_OP_IMPL(Check_EQ, ==)  // Compilation error with CHECK_EQ(NULL, x)?
+DEFINE_CHECK_OP_IMPL(Check_NE, !=)  // Use CHECK(x == NULL) instead.
+DEFINE_CHECK_OP_IMPL(Check_LE, <=)
+DEFINE_CHECK_OP_IMPL(Check_LT, < )
+DEFINE_CHECK_OP_IMPL(Check_GE, >=)
+DEFINE_CHECK_OP_IMPL(Check_GT, > )
+
+#define CHECK_OP(name, op, val1, val2) \
+  ::aos::LogImplCheck##name(val1, val2, \
+                            STRINGIFY(val1) STRINGIFY(op) STRINGIFY(val2))
+
+#define CHECK_EQ(val1, val2) CHECK_OP(_EQ, ==, val1, val2)
+#define CHECK_NE(val1, val2) CHECK_OP(_NE, !=, val1, val2)
+#define CHECK_LE(val1, val2) CHECK_OP(_LE, <=, val1, val2)
+#define CHECK_LT(val1, val2) CHECK_OP(_LT, < , val1, val2)
+#define CHECK_GE(val1, val2) CHECK_OP(_GE, >=, val1, val2)
+#define CHECK_GT(val1, val2) CHECK_OP(_GT, > , val1, val2)
+
+// A small helper for CHECK_NOTNULL().
+template <typename T>
+inline T* CheckNotNull(const char *value_name, T *t) {
+  if (t == NULL) {
+    LOG(FATAL, "'%s' must not be NULL\n", value_name);
+  }
+  return t;
+}
+
+// Check that the input is non NULL.  This very useful in constructor
+// initializer lists.
+#define CHECK_NOTNULL(val) \
+  ::aos::CheckNotNull(STRINGIFY(val), val)
+
+}  // namespace aos
+
+#endif  // __cplusplus
 
 #endif

@@ -20,7 +20,7 @@ namespace {
 // For purposes of moving the end up/down by a certain amount, the wrist is 18
 // inches long.
 const double kCompWristHallEffectStartAngle = 1.285;
-const double kPracticeWristHallEffectStartAngle = 1.168;
+const double kPracticeWristHallEffectStartAngle = 1.175;
 
 const double kCompWristHallEffectStopAngle = 100 * M_PI / 180.0;
 const double kPracticeWristHallEffectStopAngle = 100 * M_PI / 180.0;

@@ -39,10 +39,7 @@
 #include "CAN.h"
 #include "gyro.h"
 
-/*
- * The task that handles the USB stack.
- */
-extern void vUSBTask(void *pvParameters);
+extern void usb_init(void);
 
 // Sets up (and connects) PLL0.
 // The CPU will be running at 100 MHz with a 12 MHz clock input when this is
@@ -162,11 +159,6 @@ static void setup_hardware(void) {
 int main(void) {
   setup_hardware();
 
-  /* Create the USB task. */
-  xTaskCreate(vUSBTask, (signed char *) "USB",
-              configMINIMAL_STACK_SIZE + 1020, (void *) NULL,
-              tskIDLE_PRIORITY + 3, NULL);
-
   digital_init();
 
   analog_init();
@@ -175,10 +167,9 @@ int main(void) {
 
   gyro_init();
 
-  // Enable USB.  The PC has probably disconnected it now.
-  USBHwAllowConnect();
-
   initCAN();
+
+  usb_init();
 
   // Start the scheduler.
   vTaskStartScheduler();

@@ -46,12 +46,13 @@ static uint32_t do_gyro_read(uint32_t data, int *parity_error) {
   }
   uint16_t low_value = spi_read();
   gyro_disable_csel();
-  if (__builtin_parity(low_value) != 1) {
-    printf("low value 0x%"PRIx16" parity error\n", high_value);
+  uint32_t r = high_value << 16 | low_value;
+  if (__builtin_parity(r) != 1) {
+    printf("low value 0x%"PRIx16" parity error (r=%"PRIx32")\n", low_value, r);
     *parity_error = 1;
   }
 
-  return high_value << 16 | low_value;
+  return r;
 }
 
 // Returns all of the non-data bits in the "header" except the parity from
@@ -184,6 +185,56 @@ static int gyro_setup(void) {
 }
 
 static portTASK_FUNCTION(gyro_read_task, pvParameters) {
+  // Connect power and clock.
+  SC->PCONP |= PCONP_PCSSP0;
+  SC->PCLKSEL1 &= ~(3 << 10);
+  SC->PCLKSEL1 |= 1 << 10;
+
+  // Set up SSEL.
+  // It's is just a GPIO pin because we're the master (it would be special if we
+  // were a slave).
+  gyro_disable_csel();
+  GPIO0->FIODIR |= 1 << 16;
+  PINCON->PINSEL1 &= ~(3 << 0);
+  PINCON->PINSEL1 |= 0 << 0;
+
+  // Set up MISO0 and MOSI0.
+  PINCON->PINSEL1 &= ~(3 << 2 | 3 << 4);
+  PINCON->PINSEL1 |= 2 << 2 | 2 << 4;
+
+  // Set up SCK0.
+  PINCON->PINSEL0 &= ~(3 << 30);
+  PINCON->PINSEL0 |= (2 << 30);
+
+  // Make sure it's disabled.
+  SSP0->CR1 = 0;
+  SSP0->CR0 =
+      0xF /* 16 bit transfer */ |
+      0 << 4 /* SPI mode */ |
+      0 << 6 /* CPOL = 0 */ |
+      0 << 7 /* CPHA = 0 */;
+  // 14 clocks per cycle.  This works out to a ~7.2MHz bus.
+  // The gyro is rated for a maximum of 8.08MHz.
+  SSP0->CPSR = 14;
+  // Finally, enable it.
+  // This has to be done after we're done messing with everything else.
+  SSP0->CR1 |= 1 << 1;
+
+  if (gyro_setup()) {
+    printf("gyro setup failed. deleting task\n");
+    gyro_output.angle = 0;
+    gyro_output.last_reading_bad = gyro_output.gyro_bad = 1;
+    gyro_output.initialized = 1;
+    vTaskDelete(NULL);
+    return;
+  } else {
+    gyro_output.initialized = 1;
+  }
+
+  gyro_output.angle = 0;
+  gyro_output.last_reading_bad = 1;  // until we're started up
+  gyro_output.gyro_bad = 0;
+
   // How many times per second to read the gyro value.
   static const int kGyroReadFrequency = 200;
   // How many times per second to flash the LED.
@@ -288,53 +339,7 @@ static portTASK_FUNCTION(gyro_read_task, pvParameters) {
 }
 
 void gyro_init(void) {
-  // Connect power and clock.
-  SC->PCONP |= PCONP_PCSSP0;
-  SC->PCLKSEL1 &= ~(3 << 10);
-  SC->PCLKSEL1 |= 1 << 10;
-
-  // Set up SSEL.
-  // It's is just a GPIO pin because we're the master (it would be special if we
-  // were a slave).
-  gyro_disable_csel();
-  GPIO0->FIODIR |= 1 << 16;
-  PINCON->PINSEL1 &= ~(3 << 0);
-  PINCON->PINSEL1 |= 0 << 0;
-
-  // Set up MISO0 and MOSI0.
-  PINCON->PINSEL1 &= ~(3 << 2 | 3 << 4);
-  PINCON->PINSEL1 |= 2 << 2 | 2 << 2;
-
-  // Set up SCK0.
-  PINCON->PINSEL0 &= ~(3 << 30);
-  PINCON->PINSEL0 |= (2 << 30);
-
-  // Make sure it's disabled.
-  SSP0->CR1 = 0;
-  SSP0->CR0 =
-      0xF /* 16 bit transfer */ |
-      0 << 4 /* SPI mode */ |
-      0 << 6 /* CPOL = 0 */ |
-      0 << 7 /* CPHA = 0 */;
-  // 14 clocks per cycle.  This works out to a ~7.2MHz bus.
-  // The gyro is rated for a maximum of 8.08MHz.
-  SSP0->CPSR = 14;
-  // Set it to master mode.
-  SSP0->CR1 |= 1 << 2;
-  // Finally, enable it.
-  // This has to be done after we're done messing with everything else.
-  SSP0->CR1 |= 1 << 1;
-
-  if (gyro_setup()) {
-    printf("gyro setup failed. not starting task\n");
-    gyro_output.angle = 0;
-    gyro_output.last_reading_bad = gyro_output.gyro_bad = 1;
-    return;
-  }
-
-  gyro_output.angle = 0;
-  gyro_output.last_reading_bad = 1;  // until we're started up
-  gyro_output.gyro_bad = 0;
+  gyro_output.initialized = 0;
 
   xTaskCreate(gyro_read_task, (signed char *) "gyro",
               configMINIMAL_STACK_SIZE + 100, NULL,

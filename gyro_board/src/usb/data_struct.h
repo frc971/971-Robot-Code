@@ -1,6 +1,8 @@
 // This isn't really a header file. It's designed to be #included directly into
 // other code (possibly in a namespace or whatever), so it doesn't have include
 // guards.
+// This means that it can not #include anything else because it (sometimes) gets
+// #included inside a namespace.
 // In the gyro board code, fill_packet.h #includes this file.
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
@@ -96,9 +98,15 @@ struct DATA_STRUCT_NAME {
 };
 #pragma pack(pop)
 
+// This is how big the isochronous packets that we're going to send are.
+// This number is more painful to change than the actual size of the struct
+// because the code on both ends has to agree on this (or at least that's what
+// Brian found empirically 2013-10-24).
+#define DATA_STRUCT_SEND_SIZE 128
+
 #ifdef __cplusplus
 // TODO(brians): Consider using C1X's _Static_assert once we have a compiler
 // (GCC 4.6) + flags that support it.
-static_assert(sizeof(DATA_STRUCT_NAME) <= 64,
-              "We only have room for 64 bytes in the USB packet.");
+static_assert(sizeof(DATA_STRUCT_NAME) <= DATA_STRUCT_SEND_SIZE,
+              "The sensor data structure is too big.");
 #endif  // defined(__cplusplus)

@@ -11,6 +11,7 @@ struct GyroOutput {
   int64_t angle;
   int last_reading_bad;
   int gyro_bad;
+  int initialized;
 };
 // This gets updated in a portENTER_CRITICAL/portEXIT_CRITICAL() block so all of
 // the values will be in sync.

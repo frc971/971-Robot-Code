@@ -8,4 +8,4 @@ wrist
 index
 shooter
 auto
-gyro_board_reader
+gyro_sensor_receiver
