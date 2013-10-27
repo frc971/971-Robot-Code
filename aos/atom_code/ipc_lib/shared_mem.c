@@ -1,4 +1,4 @@
-#include "shared_mem.h"
+#include "aos/atom_code/ipc_lib/shared_mem.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -8,11 +8,20 @@
 #include <sys/types.h>
 #include <errno.h>
 
+#include "aos/atom_code/ipc_lib/core_lib.h"
+
 // the path for the shared memory segment. see shm_open(3) for restrictions
 #define AOS_SHM_NAME "/aos_shared_mem"
 // Size of the shared mem segment.
 // set to the maximum number that worked
 #define SIZEOFSHMSEG (4096 * 27813)
+
+void init_shared_mem_core(aos_shm_core *shm_core) {
+  clock_gettime(CLOCK_REALTIME, &shm_core->identifier);
+  shm_core->msg_alloc_lock = 0;
+  shm_core->queues.queue_list = NULL;
+  shm_core->queues.alloc_lock = 0;
+}
 
 ptrdiff_t aos_core_get_mem_usage(void) {
   return global_core->size -
@@ -20,10 +29,10 @@ ptrdiff_t aos_core_get_mem_usage(void) {
        (ptrdiff_t)global_core->mem_struct);
 }
 
-struct aos_core global_core_data;
 struct aos_core *global_core = NULL;
 
 int aos_core_create_shared_mem(enum aos_core_create to_create) {
+  static struct aos_core global_core_data;
   global_core = &global_core_data;
   int shm;
 before:
@@ -46,8 +55,8 @@ before:
   }
   if (shm == -1) {
     fprintf(stderr, "shared_mem:"
-        " shm_open(" AOS_SHM_NAME ", O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
-        " failed with %d: %s\n", errno, strerror(errno));
+            " shm_open(" AOS_SHM_NAME ", O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
+            " failed with %d: %s\n", errno, strerror(errno));
     return -1;
   }
   if (global_core->owner) {
@@ -62,8 +71,8 @@ before:
       MAP_SHARED | MAP_FIXED | MAP_LOCKED | MAP_POPULATE, shm, 0);
   if (shm_address == MAP_FAILED) {
     fprintf(stderr, "shared_mem: mmap(%p, 0x%zx, stuff, stuff, %d, 0) failed"
-        " with %d: %s\n",
-        (void *)SHM_START, SIZEOFSHMSEG, shm, errno, strerror(errno));
+            " with %d: %s\n",
+            (void *)SHM_START, SIZEOFSHMSEG, shm, errno, strerror(errno));
     return -1;
   }
   printf("shared_mem: shm at: %p\n", shm_address);
@@ -88,9 +97,9 @@ int aos_core_use_address_as_shared_mem(void *address, size_t size) {
     init_shared_mem_core(global_core->mem_struct);
   }
   if (global_core->owner) {
-    condition_set(&global_core->mem_struct->creation_condition);
+    futex_set(&global_core->mem_struct->creation_condition);
   } else {
-    if (condition_wait(&global_core->mem_struct->creation_condition) != 0) {
+    if (futex_wait(&global_core->mem_struct->creation_condition) != 0) {
       fprintf(stderr, "waiting on creation_condition failed\n");
       return -1;
     }
@@ -116,4 +125,3 @@ int aos_core_free_shared_mem(){
   }
   return 0;
 }
-

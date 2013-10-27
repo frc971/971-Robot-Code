@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This is a helper script that gets called as a replacement for gcc. It just
+# passes all arguments on unless it is being called as a shared linker.
+
+[ $1 != '-shared' ] && exec powerpc-wrs-vxworks-gcc "$@"
+exec $(dirname $0)/crio_link_out "$@"

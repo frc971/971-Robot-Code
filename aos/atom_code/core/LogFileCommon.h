@@ -28,13 +28,13 @@ namespace logging {
 // A lot of the fields don't have comments because they're the same as the
 // identically named fields in LogMessage.
 struct __attribute__((aligned)) LogFileMessageHeader {
-  // gets condition_set once this one has been written
+  // gets futex_set once this one has been written
   // for readers keeping up with a live writer
   //
   // gets initialized to 0 by ftruncate
   // 
   // there will be something here after the last log on a "page" set to 2
-  // (by the condition_set) to indicate that the next log is on the next page
+  // (by the futex_set) to indicate that the next log is on the next page
   mutex marker;
   static_assert(sizeof(marker) == 4, "mutex changed size!");
   log_level level;
@@ -132,8 +132,8 @@ class LogFileAccessor {
         sizeof(mutex) > kPageSize) {
       char *const temp = current_;
       MapNextPage();
-      if (condition_set_value(reinterpret_cast<mutex *>(&temp[position_]), 2) == -1) {
-        fprintf(stderr, "LogFileCommon: condition_set_value(%p, 2) failed with %d: %s."
+      if (futex_set_value(reinterpret_cast<mutex *>(&temp[position_]), 2) == -1) {
+        fprintf(stderr, "LogFileCommon: futex_set_value(%p, 2) failed with %d: %s."
                 " readers will hang\n", &temp[position_], errno, strerror(errno));
       }
       Unmap(temp);
@@ -152,7 +152,7 @@ class LogFileAccessor {
     do {
       r = reinterpret_cast<LogFileMessageHeader *>(&current_[position_]);
       if (wait) {
-        if (condition_wait(&r->marker) != 0) continue;
+        if (futex_wait(&r->marker) != 0) continue;
       }
       if (r->marker == 2) {
         Unmap(current_);

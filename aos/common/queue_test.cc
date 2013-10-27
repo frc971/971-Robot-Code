@@ -48,7 +48,7 @@ TEST_F(QueueTest, FetchBlocking) {
   usleep(50000);
   my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
   t.Join();
-  EXPECT_EQ(true, t.threaded_test_queue.IsNewerThanMS(20));
+  EXPECT_LE(t.threaded_test_queue.Age(), time::Time::InMS(55));
 }
 
 // Tests that we can send a message with the message pointer and get it back.

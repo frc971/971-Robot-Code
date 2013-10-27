@@ -17,10 +17,10 @@
             '<(AOS)/atom_code/logging/atom_logging.cc',
           ],
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:ipc_lib',
+            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
           ]
         }],
       ],

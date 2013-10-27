@@ -10,8 +10,8 @@ namespace constants {
 // store their output value into and assume that aos::robot_state->get() is
 // not null and is correct.  They return true on success.
 
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 5971;
+const uint16_t kCompTeamNumber = 5971;
+const uint16_t kPracticeTeamNumber = 971;
 
 // Sets *angle to how many radians from horizontal to the location of interest.
 bool wrist_hall_effect_start_angle(double *angle);

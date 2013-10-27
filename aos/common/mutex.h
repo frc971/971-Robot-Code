@@ -11,6 +11,8 @@
 
 namespace aos {
 
+class Condition;
+
 // An abstraction of a mutex that has implementations both for the
 // atom and for the cRIO.
 // If there are multiple tasks or processes contending for the mutex,
@@ -42,6 +44,9 @@ class Mutex {
   typedef mutex ImplementationType;
 #endif
   ImplementationType impl_;
+
+  friend class Condition;  // for access to impl_
+
 #ifdef __VXWORKS__
   DISALLOW_COPY_AND_ASSIGN(Mutex);
 #endif
@@ -63,6 +68,20 @@ class MutexLocker {
  private:
   Mutex *mutex_;
   DISALLOW_COPY_AND_ASSIGN(MutexLocker);
+};
+// The inverse of MutexLocker.
+class MutexUnlocker {
+ public:
+  explicit MutexUnlocker(Mutex *mutex) : mutex_(mutex) {
+    mutex_->Unlock();
+  }
+  ~MutexUnlocker() {
+    mutex_->Lock();
+  }
+
+ private:
+  Mutex *mutex_;
+  DISALLOW_COPY_AND_ASSIGN(MutexUnlocker);
 };
 
 }  // namespace aos

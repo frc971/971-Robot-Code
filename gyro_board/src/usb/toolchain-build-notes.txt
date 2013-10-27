@@ -3,7 +3,7 @@ It compiles the code successfully and lives in /opt/cortex-m3.
 The flags are from logic, Austin's gcc, and
   <http://www.coactionos.com/getting-started/43-building-and-installing-a-cortex-m3-compiler-on-ubuntu.html>
   (for some of the newlib flags).
-TODO(brians): make sure that it generates code that works and then update this
+This has been uploaded to our package repository for wheezy as arm-eabi-gcc.
 
 binutils
 	../binutils-2.23.2/configure --prefix=/opt/cortex-m3 --target=arm-eabi

@@ -20,6 +20,8 @@ queue_group IndexLoop {
     // If true, set the indexer voltage to index_voltage.
     bool override_index;
     double index_voltage;
+    bool override_transfer;
+    double transfer_voltage;
   };
 
   message Position {
@@ -45,8 +47,10 @@ queue_group IndexLoop {
     int32_t top_disc_negedge_count;
     double top_disc_negedge_position;
 
-    // Whether the hall effect for the loader being at the top is triggered.
+    // Whether the hall effects for the loader are triggered (have a magnet in
+	// front of them).
 	bool loader_top;
+	bool loader_bottom;
   };
 
   message Output {
@@ -75,6 +79,12 @@ queue_group IndexLoop {
     bool preloaded;
     // Indexer ready to accept more discs.
     bool ready_to_intake;
+	// True from when we're committed to shooting util after the disk is clear
+	// of the robot.
+	bool is_shooting;
+	// Goes false when we first get a disk and back true after we finish
+	// clearing.
+	bool hopper_clear;
   };
 
   queue Goal goal;

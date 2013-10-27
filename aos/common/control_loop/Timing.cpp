@@ -11,8 +11,8 @@ namespace time {
 void PhasedLoopXMS(int ms, int offset) {
   // TODO(brians): Tests!
   const Time frequency = Time::InMS(ms);
-  SleepUntil((Time::Now() / frequency.ToNSec()) *
-             frequency.ToNSec() +
+  SleepUntil((Time::Now() / static_cast<int32_t>(frequency.ToNSec())) *
+             static_cast<int32_t>(frequency.ToNSec()) +
              frequency + Time::InUS(offset));
 }
 
