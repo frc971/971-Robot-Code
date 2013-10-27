@@ -267,7 +267,7 @@ static void USBFrameHandler(unsigned short wFrame) {
   }
 
   fillSensorPacket(&usbPacket);
-  static uint8_t sequence = 0;
+  static uint32_t sequence = 0;
   usbPacket.sequence = sequence++;
   USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, DATA_PACKET_SIZE);
 }
