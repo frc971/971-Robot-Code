@@ -37,7 +37,7 @@ class SerializableControlLoop : public Runnable {
 };
 
 // Control loops run this often, "starting" at time 0.
-const time::Time kLoopFrequency = time::Time::InSeconds(0.01);
+constexpr time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 
 // Calculates the next time to run control loops after start.
 time::Time NextLoopTime(time::Time start = time::Time::Now());
@@ -50,7 +50,7 @@ time::Time NextLoopTime(time::Time start = time::Time::Now());
 // If has_position is false, the control loop will always use NULL as the
 // position and not check the queue.  This is used for "loops" that control
 // motors open loop.
-template <class T, bool has_position = true>
+template <class T, bool has_position = true, bool fail_no_position = true>
 class ControlLoop : public SerializableControlLoop {
  public:
   // Maximum age of position packets before the loop will be disabled due to

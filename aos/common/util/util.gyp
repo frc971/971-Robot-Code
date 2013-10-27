@@ -41,5 +41,23 @@
         '<(AOS)/build/aos.gyp:logging',
       ],
     },
+    {
+      'target_name': 'wrapping_counter',
+      'type': 'static_library',
+      'sources': [
+        'wrapping_counter.cc',
+      ],
+    },
+    {
+      'target_name': 'wrapping_counter_test',
+      'type': 'executable',
+      'sources': [
+        'wrapping_counter_test.cc',
+      ],
+      'dependencies': [
+        'wrapping_counter',
+        '<(EXTERNALS):gtest',
+      ],
+    },
   ],
 }

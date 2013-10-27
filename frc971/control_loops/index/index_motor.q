@@ -20,6 +20,8 @@ queue_group IndexLoop {
     // If true, set the indexer voltage to index_voltage.
     bool override_index;
     double index_voltage;
+    bool override_transfer;
+    double transfer_voltage;
   };
 
   message Position {

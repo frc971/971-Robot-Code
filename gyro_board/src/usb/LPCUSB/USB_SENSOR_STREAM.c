@@ -38,19 +38,20 @@
 
 #include "LPC17xx.h"
 
-#include "analog.h"
+#include "fill_packet.h"
 
 #define usbMAX_SEND_BLOCK    ( 20 / portTICK_RATE_MS )
 #define usbRXBUFFER_LEN      ( 80 )
 #define usbTXBUFFER_LEN      ( 600 )
 
-#define INT_IN_EP     0x81 //read manual for picking these...
-#define INT_OUT_EP    0x04
+// Read the processor manual for picking these.
 #define BULK_IN_EP    0x82
 #define BULK_OUT_EP   0x05
 #define ISOC_IN_EP    0x83
+#define NUM_ENDPOINTS 3
 
 #define MAX_PACKET_SIZE  64
+#define DATA_PACKET_SIZE DATA_STRUCT_SEND_SIZE
 
 #define LE_WORD(x)    ((x)&0xFF),((x)>>8)
 
@@ -58,8 +59,13 @@ static struct DataStruct usbPacket;
 
 static xQueueHandle xRxedChars = NULL, xCharsForTx = NULL;
 
-static const unsigned char abDescriptors[] = {
+// This gets cleared each time the ISR is entered and then checked as it's
+// returning so that we can still yield from the ISR to a woken task but not
+// from the middle of the ISR like it would be if this was checked in each
+// endpoint handler that needs it.
+static portBASE_TYPE higher_priority_task_woken;
 
+static const unsigned char abDescriptors[] = {
 // Device descriptor
   0x12,
   DESC_DEVICE,
@@ -79,7 +85,7 @@ static const unsigned char abDescriptors[] = {
 // Configuration descriptor
   0x09,
   DESC_CONFIGURATION,
-  LE_WORD(46),      // wTotalLength
+  LE_WORD(9 + 9 + 7 * NUM_ENDPOINTS),  // wTotalLength
   0x01,        // bNumInterfaces
   0x01,        // bConfigurationValue
   0x00,        // iConfiguration
@@ -90,7 +96,7 @@ static const unsigned char abDescriptors[] = {
   DESC_INTERFACE,
   0x00,        // bInterfaceNumber
   0x00,        // bAlternateSetting
-  0x05,        // bNumEndPoints
+  NUM_ENDPOINTS,  // bNumEndPoints
   0x0A,        // bInterfaceClass = data
   0x00,        // bInterfaceSubClass
   0x00,        // bInterfaceProtocol
@@ -98,7 +104,7 @@ static const unsigned char abDescriptors[] = {
 // Debug EP OUT
   0x07,
   DESC_ENDPOINT,
-  BULK_OUT_EP,      // bEndpointAddress
+  BULK_OUT_EP,  // bEndpointAddress
   0x02,        // bmAttributes = bulk
   LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
   0x00,        // bInterval
@@ -109,28 +115,13 @@ static const unsigned char abDescriptors[] = {
   0x02,        // bmAttributes = bulk
   LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
   0x00,        // bInterval
-// Data EP OUT
-  0x07,
-  DESC_ENDPOINT,
-  INT_OUT_EP,      // bEndpointAddress
-  0x03,        // bmAttributes = intr
-  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
-  0x01,        // bInterval
-// Data EP in
-  0x07,
-  DESC_ENDPOINT,
-  INT_IN_EP,      // bEndpointAddress
-  0x03,        // bmAttributes = intr
-  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
-  0x01,        // bInterval
-  
   // isoc data EP IN
   0x07,
   DESC_ENDPOINT,
   ISOC_IN_EP,            // bEndpointAddress
   0x0D,              // bmAttributes = isoc, synchronous, data endpoint
-  LE_WORD(MAX_PACKET_SIZE),  // wMaxPacketSize
-  0x01,            // bInterval  
+  LE_WORD(DATA_PACKET_SIZE),  // wMaxPacketSize
+  0x01,            // bInterval
 
   // string descriptors
   0x04,
@@ -162,7 +153,6 @@ static const unsigned char abDescriptors[] = {
  */
 static void DebugOut(unsigned char bEP, unsigned char bEPStatus) {
   int i, iLen;
-  long lHigherPriorityTaskWoken = pdFALSE;
   unsigned char abBulkBuf[64];
 
   (void) bEPStatus;
@@ -171,10 +161,8 @@ static void DebugOut(unsigned char bEP, unsigned char bEPStatus) {
   iLen = USBHwEPRead(bEP, abBulkBuf, sizeof(abBulkBuf));
   for (i = 0; i < iLen; i++) {
     // put into queue
-    xQueueSendFromISR(xRxedChars, &(abBulkBuf[ i ]), &lHigherPriorityTaskWoken);
+    xQueueSendFromISR(xRxedChars, &abBulkBuf[i], &higher_priority_task_woken);
   }
-
-  portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
 
 
@@ -186,7 +174,6 @@ static void DebugOut(unsigned char bEP, unsigned char bEPStatus) {
  */
 static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
   int i, iLen;
-  long lHigherPriorityTaskWoken = pdFALSE;
   unsigned char abBulkBuf[64];
 
   (void) bEPStatus;
@@ -199,8 +186,8 @@ static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
 
   // get bytes from transmit FIFO into intermediate buffer
   for (i = 0; i < MAX_PACKET_SIZE; i++) {
-    if (xQueueReceiveFromISR(xCharsForTx, (&abBulkBuf[i]),
-                             &lHigherPriorityTaskWoken) != pdPASS) {
+    if (xQueueReceiveFromISR(xCharsForTx, &abBulkBuf[i],
+                             &higher_priority_task_woken) != pdPASS) {
       break;
     }
   }
@@ -210,33 +197,8 @@ static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
   if (iLen > 0) {
     USBHwEPWrite(bEP, abBulkBuf, iLen);
   }
-
-  portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
 }
 
-
-static unsigned char abDataBuf[64];
-int VCOM_putcharFromISR(int c, long *woken);
-static void DataOut(unsigned char bEP, unsigned char bEPStatus) {
-    int iLen;
-    long lHigherPriorityTaskWoken = pdFALSE;
-    /*
-       char *a = "hello\n";
-       while(*a){
-         VCOM_putcharFromISR(*a,&lHigherPriorityTaskWoken);
-         a ++;
-       }
-       */
-    iLen = USBHwEPRead(bEP, abDataBuf, sizeof(abDataBuf));
-    portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
-}
-
-static void DataIn(unsigned char bEP, unsigned char bEPStatus) {
-    long lHigherPriorityTaskWoken = pdFALSE;
-  	fillSensorPacket(&usbPacket);
-    USBHwEPWrite(bEP, (unsigned char *)&usbPacket, sizeof(usbPacket));
-    portEND_SWITCHING_ISR(lHigherPriorityTaskWoken);
-}
 
 /**
  * Writes one character to VCOM port
@@ -289,26 +251,28 @@ int VCOM_getchar(void) {
  * Simply calls the USB ISR
  */
 void USB_IRQHandler(void) {
+  higher_priority_task_woken = pdFALSE;
   USBHwISR();
+  portEND_SWITCHING_ISR(higher_priority_task_woken);
 }
 
 static void USBFrameHandler(unsigned short wFrame) {
   (void) wFrame;
   if (uxQueueMessagesWaitingFromISR(xCharsForTx) > 0) {
-    // data available, enable interrupt instead of NAK on bulk in too
+    // Data to send is available so enable interrupt instead of NAK on bulk in
+    // too.
     USBHwNakIntEnable(INACK_BI | INACK_II);
   } else {
     USBHwNakIntEnable(INACK_II);
   }
 
   fillSensorPacket(&usbPacket);
-  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, sizeof(usbPacket));
+  static uint32_t sequence = 0;
+  usbPacket.sequence = sequence++;
+  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, DATA_PACKET_SIZE);
 }
 
-void vUSBTask(void *pvParameters) {
-  portTickType xLastFlashTime;
-
-  (void) pvParameters;
+void usb_init(void) {
   DBG("Initialising USB stack\n");
 
   xRxedChars = xQueueCreate(usbRXBUFFER_LEN, sizeof(char));
@@ -320,7 +284,7 @@ void vUSBTask(void *pvParameters) {
     vTaskDelete(NULL);
   }
 
-  // initialise stack
+  // Initialise the USB stack.
   USBInit();
 
   // register descriptors
@@ -331,16 +295,11 @@ void vUSBTask(void *pvParameters) {
   //                          HandleClassRequest, abClassReqData);
 
   // register endpoint handlers
-  USBHwRegisterEPIntHandler(INT_IN_EP, DataIn);
-  USBHwRegisterEPIntHandler(INT_OUT_EP, DataOut);
   USBHwRegisterEPIntHandler(BULK_IN_EP, DebugIn);
   USBHwRegisterEPIntHandler(BULK_OUT_EP, DebugOut);
 
   // register frame handler
   USBHwRegisterFrameHandler(USBFrameHandler);
-
-  // enable bulk-in interrupts on NAKs
-  USBHwNakIntEnable(INACK_BI);
 
   DBG("Starting USB communication\n");
 
@@ -352,20 +311,6 @@ void vUSBTask(void *pvParameters) {
   DBG("Connecting to USB bus\n");
   USBHwConnect(TRUE);
 
-  xLastFlashTime = xTaskGetTickCount();
-
-  vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS * 100);
-
-  //USBHwAllowConnect();
-  // echo any character received (do USB stuff in interrupt)
-  for (;;) {
-    //  c = VCOM_getchar();
-    //  if (c != EOF) {
-    //    // Echo character back with INCREMENT_ECHO_BY offset, so for example if
-    //    // INCREMENT_ECHO_BY is 1 and 'A' is received, 'B' will be echoed back.
-    //    VCOM_putchar(c + INCREMENT_ECHO_BY);
-    //  }
-    vTaskDelayUntil(&xLastFlashTime, 1000 / portTICK_RATE_MS);
-  }
+  // Enable USB.  The PC has probably disconnected it now.
+  USBHwAllowConnect();
 }
-

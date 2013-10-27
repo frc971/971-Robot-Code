@@ -11,6 +11,10 @@
         '<(AOS)/common/util/util.gyp:thread',
         'libusb_wrap',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

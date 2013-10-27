@@ -458,6 +458,8 @@ void USBHwISR(void) {
 	// endpoint interrupt
 	if (dwStatus & EP_SLOW) {
 		// clear EP_SLOW
+    // TODO(brians): The manual says that this should happen after clearing
+    // stuff using USBEpIntClr.
 		USB->USBDevIntClr = EP_SLOW;
 		// check all endpoints
 		for (i = 0; i < 32; i++) {

@@ -1,6 +1,15 @@
 #include "aos/common/mutex.h"
 
+#include <sched.h>
+#include <math.h>
+#include <pthread.h>
+#ifdef __VXWORKS__
+#include <taskLib.h>
+#endif
+
 #include "gtest/gtest.h"
+
+#include "aos/atom_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 namespace testing {
@@ -49,6 +58,18 @@ TEST_F(MutexTest, MutexLocker) {
     EXPECT_FALSE(test_mutex.TryLock());
   }
   EXPECT_TRUE(test_mutex.TryLock());
+}
+
+TEST_F(MutexTest, MutexUnlocker) {
+  test_mutex.Lock();
+  {
+    aos::MutexUnlocker unlocker(&test_mutex);
+    // If this fails, then something weird is going on and the next line might
+    // hang, so fail immediately.
+    ASSERT_TRUE(test_mutex.TryLock());
+    test_mutex.Unlock();
+  }
+  EXPECT_FALSE(test_mutex.TryLock());
 }
 
 }  // namespace testing

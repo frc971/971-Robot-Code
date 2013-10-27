@@ -421,8 +421,6 @@ void HandleAuto() {
     SetDriveGoal(kDistanceToCenterMeters);
     if (ShouldExitAuto()) return;
 
-    return;
-
     ShootNDiscs(4);
     if (ShouldExitAuto()) return;
   } else {
@@ -441,11 +439,11 @@ void HandleAuto() {
     WaitForIndex();			// ready to pick up discs
 
     // How long we're going to drive in total.
-    static const double kDriveDistance = 2.8;
+    static const double kDriveDistance = 2.84;
     // How long to drive slowly to pick up the 2 disks under the pyramid.
     static const double kFirstDrive = 0.4;
     // How long to drive slowly to pick up the last 2 disks.
-    static const double kLastDrive = 0.3;
+    static const double kLastDrive = 0.34;
     // How fast to drive when picking up disks.
     static const double kPickupVelocity = 0.6;
     // Where to take the second set of shots from.

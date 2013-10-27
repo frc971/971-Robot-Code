@@ -839,7 +839,7 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = false;
       disc_ejected_ = false;
-      disk_stuck_in_loader_ = false;
+      disc_stuck_in_loader_ = false;
       if (loader_goal_ == LoaderGoal::GRAB ||
           loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
         if (goal->force_fire) {
@@ -899,7 +899,7 @@ void IndexMotor::RunIteration(
         break;
       }
     case LoaderState::LIFTING:
-      LOG(DEBUG, "Loader LIFTING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LIFTING %d %d\n", loader_countdown_, loader_timeout_);
       // Lifting the disc.
       loader_up_ = true;
       disc_clamped_ = true;
@@ -918,8 +918,10 @@ void IndexMotor::RunIteration(
         ++loader_timeout_;
         if (loader_timeout_ > kLiftingTimeout) {
           LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
-          loader_state_ = LoaderState::LIFTED;
-          disk_stuck_in_loader_ = true;
+          loader_state_ = LoaderState::LOWERING;
+          loader_countdown_ = kLoweringDelay;
+          loader_timeout_ = 0;
+          disc_stuck_in_loader_ = true;
         } else {
           break;
         }
@@ -953,14 +955,14 @@ void IndexMotor::RunIteration(
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
       loader_timeout_ = 0;
-      --hopper_disc_count_;
-      ++shot_disc_count_;
     case LoaderState::LOWERING:
-      LOG(DEBUG, "Loader LOWERING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LOWERING %d %d\n", loader_countdown_, loader_timeout_);
       // Lowering the loader back down.
       loader_up_ = false;
       disc_clamped_ = false;
-      disc_ejected_ = true;
+      // We don't want to eject if we're stuck because it will force the disc
+      // into the green loader wheel.
+      disc_ejected_ = disc_stuck_in_loader_ ? false : true;
       if (position->loader_bottom) {
         if (loader_countdown_ > 0) {
           --loader_countdown_;
@@ -968,6 +970,8 @@ void IndexMotor::RunIteration(
           break;
         } else {
           loader_state_ = LoaderState::LOWERED;
+          --hopper_disc_count_;
+          ++shot_disc_count_;
         }
       } else {
         // Restart the countdown if it bounces back up or something.
@@ -976,7 +980,7 @@ void IndexMotor::RunIteration(
         if (loader_timeout_ > kLoweringTimeout) {
           LOG(ERROR, "Loader timeout while LOWERING %d\n", loader_timeout_);
           loader_state_ = LoaderState::LOWERED;
-          disk_stuck_in_loader_ = true;
+          disc_stuck_in_loader_ = true;
         } else {
           break;
         }
@@ -986,8 +990,8 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_ejected_ = false;
       is_shooting_ = false;
-      if (disk_stuck_in_loader_) {
-        disk_stuck_in_loader_ = false;
+      if (disc_stuck_in_loader_) {
+        disc_stuck_in_loader_ = false;
         disc_clamped_ = true;
         loader_state_ = LoaderState::GRABBED;
       } else {
@@ -1044,7 +1048,11 @@ void IndexMotor::RunIteration(
 
   if (output) {
     output->intake_voltage = intake_voltage;
-    output->transfer_voltage = transfer_voltage;
+    if (goal->override_transfer) {
+      output->transfer_voltage = goal->transfer_voltage;
+    } else {
+      output->transfer_voltage = transfer_voltage;
+    }
     if (goal->override_index) {
       output->index_voltage = goal->index_voltage;
     } else {

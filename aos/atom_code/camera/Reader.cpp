@@ -17,6 +17,7 @@
 #include "aos/atom_code/camera/V4L2.h"
 #include "aos/atom_code/camera/Buffers.h"
 #include "aos/common/logging/logging.h"
+#include "aos/atom_code/ipc_lib/queue.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -31,8 +32,7 @@ class Reader {
   // the bound socket listening for fd requests
   int server_fd_;
 
-  static const aos_type_sig kRecycleSignature;
-  aos_queue *queue_, *recycle_queue_;
+  RawQueue *queue_, *recycle_queue_;
   // the number of buffers currently queued in v4l2
   uint32_t queued_;
  public:
@@ -52,10 +52,11 @@ class Reader {
               dev_name, errno, strerror(errno));
     }
 
-    queue_ = aos_fetch_queue_recycle(Buffers::kQueueName.c_str(), &Buffers::kSignature,
-                                     &kRecycleSignature, &recycle_queue_);
+    queue_ = RawQueue::Fetch(Buffers::kQueueName.c_str(),
+                          sizeof(Buffers::Message), 971, 1,
+                          1, Buffers::kNumBuffers, &recycle_queue_);
     // read off any existing recycled messages
-    while (aos_queue_read_msg(recycle_queue_, NON_BLOCK) != NULL);
+    while (recycle_queue_->ReadMessage(RawQueue::kNonBlock) != NULL);
     queued_ = 0;
 
     InitServer();
@@ -140,10 +141,11 @@ class Reader {
       read = static_cast<const Buffers::Message *>(
           // we block waiting for one if we can't dequeue one without leaving
           // the driver <= 2 (to be safe)
-          aos_queue_read_msg(recycle_queue_, (queued_ <= 2) ? BLOCK : NON_BLOCK));
+          recycle_queue_->ReadMessage((queued_ <= 2) ?
+                                      RawQueue::kBlock : RawQueue::kNonBlock));
       if (read != NULL) {
         buf.index = read->index;
-        aos_queue_free_msg(recycle_queue_, read);
+        recycle_queue_->FreeMessage(read);
         QueueBuffer(&buf);
       }
     } while (read != NULL);
@@ -163,7 +165,7 @@ class Reader {
     }
 
     Buffers::Message *const msg = static_cast<Buffers::Message *>(
-        aos_queue_get_msg(queue_));
+        queue_->GetMessage());
     if (msg == NULL) {
       LOG(WARNING,
           "couldn't get a message to send buf #%" PRIu32 " from queue %p."
@@ -175,7 +177,7 @@ class Reader {
     msg->bytesused = buf.bytesused;
     memcpy(&msg->timestamp, &buf.timestamp, sizeof(msg->timestamp));
     msg->sequence = buf.sequence;
-    if (aos_queue_write_msg_free(queue_, msg, OVERRIDE) == -1) {
+    if (!queue_->WriteMessage(msg, RawQueue::kOverride)) {
       LOG(WARNING,
           "sending message %p with buf #%" PRIu32 " to queue %p failed."
           " re-queueing now\n", msg, buf.index, queue_);
@@ -405,8 +407,6 @@ class Reader {
   }
 };
 const char *const Reader::dev_name = "/dev/video0";
-const aos_type_sig Reader::kRecycleSignature{
-  sizeof(Buffers::Message), 1, Buffers::kNumBuffers};
 
 } // namespace camera
 } // namespace aos

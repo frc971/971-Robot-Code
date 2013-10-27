@@ -71,7 +71,7 @@ template<class T> class QueueBuilder {
 #define aos_check_rv __attribute__((warn_unused_result))
 template<typename T> class QueueHolderNoBuilder {
 #ifndef __VXWORKS__
-  aos_queue *const queue_;
+  Queue *const queue_;
   static_assert(shm_ok<T>::value, "T must be able to"
                 " go through shared memory and memcpy");
   T t_;
@@ -80,7 +80,7 @@ template<typename T> class QueueHolderNoBuilder {
 #endif
  public:
 #ifndef __VXWORKS__
-  explicit QueueHolderNoBuilder(aos_queue *queue) : queue_(queue) {}
+  explicit QueueHolderNoBuilder(Queue *queue) : queue_(queue) {}
 #else
   QueueHolderNoBuilder() {}
 #endif
@@ -158,7 +158,7 @@ template<typename T> class QueueHolder : public QueueHolderNoBuilder<T> {
   QueueBuilder<T> builder_;
  public:
 #ifndef __VXWORKS__
-  explicit QueueHolder(aos_queue *queue) : QueueHolderNoBuilder<T>(queue),
+  explicit QueueHolder(Queue *queue) : QueueHolderNoBuilder<T>(queue),
     builder_(*this) {}
 #else
   QueueHolder() : builder_(*this) {}
@@ -171,7 +171,6 @@ template<typename T> class QueueHolder : public QueueHolderNoBuilder<T> {
   }
 };
 
-} // namespace aos
+}  // namespace aos
 
 #endif
-
