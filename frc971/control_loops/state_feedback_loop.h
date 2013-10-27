@@ -223,13 +223,16 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_outputs, 1> U_ff;
   Eigen::Matrix<double, number_of_outputs, 1> Y;
 
-  ::std::vector<StateFeedbackController<number_of_states, number_of_inputs,
-                                        number_of_outputs> *> controllers_;
-
   const StateFeedbackController<
       number_of_states, number_of_inputs, number_of_outputs>
           &controller() const {
     return *controllers_[controller_index_];
+  }
+
+  const StateFeedbackController<
+      number_of_states, number_of_inputs, number_of_outputs>
+          &controller(int index) const {
+    return *controllers_[index];
   }
 
   void Reset() {
@@ -324,6 +327,9 @@ class StateFeedbackLoop {
   void controller_index() const { return controller_index_; }
 
  protected:
+  ::std::vector<StateFeedbackController<number_of_states, number_of_inputs,
+                                        number_of_outputs> *> controllers_;
+
   // these are accessible from non-templated subclasses
   static const int kNumStates = number_of_states;
   static const int kNumOutputs = number_of_outputs;

@@ -4,6 +4,7 @@ import numpy
 import sys
 import polytope
 import drivetrain
+import control_loop
 import controls
 from matplotlib import pylab
 
@@ -94,22 +95,30 @@ def CoerceGoal(region, K, w, R):
     return closest_point
 
 
-class VelocityDrivetrainModel(object):
-  def __init__(self, left_low=True, right_low=True):
+class VelocityDrivetrainModel(control_loop.ControlLoop):
+  def __init__(self, left_low=True, right_low=True, name="VelocityDrivetrainModel"):
+    super(VelocityDrivetrainModel, self).__init__(name)
     self._drivetrain = drivetrain.Drivetrain(left_low=left_low,
                                              right_low=right_low)
-    self.A = numpy.matrix(
-        [[self._drivetrain.A[1, 1], self._drivetrain.A[1, 3]],
-         [self._drivetrain.A[3, 1], self._drivetrain.A[3, 3]]])
+    self.dt = 0.01
+    self.A_continuous = numpy.matrix(
+        [[self._drivetrain.A_continuous[1, 1], self._drivetrain.A_continuous[1, 3]],
+         [self._drivetrain.A_continuous[3, 1], self._drivetrain.A_continuous[3, 3]]])
 
-    self.B = numpy.matrix(
-        [[self._drivetrain.B[1, 0], self._drivetrain.B[1, 1]],
-         [self._drivetrain.B[3, 0], self._drivetrain.B[3, 1]]])
+    self.B_continuous = numpy.matrix(
+        [[self._drivetrain.B_continuous[1, 0], self._drivetrain.B_continuous[1, 1]],
+         [self._drivetrain.B_continuous[3, 0], self._drivetrain.B_continuous[3, 1]]])
+    self.C = numpy.matrix(numpy.eye(2));
+    self.D = numpy.matrix(numpy.zeros((2, 2)));
+
+    self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
+                                               self.B_continuous, self.dt)
 
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.K = controls.dplace(self.A, self.B, [0.3, 0.3])
+    self.PlaceControllerPoles([0.3, 0.3])
+    self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
     self.G_low = self._drivetrain.G_low
@@ -118,13 +127,16 @@ class VelocityDrivetrainModel(object):
     self.Kv = self._drivetrain.Kv
     self.Kt = self._drivetrain.Kt
 
+    self.U_max = self._drivetrain.U_max
+    self.U_min = self._drivetrain.U_min
+
 
 class VelocityDrivetrain(object):
   def __init__(self):
-    self.drivetrain_low_low = VelocityDrivetrainModel(left_low=True, right_low=True)
-    self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False)
-    self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True)
-    self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False)
+    self.drivetrain_low_low = VelocityDrivetrainModel(left_low=True, right_low=True, name='VelocityDrivetrainLowLow')
+    self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False, name='VelocityDrivetrainLowHigh')
+    self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True, name = 'VelocityDrivetrainHighLow')
+    self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False, name = 'VelocityDrivetrainHighHigh')
 
     # X is [lvel, rvel]
     self.X = numpy.matrix(
@@ -215,13 +227,11 @@ class VelocityDrivetrain(object):
     # Do this by finding the index of FF that has the lowest value, and computing
     # the sums using that index.
     FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
-    max_FF_sum_index = numpy.argmin(FF_sum)
-    max_FF_sum = FF_sum[max_FF_sum_index, 0]
-    max_K_sum = self.CurrentDrivetrain().K[max_FF_sum_index, :].sum()
-    max_A_sum = self.CurrentDrivetrain().A[max_FF_sum_index, :].sum()
-    max_B_sum = self.CurrentDrivetrain().B[max_FF_sum_index, :].sum()
+    min_FF_sum_index = numpy.argmin(FF_sum)
+    min_FF_sum = FF_sum[min_FF_sum_index, 0]
+    min_K_sum = self.CurrentDrivetrain().K[min_FF_sum_index, :].sum()
     # Compute the FF sum for high gear.
-    high_max_FF_sum = self.drivetrain_high_high.FF[0, :].sum()
+    high_min_FF_sum = self.drivetrain_high_high.FF[0, :].sum()
 
     # U = self.K[0, :].sum() * (R - x_avg) + self.FF[0, :].sum() * R
     # throttle * 12.0 = (self.K[0, :].sum() + self.FF[0, :].sum()) * R
@@ -233,12 +243,12 @@ class VelocityDrivetrain(object):
     # U = (K + FF) * R - K * X
     # (K + FF) ^-1 * (U + K * X) = R
 
-    # Scale throttle by max_FF_sum / high_max_FF_sum.  This will make low gear
+    # Scale throttle by min_FF_sum / high_min_FF_sum.  This will make low gear
     # have the same velocity goal as high gear, and so that the robot will hold
     # the same speed for the same throttle for all gears.
-    adjusted_ff_voltage = numpy.clip(throttle * 12.0 * max_FF_sum / high_max_FF_sum, -12.0, 12.0)
-    return ((adjusted_ff_voltage + self.ttrust * max_K_sum * (self.X[0, 0] + self.X[1, 0]) / 2.0)
-            / (self.ttrust * max_K_sum + max_FF_sum))
+    adjusted_ff_voltage = numpy.clip(throttle * 12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0)
+    return ((adjusted_ff_voltage + self.ttrust * min_K_sum * (self.X[0, 0] + self.X[1, 0]) / 2.0)
+            / (self.ttrust * min_K_sum + min_FF_sum))
 
   def Update(self, throttle, steering):
     # Shift into the gear which sends the most power to the floor.
@@ -302,6 +312,22 @@ class VelocityDrivetrain(object):
 
 def main(argv):
   vdrivetrain = VelocityDrivetrain()
+
+  if len(argv) != 3:
+    print "Expected .h file name and .cc file name"
+  else:
+    loop_writer = control_loop.ControlLoopWriter(
+        "VDrivetrain", [vdrivetrain.drivetrain_low_low,
+                        vdrivetrain.drivetrain_low_high,
+                        vdrivetrain.drivetrain_high_low,
+                        vdrivetrain.drivetrain_high_high])
+
+    if argv[1][-3:] == '.cc':
+      loop_writer.Write(argv[2], argv[1])
+    else:
+      loop_writer.Write(argv[1], argv[2])
+    return
+
 
   vl_plot = []
   vr_plot = []
