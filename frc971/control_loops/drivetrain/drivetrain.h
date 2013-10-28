@@ -5,6 +5,7 @@
 
 #include "aos/controls/polytope.h"
 #include "aos/common/control_loop/ControlLoop.h"
+#include "aos/controls/polytope.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
@@ -23,7 +24,9 @@ class DrivetrainLoop
   explicit DrivetrainLoop(
       control_loops::Drivetrain *my_drivetrain = &control_loops::drivetrain)
       : aos::control_loops::ControlLoop<control_loops::Drivetrain, true, false>(
-          my_drivetrain) {}
+          my_drivetrain) {
+    ::aos::controls::HPolytope<0>::Init();
+  }
 
  protected:
   // Executes one cycle of the control loop.

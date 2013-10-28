@@ -150,7 +150,7 @@ class PolyDrivetrain {
                  /*[*/ 12 /*]]*/).finished()),
         loop_(new StateFeedbackLoop<2, 2, 2>(MakeVDrivetrainLoop())) {
 
-    ttrust_ = 1.0;
+    ttrust_ = 1.1;
 
     wheel_ = 0.0;
     throttle_ = 0.0;
@@ -158,7 +158,7 @@ class PolyDrivetrain {
     highgear_ = true;
   }
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear) {
-    const double kWheelNonLinearity = 0.1;
+    const double kWheelNonLinearity = 0.4;
     // Apply a sin function that's scaled to make it feel better.
     const double angular_range = M_PI_2 * kWheelNonLinearity;
     wheel_ = sin(angular_range * wheel) / sin(angular_range);
@@ -197,6 +197,28 @@ class PolyDrivetrain {
             (ttrust_ * min_K_sum + min_FF_sum));
   }
 
+  double MaxVelocity() {
+    const Eigen::Matrix<double, 2, 2> FF =
+        loop_->B().inverse() *
+        (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+
+    constexpr int kHighGearController = 3;
+    const Eigen::Matrix<double, 2, 2> FF_high =
+        loop_->controller(kHighGearController).plant.B.inverse() *
+        (Eigen::Matrix<double, 2, 2>::Identity() -
+         loop_->controller(kHighGearController).plant.A);
+
+    ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
+    int min_FF_sum_index;
+    const double min_FF_sum = FF_sum.minCoeff(&min_FF_sum_index);
+    //const double min_K_sum = loop_->K().col(min_FF_sum_index).sum();
+    const double high_min_FF_sum = FF_high.col(0).sum();
+
+    const double adjusted_ff_voltage = ::aos::Clip(
+        12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
+    return adjusted_ff_voltage / min_FF_sum;
+  }
+
   void Update() {
     // FF * X = U (steady state)
     const Eigen::Matrix<double, 2, 2> FF =
@@ -210,18 +232,24 @@ class PolyDrivetrain {
     const double fvel = FilterVelocity(throttle_);
 
     const double sign_svel = wheel_ * ((fvel > 0.0) ? 1.0 : -1.0);
-    const double svel = ::std::abs(fvel) * wheel_;
-    const double left_velocity = fvel - svel;
-    const double right_velocity = fvel + svel;
-
-    // K * R = w
-    Eigen::Matrix<double,1,2> equality_k;
-    equality_k << 1 + sign_svel, -(1 - sign_svel);
-    const double equality_w = 0.0;
+    double steering_velocity;
+    if (quickturn_) {
+      steering_velocity = wheel_ * MaxVelocity();
+    } else {
+      steering_velocity = ::std::abs(fvel) * wheel_;
+    }
+    const double left_velocity = fvel - steering_velocity;
+    const double right_velocity = fvel + steering_velocity;
 
     // Integrate velocity to get the position.
     // This position is used to get integral control.
     loop_->R << left_velocity, right_velocity;
+
+    if (!quickturn_) {
+    // K * R = w
+    Eigen::Matrix<double,1,2> equality_k;
+    equality_k << 1 + sign_svel, -(1 - sign_svel);
+    const double equality_w = 0.0;
 
     // Construct a constraint on R by manipulating the constraint on U
     ::aos::controls::HPolytope<2> R_poly = ::aos::controls::HPolytope<2>(
@@ -229,12 +257,13 @@ class PolyDrivetrain {
         U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat);
 
     // Limit R back inside the box.
-    const Eigen::Matrix<double, 2, 1> boxed_R =
+    loop_->R =
         CoerceGoal(R_poly, equality_k, equality_w, loop_->R);
+    }
 
-    const Eigen::Matrix<double, 2, 1> FF_volts = FF * boxed_R;
+    const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R;
     const Eigen::Matrix<double, 2, 1> U_ideal =
-        loop_->K() * (boxed_R - loop_->X_hat) + FF_volts;
+        loop_->K() * (loop_->R - loop_->X_hat) + FF_volts;
 
     for (int i = 0; i < 2; i++) {
       loop_->U[i] = ::aos::Clip(U_ideal[i], -12, 12);
