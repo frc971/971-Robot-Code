@@ -110,9 +110,11 @@ class USBReceiver {
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
   ::std::unique_ptr<libusb::IsochronousTransfer> transfers_[kNumTransfers];
-  // "Temporary" variable for holding a completed transfer to communicate that
-  // information from the callback to the code that wants it.
+
+  // "Temporary" variables for communicating information about a transfer that
+  // finished from the callback to the rest of the code.
   libusb::Transfer *completed_transfer_;
+  ::aos::time::Time transfer_received_time_{0, 0};
 };
 
 }  // namespace frc971

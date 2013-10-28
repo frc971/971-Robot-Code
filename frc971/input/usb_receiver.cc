@@ -17,8 +17,17 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    const ::aos::time::Time received_time = ::aos::time::Time::Now();
-    if (phase_locker_.IsCurrentPacketGood(received_time, sequence_)) {
+    // TODO(brians): Remove this temporary debug stuff.
+    static ::aos::time::Time temp(0, 0);
+    ::aos::time::Time delta = transfer_received_time_ - temp;
+    if (delta < ::aos::time::Time::InSeconds(0.0008)) {
+      LOG(INFO, "short delta %f\n", delta.ToSeconds());
+    } else if (delta > ::aos::time::Time::InSeconds(0.0012)) {
+      LOG(INFO, "long delta %f\n", delta.ToSeconds());
+    }
+    temp = transfer_received_time_;
+
+    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, sequence_)) {
       LOG(DEBUG, "processing data %" PRIu32 "\n", sequence_);
       ProcessData();
     }
@@ -163,6 +172,7 @@ void USBReceiver::StaticTransferCallback(libusb::Transfer *transfer,
 }
 
 void USBReceiver::TransferCallback(libusb::Transfer *transfer) {
+  transfer_received_time_ = ::aos::time::Time::Now();
   if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
     LOG(DEBUG, "transfer %p completed\n", transfer);
     completed_transfer_ = transfer;
