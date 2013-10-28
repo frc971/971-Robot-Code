@@ -18,6 +18,10 @@ class USBReceiver {
 
   void RunIteration();
 
+  // The relative priority that tasks doing this should get run at (ie what to
+  // pass to ::aos::Init(int)).
+  static const int kRelativePriority = 5;
+
  protected:
   GyroBoardData *data() { return &data_; }
 

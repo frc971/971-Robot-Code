@@ -81,7 +81,7 @@ const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
 
 void InitNRT() { DoInitNRT(aos_core_create::reference); }
 void InitCreate() { DoInitNRT(aos_core_create::create); }
-void Init() {
+void Init(int relative_priority) {
   if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
     LockAllMemory();
     // Only let rt processes run for 1 second straight.
@@ -90,7 +90,7 @@ void Init() {
     SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
     // Set our process to priority 40.
     struct sched_param param;
-    param.sched_priority = 40;
+    param.sched_priority = 30 + relative_priority;
     if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {
       Die("%s-init: setting SCHED_FIFO failed with %d (%s)\n",
           program_invocation_short_name, errno, strerror(errno));

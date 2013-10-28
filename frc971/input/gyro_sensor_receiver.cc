@@ -139,7 +139,7 @@ class GyroSensorReceiver : public USBReceiver {
 }  // namespace frc971
 
 int main() {
-  ::aos::Init();
+  ::aos::Init(frc971::USBReceiver::kRelativePriority);
   ::frc971::GyroSensorReceiver receiver;
   while (true) {
     receiver.RunIteration();
