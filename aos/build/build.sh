@@ -70,9 +70,9 @@ else
   else
     NINJA_ACTION=
   fi
-  ${NINJA} -C ${OUTDIR}/Default ${NINJA_ACTION} "$@"
+  ${NINJA} -C ${OUTDIR}/Default ${NINJA_ACTION}
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
-    [ ${PLATFORM} == atom ] && \
+    [ ${PLATFORM} == atom ] || [ ${PLATFORM} == bot3_atom] && \
       rsync --progress -c -r \
         ${OUTDIR}/Default/outputs/* \
         driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
