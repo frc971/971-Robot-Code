@@ -9,7 +9,8 @@
 
 namespace frc971 {
 
-USBReceiver::USBReceiver() {
+USBReceiver::USBReceiver(uint8_t expected_robot_id)
+    : expected_robot_id_(expected_robot_id) {
   Reset();
 }
 
@@ -17,19 +18,24 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    // TODO(brians): Remove this temporary debug stuff.
-    static ::aos::time::Time temp(0, 0);
-    ::aos::time::Time delta = transfer_received_time_ - temp;
-    if (delta < ::aos::time::Time::InSeconds(0.0008)) {
-      LOG(INFO, "short delta %f\n", delta.ToSeconds());
-    } else if (delta > ::aos::time::Time::InSeconds(0.0012)) {
-      LOG(INFO, "long delta %f\n", delta.ToSeconds());
-    }
-    temp = transfer_received_time_;
-
     if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, sequence_)) {
-      LOG(DEBUG, "processing data %" PRIu32 "\n", sequence_);
-      ProcessData();
+      static const int kCountsPerSecond = 100000;
+      const ::aos::time::Time timestamp =
+          ::aos::time::Time(data()->timestamp / kCountsPerSecond,
+                            data()->timestamp *
+                            ::aos::time::Time::kNSecInSec / kCountsPerSecond);
+
+      if (data()->robot_id != expected_robot_id_) {
+        LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
+            " dip switches are %hhx\n",
+            data()->robot_id, expected_robot_id_, data()->dip_switches);
+        return;
+      } else {
+        LOG(DEBUG, "processing dips %hhx at %f\n",
+            data()->dip_switches, timestamp.ToSeconds());
+      }
+
+      ProcessData(timestamp);
     }
   }
 }

@@ -3,6 +3,7 @@
 // guards.
 // This means that it can not #include anything else because it (sometimes) gets
 // #included inside a namespace.
+// <stdint.h> must be #included by the containing file.
 // In the gyro board code, fill_packet.h #includes this file.
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
@@ -12,8 +13,14 @@
 struct DATA_STRUCT_NAME {
   int64_t gyro_angle;
 
+  // In units of 100,000 counts/second.
+  uint64_t timestamp;
+
   union {
     struct {
+      // This is a counter that gets incremented with each packet sent.
+      uint32_t sequence;
+
       // Which robot (+version) the gyro board is sending out data for.
       // We should keep this in the same place for all gyro board software
       // versions so that the fitpc can detect when it's reading from a gyro
@@ -36,23 +43,21 @@ struct DATA_STRUCT_NAME {
           uint8_t dip_switch1 : 1;
           uint8_t dip_switch2 : 1;
           uint8_t dip_switch3 : 1;
-          // If the current gyro_angle has been not updated because of a bad
-          // reading from the sensor.
-          uint8_t old_gyro_reading : 1;
-          // If we're not going to get any more good gyro_angles.
-          uint8_t bad_gyro : 1;
         };
-        uint8_t base_status;
+        uint8_t dip_switches;
+      };
+      struct {
+        // If the current gyro_angle has been not updated because of a bad
+        // reading from the sensor.
+        uint8_t old_gyro_reading : 1;
+        // If we're not going to get any more good gyro_angles.
+        uint8_t bad_gyro : 1;
       };
     };
-    uint32_t header;
+    uint64_t header;
   };
 
-  // This is a counter that gets incremented with each packet sent.
-  uint32_t sequence;
-
-  // We are 64-bit aligned at this point if it matters for anything other than
-  // the gyro angle.
+  // We are 64-bit aligned at this point.
 
   union {
     struct {

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/common/time.h"
+#include "aos/common/macros.h"
 
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/input/gyro_board_data.h"
@@ -14,7 +15,7 @@ namespace frc971 {
 // us.
 class USBReceiver {
  public:
-  USBReceiver();
+  USBReceiver(uint8_t expected_robot_id);
 
   void RunIteration();
 
@@ -101,7 +102,9 @@ class USBReceiver {
 
   void Reset();
 
-  virtual void ProcessData() = 0;
+  virtual void ProcessData(const ::aos::time::Time &timestamp) = 0;
+
+  const uint8_t expected_robot_id_;
 
   GyroBoardData data_;
 
@@ -115,6 +118,8 @@ class USBReceiver {
   // finished from the callback to the rest of the code.
   libusb::Transfer *completed_transfer_;
   ::aos::time::Time transfer_received_time_{0, 0};
+
+  DISALLOW_COPY_AND_ASSIGN(USBReceiver);
 };
 
 }  // namespace frc971

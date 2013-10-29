@@ -63,22 +63,19 @@ inline double adc_translate(uint16_t in) {
        (kVRefP - kVRefN));
 }
 
+inline double gyro_translate(int64_t in) {
+  return in / 16.0 / 1000.0 / (180.0 / M_PI);
+}
+
 }  // namespace
 
 class GyroSensorReceiver : public USBReceiver {
-  virtual void ProcessData() override {
-    if (data()->robot_id != 2) {
-      LOG(ERROR, "gyro board sent data for robot id %hhd!"
-          " dip switches are %x\n",
-          data()->robot_id, data()->base_status & 0xF);
-      return;
-    } else {
-      LOG(DEBUG, "processing a packet dip switches %x\n",
-          data()->base_status & 0xF);
-    }
+ public:
+  GyroSensorReceiver() : USBReceiver(2) {}
 
+  virtual void ProcessData(const ::aos::time::Time &/*timestamp*/) override {
     gyro.MakeWithBuilder()
-        .angle(data()->gyro_angle / 16.0 / 1000.0 / 180.0 * M_PI)
+        .angle(gyro_translate(data()->gyro_angle))
         .Send();
 
     drivetrain.position.MakeWithBuilder()
