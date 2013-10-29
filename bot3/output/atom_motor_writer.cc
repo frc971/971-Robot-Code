@@ -22,21 +22,17 @@ class MotorWriter : public ::aos::MotorOutput {
 
   virtual void RunIteration() {
     values_.digital_module = 0;
-    values_.pressure_switch_channel = 14;
-    values_.compressor_channel = 1;
+    values_.pressure_switch_channel = 1;
+    values_.compressor_channel = 1; //spike
     values_.solenoid_module = 0;
 
     drivetrain.output.FetchLatest();
     if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS) && kEnableDrivetrain) {
-      SetPWMOutput(2, drivetrain.output->right_voltage / 12.0, kTalonBounds);
       SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(5, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+      SetPWMOutput(4, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
     } else {
-      DisablePWMOutput(2);
       DisablePWMOutput(3);
-      DisablePWMOutput(5);
-      DisablePWMOutput(6);
+      DisablePWMOutput(4);
       if (kEnableDrivetrain) {
         LOG(WARNING, "drivetrain not new enough\n");
       }

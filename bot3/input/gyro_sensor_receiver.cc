@@ -18,32 +18,18 @@ using ::frc971::USBReceiver;
 namespace bot3 {
 namespace {
 
+//TODO (danielp): Figure out whether the bigger gear is on the 
+// encoder or not.
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (19.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/ *
-      (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+      (44.0 / 32.0 /*encoder gears*/) * // the encoders are on the wheels.
+      (3.5 /*wheel diameter*/ * 2.54 / 100 * M_PI);
 }
 
-inline double wrist_translate(int32_t in) {
-  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (14.0 / 50.0 * 20.0 / 84.0) /*gears*/ * (2 * M_PI);
-}
-
-inline double angle_adjust_translate(int32_t in) {
-  static const double kCableDiameter = 0.060;
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      ((0.75 + kCableDiameter) / (16.61125 + kCableDiameter)) /*pulleys*/ *
-      (2 * M_PI);
-}
-
+// TODO (danielp): This needs to be modified eventually.
 inline double shooter_translate(int32_t in) {
  return static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
       (15.0 / 34.0) /*gears*/ * (2 * M_PI);
-}
-
-inline double index_translate(int32_t in) {
-  return -static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*quad*/) *
-      (1.0) /*gears*/ * (2 * M_PI);
 }
 
 }  // namespace

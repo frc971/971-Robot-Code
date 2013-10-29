@@ -12,6 +12,7 @@ namespace constants {
 
 const uint16_t kCompTeamNumber = 5971;
 const uint16_t kPracticeTeamNumber = 971;
+const uint16_t kBot3TeamNumber = 9971;
 
 // Sets *angle to how many radians from horizontal to the location of interest.
 bool wrist_hall_effect_start_angle(double *angle);

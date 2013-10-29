@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../../aos/build/build.sh crio crio.gyp no "$@"
+../../aos/build/build.sh crio crio.gyp no crio "$@"
