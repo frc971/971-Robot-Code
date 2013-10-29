@@ -12,7 +12,7 @@ DEBUG=$3
 OUT_NAME=$4
 ACTION=$5
 
-shift 3
+shift 4
 shift || true # We might not have a 4th argument if ACTION is empty.
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
@@ -70,7 +70,7 @@ else
   else
     NINJA_ACTION=
   fi
-  ${NINJA} -C ${OUTDIR}/Default ${NINJA_ACTION}
+  ${NINJA} -C ${OUTDIR}/Default ${NINJA_ACTION} "$@"
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
     [ ${PLATFORM} == atom ] || [ ${PLATFORM} == bot3_atom] && \
       rsync --progress -c -r \
