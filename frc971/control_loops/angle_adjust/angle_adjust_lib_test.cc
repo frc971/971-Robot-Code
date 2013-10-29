@@ -62,16 +62,14 @@ class AngleAdjustMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    double hall_effect_start_angle[2];
-    ASSERT_TRUE(constants::angle_adjust_hall_effect_start_angle(
-                    hall_effect_start_angle));
-    double hall_effect_stop_angle[2];
-    ASSERT_TRUE(constants::angle_adjust_hall_effect_stop_angle(
-                    hall_effect_stop_angle));
-
     ::aos::ScopedMessagePtr<control_loops::AngleAdjustLoop::Position> position =
         my_angle_adjust_loop_.position.MakeMessage();
     position->angle = angle;
+
+    const double (&hall_effect_start_angle)[2] =
+        constants::GetValues().angle_adjust_hall_effect_start_angle;
+    const double (&hall_effect_stop_angle)[2] =
+        constants::GetValues().angle_adjust_hall_effect_stop_angle;
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
@@ -115,16 +113,10 @@ class AngleAdjustMotorSimulation {
     angle_adjust_plant_->U << last_voltage_;
     angle_adjust_plant_->Update();
 
-    // Assert that we are in the right physical range.
-    double upper_physical_limit;
-    ASSERT_TRUE(constants::angle_adjust_upper_physical_limit(
-                    &upper_physical_limit));
-    double lower_physical_limit;
-    ASSERT_TRUE(constants::angle_adjust_lower_physical_limit(
-                    &lower_physical_limit));
-
-    EXPECT_GE(upper_physical_limit, angle_adjust_plant_->Y(0, 0));
-    EXPECT_LE(lower_physical_limit, angle_adjust_plant_->Y(0, 0));
+    EXPECT_GE(constants::GetValues().angle_adjust_upper_physical_limit,
+              angle_adjust_plant_->Y(0, 0));
+    EXPECT_LE(constants::GetValues().angle_adjust_lower_physical_limit,
+              angle_adjust_plant_->Y(0, 0));
     last_voltage_ = my_angle_adjust_loop_.output->voltage;
   }
 

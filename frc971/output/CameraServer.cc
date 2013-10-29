@@ -3,7 +3,6 @@
 #include "aos/atom_code/output/HTTPServer.h"
 #include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
 #include "aos/atom_code/output/ctemplate_cache.h"
-#include "aos/common/messages/RobotState.q.h"
 #include "ctemplate/template.h"
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
@@ -55,17 +54,7 @@ class CameraServer : public aos::http::HTTPServer {
     // after it.
     dict.SetValue("HOST", ctemplate::TemplateString(host, length));
 
-    if (!aos::robot_state.FetchLatest()) {
-      LOG(WARNING, "getting a RobotState message failed\n");
-      evhttp_send_error(request, HTTP_INTERNAL, NULL);
-      return;
-    }
-    int center;
-    if (!constants::camera_center(&center)) {
-      evhttp_send_error(request, HTTP_INTERNAL, NULL);
-      return;
-    }
-    dict.SetIntValue("CENTER", center);
+    dict.SetIntValue("CENTER", constants::GetValues().camera_center);
 
     aos::http::EvhttpCtemplateEmitter emitter(buf_);
     if (!aos::http::get_template_cache()->

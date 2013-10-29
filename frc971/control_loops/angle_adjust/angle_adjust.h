@@ -52,10 +52,6 @@ class AngleAdjustMotor
   friend class testing::AngleAdjustTest_RezeroWithMissingPos_Test;
   friend class testing::AngleAdjustTest_DisableGoesUninitialized_Test;
 
-  // Fetches and locally caches the latest set of constants.
-  // Returns whether it succeeded or not.
-  bool FetchConstants(ZeroedJoint<2>::ConfigurationData *config_data);
-
   // The zeroed joint to use.
   ZeroedJoint<2> zeroed_joint_;
 

@@ -1,6 +1,17 @@
 {
   'targets': [
     {
+      'target_name': 'team_number',
+      'type': 'static_library',
+      'sources': [
+        'team_number.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/atom_code/atom_code.gyp:configuration',
+        '<(AOS)/common/common.gyp:once',
+      ],
+    },
+    {
       'target_name': 'socket_so',
       'type': 'shared_library',
       'variables': {'no_rsync': 1},

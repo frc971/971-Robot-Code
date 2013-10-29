@@ -3,7 +3,6 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/logging/logging.h"
 
 #include "frc971/autonomous/auto.q.h"
@@ -341,7 +340,8 @@ void DriveSpin(double radians) {
 void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
 
-  double WRIST_UP;
+  const double WRIST_UP =
+      constants::GetValues().wrist_hall_effect_start_angle - 0.4;
   const double WRIST_DOWN = -0.580;
   const double WRIST_DOWN_TWO = WRIST_DOWN - 0.012;
   const double ANGLE_ONE = 0.509;
@@ -356,15 +356,6 @@ void HandleAuto() {
   //::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
   if (ShouldExitAuto()) return;
   
-  ::aos::robot_state.FetchLatest();
-  if (!::aos::robot_state.get() ||
-      !constants::wrist_hall_effect_start_angle(&WRIST_UP)) {
-    LOG(ERROR, "Constants not ready\n");
-    return;
-  }
-  WRIST_UP -= 0.4;
-  LOG(INFO, "Got constants\n");
-
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
     LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
