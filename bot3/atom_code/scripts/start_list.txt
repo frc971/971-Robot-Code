@@ -3,6 +3,5 @@ MotorWriter
 joystick_reader
 drivetrain
 CRIOLogReader
-shooter
 auto
-gyro_board_reader
+gyro_sensor_receiver

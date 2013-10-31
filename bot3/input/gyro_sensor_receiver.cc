@@ -51,9 +51,11 @@ class GyroSensorReceiver : public USBReceiver {
         .Send();
 
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(data()->main.right_drive))
-        .left_encoder(-drivetrain_translate(data()->main.left_drive))
+        .right_encoder(drivetrain_translate(data()->main.wrist))
+        .left_encoder(drivetrain_translate(data()->main.shooter))
         .Send();
+    LOG(DEBUG, "right: %d left: %d angle: %lld \n",
+        data()->main.wrist, data()->main.shooter, data()->gyro_angle);
   }
 
   WrappingCounter top_rise_;
