@@ -18,8 +18,13 @@ struct DATA_STRUCT_NAME {
 
   union {
     struct {
-      // This is a counter that gets incremented with each packet sent.
-      uint32_t sequence;
+      // This is the USB frame number for this data. It gets incremented on
+      // every packet sent.
+      // Negative numbers mean that the gyro board has no idea what the right
+      // answer is.
+      // This value going down at all indicates that the code on the gyro board
+      // dealing with it reset.
+      int32_t frame_number;
 
       // Which robot (+version) the gyro board is sending out data for.
       // We should keep this in the same place for all gyro board software
@@ -52,6 +57,9 @@ struct DATA_STRUCT_NAME {
         uint8_t old_gyro_reading : 1;
         // If we're not going to get any more good gyro_angles.
         uint8_t bad_gyro : 1;
+
+        // We're not sure what frame number this packet was sent in.
+        uint8_t unknown_frame : 1;
       };
     };
     uint64_t header;

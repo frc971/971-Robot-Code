@@ -18,12 +18,13 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, sequence_)) {
+    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
       static const int kCountsPerSecond = 100000;
       const ::aos::time::Time timestamp =
           ::aos::time::Time(data()->timestamp / kCountsPerSecond,
-                            data()->timestamp *
-                            ::aos::time::Time::kNSecInSec / kCountsPerSecond);
+                            (data()->timestamp * ::aos::time::Time::kNSecInSec /
+                             kCountsPerSecond) %
+                                ::aos::time::Time::kNSecInSec);
 
       if (data()->robot_id != expected_robot_id_) {
         LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
@@ -31,8 +32,8 @@ void USBReceiver::RunIteration() {
             data()->robot_id, expected_robot_id_, data()->dip_switches);
         return;
       } else {
-        LOG(DEBUG, "processing dips %hhx at %f\n",
-            data()->dip_switches, timestamp.ToSeconds());
+        LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
+            data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
       }
 
       ProcessData(timestamp);
@@ -60,11 +61,6 @@ bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
   }
   if (last_good_sequence_ != 0 && sequence - last_good_sequence_ > 100) {
     LOG(WARNING, "skipped too many packets\n");
-    Reset();
-    return false;
-  }
-  if (sequence < last_good_sequence_) {
-    LOG(WARNING, "sequence went down. gyro board reset?\n");
     Reset();
     return false;
   }
@@ -215,14 +211,27 @@ bool USBReceiver::ReceiveData() {
     memcpy(data(), completed_transfer_->data(),
            sizeof(GyroBoardData));
 
-    uint32_t sequence_before = sequence_;
-    sequence_ = data()->sequence;
-    if (sequence_before == 0) {
-      LOG(INFO, "count starting at %" PRIu32 "\n", sequence_);
-    } else if (sequence_ - sequence_before != 1) {
-      LOG(WARNING, "count went from %" PRIu32" to %" PRIu32 "\n",
-          sequence_before, sequence_);
+    if (data()->unknown_frame) {
+      LOG(WARNING, "unknown frame number\n");
+      return true;
     }
+    uint32_t frame_number_before = frame_number_;
+    frame_number_ = data()->frame_number;
+    if (frame_number_ < 0) {
+      LOG(WARNING, "negative frame number %" PRId32 "\n", frame_number_);
+      return true;
+    }
+    if (frame_number_before == 0) {
+      LOG(INFO, "frame number starting at %" PRId32 "\n", frame_number_);
+    } else if (frame_number_ - frame_number_before != 1) {
+      LOG(WARNING, "frame number went from %" PRId32" to %" PRId32 "\n",
+          frame_number_before, frame_number_);
+    }
+    if (frame_number_ < last_frame_number_) {
+      LOG(WARNING, "frame number went down\n");
+      return true;
+    }
+    last_frame_number_ = frame_number_;
 
     return false;
   }
@@ -246,7 +255,7 @@ void USBReceiver::Reset() {
     c->Submit();
   }
 
-  sequence_ = 0;
+  last_frame_number_ = frame_number_ = 0;
   phase_locker_.Reset();
 }
 

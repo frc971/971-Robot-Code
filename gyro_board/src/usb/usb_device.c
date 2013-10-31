@@ -32,9 +32,19 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "usbapi.h"
-#include "usbdebug.h"
-#include "usbstruct.h"
+#include "LPCUSB/usbapi.h"
+#include "LPCUSB/usbdebug.h"
+#include "LPCUSB/usbstruct.h"
+
+// This file is marked private and most of the functions in its associated .c
+// file started out static, but we want to use some of them to do frame handling
+// stuff because we do special stuff with it (handle it ourselves for reduced
+// jitter and actually deal with the frame number correctly), so it's nice to
+// have the utility functions for accessing the hardware available instead of
+// having to rewrite them.
+#include "LPCUSB/usbhw_lpc.h"
+unsigned char USBHwCmdRead(unsigned char bCmd);
+void Wait4DevInt(unsigned long dwIntr);
 
 #include "LPC17xx.h"
 
@@ -54,8 +64,6 @@
 #define DATA_PACKET_SIZE DATA_STRUCT_SEND_SIZE
 
 #define LE_WORD(x)    ((x)&0xFF),((x)>>8)
-
-static struct DataStruct usbPacket;
 
 static xQueueHandle xRxedChars = NULL, xCharsForTx = NULL;
 
@@ -144,6 +152,12 @@ static const unsigned char abDescriptors[] = {
   0
 };
 
+// Enables interrupts to write data instead of NAKing on the bulk in endpoints.
+// This is in a centralized place so that other NAK interrupts can be enabled
+// all of the time easily in the future.
+static void bulk_in_nak_int(int have_data) {
+  USBHwNakIntEnable(have_data ? INACK_BI : 0);
+}
 
 /**
  * Local function to handle incoming bulk data
@@ -179,8 +193,8 @@ static void DebugIn(unsigned char bEP, unsigned char bEPStatus) {
   (void) bEPStatus;
 
   if (uxQueueMessagesWaitingFromISR(xCharsForTx) == 0) {
-    // no more data, disable further NAK interrupts until next USB frame
-    USBHwNakIntEnable(INACK_II);
+    // no more data
+    bulk_in_nak_int(0);
     return;
   }
 
@@ -245,31 +259,83 @@ int VCOM_getchar(void) {
     return -1;
 }
 
-/**
- * Interrupt handler
- *
- * Simply calls the USB ISR
- */
-void USB_IRQHandler(void) {
-  higher_priority_task_woken = pdFALSE;
-  USBHwISR();
-  portEND_SWITCHING_ISR(higher_priority_task_woken);
-}
+// Instead of registering an lpcusb handler for this, we do it ourself so that
+// we can get the timing jitter down.
+static void HandleFrame(void) {
+  USB->USBDevIntClr = FRAME;
 
-static void USBFrameHandler(unsigned short wFrame) {
-  (void) wFrame;
-  if (uxQueueMessagesWaitingFromISR(xCharsForTx) > 0) {
-    // Data to send is available so enable interrupt instead of NAK on bulk in
-    // too.
-    USBHwNakIntEnable(INACK_BI | INACK_II);
+  static struct DataStruct sensor_values;
+  fillSensorPacket(&sensor_values);
+
+  static int32_t current_frame = -1;
+  static int guessed_frames = 0;
+
+  uint8_t error_status = USBHwCmdRead(CMD_DEV_READ_ERROR_STATUS);
+  if (error_status & PID_ERR) {
+    ++guessed_frames;
   } else {
-    USBHwNakIntEnable(INACK_II);
+    int16_t read_frame = USBHwCmdRead(CMD_DEV_READ_CUR_FRAME_NR);
+    USB->USBCmdCode = 0x00000200 | (CMD_DEV_READ_CUR_FRAME_NR << 16);
+    Wait4DevInt(CDFULL);
+    read_frame |= USB->USBCmdData << 8;
+
+    if (current_frame < 0) {
+      current_frame = read_frame;
+      guessed_frames = 0;
+    } else {
+      static const uint32_t kMaxReadFrame = 0x800;
+      static const uint32_t kReadMask = kMaxReadFrame - 1;
+      if ((current_frame & kReadMask) == read_frame) {
+        // This seems like it must mean that we didn't receive the SOF token.
+        ++guessed_frames;
+      } else {
+        guessed_frames = 0;
+        int16_t difference =
+            read_frame - (int16_t)((current_frame + 1) & kReadMask);
+        // If we're off by only a little.
+        if (difference > -10 && difference < 10) {
+          current_frame = ((current_frame + 1) & ~kReadMask) | read_frame;
+          // If we're ahead by only a little but we wrapped.
+        } else if (difference > kMaxReadFrame - 10) {
+          current_frame =
+              ((current_frame & ~kReadMask) - kMaxReadFrame) | read_frame;
+          // If we're behind by only a little but the packet counter wrapped.
+        } else if (difference < -(kMaxReadFrame - 10)) {
+          current_frame =
+              ((current_frame & ~kReadMask) + kMaxReadFrame) | read_frame;
+        } else {
+          // Give up and reset.
+          current_frame = -1;
+        }
+      }
+    }
   }
 
-  fillSensorPacket(&usbPacket);
-  static uint32_t sequence = 0;
-  usbPacket.sequence = sequence++;
-  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&usbPacket, DATA_PACKET_SIZE);
+  sensor_values.frame_number = current_frame + guessed_frames;
+  sensor_values.unknown_frame = guessed_frames > 10;
+
+  USBHwEPWrite(ISOC_IN_EP, (unsigned char *)&sensor_values, DATA_PACKET_SIZE);
+
+  if (uxQueueMessagesWaitingFromISR(xCharsForTx) > 0) {
+    // Data to send is available so enable interrupt instead of NAK.
+    bulk_in_nak_int(1);
+  } else {
+    bulk_in_nak_int(0);
+  }
+}
+
+void USB_IRQHandler(void) {
+  higher_priority_task_woken = pdFALSE;
+  uint32_t status = SC->USBIntSt;
+  if (status & USB_INT_REQ_HP) {
+    // We set the frame interrupt to get routed to the high priority line.
+    HandleFrame();
+  }
+  //if (status & USB_INT_REQ_LP) {
+    // Call lpcusb to let it handle all of the other interrupts.
+    USBHwISR();
+  //}
+  portEND_SWITCHING_ISR(higher_priority_task_woken);
 }
 
 void usb_init(void) {
@@ -298,8 +364,11 @@ void usb_init(void) {
   USBHwRegisterEPIntHandler(BULK_IN_EP, DebugIn);
   USBHwRegisterEPIntHandler(BULK_OUT_EP, DebugOut);
 
+  USB->USBDevIntPri = 1;  // route frame interrupt to high priority line
+  USB->USBDevIntEn |= FRAME;  // enable frame interrupt
+
   // register frame handler
-  USBHwRegisterFrameHandler(USBFrameHandler);
+  //USBHwRegisterFrameHandler(USBFrameHandler);
 
   DBG("Starting USB communication\n");
 

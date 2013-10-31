@@ -108,7 +108,7 @@ class USBReceiver {
 
   GyroBoardData data_;
 
-  uint32_t sequence_;
+  int32_t last_frame_number_, frame_number_;
 
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
