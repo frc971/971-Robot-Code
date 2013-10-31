@@ -9,6 +9,7 @@
       'dependencies': [
         '<(AOS)/atom_code/atom_code.gyp:configuration',
         '<(AOS)/common/common.gyp:once',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
