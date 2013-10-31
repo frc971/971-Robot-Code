@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/wrapping_counter.h"
@@ -67,6 +69,10 @@ inline double gyro_translate(int64_t in) {
   return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
+inline double battery_translate(uint16_t in) {
+  return adc_translate(in) * 80.8 / 17.8;
+}
+
 }  // namespace
 
 class GyroSensorReceiver : public USBReceiver {
@@ -124,6 +130,14 @@ class GyroSensorReceiver : public USBReceiver {
         .loader_top(data()->main.loader_top)
         .loader_bottom(data()->main.loader_bottom)
         .Send();
+
+    LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
+        battery_translate(data()->main.battery_voltage),
+        adc_translate(data()->main.battery_voltage),
+        data()->main.battery_voltage);
+    LOG(DEBUG, "halls l=%f r=%f\n",
+        adc_translate(data()->main.left_drive_hall),
+        adc_translate(data()->main.right_drive_hall));
   }
 
   WrappingCounter top_rise_;

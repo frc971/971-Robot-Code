@@ -537,9 +537,9 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.left_drive = encoder5_val;
     packet->main.right_drive = encoder4_val;
     packet->main.indexer = encoder3_val;
-    packet->main.battery_voltage = analog(0);
+    packet->main.battery_voltage = analog(3);
     packet->main.left_drive_hall = analog(1);
-    packet->main.right_drive_hall = analog(3);
+    packet->main.right_drive_hall = analog(2);
 
     NVIC_DisableIRQ(EINT3_IRQn);
 

@@ -6,9 +6,8 @@ void analog_init(void) {
   SC->PCONP |= PCONP_PCAD;
 
   // Enable AD0.0, AD0.1, AD0.2, AD0.3
-  PINCON->PINSEL1 &= ~(2 << 14 | 2 << 16 | 2 << 18 | 2 << 20);
+  PINCON->PINSEL1 &= ~(3 << 14 | 3 << 16 | 3 << 18 | 3 << 20);
   PINCON->PINSEL1 |= 1 << 14 | 1 << 16 | 1 << 18 | 1 << 20;
-  ADC->ADCR = 0x00200500;
   ADC->ADCR = (1 << 0 | 1 << 1 | 1 << 2 | 1 << 3) /* enable all 4 */ |
       7 << 8 /* 100MHz / 8 = 12.5MHz */ |
       1 << 16 /* enable burst mode */ |
@@ -36,5 +35,5 @@ uint16_t analog(int channel) {
     }
   } while (!(value & 1 << 31));
 
-  return ((value & 0xFFF0) >> 4);
+  return (value >> 4) & 0x3FF;
 }
