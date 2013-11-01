@@ -149,8 +149,8 @@ static void setup_hardware(void) {
 
   setup_PLL1();
 
-  // Set CAN to run at CCLK/6, which should have it running about 1 Mbit (1.042)
-  SC->PCLKSEL0 = 0xff555555;
+  // Set everything to run at full CCLK by default.
+  SC->PCLKSEL0 = 0x55555555;
 
   /* Configure the LEDs. */
   vParTestInitialise();

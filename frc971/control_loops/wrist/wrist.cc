@@ -4,7 +4,6 @@
 
 #include <algorithm>
 
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 
@@ -17,42 +16,22 @@ namespace control_loops {
 WristMotor::WristMotor(control_loops::WristLoop *my_wrist)
     : aos::control_loops::ControlLoop<control_loops::WristLoop>(my_wrist),
       zeroed_joint_(MakeWristLoop()) {
-}
+  {
+    using ::frc971::constants::GetValues;
+    ZeroedJoint<1>::ConfigurationData config_data;
 
-bool WristMotor::FetchConstants(
-    ZeroedJoint<1>::ConfigurationData *config_data) {
-  if (::aos::robot_state.get() == NULL) {
-    if (!::aos::robot_state.FetchNext()) {
-      LOG(ERROR, "Failed to fetch robot state to get constants.\n");
-      return false;
-    }
-  }
-  if (!constants::wrist_lower_limit(&config_data->lower_limit)) {
-    LOG(ERROR, "Failed to fetch the wrist lower limit constant.\n");
-    return false;
-  }
-  if (!constants::wrist_upper_limit(&config_data->upper_limit)) {
-    LOG(ERROR, "Failed to fetch the wrist upper limit constant.\n");
-    return false;
-  }
-  if (!constants::wrist_hall_effect_start_angle(
-          &config_data->hall_effect_start_angle[0])) {
-    LOG(ERROR, "Failed to fetch the wrist start angle constant.\n");
-    return false;
-  }
-  if (!constants::wrist_zeroing_off_speed(&config_data->zeroing_off_speed)) {
-    LOG(ERROR, "Failed to fetch the wrist zeroing off speed constant.\n");
-    return false;
-  }
+    config_data.lower_limit = GetValues().wrist_lower_limit;
+    config_data.upper_limit = GetValues().wrist_upper_limit;
+    config_data.hall_effect_start_angle[0] =
+        GetValues().wrist_hall_effect_start_angle;
+    config_data.zeroing_off_speed = GetValues().wrist_zeroing_off_speed;
+    config_data.zeroing_speed = GetValues().wrist_zeroing_speed;
 
-  if (!constants::wrist_zeroing_speed(&config_data->zeroing_speed)) {
-    LOG(ERROR, "Failed to fetch the wrist zeroing speed constant.\n");
-    return false;
-  }
+    config_data.max_zeroing_voltage = 5.0;
+    config_data.deadband_voltage = 0.0;
 
-  config_data->max_zeroing_voltage = 5.0;
-  config_data->deadband_voltage = 0.0;
-  return true;
+    zeroed_joint_.set_config_data(config_data);
+  }
 }
 
 // Positive angle is up, and positive power is up.
@@ -66,14 +45,6 @@ void WristMotor::RunIteration(
   // motors disabled.
   if (output) {
     output->voltage = 0;
-  }
-
-  // Cache the constants to avoid error handling down below.
-  ZeroedJoint<1>::ConfigurationData config_data;
-  if (!FetchConstants(&config_data)) {
-    return;
-  } else {
-    zeroed_joint_.set_config_data(config_data);
   }
 
   ZeroedJoint<1>::PositionData transformed_position;

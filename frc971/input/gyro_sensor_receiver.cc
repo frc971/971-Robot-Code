@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/wrapping_counter.h"
@@ -53,22 +55,33 @@ inline double index_translate(int32_t in) {
       (1.0) /*gears*/ * (2 * M_PI);
 }
 
+// Translates values from the ADC into voltage.
+inline double adc_translate(uint16_t in) {
+  static const double kVRefN = 0;
+  static const double kVRefP = 3.3;
+  static const int kMaximumValue = 0x3FF;
+  return kVRefN +
+      (static_cast<double>(in) / static_cast<double>(kMaximumValue) *
+       (kVRefP - kVRefN));
+}
+
+inline double gyro_translate(int64_t in) {
+  return in / 16.0 / 1000.0 / (180.0 / M_PI);
+}
+
+inline double battery_translate(uint16_t in) {
+  return adc_translate(in) * 80.8 / 17.8;
+}
+
 }  // namespace
 
 class GyroSensorReceiver : public USBReceiver {
-  virtual void ProcessData() override {
-    if (data()->robot_id != 0) {
-      LOG(ERROR, "gyro board sent data for robot id %hhd!"
-          " dip switches are %x\n",
-          data()->robot_id, data()->base_status & 0xF);
-      return;
-    } else {
-      LOG(DEBUG, "processing a packet dip switches %x\n",
-          data()->base_status & 0xF);
-    }
+ public:
+  GyroSensorReceiver() : USBReceiver(2) {}
 
+  virtual void ProcessData(const ::aos::time::Time &/*timestamp*/) override {
     gyro.MakeWithBuilder()
-        .angle(data()->gyro_angle / 16.0 / 1000.0 / 180.0 * M_PI)
+        .angle(gyro_translate(data()->gyro_angle))
         .Send();
 
     drivetrain.position.MakeWithBuilder()
@@ -117,6 +130,14 @@ class GyroSensorReceiver : public USBReceiver {
         .loader_top(data()->main.loader_top)
         .loader_bottom(data()->main.loader_bottom)
         .Send();
+
+    LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
+        battery_translate(data()->main.battery_voltage),
+        adc_translate(data()->main.battery_voltage),
+        data()->main.battery_voltage);
+    LOG(DEBUG, "halls l=%f r=%f\n",
+        adc_translate(data()->main.left_drive_hall),
+        adc_translate(data()->main.right_drive_hall));
   }
 
   WrappingCounter top_rise_;
@@ -129,7 +150,7 @@ class GyroSensorReceiver : public USBReceiver {
 }  // namespace frc971
 
 int main() {
-  ::aos::Init();
+  ::aos::Init(frc971::USBReceiver::kRelativePriority);
   ::frc971::GyroSensorReceiver receiver;
   while (true) {
     receiver.RunIteration();

@@ -1,14 +1,15 @@
 {
   'targets': [
     {
-      'target_name': 'common',
+      'target_name': 'constants',
       'type': 'static_library',
       'sources': [
-        'constants.cpp',
+        'constants.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/common.gyp:once',
+        '<(AOS)/common/network/network.gyp:team_number',
       ],
     }
   ],

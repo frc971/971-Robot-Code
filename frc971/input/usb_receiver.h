@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "aos/common/time.h"
-#include "aos/common/util/wrapping_counter.h"
+#include "aos/common/macros.h"
 
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/input/gyro_board_data.h"
@@ -15,9 +15,13 @@ namespace frc971 {
 // us.
 class USBReceiver {
  public:
-  USBReceiver();
+  USBReceiver(uint8_t expected_robot_id);
 
   void RunIteration();
+
+  // The relative priority that tasks doing this should get run at (ie what to
+  // pass to ::aos::Init(int)).
+  static const int kRelativePriority = 5;
 
  protected:
   GyroBoardData *data() { return &data_; }
@@ -62,7 +66,7 @@ class USBReceiver {
     // Gets called for every packet received.
     // Returns whether or not to process the values from this packet.
     bool IsCurrentPacketGood(const ::aos::time::Time &received_time,
-                             int32_t sequence);
+                             uint32_t sequence);
 
    private:
     // How many times the packet we guessed has to be close to right to use the
@@ -78,7 +82,7 @@ class USBReceiver {
 
     ::aos::time::Time last_good_packet_time_{0, 0};
 
-    int32_t last_good_sequence_;
+    uint32_t last_good_sequence_;
 
     const int kUnknownPhase = -11;
     // kUnknownPhase or the sequence number (%kPacketsPerLoopCycle) to
@@ -98,18 +102,24 @@ class USBReceiver {
 
   void Reset();
 
-  virtual void ProcessData() = 0;
+  virtual void ProcessData(const ::aos::time::Time &timestamp) = 0;
+
+  const uint8_t expected_robot_id_;
 
   GyroBoardData data_;
 
-  ::aos::util::WrappingCounter sequence_;
+  int32_t last_frame_number_, frame_number_;
 
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
   ::std::unique_ptr<libusb::IsochronousTransfer> transfers_[kNumTransfers];
-  // "Temporary" variable for holding a completed transfer to communicate that
-  // information from the callback to the code that wants it.
+
+  // "Temporary" variables for communicating information about a transfer that
+  // finished from the callback to the rest of the code.
   libusb::Transfer *completed_transfer_;
+  ::aos::time::Time transfer_received_time_{0, 0};
+
+  DISALLOW_COPY_AND_ASSIGN(USBReceiver);
 };
 
 }  // namespace frc971

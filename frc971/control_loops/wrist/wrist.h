@@ -51,9 +51,6 @@ class WristMotor
   friend class testing::WristTest_NoWindupPositive_Test;
   friend class testing::WristTest_NoWindupNegative_Test;
 
-  // Fetches and locally caches the latest set of constants.
-  bool FetchConstants(ZeroedJoint<1>::ConfigurationData *config_data);
-
   // The zeroed joint to use.
   ZeroedJoint<1> zeroed_joint_;
 

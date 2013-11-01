@@ -3,6 +3,7 @@
 // guards.
 // This means that it can not #include anything else because it (sometimes) gets
 // #included inside a namespace.
+// <stdint.h> must be #included by the containing file.
 // In the gyro board code, fill_packet.h #includes this file.
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
@@ -12,14 +13,31 @@
 struct DATA_STRUCT_NAME {
   int64_t gyro_angle;
 
+  // In units of 100,000 counts/second.
+  uint64_t timestamp;
+
   union {
     struct {
+      // This is the USB frame number for this data. It gets incremented on
+      // every packet sent.
+      // Negative numbers mean that the gyro board has no idea what the right
+      // answer is.
+      // This value going down at all indicates that the code on the gyro board
+      // dealing with it reset.
+      int32_t frame_number;
+
       // Which robot (+version) the gyro board is sending out data for.
       // We should keep this in the same place for all gyro board software
       // versions so that the fitpc can detect when it's reading from a gyro
-      // board set up for a different robot than it is.
-      // 0 = 2013 competition/practice robot
-      // 1 = 2013 3rd robot
+      // board set up for a different robot (or version) than it is.
+      // The numbers listed below each robot are the values that have been used
+      // for it.
+      //
+      // 2013 competition/practice robot
+      //   0
+      //   2 added battery measurement + drivetrain analog hall effects
+      // 2013 3rd robot
+      //   1
       uint8_t robot_id;
       // This information should also be kept in the same place from year to
       // year so that the fitpc code can record the dip switch values when it
@@ -30,35 +48,27 @@ struct DATA_STRUCT_NAME {
           uint8_t dip_switch1 : 1;
           uint8_t dip_switch2 : 1;
           uint8_t dip_switch3 : 1;
-          // If the current gyro_angle has been not updated because of a bad
-          // reading from the sensor.
-          uint8_t old_gyro_reading : 1;
-          // If we're not going to get any more good gyro_angles.
-          uint8_t bad_gyro : 1;
         };
-        uint8_t base_status;
+        uint8_t dip_switches;
+      };
+      struct {
+        // If the current gyro_angle has been not updated because of a bad
+        // reading from the sensor.
+        uint8_t old_gyro_reading : 1;
+        // If we're not going to get any more good gyro_angles.
+        uint8_t bad_gyro : 1;
+
+        // We're not sure what frame number this packet was sent in.
+        uint8_t unknown_frame : 1;
       };
     };
-    uint16_t header;
+    uint64_t header;
   };
 
-  // This is a counter that gets incremented with each packet sent (and wraps
-  // around when it reaches 255).
-  uint8_t sequence;
+  // We are 64-bit aligned at this point.
 
   union {
     struct {
-      union {
-        struct {
-          uint8_t wrist_hall_effect : 1;
-          uint8_t angle_adjust_bottom_hall_effect : 1;
-          uint8_t top_disc : 1;
-          uint8_t bottom_disc : 1;
-          uint8_t loader_top : 1;
-          uint8_t loader_bottom : 1;
-        };
-        uint16_t booleans;
-      };
       int32_t left_drive;
       int32_t right_drive;
       int32_t shooter_angle;
@@ -72,6 +82,10 @@ struct DATA_STRUCT_NAME {
       int32_t capture_wrist_rise;
       int32_t capture_shooter_angle_rise;
 
+      uint16_t battery_voltage;
+      uint16_t left_drive_hall;
+      uint16_t right_drive_hall;
+
       int8_t top_rise_count;
 
       int8_t top_fall_count;
@@ -84,6 +98,15 @@ struct DATA_STRUCT_NAME {
       int8_t wrist_rise_count;
 
       int8_t shooter_angle_rise_count;
+
+      struct {
+        uint8_t wrist_hall_effect : 1;
+        uint8_t angle_adjust_bottom_hall_effect : 1;
+        uint8_t top_disc : 1;
+        uint8_t bottom_disc : 1;
+        uint8_t loader_top : 1;
+        uint8_t loader_bottom : 1;
+      };
     } main;
     
     struct {

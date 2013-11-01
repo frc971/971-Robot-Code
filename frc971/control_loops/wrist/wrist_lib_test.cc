@@ -58,13 +58,6 @@ class WristMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    double wrist_hall_effect_start_angle;
-    ASSERT_TRUE(constants::wrist_hall_effect_start_angle(
-                    &wrist_hall_effect_start_angle));
-    double wrist_hall_effect_stop_angle;
-    ASSERT_TRUE(constants::wrist_hall_effect_stop_angle(
-                    &wrist_hall_effect_stop_angle));
-
     ::aos::ScopedMessagePtr<control_loops::WristLoop::Position> position =
         my_wrist_loop_.position.MakeMessage();
     position->pos = angle;
@@ -72,8 +65,8 @@ class WristMotorSimulation {
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
     double abs_position = GetAbsolutePosition();
-    if (abs_position >= wrist_hall_effect_start_angle &&
-        abs_position <= wrist_hall_effect_stop_angle) {
+    if (abs_position >= constants::GetValues().wrist_hall_effect_start_angle &&
+        abs_position <= constants::GetValues().wrist_hall_effect_stop_angle) {
       position->hall_effect = true;
     } else {
       position->hall_effect = false;
@@ -81,11 +74,14 @@ class WristMotorSimulation {
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
-    if ((last_position_ < wrist_hall_effect_start_angle ||
-         last_position_ > wrist_hall_effect_stop_angle) &&
-         position->hall_effect) {
+    if ((last_position_ <
+             constants::GetValues().wrist_hall_effect_start_angle ||
+         last_position_ >
+             constants::GetValues().wrist_hall_effect_stop_angle) &&
+        position->hall_effect) {
       calibration_value_ =
-          wrist_hall_effect_start_angle - initial_position_;
+          constants::GetValues().wrist_hall_effect_start_angle -
+          initial_position_;
     }
 
     position->calibration = calibration_value_;
@@ -99,17 +95,9 @@ class WristMotorSimulation {
     wrist_plant_->U << last_voltage_;
     wrist_plant_->Update();
 
-    // Assert that we are in the right physical range.
-    double wrist_upper_physical_limit;
-    ASSERT_TRUE(constants::wrist_upper_physical_limit(
-                    &wrist_upper_physical_limit));
-    double wrist_lower_physical_limit;
-    ASSERT_TRUE(constants::wrist_lower_physical_limit(
-                    &wrist_lower_physical_limit));
-
-    EXPECT_GE(wrist_upper_physical_limit,
+    EXPECT_GE(constants::GetValues().wrist_upper_physical_limit,
               wrist_plant_->Y(0, 0));
-    EXPECT_LE(wrist_lower_physical_limit,
+    EXPECT_LE(constants::GetValues().wrist_lower_physical_limit,
               wrist_plant_->Y(0, 0));
     last_voltage_ = my_wrist_loop_.output->voltage;
   }

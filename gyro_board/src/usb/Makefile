@@ -44,7 +44,7 @@ SOURCES=main.c \
 	CAN.c \
 	LPCUSB/usbinit.c \
 	LPCUSB/usbcontrol.c \
-	LPCUSB/USB_SENSOR_STREAM.c \
+	usb_device.c \
 	LPCUSB/usbhw_lpc.c \
 	gyro.c \
 	LPCUSB/usbstdreq.c
