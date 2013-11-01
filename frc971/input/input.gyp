@@ -56,6 +56,9 @@
         '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
         '<(AOS)/common/common.gyp:time',
       ],
+      'defines': [
+        'GYRO_BOARD_DATA_CHECKSUM=<!(<(DEPTH)/gyro_board/src/usb/data_struct_checksum.sh)',
+      ],
     },
   ],
 }

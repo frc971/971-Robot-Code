@@ -18,23 +18,29 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
-      static const int kCountsPerSecond = 100000;
-      const ::aos::time::Time timestamp =
-          ::aos::time::Time(data()->timestamp / kCountsPerSecond,
-                            (data()->timestamp * ::aos::time::Time::kNSecInSec /
-                             kCountsPerSecond) %
-                                ::aos::time::Time::kNSecInSec);
+    static const int kCountsPerSecond = 100000;
+    const ::aos::time::Time timestamp =
+        ::aos::time::Time(data()->timestamp / kCountsPerSecond,
+                          (data()->timestamp * ::aos::time::Time::kNSecInSec /
+                           kCountsPerSecond) %
+                          ::aos::time::Time::kNSecInSec);
 
-      if (data()->robot_id != expected_robot_id_) {
-        LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
-            " dip switches are %hhx\n",
-            data()->robot_id, expected_robot_id_, data()->dip_switches);
-        return;
-      } else {
-        LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
-            data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
-      }
+    if (data()->robot_id != expected_robot_id_) {
+      LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
+          " dip switches are %hhx\n",
+          data()->robot_id, expected_robot_id_, data()->dip_switches);
+      return;
+    }
+    if (data()->checksum != GYRO_BOARD_DATA_CHECKSUM) {
+      LOG(ERROR,
+          "gyro board sent checksum %" PRIu16 " instead of %" PRIu16 "!\n",
+          data()->checksum, GYRO_BOARD_DATA_CHECKSUM);
+      return;
+    }
+
+    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
+      LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
+          data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
 
       ProcessData(timestamp);
     }

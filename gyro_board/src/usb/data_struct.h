@@ -26,6 +26,11 @@ struct DATA_STRUCT_NAME {
       // dealing with it reset.
       int32_t frame_number;
 
+      // Checksum of this file calculated with sum(1).
+      // The gyro board sets this and then the fitpc checks it to make sure that
+      // they're both using the same version of this file.
+      uint16_t checksum;
+
       // Which robot (+version) the gyro board is sending out data for.
       // We should keep this in the same place for all gyro board software
       // versions so that the fitpc can detect when it's reading from a gyro
@@ -62,7 +67,9 @@ struct DATA_STRUCT_NAME {
         uint8_t unknown_frame : 1;
       };
     };
-    uint64_t header;
+    struct {
+      uint64_t header0, header1;
+    };
   };
 
   // We are 64-bit aligned at this point.

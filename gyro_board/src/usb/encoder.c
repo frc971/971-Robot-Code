@@ -517,6 +517,8 @@ void fillSensorPacket(struct DataStruct *packet) {
   packet->timestamp = ((uint64_t)sensor_timing_wraps << 32) | TIM1->TC;
   NVIC_EnableIRQ(TIMER1_IRQn);
 
+  packet->checksum = DATA_STRUCT_CHECKSUM;
+
   packet->dip_switch0 = dip_switch(0);
   packet->dip_switch1 = dip_switch(1);
   packet->dip_switch2 = dip_switch(2);
