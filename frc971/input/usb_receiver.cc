@@ -234,8 +234,8 @@ bool USBReceiver::ReceiveData() {
       LOG(WARNING, "frame number went from %" PRId32" to %" PRId32 "\n",
           frame_number_before, frame_number_);
     }
-    if (frame_number_ < last_frame_number_) {
-      LOG(WARNING, "frame number went down\n");
+    if (frame_number_ < last_frame_number_ - 2) {
+      LOG(WARNING, "frame number went down a lot\n");
       return true;
     }
     last_frame_number_ = frame_number_;
