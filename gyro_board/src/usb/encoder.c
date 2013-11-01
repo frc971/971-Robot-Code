@@ -12,15 +12,6 @@
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
 
-// The timer to use for timestamping sensor readings.
-// This is a constant to avoid hard-coding it in a lot of places, but there ARE
-// things (PCONP bits, IRQ numbers, etc) that have this value in them
-// implicitly.
-#define SENSOR_TIMING_TIMER TIM1
-// How many counts per second SENSOR_TIMING_TIMER should be.
-// This will wrap the counter about every 1/3 of a second.
-static const int kSensorTimingRate = 100000;
-
 #define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
   switch (channel) {
@@ -394,24 +385,7 @@ int32_t encoder_val(int chan) {
 
 static volatile uint32_t sensor_timing_wraps = 0;
 
-void TIMER1_IRQHandler(void) {
-  SENSOR_TIMING_TIMER->IR = 1 << 0;  // clear channel 0 match
-  ++sensor_timing_wraps;
-}
-
 void encoder_init(void) {
-  // Set up the timer for timestamping sensor readings.
-  SC->PCONP |= 1 << 2;
-  SENSOR_TIMING_TIMER->PR = (configCPU_CLOCK_HZ / kSensorTimingRate) - 1UL;
-  SENSOR_TIMING_TIMER->TC = 1;  // don't match the first time around
-  SENSOR_TIMING_TIMER->MR0 = 0;  // match every time it wraps
-  SENSOR_TIMING_TIMER->MCR = 1 << 0;  // interrupt on match channel 0
-  // Priority 4 is higher than any FreeRTOS-managed stuff (ie USB), but lower
-  // than encoders etc.
-  NVIC_SetPriority(TIMER1_IRQn, 4);
-  NVIC_EnableIRQ(TIMER1_IRQn);
-  SENSOR_TIMING_TIMER->TCR = 1;  // enable it
-
   // Setup the encoder interface.
   SC->PCONP |= PCONP_PCQEI;
   PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
@@ -512,10 +486,6 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->old_gyro_reading = 1;
     packet->bad_gyro = 0;
   }
-
-  NVIC_DisableIRQ(TIMER1_IRQn);
-  packet->timestamp = ((uint64_t)sensor_timing_wraps << 32) | TIM1->TC;
-  NVIC_EnableIRQ(TIMER1_IRQn);
 
   packet->checksum = DATA_STRUCT_CHECKSUM;
 

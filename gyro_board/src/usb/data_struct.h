@@ -13,17 +13,24 @@
 struct DATA_STRUCT_NAME {
   int64_t gyro_angle;
 
-  // In units of 100,000 counts/second.
-  uint64_t timestamp;
-
   union {
     struct {
-      // This is the USB frame number for this data. It gets incremented on
-      // every packet sent.
+      // This is the USB frame number for this data. It (theoretically) gets
+      // incremented on every packet sent, but the gyro board will deal with it
+      // correctly if it misses a frame or whatever by tracking the frame
+      // numbers sent out by the host.
       // Negative numbers mean that the gyro board has no idea what the right
       // answer is.
       // This value going down at all indicates that the code on the gyro board
       // dealing with it reset.
+      //
+      // The USB 2.0 standard says that timing of frames is 1.000ms +- 500ns.
+      // Testing with a fitpc and gyro board on 2013-10-30 by Brian gave 10us
+      // (the resolution of the timer on the gyro board that was used) of drift
+      // every 90-130 frames (~100ns per frame) and no jitter (and the timer on
+      // the gyro board isn't necessarily that good). This is plenty accurate
+      // for what we need for timing, so this number is what the code uses to do
+      // all timing calculations.
       int32_t frame_number;
 
       // Checksum of this file calculated with sum(1).

@@ -18,12 +18,8 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    static const int kCountsPerSecond = 100000;
     const ::aos::time::Time timestamp =
-        ::aos::time::Time(data()->timestamp / kCountsPerSecond,
-                          (data()->timestamp * ::aos::time::Time::kNSecInSec /
-                           kCountsPerSecond) %
-                          ::aos::time::Time::kNSecInSec);
+        ::aos::time::Time::InMS(data()->frame_number);
 
     if (data()->robot_id != expected_robot_id_) {
       LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"

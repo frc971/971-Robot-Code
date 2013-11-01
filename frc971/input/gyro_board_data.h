@@ -1,6 +1,8 @@
 #ifndef FRC971_INPUT_GYRO_BOARD_DATA_H_
 #define FRC971_INPUT_GYRO_BOARD_DATA_H_
 
+#include <stdint.h>
+
 namespace frc971 {
 
 #define DATA_STRUCT_NAME GyroBoardData

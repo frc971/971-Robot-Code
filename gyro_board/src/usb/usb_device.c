@@ -260,14 +260,17 @@ int VCOM_getchar(void) {
 }
 
 // Instead of registering an lpcusb handler for this, we do it ourself so that
-// we can get the timing jitter down.
+// we can get the timing jitter down and deal with the frame number right.
 static void HandleFrame(void) {
   USB->USBDevIntClr = FRAME;
 
   static struct DataStruct sensor_values;
   fillSensorPacket(&sensor_values);
 
+  // What the last good frame number that we got was.
+  // Values <0 are uninitialized.
   static int32_t current_frame = -1;
+  // How many extra frames we're guessing happened since we got a good one.
   static int guessed_frames = 0;
 
   uint8_t error_status = USBHwCmdRead(CMD_DEV_READ_ERROR_STATUS);
@@ -283,6 +286,11 @@ static void HandleFrame(void) {
       current_frame = read_frame;
       guessed_frames = 0;
     } else {
+      // All of the complicated stuff in here tracks the frame number from
+      // hardware (which comes from the SOF tokens sent out by the host) except
+      // deal with it if we miss a couple or get off by a little bit (and reset
+      // completely if we get off by a lot or miss a lot in a row).
+
       static const uint32_t kMaxReadFrame = 0x800;
       static const uint32_t kReadMask = kMaxReadFrame - 1;
       if ((current_frame & kReadMask) == read_frame) {
@@ -290,21 +298,24 @@ static void HandleFrame(void) {
         ++guessed_frames;
       } else {
         guessed_frames = 0;
+        // The frame number that we think we should have gotten.
+        int32_t expected_frame = current_frame + guessed_frames + 1;
         int16_t difference =
-            read_frame - (int16_t)((current_frame + 1) & kReadMask);
+            read_frame - (int16_t)(expected_frame & kReadMask);
         // If we're off by only a little.
         if (difference > -10 && difference < 10) {
-          current_frame = ((current_frame + 1) & ~kReadMask) | read_frame;
-          // If we're ahead by only a little but we wrapped.
+          current_frame = (expected_frame & ~kReadMask) | read_frame;
+          // If we're ahead by only a little (or dead on) but we wrapped.
         } else if (difference > kMaxReadFrame - 10) {
           current_frame =
-              ((current_frame & ~kReadMask) - kMaxReadFrame) | read_frame;
-          // If we're behind by only a little but the packet counter wrapped.
+              ((expected_frame & ~kReadMask) - kMaxReadFrame) | read_frame;
+          // If we're behind by only a little (or dead on) but the number in the
+          // token wrapped.
         } else if (difference < -(kMaxReadFrame - 10)) {
           current_frame =
-              ((current_frame & ~kReadMask) + kMaxReadFrame) | read_frame;
+              ((expected_frame & ~kReadMask) + kMaxReadFrame) | read_frame;
         } else {
-          // Give up and reset.
+          // We're way off, so give up and reset.
           current_frame = -1;
         }
       }
