@@ -509,9 +509,6 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.left_drive = encoder5_val;
     packet->main.right_drive = encoder4_val;
     packet->main.indexer = encoder3_val;
-    packet->main.battery_voltage = analog(3);
-    packet->main.left_drive_hall = analog(1);
-    packet->main.right_drive_hall = analog(2);
 
     NVIC_DisableIRQ(EINT3_IRQn);
 
@@ -535,6 +532,7 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.capture_bottom_fall_delay = capture_bottom_fall_delay;
     packet->main.bottom_fall_delay_count = bottom_fall_delay_count;
     packet->main.bottom_fall_count = bottom_fall_count;
+    packet->main.bottom_rise_count = bottom_rise_count;
     packet->main.bottom_disc = !digital(1);
 
     NVIC_EnableIRQ(EINT3_IRQn);
@@ -553,6 +551,10 @@ void fillSensorPacket(struct DataStruct *packet) {
 
     NVIC_EnableIRQ(EINT3_IRQn);
 
-    packet->main.bottom_rise_count = bottom_rise_count;
+    // Do all of the analogs last because they have the potential to be slow and
+    // jittery.
+    packet->main.battery_voltage = analog(3);
+    packet->main.left_drive_hall = analog(1);
+    packet->main.right_drive_hall = analog(2);
   }
 }
