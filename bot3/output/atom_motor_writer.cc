@@ -28,8 +28,8 @@ class MotorWriter : public ::aos::MotorOutput {
 
     drivetrain.output.FetchLatest();
     if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS) && kEnableDrivetrain) {
-      SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(4, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+      SetPWMOutput(4, drivetrain.output->right_voltage / 12.0, kTalonBounds);
+      SetPWMOutput(3, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
     } else {
       DisablePWMOutput(3);
       DisablePWMOutput(4);
@@ -39,8 +39,8 @@ class MotorWriter : public ::aos::MotorOutput {
     }
     shifters.FetchLatest();
     if (shifters.get()) {
-      SetSolenoid(1, shifters->set);
-      SetSolenoid(2, !shifters->set);
+      SetSolenoid(7, shifters->set);
+      SetSolenoid(8, !shifters->set);
     }
 
     /*if (shooter.output.IsNewerThanMS(kOutputMaxAgeMS)) {
