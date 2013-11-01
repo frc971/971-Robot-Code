@@ -38,6 +38,8 @@ void USBReceiver::RunIteration() {
       return;
     }
 
+    PacketReceived(timestamp);
+
     if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
       LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
           data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
@@ -55,6 +57,9 @@ void USBReceiver::PhaseLocker::Reset() {
   guess_phase_good_ = guess_phase_bad_ = 0;
   good_phase_early_ = good_phase_late_ = 0;
 }
+
+void USBReceiver::PacketReceived(const ::aos::time::Time &/*timestamp*/) {}
+void USBReceiver::ProcessData(const ::aos::time::Time &/*timestamp*/) {}
 
 bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
     const ::aos::time::Time &received_time,

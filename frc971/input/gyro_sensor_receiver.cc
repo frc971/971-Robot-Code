@@ -79,10 +79,25 @@ class GyroSensorReceiver : public USBReceiver {
  public:
   GyroSensorReceiver() : USBReceiver(2) {}
 
+  virtual void PacketReceived(const ::aos::time::Time &/*timestamp*/) override {
+    if (data()->bad_gyro) {
+      LOG(ERROR, "bad gyro\n");
+      bad_gyro_ = true;
+      gyro.MakeWithBuilder().angle(0).Send();
+    } else if (data()->old_gyro_reading) {
+      LOG(WARNING, "old gyro reading\n");
+      bad_gyro_ = true;
+    } else {
+      bad_gyro_ = false;
+    }
+  }
+
   virtual void ProcessData(const ::aos::time::Time &/*timestamp*/) override {
-    gyro.MakeWithBuilder()
-        .angle(gyro_translate(data()->gyro_angle))
-        .Send();
+    if (!bad_gyro_) {
+      gyro.MakeWithBuilder()
+          .angle(gyro_translate(data()->gyro_angle))
+          .Send();
+    }
 
     drivetrain.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(data()->main.right_drive))
@@ -139,6 +154,8 @@ class GyroSensorReceiver : public USBReceiver {
         adc_translate(data()->main.left_drive_hall),
         adc_translate(data()->main.right_drive_hall));
   }
+
+  bool bad_gyro_;
 
   WrappingCounter top_rise_;
   WrappingCounter top_fall_;
