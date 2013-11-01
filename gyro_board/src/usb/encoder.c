@@ -447,26 +447,26 @@ void encoder_init(void) {
   // Wrap back to 0 when we wrap the int and vice versa.
   QEI->QEIMAXPOS = 0xFFFFFFFF;
   
-  // Set up encoder 4.
-  GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
-  GPIOINT->IO2IntEnF |= (1 << 1);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 1);  // Set GPIO rising interrupt.
+  // Set up encoder 2.
+  GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
+  GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
+  GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
+  GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
   // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL4 &= ~(0x3 << 0);
-  PINCON->PINSEL4 &= ~(0x3 << 2);
-  encoder4_val = 0;
+  PINCON->PINSEL1 &= ~(0x3 << 12);
+  PINCON->PINSEL1 &= ~(0x3 << 10);
+  encoder2_val = 0;
 
-  // Set up encoder 5.
-  GPIOINT->IO2IntEnF |= (1 << 2);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 2);  // Set GPIO rising interrupt.
-  GPIOINT->IO2IntEnF |= (1 << 3);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 3);  // Set GPIO rising interrupt.
+  // Set up encoder 3.
+  GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
+  GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
+  GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
+  GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
   // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL4 &= ~(0x3 << 4);
-  PINCON->PINSEL4 &= ~(0x3 << 6);
-  encoder5_val = 0;
-
+  PINCON->PINSEL1 &= ~(0x3 << 8);
+  PINCON->PINSEL1 &= ~(0x3 << 6);
+  encoder3_val = 0;
+  
   // Enable interrupts from the GPIO pins.
   NVIC_EnableIRQ(EINT3_IRQn);
 
@@ -509,25 +509,26 @@ void encoder_init(void) {
     NVIC_EnableIRQ(EINT2_IRQn);
     encoder1_val = 0;
 
-    // Set up encoder 2.
-    GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
-    GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
-    GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
-    GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
+    // Set up encoder 4.
+    GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
+    GPIOINT->IO2IntEnF |= (1 << 1);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 1);  // Set GPIO rising interrupt.
     // Make sure they're in mode 00 (the default, aka nothing special).
-    PINCON->PINSEL1 &= ~(0x3 << 12);
-    PINCON->PINSEL1 &= ~(0x3 << 10);
-    encoder2_val = 0;
+    PINCON->PINSEL4 &= ~(0x3 << 0);
+    PINCON->PINSEL4 &= ~(0x3 << 2);
+    encoder4_val = 0;
 
-    // Set up encoder 3.
-    GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
-    GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
-    GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
-    GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
+    // Set up encoder 5.
+    GPIOINT->IO2IntEnF |= (1 << 2);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 2);  // Set GPIO rising interrupt.
+    GPIOINT->IO2IntEnF |= (1 << 3);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 3);  // Set GPIO rising interrupt.
     // Make sure they're in mode 00 (the default, aka nothing special).
-    PINCON->PINSEL1 &= ~(0x3 << 8);
-    PINCON->PINSEL1 &= ~(0x3 << 6);
-    encoder3_val = 0;
+    PINCON->PINSEL4 &= ~(0x3 << 4);
+    PINCON->PINSEL4 &= ~(0x3 << 6);
+    encoder5_val = 0;
+
 
     xTaskCreate(vDelayCapture,
                 (signed char *) "SENSORs",
@@ -574,15 +575,18 @@ void fillSensorPacket(struct DataStruct *packet) {
   // because disabling and enabling is cheap (2 instructions) and we really rely
   // on low interrupt latencies.
 
-  packet->main.left_drive = encoder5_val;
-  packet->main.right_drive = encoder4_val;
-
   if (is_bot3) {
     packet->robot_id = 1;
+
+    packet->main.left_drive = encoder3_val;
+    packet->main.right_drive = encoder2_val;
 
     packet->bot3.shooter_cycle_ticks = shooter_cycle_ticks;
   } else {  // is main robot
     packet->robot_id = 0;
+
+    packet->main.left_drive = encoder5_val;
+    packet->main.right_drive = encoder4_val;
 
     packet->main.shooter = encoder1_val;
     packet->main.indexer = encoder3_val;

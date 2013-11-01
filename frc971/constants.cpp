@@ -74,7 +74,6 @@ const int kPracticeCameraCenter = -5;
 
 const int kCompDrivetrainGearboxPinion = 19;
 const int kPracticeDrivetrainGearboxPinion = 17;
-const int kBot3DrivetrainGearboxPinion = 15;
 
 struct Values {
   // Wrist hall effect positive and negative edges.

@@ -39,8 +39,8 @@ class MotorWriter : public ::aos::MotorOutput {
     }
     shifters.FetchLatest();
     if (shifters.get()) {
-      SetSolenoid(1, shifters->set);
-      SetSolenoid(2, !shifters->set);
+      SetSolenoid(7, shifters->set);
+      SetSolenoid(8, !shifters->set);
     }
 
     /*if (shooter.output.IsNewerThanMS(kOutputMaxAgeMS)) {
