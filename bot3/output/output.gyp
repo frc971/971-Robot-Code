@@ -4,11 +4,11 @@
       'target_name': 'CameraServer',
       'type': 'executable',
       'sources': [
-        'CameraServer.cc',
+        '<(DEPTH)/frc971/output/CameraServer.cc',
       ],
       'dependencies': [
         '<(AOS)/atom_code/output/output.gyp:http_server',
-        '<(DEPTH)/frc971/frc971.gyp:common',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/messages/messages.gyp:aos_queues',
