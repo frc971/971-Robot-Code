@@ -24,6 +24,7 @@
         'drivetrain.cc',
         'drivetrain_motor_plant.cc',
         'polydrivetrain_motor_plant.cc',
+        'polydrivetrain_cim_plant.cc',
       ],
       'dependencies': [
         'drivetrain_loop',

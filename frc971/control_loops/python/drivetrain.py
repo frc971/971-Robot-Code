@@ -41,6 +41,7 @@ class CIM(control_loop.ControlLoop):
                                                self.B_continuous, self.dt)
 
     self.PlaceControllerPoles([0.01])
+    self.PlaceObserverPoles([0.01])
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])

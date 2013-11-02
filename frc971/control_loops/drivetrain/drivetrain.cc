@@ -13,6 +13,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_motor_plant.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
@@ -139,6 +140,40 @@ class DrivetrainMotorsSS {
 
 class PolyDrivetrain {
  public:
+
+  enum Gear {
+    HIGH,
+    LOW,
+    SHIFTING_UP,
+    SHIFTING_DOWN
+  };
+  // Stall Torque in N m
+  static constexpr double kStallTorque = 2.42;
+  // Stall Current in Amps
+  static constexpr double kStallCurrent = 133;
+  // Free Speed in RPM. Used number from last year.
+  static constexpr double kFreeSpeed = 4650.0;
+  // Free Current in Amps
+  static constexpr double kFreeCurrent = 2.7;
+  // Moment of inertia of the drivetrain in kg m^2
+  // Just borrowed from last year.
+  static constexpr double J = 6.4;
+  // Mass of the robot, in kg.
+  static constexpr double m = 68;
+  // Radius of the robot, in meters (from last year).
+  static constexpr double rb = 0.617998644 / 2.0;
+  static constexpr double kWheelRadius = .04445;
+  // Resistance of the motor, divided by the number of motors.
+  static constexpr double kR = (12.0 / kStallCurrent / 4 + 0.03) / (0.93 * 0.93);
+  // Motor velocity constant
+  static constexpr double Kv =
+      ((kFreeSpeed / 60.0 * 2.0 * M_PI) / (12.0 - kR * kFreeCurrent));
+  // Torque constant
+  static constexpr double Kt = kStallTorque / kStallCurrent;
+  // Gear ratios
+  static constexpr double G_low = 16.0 / 60.0 * 19.0 / 50.0;
+  static constexpr double G_high = 28.0 / 48.0 * 19.0 / 50.0;
+
   PolyDrivetrain()
       : U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                  /*[*/ -1, 0 /*]*/,
@@ -148,15 +183,32 @@ class PolyDrivetrain {
                  /*[*/ 12 /*]*/,
                  /*[*/ 12 /*]*/,
                  /*[*/ 12 /*]]*/).finished()),
-        loop_(new StateFeedbackLoop<2, 2, 2>(MakeVDrivetrainLoop())) {
+        loop_(new StateFeedbackLoop<2, 2, 2>(MakeVDrivetrainLoop())),
+        left_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
+        right_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
+        ttrust_(1.1),
+        wheel_(0.0),
+        throttle_(0.0),
+        quickturn_(false),
+        stale_count_(0),
+        position_time_delta_(0.01),
+        left_gear_(LOW),
+        right_gear_(LOW) {
 
-    ttrust_ = 1.1;
-
-    wheel_ = 0.0;
-    throttle_ = 0.0;
-    quickturn_ = false;
-    highgear_ = true;
+    last_position_.Zero();
+    position_.Zero();
   }
+  static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
+
+  static double MotorSpeed(double shifter_position, double velocity) {
+    // TODO(austin): G_high, G_low and kWheelRadius
+    if (shifter_position > 0.5) {
+      return velocity / G_high / kWheelRadius;
+    } else {
+      return velocity / G_low / kWheelRadius;
+    }
+  }
+
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear) {
     const double kWheelNonLinearity = 0.4;
     // Apply a sin function that's scaled to make it feel better.
@@ -165,13 +217,71 @@ class PolyDrivetrain {
     wheel_ = sin(angular_range * wheel_) / sin(angular_range);
     throttle_ = throttle;
     quickturn_ = quickturn;
-    highgear_ = highgear;
-    if (highgear_) {
-      loop_->set_controller_index(3);
-    } else {
-      loop_->set_controller_index(0);
+
+    // TODO(austin): Fix the upshift logic to include states.
+    const Gear requested_gear = highgear ? HIGH : LOW;
+
+    if (left_gear_ != requested_gear) {
+      if (IsInGear(left_gear_)) {
+        if (requested_gear == HIGH) {
+          left_gear_ = SHIFTING_UP;
+        } else {
+          left_gear_ = SHIFTING_DOWN;
+        }
+      }
+    }
+    if (right_gear_ != requested_gear) {
+      if (IsInGear(right_gear_)) {
+        if (requested_gear == HIGH) {
+          right_gear_ = SHIFTING_UP;
+        } else {
+          right_gear_ = SHIFTING_DOWN;
+        }
+      }
     }
   }
+  void SetPosition(const Drivetrain::Position *position) {
+    if (position == NULL) {
+      ++stale_count_;
+    } else {
+      last_position_ = position_;
+      position_ = *position;
+      position_time_delta_ = (stale_count_ + 1) * 0.01;
+      stale_count_ = 0;
+    }
+
+    if (position) {
+      // Switch to the correct controller.
+      // TODO(austin): Un-hard code 0.5
+      if (position->left_shifter_position < 0.5) {
+        if (position->right_shifter_position < 0.5) {
+          loop_->set_controller_index(0);
+        } else {
+          loop_->set_controller_index(1);
+        }
+      } else {
+        if (position->right_shifter_position < 0.5) {
+          loop_->set_controller_index(2);
+        } else {
+          loop_->set_controller_index(3);
+        }
+      }
+      // TODO(austin): Constants.
+      if (position->left_shifter_position > 0.9 && left_gear_ == SHIFTING_UP) {
+        left_gear_ = HIGH;
+      }
+      if (position->left_shifter_position < 0.1 && left_gear_ == SHIFTING_DOWN) {
+        left_gear_ = LOW;
+      }
+      if (position->right_shifter_position > 0.9 && right_gear_ == SHIFTING_UP) {
+        right_gear_ = HIGH;
+      }
+      if (position->right_shifter_position < 0.1 && right_gear_ == SHIFTING_DOWN) {
+        right_gear_ = LOW;
+      }
+    }
+  }
+
   double FilterVelocity(double throttle) {
     const Eigen::Matrix<double, 2, 2> FF =
         loop_->B().inverse() *
@@ -220,57 +330,100 @@ class PolyDrivetrain {
   }
 
   void Update() {
-    // FF * X = U (steady state)
-    const Eigen::Matrix<double, 2, 2> FF =
-        loop_->B().inverse() *
-        (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+    // TODO(austin): Observer for the current velocity instead of difference
+    // calculations.
+    const double current_left_velocity =
+        (position_.left_encoder - last_position_.left_encoder) * 100.0 /
+        position_time_delta_;
+    const double current_right_velocity =
+        (position_.right_encoder - last_position_.right_encoder) * 100.0 /
+        position_time_delta_;
+    const double left_motor_speed =
+        MotorSpeed(position_.left_shifter_position, current_left_velocity);
+    const double right_motor_speed =
+        MotorSpeed(position_.right_shifter_position, current_right_velocity);
 
-    // Invert the plant to figure out how the velocity filter would have to work
-    // out in order to filter out the forwards negative inertia.
-    // This math assumes that the left and right power and velocity are equals,
-    // and that the plant is the same on the left and right.
-    const double fvel = FilterVelocity(throttle_);
+    // Reset the CIM model to the current conditions to be ready for when we shift.
+    if (IsInGear(left_gear_)) {
+      left_cim_->X_hat(0, 0) = left_motor_speed;
+    }
+    if (IsInGear(right_gear_)) {
+      right_cim_->X_hat(1, 0) = right_motor_speed;
+    }
 
-    const double sign_svel = wheel_ * ((fvel > 0.0) ? 1.0 : -1.0);
-    double steering_velocity;
-    if (quickturn_) {
-      steering_velocity = wheel_ * MaxVelocity();
+    if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
+      // FF * X = U (steady state)
+      const Eigen::Matrix<double, 2, 2> FF =
+          loop_->B().inverse() *
+          (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+
+      // Invert the plant to figure out how the velocity filter would have to
+      // work
+      // out in order to filter out the forwards negative inertia.
+      // This math assumes that the left and right power and velocity are
+      // equals,
+      // and that the plant is the same on the left and right.
+      const double fvel = FilterVelocity(throttle_);
+
+      const double sign_svel = wheel_ * ((fvel > 0.0) ? 1.0 : -1.0);
+      double steering_velocity;
+      if (quickturn_) {
+        steering_velocity = wheel_ * MaxVelocity();
+      } else {
+        steering_velocity = ::std::abs(fvel) * wheel_;
+      }
+      const double left_velocity = fvel - steering_velocity;
+      const double right_velocity = fvel + steering_velocity;
+
+      // Integrate velocity to get the position.
+      // This position is used to get integral control.
+      loop_->R << left_velocity, right_velocity;
+
+      if (!quickturn_) {
+        // K * R = w
+        Eigen::Matrix<double, 1, 2> equality_k;
+        equality_k << 1 + sign_svel, -(1 - sign_svel);
+        const double equality_w = 0.0;
+
+        // Construct a constraint on R by manipulating the constraint on U
+        ::aos::controls::HPolytope<2> R_poly = ::aos::controls::HPolytope<2>(
+            U_Poly_.H() * (loop_->K() + FF),
+            U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat);
+
+        // Limit R back inside the box.
+        loop_->R = CoerceGoal(R_poly, equality_k, equality_w, loop_->R);
+      }
+
+      const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R;
+      const Eigen::Matrix<double, 2, 1> U_ideal =
+          loop_->K() * (loop_->R - loop_->X_hat) + FF_volts;
+
+      for (int i = 0; i < 2; i++) {
+        loop_->U[i] = ::aos::Clip(U_ideal[i], -12, 12);
+      }
     } else {
-      steering_velocity = ::std::abs(fvel) * wheel_;
-    }
-    const double left_velocity = fvel - steering_velocity;
-    const double right_velocity = fvel + steering_velocity;
+      // Any motor is not in gear.  Speed match.
+      ::Eigen::Matrix<double, 1, 1> R_left;
+      R_left(0, 0) = left_motor_speed;
 
-    // Integrate velocity to get the position.
-    // This position is used to get integral control.
-    loop_->R << left_velocity, right_velocity;
+      // TODO(austin): Use battery volts here at some point.
+      loop_->U(0, 0) = ::aos::Clip(
+          (left_cim_->K() * (R_left - left_cim_->X_hat) + R_left / Kv)(0, 0), -12, 12);
+      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat + right_cim_->B() * loop_->U(0, 0);
 
-    if (!quickturn_) {
-    // K * R = w
-    Eigen::Matrix<double,1,2> equality_k;
-    equality_k << 1 + sign_svel, -(1 - sign_svel);
-    const double equality_w = 0.0;
-
-    // Construct a constraint on R by manipulating the constraint on U
-    ::aos::controls::HPolytope<2> R_poly = ::aos::controls::HPolytope<2>(
-        U_Poly_.H() * (loop_->K() + FF),
-        U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat);
-
-    // Limit R back inside the box.
-    loop_->R =
-        CoerceGoal(R_poly, equality_k, equality_w, loop_->R);
+      ::Eigen::Matrix<double, 1, 1> R_right;
+      R_right(0, 0) = right_motor_speed;
+      loop_->U(1, 0) = ::aos::Clip(
+          (right_cim_->K() * (R_right - right_cim_->X_hat) + R_right / Kv)(0, 0), -12,
+          12);
+      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat + right_cim_->B() * loop_->U(1, 0);
     }
 
-    const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R;
-    const Eigen::Matrix<double, 2, 1> U_ideal =
-        loop_->K() * (loop_->R - loop_->X_hat) + FF_volts;
-
-    for (int i = 0; i < 2; i++) {
-      loop_->U[i] = ::aos::Clip(U_ideal[i], -12, 12);
+    if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
+      // TODO(austin): Model this better.
+      // TODO(austin): Feed back?
+      loop_->X_hat = loop_->A() * loop_->X_hat + loop_->B() * loop_->U;
     }
-
-    // TODO(austin): Feed back?
-    loop_->X_hat = loop_->A() * loop_->X_hat + loop_->B() * loop_->U;
   }
 
   void SendMotors(Drivetrain::Output *output) {
@@ -278,7 +431,10 @@ class PolyDrivetrain {
         loop_->U(0, 0), loop_->U(1, 0), wheel_, throttle_);
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
-    if (highgear_) {
+    // Go in high gear if anything wants to be in high gear.
+    // TODO(austin): Seperate these.
+    if (left_gear_ == HIGH || left_gear_ == SHIFTING_UP ||
+        right_gear_ == HIGH || right_gear_ == SHIFTING_UP) {
       shifters.MakeWithBuilder().set(false).Send();
     } else {
       shifters.MakeWithBuilder().set(true).Send();
@@ -289,12 +445,19 @@ class PolyDrivetrain {
   const ::aos::controls::HPolytope<2> U_Poly_;
 
   ::std::unique_ptr<StateFeedbackLoop<2, 2, 2>> loop_;
+  ::std::unique_ptr<StateFeedbackLoop<1, 1, 1>> left_cim_;
+  ::std::unique_ptr<StateFeedbackLoop<1, 1, 1>> right_cim_;
 
-  double ttrust_;
+  const double ttrust_;
   double wheel_;
   double throttle_;
   bool quickturn_;
-  bool highgear_;
+  int stale_count_;
+  double position_time_delta_;
+  Gear left_gear_;
+  Gear right_gear_;
+  Drivetrain::Position last_position_;
+  Drivetrain::Position position_;
 };
 
 
@@ -318,7 +481,7 @@ class DrivetrainMotorsOL {
     _left_pwm = 0.0;
     _right_pwm = 0.0;
   }
-  void Update(void) {
+  void Update() {
     double overPower;
     float sensitivity = 1.7;
     float angular_power;
@@ -455,7 +618,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   static PolyDrivetrain dt_openloop;
 
   bool bad_pos = false;
-  if (position == NULL) {
+  if (position == nullptr) {
     LOG(WARNING, "no position\n");
     bad_pos = true;
   }
@@ -481,6 +644,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
   }
+  dt_openloop.SetPosition(position);
   dt_closedloop.Update(position, output == NULL);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();

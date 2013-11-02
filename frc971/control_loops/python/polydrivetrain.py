@@ -117,7 +117,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.PlaceControllerPoles([0.5, 0.5])
+    self.PlaceControllerPoles([0.6, 0.6])
     self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
@@ -132,8 +132,14 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
 
 
 class VelocityDrivetrain(object):
+  HIGH = 'high'
+  LOW = 'low'
+  SHIFTING_UP = 'up'
+  SHIFTING_DOWN = 'down'
+
   def __init__(self):
-    self.drivetrain_low_low = VelocityDrivetrainModel(left_low=True, right_low=True, name='VelocityDrivetrainLowLow')
+    self.drivetrain_low_low = VelocityDrivetrainModel(
+        left_low=True, right_low=True, name='VelocityDrivetrainLowLow')
     self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False, name='VelocityDrivetrainLowHigh')
     self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True, name = 'VelocityDrivetrainHighLow')
     self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False, name = 'VelocityDrivetrainHighHigh')
@@ -171,42 +177,65 @@ class VelocityDrivetrain(object):
     # inertia.  A value of 1 is no throttle negative inertia.
     self.ttrust = 1.0
 
-    self.left_high = False
-    self.right_high = False
+    self.left_gear = VelocityDrivetrain.LOW
+    self.right_gear = VelocityDrivetrain.LOW
+    self.left_shifter_position = 0.0
+    self.right_shifter_position = 0.0
+    self.left_cim = drivetrain.CIM()
+    self.right_cim = drivetrain.CIM()
+
+  def IsInGear(self, gear):
+    return gear is VelocityDrivetrain.HIGH or gear is VelocityDrivetrain.LOW
+
+  def MotorRPM(self, shifter_position, velocity):
+    if shifter_position > 0.5:
+      return (velocity / self.CurrentDrivetrain().G_high /
+              self.CurrentDrivetrain().r)
+    else:
+      return (velocity / self.CurrentDrivetrain().G_low /
+              self.CurrentDrivetrain().r)
 
   def CurrentDrivetrain(self):
-    if self.left_high:
-      if self.right_high:
+    if self.left_shifter_position > 0.5:
+      if self.right_shifter_position > 0.5:
         return self.drivetrain_high_high
       else:
         return self.drivetrain_high_low
     else:
-      if self.right_high:
+      if self.right_shifter_position > 0.5:
         return self.drivetrain_low_high
       else:
         return self.drivetrain_low_low
+
+  def SimShifter(self, gear, shifter_position):
+    if gear is VelocityDrivetrain.HIGH or gear is VelocityDrivetrain.SHIFTING_UP:
+      shifter_position = min(shifter_position + 0.1, 1.0)
+    else:
+      shifter_position = max(shifter_position - 0.1, 0.0)
+
+    if shifter_position == 1.0:
+      gear = VelocityDrivetrain.HIGH
+    elif shifter_position == 0.0:
+      gear = VelocityDrivetrain.LOW
+
+    return gear, shifter_position
 
   def ComputeGear(self, wheel_velocity, should_print=False, current_gear=False, gear_name=None):
     high_omega = (wheel_velocity / self.CurrentDrivetrain().G_high /
                   self.CurrentDrivetrain().r)
     low_omega = (wheel_velocity / self.CurrentDrivetrain().G_low /
                  self.CurrentDrivetrain().r)
-    print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
+    #print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
     high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
                    self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
     low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
     high_power = high_torque * high_omega
     low_power = low_torque * low_omega
-    if should_print:
-      print gear_name, "High omega", high_omega, "Low omega", low_omega
-      print gear_name, "High torque", high_torque, "Low torque", low_torque
-      print gear_name, "High power", high_power, "Low power", low_power
-      if (high_power > low_power) != current_gear:
-        if high_power > low_power:
-          print gear_name, "Shifting to high"
-        else:
-          print gear_name, "Shifting to low"
+    #if should_print:
+    #  print gear_name, "High omega", high_omega, "Low omega", low_omega
+    #  print gear_name, "High torque", high_torque, "Low torque", low_torque
+    #  print gear_name, "High power", high_power, "Low power", low_power
 
     # Shift algorithm improvements.
     # TODO(aschuh):
@@ -215,7 +244,23 @@ class VelocityDrivetrain(object):
     # to include that info.
     # If the driver is still in high gear, but isn't asking for the extra power
     # from low gear, don't shift until he asks for it.
-    return high_power > low_power
+    goal_gear_is_high = high_power > low_power
+    #goal_gear_is_high = True
+
+    if not self.IsInGear(current_gear):
+      print gear_name, 'Not in gear.'
+      return current_gear
+    else:
+      is_high = current_gear is VelocityDrivetrain.HIGH
+      if is_high != goal_gear_is_high:
+        if goal_gear_is_high:
+          print gear_name, 'Shifting up.'
+          return VelocityDrivetrain.SHIFTING_UP
+        else:
+          print gear_name, 'Shifting down.'
+          return VelocityDrivetrain.SHIFTING_DOWN
+      else:
+        return current_gear
 
   def FilterVelocity(self, throttle):
     # Invert the plant to figure out how the velocity filter would have to work
@@ -255,65 +300,99 @@ class VelocityDrivetrain(object):
     # This is the same as sending the most torque down to the floor at the
     # wheel.
 
-    self.left_high = self.ComputeGear(self.X[0, 0], should_print=True, current_gear=self.left_high, gear_name="left")
-    self.right_high = self.ComputeGear(self.X[1, 0], should_print=True, current_gear=self.right_high, gear_name="right")
+    self.left_gear = self.ComputeGear(self.X[0, 0], should_print=True,
+                                      current_gear=self.left_gear,
+                                      gear_name="left")
+    self.right_gear = self.ComputeGear(self.X[1, 0], should_print=True,
+                                       current_gear=self.right_gear,
+                                       gear_name="right")
+    if self.IsInGear(self.left_gear):
+      self.left_cim.X[0, 0] = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
 
-    FF_sum = self.CurrentDrivetrain().FF.sum(axis=1)
+    if self.IsInGear(self.right_gear):
+      self.right_cim.X[0, 0] = self.MotorRPM(self.right_shifter_position, self.X[0, 0])
 
-    # Filter the throttle to provide a nicer response.
+    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+      # Filter the throttle to provide a nicer response.
+      fvel = self.FilterVelocity(throttle)
 
-    # TODO(austin): fn
-    fvel = self.FilterVelocity(throttle)
+      # Constant radius means that angualar_velocity / linear_velocity = constant.
+      # Compute the left and right velocities.
+      left_velocity = fvel - steering * numpy.abs(fvel)
+      right_velocity = fvel + steering * numpy.abs(fvel)
 
-    # Constant radius means that angualar_velocity / linear_velocity = constant.
-    # Compute the left and right velocities.
-    left_velocity = fvel - steering * numpy.abs(fvel)
-    right_velocity = fvel + steering * numpy.abs(fvel)
+      # Write this constraint in the form of K * R = w
+      # angular velocity / linear velocity = constant
+      # (left - right) / (left + right) = constant
+      # left - right = constant * left + constant * right
 
-    # Write this constraint in the form of K * R = w
-    # angular velocity / linear velocity = constant
-    # (left - right) / (left + right) = constant
-    # left - right = constant * left + constant * right
+      # (fvel - steering * numpy.abs(fvel) - fvel - steering * numpy.abs(fvel)) /
+      #  (fvel - steering * numpy.abs(fvel) + fvel + steering * numpy.abs(fvel)) =
+      #       constant
+      # (- 2 * steering * numpy.abs(fvel)) / (2 * fvel) = constant
+      # (-steering * sign(fvel)) = constant
+      # (-steering * sign(fvel)) * (left + right) = left - right
+      # (steering * sign(fvel) + 1) * left + (steering * sign(fvel) - 1) * right = 0
 
-    # (fvel - steering * numpy.abs(fvel) - fvel - steering * numpy.abs(fvel)) /
-    #  (fvel - steering * numpy.abs(fvel) + fvel + steering * numpy.abs(fvel)) =
-    #       constant
-    # (- 2 * steering * numpy.abs(fvel)) / (2 * fvel) = constant
-    # (-steering * sign(fvel)) = constant
-    # (-steering * sign(fvel)) * (left + right) = left - right
-    # (steering * sign(fvel) + 1) * left + (steering * sign(fvel) - 1) * right = 0
+      equality_k = numpy.matrix(
+          [[1 + steering * numpy.sign(fvel), -(1 - steering * numpy.sign(fvel))]])
+      equality_w = 0.0
 
-    equality_k = numpy.matrix(
-        [[1 + steering * numpy.sign(fvel), -(1 - steering * numpy.sign(fvel))]])
-    equality_w = 0.0
+      self.R[0, 0] = left_velocity
+      self.R[1, 0] = right_velocity
 
-    self.R[0, 0] = left_velocity
-    self.R[1, 0] = right_velocity
+      # Construct a constraint on R by manipulating the constraint on U
+      # Start out with H * U <= k
+      # U = FF * R + K * (R - X)
+      # H * (FF * R + K * R - K * X) <= k
+      # H * (FF + K) * R <= k + H * K * X
+      R_poly = polytope.HPolytope(
+          self.U_poly.H * (self.CurrentDrivetrain().K + self.CurrentDrivetrain().FF),
+          self.U_poly.k + self.U_poly.H * self.CurrentDrivetrain().K * self.X)
 
-    # Construct a constraint on R by manipulating the constraint on U
-    # Start out with H * U <= k
-    # U = FF * R + K * (R - X)
-    # H * (FF * R + K * R - K * X) <= k
-    # H * (FF + K) * R <= k + H * K * X
-    R_poly = polytope.HPolytope(
-        self.U_poly.H * (self.CurrentDrivetrain().K + self.CurrentDrivetrain().FF),
-        self.U_poly.k + self.U_poly.H * self.CurrentDrivetrain().K * self.X)
+      # Limit R back inside the box.
+      self.boxed_R = CoerceGoal(R_poly, equality_k, equality_w, self.R)
 
-    # Limit R back inside the box.
-    self.boxed_R = CoerceGoal(R_poly, equality_k, equality_w, self.R)
+      FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
+      self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R - self.X) + FF_volts
+    else:
+      print 'Not all in gear'
+      if not self.IsInGear(self.left_gear) and not self.IsInGear(self.right_gear):
+        # TODO(austin): Use battery volts here.
+        R_left = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
+        self.U_ideal[0, 0] = numpy.clip(
+            self.left_cim.K * (R_left - self.left_cim.X) + R_left / self.left_cim.Kv,
+            self.left_cim.U_min, self.left_cim.U_max)
+        self.left_cim.Update(self.U_ideal[0, 0])
 
-    FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
-    self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R - self.X) + FF_volts
+        R_right = self.MotorRPM(self.right_shifter_position, self.X[1, 0])
+        self.U_ideal[1, 0] = numpy.clip(
+            self.right_cim.K * (R_right - self.right_cim.X) + R_right / self.right_cim.Kv,
+            self.right_cim.U_min, self.right_cim.U_max)
+        self.right_cim.Update(self.U_ideal[1, 0])
+      else:
+        assert False
 
     self.U = numpy.clip(self.U_ideal, self.U_min, self.U_max)
-    self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
+
+    # TODO(austin): Model the robot as not accelerating when you shift...
+    # This hack only works when you shift at the same time.
+    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+      self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
+
+    self.left_gear, self.left_shifter_position = self.SimShifter(
+        self.left_gear, self.left_shifter_position)
+    self.right_gear, self.right_shifter_position = self.SimShifter(
+        self.right_gear, self.right_shifter_position)
+
     print "U is", self.U[0, 0], self.U[1, 0]
+    print "Left shifter", self.left_gear, self.left_shifter_position, "Right shifter", self.right_gear, self.right_shifter_position
 
 
 def main(argv):
   vdrivetrain = VelocityDrivetrain()
 
-  if len(argv) != 3:
+  if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
     loop_writer = control_loop.ControlLoopWriter(
@@ -326,8 +405,15 @@ def main(argv):
       loop_writer.Write(argv[2], argv[1])
     else:
       loop_writer.Write(argv[1], argv[2])
-    return
 
+    cim_writer = control_loop.ControlLoopWriter(
+        "CIM", [drivetrain.CIM()])
+
+    if argv[3][-3:] == '.cc':
+      cim_writer.Write(argv[4], argv[3])
+    else:
+      cim_writer.Write(argv[3], argv[4])
+    return
 
   vl_plot = []
   vr_plot = []
@@ -337,38 +423,40 @@ def main(argv):
   t_plot = []
   left_gear_plot = []
   right_gear_plot = []
-  vdrivetrain.left_high = True
-  vdrivetrain.right_high = True
+  vdrivetrain.left_shifter_position = 0.0
+  vdrivetrain.right_shifter_position = 0.0
+  vdrivetrain.left_gear = VelocityDrivetrain.LOW
+  vdrivetrain.right_gear = VelocityDrivetrain.LOW
 
   print "K is", vdrivetrain.CurrentDrivetrain().K
 
-  if vdrivetrain.left_high:
+  if vdrivetrain.left_gear is VelocityDrivetrain.HIGH:
     print "Left is high"
   else:
     print "Left is low"
-  if vdrivetrain.right_high:
+  if vdrivetrain.right_gear is VelocityDrivetrain.HIGH:
     print "Right is high"
   else:
     print "Right is low"
 
-  for t in numpy.arange(0, 2.0, vdrivetrain.dt):
+  for t in numpy.arange(0, 4.0, vdrivetrain.dt):
     if t < 1.0:
-      vdrivetrain.Update(throttle=0.60, steering=0.3)
-    elif t < 1.5:
-      vdrivetrain.Update(throttle=0.60, steering=-0.3)
+      vdrivetrain.Update(throttle=0.60, steering=0.0)
+    elif t < 1.2:
+      vdrivetrain.Update(throttle=0.60, steering=0.0)
     else:
-      vdrivetrain.Update(throttle=0.0, steering=0.3)
+      vdrivetrain.Update(throttle=0.60, steering=0.0)
     t_plot.append(t)
     vl_plot.append(vdrivetrain.X[0, 0])
     vr_plot.append(vdrivetrain.X[1, 0])
     ul_plot.append(vdrivetrain.U[0, 0])
     ur_plot.append(vdrivetrain.U[1, 0])
-    left_gear_plot.append(vdrivetrain.left_high * 2.0 - 10.0)
-    right_gear_plot.append(vdrivetrain.right_high * 2.0 - 10.0)
+    left_gear_plot.append((vdrivetrain.left_gear is VelocityDrivetrain.HIGH) * 2.0 - 10.0)
+    right_gear_plot.append((vdrivetrain.right_gear is VelocityDrivetrain.HIGH) * 2.0 - 10.0)
 
     fwd_velocity = (vdrivetrain.X[1, 0] + vdrivetrain.X[0, 0]) / 2
     turn_velocity = (vdrivetrain.X[1, 0] - vdrivetrain.X[0, 0])
-    if fwd_velocity < 0.0000001:
+    if abs(fwd_velocity) < 0.0000001:
       radius_plot.append(turn_velocity)
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
@@ -384,11 +472,16 @@ def main(argv):
     cim_velocity_plot.append(cim.X[0, 0])
     cim_voltage_plot.append(U[0, 0] * 10)
     cim_time.append(t)
-  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
-  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
-  pylab.legend()
-  pylab.show()
+  #pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
+  #pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
+  #pylab.legend()
+  #pylab.show()
 
+  # TODO(austin):
+  # Shifting compensation.
+
+  # Tighten the turn.
+  # Closed loop drive.
 
   pylab.plot(t_plot, vl_plot, label='left velocity')
   pylab.plot(t_plot, vr_plot, label='right velocity')

@@ -20,6 +20,8 @@ queue_group Drivetrain {
   message Position {
     double left_encoder;
     double right_encoder;
+    double left_shifter_position;
+    double right_shifter_position;
   };
 
   message Output {
