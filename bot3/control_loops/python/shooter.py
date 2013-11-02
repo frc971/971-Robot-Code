@@ -40,8 +40,10 @@ class Shooter(control_loop.ControlLoop):
     self.C = numpy.matrix([[1, 0]])
     self.D = numpy.matrix([[0]])
 
-    self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
-                              self.dt, self.C)
+    self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
+                              self.dt)
+
+    self.InitializeState()
 
     self.PlaceControllerPoles([.6, .981])
 
@@ -77,7 +79,7 @@ def main(argv):
   pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
   pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
   pylab.legend()
-  pylab.show()
+# pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
   shooter = Shooter()
@@ -112,7 +114,7 @@ def main(argv):
   #pylab.plot(pylab.linspace(0,1.99,200), close_loop_U, 'ro')
   #pylab.plotfile("shooter.csv", (0,2))
   pylab.plot(pylab.linspace(0,1.99,200), close_loop_x, 'ro')
-  pylab.show()
+# pylab.show()
 
   # Simulate spin down.
   spin_down_x = [];

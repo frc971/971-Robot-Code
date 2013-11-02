@@ -1,17 +1,17 @@
-#include "bot3/control_loops/shooter/shooter_motor_plant.h"
+#include "frc971/control_loops/shooter/shooter_motor_plant.h"
 
 #include <vector>
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace bot3 {
+namespace frc971 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 1.0, 0.00992127884628, 0.0, 0.984297191531;
+  A << 1.0, 0.00994518845675, 0.0, 0.989057756738;
   Eigen::Matrix<double, 2, 1> B;
-  B << 0.00398899915072, 0.795700859132;
+  B << 0.00267091861198, 0.533205953514;
   Eigen::Matrix<double, 1, 2> C;
   C << 1, 0;
   Eigen::Matrix<double, 1, 1> D;
@@ -25,9 +25,9 @@ StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients() {
 
 StateFeedbackController<2, 1, 1> MakeShooterController() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 1.08429719153, 29.2677479765;
+  L << 1.08905775674, 29.7111780621;
   Eigen::Matrix<double, 1, 2> K;
-  K << 0.955132813139, 0.50205697652;
+  K << 1.42534042426, 0.758151303088;
   return StateFeedbackController<2, 1, 1>(L, K, MakeShooterPlantCoefficients());
 }
 
@@ -44,4 +44,4 @@ StateFeedbackLoop<2, 1, 1> MakeShooterLoop() {
 }
 
 }  // namespace control_loops
-}  // namespace bot3
+}  // namespace frc971
