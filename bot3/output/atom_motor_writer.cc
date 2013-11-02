@@ -8,8 +8,10 @@
 
 #include "frc971/queues/Piston.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/shooter/shooter_motor.q.h"
 
 using ::bot3::control_loops::drivetrain;
+using ::bot3::control_loops::shooter;
 using ::frc971::control_loops::shifters;
 
 namespace bot3 {
@@ -43,12 +45,13 @@ class MotorWriter : public ::aos::MotorOutput {
       SetSolenoid(8, !shifters->set);
     }
 
-    /*if (shooter.output.IsNewerThanMS(kOutputMaxAgeMS)) {
-      SetPWMOutput(4, shooter.output->voltage / 12.0, kVictorBounds);
+    shooter.output.FetchLatest();
+    if (shooter.output.IsNewerThanMS(kOutputMaxAgeMS)) {
+      SetPWMOutput(2, shooter.output->voltage / 12.0, kVictorBounds);
     } else {
-      DisablePWMOutput(4);
+      DisablePWMOutput(2);
       LOG(WARNING, "shooter not new enough\n");
-    }*/
+    }
     // TODO(danielp): Add stuff for intake and shooter.
   }
 };

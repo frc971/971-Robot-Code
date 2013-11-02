@@ -3,6 +3,7 @@
 #include "aos/common/util/wrapping_counter.h"
 
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/input/usb_receiver.h"
 
@@ -11,6 +12,7 @@
 #endif
 
 using ::bot3::control_loops::drivetrain;
+using ::bot3::control_loops::shooter;
 using ::frc971::sensors::gyro;
 using ::aos::util::WrappingCounter;
 using ::frc971::USBReceiver;
@@ -22,7 +24,7 @@ namespace {
 // encoder or not.
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (44.0 / 32.0 /*encoder gears*/) * // the encoders are on the wheels.
+      (32.0 / 44.0 /*encoder gears*/) * // the encoders are on the wheels.
       (3.5 /*wheel diameter*/ * 2.54 / 100 * M_PI);
 }
 
@@ -54,8 +56,11 @@ class GyroSensorReceiver : public USBReceiver {
         .right_encoder(drivetrain_translate(data()->main.wrist))
         .left_encoder(drivetrain_translate(data()->main.shooter))
         .Send();
-    LOG(DEBUG, "right: %d left: %d angle: %lld \n",
-        data()->main.wrist, data()->main.shooter, data()->gyro_angle);
+    LOG(DEBUG, "right: %lf left: %lf angle: %lld \n",
+        drivetrain_translate(data()->main.wrist),
+        drivetrain_translate(data()->main.shooter), data()->gyro_angle);
+
+    shooter.position.MakeWithBuilder().position(drivetrain_translate(data()->main.shooter)).Send();
   }
 
   WrappingCounter top_rise_;

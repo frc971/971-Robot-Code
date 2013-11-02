@@ -4,4 +4,5 @@ joystick_reader
 drivetrain
 CRIOLogReader
 auto
+shooter
 gyro_sensor_receiver
