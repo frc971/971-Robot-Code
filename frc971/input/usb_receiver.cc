@@ -183,7 +183,6 @@ void USBReceiver::StaticTransferCallback(libusb::Transfer *transfer,
 void USBReceiver::TransferCallback(libusb::Transfer *transfer) {
   transfer_received_time_ = ::aos::time::Time::Now();
   if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
-    LOG(DEBUG, "transfer %p completed\n", transfer);
     completed_transfer_ = transfer;
   } else if (transfer->status() == LIBUSB_TRANSFER_TIMED_OUT) {
     LOG(WARNING, "transfer %p timed out\n", transfer);

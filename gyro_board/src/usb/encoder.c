@@ -553,8 +553,8 @@ void fillSensorPacket(struct DataStruct *packet) {
 
     // Do all of the analogs last because they have the potential to be slow and
     // jittery.
-    packet->main.battery_voltage = analog(3);
-    packet->main.left_drive_hall = analog(1);
+    packet->main.battery_voltage = analog(1);
+    packet->main.left_drive_hall = analog(3);
     packet->main.right_drive_hall = analog(2);
   }
 }
