@@ -29,7 +29,7 @@
       'dependencies': [
         'drivetrain_loop',
         '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/frc971.gyp:common',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/aos/build/externals.gyp:libcdd',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',

@@ -59,7 +59,7 @@ static TFnFrameHandler	*_pfnFrameHandler = NULL;
 
 	@param [in]	dwIntr		Bitmask of interrupts to wait for
  */
-static void Wait4DevInt(unsigned long dwIntr)
+void Wait4DevInt(unsigned long dwIntr)
 {
 	// wait for specific interrupt
 	while ((USB->USBDevIntSt & dwIntr) != dwIntr);
@@ -107,7 +107,7 @@ static void USBHwCmdWrite(unsigned char bCmd, unsigned short bData)
 
 	@return the data
  */
-static unsigned char USBHwCmdRead(unsigned char bCmd)
+unsigned char USBHwCmdRead(unsigned char bCmd)
 {
 	// write command code
 	USBHwCmd(bCmd);

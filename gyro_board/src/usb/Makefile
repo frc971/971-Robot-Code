@@ -44,18 +44,20 @@ SOURCES=main.c \
 	CAN.c \
 	LPCUSB/usbinit.c \
 	LPCUSB/usbcontrol.c \
-	LPCUSB/USB_SENSOR_STREAM.c \
+	usb_device.c \
 	LPCUSB/usbhw_lpc.c \
 	gyro.c \
 	LPCUSB/usbstdreq.c
+
+DATA_STRUCT_CHECKSUM=$(shell ./data_struct_checksum.sh)
 
 all: $(NAME).hex
 
 $(NAME).elf: Makefile $(SOURCES:.c=.o) $(LDSCRIPT)
 	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L$(TOOLS_PREFIX)/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
 
-%.o: %.c Makefile
-	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99
+%.o: %.c Makefile data_struct_checksum.sh
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99 -DDATA_STRUCT_CHECKSUM=$(DATA_STRUCT_CHECKSUM)
 
 run: deploy
 	$(FLASHER) -termonly -control $(NAME).hex $(PORT) $(SPEED) $(OSC)

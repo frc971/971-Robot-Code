@@ -14,6 +14,9 @@ typedef struct _can_message {
 } can_message;
 
 int CAN_get(can_message *message);
+
+// Sets up PCLKSEL for CAN stuff (errata PCLKSELx.1).
+void CAN_PCLKSEL(void);
 void initCAN(void);
 
 #endif

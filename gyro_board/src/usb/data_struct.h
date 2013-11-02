@@ -3,6 +3,7 @@
 // guards.
 // This means that it can not #include anything else because it (sometimes) gets
 // #included inside a namespace.
+// <stdint.h> must be #included by the containing file.
 // In the gyro board code, fill_packet.h #includes this file.
 // In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
 
@@ -14,6 +15,29 @@ struct DATA_STRUCT_NAME {
 
   union {
     struct {
+      // This is the USB frame number for this data. It (theoretically) gets
+      // incremented on every packet sent, but the gyro board will deal with it
+      // correctly if it misses a frame or whatever by tracking the frame
+      // numbers sent out by the host.
+      // Negative numbers mean that the gyro board has no idea what the right
+      // answer is.
+      // This value going down at all indicates that the code on the gyro board
+      // dealing with it reset.
+      //
+      // The USB 2.0 standard says that timing of frames is 1.000ms +- 500ns.
+      // Testing with a fitpc and gyro board on 2013-10-30 by Brian gave 10us
+      // (the resolution of the timer on the gyro board that was used) of drift
+      // every 90-130 frames (~100ns per frame) and no jitter (and the timer on
+      // the gyro board isn't necessarily that good). This is plenty accurate
+      // for what we need for timing, so this number is what the code uses to do
+      // all timing calculations.
+      int32_t frame_number;
+
+      // Checksum of this file calculated with sum(1).
+      // The gyro board sets this and then the fitpc checks it to make sure that
+      // they're both using the same version of this file.
+      uint16_t checksum;
+
       // Which robot (+version) the gyro board is sending out data for.
       // We should keep this in the same place for all gyro board software
       // versions so that the fitpc can detect when it's reading from a gyro
@@ -36,23 +60,26 @@ struct DATA_STRUCT_NAME {
           uint8_t dip_switch1 : 1;
           uint8_t dip_switch2 : 1;
           uint8_t dip_switch3 : 1;
-          // If the current gyro_angle has been not updated because of a bad
-          // reading from the sensor.
-          uint8_t old_gyro_reading : 1;
-          // If we're not going to get any more good gyro_angles.
-          uint8_t bad_gyro : 1;
         };
-        uint8_t base_status;
+        uint8_t dip_switches;
+      };
+      struct {
+        // If the current gyro_angle has been not updated because of a bad
+        // reading from the sensor.
+        uint8_t old_gyro_reading : 1;
+        // If we're not going to get any more good gyro_angles.
+        uint8_t bad_gyro : 1;
+
+        // We're not sure what frame number this packet was sent in.
+        uint8_t unknown_frame : 1;
       };
     };
-    uint32_t header;
+    struct {
+      uint64_t header0, header1;
+    };
   };
 
-  // This is a counter that gets incremented with each packet sent.
-  uint32_t sequence;
-
-  // We are 64-bit aligned at this point if it matters for anything other than
-  // the gyro angle.
+  // We are 64-bit aligned at this point.
 
   union {
     struct {

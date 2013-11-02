@@ -9,7 +9,8 @@
 
 namespace frc971 {
 
-USBReceiver::USBReceiver() {
+USBReceiver::USBReceiver(uint8_t expected_robot_id)
+    : expected_robot_id_(expected_robot_id) {
   Reset();
 }
 
@@ -17,10 +18,29 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    const ::aos::time::Time received_time = ::aos::time::Time::Now();
-    if (phase_locker_.IsCurrentPacketGood(received_time, sequence_)) {
-      LOG(DEBUG, "processing data %" PRIu32 "\n", sequence_);
-      ProcessData();
+    const ::aos::time::Time timestamp =
+        ::aos::time::Time::InMS(data()->frame_number);
+
+    if (data()->robot_id != expected_robot_id_) {
+      LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
+          " dip switches are %hhx\n",
+          data()->robot_id, expected_robot_id_, data()->dip_switches);
+      return;
+    }
+    if (data()->checksum != GYRO_BOARD_DATA_CHECKSUM) {
+      LOG(ERROR,
+          "gyro board sent checksum %" PRIu16 " instead of %" PRIu16 "!\n",
+          data()->checksum, GYRO_BOARD_DATA_CHECKSUM);
+      return;
+    }
+
+    PacketReceived(timestamp);
+
+    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
+      LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
+          data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
+
+      ProcessData(timestamp);
     }
   }
 }
@@ -34,6 +54,9 @@ void USBReceiver::PhaseLocker::Reset() {
   good_phase_early_ = good_phase_late_ = 0;
 }
 
+void USBReceiver::PacketReceived(const ::aos::time::Time &/*timestamp*/) {}
+void USBReceiver::ProcessData(const ::aos::time::Time &/*timestamp*/) {}
+
 bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
     const ::aos::time::Time &received_time,
     uint32_t sequence) {
@@ -45,11 +68,6 @@ bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
   }
   if (last_good_sequence_ != 0 && sequence - last_good_sequence_ > 100) {
     LOG(WARNING, "skipped too many packets\n");
-    Reset();
-    return false;
-  }
-  if (sequence < last_good_sequence_) {
-    LOG(WARNING, "sequence went down. gyro board reset?\n");
     Reset();
     return false;
   }
@@ -163,8 +181,8 @@ void USBReceiver::StaticTransferCallback(libusb::Transfer *transfer,
 }
 
 void USBReceiver::TransferCallback(libusb::Transfer *transfer) {
+  transfer_received_time_ = ::aos::time::Time::Now();
   if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
-    LOG(DEBUG, "transfer %p completed\n", transfer);
     completed_transfer_ = transfer;
   } else if (transfer->status() == LIBUSB_TRANSFER_TIMED_OUT) {
     LOG(WARNING, "transfer %p timed out\n", transfer);
@@ -199,14 +217,27 @@ bool USBReceiver::ReceiveData() {
     memcpy(data(), completed_transfer_->data(),
            sizeof(GyroBoardData));
 
-    uint32_t sequence_before = sequence_;
-    sequence_ = data()->sequence;
-    if (sequence_before == 0) {
-      LOG(INFO, "count starting at %" PRIu32 "\n", sequence_);
-    } else if (sequence_ - sequence_before != 1) {
-      LOG(WARNING, "count went from %" PRIu32" to %" PRIu32 "\n",
-          sequence_before, sequence_);
+    if (data()->unknown_frame) {
+      LOG(WARNING, "unknown frame number\n");
+      return true;
     }
+    uint32_t frame_number_before = frame_number_;
+    frame_number_ = data()->frame_number;
+    if (frame_number_ < 0) {
+      LOG(WARNING, "negative frame number %" PRId32 "\n", frame_number_);
+      return true;
+    }
+    if (frame_number_before == 0) {
+      LOG(INFO, "frame number starting at %" PRId32 "\n", frame_number_);
+    } else if (frame_number_ - frame_number_before != 1) {
+      LOG(WARNING, "frame number went from %" PRId32" to %" PRId32 "\n",
+          frame_number_before, frame_number_);
+    }
+    if (frame_number_ < last_frame_number_ - 2) {
+      LOG(WARNING, "frame number went down a lot\n");
+      return true;
+    }
+    last_frame_number_ = frame_number_;
 
     return false;
   }
@@ -230,7 +261,7 @@ void USBReceiver::Reset() {
     c->Submit();
   }
 
-  sequence_ = 0;
+  last_frame_number_ = frame_number_ = 0;
   phase_locker_.Reset();
 }
 

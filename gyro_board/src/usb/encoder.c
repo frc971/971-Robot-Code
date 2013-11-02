@@ -383,6 +383,8 @@ int32_t encoder_val(int chan) {
   }
 }
 
+static volatile uint32_t sensor_timing_wraps = 0;
+
 void encoder_init(void) {
   // Setup the encoder interface.
   SC->PCONP |= PCONP_PCQEI;
@@ -485,6 +487,8 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->bad_gyro = 0;
   }
 
+  packet->checksum = DATA_STRUCT_CHECKSUM;
+
   packet->dip_switch0 = dip_switch(0);
   packet->dip_switch1 = dip_switch(1);
   packet->dip_switch2 = dip_switch(2);
@@ -505,9 +509,6 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.left_drive = encoder5_val;
     packet->main.right_drive = encoder4_val;
     packet->main.indexer = encoder3_val;
-    packet->main.battery_voltage = analog(0);
-    packet->main.left_drive_hall = analog(1);
-    packet->main.right_drive_hall = analog(3);
 
     NVIC_DisableIRQ(EINT3_IRQn);
 
@@ -531,6 +532,7 @@ void fillSensorPacket(struct DataStruct *packet) {
     packet->main.capture_bottom_fall_delay = capture_bottom_fall_delay;
     packet->main.bottom_fall_delay_count = bottom_fall_delay_count;
     packet->main.bottom_fall_count = bottom_fall_count;
+    packet->main.bottom_rise_count = bottom_rise_count;
     packet->main.bottom_disc = !digital(1);
 
     NVIC_EnableIRQ(EINT3_IRQn);
@@ -549,6 +551,10 @@ void fillSensorPacket(struct DataStruct *packet) {
 
     NVIC_EnableIRQ(EINT3_IRQn);
 
-    packet->main.bottom_rise_count = bottom_rise_count;
+    // Do all of the analogs last because they have the potential to be slow and
+    // jittery.
+    packet->main.battery_voltage = analog(1);
+    packet->main.left_drive_hall = analog(3);
+    packet->main.right_drive_hall = analog(2);
   }
 }

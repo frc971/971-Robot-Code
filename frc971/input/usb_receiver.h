@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/common/time.h"
+#include "aos/common/macros.h"
 
 #include "gyro_board/src/libusb-driver/libusb_wrap.h"
 #include "frc971/input/gyro_board_data.h"
@@ -14,9 +15,13 @@ namespace frc971 {
 // us.
 class USBReceiver {
  public:
-  USBReceiver();
+  USBReceiver(uint8_t expected_robot_id);
 
   void RunIteration();
+
+  // The relative priority that tasks doing this should get run at (ie what to
+  // pass to ::aos::Init(int)).
+  static const int kRelativePriority = 5;
 
  protected:
   GyroBoardData *data() { return &data_; }
@@ -97,18 +102,36 @@ class USBReceiver {
 
   void Reset();
 
-  virtual void ProcessData() = 0;
+  // These 2 are the functions for subclasses to override and do stuff in.
+  // timestamp for both of them is the time (as best as this code can determine)
+  // that the values in the packet were captured.
+  // They both have empty implementations here for subclasses that don't want to
+  // do anything in one of them.
+
+  // Gets called after each packet is received (possibly before ProcessData for
+  // the same packet).
+  virtual void PacketReceived(const ::aos::time::Time &timestamp);
+  // Gets called every 10th packet (or so) (at the right time for data for
+  // control loops to get read). PacketReceived will always be called right
+  // before this.
+  virtual void ProcessData(const ::aos::time::Time &timestamp);
+
+  const uint8_t expected_robot_id_;
 
   GyroBoardData data_;
 
-  uint32_t sequence_;
+  int32_t last_frame_number_, frame_number_;
 
   LibUSB libusb_;
   ::std::unique_ptr<LibUSBDeviceHandle> dev_handle_;
   ::std::unique_ptr<libusb::IsochronousTransfer> transfers_[kNumTransfers];
-  // "Temporary" variable for holding a completed transfer to communicate that
-  // information from the callback to the code that wants it.
+
+  // "Temporary" variables for communicating information about a transfer that
+  // finished from the callback to the rest of the code.
   libusb::Transfer *completed_transfer_;
+  ::aos::time::Time transfer_received_time_{0, 0};
+
+  DISALLOW_COPY_AND_ASSIGN(USBReceiver);
 };
 
 }  // namespace frc971
