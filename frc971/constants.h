@@ -12,6 +12,13 @@ namespace constants {
 const uint16_t kCompTeamNumber = 5971;
 const uint16_t kPracticeTeamNumber = 971;
 
+// Contains the voltages for an analog hall effect sensor on a shifter.
+struct ShifterHallEffect {
+  double high, low;
+
+  double clear_high, clear_low;
+};
+
 // This structure contains current values for all of the things that change.
 struct Values {
   // Wrist hall effect positive and negative edges.
@@ -56,6 +63,8 @@ struct Values {
 
   // The number of teeth on the pinion that drives the drivetrain wheels.
   int drivetrain_gearbox_pinion;
+
+  ShifterHallEffect left_drive, right_drive;
 
   // How many pixels off center the vertical line
   // on the camera view is.

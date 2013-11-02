@@ -73,6 +73,14 @@ const int kPracticeCameraCenter = -5;
 const int kCompDrivetrainGearboxPinion = 19;
 const int kPracticeDrivetrainGearboxPinion = 17;
 
+const ShifterHallEffect kCompLeftDriveShifter{1.5, 1, 1.2, 1.0};
+const ShifterHallEffect kCompRightDriveShifter{1.5, 1, 1.2, 1.0};
+
+const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
+                                                  0.47};
+const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
+                                                   0.55};
+
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
   LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
@@ -96,6 +104,8 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingOffSpeed,
                         kCompAngleAdjustDeadband,
                         kCompDrivetrainGearboxPinion,
+                        kCompLeftDriveShifter,
+                        kCompRightDriveShifter,
                         kCompCameraCenter};
       break;
     case kPracticeTeamNumber:
@@ -117,6 +127,8 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingOffSpeed,
                         kPracticeAngleAdjustDeadband,
                         kPracticeDrivetrainGearboxPinion,
+                        kPracticeLeftDriveShifter,
+                        kPracticeRightDriveShifter,
                         kPracticeCameraCenter};
       break;
     default:

@@ -38,6 +38,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:wrapping_counter',
         'usb_receiver',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
       ],
     },
     {
@@ -56,8 +57,12 @@
         '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
         '<(AOS)/common/common.gyp:time',
       ],
+      'variables': {
+        # TODO(brians): Add dependency on this file too (or something).
+        'checksum': '<!(<(DEPTH)/gyro_board/src/usb/data_struct_checksum.sh)',
+      },
       'defines': [
-        'GYRO_BOARD_DATA_CHECKSUM=<!(<(DEPTH)/gyro_board/src/usb/data_struct_checksum.sh)',
+        'GYRO_BOARD_DATA_CHECKSUM=<(checksum)',
       ],
     },
   ],
