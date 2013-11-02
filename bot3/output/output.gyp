@@ -34,6 +34,7 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/bot3/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],

@@ -5,6 +5,7 @@
 #include "aos/common/util/wrapping_counter.h"
 
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/shooter/shooter_motor.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/input/usb_receiver.h"
 
@@ -13,6 +14,7 @@
 #endif
 
 using ::bot3::control_loops::drivetrain;
+using ::bot3::control_loops::shooter;
 using ::frc971::sensors::gyro;
 using ::aos::util::WrappingCounter;
 using ::frc971::USBReceiver;
@@ -61,8 +63,8 @@ class GyroSensorReceiver : public USBReceiver {
         drivetrain_translate(data()->main.shooter_angle),
         drivetrain_translate(data()->main.indexer));
     drivetrain.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(data()->main.right_drive))
-        .left_encoder(-drivetrain_translate(data()->main.left_drive))
+        .right_encoder(drivetrain_translate(data()->main.wrist))
+        .left_encoder(drivetrain_translate(data()->main.shooter))
         .Send();
     
     LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
