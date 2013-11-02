@@ -1,10 +1,10 @@
-#include "frc971/control_loops/shooter/shooter_motor_plant.h"
+#include "bot3/control_loops/shooter/shooter_motor_plant.h"
 
 #include <vector>
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
+namespace bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients() {
@@ -44,4 +44,4 @@ StateFeedbackLoop<2, 1, 1> MakeShooterLoop() {
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace bot3

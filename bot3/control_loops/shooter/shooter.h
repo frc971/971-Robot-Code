@@ -1,5 +1,5 @@
-#ifndef FRC971_CONTROL_LOOPS_SHOOTER_H_
-#define FRC971_CONTROL_LOOPS_SHOOTER_H_
+#ifndef BOT3_CONTROL_LOOPS_SHOOTER_H_
+#define BOT3_CONTROL_LOOPS_SHOOTER_H_
 
 #include <memory>
 
@@ -54,4 +54,4 @@ class ShooterMotor
 }  // namespace control_loops
 }  // namespace bot3
 
-#endif // FRC971_CONTROL_LOOPS_SHOOTER_H_
+#endif // BOT3_CONTROL_LOOPS_SHOOTER_H_
