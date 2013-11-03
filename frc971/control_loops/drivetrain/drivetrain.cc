@@ -99,14 +99,14 @@ class DrivetrainMotorsSS {
       double left, double right, double gyro, bool control_loop_driving) {
     // Decay the offset quickly because this gyro is great.
     _offset = (0.25) * (right - left - gyro * width) / 2.0 + 0.75 * _offset;
-    const double angle_error = (_right_goal - _left_goal) / width - (_raw_right - _offset - _raw_left - _offset) / width;
+    //const double angle_error = (_right_goal - _left_goal) / width - (_raw_right - _offset - _raw_left - _offset) / width;
     // TODO(aschuh): Add in the gyro.
     _integral_offset = 0.0;
     _offset = 0.0;
     _gyro = gyro;
     _control_loop_driving = control_loop_driving;
     SetRawPosition(left, right);
-    LOG(DEBUG, "Left %f->%f Right %f->%f Gyro %f aerror %f ioff %f\n", left + _offset, _left_goal, right - _offset, _right_goal, gyro, angle_error, _integral_offset);
+    //LOG(DEBUG, "Left %f->%f Right %f->%f Gyro %f aerror %f ioff %f\n", left + _offset, _left_goal, right - _offset, _right_goal, gyro, angle_error, _integral_offset);
   }
 
   void Update(bool update_observer, bool stop_motors) {
@@ -193,7 +193,8 @@ class PolyDrivetrain {
         stale_count_(0),
         position_time_delta_(0.01),
         left_gear_(LOW),
-        right_gear_(LOW) {
+        right_gear_(LOW),
+        counter_(0) {
 
     last_position_.Zero();
     position_.Zero();
@@ -202,7 +203,7 @@ class PolyDrivetrain {
 
   static double MotorSpeed(double shifter_position, double velocity) {
     // TODO(austin): G_high, G_low and kWheelRadius
-    if (shifter_position > 0.5) {
+    if (shifter_position > 0.57) {
       return velocity / G_high / kWheelRadius;
     } else {
       return velocity / G_low / kWheelRadius;
@@ -210,7 +211,7 @@ class PolyDrivetrain {
   }
 
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear) {
-    const double kWheelNonLinearity = 0.4;
+    const double kWheelNonLinearity = 0.3;
     // Apply a sin function that's scaled to make it feel better.
     const double angular_range = M_PI_2 * kWheelNonLinearity;
     wheel_ = sin(angular_range * wheel) / sin(angular_range);
@@ -252,19 +253,51 @@ class PolyDrivetrain {
 
     if (position) {
       // Switch to the correct controller.
-      // TODO(austin): Un-hard code 0.5
-      if (position->left_shifter_position < 0.5) {
-        if (position->right_shifter_position < 0.5) {
+      // TODO(austin): Un-hard code 0.57
+      if (position->left_shifter_position < 0.57) {
+        if (position->right_shifter_position < 0.57) {
+          LOG(DEBUG, "Loop Left low, Right low\n");
           loop_->set_controller_index(0);
         } else {
+          LOG(DEBUG, "Loop Left low, Right high\n");
           loop_->set_controller_index(1);
         }
       } else {
-        if (position->right_shifter_position < 0.5) {
+        if (position->right_shifter_position < 0.57) {
+          LOG(DEBUG, "Loop Left high, Right low\n");
           loop_->set_controller_index(2);
         } else {
+          LOG(DEBUG, "Loop Left high, Right high\n");
           loop_->set_controller_index(3);
         }
+      }
+      switch (left_gear_) {
+        case LOW:
+          LOG(DEBUG, "Left is in low\n");
+          break;
+        case HIGH:
+          LOG(DEBUG, "Left is in high\n");
+          break;
+        case SHIFTING_UP:
+          LOG(DEBUG, "Left is shifting up\n");
+          break;
+        case SHIFTING_DOWN:
+          LOG(DEBUG, "Left is shifting down\n");
+          break;
+      }
+      switch (right_gear_) {
+        case LOW:
+          LOG(DEBUG, "Right is in low\n");
+          break;
+        case HIGH:
+          LOG(DEBUG, "Right is in high\n");
+          break;
+        case SHIFTING_UP:
+          LOG(DEBUG, "Right is shifting up\n");
+          break;
+        case SHIFTING_DOWN:
+          LOG(DEBUG, "Right is shifting down\n");
+          break;
       }
       // TODO(austin): Constants.
       if (position->left_shifter_position > 0.9 && left_gear_ == SHIFTING_UP) {
@@ -332,11 +365,12 @@ class PolyDrivetrain {
   void Update() {
     // TODO(austin): Observer for the current velocity instead of difference
     // calculations.
+    ++counter_;
     const double current_left_velocity =
-        (position_.left_encoder - last_position_.left_encoder) * 100.0 /
+        (position_.left_encoder - last_position_.left_encoder) /
         position_time_delta_;
     const double current_right_velocity =
-        (position_.right_encoder - last_position_.right_encoder) * 100.0 /
+        (position_.right_encoder - last_position_.right_encoder) /
         position_time_delta_;
     const double left_motor_speed =
         MotorSpeed(position_.left_shifter_position, current_left_velocity);
@@ -346,10 +380,16 @@ class PolyDrivetrain {
     // Reset the CIM model to the current conditions to be ready for when we shift.
     if (IsInGear(left_gear_)) {
       left_cim_->X_hat(0, 0) = left_motor_speed;
+      LOG(DEBUG, "Setting left CIM to %f at robot speed %f\n", left_motor_speed,
+          current_left_velocity);
     }
     if (IsInGear(right_gear_)) {
-      right_cim_->X_hat(1, 0) = right_motor_speed;
+      right_cim_->X_hat(0, 0) = right_motor_speed;
+      LOG(DEBUG, "Setting right CIM to %f at robot speed %f\n",
+          right_motor_speed, current_right_velocity);
     }
+    LOG(DEBUG, "robot speed l=%f r=%f\n", current_left_velocity,
+        current_right_velocity);
 
     if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
       // FF * X = U (steady state)
@@ -401,36 +441,40 @@ class PolyDrivetrain {
       for (int i = 0; i < 2; i++) {
         loop_->U[i] = ::aos::Clip(U_ideal[i], -12, 12);
       }
+
+      // TODO(austin): Model this better.
+      // TODO(austin): Feed back?
+      loop_->X_hat = loop_->A() * loop_->X_hat + loop_->B() * loop_->U;
     } else {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
       R_left(0, 0) = left_motor_speed;
+      const double wiggle = (static_cast<double>((counter_ % 4) / 2) - 0.5) * 3.5;
 
-      // TODO(austin): Use battery volts here at some point.
-      loop_->U(0, 0) = ::aos::Clip(
-          (left_cim_->K() * (R_left - left_cim_->X_hat) + R_left / Kv)(0, 0), -12, 12);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat + right_cim_->B() * loop_->U(0, 0);
+      loop_->U(0, 0) =
+          ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -position_.battery_voltage,
+                      position_.battery_voltage);
+      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
+                          right_cim_->B() * loop_->U(0, 0);
 
       ::Eigen::Matrix<double, 1, 1> R_right;
       R_right(0, 0) = right_motor_speed;
-      loop_->U(1, 0) = ::aos::Clip(
-          (right_cim_->K() * (R_right - right_cim_->X_hat) + R_right / Kv)(0, 0), -12,
-          12);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat + right_cim_->B() * loop_->U(1, 0);
-    }
-
-    if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
-      // TODO(austin): Model this better.
-      // TODO(austin): Feed back?
-      loop_->X_hat = loop_->A() * loop_->X_hat + loop_->B() * loop_->U;
+      loop_->U(1, 0) =
+          ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -position_.battery_voltage,
+                      position_.battery_voltage);
+      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
+                          right_cim_->B() * loop_->U(1, 0);
+      loop_->U *= 12.0 / position_.battery_voltage;
     }
   }
 
   void SendMotors(Drivetrain::Output *output) {
     LOG(DEBUG, "left pwm: %f right pwm: %f wheel: %f throttle: %f\n",
         loop_->U(0, 0), loop_->U(1, 0), wheel_, throttle_);
-    output->left_voltage = loop_->U(0, 0);
-    output->right_voltage = loop_->U(1, 0);
+    if (output != NULL) {
+      output->left_voltage = loop_->U(0, 0);
+      output->right_voltage = loop_->U(1, 0);
+    }
     // Go in high gear if anything wants to be in high gear.
     // TODO(austin): Seperate these.
     if (left_gear_ == HIGH || left_gear_ == SHIFTING_UP ||
@@ -458,6 +502,7 @@ class PolyDrivetrain {
   Gear right_gear_;
   Drivetrain::Position last_position_;
   Drivetrain::Position position_;
+  int counter_;
 };
 
 

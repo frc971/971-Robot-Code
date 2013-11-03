@@ -209,9 +209,9 @@ class VelocityDrivetrain(object):
 
   def SimShifter(self, gear, shifter_position):
     if gear is VelocityDrivetrain.HIGH or gear is VelocityDrivetrain.SHIFTING_UP:
-      shifter_position = min(shifter_position + 0.1, 1.0)
+      shifter_position = min(shifter_position + 0.5, 1.0)
     else:
-      shifter_position = max(shifter_position - 0.1, 0.0)
+      shifter_position = max(shifter_position - 0.5, 0.0)
 
     if shifter_position == 1.0:
       gear = VelocityDrivetrain.HIGH
@@ -441,11 +441,11 @@ def main(argv):
 
   for t in numpy.arange(0, 4.0, vdrivetrain.dt):
     if t < 1.0:
-      vdrivetrain.Update(throttle=0.60, steering=0.0)
+      vdrivetrain.Update(throttle=1.00, steering=0.0)
     elif t < 1.2:
-      vdrivetrain.Update(throttle=0.60, steering=0.0)
+      vdrivetrain.Update(throttle=1.00, steering=0.0)
     else:
-      vdrivetrain.Update(throttle=0.60, steering=0.0)
+      vdrivetrain.Update(throttle=1.00, steering=0.0)
     t_plot.append(t)
     vl_plot.append(vdrivetrain.X[0, 0])
     vr_plot.append(vdrivetrain.X[1, 0])

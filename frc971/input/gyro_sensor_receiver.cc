@@ -110,6 +110,11 @@ class GyroSensorReceiver : public USBReceiver {
     drivetrain.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(data()->main.right_drive))
         .left_encoder(-drivetrain_translate(data()->main.left_drive))
+        .left_shifter_position(hall_translate(constants::GetValues().left_drive,
+                                              data()->main.left_drive_hall))
+        .right_shifter_position(hall_translate(
+             constants::GetValues().right_drive, data()->main.right_drive_hall))
+        .battery_voltage(battery_translate(data()->main.battery_voltage))
         .Send();
 
     wrist.position.MakeWithBuilder()
@@ -153,21 +158,6 @@ class GyroSensorReceiver : public USBReceiver {
         .loader_top(data()->main.loader_top)
         .loader_bottom(data()->main.loader_bottom)
         .Send();
-
-    LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
-        battery_translate(data()->main.battery_voltage),
-        adc_translate(data()->main.battery_voltage),
-        data()->main.battery_voltage);
-    LOG(DEBUG, "halls l=%f r=%f %" PRIx16 " %" PRIx16 "\n",
-        adc_translate(data()->main.left_drive_hall),
-        adc_translate(data()->main.right_drive_hall),
-        data()->main.left_drive_hall,
-        data()->main.right_drive_hall);
-    LOG(DEBUG, "real l=%f r=%f\n",
-        hall_translate(constants::GetValues().left_drive,
-                       data()->main.left_drive_hall),
-        hall_translate(constants::GetValues().right_drive,
-                       data()->main.right_drive_hall));
   }
 
   bool bad_gyro_;
