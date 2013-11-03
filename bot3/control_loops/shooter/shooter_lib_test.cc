@@ -22,7 +22,7 @@ class ShooterMotorSimulation {
   // Constructs a shooter simulation. I'm not sure how the construction of
   // the queue (my_shooter_loop_) actually works (same format as wrist).
   ShooterMotorSimulation()
-      : shooter_plant_(new StateFeedbackPlant<2, 1, 1>(MakeShooterPlant())),
+      : shooter_plant_(new StateFeedbackPlant<1, 1, 1>(MakeShooterPlant())),
         my_shooter_loop_(".bot3.control_loops.shooter",
           0x78d8e372, ".bot3.control_loops.shooter.goal",
           ".bot3.control_loops.shooter.position",
@@ -45,7 +45,7 @@ class ShooterMotorSimulation {
     shooter_plant_->Update();
   }
 
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
+  ::std::unique_ptr<StateFeedbackPlant<1, 1, 1>> shooter_plant_;
 
  private:
   ShooterLoop my_shooter_loop_;

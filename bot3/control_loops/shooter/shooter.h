@@ -33,17 +33,9 @@ class ShooterMotor
 
  private:
   // The state feedback control loop to talk to.
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> loop_;
+  ::std::unique_ptr<StateFeedbackLoop<1, 1, 1>> loop_;
 
-  // History array and stuff for determining average velocity and whether
-  // we are ready to shoot.
-  static const int kHistoryLength = 5;
-  double history_[kHistoryLength];
-  ptrdiff_t history_position_;
   double average_velocity_;
-
-  double position_goal_;
-  double last_position_;
 
   // For making sure it keeps spinning if we're shooting.
   double last_velocity_goal_;
