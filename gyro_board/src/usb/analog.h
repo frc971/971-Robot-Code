@@ -16,7 +16,7 @@ void analog_init(void);
 // 0 means 0V and 0xFFF means 3.3V.
 // These values are run through a low-pass filter with unreasonable readings
 // discarded first.
-uint16_t analog(int channel) {
+static inline uint16_t analog(int channel) {
   if (channel < 0 || channel > 3) return 0xFFFF;
   return averaged_values[channel];
 }
