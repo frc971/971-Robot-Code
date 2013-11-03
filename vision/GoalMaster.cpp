@@ -46,7 +46,8 @@ int main() {
            kMetersToShooterAngles,
            meters);
 
-      LOG(DEBUG, "think target is %f meters away Speed %f Angle %f\n",
+      LOG(DEBUG, "%+f=> think target is %f meters away Speed %f Angle %f\n",
+          targets->percent_elevation_off_center,
           meters, shooter_speed, shooter_angle);
 
       target_angle.MakeWithBuilder()

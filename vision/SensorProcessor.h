@@ -10,27 +10,31 @@ typedef struct {
 } Interpolation;
 
 static const Interpolation kPixelsToMeters[] = {
-	{43.0 / 320.0, 12.573},
-	{98.0 / 320.0, 6.604},
-	{145.75 / 320.0, 4.420},
-	{216.75 / 320.0, 2.794},
+  {-0.050781, 4.7498},
+  {-0.0375, 4.318},
+  {0.028125, 3.9878},
+  {0.080469, 3.51},
+  {0.126563, 3.1496},
+  {0.131, 2.9972},
+  {0.144, 2.921},
+  {0.196, 3.2258},
+  // Below here is junk because it starts coming off of the tower base.
+  {0.296875, 2.667},
+  {0.351562, 2.3876},
 };
 
 // Must be in reverse order in meters.
 static const Interpolation kMetersToShooterSpeeds[] = {
-  {12.5, 375.0},
-  {21.0, 360.0},
-  {25.0, 375.0},
+  {2.0, 375.0},
+  {3.0, 360.0},
+  {4.5, 375.0},
 };
 
 static const Interpolation kMetersToShooterAngles[] = {
-  {0.0, 0.7267},
-  {12.5, 0.7267},
-  {16.5, 0.604},
-  {18.0, 0.587},
-  {20.0, 0.576},
-  {21.0, 0.550},
-  {23.0, 0.540},
+  {3.0, 0.68},
+  {3.7, 0.635},
+  {4.15, 0.58},
+  {5.0, 0.51},
 };
 
 double interpolate(int num_interp_vals,

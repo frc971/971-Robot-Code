@@ -459,7 +459,7 @@ void ProcessorData::filterToTargets() {
             raw_contour, rect, check, is_90));
     }
     if (contour.size() == 4 && cullObvious(rect, contourArea(contour))) {
-    	LOG(INFO, "check= %.2f\n", check);
+    	LOG(DEBUG, "check= %.2f\n", check);
     }
   }
 }

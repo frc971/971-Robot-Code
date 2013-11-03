@@ -11,6 +11,5 @@ auto
 gyro_sensor_receiver
 CameraReader
 CameraHTTPStreamer
-CameraServer
 OpenCVWorkTask
 GoalMaster
