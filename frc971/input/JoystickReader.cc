@@ -171,6 +171,7 @@ class Reader : public ::aos::input::JoystickInput {
         if (hopper_clear) wrist_up_position = kWristCleared;
         angle_adjust_goal = 0.70;
       } else if (data.IsPressed(kLongShot)) {
+#if 0
         target_angle.FetchLatest();
         if (target_angle.IsNewerThanMS(500)) {
           shooter_goal->velocity = target_angle->shooter_speed;
@@ -181,6 +182,7 @@ class Reader : public ::aos::input::JoystickInput {
           LOG(WARNING, "camera frame too old\n");
           // Pretend like no button is pressed.
         }
+#endif
       } else if (data.IsPressed(kMediumShot)) {
         // middle wheel on the back line (same as auto)
         shooter_goal->velocity = 395;
