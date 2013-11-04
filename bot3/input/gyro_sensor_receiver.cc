@@ -22,12 +22,14 @@ using ::frc971::USBReceiver;
 namespace bot3 {
 namespace {
 
-//TODO (danielp): Figure out whether the bigger gear is on the 
-// encoder or not.
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       (32.0 / 44.0 /*encoder gears*/) * // the encoders are on the wheels.
       (3.5 /*wheel diameter*/ * 2.54 / 100 * M_PI);
+}
+
+inline double shooter_translate(int32_t in) {
+  return static_cast<double>(in) / 500 /*counter rate*/ * (2 * M_PI);  
 }
 
 // Translates values from the ADC into voltage.
@@ -66,6 +68,9 @@ class GyroSensorReceiver : public USBReceiver {
         .right_encoder(drivetrain_translate(data()->main.wrist))
         .left_encoder(drivetrain_translate(data()->main.shooter))
         .Send();
+
+    shooter.position.MakeWithBuilder()
+        .position(shooter_translate(data()->bot3.shooter_cycle_ticks));
     
     LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
         battery_translate(data()->main.battery_voltage),
