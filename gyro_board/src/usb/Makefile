@@ -37,17 +37,17 @@ SOURCES=main.c \
 	analog.c \
 	digital.c \
 	encoder.c \
+	gyro.c \
+	CAN.c \
 	FreeRTOS/portable/GCC/ARM_CM3/port.c \
 	FreeRTOS/tasks.c \
 	FreeRTOS/list.c \
 	FreeRTOS/queue.c \
-	CAN.c \
 	LPCUSB/usbinit.c \
 	LPCUSB/usbcontrol.c \
-	usb_device.c \
 	LPCUSB/usbhw_lpc.c \
-	gyro.c \
-	LPCUSB/usbstdreq.c
+	LPCUSB/usbstdreq.c \
+	usb_device.c \
 
 DATA_STRUCT_CHECKSUM=$(shell ./data_struct_checksum.sh)
 
