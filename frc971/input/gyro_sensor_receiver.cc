@@ -30,7 +30,7 @@ namespace {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (19.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/ *
+      constants::GetValues().drivetrain_encoder_ratio *
       (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 

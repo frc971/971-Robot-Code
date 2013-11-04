@@ -19,7 +19,7 @@ namespace {
 // It has about 0.029043 of gearbox slop.
 // For purposes of moving the end up/down by a certain amount, the wrist is 18
 // inches long.
-const double kCompWristHallEffectStartAngle = 1.285;
+const double kCompWristHallEffectStartAngle = 1.27;
 const double kPracticeWristHallEffectStartAngle = 1.182;
 
 const double kWristHallEffectStopAngle = 100 * M_PI / 180.0;
@@ -70,11 +70,18 @@ const double kCompAngleAdjustDeadband = 0.65;
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
-const int kCompDrivetrainGearboxPinion = 19;
-const int kPracticeDrivetrainGearboxPinion = 17;
+const double kCompDrivetrainEncoderRatio =
+    (15.0 / 50.0) /*output reduction*/ * (36.0 / 24.0) /*encoder gears*/;
+const double kCompLowGearRatio = 14.0 / 60.0 * 15.0 / 50.0;
+const double kCompHighGearRatio = 30.0 / 44.0 * 15.0 / 50.0;
 
-const ShifterHallEffect kCompLeftDriveShifter{1.5, 1, 1.2, 1.0};
-const ShifterHallEffect kCompRightDriveShifter{1.5, 1, 1.2, 1.0};
+const double kPracticeDrivetrainEncoderRatio =
+    (17.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/;
+const double kPracticeLowGearRatio = 16.0 / 60.0 * 19.0 / 50.0;
+const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
+
+const ShifterHallEffect kCompLeftDriveShifter{0.8 /*TODO*/, 2.14, 1.2, 1.0};
+const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
 
 const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
                                                   0.47};
@@ -103,9 +110,12 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingSpeed,
                         kAngleAdjustZeroingOffSpeed,
                         kCompAngleAdjustDeadband,
-                        kCompDrivetrainGearboxPinion,
+                        kCompDrivetrainEncoderRatio,
+                        kCompLowGearRatio,
+                        kCompHighGearRatio,
                         kCompLeftDriveShifter,
                         kCompRightDriveShifter,
+                        true,
                         kCompCameraCenter};
       break;
     case kPracticeTeamNumber:
@@ -126,9 +136,12 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingSpeed,
                         kAngleAdjustZeroingOffSpeed,
                         kPracticeAngleAdjustDeadband,
-                        kPracticeDrivetrainGearboxPinion,
+                        kPracticeDrivetrainEncoderRatio,
+                        kPracticeLowGearRatio,
+                        kPracticeHighGearRatio,
                         kPracticeLeftDriveShifter,
                         kPracticeRightDriveShifter,
+                        false,
                         kPracticeCameraCenter};
       break;
     default:

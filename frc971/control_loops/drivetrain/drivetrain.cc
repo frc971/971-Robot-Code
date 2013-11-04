@@ -17,6 +17,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
+#include "frc971/constants.h"
 
 using frc971::sensors::gyro;
 
@@ -162,7 +163,7 @@ class PolyDrivetrain {
   static constexpr double m = 68;
   // Radius of the robot, in meters (from last year).
   static constexpr double rb = 0.617998644 / 2.0;
-  static constexpr double kWheelRadius = .04445;
+  static constexpr double kWheelRadius = 0.04445;
   // Resistance of the motor, divided by the number of motors.
   static constexpr double kR = (12.0 / kStallCurrent / 4 + 0.03) / (0.93 * 0.93);
   // Motor velocity constant
@@ -170,9 +171,6 @@ class PolyDrivetrain {
       ((kFreeSpeed / 60.0 * 2.0 * M_PI) / (12.0 - kR * kFreeCurrent));
   // Torque constant
   static constexpr double Kt = kStallTorque / kStallCurrent;
-  // Gear ratios
-  static constexpr double G_low = 16.0 / 60.0 * 19.0 / 50.0;
-  static constexpr double G_high = 28.0 / 48.0 * 19.0 / 50.0;
 
   PolyDrivetrain()
       : U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
@@ -204,9 +202,27 @@ class PolyDrivetrain {
   static double MotorSpeed(double shifter_position, double velocity) {
     // TODO(austin): G_high, G_low and kWheelRadius
     if (shifter_position > 0.57) {
-      return velocity / G_high / kWheelRadius;
+      return velocity / constants::GetValues().high_gear_ratio / kWheelRadius;
     } else {
-      return velocity / G_low / kWheelRadius;
+      return velocity / constants::GetValues().low_gear_ratio / kWheelRadius;
+    }
+  }
+
+  Gear ComputeGear(double velocity, Gear current) {
+    const double low_omega = MotorSpeed(0, ::std::abs(velocity));
+    const double high_omega = MotorSpeed(1.0, ::std::abs(velocity));
+
+    LOG(DEBUG, "velocity %f\n", velocity);
+    double high_torque = ((12.0 - high_omega / Kv) * Kt / kR);
+    double low_torque = ((12.0 - low_omega / Kv) * Kt / kR);
+    double high_power = high_torque * high_omega;
+    double low_power = low_torque * low_omega;
+    if ((current == HIGH ||
+         high_power > low_power + /*50*/50) &&
+        high_power > low_power - /*50*/200) {
+      return HIGH;
+    } else {
+      return LOW;
     }
   }
 
@@ -216,27 +232,54 @@ class PolyDrivetrain {
     const double angular_range = M_PI_2 * kWheelNonLinearity;
     wheel_ = sin(angular_range * wheel) / sin(angular_range);
     wheel_ = sin(angular_range * wheel_) / sin(angular_range);
-    throttle_ = throttle;
     quickturn_ = quickturn;
 
+    static const double kThrottleDeadband = 0.05;
+    if (::std::abs(throttle) < kThrottleDeadband) {
+      throttle_ = 0;
+    } else {
+      throttle_ = copysign((::std::abs(throttle) - kThrottleDeadband) /
+                           (1.0 - kThrottleDeadband), throttle);
+    }
+
     // TODO(austin): Fix the upshift logic to include states.
-    const Gear requested_gear = highgear ? HIGH : LOW;
+    Gear requested_gear;
+    if (constants::GetValues().clutch_transmission) {
+      const double current_left_velocity =
+          (position_.left_encoder - last_position_.left_encoder) /
+          position_time_delta_;
+      const double current_right_velocity =
+          (position_.right_encoder - last_position_.right_encoder) /
+          position_time_delta_;
+
+      Gear left_requested = ComputeGear(current_left_velocity, left_gear_);
+      Gear right_requested = ComputeGear(current_right_velocity, right_gear_);
+      requested_gear =
+          (left_requested == HIGH || right_requested == HIGH) ? HIGH : LOW;
+    } else {
+      requested_gear = highgear ? HIGH : LOW;
+    }
+
+    const Gear shift_up =
+        constants::GetValues().clutch_transmission ? HIGH : SHIFTING_UP;
+    const Gear shift_down =
+        constants::GetValues().clutch_transmission ? LOW : SHIFTING_DOWN;
 
     if (left_gear_ != requested_gear) {
       if (IsInGear(left_gear_)) {
         if (requested_gear == HIGH) {
-          left_gear_ = SHIFTING_UP;
+          left_gear_ = shift_up;
         } else {
-          left_gear_ = SHIFTING_DOWN;
+          left_gear_ = shift_down;
         }
       }
     }
     if (right_gear_ != requested_gear) {
       if (IsInGear(right_gear_)) {
         if (requested_gear == HIGH) {
-          right_gear_ = SHIFTING_UP;
+          right_gear_ = shift_up;
         } else {
-          right_gear_ = SHIFTING_DOWN;
+          right_gear_ = shift_down;
         }
       }
     }
@@ -255,7 +298,7 @@ class PolyDrivetrain {
       // Switch to the correct controller.
       // TODO(austin): Un-hard code 0.57
       if (position->left_shifter_position < 0.57) {
-        if (position->right_shifter_position < 0.57) {
+        if (position->right_shifter_position < 0.57 || right_gear_ == LOW) {
           LOG(DEBUG, "Loop Left low, Right low\n");
           loop_->set_controller_index(0);
         } else {
@@ -263,7 +306,7 @@ class PolyDrivetrain {
           loop_->set_controller_index(1);
         }
       } else {
-        if (position->right_shifter_position < 0.57) {
+        if (position->right_shifter_position < 0.57 || left_gear_ == LOW) {
           LOG(DEBUG, "Loop Left high, Right low\n");
           loop_->set_controller_index(2);
         } else {

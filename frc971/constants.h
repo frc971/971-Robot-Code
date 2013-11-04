@@ -63,10 +63,17 @@ struct Values {
   // Deadband voltage.
   double angle_adjust_deadband;
 
-  // The number of teeth on the pinion that drives the drivetrain wheels.
-  int drivetrain_gearbox_pinion;
+  // The ratio from the encoder shaft to the drivetrain wheels.
+  double drivetrain_encoder_ratio;
+
+  // The gear ratios from motor shafts to the drivetrain wheels for high and low
+  // gear.
+  double low_gear_ratio;
+  double high_gear_ratio;
 
   ShifterHallEffect left_drive, right_drive;
+
+  bool clutch_transmission;
 
   // How many pixels off center the vertical line
   // on the camera view is.
