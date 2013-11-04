@@ -8,6 +8,10 @@ queue_group ShooterLoop {
   message Goal {
     // Goal velocity in rad/sec
     double velocity;
+    // PWM output to intake.
+    double intake;
+    // Whether to activate pusher piston.
+    bool push;
   };
 
   message Status {
@@ -15,6 +19,8 @@ queue_group ShooterLoop {
     bool ready;
     // The average velocity over the last 0.1 seconds.
     double average_velocity;
+    // True if Frisbees are being fired into the shooter.
+    bool firing;
   };
 
   message Position {
@@ -22,9 +28,18 @@ queue_group ShooterLoop {
     double position;
   };
 
+  message Output {
+    // Output to shooter, Volts.
+    double voltage;
+    // PWM output to intake.
+    double intake;
+    // Whether to activate pusher piston.
+    bool push;
+  };
+
   queue Goal goal;
   queue Position position;
-  queue aos.control_loops.Output output;
+  queue Output output;
   queue Status status;
 };
 

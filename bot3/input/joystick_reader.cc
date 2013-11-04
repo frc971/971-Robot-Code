@@ -8,12 +8,14 @@
 #include "aos/common/logging/logging.h"
 
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/shooter/shooter_motor.q.h"
 #include "bot3/autonomous/auto.q.h"
 #include "frc971/queues/GyroAngle.q.h"
 #include "frc971/queues/Piston.q.h"
 #include "frc971/queues/CameraTarget.q.h"
 
 using ::bot3::control_loops::drivetrain;
+using ::bot3::control_loops::shooter;
 using ::frc971::control_loops::shifters;
 using ::frc971::sensors::gyro;
 // using ::frc971::vision::target_angle;
@@ -32,15 +34,10 @@ const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
-const ButtonLocation kLongShot(3, 5);
-const ButtonLocation kMediumShot(3, 3);
-const ButtonLocation kShortShot(3, 6);
-const ButtonLocation kPitShot1(2, 7), kPitShot2(2, 10);
+const ButtonLocation kPush(3, 9);
 
-const ButtonLocation kFire(3, 11);
-const ButtonLocation kIntake(3, 10);
-const ButtonLocation kForceFire(3, 12);
-const ButtonLocation kForceIndexUp(3, 9), kForceIndexDown(3, 7);
+const ButtonLocation kFire(3, 3);
+const ButtonLocation kIntake(3, 4);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -126,6 +123,23 @@ class Reader : public ::aos::input::JoystickInput {
       if (data.PosEdge(kShiftLow)) {
         is_high_gear = true;
       }
+
+      // 3, 4, 9, 9 fires, 3 pickups
+
+      shooter.status.FetchLatest();
+      bool push = false;
+      double velocity = 0.0;
+      double intake = 0.0;
+      if (data.IsPressed(kPush) && shooter.status->ready) {
+        push = true;
+      }
+      if (data.IsPressed(kFire)) {
+        velocity = 250;
+      }
+      if (data.IsPressed(kIntake)) {
+        intake = 0.9;
+      }
+      shooter.goal.MakeWithBuilder().intake(intake).velocity(velocity).push(push).Send();
 #if 0
       ::aos::ScopedMessagePtr<frc971::control_loops::ShooterLoop::Goal> shooter_goal =
           shooter.goal.MakeMessage();

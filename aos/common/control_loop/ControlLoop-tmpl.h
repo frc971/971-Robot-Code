@@ -53,16 +53,16 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
           LOG(ERROR, "Stale position. %d ms > %d ms.  Outputs disabled.\n",
               msec_age, kPositionTimeoutMs);
-          ZeroOutputs();
-          return;
+          //ZeroOutputs();
+          //eturn;
         } else {
           LOG(ERROR, "Stale position. %d ms\n", msec_age);
         }
       } else {
         LOG(ERROR, "Never had a position.\n");
         if (fail_no_position) {
-          ZeroOutputs();
-          return;
+         // ZeroOutputs();
+         // return;
         }
       }
     }

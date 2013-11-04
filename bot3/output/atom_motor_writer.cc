@@ -47,9 +47,13 @@ class MotorWriter : public ::aos::MotorOutput {
 
     shooter.output.FetchLatest();
     if (shooter.output.IsNewerThanMS(kOutputMaxAgeMS)) {
-      SetPWMOutput(2, shooter.output->voltage / 12.0, kVictorBounds);
+      SetPWMOutput(1, shooter.output->voltage / 12.0, kVictorBounds);
+      SetPWMOutput(7, shooter.output->intake, kVictorBounds);
+      SetSolenoid(4, shooter.output->push);
+      LOG(DEBUG, "shooter: %lf, intake: %lf, push: %d", shooter.output->voltage, shooter.output->intake, shooter.output->push);
     } else {
       DisablePWMOutput(2);
+      DisablePWMOutput(1);
       LOG(WARNING, "shooter not new enough\n");
     }
     // TODO(danielp): Add stuff for intake and shooter.

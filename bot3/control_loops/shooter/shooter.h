@@ -1,5 +1,5 @@
-#ifndef FRC971_CONTROL_LOOPS_SHOOTER_H_
-#define FRC971_CONTROL_LOOPS_SHOOTER_H_
+#ifndef BOT3_CONTROL_LOOPS_SHOOTER_H_
+#define BOT3_CONTROL_LOOPS_SHOOTER_H_
 
 #include <memory>
 
@@ -28,7 +28,7 @@ class ShooterMotor
   virtual void RunIteration(
       const control_loops::ShooterLoop::Goal *goal,
       const control_loops::ShooterLoop::Position *position,
-      ::aos::control_loops::Output *output,
+      control_loops::ShooterLoop::Output *output,
       control_loops::ShooterLoop::Status *status);
 
  private:
@@ -54,4 +54,4 @@ class ShooterMotor
 }  // namespace control_loops
 }  // namespace bot3
 
-#endif // FRC971_CONTROL_LOOPS_SHOOTER_H_
+#endif // BOT3_CONTROL_LOOPS_SHOOTER_H_

@@ -4,7 +4,7 @@
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
+namespace bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients() {

@@ -4,6 +4,7 @@ import numpy
 import sys
 from matplotlib import pylab
 import control_loop
+import slycot
 
 class Shooter(control_loop.ControlLoop):
   def __init__(self):
@@ -43,9 +44,17 @@ class Shooter(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
                               self.dt)
 
+    R_LQR = numpy.matrix([[1e-5]])
+    P = slycot.sb02od(2,1, self.A, self.B, self.C.T * self.C, R_LQR, 'D')[0]
+
+    self.K = numpy.linalg.inv(R_LQR + self.B.T * P * self.B) * self.B.T * P * self.A
+    
+    print self.K
+
     self.InitializeState()
 
-    self.PlaceControllerPoles([.6, .981])
+#   self.PlaceControllerPoles([.6, .981])
+#   print self.K
 
     self.rpl = .45
     self.ipl = 0.07
@@ -74,11 +83,11 @@ def main(argv):
     last_x = shooter_data[i, 2]
 
   sim_delay = 1
-  pylab.plot(range(sim_delay, shooter_data.shape[0] + sim_delay),
-             simulated_x, label='Simulation')
-  pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
-  pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
-  pylab.legend()
+# pylab.plot(range(sim_delay, shooter_data.shape[0] + sim_delay),
+#            simulated_x, label='Simulation')
+# pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
+# pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
+# pylab.legend()
 # pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
@@ -108,13 +117,13 @@ def main(argv):
     shooter.UpdateObserver(U)
     shooter.Update(U)
     close_loop_x.append(shooter.X[1, 0])
-    close_loop_U.append(U[0, 0])
+    close_loop_U.append(U[0, 0] * 10)
 
   #pylab.plotfile("shooter.csv", (0,1))
-  #pylab.plot(pylab.linspace(0,1.99,200), close_loop_U, 'ro')
+  pylab.plot(pylab.linspace(0,1.99,200), close_loop_U)
   #pylab.plotfile("shooter.csv", (0,2))
-  pylab.plot(pylab.linspace(0,1.99,200), close_loop_x, 'ro')
-# pylab.show()
+  pylab.plot(pylab.linspace(0,1.99,200), close_loop_x)
+  pylab.show()
 
   # Simulate spin down.
   spin_down_x = [];

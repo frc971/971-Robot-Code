@@ -1,9 +1,9 @@
-#ifndef FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
-#define FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
+#ifndef BOT3_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
+#define BOT3_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
+namespace bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients();
