@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "frc971/control_loops/state_feedback_loop.h"
+
 namespace frc971 {
 namespace constants {
 
@@ -74,6 +76,9 @@ struct Values {
   ShifterHallEffect left_drive, right_drive;
 
   bool clutch_transmission;
+
+  ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
   // How many pixels off center the vertical line
   // on the camera view is.

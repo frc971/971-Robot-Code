@@ -96,10 +96,11 @@ def CoerceGoal(region, K, w, R):
 
 
 class VelocityDrivetrainModel(control_loop.ControlLoop):
-  def __init__(self, left_low=True, right_low=True, name="VelocityDrivetrainModel"):
+  def __init__(self, left_low=True, right_low=True, name="VelocityDrivetrainModel", is_clutch=False):
     super(VelocityDrivetrainModel, self).__init__(name)
     self._drivetrain = drivetrain.Drivetrain(left_low=left_low,
-                                             right_low=right_low)
+                                             right_low=right_low,
+                                             is_clutch=is_clutch)
     self.dt = 0.01
     self.A_continuous = numpy.matrix(
         [[self._drivetrain.A_continuous[1, 1], self._drivetrain.A_continuous[1, 3]],
@@ -137,12 +138,13 @@ class VelocityDrivetrain(object):
   SHIFTING_UP = 'up'
   SHIFTING_DOWN = 'down'
 
-  def __init__(self):
+  def __init__(self, is_clutch):
+    prefix = 'Clutch' if is_clutch else 'Dog'
     self.drivetrain_low_low = VelocityDrivetrainModel(
-        left_low=True, right_low=True, name='VelocityDrivetrainLowLow')
-    self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False, name='VelocityDrivetrainLowHigh')
-    self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True, name = 'VelocityDrivetrainHighLow')
-    self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False, name = 'VelocityDrivetrainHighHigh')
+        left_low=True, right_low=True, name=prefix+'VelocityDrivetrainLowLow', is_clutch=is_clutch)
+    self.drivetrain_low_high = VelocityDrivetrainModel(left_low=True, right_low=False, name=prefix+'VelocityDrivetrainLowHigh', is_clutch=is_clutch)
+    self.drivetrain_high_low = VelocityDrivetrainModel(left_low=False, right_low=True, name = prefix+'VelocityDrivetrainHighLow', is_clutch=is_clutch)
+    self.drivetrain_high_high = VelocityDrivetrainModel(left_low=False, right_low=False, name = prefix+'VelocityDrivetrainHighHigh', is_clutch=is_clutch)
 
     # X is [lvel, rvel]
     self.X = numpy.matrix(
@@ -390,29 +392,41 @@ class VelocityDrivetrain(object):
 
 
 def main(argv):
-  vdrivetrain = VelocityDrivetrain()
+  dog_vdrivetrain = VelocityDrivetrain(False)
+  clutch_vdrivetrain = VelocityDrivetrain(True)
 
-  if len(argv) != 5:
+  if len(argv) != 7:
     print "Expected .h file name and .cc file name"
   else:
-    loop_writer = control_loop.ControlLoopWriter(
-        "VDrivetrain", [vdrivetrain.drivetrain_low_low,
-                        vdrivetrain.drivetrain_low_high,
-                        vdrivetrain.drivetrain_high_low,
-                        vdrivetrain.drivetrain_high_high])
+    dog_loop_writer = control_loop.ControlLoopWriter(
+        "VDogDrivetrain", [dog_vdrivetrain.drivetrain_low_low,
+                           dog_vdrivetrain.drivetrain_low_high,
+                           dog_vdrivetrain.drivetrain_high_low,
+                           dog_vdrivetrain.drivetrain_high_high])
 
     if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
+      dog_loop_writer.Write(argv[2], argv[1])
     else:
-      loop_writer.Write(argv[1], argv[2])
+      dog_loop_writer.Write(argv[1], argv[2])
+
+    clutch_loop_writer = control_loop.ControlLoopWriter(
+        "VClutchDrivetrain", [clutch_vdrivetrain.drivetrain_low_low,
+                              clutch_vdrivetrain.drivetrain_low_high,
+                              clutch_vdrivetrain.drivetrain_high_low,
+                              clutch_vdrivetrain.drivetrain_high_high])
+
+    if argv[3][-3:] == '.cc':
+      clutch_loop_writer.Write(argv[4], argv[3])
+    else:
+      clutch_loop_writer.Write(argv[3], argv[4])
 
     cim_writer = control_loop.ControlLoopWriter(
         "CIM", [drivetrain.CIM()])
 
-    if argv[3][-3:] == '.cc':
-      cim_writer.Write(argv[4], argv[3])
+    if argv[5][-3:] == '.cc':
+      cim_writer.Write(argv[6], argv[5])
     else:
-      cim_writer.Write(argv[3], argv[4])
+      cim_writer.Write(argv[5], argv[6])
     return
 
   vl_plot = []

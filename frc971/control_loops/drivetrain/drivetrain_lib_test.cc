@@ -10,7 +10,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/queues/GyroAngle.q.h"
 
 
@@ -37,9 +37,10 @@ class Environment : public ::testing::Environment {
 class DrivetrainSimulation {
  public:
   // Constructs a motor simulation.
+  // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(
-            new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
+            new StateFeedbackPlant<4, 2, 2>(MakeDogDrivetrainPlant())),
         my_drivetrain_loop_(".frc971.control_loops.drivetrain",
                        0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
                        ".frc971.control_loops.drivetrain.position",

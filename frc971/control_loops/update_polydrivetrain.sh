@@ -1,8 +1,12 @@
 #!/bin/bash
 #
-# Updates the polydrivetrain controller and CIM models.
+# Updates the polydrivetrain controllers (for both robots) and CIM models.
 
-./python/polydrivetrain.py drivetrain/polydrivetrain_motor_plant.h \
-    drivetrain/polydrivetrain_motor_plant.cc \
+cd $(dirname $0)
+
+./python/polydrivetrain.py drivetrain/polydrivetrain_dog_motor_plant.h \
+    drivetrain/polydrivetrain_dog_motor_plant.cc \
+    drivetrain/polydrivetrain_clutch_motor_plant.h \
+    drivetrain/polydrivetrain_clutch_motor_plant.cc \
     drivetrain/polydrivetrain_cim_plant.h \
     drivetrain/polydrivetrain_cim_plant.cc

@@ -8,6 +8,11 @@
 #include "aos/common/once.h"
 #include "aos/common/network/team_number.h"
 
+#include "frc971/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain_clutch_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_clutch_motor_plant.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -116,6 +121,8 @@ const Values *DoGetValues() {
                         kCompLeftDriveShifter,
                         kCompRightDriveShifter,
                         true,
+                        control_loops::MakeVClutchDrivetrainLoop,
+                        control_loops::MakeClutchDrivetrainLoop,
                         kCompCameraCenter};
       break;
     case kPracticeTeamNumber:
@@ -142,6 +149,8 @@ const Values *DoGetValues() {
                         kPracticeLeftDriveShifter,
                         kPracticeRightDriveShifter,
                         false,
+                        control_loops::MakeVDogDrivetrainLoop,
+                        control_loops::MakeDogDrivetrainLoop,
                         kPracticeCameraCenter};
       break;
     default:

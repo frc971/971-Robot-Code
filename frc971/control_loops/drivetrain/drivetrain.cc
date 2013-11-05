@@ -11,8 +11,6 @@
 #include "aos/controls/polytope.h"
 #include "aos/common/commonmath.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
-#include "frc971/control_loops/drivetrain/polydrivetrain_motor_plant.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/GyroAngle.q.h"
@@ -76,8 +74,9 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
 
 class DrivetrainMotorsSS {
  public:
-  DrivetrainMotorsSS ()
-      : loop_(new StateFeedbackLoop<4, 2, 2>(MakeDrivetrainLoop())) {
+  DrivetrainMotorsSS()
+      : loop_(new StateFeedbackLoop<4, 2, 2>(
+            constants::GetValues().make_drivetrain_loop())) {
     _offset = 0;
     _integral_offset = 0;
     _left_goal = 0.0;
@@ -181,7 +180,8 @@ class PolyDrivetrain {
                  /*[*/ 12 /*]*/,
                  /*[*/ 12 /*]*/,
                  /*[*/ 12 /*]]*/).finished()),
-        loop_(new StateFeedbackLoop<2, 2, 2>(MakeVDrivetrainLoop())),
+        loop_(new StateFeedbackLoop<2, 2, 2>(
+            constants::GetValues().make_v_drivetrain_loop())),
         left_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
         right_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
         ttrust_(1.1),
