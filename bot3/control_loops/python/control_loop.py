@@ -17,7 +17,7 @@ class ControlLoopWriter(object):
     if namespaces:
       self._namespaces = namespaces
     else:
-      self._namespaces = ['frc971', 'control_loops']
+      self._namespaces = ['bot3', 'control_loops']
 
     self._namespace_start = '\n'.join(
         ['namespace %s {' % name for name in self._namespaces])
@@ -26,7 +26,7 @@ class ControlLoopWriter(object):
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
 
   def _HeaderGuard(self, header_file):
-    return ('FRC971_CONTROL_LOOPS_' +
+    return ('BOT3_CONTROL_LOOPS_' +
             header_file.upper().replace('.', '_').replace('/', '_') +
             '_')
 

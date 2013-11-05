@@ -4,6 +4,7 @@ import numpy
 import sys
 from matplotlib import pylab
 import control_loop
+import slycot
 
 class Shooter(control_loop.ControlLoop):
   def __init__(self):
@@ -32,12 +33,10 @@ class Shooter(control_loop.ControlLoop):
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(
-        [[0, 1],
-         [0, -self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
+        [[-self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
     self.B_continuous = numpy.matrix(
-        [[0],
-         [self.Kt / (self.J * self.G * self.R)]])
-    self.C = numpy.matrix([[1, 0]])
+        [[self.Kt / (self.J * self.G * self.R)]])
+    self.C = numpy.matrix([[1]])
     self.D = numpy.matrix([[0]])
 
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous,
@@ -45,12 +44,16 @@ class Shooter(control_loop.ControlLoop):
 
     self.InitializeState()
 
-    self.PlaceControllerPoles([.6, .981])
+    self.PlaceControllerPoles([.881])
+    print self.K
+    self.R_LQR = numpy.matrix([[0]])
+    self.P = slycot.sb02od(1, 1, self.A, self.B, self.C * self.C.T, self.R, 'D')[0]
+    self.K = (numpy.linalg.inv(self.R_LQR + self.B.T * self.P * self.B)
+             * self.B.T * self.P * self.A)
+    print self.K
 
-    self.rpl = .45
-    self.ipl = 0.07
-    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl])
+
+    self.PlaceObserverPoles([0.45])
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
@@ -74,56 +77,47 @@ def main(argv):
     last_x = shooter_data[i, 2]
 
   sim_delay = 1
-  pylab.plot(range(sim_delay, shooter_data.shape[0] + sim_delay),
-             simulated_x, label='Simulation')
-  pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
-  pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
-  pylab.legend()
+# pylab.plot(range(sim_delay, shooter_data.shape[0] + sim_delay),
+#            simulated_x, label='Simulation')
+# pylab.plot(range(shooter_data.shape[0]), real_x, label='Reality')
+# pylab.plot(range(shooter_data.shape[0]), x_vel, label='Velocity')
+# pylab.legend()
 # pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
   shooter = Shooter()
   close_loop_x = []
   close_loop_U = []
-  velocity_goal = 300
-  R = numpy.matrix([[0.0], [velocity_goal]])
-  for _ in pylab.linspace(0,1.99,200):
+  velocity_goal = 400
+  R = numpy.matrix([[velocity_goal]])
+  goal = False
+  for i in pylab.linspace(0,1.99,200):
     # Iterate the position up.
-    R = numpy.matrix([[R[0, 0] + 10.5], [velocity_goal]])
-    # Prevents the position goal from going beyond what is necessary.
-    velocity_weight_scalar = 0.35
-    max_reference = (
-        (shooter.U_max[0, 0] - velocity_weight_scalar *
-         (velocity_goal - shooter.X_hat[1, 0]) * shooter.K[0, 1]) /
-         shooter.K[0, 0] +
-         shooter.X_hat[0, 0])
-    min_reference = (
-        (shooter.U_min[0, 0] - velocity_weight_scalar *
-         (velocity_goal - shooter.X_hat[1, 0]) * shooter.K[0, 1]) /
-         shooter.K[0, 0] +
-         shooter.X_hat[0, 0])
-    R[0, 0] = numpy.clip(R[0, 0], min_reference, max_reference)
-    U = numpy.clip(shooter.K * (R - shooter.X_hat),
+    R = numpy.matrix([[velocity_goal]])
+    U = numpy.clip(shooter.K * (R - shooter.X_hat) +
+                   (numpy.identity(shooter.A.shape[0]) - shooter.A) * R / shooter.B,
                    shooter.U_min, shooter.U_max)
     shooter.UpdateObserver(U)
     shooter.Update(U)
-    close_loop_x.append(shooter.X[1, 0])
+    close_loop_x.append(shooter.X[0, 0])
     close_loop_U.append(U[0, 0])
+    if (abs(R[0, 0] - shooter.X[0, 0]) < R[0, 0]* 0.01 and (not goal)):
+      goal = True
+      print i
 
   #pylab.plotfile("shooter.csv", (0,1))
-  #pylab.plot(pylab.linspace(0,1.99,200), close_loop_U, 'ro')
+  pylab.plot(pylab.linspace(0,1.99,200), close_loop_U)
   #pylab.plotfile("shooter.csv", (0,2))
-  pylab.plot(pylab.linspace(0,1.99,200), close_loop_x, 'ro')
-# pylab.show()
+  pylab.plot(pylab.linspace(0,1.99,200), close_loop_x)
+  pylab.show()
 
   # Simulate spin down.
   spin_down_x = [];
-  R = numpy.matrix([[50.0], [0.0]])
   for _ in xrange(150):
     U = 0
     shooter.UpdateObserver(U)
     shooter.Update(U)
-    spin_down_x.append(shooter.X[1, 0])
+    spin_down_x.append(shooter.X[0, 0])
 
   #pylab.plot(range(150), spin_down_x)
   #pylab.show()
