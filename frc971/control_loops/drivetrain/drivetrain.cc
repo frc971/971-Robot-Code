@@ -212,14 +212,14 @@ class PolyDrivetrain {
     const double low_omega = MotorSpeed(0, ::std::abs(velocity));
     const double high_omega = MotorSpeed(1.0, ::std::abs(velocity));
 
-    LOG(DEBUG, "velocity %f\n", velocity);
     double high_torque = ((12.0 - high_omega / Kv) * Kt / kR);
     double low_torque = ((12.0 - low_omega / Kv) * Kt / kR);
     double high_power = high_torque * high_omega;
     double low_power = low_torque * low_omega;
-    if ((current == HIGH ||
-         high_power > low_power + /*50*/50) &&
-        high_power > low_power - /*50*/200) {
+
+    // TODO(aschuh): Do this right!
+    if ((current == HIGH || high_power > low_power + 160) &&
+        ::std::abs(velocity) > 0.14) {
       return HIGH;
     } else {
       return LOW;
@@ -244,7 +244,7 @@ class PolyDrivetrain {
 
     // TODO(austin): Fix the upshift logic to include states.
     Gear requested_gear;
-    if (constants::GetValues().clutch_transmission) {
+    if (false) {
       const double current_left_velocity =
           (position_.left_encoder - last_position_.left_encoder) /
           position_time_delta_;
@@ -272,6 +272,12 @@ class PolyDrivetrain {
         } else {
           left_gear_ = shift_down;
         }
+      } else {
+        if (requested_gear == HIGH && left_gear_ == SHIFTING_DOWN) {
+          left_gear_ = SHIFTING_UP;
+        } else if (requested_gear == LOW && left_gear_ == SHIFTING_UP) {
+          left_gear_ = SHIFTING_DOWN;
+        }
       }
     }
     if (right_gear_ != requested_gear) {
@@ -280,6 +286,12 @@ class PolyDrivetrain {
           right_gear_ = shift_up;
         } else {
           right_gear_ = shift_down;
+        }
+      } else {
+        if (requested_gear == HIGH && right_gear_ == SHIFTING_DOWN) {
+          right_gear_ = SHIFTING_UP;
+        } else if (requested_gear == LOW && right_gear_ == SHIFTING_UP) {
+          right_gear_ = SHIFTING_DOWN;
         }
       }
     }
