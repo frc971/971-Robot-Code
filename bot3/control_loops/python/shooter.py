@@ -94,11 +94,11 @@ def main(argv):
   shooter = Shooter()
   close_loop_x = []
   close_loop_U = []
-  velocity_goal = 300
+  velocity_goal = 350
   R = numpy.matrix([[0.0], [velocity_goal]])
-  for _ in pylab.linspace(0,1.99,200):
+  for _ in pylab.linspace(0,3.99,400):
     # Iterate the position up.
-    R = numpy.matrix([[R[0, 0] + 10.5], [velocity_goal]])
+    R = numpy.matrix([[R[0, 0] + velocity_goal / 100], [velocity_goal]])
     # Prevents the position goal from going beyond what is necessary.
     velocity_weight_scalar = 0.35
     max_reference = (
@@ -118,11 +118,12 @@ def main(argv):
     shooter.Update(U)
     close_loop_x.append(shooter.X[1, 0])
     close_loop_U.append(U[0, 0] * 10)
+    print U[0, 0]
 
   #pylab.plotfile("shooter.csv", (0,1))
-  pylab.plot(pylab.linspace(0,1.99,200), close_loop_U)
+  pylab.plot(pylab.linspace(0,3.99,400), close_loop_U)
   #pylab.plotfile("shooter.csv", (0,2))
-  pylab.plot(pylab.linspace(0,1.99,200), close_loop_x)
+  pylab.plot(pylab.linspace(0,3.99,400), close_loop_x)
   pylab.show()
 
   # Simulate spin down.

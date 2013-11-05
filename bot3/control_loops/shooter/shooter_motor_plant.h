@@ -15,6 +15,6 @@ StateFeedbackPlant<2, 1, 1> MakeShooterPlant();
 StateFeedbackLoop<2, 1, 1> MakeShooterLoop();
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace bot3
 
-#endif  // FRC971_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_
+#endif  // BOT3_CONTROL_LOOPS_SHOOTER_SHOOTER_MOTOR_PLANT_H_

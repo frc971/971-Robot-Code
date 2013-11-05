@@ -134,10 +134,28 @@ class Reader : public ::aos::input::JoystickInput {
         push = true;
       }
       if (data.IsPressed(kFire)) {
+        velocity = 500;
+      }
+      else if (data.IsPressed(ButtonLocation(3, 1))) {
+        velocity = 50;
+      }
+      else if (data.IsPressed(ButtonLocation(3, 2))) {
         velocity = 250;
       }
+      else if (data.IsPressed(ButtonLocation(3, 5))) {
+        velocity = 300;
+      }
+      else if (data.IsPressed(ButtonLocation(3, 7))) {
+        velocity = 350;
+      }
+      else if (data.IsPressed(ButtonLocation(3, 8))) {
+        velocity = 400;
+      }
+      else if (data.IsPressed(ButtonLocation(3, 10))) {
+        velocity = 450;
+      }
       if (data.IsPressed(kIntake)) {
-        intake = 0.9;
+        intake = 0.8;
       }
       shooter.goal.MakeWithBuilder().intake(intake).velocity(velocity).push(push).Send();
 #if 0

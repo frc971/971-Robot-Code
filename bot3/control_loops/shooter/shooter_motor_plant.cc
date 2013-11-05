@@ -27,7 +27,7 @@ StateFeedbackController<2, 1, 1> MakeShooterController() {
   Eigen::Matrix<double, 2, 1> L;
   L << 1.08905775674, 29.7111780621;
   Eigen::Matrix<double, 1, 2> K;
-  K << 1.42534042426, 0.758151303088;
+  K << 130.450278144, 2.19032372689;
   return StateFeedbackController<2, 1, 1>(L, K, MakeShooterPlantCoefficients());
 }
 
@@ -44,4 +44,4 @@ StateFeedbackLoop<2, 1, 1> MakeShooterLoop() {
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace bot3
