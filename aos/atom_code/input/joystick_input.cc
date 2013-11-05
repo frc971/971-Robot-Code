@@ -62,6 +62,26 @@ void JoystickInput::Run() {
           }
         }
       }
+
+      using driver_station::ControlBit;
+      if (data.PosEdge(ControlBit::kFmsAttached)) {
+        LOG(INFO, "PosEdge(kFmsAttached)\n");
+      }
+      if (data.NegEdge(ControlBit::kFmsAttached)) {
+        LOG(INFO, "NegEdge(kFmsAttached)\n");
+      }
+      if (data.PosEdge(ControlBit::kAutonomous)) {
+        LOG(INFO, "PosEdge(kAutonomous)\n");
+      }
+      if (data.NegEdge(ControlBit::kAutonomous)) {
+        LOG(INFO, "NegEdge(kAutonomous)\n");
+      }
+      if (data.PosEdge(ControlBit::kEnabled)) {
+        LOG(INFO, "PosEdge(kEnabled)\n");
+      }
+      if (data.NegEdge(ControlBit::kEnabled)) {
+        LOG(INFO, "NegEdge(kEnabled)\n");
+      }
     }
 
     RunIteration(data);
