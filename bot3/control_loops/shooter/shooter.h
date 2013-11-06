@@ -28,7 +28,7 @@ class ShooterMotor
   virtual void RunIteration(
       const control_loops::ShooterLoop::Goal *goal,
       const control_loops::ShooterLoop::Position *position,
-      ::aos::control_loops::Output *output,
+      control_loops::ShooterLoop::Output *output,
       control_loops::ShooterLoop::Status *status);
 
  private:

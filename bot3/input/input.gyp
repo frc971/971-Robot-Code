@@ -12,6 +12,7 @@
         '<(AOS)/build/aos.gyp:logging',
 
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/bot3/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(DEPTH)/bot3/autonomous/autonomous.gyp:auto_queue',
       ],

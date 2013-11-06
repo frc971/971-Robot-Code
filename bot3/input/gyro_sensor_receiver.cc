@@ -68,6 +68,10 @@ class GyroSensorReceiver : public USBReceiver {
         .right_encoder(drivetrain_translate(data()->main.wrist))
         .left_encoder(drivetrain_translate(data()->main.shooter))
         .Send();
+    /*drivetrain.position.MakeWithBuilder()
+        .right_encoder(0)
+        .left_encoder(0)
+        .Send();*/
 
     shooter.position.MakeWithBuilder()
         .position(shooter_translate(data()->bot3.shooter_cycle_ticks));
