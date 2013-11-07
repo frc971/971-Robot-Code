@@ -1,29 +1,6 @@
 {
   'targets': [
     {
-      'target_name': 'CameraServer',
-      'type': 'executable',
-      'sources': [
-        '<(DEPTH)/frc971/output/CameraServer.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/atom_code/output/output.gyp:http_server',
-        '<(DEPTH)/frc971/frc971.gyp:constants',
-        '<(AOS)/atom_code/atom_code.gyp:init',
-        '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
-        '<(AOS)/atom_code/atom_code.gyp:configuration',
-      ],
-      'copies': [
-        {
-          'destination': '<(rsync_dir)',
-          'files': [
-            'robot.html.tpl',
-          ],
-        },
-      ],
-    },
-    {
       'target_name': 'MotorWriter',
       'type': '<(aos_target)',
       'sources': [

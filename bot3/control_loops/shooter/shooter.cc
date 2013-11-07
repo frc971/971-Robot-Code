@@ -1,4 +1,5 @@
 #include "bot3/control_loops/shooter/shooter.h"
+#include "bot3/control_loops/shooter/shooter_motor.q.h"
 
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
@@ -21,15 +22,14 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
 void ShooterMotor::RunIteration(
     const control_loops::ShooterLoop::Goal *goal,
     const control_loops::ShooterLoop::Position *position,
-    ::aos::control_loops::Output *output,
+    control_loops::ShooterLoop::Output *output,
     control_loops::ShooterLoop::Status *status) {
   double velocity_goal = goal->velocity;
   // Our position here is actually a velocity.
   average_velocity_ =
-      (position == NULL ? loop_->X_hat(0, 0) : position->position);
+      (position == NULL ? loop_->X_hat(0, 0) : position->velocity);
   double output_voltage = 0.0;
 
-// TODO (danielp): This must be modified for our index.
 /*  if (index_loop.status.FetchLatest() || index_loop.status.get()) {
     if (index_loop.status->is_shooting) {
       if (velocity_goal != last_velocity_goal_ &&
@@ -73,6 +73,9 @@ void ShooterMotor::RunIteration(
   
   if (output) {
     output->voltage = output_voltage;
+    output->intake = goal->intake;
+    output->push = goal->push;
+    LOG(DEBUG, "goal: %lf, volt: %lf, push:%d\n", goal->intake, output_voltage, goal->push);
   }
 }
 

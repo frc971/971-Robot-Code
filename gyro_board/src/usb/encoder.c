@@ -13,9 +13,10 @@
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
+
 // How long to wait for a revolution of the shooter wheel (on the third robot)
 // before said wheel is deemed "stopped". (In secs)
-static const uint8_t kWheelStopThreshold = 1;
+static const float kWheelStopThreshold = 2.0;
 
 // The timer to use for timestamping sensor readings.
 // This is a constant to avoid hard-coding it in a lot of places, but there ARE
@@ -91,9 +92,6 @@ void EINT2_IRQHandler(void) {
 
 static inline void reset_TC(void) {
   TIM2->TCR |= (1 << 1); // Put it into reset.
-  while (TIM2->TC != 0) { // Wait for reset.
-    continue;
-  }
   TIM2->TCR = 1; // Take it out of reset + make sure it's enabled.
 }
 
@@ -505,17 +503,14 @@ void encoder_init(void) {
     // Set up timer for bot3 photosensor.
     // Make sure timer two is powered.
     SC->PCONP |= (1 << 22);
-    // We don't need all the precision the CCLK can provide.
-    // We'll use CCLK/8. (12.5 mhz).
-    SC->PCLKSEL1 |= (0x3 << 12);
-    // Use timer prescale to get that freq down to 500 hz.
-    TIM2->PR = 25000;
+    // Rate of clock signal is just CCLK.
+    SC->PCLKSEL1 |= (1 << 12);
     // Select capture 2.0 function on pin 0.4.
     PINCON->PINSEL0 |= (0x3 << 8);
     // Set timer to capture and interrupt on rising edge.
     TIM2->CCR = 0x5;
     // Set up match interrupt.
-    TIM2->MR0 = kWheelStopThreshold * 500;
+    TIM2->MR0 = kWheelStopThreshold * (10 ^ 8);
     TIM2->MCR = 1;
     // Enable timer IRQ, and make it lower priority than the encoders.
     NVIC_SetPriority(TIMER3_IRQn, 1);

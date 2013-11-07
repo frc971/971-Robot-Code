@@ -34,7 +34,7 @@ class ShooterMotorSimulation {
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Position> position =
       my_shooter_loop_.position.MakeMessage();
-    position->position = shooter_plant_->Y(0, 0);
+    position->velocity = shooter_plant_->Y(0, 0);
     position.Send();
   }
 

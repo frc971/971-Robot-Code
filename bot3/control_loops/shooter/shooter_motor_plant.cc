@@ -1,4 +1,4 @@
-#include "bot3/control_loops/shooter/shooter_motor_plant.h"
+#include "frc971/control_loops/shooter/shooter_motor_plant.h"
 
 #include <vector>
 
