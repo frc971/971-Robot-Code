@@ -20,7 +20,7 @@ StateFeedbackPlantCoefficients<1, 1, 1> MakeShooterPlantCoefficients() {
   U_max << 12.0;
   Eigen::Matrix<double, 1, 1> U_min;
   U_min << -12.0;
-  return StateFeedbackPlantCoefficients<2, 1, 1>(A, B, C, D, U_max, U_min);
+  return StateFeedbackPlantCoefficients<1, 1, 1>(A, B, C, D, U_max, U_min);
 }
 
 StateFeedbackController<1, 1, 1> MakeShooterController() {
