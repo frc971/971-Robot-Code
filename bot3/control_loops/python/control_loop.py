@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../../frc971/control_loops/python")
+
 import controls
 import numpy
 

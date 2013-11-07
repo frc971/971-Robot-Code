@@ -13,7 +13,6 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
     : aos::control_loops::ControlLoop<control_loops::ShooterLoop>(my_shooter),
     loop_(new StateFeedbackLoop<1, 1, 1>(MakeShooterLoop())),
     last_velocity_goal_(0) {
-    loop_->Reset();
 }
 
 /*static*/ const double ShooterMotor::dt = 0.01;
@@ -26,10 +25,9 @@ void ShooterMotor::RunIteration(
   double velocity_goal = goal->velocity;
   // Our position here is actually a velocity.
   average_velocity_ =
-      (position == NULL ? loop_->X_hat(0, 0) : position->position);
+      (position == NULL ? loop_->X_hat(0, 0) : position->velocity);
   double output_voltage = 0.0;
 
-// TODO (danielp): This must be modified for our index.
 /*  if (index_loop.status.FetchLatest() || index_loop.status.get()) {
     if (index_loop.status->is_shooting) {
       if (velocity_goal != last_velocity_goal_ &&

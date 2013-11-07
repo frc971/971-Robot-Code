@@ -6,13 +6,13 @@
 namespace bot3 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<1, 1, 1> MakeShooterPlantCoefficients();
+StateFeedbackPlantCoefficients<2, 1, 1> MakeShooterPlantCoefficients();
 
-StateFeedbackController<1, 1, 1> MakeShooterController();
+StateFeedbackController<2, 1, 1> MakeShooterController();
 
-StateFeedbackPlant<1, 1, 1> MakeShooterPlant();
+StateFeedbackPlant<2, 1, 1> MakeShooterPlant();
 
-StateFeedbackLoop<1, 1, 1> MakeShooterLoop();
+StateFeedbackLoop<2, 1, 1> MakeShooterLoop();
 
 }  // namespace control_loops
 }  // namespace bot3

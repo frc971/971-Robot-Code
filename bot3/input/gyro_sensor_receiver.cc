@@ -29,25 +29,12 @@ inline double drivetrain_translate(int32_t in) {
 }
 
 inline double shooter_translate(int32_t in) {
-  return static_cast<double>(in) / 500 /*counter rate*/ * (2 * M_PI);  
-}
-
-// Translates values from the ADC into voltage.
-inline double adc_translate(uint16_t in) {
-  static const double kVRefN = 0;
-  static const double kVRefP = 3.3;
-  static const int kMaximumValue = 0x3FF;
-  return kVRefN +
-      (static_cast<double>(in) / static_cast<double>(kMaximumValue) *
-       (kVRefP - kVRefN));
+  return 1.0 / (static_cast<double>(in) / (10 ^ 8)/*ticks per sec*/)
+    * (2 * M_PI);  
 }
 
 inline double gyro_translate(int64_t in) {
   return in / 16.0 / 1000.0 / (180.0 / M_PI);
-}
-
-inline double battery_translate(uint16_t in) {
-  return adc_translate(in) * 80.8 / 17.8;
 }
 
 }  // namespace
@@ -74,15 +61,7 @@ class GyroSensorReceiver : public USBReceiver {
         .Send();*/
 
     shooter.position.MakeWithBuilder()
-        .position(shooter_translate(data()->bot3.shooter_cycle_ticks));
-    
-    LOG(DEBUG, "battery %f %f %" PRIu16 "\n",
-        battery_translate(data()->main.battery_voltage),
-        adc_translate(data()->main.battery_voltage),
-        data()->main.battery_voltage);
-    LOG(DEBUG, "halls l=%f r=%f\n",
-        adc_translate(data()->main.left_drive_hall),
-        adc_translate(data()->main.right_drive_hall));
+        .velocity(shooter_translate(data()->bot3.shooter_cycle_ticks));
   }
 };
 

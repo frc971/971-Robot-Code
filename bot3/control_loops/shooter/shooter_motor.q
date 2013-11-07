@@ -24,8 +24,8 @@ queue_group ShooterLoop {
   };
 
   message Position {
-    // The angle of the shooter wheel measured in rad/sec.
-    double position;
+    // The speed of the shooter wheel measured in rad/sec.
+    double velocity;
   };
 
   message Output {
