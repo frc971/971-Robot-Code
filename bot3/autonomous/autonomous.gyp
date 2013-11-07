@@ -26,6 +26,7 @@
         '<(AOS)/common/common.gyp:controls',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/bot3/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
