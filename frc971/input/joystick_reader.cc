@@ -82,7 +82,7 @@ class Reader : public ::aos::input::JoystickInput {
       bool is_control_loop_driving = false;
       double left_goal = 0.0;
       double right_goal = 0.0;
-      const double wheel = data.GetAxis(kSteeringWheel);
+      const double wheel = -data.GetAxis(kSteeringWheel);
       const double throttle = -data.GetAxis(kDriveThrottle);
       LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
       const double kThrottleGain = 1.0 / 2.5;
@@ -177,22 +177,13 @@ class Reader : public ::aos::input::JoystickInput {
           shooter_goal->velocity = target_angle->shooter_speed;
           angle_adjust_goal = target_angle->shooter_angle;
           // TODO(brians): do the math right here
-          wrist_up_position = 0.70;
+          if (!hopper_clear) wrist_up_position = 0.70;
         } else {
           LOG(WARNING, "camera frame too old\n");
-          // pretend like no button is pressed
+          // Pretend like no button is pressed.
         }
 #endif
-        // This shot is from 30'.
-        shooter_goal->velocity = 360;
-        if (!hopper_clear) wrist_up_position = 1.23 - 0.4;
-        angle_adjust_goal = 0.630;
       } else if (data.IsPressed(kMediumShot)) {
-#if 0
-        shooter_goal->velocity = 375;
-        wrist_up_position = 0.70;
-        angle_adjust_goal = 0.564;
-#endif
         // middle wheel on the back line (same as auto)
         shooter_goal->velocity = 395;
         if (!hopper_clear) wrist_up_position = 1.23 - 0.4;

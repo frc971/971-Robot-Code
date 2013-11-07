@@ -149,14 +149,19 @@ static void setup_hardware(void) {
 
   setup_PLL1();
 
-  // Set everything to run at full CCLK by default.
-  SC->PCLKSEL0 = 0x55555555;
-
   /* Configure the LEDs. */
   vParTestInitialise();
 }
 
 int main(void) {
+  // Errata PCLKSELx.1 says that we have to do all of this BEFORE setting up
+  // PLL0 or it might not work.
+
+  // Set everything to run at full CCLK by default.
+  SC->PCLKSEL0 = 0x55555555;
+
+  CAN_PCLKSEL();
+
   setup_hardware();
 
   digital_init();
@@ -203,7 +208,6 @@ void vConfigureTimerForRunTimeStats(void) {
 
   /* Power up and feed the timer. */
   SC->PCONP |= 0x02UL;
-  SC->PCLKSEL0 = (SC->PCLKSEL0 & (~(0x3 << 2))) | (0x01 << 2);
 
   /* Reset Timer 0 */
   TIM0->TCR = TCR_COUNT_RESET;

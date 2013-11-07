@@ -187,10 +187,6 @@ static int gyro_setup(void) {
 static portTASK_FUNCTION(gyro_read_task, pvParameters) {
   SC->PCONP |= PCONP_PCSSP0;
 
-  // Make sure that the clock is set up right.
-  SC->PCLKSEL1 &= ~(3 << 10);
-  SC->PCLKSEL1 |= 1 << 10;
-
   // Set up SSEL.
   // It's is just a GPIO pin because we're the master (it would be special if we
   // were a slave).

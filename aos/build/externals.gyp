@@ -15,6 +15,7 @@
     'libusb_apiversion': '1.0',
     'compiler_rt_version': 'RELEASE_32_final',
     'libevent_version': '2.0.21',
+    'libcdd_version': '094g',
   },
   'targets': [
     {
@@ -205,6 +206,16 @@
       },
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/libusb-<(libusb_version)-prefix/include'],
+      },
+    },
+    {
+      'target_name': 'libcdd',
+      'type': 'none',
+      'link_settings': {
+        'libraries': ['<(externals_abs)/libcdd-<(libcdd_version)-prefix/lib/libcdd.a'],
+      },
+      'direct_dependent_settings': {
+        'include_dirs': ['<(externals_abs)/libcdd-<(libcdd_version)-prefix/include'],
       },
     },
   ],

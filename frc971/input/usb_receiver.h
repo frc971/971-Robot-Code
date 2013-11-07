@@ -102,7 +102,19 @@ class USBReceiver {
 
   void Reset();
 
-  virtual void ProcessData(const ::aos::time::Time &timestamp) = 0;
+  // These 2 are the functions for subclasses to override and do stuff in.
+  // timestamp for both of them is the time (as best as this code can determine)
+  // that the values in the packet were captured.
+  // They both have empty implementations here for subclasses that don't want to
+  // do anything in one of them.
+
+  // Gets called after each packet is received (possibly before ProcessData for
+  // the same packet).
+  virtual void PacketReceived(const ::aos::time::Time &timestamp);
+  // Gets called every 10th packet (or so) (at the right time for data for
+  // control loops to get read). PacketReceived will always be called right
+  // before this.
+  virtual void ProcessData(const ::aos::time::Time &timestamp);
 
   const uint8_t expected_robot_id_;
 

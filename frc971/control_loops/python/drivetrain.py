@@ -5,9 +5,53 @@ import numpy
 import sys
 from matplotlib import pylab
 
-class Drivetrain(control_loop.ControlLoop):
+
+class CIM(control_loop.ControlLoop):
   def __init__(self):
-    super(Drivetrain, self).__init__("Drivetrain")
+    super(CIM, self).__init__("CIM")
+    # Stall Torque in N m
+    self.stall_torque = 2.42
+    # Stall Current in Amps
+    self.stall_current = 133
+    # Free Speed in RPM
+    self.free_speed = 4650.0
+    # Free Current in Amps
+    self.free_current = 2.7
+    # Moment of inertia of the CIM in kg m^2
+    self.J = 0.0001
+    # Resistance of the motor, divided by 2 to account for the 2 motors
+    self.R = 12.0 / self.stall_current
+    # Motor velocity constant
+    self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
+              (12.0 - self.R * self.free_current))
+    # Torque constant
+    self.Kt = self.stall_torque / self.stall_current
+    # Control loop time step
+    self.dt = 0.01
+
+    # State feedback matrices
+    self.A_continuous = numpy.matrix(
+        [[-self.Kt / self.Kv / (self.J * self.R)]])
+    self.B_continuous = numpy.matrix(
+        [[self.Kt / (self.J * self.R)]])
+    self.C = numpy.matrix([[1]])
+    self.D = numpy.matrix([[0]])
+
+    self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
+                                               self.B_continuous, self.dt)
+
+    self.PlaceControllerPoles([0.01])
+    self.PlaceObserverPoles([0.01])
+
+    self.U_max = numpy.matrix([[12.0]])
+    self.U_min = numpy.matrix([[-12.0]])
+
+    self.InitializeState()
+
+
+class Drivetrain(control_loop.ControlLoop):
+  def __init__(self, left_low=True, right_low=True, is_clutch=False):
+    super(Drivetrain, self).__init__(("Clutch" if is_clutch else "Dog" )+"Drivetrain")
     # Stall Torque in N m
     self.stall_torque = 2.42
     # Stall Current in Amps
@@ -18,7 +62,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
-    self.J = 6.4
+    self.J = 4.5
     # Mass of the robot, in kg.
     self.m = 68
     # Radius of the robot, in meters (from last year).
@@ -26,16 +70,27 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the wheels, in meters.
     self.r = .04445
     # Resistance of the motor, divided by the number of motors.
-    self.R = 12.0 / self.stall_current / 6 + 0.03
+    self.R = (12.0 / self.stall_current / 4 + 0.03) / (0.93 ** 2.0)
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (12.0 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 16.0 / 60.0 * 19.0 / 50.0
-    self.G_high = 28.0 / 48.0 * 19.0 / 50.0
-    self.G = self.G_low
+    if is_clutch:
+      self.G_low = 14.0 / 60.0 * 15.0 / 50.0
+      self.G_high = 30.0 / 44.0 * 15.0 / 50.0
+    else:
+      self.G_low = 16.0 / 60.0 * 17.0 / 50.0
+      self.G_high = 28.0 / 48.0 * 17.0 / 50.0
+    if left_low:
+      self.Gl = self.G_low
+    else:
+      self.Gl = self.G_high
+    if right_low:
+      self.Gr = self.G_low
+    else:
+      self.Gr = self.G_high
     # Control loop time step
     self.dt = 0.01
 
@@ -44,22 +99,24 @@ class Drivetrain(control_loop.ControlLoop):
     self.msp = 1.0 / self.m + self.rb * self.rb / self.J
     self.msn = 1.0 / self.m - self.rb * self.rb / self.J
     # The calculations which we will need for A and B.
-    self.tc = -self.Kt / self.Kv / (self.G * self.G * self.R * self.r * self.r)
-    self.mp = self.Kt / (self.G * self.R * self.r)
+    self.tcl = -self.Kt / self.Kv / (self.Gl * self.Gl * self.R * self.r * self.r)
+    self.tcr = -self.Kt / self.Kv / (self.Gr * self.Gr * self.R * self.r * self.r)
+    self.mpl = self.Kt / (self.Gl * self.R * self.r)
+    self.mpr = self.Kt / (self.Gr * self.R * self.r)
 
     # State feedback matrices
     # X will be of the format
-    # [[position1], [velocity1], [position2], velocity2]]
+    # [[positionl], [velocityl], [positionr], velocityr]]
     self.A_continuous = numpy.matrix(
         [[0, 1, 0, 0],
-         [0, self.msp * self.tc, 0, self.msn * self.tc],
+         [0, self.msp * self.tcl, 0, self.msn * self.tcr],
          [0, 0, 0, 1],
-         [0, self.msn * self.tc, 0, self.msp * self.tc]])
+         [0, self.msn * self.tcl, 0, self.msp * self.tcr]])
     self.B_continuous = numpy.matrix(
         [[0, 0],
-         [self.msp * self.mp, self.msn * self.mp],
+         [self.msp * self.mpl, self.msn * self.mpr],
          [0, 0],
-         [self.msn * self.mp, self.msp * self.mp]])
+         [self.msn * self.mpl, self.msp * self.mpr]])
     self.C = numpy.matrix([[1, 0, 0, 0],
                            [0, 0, 1, 0]])
     self.D = numpy.matrix([[0, 0],
@@ -72,8 +129,6 @@ class Drivetrain(control_loop.ControlLoop):
     self.hp = 0.65
     self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.hp, self.lp, self.lp])
-
-    print self.K
 
     self.hlp = 0.07
     self.llp = 0.09
@@ -149,14 +204,23 @@ def main(argv):
   #pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 3:
+  dog_drivetrain = Drivetrain(is_clutch=False)
+  clutch_drivetrain = Drivetrain(is_clutch=True)
+
+  if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
-    loop_writer = control_loop.ControlLoopWriter("Drivetrain", [drivetrain])
+    dog_loop_writer = control_loop.ControlLoopWriter("DogDrivetrain", [dog_drivetrain])
     if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
+      dog_loop_writer.Write(argv[2], argv[1])
     else:
-      loop_writer.Write(argv[1], argv[2])
+      dog_loop_writer.Write(argv[1], argv[2])
+
+    clutch_loop_writer = control_loop.ControlLoopWriter("ClutchDrivetrain", [clutch_drivetrain])
+    if argv[3][-3:] == '.cc':
+      clutch_loop_writer.Write(argv[4], argv[3])
+    else:
+      clutch_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

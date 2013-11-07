@@ -8,6 +8,11 @@
 #include "aos/common/once.h"
 #include "aos/common/network/team_number.h"
 
+#include "frc971/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain_clutch_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_clutch_motor_plant.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -19,8 +24,8 @@ namespace {
 // It has about 0.029043 of gearbox slop.
 // For purposes of moving the end up/down by a certain amount, the wrist is 18
 // inches long.
-const double kCompWristHallEffectStartAngle = 1.285;
-const double kPracticeWristHallEffectStartAngle = 1.175;
+const double kCompWristHallEffectStartAngle = 1.27;
+const double kPracticeWristHallEffectStartAngle = 1.178;
 
 const double kWristHallEffectStopAngle = 100 * M_PI / 180.0;
 
@@ -70,8 +75,23 @@ const double kCompAngleAdjustDeadband = 0.65;
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;
 
-const int kCompDrivetrainGearboxPinion = 19;
-const int kPracticeDrivetrainGearboxPinion = 17;
+const double kCompDrivetrainEncoderRatio =
+    (15.0 / 50.0) /*output reduction*/ * (36.0 / 24.0) /*encoder gears*/;
+const double kCompLowGearRatio = 14.0 / 60.0 * 15.0 / 50.0;
+const double kCompHighGearRatio = 30.0 / 44.0 * 15.0 / 50.0;
+
+const double kPracticeDrivetrainEncoderRatio =
+    (17.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/;
+const double kPracticeLowGearRatio = 16.0 / 60.0 * 19.0 / 50.0;
+const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
+
+const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
+const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
+
+const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
+                                                  0.47};
+const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
+                                                   0.55};
 
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
@@ -95,7 +115,14 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingSpeed,
                         kAngleAdjustZeroingOffSpeed,
                         kCompAngleAdjustDeadband,
-                        kCompDrivetrainGearboxPinion,
+                        kCompDrivetrainEncoderRatio,
+                        kCompLowGearRatio,
+                        kCompHighGearRatio,
+                        kCompLeftDriveShifter,
+                        kCompRightDriveShifter,
+                        true,
+                        control_loops::MakeVClutchDrivetrainLoop,
+                        control_loops::MakeClutchDrivetrainLoop,
                         kCompCameraCenter};
       break;
     case kPracticeTeamNumber:
@@ -116,7 +143,14 @@ const Values *DoGetValues() {
                         kAngleAdjustZeroingSpeed,
                         kAngleAdjustZeroingOffSpeed,
                         kPracticeAngleAdjustDeadband,
-                        kPracticeDrivetrainGearboxPinion,
+                        kPracticeDrivetrainEncoderRatio,
+                        kPracticeLowGearRatio,
+                        kPracticeHighGearRatio,
+                        kPracticeLeftDriveShifter,
+                        kPracticeRightDriveShifter,
+                        false,
+                        control_loops::MakeVDogDrivetrainLoop,
+                        control_loops::MakeDogDrivetrainLoop,
                         kPracticeCameraCenter};
       break;
     default:

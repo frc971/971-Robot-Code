@@ -18,23 +18,27 @@ void USBReceiver::RunIteration() {
   if (ReceiveData()) {
     Reset();
   } else {
-    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
-      static const int kCountsPerSecond = 100000;
-      const ::aos::time::Time timestamp =
-          ::aos::time::Time(data()->timestamp / kCountsPerSecond,
-                            (data()->timestamp * ::aos::time::Time::kNSecInSec /
-                             kCountsPerSecond) %
-                                ::aos::time::Time::kNSecInSec);
+    const ::aos::time::Time timestamp =
+        ::aos::time::Time::InMS(data()->frame_number);
 
-      if (data()->robot_id != expected_robot_id_) {
-        LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
-            " dip switches are %hhx\n",
-            data()->robot_id, expected_robot_id_, data()->dip_switches);
-        return;
-      } else {
-        LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
-            data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
-      }
+    if (data()->robot_id != expected_robot_id_) {
+      LOG(ERROR, "gyro board sent data for robot id %hhd instead of %hhd!"
+          " dip switches are %hhx\n",
+          data()->robot_id, expected_robot_id_, data()->dip_switches);
+      return;
+    }
+    if (data()->checksum != GYRO_BOARD_DATA_CHECKSUM) {
+      LOG(ERROR,
+          "gyro board sent checksum %" PRIu16 " instead of %" PRIu16 "!\n",
+          data()->checksum, GYRO_BOARD_DATA_CHECKSUM);
+      return;
+    }
+
+    PacketReceived(timestamp);
+
+    if (phase_locker_.IsCurrentPacketGood(transfer_received_time_, frame_number_)) {
+      LOG(DEBUG, "processing dips %hhx frame %" PRId32 " at %f\n",
+          data()->dip_switches, data()->frame_number, timestamp.ToSeconds());
 
       ProcessData(timestamp);
     }
@@ -49,6 +53,9 @@ void USBReceiver::PhaseLocker::Reset() {
   guess_phase_good_ = guess_phase_bad_ = 0;
   good_phase_early_ = good_phase_late_ = 0;
 }
+
+void USBReceiver::PacketReceived(const ::aos::time::Time &/*timestamp*/) {}
+void USBReceiver::ProcessData(const ::aos::time::Time &/*timestamp*/) {}
 
 bool USBReceiver::PhaseLocker::IsCurrentPacketGood(
     const ::aos::time::Time &received_time,
@@ -176,7 +183,6 @@ void USBReceiver::StaticTransferCallback(libusb::Transfer *transfer,
 void USBReceiver::TransferCallback(libusb::Transfer *transfer) {
   transfer_received_time_ = ::aos::time::Time::Now();
   if (transfer->status() == LIBUSB_TRANSFER_COMPLETED) {
-    LOG(DEBUG, "transfer %p completed\n", transfer);
     completed_transfer_ = transfer;
   } else if (transfer->status() == LIBUSB_TRANSFER_TIMED_OUT) {
     LOG(WARNING, "transfer %p timed out\n", transfer);
@@ -227,8 +233,8 @@ bool USBReceiver::ReceiveData() {
       LOG(WARNING, "frame number went from %" PRId32" to %" PRId32 "\n",
           frame_number_before, frame_number_);
     }
-    if (frame_number_ < last_frame_number_) {
-      LOG(WARNING, "frame number went down\n");
+    if (frame_number_ < last_frame_number_ - 2) {
+      LOG(WARNING, "frame number went down a lot\n");
       return true;
     }
     last_frame_number_ = frame_number_;

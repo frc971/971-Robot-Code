@@ -121,3 +121,18 @@ LIBEVENT_URL=${LIBEVENT_URL}/libevent-${LIBEVENT_VERSION}-stable.tar.gz
   CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
   bash -c "cd ${LIBEVENT_DIR} && ./configure \
   --prefix=`readlink -f ${LIBEVENT_PREFIX}` && make && make install"
+
+# get and build libcdd
+LIBCDD_VERSION=094g
+LIBCDD_DIR=${EXTERNALS}/libcdd-${LIBCDD_VERSION}
+LIBCDD_PREFIX=${LIBCDD_DIR}-prefix
+LIBCDD_LIB=${LIBCDD_PREFIX}/lib/libcdd.a
+LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.tar.gz
+[ -f ${LIBCDD_DIR}.tar.gz ] || \
+        wget ${LIBCDD_URL} -O ${LIBCDD_DIR}.tar.gz
+[ -d ${LIBCDD_DIR} ] || ( mkdir ${LIBCDD_DIR} && tar \
+        --strip-components=1 -C ${LIBCDD_DIR} -xf ${LIBCDD_DIR}.tar.gz )
+[ -f ${LIBCDD_LIB} ] || env -i PATH="${PATH}" \
+        CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
+        bash -c "cd ${LIBCDD_DIR} && ./configure --disable-shared \
+        --prefix=`readlink -f ${LIBCDD_PREFIX}` && make && make install"

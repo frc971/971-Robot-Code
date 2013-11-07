@@ -5,7 +5,6 @@
       'type': 'static_library',
       'sources': [
         #'state_feedback_loop.h'
-        #'StateFeedbackLoop.h'
       ],
       'dependencies': [
         '<(EXTERNALS):eigen',

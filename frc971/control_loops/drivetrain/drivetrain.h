@@ -1,11 +1,20 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 
+#include "Eigen/Dense"
+
+#include "aos/controls/polytope.h"
 #include "aos/common/control_loop/ControlLoop.h"
+#include "aos/controls/polytope.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
 namespace control_loops {
+
+Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
+                                       const Eigen::Matrix<double, 1, 2> &K,
+                                       double w,
+                                       const Eigen::Matrix<double, 2, 1> &R);
 
 class DrivetrainLoop
     : public aos::control_loops::ControlLoop<control_loops::Drivetrain, true, false> {
@@ -15,7 +24,9 @@ class DrivetrainLoop
   explicit DrivetrainLoop(
       control_loops::Drivetrain *my_drivetrain = &control_loops::drivetrain)
       : aos::control_loops::ControlLoop<control_loops::Drivetrain, true, false>(
-          my_drivetrain) {}
+          my_drivetrain) {
+    ::aos::controls::HPolytope<0>::Init();
+  }
 
  protected:
   // Executes one cycle of the control loop.
