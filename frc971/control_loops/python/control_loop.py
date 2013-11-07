@@ -26,7 +26,7 @@ class ControlLoopWriter(object):
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
 
   def _HeaderGuard(self, header_file):
-    return ('FRC971_CONTROL_LOOPS_' +
+    return (self._namespaces[0].upper() + '_CONTROL_LOOPS_' +
             header_file.upper().replace('.', '_').replace('/', '_') +
             '_')
 
@@ -89,7 +89,8 @@ class ControlLoopWriter(object):
   def WriteCC(self, header_file_name, cc_file):
     """Writes the cc file to the file named cc_file."""
     with open(cc_file, 'w') as fd:
-      fd.write('#include \"frc971/control_loops/%s\"\n' % header_file_name)
+      fd.write('#include \"' + self._namespaces[0] +
+          '/control_loops/%s\"\n' % header_file_name)
       fd.write('\n')
       fd.write('#include <vector>\n')
       fd.write('\n')

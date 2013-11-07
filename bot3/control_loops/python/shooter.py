@@ -2,6 +2,7 @@
 
 import numpy
 import sys
+sys.path.append('../../frc971/control_loops/python')
 from matplotlib import pylab
 import control_loop
 import slycot
@@ -126,7 +127,7 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name"
   else:
-    loop_writer = control_loop.ControlLoopWriter("Shooter", [shooter])
+    loop_writer = control_loop.ControlLoopWriter("Shooter", [shooter], namespaces=['bot3','control_loops'])
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:
