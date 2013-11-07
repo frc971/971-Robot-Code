@@ -40,6 +40,8 @@ class ShooterMotor
   // For making sure it keeps spinning if we're shooting.
   double last_velocity_goal_;
 
+  Eigen::Matrix<double, 1, 1> U_add;
+
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };
 

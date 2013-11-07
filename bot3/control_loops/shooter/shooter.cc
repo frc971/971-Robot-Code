@@ -13,6 +13,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
     : aos::control_loops::ControlLoop<control_loops::ShooterLoop>(my_shooter),
     loop_(new StateFeedbackLoop<1, 1, 1>(MakeShooterLoop())),
     last_velocity_goal_(0) {
+    loop_->Reset();
+    U_add = loop_->B().inverse() * (loop_->A().Identity() - loop_->A());
 }
 
 /*static*/ const double ShooterMotor::dt = 0.01;
@@ -43,7 +45,7 @@ void ShooterMotor::RunIteration(
   loop_->Y << average_velocity_;
   loop_->R << velocity_goal;
 
-  loop_->Update(position, output == NULL);
+  loop_->Update(position, output == NULL, U_add * loop_->R);
 
   // Kill power at low velocity goals.
   if (velocity_goal < 1.0) {

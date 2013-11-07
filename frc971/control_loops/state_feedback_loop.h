@@ -294,11 +294,15 @@ class StateFeedbackLoop {
 
   // update_observer is whether or not to use the values in Y.
   // stop_motors is whether or not to output all 0s.
-  void Update(bool update_observer, bool stop_motors) {
+  // U_add is for the bot3 shooter velocity control, where a constant
+  // must be added to get a good U.
+  void Update(bool update_observer, bool stop_motors,
+              Eigen::Matrix<double, number_of_inputs, 1> U_add =
+              Eigen::Matrix<double, number_of_inputs, 1>::Zero()) {
     if (stop_motors) {
       U.setZero();
     } else {
-      U = U_uncapped = K() * (R - X_hat);
+      U = U_uncapped = K() * (R - X_hat) + U_add;
       CapU();
     }
 
