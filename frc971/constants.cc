@@ -25,7 +25,7 @@ namespace {
 // For purposes of moving the end up/down by a certain amount, the wrist is 18
 // inches long.
 const double kCompWristHallEffectStartAngle = 1.27;
-const double kPracticeWristHallEffectStartAngle = 1.182;
+const double kPracticeWristHallEffectStartAngle = 1.178;
 
 const double kWristHallEffectStopAngle = 100 * M_PI / 180.0;
 
@@ -85,7 +85,7 @@ const double kPracticeDrivetrainEncoderRatio =
 const double kPracticeLowGearRatio = 16.0 / 60.0 * 19.0 / 50.0;
 const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
 
-const ShifterHallEffect kCompLeftDriveShifter{0.8 /*TODO*/, 2.14, 1.2, 1.0};
+const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
 const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
 
 const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
