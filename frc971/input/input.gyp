@@ -37,32 +37,8 @@
         '<(AOS)/atom_code/atom_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:wrapping_counter',
-        'usb_receiver',
+        '<(DEPTH)/frc971/input/usb.gyp:usb_receiver',
         '<(DEPTH)/frc971/frc971.gyp:constants',
-      ],
-    },
-    {
-      'target_name': 'usb_receiver',
-      'type': 'static_library',
-      'sources': [
-        'usb_receiver.cc',
-      ],
-      'dependencies': [
-        '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
-        '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/common.gyp:controls',
-      ],
-      'export_dependent_settings': [
-        '<(DEPTH)/gyro_board/src/libusb-driver/libusb-driver.gyp:libusb_wrap',
-        '<(AOS)/common/common.gyp:time',
-      ],
-      'variables': {
-        # TODO(brians): Add dependency on this file too (or something).
-        'checksum': '<!(<(DEPTH)/gyro_board/src/usb/data_struct_checksum.sh)',
-      },
-      'defines': [
-        'GYRO_BOARD_DATA_CHECKSUM=<(checksum)',
       ],
     },
   ],

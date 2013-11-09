@@ -22,6 +22,9 @@ using ::frc971::USBReceiver;
 namespace bot3 {
 namespace {
 
+const double kWheelRadius = 1.964;
+const double kTapeThickness = 2.696;
+
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       (32.0 / 44.0 /*encoder gears*/) * // the encoders are on the wheels.
@@ -30,7 +33,7 @@ inline double drivetrain_translate(int32_t in) {
 
 inline double shooter_translate(int32_t in) {
   return 1.0 / (static_cast<double>(in) / (10 ^ 8)/*ticks per sec*/)
-    * (2 * M_PI);  
+    / (1 - (kTapeThickness / (2 * kWheelRadius * M_PI))) * (2 * M_PI);  
 }
 
 inline double gyro_translate(int64_t in) {
@@ -61,7 +64,8 @@ class GyroSensorReceiver : public USBReceiver {
         .Send();*/
 
     shooter.position.MakeWithBuilder()
-        .velocity(shooter_translate(data()->bot3.shooter_cycle_ticks));
+        .velocity(shooter_translate(data()->bot3.shooter_cycle_ticks))
+        .Send();
   }
 };
 

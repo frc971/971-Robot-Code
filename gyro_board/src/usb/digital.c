@@ -30,7 +30,7 @@ int dip_switch(int channel) {
 
 int is_bot3;
 void digital_init(void) {
-  if (dip_switch(0) || dip_switch(1) || dip_switch(2) || dip_switch(3)) {
+  if (dip_switch(1) || dip_switch(2) || dip_switch(3) || dip_switch(4)) {
     is_bot3 = 1;
   } else {
     is_bot3 = 0;

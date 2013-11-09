@@ -13,6 +13,7 @@
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
+static const int kWheelStopThreshold = 2.5;
 
 #define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
@@ -434,35 +435,6 @@ int32_t encoder_val(int chan) {
 static volatile uint32_t sensor_timing_wraps = 0;
 
 void encoder_init(void) {
-  // Setup the encoder interface.
-  SC->PCONP |= PCONP_PCQEI;
-  PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
-  // Reset the count and velocity.
-  QEI->QEICON = 0x00000005;
-  QEI->QEICONF = 0x00000004;
-  // Wrap back to 0 when we wrap the int and vice versa.
-  QEI->QEIMAXPOS = 0xFFFFFFFF;
-  
-  // Set up encoder 2.
-  GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 12);
-  PINCON->PINSEL1 &= ~(0x3 << 10);
-  encoder2_val = 0;
-
-  // Set up encoder 3.
-  GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 8);
-  PINCON->PINSEL1 &= ~(0x3 << 6);
-  encoder3_val = 0;
-  
   // Enable interrupts from the GPIO pins.
   NVIC_EnableIRQ(EINT3_IRQn);
 
@@ -483,12 +455,21 @@ void encoder_init(void) {
     TIM2->MR0 = kWheelStopThreshold * (10 ^ 8);
     TIM2->MCR = 1;
     // Enable timer IRQ, and make it lower priority than the encoders.
-    NVIC_SetPriority(TIMER3_IRQn, 1);
-    NVIC_EnableIRQ(TIMER3_IRQn);
+    NVIC_SetPriority(TIMER2_IRQn, 1);
+    NVIC_EnableIRQ(TIMER2_IRQn);
     // Set up GPIO interrupt on other edge.
-    GPIOINT->IO0IntEnF |= (1 << 23);
+    GPIOINT->IO0IntEnF |= (1 << 4);
 
   } else {  // is main robot
+    // Setup the encoder interface.
+    SC->PCONP |= PCONP_PCQEI;
+    PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
+    // Reset the count and velocity.
+    QEI->QEICON = 0x00000005;
+    QEI->QEICONF = 0x00000004;
+    // Wrap back to 0 when we wrap the int and vice versa.
+    QEI->QEIMAXPOS = 0xFFFFFFFF;
+
     // Set up encoder 1.
     // Make GPIOs 2.11 and 2.12 trigger EINT1 and EINT2 (respectively).
     // PINSEL4[23:22] = {0 1}
@@ -501,7 +482,27 @@ void encoder_init(void) {
     NVIC_EnableIRQ(EINT1_IRQn);
     NVIC_EnableIRQ(EINT2_IRQn);
     encoder1_val = 0;
+        
+    // Set up encoder 2.
+    GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 12);
+    PINCON->PINSEL1 &= ~(0x3 << 10);
+    encoder2_val = 0;
 
+    // Set up encoder 3.
+    GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 8);
+    PINCON->PINSEL1 &= ~(0x3 << 6);
+    encoder3_val = 0;
+    
     // Set up encoder 4.
     GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
     GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
@@ -521,7 +522,6 @@ void encoder_init(void) {
     PINCON->PINSEL4 &= ~(0x3 << 4);
     PINCON->PINSEL4 &= ~(0x3 << 6);
     encoder5_val = 0;
-
 
     xTaskCreate(vDelayCapture,
                 (signed char *) "SENSORs",
@@ -573,8 +573,8 @@ void fillSensorPacket(struct DataStruct *packet) {
   if (is_bot3) {
     packet->robot_id = 1;
 
-    packet->main.left_drive = encoder3_val;
-    packet->main.right_drive = encoder2_val;
+    //packet->main.left_drive = encoder3_val;
+    //packet->main.right_drive = encoder2_val;
 
     packet->bot3.shooter_cycle_ticks = shooter_cycle_ticks;
   } else {  // is main robot
