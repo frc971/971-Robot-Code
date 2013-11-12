@@ -40,10 +40,12 @@ const ButtonLocation kFire(3, 3);
 const ButtonLocation kIntake(3, 4);
 
 class Reader : public ::aos::input::JoystickInput {
+  bool last_push_;
+  bool shooting_;
  public:
   static const bool kWristAlwaysDown = false;
 
-  Reader() {
+  Reader() : shooting_(false) {
     printf("\nRunning Bot3 JoystickReader!\n");
     shifters.MakeWithBuilder().set(true).Send();
   }
@@ -60,6 +62,8 @@ class Reader : public ::aos::input::JoystickInput {
         LOG(INFO, "Stopping auto mode\n");
         ::bot3::autonomous::autonomous.MakeWithBuilder()
             .run_auto(false).Send();
+      } else {
+        LOG(DEBUG, "Running auto\n");
       }
     } else {  // teleop
       bool is_control_loop_driving = false;
@@ -67,54 +71,18 @@ class Reader : public ::aos::input::JoystickInput {
       double right_goal = 0.0;
       const double wheel = data.GetAxis(kSteeringWheel);
       const double throttle = -data.GetAxis(kDriveThrottle);
-      LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
+      const bool quickturn = data.IsPressed(kQuickTurn);
+      LOG(DEBUG, "wheel %f throttle %f quickturn %d\n", wheel, throttle, quickturn);
       //const double kThrottleGain = 1.0 / 2.5;
-      if (data.IsPressed(kDriveControlLoopEnable1) ||
-          data.IsPressed(kDriveControlLoopEnable2)) {
-          LOG(INFO, "Control loop driving is currently not supported by this robot.\n");
-#if 0
-        static double distance = 0.0;
-        static double angle = 0.0;
-        static double filtered_goal_distance = 0.0;
-        if (data.PosEdge(kDriveControlLoopEnable1) ||
-            data.PosEdge(kDriveControlLoopEnable2)) {
-          if (drivetrain.position.FetchLatest() && gyro.FetchLatest()) {
-            distance = (drivetrain.position->left_encoder +
-                        drivetrain.position->right_encoder) / 2.0
-                - throttle * kThrottleGain / 2.0;
-            angle = gyro->angle;
-            filtered_goal_distance = distance;
-          }
+      if (!shooting_) {
+        if (!drivetrain.goal.MakeWithBuilder()
+                  .steering(wheel)
+                  .throttle(throttle)
+                  .highgear(is_high_gear).quickturn(quickturn)
+                  .control_loop_driving(is_control_loop_driving)
+                  .left_goal(left_goal).right_goal(right_goal).Send()) {
+          LOG(WARNING, "sending stick values failed\n");
         }
-        is_control_loop_driving = true;
-
-        //const double gyro_angle = Gyro.View().angle;
-        const double goal_theta = angle - wheel * 0.27;
-        const double goal_distance = distance + throttle * kThrottleGain;
-        const double robot_width = 22.0 / 100.0 * 2.54;
-        const double kMaxVelocity = 0.6;
-        if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance) {
-          filtered_goal_distance += kMaxVelocity * 0.02;
-        } else if (goal_distance < -kMaxVelocity * 0.02 +
-                   filtered_goal_distance) {
-          filtered_goal_distance -= kMaxVelocity * 0.02;
-        } else {
-          filtered_goal_distance = goal_distance;
-        }
-        left_goal = filtered_goal_distance - robot_width * goal_theta / 2.0;
-        right_goal = filtered_goal_distance + robot_width * goal_theta / 2.0;
-        is_high_gear = false;
-
-        LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
-#endif
-      }
-      if (!(drivetrain.goal.MakeWithBuilder()
-                .steering(wheel)
-                .throttle(throttle)
-                .highgear(is_high_gear).quickturn(data.IsPressed(kQuickTurn))
-                .control_loop_driving(is_control_loop_driving)
-                .left_goal(left_goal).right_goal(right_goal).Send())) {
-        LOG(WARNING, "sending stick values failed\n");
       }
 
       if (data.PosEdge(kShiftHigh)) {
@@ -128,16 +96,22 @@ class Reader : public ::aos::input::JoystickInput {
 
       shooter.status.FetchLatest();
       bool push = false;
+      bool full_power = false;
       double velocity = 0.0;
       double intake = 0.0;
       if (data.IsPressed(kPush) && shooter.status->ready) {
         push = true;
       }
+      if (!push && last_push_) {
+        //Falling edge
+        full_power = true;
+      }
+      last_push_ = push;
       if (data.IsPressed(kFire)) {
         velocity = 500;
       }
       else if (data.IsPressed(ButtonLocation(3, 1))) {
-        velocity = 50;
+        velocity = 100;
       }
       else if (data.IsPressed(ButtonLocation(3, 2))) {
         velocity = 250;
@@ -157,72 +131,20 @@ class Reader : public ::aos::input::JoystickInput {
       if (data.IsPressed(kIntake)) {
         intake = 0.8;
       }
-      shooter.goal.MakeWithBuilder().intake(intake).velocity(velocity).push(push).Send();
-#if 0
-      ::aos::ScopedMessagePtr<frc971::control_loops::ShooterLoop::Goal> shooter_goal =
-          shooter.goal.MakeMessage();
-      shooter_goal->velocity = 0;
-      if (data.IsPressed(kPitShot1) && data.IsPressed(kPitShot2)) {
-        shooter_goal->velocity = 131;
-      } else if (data.IsPressed(kLongShot)) {
-#if 0
-        target_angle.FetchLatest();
-        if (target_angle.IsNewerThanMS(500)) {
-          shooter_goal->velocity = target_angle->shooter_speed;
-          angle_adjust_goal = target_angle->shooter_angle;
-          // TODO(brians): do the math right here
-          wrist_up_position = 0.70;
-        } else {
-          LOG(WARNING, "camera frame too old\n");
-          // pretend like no button is pressed
+      if (abs(throttle) < 0.2 && !quickturn) {
+        shooting_ = true;
+        shooter.goal.MakeWithBuilder().intake(intake).velocity(velocity).push(push).Send();
+        if (full_power) {
+          LOG(DEBUG, "Zeroing position.velocity\n");
+          shooter.position.MakeWithBuilder().velocity(0).Send();
         }
-#endif
-        shooter_goal->velocity = 360;
-      } else if (data.IsPressed(kMediumShot)) {
-#if 0
-        shooter_goal->velocity = 375;
-        wrist_up_position = 0.70;
-        angle_adjust_goal = 0.564;
-#endif
-        // middle wheel on the back line (same as auto)
-        shooter_goal->velocity = 395;
-      } else if (data.IsPressed(kShortShot)) {
-        shooter_goal->velocity = 375;
-      }
-
-      //TODO (daniel) Modify this for hopper and shooter.
-      ::aos::ScopedMessagePtr<frc971::control_loops::IndexLoop::Goal> index_goal =
-          index_loop.goal.MakeMessage();
-      if (data.IsPressed(kFire)) {
-        // FIRE
-        index_goal->goal_state = 4;
-      } else if (shooter_goal->velocity != 0) {
-        // get ready to shoot
-        index_goal->goal_state = 3;
-      } else if (data.IsPressed(kIntake)) {
-        // intake
-        index_goal->goal_state = 2;
       } else {
-        // get ready to intake
-        index_goal->goal_state = 1;
+        shooting_ = false;
       }
-      index_goal->force_fire = data.IsPressed(kForceFire);
-
-      const bool index_up = data.IsPressed(kForceIndexUp);
-      const bool index_down = data.IsPressed(kForceIndexDown);
-      index_goal->override_index = index_up || index_down;
-      if (index_up && index_down) {
-        index_goal->index_voltage = 0.0;
-      } else if (index_up) {
-        index_goal->index_voltage = 12.0;
-      } else if (index_down) {
-        index_goal->index_voltage = -12.0;
+      if (!velocity) {
+        shooting_ = false;
       }
-
-      index_goal.Send();
-      shooter_goal.Send();
-#endif
-    }
+   }
   }
 };
 

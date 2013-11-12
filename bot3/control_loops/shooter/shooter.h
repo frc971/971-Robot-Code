@@ -12,7 +12,7 @@ namespace bot3 {
 namespace control_loops {
 
 class ShooterMotor
-    : public aos::control_loops::ControlLoop<control_loops::ShooterLoop> {
+    : public aos::control_loops::ControlLoop<control_loops::ShooterLoop, true, false, true> {
  public:
   explicit ShooterMotor(
       control_loops::ShooterLoop *my_shooter = &control_loops::shooter);

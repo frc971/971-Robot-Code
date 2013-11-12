@@ -9,16 +9,17 @@ namespace control_loops {
 
 // TODO(aschuh): Tests.
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
+template <class T, bool has_position, bool fail_no_position, bool ignore_stale>
+void ControlLoop<T, has_position, fail_no_position, ignore_stale>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::Iterate() {
+template <class T, bool has_position, bool fail_no_position, bool ignore_stale>
+void ControlLoop<T, has_position, fail_no_position, ignore_stale>::Iterate() {
+  bool use_model = false;
   // Temporary storage for printing out inputs and outputs.
   char state[1024];
 
@@ -48,21 +49,26 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     if (control_loop_->position.FetchLatest()) {
       position = control_loop_->position.get();
     } else {
+      if (ignore_stale) {
+        use_model = true;
+      }
       if (control_loop_->position.get()) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
           LOG(ERROR, "Stale position. %d ms > %d ms.  Outputs disabled.\n",
               msec_age, kPositionTimeoutMs);
-          //ZeroOutputs();
-          //eturn;
+          if (!ignore_stale) {
+            ZeroOutputs();
+            return;
+          }
         } else {
           LOG(ERROR, "Stale position. %d ms\n", msec_age);
         }
       } else {
         LOG(ERROR, "Never had a position.\n");
         if (fail_no_position) {
-         // ZeroOutputs();
-         // return;
+         ZeroOutputs();
+         return;
         }
       }
     }
@@ -95,7 +101,11 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     return;
   }
 
+  LOG(DEBUG, "Outputs enabled: %d\n", outputs_enabled);
   if (outputs_enabled) {
+    if (use_model) {
+      position = NULL;
+    }
     aos::ScopedMessagePtr<OutputType> output =
         control_loop_->output.MakeMessage();
     RunIteration(goal, position, output.get(), status.get());
@@ -114,8 +124,8 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   status.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::Run() {
+template <class T, bool has_position, bool fail_no_position, bool ignore_stale>
+void ControlLoop<T, has_position, fail_no_position, ignore_stale>::Run() {
   while (true) {
     time::SleepUntil(NextLoopTime());
     Iterate();

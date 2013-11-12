@@ -10,7 +10,7 @@ namespace bot3 {
 namespace control_loops {
 
 ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
-    : aos::control_loops::ControlLoop<control_loops::ShooterLoop>(my_shooter),
+    : aos::control_loops::ControlLoop<control_loops::ShooterLoop, true, false, true>(my_shooter),
     loop_(new StateFeedbackLoop<1, 1, 1>(MakeShooterLoop())),
     last_velocity_goal_(0) {
     loop_->Reset();
@@ -26,9 +26,15 @@ void ShooterMotor::RunIteration(
     control_loops::ShooterLoop::Status *status) {
   double velocity_goal = goal->velocity;
   // Our position here is actually a velocity.
+  LOG(DEBUG, "Position is null: %d\n", position == NULL);
   average_velocity_ =
       (position == NULL ? loop_->X_hat(0, 0) : position->velocity);
   double output_voltage = 0.0;
+  bool full_power = false;
+  if (!average_velocity_ && velocity_goal) {
+    LOG(DEBUG, "Giving full power.\n");
+    full_power = true;
+  }
 
 /*  if (index_loop.status.FetchLatest() || index_loop.status.get()) {
     if (index_loop.status->is_shooting) {
@@ -70,6 +76,10 @@ void ShooterMotor::RunIteration(
     status->ready = false;
   }
   LOG(DEBUG, "avg = %f goal = %f\n", average_velocity_, velocity_goal);
+
+  if (full_power) {
+    output_voltage = 12.0;
+  }
   
   if (output) {
     output->voltage = output_voltage;
