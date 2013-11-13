@@ -110,7 +110,7 @@ const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 /*static*/ const int IndexMotor::kGrabbingDelay = 5;
 /*static*/ const int IndexMotor::kLiftingDelay = 5;
 /*static*/ const int IndexMotor::kLiftingTimeout = 100;
-/*static*/ const int IndexMotor::kShootingDelay = 10;
+/*static*/ const int IndexMotor::kShootingDelay = 25;
 /*static*/ const int IndexMotor::kLoweringDelay = 4;
 /*static*/ const int IndexMotor::kLoweringTimeout = 120;
 
