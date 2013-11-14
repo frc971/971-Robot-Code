@@ -4,3 +4,4 @@ joystick_reader
 drivetrain
 auto
 shooter
+gyro_sensor_receiver

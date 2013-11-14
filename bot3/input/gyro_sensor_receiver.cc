@@ -23,7 +23,7 @@ namespace bot3 {
 namespace {
 
 const double kWheelRadius = 1.964;
-const double kTapeThickness = 2.696;
+const double kTapeThickness = 3.12;
 
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *

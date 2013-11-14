@@ -89,7 +89,7 @@ void TIMER2_IRQHandler(void) {
   // Apparently, this handler runs regardless of a match or capture event.
   if (TIM2->IR & (1 << 4)) {
     // Capture
-    TIM2->IR = (1 << 3); // Clear the interrupt.
+    TIM2->IR = (1 << 4); // Clear the interrupt.
     
     shooter_cycle_ticks = TIM2->CR0;
   
@@ -325,7 +325,7 @@ static void ShooterHallRise(void) {
 
 // Third robot shooter.
 static void ShooterPhotoFall(void) {
-  GPIOINT->IO0IntClr = (1 << 23);
+  GPIOINT->IO0IntClr = (1 << 4);
   // We reset TC to make sure we don't get a crap
   // value from CR0 when the capture interrupt occurs
   // if the shooter is just starting up again, and so
