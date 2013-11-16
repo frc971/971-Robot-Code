@@ -106,7 +106,6 @@ class DrivetrainMotorsSS {
     _gyro = gyro;
     _control_loop_driving = control_loop_driving;
     SetRawPosition(left, right);
-    //LOG(DEBUG, "Left %f->%f Right %f->%f Gyro %f aerror %f ioff %f\n", left + _offset, _left_goal, right - _offset, _right_goal, gyro, angle_error, _integral_offset);
   }
 
   void Update(bool update_observer, bool stop_motors) {
@@ -524,8 +523,6 @@ class PolyDrivetrain {
   }
 
   void SendMotors(Drivetrain::Output *output) {
-    LOG(DEBUG, "left pwm: %f right pwm: %f wheel: %f throttle: %f\n",
-        loop_->U(0, 0), loop_->U(1, 0), wheel_, throttle_);
     if (output != NULL) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
@@ -738,6 +735,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
     if (gyro.FetchLatest()) {
+      LOG(DEBUG, "gyro %f\n", gyro->angle);
       dt_closedloop.SetPosition(left_encoder, right_encoder, gyro->angle,
                                 control_loop_driving);
     } else {

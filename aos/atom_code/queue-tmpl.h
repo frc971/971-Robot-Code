@@ -23,7 +23,7 @@ bool ScopedMessagePtr<T>::SendBlocking() {
 template <class T>
 void ScopedMessagePtr<T>::reset(T *msg) {
   if (queue_ != NULL && msg_ != NULL) {
-    queue_->FreeMessage(msg);
+    queue_->FreeMessage(msg_);
   }
   msg_ = msg;
 }

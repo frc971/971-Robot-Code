@@ -24,7 +24,7 @@ namespace {
 // It has about 0.029043 of gearbox slop.
 // For purposes of moving the end up/down by a certain amount, the wrist is 18
 // inches long.
-const double kCompWristHallEffectStartAngle = 1.27;
+const double kCompWristHallEffectStartAngle = 1.277;
 const double kPracticeWristHallEffectStartAngle = 1.178;
 
 const double kWristHallEffectStopAngle = 100 * M_PI / 180.0;
@@ -50,7 +50,7 @@ const int kAngleAdjustHallEffect = 2;
 // wire guide is 0.773652098 radians.
 
 const double kCompAngleAdjustHallEffectStartAngle[2] = {0.301170496, 1.5};
-const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.305172594, 1.5};
+const double kPracticeAngleAdjustHallEffectStartAngle[2] = {0.297, 1.5};
 
 const double kAngleAdjustHallEffectStopAngle[2] = {0.1, 1.0};
 
@@ -70,7 +70,7 @@ const double kAngleAdjustZeroingSpeed = -0.2;
 const double kAngleAdjustZeroingOffSpeed = -0.5;
 
 const double kPracticeAngleAdjustDeadband = 0.4;
-const double kCompAngleAdjustDeadband = 0.65;
+const double kCompAngleAdjustDeadband = 0.0;
 
 const int kCompCameraCenter = -2;
 const int kPracticeCameraCenter = -5;

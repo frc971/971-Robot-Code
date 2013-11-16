@@ -93,7 +93,7 @@ class GyroSensorReceiver : public USBReceiver {
       bad_gyro_ = true;
       gyro.MakeWithBuilder().angle(0).Send();
     } else if (data()->old_gyro_reading) {
-      LOG(WARNING, "old gyro reading\n");
+      LOG(WARNING, "old/bad/uninitialized gyro reading\n");
       bad_gyro_ = true;
     } else {
       bad_gyro_ = false;

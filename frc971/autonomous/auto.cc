@@ -4,6 +4,7 @@
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/network/team_number.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
@@ -381,7 +382,7 @@ void HandleAuto() {
   WaitForAngle_Adjust();
   ShootIndex();        // tilt up, shoot, repeat until empty
           // calls WaitForShooter
-  ShootNDiscs(3);      // ShootNDiscs returns if ShouldExitAuto
+  ShootNDiscs(4);      // ShootNDiscs returns if ShouldExitAuto
   if (ShouldExitAuto()) return;
 
   StartIndex();        // take in up to 4 discs
@@ -437,20 +438,29 @@ void HandleAuto() {
     static const double kLastDrive = 0.34;
     // How fast to drive when picking up disks.
     static const double kPickupVelocity = 0.6;
+    // How fast to drive when not picking up disks.
+    static const double kDriveVelocity =
+        constants::GetValues().clutch_transmission ? 0.8 : 1.75;
     // Where to take the second set of shots from.
     static const double kSecondShootDistance = 2.0;
 
     // Go slowly to grab the 2 disks under the pyramid.
     SetDriveGoal(kFirstDrive, kPickupVelocity);
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
-    SetDriveGoal(kDriveDistance - kFirstDrive - kLastDrive, 2.0);
-    SetWristGoal(WRIST_DOWN_TWO);
-    // Go slowly at the end to pick up the last 2 disks.
-    SetDriveGoal(kLastDrive, kPickupVelocity);
-    if (ShouldExitAuto()) return;
 
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
-    SetDriveGoal(kSecondShootDistance - kDriveDistance, 2.0);
+    if (constants::GetValues().clutch_transmission) {
+      SetDriveGoal(kSecondShootDistance - kFirstDrive, kDriveVelocity);
+    } else {
+      SetDriveGoal(kDriveDistance - kFirstDrive - kLastDrive, kDriveVelocity);
+      SetWristGoal(WRIST_DOWN_TWO);
+      // Go slowly at the end to pick up the last 2 disks.
+      SetDriveGoal(kLastDrive, kPickupVelocity);
+      if (ShouldExitAuto()) return;
+
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
+      SetDriveGoal(kSecondShootDistance - kDriveDistance, kDriveVelocity);
+    }
+
     PreloadIndex();
 
     if (ShouldExitAuto()) return;
