@@ -175,9 +175,6 @@
             '-pthread',
             #'-m32',
           ],
-          'library_dirs': [
-            '/usr/lib32',
-          ],
           'cflags': [
             '-pthread',
             #'-m32',
