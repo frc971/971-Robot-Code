@@ -2,7 +2,6 @@
 # that download_externals.sh downloads so build.sh can use.
 
 EXTERNALS=${AOS}/../output/downloaded
-COMPILED=${EXTERNALS}/../compiled-i386
 
 NINJA_RELEASE=v1.4.0
 NINJA_DIR=${EXTERNALS}/ninja-${NINJA_RELEASE}

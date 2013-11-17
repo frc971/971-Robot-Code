@@ -4,6 +4,14 @@ set -e
 
 AOS=$(readlink -f $(dirname $0)/..)
 . $(dirname $0)/tools_config
+COMPILED=${EXTERNALS}/../compiled-arm
+
+export CC=arm-linux-gnueabi-gcc-4.7
+export CXX=arm-linux-gnueabi-g++-4.7
+# Flags that should get passed to all configure scripts.
+# TODO(brians): If we're going to build everything ourselves, we should probably
+# optimize it for our target.
+CONFIGURE_FLAGS="--host=arm-linux-gnueabi CC=${CC} CXX=${CXX}"
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
@@ -48,7 +56,10 @@ LIBJPEG_LIB=${LIBJPEG_PREFIX}/lib/libjpeg.a
 LIBJPEG_TAR=${EXTERNALS}/jpegsrc.v${LIBJPEG_VERSION}.tar.gz
 [ -f ${LIBJPEG_TAR} ] || wget http://www.ijg.org/files/jpegsrc.v${LIBJPEG_VERSION}.tar.gz -O ${LIBJPEG_TAR}
 [ -d ${LIBJPEG_DIR} ] || ( mkdir ${LIBJPEG_DIR} && tar --strip-components=1 -C ${LIBJPEG_DIR} -xf ${LIBJPEG_TAR} )
-[ -f ${LIBJPEG_LIB} ] || env -i PATH="${PATH}" bash -c "cd ${LIBJPEG_DIR} && CFLAGS='-m32' ./configure --disable-shared --prefix=`readlink -f ${LIBJPEG_PREFIX}` && make && make install"
+[ -f ${LIBJPEG_LIB} ] || bash -c \
+	"cd ${LIBJPEG_DIR} && ./configure --disable-shared \
+	${CONFIGURE_FLAGS} --prefix=`readlink -f ${LIBJPEG_PREFIX}` \
+	&& make && make install"
 
 # get gtest
 GTEST_VERSION=1.6.0
@@ -77,10 +88,10 @@ else
 	[ -d ${CTEMPLATE_DIR} ] || \
 		svn checkout ${CTEMPLATE_URL} -r ${CTEMPLATE_VERSION} ${CTEMPLATE_DIR}
 fi
-[ -f ${CTEMPLATE_LIB} ] || env -i PATH="${PATH}" \
-	CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
-	bash -c "cd ${CTEMPLATE_DIR} && ./configure --disable-shared \
-	--prefix=`readlink -f ${CTEMPLATE_PREFIX}` && make && make install"
+[ -f ${CTEMPLATE_LIB} ] || bash -c "cd ${CTEMPLATE_DIR} && \
+	./configure --disable-shared \
+	${CONFIGURE_FLAGS} --prefix=`readlink -f ${CTEMPLATE_PREFIX}` \
+	&& make && make install"
 
 # get and build gflags
 GFLAGS_VERSION=2.0
@@ -92,10 +103,9 @@ GFLAGS_URL=https://gflags.googlecode.com/files/gflags-${GFLAGS_VERSION}.tar.gz
 [ -f ${GFLAGS_TAR} ] || wget ${GFLAGS_URL} -O ${GFLAGS_TAR}
 [ -d ${GFLAGS_DIR} ] || ( mkdir ${GFLAGS_DIR} && tar \
   --strip-components=1 -C ${GFLAGS_DIR} -xf ${GFLAGS_TAR} )
-[ -f ${GFLAGS_LIB} ] || env -i PATH="${PATH}" \
-  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
-  bash -c "cd ${GFLAGS_DIR} && ./configure \
-  --prefix=`readlink -f ${GFLAGS_PREFIX}` && make && make install"
+[ -f ${GFLAGS_LIB} ] || bash -c "cd ${GFLAGS_DIR} && ./configure \
+  ${CONFIGURE_FLAGS} --prefix=`readlink -f ${GFLAGS_PREFIX}` \
+  && make && make install"
 
 # get and build libusb
 LIBUSB_VERSION=1.0.9
@@ -108,10 +118,9 @@ LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-${LIBUSB_APIVERSI
 [ -f ${LIBUSB_TAR} ] || wget ${LIBUSB_URL} -O ${LIBUSB_TAR}
 [ -d ${LIBUSB_DIR} ] || ( mkdir ${LIBUSB_DIR} && tar \
   --strip-components=1 -C ${LIBUSB_DIR} -xf ${LIBUSB_TAR} )
-[ -f ${LIBUSB_LIB} ] || env -i PATH="${PATH}" \
-  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
-  bash -c "cd ${LIBUSB_DIR} && ./configure \
-  --prefix=`readlink -f ${LIBUSB_PREFIX}` && make && make install"
+[ -f ${LIBUSB_LIB} ] || bash -c "cd ${LIBUSB_DIR} && ./configure \
+	${CONFIGURE_FLAGS} --prefix=`readlink -f ${LIBUSB_PREFIX}` \
+	&& make && make install"
 
 # get the LLVM Compiler-RT source
 COMPILER_RT_TAG=RELEASE_32/final
@@ -131,10 +140,23 @@ LIBEVENT_URL=${LIBEVENT_URL}/libevent-${LIBEVENT_VERSION}-stable.tar.gz
 [ -f ${LIBEVENT_TAR} ] || wget ${LIBEVENT_URL} -O ${LIBEVENT_TAR}
 [ -d ${LIBEVENT_DIR} ] || ( mkdir ${LIBEVENT_DIR} && tar \
   --strip-components=1 -C ${LIBEVENT_DIR} -xf ${LIBEVENT_TAR} )
-[ -f ${LIBEVENT_LIB} ] || env -i PATH="${PATH}" \
-  CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
-  bash -c "cd ${LIBEVENT_DIR} && ./configure \
-  --prefix=`readlink -f ${LIBEVENT_PREFIX}` && make && make install"
+[ -f ${LIBEVENT_LIB} ] || bash -c "cd ${LIBEVENT_DIR} && ./configure \
+	${CONFIGURE_FLAGS} --prefix=`readlink -f ${LIBEVENT_PREFIX}` \
+	&& make && make install"
+
+# get and build gmp
+GMP_VERSION=5.1.3
+GMP_TAR=${EXTERNALS}/gmp-${GMP_VERSION}.tar.lz
+GMP_DIR=${COMPILED}/gmp-${GMP_VERSION}
+GMP_PREFIX=${GMP_DIR}-prefix
+GMP_LIB=${GMP_PREFIX}/lib/libgmp.a
+GMP_URL=http://ftp.gmplib.org/gmp/gmp-${GMP_VERSION}.tar.lz
+[ -f ${GMP_TAR} ] || wget ${GMP_URL} -O ${GMP_TAR}
+[ -d ${GMP_DIR} ] || ( mkdir ${GMP_DIR} && tar \
+	--strip-components=1 -C ${GMP_DIR} -xf ${GMP_TAR} )
+[ -f ${GMP_LIB} ] || bash -c "cd ${GMP_DIR} && ./configure \
+	${CONFIGURE_FLAGS} --prefix=$(readlink -f ${GMP_PREFIX}) \
+	&& make && make install"
 
 # get and build libcdd
 LIBCDD_VERSION=094g
@@ -147,9 +169,10 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
         wget ${LIBCDD_URL} -O ${LIBCDD_TAR}
 [ -d ${LIBCDD_DIR} ] || ( mkdir ${LIBCDD_DIR} && tar \
         --strip-components=1 -C ${LIBCDD_DIR} -xf ${LIBCDD_TAR} )
-[ -f ${LIBCDD_LIB} ] || env -i PATH="${PATH}" \
-        CFLAGS='-m32' CXXFLAGS='-m32' LDFLAGS='-m32' \
-        bash -c "cd ${LIBCDD_DIR} && ./configure --disable-shared \
-        --prefix=`readlink -f ${LIBCDD_PREFIX}` && make && make install"
+[ -f ${LIBCDD_LIB} ] || LDFLAGS=-L${GMP_PREFIX}/lib \
+	bash -c "cd ${LIBCDD_DIR} && ./configure \
+	--disable-shared ${CONFIGURE_FLAGS} \
+	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
+	&& make gmpdir=${GMP_PREFIX} && make install"
 
 rm -rf ${TMPDIR}
