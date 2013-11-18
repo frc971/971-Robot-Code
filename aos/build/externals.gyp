@@ -124,6 +124,9 @@
       'type': 'none',
       'direct_dependent_settings': {
         'libraries': ['<(compiled_abs)/libjpeg/lib/libjpeg.a'],
+        'cflags': [
+          '-isystem', '<(compiled)',
+        ],
       },
     },
     {
@@ -217,7 +220,7 @@
         'libraries': ['<(compiled_abs)/libcdd-<(libcdd_version)-prefix/lib/libcdd.a'],
       },
       'direct_dependent_settings': {
-        'include_dirs': ['<(compiled_abs)/libcdd-<(libcdd_version)-prefix/include'],
+        'include_dirs': ['<(compiled_abs)/'],
       },
     },
   ],

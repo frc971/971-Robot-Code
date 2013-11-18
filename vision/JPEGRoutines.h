@@ -1,7 +1,7 @@
 // for jpeglib.h
 #include <stdio.h>
 
-#include "aos/externals/libjpeg/include/jpeglib.h"
+#include "libjpeg/include/jpeglib.h"
 
 namespace frc971 {
 namespace vision {

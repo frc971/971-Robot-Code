@@ -11,9 +11,10 @@
 #include <vector>
 #include <iostream>
 
+#include "libjpeg/include/jpeglib.h"
+
 #include "aos/common/time.h"
 #include "aos/atom_code/camera/Buffers.h"
-#include "aos/externals/libjpeg/include/jpeglib.h"
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging.h"
 
