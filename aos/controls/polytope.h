@@ -2,8 +2,8 @@
 #define _AOS_CONTROLS_POLYTOPE_H_
 
 #include "Eigen/Dense"
-#include "aos/externals/libcdd-094g-prefix/include/setoper.h"
-#include "aos/externals/libcdd-094g-prefix/include/cdd.h"
+#include "libcdd-094g-prefix/include/setoper.h"
+#include "libcdd-094g-prefix/include/cdd.h"
 
 namespace aos {
 namespace controls {
