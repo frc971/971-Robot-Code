@@ -41,7 +41,7 @@ if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
 {
   'target_defaults': {
     'configurations': {
-	  '${PLATFORM}': {}
+	  '${OUT_NAME}': {}
     }
   }
 }
