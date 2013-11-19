@@ -8,10 +8,10 @@ COMPILED=${EXTERNALS}/../compiled-arm
 
 export CC=arm-linux-gnueabihf-gcc-4.7
 export CXX=arm-linux-gnueabihf-g++-4.7
+export CFLAGS=-mcpu=cortex-a8
+export CXXFLAGS=-mcpu=cortex-a8
 # Flags that should get passed to all configure scripts.
-# TODO(brians): If we're going to build everything ourselves, we should probably
-# optimize it for our target.
-CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX}"
+CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} CXXFLAGS=${CXXFLAGS}"
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}

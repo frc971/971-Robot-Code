@@ -94,8 +94,7 @@
               ],
             }, {
               'cflags': [
-                #'-march=atom',
-                #'-mfpmath=sse',
+                '-mcpu=cortex-a8',
 
                 '-fstack-protector-all',
               ],
@@ -173,11 +172,9 @@
           ],
           'ldflags': [
             '-pthread',
-            #'-m32',
           ],
           'cflags': [
             '-pthread',
-            #'-m32',
 
             '-Wunused-local-typedefs',
 
