@@ -10,8 +10,10 @@ export CC=arm-linux-gnueabihf-gcc-4.7
 export CXX=arm-linux-gnueabihf-g++-4.7
 export CFLAGS=-mcpu=cortex-a8
 export CXXFLAGS=-mcpu=cortex-a8
+export LDFLAGS=-mcpu=cortex-a8
+export OBJDUMP=arm-linux-gnueabihf-objdump
 # Flags that should get passed to all configure scripts.
-CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} CXXFLAGS=${CXXFLAGS}"
+CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} CXXFLAGS=${CXXFLAGS} LDFLAGS=${LDFLAGS} OBJDUMP=${OBJDUMP}"
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
@@ -49,7 +51,7 @@ ONEJAR_JAR=${EXTERNALS}/one-jar-boot-${ONEJAR_VERSION}.jar
 
 # get and build libjpeg
 LIBJPEG_VERSION=8d
-LIBJPEG_DIR=${EXTERNALS}/jpeg-${LIBJPEG_VERSION}
+LIBJPEG_DIR=${COMPILED}/jpeg-${LIBJPEG_VERSION}
 # NOTE: this directory ends up in #include names
 LIBJPEG_PREFIX=${COMPILED}/libjpeg
 LIBJPEG_LIB=${LIBJPEG_PREFIX}/lib/libjpeg.a
