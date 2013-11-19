@@ -31,8 +31,8 @@
         },
       }, {
         'make_global_settings': [
-          ['CC', '<!(which arm-linux-gnueabi-gcc-4.7)'],
-          ['CXX', '<!(which arm-linux-gnueabi-g++-4.7)'],
+          ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
+          ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
         ],
         'variables': {
           'aos_target': 'executable',

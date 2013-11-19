@@ -6,12 +6,12 @@ AOS=$(readlink -f $(dirname $0)/..)
 . $(dirname $0)/tools_config
 COMPILED=${EXTERNALS}/../compiled-arm
 
-export CC=arm-linux-gnueabi-gcc-4.7
-export CXX=arm-linux-gnueabi-g++-4.7
+export CC=arm-linux-gnueabihf-gcc-4.7
+export CXX=arm-linux-gnueabihf-g++-4.7
 # Flags that should get passed to all configure scripts.
 # TODO(brians): If we're going to build everything ourselves, we should probably
 # optimize it for our target.
-CONFIGURE_FLAGS="--host=arm-linux-gnueabi CC=${CC} CXX=${CXX}"
+CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX}"
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
