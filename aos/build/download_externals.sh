@@ -8,12 +8,13 @@ COMPILED=${EXTERNALS}/../compiled-arm
 
 export CC=arm-linux-gnueabihf-gcc-4.7
 export CXX=arm-linux-gnueabihf-g++-4.7
-export CFLAGS=-mcpu=cortex-a8
-export CXXFLAGS=-mcpu=cortex-a8
-export LDFLAGS=-mcpu=cortex-a8
+export CFLAGS=-mcpu="cortex-a8 -mfpu=neon"
+export CXXFLAGS=-mcpu="cortex-a8 -mfpu=neon"
 export OBJDUMP=arm-linux-gnueabihf-objdump
 # Flags that should get passed to all configure scripts.
-CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} CXXFLAGS=${CXXFLAGS} LDFLAGS=${LDFLAGS} OBJDUMP=${OBJDUMP}"
+# Some of them need to set LDFLAGS separately to work around stupid configure
+# scripts, so we can't just set that here.
+CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
