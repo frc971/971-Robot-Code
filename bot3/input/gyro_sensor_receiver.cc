@@ -32,6 +32,10 @@ inline double drivetrain_translate(int32_t in) {
 }
 
 inline double shooter_translate(int32_t in) {
+  LOG(DEBUG, "raw %" PRId32 "\n", in);
+  if (in == 0) {
+    return 0;
+  }
   return 1.0 / (static_cast<double>(in) / (10 ^ 8)/*ticks per sec*/)
     / (1 - (kTapeThickness / (2 * kWheelRadius * M_PI))) * (2 * M_PI);  
 }
@@ -63,6 +67,7 @@ class GyroSensorReceiver : public USBReceiver {
         .left_encoder(0)
         .Send();*/
 
+    LOG(DEBUG, "shooter: %f\n", shooter_translate(data()->bot3.shooter_cycle_ticks));
     shooter.position.MakeWithBuilder()
         .velocity(shooter_translate(data()->bot3.shooter_cycle_ticks))
         .Send();

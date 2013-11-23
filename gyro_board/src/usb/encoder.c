@@ -79,7 +79,8 @@ void EINT2_IRQHandler(void) {
 }
 
 static inline void reset_TC(void) {
-  TIM2->TCR |= (1 << 1); // Put it into reset.
+  TIM2->TCR = (1 << 1); // Put it into reset and disabled.
+  while (TIM2->TC != 0);
   TIM2->TCR = 1; // Take it out of reset + make sure it's enabled.
 }
 
@@ -91,7 +92,7 @@ void TIMER2_IRQHandler(void) {
     // Capture
     TIM2->IR = (1 << 4); // Clear the interrupt.
     
-    shooter_cycle_ticks = TIM2->CR0;
+    shooter_cycle_ticks = TIM2->CR0 + 2;
   
     reset_TC();
   } else if (TIM2->IR & 1) {
@@ -99,10 +100,10 @@ void TIMER2_IRQHandler(void) {
     TIM2->IR = 1; // Clear the interrupt
 
     // Assume shooter is stopped.
-    shooter_cycle_ticks = 0;
+    //shooter_cycle_ticks = 1;
 
     // Disable timer.
-    TIM2->TCR = 0;
+    //TIM2->TCR = 0;
   }
 
   // It will only handle one interrupt per run.
@@ -445,8 +446,6 @@ void encoder_init(void) {
     // Set up timer for bot3 photosensor.
     // Make sure timer two is powered.
     SC->PCONP |= (1 << 22);
-    // Rate of clock signal is just CCLK.
-    SC->PCLKSEL1 |= (1 << 12);
     // Select capture 2.0 function on pin 0.4.
     PINCON->PINSEL0 |= (0x3 << 8);
     // Set timer to capture and interrupt on rising edge.
