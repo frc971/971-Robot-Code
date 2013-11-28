@@ -23,7 +23,7 @@ namespace bot3 {
 namespace {
 
 const double kWheelRadius = 1.964;
-const double kTapeThickness = 3.12;
+const double kTapeThickness = 2.519;
 
 inline double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
@@ -36,7 +36,7 @@ inline double shooter_translate(int32_t in) {
   if (in == 0) {
     return 0;
   }
-  return 1.0 / (static_cast<double>(in) / (10 ^ 8)/*ticks per sec*/)
+  return (100000000.0/*ticks per sec*/ / static_cast<double>(in))
     / (1 - (kTapeThickness / (2 * kWheelRadius * M_PI))) * (2 * M_PI);  
 }
 

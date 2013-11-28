@@ -13,7 +13,7 @@
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
-static const int kWheelStopThreshold = 2.5;
+static const uint32_t kWheelStopThreshold = 250000000;
 
 #define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
@@ -92,7 +92,7 @@ void TIMER2_IRQHandler(void) {
     // Capture
     TIM2->IR = (1 << 4); // Clear the interrupt.
     
-    shooter_cycle_ticks = TIM2->CR0 + 2;
+    shooter_cycle_ticks = TIM2->CR0;
   
     reset_TC();
   } else if (TIM2->IR & 1) {
@@ -100,10 +100,10 @@ void TIMER2_IRQHandler(void) {
     TIM2->IR = 1; // Clear the interrupt
 
     // Assume shooter is stopped.
-    //shooter_cycle_ticks = 1;
+    shooter_cycle_ticks = 0;
 
     // Disable timer.
-    //TIM2->TCR = 0;
+    TIM2->TCR = 0;
   }
 
   // It will only handle one interrupt per run.
@@ -451,7 +451,7 @@ void encoder_init(void) {
     // Set timer to capture and interrupt on rising edge.
     TIM2->CCR = 0x5;
     // Set up match interrupt.
-    TIM2->MR0 = kWheelStopThreshold * (10 ^ 8);
+    TIM2->MR0 = kWheelStopThreshold;
     TIM2->MCR = 1;
     // Enable timer IRQ, and make it lower priority than the encoders.
     NVIC_SetPriority(TIMER2_IRQn, 1);
