@@ -566,7 +566,7 @@ P 0 4900 300 4900 1 0 0
 T 0 4900 5 10 0 0 0 0 1
 pintype=in
 T 355 4895 5 10 1 1 0 0 1
-pinlabel=_RST_
+pinlabel=\_RST\_
 T 205 4945 5 10 1 1 0 6 1
 pinnumber=7
 T 0 4900 5 10 0 0 0 0 1
