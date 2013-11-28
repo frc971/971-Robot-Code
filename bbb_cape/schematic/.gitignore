@@ -1,0 +1,5 @@
+\#*.sch#
+*.sch~
+*.sym~
+*.pcb-
+*.net
