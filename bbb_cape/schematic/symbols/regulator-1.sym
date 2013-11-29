@@ -29,7 +29,7 @@ device=regulator
 T -700 1300 8 10 0 1 0 0 1
 description=voltage regulator
 T 800 1300 8 10 1 1 0 0 1
-refdes=U?
+refdes=X?
 P 1500 200 1500 500 1 0 0
 {
 T 1500 200 5 10 0 0 0 0 1
