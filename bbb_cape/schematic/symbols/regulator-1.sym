@@ -1,0 +1,45 @@
+v 20110115 2
+B 0 500 2000 1200 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
+T 200 1500 9 10 1 0 0 0 1
+Power Regulator
+P 500 200 500 500 1 0 0
+{
+T 500 200 5 10 0 0 0 0 1
+pintype=pwr
+T 500 555 5 10 1 1 90 0 1
+pinlabel=GND
+T 450 405 5 10 0 1 90 6 1
+pinnumber=GND
+T 500 200 5 10 0 0 0 0 1
+pinseq=1
+}
+P 1000 200 1000 500 1 0 0
+{
+T 1000 200 5 10 0 0 0 0 1
+pintype=pwr
+T 1000 555 5 10 1 1 90 0 1
+pinlabel=VIN
+T 950 405 5 10 0 1 90 6 1
+pinnumber=VIN
+T 1000 200 5 10 0 0 0 0 1
+pinseq=2
+}
+T -1100 700 8 10 0 1 0 0 1
+device=regulator
+T -700 1300 8 10 0 1 0 0 1
+description=voltage regulator
+T 800 1300 8 10 1 1 0 0 1
+refdes=U?
+P 1500 200 1500 500 1 0 0
+{
+T 1500 200 5 10 0 0 0 0 1
+pintype=pwr
+T 1500 555 5 10 1 1 90 0 1
+pinlabel=VOUT
+T 1450 405 5 10 0 1 90 6 1
+pinnumber=VOUT
+T 1500 200 5 10 0 0 0 0 1
+pinseq=0
+}
+T 0 1100 8 10 1 1 0 0 1
+source=unknown

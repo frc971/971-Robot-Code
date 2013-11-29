@@ -1,1 +1,2 @@
 (component-library "./symbols" "971 Symbols")
+(source-library ".")
