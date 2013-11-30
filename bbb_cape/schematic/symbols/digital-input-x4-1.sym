@@ -1,0 +1,113 @@
+v 20110115 2
+B 300 300 2000 1500 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
+P 2600 1400 2300 1400 1 0 0
+{
+T 2600 1400 5 10 0 0 0 0 1
+pintype=out
+T 2245 1395 5 10 1 1 0 6 1
+pinlabel=OUT0
+T 2395 1445 5 10 0 1 0 0 1
+pinnumber=OUT0
+T 2600 1400 5 10 0 0 0 0 1
+pinseq=1
+}
+P 2600 1100 2300 1100 1 0 0
+{
+T 2600 1100 5 10 0 0 0 0 1
+pintype=out
+T 2245 1095 5 10 1 1 0 6 1
+pinlabel=OUT1
+T 2395 1145 5 10 0 1 0 0 1
+pinnumber=OUT1
+T 2600 1100 5 10 0 0 0 0 1
+pinseq=2
+}
+P 2600 800 2300 800 1 0 0
+{
+T 2600 800 5 10 0 0 0 0 1
+pintype=out
+T 2245 795 5 10 1 1 0 6 1
+pinlabel=OUT2
+T 2395 845 5 10 0 1 0 0 1
+pinnumber=OUT2
+T 2600 800 5 10 0 0 0 0 1
+pinseq=3
+}
+P 2600 500 2300 500 1 0 0
+{
+T 2600 500 5 10 0 0 0 0 1
+pintype=out
+T 2245 495 5 10 1 1 0 6 1
+pinlabel=OUT3
+T 2395 545 5 10 0 1 0 0 1
+pinnumber=OUT3
+T 2600 500 5 10 0 0 0 0 1
+pinseq=4
+}
+P 0 1400 300 1400 1 0 0
+{
+T 0 1400 5 10 0 0 0 0 1
+pintype=pwr
+T 355 1395 5 10 1 1 0 0 1
+pinlabel=SGND
+T 205 1445 5 10 0 1 0 6 1
+pinnumber=SGND
+T 0 1400 5 10 0 0 0 0 1
+pinseq=5
+}
+P 0 1100 300 1100 1 0 0
+{
+T 0 1100 5 10 0 0 0 0 1
+pintype=pwr
+T 355 1095 5 10 1 1 0 0 1
+pinlabel=SVCC
+T 205 1145 5 10 0 1 0 6 1
+pinnumber=SVCC
+T 0 1100 5 10 0 0 0 0 1
+pinseq=6
+}
+P 0 800 300 800 1 0 0
+{
+T 0 800 5 10 0 0 0 0 1
+pintype=pwr
+T 355 795 5 10 1 1 0 0 1
+pinlabel=DGND
+T 205 845 5 10 0 1 0 6 1
+pinnumber=DGND
+T 0 800 5 10 0 0 0 0 1
+pinseq=7
+}
+P 0 500 300 500 1 0 0
+{
+T 0 500 5 10 0 0 0 0 1
+pintype=pwr
+T 355 495 5 10 1 1 0 0 1
+pinlabel=DVCC
+T 205 545 5 10 0 1 0 6 1
+pinnumber=DVCC
+T 0 500 5 10 0 0 0 0 1
+pinseq=0
+}
+T 1300 1500 8 10 0 1 0 0 1
+device=digital-input-x4
+T 1900 1600 8 10 0 1 0 0 1
+description=set of 4 digital inputs
+T 400 1600 8 10 1 1 0 0 1
+source=unknown
+T 2000 1900 8 10 1 1 0 0 1
+refdes=X?
+T 1200 1800 8 10 0 1 0 0 1
+numslots=1
+T 400 1900 9 10 1 0 0 0 1
+digital inputs x4
+P 1300 0 1300 300 1 0 0
+{
+T 1300 0 5 10 0 0 0 0 1
+pintype=in
+T 1300 355 5 10 1 1 90 0 1
+pinlabel=DIFFA
+T 1250 205 5 10 0 1 90 6 1
+pinnumber=DIFFA
+T 1300 0 5 10 0 0 0 0 1
+pinseq=9
+}
