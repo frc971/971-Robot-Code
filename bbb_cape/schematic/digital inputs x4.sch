@@ -102,6 +102,8 @@ T 40600 48100 5 10 0 1 0 0 1
 device=encoder-input
 T 39800 48000 5 10 1 1 0 0 1
 refdes=X2
+T 38100 47200 5 10 0 0 0 0 1
+source=digital input.sch
 }
 C 38100 46100 1 0 0 digital-input-1.sym
 {
@@ -109,6 +111,8 @@ T 40600 47000 5 10 0 1 0 0 1
 device=encoder-input
 T 39800 46900 5 10 1 1 0 0 1
 refdes=X1
+T 38100 46100 5 10 0 0 0 0 1
+source=digital input.sch
 }
 N 40400 46400 41000 46400 4
 N 41000 46400 41000 46900 4
@@ -120,6 +124,8 @@ T 40600 49200 5 10 0 1 0 0 1
 device=encoder-input
 T 39800 49100 5 10 1 1 0 0 1
 refdes=X3
+T 38100 48300 5 10 0 0 0 0 1
+source=digital input.sch
 }
 C 38100 49400 1 0 0 digital-input-1.sym
 {
@@ -127,6 +133,8 @@ T 40600 50300 5 10 0 1 0 0 1
 device=encoder-input
 T 39800 50200 5 10 1 1 0 0 1
 refdes=X4
+T 38100 49400 5 10 0 0 0 0 1
+source=digital input.sch
 }
 N 41000 48100 42000 48100 4
 N 42000 48700 41300 48700 4
