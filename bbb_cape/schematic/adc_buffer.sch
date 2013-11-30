@@ -84,28 +84,28 @@ C 40600 49200 1 0 0 in-1.sym
 T 40600 49500 5 10 0 0 0 0 1
 device=INPUT
 T 40600 49500 5 10 1 1 0 0 1
-refdes=in1
+refdes=IN1
 }
 C 40600 44800 1 0 0 in-1.sym
 {
 T 40600 45100 5 10 0 0 0 0 1
 device=INPUT
 T 40600 45100 5 10 1 1 0 0 1
-refdes=in4
+refdes=IN4
 }
 C 40600 46300 1 0 0 in-1.sym
 {
 T 40600 46600 5 10 0 0 0 0 1
 device=INPUT
 T 40600 46600 5 10 1 1 0 0 1
-refdes=in3
+refdes=IN3
 }
 C 40600 47700 1 0 0 in-1.sym
 {
 T 40600 48000 5 10 0 0 0 0 1
 device=INPUT
 T 40600 48000 5 10 1 1 0 0 1
-refdes=in2
+refdes=IN2
 }
 C 42000 51100 1 270 0 in-1.sym
 {
@@ -126,28 +126,28 @@ C 43200 49400 1 0 0 out-1.sym
 T 43200 49700 5 10 0 0 0 0 1
 device=OUTPUT
 T 43200 49600 5 10 1 1 0 0 1
-refdes=out1
+refdes=OUT1
 }
 C 43200 47900 1 0 0 out-1.sym
 {
 T 43200 48200 5 10 0 0 0 0 1
 device=OUTPUT
 T 43200 48100 5 10 1 1 0 0 1
-refdes=out2
+refdes=OUT2
 }
 C 43200 46500 1 0 0 out-1.sym
 {
 T 43200 46800 5 10 0 0 0 0 1
 device=OUTPUT
 T 43200 46700 5 10 1 1 0 0 1
-refdes=out3
+refdes=OUT3
 }
 C 43200 45000 1 0 0 out-1.sym
 {
 T 43200 45300 5 10 0 0 0 0 1
 device=OUTPUT
 T 43200 45200 5 10 1 1 0 0 1
-refdes=out4
+refdes=OUT4
 }
 N 41600 49300 41200 49300 4
 N 41600 47800 41200 47800 4
