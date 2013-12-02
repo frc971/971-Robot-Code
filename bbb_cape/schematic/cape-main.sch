@@ -1328,7 +1328,7 @@ net=NRST:1
 C 37100 43700 1 180 0 generic-power.sym
 {
 T 36900 43450 5 10 1 1 180 3 1
-net=NRST
+net=NRST:1
 }
 N 36900 43700 36900 44100 4
 C 56000 48500 1 180 0 connector4-1.sym
