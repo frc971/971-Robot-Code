@@ -6,11 +6,11 @@ FileVersion[20070407]
 PCB["971 BBB Cape" 500000 400000]
 
 Grid[500.0 441 0 0]
-Cursor[452941 13500 0.000000]
+Cursor[499941 160500 0.000000]
 PolyArea[3100.006200]
 Thermal[0.500000]
 DRC[800 1000 800 10 1000 500]
-Flags("showdrc,rubberband,nameonpcb,autodrc,clearnew,snappin,locknames,hidenames")
+Flags("showdrc,rubberband,nameonpcb,autodrc,clearnew,snappin,hidenames")
 Groups("1,c:3:2:4,s:5")
 Styles["Signal,800,2000,1000,800:Power,2500,6000,3500,1000:Fat,4000,6000,3500,1000:Skinny,600,2402,1181,600"]
 
@@ -3605,7 +3605,6 @@ Layer(1 "top")
 	Line[366441 142228 366441 196922 800 1600 "clearline"]
 	Line[366441 196922 374519 205000 800 1600 "clearline"]
 	Line[374519 205000 376510 205000 800 1600 "clearline"]
-	Line[377313 233477 386023 242187 800 1600 "clearline"]
 	Line[389441 216000 398441 225000 800 1600 "clearline"]
 	Line[398441 225000 398441 227000 800 1600 "clearline"]
 	Line[440941 277000 398441 234500 2500 2000 "clearline"]
@@ -4144,6 +4143,7 @@ Layer(1 "top")
 	Line[170048 151457 170005 151500 2500 2000 "clearline"]
 	Line[170005 151500 162441 151500 2500 2000 "clearline"]
 	Line[275291 179048 245863 208476 2500 2000 "clearline"]
+	Line[377441 233605 386151 242315 800 1600 "clearline"]
 	Polygon("")
 	(
 		[323441 301000] [347441 277000] [391441 277000] [391441 317000] [323441 317000] 
@@ -5925,20 +5925,20 @@ Layer(4 "bottom")
 Layer(5 "outline")
 (
 	Line[74500 700 478100 700 800 1600 "found,clearline"]
-	Arc[478100 7200 6500 6500 800 1600 -90 -90 "found,clearline"]
 	Line[484600 7200 484600 358000 800 1600 "found,clearline"]
-	Arc[478100 358000 6500 6500 800 1600 180 -90 "found,clearline"]
 	Line[479100 364500 73500 364500 800 1600 "found,clearline"]
-	Arc[74500 358000 6500 6500 800 1600 90 -90 "found,clearline"]
 	Line[68000 358000 68000 156000 800 1600 "found,clearline"]
-	Arc[74500 156000 6500 6500 800 1600 0 -90 "found,clearline"]
 	Line[74500 149500 101000 149500 800 1600 "found,clearline"]
-	Arc[101000 143000 6500 6500 800 1600 180 -90 "found,clearline"]
 	Line[107500 144000 107500 87500 800 1600 "found,clearline"]
-	Arc[101000 87500 6500 6500 800 1600 -90 -90 "found,clearline"]
 	Line[101000 81000 74500 81000 800 1600 "found,clearline"]
-	Arc[74500 74500 6500 6500 800 1600 90 -90 "found,clearline"]
 	Line[68000 74500 68000 7200 800 1600 "found,clearline"]
+	Arc[478100 7200 6500 6500 800 1600 -90 -90 "found,clearline"]
+	Arc[478100 358000 6500 6500 800 1600 180 -90 "found,clearline"]
+	Arc[74500 358000 6500 6500 800 1600 90 -90 "found,clearline"]
+	Arc[74500 156000 6500 6500 800 1600 0 -90 "found,clearline"]
+	Arc[101000 143000 6500 6500 800 1600 180 -90 "found,clearline"]
+	Arc[101000 87500 6500 6500 800 1600 -90 -90 "found,clearline"]
+	Arc[74500 74500 6500 6500 800 1600 90 -90 "found,clearline"]
 	Arc[74500 7200 6500 6500 800 1600 0 -90 "found,clearline"]
 )
 Layer(6 "silk")
@@ -5946,6 +5946,15 @@ Layer(6 "silk")
 )
 Layer(7 "silk")
 (
+	Text[117441 174500 3 100 "-      +" "clearline"]
+	Text[316750 357003 1 100 "-      +     A" "clearline"]
+	Text[87438 316059 0 100 "0             1               2              3               4               5               6               7" "clearline"]
+	Text[442500 348003 1 100 "11             10              9               8               7              6               5              4               3               2               1               0" "clearline"]
+	Text[416438 303515 0 100 "-      +     D" "clearline"]
+	Text[384000 226503 1 100 "7                               5              4               3                               1               0" "clearline"]
+	Text[403438 245515 0 100 "-     +    A     B" "clearline"]
+	Text[308438 170515 0 100 "-   DIO CLK RST" "clearline"]
+	Text[308438 178515 0 100 "SWD connector" "clearline"]
 )
 NetList()
 (
