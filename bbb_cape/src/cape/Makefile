@@ -1,7 +1,11 @@
 OBJDIR := .obj/
 $(shell mkdir -p $(OBJDIR))
 
-CROSS_COMPILE := /opt/cortex-m3/bin/arm-eabi-
+ifeq ($(OS),Windows_NT)
+  CROSS_COMPILE := arm-none-eabi-
+else
+  CROSS_COMPILE := /opt/cortex-m3/bin/arm-eabi-
+endif
 
 CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
