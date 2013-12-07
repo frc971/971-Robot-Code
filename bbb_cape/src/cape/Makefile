@@ -9,7 +9,7 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 OBJDUMP := $(CROSS_COMPILE)objdump
 AS := $(CROSS_COMPILE)as
 
-CPPFLAGS := -I. \
+CPPFLAGS := -I.. -ICMSIS \
 
 CFLAGS := -nostartfiles -nostdlib \
 	-O3 -mcpu=cortex-m3 \
@@ -47,8 +47,8 @@ PERCENT := %
 # "$(OBJDIR)%.elf: $(OBJECTS_%:%=$(OBJDIR)%.o)" with the % signs meaning the
 # right thing in the right places.
 $(OUTPUTS_elf): $(OBJDIR)%.elf: $$(OBJECTS_$$*:$$(PERCENT)=$(OBJDIR)$$(PERCENT).o)
-$(OUTPUTS_elf): $(OBJDIR)%.elf:	gcc_arm.ld $(OBJDIR)STM32F2XX_startup.o
-	$(CC) $(CPPFLAGS) $(LDFLAGS) -o $@ \
+$(OUTPUTS_elf): $(OBJDIR)%.elf:	gcc_arm.ld %.ld $(OBJDIR)STM32F2XX_startup.o
+	$(CC) $(CPPFLAGS) -T $*.ld $(LDFLAGS) -o $@ \
 		$(OBJDIR)STM32F2XX_startup.o \
 		$(OBJECTS_$*:%=$(OBJDIR)%.o) \
 		-Wa,-Map -Wa,$(OBJDIR)$*.map

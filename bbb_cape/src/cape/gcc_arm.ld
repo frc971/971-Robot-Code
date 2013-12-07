@@ -1,11 +1,3 @@
-/* Linker script to configure memory regions. */
-MEMORY
-{
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x40000   /* 256k */
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x08000   /*  32k */
-}
-
-/* Library configurations */
 GROUP(libgcc.a libc.a libm.a)
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -40,8 +32,6 @@ SECTIONS
 {
 	.text :
 	{
-		KEEP(*(.vectors))
-		/*KEEP(*(.vectors_ram))*/
 		*(.text*)
 
 		KEEP(*(.init))
@@ -66,12 +56,6 @@ SECTIONS
 		KEEP(*(.eh_frame*))
 	} > FLASH
 
-	.vectors_ram :
-	{
-		. = ALIGN(4);
-		KEEP(*(.vectors_ram))
-	} > RAM
-
 	.ARM.extab :
 	{
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
@@ -89,6 +73,10 @@ SECTIONS
 	.data : AT (__etext)
 	{
 		__data_start__ = .;
+
+		/* bootloader.ld sticks this at the beginning of FLASH before here */
+		KEEP(*(.vectors))
+
 		*(vtable)
 		*(.data*)
 

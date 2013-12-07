@@ -40,11 +40,7 @@
 .section .stack
   .align 3
 
-#ifdef __STACK_SIZE
-  .equ  Stack_Size, __STACK_SIZE
-#else
   .equ  Stack_Size, 0x00000400
-#endif
 
  .globl  __StackLimit
  __StackLimit:
@@ -60,11 +56,7 @@
 
  .globl  __HeapBase
  __HeapBase:
-#ifdef __HEAP_SIZE
-  .equ  Heap_Size, __HEAP_SIZE
-#else
   .equ  Heap_Size, 0x00000C00
-#endif
   .if  Heap_Size
     .space  Heap_Size
   .endif
@@ -74,64 +66,6 @@
  __HeapLimit:
   .size __HeapLimit, . - __HeapLimit
 
-#if 0
-  .section .isr_vector
-  .align 2
-  .globl __isr_vector
-__isr_vector:
-    .long    __StackTop            /* Top of Stack */
-    .long    Reset_Handler         /* Reset Handler */
-    .long    NMI_Handler           /* NMI Handler */
-    .long    HardFault_Handler     /* Hard Fault Handler */
-    .long    MemManage_Handler     /* MPU Fault Handler */
-    .long    BusFault_Handler      /* Bus Fault Handler */
-    .long    UsageFault_Handler    /* Usage Fault Handler */
-    .long    0                     /* Reserved */
-    .long    0                     /* Reserved */
-    .long    0                     /* Reserved */
-    .long    0                     /* Reserved */
-    .long    SVC_Handler           /* SVCall Handler */
-    .long    DebugMon_Handler      /* Debug Monitor Handler */
-    .long    0                     /* Reserved */
-    .long    PendSV_Handler        /* PendSV Handler */
-    .long    SysTick_Handler       /* SysTick Handler */
-
-    /* External interrupts */
-    .long    WDT_IRQHandler        /*  0:  Watchdog Timer            */
-    .long    RTC_IRQHandler        /*  1:  Real Time Clock           */
-    .long    TIM0_IRQHandler       /*  2:  Timer0 / Timer1           */
-    .long    TIM2_IRQHandler       /*  3:  Timer2 / Timer3           */
-    .long    MCIA_IRQHandler       /*  4:  MCIa                      */
-    .long    MCIB_IRQHandler       /*  5:  MCIb                      */
-    .long    UART0_IRQHandler      /*  6:  UART0 - DUT FPGA          */
-    .long    UART1_IRQHandler      /*  7:  UART1 - DUT FPGA          */
-    .long    UART2_IRQHandler      /*  8:  UART2 - DUT FPGA          */
-    .long    UART4_IRQHandler      /*  9:  UART4 - not connected     */
-    .long    AACI_IRQHandler       /* 10: AACI / AC97                */
-    .long    CLCD_IRQHandler       /* 11: CLCD Combined Interrupt    */
-    .long    ENET_IRQHandler       /* 12: Ethernet                   */
-    .long    USBDC_IRQHandler      /* 13: USB Device                 */
-    .long    USBHC_IRQHandler      /* 14: USB Host Controller        */
-    .long    CHLCD_IRQHandler      /* 15: Character LCD              */
-    .long    FLEXRAY_IRQHandler    /* 16: Flexray                    */
-    .long    CAN_IRQHandler        /* 17: CAN                        */
-    .long    LIN_IRQHandler        /* 18: LIN                        */
-    .long    I2C_IRQHandler        /* 19: I2C ADC/DAC                */
-    .long    0                     /* 20: Reserved                   */
-    .long    0                     /* 21: Reserved                   */
-    .long    0                     /* 22: Reserved                   */
-    .long    0                     /* 23: Reserved                   */
-    .long    0                     /* 24: Reserved                   */
-    .long    0                     /* 25: Reserved                   */
-    .long    0                     /* 26: Reserved                   */
-    .long    0                     /* 27: Reserved                   */
-    .long    CPU_CLCD_IRQHandler   /* 28: Reserved - CPU FPGA CLCD   */
-    .long    0                     /* 29: Reserved - CPU FPGA        */
-    .long    UART3_IRQHandler      /* 30: UART3    - CPU FPGA        */
-    .long    SPI_IRQHandler        /* 31: SPI Touchscreen - CPU FPGA */
-
-    .size    __isr_vector, . - __isr_vector
-#else
 .macro ISR_HANDLER name=
   .section .vectors, "a"
     .word \name
@@ -253,14 +187,6 @@ __isr_vector:
 .section .vectors, "a"
  _vectors_end:
 
-
-.section .vectors_ram, "a"
- /*.global _vectors_ram*/
- _vectors_ram:
-  .space _vectors_end-_vectors, 0
-  /*.size _vectors_ram, . - _vectors_ram*/
-#endif
-
 .text
  .thumb_func
  .align 2
@@ -299,26 +225,6 @@ __isr_vector:
   itt  lt
   strlt   r0, [r1], #4
   blt  .LC2
-
-  /*bl  SystemInit*/
-
-  /* Copy the vector table into RAM */
-  ldr r0, =_vectors
-  ldr r1, =_vectors_end
-  ldr r2, =_vectors_ram
- .LC3:
-  cmp r0, r1
-  beq .LC4
-  ldr r3, [r0]
-  str r3, [r2]
-  adds r0, r0, #4
-  adds r2, r2, #4
-  b .LC3
- .LC4:
-  /* Configure vector table offset register to use the newly copied table */
-  ldr r0, =0xE000ED08
-  ldr r1, =_vectors_ram
-  str r1, [r0]
 
   bl  _start
   1: b 1b /* endless loop if it ever returns */
