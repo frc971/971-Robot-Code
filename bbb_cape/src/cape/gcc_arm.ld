@@ -6,7 +6,7 @@ MEMORY
 }
 
 /* Library configurations */
-GROUP(libgcc.a libc.a libm.a libnosys.a)
+GROUP(libgcc.a libc.a libm.a)
 
 /* Linker script to place sections and symbol values. Should be used together
  * with other linker script that defines memory regions FLASH and RAM.
@@ -40,7 +40,8 @@ SECTIONS
 {
 	.text :
 	{
-		KEEP(*(.isr_vector))
+		KEEP(*(.vectors))
+		/*KEEP(*(.vectors_ram))*/
 		*(.text*)
 
 		KEEP(*(.init))
@@ -64,6 +65,12 @@ SECTIONS
 
 		KEEP(*(.eh_frame*))
 	} > FLASH
+
+	.vectors_ram :
+	{
+		. = ALIGN(4);
+		KEEP(*(.vectors_ram))
+	} > RAM
 
 	.ARM.extab :
 	{
