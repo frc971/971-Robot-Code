@@ -18,7 +18,6 @@ CFLAGS := -nostartfiles -nostdlib \
 
 LDFLAGS := -O3 -mcpu=cortex-m3 \
 	-nostartfiles -nostdlib \
-	-L$(TOOLS_PREFIX)/lib/gcc/arm-eabi/4.5.1/ \
 	-T gcc_arm.ld \
 
 ASFLAGS := -O3 -mcpu=cortex-m3 \
