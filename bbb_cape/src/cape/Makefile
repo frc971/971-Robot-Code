@@ -29,12 +29,16 @@ ASFLAGS := -O3 -mcpu=cortex-m3 \
 	-mthumb \
 
 OBJECTS_main := main \
+	uart_common \
 
 OBJECTS_bootloader := bootloader \
+	uart_common \
+	uart \
 
 OUTPUTS := main bootloader
 
-OBJECTS := $(foreach output,$(OUTPUTS),$(OBJECTS_$(output)))
+# The sort is to remove duplicates because Make warns about those.
+OBJECTS := $(sort $(foreach output,$(OUTPUTS),$(OBJECTS_$(output))))
 
 OUTPUTS_elf := $(OUTPUTS:%=$(OBJDIR)%.elf)
 OUTPUTS_hex := $(OUTPUTS:%=$(OBJDIR)%.hex)
