@@ -11,6 +11,8 @@ void uart_configure(int baud);
 
 // Callbacks to be implemented by the user.
 // Implemented as weak symbols that do nothing by default.
+// The argument is the number of bytes transmitted or received. It will be less
+// than the requested number if there was an error.
 void uart_transmit_callback(int bytes_transmitted);
 void uart_receive_callback(int bytes_received);
 

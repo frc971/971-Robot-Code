@@ -8,6 +8,7 @@ SECTIONS
 {
 	.text :
 	{
+		/* make sure this stays at the beginning of FLASH */
 		KEEP(*(Reset_Handler))
 	} > FLASH
 }

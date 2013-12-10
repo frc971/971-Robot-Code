@@ -15,10 +15,11 @@ AS := $(CROSS_COMPILE)as
 
 CPPFLAGS := -I.. -ICMSIS \
 
-CFLAGS := -nostartfiles -nostdlib \
+CFLAGS := -nostartfiles -nostdlib -ffreestanding -fbuiltin \
 	-O3 -mcpu=cortex-m3 \
 	-mthumb -Wl,--gc-sections -ffunction-sections -Wl,-static \
 	-Wall -Werror --std=gnu99 \
+	-Wstrict-aliasing=2 -Wcast-qual -Wpointer-arith \
 
 LDFLAGS := -O3 -mcpu=cortex-m3 \
 	-nostartfiles -nostdlib \
@@ -30,6 +31,9 @@ ASFLAGS := -O3 -mcpu=cortex-m3 \
 
 OBJECTS_main := main \
 	uart_common \
+	uart_dma \
+	fill_packet \
+	cows \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \

@@ -1,0 +1,28 @@
+This file documents what code is using which peripherial(s), priorities when
+applicable, and which file(s) the code is in. The purpose is to make assigning
+priorities to everything else easier because the relative priorities of
+everything is what matters; the absolute priority is meaningless. It also helps
+with choosing things like timers.
+
+[BBB communication]
+USART1
+uart.[ch]
+  USART1_IRQ:3
+uart_dma.[ch]
+  DMA2.7:2
+  DMA2.7_IRQ:6
+
+[gyro communication]
+SPI3
+
+[ADC communication]
+SPI2
+
+[encoders]
+encoder.c
+  TIM1,TIM2,TIM3,TIM4,TIM5,TIM8
+
+[sensor packet sending]
+fill_packet.c
+  TIM6
+  CRC

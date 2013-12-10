@@ -4,6 +4,7 @@
 #define FPCLK 60000000
 
 void uart_common_configure(int baud) {
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
   // baud = 60MHz / (8 * (2 - OVER8) * (mantissa / fraction))
   int fraction = 8;  // the biggest it can be with OVER8=0
   int mantissa = FPCLK * (16 /* 8 * (2 - OVER8) */ / fraction) / baud;
