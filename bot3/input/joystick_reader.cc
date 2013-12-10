@@ -96,17 +96,11 @@ class Reader : public ::aos::input::JoystickInput {
 
       shooter.status.FetchLatest();
       bool push = false;
-      bool full_power = false;
       double velocity = 0.0;
       double intake = 0.0;
       if (data.IsPressed(kPush) && shooter.status->ready) {
         push = true;
       }
-      if (!push && last_push_) {
-        //Falling edge
-        full_power = true;
-      }
-      last_push_ = push;
       if (data.IsPressed(kFire)) {
         velocity = 500;
       }
@@ -134,10 +128,6 @@ class Reader : public ::aos::input::JoystickInput {
       if (abs(throttle) < 0.2 && !quickturn) {
         shooting_ = true;
         shooter.goal.MakeWithBuilder().intake(intake).velocity(velocity).push(push).Send();
-        if (full_power) {
-          LOG(DEBUG, "Zeroing position.velocity\n");
-          shooter.position.MakeWithBuilder().velocity(0).Send();
-        }
       } else {
         shooting_ = false;
       }

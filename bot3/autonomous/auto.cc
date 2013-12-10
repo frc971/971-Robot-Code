@@ -30,11 +30,6 @@ void SetShooter(double velocity, bool push) {
     .velocity(velocity).push(push).Send();
 }
 
-void SpinUp() {
-  LOG(INFO, "Tricking shooter into running at full power...\n");
-  control_loops::shooter.position.MakeWithBuilder().velocity(0).Send();
-}
-
 bool ShooterReady() {
   bool ready = control_loops::shooter.status.FetchNextBlocking() && control_loops::shooter.status->ready;
   LOG(DEBUG, "Shooter ready: %d\n", ready);
@@ -54,8 +49,6 @@ void HandleAuto() {
     SetShooter(shooter_velocity, true);
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.25));
     SetShooter(shooter_velocity, false);
-    // We just shot, trick it into spinning back up.
-    SpinUp();
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(2.0));
   }
   return;
