@@ -6,8 +6,8 @@
 // This file deals with USART1. It sends bytes from a buffer or receives bytes
 // into a buffer and then calls a callback function.
 
-// See uart_common_configure in uart_common.h for details.
-void uart_configure(int baud);
+// uart_common_configure must be called before this.
+void uart_configure(void);
 
 // Callbacks to be implemented by the user.
 // Implemented as weak symbols that do nothing by default.

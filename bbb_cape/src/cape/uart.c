@@ -43,8 +43,7 @@ void USART1_IRQHandler(void) {
   }
 }
 
-void uart_configure(int baud) {
-  uart_common_configure(baud);
+void uart_configure(void) {
   NVIC_SetPriority(USART1_IRQn, 3);
   NVIC_EnableIRQ(USART1_IRQn);
 }

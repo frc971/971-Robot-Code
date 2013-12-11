@@ -5,6 +5,7 @@
 #include <STM32F2XX.h>
 
 #include "cape/uart_dma.h"
+#include "cape/uart_common.h"
 #include "cape/cows.h"
 
 static uint8_t buffer1[DATA_STRUCT_SEND_SIZE] __attribute__((aligned(4)));
@@ -39,5 +40,6 @@ void uart_dma_callback(uint8_t *buffer) {
 void fill_packet_start(void) {
   RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
 
-  uart_dma_configure(3000000, DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
+  uart_common_configure(3000000);
+  uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
 }

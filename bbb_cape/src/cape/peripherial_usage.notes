@@ -5,12 +5,15 @@ everything is what matters; the absolute priority is meaningless. It also helps
 with choosing things like timers.
 
 [BBB communication]
-USART1
-uart.[ch]
+uart_common
+  USART1
+uart
   USART1_IRQ:3
-uart_dma.[ch]
+uart_dma
   DMA2.7:2
   DMA2.7_IRQ:6
+uart_byte
+  TIM7
 
 [gyro communication]
 SPI3
@@ -19,10 +22,10 @@ SPI3
 SPI2
 
 [encoders]
-encoder.c
+encoder
   TIM1,TIM2,TIM3,TIM4,TIM5,TIM8
 
 [sensor packet sending]
-fill_packet.c
+fill_packet
   TIM6
   CRC

@@ -32,12 +32,13 @@ ASFLAGS := -O3 -mcpu=cortex-m3 \
 OBJECTS_main := main \
 	uart_common \
 	uart_dma \
+	uart \
 	fill_packet \
 	cows \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \
-	uart \
+	uart_byte \
 
 OUTPUTS := main bootloader
 
