@@ -22,7 +22,7 @@ mkdir -p ${COMPILED}
 
 # get and build ninja
 [ -d ${NINJA_DIR} ] || git clone --branch ${NINJA_RELEASE} https://github.com/martine/ninja.git ${NINJA_DIR}
-[ -x ${NINJA} ] || ${NINJA_DIR}/bootstrap.py
+[ -x ${NINJA} ] || env -i "PATH=$PATH" ${NINJA_DIR}/bootstrap.py
 
 # get gyp
 [ -d ${GYP_DIR} ] || ( svn co http://gyp.googlecode.com/svn/trunk -r ${GYP_REVISION} ${GYP_DIR} && patch -p1 -d ${GYP_DIR} < ${AOS}/externals/gyp.patch )
