@@ -32,12 +32,15 @@ ASFLAGS := -O3 -mcpu=cortex-m3 \
 OBJECTS_main := main \
 	uart_common \
 	uart_dma \
+	uart \
 	fill_packet \
 	cows \
+	encoder \
+	crc \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \
-	uart \
+	uart_byte \
 
 OUTPUTS := main bootloader
 
@@ -65,9 +68,9 @@ $(OUTPUTS_elf): $(OBJDIR)%.elf:	gcc_arm.ld %.ld $(OBJDIR)STM32F2XX_startup.o
 		-Wa,-Map -Wa,$(OBJDIR)$*.map
 
 $(OBJECTS:%=$(OBJDIR)%.o): $(OBJDIR)%.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MD -MP -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MD -MP -MT '$@ $*.s' -c -o $@ $<
 $(OBJDIR)%.o: %.S
-	$(CC) $(CPPFLAGS) $(ASFLAGS) -MD -MP -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -MD -MP -MT '$@ $*.s' -c -o $@ $<
 
 # So that you can see the assembly for an individual file with any comments etc.
 $(OBJECTS:%=%.s): %.s: %.c

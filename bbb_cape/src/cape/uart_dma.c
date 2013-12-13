@@ -37,10 +37,7 @@ void DMA_Stream_IRQHandler(void) {
   }
 }
 
-void uart_dma_configure(int baud, int bytes,
-                        uint8_t *buffer1_in, uint8_t *buffer2_in) {
-  uart_common_configure(baud);
-
+void uart_dma_configure(int bytes, uint8_t *buffer1_in, uint8_t *buffer2_in) {
   buffer1 = buffer1_in;
   buffer2 = buffer2_in;
   uart_dma_callback(buffer1);
