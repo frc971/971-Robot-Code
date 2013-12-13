@@ -7,7 +7,7 @@
 void uart_byte_configure(void);
 
 // Spins until 1 byte is received or some amount of time. The timeout is
-// timeout_count*timeout_divider/30MHz.
+// timeout_count*(timeout_divider+1)/30MHz.
 // The result is <0 for timeout or the received byte.
 int uart_byte_receive(uint16_t timeout_count, uint16_t timeout_divider);
 

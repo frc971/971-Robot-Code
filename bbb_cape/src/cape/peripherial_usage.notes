@@ -24,8 +24,14 @@ SPI2
 [encoders]
 encoder
   TIM1,TIM2,TIM3,TIM4,TIM5,TIM8
+  EXTI0,EXTI1,EXTI2,EXTI3
+  EXTI0_IRQ:0,EXTI1_IRQ:0,EXTI2_IRQ:0,EXTI3_IRQ:0
+
 
 [sensor packet sending]
 fill_packet
   TIM6
+
+[utilities]
+crc
   CRC

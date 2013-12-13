@@ -4,8 +4,11 @@
 #include <STM32F2XX.h>
 
 #define TIMEOUT_TIM TIM7
+#define RCC_APB1ENR_TIMEOUT_TIMEN RCC_APB1ENR_TIM7EN
 
 void uart_byte_configure(void) {
+  RCC->APB1ENR |= RCC_APB1ENR_TIMEOUT_TIMEN;
+
   TIMEOUT_TIM->CR1 = TIM_CR1_UDIS;
 }
 

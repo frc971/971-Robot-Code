@@ -15,8 +15,12 @@ struct DATA_STRUCT_NAME {
 
   union {
     struct {
-      // In us since the cape last reset.
+      // In 1/3us since the cape last reset.
       uint64_t timestamp;
+
+      // The CRC32 (same algorithm as the checksum for the packet) of the whole
+      // contents of flash for the main code (aka what's in the .hex file).
+      uint32_t flash_checksum;
 
       struct {
         // If the current gyro_angle has been not updated because of a bad
@@ -35,52 +39,14 @@ struct DATA_STRUCT_NAME {
 
   union {
     struct {
-      int32_t left_drive;
-      int32_t right_drive;
-      int32_t shooter_angle;
-      int32_t shooter;
-      int32_t indexer;
-      int32_t wrist;
+      int32_t encoders[8];
 
-      int32_t capture_top_rise;
-      int32_t capture_top_fall;
-      int32_t capture_bottom_fall_delay;
-      int32_t capture_wrist_rise;
-      int32_t capture_shooter_angle_rise;
+      uint16_t analogs[8];
 
-      uint16_t battery_voltage;
-      uint16_t left_drive_hall;
-      uint16_t right_drive_hall;
-
-      int8_t top_rise_count;
-
-      int8_t top_fall_count;
-
-      int8_t bottom_rise_count;
-
-      int8_t bottom_fall_delay_count;
-      int8_t bottom_fall_count;
-
-      int8_t wrist_rise_count;
-
-      int8_t shooter_angle_rise_count;
-
-      struct {
-        uint8_t wrist_hall_effect : 1;
-        uint8_t angle_adjust_bottom_hall_effect : 1;
-        uint8_t top_disc : 1;
-        uint8_t bottom_disc : 1;
-        uint8_t loader_top : 1;
-        uint8_t loader_bottom : 1;
-      };
+      uint32_t digitals;
     } main;
     
     struct {
-      union {
-        struct {
-        };
-        uint16_t booleans;
-      };
     } bot3;
   };
 } __attribute__((aligned(8)));
