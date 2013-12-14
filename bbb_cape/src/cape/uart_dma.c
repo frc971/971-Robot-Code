@@ -61,7 +61,7 @@ void uart_dma_configure(int bytes, uint8_t *buffer1_in, uint8_t *buffer2_in) {
       DMA_SxFCR_DMDIS /* disable direct mode (enable the FIFO) */ |
       1 /* 1/2 full threshold */;
   DMA_Stream->CR |= DMA_SxCR_EN;  // enable it
-  NVIC_SetPriority(DMA_Stream_IRQn, 6);
+  NVIC_SetPriority(DMA_Stream_IRQn, 8);
   NVIC_EnableIRQ(DMA_Stream_IRQn);
 
   uart_dma_callback(buffer2);

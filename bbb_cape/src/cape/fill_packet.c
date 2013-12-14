@@ -12,6 +12,7 @@
 #include "cape/bootloader_handoff.h"
 #include "cape/gyro.h"
 #include "cape/led.h"
+#include "cape/analog.h"
 
 #define TIMESTAMP_TIM TIM6
 #define RCC_APB1ENR_TIMESTAMP_TIMEN RCC_APB1ENR_TIM6EN
@@ -47,6 +48,10 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->main.encoders[5] = encoder_read(5);
   packet->main.encoders[6] = encoder_read(6);
   packet->main.encoders[7] = encoder_read(7);
+
+  for (int i = 0; i < 8; ++i) {
+    packet->main.analogs[i] = analog_get(i);
+  }
 }
 
 // Fills the new packet with data.
@@ -78,6 +83,7 @@ void fill_packet_start(void) {
 
   crc_init();
   led_init();
+  analog_init();
   encoder_init();
   gyro_init();
 

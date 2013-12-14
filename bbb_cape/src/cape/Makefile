@@ -39,6 +39,7 @@ OBJECTS_main := main \
 	crc \
 	gyro \
 	led \
+	analog \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \

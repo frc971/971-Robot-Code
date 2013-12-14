@@ -11,7 +11,7 @@ uart
   USART1_IRQ:3
 uart_dma
   DMA2.7:2
-  DMA2.7_IRQ:6
+  DMA2.7_IRQ:8
 uart_byte
   TIM7
 
@@ -19,11 +19,15 @@ uart_byte
 gyro
   SPI3
   SPI3_IRQ:4
-  TIM10
-  TIM10_IRQ:5 (aka TIM1_UP)
+  TIM13
+  TIM13_IRQ:5 (aka TIM8_UP)
 
 [ADC communication]
-SPI2
+analog
+  SPI2
+  SPI2_IRQ:6
+  TIM14
+  TIM14_IRQ:6 (aka TIM8_TRG_COM)
 
 [encoders]
 encoder

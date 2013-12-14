@@ -11,10 +11,12 @@
 
 #define SPI SPI3
 #define SPI_IRQHandler SPI3_IRQHandler
+#define SPI_IRQn SPI3_IRQn
 #define RCC_APB1ENR_SPIEN RCC_APB1ENR_SPI3EN
-#define TIM TIM10
-#define TIM_IRQHandler TIM1_UP_TIM10_IRQHandler
-#define RCC_APB2ENR_TIMEN RCC_APB2ENR_TIM10EN
+#define TIM TIM13
+#define TIM_IRQHandler TIM8_UP_TIM13_IRQHandler
+#define TIM_IRQn TIM8_UP_TIM13_IRQn
+#define RCC_APB1ENR_TIMEN RCC_APB1ENR_TIM13EN
 #define CSEL_GPIO GPIOA
 #define CSEL_NUM 4
 // The header file also contains references to TIM in gyro_read.
@@ -355,27 +357,28 @@ void gyro_init(void) {
   gyro_output.zeroed = 0;
 
   RCC->APB1ENR |= RCC_APB1ENR_SPIEN;
-  RCC->APB2ENR |= RCC_APB2ENR_TIMEN;
+  RCC->APB1ENR |= RCC_APB1ENR_TIMEN;
 
   // Set up CSEL.
   // It's is just a GPIO pin because we're the master (it would be special if we
   // were a slave).
   gpio_setup_out(CSEL_GPIO, CSEL_NUM, 3);
+  CSEL_GPIO->BSRRL = 1 << CSEL_NUM;  // make sure it's deselected
 
   // Set up SCK, MISO, and MOSI.
   gpio_setup_alt(GPIOC, 10, 6);  // SCK
   gpio_setup_alt(GPIOC, 11, 6);  // MISO
   gpio_setup_alt(GPIOC, 12, 6);  // MOSI
 
-  NVIC_SetPriority(SPI3_IRQn, 4);
-  NVIC_EnableIRQ(SPI3_IRQn);
-  NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 5);
-  NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+  NVIC_SetPriority(SPI_IRQn, 4);
+  NVIC_EnableIRQ(SPI_IRQn);
+  NVIC_SetPriority(TIM_IRQn, 5);
+  NVIC_EnableIRQ(TIM_IRQn);
 
   TIM->CR1 = TIM_CR1_UDIS;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
-  TIM->PSC = 60000 - 1;
+  TIM->PSC = 30000 - 1;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
