@@ -26,6 +26,12 @@ struct DATA_STRUCT_NAME {
         // If the current gyro_angle has been not updated because of a bad
         // reading from the sensor.
         uint8_t old_gyro_reading : 1;
+        // If the gyro is still initializing.
+        // If this is 1, then all of the other gyro data is invalid.
+        uint8_t uninitialized_gyro : 1;
+        // If the gyro is still zeroing.
+        // If this is 1, then all of the other gyro data is invalid.
+        uint8_t zeroing_gyro : 1;
         // If we're not going to get any more good gyro_angles.
         uint8_t bad_gyro : 1;
       };

@@ -10,6 +10,8 @@
 #include "cape/encoder.h"
 #include "cape/crc.h"
 #include "cape/bootloader_handoff.h"
+#include "cape/gyro.h"
+#include "cape/led.h"
 
 #define TIMESTAMP_TIM TIM6
 #define RCC_APB1ENR_TIMESTAMP_TIMEN RCC_APB1ENR_TIM6EN
@@ -28,6 +30,14 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->timestamp = timestamp;
 
   packet->flash_checksum = flash_checksum;
+
+  struct GyroOutput gyro_output;
+  gyro_get_output(&gyro_output);
+  packet->gyro_angle = gyro_output.angle;
+  packet->old_gyro_reading = gyro_output.last_reading_bad;
+  packet->uninitialized_gyro = !gyro_output.initialized;
+  packet->zeroing_gyro = !gyro_output.zeroed;
+  packet->bad_gyro = gyro_output.gyro_bad;
 
   packet->main.encoders[0] = encoder_read(0);
   packet->main.encoders[1] = encoder_read(1);
@@ -67,7 +77,9 @@ void fill_packet_start(void) {
   TIMESTAMP_TIM->CR1 |= TIM_CR1_CEN;
 
   crc_init();
+  led_init();
   encoder_init();
+  gyro_init();
 
   uint8_t *flash_end = &__etext + (&__data_start__ - &__data_end__) + 8;
   flash_checksum = crc_calculate((void *)MAIN_FLASH_START,

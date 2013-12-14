@@ -35,4 +35,12 @@ static inline void gpio_setup_alt(GPIO_TypeDef *port, int pin, int afr) {
   }
 }
 
+// A convenient way to set up a GPIO pin for output (push-pull) without missing
+// part or messing up which bits need setting to what.
+// speed is 0 (slow) to 3 (fast)
+static inline void gpio_setup_out(GPIO_TypeDef *port, int pin, int speed) {
+  SET_BITS(port->MODER, 2, 1 /* output */, pin);
+  SET_BITS(port->OSPEEDR, 2, speed, pin);
+}
+
 #endif  // CAPE_UTIL_H_

@@ -37,6 +37,8 @@ OBJECTS_main := main \
 	cows \
 	encoder \
 	crc \
+	gyro \
+	led \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \

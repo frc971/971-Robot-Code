@@ -88,12 +88,18 @@ class GyroSensorReceiver : public USBReceiver {
   GyroSensorReceiver() : USBReceiver(2) {}
 
   virtual void PacketReceived(const ::aos::time::Time &/*timestamp*/) override {
-    if (data()->bad_gyro) {
+    if (data()->uninitialized_gyro) {
+      LOG(DEBUG, "uninitialized gyro\n");
+      bad_gyro_ = true;
+    } else if (data()->zeroing_gyro) {
+      LOG(DEBUG, "zeroing gyro\n");
+      bad_gyro_ = true;
+    } else if (data()->bad_gyro) {
       LOG(ERROR, "bad gyro\n");
       bad_gyro_ = true;
       gyro.MakeWithBuilder().angle(0).Send();
     } else if (data()->old_gyro_reading) {
-      LOG(WARNING, "old/bad/uninitialized gyro reading\n");
+      LOG(WARNING, "old/bad gyro reading\n");
       bad_gyro_ = true;
     } else {
       bad_gyro_ = false;

@@ -16,7 +16,11 @@ uart_byte
   TIM7
 
 [gyro communication]
-SPI3
+gyro
+  SPI3
+  SPI3_IRQ:4
+  TIM10
+  TIM10_IRQ:5 (aka TIM1_UP)
 
 [ADC communication]
 SPI2
