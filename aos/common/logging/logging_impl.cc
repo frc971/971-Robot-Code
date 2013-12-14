@@ -57,8 +57,8 @@ void ExecuteFormat(char *output, size_t output_size,
   const size_t size = output_size - strlen(continued);
   const int ret = vsnprintf(output, size, format, ap);
   if (ret < 0) {
-    LOG(FATAL, "vsnprintf(%p, %zd, %s, %p) failed with %d (%s)\n",
-        output, size, format, ap, errno, strerror(errno));
+    LOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed with %d (%s)\n",
+        output, size, format, errno, strerror(errno));
   } else if (static_cast<uintmax_t>(ret) >= static_cast<uintmax_t>(size)) {
     // Overwrite the '\0' at the end of the existing data and
     // copy in the one on the end of continued.
