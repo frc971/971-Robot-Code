@@ -1,8 +1,10 @@
+#include <fcntl.h>
+#include <linux/serial.h>
+#include <termio.h>
+#include <unistd.h>
+
 #include <cmath>
 #include <cstring>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
 
 #include "aos/common/logging/logging_impl.h"
 #include "bbb_cape/src/cape/cows.h"
@@ -13,9 +15,12 @@
 // NOTE: In order for this to work, you MUST HAVE "capemgr.enable_partno=BB_UART1"
 // in your BBB's /media/BEAGLEBONE/uEnv.txt file!
 
+// Implementation for setting custom serial baud rates based on this code:
+// <http://jim.sh/ftx/files/linux-custom-baudrate.c>
+
 namespace bbb {
 
-UartReceiver::UartReceiver(speed_t baud_rate, size_t packet_size) : 
+UartReceiver::UartReceiver(uint32_t baud_rate, size_t packet_size) : 
   baud_rate_(baud_rate), packet_size_(packet_size) {
   //packet_size_ should be a multiple of four.
   int toadd = packet_size_ % 4;
@@ -33,28 +38,53 @@ UartReceiver::~UartReceiver() {
 }
 
 int UartReceiver::SetUp() {
-  termios cape;
+  termios options;
+  serial_struct serinfo;
 
   if ((fd_ = open("/dev/ttyO1", O_RDWR | O_NOCTTY)) < 0) {
     LOG(FATAL, "Open() failed with error %d.\
       (Did you read my note in uart_receiver.cc?)\n", fd_);
   }
-  if (int ret = tcgetattr(fd_, &cape)) {
-    LOG(ERROR, "Tcgetattr() failed with error %d.\n", ret);
+ 
+  // Must implement an ugly custom divisor.
+  serinfo.reserved_char[0] = 0;
+  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0)
     return -1;
-  }
-  if (int ret = cfsetispeed(&cape, baud_rate_) < 0) {
-    LOG(ERROR, "Cfsetispeed() failed with error %d.\n", ret);
+  serinfo.flags &= ~ASYNC_SPD_MASK;
+  serinfo.flags |= ASYNC_SPD_CUST;
+  serinfo.custom_divisor = (serinfo.baud_base + (baud_rate_ / 2)) / baud_rate_;
+  if (serinfo.custom_divisor < 1) 
+    serinfo.custom_divisor = 1;
+  if (ioctl(fd_, TIOCSSERIAL, &serinfo) < 0)
+    LOG(ERROR, "First ioctl failed.\n");
     return -1;
+  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0)
+    LOG(ERROR, "Second ioctl failed.\n");
+    return -1;
+  if (serinfo.custom_divisor * static_cast<int>(baud_rate_) 
+    != serinfo.baud_base) {
+    LOG(WARNING, "actual baudrate is %d / %d = %f",
+          serinfo.baud_base, serinfo.custom_divisor,
+          (float)serinfo.baud_base / serinfo.custom_divisor);
   }
 
-  cape.c_iflag = 0;
-  cape.c_oflag = 0;
-  cape.c_lflag = 0;
-  cape.c_cc[VMIN] = 0; 
-  cape.c_cc[VTIME] = 0;
-  
-  tcsetattr(fd_, TCSANOW, &cape);
+  fcntl(fd_, F_SETFL, 0);
+  tcgetattr(fd_, &options);
+  cfsetispeed(&options, B38400);
+  cfsetospeed(&options, B38400);
+  cfmakeraw(&options);
+  options.c_cflag |= (CLOCAL | CREAD);
+  options.c_cflag &= ~CRTSCTS;
+  options.c_iflag = 0;
+  options.c_oflag = 0;
+  options.c_lflag = 0;
+  // We know the minimum size for packets.
+  // No use in having it do excessive syscalls.
+  options.c_cc[VMIN] = packet_size_;
+  options.c_cc[VTIME] = 0;
+  if (tcsetattr(fd_, TCSANOW, &options) != 0)
+    LOG(ERROR, "Tcsetattr failed.\n");
+    return -1;
 
   return 0;
 }

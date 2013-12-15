@@ -2,7 +2,6 @@
 #define FRC971_INPUT_UART_RECEIVER_H_
 
 #include <cstdint>
-#include <termios.h>
 
 #define DATA_STRUCT_NAME DataStruct
 #include <bbb_cape/src/cape/data_struct.h>
@@ -18,7 +17,7 @@ namespace bbb {
     char *buf_;
   
   public:
-    UartReceiver(speed_t baud_rate, size_t packet_size);
+    UartReceiver(uint32_t baud_rate, size_t packet_size);
     ~UartReceiver();
     // Opens file descriptor, etc.
     int SetUp();
