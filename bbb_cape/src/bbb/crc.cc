@@ -1,4 +1,4 @@
-#include "bbb/crc.h"
+#include "crc.h"
 
 #include "aos/common/once.h"
 
@@ -27,7 +27,7 @@ const uint32_t *GenerateTable() {
 }  // namespace
 
 uint32_t CalculateChecksum(uint8_t *data, size_t length) {
-  static ::aos::once<const uint32_t> table_once(GenerateTable);
+  static ::aos::Once<const uint32_t> table_once(GenerateTable);
   const uint32_t *const table = table_once.Get();
 
   uint32_t r = 0xFFFFFFFF;
