@@ -81,6 +81,7 @@ static void switch_state(enum State new_state, int time) {
   state = new_state;
   TIM->CCR1 = time;
   TIM->EGR = TIM_EGR_UG;
+  TIM->CR1 |= TIM_CR1_CEN;
 }
 
 static void gyro_setup_failed(void) {

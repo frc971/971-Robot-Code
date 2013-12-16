@@ -13,6 +13,7 @@
 #include "cape/gyro.h"
 #include "cape/led.h"
 #include "cape/analog.h"
+#include "cape/robot.h"
 
 #define TIMESTAMP_TIM TIM6
 #define RCC_APB1ENR_TIMESTAMP_TIMEN RCC_APB1ENR_TIM6EN
@@ -40,18 +41,7 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->zeroing_gyro = !gyro_output.zeroed;
   packet->bad_gyro = gyro_output.gyro_bad;
 
-  packet->main.encoders[0] = encoder_read(0);
-  packet->main.encoders[1] = encoder_read(1);
-  packet->main.encoders[2] = encoder_read(2);
-  packet->main.encoders[3] = encoder_read(3);
-  packet->main.encoders[4] = encoder_read(4);
-  packet->main.encoders[5] = encoder_read(5);
-  packet->main.encoders[6] = encoder_read(6);
-  packet->main.encoders[7] = encoder_read(7);
-
-  for (int i = 0; i < 8; ++i) {
-    packet->main.analogs[i] = analog_get(i);
-  }
+  robot_fill_packet(packet);
 }
 
 // Fills the new packet with data.
@@ -71,7 +61,7 @@ void uart_dma_callback(uint8_t *buffer) {
   memcpy(&p, &packet, sizeof(void *));
   data.checksum = crc_calculate(p, sizeof(*packet) / 4);
 
-  memset(buffer, 0, 4);
+  ((uint32_t *)buffer)[0] = 0;
   cows_stuff(&data, sizeof(data), buffer + 4);
 }
 

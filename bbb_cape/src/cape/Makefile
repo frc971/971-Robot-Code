@@ -29,7 +29,7 @@ ASFLAGS := -O3 -mcpu=cortex-m3 \
 	-nostartfiles -nostdlib \
 	-mthumb \
 
-OBJECTS_main := main \
+OBJECTS_main_common := main \
 	uart_common \
 	uart_dma \
 	uart \
@@ -45,7 +45,10 @@ OBJECTS_bootloader := bootloader \
 	uart_common \
 	uart_byte \
 
-OUTPUTS := main bootloader
+OBJECTS_main_test := $(OBJECTS_main_common) \
+	robot_test \
+
+OUTPUTS := main_test bootloader
 
 # The sort is to remove duplicates because Make warns about those.
 OBJECTS := $(sort $(foreach output,$(OUTPUTS),$(OBJECTS_$(output))))

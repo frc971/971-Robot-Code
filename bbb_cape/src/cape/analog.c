@@ -48,6 +48,7 @@ void SPI_IRQHandler(void) {
     TIM->CR1 = TIM_CR1_UDIS;
     TIM->CCR1 = 1;
     TIM->EGR = TIM_EGR_UG;
+    TIM->CR1 |= TIM_CR1_CEN;
   }
 }
 
