@@ -32,9 +32,15 @@ analog
 [encoders]
 encoder
   TIM1,TIM2,TIM3,TIM4,TIM5,TIM8
-  EXTI0,EXTI1,EXTI2,EXTI3
-  EXTI0_IRQ:0,EXTI1_IRQ:0,EXTI2_IRQ:0,EXTI3_IRQ:0
+  EXTI0,EXTI1,EXTI3
+  EXTI0_IRQ:0,EXTI1_IRQ:0,EXTI3_IRQ:0
+  TIM9 (for its input capture 1)
+  TIM9_IRQ:0 (aka TIM1_BRK)
 
+[digital inputs]
+digital
+  EXTI2,EXTI4-15
+  EXTI2_IRQ:1,EXTI4-15_IRQ:1
 
 [sensor packet sending]
 fill_packet

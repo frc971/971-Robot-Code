@@ -56,11 +56,10 @@ PD2
 [GPIOs]
 C0  enc
 C1  enc
-A2  enc
+A2  enc (as TIM9.1)
 A3  enc
 
 B2
-#A2  TIM9.1
 C4
 C5
 A7

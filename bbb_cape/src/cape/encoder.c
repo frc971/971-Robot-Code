@@ -19,8 +19,8 @@ volatile int32_t encoder3_value = 0;
 
 // 1.A
 void EXTI0_IRQHandler(void) {
-  EXTI->PR = EXTI_PR_PR0;
   uint32_t inputs = GPIOA->IDR;
+  EXTI->PR = EXTI_PR_PR0;
   // This looks like a weird way to XOR the 2 inputs, but it compiles down to
   // just 2 instructions, which is hard to beat.
   if (((inputs >> 1) ^ inputs) & (1 << 0)) {
@@ -32,8 +32,8 @@ void EXTI0_IRQHandler(void) {
 
 // 1.B
 void EXTI1_IRQHandler(void) {
-  EXTI->PR = EXTI_PR_PR1;
   uint32_t inputs = GPIOA->IDR;
+  EXTI->PR = EXTI_PR_PR1;
   if (((inputs >> 1) ^ inputs) & (1 << 0)) {
     --encoder1_value;
   } else {
@@ -42,9 +42,9 @@ void EXTI1_IRQHandler(void) {
 }
 
 // 3.A
-void EXTI2_IRQHandler(void) {
-  EXTI->PR = EXTI_PR_PR2;
+void TIM1_TRG_COM_TIM11_IRQHandler(void) {
   uint32_t inputs = GPIOC->IDR;
+  TIM9->SR = TIM_SR_CC1IF;
   if (((inputs >> 1) ^ inputs) & (1 << 2)) {
     ++encoder3_value;
   } else {
@@ -54,8 +54,8 @@ void EXTI2_IRQHandler(void) {
 
 // 3.B
 void EXTI3_IRQHandler(void) {
-  EXTI->PR = EXTI_PR_PR3;
   uint32_t inputs = GPIOC->IDR;
+  EXTI->PR = EXTI_PR_PR3;
   if (((inputs >> 1) ^ inputs) & (1 << 2)) {
     --encoder3_value;
   } else {
@@ -64,7 +64,9 @@ void EXTI3_IRQHandler(void) {
 }
 
 static void encoder_setup(TIM_TypeDef *timer) {
-  timer->CR1 = TIM_CR1_UDIS;
+  timer->CR1 = TIM_CR1_UDIS /* wait until we tell it to do anything */ |
+               TIM_CR1_URS /* don't generate spurious update interrupts that
+                              might be shared with other timers */;
   timer->SMCR = 3;  // 4x quadrature encoder mode
   timer->CCMR1 =
       TIM_CCMR1_CC2S_0 | /* input pin 2 -> timer input 2 */
@@ -74,18 +76,27 @@ static void encoder_setup(TIM_TypeDef *timer) {
 }
 
 void encoder_init(void) {
-  SYSCFG->EXTICR[0] =
-      SYSCFG_EXTICR1_EXTI0_PC |
-      SYSCFG_EXTICR1_EXTI1_PC |
-      SYSCFG_EXTICR1_EXTI2_PA |
-      SYSCFG_EXTICR1_EXTI3_PA;
-  EXTI->IMR |= EXTI_IMR_MR0 | EXTI_IMR_MR1 | EXTI_IMR_MR2 | EXTI_IMR_MR3;
-  EXTI->RTSR |= EXTI_RTSR_TR0 | EXTI_RTSR_TR1 | EXTI_RTSR_TR2 | EXTI_RTSR_TR3;
-  EXTI->FTSR |= EXTI_FTSR_TR0 | EXTI_FTSR_TR1 | EXTI_FTSR_TR2 | EXTI_FTSR_TR3;
+  // Set up the 3 simple software encoder inputs.
+  EXTI_set(0, 2);
+  EXTI_set(1, 2);
+  EXTI_set(3, 0);
+  EXTI->IMR |= EXTI_IMR_MR0 | EXTI_IMR_MR1 | EXTI_IMR_MR3;
+  EXTI->RTSR |= EXTI_RTSR_TR0 | EXTI_RTSR_TR1 | EXTI_RTSR_TR3;
+  EXTI->FTSR |= EXTI_FTSR_TR0 | EXTI_FTSR_TR1 | EXTI_FTSR_TR3;
   NVIC_EnableIRQ(EXTI0_IRQn);
   NVIC_EnableIRQ(EXTI1_IRQn);
-  NVIC_EnableIRQ(EXTI2_IRQn);
   NVIC_EnableIRQ(EXTI3_IRQn);
+
+  // Set up the A2 software encoder input through TIM9.
+  gpio_setup_alt(GPIOA, 2, 3);
+  RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;
+  TIM9->CR1 = TIM_CR1_UDIS;
+  TIM9->DIER = TIM_DIER_CC1IE;
+  TIM9->CCMR1 = TIM_CCMR1_CC1S_0; /* input pin 1 -> timer input 1 */
+  TIM9->CCER = TIM_CCER_CC1NP | TIM_CCER_CC1P | TIM_CCER_CC1E;
+  TIM9->EGR = TIM_EGR_UG;
+  TIM9->CR1 |= TIM_CR1_CEN;
+  NVIC_EnableIRQ(TIM1_BRK_TIM9_IRQn);
 
   gpio_setup_alt(GPIOA, 8, 1);
   gpio_setup_alt(GPIOB, 0, 1);

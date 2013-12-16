@@ -40,6 +40,7 @@ OBJECTS_main_common := main \
 	gyro \
 	led \
 	analog \
+	digital \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \

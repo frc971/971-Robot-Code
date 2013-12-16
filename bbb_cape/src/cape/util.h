@@ -13,6 +13,14 @@ static inline void compiler_memory_barrier(void) {
   __asm__ __volatile__("" ::: "memory");
 }
 
+// Count leading zeros.
+// Returns 0 if bit 31 is set etc.
+__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
+  uint32_t result;
+  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
+  return result;
+}
+
 // Sets number_of_bits (shifted left shift number of slots) to value in
 // variable.
 // This means that the total shift is number_bits*shift.
@@ -41,6 +49,12 @@ static inline void gpio_setup_alt(GPIO_TypeDef *port, int pin, int afr) {
 static inline void gpio_setup_out(GPIO_TypeDef *port, int pin, int speed) {
   SET_BITS(port->MODER, 2, 1 /* output */, pin);
   SET_BITS(port->OSPEEDR, 2, speed, pin);
+}
+
+// exti is which EXTI line to set
+// port is 0 for A, 1 for B, etc
+static inline void EXTI_set(int exti, int port) {
+  SET_BITS(SYSCFG->EXTICR[exti / 4], 4, port, exti % 4);
 }
 
 #endif  // CAPE_UTIL_H_
