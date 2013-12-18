@@ -45,6 +45,7 @@ OBJECTS_main_common := main \
 OBJECTS_bootloader := bootloader \
 	uart_common \
 	uart_byte \
+	led \
 
 OBJECTS_main_test := $(OBJECTS_main_common) \
 	robot_test \

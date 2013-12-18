@@ -13,9 +13,9 @@
 
 static void do_led_set(GPIO_TypeDef *port, int number, int on) {
   if (on) {
-    port->BSRRL = 1 << number;
-  } else {
     port->BSRRH = 1 << number;
+  } else {
+    port->BSRRL = 1 << number;
   }
 }
 

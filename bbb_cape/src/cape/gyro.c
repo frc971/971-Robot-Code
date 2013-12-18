@@ -97,7 +97,7 @@ static void gyro_enable_csel(void) {
   // Do it 8 times (9 cycles) to wait for the amount of time the gyro datasheet
   // says we need to.
   // (1/2/(7.5MHz)+8ns)*120MHz = 8.96
-  for (int i = 0; i < 8; ++i) CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
+  for (int i = 0; i < 8; ++i) CSEL_GPIO->BSRRL = 1 << CSEL_NUM;
 }
 
 // Blocks until there is space to enqueue data.
@@ -265,7 +265,7 @@ void SPI_IRQHandler(void) {
       uint32_t full_value = high_value << 16 | value;
       // Set the CSEL pin high to deselect it.
       // The parity calculation etc took long enough that this is safe now.
-      CSEL_GPIO->BSRRL = 1 << CSEL_NUM;
+      CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
       reading_received(full_value);
     }
   }
@@ -364,7 +364,7 @@ void gyro_init(void) {
   // It's is just a GPIO pin because we're the master (it would be special if we
   // were a slave).
   gpio_setup_out(CSEL_GPIO, CSEL_NUM, 3);
-  CSEL_GPIO->BSRRL = 1 << CSEL_NUM;  // make sure it's deselected
+  CSEL_GPIO->BSRRH = 1 << CSEL_NUM;  // make sure it's deselected
 
   // Set up SCK, MISO, and MOSI.
   gpio_setup_alt(GPIOC, 10, 6);  // SCK

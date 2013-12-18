@@ -1,6 +1,7 @@
 #include <STM32F2XX.h>
 
 #include "cape/fill_packet.h"
+#include "cape/led.h"
 
 // The startup asm code defines this to the start of our exception vector table.
 extern uint32_t _vectors;
@@ -11,6 +12,7 @@ void _start(void) {
   SCB->VTOR = (uint32_t)&_vectors;
   // Data Memory Barrier to make sure it gets the updated vector table.
   __asm__ __volatile__("dmb");
+  led_set(LED_DB, 0);
 
   fill_packet_start();
 
@@ -18,6 +20,9 @@ void _start(void) {
   // decreses ISR latency a little bit because it doesn't have to stack the
   // registers for the first one.
   SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;
+
+  led_set(LED_ERR, 0);
+
   // This seems like the perfect place to use WFI, but Brian on 2013-12-13
   // couldn't find anything verifying that WFI doesn't increase the latency for
   // the first interrupt handled, and we should never actually get here anyways,

@@ -11,7 +11,6 @@
 #include "cape/crc.h"
 #include "cape/bootloader_handoff.h"
 #include "cape/gyro.h"
-#include "cape/led.h"
 #include "cape/analog.h"
 #include "cape/robot.h"
 #include "cape/digital.h"
@@ -73,7 +72,6 @@ void fill_packet_start(void) {
   TIMESTAMP_TIM->CR1 |= TIM_CR1_CEN;
 
   crc_init();
-  led_init();
   analog_init();
   encoder_init();
   gyro_init();

@@ -5,7 +5,7 @@
 // the bootloader and the main code.
 
 // How much flash the bootloader has (starting at address 0).
-#define BOOTLOADER_FLASH_SIZE 0x8000
+#define BOOTLOADER_FLASH_SIZE 0x4000
 // Where the main code's flash starts.
 #define MAIN_FLASH_START BOOTLOADER_FLASH_SIZE
 
