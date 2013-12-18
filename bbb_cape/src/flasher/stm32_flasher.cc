@@ -140,10 +140,21 @@ int main(int argc, char **argv) {
   }
   printf("not erasing sector %d\n", end_sector);
 
-  if (!stm32_erase_memory(stm, start_sector,
-                          end_sector - start_sector - 1 /* you send the
-                                                           bootloader N-1 */)) {
+  if (!stm32_erase_memory(stm, start_sector, end_sector - start_sector)) {
     LOG(FATAL, "failed to erase memory\n");
+  }
+
+  // Read all of the 0xFFs that the parser inserts to pad the data out.
+  {
+    uint8_t garbage[1024];
+    uint32_t length = start_address;
+    while (length > 0) {
+      uint32_t read = ::std::min(sizeof(garbage), length);
+      if (parser->read(p_st, garbage, &read) != PARSER_ERR_OK) {
+        LOG(FATAL, "reading 0xFFs from the hex parser failed\n");
+      }
+      length -= read;
+    }
   }
 
   uint32_t kFlashStart = 0x08000000;
@@ -151,7 +162,7 @@ int main(int argc, char **argv) {
   uint8_t buffer[256];  // 256 is the biggest size supported
   uint32_t completed = 0;
   while (completed < size) {
-    uint32_t address = start_address + completed;
+    uint32_t address = start_address + completed + kFlashStart;
     uint32_t length = ::std::min(size - completed, sizeof(buffer));
     if (parser->read(p_st, buffer, &length) != PARSER_ERR_OK) {
       LOG(FATAL, "reading file failed\n");
@@ -159,15 +170,24 @@ int main(int argc, char **argv) {
     if (length == 0) {
       LOG(FATAL, "failed to read input file\n");
     }
-    if (!stm32_write_memory(stm, kFlashStart + address, buffer, length)) {
+    if ((length % 4) != 0) {
+      // Pad the size we want to write to a multiple of 4 bytes.
+      for (unsigned int i = 0; i < (4 - (length % 4)); ++i) {
+        buffer[length++] = 0xFF;
+      }
+    }
+    if (!stm32_write_memory(stm, address, buffer, length)) {
       LOG(FATAL, "failed to write memory at address 0x%x\n", address);
     }
     uint8_t compare_buffer[sizeof(buffer)];
-    if (!stm32_read_memory(stm, kFlashStart + address, compare_buffer,
-                           length)) {
+    if (!stm32_read_memory(stm, address, compare_buffer, length)) {
       LOG(FATAL, "failed to read memory at address 0x%x\n", address);
     }
     if (memcmp(buffer, compare_buffer, length) != 0) {
+      printf("\n");
+      for (size_t i = 0; i < length; ++i) {
+        printf("want %x have %x\n", buffer[i], compare_buffer[i]);
+      }
       LOG(FATAL, "verify from 0x%x to 0x%x failed\n",
           address, address + length);
     }
