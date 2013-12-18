@@ -30,6 +30,10 @@
           'aos_target': 'static_library',
         },
       }, {
+        'make_global_settings': [
+          ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
+          ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
+        ],
         'variables': {
           'aos_target': 'executable',
         },
@@ -90,8 +94,8 @@
               ],
             }, {
               'cflags': [
-                '-march=atom',
-                '-mfpmath=sse',
+                '-mcpu=cortex-a8',
+                '-mfpu=neon',
 
                 '-fstack-protector-all',
               ],
@@ -169,14 +173,9 @@
           ],
           'ldflags': [
             '-pthread',
-            '-m32',
-          ],
-          'library_dirs': [
-            '/usr/lib32',
           ],
           'cflags': [
             '-pthread',
-            '-m32',
 
             '-Wunused-local-typedefs',
 

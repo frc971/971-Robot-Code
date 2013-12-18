@@ -132,15 +132,18 @@ class LogFileAccessor {
         sizeof(mutex) > kPageSize) {
       char *const temp = current_;
       MapNextPage();
-      if (futex_set_value(reinterpret_cast<mutex *>(&temp[position_]), 2) == -1) {
-        fprintf(stderr, "LogFileCommon: futex_set_value(%p, 2) failed with %d: %s."
-                " readers will hang\n", &temp[position_], errno, strerror(errno));
+      if (futex_set_value(static_cast<mutex *>(static_cast<void *>(
+                      &temp[position_])), 2) == -1) {
+        fprintf(stderr,
+                "LogFileCommon: futex_set_value(%p, 2) failed with %d: %s."
+                " readers will hang\n",
+                &temp[position_], errno, strerror(errno));
       }
       Unmap(temp);
       position_ = 0;
     }
-    LogFileMessageHeader *const r = reinterpret_cast<LogFileMessageHeader *>(
-        &current_[position_]);
+    LogFileMessageHeader *const r = static_cast<LogFileMessageHeader *>(
+        static_cast<void *>(&current_[position_]));
     position_ += message_size;
     // keep it aligned for next time
     position_ += kAlignment - (position_ % kAlignment);
@@ -150,7 +153,8 @@ class LogFileAccessor {
   const LogFileMessageHeader *ReadNextMessage(bool wait) {
     LogFileMessageHeader *r;
     do {
-      r = reinterpret_cast<LogFileMessageHeader *>(&current_[position_]);
+      r = static_cast<LogFileMessageHeader *>(
+          static_cast<void *>(&current_[position_]));
       if (wait) {
         if (futex_wait(&r->marker) != 0) continue;
       }
@@ -158,7 +162,7 @@ class LogFileAccessor {
         Unmap(current_);
         MapNextPage();
         position_ = 0;
-        r = reinterpret_cast<LogFileMessageHeader *>(current_);
+        r = static_cast<LogFileMessageHeader *>(static_cast<void *>(current_));
       }
     } while (wait && r->marker == 0);
     if (r->marker == 0) {
