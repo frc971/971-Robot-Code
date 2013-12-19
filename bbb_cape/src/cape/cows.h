@@ -4,6 +4,10 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // This file implements something very similar to Consistent Overhead Byte
 // Stuffing <http://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing>. It
 // uses that algorithm except with 4-byte chunks instead of individual bytes
@@ -29,5 +33,9 @@ uint32_t cows_stuff(const void *__restrict__ source, size_t source_length,
 // Returns the total number of words written to destination or 0 for error.
 uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
                       uint32_t *__restrict__ destination);
+
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif  // CAPE_COWS_H_

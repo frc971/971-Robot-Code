@@ -10,14 +10,14 @@
 namespace bbb {
   
   class UartReceiver {
-    speed_t baud_rate_;   
+    uint32_t baud_rate_;   
     size_t packet_size_, stuffed_size_;
     int fd_;
     uint32_t buf_used_;
     char *buf_;
   
   public:
-    UartReceiver(uint32_t baud_rate, size_t packet_size);
+    UartReceiver(uint32_t baud_rate);
     ~UartReceiver();
     // Opens file descriptor, etc.
     int SetUp();

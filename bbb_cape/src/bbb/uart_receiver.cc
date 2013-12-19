@@ -20,8 +20,9 @@
 
 namespace bbb {
 
-UartReceiver::UartReceiver(uint32_t baud_rate, size_t packet_size) : 
-  baud_rate_(baud_rate), packet_size_(packet_size) {
+UartReceiver::UartReceiver(uint32_t baud_rate) : 
+  baud_rate_(baud_rate) {
+  packet_size_ = DATA_STRUCT_SEND_SIZE;
   //packet_size_ should be a multiple of four.
   int toadd = packet_size_ % 4;
   LOG(DEBUG, "Increasing packet size by %d bytes.\n", toadd);
@@ -81,7 +82,7 @@ int UartReceiver::SetUp() {
   // We know the minimum size for packets.
   // No use in having it do excessive syscalls.
   options.c_cc[VMIN] = packet_size_;
-  options.c_cc[VTIME] = 0;
+  options.c_cc[VTIME] = 1;
   if (tcsetattr(fd_, TCSANOW, &options) != 0)
     LOG(ERROR, "Tcsetattr failed.\n");
     return -1;
@@ -128,7 +129,7 @@ int UartReceiver::GetPacket(DataStruct *packet) {
 
   // Copy packet data to output.
   int filled = 0;
-  readi -= 3;
+  readi -= 3; // We read a little into the next packet.
   for (uint32_t i = pstarti; i < readi - 3; ++i) {
     ptemp[i] = buf_[i];
     ++filled;
@@ -139,6 +140,7 @@ int UartReceiver::GetPacket(DataStruct *packet) {
     buf_[puti++] = buf_[i];
   }
   buf_used_ = stuffed_size_ - readi;
+  readi = 0;
 
   // Cows algorithm always outputs something 4-byte aligned.
   if (filled % 4) {
@@ -163,6 +165,8 @@ int UartReceiver::GetPacket(DataStruct *packet) {
 
   // Make sure the checksum checks out.
   uint32_t checksum = static_cast<uint32_t>(ptemp_unstuffed[packet_size_ - 4]);
+  // Checksum only gets done on the actual datastruct part of the packet,
+  // so we'll discard everything after it.
   memcpy(packet, ptemp_unstuffed, sizeof(DataStruct));
   if (cape::CalculateChecksum((uint8_t *)packet, sizeof(DataStruct)) != checksum) {
     LOG(WARNING, "Rejecting packet due to checksum failure.\n");
@@ -172,5 +176,5 @@ int UartReceiver::GetPacket(DataStruct *packet) {
   return 0;
 }
 
-} //bbb
+} // bbb
 

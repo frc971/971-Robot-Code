@@ -22,5 +22,41 @@
         'uart_receiver.cc',
       ],
     },
+    {
+      'target_name': 'uart_receiver_test',
+      'type': 'executable',
+      'dependencies': [
+        'uart_receiver',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'sources': [
+        'uart_receiver_test.cc',
+      ],
+    },
+    {
+      'target_name': 'uart_receiver_main',
+      'type': 'executable',
+      'dependencies': [
+        'uart_receiver',
+        'gpios',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/atom_code.gyp:init',
+      ],
+      'sources': [
+        'uart_receiver_main.cc',
+      ],
+    },
+    {
+      'target_name': 'gpios',
+      'type': 'static_library',
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'sources': [
+        'gpios.cc',
+      ],
+    },
   ],
 }
