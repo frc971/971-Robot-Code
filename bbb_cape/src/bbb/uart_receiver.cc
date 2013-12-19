@@ -121,8 +121,8 @@ int UartReceiver::GetPacket(DataStruct *packet) {
       } else {
         cons_zeros = 0;
       }
+      readi++
     }
-    ++readi;
   }
 
   // Copy packet data to output.
