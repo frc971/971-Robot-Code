@@ -79,9 +79,7 @@ int UartReceiver::SetUp() {
   options.c_iflag = 0;
   options.c_oflag = 0;
   options.c_lflag = 0;
-  // We know the minimum size for packets.
-  // No use in having it do excessive syscalls.
-  options.c_cc[VMIN] = packet_size_;
+  options.c_cc[VMIN] = 0;
   options.c_cc[VTIME] = 1;
   if (tcsetattr(fd_, TCSANOW, &options) != 0)
     LOG(ERROR, "Tcsetattr failed.\n");
