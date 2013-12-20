@@ -155,7 +155,7 @@ GMP_TAR=${EXTERNALS}/gmp-${GMP_VERSION}.tar.lz
 GMP_DIR=${COMPILED}/gmp-${GMP_VERSION}
 GMP_PREFIX=${GMP_DIR}-prefix
 GMP_LIB=${GMP_PREFIX}/lib/libgmp.a
-GMP_URL=http://ftp.gmplib.org/gmp/gmp-${GMP_VERSION}.tar.lz
+GMP_URL=ftp://ftp.gmplib.org/pub/gmp/gmp-${GMP_VERSION}.tar.lz
 [ -f ${GMP_TAR} ] || wget ${GMP_URL} -O ${GMP_TAR}
 [ -d ${GMP_DIR} ] || ( mkdir ${GMP_DIR} && tar \
 	--strip-components=1 -C ${GMP_DIR} -xf ${GMP_TAR} )

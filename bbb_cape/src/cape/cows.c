@@ -1,12 +1,12 @@
-#include "cape/cows.h"
+#include "cows.h"
 
 #include <limits.h>
 
 // This implementation is based on
 // <http://www.jacquesf.com/2011/03/consistent-overhead-byte-stuffing/>.
 
-uint32_t cows_stuff(const void *restrict source_in, size_t source_length,
-                    void *restrict destination_in) {
+uint32_t cows_stuff(const void *__restrict__ source_in, size_t source_length,
+                    void *__restrict__ destination_in) {
   const uint32_t *restrict source = (const uint32_t *)source_in;
   uint32_t *restrict destination = (uint32_t *)destination_in;
   size_t source_index = 0;
@@ -34,8 +34,8 @@ uint32_t cows_stuff(const void *restrict source_in, size_t source_length,
   return destination_index;
 }
 
-uint32_t cows_unstuff(const uint32_t *restrict source, size_t source_length,
-                      uint32_t *restrict destination) {
+uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
+                      uint32_t *__restrict__ destination) {
   size_t source_index = 0;
   size_t destination_index = 0;
   uint32_t code;
