@@ -9,10 +9,10 @@
 
 namespace bbb {
 
-class UartReceiver {
+class UartReader {
  public:
-  UartReceiver(int32_t baud_rate);
-  ~UartReceiver();
+  UartReader(int32_t baud_rate);
+  ~UartReader();
 
   // Returns true if it finds one or false if it gets an I/O error first.
   // packet must be aligned to 4 bytes.

@@ -1,4 +1,4 @@
-#include "bbb/uart_receiver.h"
+#include "bbb/uart_reader.h"
 
 #include <termios.h>
 
@@ -7,16 +7,16 @@
 namespace bbb {
 namespace {
 
-class UartReceiverTest : public ::testing::Test {
+class UartReaderTest : public ::testing::Test {
 protected:
-  UartReceiver test_instance_;
+  UartReader test_instance_;
 
 public:
-  UartReceiverTest () : test_instance_(UartReceiver(3000000)) {}
+  UartReaderTest () : test_instance_(UartReader(3000000)) {}
 };
 
 #if 0
-TEST_F(UartReceiverTest, SetUpTest) {
+TEST_F(UartReaderTest, SetUpTest) {
   // Test its ability to open a file descriptor and set a baud rate.
   ASSERT_EQ(test_instance_.SetUp(), 0);
 }

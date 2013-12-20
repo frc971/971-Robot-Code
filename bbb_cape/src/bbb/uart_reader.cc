@@ -1,4 +1,4 @@
-#include "bbb/uart_receiver.h"
+#include "bbb/uart_reader.h"
 
 #include <fcntl.h>
 #include <linux/serial.h>
@@ -29,7 +29,7 @@ namespace {
 const char *device = "/dev/ttyO1";
 }  // namespace
 
-UartReceiver::UartReceiver(int32_t baud_rate)
+UartReader::UartReader(int32_t baud_rate)
     : baud_rate_(baud_rate),
       buf_(new AlignedChar[DATA_STRUCT_SEND_SIZE]),
       fd_(open(device, O_RDWR | O_NOCTTY)) {
@@ -38,7 +38,7 @@ UartReceiver::UartReceiver(int32_t baud_rate)
 
   if (fd_ < 0) {
     LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY) failed with %d: %s."
-               " Did you read my note in bbb/uart_receiver.cc?\n",
+               " Did you read my note in bbb/uart_reader.cc?\n",
         device, errno, strerror(errno));
   }
  
@@ -99,12 +99,12 @@ UartReceiver::UartReceiver(int32_t baud_rate)
   }
 }
 
-UartReceiver::~UartReceiver() {
+UartReader::~UartReader() {
   delete buf_;
   if (fd_ > 0) close(fd_);
 }
 
-bool UartReceiver::FindPacket() {
+bool UartReader::FindPacket() {
   // How many 0 bytes we've found at the front so far.
   int zeros_found = 0;
   // How many bytes of the packet we've read in (or -1 if we don't know where
@@ -150,7 +150,7 @@ bool UartReceiver::FindPacket() {
   }
 }
 
-bool UartReceiver::GetPacket(DataStruct *packet) {
+bool UartReader::GetPacket(DataStruct *packet) {
   if (!FindPacket()) return false;
 
   uint32_t unstuffed = cows_unstuff(reinterpret_cast<uint32_t *>(buf_),

@@ -16,7 +16,7 @@
       ],
     },
     {
-      'target_name': 'uart_receiver',
+      'target_name': 'uart_reader',
       'type': 'static_library',
       'dependencies': [
         'crc',
@@ -28,33 +28,33 @@
         '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
       ],
       'sources': [
-        'uart_receiver.cc',
+        'uart_reader.cc',
       ],
     },
     {
-      'target_name': 'uart_receiver_test',
+      'target_name': 'uart_reader_test',
       'type': 'executable',
       'dependencies': [
-        'uart_receiver',
+        'uart_reader',
         '<(EXTERNALS):gtest',
         '<(AOS)/build/aos.gyp:logging',
       ],
       'sources': [
-        'uart_receiver_test.cc',
+        'uart_reader_test.cc',
       ],
     },
     {
-      'target_name': 'uart_receiver_main',
+      'target_name': 'uart_reader_main',
       'type': 'executable',
       'dependencies': [
-        'uart_receiver',
+        'uart_reader',
         'gpios',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/atom_code/atom_code.gyp:init',
       ],
       'sources': [
-        'uart_receiver_main.cc',
+        'uart_reader_main.cc',
       ],
     },
     {

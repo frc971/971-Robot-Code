@@ -4,7 +4,7 @@
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
 #include "bbb/gpios.h"
-#include "bbb/uart_receiver.h"
+#include "bbb/uart_reader.h"
 
 using ::aos::time::Time;
 
@@ -15,7 +15,7 @@ int main() {
   // the board.
   Time kPacketTimeout = Time::InSeconds(1);
 
-  bbb::UartReceiver receiver = bbb::UartReceiver(3000000);
+  bbb::UartReader receiver(3000000);
   bbb::Pin reset_pin = bbb::Pin(1, 6);
   reset_pin.MakeOutput();
 
