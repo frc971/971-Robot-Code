@@ -122,6 +122,24 @@ bool UartReader::FindPacket() {
       return false;
     }
 
+    if (packet_bytes != -1) {  // we think there's a packet at the beginning of
+                               // our buffer
+      for (int to_check = packet_bytes; packet_bytes + new_bytes; ++to_check) {
+        // We shouldn't find any 0s in the middle of what should be a packet.
+        if (buf_[to_check] == 0) {
+          packet_bytes = -1;
+          memmove(buf_, buf_ + to_check, new_bytes - to_check);
+          new_bytes -= to_check;
+          break;
+        }
+      }
+      if (packet_bytes != -1) {
+        packet_bytes += new_bytes;
+        if (packet_bytes == DATA_STRUCT_SEND_SIZE) return true;
+      }
+    }
+    // This can't just be an else because the above code might set it to -1 if
+    // it finds 0s in the middle of a packet.
     if (packet_bytes == -1) {
       // Find the beginning of the packet (aka look for four zero bytes).
       for (ssize_t checked = 0; checked < new_bytes; ++checked) {
@@ -136,16 +154,6 @@ bool UartReader::FindPacket() {
           zeros_found = 0;
         }
       }
-    } else {  // we think there's a packet at the beginning of our buffer
-      for (int to_check = packet_bytes; packet_bytes + new_bytes; ++to_check) {
-        // We shouldn't find any 0s in the middle of what should be a packet.
-        if (buf_[to_check] == 0) {
-          packet_bytes = -1;
-          break;
-        }
-      }
-      packet_bytes += new_bytes;
-      if (packet_bytes == DATA_STRUCT_SEND_SIZE) return true;
     }
   }
 }
