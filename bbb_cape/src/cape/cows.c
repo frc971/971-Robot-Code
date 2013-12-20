@@ -1,4 +1,4 @@
-#include "cows.h"
+#include "cape/cows.h"
 
 #include <limits.h>
 

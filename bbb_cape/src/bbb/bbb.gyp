@@ -1,4 +1,9 @@
 {
+  'target_defaults': {
+    'include_dirs': [
+      '..',
+    ],
+  },
   'targets': [
     {
       'target_name': 'crc',
@@ -16,7 +21,11 @@
       'dependencies': [
         'crc',
         '<(DEPTH)/bbb_cape/src/cape/cape.gyp:cows',
+        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
         '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
       ],
       'sources': [
         'uart_receiver.cc',

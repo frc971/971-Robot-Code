@@ -1,78 +1,90 @@
+#include "bbb/uart_receiver.h"
+
 #include <fcntl.h>
 #include <linux/serial.h>
 #include <termio.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <inttypes.h>
 
-#include <cmath>
-#include <cstring>
+#include <algorithm>
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging.h"
 #include "bbb_cape/src/cape/cows.h"
-#include "crc.h"
-#include "uart_receiver.h"
+#include "bbb/crc.h"
 
 // This is the code for receiving data from the cape via UART.
-// NOTE: In order for this to work, you MUST HAVE "capemgr.enable_partno=BB_UART1"
+// NOTE: In order for this to work, you MUST HAVE
+// "capemgr.enable_partno=BB_UART1"
 // in your BBB's /media/BEAGLEBONE/uEnv.txt file!
 
 // Implementation for setting custom serial baud rates based on this code:
 // <http://jim.sh/ftx/files/linux-custom-baudrate.c>
 
 namespace bbb {
+namespace {
+// TODO(brians): Determine this in some way that allows easy switching for
+// testing with /dev/ttyUSB0 for example.
+const char *device = "/dev/ttyO1";
+}  // namespace
 
-UartReceiver::UartReceiver(uint32_t baud_rate) : 
-  baud_rate_(baud_rate) {
-  packet_size_ = DATA_STRUCT_SEND_SIZE;
-  //packet_size_ should be a multiple of four.
-  int toadd = packet_size_ % 4;
-  LOG(DEBUG, "Increasing packet size by %d bytes.\n", toadd);
-  packet_size_ += toadd;
-  
-  // See cows.h for where this comes from.
-  stuffed_size_ = ((packet_size_ - 1) / (pow(2, 32) - 1) + 1) * 4 + packet_size_;
-  
-  buf_ = static_cast<char *>(malloc(stuffed_size_));  
-}
+UartReceiver::UartReceiver(int32_t baud_rate)
+    : baud_rate_(baud_rate),
+      buf_(new AlignedChar[DATA_STRUCT_SEND_SIZE]),
+      fd_(open(device, O_RDWR | O_NOCTTY)) {
+  static_assert((DATA_STRUCT_SEND_SIZE % 4) == 0,
+                "We can't do checksums of lengths that aren't multiples of 4.");
 
-UartReceiver::~UartReceiver() {
-  free(buf_);
-}
-
-int UartReceiver::SetUp() {
-  termios options;
-  serial_struct serinfo;
-
-  if ((fd_ = open("/dev/ttyO1", O_RDWR | O_NOCTTY)) < 0) {
-    LOG(FATAL, "Open() failed with error %d.\
-      (Did you read my note in uart_receiver.cc?)\n", fd_);
+  if (fd_ < 0) {
+    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY) failed with %d: %s."
+               " Did you read my note in bbb/uart_receiver.cc?\n",
+        device, errno, strerror(errno));
   }
  
+  serial_struct serinfo;
   // Must implement an ugly custom divisor.
   serinfo.reserved_char[0] = 0;
-  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0)
-    return -1;
+  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0) {
+    LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
+        fd_, &serinfo, errno, strerror(errno));
+  }
   serinfo.flags &= ~ASYNC_SPD_MASK;
   serinfo.flags |= ASYNC_SPD_CUST;
   serinfo.custom_divisor = (serinfo.baud_base + (baud_rate_ / 2)) / baud_rate_;
-  if (serinfo.custom_divisor < 1) 
-    serinfo.custom_divisor = 1;
-  if (ioctl(fd_, TIOCSSERIAL, &serinfo) < 0)
-    LOG(ERROR, "First ioctl failed.\n");
-    return -1;
-  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0)
-    LOG(ERROR, "Second ioctl failed.\n");
-    return -1;
-  if (serinfo.custom_divisor * static_cast<int>(baud_rate_) 
-    != serinfo.baud_base) {
-    LOG(WARNING, "actual baudrate is %d / %d = %f",
-          serinfo.baud_base, serinfo.custom_divisor,
-          (float)serinfo.baud_base / serinfo.custom_divisor);
+  if (serinfo.custom_divisor < 1) serinfo.custom_divisor = 1;
+  if (ioctl(fd_, TIOCSSERIAL, &serinfo) < 0) {
+    LOG(FATAL, "ioctl(%d, TIOCSSERIAL, %p) failed with %d: %s\n",
+        fd_, &serinfo, errno, strerror(errno));
+  }
+  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0) {
+    LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
+        fd_, &serinfo, errno, strerror(errno));
+  }
+  if (serinfo.custom_divisor * baud_rate_ != serinfo.baud_base) {
+    LOG(WARNING, "actual baudrate is %d / %d = %f\n",
+        serinfo.baud_base, serinfo.custom_divisor,
+        static_cast<double>(serinfo.baud_base) / serinfo.custom_divisor);
   }
 
-  fcntl(fd_, F_SETFL, 0);
-  tcgetattr(fd_, &options);
-  cfsetispeed(&options, B38400);
-  cfsetospeed(&options, B38400);
+  if (fcntl(fd_, F_SETFL, 0) != 0) {
+    LOG(FATAL, "fcntl(%d, F_SETFL, 0) failed with %d: %s\n",
+        fd_, errno, strerror(errno));
+  }
+
+  termios options;
+  if (tcgetattr(fd_, &options) != 0) {
+    LOG(FATAL, "tcgetattr(%d, %p) failed with %d: %s\n",
+        fd_, &options, errno, strerror(errno));
+  }
+  if (cfsetispeed(&options, B38400) != 0) {
+    LOG(FATAL, "cfsetispeed(%p, B38400) failed with %d: %s\n",
+        &options, errno, strerror(errno));
+  }
+  if (cfsetospeed(&options, B38400) != 0) {
+    LOG(FATAL, "cfsetospeed(%p, B38400) failed with %d: %s\n",
+        &options, errno, strerror(errno));
+  }
   cfmakeraw(&options);
   options.c_cflag |= (CLOCAL | CREAD);
   options.c_cflag &= ~CRTSCTS;
@@ -81,98 +93,86 @@ int UartReceiver::SetUp() {
   options.c_lflag = 0;
   options.c_cc[VMIN] = 0;
   options.c_cc[VTIME] = 1;
-  if (tcsetattr(fd_, TCSANOW, &options) != 0)
-    LOG(ERROR, "Tcsetattr failed.\n");
-    return -1;
-
-  return 0;
+  if (tcsetattr(fd_, TCSANOW, &options) != 0) {
+    LOG(FATAL, "tcsetattr(%d, TCSANOW, %p) failed with %d: %s\n",
+        fd_, &options, errno, strerror(errno));
+  }
 }
 
-int UartReceiver::GetPacket(DataStruct *packet) {
-  int pstarti = 0, bread, cons_zeros = 0;
-  uint32_t readi = 0;
-  bool done = false, has_packet = false;
-  uint32_t ptemp [(stuffed_size_ - 1) / 4 + 1];
+UartReceiver::~UartReceiver() {
+  delete buf_;
+  if (fd_ > 0) close(fd_);
+}
 
-  while (!done && buf_used_ < stuffed_size_) {
-    if ((bread = read(fd_, buf_ + buf_used_, stuffed_size_ - buf_used_)) < 0) {
-      LOG(WARNING, "Read() failed with error %d.\n", bread);
-      return -1;
+bool UartReceiver::FindPacket() {
+  // How many 0 bytes we've found at the front so far.
+  int zeros_found = 0;
+  // How many bytes of the packet we've read in (or -1 if we don't know where
+  // the packet is).
+  int packet_bytes = -1;
+  while (true) {
+    size_t already_read = ::std::max(packet_bytes, 0);
+    ssize_t new_bytes =
+        read(fd_, buf_ + already_read, DATA_STRUCT_SEND_SIZE - already_read);
+    if (new_bytes < 0) {
+      if (errno == EINTR) continue;
+      LOG(WARNING, "read(%d, %p, %zd) failed with %d: %s\n",
+          fd_, buf_ + already_read, DATA_STRUCT_SEND_SIZE - already_read,
+          errno, strerror(errno));
+      return false;
     }
-    buf_used_ += bread;
 
-    // Find the beginning of the packet.
-    // Look for four bytes of zeros.
-    while (readi < buf_used_) {
-      if (buf_[readi] == 0) {
-        if (cons_zeros == 4) {
-          if (has_packet) {
-            // We got to the end of a packet.
-            done = true;
+    if (packet_bytes == -1) {
+      // Find the beginning of the packet (aka look for four zero bytes).
+      for (ssize_t checked = 0; checked < new_bytes; ++checked) {
+        if (buf_[checked] == 0) {
+          ++zeros_found;
+          if (zeros_found == 4) {
+            packet_bytes = new_bytes - checked - 1;
+            memmove(buf_, buf_ + checked + 1, packet_bytes);
             break;
-          } else {
-            // We got to the start of a packet.
-            has_packet = true;
-            pstarti = readi - 3;
           }
         } else {
-          ++cons_zeros;
+          zeros_found = 0;
         }
-      } else {
-        cons_zeros = 0;
       }
-      readi++
+    } else {  // we think there's a packet at the beginning of our buffer
+      for (int to_check = packet_bytes; packet_bytes + new_bytes; ++to_check) {
+        // We shouldn't find any 0s in the middle of what should be a packet.
+        if (buf_[to_check] == 0) {
+          packet_bytes = -1;
+          break;
+        }
+      }
+      packet_bytes += new_bytes;
+      if (packet_bytes == DATA_STRUCT_SEND_SIZE) return true;
     }
   }
+}
 
-  // Copy packet data to output.
-  int filled = 0;
-  readi -= 3; // We read a little into the next packet.
-  for (uint32_t i = pstarti; i < readi - 3; ++i) {
-    ptemp[i] = buf_[i];
-    ++filled;
-  }
-  // Move everything we didn't use to the beginning of the buffer for next time.
-  uint32_t puti = 0;
-  for (uint32_t i = readi; i < stuffed_size_; ++i) {
-    buf_[puti++] = buf_[i];
-  }
-  buf_used_ = stuffed_size_ - readi;
-  readi = 0;
+bool UartReceiver::GetPacket(DataStruct *packet) {
+  if (!FindPacket()) return false;
 
-  // Cows algorithm always outputs something 4-byte aligned.
-  if (filled % 4) {
-    LOG(WARNING, "Rejecting packet due to it not being possible\
-      for cows to have created it.\n");
-    return -1;
-  }
-
-  // Unstuff our packet.
-  uint32_t ptemp_unstuffed [packet_size_];
-  uint32_t bunstuffed;
-  if ((bunstuffed = cows_unstuff(ptemp, sizeof(ptemp), ptemp_unstuffed)) == 0) {
-    LOG(WARNING, "Rejecting packet due to failure to unstuff it.\n");
-    return -1;
-  }
-  if (bunstuffed != packet_size_) {
-    LOG(WARNING, "Rejecting packet of wrong size.\
-      Expected packet of size %d, got packet of size %d.\n",
-      packet_size_, bunstuffed);
-    return -1;
+  uint32_t unstuffed = cows_unstuff(reinterpret_cast<uint32_t *>(buf_),
+                                    DATA_STRUCT_SEND_SIZE / 4,
+                                    reinterpret_cast<uint32_t *>(packet));
+  if (unstuffed == 0) {
+    LOG(WARNING, "invalid packet\n");
+  } else if (unstuffed != sizeof(packet)) {
+    LOG(WARNING, "packet is %" PRIu32 " words instead of %" PRIu32 "\n",
+        unstuffed, DATA_STRUCT_SEND_SIZE / 4);
   }
 
   // Make sure the checksum checks out.
-  uint32_t checksum = static_cast<uint32_t>(ptemp_unstuffed[packet_size_ - 4]);
-  // Checksum only gets done on the actual datastruct part of the packet,
-  // so we'll discard everything after it.
-  memcpy(packet, ptemp_unstuffed, sizeof(DataStruct));
-  if (cape::CalculateChecksum((uint8_t *)packet, sizeof(DataStruct)) != checksum) {
+  uint32_t checksum;
+  memcpy(&checksum, buf_ + DATA_STRUCT_SEND_SIZE - 4, 4);
+  if (cape::CalculateChecksum(reinterpret_cast<uint8_t *>(packet),
+                              sizeof(DataStruct)) != checksum) {
     LOG(WARNING, "Rejecting packet due to checksum failure.\n");
-    return -1;
+    return false;
   }
 
-  return 0;
+  return true;
 }
 
-} // bbb
-
+}  // namespace bbb

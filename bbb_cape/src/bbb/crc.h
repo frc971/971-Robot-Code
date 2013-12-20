@@ -1,7 +1,7 @@
 #ifndef BBB_CRC_H_
 #define BBB_CRC_H_
 
-#include <cstring>
+#include <string.h>
 #include <stdint.h>
 
 namespace cape {

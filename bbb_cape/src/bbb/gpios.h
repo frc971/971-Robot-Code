@@ -1,8 +1,8 @@
 #ifndef BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
 #define BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
 
-#include <cstdint>
-#include <cstring>
+#include <stdint.h>
+#include <stdio.h>
 
 // As it turns out, controlling the BBB's GPIO pins
 // from C++ is kind of a pain. The purpose of this
@@ -35,6 +35,6 @@ public:
   int Read();
 };
 
-} // bbb
+}  // namespace bbb
 
 #endif

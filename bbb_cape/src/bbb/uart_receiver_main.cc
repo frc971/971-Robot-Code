@@ -1,10 +1,10 @@
-#include <cstdint>
+#include <stdint.h>
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
-#include "gpios.h"
-#include "uart_receiver.h"
+#include "bbb/gpios.h"
+#include "bbb/uart_receiver.h"
 
 using ::aos::time::Time;
 
@@ -16,7 +16,6 @@ int main() {
   Time kPacketTimeout = Time::InSeconds(1);
 
   bbb::UartReceiver receiver = bbb::UartReceiver(3000000);
-  receiver.SetUp();
   bbb::Pin reset_pin = bbb::Pin(1, 6);
   reset_pin.MakeOutput();
 
