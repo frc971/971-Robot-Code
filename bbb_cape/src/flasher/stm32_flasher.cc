@@ -19,6 +19,8 @@ extern "C" {
 
 int main(int argc, char **argv) {
   ::aos::logging::Init();
+  ::aos::logging::AddImplementation(
+      new ::aos::logging::StreamLogImplementation(stdout));
 
   if (argc < 2) {
     fputs("Need an argument saying which target to download.\n", stderr);
@@ -70,7 +72,7 @@ int main(int argc, char **argv) {
       }
       start_address |= value << (12 - (4 * i));
     }
-    printf("%x\n", start_address);
+    LOG(INFO, "start address = 0x%x\n", start_address);
   }
 
   parser_t *parser = &PARSER_HEX;
@@ -106,7 +108,6 @@ int main(int argc, char **argv) {
 
   unsigned int last_byte = parser->size(p_st);
   unsigned int size = last_byte - start_address;
-  printf("%x\n", size);
 
   // An array of the sizes of each sector.
   static const uint32_t kSectorSizes[12] = {0x4000, 0x4000, 0x4000, 0x4000,
@@ -126,7 +127,6 @@ int main(int argc, char **argv) {
     }
     if (address == start_address) break;
   }
-  printf("starting with sector %d\n", start_sector);
 
   // The first sector that we're not going to erase.
   int end_sector = 0;
@@ -138,7 +138,6 @@ int main(int argc, char **argv) {
           size, start_address);
     }
   }
-  printf("not erasing sector %d\n", end_sector);
 
   if (!stm32_erase_memory(stm, start_sector, end_sector - start_sector)) {
     LOG(FATAL, "failed to erase memory\n");
@@ -186,7 +185,7 @@ int main(int argc, char **argv) {
     if (memcmp(buffer, compare_buffer, length) != 0) {
       printf("\n");
       for (size_t i = 0; i < length; ++i) {
-        printf("want %x have %x\n", buffer[i], compare_buffer[i]);
+        LOG(DEBUG, "want %x have %x\n", buffer[i], compare_buffer[i]);
       }
       LOG(FATAL, "verify from 0x%x to 0x%x failed\n",
           address, address + length);
@@ -199,7 +198,7 @@ int main(int argc, char **argv) {
   printf("\n");
 
   if (init_bl_exit(stm, serial, NULL /* GPIO sequence */)) {
-    printf("done!\n");
+    LOG(INFO, "all done\n");
   } else {
     LOG(FATAL, "init_bl_exit failed\n");
   }

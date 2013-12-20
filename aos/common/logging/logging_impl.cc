@@ -120,6 +120,16 @@ void PrintMessage(FILE *output, const LogMessage &message) {
 
 }  // namespace internal
 
+StreamLogImplementation::StreamLogImplementation(FILE *stream)
+    : stream_(stream) {}
+
+void StreamLogImplementation::DoLog(log_level level, const char *format,
+                                    va_list ap) {
+  LogMessage message;
+  internal::FillInMessage(level, format, ap, &message);
+  internal::PrintMessage(stream_, message);
+}
+
 void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
                    int levels) {
   Context *context = Context::Get();

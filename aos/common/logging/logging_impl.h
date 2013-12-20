@@ -114,6 +114,17 @@ class LogImplementation {
   LogImplementation *next_;
 };
 
+// A log implementation that dumps all messages to a C stdio stream.
+class StreamLogImplementation : public LogImplementation {
+ public:
+  StreamLogImplementation(FILE *stream);
+
+ private:
+  virtual void DoLog(log_level level, const char *format, va_list ap);
+
+  FILE *const stream_;
+};
+
 // Adds another implementation to the stack of implementations in this
 // task/thread.
 // Any tasks/threads created after this call will also use this implementation.

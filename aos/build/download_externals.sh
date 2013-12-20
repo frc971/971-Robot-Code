@@ -6,11 +6,13 @@ AOS=$(readlink -f $(dirname $0)/..)
 . $(dirname $0)/tools_config
 COMPILED=${EXTERNALS}/../compiled-arm
 
-export CC=arm-linux-gnueabihf-gcc-4.7
-export CXX=arm-linux-gnueabihf-g++-4.7
-export CFLAGS=-mcpu="cortex-a8 -mfpu=neon"
-export CXXFLAGS=-mcpu="cortex-a8 -mfpu=neon"
-export OBJDUMP=arm-linux-gnueabihf-objdump
+CROSS_COMPILE=arm-linux-gnueabihf-
+
+export CC=${CROSS_COMPLIE}gcc-4.7
+export CXX=${CROSS_COMPLIE}g++-4.7
+export CFLAGS="-mcpu=cortex-a8 -mfpu=neon"
+export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
+export OBJDUMP=${CROSS_COMPLIE}objdump
 # Flags that should get passed to all configure scripts.
 # Some of them need to set LDFLAGS separately to work around stupid configure
 # scripts, so we can't just set that here.
