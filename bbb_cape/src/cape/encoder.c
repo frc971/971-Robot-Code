@@ -44,7 +44,7 @@ void EXTI1_IRQHandler(void) {
 // 3.A
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
   uint32_t inputs = GPIOC->IDR;
-  TIM9->SR = TIM_SR_CC1IF;
+  TIM9->SR = ~TIM_SR_CC1IF;
   if (((inputs >> 1) ^ inputs) & (1 << 2)) {
     ++encoder3_value;
   } else {

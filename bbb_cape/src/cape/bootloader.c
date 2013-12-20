@@ -58,7 +58,7 @@ void _start(void) {
   RCC->AHB1ENR |=
       RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOCEN;
   led_init();
-  led_set(LED_ERR, 1);
+  led_set(LED_HB, 1);
 
   setup_main_clock();
 
@@ -67,7 +67,6 @@ void _start(void) {
   while (!(SYSCFG->CMPCR & SYSCFG_CMPCR_READY)) {}  // wait for it to be ready
   TODO(brians): Figure out what the story with this is.
 #endif
-  led_set(LED_DB, 1);
 
   jump_to_main();
 }

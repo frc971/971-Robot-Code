@@ -14,6 +14,7 @@
 #include "cape/analog.h"
 #include "cape/robot.h"
 #include "cape/digital.h"
+#include "cape/led.h"
 
 #define TIMESTAMP_TIM TIM6
 #define RCC_APB1ENR_TIMESTAMP_TIMEN RCC_APB1ENR_TIM6EN
@@ -74,12 +75,14 @@ void fill_packet_start(void) {
   crc_init();
   analog_init();
   encoder_init();
-  gyro_init();
   digital_init();
 
   uint8_t *flash_end = &__etext + (&__data_start__ - &__data_end__) + 8;
   flash_checksum = crc_calculate((void *)MAIN_FLASH_START,
                                  (size_t)(flash_end - MAIN_FLASH_START) / 4);
+
+  led_set(LED_ERR, 0);
+  //gyro_init();
 
   uart_common_configure(3000000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);

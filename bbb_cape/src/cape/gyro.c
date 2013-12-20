@@ -90,6 +90,7 @@ static void gyro_setup_failed(void) {
   gyro_output.last_reading_bad = gyro_output.gyro_bad = 1;
   gyro_output.initialized = 1;
   gyro_output.zeroed = 0;
+  led_set(LED_ERR, 1);
 }
 
 static void gyro_enable_csel(void) {
@@ -257,6 +258,14 @@ void SPI_IRQHandler(void) {
     uint16_t value = SPI->DR;
     if (__builtin_parity(value) != 1) {
       parity_error = 1;
+      for (int i = -2; i < 16; ++i) {
+        led_set(LED_Z, i < 0);
+        for (int ii = 0; ii < 1000000; ++ii) {
+          led_set(LED_ERR, i >= 0 && ii < 500000);
+          if (i >= 0) led_set(LED_DB, value & (1 << i));
+          else led_set(LED_DB, 0);
+        }
+      }
     }
     if (receive_byte == 0) {
       receive_byte = 1;
@@ -273,7 +282,7 @@ void SPI_IRQHandler(void) {
 
 void TIM_IRQHandler(void) {
   TIM->CR1 &= ~TIM_CR1_CEN;
-  TIM->SR = TIM_SR_CC1IF;
+  TIM->SR = ~TIM_SR_CC1IF;
   switch (state) {
     case STATE_SETUP0:
       if (setup_counter++ < 100) {
@@ -379,11 +388,13 @@ void gyro_init(void) {
   TIM->CR1 = TIM_CR1_UDIS;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
-  TIM->PSC = 30000 - 1;
+  // Make it generate 1 tick every ms.
+  TIM->PSC = 60000 - 1;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
       SPI_CR1_DFF /* 16 bit frame */ |
+      SPI_CR1_SSM | SPI_CR1_SSI | /* don't watch for other masters */
       1 << 3 /* 30MHz/4 = 7.5MHz */ |
       SPI_CR1_MSTR /* master mode */;
   SPI->CR2 = SPI_CR2_RXNEIE;

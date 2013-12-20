@@ -84,7 +84,7 @@ $(OBJDIR)%.o: %.S
 $(OBJECTS:%=%.s): %.s: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -S -o $@ $<
 %.s: %.S
-	$(CC) $(CPPFLAGS) $(ASFLAGS) -S -o $@ $<
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -S -o $@ $< > $@
 
 # So that you can see the assembly of the whole .elf file.
 $(OUTPUTS:%=elf_%.s): elf_%.s: $(OBJDIR)%.elf

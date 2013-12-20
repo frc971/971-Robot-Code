@@ -6,9 +6,10 @@ void crc_init(void) {
   RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
 }
 
-uint32_t crc_calculate(uint32_t *restrict data, size_t words) {
+uint32_t crc_calculate(uint32_t *data, size_t words) {
   CRC->CR = 1;  // reset it
-  for (; data < data + words; ++data) {
+  uint32_t *end = data + words;
+  for (; data < end; ++data) {
     CRC->DR = *data;
   }
   return CRC->DR;

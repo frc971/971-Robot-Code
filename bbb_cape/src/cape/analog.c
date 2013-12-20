@@ -5,9 +5,10 @@
 #include <STM32F2XX.h>
 
 #include "cape/util.h"
+#include "cape/led.h"
 
 #define SPI SPI2
-#define SPI_IRQHander SPI2_IRQHandler
+#define SPI_IRQHandler SPI2_IRQHandler
 #define SPI_IRQn SPI2_IRQn
 #define RCC_APB1ENR_SPIEN RCC_APB1ENR_SPI2EN
 #define TIM TIM14
@@ -45,16 +46,14 @@ void SPI_IRQHandler(void) {
     analog_readings[current_channel] = value & 0x3FF;
     CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
 
-    TIM->CR1 = TIM_CR1_UDIS;
-    TIM->CCR1 = 1;
+    TIM->CR1 = TIM_CR1_UDIS | TIM_CR1_OPM;
     TIM->EGR = TIM_EGR_UG;
     TIM->CR1 |= TIM_CR1_CEN;
   }
 }
 
 void TIM_IRQHandler(void) {
-  TIM->CR1 &= ~TIM_CR1_CEN;
-  TIM->SR = TIM_SR_CC1IF;
+  TIM->SR = ~TIM_SR_CC1IF;
 
   start_read((current_channel + 1) % NUM_CHANNELS);
 }
@@ -77,15 +76,18 @@ void analog_init(void) {
   NVIC_SetPriority(TIM_IRQn, 6);
   NVIC_EnableIRQ(TIM_IRQn);
 
-  TIM->CR1 = TIM_CR1_UDIS;
+  TIM->CR1 = TIM_CR1_UDIS | TIM_CR1_OPM;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
   // Make each tick take 500ns.
-  TIM->PSC = (30 * 500 / 1000) - 1;
+  TIM->PSC = (60 * 500 / 1000) - 1;
+  // Call the interrupt after 1 tick.
+  TIM->CCR1 = 1;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
       SPI_CR1_DFF /* 16 bit frame */ |
+      SPI_CR1_SSM | SPI_CR1_SSI | /* don't watch for other masters */
       1 << 3 /* 30MHz/4 = 7.5MHz */ |
       SPI_CR1_MSTR /* master mode */;
   SPI->CR2 = SPI_CR2_RXNEIE;
