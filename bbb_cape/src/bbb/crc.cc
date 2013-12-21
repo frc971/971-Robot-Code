@@ -32,11 +32,13 @@ uint32_t CalculateChecksum(uint8_t *data, size_t length) {
 
   uint32_t r = 0xFFFFFFFF;
 
-  for (size_t i = 0; i < length; ++i) {
-    r = (r << 8) ^ table[(r >> 24) ^ data[i]];
+  for (size_t i = 0; i < (length / 4); ++i) {
+    for (int ii = 3; ii >= 0; --ii) {
+      r = (r << 8) ^ table[(r >> 24) ^ data[i * 4 + ii]];
+    }
   }
 
-  return ~r;
+  return r;
 }
 
 }  // namespace cape

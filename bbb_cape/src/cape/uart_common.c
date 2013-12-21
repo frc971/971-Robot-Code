@@ -26,7 +26,7 @@ void uart_common_configure(int baud) {
   UART->CR1 =
       //USART_CR1_M /* 9th bit for the parity */ |
       //USART_CR1_PCE /* enable parity (even by default) */ |
-      USART_CR1_TE /* enable transmitter */ |
-      USART_CR1_RE /* enable receiver */;
+      //USART_CR1_OVER8 /* support going faster */ |
+      0;
   UART->CR1 |= USART_CR1_UE;  // enable it
 }

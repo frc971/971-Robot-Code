@@ -51,7 +51,7 @@ uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
     for (uint32_t i = 1; i < code; ++i) {
       destination[destination_index++] = source[source_index++];
     }
-    if (code != UINT32_MAX && source_index != source_length) {
+    if (code != UINT32_MAX && source_index != source_length / 4) {
       destination[destination_index++] = 0;
     }
   }

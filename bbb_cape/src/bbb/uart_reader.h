@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <memory>
+
 #define DATA_STRUCT_NAME DataStruct
 #include "cape/data_struct.h"
 #undef DATA_STRUCT_NAME
@@ -24,11 +26,22 @@ class UartReader {
   // packet is invalid in some way.
   bool FindPacket();
 
-  typedef char __attribute__((aligned(8))) AlignedChar;
+  // Processes a packet currently in buf_ and leaves the result in
+  // unstuffed_data_.
+  // Returns true if it succeeds or false if there was something wrong with the
+  // data.
+  bool ProcessPacket();
+
+  typedef char __attribute__((aligned(4))) AlignedChar;
 
   const int32_t baud_rate_;
   AlignedChar *const buf_;
+  AlignedChar *const unstuffed_data_;
   const int fd_;
+
+  // How many bytes of the packet we've read in (or -1 if we don't know where
+  // the packet is).
+  int packet_bytes_ = -1;
 };
 
 }  // namespace bbb

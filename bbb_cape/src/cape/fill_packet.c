@@ -58,11 +58,11 @@ void uart_dma_callback(uint8_t *buffer) {
                 The_size_of_the_data_is_wrong);
   struct DataStruct *packet = &data.packet;
 
-  do_fill_packet(packet);
+  //do_fill_packet(packet);
 
   uint32_t *p;
   memcpy(&p, &packet, sizeof(void *));
-  data.checksum = crc_calculate(p, sizeof(*packet) / 4);
+  data.checksum = crc_calculate(p, (sizeof(data) - 4) / 4);
 
   ((uint32_t *)buffer)[0] = 0;
   cows_stuff(&data, sizeof(data), buffer + 4);
@@ -87,19 +87,6 @@ void fill_packet_start(void) {
   //gyro_init();
 
   //uart_common_configure(3000000);
-  uart_common_configure(300000);
-  //uart_common_configure(19200);
-#if 0
-  //for (int i = 0; i < 5; ++i) uart_byte_send(255);
-  for (int i = 0; i < 10; ++i) uart_byte_send(i + 20);
-  //uart_byte_send('a');
-  //uart_byte_send('b');
-  //uart_byte_send('c');
-  //uart_byte_send('d');
-  led_set(LED_DB, 1);
-  (void)buffer1;
-  (void)buffer2;
-#else
+  uart_common_configure(30000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
-#endif
 }

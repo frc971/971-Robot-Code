@@ -23,8 +23,7 @@ int main() {
 #endif
 
   //::bbb::UartReader receiver(3000000);
-  ::bbb::UartReader receiver(300000);
-  //::bbb::UartReader receiver(19200);
+  ::bbb::UartReader receiver(30000);
 
   Time last_packet_time = Time::Now();
   while (true) {
