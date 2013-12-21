@@ -37,8 +37,14 @@ int main(int argc, char **argv) {
 
   int file = open(filename.c_str(), O_RDONLY);
   if (file == -1) {
-    LOG(FATAL, "open(%s, O_RDONLY) failed with %d: %s\n",
-        filename.c_str(), errno, strerror(errno));
+    filename = target;
+    file = open(filename.c_str(), O_RDONLY);
+    if (file == -1) {
+      LOG(FATAL, "open(%s, O_RDONLY) failed with %d: %s\n",
+          filename.c_str(), errno, strerror(errno));
+    } else {
+      LOG(INFO, "using filename %s from the command line\n", filename.c_str());
+    }
   }
 
   uint16_t start_address = 0;

@@ -26,7 +26,8 @@ namespace bbb {
 namespace {
 // TODO(brians): Determine this in some way that allows easy switching for
 // testing with /dev/ttyUSB0 for example.
-const char *device = "/dev/ttyO1";
+// TODO(brians): Change back to /dev/ttyO1.
+const char *device = "/dev/ttyUSB0";
 }  // namespace
 
 UartReader::UartReader(int32_t baud_rate)
@@ -41,61 +42,76 @@ UartReader::UartReader(int32_t baud_rate)
                " Did you read my note in bbb/uart_reader.cc?\n",
         device, errno, strerror(errno));
   }
+
+  {
+    termios options;
+    if (tcgetattr(fd_, &options) != 0) {
+      LOG(FATAL, "tcgetattr(%d, %p) failed with %d: %s\n",
+          fd_, &options, errno, strerror(errno));
+    }
+    if (cfsetispeed(&options, B38400) != 0) {
+      LOG(FATAL, "cfsetispeed(%p, B38400) failed with %d: %s\n",
+          &options, errno, strerror(errno));
+    }
+    if (cfsetospeed(&options, B38400) != 0) {
+      LOG(FATAL, "cfsetospeed(%p, B38400) failed with %d: %s\n",
+          &options, errno, strerror(errno));
+    }
+    cfmakeraw(&options);
+    options.c_cflag |= CLOCAL;  // ignore modem flow control
+    options.c_cflag |= CREAD;  // enable receiver
+    options.c_cflag &= ~CRTSCTS;  // disable flow control
+    //options.c_cflag |= PARENB;  // enable parity; defaults to even
+    options.c_cflag = (options.c_cflag & ~CSIZE) | CS8;  // 8 bits
+    options.c_cflag &= ~CSTOPB;  // 1 stop bit
+    options.c_iflag = 0;
+    // Replace any received characters with parity or framing errors with 0s.
+    options.c_iflag = (options.c_iflag & ~(IGNPAR | PARMRK)) | INPCK;
+    //options.c_iflag |= IGNCR | PARMRK;
+    options.c_oflag = 0;
+    options.c_lflag = 0;
+    options.c_cc[VMIN] = 0;
+    options.c_cc[VTIME] = 1;
+    if (tcsetattr(fd_, TCSANOW, &options) != 0) {
+      LOG(FATAL, "tcsetattr(%d, TCSANOW, %p) failed with %d: %s\n",
+          fd_, &options, errno, strerror(errno));
+    }
+  }
  
-  serial_struct serinfo;
-  // Must implement an ugly custom divisor.
-  serinfo.reserved_char[0] = 0;
-  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0) {
-    LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
-        fd_, &serinfo, errno, strerror(errno));
-  }
-  serinfo.flags &= ~ASYNC_SPD_MASK;
-  serinfo.flags |= ASYNC_SPD_CUST;
-  serinfo.custom_divisor = (serinfo.baud_base + (baud_rate_ / 2)) / baud_rate_;
-  if (serinfo.custom_divisor < 1) serinfo.custom_divisor = 1;
-  if (ioctl(fd_, TIOCSSERIAL, &serinfo) < 0) {
-    LOG(FATAL, "ioctl(%d, TIOCSSERIAL, %p) failed with %d: %s\n",
-        fd_, &serinfo, errno, strerror(errno));
-  }
-  if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0) {
-    LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
-        fd_, &serinfo, errno, strerror(errno));
-  }
-  if (serinfo.custom_divisor * baud_rate_ != serinfo.baud_base) {
-    LOG(WARNING, "actual baudrate is %d / %d = %f\n",
-        serinfo.baud_base, serinfo.custom_divisor,
-        static_cast<double>(serinfo.baud_base) / serinfo.custom_divisor);
+  {
+    serial_struct serinfo;
+    if (ioctl(fd_, TIOCGSERIAL, &serinfo) != 0) {
+      LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
+          fd_, &serinfo, errno, strerror(errno));
+    }
+    serinfo.reserved_char[0] = 0;
+    serinfo.flags &= ~ASYNC_SPD_MASK;
+    serinfo.flags |= ASYNC_SPD_CUST;
+    //serinfo.flags |= ASYNC_LOW_LATENCY;
+    serinfo.custom_divisor = static_cast<int>(
+        static_cast<double>(serinfo.baud_base) / baud_rate_ + 0.5);
+    if (serinfo.custom_divisor < 1) serinfo.custom_divisor = 1;
+    if (ioctl(fd_, TIOCSSERIAL, &serinfo) < 0) {
+      LOG(FATAL, "ioctl(%d, TIOCSSERIAL, %p) failed with %d: %s\n",
+          fd_, &serinfo, errno, strerror(errno));
+    }
+    if (ioctl(fd_, TIOCGSERIAL, &serinfo) < 0) {
+      LOG(FATAL, "ioctl(%d, TIOCGSERIAL, %p) failed with %d: %s\n",
+          fd_, &serinfo, errno, strerror(errno));
+    }
+    if ((serinfo.flags & ASYNC_SPD_CUST) == 0) {
+      LOG(FATAL, "can not set custom baud rate\n");
+    }
+    if (serinfo.custom_divisor * baud_rate_ != serinfo.baud_base) {
+      LOG(WARNING, "actual baudrate is %d / %d = %f\n",
+          serinfo.baud_base, serinfo.custom_divisor,
+          static_cast<double>(serinfo.baud_base) / serinfo.custom_divisor);
+    }
   }
 
   if (fcntl(fd_, F_SETFL, 0) != 0) {
     LOG(FATAL, "fcntl(%d, F_SETFL, 0) failed with %d: %s\n",
         fd_, errno, strerror(errno));
-  }
-
-  termios options;
-  if (tcgetattr(fd_, &options) != 0) {
-    LOG(FATAL, "tcgetattr(%d, %p) failed with %d: %s\n",
-        fd_, &options, errno, strerror(errno));
-  }
-  if (cfsetispeed(&options, B38400) != 0) {
-    LOG(FATAL, "cfsetispeed(%p, B38400) failed with %d: %s\n",
-        &options, errno, strerror(errno));
-  }
-  if (cfsetospeed(&options, B38400) != 0) {
-    LOG(FATAL, "cfsetospeed(%p, B38400) failed with %d: %s\n",
-        &options, errno, strerror(errno));
-  }
-  cfmakeraw(&options);
-  options.c_cflag |= (CLOCAL | CREAD);
-  options.c_cflag &= ~CRTSCTS;
-  options.c_iflag = 0;
-  options.c_oflag = 0;
-  options.c_lflag = 0;
-  options.c_cc[VMIN] = 0;
-  options.c_cc[VTIME] = 1;
-  if (tcsetattr(fd_, TCSANOW, &options) != 0) {
-    LOG(FATAL, "tcsetattr(%d, TCSANOW, %p) failed with %d: %s\n",
-        fd_, &options, errno, strerror(errno));
   }
 }
 
@@ -114,6 +130,11 @@ bool UartReader::FindPacket() {
     size_t already_read = ::std::max(packet_bytes, 0);
     ssize_t new_bytes =
         read(fd_, buf_ + already_read, DATA_STRUCT_SEND_SIZE - already_read);
+    LOG(DEBUG, "read %zd, wanted %d\n", new_bytes,
+        DATA_STRUCT_SEND_SIZE - already_read);
+    for (int i = 0; i < new_bytes; ++i) {
+      LOG(DEBUG, "%x\n", buf_[i]);
+    }
     if (new_bytes < 0) {
       if (errno == EINTR) continue;
       LOG(WARNING, "read(%d, %p, %zd) failed with %d: %s\n",

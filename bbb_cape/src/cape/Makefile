@@ -49,6 +49,7 @@ OBJECTS_bootloader := bootloader \
 
 OBJECTS_main_test := $(OBJECTS_main_common) \
 	robot_test \
+	uart_byte \
 
 OUTPUTS := main_test bootloader
 

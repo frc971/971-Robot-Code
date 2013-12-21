@@ -16,6 +16,8 @@
 #include "cape/digital.h"
 #include "cape/led.h"
 
+#include "cape/uart_byte.h"
+
 #define TIMESTAMP_TIM TIM6
 #define RCC_APB1ENR_TIMESTAMP_TIMEN RCC_APB1ENR_TIM6EN
 
@@ -84,6 +86,20 @@ void fill_packet_start(void) {
   led_set(LED_ERR, 0);
   //gyro_init();
 
-  uart_common_configure(3000000);
+  //uart_common_configure(3000000);
+  uart_common_configure(300000);
+  //uart_common_configure(19200);
+#if 0
+  //for (int i = 0; i < 5; ++i) uart_byte_send(255);
+  for (int i = 0; i < 10; ++i) uart_byte_send(i + 20);
+  //uart_byte_send('a');
+  //uart_byte_send('b');
+  //uart_byte_send('c');
+  //uart_byte_send('d');
+  led_set(LED_DB, 1);
+  (void)buffer1;
+  (void)buffer2;
+#else
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
+#endif
 }
