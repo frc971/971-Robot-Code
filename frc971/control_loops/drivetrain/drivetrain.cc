@@ -556,6 +556,18 @@ class PolyDrivetrain {
   Drivetrain::Position position_;
   int counter_;
 };
+constexpr double PolyDrivetrain::kStallTorque;
+constexpr double PolyDrivetrain::kStallCurrent;
+constexpr double PolyDrivetrain::kFreeSpeed;
+constexpr double PolyDrivetrain::kFreeCurrent;
+constexpr double PolyDrivetrain::J;
+constexpr double PolyDrivetrain::m;
+constexpr double PolyDrivetrain::rb;
+constexpr double PolyDrivetrain::kWheelRadius;
+constexpr double PolyDrivetrain::kR;
+constexpr double PolyDrivetrain::Kv;
+constexpr double PolyDrivetrain::Kt;
+
 
 
 class DrivetrainMotorsOL {
