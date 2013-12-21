@@ -135,7 +135,7 @@ bool UartReader::FindPacket() {
         read(fd_, buf_ + already_read, PACKET_SIZE - already_read);
     if (new_bytes < 0) {
       if (errno == EINTR) continue;
-      LOG(FATAL, "read(%d, %p, %zd) failed with %d: %s\n",
+      LOG(ERROR, "read(%d, %p, %zd) failed with %d: %s\n",
           fd_, buf_ + already_read, PACKET_SIZE - already_read,
           errno, strerror(errno));
       return false;
