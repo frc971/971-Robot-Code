@@ -58,7 +58,7 @@ void uart_dma_callback(uint8_t *buffer) {
                 The_size_of_the_data_is_wrong);
   struct DataStruct *packet = &data.packet;
 
-  //do_fill_packet(packet);
+  do_fill_packet(packet);
 
   uint32_t *p;
   memcpy(&p, &packet, sizeof(void *));

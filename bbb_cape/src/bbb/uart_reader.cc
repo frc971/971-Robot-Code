@@ -73,8 +73,8 @@ UartReader::UartReader(int32_t baud_rate)
     //options.c_iflag |= IGNCR | PARMRK;
     options.c_oflag = 0;
     options.c_lflag = 0;
-    options.c_cc[VMIN] = 0;
-    options.c_cc[VTIME] = 10;
+    options.c_cc[VMIN] = 20;
+    options.c_cc[VTIME] = 0;
     if (tcsetattr(fd_, TCSANOW, &options) != 0) {
       LOG(FATAL, "tcsetattr(%d, TCSANOW, %p) failed with %d: %s\n",
           fd_, &options, errno, strerror(errno));

@@ -9,13 +9,13 @@
 #define DMA_Stream DMA2_Stream7
 #define DMA_SR DMA2->HISR
 #define DMA_FCR DMA2->HIFCR
-#define DMA_SR_SHIFT 3
 #define DMA_Stream_IRQHandler DMA2_Stream7_IRQHandler
 #define DMA_Stream_IRQn DMA2_Stream7_IRQn
 #define DMA_CHANNEL_NUMBER 4
 #define RCC_AHB1ENR_DMAEN RCC_AHB1ENR_DMA2EN
 
-#define DMA_SR_BIT(bit) (1 << (bit + 6 * DMA_SR_SHIFT))
+#define DMA_SR_SHIFT(value) ((value) << 22)
+#define DMA_SR_BIT(bit) DMA_SR_SHIFT(1 << (bit))
 
 void uart_dma_callback(uint8_t *new_buffer) __attribute__((weak));
 void uart_dma_callback(uint8_t *new_buffer) {}
@@ -23,7 +23,6 @@ void uart_dma_callback(uint8_t *new_buffer) {}
 static uint8_t *volatile buffer1, *volatile buffer2;
 
 void DMA_Stream_IRQHandler(void) {
-  led_set(LED_DB, 1);
   uint32_t status = DMA_SR;
   if (status & DMA_SR_BIT(5)) {  // transfer completed
     DMA_FCR = DMA_SR_BIT(5);
@@ -69,11 +68,10 @@ void uart_dma_configure(int bytes, uint8_t *buffer1_in, uint8_t *buffer2_in) {
       DMA_SxFCR_DMDIS /* disable direct mode (enable the FIFO) */ |
       1 /* 1/2 full threshold */;
   UART->SR = ~USART_SR_TC;
-  DMA_FCR = 0xF << DMA_SR_SHIFT;
+  DMA_FCR = DMA_SR_SHIFT(1 << 0 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5);
   DMA_Stream->CR |= DMA_SxCR_EN;  // enable it
   NVIC_SetPriority(DMA_Stream_IRQn, 8);
   NVIC_EnableIRQ(DMA_Stream_IRQn);
 
   uart_dma_callback(buffer2);
-  led_set(LED_Z, 1);
 }

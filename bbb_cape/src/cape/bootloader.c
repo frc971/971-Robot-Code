@@ -62,11 +62,9 @@ void _start(void) {
 
   setup_main_clock();
 
-#if 0
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
   SYSCFG->CMPCR |= SYSCFG_CMPCR_CMP_PD;  // enable IO compensation cell
   while (!(SYSCFG->CMPCR & SYSCFG_CMPCR_READY)) {}  // wait for it to be ready
-  TODO(brians): Figure out what the story with this is.
-#endif
 
   jump_to_main();
 }

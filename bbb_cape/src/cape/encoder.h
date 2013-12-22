@@ -18,10 +18,10 @@ static inline void counter_update_s32_u16(int32_t *restrict counter,
   static const uint16_t kHalf = 0xFFFF / 2;
   uint16_t old = *counter & 0xFFFF;
   int32_t counter_top = *counter ^ old;
-  int32_t delta = (int32_t)new - (int32_t)old;
+  int32_t delta = (int32_t)old - (int32_t)new;
   int32_t new_counter;
   if (__builtin_expect(delta < -kHalf, 0)) {
-    new_counter = counter_top - 0x10000;
+    new_counter = (counter_top - 0x10000) ^ 0xFFFF;
   } else if (__builtin_expect(delta > kHalf, 0)) {
     new_counter = counter_top + 0x10000;
   } else {
@@ -39,12 +39,13 @@ static inline void counter_update_u64_u16(uint64_t *restrict counter,
                                           uint32_t new) {
   uint16_t old = *counter & 0xFFFF;
   int64_t counter_top = *counter ^ old;
+  int64_t new_counter;
   if (__builtin_expect(new < old, 0)) {
-    *counter = counter_top + 0x10000;
+    new_counter = counter_top + 0x10000;
   } else {
-    *counter = counter_top;
+    new_counter = counter_top;
   }
-  *counter |= new;
+  *counter = new_counter | new;
 }
 
 // number is the 0-indexed number on the silkscreen

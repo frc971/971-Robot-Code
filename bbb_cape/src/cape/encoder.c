@@ -70,7 +70,7 @@ static void encoder_setup(TIM_TypeDef *timer) {
   timer->SMCR = 3;  // 4x quadrature encoder mode
   timer->CCMR1 =
       TIM_CCMR1_CC2S_0 | /* input pin 2 -> timer input 2 */
-      TIM_CCMR1_CC1S_0;  /* input pin 1 -> timer input 1*/
+      TIM_CCMR1_CC1S_0;  /* input pin 1 -> timer input 1 */
   timer->EGR = TIM_EGR_UG;
   timer->CR1 |= TIM_CR1_CEN;
 }

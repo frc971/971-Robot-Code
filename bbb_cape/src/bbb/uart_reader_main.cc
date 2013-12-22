@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
@@ -46,6 +47,8 @@ int main() {
     last_packet_time = Time::Now();
 
     LOG(DEBUG, "got one!\n");
+    LOG(DEBUG, "timestamp %" PRIu64 "\n", packet.timestamp);
+    LOG(DEBUG, "0=%d\n", packet.main.encoders[0]);
     //TODO (danielp): Do stuff here with the data we got.
   }
 
