@@ -113,4 +113,4 @@ int UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes) {
   return read(fd_, dest, max_bytes);
 }
 
-} // namespace bbb
+}  // namespace bbb

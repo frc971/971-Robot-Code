@@ -9,14 +9,16 @@
 namespace bbb {
 
 class UartReader : public PacketFinder {
-  int fd_;
-
-public:
+ public:
   UartReader(int32_t baud_rate);
-  ~UartReader();
+  virtual ~UartReader();
+
   int ReadBytes(AlignedChar *dest, size_t max_bytes);
+
+ private:
+  const int fd_;
 };
 
-} // namespace bbb
+}  // namespace bbb
 
 #endif

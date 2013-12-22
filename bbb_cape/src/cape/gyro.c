@@ -77,7 +77,7 @@ static int setup_counter;
 
 // Switches to new_state in time TIM milliseconds (aka it shows in the TIM ISR).
 static void switch_state(enum State new_state, int time) {
-  TIM->CR1 = TIM_CR1_UDIS;
+  TIM->CR1 = 0;
   state = new_state;
   TIM->CCR1 = time;
   TIM->EGR = TIM_EGR_UG;
@@ -385,7 +385,7 @@ void gyro_init(void) {
   NVIC_SetPriority(TIM_IRQn, 5);
   NVIC_EnableIRQ(TIM_IRQn);
 
-  TIM->CR1 = TIM_CR1_UDIS;
+  TIM->CR1 = 0;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
   // Make it generate 1 tick every ms.

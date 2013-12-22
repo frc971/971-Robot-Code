@@ -15,17 +15,17 @@ namespace bbb {
 
 PacketFinder::PacketFinder()
     : buf_(new AlignedChar[PACKET_SIZE]),
-    unstuffed_data_(new AlignedChar[PACKET_SIZE - 4]) {
+      unstuffed_data_(new AlignedChar[PACKET_SIZE - 4]) {
   static_assert((PACKET_SIZE % 4) == 0,
                 "We can't do checksums of lengths that aren't multiples of 4.");
-  }
+}
 
 PacketFinder::~PacketFinder() {
   delete buf_;
   delete unstuffed_data_;
 }
 
-// TODO(brians): Figure out why this (sometimes?) gets confused right after
+// TODO(brians): Figure out why this (sometimes) gets confused right after
 // flashing the cape.
 bool PacketFinder::FindPacket() {
   // How many 0 bytes we've found at the front so far.
@@ -93,10 +93,7 @@ bool PacketFinder::ProcessPacket() {
   return true;
 }
 
-bool PacketFinder::GetPacket(DataStruct *packet) {
-  static_assert(sizeof(*packet) <= PACKET_SIZE - 8,
-                "output data type is too big");
-
+bool PacketFinder::ReadPacket() {
   if (!FindPacket()) return false;
 
   if (!ProcessPacket()) {
@@ -119,7 +116,6 @@ bool PacketFinder::GetPacket(DataStruct *packet) {
   } else {
     packet_bytes_ = -1;
   }
-  memcpy(packet, unstuffed_data_, sizeof(*packet));
 
   return true;
 }

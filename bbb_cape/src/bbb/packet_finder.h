@@ -11,21 +11,34 @@
 namespace bbb {
 
 class PacketFinder {
- protected:
-  typedef char __attribute__((aligned(4))) AlignedChar;
-
  public:
   PacketFinder();
   virtual ~PacketFinder();
 
-  // Returns true if it finds one or false if it gets an I/O error first.
-  // packet must be aligned to 4 bytes.
-  bool GetPacket(DataStruct *packet);
+  // Returns true if it succeeds or false if it gets an I/O error first.
+  bool ReadPacket();
+
+  // Gets a reference to the received packet.
+  // The most recent call to ReadPacket() must have returned true or the data
+  // pointed to is undefined.
+  template <typename T>
+  const T *get_packet() {
+    static_assert(alignof(T) <= alignof(*unstuffed_data_),
+                  "We need to align our data better.");
+    /*static_assert(sizeof(T) <= PACKET_SIZE - 8,
+                  "We aren't getting that much data.");*/
+    return reinterpret_cast<const T *>(unstuffed_data_);
+  }
+
+ protected:
+  typedef char __attribute__((aligned(8))) AlignedChar;
+
+ private:
   // Implemented by subclasses to provide a data source 
   // for these algorithms.
+  // Returns the number of bytes read or -1 if there is an error in errno.
   virtual int ReadBytes(AlignedChar *dest, size_t max_bytes) = 0;
- 
- private:
+
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
   // packet is invalid in some way.
@@ -36,7 +49,6 @@ class PacketFinder {
   // Returns true if it succeeds or false if there was something wrong with the
   // data.
   bool ProcessPacket();
-
 
   AlignedChar *const buf_;
   AlignedChar *const unstuffed_data_;
