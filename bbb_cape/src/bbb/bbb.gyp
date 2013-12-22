@@ -29,20 +29,21 @@
       ],
       'sources': [
         'uart_reader.cc',
+        'packet_finder.cc',
       ],
     },
-    {
-      'target_name': 'uart_reader_test',
-      'type': 'executable',
-      'dependencies': [
-        'uart_reader',
-        '<(EXTERNALS):gtest',
-        '<(AOS)/build/aos.gyp:logging',
-      ],
-      'sources': [
-        'uart_reader_test.cc',
-      ],
-    },
+    #{
+    #  'target_name': 'uart_reader_test',
+    #  'type': 'executable',
+    #  'dependencies': [
+    #    'uart_reader',
+    #    '<(EXTERNALS):gtest',
+    #    '<(AOS)/build/aos.gyp:logging',
+    #  ],
+    #  'sources': [
+    #    'uart_reader_test.cc',
+    #  ],
+    #},
     {
       'target_name': 'uart_reader_main',
       'type': 'executable',
