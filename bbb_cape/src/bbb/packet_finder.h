@@ -16,7 +16,7 @@ class PacketFinder {
 
  public:
   PacketFinder();
-  ~PacketFinder();
+  virtual ~PacketFinder();
 
   // Returns true if it finds one or false if it gets an I/O error first.
   // packet must be aligned to 4 bytes.
