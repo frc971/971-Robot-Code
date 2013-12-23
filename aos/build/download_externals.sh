@@ -8,8 +8,8 @@ COMPILED=${EXTERNALS}/../compiled-arm
 
 CROSS_COMPILE=arm-linux-gnueabihf-
 
-export CC=${CROSS_COMPLIE}gcc-4.7
-export CXX=${CROSS_COMPLIE}g++-4.7
+export CC=${CROSS_COMPILE}gcc-4.7
+export CXX=${CROSS_COMPILE}g++-4.7
 export CFLAGS="-mcpu=cortex-a8 -mfpu=neon"
 export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
 export OBJDUMP=${CROSS_COMPLIE}objdump

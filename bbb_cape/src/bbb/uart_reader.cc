@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/serial.h>
+#include <sys/select.h>
 #include <termio.h>
 #include <unistd.h>
 
@@ -25,7 +26,7 @@ const char *device = "/dev/ttyUSB0";
 }  // namespace
 
 UartReader::UartReader(int32_t baud_rate)
-    : fd_(open(device, O_RDWR | O_NOCTTY)) {
+    : fd_(open(device, O_RDWR | O_NDELAY | O_NOCTTY)) {
   
   if (fd_ < 0) {
     LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY) failed with %d: %s."
@@ -103,6 +104,15 @@ UartReader::UartReader(int32_t baud_rate)
     LOG(FATAL, "fcntl(%d, F_SETFL, 0) failed with %d: %s\n",
         fd_, errno, strerror(errno));
   }
+
+  // Implement timeout.
+  fd_set readfd;
+  timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 500000;
+  FD_ZERO(&readfd);
+  FD_SET(fd_, &readfd);
+  select(fd_ + 1, &readfd, NULL, NULL, &tv);
 }
 
 UartReader::~UartReader() {
