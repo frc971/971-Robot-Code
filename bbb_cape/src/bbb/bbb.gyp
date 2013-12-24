@@ -30,6 +30,7 @@
       'sources': [
         'uart_reader.cc',
         'packet_finder.cc',
+        'uart_reader_termios2.c',
       ],
     },
     #{
