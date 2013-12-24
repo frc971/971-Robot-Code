@@ -23,8 +23,7 @@ int main() {
   reset_pin.MakeOutput();
 #endif
 
-  //::bbb::UartReader receiver(3000000);
-  ::bbb::UartReader receiver(30000);
+  ::bbb::UartReader receiver(1500000);
 
   Time last_packet_time = Time::Now();
   while (true) {
