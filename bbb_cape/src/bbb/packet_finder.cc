@@ -9,16 +9,14 @@
 #include "bbb_cape/src/cape/cows.h"
 #include "bbb/crc.h"
 
-#define PACKET_SIZE (DATA_STRUCT_SEND_SIZE - 4)
-
 namespace bbb {
 
 PacketFinder::PacketFinder()
-    : buf_(new AlignedChar[PACKET_SIZE]),
-    unstuffed_data_(new AlignedChar[PACKET_SIZE - 4]) {
-  static_assert((PACKET_SIZE % 4) == 0,
-                "We can't do checksums of lengths that aren't multiples of 4.");
-  }
+    : buf_(new AlignedChar[kPacketSize]),
+    unstuffed_data_(new AlignedChar[kPacketSize - 4]) {
+  int remainder = kPacketSize % 4;
+  CHECK(remainder == 0);
+}
 
 PacketFinder::~PacketFinder() {
   delete buf_;
@@ -33,11 +31,11 @@ bool PacketFinder::FindPacket() {
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
     ssize_t new_bytes =
-        ReadBytes(buf_ + already_read, PACKET_SIZE - already_read);
+        ReadBytes(buf_ + already_read, kPacketSize - already_read);
     if (new_bytes < 0) {
       if (errno == EINTR) continue;
       LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-          buf_ + already_read, PACKET_SIZE - already_read,
+          buf_ + already_read, kPacketSize - already_read,
           errno, strerror(errno));
       return false;
     }
@@ -61,29 +59,29 @@ bool PacketFinder::FindPacket() {
     }
     if (packet_bytes_ != -1) {  // if we decided that these are good bytes
       packet_bytes_ += new_bytes;
-      if (packet_bytes_ == PACKET_SIZE) return true;
+      if (packet_bytes_ == static_cast<int>(kPacketSize)) return true;
     }
   }
 }
 
 bool PacketFinder::ProcessPacket() {
   uint32_t unstuffed =
-      cows_unstuff(reinterpret_cast<uint32_t *>(buf_), PACKET_SIZE,
+      cows_unstuff(reinterpret_cast<uint32_t *>(buf_), kPacketSize,
                    reinterpret_cast<uint32_t *>(unstuffed_data_));
   if (unstuffed == 0) {
     LOG(WARNING, "invalid packet\n");
     return false;
-  } else if (unstuffed != (PACKET_SIZE - 4) / 4) {
+  } else if (unstuffed != (kPacketSize - 4) / 4) {
     LOG(WARNING, "packet is %" PRIu32 " words instead of %" PRIu32 "\n",
-        unstuffed, (PACKET_SIZE - 4) / 4);
+        unstuffed, (kPacketSize - 4) / 4);
     return false;
   }
 
   // Make sure the checksum checks out.
   uint32_t sent_checksum;
-  memcpy(&sent_checksum, unstuffed_data_ + PACKET_SIZE - 8, 4);
+  memcpy(&sent_checksum, unstuffed_data_ + kPacketSize - 8, 4);
   uint32_t calculated_checksum = cape::CalculateChecksum(
-      reinterpret_cast<uint8_t *>(unstuffed_data_), PACKET_SIZE - 8);
+      reinterpret_cast<uint8_t *>(unstuffed_data_), kPacketSize - 8);
   if (sent_checksum != calculated_checksum) {
     LOG(WARNING, "sent checksum: %" PRIx32 " vs calculated: %" PRIx32"\n",
         sent_checksum, calculated_checksum);
@@ -94,20 +92,19 @@ bool PacketFinder::ProcessPacket() {
 }
 
 bool PacketFinder::GetPacket(DataStruct *packet) {
-  static_assert(sizeof(*packet) <= PACKET_SIZE - 8,
-                "output data type is too big");
+  CHECK(sizeof(*packet) <= kPacketSize - 8);
 
   if (!FindPacket()) return false;
 
   if (!ProcessPacket()) {
     packet_bytes_ = -1;
     int zeros = 0;
-    for (int i = 0; i < PACKET_SIZE; ++i) {
+    for (uint32_t i = 0; i < kPacketSize; ++i) {
       if (buf_[i] == 0) {
         ++zeros;
         if (zeros == 4) {
           LOG(INFO, "found another packet start at %d\n", i);
-          packet_bytes_ = PACKET_SIZE - (i + 1);
+          packet_bytes_ = kPacketSize - (i + 1);
           memmove(buf_, buf_ + i + 1, packet_bytes_);
           return false;
         }

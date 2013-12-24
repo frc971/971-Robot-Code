@@ -14,7 +14,7 @@ class UartReader : public PacketFinder {
 public:
   UartReader(int32_t baud_rate);
   ~UartReader();
-  int ReadBytes(AlignedChar *dest, size_t max_bytes);
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes);
 };
 
 } // namespace bbb

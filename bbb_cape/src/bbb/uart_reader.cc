@@ -109,7 +109,7 @@ UartReader::~UartReader() {
   if (fd_ > 0) close(fd_);
 }
 
-int UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes) {
+ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes) {
   return read(fd_, dest, max_bytes);
 }
 

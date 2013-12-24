@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
 
 #define DATA_STRUCT_NAME DataStruct
 #include "cape/data_struct.h"
@@ -11,10 +12,9 @@
 namespace bbb {
 
 class PacketFinder {
- protected:
-  typedef char __attribute__((aligned(4))) AlignedChar;
-
  public:
+  typedef char __attribute__((aligned(4))) AlignedChar;
+  
   PacketFinder();
   virtual ~PacketFinder();
 
@@ -23,8 +23,11 @@ class PacketFinder {
   bool GetPacket(DataStruct *packet);
   // Implemented by subclasses to provide a data source 
   // for these algorithms.
-  virtual int ReadBytes(AlignedChar *dest, size_t max_bytes) = 0;
- 
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes) = 0;
+
+ protected:
+  const uint32_t kPacketSize = DATA_STRUCT_SEND_SIZE - 4; 
+
  private:
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
