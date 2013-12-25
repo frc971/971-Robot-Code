@@ -28,6 +28,7 @@ extern "C" {
 // Sets all of the weird, annoying TTY flags on fd. In a separate file because
 // the structure it uses is so weird and annoying and carries so much baggage it
 // messes up all the #includes in whatever file it's used in.
+// Defined in uart_reader_termios2.c.
 extern int aos_uart_reader_set_tty_options(int fd, int baud_rate);
 
 }  // extern "C"

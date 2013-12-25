@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
@@ -24,6 +25,16 @@ int main() {
 #endif
 
   ::bbb::UartReader receiver(1500000);
+  receiver.ReadPacket();
+  // TODO(brians): Do this cleanly.
+  int chrt_result = system(
+      "bash -c 'chrt -r -p 55 $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+  if (chrt_result == -1) {
+    LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+  } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
+    LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
+        WEXITSTATUS(chrt_result));
+  }
 
   Time last_packet_time = Time::Now();
   while (true) {
@@ -47,8 +58,9 @@ int main() {
     const DataStruct *packet = receiver.get_packet<DataStruct>();
     LOG(DEBUG, "got one!\n");
     LOG(DEBUG, "timestamp %" PRIu64 "\n", packet->timestamp);
-    LOG(DEBUG, "0=%d\n", packet->main.encoders[0]);
-    //TODO (danielp): Do stuff here with the data we got.
+    for (int i = 0; i < 8; ++i) {
+      LOG(DEBUG, "enc[%d]=%" PRId32 "\n", i, packet->main.encoders[i]);
+    }
   }
 
   ::aos::Cleanup();
