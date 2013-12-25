@@ -50,8 +50,8 @@ static inline void counter_update_u64_u16(uint64_t *restrict counter,
 
 // number is the 0-indexed number on the silkscreen
 static inline int32_t encoder_read(int number) {
-  static int32_t value0, value4, value6, value7;
-  extern volatile int32_t encoder1_value, encoder3_value;
+  static int32_t value0, value6, value7;
+  extern volatile int32_t encoder1_value, encoder3_value, encoder4_value;
   switch (number) {
     case 0:
       counter_update_s32_u16(&value0, TIM8->CNT);
@@ -63,8 +63,7 @@ static inline int32_t encoder_read(int number) {
     case 3:
       return encoder3_value;
     case 4:
-      counter_update_s32_u16(&value4, TIM1->CNT);
-      return value4;
+      return encoder4_value;
     case 5:
       return TIM2->CNT;
     case 6:

@@ -19,7 +19,7 @@ PA12 (don't change during reset into bootloader)
 PA13 SWDIO
 PA14 SWCLK
 PA15 (gets pulled up during reset (JTAG pin))
-PB0  TIM1.2
+PB0  TIM3.3
 PB1
 PB2  BOOT1 (tie to GND)
 PB3  TIM2.2
