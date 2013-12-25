@@ -23,8 +23,7 @@ int main() {
   reset_pin.MakeOutput();
 #endif
 
-  //::bbb::UartReader receiver(3000000);
-  ::bbb::UartReader receiver(30000);
+  ::bbb::UartReader receiver(1500000);
 
   Time last_packet_time = Time::Now();
   while (true) {
@@ -39,16 +38,16 @@ int main() {
     }
 #endif
 
-    DataStruct packet;
-    if (!receiver.GetPacket(&packet)) {
-      LOG(WARNING, "Could not get a packet.\n");
+    if (!receiver.ReadPacket()) {
+      LOG(WARNING, "Could not read a packet.\n");
       continue;
     }
     last_packet_time = Time::Now();
 
+    const DataStruct *packet = receiver.get_packet<DataStruct>();
     LOG(DEBUG, "got one!\n");
-    LOG(DEBUG, "timestamp %" PRIu64 "\n", packet.timestamp);
-    LOG(DEBUG, "0=%d\n", packet.main.encoders[0]);
+    LOG(DEBUG, "timestamp %" PRIu64 "\n", packet->timestamp);
+    LOG(DEBUG, "0=%d\n", packet->main.encoders[0]);
     //TODO (danielp): Do stuff here with the data we got.
   }
 

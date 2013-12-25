@@ -45,6 +45,8 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->bad_gyro = gyro_output.gyro_bad;
 
   robot_fill_packet(packet);
+  //counter_update_u64_u16(&timestamp, TIMESTAMP_TIM->CNT);
+  //packet->main.encoders[0] = timestamp;
 }
 
 // Fills the new packet with data.
@@ -70,7 +72,8 @@ void uart_dma_callback(uint8_t *buffer) {
 
 void fill_packet_start(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIMESTAMP_TIMEN;
-  TIMESTAMP_TIM->CR1 = TIM_CR1_UDIS;
+  TIMESTAMP_TIM->CR1 = 0;
+  TIMESTAMP_TIM->PSC = 600 - 1;
   TIMESTAMP_TIM->EGR = TIM_EGR_UG;
   TIMESTAMP_TIM->CR1 |= TIM_CR1_CEN;
 
@@ -86,7 +89,6 @@ void fill_packet_start(void) {
   led_set(LED_ERR, 0);
   //gyro_init();
 
-  //uart_common_configure(3000000);
-  uart_common_configure(30000);
+  uart_common_configure(1500000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
 }

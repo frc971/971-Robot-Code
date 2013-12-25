@@ -64,9 +64,9 @@ void EXTI3_IRQHandler(void) {
 }
 
 static void encoder_setup(TIM_TypeDef *timer) {
-  timer->CR1 = TIM_CR1_UDIS /* wait until we tell it to do anything */ |
-               TIM_CR1_URS /* don't generate spurious update interrupts that
-                              might be shared with other timers */;
+  timer->CR1 =
+      TIM_CR1_URS /* don't generate spurious update interrupts that
+                     might be shared with other timers */;
   timer->SMCR = 3;  // 4x quadrature encoder mode
   timer->CCMR1 =
       TIM_CCMR1_CC2S_0 | /* input pin 2 -> timer input 2 */
@@ -90,7 +90,7 @@ void encoder_init(void) {
   // Set up the A2 software encoder input through TIM9.
   gpio_setup_alt(GPIOA, 2, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;
-  TIM9->CR1 = TIM_CR1_UDIS;
+  TIM9->CR1 = 0;
   TIM9->DIER = TIM_DIER_CC1IE;
   TIM9->CCMR1 = TIM_CCMR1_CC1S_0; /* input pin 1 -> timer input 1 */
   TIM9->CCER = TIM_CCER_CC1NP | TIM_CCER_CC1P | TIM_CCER_CC1E;

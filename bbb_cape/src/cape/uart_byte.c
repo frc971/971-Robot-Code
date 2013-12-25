@@ -9,7 +9,7 @@
 void uart_byte_configure(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIMEOUT_TIMEN;
 
-  TIMEOUT_TIM->CR1 = TIM_CR1_UDIS;
+  TIMEOUT_TIM->CR1 = 0;
 }
 
 int uart_byte_receive(uint16_t timeout_count, uint16_t timeout_divider) {

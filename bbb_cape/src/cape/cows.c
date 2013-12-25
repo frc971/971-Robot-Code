@@ -42,7 +42,7 @@ uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
 
   while (source_index < ((source_length - 1) / 4) + 1) {
     code = source[source_index];
-    if (source_index + code > source_length && code != 1) {
+    if (source_index + code > source_length / 4 && code != 1) {
       return 0;
     }
 

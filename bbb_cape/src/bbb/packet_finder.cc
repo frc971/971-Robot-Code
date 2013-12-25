@@ -23,7 +23,7 @@ PacketFinder::~PacketFinder() {
   delete unstuffed_data_;
 }
 
-// TODO(brians): Figure out why this (sometimes?) gets confused right after
+// TODO(brians): Figure out why this (sometimes) gets confused right after
 // flashing the cape.
 bool PacketFinder::FindPacket() {
   // How many 0 bytes we've found at the front so far.
@@ -91,9 +91,7 @@ bool PacketFinder::ProcessPacket() {
   return true;
 }
 
-bool PacketFinder::GetPacket(DataStruct *packet) {
-  CHECK(sizeof(*packet) <= kPacketSize - 8);
-
+bool PacketFinder::ReadPacket() {
   if (!FindPacket()) return false;
 
   if (!ProcessPacket()) {
@@ -116,7 +114,6 @@ bool PacketFinder::GetPacket(DataStruct *packet) {
   } else {
     packet_bytes_ = -1;
   }
-  memcpy(packet, unstuffed_data_, sizeof(*packet));
 
   return true;
 }

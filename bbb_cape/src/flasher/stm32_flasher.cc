@@ -28,7 +28,9 @@ int main(int argc, char **argv) {
   }
   ::std::string target = argv[1];
 
-  ::std::string device = "/dev/ttyUSB0";
+  //::std::string device = "/dev/ttyUSB0";
+  // TODO(brians): Figure out an intelligent way to set the device to use.
+  ::std::string device = "/dev/ttyO1";
   serial_baud_t baud_rate = SERIAL_BAUD_57600;
 
   ::std::string filename =

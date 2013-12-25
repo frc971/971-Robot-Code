@@ -15,7 +15,7 @@ struct DATA_STRUCT_NAME {
 
   union {
     struct {
-      // In 1/3us since the cape last reset.
+      // In 10us since the cape last reset.
       uint64_t timestamp;
 
       // The CRC32 (same algorithm as the checksum for the packet) of the whole

@@ -46,7 +46,7 @@ void SPI_IRQHandler(void) {
     analog_readings[current_channel] = value & 0x3FF;
     CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
 
-    TIM->CR1 = TIM_CR1_UDIS | TIM_CR1_OPM;
+    TIM->CR1 = TIM_CR1_OPM;
     TIM->EGR = TIM_EGR_UG;
     TIM->CR1 |= TIM_CR1_CEN;
   }
@@ -76,7 +76,7 @@ void analog_init(void) {
   NVIC_SetPriority(TIM_IRQn, 6);
   NVIC_EnableIRQ(TIM_IRQn);
 
-  TIM->CR1 = TIM_CR1_UDIS | TIM_CR1_OPM;
+  TIM->CR1 = TIM_CR1_OPM;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
   // Make each tick take 500ns.
