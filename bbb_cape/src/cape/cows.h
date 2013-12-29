@@ -27,12 +27,13 @@ uint32_t cows_stuff(const void *__restrict__ source, size_t source_length,
 
 // source_length will be rounded up a multiple of 4. That many bytes of source
 // will be read.
-// Destination must be big enough to hold all source_length bytes (see
-// cows_stuff for the exact size it might be).
 // source and destination both have to be 4-byte aligned.
 // Returns the total number of words written to destination or 0 for error.
+// Possible errors are trying to unstuff more data than is available in source
+// or trying to write more than destination_length bytes out.
 uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
-                      uint32_t *__restrict__ destination);
+                      uint32_t *__restrict__ destination,
+                      size_t destination_length);
 
 #ifdef __cplusplus
 } // extern C
