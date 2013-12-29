@@ -50,7 +50,7 @@ struct DATA_STRUCT_NAME {
       uint16_t analogs[8];
 
       uint32_t digitals;
-    } main;
+    } test;
     
     struct {
     } bot3;

@@ -58,8 +58,13 @@ int main() {
     const DataStruct *packet = receiver.get_packet<DataStruct>();
     LOG(DEBUG, "got one!\n");
     LOG(DEBUG, "timestamp %" PRIu64 "\n", packet->timestamp);
+    LOG(DEBUG, "gyro old=%d uninit=%d z=%d bad=%d %" PRId64 " \n",
+        packet->old_gyro_reading, packet->uninitialized_gyro,
+        packet->zeroing_gyro, packet->bad_gyro, packet->gyro_angle);
     for (int i = 0; i < 8; ++i) {
-      LOG(DEBUG, "enc[%d]=%" PRId32 "\n", i, packet->main.encoders[i]);
+      LOG(DEBUG, "enc[%d]=%" PRId32 "\n", i, packet->test.encoders[i]);
+      LOG(DEBUG, "adc[%d]=%f (%" PRIx16 ")\n", i,
+          3.3 * packet->test.analogs[i] / 0x3FF, packet->test.analogs[i]);
     }
   }
 
