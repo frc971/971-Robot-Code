@@ -87,7 +87,7 @@ void fill_packet_start(void) {
                                  (size_t)(flash_end - MAIN_FLASH_START) / 4);
 
   led_set(LED_ERR, 0);
-  //gyro_init();
+  gyro_init();
 
   uart_common_configure(1500000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);

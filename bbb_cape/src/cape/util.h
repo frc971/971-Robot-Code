@@ -1,6 +1,8 @@
 #ifndef CAPE_UTIL_H_
 #define CAPE_UTIL_H_
 
+#include <stdint.h>
+
 #include <STM32F2XX.h>
 
 #define ALIAS_WEAK(f) __attribute__ ((weak, alias (#f)))
@@ -51,10 +53,24 @@ static inline void gpio_setup_out(GPIO_TypeDef *port, int pin, int speed) {
   SET_BITS(port->OSPEEDR, 2, speed, pin);
 }
 
+static inline void gpio_setup_in(GPIO_TypeDef *port, int pin) {
+  SET_BITS(port->MODER, 2, 0 /* input */, pin);
+}
+
 // exti is which EXTI line to set
 // port is 0 for A, 1 for B, etc
 static inline void EXTI_set(int exti, int port) {
   SET_BITS(SYSCFG->EXTICR[exti / 4], 4, port, exti % 4);
 }
+
+static inline void gpio_on(GPIO_TypeDef *port, int pin) {
+  port->BSRRL = 1 << pin;
+}
+
+static inline void gpio_off(GPIO_TypeDef *port, int pin) {
+  port->BSRRH = 1 << pin;
+}
+
+void led_write(uint32_t value, int bits);
 
 #endif  // CAPE_UTIL_H_
