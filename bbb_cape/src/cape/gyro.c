@@ -32,7 +32,7 @@ static volatile uint16_t high_value;
 
 // 1 if the latest result is potentially bad and 0 if it's good.
 static volatile int bad_reading;
-// 1 if the gyro is bad adn we're not going to get any more readings.
+// 1 if the gyro is bad and we're not going to get any more readings.
 static volatile int bad_gyro;
 // The new reading waiting for the next timer cycle to be outputted.
 static volatile int16_t new_reading;
@@ -98,7 +98,7 @@ static void gyro_enable_csel(void) {
   // Do it 8 times (9 cycles) to wait for the amount of time the gyro datasheet
   // says we need to.
   // (1/2/(7.5MHz)+8ns)*120MHz = 8.96
-  for (int i = 0; i < 8; ++i) CSEL_GPIO->BSRRL = 1 << CSEL_NUM;
+  for (int i = 0; i < 8; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
 }
 
 // Blocks until there is space to enqueue data.
@@ -128,153 +128,161 @@ static uint8_t gyro_errors(uint32_t value) {
   return (value >> 1) & 0x7F;
 }
 
-static void process_reading(int16_t reading) {
-  switch (state) {
-    case STATE_SETUP0:
-      if (parity_error) {
-        switch_state(STATE_SETUP0, 100);
-      } else {
-        if (reading != 1) {
-          printf("gyro unexpected initial response 0x%"PRIx32"\n", reading);
-          // There's a chance that we're retrying because of a parity error
-          // previously, so keep going.
-        }
-        // Wait for it to assert the fault conditions before reading them.
-        switch_state(STATE_SETUP1, 50);
-      }
-      break;
-    case STATE_SETUP1:
-      if (parity_error) {
-        switch_state(STATE_SETUP0, 100);
-      } else {
-        // Wait for it to clear the fault conditions before reading again.
-        switch_state(STATE_SETUP2, 50);
-      }
-      break;
-    case STATE_SETUP2:
-      if (parity_error) {
-        switch_state(STATE_SETUP0, 100);
-      } else {
-        // If it's not reporting self test data.
-        if (gyro_status(reading) != 2) {
-          printf("gyro first value 0x%"PRIx32" not self test data\n", reading);
+static void reading_received(uint32_t reading) {
+    switch (state) {
+      case STATE_SETUP0:
+        if (parity_error) {
           switch_state(STATE_SETUP0, 100);
-          break;
+        } else {
+          if (reading != 1) {
+            printf("gyro unexpected initial response 0x%" PRIx32 "\n", reading);
+            // There's a chance that we're retrying because of a parity error
+            // previously, so keep going.
+          }
+          // Wait for it to assert the fault conditions before reading them.
+          switch_state(STATE_SETUP1, 50);
         }
-        // If we don't see all of the errors.
-        if (gyro_errors(reading) != 0x7F) {
-          printf("gyro self test value 0x%"PRIx32" is bad\n", reading);
-          gyro_setup_failed();
-          break;
-        }
-        // Wait for the sequential transfer delay before reading out the last of
-        // the self test data.
-        switch_state(STATE_SETUP3, 1);
-      }
-      break;
-    case STATE_SETUP3:
-      if (parity_error) {
-        switch_state(STATE_SETUP0, 100);
-      } else {
-        // It should still be reporting self test data.
-        if (gyro_status(reading) != 2) {
-          printf("gyro second value 0x%"PRIx32" not self test data\n", reading);
+        break;
+      case STATE_SETUP1:
+        if (parity_error) {
           switch_state(STATE_SETUP0, 100);
-          break;
+        } else {
+          // Wait for it to clear the fault conditions before reading again.
+          switch_state(STATE_SETUP2, 50);
         }
+        break;
+      case STATE_SETUP2:
+        if (parity_error) {
+          switch_state(STATE_SETUP0, 100);
+        } else {
+          // If it's not reporting self test data.
+          if (gyro_status(reading) != 2) {
+            printf("gyro first value 0x%" PRIx32 " not self test data\n",
+                   reading);
+            switch_state(STATE_SETUP0, 100);
+            break;
+          }
+          // If we don't see all of the errors.
+          if (gyro_errors(reading) != 0x7F) {
+            printf("gyro self test value 0x%" PRIx32 " is bad\n", reading);
+            gyro_setup_failed();
+            break;
+          }
+          // Wait for the sequential transfer delay before reading out the last
+          // of
+          // the self test data.
+          switch_state(STATE_SETUP3, 1);
+        }
+        break;
+      case STATE_SETUP3:
+        if (parity_error) {
+          switch_state(STATE_SETUP0, 100);
+        } else {
+          // It should still be reporting self test data.
+          if (gyro_status(reading) != 2) {
+            printf("gyro second value 0x%" PRIx32 " not self test data\n",
+                   reading);
+            switch_state(STATE_SETUP0, 100);
+            break;
+          }
 
-        gyro_output.initialized = 1;
-        gyro_output.angle = 0;
-        gyro_output.last_reading_bad = 1;  // until we're started up
-        gyro_output.gyro_bad = 0;
-        // Start reading values (after the sequential transfer delay).
-        switch_state(STATE_READ, 1);
-      }
-      break;
-    case STATE_READ:
-      new_reading = reading;
-      switch_state(STATE_READ, 1000 / kGyroReadFrequency);
-      break;
-  }
+          gyro_output.initialized = 1;
+          gyro_output.angle = 0;
+          gyro_output.last_reading_bad = 1;  // until we're started up
+          gyro_output.gyro_bad = bad_gyro = 0;
+          // Start reading values (after the sequential transfer delay).
+          switch_state(STATE_READ, 1);
+        }
+        break;
+      case STATE_READ:
+        if (parity_error) {
+          bad_reading = 1;
+        } else {
+          // This check assumes that the sequence bits are all 0, but they should
+          // be
+          // because that's all we send.
+          if (gyro_status(reading) != 1) {
+            uint8_t status = gyro_status(reading);
+            if (status == 0) {
+              printf("gyro says sensor data is bad\n");
+            } else {
+              printf("gyro gave weird status 0x%" PRIx8 "\n", status);
+            }
+            bad_reading = 1;
+          }
+
+          if (gyro_errors(reading) != 0) {
+            uint8_t errors = gyro_errors(reading);
+            if (errors & ~(1 << 1)) {
+              bad_reading = 1;
+              // Error 1 (continuous self-test error) will set status to 0 if it's
+              // bad
+              // enough by itself.
+            }
+            if (errors & (1 << 6)) {
+              printf("gyro PLL error\n");
+            }
+            if (errors & (1 << 5)) {
+              printf("gyro quadrature error\n");
+            }
+            if (errors & (1 << 4)) {
+              printf("gyro non-volatile memory error\n");
+              bad_gyro = 1;
+            }
+            if (errors & (1 << 3)) {
+              printf("gyro volatile memory error\n");
+              bad_gyro = 1;
+            }
+            if (errors & (1 << 2)) {
+              printf("gyro power error\n");
+            }
+            if (errors & (1 << 1)) {
+              printf("gyro continuous self-test error\n");
+            }
+            if (errors & 1) {
+              printf("gyro unexpected self check mode\n");
+            }
+          }
+          if (bad_gyro) {
+            bad_reading = 1;
+          }
+          new_reading = -(int16_t)(reading >> 10 & 0xFFFF);
+        }
+        switch_state(STATE_READ, 1000 / kGyroReadFrequency);
+        break;
+    }
 }
 
-static void reading_received(uint32_t value) {
-  if (parity_error) {
-    bad_reading = 1;
-  } else {
-    // This check assumes that the sequence bits are all 0, but they should be
-    // because that's all we send.
-    if (gyro_status(value) != 1) {
-      uint8_t status = gyro_status(value);
-      if (status == 0) {
-        printf("gyro says sensor data is bad\n");
-      } else {
-        printf("gyro gave weird status 0x%"PRIx8"\n", status);
-      }
-      bad_reading = 1;
-    }
-
-    if (gyro_errors(value) != 0) {
-      uint8_t errors = gyro_errors(value);
-      if (errors & ~(1 << 1)) {
-        bad_reading = 1;
-        // Error 1 (continuous self-test error) will set status to 0 if it's bad
-        // enough by itself.
-      }
-      if (errors & (1 << 6)) {
-        printf("gyro PLL error\n");
-      }
-      if (errors & (1 << 5)) {
-        printf("gyro quadrature error\n");
-      }
-      if (errors & (1 << 4)) {
-        printf("gyro non-volatile memory error\n");
-        bad_gyro = 1;
-      }
-      if (errors & (1 << 3)) {
-        printf("gyro volatile memory error\n");
-        bad_gyro = 1;
-      }
-      if (errors & (1 << 2)) {
-        printf("gyro power error\n");
-      }
-      if (errors & (1 << 1)) {
-        printf("gyro continuous self-test error\n");
-      }
-      if (errors & 1) {
-        printf("gyro unexpected self check mode\n");
-      }
-    }
-    if (bad_gyro) {
-      bad_reading = 1;
-    }
-  }
-  process_reading(-(int16_t)(value >> 10 & 0xFFFF));
-}
 
 void SPI_IRQHandler(void) {
   uint32_t status = SPI->SR;
   if (status & SPI_SR_RXNE) {
     uint16_t value = SPI->DR;
-    if (__builtin_parity(value) != 1) {
-      parity_error = 1;
-      for (int i = -2; i < 16; ++i) {
-        led_set(LED_Z, i < 0);
-        for (int ii = 0; ii < 1000000; ++ii) {
-          led_set(LED_ERR, i >= 0 && ii < 500000);
-          if (i >= 0) led_set(LED_DB, value & (1 << i));
-          else led_set(LED_DB, 0);
-        }
-      }
-    }
     if (receive_byte == 0) {
       receive_byte = 1;
-      high_value = value;
+
+      if (__builtin_parity(value) != 1) {
+        parity_error = 1;
+        high_value = 0;
+      } else {
+        high_value = value;
+      }
     } else {
       uint32_t full_value = high_value << 16 | value;
+      if (__builtin_parity(full_value) != 1) {
+        parity_error = 1;
+      }
+
+      // We have to wait for the hardware to finish sending all the bits first.
+      while (SPI->SR & SPI_SR_BSY) {}
+      // Do it 8 times (9 cycles) to wait for the amount of time the gyro datasheet
+      // says we need to.
+      // (1/2/(7.5MHz)+8ns)*120MHz = 8.96
+      for (int i = 0; i < 8; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
+
       // Set the CSEL pin high to deselect it.
-      // The parity calculation etc took long enough that this is safe now.
-      CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
+      gpio_on(CSEL_GPIO, CSEL_NUM);
+
       reading_received(full_value);
     }
   }
@@ -370,10 +378,8 @@ void gyro_init(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIMEN;
 
   // Set up CSEL.
-  // It's is just a GPIO pin because we're the master (it would be special if we
-  // were a slave).
   gpio_setup_out(CSEL_GPIO, CSEL_NUM, 3);
-  CSEL_GPIO->BSRRH = 1 << CSEL_NUM;  // make sure it's deselected
+  gpio_on(CSEL_GPIO, CSEL_NUM);  // deselect it
 
   // Set up SCK, MISO, and MOSI.
   gpio_setup_alt(GPIOC, 10, 6);  // SCK
@@ -390,6 +396,7 @@ void gyro_init(void) {
   TIM->CCMR1 = 0;
   // Make it generate 1 tick every ms.
   TIM->PSC = 60000 - 1;
+  TIM->EGR = TIM_EGR_UG;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
@@ -401,5 +408,6 @@ void gyro_init(void) {
   SPI->CR1 |= SPI_CR1_SPE;  // enable it
 
   setup_counter = 0;
+  led_set(LED_Z, 1);
   switch_state(STATE_SETUP0, 100);
 }

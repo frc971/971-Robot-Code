@@ -35,7 +35,8 @@ uint32_t cows_stuff(const void *__restrict__ source_in, size_t source_length,
 }
 
 uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
-                      uint32_t *__restrict__ destination) {
+                      uint32_t *__restrict__ destination,
+                      size_t destination_length) {
   size_t source_index = 0;
   size_t destination_index = 0;
   uint32_t code;
@@ -50,9 +51,11 @@ uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
 
     for (uint32_t i = 1; i < code; ++i) {
       destination[destination_index++] = source[source_index++];
+      if (destination_index > destination_length / 4) return 0;
     }
     if (code != UINT32_MAX && source_index != source_length / 4) {
       destination[destination_index++] = 0;
+      if (destination_index > destination_length / 4) return 0;
     }
   }
   return destination_index;

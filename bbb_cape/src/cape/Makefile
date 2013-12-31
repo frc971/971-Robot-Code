@@ -41,6 +41,7 @@ OBJECTS_main_common := main \
 	led \
 	analog \
 	digital \
+	util \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \
@@ -49,7 +50,6 @@ OBJECTS_bootloader := bootloader \
 
 OBJECTS_main_test := $(OBJECTS_main_common) \
 	robot_test \
-	uart_byte \
 
 OUTPUTS := main_test bootloader
 

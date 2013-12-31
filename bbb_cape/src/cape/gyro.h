@@ -22,9 +22,9 @@ struct GyroOutput {
 // Must be called from a lower-priority ISR than TIM10's.
 static inline void gyro_get_output(struct GyroOutput *output) {
   extern struct GyroOutput gyro_output;
-  NVIC_DisableIRQ(TIM1_UP_TIM10_IRQn);
+  NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn);
   memcpy(output, &gyro_output, sizeof(gyro_output));
-  NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+  NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 }
 
 #endif  // GYRO_BOARD_SRC_USB_GYRO_H_

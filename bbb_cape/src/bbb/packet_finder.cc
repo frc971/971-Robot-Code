@@ -65,9 +65,9 @@ bool PacketFinder::FindPacket() {
 }
 
 bool PacketFinder::ProcessPacket() {
-  uint32_t unstuffed =
-      cows_unstuff(reinterpret_cast<uint32_t *>(buf_), kPacketSize,
-                   reinterpret_cast<uint32_t *>(unstuffed_data_));
+  uint32_t unstuffed = cows_unstuff(
+      reinterpret_cast<uint32_t *>(buf_), kPacketSize,
+      reinterpret_cast<uint32_t *>(unstuffed_data_), kPacketSize);
   if (unstuffed == 0) {
     LOG(WARNING, "invalid packet\n");
     return false;

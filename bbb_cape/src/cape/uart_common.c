@@ -11,7 +11,6 @@
 void uart_common_configure(int baud) {
   gpio_setup_alt(GPIOA, 9, 7);
   gpio_setup_alt(GPIOA, 10, 7);
-  GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9;  // we want to go FAST!
   RCC->APB2ENR |= RCC_APB2ENR_UARTEN;
 
   // baud = 60MHz / kMultiplier * (whole_part + fraction / kMultiplier))

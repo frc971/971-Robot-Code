@@ -8,59 +8,100 @@
 // 0: PC6,PC7 TIM8
 // 1: PC0,PC1 EXTI0,EXTI1
 // 2: PA0,PA1 TIM5(32)
-// 3: PA2,PA3 EXTI2,EXTI3
-// 4: PA8,PB0 TIM1
+// 3: PA2,PA3 TIM9.1,EXTI3
+// 4: PA8,PB0 TIM1.1,TIM3.3
 // 5: PA5,PB3 TIM2(32)
 // 6: PA6,PB5 TIM3
 // 7: PB6,PB7 TIM4
 
 volatile int32_t encoder1_value = 0;
 volatile int32_t encoder3_value = 0;
+volatile int32_t encoder4_value = 0;
 
 // 1.A
 void EXTI0_IRQHandler(void) {
-  uint32_t inputs = GPIOA->IDR;
+  uint32_t inputs = GPIOC->IDR;
   EXTI->PR = EXTI_PR_PR0;
+	int32_t old_value = encoder1_value;
+	int32_t new_value;
   // This looks like a weird way to XOR the 2 inputs, but it compiles down to
   // just 2 instructions, which is hard to beat.
   if (((inputs >> 1) ^ inputs) & (1 << 0)) {
-    ++encoder1_value;
+		new_value = old_value + 1;
   } else {
-    --encoder1_value;
+		new_value = old_value - 1;
   }
+	encoder1_value = new_value;
 }
 
 // 1.B
 void EXTI1_IRQHandler(void) {
-  uint32_t inputs = GPIOA->IDR;
+  uint32_t inputs = GPIOC->IDR;
   EXTI->PR = EXTI_PR_PR1;
+	int32_t old_value = encoder1_value;
+	int32_t new_value;
   if (((inputs >> 1) ^ inputs) & (1 << 0)) {
-    --encoder1_value;
+		new_value = old_value - 1;
   } else {
-    ++encoder1_value;
+		new_value = old_value + 1;
   }
+	encoder1_value = new_value;
 }
 
 // 3.A
-void TIM1_TRG_COM_TIM11_IRQHandler(void) {
-  uint32_t inputs = GPIOC->IDR;
+void TIM1_BRK_TIM9_IRQHandler(void) {
+  uint32_t inputs = GPIOA->IDR;
   TIM9->SR = ~TIM_SR_CC1IF;
+	int32_t old_value = encoder3_value;
+	int32_t new_value;
   if (((inputs >> 1) ^ inputs) & (1 << 2)) {
-    ++encoder3_value;
+		new_value = old_value + 1;
   } else {
-    --encoder3_value;
+		new_value = old_value - 1;
   }
+	encoder3_value = new_value;
 }
 
 // 3.B
 void EXTI3_IRQHandler(void) {
-  uint32_t inputs = GPIOC->IDR;
+  uint32_t inputs = GPIOA->IDR;
   EXTI->PR = EXTI_PR_PR3;
+	int32_t old_value = encoder3_value;
+	int32_t new_value;
   if (((inputs >> 1) ^ inputs) & (1 << 2)) {
-    --encoder3_value;
+		new_value = old_value - 1;
   } else {
-    ++encoder3_value;
+		new_value = old_value + 1;
   }
+	encoder3_value = new_value;
+}
+
+// 4.A
+void TIM1_CC_IRQHandler(void) {
+  uint32_t a_inputs = GPIOA->IDR, b_inputs = GPIOB->IDR;
+  TIM1->SR = ~TIM_SR_CC1IF;
+	int32_t old_value = encoder4_value;
+	int32_t new_value;
+  if (((a_inputs >> 8) ^ b_inputs) & (1 << 0)) {
+		new_value = old_value + 1;
+  } else {
+		new_value = old_value - 1;
+  }
+	encoder4_value = new_value;
+}
+
+// 4.B
+void TIM3_IRQHandler(void) {
+  uint32_t a_inputs = GPIOA->IDR, b_inputs = GPIOB->IDR;
+  TIM3->SR = ~TIM_SR_CC3IF;
+	int32_t old_value = encoder4_value;
+	int32_t new_value;
+  if (((a_inputs >> 8) ^ b_inputs) & (1 << 0)) {
+		new_value = old_value - 1;
+  } else {
+		new_value = old_value + 1;
+  }
+	encoder4_value = new_value;
 }
 
 static void encoder_setup(TIM_TypeDef *timer) {
@@ -87,7 +128,7 @@ void encoder_init(void) {
   NVIC_EnableIRQ(EXTI1_IRQn);
   NVIC_EnableIRQ(EXTI3_IRQn);
 
-  // Set up the A2 software encoder input through TIM9.
+  // Set up the A2 software encoder input through TIM9 input 1.
   gpio_setup_alt(GPIOA, 2, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;
   TIM9->CR1 = 0;
@@ -98,10 +139,27 @@ void encoder_init(void) {
   TIM9->CR1 |= TIM_CR1_CEN;
   NVIC_EnableIRQ(TIM1_BRK_TIM9_IRQn);
 
+	// Set up the A4 software encoder input through TIM1 input 1.
   gpio_setup_alt(GPIOA, 8, 1);
-  gpio_setup_alt(GPIOB, 0, 1);
   RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-  encoder_setup(TIM1);
+	TIM1->CR1 = 0;
+	TIM1->DIER = TIM_DIER_CC1IE;
+	TIM1->CCMR1 = TIM_CCMR1_CC1S_0; /* input pin 1 -> timer input 1 */
+	TIM1->CCER = TIM_CCER_CC1NP | TIM_CCER_CC1P | TIM_CCER_CC1E;
+	TIM1->EGR = TIM_EGR_UG;
+	TIM1->CR1 |= TIM_CR1_CEN;
+	NVIC_EnableIRQ(TIM1_CC_IRQn);
+
+	// Set up the B4 software encoder input through TIM3 input 3.
+  gpio_setup_alt(GPIOB, 0, 2);
+	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+	TIM3->CR1 = 0;
+	TIM3->DIER = TIM_DIER_CC3IE;
+	TIM3->CCMR2 = TIM_CCMR2_CC3S_0; /* input pin 3 -> timer input 3 */
+	TIM3->CCER = TIM_CCER_CC3NP | TIM_CCER_CC3P | TIM_CCER_CC3E;
+	TIM3->EGR = TIM_EGR_UG;
+	TIM3->CR1 |= TIM_CR1_CEN;
+	NVIC_EnableIRQ(TIM3_IRQn);
 
   gpio_setup_alt(GPIOA, 5, 1);
   gpio_setup_alt(GPIOB, 3, 1);

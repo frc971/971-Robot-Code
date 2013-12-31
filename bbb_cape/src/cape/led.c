@@ -12,10 +12,12 @@
 // ERR = PB11
 
 static void do_led_set(GPIO_TypeDef *port, int number, int on) {
+  // The LEDs are hooked up between 3.3V and the GPIO pin, so these are
+  // backwards.
   if (on) {
-    port->BSRRH = 1 << number;
+    gpio_off(port, number);
   } else {
-    port->BSRRL = 1 << number;
+    gpio_on(port, number);
   }
 }
 

@@ -31,11 +31,15 @@ analog
 
 [encoders]
 encoder
-  TIM1,TIM2,TIM3,TIM4,TIM5,TIM8
+  TIM2,TIM3,TIM4,TIM5,TIM8
   EXTI0,EXTI1,EXTI3
   EXTI0_IRQ:0,EXTI1_IRQ:0,EXTI3_IRQ:0
   TIM9 (for its input capture 1)
   TIM9_IRQ:0 (aka TIM1_BRK)
+  TIM1 (for its input capture 1)
+  TIM1_CC_IRQ:0
+  TIM3 (for its input capture 3)
+  TIM3_IRQ:0
 
 [digital inputs]
 digital

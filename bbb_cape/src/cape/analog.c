@@ -29,7 +29,7 @@ static void start_read(int channel) {
   // (100ns+8ns)*120MHz = 12.96
 
   // Clear the CSEL pin to select it.
-  for (int i = 0; i < 9; ++i) CSEL_GPIO->BSRRL = 1 << CSEL_NUM;
+  for (int i = 0; i < 9; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
   current_channel = channel;
   uint16_t data = 1 << 8 /* start bit */ |
       0 << 7 /* not differential */ |
@@ -44,7 +44,7 @@ void SPI_IRQHandler(void) {
     // Masking off the high bits is important because there's nothing driving
     // the MISO line during the time the MCU receives them.
     analog_readings[current_channel] = value & 0x3FF;
-    CSEL_GPIO->BSRRH = 1 << CSEL_NUM;
+    gpio_on(CSEL_GPIO, CSEL_NUM);
 
     TIM->CR1 = TIM_CR1_OPM;
     TIM->EGR = TIM_EGR_UG;
@@ -65,7 +65,7 @@ void analog_init(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIMEN;
 
   gpio_setup_out(CSEL_GPIO, CSEL_NUM, 3);
-  CSEL_GPIO->BSRRH = 1 << CSEL_NUM;  // make sure it's deselected
+  gpio_on(CSEL_GPIO, CSEL_NUM);  // deselect it
 
   gpio_setup_alt(GPIOB, 13, 5);  // SCK
   gpio_setup_alt(GPIOB, 14, 5);  // MISO
