@@ -30,9 +30,9 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
     }
     rlim.rlim_cur = soft;
     if (setrlimit64(resource, &rlim) == -1) {
-      Die("%s-init: setrlimit64(%d, {cur=%jd,max=%jd})"
+      Die("%s-init: setrlimit64(%d, {cur=%ju,max=%ju})"
           " failed with %d (%s)\n", program_invocation_short_name,
-          resource, (intmax_t)rlim.rlim_cur, (intmax_t)rlim.rlim_max,
+          resource, (uintmax_t)rlim.rlim_cur, (uintmax_t)rlim.rlim_max,
           errno, strerror(errno));
     }
   }
