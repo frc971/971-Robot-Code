@@ -4,16 +4,16 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "bbb/packet_finder.h"
+#include "bbb/byte_reader.h"
 
 namespace bbb {
 
-class UartReader : public PacketFinder {
+class UartReader : public ByteReader {
  public:
   UartReader(int32_t baud_rate);
   virtual ~UartReader();
 
-  int ReadBytes(AlignedChar *dest, size_t max_bytes);
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes);
 
  private:
   const int fd_;

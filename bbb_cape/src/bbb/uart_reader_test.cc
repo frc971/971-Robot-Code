@@ -1,7 +1,5 @@
 #include "bbb/uart_reader.h"
 
-#include <termios.h>
-
 #include "gtest/gtest.h"
 
 namespace bbb {

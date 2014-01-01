@@ -2,11 +2,18 @@
 
 #include <limits.h>
 
+#if __STDC_HOSTED__
+#include <assert.h>
+#else
+#define assert(...)
+#endif
+
 // This implementation is based on
 // <http://www.jacquesf.com/2011/03/consistent-overhead-byte-stuffing/>.
 
 uint32_t cows_stuff(const void *__restrict__ source_in, size_t source_length,
                     void *__restrict__ destination_in) {
+  assert((source_length % 4) == 0);
   const uint32_t *restrict source = (const uint32_t *)source_in;
   uint32_t *restrict destination = (uint32_t *)destination_in;
   size_t source_index = 0;
@@ -14,7 +21,7 @@ uint32_t cows_stuff(const void *__restrict__ source_in, size_t source_length,
   size_t code_index = 0;
   uint32_t code = 1;
 
-  while (source_index < ((source_length - 1) / 4) + 1) {
+  while (source_index < source_length / 4) {
     if (source[source_index] == 0) {
       destination[code_index] = code;
       code = 1;
@@ -37,11 +44,13 @@ uint32_t cows_stuff(const void *__restrict__ source_in, size_t source_length,
 uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
                       uint32_t *__restrict__ destination,
                       size_t destination_length) {
+  assert((source_length % 4) == 0);
+  assert((destination_length % 4) == 0);
   size_t source_index = 0;
   size_t destination_index = 0;
   uint32_t code;
 
-  while (source_index < ((source_length - 1) / 4) + 1) {
+  while (1) {
     code = source[source_index];
     if (source_index + code > source_length / 4 && code != 1) {
       return 0;
@@ -50,13 +59,19 @@ uint32_t cows_unstuff(const uint32_t *__restrict__ source, size_t source_length,
     ++source_index;
 
     for (uint32_t i = 1; i < code; ++i) {
+      if (destination_index >= destination_length / 4) {
+        return 0;
+      }
       destination[destination_index++] = source[source_index++];
-      if (destination_index > destination_length / 4) return 0;
     }
-    if (code != UINT32_MAX && source_index != source_length / 4) {
+    if (source_index == source_length / 4) {
+      return destination_index;
+    }
+    if (code != UINT32_MAX) {
+      if (destination_index >= destination_length / 4) {
+        return 0;
+      }
       destination[destination_index++] = 0;
-      if (destination_index > destination_length / 4) return 0;
     }
   }
-  return destination_index;
 }

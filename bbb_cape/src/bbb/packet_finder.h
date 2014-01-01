@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "aos/common/logging/logging.h"
+
+#include "bbb/byte_reader.h"
+
 #define DATA_STRUCT_NAME DataStruct
 #include "cape/data_struct.h"
 #undef DATA_STRUCT_NAME
@@ -12,8 +16,10 @@ namespace bbb {
 
 class PacketFinder {
  public:
-  PacketFinder();
-  virtual ~PacketFinder();
+  // *reader has to stay alive for the entire lifetime of this object but this
+  // object does not take ownership.
+  explicit PacketFinder(ByteReader *reader, size_t packet_size);
+  ~PacketFinder();
 
   // Returns true if it succeeds or false if it gets an I/O error first.
   bool ReadPacket();
@@ -25,19 +31,12 @@ class PacketFinder {
   const T *get_packet() {
     static_assert(alignof(T) <= alignof(*unstuffed_data_),
                   "We need to align our data better.");
-    /*static_assert(sizeof(T) <= PACKET_SIZE - 8,
-                  "We aren't getting that much data.");*/
+    CHECK(sizeof(T) <= packet_size_ - 8);
     return reinterpret_cast<const T *>(unstuffed_data_);
   }
 
- protected:
-  typedef char __attribute__((aligned(8))) AlignedChar;
-
  private:
-  // Implemented by subclasses to provide a data source 
-  // for these algorithms.
-  // Returns the number of bytes read or -1 if there is an error in errno.
-  virtual int ReadBytes(AlignedChar *dest, size_t max_bytes) = 0;
+  typedef ByteReader::AlignedChar AlignedChar;
 
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
@@ -49,6 +48,9 @@ class PacketFinder {
   // Returns true if it succeeds or false if there was something wrong with the
   // data.
   bool ProcessPacket();
+
+  ByteReader *const reader_;
+  const size_t packet_size_;
 
   AlignedChar *const buf_;
   AlignedChar *const unstuffed_data_;

@@ -61,7 +61,7 @@ struct DATA_STRUCT_NAME {
 // The number of bytes that we actually send (so it stays consistent) (including
 // the byte-stuffing overhead and the CRC on the end).
 // This will always be a multiple of 4.
-#define DATA_STRUCT_SEND_SIZE 200
+#define DATA_STRUCT_SEND_SIZE 148
 
 #ifdef __cplusplus
 #define STATIC_ASSERT(cond, msg) static_assert(cond, #msg)
