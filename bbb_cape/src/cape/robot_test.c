@@ -18,5 +18,10 @@ void robot_fill_packet(struct DataStruct *packet) {
     packet->test.analogs[i] = analog_get(i);
   }
 
+  packet->test.digitals = 0;
+  for (int i = 0; i < 12; ++i) {
+    SET_BITS(packet->test.digitals, 1, !!digital_read(i), i);
+  }
+
   // TODO(brians): digitals
 }

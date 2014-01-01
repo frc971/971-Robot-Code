@@ -22,6 +22,8 @@
 
 uint16_t analog_readings[NUM_CHANNELS] __attribute__((aligned(8)));
 static volatile int current_channel;
+static volatile int partial_reading;
+static volatile int frame;
 
 static void start_read(int channel) {
   // This needs to wait 13 cycles between enabling the CSEL pin and starting to
@@ -31,9 +33,12 @@ static void start_read(int channel) {
   // Clear the CSEL pin to select it.
   for (int i = 0; i < 9; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
   current_channel = channel;
-  uint16_t data = 1 << 8 /* start bit */ |
-      0 << 7 /* not differential */ |
-      channel << 4;
+  partial_reading = 0;
+  frame = 0;
+  SPI->DR = 1;  // start bit
+  uint16_t data = (1 << 15) /* not differential */ |
+      (channel << 12);
+  while (!(SPI->SR & SPI_SR_TXE));
   SPI->DR = data;
 }
 
@@ -41,14 +46,20 @@ void SPI_IRQHandler(void) {
   uint32_t status = SPI->SR;
   if (status & SPI_SR_RXNE) {
     uint16_t value = SPI->DR;
-    // Masking off the high bits is important because there's nothing driving
-    // the MISO line during the time the MCU receives them.
-    analog_readings[current_channel] = value & 0x3FF;
-    gpio_on(CSEL_GPIO, CSEL_NUM);
+    if (frame == 0) {
+      frame = 1;
+      partial_reading = value;
+    } else {
+      // Masking off the high bits is important because there's nothing driving
+      // the MISO line during the time the MCU receives them.
+      analog_readings[current_channel] = (partial_reading << 16 | value) & 0x3FF;
+      for (int i = 0; i < 100; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
+      gpio_on(CSEL_GPIO, CSEL_NUM);
 
-    TIM->CR1 = TIM_CR1_OPM;
-    TIM->EGR = TIM_EGR_UG;
-    TIM->CR1 |= TIM_CR1_CEN;
+      TIM->CR1 = TIM_CR1_OPM;
+      TIM->EGR = TIM_EGR_UG;
+      TIM->CR1 |= TIM_CR1_CEN;
+    }
   }
 }
 
@@ -79,8 +90,8 @@ void analog_init(void) {
   TIM->CR1 = TIM_CR1_OPM;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
-  // Make each tick take 500ns.
-  TIM->PSC = (60 * 500 / 1000) - 1;
+  // Make each tick take 1500ns.
+  TIM->PSC = (60 * 1500 / 1000) - 1;
   // Call the interrupt after 1 tick.
   TIM->CCR1 = 1;
 
@@ -88,7 +99,7 @@ void analog_init(void) {
   SPI->CR1 =
       SPI_CR1_DFF /* 16 bit frame */ |
       SPI_CR1_SSM | SPI_CR1_SSI | /* don't watch for other masters */
-      1 << 3 /* 30MHz/4 = 7.5MHz */ |
+      3 << 3 /* 30MHz/16 = 1.875MHz */ |
       SPI_CR1_MSTR /* master mode */;
   SPI->CR2 = SPI_CR2_RXNEIE;
   SPI->CR1 |= SPI_CR1_SPE;  // enable it

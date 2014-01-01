@@ -62,7 +62,6 @@ void uart_dma_configure(int bytes, uint8_t *buffer1_in, uint8_t *buffer2_in) {
       0 << 11 /* peripherial data size = 8 bits */ |
       DMA_SxCR_MINC /* increment memory address */ |
       1 << 6 /* memory to peripherial */ |
-      //DMA_SxCR_PFCTRL /* peripherial controls flow */ |
       DMA_SxCR_TCIE | DMA_SxCR_TEIE;
   DMA_Stream->FCR =
       DMA_SxFCR_DMDIS /* disable direct mode (enable the FIFO) */ |
