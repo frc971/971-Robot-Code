@@ -162,7 +162,7 @@ namespace aos {
 //    CHECK(fp->Write(x) == 4)
 #define CHECK(condition)  \
   if (__builtin_expect(!(condition), 0)) { \
-    LOG(FATAL, "CHECK(" #condition ") failed\n"); \
+    LOG(FATAL, "CHECK(%s) failed\n", #condition); \
   }
 
 // Helper functions for CHECK_OP macro.
