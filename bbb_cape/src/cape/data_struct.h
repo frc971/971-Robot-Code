@@ -44,16 +44,18 @@ struct DATA_STRUCT_NAME {
   // We are 64-bit aligned at this point.
 
   union {
+    // This is for the test code that basically just sends all of the values
+    // over to make sure that everything is working.
     struct {
       int32_t encoders[8];
 
       uint16_t analogs[8];
 
       uint32_t digitals;
+
+      int32_t posedge_value, negedge_value;
+      uint8_t posedge_count, negedge_count;
     } test;
-    
-    struct {
-    } bot3;
   };
 } __attribute__((aligned(8)));
 #pragma pack(pop)

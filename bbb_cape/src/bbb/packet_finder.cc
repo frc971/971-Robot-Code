@@ -2,7 +2,6 @@
 
 #include <errno.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include <algorithm>
 
@@ -17,7 +16,7 @@ PacketFinder::PacketFinder(ByteReader *reader, size_t packet_size)
       packet_size_(packet_size),
       buf_(new AlignedChar[packet_size_]),
       unstuffed_data_(new AlignedChar[packet_size_ - 4]) {
-  assert((packet_size_ % 4) == 0);
+  CHECK((packet_size_ % 4) == 0);
 }
 
 PacketFinder::~PacketFinder() {

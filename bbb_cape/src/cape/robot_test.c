@@ -4,6 +4,25 @@
 #include "cape/analog.h"
 #include "cape/digital.h"
 
+#define CAPTURE_NUM 11
+
+#define CAPTURE(num, np) digital_capture_ ## num ## np
+#define CAPTURE2(num, np) CAPTURE(num, np)
+#define CAPTURE_P CAPTURE2(CAPTURE_NUM, P)
+#define CAPTURE_N CAPTURE2(CAPTURE_NUM, N)
+
+static int32_t posedge_value, negedge_value;
+static uint8_t posedge_count = 0, negedge_count = 0;
+
+void CAPTURE_P(void) {
+  ++posedge_count;
+  posedge_value = encoder_read(1);
+}
+void CAPTURE_N(void) {
+  ++negedge_count;
+  negedge_value = encoder_read(1);
+}
+
 void robot_fill_packet(struct DataStruct *packet) {
   packet->test.encoders[0] = encoder_read(0);
   packet->test.encoders[1] = encoder_read(1);
@@ -20,8 +39,13 @@ void robot_fill_packet(struct DataStruct *packet) {
 
   packet->test.digitals = 0;
   for (int i = 0; i < 12; ++i) {
-    SET_BITS(packet->test.digitals, 1, !!digital_read(i), i);
+    SET_BITS(packet->test.digitals, 1, digital_read(i), i);
   }
 
-  // TODO(brians): digitals
+  digital_capture_disable(CAPTURE_NUM);
+  packet->test.posedge_count = posedge_count;
+  packet->test.posedge_value = posedge_value;
+  packet->test.negedge_count = negedge_count;
+  packet->test.negedge_value = negedge_value;
+  digital_capture_enable(CAPTURE_NUM);
 }

@@ -55,7 +55,7 @@ void uart_dma_callback(uint8_t *buffer) {
     struct DataStruct packet;
     uint8_t padding[DATA_STRUCT_SEND_SIZE - sizeof(struct DataStruct) - 12];
     uint32_t checksum;
-  } data __attribute__((aligned(4)));
+  } __attribute__((packed)) data __attribute__((aligned(4)));
   STATIC_ASSERT(sizeof(data) == DATA_STRUCT_SEND_SIZE - 8,
                 The_size_of_the_data_is_wrong);
   struct DataStruct *packet = &data.packet;
@@ -89,6 +89,6 @@ void fill_packet_start(void) {
   led_set(LED_ERR, 0);
   gyro_init();
 
-  uart_common_configure(1500000);
+  uart_common_configure(750000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);
 }

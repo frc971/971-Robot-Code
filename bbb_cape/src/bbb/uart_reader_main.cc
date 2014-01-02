@@ -7,24 +7,15 @@
 #include "aos/common/time.h"
 #include "bbb/gpios.h"
 #include "bbb/uart_reader.h"
+#include "bbb/packet_finder.h"
 
 using ::aos::time::Time;
-
-#define DO_RESET 0
 
 int main() {
   ::aos::Init();
 
-#if DO_RESET
-  // time since last good packet before we reset 
-  // the board.
-  static const Time kPacketTimeout = Time::InSeconds(1);
-
-  ::bbb::Pin reset_pin = bbb::Pin(1, 6);
-  reset_pin.MakeOutput();
-#endif
-
-  ::bbb::UartReader receiver(1500000);
+  ::bbb::UartReader reader(750000);
+  ::bbb::PacketFinder receiver(&reader, DATA_STRUCT_SEND_SIZE - 4);
   receiver.ReadPacket();
   // TODO(brians): Do this cleanly.
   int chrt_result = system(
@@ -38,17 +29,6 @@ int main() {
 
   Time last_packet_time = Time::Now();
   while (true) {
-#if DO_RESET
-    if (!last_packet_time.IsWithin(Time::Now(), kPacketTimeout.ToNSec())) {
-      LOG(ERROR, "No good packets for too long. Resetting cape.\n");
-      reset_pin.Write(1);
-      ::aos::time::SleepFor(Time::InSeconds(1));
-      reset_pin.Write(0);
-      
-      last_packet_time = Time::Now();
-    }
-#endif
-
     if (!receiver.ReadPacket()) {
       LOG(WARNING, "Could not read a packet.\n");
       continue;
@@ -66,6 +46,10 @@ int main() {
       LOG(DEBUG, "adc[%d]=%f (%" PRIx16 ")\n", i,
           3.3 * packet->test.analogs[i] / 0x3FF, packet->test.analogs[i]);
     }
+    LOG(DEBUG, "digitals=%x\n", packet->test.digitals);
+    LOG(DEBUG, "+=%" PRId32 "/%" PRIu8 " and -=%" PRId32 "/%" PRIu8 "\n",
+        packet->test.posedge_value, packet->test.posedge_count,
+        packet->test.negedge_value, packet->test.negedge_count);
   }
 
   ::aos::Cleanup();
