@@ -35,31 +35,41 @@ SOURCES=main.c \
 	FreeRTOS/portable/MemMang/heap_2.c \
 	alloc.c \
 	analog.c \
+	digital.c \
+	encoder.c \
+	gyro.c \
+	CAN.c \
 	FreeRTOS/portable/GCC/ARM_CM3/port.c \
 	FreeRTOS/tasks.c \
 	FreeRTOS/list.c \
 	FreeRTOS/queue.c \
-	CAN.c \
 	LPCUSB/usbinit.c \
 	LPCUSB/usbcontrol.c \
-	LPCUSB/USB_SENSOR_STREAM.c \
 	LPCUSB/usbhw_lpc.c \
-	spi.c \
-	LPCUSB/usbstdreq.c
+	LPCUSB/usbstdreq.c \
+	usb_device.c \
+
+DATA_STRUCT_CHECKSUM=$(shell ./data_struct_checksum.sh)
 
 all: $(NAME).hex
 
 $(NAME).elf: Makefile $(SOURCES:.c=.o) $(LDSCRIPT)
 	$(CC) $(CFLAGS) -nostartfiles -nostdlib -T $(LDSCRIPT) -o $@ -L$(TOOLS_PREFIX)/lib/gcc/arm-eabi/4.5.1/ $(SOURCES:.c=.o) -Wa,-Map -Wa,main.map -lgcc
 
-%.o: %.c Makefile
-	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99
+%.o: %.c Makefile data_struct_checksum.sh
+	$(CC) $(CFLAGS) -nostartfiles -nostdlib -c -o $@ $< -Wall -std=gnu99 -DDATA_STRUCT_CHECKSUM=$(DATA_STRUCT_CHECKSUM)
 
 run: deploy
 	$(FLASHER) -termonly -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
 
 deploy: all $(NAME).hex
-	$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+	# TODO(aschuh): Figure out why the verify fails (or remove it) and then
+	# remove the -.
+	-$(FLASHER) -hex -verify -control $(NAME).hex $(PORT) $(SPEED) $(OSC)
+
+reset: deploy
+	# Echo an ESC into it to immediately exit the terminal.
+	`which echo` -e '\e' | $(FLASHER) -termonly -control $(PORT) $(SPEED) $(OSC)
 
 cat:
 	@cd ../../bin; python serial_looper.py

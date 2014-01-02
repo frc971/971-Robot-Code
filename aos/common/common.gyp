@@ -137,12 +137,14 @@
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',
+        'control_loop_queues',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',
+        'control_loop_queues',
       ],
     },
     {

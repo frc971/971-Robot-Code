@@ -1,0 +1,8 @@
+#ifndef CAPE_UART_COMMON_PRIVATE_H_
+#define CAPE_UART_COMMON_PRIVATE_H_
+
+#include <STM32F2XX.h>
+
+#define UART USART1
+
+#endif  // CAPE_UART_COMMON_PRIVATE_H_

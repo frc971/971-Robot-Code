@@ -136,12 +136,19 @@ class IndexMotor
 
   // Time that it takes to grab the disc in cycles.
   static const int kGrabbingDelay;
-  // Time that it takes to lift the loader in cycles.
+  // Time that it takes to finish lifting the loader after the sensor is
+  // triggered in cycles.
   static const int kLiftingDelay;
+  // Time until we give up lifting and move on in cycles.
+  static const int kLiftingTimeout;
   // Time that it takes to shoot the disc in cycles.
   static const int kShootingDelay;
-  // Time that it takes to lower the loader in cycles.
+  // Time that it takes to finish lowering the loader after the sensor is
+  // triggered in cycles.
   static const int kLoweringDelay;
+  // Time until we give up lowering and move on in cycles.
+  // It's a long time because we really don't want to ever hit this.
+  static const int kLoweringTimeout;
 
   // Object representing a Frisbee tracked by the indexer.
   class Frisbee {
@@ -309,12 +316,17 @@ class IndexMotor
   // Loader goal, state, and counter.
   LoaderGoal loader_goal_;
   LoaderState loader_state_;
-  int loader_countdown_;
+  int loader_countdown_, loader_timeout_;
+  // Whether or not we (might have) failed to shoot a disc that's now (probably)
+  // still in the loader.
+  bool disc_stuck_in_loader_;
 
   // Current state of the pistons.
   bool loader_up_;
   bool disc_clamped_;
   bool disc_ejected_;
+
+  bool is_shooting_;
 
   // The frisbee that is flying through the transfer rollers.
   Frisbee transfer_frisbee_;
@@ -322,6 +334,7 @@ class IndexMotor
   // Bottom disc detect from the last valid packet for detecting edges.
   bool last_bottom_disc_detect_;
   bool last_top_disc_detect_;
+  bool hopper_clear_;
   int32_t last_bottom_disc_posedge_count_;
   int32_t last_bottom_disc_negedge_count_;
   int32_t last_bottom_disc_negedge_wait_count_;

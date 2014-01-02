@@ -35,7 +35,8 @@ const in_addr *DoGetOwnIPAddress() {
     if (addrs->ifa_addr->sa_family == AF_INET) {
       if (strcmp(kAtomNetInterface, addrs->ifa_name) == 0) {
         static const in_addr r =
-            reinterpret_cast<sockaddr_in *>(addrs->ifa_addr)->sin_addr;
+            reinterpret_cast<sockaddr_in *>(__builtin_assume_aligned(
+                addrs->ifa_addr, alignof(sockaddr_in)))->sin_addr;
         return &r;
       }
     }

@@ -391,7 +391,7 @@ class Reader {
       }
 
       if (FD_ISSET(fd_, &fds)) {
-        LOG(INFO, "Got a frame\n");
+        LOG(DEBUG, "Got a frame\n");
         ReadFrame();
       }
       if (FD_ISSET(server_fd_, &fds)) {

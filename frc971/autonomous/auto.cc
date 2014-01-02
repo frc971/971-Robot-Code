@@ -3,8 +3,8 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/network/team_number.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
@@ -341,11 +341,12 @@ void DriveSpin(double radians) {
 void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
 
-  double WRIST_UP;
+  const double WRIST_UP =
+      constants::GetValues().wrist_hall_effect_start_angle - 0.4;
   const double WRIST_DOWN = -0.580;
-  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.005;
-  const double ANGLE_ONE = 0.520;
-  const double ANGLE_TWO = 0.677;
+  const double WRIST_DOWN_TWO = WRIST_DOWN - 0.012;
+  const double ANGLE_ONE = 0.509;
+  const double ANGLE_TWO = 0.673;
 
   ResetIndex();
   SetWristGoal(1.0);  // wrist must calibrate itself on power-up
@@ -356,15 +357,6 @@ void HandleAuto() {
   //::aos::time::SleepFor(::aos::time::Time::InSeconds(20));
   if (ShouldExitAuto()) return;
   
-  ::aos::robot_state.FetchLatest();
-  if (!::aos::robot_state.get() ||
-      !constants::wrist_hall_effect_start_angle(&WRIST_UP)) {
-    LOG(ERROR, "Constants not ready\n");
-    return;
-  }
-  WRIST_UP -= 0.4;
-  LOG(INFO, "Got constants\n");
-
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
     LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
@@ -390,7 +382,7 @@ void HandleAuto() {
   WaitForAngle_Adjust();
   ShootIndex();        // tilt up, shoot, repeat until empty
           // calls WaitForShooter
-  ShootNDiscs(3);      // ShootNDiscs returns if ShouldExitAuto
+  ShootNDiscs(4);      // ShootNDiscs returns if ShouldExitAuto
   if (ShouldExitAuto()) return;
 
   StartIndex();        // take in up to 4 discs
@@ -421,8 +413,6 @@ void HandleAuto() {
     SetDriveGoal(kDistanceToCenterMeters);
     if (ShouldExitAuto()) return;
 
-    return;
-
     ShootNDiscs(4);
     if (ShouldExitAuto()) return;
   } else {
@@ -440,16 +430,37 @@ void HandleAuto() {
     if (ShouldExitAuto()) return; 
     WaitForIndex();			// ready to pick up discs
 
-    static const double kDriveDistance = 2.8;
-    static const double kFirstDrive = 0.27;
+    // How long we're going to drive in total.
+    static const double kDriveDistance = 2.84;
+    // How long to drive slowly to pick up the 2 disks under the pyramid.
+    static const double kFirstDrive = 0.4;
+    // How long to drive slowly to pick up the last 2 disks.
+    static const double kLastDrive = 0.34;
+    // How fast to drive when picking up disks.
+    static const double kPickupVelocity = 0.6;
+    // How fast to drive when not picking up disks.
+    static const double kDriveVelocity =
+        constants::GetValues().clutch_transmission ? 0.8 : 1.75;
+    // Where to take the second set of shots from.
     static const double kSecondShootDistance = 2.0;
-    SetDriveGoal(kFirstDrive, 0.6);
-    SetWristGoal(WRIST_DOWN_TWO);
-    SetDriveGoal(kDriveDistance - kFirstDrive, 2.0);
-    if (ShouldExitAuto()) return;
 
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
-    SetDriveGoal(kSecondShootDistance - kDriveDistance, 2.0);
+    // Go slowly to grab the 2 disks under the pyramid.
+    SetDriveGoal(kFirstDrive, kPickupVelocity);
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+
+    if (constants::GetValues().clutch_transmission) {
+      SetDriveGoal(kSecondShootDistance - kFirstDrive, kDriveVelocity);
+    } else {
+      SetDriveGoal(kDriveDistance - kFirstDrive - kLastDrive, kDriveVelocity);
+      SetWristGoal(WRIST_DOWN_TWO);
+      // Go slowly at the end to pick up the last 2 disks.
+      SetDriveGoal(kLastDrive, kPickupVelocity);
+      if (ShouldExitAuto()) return;
+
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.5));
+      SetDriveGoal(kSecondShootDistance - kDriveDistance, kDriveVelocity);
+    }
+
     PreloadIndex();
 
     if (ShouldExitAuto()) return;

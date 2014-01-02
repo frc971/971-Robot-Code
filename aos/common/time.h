@@ -23,16 +23,22 @@ namespace time {
 // 0 <= nsec_ < kNSecInSec should always be true. All functions here will make
 // sure that that is true if it was on all inputs (including *this).
 //
+// Negative times are supported so that all of the normal arithmetic identities
+// work. nsec_ is still always positive.
+//
 // The arithmetic and comparison operators are overloaded because they make
 // complete sense and are very useful. The default copy and assignment stuff is
-// left because it works fine. Multiplication and division of Times by Times are
+// left because it works fine. Multiplication of Times by Times is
 // not implemented because I can't think of any uses for them and there are
-// multiple ways to do it.
+// multiple ways to do it. Division of Times by Times is implemented as the
+// ratio of them. Multiplication, division, and modulus of Times by integers are
+// implemented as interpreting the argument as nanoseconds.
 struct Time {
 #ifdef SWIG
 // All of the uses of constexpr here can safely be simply removed.
 // NOTE: This means that relying on the fact that constexpr implicitly makes
-// member functions const is not safe.
+// member functions const is not valid, so they all have to be explicitly marked
+// const.
 #define constexpr
 #endif  // SWIG
  public:
@@ -83,7 +89,6 @@ struct Time {
   static Time Now(clockid_t clock = kDefaultClock);
 
   // Constructs a Time representing seconds.
-  // TODO(brians): fix and test the negative cases for all of these
   static constexpr Time InSeconds(double seconds) {
     return (seconds < 0.0) ?
         Time(static_cast<int32_t>(seconds) - 1,
@@ -94,8 +99,11 @@ struct Time {
 
   // Constructs a time representing microseconds.
   static constexpr Time InNS(int64_t nseconds) {
-    return Time(nseconds / static_cast<int64_t>(kNSecInSec),
-                nseconds % kNSecInSec);
+    return (nseconds < 0) ?
+        Time(nseconds / static_cast<int64_t>(kNSecInSec) - 1,
+             (nseconds % kNSecInSec) + kNSecInSec) :
+        Time(nseconds / static_cast<int64_t>(kNSecInSec),
+             nseconds % kNSecInSec);
   }
 
   // Constructs a time representing microseconds.
@@ -108,7 +116,10 @@ struct Time {
 
   // Constructs a time representing mseconds.
   static constexpr Time InMS(int mseconds) {
-    return Time(mseconds / kMSecInSec, (mseconds % kMSecInSec) * kNSecInMSec);
+    return (mseconds < 0) ?
+        Time(mseconds / kMSecInSec - 1,
+             (mseconds % kMSecInSec) * kNSecInMSec + kNSecInSec) :
+        Time(mseconds / kMSecInSec, (mseconds % kMSecInSec) * kNSecInMSec);
   }
 
   // Checks whether or not this time is within amount nanoseconds of other.
@@ -138,7 +149,6 @@ struct Time {
   }
 
   // Returns the time represent in microseconds.
-  // TODO(brians): test this
   int64_t constexpr ToUSec() const {
     return static_cast<int64_t>(sec_) * static_cast<int64_t>(kUSecInSec) +
         (static_cast<int64_t>(nsec_) / static_cast<int64_t>(kNSecInUSec));
@@ -155,14 +165,21 @@ struct Time {
   Time &operator*=(int32_t rhs);
   Time &operator/=(int32_t rhs);
   Time &operator%=(int32_t rhs);
+  Time &operator%=(double rhs) = delete;
+  Time &operator*=(double rhs) = delete;
+  Time &operator/=(double rhs) = delete;
+  const Time operator*(double rhs) const = delete;
+  const Time operator/(double rhs) const = delete;
+  const Time operator%(double rhs) const = delete;
   #endif
   const Time operator+(const Time &rhs) const;
   const Time operator-(const Time &rhs) const;
   const Time operator*(int32_t rhs) const;
   const Time operator/(int32_t rhs) const;
-  // TODO(brians) test this
   double operator/(const Time &rhs) const;
   const Time operator%(int32_t rhs) const;
+
+  const Time operator-() const;
 
   bool operator==(const Time &rhs) const;
   bool operator!=(const Time &rhs) const;
@@ -194,14 +211,12 @@ struct Time {
   // Enables returning the mock time value for Now instead of checking the
   // system clock.  This should only be used when testing things depending on
   // time, or many things may/will break.
-  static void EnableMockTime(const Time now);
+  static void EnableMockTime(const Time &now);
   // Sets now when time is being mocked.
-  static void SetMockTime(const Time now);
-  // Convenience function to just increment the mock time by a certain amount.
-  static void IncrementMockTime(const Time amount) {
-    // TODO(brians) make this thread safe so it's more useful?
-    SetMockTime(Now() + amount);
-  }
+  static void SetMockTime(const Time &now);
+  // Convenience function to just increment the mock time by a certain amount in
+  // a thread safe way.
+  static void IncrementMockTime(const Time &amount);
   // Disables mocking time.
   static void DisableMockTime();
 
@@ -212,7 +227,9 @@ struct Time {
   static void CheckImpl(int32_t nsec);
   void Check() { CheckImpl(nsec_); }
   // A constexpr version of CheckImpl that returns the given value when it
-  // succeeds.
+  // succeeds or evaluates to non-constexpr and returns 0 when it fails.
+  // This will result in the usual LOG(FATAL) if this is used where it isn't
+  // required to be constexpr or a compile error if it is.
   static constexpr int32_t CheckConstexpr(int32_t nsec) {
     return (nsec >= kNSecInSec || nsec < 0) ? CheckImpl(nsec), 0 : nsec;
   }

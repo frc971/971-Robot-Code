@@ -119,7 +119,7 @@ def dd_DDMatrix2Poly(matrixptr):
 
   # Return None on error.
   # The error values are enums, so they aren't exposed.
-  if error.value != NO_ERRORS:
+  if error.value != DD_NO_ERRORS:
     # Dump out the errors to stderr
     libcdd._Z21dd_WriteErrorMessagesP8_IO_FILE12dd_ErrorType(
         ctypes.pythonapi.PyFile_AsFile(ctypes.py_object(sys.stdout)),

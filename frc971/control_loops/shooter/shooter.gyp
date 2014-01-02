@@ -27,8 +27,9 @@
       'dependencies': [
         'shooter_loop',
         '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/frc971.gyp:common',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
       ],
       'export_dependent_settings': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',

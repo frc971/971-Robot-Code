@@ -1,0 +1,47 @@
+v 20110115 2
+B 300 0 1700 700 3 0 0 0 -1 -1 0 -1 -1 -1 -1 -1
+P 0 500 300 500 1 0 0
+{
+T 0 500 5 10 0 0 0 0 1
+pintype=pwr
+T 355 495 5 10 1 1 0 0 1
+pinlabel=SGND
+T 205 545 5 10 0 1 0 6 1
+pinnumber=SGND
+T 0 500 5 10 0 0 0 0 1
+pinseq=1
+}
+P 0 200 300 200 1 0 0
+{
+T 0 200 5 10 0 0 0 0 1
+pintype=pwr
+T 355 195 5 10 1 1 0 0 1
+pinlabel=SVCC
+T 205 245 5 10 0 1 0 6 1
+pinnumber=SVCC
+T 0 200 5 10 0 0 0 0 1
+pinseq=2
+}
+P 2300 300 2000 300 1 0 0
+{
+T 2300 300 5 10 0 0 0 0 1
+pintype=out
+T 1945 295 5 10 1 1 0 6 1
+pinlabel=OUT
+T 2095 345 5 10 0 1 0 0 1
+pinnumber=OUT
+T 2300 300 5 10 0 0 0 0 1
+pinseq=3
+}
+T 2500 900 8 10 0 1 0 0 1
+device=encoder-input
+T 1400 1000 8 10 0 1 0 0 1
+description=1 encoder input
+T 2900 700 8 10 0 1 0 0 1
+source=encoder input.sch
+T 1700 800 8 10 1 1 0 0 1
+refdes=X?
+T 2900 400 8 10 0 1 0 0 1
+numslots=1
+T 400 800 9 10 1 0 0 0 1
+digital input

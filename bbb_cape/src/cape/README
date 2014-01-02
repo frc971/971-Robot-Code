@@ -1,0 +1,16 @@
+[files]
+  Low-level hardware interface files: These are files copied (and tweaked) from
+      other places that deal with the low-level hardware stuff.
+	CMSIS/STM32F2XX.h: This has the declarations for all of the peripherial
+	    registers and other stuff specific to this MCU. It was downloaded from
+		the Rowley Associates STM32 BSP.
+    CMSIS/core_cm3.h: This has the declarations for the generic Cortex-M3
+	    registers. It is a generic file that seems to be dowloadable from lots
+		of places (with slight differences between each, of course). STM32F2XX.h
+		#includes it.
+	STM32FXX_startup.S: This defines the exception vector table and handles
+	    copying data into RAM etc before calling main.
+    *.ld: These are linker scripts. They defines where in memory everything
+	    actually goes and give various locations names so that the startup
+		code (described above) can find them and put the data where it
+		belongs.

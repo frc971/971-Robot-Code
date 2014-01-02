@@ -6,8 +6,8 @@
       'sources': [
         'OpenCVWorkTask.cpp',
         'CameraProcessor.cpp',
-        'BinaryServer.cpp',
-        'PacketNotifier.cpp',
+        #'BinaryServer.cpp',
+        #'PacketNotifier.cpp',
         'JPEGRoutines.cpp',
       ],
       'dependencies': [

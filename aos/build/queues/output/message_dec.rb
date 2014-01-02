@@ -35,7 +35,7 @@ class Target::MessageDec < Target::Node
 			format += ", "
 			format += elem.toPrintFormat()
 			if (elem.type == 'bool')
-				args.push("#{elem.name} ? 't' : 'f'")
+				args.push("#{elem.name} ? 'T' : 'f'")
 			else
 				args.push(elem.name)
 			end

@@ -5,10 +5,12 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
+#include "aos/controls/polytope.h"
+
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/drivetrain/drivetrain_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/queues/GyroAngle.q.h"
 
 
@@ -18,15 +20,27 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+class Environment : public ::testing::Environment {
+ public:
+  virtual ~Environment() {}
+  // how to set up the environment.
+  virtual void SetUp() {
+    aos::controls::HPolytope<0>::Init();
+  }
+};
+::testing::Environment* const holder_env =
+  ::testing::AddGlobalTestEnvironment(new Environment);
+
 
 // Class which simulates the drivetrain and sends out queue messages containing the
 // position.
 class DrivetrainSimulation {
  public:
   // Constructs a motor simulation.
+  // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(
-            new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
+            new StateFeedbackPlant<4, 2, 2>(MakeDogDrivetrainPlant())),
         my_drivetrain_loop_(".frc971.control_loops.drivetrain",
                        0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
                        ".frc971.control_loops.drivetrain.position",
@@ -180,6 +194,108 @@ TEST_F(DrivetrainTest, SurvivesBadPosition) {
     SendDSPacket(true);
   }
   VerifyNearGoal();
+}
+
+::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
+                                      double x2_min, double x2_max) {
+  Eigen::Matrix<double, 4, 2> box_H;
+  box_H << /*[[*/ 1.0, 0.0 /*]*/,
+            /*[*/-1.0, 0.0 /*]*/,
+            /*[*/ 0.0, 1.0 /*]*/,
+            /*[*/ 0.0,-1.0 /*]]*/;
+  Eigen::Matrix<double, 4, 1> box_k;
+  box_k << /*[[*/ x1_max /*]*/,
+            /*[*/-x1_min /*]*/,
+            /*[*/ x2_max /*]*/,
+            /*[*/-x2_min /*]]*/;
+  ::aos::controls::HPolytope<2> t_poly(box_H, box_k);
+  return t_poly;
+}
+
+class CoerceGoalTest : public ::testing::Test {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+// WHOOOHH!
+TEST_F(CoerceGoalTest, Inside) {
+  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+
+  Eigen::Matrix<double, 1, 2> K;
+  K << /*[[*/ 1, -1 /*]]*/;
+
+  Eigen::Matrix<double, 2, 1> R;
+  R << /*[[*/ 1.5, 1.5 /*]]*/;
+
+  Eigen::Matrix<double, 2, 1> output =
+      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+
+  EXPECT_EQ(R(0, 0), output(0, 0));
+  EXPECT_EQ(R(1, 0), output(1, 0));
+}
+
+TEST_F(CoerceGoalTest, Outside_Inside_Intersect) {
+  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+
+  Eigen::Matrix<double, 1, 2> K;
+  K << 1, -1;
+
+  Eigen::Matrix<double, 2, 1> R;
+  R << 5, 5;
+
+  Eigen::Matrix<double, 2, 1> output =
+      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+
+  EXPECT_EQ(2.0, output(0, 0));
+  EXPECT_EQ(2.0, output(1, 0));
+}
+
+TEST_F(CoerceGoalTest, Outside_Inside_no_Intersect) {
+  ::aos::controls::HPolytope<2> box = MakeBox(3, 4, 1, 2);
+
+  Eigen::Matrix<double, 1, 2> K;
+  K << 1, -1;
+
+  Eigen::Matrix<double, 2, 1> R;
+  R << 5, 5;
+
+  Eigen::Matrix<double, 2, 1> output =
+      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+
+  EXPECT_EQ(3.0, output(0, 0));
+  EXPECT_EQ(2.0, output(1, 0));
+}
+
+TEST_F(CoerceGoalTest, Middle_Of_Edge) {
+  ::aos::controls::HPolytope<2> box = MakeBox(0, 4, 1, 2);
+
+  Eigen::Matrix<double, 1, 2> K;
+  K << -1, 1;
+
+  Eigen::Matrix<double, 2, 1> R;
+  R << 5, 5;
+
+  Eigen::Matrix<double, 2, 1> output =
+      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+
+  EXPECT_EQ(2.0, output(0, 0));
+  EXPECT_EQ(2.0, output(1, 0));
+}
+
+TEST_F(CoerceGoalTest, PerpendicularLine) {
+  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+
+  Eigen::Matrix<double, 1, 2> K;
+  K << 1, 1;
+
+  Eigen::Matrix<double, 2, 1> R;
+  R << 5, 5;
+
+  Eigen::Matrix<double, 2, 1> output =
+      ::frc971::control_loops::CoerceGoal(box, K, 0, R);
+
+  EXPECT_EQ(1.0, output(0, 0));
+  EXPECT_EQ(1.0, output(1, 0));
 }
 
 }  // namespace testing

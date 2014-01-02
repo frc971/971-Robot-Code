@@ -1,0 +1,81 @@
+EXTI interrupt groupings:
+  by number in the port
+  0,1,2,3,4,5-9,10-15
+
+
+PA0  TIM5.1
+PA1  TIM5.2
+PA2
+PA3
+PA4  SPI3_NSS (slave select)
+PA5  TIM2.1
+PA6  TIM3.1
+PA7
+PA8  TIM1.1
+PA9  USART1_TX (bootloader)
+PA10 USART1_RX (bootloader)
+PA11 (don't change during reset into bootloader)
+PA12 (don't change during reset into bootloader)
+PA13 SWDIO
+PA14 SWCLK
+PA15 (gets pulled up during reset (JTAG pin))
+PB0  TIM3.3
+PB1
+PB2  BOOT1 (tie to GND)
+PB3  TIM2.2
+PB4  (gets pulled up during reset (JTAG pin))
+PB5  TIM3.2 (don't change during reset into bootloader)
+PB6  TIM4.1
+PB7  TIM4.2
+PB8
+PB9
+PB10
+PB11 (don't change during reset into bootloader)
+PB12 SPI2_NSS (slave select)
+PB13 SPI2_SCK
+PB14 SPI2_MISO
+PB15 SPI2_MOSI
+PC0
+PC1
+PC2
+PC3
+PC4
+PC5
+PC6  TIM8.1
+PC7  TIM8.2
+PC8
+PC9
+PC10 SPI3_SCK
+PC11 SPI3_MISO
+PC12 SPI3_MOSI
+PC13
+PC14
+PC15
+PD2
+
+[GPIOs]
+C0  enc
+C1  enc
+A2  enc (as TIM9.1)
+A3  enc
+
+B2
+C4
+C5
+A7
+B8
+B9
+B10
+A11
+A12
+C13
+C14
+C15
+
+C8  BBB_RST TIM8.3
+
+
+IO compensation cell?
+  controls slew rates
+  increased power draw
+  should probably just enable it?

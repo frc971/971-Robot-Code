@@ -10,7 +10,13 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "cmpxchg.h"
+// TODO(brians): Inline these in the new PI version.
+#define cmpxchg(ptr, o, n) __sync_val_compare_and_swap(ptr, o, n)
+static inline uint32_t xchg(mutex *pointer, uint32_t value) {
+  uint32_t result;
+  __atomic_exchange(pointer, &value, &result, __ATOMIC_SEQ_CST);
+  return result;
+}
 
 // this code is based on something that appears to be based on <http://www.akkadia.org/drepper/futex.pdf>, which also has a lot of useful information
 // should probably use <http://lxr.linux.no/linux+v2.6.34/Documentation/robust-futexes.txt> once it becomes available

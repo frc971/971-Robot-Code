@@ -23,18 +23,15 @@ int Buffers::CreateSocket(int (*bind_connect)(int, const sockaddr *, socklen_t))
   } addr;
   const int r = socket(AF_UNIX, SOCK_STREAM, 0);
   if (r == -1) {
-    LOG(ERROR, "socket(AF_UNIX, SOCK_STREAM, 0) failed with %d: %s\n",
+    LOG(FATAL, "socket(AF_UNIX, SOCK_STREAM, 0) failed with %d: %s\n",
         errno, strerror(errno));
-    return -1;
   }
   addr.un.sun_family = AF_UNIX;
   memset(addr.un.sun_path, 0, sizeof(addr.un.sun_path));
   strcpy(addr.un.sun_path, kFDServerName.c_str());
   if (bind_connect(r, &addr.addr, sizeof(addr.un)) == -1) {
-    LOG(ERROR, "bind_connect(=%p)(%d, %p, %zd) failed with %d: %s\n",
+    LOG(FATAL, "bind_connect(=%p)(%d, %p, %zd) failed with %d: %s\n",
         bind_connect, r, &addr.addr, sizeof(addr.un), errno, strerror(errno));
-    close(r); // what are we going to do about an error?
-    return -1;
   }
   return r;
 }

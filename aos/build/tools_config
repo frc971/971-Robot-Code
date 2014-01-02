@@ -1,0 +1,13 @@
+# This is a shell fragment that sets up variables related to where the tools
+# that download_externals.sh downloads so build.sh can use.
+
+EXTERNALS=${AOS}/../output/downloaded
+
+NINJA_RELEASE=v1.4.0
+NINJA_DIR=${EXTERNALS}/ninja-${NINJA_RELEASE}
+NINJA=${NINJA_DIR}/ninja
+
+# From chromium@154360:trunk/src/DEPS.
+GYP_REVISION=1738
+GYP_DIR=${EXTERNALS}/gyp-${GYP_REVISION}
+GYP=${GYP_DIR}/gyp

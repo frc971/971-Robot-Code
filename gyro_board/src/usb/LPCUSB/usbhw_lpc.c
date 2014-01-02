@@ -59,7 +59,7 @@ static TFnFrameHandler	*_pfnFrameHandler = NULL;
 
 	@param [in]	dwIntr		Bitmask of interrupts to wait for
  */
-static void Wait4DevInt(unsigned long dwIntr)
+void Wait4DevInt(unsigned long dwIntr)
 {
 	// wait for specific interrupt
 	while ((USB->USBDevIntSt & dwIntr) != dwIntr);
@@ -107,7 +107,7 @@ static void USBHwCmdWrite(unsigned char bCmd, unsigned short bData)
 
 	@return the data
  */
-static unsigned char USBHwCmdRead(unsigned char bCmd)
+unsigned char USBHwCmdRead(unsigned char bCmd)
 {
 	// write command code
 	USBHwCmd(bCmd);
@@ -458,6 +458,8 @@ void USBHwISR(void) {
 	// endpoint interrupt
 	if (dwStatus & EP_SLOW) {
 		// clear EP_SLOW
+    // TODO(brians): The manual says that this should happen after clearing
+    // stuff using USBEpIntClr.
 		USB->USBDevIntClr = EP_SLOW;
 		// check all endpoints
 		for (i = 0; i < 32; i++) {

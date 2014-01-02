@@ -18,21 +18,19 @@
         '../control_loops/shooter/shooter.gyp:shooter',
         '../autonomous/autonomous.gyp:auto',
         '../input/input.gyp:JoystickReader',
-        '../input/input.gyp:GyroReader',
         '../../vision/vision.gyp:OpenCVWorkTask',
         '../../vision/vision.gyp:GoalMaster',
         '../output/output.gyp:MotorWriter',
         '../output/output.gyp:CameraServer',
         #'camera/camera.gyp:frc971',
         '../../gyro_board/src/libusb-driver/libusb-driver.gyp:get',
-        '../input/input.gyp:gyro_board_reader',
-        '../input/input.gyp:gyro_sensor_receiver',
+        #'../input/input.gyp:gyro_sensor_receiver',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:*',
       ],
       'copies': [
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'scripts/aos_module.ko',
             'scripts/start_list.txt',
           ],
         },

@@ -4,6 +4,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include "aos/common/macros.h"
+#include "aos/common/time.h"
 
 class LibUSBDeviceHandle;
 namespace libusb {
@@ -61,7 +62,8 @@ class Transfer {
  public:
   Transfer(size_t data_length,
            void (*callback)(Transfer *, void *),
-           void *user_data);
+           void *user_data,
+           int num_iso_packets = 0);
   ~Transfer();
 
   void FillInterrupt(LibUSBDeviceHandle *device,
@@ -72,7 +74,7 @@ class Transfer {
   void Cancel();
 
   libusb_transfer_status status() { return transfer_->status; }
-  int read_bytes() { return transfer_->actual_length; }
+  virtual int read_bytes() { return transfer_->actual_length; }
 
   const uint8_t *data() { return data_; }
 
@@ -81,13 +83,14 @@ class Transfer {
     static_cast<Transfer *>(self->user_data)->TransferCallback();
   }
 
- private:
-  void TransferCallback();
-
+ protected:
   libusb_transfer *const transfer_;
 
   uint8_t *const data_;
   size_t data_length_;
+
+ private:
+  void TransferCallback();
 
   void (*const callback_)(Transfer *, void *);
   void *const user_data_;
@@ -95,6 +98,7 @@ class Transfer {
   DISALLOW_COPY_AND_ASSIGN(Transfer);
 };
 
+// TODO(brians): Make this actually work for num_packets != 1.
 class IsochronousTransfer : public Transfer {
  public:
   IsochronousTransfer(size_t packet_length,
@@ -104,7 +108,11 @@ class IsochronousTransfer : public Transfer {
 
   void FillIsochronous(LibUSBDeviceHandle *device,
                        unsigned char endpoint,
-                       unsigned int timeout);
+                       const ::aos::time::Time &timeout);
+
+  virtual int read_bytes() {
+    return transfer_->iso_packet_desc[0].actual_length;
+  }
 
  private:
   const int num_packets_;

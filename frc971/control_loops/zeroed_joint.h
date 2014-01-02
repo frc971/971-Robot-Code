@@ -263,7 +263,7 @@ class ZeroedJoint {
 
 template <int kNumZeroSensors>
 const ::aos::time::Time ZeroedJoint<kNumZeroSensors>::kRezeroTime =
-    ::aos::time::Time::InSeconds(10);
+    ::aos::time::Time::InSeconds(2);
 
 template <int kNumZeroSensors>
 /*static*/ const double ZeroedJoint<kNumZeroSensors>::dt = 0.01;

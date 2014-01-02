@@ -45,6 +45,9 @@ class ShooterMotor
   double position_goal_;
   double last_position_;
 
+  // For making sure it keeps spinning if we're shooting.
+  double last_velocity_goal_;
+
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };
 

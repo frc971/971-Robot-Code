@@ -39,9 +39,9 @@ struct RawQueue::MessageHeader {
   int ref_count;
   int index;  // in pool_
   static MessageHeader *Get(const void *msg) {
-    return reinterpret_cast<MessageHeader *>(
-        static_cast<uint8_t *>(const_cast<void *>(msg)) -
-        sizeof(MessageHeader));
+    return reinterpret_cast<MessageHeader *>(__builtin_assume_aligned(
+        static_cast<uint8_t *>(const_cast<void *>(msg)) - sizeof(MessageHeader),
+        alignof(MessageHeader)));
   }
   void Swap(MessageHeader *other) {
     MessageHeader temp;

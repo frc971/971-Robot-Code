@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "aos/common/messages/RobotState.q.h"
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 
@@ -17,43 +16,23 @@ AngleAdjustMotor::AngleAdjustMotor(
     : aos::control_loops::ControlLoop<control_loops::AngleAdjustLoop>(
         my_angle_adjust),
       zeroed_joint_(MakeAngleAdjustLoop()) {
-}
+  {
+    using ::frc971::constants::GetValues;
+    ZeroedJoint<2>::ConfigurationData config_data;
 
-bool AngleAdjustMotor::FetchConstants(
-    ZeroedJoint<2>::ConfigurationData *config_data) {
-  if (!constants::angle_adjust_lower_limit(
-          &config_data->lower_limit)) {
-    LOG(ERROR, "Failed to fetch the angle adjust lower limit constant.\n");
-    return false;
-  }
-  if (!constants::angle_adjust_upper_limit(
-          &config_data->upper_limit)) {
-    LOG(ERROR, "Failed to fetch the angle adjust upper limit constant.\n");
-    return false;
-  }
-  if (!constants::angle_adjust_hall_effect_start_angle(
-          config_data->hall_effect_start_angle)) {
-    LOG(ERROR, "Failed to fetch the hall effect start angle constants.\n");
-    return false;
-  }
-  if (!constants::angle_adjust_zeroing_off_speed(
-          &config_data->zeroing_off_speed)) {
-    LOG(ERROR,
-        "Failed to fetch the angle adjust zeroing off speed constant.\n");
-    return false;
-  }
-  if (!constants::angle_adjust_zeroing_speed(
-          &config_data->zeroing_speed)) {
-    LOG(ERROR, "Failed to fetch the angle adjust zeroing speed constant.\n");
-    return false;
-  }
+    config_data.lower_limit = GetValues().angle_adjust_lower_limit;
+    config_data.upper_limit = GetValues().angle_adjust_upper_limit;
+    memcpy(config_data.hall_effect_start_angle,
+           GetValues().angle_adjust_hall_effect_start_angle,
+           sizeof(config_data.hall_effect_start_angle));
+    config_data.zeroing_off_speed = GetValues().angle_adjust_zeroing_off_speed;
+    config_data.zeroing_speed = GetValues().angle_adjust_zeroing_speed;
 
-  config_data->max_zeroing_voltage = 4.0;
-  if (!constants::angle_adjust_deadband(&config_data->deadband_voltage)) {
-    LOG(ERROR, "Failed to fetch the angle adjust deadband voltage constant.\n");
-    return false;
+    config_data.max_zeroing_voltage = 4.0;
+    config_data.deadband_voltage = GetValues().angle_adjust_deadband;
+
+    zeroed_joint_.set_config_data(config_data);
   }
-  return true;
 }
 
 // Positive angle is up, and positive power is up.
@@ -67,15 +46,6 @@ void AngleAdjustMotor::RunIteration(
   // motors disabled.
   if (output) {
     output->voltage = 0;
-  }
-
-  // Cache the constants to avoid error handling down below.
-  ZeroedJoint<2>::ConfigurationData config_data;
-  if (!FetchConstants(&config_data)) {
-    LOG(WARNING, "Failed to fetch constants.\n");
-    return;
-  } else {
-    zeroed_joint_.set_config_data(config_data);
   }
 
   ZeroedJoint<2>::PositionData transformed_position;

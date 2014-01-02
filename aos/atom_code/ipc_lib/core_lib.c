@@ -9,7 +9,8 @@ static inline uint8_t aos_8max(uint8_t l, uint8_t r) {
   return (l > r) ? l : r;
 }
 void *shm_malloc_aligned(size_t length, uint8_t alignment) {
-  // minimum alignments from <http://software.intel.com/en-us/articles/data-alignment-when-migrating-to-64-bit-intel-architecture/>
+  // minimum alignments from
+  // <http://software.intel.com/en-us/articles/data-alignment-when-migrating-to-64-bit-intel-architecture/>
   if (length <= 1) {
     alignment = aos_8max(alignment, 1);
   } else if (length <= 2) {

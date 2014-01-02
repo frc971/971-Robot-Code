@@ -1,51 +1,94 @@
+#ifndef FRC971_CONSTANTS_H_
+#define FRC971_CONSTANTS_H_
+
 #include <stdint.h>
+
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace constants {
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
-//
-// All of the public functions to retrieve various values take a pointer to
-// store their output value into and assume that aos::robot_state->get() is
-// not null and is correct.  They return true on success.
 
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 5971;
+const uint16_t kCompTeamNumber = 8971;
+const uint16_t kPracticeTeamNumber = 971;
 
-// Sets *angle to how many radians from horizontal to the location of interest.
-bool wrist_hall_effect_start_angle(double *angle);
-bool wrist_hall_effect_stop_angle(double *angle);
-// These are the soft stops for up and down.
-bool wrist_lower_limit(double *angle);
-bool wrist_upper_limit(double *angle);
-// These are the hard stops.  Don't use these for anything but testing.
-bool wrist_lower_physical_limit(double *angle);
-bool wrist_upper_physical_limit(double *angle);
+// Contains the voltages for an analog hall effect sensor on a shifter.
+struct ShifterHallEffect {
+  // The numbers to use for scaling raw voltages to 0-1.
+  double high, low;
 
-// Returns the speed to move the wrist at when zeroing in rad/sec
-bool wrist_zeroing_speed(double *speed);
-bool wrist_zeroing_off_speed(double *speed);
+  // The numbers for when the dog is clear of each gear.
+  double clear_high, clear_low;
+};
 
-bool angle_adjust_hall_effect_start_angle(double *angle);
-bool angle_adjust_hall_effect_stop_angle(double *angle);
-// These are the soft stops for up and down.
-bool angle_adjust_lower_limit(double *angle);
-bool angle_adjust_upper_limit(double *angle);
-// These are the hard stops.  Don't use these for anything but testing.
-bool angle_adjust_lower_physical_limit(double *angle);
-bool angle_adjust_upper_physical_limit(double *angle);
+// This structure contains current values for all of the things that change.
+struct Values {
+  // Wrist hall effect positive and negative edges.
+  // How many radians from horizontal to the location of interest.
+  double wrist_hall_effect_start_angle;
+  double wrist_hall_effect_stop_angle;
 
-// Returns speed to move the angle adjust when zeroing, in rad/sec
-bool angle_adjust_zeroing_speed(double *speed);
-bool angle_adjust_zeroing_off_speed(double *speed);
+  // Upper and lower extreme limits of travel for the wrist.
+  // These are the soft stops for up and down.
+  double wrist_upper_limit;
+  double wrist_lower_limit;
 
-// Returns the deadband voltage to use.
-bool angle_adjust_deadband(double *voltage);
+  // Physical limits.  These are here for testing.
+  double wrist_upper_physical_limit;
+  double wrist_lower_physical_limit;
 
-// Sets *center to how many pixels off center the vertical line
-// on the camera view is.
-bool camera_center(int *center);
+  // Zeroing speed.
+  // The speed to move the wrist at when zeroing in rad/sec
+  double wrist_zeroing_speed;
+  // Zeroing off speed (in rad/sec).
+  double wrist_zeroing_off_speed;
+
+  // AngleAdjust hall effect positive and negative edges.
+  // These are the soft stops for up and down.
+  const double (&angle_adjust_hall_effect_start_angle)[2];
+  const double (&angle_adjust_hall_effect_stop_angle)[2];
+
+  // Upper and lower extreme limits of travel for the angle adjust.
+  double angle_adjust_upper_limit;
+  double angle_adjust_lower_limit;
+  // Physical limits.  These are here for testing.
+  double angle_adjust_upper_physical_limit;
+  double angle_adjust_lower_physical_limit;
+
+  // The speed to move the angle adjust when zeroing, in rad/sec
+  double angle_adjust_zeroing_speed;
+  // Zeroing off speed.
+  double angle_adjust_zeroing_off_speed;
+
+  // Deadband voltage.
+  double angle_adjust_deadband;
+
+  // The ratio from the encoder shaft to the drivetrain wheels.
+  double drivetrain_encoder_ratio;
+
+  // The gear ratios from motor shafts to the drivetrain wheels for high and low
+  // gear.
+  double low_gear_ratio;
+  double high_gear_ratio;
+
+  ShifterHallEffect left_drive, right_drive;
+
+  bool clutch_transmission;
+
+  ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
+  ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
+
+  // How many pixels off center the vertical line
+  // on the camera view is.
+  int camera_center;
+};
+
+// Creates (once) a Values instance and returns a reference to it.
+const Values &GetValues();
 
 }  // namespace constants
 }  // namespace frc971
+
+#endif  // FRC971_CONSTANTS_H_

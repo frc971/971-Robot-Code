@@ -54,8 +54,10 @@ IndexMotor::IndexMotor(control_loops::IndexLoop *my_index)
       loader_up_(false),
       disc_clamped_(false),
       disc_ejected_(false),
+      is_shooting_(false),
       last_bottom_disc_detect_(false),
       last_top_disc_detect_(false),
+      hopper_clear_(true),
       no_prior_position_(true),
       missing_position_count_(0) {
 }
@@ -106,9 +108,11 @@ const /*static*/ double IndexMotor::kRollerRadius = 2.0 * 0.0254 / 2;
 const /*static*/ double IndexMotor::kTransferRollerRadius = 1.25 * 0.0254 / 2;
 
 /*static*/ const int IndexMotor::kGrabbingDelay = 5;
-/*static*/ const int IndexMotor::kLiftingDelay = 30;
-/*static*/ const int IndexMotor::kShootingDelay = 5;
-/*static*/ const int IndexMotor::kLoweringDelay = 20;
+/*static*/ const int IndexMotor::kLiftingDelay = 5;
+/*static*/ const int IndexMotor::kLiftingTimeout = 100;
+/*static*/ const int IndexMotor::kShootingDelay = 25;
+/*static*/ const int IndexMotor::kLoweringDelay = 4;
+/*static*/ const int IndexMotor::kLoweringTimeout = 120;
 
 // TODO(aschuh): Tune these.
 /*static*/ const double
@@ -360,7 +364,7 @@ void IndexMotor::RunIteration(
     }
 
     if (position->top_disc_posedge_count != last_top_disc_posedge_count_) {
-      LOG(INFO, "Saw a posedge\n");
+      LOG(INFO, "Saw a top posedge\n");
       const double index_position = wrist_loop_->X_hat(0, 0) -
           position->index_position + position->top_disc_posedge_position;
       // TODO(aschuh): Sanity check this number...
@@ -532,6 +536,7 @@ void IndexMotor::RunIteration(
       break;
     case Goal::READY_LOWER:
     case Goal::INTAKE:
+      hopper_clear_ = false;
       {
         if (position) {
           // Posedge of the disc entering the beam break.
@@ -688,6 +693,7 @@ void IndexMotor::RunIteration(
           if (loader_state_ == LoaderState::GRABBED &&
               safe_goal_ == Goal::SHOOT) {
             loader_goal_ = LoaderGoal::SHOOT_AND_RESET;
+            is_shooting_ = true;
           }
 
           // Must wait until it has been grabbed to continue.
@@ -756,6 +762,7 @@ void IndexMotor::RunIteration(
                   "Emptied the hopper out but there are still discs there\n");
               hopper_disc_count_ = 0;
             }
+            hopper_clear_ = true;
           }
         }
       }
@@ -788,6 +795,7 @@ void IndexMotor::RunIteration(
                 hopper_disc_count_);
             hopper_disc_count_ = 0;
           }
+          hopper_clear_ = true;
         }
       }
 
@@ -831,6 +839,7 @@ void IndexMotor::RunIteration(
       loader_up_ = false;
       disc_clamped_ = false;
       disc_ejected_ = false;
+      disc_stuck_in_loader_ = false;
       if (loader_goal_ == LoaderGoal::GRAB ||
           loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
         if (goal->force_fire) {
@@ -864,13 +873,13 @@ void IndexMotor::RunIteration(
       disc_clamped_ = true;
       disc_ejected_ = false;
       if (loader_goal_ == LoaderGoal::SHOOT_AND_RESET || goal->force_fire) {
-        shooter.status.FetchLatest();
-        if (shooter.status.get()) {
+        if (shooter.status.FetchLatest() || shooter.status.get()) {
           // TODO(aschuh): If we aren't shooting nicely, wait until the shooter
           // is up to speed rather than just spinning.
           if (shooter.status->average_velocity > 130 && shooter.status->ready) {
             loader_state_ = LoaderState::LIFTING;
             loader_countdown_ = kLiftingDelay;
+            loader_timeout_ = 0;
             LOG(INFO, "Told to SHOOT_AND_RESET, moving on\n");
           } else {
             LOG(WARNING, "Told to SHOOT_AND_RESET, shooter too slow at %f\n",
@@ -881,6 +890,7 @@ void IndexMotor::RunIteration(
           LOG(ERROR, "Told to SHOOT_AND_RESET, no shooter data, moving on.\n");
           loader_state_ = LoaderState::LIFTING;
           loader_countdown_ = kLiftingDelay;
+          loader_timeout_ = 0;
         }
       } else if (loader_goal_ == LoaderGoal::READY) {
         LOG(ERROR, "Can't go to ready when we have something grabbed.\n");
@@ -889,16 +899,32 @@ void IndexMotor::RunIteration(
         break;
       }
     case LoaderState::LIFTING:
-      LOG(DEBUG, "Loader LIFTING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LIFTING %d %d\n", loader_countdown_, loader_timeout_);
       // Lifting the disc.
       loader_up_ = true;
       disc_clamped_ = true;
       disc_ejected_ = false;
-      if (loader_countdown_ > 0) {
-        --loader_countdown_;
-        break;
+      if (position->loader_top) {
+        if (loader_countdown_ > 0) {
+          --loader_countdown_;
+          loader_timeout_ = 0;
+          break;
+        } else {
+          loader_state_ = LoaderState::LIFTED;
+        }
       } else {
-        loader_state_ = LoaderState::LIFTED;
+        // Restart the countdown if it bounces back down or whatever.
+        loader_countdown_ = kLiftingDelay;
+        ++loader_timeout_;
+        if (loader_timeout_ > kLiftingTimeout) {
+          LOG(ERROR, "Loader timeout while LIFTING %d\n", loader_timeout_);
+          loader_state_ = LoaderState::LOWERING;
+          loader_countdown_ = kLoweringDelay;
+          loader_timeout_ = 0;
+          disc_stuck_in_loader_ = true;
+        } else {
+          break;
+        }
       }
     case LoaderState::LIFTED:
       LOG(DEBUG, "Loader LIFTED\n");
@@ -928,30 +954,53 @@ void IndexMotor::RunIteration(
       disc_ejected_ = true;
       loader_state_ = LoaderState::LOWERING;
       loader_countdown_ = kLoweringDelay;
-      --hopper_disc_count_;
-      ++shot_disc_count_;
+      loader_timeout_ = 0;
     case LoaderState::LOWERING:
-      LOG(DEBUG, "Loader LOWERING %d\n", loader_countdown_);
+      LOG(DEBUG, "Loader LOWERING %d %d\n", loader_countdown_, loader_timeout_);
       // Lowering the loader back down.
       loader_up_ = false;
       disc_clamped_ = false;
-      disc_ejected_ = true;
-      if (loader_countdown_ > 0) {
-        --loader_countdown_;
-        break;
+      // We don't want to eject if we're stuck because it will force the disc
+      // into the green loader wheel.
+      disc_ejected_ = disc_stuck_in_loader_ ? false : true;
+      if (position->loader_bottom) {
+        if (loader_countdown_ > 0) {
+          --loader_countdown_;
+          loader_timeout_ = 0;
+          break;
+        } else {
+          loader_state_ = LoaderState::LOWERED;
+          --hopper_disc_count_;
+          ++shot_disc_count_;
+        }
       } else {
-        loader_state_ = LoaderState::LOWERED;
+        // Restart the countdown if it bounces back up or something.
+        loader_countdown_ = kLoweringDelay;
+        ++loader_timeout_;
+        if (loader_timeout_ > kLoweringTimeout) {
+          LOG(ERROR, "Loader timeout while LOWERING %d\n", loader_timeout_);
+          loader_state_ = LoaderState::LOWERED;
+          disc_stuck_in_loader_ = true;
+        } else {
+          break;
+        }
       }
     case LoaderState::LOWERED:
       LOG(DEBUG, "Loader LOWERED\n");
-      // The indexer is lowered.
       loader_up_ = false;
-      disc_clamped_ = false;
       disc_ejected_ = false;
-      loader_state_ = LoaderState::READY;
-      // Once we have shot, we need to hang out in READY until otherwise
-      // notified.
-      loader_goal_ = LoaderGoal::READY;
+      is_shooting_ = false;
+      if (disc_stuck_in_loader_) {
+        disc_stuck_in_loader_ = false;
+        disc_clamped_ = true;
+        loader_state_ = LoaderState::GRABBED;
+      } else {
+        disc_clamped_ = false;
+        loader_state_ = LoaderState::READY;
+        // Once we have shot, we need to hang out in READY until otherwise
+        // notified.
+        loader_goal_ = LoaderGoal::READY;
+      }
       break;
   }
 
@@ -994,10 +1043,16 @@ void IndexMotor::RunIteration(
   status->total_disc_count = total_disc_count_;
   status->shot_disc_count = shot_disc_count_;
   status->preloaded = (loader_state_ != LoaderState::READY);
+  status->is_shooting = is_shooting_;
+  status->hopper_clear = hopper_clear_;
 
   if (output) {
     output->intake_voltage = intake_voltage;
-    output->transfer_voltage = transfer_voltage;
+    if (goal->override_transfer) {
+      output->transfer_voltage = goal->transfer_voltage;
+    } else {
+      output->transfer_voltage = transfer_voltage;
+    }
     if (goal->override_index) {
       output->index_voltage = goal->index_voltage;
     } else {

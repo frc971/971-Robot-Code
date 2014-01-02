@@ -13,8 +13,10 @@
 // the path for the shared memory segment. see shm_open(3) for restrictions
 #define AOS_SHM_NAME "/aos_shared_mem"
 // Size of the shared mem segment.
-// set to the maximum number that worked
-#define SIZEOFSHMSEG (4096 * 27813)
+// Set to the maximum number that worked. Any bigger than this and the kernel
+// thinks you should be able to access all of it but it doesn't work with the
+// ARM kernel Brian was using on 2013-12-20.
+#define SIZEOFSHMSEG (4096 * 25074)
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
   clock_gettime(CLOCK_REALTIME, &shm_core->identifier);

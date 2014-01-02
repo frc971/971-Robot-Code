@@ -30,9 +30,9 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
     }
     rlim.rlim_cur = soft;
     if (setrlimit64(resource, &rlim) == -1) {
-      Die("%s-init: setrlimit64(%d, {cur=%jd,max=%jd})"
+      Die("%s-init: setrlimit64(%d, {cur=%ju,max=%ju})"
           " failed with %d (%s)\n", program_invocation_short_name,
-          resource, (intmax_t)rlim.rlim_cur, (intmax_t)rlim.rlim_max,
+          resource, (uintmax_t)rlim.rlim_cur, (uintmax_t)rlim.rlim_max,
           errno, strerror(errno));
     }
   }
@@ -81,7 +81,7 @@ const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
 
 void InitNRT() { DoInitNRT(aos_core_create::reference); }
 void InitCreate() { DoInitNRT(aos_core_create::create); }
-void Init() {
+void Init(int relative_priority) {
   if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
     LockAllMemory();
     // Only let rt processes run for 1 second straight.
@@ -90,7 +90,7 @@ void Init() {
     SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
     // Set our process to priority 40.
     struct sched_param param;
-    param.sched_priority = 40;
+    param.sched_priority = 30 + relative_priority;
     if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {
       Die("%s-init: setting SCHED_FIFO failed with %d (%s)\n",
           program_invocation_short_name, errno, strerror(errno));

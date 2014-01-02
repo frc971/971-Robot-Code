@@ -5,9 +5,6 @@
 
 #include <vector>
 
-// Stupid vxworks system headers define it which blows up Eigen...
-#undef m_data
-
 #include "Eigen/Dense"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -223,13 +220,15 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_outputs, 1> U_ff;
   Eigen::Matrix<double, number_of_outputs, 1> Y;
 
-  ::std::vector<StateFeedbackController<number_of_states, number_of_inputs,
-                                        number_of_outputs> *> controllers_;
-
-  const StateFeedbackController<
-      number_of_states, number_of_inputs, number_of_outputs>
-          &controller() const {
+  const StateFeedbackController<number_of_states, number_of_inputs,
+                                number_of_outputs> &controller() const {
     return *controllers_[controller_index_];
+  }
+
+  const StateFeedbackController<number_of_states, number_of_inputs,
+                                number_of_outputs> &controller(
+                                    int index) const {
+    return *controllers_[index];
   }
 
   void Reset() {
@@ -241,22 +240,17 @@ class StateFeedbackLoop {
     Y.setZero();
   }
 
-  StateFeedbackLoop(
-      const StateFeedbackController<number_of_states, number_of_inputs,
-                                    number_of_outputs> &controller)
+  StateFeedbackLoop(const StateFeedbackController<
+      number_of_states, number_of_inputs, number_of_outputs> &controller)
       : controller_index_(0) {
-    controllers_.push_back(
-        new StateFeedbackController<number_of_states, number_of_inputs,
-                                    number_of_outputs>(controller));
+    controllers_.push_back(new StateFeedbackController<
+        number_of_states, number_of_inputs, number_of_outputs>(controller));
     Reset();
   }
 
-  StateFeedbackLoop(
-      const ::std::vector<StateFeedbackController<
-          number_of_states, number_of_inputs,
-          number_of_outputs> *> &controllers)
-      : controllers_(controllers),
-        controller_index_(0) {
+  StateFeedbackLoop(const ::std::vector<StateFeedbackController<
+      number_of_states, number_of_inputs, number_of_outputs> *> &controllers)
+      : controllers_(controllers), controller_index_(0) {
     Reset();
   }
 
@@ -324,6 +318,9 @@ class StateFeedbackLoop {
   void controller_index() const { return controller_index_; }
 
  protected:
+  ::std::vector<StateFeedbackController<number_of_states, number_of_inputs,
+                                        number_of_outputs> *> controllers_;
+
   // these are accessible from non-templated subclasses
   static const int kNumStates = number_of_states;
   static const int kNumOutputs = number_of_outputs;
