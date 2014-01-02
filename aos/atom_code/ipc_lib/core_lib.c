@@ -5,7 +5,7 @@
 
 #include "aos/atom_code/ipc_lib/shared_mem.h"
 
-static inline uint8_t aos_8max(uint8_t l, uint8_t r) {
+static uint8_t aos_8max(uint8_t l, uint8_t r) {
   return (l > r) ? l : r;
 }
 void *shm_malloc_aligned(size_t length, uint8_t alignment) {

@@ -7,7 +7,6 @@
 #include <libgen.h>
 #include <assert.h>
 
-#include <vector>
 #include <string>
 
 #include "aos/common/time.h"
@@ -22,6 +21,10 @@
 // stderr output from each test run and only prints it out (not interleaved with
 // the output from any other run) if the test fails.
 //
+// They have to be run in separate processes because (in addition to various
+// parts of our code not being thread-safe...) gtest does not like multiple
+// threads.
+//
 // It's written in C++ for performance. We need actual OS-level parallelism for
 // this to work, which means that Ruby's out because it doesn't have good
 // support for doing that. My Python implementation ended up pretty heavily disk
@@ -33,14 +36,14 @@ namespace aos {
 // arguments to pass to it.
 // Using --gtest_filter is a bad idea because it seems to result in a lot of
 // swapping which causes everything to be disk-bound (at least for me).
-static const ::std::vector< ::std::vector< ::std::string>> kTests = {
+static const char * kTests[][] = {
   {"queue_test"},
   {"condition_test"},
   {"mutex_test"},
   {"raw_queue_test"},
 };
 // These arguments get inserted before any per-test arguments.
-static const ::std::vector< ::std::string> kDefaultArgs = {
+static const char *kDefaultArgs[] = {
   "--gtest_repeat=30",
   "--gtest_shuffle",
 };
@@ -75,7 +78,7 @@ static_assert(shm_ok<Shared>::value,
 
 // Gets called after each child forks to run a test.
 void __attribute__((noreturn)) DoRunTest(
-    Shared *shared, const ::std::vector< ::std::string> &test, int pipes[2]) {
+    Shared *shared, const ::std::array<const char *> &test, int pipes[2]) {
   if (close(pipes[0]) == -1) {
     Die("close(%d) of read end of pipe failed with %d: %s\n",
         pipes[0], errno, strerror(errno));
@@ -95,6 +98,7 @@ void __attribute__((noreturn)) DoRunTest(
 
   size_t size = test.size();
   size_t default_size = kDefaultArgs.size();
+  // There's no chance to free this because we either exec or Die.
   const char **args = new const char *[size + default_size + 1];
   // The actual executable to run.
   ::std::string executable;
@@ -120,7 +124,9 @@ void __attribute__((noreturn)) DoRunTest(
 void DoRun(Shared *shared) {
   int iterations = 0;
   // An iterator pointing to a random one of the tests.
-  auto test = kTests.begin() + (getpid() % kTests.size());
+  // We randomize based on PID because otherwise they all end up running the
+  // same test at the same time for the whole test.
+  const char *(*test)[] = &kTests[getpid() % kTestsLength];
   int pipes[2];
   while (time::Time::Now() < shared->stop_time) {
     if (pipe(pipes) == -1) {
