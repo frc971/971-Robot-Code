@@ -8,6 +8,7 @@
 
 #include "aos/atom_code/ipc_lib/queue.h"
 #include "aos/common/type_traits.h"
+#include "aos/atom_code/ipc_lib/unique_message_ptr.h"
 
 namespace aos {
 namespace camera {
@@ -17,6 +18,7 @@ class Buffers {
   // It has to do a lot of the same things as all the other ones, but it gets
   // the information from different places (some of it gets sent out by it).
   friend class Reader;
+
   // Not an abstract name so that an existing one can just be unlinked without
   // disturbing it if necessary (like with shm_link).
   static const std::string kFDServerName;
@@ -50,14 +52,17 @@ class Buffers {
     uint32_t sequence;
   };
   static_assert(shm_ok<Message>::value, "it's going through queues");
-  // The current one. Sometimes NULL.
-  const Message *message_;
-  static const std::string kQueueName;
+
   // NULL for the Reader one.
-  RawQueue *queue_;
+  RawQueue *const queue_;
+  // The current one. Sometimes NULL.
+  unique_message_ptr<const Message> message_;
+
+  static const std::string kQueueName;
   // Make the actual mmap calls.
   // Called by Buffers() automatically.
   void MMap();
+
  public:
   Buffers();
   // Will clean everything up.
@@ -89,4 +94,3 @@ class Buffers {
 } // namespace aos
 
 #endif
-

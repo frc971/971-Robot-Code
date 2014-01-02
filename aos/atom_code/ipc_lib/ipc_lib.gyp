@@ -82,5 +82,18 @@
         'is_special_test': 1,
       },
     },
+    {
+      'target_name': 'scoped_message_ptr',
+      'type': 'static_library',
+      'sources': [
+        #'scoped_message_ptr.h',
+      ],
+      'dependencies': [
+        'queue',
+      ],
+      'export_dependent_settings': [
+        'queue',
+      ],
+    },
   ],
 }

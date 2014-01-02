@@ -47,9 +47,11 @@
       'dependencies': [
         '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:scoped_message_ptr',
       ],
       'export_dependent_settings': [
         '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:scoped_message_ptr',
       ],
     },
     {
