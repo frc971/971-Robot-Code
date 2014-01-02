@@ -67,6 +67,8 @@
       ],
       'sources': [
         'gpios.cc',
+        'gpi.cc',
+        'gpo.cc',
       ],
     },
   ],
