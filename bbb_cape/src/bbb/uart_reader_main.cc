@@ -4,12 +4,10 @@
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
-#include "aos/common/time.h"
-#include "bbb/gpios.h"
+
 #include "bbb/uart_reader.h"
 #include "bbb/packet_finder.h"
-
-using ::aos::time::Time;
+#include "bbb/data_struct.h"
 
 int main() {
   ::aos::Init();
@@ -27,15 +25,13 @@ int main() {
         WEXITSTATUS(chrt_result));
   }
 
-  Time last_packet_time = Time::Now();
   while (true) {
     if (!receiver.ReadPacket()) {
       LOG(WARNING, "Could not read a packet.\n");
       continue;
     }
-    last_packet_time = Time::Now();
 
-    const DataStruct *packet = receiver.get_packet<DataStruct>();
+    const ::bbb::DataStruct *packet = receiver.get_packet< ::bbb::DataStruct>();
     LOG(DEBUG, "got one!\n");
     LOG(DEBUG, "timestamp %" PRIu64 "\n", packet->timestamp);
     LOG(DEBUG, "gyro old=%d uninit=%d z=%d bad=%d %" PRId64 " \n",

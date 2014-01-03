@@ -4,8 +4,8 @@
 // This means that it can not #include anything else because it (sometimes) gets
 // #included inside a namespace.
 // <stdint.h> must be #included by the containing file.
-// In the cape code, fill_packet.h #includes this file.
-// In the fitpc code, frc971/input/gyro_board_data.h #includes this file.
+// In the cape code, bbb_cape/src/cape/fill_packet.h #includes this file.
+// In the prime code, bbb_cape/src/bbb/data_struct.h #includes this file.
 
 #pragma pack(push, 1)
 // Be careful with declaration order in here. ARM doesn't like unaligned

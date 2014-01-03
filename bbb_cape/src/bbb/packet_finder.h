@@ -8,10 +8,6 @@
 
 #include "bbb/byte_reader.h"
 
-#define DATA_STRUCT_NAME DataStruct
-#include "cape/data_struct.h"
-#undef DATA_STRUCT_NAME
-
 namespace bbb {
 
 class PacketFinder {

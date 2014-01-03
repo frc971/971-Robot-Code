@@ -1,7 +1,5 @@
 #include "bbb/uart_reader.h"
 
-#define OLD_CUSTOM_SPEED 0
-
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/serial.h>

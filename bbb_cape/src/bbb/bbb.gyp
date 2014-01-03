@@ -19,12 +19,7 @@
       'target_name': 'uart_reader',
       'type': 'static_library',
       'dependencies': [
-        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
         '<(AOS)/build/aos.gyp:logging',
-        'packet_finder',
-      ],
-      'export_dependent_settings': [
-        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
       ],
       'sources': [
         'uart_reader.cc',
@@ -65,16 +60,32 @@
         '<(AOS)/build/aos.gyp:logging',
         'crc',
       ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
+      'target_name': 'data_struct',
+      'type': 'static_library',
+      'sources': [
+        # 'data_struct.h',
+      ],
+      'dependencies': [
+        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
+      ],
+      'export_dependent_settings': [
+        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:data_struct',
+      ],
     },
     {
       'target_name': 'uart_reader_main',
       'type': 'executable',
       'dependencies': [
         'uart_reader',
-        'gpios',
-        '<(AOS)/common/common.gyp:time',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/atom_code/atom_code.gyp:init',
+        'packet_finder',
+        'data_struct',
       ],
       'sources': [
         'uart_reader_main.cc',
