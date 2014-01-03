@@ -1,4 +1,4 @@
-Some us are using git for managing quickly changing code. This file has
+Some of us are using git for managing quickly changing code. This file has
 notes for setting that up.
 
 ssh to robotics.mvla.net and add the git executables to your .bashrc:
@@ -9,28 +9,63 @@ ssh to robotics.mvla.net and add the git executables to your .bashrc:
     ssh://USERNAME@robotics.mvla.net/www/https/git/frc971/SOMEBODY/2013.git`
   where USERNAME is your login on the server and SOMEBODY is whoever's git
   repo you want to clone
+If you don't have a login on the server, then cloning
+  https://robotics.mvla.net/git/frc971/somebody/2013.git instead should work
+  (with your SVN username and password). However, that form of URL is read-
+  only. In order for this to work, you have to either set the environment
+  variable GIT_SSL_NO_VERIFY to 1 or set the git option http.sslverify to false.
+  If you get an error like the one below, install a newer version of git.
+    Unable to find 8fcd87533b76ca5b4b83fb6031ddf0de5e03eb57 under https://robotics.mvla.net/git/frc971/brian/2013.git
+    Cannot obtain needed object 8fcd87533b76ca5b4b83fb6031ddf0de5e03eb57
+    error: Fetch failed.
+  I get this error sometimes with version 1.7.2.5 but not with version 1.7.10.4.
 
 [Adding Other People's Repositories]
 `git remote add SOMEBODY \
-    ssh://USERNAME@robotics.mvla.net/www.https/git/frc971/SOMEBODY/2013.git`
+    ssh://USERNAME@robotics.mvla.net/www/https/git/frc971/SOMEBODY/2013.git`
   where USERNAME is your login on the server and SOMEBODY is another person's
   git repository
+The https:// URL discussed above in [Cloning] will work too.
 
 [Working with Other People's Repositories]
 `git fetch SOMEBODY` will pull their changes, and then you can rebase on top of
   them etc.
 `git push --mirror` will push all of your local branches so that everybody else
   can see them. (This is the default if the configuration option remote.<remote>.mirror is set.)
+  However, you can not do that with an https:// URL.
 
 [Synchronizing with SVN]
 In order to synchronize the git commits with svn, somebody has to set up git-svn in their local git repo and then push/pull commits.
 
 To do that, `git svn init https://robotics.mvla.net/svn/frc971/2013/trunk/src`
 
-Then, unless you want git-svn to pull down everything from SVN again, you have to edit .git/refs/remotes/git-svn (or whatever you name the remote) and put in the commit ID of the latest commit in the repository that's from SVN.
+Then, unless you want git-svn to pull down everything from SVN again, you have to edit .git/refs/remotes/git-svn (or whatever you name the remote) in your local repository and put in the commit ID of the latest commit in the repository that's from SVN.
 
-After doing that (and a `git svn fetch`), git-svn works like usual.
+After doing that (and a `git svn fetch`), git-svn works like usual (see git-svn(1) for details).
 
 To pull changes from svn, do `git-svn fetch`. To push changes to svn, do `git svn dcommit`, which will take all of your git commits between the latest commit from svn and your HEAD and make them into svn commits.
 
-Multiple people dealing with svn works OK because the git commit SHAs end up the same so they all just become the same.
+Multiple people dealing with svn works OK because the git commit SHAs end up the same so they all just become the same objects.
+
+[Server Setup]
+To get started working with git on the server, first you have to set up your
+  .bashrc so that the git tools work. To do that, add the following line to your
+  .bashrc *ABOVE* the '[ -z "$PS1" ] && return' line.
+    PATH=$PATH:/www/https/files/frc971/2013/brian/
+You also need a place to store your files. You will need an adminstrator to
+  create a folder for you in /www/https/git/frc971 (on the server) with the
+  correct permissions and group.
+
+[Repository Setup]
+To create a git repository on the server,
+  "/www/https/git/frc971/brian/bare-git-repo" to wherever you want your
+  repository (using `git init` won't work correctly). The standard location for
+  mirrors of the "https://robotics.mvla.net/svn/frc971/YEAR/trunk/src" folder is
+  "/www/https/git/frc971/USERNAME/YEAR.git".
+In order for https:// access to work, you have to make sure to rename
+  .git/hooks/post-update.sample to .git/hooks/post-update (and then run
+  `git update-server-info` if you're not going to push immediately).
+
+To learn more about git, see git(1) (`man git` or
+  <http://manpages.debian.net/cgi-bin/man.cgi?query=git>) (especially the NOTES
+  section).
