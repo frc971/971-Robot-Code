@@ -3,6 +3,8 @@
 
 #include <sys/types.h>
 
+#include "aos/common/time.h"
+
 namespace bbb {
 
 class ByteReader {
@@ -12,8 +14,10 @@ class ByteReader {
 
   // Implemented by subclasses to provide a data source 
   // for these algorithms.
-  // Returns the number of bytes read or -1 if there is an error in errno.
-  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes) = 0;
+  // Returns the number of bytes read, -1 if there is an error in errno, or -2
+  // if reading takes longer than timeout.
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
+                            const ::aos::time::Time &timeout) = 0;
 };
 
 }  // namespace bbb

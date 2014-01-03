@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/time.h"
 
 #include "bbb/byte_reader.h"
 
@@ -17,8 +18,11 @@ class PacketFinder {
   explicit PacketFinder(ByteReader *reader, size_t packet_size);
   ~PacketFinder();
 
-  // Returns true if it succeeds or false if it gets an I/O error first.
-  bool ReadPacket();
+  // Returns true if it succeeds or false if it gets an I/O error (or timeout)
+  // first.
+  // timeout_time is when this method should give up trying to read a packet and
+  // return false.
+  bool ReadPacket(const ::aos::time::Time &timeout_time);
 
   // Gets a reference to the received packet.
   // The most recent call to ReadPacket() must have returned true or the data
@@ -37,7 +41,7 @@ class PacketFinder {
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
   // packet is invalid in some way.
-  bool FindPacket();
+  bool FindPacket(const ::aos::time::Time &timeout_time);
 
   // Processes a packet currently in buf_ and leaves the result in
   // unstuffed_data_.
@@ -54,6 +58,9 @@ class PacketFinder {
   // How many bytes of the packet we've read in (or -1 if we don't know where
   // the packet is).
   int packet_bytes_ = -1;
+
+  // Whether we've increased the priority of the IRQ yet.
+  bool irq_priority_increased_ = false;
 };
 
 }  // namespace bbb

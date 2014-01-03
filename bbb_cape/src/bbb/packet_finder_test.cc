@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/queue_testutils.h"
+#include "aos/common/time.h"
 
 #include "bbb/byte_reader.h"
 
@@ -21,7 +22,9 @@ class TestByteReader : public ByteReader {
   TestByteReader(const void *data, size_t data_size)
       : data_(data), data_size_(data_size), bytes_left_(data_size) {}
 
-  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes) {
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
+                            const ::aos::time::Time &/*timeout_time*/)
+      override {
     size_t to_transfer = ::std::min(max_bytes, bytes_left_);
     memcpy(dest, static_cast<const uint8_t *>(data_) + data_size_ - bytes_left_,
            to_transfer);
@@ -115,7 +118,7 @@ TEST_F(PacketFinderTest, StupidZeros) {
   };
   TestByteReader reader(kTestData, sizeof(kTestData));
   PacketFinder packet_finder(&reader, 144);
-  EXPECT_TRUE(packet_finder.ReadPacket());
+  EXPECT_TRUE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
 }
 
 }  // namespace testing

@@ -32,10 +32,10 @@ extern int aos_uart_reader_set_tty_options(int fd, int baud_rate);
 }  // extern "C"
 
 UartReader::UartReader(int32_t baud_rate)
-    : fd_(open(device, O_RDWR | O_NOCTTY)) {
+    : fd_(open(device, O_RDWR | O_NOCTTY | O_NONBLOCK)) {
   
   if (fd_ < 0) {
-    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY) failed with %d: %s."
+    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s."
                " Did you read my note in bbb/uart_reader.cc?\n",
         device, errno, strerror(errno));
   }
@@ -44,14 +44,30 @@ UartReader::UartReader(int32_t baud_rate)
     LOG(FATAL, "aos_uart_reader_set_tty_options(%d) failed with %d: %s\n",
         fd_, errno, strerror(errno));
   }
+
+  FD_ZERO(&fd_set_);
+  FD_SET(fd_, &fd_set_);
 }
 
 UartReader::~UartReader() {
   if (fd_ > 0) close(fd_);
 }
 
-ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes) {
+ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes,
+                              const ::aos::time::Time &timeout) {
   do {
+    struct timeval timeout_timeval = timeout.ToTimeval();
+    switch (select(fd_ + 1, &fd_set_, NULL, NULL, &timeout_timeval)) {
+      case 0:
+        return -2;
+      case -1:
+        continue;
+      case 1:
+        break;
+      default:
+        LOG(WARNING, "unknown select return value\n");
+        return -1;
+    }
     ssize_t r = read(fd_, dest, max_bytes);
     if (r != -1) return r;
   } while (errno == EINTR);

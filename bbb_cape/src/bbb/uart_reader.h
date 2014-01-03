@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <sys/select.h>
+
+#include "aos/common/time.h"
 
 #include "bbb/byte_reader.h"
 
@@ -13,10 +16,13 @@ class UartReader : public ByteReader {
   UartReader(int32_t baud_rate);
   virtual ~UartReader();
 
-  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes);
+  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
+                            const ::aos::time::Time &timeout) override;
 
  private:
   const int fd_;
+  // Gets initialized to only contain fd_.
+  fd_set fd_set_;
 };
 
 }  // namespace bbb

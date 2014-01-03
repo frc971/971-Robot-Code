@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <inttypes.h>
-#include <stdlib.h>
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
+#include "aos/common/time.h"
 
 #include "bbb/uart_reader.h"
 #include "bbb/packet_finder.h"
@@ -14,19 +14,10 @@ int main() {
 
   ::bbb::UartReader reader(750000);
   ::bbb::PacketFinder receiver(&reader, DATA_STRUCT_SEND_SIZE - 4);
-  receiver.ReadPacket();
-  // TODO(brians): Do this cleanly.
-  int chrt_result = system(
-      "bash -c 'chrt -r -p 55 $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
-  if (chrt_result == -1) {
-    LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
-  } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
-    LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
-        WEXITSTATUS(chrt_result));
-  }
 
   while (true) {
-    if (!receiver.ReadPacket()) {
+    if (!receiver.ReadPacket(::aos::time::Time::Now() +
+                             ::aos::time::Time::InSeconds(1.5))) {
       LOG(WARNING, "Could not read a packet.\n");
       continue;
     }

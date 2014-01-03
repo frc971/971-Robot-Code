@@ -2,12 +2,15 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #include <algorithm>
 
 #include "aos/common/logging/logging.h"
 #include "bbb_cape/src/cape/cows.h"
 #include "bbb/crc.h"
+
+using ::aos::time::Time;
 
 namespace bbb {
 
@@ -24,20 +27,39 @@ PacketFinder::~PacketFinder() {
   delete unstuffed_data_;
 }
 
-// TODO(brians): Figure out why this (sometimes) gets confused right after
-// flashing the cape.
-bool PacketFinder::FindPacket() {
+bool PacketFinder::FindPacket(const ::Time &timeout_time) {
   // How many 0 bytes we've found at the front so far.
   int zeros_found = 0;
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
     ssize_t new_bytes =
-        reader_->ReadBytes(buf_ + already_read, packet_size_ - already_read);
+        reader_->ReadBytes(buf_ + already_read, packet_size_ - already_read,
+                           timeout_time - ::Time::Now());
     if (new_bytes < 0) {
-      LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-          buf_ + already_read, packet_size_ - already_read,
-          errno, strerror(errno));
+      if (new_bytes == -1) {
+        LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
+            buf_ + already_read, packet_size_ - already_read, errno,
+            strerror(errno));
+      } else if (new_bytes == -2) {
+        LOG(WARNING, "timed out\n");
+      } else {
+        LOG(WARNING, "bad ByteReader %p returned %zd\n", reader_, new_bytes);
+      }
       return false;
+    }
+
+    if (!irq_priority_increased_) {
+      // TODO(brians): Do this cleanly.
+      int chrt_result = system(
+          "bash -c 'chrt -r -p 55 $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+      if (chrt_result == -1) {
+        LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+      } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
+        LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
+            WEXITSTATUS(chrt_result));
+      }
+
+      irq_priority_increased_ = true;
     }
 
     if (packet_bytes_ == -1) {
@@ -92,8 +114,8 @@ bool PacketFinder::ProcessPacket() {
   return true;
 }
 
-bool PacketFinder::ReadPacket() {
-  if (!FindPacket()) return false;
+bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
+  if (!FindPacket(timeout_time)) return false;
 
   if (!ProcessPacket()) {
     packet_bytes_ = -1;
