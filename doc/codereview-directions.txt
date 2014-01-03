@@ -21,19 +21,36 @@ The email that you receive will have a link to the issue (like
   The most useful form of diff are the "Side-by-side diffs". Click the "View"
   link in that column next to each file to look at it. After the first set of
   comments, the "Delta from patch set" links are also helpful to see what got
-  changed so that you don't have to look at everything agin. While looking at
+  changed so that you don't have to look at everything again. While looking at
   a diff, double-click on any line of code to leave a comment there. You can
-  also reply to existing comments. The web interface sometimes "eats" comments
+  also reply to existing comments. The web interface sometimes hides comments
   right after you create/edit them. Refresh the page to fix that (don't just do
   it again, or you'll end up with 2 identical comments). Once you are done
   looking at all of the files and making comments, click the
   "Publish+Mail Comments" link (at the top of each diff or on the left of the
   main issue page) to send out your comments. You can also put general notes in
-  the "Message" box. If you think that it looks good, then put "LGTM" somewhere
-  in the message. The owner of the code review will keep looking at your
+  the "Message" box. If you think that it looks good, then put "LGTM" at the top
+  of the message. The owner of the code review will keep looking at your
   comments, making changes, and sending out more messages until it's finished.
 
-TODO(brians): add information about starting a review
+[Starting a Review]
+To begin, log in to <http://971code.appspot.com/> then click the "Create Issue"
+  link. Download the "upload.py" script and use that, not the web form, for
+  uploading a diff. (The web form has too many problems and is unusable with
+  git.) The script will find svn, git, or hg diffs in your current directory. If
+  you want the diff to cover back to an earlier change number, use the --rev
+  arg.
+
+  You don't need to give it a -s (--server) arg since the right default server
+  address is in the script. You can give it a -e (--email) arg with your gmail
+  address or let it ask you. (If you use 2-factor login for gmail, which I
+  recommend, you'll need to create an application-specific password instead of
+  using your regular password + OTP code.)
+
+  After it uploads, you can review the diffs on the web page. You can change
+  code and upload another diff. When ready, use the web UI to send the code
+  review email. Don't delete the old diffs; they are helpful for reviewers to
+  figure out what changed.
 
 For more information about using Rietveld, see
   <https://code.google.com/p/rietveld/wiki/CodeReviewHelp>.
