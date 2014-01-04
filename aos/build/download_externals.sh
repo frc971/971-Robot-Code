@@ -112,21 +112,6 @@ GFLAGS_URL=https://gflags.googlecode.com/files/gflags-${GFLAGS_VERSION}.tar.gz
   ${CONFIGURE_FLAGS} --prefix=`readlink -f ${GFLAGS_PREFIX}` \
   && make && make install"
 
-# get and build libusb
-LIBUSB_VERSION=1.0.9
-LIBUSB_APIVERSION=1.0
-LIBUSB_TAR=${EXTERNALS}/libusb-${LIBUSB_VERSION}.tar.bz2
-LIBUSB_DIR=${COMPILED}/libusb-${LIBUSB_VERSION}
-LIBUSB_PREFIX=${LIBUSB_DIR}-prefix
-LIBUSB_LIB=${LIBUSB_PREFIX}/lib/libusb-${LIBUSB_APIVERSION}.a
-LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-${LIBUSB_APIVERSION}/libusb-${LIBUSB_VERSION}/libusb-${LIBUSB_VERSION}.tar.bz2
-[ -f ${LIBUSB_TAR} ] || wget ${LIBUSB_URL} -O ${LIBUSB_TAR}
-[ -d ${LIBUSB_DIR} ] || ( mkdir ${LIBUSB_DIR} && tar \
-  --strip-components=1 -C ${LIBUSB_DIR} -xf ${LIBUSB_TAR} )
-[ -f ${LIBUSB_LIB} ] || bash -c "cd ${LIBUSB_DIR} && ./configure \
-	${CONFIGURE_FLAGS} --prefix=`readlink -f ${LIBUSB_PREFIX}` \
-	&& make && make install"
-
 # get the LLVM Compiler-RT source
 COMPILER_RT_TAG=RELEASE_32/final
 COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
