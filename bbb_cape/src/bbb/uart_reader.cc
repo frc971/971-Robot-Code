@@ -54,8 +54,10 @@ UartReader::~UartReader() {
 }
 
 ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes,
-                              const ::aos::time::Time &timeout) {
+                              const ::aos::time::Time &timeout_time) {
   do {
+    ::aos::time::Time timeout = timeout_time - ::aos::time::Time::Now();
+    if (timeout < ::aos::time::Time(0, 0)) return -2;
     struct timeval timeout_timeval = timeout.ToTimeval();
     switch (select(fd_ + 1, &fd_set_, NULL, NULL, &timeout_timeval)) {
       case 0:

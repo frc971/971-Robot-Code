@@ -17,7 +17,7 @@ class ByteReader {
   // Returns the number of bytes read, -1 if there is an error in errno, or -2
   // if reading takes longer than timeout.
   virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
-                            const ::aos::time::Time &timeout) = 0;
+                            const ::aos::time::Time &timeout_time) = 0;
 };
 
 }  // namespace bbb

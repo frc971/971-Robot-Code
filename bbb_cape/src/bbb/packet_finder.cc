@@ -32,9 +32,8 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
   int zeros_found = 0;
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
-    ssize_t new_bytes =
-        reader_->ReadBytes(buf_ + already_read, packet_size_ - already_read,
-                           timeout_time - ::Time::Now());
+    ssize_t new_bytes = reader_->ReadBytes(
+        buf_ + already_read, packet_size_ - already_read, timeout_time);
     if (new_bytes < 0) {
       if (new_bytes == -1) {
         LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
@@ -50,8 +49,8 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
 
     if (!irq_priority_increased_) {
       // TODO(brians): Do this cleanly.
-      int chrt_result = system(
-          "bash -c 'chrt -r -p 55 $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+      int chrt_result = system("bash -c 'chrt -r -p 55"
+                               " $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
       if (chrt_result == -1) {
         LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
       } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {

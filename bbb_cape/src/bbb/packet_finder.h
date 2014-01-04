@@ -6,6 +6,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
+#include "aos/common/macros.h"
 
 #include "bbb/byte_reader.h"
 
@@ -61,6 +62,8 @@ class PacketFinder {
 
   // Whether we've increased the priority of the IRQ yet.
   bool irq_priority_increased_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(PacketFinder);
 };
 
 }  // namespace bbb

@@ -3,6 +3,11 @@
     'include_dirs': [
       '..',
     ],
+    'direct_dependent_settings': {
+      'include_dirs': [
+        '..',
+      ],
+    },
   },
   'targets': [
     {
@@ -70,6 +75,17 @@
       ],
     },
     {
+      'target_name': 'sensor_generation',
+      'type': 'static_library',
+      'sources': [
+        'sensor_generation.q',
+      ],
+      'variables': {
+        'header_path': 'bbb',
+      },
+      'includes': ['../../../aos/build/queues.gypi'],
+    },
+    {
       'target_name': 'packet_finder',
       'type': 'static_library',
       'sources': [
@@ -124,6 +140,26 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
+      'target_name': 'sensor_reader',
+      'type': 'static_library',
+      'sources': [
+        'sensor_reader.cc',
+      ],
+      'dependencies': [
+        'uart_reader',
+        'packet_finder',
+        'data_struct',
+        '<(AOS)/common/common.gyp:time',
+        'sensor_generation',
+      ],
+      'export_dependent_settings': [
+        'uart_reader',
+        'packet_finder',
+        'data_struct',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
   ],
