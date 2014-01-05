@@ -18,6 +18,6 @@ class Gpi : public Pin {
   int Read();
 };
 
-} // namespace bbb
+}  // namespace bbb
 
 #endif

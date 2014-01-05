@@ -10,20 +10,12 @@ class Gpo : public Pin {
  public:
   // See the base class for what these args mean.
   Gpo(int bank, int pin);
-
-  // Methods set the pin to read either high or low.
-  inline bool SetHigh() {
-    return DoSet(1);
-  }
-  inline bool SetLow() {
-    return DoSet(0);
-  }
-
- private:
-  // Does the actual pin setting.
-  bool DoSet(const int value);
+  // Sets the pin to either high or low.
+  // If the argument is true, is sets it high.
+  // Otherwise, it sets it low.
+  bool Set(const bool high);
 };
 
-} // namespace bbb
+}  // namespace bbb
 
 #endif

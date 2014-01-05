@@ -40,9 +40,9 @@ int main() {
 #if DO_RESET
     if (!last_packet_time.IsWithin(Time::Now(), kPacketTimeout.ToNSec())) {
       LOG(ERROR, "No good packets for too long. Resetting cape.\n");
-      reset_pin.SetHigh();
+      reset_pin.Set(true);
       ::aos::time::SleepFor(Time::InSeconds(1));
-      reset_pin.SetLow();
+      reset_pin.Set(false);
       
       last_packet_time = Time::Now();
     }

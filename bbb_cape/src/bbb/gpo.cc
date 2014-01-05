@@ -18,7 +18,7 @@ Gpo::Gpo(int bank, int pin) {
   }
 }
 
-bool Gpo::DoSet(const int value) {
+bool Gpo::Set(const bool high) {
   char val_path[64];
   snprintf(val_path, sizeof(val_path), "/sys/class/gpio/gpio%d/value",
            kernel_pin_);
@@ -28,10 +28,10 @@ bool Gpo::DoSet(const int value) {
     return false;
   }
 
-  fprintf(handle_, "%d", value);
+  fprintf(handle_, "%d", high);
   fclose(handle_);
 
   return true;
 }
 
-} // namespace bbb
+}  // namespace bbb

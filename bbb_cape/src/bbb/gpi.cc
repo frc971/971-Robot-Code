@@ -45,4 +45,4 @@ int Gpi::Read() {
   return atoi(&buf);
 }
 
-} // namespace bbb
+}  // namespace bbb
