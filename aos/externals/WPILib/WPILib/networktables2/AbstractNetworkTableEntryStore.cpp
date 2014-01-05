@@ -9,7 +9,8 @@
 #include "networktables2/TableKeyExistsWithDifferentTypeException.h"
 #include <map>
 #include <vector>
-
+#include <iostream>
+#include <stdio.h>
 
 	AbstractNetworkTableEntryStore::AbstractNetworkTableEntryStore(TableListenerManager& lstnManager): 
 			listenerManager(lstnManager){
@@ -32,14 +33,23 @@
 	NetworkTableEntry* AbstractNetworkTableEntryStore::GetEntry(std::string& name){
 		{ 
 			Synchronized sync(LOCK);
-			return namedEntries[name];//TODO check for not existing
+			std::map<std::string, NetworkTableEntry*>::iterator value_itr = namedEntries.find(name);
+			if(value_itr != namedEntries.end()) {
+				return value_itr->second;
+			}
+			return NULL;
 		}
 	}
 	
 	NetworkTableEntry* AbstractNetworkTableEntryStore::GetEntry(EntryId entryId){
 		{ 
 			Synchronized sync(LOCK);
-			return idEntries[entryId];//TODO check for not existing
+			
+			std::map<EntryId, NetworkTableEntry*>::iterator value_itr = idEntries.find(entryId);
+			if(value_itr != idEntries.end()) {
+				return value_itr->second;
+			}
+			return NULL;
 		}
 	}
 	
@@ -112,8 +122,8 @@
 			Synchronized sync(LOCK);
 			std::map<std::string, NetworkTableEntry*>::iterator index = namedEntries.find(name);
 			NetworkTableEntry* tableEntry;
-			if(index == namedEntries.end() || namedEntries[name]==NULL)//if the name does not exist in the current entries
-			  {//TODO why doesn't find correctly detect that the entry does not exist
+			if(index == namedEntries.end())//if the name does not exist in the current entries
+			  {
 				tableEntry = new NetworkTableEntry(name, type, value);
 				if(addEntry(tableEntry))
 				{
@@ -123,7 +133,7 @@
 			}
 			else
 			{
-				tableEntry = namedEntries[name];
+				tableEntry = index->second;
 				if(tableEntry->GetType()->id != type->id){
 					throw TableKeyExistsWithDifferentTypeException(name, tableEntry->GetType());
 				}
@@ -155,7 +165,7 @@
 			NetworkTableEntry* tableEntry;
 			if(addEntry(entry)){
 				if(itr != namedEntries.end()){
-					tableEntry = namedEntries[entry->name];
+					tableEntry = itr->second;
 				}
 				else{
 					tableEntry = entry;
@@ -190,8 +200,8 @@
 			std::map<std::string, NetworkTableEntry*>::iterator itr;
 			for(itr = namedEntries.begin(); itr != namedEntries.end(); itr++)
 			{
-				NetworkTableEntry* entry = namedEntries[(*itr).first];//this may seem odd, but its so we get the address of the list element, rather than the copy stored in the itr
-				listener->ValueChanged(table, (*itr).first, entry->GetValue(), true);
+				NetworkTableEntry* entry = itr->second;
+				listener->ValueChanged(table, itr->first, entry->GetValue(), true);
 			}
 		}
 	}
