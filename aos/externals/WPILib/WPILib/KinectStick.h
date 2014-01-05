@@ -26,23 +26,23 @@ public:
 	virtual float GetZ();
 	virtual float GetTwist();
 	virtual float GetThrottle();
-	virtual float GetRawAxis(UINT32 axis);
+	virtual float GetRawAxis(uint32_t axis);
 
 	virtual bool GetTrigger(JoystickHand hand = kRightHand);
 	virtual bool GetTop(JoystickHand hand = kRightHand);
 	virtual bool GetBumper(JoystickHand hand = kRightHand);
-	virtual bool GetRawButton(UINT32 button);
+	virtual bool GetRawButton(uint32_t button);
 
 private:
 	void GetData();
-	float ConvertRawToFloat(INT8 charValue);
+	float ConvertRawToFloat(int8_t charValue);
 
 	typedef union
 	{
 		struct
 		{
-			UINT8 size;
-			UINT8 id;
+			uint8_t size;
+			uint8_t id;
 			struct
 			{
 				unsigned char axis[6];
@@ -53,7 +53,7 @@ private:
 	} KinectStickData;
 
 	int m_id;
-	static UINT32 _recentPacketNumber;
+	static uint32_t _recentPacketNumber;
 	static KinectStickData _sticks;
 };
 

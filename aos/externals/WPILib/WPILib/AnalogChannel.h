@@ -29,42 +29,43 @@ class AnalogModule;
 class AnalogChannel : public SensorBase, public PIDSource, public LiveWindowSendable
 {
 public:
-	static const UINT8 kAccumulatorModuleNumber = 1;
-	static const UINT32 kAccumulatorNumChannels = 2;
-	static const UINT32 kAccumulatorChannels[kAccumulatorNumChannels];
+	static const uint8_t kAccumulatorModuleNumber = 1;
+	static const uint32_t kAccumulatorNumChannels = 2;
+	static const uint32_t kAccumulatorChannels[kAccumulatorNumChannels];
 
-	AnalogChannel(UINT8 moduleNumber, UINT32 channel);
-	explicit AnalogChannel(UINT32 channel);
+	AnalogChannel(uint8_t moduleNumber, uint32_t channel);
+	explicit AnalogChannel(uint32_t channel);
 	virtual ~AnalogChannel();
 
 	AnalogModule *GetModule();
 
-	INT16 GetValue();
-	INT32 GetAverageValue();
+	int16_t GetValue();
+	int32_t GetAverageValue();
 
 	float GetVoltage();
 	float GetAverageVoltage();
 
-	UINT8 GetModuleNumber();
-	UINT32 GetChannel();
+	uint8_t GetModuleNumber();
+	uint32_t GetChannel();
 
-	void SetAverageBits(UINT32 bits);
-	UINT32 GetAverageBits();
-	void SetOversampleBits(UINT32 bits);
-	UINT32 GetOversampleBits();
+	void SetAverageBits(uint32_t bits);
+	uint32_t GetAverageBits();
+	void SetOversampleBits(uint32_t bits);
+	uint32_t GetOversampleBits();
 
-	UINT32 GetLSBWeight();
-	INT32 GetOffset();
+	uint32_t GetLSBWeight();
+	int32_t GetOffset();
 
 	bool IsAccumulatorChannel();
 	void InitAccumulator();
 	void SetAccumulatorInitialValue(INT64 value);
 	void ResetAccumulator();
-	void SetAccumulatorCenter(INT32 center);
-	void SetAccumulatorDeadband(INT32 deadband);
+	void SetAccumulatorCenter(int32_t center);
+	void SetAccumulatorDeadband(int32_t deadband);
 	INT64 GetAccumulatorValue();
-	UINT32 GetAccumulatorCount();
-	void GetAccumulatorOutput(INT64 *value, UINT32 *count);
+	uint32_t GetAccumulatorCount();
+	void GetAccumulatorOutput(INT64 *value, uint32_t *count);
+	void SetVoltageForPID(bool shouldUseVoltageForPID);
 	
 	double PIDGet();
 	
@@ -76,11 +77,12 @@ public:
 	ITable * GetTable();
 
 private:
-	void InitChannel(UINT8 moduleNumber, UINT32 channel);
-	UINT32 m_channel;
+	void InitChannel(uint8_t moduleNumber, uint32_t channel);
+	uint32_t m_channel;
 	AnalogModule *m_module;
 	tAccumulator *m_accumulator;
 	INT64 m_accumulatorOffset;
+	bool m_shouldUseVoltageForPID;
 	
 	ITable *m_table;
 };

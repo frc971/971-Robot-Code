@@ -18,12 +18,12 @@
 
 extern "C"
 {
-	extern char * cplusDemangle (char *source, char *dest, INT32 n);
+	extern char * cplusDemangle (char *source, char *dest, int32_t n);
 }
 
-char *wpi_getLabel(UINT addr, INT32 *found)
+char *wpi_getLabel(UINT addr, int32_t *found)
 {
-	INT32 pVal;
+	int pVal;
 	SYM_TYPE pType;
 	char name[MAX_SYS_SYM_LEN + 1];
 	static char label[DBG_DEMANGLE_PRINT_LEN + 1 + 11];
@@ -51,12 +51,12 @@ char *wpi_getLabel(UINT addr, INT32 *found)
 	return label;
 }
 /*
-static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, INT32 taskId, BOOL isKernelAdrs)
+static void wpiTracePrint(INSTR *caller, int32_t func, int32_t nargs, int32_t *args, int32_t taskId, BOOL isKernelAdrs)
 {
 	char buf [MAX_SYS_SYM_LEN * 2];
-	INT32 ix;
-	INT32 len = 0;
-	len += sprintf (&buf [len], "%s <%#010x>: ", wpi_getLabel((UINT)caller), (INT32)caller);
+	int32_t ix;
+	int32_t len = 0;
+	len += sprintf (&buf [len], "%s <%#010x>: ", wpi_getLabel((UINT)caller), (int32_t)caller);
 	len += sprintf (&buf [len], "%s <%#010x> (", wpi_getLabel((UINT)func), func);
 	for (ix = 0; ix < nargs; ix++)
 	{
@@ -69,14 +69,14 @@ static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, I
 	printf(buf);
 }
 */
-static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, INT32 taskId, BOOL isKernelAdrs)
+static void wpiCleanTracePrint(INSTR *caller, int32_t func, int32_t nargs, int32_t *args, int32_t taskId, BOOL isKernelAdrs)
 {
 	char buf [MAX_SYS_SYM_LEN];
-	INT32 ix;
-	INT32 len = 0;
-	INT32 nameFound = 0;
-	INT32 params = 0;
-	INT32 totalnargs = nargs;
+	int32_t ix;
+	int32_t len = 0;
+	int32_t nameFound = 0;
+	int32_t params = 0;
+	int32_t totalnargs = nargs;
 	char *funcName = wpi_getLabel((UINT)func, &nameFound);
 	// Ignore names that are not exact symbol address matches.
 	if (nameFound != 1) return;
@@ -112,7 +112,7 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	// If this is a member function, print out the this pointer value.
 	if (totalnargs - params == 1)
 	{
-		len += sprintf (&buf [len], "<this=%#x>", args [0]);
+		len += sprintf (&buf [len], "<this=%#lx>", args [0]);
 	}
 
 	// Print out the argument values.
@@ -121,7 +121,7 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	{
 		if (ix != totalnargs - params)
 			len += sprintf (&buf [len], ", ");
-		len += sprintf (&buf [len], "%#x", args [ix]);
+		len += sprintf (&buf [len], "%#lx", args [ix]);
 	}
 	len += sprintf (&buf [len], ")\n");
 
@@ -130,10 +130,10 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 
 extern "C"
 {
-	extern void trcStack(REG_SET* pRegs, FUNCPTR printRtn, INT32 tid);
+	extern void trcStack(REG_SET* pRegs, FUNCPTR printRtn, int32_t tid);
 }
 
-static INT32 wpiStackTask(INT32 taskId)
+static int32_t wpiStackTask(int32_t taskId)
 {
 	taskDelay(1);
 	//tt(taskId);
@@ -150,7 +150,7 @@ static INT32 wpiStackTask(INT32 taskId)
 
 void wpi_selfTrace()
 {
-	INT32 priority=100;
+	int priority=100;
 	taskPriorityGet(0, &priority);
 	// Lower priority than the calling task.
 	Task traceTask("StackTrace", (FUNCPTR)wpiStackTask, priority + 1);
@@ -201,7 +201,7 @@ bool wpi_assert_impl(bool conditionValue,
 					 const char *conditionText,
 					 const char *message,
 					 const char *fileName,
-					 UINT32 lineNumber, 
+					 uint32_t lineNumber, 
 					 const char *funcName)
 {
 	if (!conditionValue)
@@ -212,10 +212,10 @@ bool wpi_assert_impl(bool conditionValue,
 		// If an error message was specified, include it
 		// Build error string
 		if(message != NULL) {
-			sprintf(error, "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %d\n", 
+			sprintf(error, "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %ld\n", 
 							 message, conditionText, funcName, fileName, lineNumber);
 		} else {
-			sprintf(error, "Assertion failed: \"%s\" in %s() in %s at line %d\n", 
+			sprintf(error, "Assertion failed: \"%s\" in %s() in %s at line %ld\n", 
 							 conditionText, funcName, fileName, lineNumber);
 		}
 		
@@ -239,7 +239,7 @@ void wpi_assertEqual_common_impl(int valueA,
 					 	         const char *equalityType,
 						         const char *message,
 						         const char *fileName,
-						         UINT32 lineNumber, 
+						         uint32_t lineNumber, 
 						         const char *funcName)
 {
 	// Error string buffer
@@ -248,10 +248,10 @@ void wpi_assertEqual_common_impl(int valueA,
 	// If an error message was specified, include it
 	// Build error string
 	if(message != NULL) {
-		sprintf(error, "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %d\n", 
+		sprintf(error, "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %ld\n", 
 						 message, valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	} else {
-		sprintf(error, "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %d\n", 
+		sprintf(error, "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %ld\n", 
 						 valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	}
 	
@@ -273,7 +273,7 @@ bool wpi_assertEqual_impl(int valueA,
 					 	  int valueB,
 						  const char *message,
 						  const char *fileName,
-						  UINT32 lineNumber, 
+						  uint32_t lineNumber, 
 						  const char *funcName)
 {
 	if(!(valueA == valueB))
@@ -293,7 +293,7 @@ bool wpi_assertNotEqual_impl(int valueA,
 					 	     int valueB,
 						     const char *message,
 						     const char *fileName,
-						     UINT32 lineNumber, 
+						     uint32_t lineNumber, 
 						     const char *funcName)
 {
 	if(!(valueA != valueB))
@@ -309,11 +309,11 @@ bool wpi_assertNotEqual_impl(int valueA,
  * For now, expect this to be competition year.
  * @return FPGA Version number.
  */
-UINT16 GetFPGAVersion()
+uint16_t GetFPGAVersion()
 {
 	tRioStatusCode status = 0;
 	tGlobal *global = tGlobal::create(&status);
-	UINT16 version = global->readVersion(&status);
+	uint16_t version = global->readVersion(&status);
 	delete global;
 	wpi_setGlobalError(status);
 	return version;
@@ -327,11 +327,11 @@ UINT16 GetFPGAVersion()
  * The 12 least significant bits are the Build Number.
  * @return FPGA Revision number.
  */
-UINT32 GetFPGARevision()
+uint32_t GetFPGARevision()
 {
 	tRioStatusCode status = 0;
 	tGlobal *global = tGlobal::create(&status);
-	UINT32 revision = global->readRevision(&status);
+	uint32_t revision = global->readRevision(&status);
 	delete global;
 	wpi_setGlobalError(status);
 	return revision;
@@ -342,11 +342,11 @@ UINT32 GetFPGARevision()
  * 
  * @return The current time in microseconds according to the FPGA (since FPGA reset).
  */
-UINT32 GetFPGATime()
+uint32_t GetFPGATime()
 {
 	tRioStatusCode status = 0;
 	tGlobal *global = tGlobal::create(&status);
-	UINT32 time = global->readLocalTime(&status);
+	uint32_t time = global->readLocalTime(&status);
 	delete global;
 	wpi_setGlobalError(status);
 	return time;
@@ -355,17 +355,17 @@ UINT32 GetFPGATime()
 // RT hardware access functions exported from ni_emb.out
 extern "C"
 {
-	INT32 UserSwitchInput(INT32 nSwitch);
-	INT32 LedInput(INT32 led);
-	INT32 LedOutput(INT32 led, INT32 value);
+	int32_t UserSwitchInput(int32_t nSwitch);
+	int32_t LedInput(int32_t led);
+	int32_t LedOutput(int32_t led, int32_t value);
 }
 
 /**
  * Read the value of the USER1 DIP switch on the cRIO.
  */
-INT32 GetRIOUserSwitch()
+int32_t GetRIOUserSwitch()
 {
-	INT32 switchValue = UserSwitchInput(0);
+	int32_t switchValue = UserSwitchInput(0);
 	wpi_assert(switchValue >= 0);
 	return switchValue > 0;
 }
@@ -373,7 +373,7 @@ INT32 GetRIOUserSwitch()
 /**
  * Set the state of the USER1 status LED on the cRIO.
  */
-void SetRIOUserLED(UINT32 state)
+void SetRIOUserLED(uint32_t state)
 {
 	LedOutput(0, state > 0);
 }
@@ -382,7 +382,7 @@ void SetRIOUserLED(UINT32 state)
  * Get the current state of the USER1 status LED on the cRIO.
  * @return The curent state of the USER1 LED.
  */
-INT32 GetRIOUserLED()
+int32_t GetRIOUserLED()
 {
 	return LedInput(0);
 }
@@ -391,9 +391,9 @@ INT32 GetRIOUserLED()
  * Toggle the state of the USER1 status LED on the cRIO.
  * @return The new state of the USER1 LED.
  */
-INT32 ToggleRIOUserLED()
+int32_t ToggleRIOUserLED()
 {
-	INT32 ledState = !GetRIOUserLED();
+	int32_t ledState = !GetRIOUserLED();
 	SetRIOUserLED(ledState);
 	return ledState;
 }
@@ -401,7 +401,7 @@ INT32 ToggleRIOUserLED()
 /**
  * Set the state of the FPGA status LED on the cRIO.
  */
-void SetRIO_FPGA_LED(UINT32 state)
+void SetRIO_FPGA_LED(uint32_t state)
 {
 	tRioStatusCode status = 0;
 	tGlobal *global = tGlobal::create(&status);
@@ -414,7 +414,7 @@ void SetRIO_FPGA_LED(UINT32 state)
  * Get the current state of the FPGA status LED on the cRIO.
  * @return The curent state of the FPGA LED.
  */
-INT32 GetRIO_FPGA_LED()
+int32_t GetRIO_FPGA_LED()
 {
 	tRioStatusCode status = 0;
 	tGlobal *global = tGlobal::create(&status);
@@ -428,9 +428,9 @@ INT32 GetRIO_FPGA_LED()
  * Toggle the state of the FPGA status LED on the cRIO.
  * @return The new state of the FPGA LED.
  */
-INT32 ToggleRIO_FPGA_LED()
+int32_t ToggleRIO_FPGA_LED()
 {
-	INT32 ledState = !GetRIO_FPGA_LED();
+	int32_t ledState = !GetRIO_FPGA_LED();
 	SetRIO_FPGA_LED(ledState);
 	return ledState;
 }

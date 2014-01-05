@@ -10,7 +10,7 @@
 
 class FlushableOutgoingEntryReceiver;
 
-#include "OutgoingEntryReceiver.h"
+#include "networktables2/OutgoingEntryReceiver.h"
 
 class FlushableOutgoingEntryReceiver : public OutgoingEntryReceiver
 {

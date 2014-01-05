@@ -10,7 +10,7 @@ class NetworkTableClientMode;
 #include "networktables2/NetworkTableNode.h"
 #include "networktables2/thread/NTThreadManager.h"
 
-
+typedef void (*StreamDeleter)(void*);
 /**
  * 
  * Represents a different modes that network tables can be configured in
@@ -28,7 +28,7 @@ public:
 	 * @return a new node that can back a network table
 	 * @throws IOException
 	 */
-	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager) = 0;
+	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager, void*& streamFactory_out, StreamDeleter& streamDeleter_out, NetworkTableEntryTypeManager*& typeManager_out) = 0;
 	
 	static NetworkTableServerMode Server;
 	static NetworkTableClientMode Client;
@@ -37,13 +37,13 @@ public:
 class NetworkTableServerMode : public NetworkTableMode{
 public:
 	NetworkTableServerMode();
-	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager);
+	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager, void*& streamFactory_out, StreamDeleter& streamDeleter_out, NetworkTableEntryTypeManager*& typeManager_out);
 };
 
 class NetworkTableClientMode : public NetworkTableMode{
 public:
 	NetworkTableClientMode();
-	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager);
+	virtual NetworkTableNode* CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager, void*& streamFactory_out, StreamDeleter& streamDeleter_out, NetworkTableEntryTypeManager*& typeManager_out);
 };
 
 

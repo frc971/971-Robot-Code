@@ -25,7 +25,7 @@ public:
 protected:
 	tInterrupt *m_interrupt;
 	tInterruptManager *m_manager;
-	UINT32 m_interruptIndex;
+	uint32_t m_interruptIndex;
 	void AllocateInterrupts(bool watcher);
 };
 

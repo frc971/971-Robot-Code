@@ -55,7 +55,7 @@ bool AnalogTriggerOutput::Get()
 /**
  * @return The value to be written to the channel field of a routing mux.
  */
-UINT32 AnalogTriggerOutput::GetChannelForRouting()
+uint32_t AnalogTriggerOutput::GetChannelForRouting()
 {
 	return (m_trigger->m_index << 2) + m_outputType;
 }
@@ -63,7 +63,7 @@ UINT32 AnalogTriggerOutput::GetChannelForRouting()
 /**
  * @return The value to be written to the module field of a routing mux.
  */
-UINT32 AnalogTriggerOutput::GetModuleForRouting()
+uint32_t AnalogTriggerOutput::GetModuleForRouting()
 {
 	return m_trigger->m_index >> 2;
 }

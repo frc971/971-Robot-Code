@@ -17,8 +17,9 @@ extern Resource *interruptsResource;
  * Creates a digital output given a slot and channel. Common creation routine
  * for all constructors.
  */
-void DigitalOutput::InitDigitalOutput(UINT8 moduleNumber, UINT32 channel)
+void DigitalOutput::InitDigitalOutput(uint8_t moduleNumber, uint32_t channel)
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckDigitalModule(moduleNumber))
 	{
@@ -46,7 +47,7 @@ void DigitalOutput::InitDigitalOutput(UINT8 moduleNumber, UINT32 channel)
  *
  * @param channel The digital channel (1..14).
  */
-DigitalOutput::DigitalOutput(UINT32 channel)
+DigitalOutput::DigitalOutput(uint32_t channel)
 {
 	InitDigitalOutput(GetDefaultDigitalModule(), channel);
 }
@@ -58,7 +59,7 @@ DigitalOutput::DigitalOutput(UINT32 channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The digital channel (1..14).
  */
-DigitalOutput::DigitalOutput(UINT8 moduleNumber, UINT32 channel)
+DigitalOutput::DigitalOutput(uint8_t moduleNumber, uint32_t channel)
 {
 	InitDigitalOutput(moduleNumber, channel);
 }
@@ -78,7 +79,7 @@ DigitalOutput::~DigitalOutput()
  * Set the value of a digital output.
  * Set the value of a digital output to either one (true) or zero (false).
  */
-void DigitalOutput::Set(UINT32 value)
+void DigitalOutput::Set(uint32_t value)
 {
 	if (StatusIsFatal()) return;
 	m_module->SetDIO(m_channel, value);
@@ -87,7 +88,7 @@ void DigitalOutput::Set(UINT32 value)
 /**
  * @return The GPIO channel number that this object represents.
  */
-UINT32 DigitalOutput::GetChannel()
+uint32_t DigitalOutput::GetChannel()
 {
 	return m_channel;
 }
@@ -181,7 +182,7 @@ void DigitalOutput::UpdateDutyCycle(float dutyCycle)
 /**
  * @return The value to be written to the channel field of a routing mux.
  */
-UINT32 DigitalOutput::GetChannelForRouting()
+uint32_t DigitalOutput::GetChannelForRouting()
 {
 	return DigitalModule::RemapDigitalChannel(GetChannel() - 1);
 }
@@ -189,7 +190,7 @@ UINT32 DigitalOutput::GetChannelForRouting()
 /**
  * @return The value to be written to the module field of a routing mux.
  */
-UINT32 DigitalOutput::GetModuleForRouting()
+uint32_t DigitalOutput::GetModuleForRouting()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetNumber() - 1;
@@ -214,7 +215,7 @@ bool DigitalOutput::GetAnalogTriggerForRouting()
 void DigitalOutput::RequestInterrupts(tInterruptHandler handler, void *param)
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt");
+	uint32_t index = interruptsResource->Allocate("Sync Interrupt");
 	if (index == ~0ul)
 	{
 		CloneError(interruptsResource);
@@ -245,7 +246,7 @@ void DigitalOutput::RequestInterrupts(tInterruptHandler handler, void *param)
 void DigitalOutput::RequestInterrupts()
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt");
+	uint32_t index = interruptsResource->Allocate("Sync Interrupt");
 	if (index == ~0ul)
 	{
 		CloneError(interruptsResource);
@@ -288,11 +289,15 @@ void DigitalOutput::UpdateTable() {
 }
 
 void DigitalOutput::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void DigitalOutput::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string DigitalOutput::GetSmartDashboardType() {

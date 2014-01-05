@@ -8,30 +8,32 @@
 #include "DigitalModule.h"
 #include "I2C.h"
 #include "NetworkCommunication/UsageReporting.h"
+#include "networktables2/type/NumberArray.h"
 #include "WPIErrors.h"
 
-const UINT8 HiTechnicColorSensor::kAddress;
-const UINT8 HiTechnicColorSensor::kManufacturerBaseRegister;
-const UINT8 HiTechnicColorSensor::kManufacturerSize;
-const UINT8 HiTechnicColorSensor::kSensorTypeBaseRegister;
-const UINT8 HiTechnicColorSensor::kSensorTypeSize;
-const UINT8 HiTechnicColorSensor::kModeRegister;
-const UINT8 HiTechnicColorSensor::kColorRegister;
-const UINT8 HiTechnicColorSensor::kRedRegister;
-const UINT8 HiTechnicColorSensor::kGreenRegister;
-const UINT8 HiTechnicColorSensor::kBlueRegister;
-const UINT8 HiTechnicColorSensor::kRawRedRegister;
-const UINT8 HiTechnicColorSensor::kRawGreenRegister;
-const UINT8 HiTechnicColorSensor::kRawBlueRegister;
+const uint8_t HiTechnicColorSensor::kAddress;
+const uint8_t HiTechnicColorSensor::kManufacturerBaseRegister;
+const uint8_t HiTechnicColorSensor::kManufacturerSize;
+const uint8_t HiTechnicColorSensor::kSensorTypeBaseRegister;
+const uint8_t HiTechnicColorSensor::kSensorTypeSize;
+const uint8_t HiTechnicColorSensor::kModeRegister;
+const uint8_t HiTechnicColorSensor::kColorRegister;
+const uint8_t HiTechnicColorSensor::kRedRegister;
+const uint8_t HiTechnicColorSensor::kGreenRegister;
+const uint8_t HiTechnicColorSensor::kBlueRegister;
+const uint8_t HiTechnicColorSensor::kRawRedRegister;
+const uint8_t HiTechnicColorSensor::kRawGreenRegister;
+const uint8_t HiTechnicColorSensor::kRawBlueRegister;
 
 /**
  * Constructor.
  * 
  * @param moduleNumber The digital module that the sensor is plugged into (1 or 2).
  */
-HiTechnicColorSensor::HiTechnicColorSensor(UINT8 moduleNumber)
+HiTechnicColorSensor::HiTechnicColorSensor(uint8_t moduleNumber)
 	: m_i2c (NULL)
 {
+	m_table = NULL;
 	DigitalModule *module = DigitalModule::GetInstance(moduleNumber);
 	m_mode = kActive;
 	
@@ -40,8 +42,8 @@ HiTechnicColorSensor::HiTechnicColorSensor(UINT8 moduleNumber)
 		m_i2c = module->GetI2C(kAddress);
 	
 		// Verify Sensor
-		const UINT8 kExpectedManufacturer[] = "HiTechnc";
-		const UINT8 kExpectedSensorType[] = "ColorPD ";
+		const uint8_t kExpectedManufacturer[] = "HiTechnc";
+		const uint8_t kExpectedSensorType[] = "ColorPD ";
 		if ( ! m_i2c->VerifySensor(kManufacturerBaseRegister, kManufacturerSize, kExpectedManufacturer) )
 		{
 			wpi_setWPIError(CompassManufacturerError);
@@ -74,9 +76,9 @@ HiTechnicColorSensor::~HiTechnicColorSensor()
  *
  * @return The estimated color.
  */
-UINT8 HiTechnicColorSensor::GetColor()
+uint8_t HiTechnicColorSensor::GetColor()
 {
-	UINT8 color = 0;
+	uint8_t color = 0;
 	
 	if(m_mode != kActive)
 	{
@@ -100,9 +102,9 @@ UINT8 HiTechnicColorSensor::GetColor()
  *
  * @return The Red sensor value.
  */
-UINT8 HiTechnicColorSensor::GetRed()
+uint8_t HiTechnicColorSensor::GetRed()
 {
-	UINT8 red = 0;
+	uint8_t red = 0;
 	
 	if(m_mode != kActive)
 	{
@@ -126,9 +128,9 @@ UINT8 HiTechnicColorSensor::GetRed()
  * 
  * @return The Green sensor value.
  */
-UINT8 HiTechnicColorSensor::GetGreen()
+uint8_t HiTechnicColorSensor::GetGreen()
 {
-	UINT8 green = 0;
+	uint8_t green = 0;
 	
 	if(m_mode != kActive)
 	{
@@ -152,9 +154,9 @@ UINT8 HiTechnicColorSensor::GetGreen()
  * 
  * @return The Blue sensor value.
  */
-UINT8 HiTechnicColorSensor::GetBlue()
+uint8_t HiTechnicColorSensor::GetBlue()
 {
-	UINT8 blue = 0;
+	uint8_t blue = 0;
 	
 	if(m_mode != kActive)
 	{
@@ -181,7 +183,7 @@ UINT8 HiTechnicColorSensor::GetBlue()
  */
 HiTechnicColorSensor::RGB HiTechnicColorSensor::GetRGB()
 {
-	UINT8 colors[3] = {0,0,0};
+	uint8_t colors[3] = {0,0,0};
 	RGB result;
 	
 	if(m_mode != kActive)
@@ -190,7 +192,7 @@ HiTechnicColorSensor::RGB HiTechnicColorSensor::GetRGB()
 	}
 	if(m_i2c)
 	{
-		m_i2c->Read(kRawRedRegister, sizeof(colors), (UINT8*)&colors);
+		m_i2c->Read(kRawRedRegister, sizeof(colors), (uint8_t*)&colors);
 	}
 	
 	result.red = colors[0];
@@ -211,9 +213,9 @@ HiTechnicColorSensor::RGB HiTechnicColorSensor::GetRGB()
  *
  * @return The Raw Red sensor value.
  */
-UINT16 HiTechnicColorSensor::GetRawRed()
+uint16_t HiTechnicColorSensor::GetRawRed()
 {
-	UINT16 rawRed = 0;
+	uint16_t rawRed = 0;
 	
 	if(m_mode == kActive)
 	{
@@ -221,7 +223,7 @@ UINT16 HiTechnicColorSensor::GetRawRed()
 	}
 	if (m_i2c)
 	{
-		m_i2c->Read(kRawRedRegister, sizeof(rawRed), (UINT8 *)&rawRed);
+		m_i2c->Read(kRawRedRegister, sizeof(rawRed), (uint8_t *)&rawRed);
 	}
 	return rawRed;
 }
@@ -237,9 +239,9 @@ UINT16 HiTechnicColorSensor::GetRawRed()
    *
    * @return The Raw Green sensor value.
    */
-UINT16 HiTechnicColorSensor::GetRawGreen()
+uint16_t HiTechnicColorSensor::GetRawGreen()
 {
-	UINT16 rawGreen = 0;
+	uint16_t rawGreen = 0;
 	
 	if(m_mode == kActive)
 	{
@@ -247,7 +249,7 @@ UINT16 HiTechnicColorSensor::GetRawGreen()
 	}
 	if (m_i2c)
 	{
-		m_i2c->Read(kRawGreenRegister, sizeof(rawGreen), (UINT8 *)&rawGreen);
+		m_i2c->Read(kRawGreenRegister, sizeof(rawGreen), (uint8_t *)&rawGreen);
 	}
 	return rawGreen;
 }
@@ -263,9 +265,9 @@ UINT16 HiTechnicColorSensor::GetRawGreen()
  *
  * @return The Raw Blue sensor value.
  */
-UINT16 HiTechnicColorSensor::GetRawBlue()
+uint16_t HiTechnicColorSensor::GetRawBlue()
 {
-	UINT16 rawBlue = 0;
+	uint16_t rawBlue = 0;
 	
 	if(m_mode == kActive)
 	{
@@ -273,7 +275,7 @@ UINT16 HiTechnicColorSensor::GetRawBlue()
 	}
 	if (m_i2c)
 	{
-		m_i2c->Read(kRawBlueRegister, sizeof(rawBlue), (UINT8 *)&rawBlue);
+		m_i2c->Read(kRawBlueRegister, sizeof(rawBlue), (uint8_t *)&rawBlue);
 	}
 	return rawBlue;
 }
@@ -294,7 +296,7 @@ UINT16 HiTechnicColorSensor::GetRawBlue()
  */
 HiTechnicColorSensor::RGB HiTechnicColorSensor::GetRawRGB()
 {
-	UINT8 colors[6] = {0,0,0,0,0,0};
+	uint8_t colors[6] = {0,0,0,0,0,0};
 	RGB result;
 	
 	if(m_mode != kActive)
@@ -303,7 +305,7 @@ HiTechnicColorSensor::RGB HiTechnicColorSensor::GetRawRGB()
 	}
 	if(m_i2c)
 	{
-		m_i2c->Read(kRedRegister, sizeof(colors), (UINT8*)&colors);
+		m_i2c->Read(kRedRegister, sizeof(colors), (uint8_t*)&colors);
 	}
 	
 	result.red = (colors[0]<<8) + colors[1];
@@ -326,7 +328,7 @@ void HiTechnicColorSensor::SetMode(tColorMode mode)
 {
 	if(m_i2c)
 	{
-		m_i2c->Write(kModeRegister, (UINT8)mode);
+		m_i2c->Write(kModeRegister, (uint8_t)mode);
 	}
 }
 
@@ -352,6 +354,12 @@ void HiTechnicColorSensor::InitTable(ITable *subtable) {
 void HiTechnicColorSensor::UpdateTable() {
     if (m_table != NULL) {
         m_table->PutNumber("Value", GetColor());
+		NumberArray* rgb = new NumberArray();
+		rgb->add(GetRed());
+		rgb->add(GetGreen());
+		rgb->add(GetBlue());
+		m_table->PutValue("RGB", *rgb);
+		delete rgb;
     }
 }
 

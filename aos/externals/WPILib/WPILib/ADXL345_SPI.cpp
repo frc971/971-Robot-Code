@@ -10,10 +10,10 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "SPI.h"
 
-const UINT8 ADXL345_SPI::kPowerCtlRegister;
-const UINT8 ADXL345_SPI::kDataFormatRegister;
-const UINT8 ADXL345_SPI::kDataRegister;
-const double ADXL345_SPI::kGsPerLSB;
+const uint8_t ADXL345_SPI::kPowerCtlRegister;
+const uint8_t ADXL345_SPI::kDataFormatRegister;
+const uint8_t ADXL345_SPI::kDataRegister;
+constexpr double ADXL345_SPI::kGsPerLSB;
 
 /**
  * Constructor.
@@ -65,8 +65,8 @@ ADXL345_SPI::ADXL345_SPI(DigitalOutput *clk, DigitalOutput *mosi, DigitalInput *
  * @param cs The GPIO the CS (Chip Select) signal is wired to.
  * @param range The range (+ or -) that the accelerometer will measure.
  */
-ADXL345_SPI::ADXL345_SPI(UINT8 moduleNumber, UINT32 clk, UINT32 mosi, UINT32 miso,
-		UINT32 cs, ADXL345_SPI::DataFormat_Range range)
+ADXL345_SPI::ADXL345_SPI(uint8_t moduleNumber, uint32_t clk, uint32_t mosi, uint32_t miso,
+		uint32_t cs, ADXL345_SPI::DataFormat_Range range)
 	: m_clk (NULL)
 	, m_mosi (NULL)
 	, m_miso (NULL)
@@ -102,7 +102,7 @@ void ADXL345_SPI::Init(DigitalOutput *clk, DigitalOutput *mosi, DigitalInput *mi
 		m_spi->Write((kPowerCtlRegister << 8) | kPowerCtl_Measure);
 		m_spi->Read();
 		// Specify the data format to read
-		m_spi->Write((kDataFormatRegister << 8) | kDataFormat_FullRes | (UINT8)(range & 0x03));
+		m_spi->Write((kDataFormatRegister << 8) | kDataFormat_FullRes | (uint8_t)(range & 0x03));
 		m_spi->Read();
 
 		// 8-bit address and 16-bit data
@@ -138,11 +138,11 @@ ADXL345_SPI::~ADXL345_SPI()
  */
 double ADXL345_SPI::GetAcceleration(ADXL345_SPI::Axes axis)
 {
-	INT16 rawAccel = 0;
+	int16_t rawAccel = 0;
 	if(m_spi)
 	{
-		m_spi->Write(((kAddress_Read | kAddress_MultiByte | kDataRegister) + (UINT8)axis) << 16);
-		rawAccel = (UINT16)m_spi->Read();
+		m_spi->Write(((kAddress_Read | kAddress_MultiByte | kDataRegister) + (uint8_t)axis) << 16);
+		rawAccel = (uint16_t)m_spi->Read();
 
 		// Sensor is little endian... swap bytes
 		rawAccel = ((rawAccel >> 8) & 0xFF) | (rawAccel << 8);
@@ -158,7 +158,7 @@ double ADXL345_SPI::GetAcceleration(ADXL345_SPI::Axes axis)
 ADXL345_SPI::AllAxes ADXL345_SPI::GetAccelerations()
 {
 	AllAxes data = {0.0};
-	INT16 rawData[3];
+	int16_t rawData[3];
 	if (m_spi)
 	{
 		SPI::tFrameMode mode;
@@ -166,7 +166,7 @@ ADXL345_SPI::AllAxes ADXL345_SPI::GetAccelerations()
 
 		// Backup original settings.
 		DigitalOutput *cs = m_spi->GetSlaveSelect(&mode, &activeLow);
-		UINT32 bitsPerWord = m_spi->GetBitsPerWord();
+		uint32_t bitsPerWord = m_spi->GetBitsPerWord();
 
 		// Initialize the chip select to inactive.
 		cs->Set(activeLow);
@@ -188,10 +188,10 @@ ADXL345_SPI::AllAxes ADXL345_SPI::GetAccelerations()
 		m_spi->SetBitsPerWord(16);
 		m_spi->ApplyConfig();
 
-		for (INT32 i=0; i<3; i++)
+		for (int32_t i=0; i<3; i++)
 		{
 			// SPI Interface can't read enough data in a single transaction to read all axes at once.
-			rawData[i] = (UINT16)m_spi->Read(true);
+			rawData[i] = (uint16_t)m_spi->Read(true);
 			// Sensor is little endian... swap bytes
 			rawData[i] = ((rawData[i] >> 8) & 0xFF) | (rawData[i] << 8);
 		}

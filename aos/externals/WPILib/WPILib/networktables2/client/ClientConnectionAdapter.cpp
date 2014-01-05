@@ -6,19 +6,23 @@
  */
 
 #include "networktables2/client/ClientConnectionAdapter.h"
-#include "networktables2/connection/ConnectionMonitorThread.h"
+#include "networktables2/util/System.h"
 
 void ClientConnectionAdapter::gotoState(ClientConnectionState* newState){
 	{
-		Synchronized sync(LOCK);
+		NTSynchronized sync(LOCK);
 		if(connectionState!=newState){
-			fprintf(stdout, "%p entered connection state: %s\n",this, newState->toString());
+		        fprintf(stdout, "[NT] %p entered connection state: %s\n", (void*)this, newState->toString());
 			fflush(stdout);
 			if(newState==&ClientConnectionState::IN_SYNC_WITH_SERVER)
 				connectionListenerManager.FireConnectedEvent();
 			if(connectionState==&ClientConnectionState::IN_SYNC_WITH_SERVER)
 				connectionListenerManager.FireDisconnectedEvent();
+			//TODO find better way to manage memory leak
+			ClientConnectionState_Error *temp=dynamic_cast<ClientConnectionState_Error *>(connectionState);
 			connectionState = newState;
+			if (temp)
+				delete temp;
 		}
 	}
 }
@@ -49,12 +53,40 @@ ClientConnectionAdapter::ClientConnectionAdapter(ClientNetworkTableEntryStore& _
 	threadManager(_threadManager),
 	connectionListenerManager(_connectionListenerManager),
 	typeManager(_typeManager),
-    readThread(NULL),
-    connection(NULL){
+	readThread(NULL),
+	monitor(NULL),
+	connection(NULL){
 	connectionState = &ClientConnectionState::DISCONNECTED_FROM_SERVER;
 }
-ClientConnectionAdapter::~ClientConnectionAdapter(){
-  close();
+ClientConnectionAdapter::~ClientConnectionAdapter()
+{
+	if(readThread!=NULL)
+		readThread->stop();
+	if (connection)
+		connection->close();
+	if(readThread!=NULL)
+	{
+	    delete readThread;
+		readThread = NULL;
+	}
+	if(monitor!=NULL)
+	{
+	        delete monitor;
+		monitor = NULL;
+	}	
+	close();
+	if(connection!=NULL){
+		delete connection;
+		connection = NULL;
+	}	
+
+	//TODO find better way to manage memory leak
+	ClientConnectionState_Error *temp=dynamic_cast<ClientConnectionState_Error *>(connectionState);
+	if (temp)
+	{
+		delete temp;
+		connectionState=NULL;
+	}
 }
 
 
@@ -65,15 +97,25 @@ ClientConnectionAdapter::~ClientConnectionAdapter(){
  * Reconnect the client to the server (even if the client is not currently connected)
  */
 void ClientConnectionAdapter::reconnect() {
+	//This is in reconnect so that the entry store doesn't have to be valid when this object is deleted
+	//Note:  clearIds() cannot be in a LOCK critical section
+	entryStore.clearIds();
 	{
-		Synchronized sync(LOCK);
+		NTSynchronized sync(LOCK);
 		close();//close the existing stream and monitor thread if needed
 		try{
 			IOStream* stream = streamFactory.createStream();
 			if(stream==NULL)
 				return;
-			connection = new NetworkTableConnection(stream, typeManager);
-			readThread = threadManager.newBlockingPeriodicThread(new ConnectionMonitorThread(*this, *connection), "Client Connection Reader Thread");
+			if (!connection)
+				connection = new NetworkTableConnection(stream, typeManager);
+			else
+				connection->SetIOStream(stream);
+			m_IsConnectionClosed=false;
+			if (!monitor)
+				monitor = new ConnectionMonitorThread(*this, *connection);
+			if (!readThread)
+				readThread = threadManager.newBlockingPeriodicThread(monitor, "Client Connection Reader Thread");
 			connection->sendClientHello();
 			gotoState(&ClientConnectionState::CONNECTED_TO_SERVER);
 		} catch(IOException& e){
@@ -94,17 +136,15 @@ void ClientConnectionAdapter::close() {
  */
 void ClientConnectionAdapter::close(ClientConnectionState* newState) {
 	{
-		Synchronized sync(LOCK);
+		NTSynchronized sync(LOCK);
 		gotoState(newState);
-		if(readThread!=NULL){
-			readThread->stop();
-			readThread = NULL;
-		}
-		if(connection!=NULL){
+		//Disconnect the socket
+		if(connection!=NULL)
+		{
 			connection->close();
-			connection = NULL;
+			connection->SetIOStream(NULL);  //disconnect the table connection from the IO stream
 		}
-		entryStore.clearIds();
+		m_IsConnectionClosed=true;
 	}
 }
 
@@ -112,12 +152,19 @@ void ClientConnectionAdapter::close(ClientConnectionState* newState) {
 
 void ClientConnectionAdapter::badMessage(BadMessageException& e) {
 	close(new ClientConnectionState_Error(e));
+	sleep_ms(33);  //avoid busy wait
 }
 
 void ClientConnectionAdapter::ioException(IOException& e) {
 	if(connectionState!=&ClientConnectionState::DISCONNECTED_FROM_SERVER)//will get io exception when on read thread connection is closed
+	{
 		reconnect();
-	//gotoState(new ClientConnectionState.Error(e));
+		sleep_ms(500);
+	}
+	else
+	{
+		sleep_ms(33);  //avoid busy wait
+	}
 }
 
 NetworkTableEntry* ClientConnectionAdapter::GetEntry(EntryId id) {
@@ -125,7 +172,8 @@ NetworkTableEntry* ClientConnectionAdapter::GetEntry(EntryId id) {
 }
 
 
-void ClientConnectionAdapter::keepAlive() {
+bool ClientConnectionAdapter::keepAlive() {
+	return true;
 }
 
 void ClientConnectionAdapter::clientHello(ProtocolVersion protocolRevision) {
@@ -161,7 +209,7 @@ void ClientConnectionAdapter::offerIncomingUpdate(NetworkTableEntry* entry, Sequ
 void ClientConnectionAdapter::offerOutgoingAssignment(NetworkTableEntry* entry) {
 	try {
 		{
-			Synchronized sync(LOCK);
+			NTSynchronized sync(LOCK);
 			if(connection!=NULL && connectionState==&ClientConnectionState::IN_SYNC_WITH_SERVER)
 				connection->sendEntryAssignment(*entry);
 		}
@@ -173,7 +221,7 @@ void ClientConnectionAdapter::offerOutgoingAssignment(NetworkTableEntry* entry) 
 void ClientConnectionAdapter::offerOutgoingUpdate(NetworkTableEntry* entry) {
 	try {
 		{
-			Synchronized sync(LOCK);
+			NTSynchronized sync(LOCK);
 			if(connection!=NULL && connectionState==&ClientConnectionState::IN_SYNC_WITH_SERVER)
 				connection->sendEntryUpdate(*entry);
 		}
@@ -183,7 +231,7 @@ void ClientConnectionAdapter::offerOutgoingUpdate(NetworkTableEntry* entry) {
 }
 void ClientConnectionAdapter::flush() {
 	{
-		Synchronized sync(LOCK);
+		NTSynchronized sync(LOCK);
 		if(connection!=NULL) {
 			try {
 				connection->flush();
@@ -195,8 +243,8 @@ void ClientConnectionAdapter::flush() {
 }
 void ClientConnectionAdapter::ensureAlive() {
 	{
-		Synchronized sync(LOCK);
-		if(connection!=NULL) {
+		NTSynchronized sync(LOCK);
+		if ((connection!=NULL)&&(!m_IsConnectionClosed)) {
 			try {
 			  connection->sendKeepAlive();
 			} catch (IOException& e) {

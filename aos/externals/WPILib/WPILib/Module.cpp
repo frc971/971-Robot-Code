@@ -17,7 +17,7 @@ Module* Module::m_modules[kMaxModules] = {NULL};
  * @param type The type of module represented.
  * @param number The module index within the module type.
  */
-Module::Module(nLoadOut::tModuleType type, UINT8 number)
+Module::Module(nLoadOut::tModuleType type, uint8_t number)
 	: m_moduleType (type)
 	, m_moduleNumber (number)
 {
@@ -37,7 +37,7 @@ Module::~Module()
  * @param type The type of module represented.
  * @param number The module index within the module type.
  */
-Module* Module::GetModule(nLoadOut::tModuleType type, UINT8 number)
+Module* Module::GetModule(nLoadOut::tModuleType type, uint8_t number)
 {
 	if (m_modules[ToIndex(type, number)] == NULL)
 	{
@@ -68,7 +68,7 @@ Module* Module::GetModule(nLoadOut::tModuleType type, UINT8 number)
  * @param number The module index within the module type.
  * @return The index into m_modules.
  */
-UINT8 Module::ToIndex(nLoadOut::tModuleType type, UINT8 number)
+uint8_t Module::ToIndex(nLoadOut::tModuleType type, uint8_t number)
 {
 	if (number == 0 || number > kMaxModuleNumber) return 0;
 	if (type < nLoadOut::kModuleType_Analog || type > nLoadOut::kModuleType_Solenoid) return 0;

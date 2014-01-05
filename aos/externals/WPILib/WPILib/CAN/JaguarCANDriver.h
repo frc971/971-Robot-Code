@@ -14,15 +14,15 @@
 #ifndef __JaguarCANDriver_h__
 #define __JaguarCANDriver_h__
 
-#include <VxWorks.h>
+#include <vxWorks.h>
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-	void FRC_NetworkCommunication_JaguarCANDriver_sendMessage(UINT32 messageID, const UINT8 *data, UINT8 dataSize, INT32 *status);
-	void FRC_NetworkCommunication_JaguarCANDriver_receiveMessage(UINT32 *messageID, UINT8 *data, UINT8 *dataSize, UINT32 timeoutMs, INT32 *status);
+	void FRC_NetworkCommunication_JaguarCANDriver_sendMessage(uint32_t messageID, const uint8_t *data, uint8_t dataSize, int32_t *status);
+	void FRC_NetworkCommunication_JaguarCANDriver_receiveMessage(uint32_t *messageID, uint8_t *data, uint8_t *dataSize, uint32_t timeoutMs, int32_t *status);
 
 #ifdef __cplusplus
 }

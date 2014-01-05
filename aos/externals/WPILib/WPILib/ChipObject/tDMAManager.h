@@ -4,7 +4,6 @@
 #ifndef __tDMAManager_h__
 #define __tDMAManager_h__
 
-#include "NiRio.h"
 #include "tSystem.h"
 
 namespace nFPGA

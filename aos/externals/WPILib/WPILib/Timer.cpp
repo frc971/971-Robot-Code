@@ -25,7 +25,7 @@
 void Wait(double seconds)
 {
 	if (seconds < 0.0) return;
-	taskDelay((INT32)((double)sysClkRateGet() * seconds));
+	taskDelay((int32_t)((double)sysClkRateGet() * seconds));
 }
 
 /*
@@ -142,7 +142,7 @@ void Timer::Stop()
 	Synchronized sync(m_semaphore);
 	if (m_running)
 	{
-		m_accumulatedTime += temp;	
+		m_accumulatedTime = temp;	
 		m_running = false;
 	}
 }
@@ -186,7 +186,7 @@ double Timer::GetFPGATimestamp()
 // Internal function that reads the PPC timestamp counter.
 extern "C"
 {
-	UINT32 niTimestamp32(void);
+	uint32_t niTimestamp32(void);
 	UINT64 niTimestamp64(void);
 }
 

@@ -18,7 +18,7 @@ ServerNetworkTableEntryStore::~ServerNetworkTableEntryStore()
 
 bool ServerNetworkTableEntryStore::addEntry(NetworkTableEntry* newEntry)
 {
-	Synchronized sync(LOCK);
+	NTSynchronized sync(LOCK);
 	NetworkTableEntry* entry = namedEntries[newEntry->name];
 	
 	if (entry == NULL)
@@ -33,7 +33,7 @@ bool ServerNetworkTableEntryStore::addEntry(NetworkTableEntry* newEntry)
 
 bool ServerNetworkTableEntryStore::updateEntry(NetworkTableEntry* entry, SequenceNumber sequenceNumber, EntryValue value)
 {
-	Synchronized sync(LOCK);
+	NTSynchronized sync(LOCK);
 	return entry->PutValue(sequenceNumber, value);
 }
 
@@ -44,7 +44,7 @@ bool ServerNetworkTableEntryStore::updateEntry(NetworkTableEntry* entry, Sequenc
  */
 void ServerNetworkTableEntryStore::sendServerHello(NetworkTableConnection& connection)
 {
-	Synchronized sync(LOCK);
+	NTSynchronized sync(LOCK);
 	std::map<std::string, NetworkTableEntry*>::iterator itr;
 	for (itr = namedEntries.begin(); itr != namedEntries.end(); itr++)
 	{

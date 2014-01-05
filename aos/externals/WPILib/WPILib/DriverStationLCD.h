@@ -19,18 +19,18 @@
 class DriverStationLCD : public SensorBase
 {
 public:
-	static const UINT32 kSyncTimeout_ms = 20;
-	static const UINT16 kFullDisplayTextCommand = 0x9FFF;
-	static const INT32 kLineLength = 21;
-	static const INT32 kNumLines = 6;
+	static const uint32_t kSyncTimeout_ms = 20;
+	static const uint16_t kFullDisplayTextCommand = 0x9FFF;
+	static const int32_t kLineLength = 21;
+	static const int32_t kNumLines = 6;
 	enum Line {kMain_Line6=0, kUser_Line1=0, kUser_Line2=1, kUser_Line3=2, kUser_Line4=3, kUser_Line5=4, kUser_Line6=5};
 
 	virtual ~DriverStationLCD();
 	static DriverStationLCD *GetInstance();
 
 	void UpdateLCD();
-	void Printf(Line line, INT32 startingColumn, const char *writeFmt, ...);
-	void VPrintf(Line line, INT32 startingColumn, const char *writeFmt, va_list args);
+	void Printf(Line line, int32_t startingColumn, const char *writeFmt, ...);
+	void VPrintf(Line line, int32_t startingColumn, const char *writeFmt, va_list args);
 	void PrintfLine(Line line, const char *writeFmt, ...);
 	void VPrintfLine(Line line, const char *writeFmt, va_list args);
  

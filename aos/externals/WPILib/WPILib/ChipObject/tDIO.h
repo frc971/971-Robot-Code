@@ -30,8 +30,13 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Period : 16;
          unsigned MinHigh : 16;
+#else
+         unsigned MinHigh : 16;
+         unsigned Period : 16;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -40,9 +45,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned RelayFwd : 8;
          unsigned RelayRev : 8;
          unsigned I2CHeader : 4;
+#else
+         unsigned I2CHeader : 4;
+         unsigned RelayRev : 8;
+         unsigned RelayFwd : 8;
+#endif
       };
       struct{
          unsigned value : 20;
@@ -51,10 +62,17 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Transaction : 1;
          unsigned Done : 1;
          unsigned Aborted : 1;
          unsigned DataReceivedHigh : 24;
+#else
+         unsigned DataReceivedHigh : 24;
+         unsigned Aborted : 1;
+         unsigned Done : 1;
+         unsigned Transaction : 1;
+#endif
       };
       struct{
          unsigned value : 27;
@@ -63,29 +81,54 @@ public:
    typedef
    union{
       struct{
-         unsigned PeriodPower : 4;
-         unsigned OutputSelect_0 : 4;
-         unsigned OutputSelect_1 : 4;
-         unsigned OutputSelect_2 : 4;
-         unsigned OutputSelect_3 : 4;
-      };
-      struct{
-         unsigned value : 20;
-      };
-   } tDO_PWMConfig;
-   typedef
-   union{
-      struct{
+#ifdef __vxworks
          unsigned Address : 8;
          unsigned BytesToRead : 3;
          unsigned BytesToWrite : 3;
          unsigned DataToSendHigh : 16;
          unsigned BitwiseHandshake : 1;
+#else
+         unsigned BitwiseHandshake : 1;
+         unsigned DataToSendHigh : 16;
+         unsigned BytesToWrite : 3;
+         unsigned BytesToRead : 3;
+         unsigned Address : 8;
+#endif
       };
       struct{
          unsigned value : 31;
       };
    } tI2CConfig;
+   typedef
+   union{
+      struct{
+#ifdef __vxworks
+         unsigned PeriodPower : 4;
+         unsigned OutputSelect_0 : 4;
+         unsigned OutputSelect_1 : 4;
+         unsigned OutputSelect_2 : 4;
+         unsigned OutputSelect_3 : 4;
+#else
+         unsigned OutputSelect_3 : 4;
+         unsigned OutputSelect_2 : 4;
+         unsigned OutputSelect_1 : 4;
+         unsigned OutputSelect_0 : 4;
+         unsigned PeriodPower : 4;
+#endif
+      };
+      struct{
+         unsigned value : 20;
+      };
+   } tDO_PWMConfig;
+
+
+   typedef enum
+   {
+      kNumFilterSelectElements = 16,
+   } tFilterSelect_IfaceConstants;
+
+   virtual void writeFilterSelect(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
+   virtual unsigned char readFilterSelect(unsigned char bitfield_index, tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -106,15 +149,6 @@ public:
 
    typedef enum
    {
-      kNumFilterSelectElements = 16,
-   } tFilterSelect_IfaceConstants;
-
-   virtual void writeFilterSelect(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
-   virtual unsigned char readFilterSelect(unsigned char bitfield_index, tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
       kNumFilterPeriodElements = 3,
    } tFilterPeriod_IfaceConstants;
 
@@ -128,6 +162,14 @@ public:
 
    virtual void writeOutputEnable(unsigned short value, tRioStatusCode *status) = 0;
    virtual unsigned short readOutputEnable(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tPulse_IfaceConstants;
+
+   virtual void writePulse(unsigned short value, tRioStatusCode *status) = 0;
+   virtual unsigned short readPulse(tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -171,10 +213,10 @@ public:
 
    typedef enum
    {
-   } tPulse_IfaceConstants;
+   } tPulseLength_IfaceConstants;
 
-   virtual void writePulse(unsigned short value, tRioStatusCode *status) = 0;
-   virtual unsigned short readPulse(tRioStatusCode *status) = 0;
+   virtual void writePulseLength(unsigned char value, tRioStatusCode *status) = 0;
+   virtual unsigned char readPulseLength(tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -205,9 +247,20 @@ public:
 
    typedef enum
    {
-   } tI2CStart_IfaceConstants;
+   } tI2CConfig_IfaceConstants;
 
-   virtual void strobeI2CStart(tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig(tI2CConfig value, tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig_Address(unsigned char value, tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig_BytesToRead(unsigned char value, tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig_BytesToWrite(unsigned char value, tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig_DataToSendHigh(unsigned short value, tRioStatusCode *status) = 0;
+   virtual void writeI2CConfig_BitwiseHandshake(bool value, tRioStatusCode *status) = 0;
+   virtual tI2CConfig readI2CConfig(tRioStatusCode *status) = 0;
+   virtual unsigned char readI2CConfig_Address(tRioStatusCode *status) = 0;
+   virtual unsigned char readI2CConfig_BytesToRead(tRioStatusCode *status) = 0;
+   virtual unsigned char readI2CConfig_BytesToWrite(tRioStatusCode *status) = 0;
+   virtual unsigned short readI2CConfig_DataToSendHigh(tRioStatusCode *status) = 0;
+   virtual bool readI2CConfig_BitwiseHandshake(tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -230,28 +283,9 @@ public:
 
    typedef enum
    {
-   } tPulseLength_IfaceConstants;
+   } tI2CStart_IfaceConstants;
 
-   virtual void writePulseLength(unsigned char value, tRioStatusCode *status) = 0;
-   virtual unsigned char readPulseLength(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
-   } tI2CConfig_IfaceConstants;
-
-   virtual void writeI2CConfig(tI2CConfig value, tRioStatusCode *status) = 0;
-   virtual void writeI2CConfig_Address(unsigned char value, tRioStatusCode *status) = 0;
-   virtual void writeI2CConfig_BytesToRead(unsigned char value, tRioStatusCode *status) = 0;
-   virtual void writeI2CConfig_BytesToWrite(unsigned char value, tRioStatusCode *status) = 0;
-   virtual void writeI2CConfig_DataToSendHigh(unsigned short value, tRioStatusCode *status) = 0;
-   virtual void writeI2CConfig_BitwiseHandshake(bool value, tRioStatusCode *status) = 0;
-   virtual tI2CConfig readI2CConfig(tRioStatusCode *status) = 0;
-   virtual unsigned char readI2CConfig_Address(tRioStatusCode *status) = 0;
-   virtual unsigned char readI2CConfig_BytesToRead(tRioStatusCode *status) = 0;
-   virtual unsigned char readI2CConfig_BytesToWrite(tRioStatusCode *status) = 0;
-   virtual unsigned short readI2CConfig_DataToSendHigh(tRioStatusCode *status) = 0;
-   virtual bool readI2CConfig_BitwiseHandshake(tRioStatusCode *status) = 0;
+   virtual void strobeI2CStart(tRioStatusCode *status) = 0;
 
 
 

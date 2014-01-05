@@ -13,7 +13,7 @@
 #include "Utility.h"
 #include "WPIErrors.h"
 
-UINT32 KinectStick::_recentPacketNumber = 0;
+uint32_t KinectStick::_recentPacketNumber = 0;
 KinectStick::KinectStickData KinectStick::_sticks;
 
 #define kJoystickBundleID kFRC_NetworkCommunication_DynamicType_Kinect_Joystick
@@ -100,7 +100,7 @@ float KinectStick::GetThrottle()
  * @param axis The axis to read [1-6].
  * @return The value of the axis
  */
-float KinectStick::GetRawAxis(UINT32 axis)
+float KinectStick::GetRawAxis(uint32_t axis)
 {
 	if (StatusIsFatal()) return 0.0;
 
@@ -152,7 +152,7 @@ bool KinectStick::GetBumper(JoystickHand hand)
  * @param button The button number to be read.
  * @return The state of the button.
  */
-bool KinectStick::GetRawButton(UINT32 button)
+bool KinectStick::GetRawButton(uint32_t button)
 {
 	if (StatusIsFatal()) return false;
 
@@ -165,7 +165,7 @@ bool KinectStick::GetRawButton(UINT32 button)
  */
 void KinectStick::GetData()
 {
-	UINT32 packetNumber = DriverStation::GetInstance()->GetPacketNumber();
+	uint32_t packetNumber = DriverStation::GetInstance()->GetPacketNumber();
 	if (_recentPacketNumber != packetNumber)
 	{
 		_recentPacketNumber = packetNumber;
@@ -181,7 +181,7 @@ void KinectStick::GetData()
  * Convert an 8 bit joystick value to a floating point (-1,1) value
  * @param value The 8 bit raw joystick value returned from the driver station
  */
-float KinectStick::ConvertRawToFloat(INT8 value)
+float KinectStick::ConvertRawToFloat(int8_t value)
 {
 	float result;
 

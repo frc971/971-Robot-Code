@@ -23,8 +23,8 @@ class DoubleSolenoid : public SolenoidBase, public LiveWindowSendable, public IT
 public:
 	typedef enum {kOff, kForward, kReverse} Value;
 
-	explicit DoubleSolenoid(UINT32 forwardChannel, UINT32 reverseChannel);
-	DoubleSolenoid(UINT8 moduleNumber, UINT32 forwardChannel, UINT32 reverseChannel);
+	explicit DoubleSolenoid(uint32_t forwardChannel, uint32_t reverseChannel);
+	DoubleSolenoid(uint8_t moduleNumber, uint32_t forwardChannel, uint32_t reverseChannel);
 	virtual ~DoubleSolenoid();
 	virtual void Set(Value value);
 	virtual Value Get();
@@ -40,10 +40,10 @@ public:
 private:
 	virtual void InitSolenoid();
 
-	UINT32 m_forwardChannel; ///< The forward channel on the module to control.
-	UINT32 m_reverseChannel; ///< The reverse channel on the module to control.
-	UINT8 m_forwardMask; ///< The mask for the forward channel.
-	UINT8 m_reverseMask; ///< The mask for the reverse channel.
+	uint32_t m_forwardChannel; ///< The forward channel on the module to control.
+	uint32_t m_reverseChannel; ///< The reverse channel on the module to control.
+	uint8_t m_forwardMask; ///< The mask for the forward channel.
+	uint8_t m_reverseMask; ///< The mask for the reverse channel.
 	
 	ITable *m_table;
 };

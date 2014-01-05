@@ -17,9 +17,14 @@ NetworkTableConnection::~NetworkTableConnection(){
 	delete ioStream;
 }
 
+void NetworkTableConnection::SetIOStream(IOStream* stream)
+{
+	ioStream->SetIOStream(stream);  //just passing through
+}
+
 void NetworkTableConnection::close() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		if (isValid) {
 			isValid = false;
 			ioStream->close();
@@ -28,7 +33,7 @@ void NetworkTableConnection::close() {
 }
 void NetworkTableConnection::flush() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		ioStream->flush();
 	}
 }
@@ -36,14 +41,14 @@ void NetworkTableConnection::flush() {
 void NetworkTableConnection::sendMessageHeader(
 		NetworkTableMessageType messageType) {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		ioStream->writeByte((uint8_t) messageType);
 	}
 }
 
 void NetworkTableConnection::sendKeepAlive() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(KEEP_ALIVE);
 		flush();
 	}
@@ -51,7 +56,7 @@ void NetworkTableConnection::sendKeepAlive() {
 
 void NetworkTableConnection::sendClientHello() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(CLIENT_HELLO);
 		ioStream->write2BytesBE(PROTOCOL_REVISION);
 		flush();
@@ -59,7 +64,7 @@ void NetworkTableConnection::sendClientHello() {
 }
 void NetworkTableConnection::sendServerHelloComplete() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(SERVER_HELLO_COMPLETE);
 		flush();
 	}
@@ -67,7 +72,7 @@ void NetworkTableConnection::sendServerHelloComplete() {
 
 void NetworkTableConnection::sendProtocolVersionUnsupported() {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(PROTOCOL_VERSION_UNSUPPORTED);
 		ioStream->write2BytesBE(PROTOCOL_REVISION);
 		flush();
@@ -76,7 +81,7 @@ void NetworkTableConnection::sendProtocolVersionUnsupported() {
 
 void NetworkTableConnection::sendEntryAssignment(NetworkTableEntry& entry) {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(ENTRY_ASSIGNMENT);
 		ioStream->writeString(entry.name);
 		ioStream->writeByte(entry.GetType()->id);
@@ -88,7 +93,7 @@ void NetworkTableConnection::sendEntryAssignment(NetworkTableEntry& entry) {
 
 void NetworkTableConnection::sendEntryUpdate(NetworkTableEntry& entry) {
 	{
-		Synchronized sync(WRITE_LOCK);
+		NTSynchronized sync(WRITE_LOCK);
 		sendMessageHeader(FIELD_UPDATE);
 		ioStream->write2BytesBE(entry.GetId());
 		ioStream->write2BytesBE(entry.GetSequenceNumber());

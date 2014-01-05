@@ -19,7 +19,7 @@ public:
 
 	virtual ~CounterBase() {}
 	virtual void Start() = 0;
-	virtual INT32 Get() = 0;
+	virtual int32_t Get() = 0;
 	virtual void Reset() = 0;
 	virtual void Stop() = 0;
 	virtual double GetPeriod() = 0;

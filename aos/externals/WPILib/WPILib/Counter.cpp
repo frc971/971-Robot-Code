@@ -19,8 +19,9 @@ static Resource *counters = NULL;
  */
 void Counter::InitCounter(Mode mode)
 {
+	m_table = NULL;
 	Resource::CreateResourceObject(&counters, tCounter::kNumSystems);
-	UINT32 index = counters->Allocate("Counter");
+	uint32_t index = counters->Allocate("Counter");
 	if (index == ~0ul)
 	{
 		CloneError(counters);
@@ -82,7 +83,7 @@ Counter::Counter(DigitalSource &source) :
  * Create an instance of a Counter object.
  * Create an up-Counter instance given a channel. The default digital module is assumed.
  */
-Counter::Counter(UINT32 channel) :
+Counter::Counter(uint32_t channel) :
 	m_upSource(NULL),
 	m_downSource(NULL),
 	m_counter(NULL)
@@ -98,7 +99,7 @@ Counter::Counter(UINT32 channel) :
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The channel in the digital module
  */
-Counter::Counter(UINT8 moduleNumber, UINT32 channel) :
+Counter::Counter(uint8_t moduleNumber, uint32_t channel) :
 	m_upSource(NULL),
 	m_downSource(NULL),
 	m_counter(NULL)
@@ -192,7 +193,7 @@ Counter::~Counter()
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The digital channel (1..14).
  */
-void Counter::SetUpSource(UINT8 moduleNumber, UINT32 channel)
+void Counter::SetUpSource(uint8_t moduleNumber, uint32_t channel)
 {
 	if (StatusIsFatal()) return;
 	SetUpSource(new DigitalInput(moduleNumber, channel));
@@ -203,7 +204,7 @@ void Counter::SetUpSource(UINT8 moduleNumber, UINT32 channel)
  * Set the upsource for the counter as a digital input channel.
  * The slot will be the default digital module slot.
  */
-void Counter::SetUpSource(UINT32 channel)
+void Counter::SetUpSource(uint32_t channel)
 {
 	if (StatusIsFatal()) return;
 	SetUpSource(GetDefaultDigitalModule(), channel);
@@ -321,7 +322,7 @@ void Counter::ClearUpSource()
  * Set the down counting source to be a digital input channel.
  * The slot will be set to the default digital module slot.
  */
-void Counter::SetDownSource(UINT32 channel)
+void Counter::SetDownSource(uint32_t channel)
 {
 	if (StatusIsFatal()) return;
 	SetDownSource(new DigitalInput(channel));
@@ -334,7 +335,7 @@ void Counter::SetDownSource(UINT32 channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The digital channel (1..14).
  */
-void Counter::SetDownSource(UINT8 moduleNumber, UINT32 channel)
+void Counter::SetDownSource(uint8_t moduleNumber, uint32_t channel)
 {
 	if (StatusIsFatal()) return;
 	SetDownSource(new DigitalInput(moduleNumber, channel));
@@ -499,9 +500,39 @@ void Counter::SetPulseLengthMode(float threshold)
 	if (StatusIsFatal()) return;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	m_counter->writeConfig_Mode(kPulseLength, &localStatus);
-	m_counter->writeConfig_PulseLengthThreshold((UINT32)(threshold * 1.0e6) * kSystemClockTicksPerMicrosecond, &localStatus);
+	m_counter->writeConfig_PulseLengthThreshold((uint32_t)(threshold * 1.0e6) * kSystemClockTicksPerMicrosecond, &localStatus);
 	wpi_setError(localStatus);
 }
+
+    
+    /**
+     * Get the Samples to Average which specifies the number of samples of the timer to 
+     * average when calculating the period. Perform averaging to account for 
+     * mechanical imperfections or as oversampling to increase resolution.
+     * @return SamplesToAverage The number of samples being averaged (from 1 to 127)
+     */
+    int Counter::GetSamplesToAverage()
+    {
+    	tRioStatusCode localStatus = NiFpga_Status_Success;
+        return m_counter->readTimerConfig_AverageSize(&localStatus);
+    	wpi_setError(localStatus);
+    }
+
+/**
+ * Set the Samples to Average which specifies the number of samples of the timer to 
+ * average when calculating the period. Perform averaging to account for 
+ * mechanical imperfections or as oversampling to increase resolution.
+ * @param samplesToAverage The number of samples to average from 1 to 127.
+ */
+    void Counter::SetSamplesToAverage (int samplesToAverage) {
+    	tRioStatusCode localStatus = NiFpga_Status_Success;
+    	if (samplesToAverage < 1 || samplesToAverage > 127)
+    	{
+    		wpi_setWPIErrorWithContext(ParameterOutOfRange, "Average counter values must be between 1 and 127");
+    	}
+    	m_counter->writeTimerConfig_AverageSize(samplesToAverage, &localStatus);
+    	wpi_setError(localStatus);
+    }
 
 /**
  * Start the Counter counting.
@@ -521,11 +552,11 @@ void Counter::Start()
  * Read the value at this instant. It may still be running, so it reflects the current value. Next
  * time it is read, it might have a different value.
  */
-INT32 Counter::Get()
+int32_t Counter::Get()
 {
 	if (StatusIsFatal()) return 0;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	INT32 value = m_counter->readOutput_Value(&localStatus);
+	int32_t value = m_counter->readOutput_Value(&localStatus);
 	wpi_setError(localStatus);
 	return value;
 }
@@ -593,7 +624,7 @@ void Counter::SetMaxPeriod(double maxPeriod)
 {
 	if (StatusIsFatal()) return;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	m_counter->writeTimerConfig_StallPeriod((UINT32)(maxPeriod * 1.0e6), &localStatus);
+	m_counter->writeTimerConfig_StallPeriod((uint32_t)(maxPeriod * 1.0e6), &localStatus);
 	wpi_setError(localStatus);
 }
 

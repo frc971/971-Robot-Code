@@ -30,12 +30,12 @@ public:
 	const char *GetMessage() const;
 	const char *GetFilename() const;
 	const char *GetFunction() const;
-	UINT32 GetLineNumber() const;
+	uint32_t GetLineNumber() const;
 	const ErrorBase* GetOriginatingObject() const;
 	double GetTime() const;
 	void Clear();
 	void Set(Code code, const char* contextMessage, const char* filename,
-		const char *function, UINT32 lineNumber, const ErrorBase* originatingObject);
+		const char *function, uint32_t lineNumber, const ErrorBase* originatingObject);
 	static void EnableStackTrace(bool enable) { m_stackTraceEnabled=enable; }
 	static void EnableSuspendOnError(bool enable) { m_suspendOnErrorEnabled=enable; }
 
@@ -46,7 +46,7 @@ private:
 	std::string m_message;
 	std::string m_filename;
 	std::string m_function;
-	UINT32 m_lineNumber;
+	uint32_t m_lineNumber;
 	const ErrorBase* m_originatingObject;
 	double m_timestamp;
 

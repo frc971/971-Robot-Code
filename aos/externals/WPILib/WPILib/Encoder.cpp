@@ -25,46 +25,51 @@ static Resource *quadEncoders = NULL;
  */
 void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
 {
+	m_table = NULL;
 	m_encodingType = encodingType;
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	switch (encodingType)
 	{
-	case k4X:
-		Resource::CreateResourceObject(&quadEncoders, tEncoder::kNumSystems);
-		UINT32 index = quadEncoders->Allocate("4X Encoder");
-		if (index == ~0ul)
+		case k4X:
 		{
-			CloneError(quadEncoders);
-			return;
+			Resource::CreateResourceObject(&quadEncoders, tEncoder::kNumSystems);
+			uint32_t index = quadEncoders->Allocate("4X Encoder");
+			if (index == ~0ul)
+			{
+				CloneError(quadEncoders);
+				return;
+			}
+			if (m_aSource->StatusIsFatal())
+			{
+				CloneError(m_aSource);
+				return;
+			}
+			if (m_bSource->StatusIsFatal())
+			{
+				CloneError(m_bSource);
+				return;
+			}
+			m_index = index;
+			m_encoder = tEncoder::create(m_index, &localStatus);
+			m_encoder->writeConfig_ASource_Module(m_aSource->GetModuleForRouting(), &localStatus);
+			m_encoder->writeConfig_ASource_Channel(m_aSource->GetChannelForRouting(), &localStatus);
+			m_encoder->writeConfig_ASource_AnalogTrigger(m_aSource->GetAnalogTriggerForRouting(), &localStatus);
+			m_encoder->writeConfig_BSource_Module(m_bSource->GetModuleForRouting(), &localStatus);
+			m_encoder->writeConfig_BSource_Channel(m_bSource->GetChannelForRouting(), &localStatus);
+			m_encoder->writeConfig_BSource_AnalogTrigger(m_bSource->GetAnalogTriggerForRouting(), &localStatus);
+			m_encoder->strobeReset(&localStatus);
+			m_encoder->writeConfig_Reverse(reverseDirection, &localStatus);
+			m_encoder->writeTimerConfig_AverageSize(4, &localStatus);
+			m_counter = NULL;
+			break;
 		}
-		if (m_aSource->StatusIsFatal())
+		case k1X:
+		case k2X:
 		{
-			CloneError(m_aSource);
-			return;
+			m_counter = new Counter(m_encodingType, m_aSource, m_bSource, reverseDirection);
+			m_index = m_counter->GetIndex();
+			break;
 		}
-		if (m_bSource->StatusIsFatal())
-		{
-			CloneError(m_bSource);
-			return;
-		}
-		m_index = index;
-		m_encoder = tEncoder::create(m_index, &localStatus);
-		m_encoder->writeConfig_ASource_Module(m_aSource->GetModuleForRouting(), &localStatus);
-		m_encoder->writeConfig_ASource_Channel(m_aSource->GetChannelForRouting(), &localStatus);
-		m_encoder->writeConfig_ASource_AnalogTrigger(m_aSource->GetAnalogTriggerForRouting(), &localStatus);
-		m_encoder->writeConfig_BSource_Module(m_bSource->GetModuleForRouting(), &localStatus);
-		m_encoder->writeConfig_BSource_Channel(m_bSource->GetChannelForRouting(), &localStatus);
-		m_encoder->writeConfig_BSource_AnalogTrigger(m_bSource->GetAnalogTriggerForRouting(), &localStatus);
-		m_encoder->strobeReset(&localStatus);
-		m_encoder->writeConfig_Reverse(reverseDirection, &localStatus);
-		m_encoder->writeTimerConfig_AverageSize(4, &localStatus);
-		m_counter = NULL;
-		break;
-	case k1X:
-	case k2X:
-		m_counter = new Counter(m_encodingType, m_aSource, m_bSource, reverseDirection);
-		m_index = m_counter->GetIndex();
-		break;
 	}
 	m_distancePerPulse = 1.0;
 	m_pidSource = kDistance;
@@ -89,8 +94,8 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType)
  * a counter object will be used and the returned value will either exactly match the spec'd count
  * or be double (2x) the spec'd count.
  */
-Encoder::Encoder(UINT8 aModuleNumber, UINT32 aChannel,
-						UINT8 bModuleNumber, UINT32 bChannel,
+Encoder::Encoder(uint8_t aModuleNumber, uint32_t aChannel,
+						uint8_t bModuleNumber, uint32_t bChannel,
 						bool reverseDirection, EncodingType encodingType) :
 	m_encoder(NULL),
 	m_counter(NULL)
@@ -115,7 +120,7 @@ Encoder::Encoder(UINT8 aModuleNumber, UINT32 aChannel,
  * a counter object will be used and the returned value will either exactly match the spec'd count
  * or be double (2x) the spec'd count.
  */
-Encoder::Encoder(UINT32 aChannel, UINT32 bChannel, bool reverseDirection, EncodingType encodingType) :
+Encoder::Encoder(uint32_t aChannel, uint32_t bChannel, bool reverseDirection, EncodingType encodingType) :
 	m_encoder(NULL),
 	m_counter(NULL)
 {
@@ -239,10 +244,10 @@ void Encoder::Stop()
  * factor.
  * @return Current raw count from the encoder
  */
-INT32 Encoder::GetRaw()
+int32_t Encoder::GetRaw()
 {
 	if (StatusIsFatal()) return 0;
-	INT32 value;
+	int32_t value;
 	if (m_counter)
 		value = m_counter->Get();
 	else
@@ -261,10 +266,10 @@ INT32 Encoder::GetRaw()
  * 
  * @return Current count from the Encoder adjusted for the 1x, 2x, or 4x scale factor.
  */
-INT32 Encoder::Get()
+int32_t Encoder::Get()
 {
 	if (StatusIsFatal()) return 0;
-	return (INT32) (GetRaw() * DecodingScaleFactor());
+	return (int32_t) (GetRaw() * DecodingScaleFactor());
 }
 
 /**
@@ -345,7 +350,7 @@ void Encoder::SetMaxPeriod(double maxPeriod)
 	else
 	{
 		tRioStatusCode localStatus = NiFpga_Status_Success;
-		m_encoder->writeTimerConfig_StallPeriod((UINT32)(maxPeriod * 1.0e6 * DecodingScaleFactor()), &localStatus);
+		m_encoder->writeTimerConfig_StallPeriod((uint32_t)(maxPeriod * 1.0e6 * DecodingScaleFactor()), &localStatus);
 		wpi_setError(localStatus);
 	}
 }
@@ -483,6 +488,57 @@ void Encoder::SetReverseDirection(bool reverseDirection)
 		wpi_setError(localStatus);
 	}
 }
+
+    
+/**
+ * Set the Samples to Average which specifies the number of samples of the timer to 
+ * average when calculating the period. Perform averaging to account for 
+ * mechanical imperfections or as oversampling to increase resolution.
+ * @param samplesToAverage The number of samples to average from 1 to 127.
+ */
+void Encoder::SetSamplesToAverage(int samplesToAverage)
+{
+	tRioStatusCode localStatus = NiFpga_Status_Success;
+	if (samplesToAverage < 1 || samplesToAverage > 127)
+	{
+		wpi_setWPIErrorWithContext(ParameterOutOfRange, "Average counter values must be between 1 and 127");
+	}
+	switch (m_encodingType) {
+		case k4X:
+			m_encoder->writeTimerConfig_AverageSize(samplesToAverage, &localStatus);
+			break;
+		case k1X:
+		case k2X:
+			m_counter->SetSamplesToAverage(samplesToAverage);
+			break;
+	}
+	wpi_setError(localStatus);
+}
+    
+/**
+ * Get the Samples to Average which specifies the number of samples of the timer to 
+ * average when calculating the period. Perform averaging to account for 
+ * mechanical imperfections or as oversampling to increase resolution.
+ * @return SamplesToAverage The number of samples being averaged (from 1 to 127)
+ */
+int Encoder::GetSamplesToAverage()
+{
+	tRioStatusCode localStatus = NiFpga_Status_Success;
+	int result = 1;
+	switch (m_encodingType) {
+		case k4X:
+			result = m_encoder->readTimerConfig_AverageSize(&localStatus);
+			break;
+		case k1X:
+		case k2X:
+			result = m_counter->GetSamplesToAverage();
+			break;
+	}
+	wpi_setError(localStatus);
+	return result;
+}
+
+
 
 /**
  * Set which parameter of the encoder you are using as a process control variable.

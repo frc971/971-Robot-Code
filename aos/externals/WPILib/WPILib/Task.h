@@ -17,14 +17,14 @@
 class Task : public ErrorBase
 {
 public:
-	static const UINT32 kDefaultPriority = 101;
-	static const INT32 kInvalidTaskID = -1;
+	static const uint32_t kDefaultPriority = 101;
+	static const int32_t kInvalidTaskID = -1;
 
-	Task(const char* name, FUNCPTR function, INT32 priority = kDefaultPriority, UINT32 stackSize = 20000);
+	Task(const char* name, FUNCPTR function, int32_t priority = kDefaultPriority, uint32_t stackSize = 20000);
 	virtual ~Task();
 
-	bool Start(UINT32 arg0 = 0, UINT32 arg1 = 0, UINT32 arg2 = 0, UINT32 arg3 = 0, UINT32 arg4 = 0, 
-			UINT32 arg5 = 0, UINT32 arg6 = 0, UINT32 arg7 = 0, UINT32 arg8 = 0, UINT32 arg9 = 0);
+	bool Start(uint32_t arg0 = 0, uint32_t arg1 = 0, uint32_t arg2 = 0, uint32_t arg3 = 0, uint32_t arg4 = 0, 
+			uint32_t arg5 = 0, uint32_t arg6 = 0, uint32_t arg7 = 0, uint32_t arg8 = 0, uint32_t arg9 = 0);
 	bool Restart();
 	bool Stop();
 
@@ -36,17 +36,17 @@ public:
 
 	bool Verify();
 
-	INT32 GetPriority();
-	bool SetPriority(INT32 priority);
+	int32_t GetPriority();
+	bool SetPriority(int32_t priority);
 	const char* GetName();
-	INT32 GetID();
+	int32_t GetID();
 
 private:
 	FUNCPTR m_function;
 	char* m_taskName;
-	INT32 m_taskID;
-	UINT32 m_stackSize;
-	INT32 m_priority;
+	int32_t m_taskID;
+	uint32_t m_stackSize;
+	int m_priority;
 	bool HandleError(STATUS results);
 	DISALLOW_COPY_AND_ASSIGN(Task);
 };

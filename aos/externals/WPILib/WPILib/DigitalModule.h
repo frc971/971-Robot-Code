@@ -12,7 +12,7 @@
 
 class I2C;
 
-const UINT32 kExpectedLoopTiming = 260;
+const uint32_t kExpectedLoopTiming = 260;
 
 class DigitalModule: public Module
 {
@@ -20,40 +20,41 @@ class DigitalModule: public Module
 	friend class Module;
 
 protected:
-	explicit DigitalModule(UINT8 moduleNumber);
+	explicit DigitalModule(uint8_t moduleNumber);
 	virtual ~DigitalModule();
 
 public:
-	void SetPWM(UINT32 channel, UINT8 value);
-	UINT8 GetPWM(UINT32 channel);
-	void SetPWMPeriodScale(UINT32 channel, UINT32 squelchMask);
-	void SetRelayForward(UINT32 channel, bool on);
-	void SetRelayReverse(UINT32 channel, bool on);
-	bool GetRelayForward(UINT32 channel);
-	UINT8 GetRelayForward();
-	bool GetRelayReverse(UINT32 channel);
-	UINT8 GetRelayReverse();
-	bool AllocateDIO(UINT32 channel, bool input);
-	void FreeDIO(UINT32 channel);
-	void SetDIO(UINT32 channel, short value);
-	bool GetDIO(UINT32 channel);
-	UINT16 GetDIO();
-	bool GetDIODirection(UINT32 channel);
-	UINT16 GetDIODirection();
-	void Pulse(UINT32 channel, float pulseLength);
-	bool IsPulsing(UINT32 channel);
+	void SetPWM(uint32_t channel, uint8_t value);
+	uint8_t GetPWM(uint32_t channel);
+	void SetPWMPeriodScale(uint32_t channel, uint32_t squelchMask);
+	void SetRelayForward(uint32_t channel, bool on);
+	void SetRelayReverse(uint32_t channel, bool on);
+	bool GetRelayForward(uint32_t channel);
+	uint8_t GetRelayForward();
+	bool GetRelayReverse(uint32_t channel);
+	uint8_t GetRelayReverse();
+	bool AllocateDIO(uint32_t channel, bool input);
+	void FreeDIO(uint32_t channel);
+	void SetDIO(uint32_t channel, short value);
+	bool GetDIO(uint32_t channel);
+	uint16_t GetDIO();
+	bool GetDIODirection(uint32_t channel);
+	uint16_t GetDIODirection();
+	void Pulse(uint32_t channel, float pulseLength);
+	bool IsPulsing(uint32_t channel);
 	bool IsPulsing();
-	UINT32 AllocateDO_PWM();
-	void FreeDO_PWM(UINT32 pwmGenerator);
+	uint32_t AllocateDO_PWM();
+	void FreeDO_PWM(uint32_t pwmGenerator);
 	void SetDO_PWMRate(float rate);
-	void SetDO_PWMDutyCycle(UINT32 pwmGenerator, float dutyCycle);
-	void SetDO_PWMOutputChannel(UINT32 pwmGenerator, UINT32 channel);
+	void SetDO_PWMDutyCycle(uint32_t pwmGenerator, float dutyCycle);
+	void SetDO_PWMOutputChannel(uint32_t pwmGenerator, uint32_t channel);
+	uint16_t GetLoopTiming();
 
-	I2C* GetI2C(UINT32 address);
+	I2C* GetI2C(uint32_t address);
 
-	static DigitalModule* GetInstance(UINT8 moduleNumber);
-	static UINT8 RemapDigitalChannel(UINT32 channel) { return 15 - channel; }; // TODO: Need channel validation
-	static UINT8 UnmapDigitalChannel(UINT32 channel) { return 15 - channel; }; // TODO: Need channel validation
+	static DigitalModule* GetInstance(uint8_t moduleNumber);
+	static uint8_t RemapDigitalChannel(uint32_t channel) { return 15 - channel; }; // TODO: Need channel validation
+	static uint8_t UnmapDigitalChannel(uint32_t channel) { return 15 - channel; }; // TODO: Need channel validation
 
 private:
 	SEM_ID m_digitalSemaphore;

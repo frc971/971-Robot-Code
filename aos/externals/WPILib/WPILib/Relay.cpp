@@ -23,8 +23,9 @@ static Resource *relayChannels = NULL;
  * 
  * @param moduleNumber The digital module this relay is connected to (1 or 2).
  */
-void Relay::InitRelay (UINT8 moduleNumber)
+void Relay::InitRelay (uint8_t moduleNumber)
 {
+	m_table = NULL;
 	char buf[64];
 	Resource::CreateResourceObject(&relayChannels, tDIO::kNumSystems * kRelayChannels * 2);
 	if (!SensorBase::CheckRelayModule(moduleNumber))
@@ -75,7 +76,7 @@ void Relay::InitRelay (UINT8 moduleNumber)
  * @param channel The channel number within the module for this relay.
  * @param direction The direction that the Relay object will control.
  */
-Relay::Relay(UINT8 moduleNumber, UINT32 channel, Relay::Direction direction)
+Relay::Relay(uint8_t moduleNumber, uint32_t channel, Relay::Direction direction)
 	: m_channel (channel)
 	, m_direction (direction)
 {
@@ -87,7 +88,7 @@ Relay::Relay(UINT8 moduleNumber, UINT32 channel, Relay::Direction direction)
  * @param channel The channel number within the default module for this relay.
  * @param direction The direction that the Relay object will control.
  */
-Relay::Relay(UINT32 channel, Relay::Direction direction)
+Relay::Relay(uint32_t channel, Relay::Direction direction)
 	: m_channel (channel)
 	, m_direction (direction)
 {
@@ -244,11 +245,15 @@ void Relay::UpdateTable() {
 }
 
 void Relay::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if(m_table != NULL){
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Relay::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if(m_table != NULL){
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Relay::GetSmartDashboardType() {

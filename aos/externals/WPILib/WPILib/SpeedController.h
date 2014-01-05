@@ -23,7 +23,7 @@ public:
 	 * @param speed The speed to set.  Value should be between -1.0 and 1.0.
 	 * @param syncGroup The update group to add this Set() to, pending UpdateSyncGroup().  If 0, update immediately.
 	 */
-	virtual void Set(float speed, UINT8 syncGroup=0) = 0;
+	virtual void Set(float speed, uint8_t syncGroup=0) = 0;
 	/**
 	 * Common interface for getting the current set speed of a speed controller.
 	 * 

@@ -119,14 +119,14 @@ namespace nUsageReporting
      * @param context an optional additional context number for some cases (such as module number).  Set to 0 to omit.
      * @param feature a string to be included describing features in use on a specific resource.  Setting the same resource more than once allows you to change the feature string.
      */
-    UINT32 EXPORT_FUNC report(tResourceType resource, UINT8 instanceNumber, UINT8 context = 0, const char *feature = NULL);
+    uint32_t EXPORT_FUNC report(tResourceType resource, uint8_t instanceNumber, uint8_t context = 0, const char *feature = NULL);
 }
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    UINT32 EXPORT_FUNC FRC_NetworkCommunication_nUsageReporting_report(UINT8 resource, UINT8 instanceNumber, UINT8 context, const char *feature);
+    uint32_t EXPORT_FUNC FRC_NetworkCommunication_nUsageReporting_report(uint8_t resource, uint8_t instanceNumber, uint8_t context, const char *feature);
 
 #ifdef __cplusplus
 }

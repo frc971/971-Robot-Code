@@ -17,7 +17,7 @@
 
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 
-const INT32 RobotDrive::kMaxNumberOfMotors;
+const int32_t RobotDrive::kMaxNumberOfMotors;
 
 /*
  * Driving functions
@@ -49,12 +49,12 @@ void RobotDrive::InitRobotDrive() {
  * @param leftMotorChannel The PWM channel number on the default digital module that drives the left motor.
  * @param rightMotorChannel The PWM channel number on the default digital module that drives the right motor.
  */
-RobotDrive::RobotDrive(UINT32 leftMotorChannel, UINT32 rightMotorChannel)
+RobotDrive::RobotDrive(uint32_t leftMotorChannel, uint32_t rightMotorChannel)
 {
 	InitRobotDrive();
 	m_rearLeftMotor = new Jaguar(leftMotorChannel);
 	m_rearRightMotor = new Jaguar(rightMotorChannel);
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -72,15 +72,15 @@ RobotDrive::RobotDrive(UINT32 leftMotorChannel, UINT32 rightMotorChannel)
  * @param frontRightMotor Front right motor channel number on the default digital module
  * @param rearRightMotor Rear Right motor channel number on the default digital module
  */
-RobotDrive::RobotDrive(UINT32 frontLeftMotor, UINT32 rearLeftMotor,
-		UINT32 frontRightMotor, UINT32 rearRightMotor)
+RobotDrive::RobotDrive(uint32_t frontLeftMotor, uint32_t rearLeftMotor,
+		uint32_t frontRightMotor, uint32_t rearRightMotor)
 {
 	InitRobotDrive();
 	m_rearLeftMotor = new Jaguar(rearLeftMotor);
 	m_rearRightMotor = new Jaguar(rearRightMotor);
 	m_frontLeftMotor = new Jaguar(frontLeftMotor);
 	m_frontRightMotor = new Jaguar(frontRightMotor);
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -107,7 +107,7 @@ RobotDrive::RobotDrive(SpeedController *leftMotor, SpeedController *rightMotor)
 	}
 	m_rearLeftMotor = leftMotor;
 	m_rearRightMotor = rightMotor;
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -119,7 +119,7 @@ RobotDrive::RobotDrive(SpeedController &leftMotor, SpeedController &rightMotor)
 	InitRobotDrive();
 	m_rearLeftMotor = &leftMotor;
 	m_rearRightMotor = &rightMotor;
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -147,7 +147,7 @@ RobotDrive::RobotDrive(SpeedController *frontLeftMotor, SpeedController *rearLef
 	m_rearLeftMotor = rearLeftMotor;
 	m_frontRightMotor = frontRightMotor;
 	m_rearRightMotor = rearRightMotor;
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -162,7 +162,7 @@ RobotDrive::RobotDrive(SpeedController &frontLeftMotor, SpeedController &rearLef
 	m_rearLeftMotor = &rearLeftMotor;
 	m_frontRightMotor = &frontRightMotor;
 	m_rearRightMotor = &rearRightMotor;
-	for (INT32 i=0; i < kMaxNumberOfMotors; i++)
+	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
 	{
 		m_invertedMotors[i] = 1;
 	}
@@ -262,8 +262,8 @@ void RobotDrive::TankDrive(GenericHID &leftStick, GenericHID &rightStick, bool s
  * @param rightStick The Joystick object to use for the right side of the robot.
  * @param rightAxis The axis to select on the right side Joystick object.
  */
-void RobotDrive::TankDrive(GenericHID *leftStick, UINT32 leftAxis,
-		GenericHID *rightStick, UINT32 rightAxis, bool squaredInputs)
+void RobotDrive::TankDrive(GenericHID *leftStick, uint32_t leftAxis,
+		GenericHID *rightStick, uint32_t rightAxis, bool squaredInputs)
 {
 	if (leftStick == NULL || rightStick == NULL)
 	{
@@ -273,8 +273,8 @@ void RobotDrive::TankDrive(GenericHID *leftStick, UINT32 leftAxis,
 	TankDrive(leftStick->GetRawAxis(leftAxis), rightStick->GetRawAxis(rightAxis), squaredInputs);
 }
 
-void RobotDrive::TankDrive(GenericHID &leftStick, UINT32 leftAxis,
-		GenericHID &rightStick, UINT32 rightAxis, bool squaredInputs)
+void RobotDrive::TankDrive(GenericHID &leftStick, uint32_t leftAxis,
+		GenericHID &rightStick, uint32_t rightAxis, bool squaredInputs)
 {
 	TankDrive(leftStick.GetRawAxis(leftAxis), rightStick.GetRawAxis(rightAxis), squaredInputs);
 }
@@ -361,8 +361,8 @@ void RobotDrive::ArcadeDrive(GenericHID &stick, bool squaredInputs)
  * @param rotateAxis The axis on the rotation object to use for the rotate right/left (typically X_AXIS)
  * @param squaredInputs Setting this parameter to true increases the sensitivity at lower speeds
  */
-void RobotDrive::ArcadeDrive(GenericHID* moveStick, UINT32 moveAxis,
-								GenericHID* rotateStick, UINT32 rotateAxis,
+void RobotDrive::ArcadeDrive(GenericHID* moveStick, uint32_t moveAxis,
+								GenericHID* rotateStick, uint32_t rotateAxis,
 								bool squaredInputs)
 {
 	float moveValue = moveStick->GetRawAxis(moveAxis);
@@ -382,8 +382,8 @@ void RobotDrive::ArcadeDrive(GenericHID* moveStick, UINT32 moveAxis,
  * @param squaredInputs Setting this parameter to true increases the sensitivity at lower speeds
  */
 
-void RobotDrive::ArcadeDrive(GenericHID &moveStick, UINT32 moveAxis,
-								GenericHID &rotateStick, UINT32 rotateAxis,
+void RobotDrive::ArcadeDrive(GenericHID &moveStick, uint32_t moveAxis,
+								GenericHID &rotateStick, uint32_t rotateAxis,
 								bool squaredInputs)
 {
 	float moveValue = moveStick.GetRawAxis(moveAxis);
@@ -505,7 +505,7 @@ void RobotDrive::MecanumDrive_Cartesian(float x, float y, float rotation, float 
 
 	Normalize(wheelSpeeds);
 
-	UINT8 syncGroup = 0x80;
+	uint8_t syncGroup = 0x80;
 
 	m_frontLeftMotor->Set(wheelSpeeds[kFrontLeftMotor] * m_invertedMotors[kFrontLeftMotor] * m_maxOutput, syncGroup);
 	m_frontRightMotor->Set(wheelSpeeds[kFrontRightMotor] * m_invertedMotors[kFrontRightMotor] * m_maxOutput, syncGroup);
@@ -554,7 +554,7 @@ void RobotDrive::MecanumDrive_Polar(float magnitude, float direction, float rota
 
 	Normalize(wheelSpeeds);
 
-	UINT8 syncGroup = 0x80;
+	uint8_t syncGroup = 0x80;
 
 	m_frontLeftMotor->Set(wheelSpeeds[kFrontLeftMotor] * m_invertedMotors[kFrontLeftMotor] * m_maxOutput, syncGroup);
 	m_frontRightMotor->Set(wheelSpeeds[kFrontRightMotor] * m_invertedMotors[kFrontRightMotor] * m_maxOutput, syncGroup);
@@ -593,7 +593,7 @@ void RobotDrive::SetLeftRightMotorOutputs(float leftOutput, float rightOutput)
 {
 	wpi_assert(m_rearLeftMotor != NULL && m_rearRightMotor != NULL);
 
-	UINT8 syncGroup = 0x80;
+	uint8_t syncGroup = 0x80;
 
 	if (m_frontLeftMotor != NULL)
 		m_frontLeftMotor->Set(Limit(leftOutput) * m_invertedMotors[kFrontLeftMotor] * m_maxOutput, syncGroup);
@@ -630,7 +630,7 @@ float RobotDrive::Limit(float num)
 void RobotDrive::Normalize(double *wheelSpeeds)
 {
 	double maxMagnitude = fabs(wheelSpeeds[0]);
-	INT32 i;
+	int32_t i;
 	for (i=1; i<kMaxNumberOfMotors; i++)
 	{
 		double temp = fabs(wheelSpeeds[i]);

@@ -16,18 +16,18 @@ class Module: public SensorBase
 {
 public:
 	nLoadOut::tModuleType GetType() {return m_moduleType;}
-	UINT8 GetNumber() {return m_moduleNumber;}
-	static Module *GetModule(nLoadOut::tModuleType type, UINT8 number);
+	uint8_t GetNumber() {return m_moduleNumber;}
+	static Module *GetModule(nLoadOut::tModuleType type, uint8_t number);
 
 protected:
-	explicit Module(nLoadOut::tModuleType type, UINT8 number);
+	explicit Module(nLoadOut::tModuleType type, uint8_t number);
 	virtual ~Module();
 
 	nLoadOut::tModuleType m_moduleType; ///< The type of module represented.
-	UINT8 m_moduleNumber; ///< The module index within the module type.
+	uint8_t m_moduleNumber; ///< The module index within the module type.
 
 private:
-	static UINT8 ToIndex(nLoadOut::tModuleType type, UINT8 number);
+	static uint8_t ToIndex(nLoadOut::tModuleType type, uint8_t number);
 	static Module* m_modules[kMaxModules];
 };
 

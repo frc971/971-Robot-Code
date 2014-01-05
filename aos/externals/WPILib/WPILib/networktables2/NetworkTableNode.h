@@ -11,11 +11,11 @@
 
 class NetworkTableNode;
 
-#include "AbstractNetworkTableEntryStore.h"
-#include "client/ClientConnectionListenerManager.h"
-#include "type/NetworkTableEntryType.h"
-#include "type/ComplexData.h"
-#include "type/ComplexEntryType.h"
+#include "networktables2/AbstractNetworkTableEntryStore.h"
+#include "networktables2/client/ClientConnectionListenerManager.h"
+#include "networktables2/type/NetworkTableEntryType.h"
+#include "networktables2/type/ComplexData.h"
+#include "networktables2/type/ComplexEntryType.h"
 #include "tables/IRemote.h"
 #include <string>
 #include <vector>

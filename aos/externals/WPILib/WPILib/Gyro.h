@@ -27,19 +27,21 @@ class AnalogModule;
 class Gyro : public SensorBase, public PIDSource, public LiveWindowSendable
 {
 public:
-	static const UINT32 kOversampleBits = 10;
-	static const UINT32 kAverageBits = 0;
-	static const float kSamplesPerSecond = 50.0;
-	static const float kCalibrationSampleTime = 5.0;
-	static const float kDefaultVoltsPerDegreePerSecond = 0.007;
+	static const uint32_t kOversampleBits = 10;
+	static const uint32_t kAverageBits = 0;
+	static constexpr float kSamplesPerSecond = 50.0;
+	static constexpr float kCalibrationSampleTime = 5.0;
+	static constexpr float kDefaultVoltsPerDegreePerSecond = 0.007;
 
-	Gyro(UINT8 moduleNumber, UINT32 channel);
-	explicit Gyro(UINT32 channel);
+	Gyro(uint8_t moduleNumber, uint32_t channel);
+	explicit Gyro(uint32_t channel);
 	explicit Gyro(AnalogChannel *channel);
 	explicit Gyro(AnalogChannel &channel);
 	virtual ~Gyro();
 	virtual float GetAngle();
+	virtual double GetRate();
 	void SetSensitivity(float voltsPerDegreePerSecond);
+	void SetPIDSourceParameter(PIDSourceParameter pidSource);
 	virtual void Reset();
 
 	// PIDSource interface
@@ -59,6 +61,8 @@ private:
 	float m_voltsPerDegreePerSecond;
 	float m_offset;
 	bool m_channelAllocated;
+	uint32_t m_center;
+	PIDSourceParameter m_pidSource;
 	
 	ITable *m_table;
 };

@@ -22,30 +22,30 @@ public:
 	SensorBase();
 	virtual ~SensorBase();
 	static void DeleteSingletons();
-	static UINT32 GetDefaultAnalogModule() { return 1; }
-	static UINT32 GetDefaultDigitalModule() { return 1; }
-	static UINT32 GetDefaultSolenoidModule() { return 1; }
-	static bool CheckAnalogModule(UINT8 moduleNumber);
-	static bool CheckDigitalModule(UINT8 moduleNumber);
-	static bool CheckPWMModule(UINT8 moduleNumber);
-	static bool CheckRelayModule(UINT8 moduleNumber);
-	static bool CheckSolenoidModule(UINT8 moduleNumber);
-	static bool CheckDigitalChannel(UINT32 channel);
-	static bool CheckRelayChannel(UINT32 channel);
-	static bool CheckPWMChannel(UINT32 channel);
-	static bool CheckAnalogChannel(UINT32 channel);
-	static bool CheckSolenoidChannel(UINT32 channel);
+	static uint32_t GetDefaultAnalogModule() { return 1; }
+	static uint32_t GetDefaultDigitalModule() { return 1; }
+	static uint32_t GetDefaultSolenoidModule() { return 1; }
+	static bool CheckAnalogModule(uint8_t moduleNumber);
+	static bool CheckDigitalModule(uint8_t moduleNumber);
+	static bool CheckPWMModule(uint8_t moduleNumber);
+	static bool CheckRelayModule(uint8_t moduleNumber);
+	static bool CheckSolenoidModule(uint8_t moduleNumber);
+	static bool CheckDigitalChannel(uint32_t channel);
+	static bool CheckRelayChannel(uint32_t channel);
+	static bool CheckPWMChannel(uint32_t channel);
+	static bool CheckAnalogChannel(uint32_t channel);
+	static bool CheckSolenoidChannel(uint32_t channel);
 
-	static const UINT32 kSystemClockTicksPerMicrosecond = 40;
-	static const UINT32 kDigitalChannels = 14;
-	static const UINT32 kAnalogChannels = 8;
-	static const UINT32 kAnalogModules = 2;
-	static const UINT32 kDigitalModules = 2;
-	static const UINT32 kSolenoidChannels = 8;
-	static const UINT32 kSolenoidModules = 2;
-	static const UINT32 kPwmChannels = 10;
-	static const UINT32 kRelayChannels = 8;
-	static const UINT32 kChassisSlots = 8;
+	static const uint32_t kSystemClockTicksPerMicrosecond = 40;
+	static const uint32_t kDigitalChannels = 14;
+	static const uint32_t kAnalogChannels = 8;
+	static const uint32_t kAnalogModules = 2;
+	static const uint32_t kDigitalModules = 2;
+	static const uint32_t kSolenoidChannels = 8;
+	static const uint32_t kSolenoidModules = 2;
+	static const uint32_t kPwmChannels = 10;
+	static const uint32_t kRelayChannels = 8;
+	static const uint32_t kChassisSlots = 8;
 protected:
 	void AddToSingletonList();
 

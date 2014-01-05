@@ -7,11 +7,12 @@
 #include "Error.h"
 
 #include <taskLib.h>
+#include <cstdio>
+#include <cstring>
 
 #include "NetworkCommunication/FRCComm.h"
 #include "Timer.h"
 #include "Utility.h"
-
 bool Error::m_stackTraceEnabled = false;
 bool Error::m_suspendOnErrorEnabled = false;
 
@@ -48,7 +49,7 @@ const char * Error::GetFilename() const
 const char * Error::GetFunction() const
 {	return m_function.c_str();  }
 
-UINT32 Error::GetLineNumber() const
+uint32_t Error::GetLineNumber() const
 {	return m_lineNumber;  }
 
 const ErrorBase* Error::GetOriginatingObject() const
@@ -57,7 +58,7 @@ const ErrorBase* Error::GetOriginatingObject() const
 double Error::GetTime() const
 {	return m_timestamp;  }
 
-void Error::Set(Code code, const char* contextMessage, const char* filename, const char* function, UINT32 lineNumber, const ErrorBase* originatingObject)
+void Error::Set(Code code, const char* contextMessage, const char* filename, const char* function, uint32_t lineNumber, const ErrorBase* originatingObject)
 {
 	m_code = code;
 	m_message = contextMessage;
@@ -82,9 +83,9 @@ void Error::Report()
 	if (m_code != -1)
 	{
 		snprintf(error, 256, "%s: status = %d (0x%08X) %s ...in %s() in %s at line %d\n",
-				m_code < 0 ? "ERROR" : "WARNING", (INT32)m_code, (UINT32)m_code, m_message.c_str(),
+				m_code < 0 ? "ERROR" : "WARNING", (int32_t)m_code, (uint32_t)m_code, m_message.c_str(),
 				m_function.c_str(), m_filename.c_str(), m_lineNumber);
-		sprintf(error_with_code,"<Code>%d %s", (INT32)m_code, error);
+		sprintf(error_with_code,"<Code>%ld %s", (int32_t)m_code, error);
 	} else {
 		snprintf(error, 256, "ERROR: %s ...in %s() in %s at line %d\n", m_message.c_str(),
 				m_function.c_str(), m_filename.c_str(), m_lineNumber);

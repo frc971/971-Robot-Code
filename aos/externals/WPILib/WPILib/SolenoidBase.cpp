@@ -11,7 +11,7 @@ ReentrantSemaphore SolenoidBase::m_semaphore;
 Resource *SolenoidBase::m_allocated = NULL;
 
 tSolenoid *SolenoidBase::m_fpgaSolenoidModule = NULL;
-UINT32 SolenoidBase::m_refCount = 0;
+uint32_t SolenoidBase::m_refCount = 0;
 
 
 /**
@@ -19,7 +19,7 @@ UINT32 SolenoidBase::m_refCount = 0;
  * 
  * @param moduleNumber The solenoid module (1 or 2).
  */
-SolenoidBase::SolenoidBase(UINT8 moduleNumber)
+SolenoidBase::SolenoidBase(uint8_t moduleNumber)
 	: m_moduleNumber (moduleNumber)
 {
 	Synchronized sync(m_semaphore);
@@ -55,13 +55,13 @@ SolenoidBase::~SolenoidBase()
  * @param value The value you want to set on the module.
  * @param mask The channels you want to be affected.
  */
-void SolenoidBase::Set(UINT8 value, UINT8 mask)
+void SolenoidBase::Set(uint8_t value, uint8_t mask)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	if (CheckSolenoidModule(m_moduleNumber))
 	{
 		Synchronized sync(m_semaphore);
-		UINT8 currentValue = m_fpgaSolenoidModule->readDO7_0(m_moduleNumber - 1, &localStatus);
+		uint8_t currentValue = m_fpgaSolenoidModule->readDO7_0(m_moduleNumber - 1, &localStatus);
 		// Zero out the values to change
 		currentValue = currentValue & ~mask;
 		currentValue = currentValue | (value & mask);
@@ -75,12 +75,12 @@ void SolenoidBase::Set(UINT8 value, UINT8 mask)
  * 
  * @return The current value of all 8 solenoids on the module.
  */
-UINT8 SolenoidBase::GetAll()
+uint8_t SolenoidBase::GetAll()
 {
 	if (CheckSolenoidModule(m_moduleNumber))
 	{
 		tRioStatusCode localStatus = NiFpga_Status_Success;
-		UINT8 solenoids = m_fpgaSolenoidModule->readDO7_0(m_moduleNumber - 1, &localStatus);
+		uint8_t solenoids = m_fpgaSolenoidModule->readDO7_0(m_moduleNumber - 1, &localStatus);
 		wpi_setError(localStatus);
 		return solenoids;
 	}

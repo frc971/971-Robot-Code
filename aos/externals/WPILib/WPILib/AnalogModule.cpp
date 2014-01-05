@@ -13,7 +13,7 @@
 const long AnalogModule::kTimebase; ///< 40 MHz clock
 const long AnalogModule::kDefaultOversampleBits;
 const long AnalogModule::kDefaultAverageBits;
-const float AnalogModule::kDefaultSampleRate;
+constexpr float AnalogModule::kDefaultSampleRate;
 SEM_ID AnalogModule::m_registerWindowSemaphore = NULL;
 
 /**
@@ -25,7 +25,7 @@ SEM_ID AnalogModule::m_registerWindowSemaphore = NULL;
  * @param moduleNumber The analog module to get (1 or 2).
  * @return A pointer to the AnalogModule.
  */
-AnalogModule* AnalogModule::GetInstance(UINT8 moduleNumber)
+AnalogModule* AnalogModule::GetInstance(uint8_t moduleNumber)
 {
 	if (CheckAnalogModule(moduleNumber))
 	{
@@ -51,7 +51,7 @@ AnalogModule* AnalogModule::GetInstance(UINT8 moduleNumber)
  * 
  * @param moduleNumber The analog module to create (1 or 2).
  */
-AnalogModule::AnalogModule(UINT8 moduleNumber)
+AnalogModule::AnalogModule(uint8_t moduleNumber)
 	: Module(nLoadOut::kModuleType_Analog, moduleNumber)
 	, m_module (NULL)
 	, m_sampleRateSet (false)
@@ -64,7 +64,7 @@ AnalogModule::AnalogModule(UINT8 moduleNumber)
 	SetNumChannelsToActivate(kAnalogChannels);
 	SetSampleRate(kDefaultSampleRate);
 
-	for (UINT32 i = 0; i < kAnalogChannels; i++)
+	for (uint32_t i = 0; i < kAnalogChannels; i++)
 	{
 		m_module->writeScanList(i, i, &localStatus);
 		wpi_setError(localStatus);
@@ -102,8 +102,8 @@ void AnalogModule::SetSampleRate(float samplesPerSecond)
 	m_sampleRateSet = true;
 
 	// Compute the convert rate
-	UINT32 ticksPerSample = (UINT32)((float)kTimebase / samplesPerSecond);
-	UINT32 ticksPerConversion = ticksPerSample / GetNumChannelsToActivate();
+	uint32_t ticksPerSample = (uint32_t)((float)kTimebase / samplesPerSecond);
+	uint32_t ticksPerConversion = ticksPerSample / GetNumChannelsToActivate();
 	// ticksPerConversion must be at least 80
 	if (ticksPerConversion < 80)
 	{
@@ -134,9 +134,9 @@ void AnalogModule::SetSampleRate(float samplesPerSecond)
 float AnalogModule::GetSampleRate()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 ticksPerConversion = m_module->readLoopTiming(&localStatus);
+	uint32_t ticksPerConversion = m_module->readLoopTiming(&localStatus);
 	wpi_setError(localStatus);
-	UINT32 ticksPerSample = ticksPerConversion * GetNumActiveChannels();
+	uint32_t ticksPerSample = ticksPerConversion * GetNumActiveChannels();
 	return (float)kTimebase / (float)ticksPerSample;
 }
 
@@ -145,10 +145,10 @@ float AnalogModule::GetSampleRate()
  * 
  * @return Active channels.
  */
-UINT32 AnalogModule::GetNumActiveChannels()
+uint32_t AnalogModule::GetNumActiveChannels()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 scanSize = m_module->readConfig_ScanSize(&localStatus);
+	uint32_t scanSize = m_module->readConfig_ScanSize(&localStatus);
 	wpi_setError(localStatus);
 	if (scanSize == 0)
 		return 8;
@@ -166,7 +166,7 @@ UINT32 AnalogModule::GetNumActiveChannels()
  * 
  * @return Value to write to the active channels field.
  */
-UINT32 AnalogModule::GetNumChannelsToActivate()
+uint32_t AnalogModule::GetNumChannelsToActivate()
 {
 	if(m_numChannelsToActivate == 0) return GetNumActiveChannels();
 	return m_numChannelsToActivate;
@@ -180,7 +180,7 @@ UINT32 AnalogModule::GetNumChannelsToActivate()
  * 
  * @param channels Number of active channels.
  */
-void AnalogModule::SetNumChannelsToActivate(UINT32 channels)
+void AnalogModule::SetNumChannelsToActivate(uint32_t channels)
 {
 	m_numChannelsToActivate = channels;
 }
@@ -195,7 +195,7 @@ void AnalogModule::SetNumChannelsToActivate(UINT32 channels)
  * @param channel Analog channel to configure.
  * @param bits Number of bits to average.
  */
-void AnalogModule::SetAverageBits(UINT32 channel, UINT32 bits)
+void AnalogModule::SetAverageBits(uint32_t channel, uint32_t bits)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	m_module->writeAverageBits(channel - 1, bits, &localStatus);
@@ -211,10 +211,10 @@ void AnalogModule::SetAverageBits(UINT32 channel, UINT32 bits)
  * @param channel Channel to address.
  * @return Bits to average.
  */
-UINT32 AnalogModule::GetAverageBits(UINT32 channel)
+uint32_t AnalogModule::GetAverageBits(uint32_t channel)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 result = m_module->readAverageBits(channel - 1, &localStatus);
+	uint32_t result = m_module->readAverageBits(channel - 1, &localStatus);
 	wpi_setError(localStatus);
 	return result;
 }
@@ -229,7 +229,7 @@ UINT32 AnalogModule::GetAverageBits(UINT32 channel)
  * @param channel Analog channel to configure.
  * @param bits Number of bits to oversample.
  */
-void AnalogModule::SetOversampleBits(UINT32 channel, UINT32 bits)
+void AnalogModule::SetOversampleBits(uint32_t channel, uint32_t bits)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
 	m_module->writeOversampleBits(channel - 1, bits, &localStatus);
@@ -245,10 +245,10 @@ void AnalogModule::SetOversampleBits(UINT32 channel, UINT32 bits)
  * @param channel Channel to address.
  * @return Bits to oversample.
  */
-UINT32 AnalogModule::GetOversampleBits(UINT32 channel)
+uint32_t AnalogModule::GetOversampleBits(uint32_t channel)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 result = m_module->readOversampleBits(channel - 1, &localStatus);
+	uint32_t result = m_module->readOversampleBits(channel - 1, &localStatus);
 	wpi_setError(localStatus);
 	return result;
 }
@@ -261,9 +261,9 @@ UINT32 AnalogModule::GetOversampleBits(UINT32 channel)
  * 
  * @return A sample straight from the channel on this module.
  */
-INT16 AnalogModule::GetValue(UINT32 channel)
+int16_t AnalogModule::GetValue(uint32_t channel)
 {
-	INT16 value;
+	int16_t value;
 	CheckAnalogChannel(channel);
 
 	tAI::tReadSelect readSelect;
@@ -276,7 +276,7 @@ INT16 AnalogModule::GetValue(UINT32 channel)
 		Synchronized sync(m_registerWindowSemaphore);
 		m_module->writeReadSelect(readSelect, &localStatus);
 		m_module->strobeLatchOutput(&localStatus);
-		value = (INT16) m_module->readOutput(&localStatus);
+		value = (int16_t) m_module->readOutput(&localStatus);
 	}
 
 	wpi_setError(localStatus);
@@ -295,9 +295,9 @@ INT16 AnalogModule::GetValue(UINT32 channel)
  * @param channel Channel number to read.
  * @return A sample from the oversample and average engine for the channel.
  */
-INT32 AnalogModule::GetAverageValue(UINT32 channel)
+int32_t AnalogModule::GetAverageValue(uint32_t channel)
 {
-	INT32 value;
+	int32_t value;
 	CheckAnalogChannel(channel);
 
 	tAI::tReadSelect readSelect;
@@ -329,7 +329,7 @@ INT32 AnalogModule::GetAverageValue(UINT32 channel)
  * @param voltage The voltage to convert.
  * @return The raw value for the channel.
  */
-INT32 AnalogModule::VoltsToValue(INT32 channel, float voltage)
+int32_t AnalogModule::VoltsToValue(int32_t channel, float voltage)
 {
 	if (voltage > 10.0)
 	{
@@ -341,9 +341,9 @@ INT32 AnalogModule::VoltsToValue(INT32 channel, float voltage)
 		voltage = -10.0;
 		wpi_setWPIError(VoltageOutOfRange);
 	}
-	UINT32 LSBWeight = GetLSBWeight(channel);
-	INT32 offset = GetOffset(channel);
-	INT32 value = (INT32) ((voltage + offset * 1.0e-9) / (LSBWeight * 1.0e-9));
+	uint32_t LSBWeight = GetLSBWeight(channel);
+	int32_t offset = GetOffset(channel);
+	int32_t value = (int32_t) ((voltage + offset * 1.0e-9) / (LSBWeight * 1.0e-9));
 	return value;
 }
 
@@ -355,11 +355,11 @@ INT32 AnalogModule::VoltsToValue(INT32 channel, float voltage)
  * @param channel The channel to read.
  * @return A scaled sample straight from the channel on this module.
  */
-float AnalogModule::GetVoltage(UINT32 channel)
+float AnalogModule::GetVoltage(uint32_t channel)
 {
-	INT16 value = GetValue(channel);
-	UINT32 LSBWeight = GetLSBWeight(channel);
-	INT32 offset = GetOffset(channel);
+	int16_t value = GetValue(channel);
+	uint32_t LSBWeight = GetLSBWeight(channel);
+	int32_t offset = GetOffset(channel);
 	float voltage = LSBWeight * 1.0e-9 * value - offset * 1.0e-9;
 	return voltage;
 }
@@ -374,12 +374,12 @@ float AnalogModule::GetVoltage(UINT32 channel)
  * @param channel The channel to read.
  * @return A scaled sample from the output of the oversample and average engine for the channel.
  */
-float AnalogModule::GetAverageVoltage(UINT32 channel)
+float AnalogModule::GetAverageVoltage(uint32_t channel)
 {
-	INT32 value = GetAverageValue(channel);
-	UINT32 LSBWeight = GetLSBWeight(channel);
-	INT32 offset = GetOffset(channel);
-	UINT32 oversampleBits = GetOversampleBits(channel);
+	int32_t value = GetAverageValue(channel);
+	uint32_t LSBWeight = GetLSBWeight(channel);
+	int32_t offset = GetOffset(channel);
+	uint32_t oversampleBits = GetOversampleBits(channel);
 	float voltage = ((LSBWeight * 1.0e-9 * value) / (float)(1 << oversampleBits)) - offset * 1.0e-9;
 	return voltage;
 }
@@ -394,10 +394,10 @@ float AnalogModule::GetAverageVoltage(UINT32 channel)
  * @param channel The channel to get calibration data for.
  * @return Least significant bit weight.
  */
-UINT32 AnalogModule::GetLSBWeight(UINT32 channel) 
+uint32_t AnalogModule::GetLSBWeight(uint32_t channel) 
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 lsbWeight = FRC_NetworkCommunication_nAICalibration_getLSBWeight(m_module->getSystemIndex(), channel - 1, (INT32*)&localStatus);
+	uint32_t lsbWeight = FRC_NetworkCommunication_nAICalibration_getLSBWeight(m_module->getSystemIndex(), channel - 1, (int32_t*)&localStatus);
 	wpi_setError(localStatus);
 	return lsbWeight;
 }
@@ -412,10 +412,10 @@ UINT32 AnalogModule::GetLSBWeight(UINT32 channel)
  * @param channel The channel to get calibration data for.
  * @return Offset constant.
  */
-INT32 AnalogModule::GetOffset(UINT32 channel)
+int32_t AnalogModule::GetOffset(uint32_t channel)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	INT32 offset = FRC_NetworkCommunication_nAICalibration_getOffset(m_module->getSystemIndex(), channel - 1, (INT32*)&localStatus);
+	int32_t offset = FRC_NetworkCommunication_nAICalibration_getOffset(m_module->getSystemIndex(), channel - 1, (int32_t*)&localStatus);
 	wpi_setError(localStatus);
 	return offset;
 }

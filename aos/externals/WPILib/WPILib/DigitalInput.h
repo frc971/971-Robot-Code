@@ -21,15 +21,15 @@ class DigitalModule;
  */
 class DigitalInput : public DigitalSource, public LiveWindowSendable {
 public:
-	explicit DigitalInput(UINT32 channel);
-	DigitalInput(UINT8 moduleNumber, UINT32 channel);
+	explicit DigitalInput(uint32_t channel);
+	DigitalInput(uint8_t moduleNumber, uint32_t channel);
 	virtual ~DigitalInput();
-	UINT32 Get();
-	UINT32 GetChannel();
+	uint32_t Get();
+	uint32_t GetChannel();
 
 	// Digital Source Interface
-	virtual UINT32 GetChannelForRouting();
-	virtual UINT32 GetModuleForRouting();
+	virtual uint32_t GetChannelForRouting();
+	virtual uint32_t GetModuleForRouting();
 	virtual bool GetAnalogTriggerForRouting();
 	
 	// Interruptable Interface
@@ -45,8 +45,8 @@ public:
 	ITable * GetTable();
 
 private:
-	void InitDigitalInput(UINT8 moduleNumber, UINT32 channel);
-	UINT32 m_channel;
+	void InitDigitalInput(uint8_t moduleNumber, uint32_t channel);
+	uint32_t m_channel;
 	DigitalModule *m_module;
 	bool m_lastValue;
 	

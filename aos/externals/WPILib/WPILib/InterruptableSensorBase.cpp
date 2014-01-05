@@ -53,7 +53,7 @@ void InterruptableSensorBase::WaitForInterrupt(float timeout)
 	wpi_assert(m_manager != NULL);
 	wpi_assert(m_interrupt != NULL);
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	m_manager->watch((INT32)(timeout * 1e3), &localStatus);
+	m_manager->watch((int32_t)(timeout * 1e3), &localStatus);
 	wpi_setError(localStatus);
 }
 
@@ -92,7 +92,7 @@ double InterruptableSensorBase::ReadInterruptTimestamp()
 {
 	wpi_assert(m_interrupt != NULL);
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 timestamp = m_interrupt->readTimeStamp(&localStatus);
+	uint32_t timestamp = m_interrupt->readTimeStamp(&localStatus);
 	wpi_setError(localStatus);
 	return timestamp * 1e-6;
 }

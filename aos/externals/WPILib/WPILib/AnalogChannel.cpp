@@ -13,15 +13,16 @@
 
 static Resource *channels = NULL;
 
-const UINT8 AnalogChannel::kAccumulatorModuleNumber;
-const UINT32 AnalogChannel::kAccumulatorNumChannels;
-const UINT32 AnalogChannel::kAccumulatorChannels[] = {1, 2};
+const uint8_t AnalogChannel::kAccumulatorModuleNumber;
+const uint32_t AnalogChannel::kAccumulatorNumChannels;
+const uint32_t AnalogChannel::kAccumulatorChannels[] = {1, 2};
 
 /**
  * Common initialization.
  */
-void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
+void AnalogChannel::InitChannel(uint8_t moduleNumber, uint32_t channel)
 {
+	m_table = NULL;
 	char buf[64];
 	Resource::CreateResourceObject(&channels, kAnalogModules * kAnalogChannels);
 	if (!CheckAnalogModule(moduleNumber))
@@ -56,7 +57,8 @@ void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
 	{
 		m_accumulator = NULL;
 	}
-	LiveWindow::GetInstance()->AddActuator("AnalogChannel",channel, GetModuleNumber(), this);
+	m_shouldUseVoltageForPID = false;
+	LiveWindow::GetInstance()->AddSensor("AnalogChannel",channel, GetModuleNumber(), this);
 	nUsageReporting::report(nUsageReporting::kResourceType_AnalogChannel, channel, GetModuleNumber() - 1);
 }
 
@@ -66,7 +68,7 @@ void AnalogChannel::InitChannel(UINT8 moduleNumber, UINT32 channel)
  * @param moduleNumber The analog module (1 or 2).
  * @param channel The channel number to represent.
  */
-AnalogChannel::AnalogChannel(UINT8 moduleNumber, UINT32 channel)
+AnalogChannel::AnalogChannel(uint8_t moduleNumber, uint32_t channel)
 {
 	InitChannel(moduleNumber, channel);
 }
@@ -76,7 +78,7 @@ AnalogChannel::AnalogChannel(UINT8 moduleNumber, UINT32 channel)
  * 
  * @param channel The channel number to represent.
  */
-AnalogChannel::AnalogChannel(UINT32 channel)
+AnalogChannel::AnalogChannel(uint32_t channel)
 {
 	InitChannel(GetDefaultAnalogModule(), channel);
 }
@@ -105,7 +107,7 @@ AnalogModule *AnalogChannel::GetModule()
  * The units are in A/D converter codes.  Use GetVoltage() to get the analog value in calibrated units.
  * @return A sample straight from this channel on the module.
  */
-INT16 AnalogChannel::GetValue()
+int16_t AnalogChannel::GetValue()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetValue(m_channel);
@@ -120,7 +122,7 @@ INT16 AnalogChannel::GetValue()
  * Use GetAverageVoltage() to get the analog value in calibrated units.
  * @return A sample from the oversample and average engine for this channel.
  */
-INT32 AnalogChannel::GetAverageValue()
+int32_t AnalogChannel::GetAverageValue()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetAverageValue(m_channel);
@@ -159,7 +161,7 @@ float AnalogChannel::GetAverageVoltage()
  * 
  * @return Least significant bit weight.
  */
-UINT32 AnalogChannel::GetLSBWeight()
+uint32_t AnalogChannel::GetLSBWeight()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetLSBWeight(m_channel);
@@ -174,7 +176,7 @@ UINT32 AnalogChannel::GetLSBWeight()
  * 
  * @return Offset constant.
  */
-INT32 AnalogChannel::GetOffset()
+int32_t AnalogChannel::GetOffset()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetOffset(m_channel);
@@ -184,7 +186,7 @@ INT32 AnalogChannel::GetOffset()
  * Get the channel number.
  * @return The channel number.
  */
-UINT32 AnalogChannel::GetChannel()
+uint32_t AnalogChannel::GetChannel()
 {
 	if (StatusIsFatal()) return 0;
 	return m_channel;
@@ -194,7 +196,7 @@ UINT32 AnalogChannel::GetChannel()
  * Get the module number.
  * @return The module number.
  */
-UINT8 AnalogChannel::GetModuleNumber()
+uint8_t AnalogChannel::GetModuleNumber()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetNumber();
@@ -208,7 +210,7 @@ UINT8 AnalogChannel::GetModuleNumber()
  * 
  * @param bits Number of bits of averaging.
  */
-void AnalogChannel::SetAverageBits(UINT32 bits)
+void AnalogChannel::SetAverageBits(uint32_t bits)
 {
 	if (StatusIsFatal()) return;
 	m_module->SetAverageBits(m_channel, bits);
@@ -221,7 +223,7 @@ void AnalogChannel::SetAverageBits(UINT32 bits)
  * 
  * @return Number of bits of averaging previously configured.
  */
-UINT32 AnalogChannel::GetAverageBits()
+uint32_t AnalogChannel::GetAverageBits()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetAverageBits(m_channel);
@@ -235,7 +237,7 @@ UINT32 AnalogChannel::GetAverageBits()
  * 
  * @param bits Number of bits of oversampling.
  */
-void AnalogChannel::SetOversampleBits(UINT32 bits)
+void AnalogChannel::SetOversampleBits(uint32_t bits)
 {
 	if (StatusIsFatal()) return;
 	m_module->SetOversampleBits(m_channel, bits);
@@ -248,7 +250,7 @@ void AnalogChannel::SetOversampleBits(UINT32 bits)
  * 
  * @return Number of bits of oversampling previously configured.
  */
-UINT32 AnalogChannel::GetOversampleBits()
+uint32_t AnalogChannel::GetOversampleBits()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetOversampleBits(m_channel);
@@ -263,7 +265,7 @@ bool AnalogChannel::IsAccumulatorChannel()
 {
 	if (StatusIsFatal()) return false;
 	if(m_module->GetNumber() != kAccumulatorModuleNumber) return false;
-	for (UINT32 i=0; i<kAccumulatorNumChannels; i++)
+	for (uint32_t i=0; i<kAccumulatorNumChannels; i++)
 	{
 		if (m_channel == kAccumulatorChannels[i]) return true;
 	}
@@ -320,7 +322,7 @@ void AnalogChannel::ResetAccumulator()
  * This center value is based on the output of the oversampled and averaged source from channel 1.
  * Because of this, any non-zero oversample bits will affect the size of the value for this field.
  */
-void AnalogChannel::SetAccumulatorCenter(INT32 center)
+void AnalogChannel::SetAccumulatorCenter(int32_t center)
 {
 	if (StatusIsFatal()) return;
 	if (m_accumulator == NULL)
@@ -336,7 +338,7 @@ void AnalogChannel::SetAccumulatorCenter(INT32 center)
 /**
  * Set the accumulator's deadband.
  */
-void AnalogChannel::SetAccumulatorDeadband(INT32 deadband)
+void AnalogChannel::SetAccumulatorDeadband(int32_t deadband)
 {
 	if (StatusIsFatal()) return;
 	if (m_accumulator == NULL)
@@ -378,7 +380,7 @@ INT64 AnalogChannel::GetAccumulatorValue()
  * 
  * @return The number of times samples from the channel were accumulated.
  */
-UINT32 AnalogChannel::GetAccumulatorCount()
+uint32_t AnalogChannel::GetAccumulatorCount()
 {
 	if (StatusIsFatal()) return 0;
 	if (m_accumulator == NULL)
@@ -387,7 +389,7 @@ UINT32 AnalogChannel::GetAccumulatorCount()
 		return 0;
 	}
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 count = m_accumulator->readOutput_Count(&localStatus);
+	uint32_t count = m_accumulator->readOutput_Count(&localStatus);
 	wpi_setError(localStatus);
 	return count;
 }
@@ -402,7 +404,7 @@ UINT32 AnalogChannel::GetAccumulatorCount()
  * @param value Pointer to the 64-bit accumulated output.
  * @param count Pointer to the number of accumulation cycles.
  */
-void AnalogChannel::GetAccumulatorOutput(INT64 *value, UINT32 *count)
+void AnalogChannel::GetAccumulatorOutput(INT64 *value, uint32_t *count)
 {
 	if (StatusIsFatal()) return;
 	if (m_accumulator == NULL)
@@ -424,14 +426,30 @@ void AnalogChannel::GetAccumulatorOutput(INT64 *value, UINT32 *count)
 }
 
 /**
- * Get the Average voltage for the PID Source base object.
+ * Set whether to use voltage or value for PIDGet.
+ * This method determines whether PIDGet should use average voltage
+ * or value for PIDControllers for a particular channel. This is to
+ * preserve compatibility with existng programs and is likely to change
+ * in favor of voltage for 2015 and beyond.
+ * @param shouldUseVoltageForPID true if voltage should be used for PIDGet.
+ */
+void AnalogChannel::SetVoltageForPID(bool shouldUseVoltageForPID) {
+	m_shouldUseVoltageForPID = shouldUseVoltageForPID;
+}
+
+/**
+ * Get the Average value for the PID Source base object.
  * 
  * @return The average voltage.
  */
 double AnalogChannel::PIDGet() 
 {
 	if (StatusIsFatal()) return 0.0;
-	return GetAverageValue();
+	if (m_shouldUseVoltageForPID) {
+		return GetAverageVoltage();
+	} else {
+		return GetAverageValue();
+	}
 }
 
 void AnalogChannel::UpdateTable() {

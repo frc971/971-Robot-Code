@@ -45,7 +45,7 @@ public:
 	 * Setting the period to 0.0 will cause the periodic functions to follow
 	 * the Driver Station packet rate of about 50Hz.
 	 */
-	static const double kDefaultPeriod = 0.0;
+	static constexpr double kDefaultPeriod = 0.0;
 
 	virtual void StartCompetition();
 

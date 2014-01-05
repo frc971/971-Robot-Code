@@ -6,9 +6,10 @@
 
 #include "BinaryImage.h"
 #include "WPIErrors.h"
+#include <cstring>
 
 /** Private NI function needed to write to the VxWorks target */
-IMAQ_FUNC int Priv_SetWriteFileAllowed(UINT32 enable); 
+IMAQ_FUNC int Priv_SetWriteFileAllowed(uint32_t enable); 
 
 BinaryImage::BinaryImage() : MonoImage()
 {

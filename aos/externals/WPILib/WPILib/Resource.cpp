@@ -15,12 +15,12 @@ ReentrantSemaphore Resource::m_createLock;
  * Allocate a bool array of values that will get initialized to indicate that no resources
  * have been allocated yet. The indicies of the resources are [0 .. elements - 1].
  */
-Resource::Resource(UINT32 elements)
+Resource::Resource(uint32_t elements)
 {
 	Synchronized sync(m_createLock);
 	m_size = elements;
 	m_isAllocated = new bool[m_size];
-	for (UINT32 i=0; i < m_size; i++)
+	for (uint32_t i=0; i < m_size; i++)
 	{
 		m_isAllocated[i] = false;
 	}
@@ -36,7 +36,7 @@ Resource::Resource(UINT32 elements)
  *    track, that is, it will allocate resource numbers in the range
  *    [0 .. elements - 1].
  */
-/*static*/ void Resource::CreateResourceObject(Resource **r, UINT32 elements)
+/*static*/ void Resource::CreateResourceObject(Resource **r, uint32_t elements)
 {
 	Synchronized sync(m_createLock);
 	if (*r == NULL)
@@ -59,10 +59,10 @@ Resource::~Resource()
  * When a resource is requested, mark it allocated. In this case, a free resource value
  * within the range is located and returned after it is marked allocated.
  */
-UINT32 Resource::Allocate(const char *resourceDesc)
+uint32_t Resource::Allocate(const char *resourceDesc)
 {
 	Synchronized sync(m_allocateLock);
-	for (UINT32 i=0; i < m_size; i++)
+	for (uint32_t i=0; i < m_size; i++)
 	{
 		if (!m_isAllocated[i])
 		{
@@ -79,7 +79,7 @@ UINT32 Resource::Allocate(const char *resourceDesc)
  * The user requests a specific resource value, i.e. channel number and it is verified
  * unallocated, then returned.
  */
-UINT32 Resource::Allocate(UINT32 index, const char *resourceDesc)
+uint32_t Resource::Allocate(uint32_t index, const char *resourceDesc)
 {
 	Synchronized sync(m_allocateLock);
 	if (index >= m_size)
@@ -102,7 +102,7 @@ UINT32 Resource::Allocate(UINT32 index, const char *resourceDesc)
  * After a resource is no longer needed, for example a destructor is called for a channel assignment
  * class, Free will release the resource value so it can be reused somewhere else in the program.
  */
-void Resource::Free(UINT32 index)
+void Resource::Free(uint32_t index)
 {
 	Synchronized sync(m_allocateLock);
 	if (index == ~0ul) return;

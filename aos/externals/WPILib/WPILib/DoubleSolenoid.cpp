@@ -15,6 +15,7 @@
  */
 void DoubleSolenoid::InitSolenoid()
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckSolenoidModule(m_moduleNumber))
 	{
@@ -53,7 +54,7 @@ void DoubleSolenoid::InitSolenoid()
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Solenoid, m_forwardChannel, m_moduleNumber - 1);
 	nUsageReporting::report(nUsageReporting::kResourceType_Solenoid, m_reverseChannel, m_moduleNumber - 1);
-	LiveWindow::GetInstance()->AddSensor("DoubleSolenoid", m_moduleNumber, m_forwardChannel, this);
+	LiveWindow::GetInstance()->AddActuator("DoubleSolenoid", m_moduleNumber, m_forwardChannel, this);
 }
 
 /**
@@ -62,7 +63,7 @@ void DoubleSolenoid::InitSolenoid()
  * @param forwardChannel The forward channel on the module to control.
  * @param reverseChannel The reverse channel on the module to control.
  */
-DoubleSolenoid::DoubleSolenoid(UINT32 forwardChannel, UINT32 reverseChannel)
+DoubleSolenoid::DoubleSolenoid(uint32_t forwardChannel, uint32_t reverseChannel)
 	: SolenoidBase (GetDefaultSolenoidModule())
 	, m_forwardChannel (forwardChannel)
 	, m_reverseChannel (reverseChannel)
@@ -77,7 +78,7 @@ DoubleSolenoid::DoubleSolenoid(UINT32 forwardChannel, UINT32 reverseChannel)
  * @param forwardChannel The forward channel on the module to control.
  * @param reverseChannel The reverse channel on the module to control.
  */
-DoubleSolenoid::DoubleSolenoid(UINT8 moduleNumber, UINT32 forwardChannel, UINT32 reverseChannel)
+DoubleSolenoid::DoubleSolenoid(uint8_t moduleNumber, uint32_t forwardChannel, uint32_t reverseChannel)
 	: SolenoidBase (moduleNumber)
 	, m_forwardChannel (forwardChannel)
 	, m_reverseChannel (reverseChannel)
@@ -105,7 +106,7 @@ DoubleSolenoid::~DoubleSolenoid()
 void DoubleSolenoid::Set(Value value)
 {
 	if (StatusIsFatal()) return;
-	UINT8 rawValue = 0x00;
+	uint8_t rawValue = 0x00;
 
 	switch(value)
 	{
@@ -131,21 +132,19 @@ void DoubleSolenoid::Set(Value value)
 DoubleSolenoid::Value DoubleSolenoid::Get()
 {
 	if (StatusIsFatal()) return kOff;
-	UINT8 value = GetAll();
+	uint8_t value = GetAll();
 
 	if (value & m_forwardMask) return kForward;
 	if (value & m_reverseMask) return kReverse;
 	return kOff;
 }
 
-
-
-
 void DoubleSolenoid::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
 	Value lvalue = kOff;
-	if (strcmp((char*)value.ptr, "Forward") == 0)
+	std::string *val = (std::string *)value.ptr;
+	if (*val == "Forward")
 		lvalue = kForward;
-	else if (strcmp((char*)value.ptr, "Reverse") == 0)
+	else if (*val == "Reverse")
 		lvalue = kReverse;
 	Set(lvalue);
 }
@@ -158,12 +157,16 @@ void DoubleSolenoid::UpdateTable() {
 
 void DoubleSolenoid::StartLiveWindowMode() {
 	Set(kOff);
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void DoubleSolenoid::StopLiveWindowMode() {
 	Set(kOff);
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string DoubleSolenoid::GetSmartDashboardType() {

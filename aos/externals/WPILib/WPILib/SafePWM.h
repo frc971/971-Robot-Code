@@ -22,8 +22,8 @@ class MotorSafetyHelper;
 class SafePWM: public PWM, public MotorSafety
 {
 public:
-	explicit SafePWM(UINT32 channel);
-	SafePWM(UINT8 moduleNumber, UINT32 channel);
+	explicit SafePWM(uint32_t channel);
+	SafePWM(uint8_t moduleNumber, uint32_t channel);
 	~SafePWM();
 
 	void SetExpiration(float timeout);

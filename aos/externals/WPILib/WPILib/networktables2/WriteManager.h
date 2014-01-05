@@ -8,18 +8,18 @@
 #ifndef WRITEMANAGER_H_
 #define WRITEMANAGER_H_
 
-
+class AbstractNetworkTableEntryStore;
 class WriteManager;
 
 
-#include "thread/PeriodicRunnable.h"
-#include "OutgoingEntryReceiver.h"
-#include "thread/NTThread.h"
-#include "thread/NTThreadManager.h"
-#include "FlushableOutgoingEntryReceiver.h"
-#include "NetworkTableEntry.h"
+#include "networktables2/thread/PeriodicRunnable.h"
+#include "networktables2/OutgoingEntryReceiver.h"
+#include "networktables2/thread/NTThread.h"
+#include "networktables2/thread/NTThreadManager.h"
+#include "networktables2/FlushableOutgoingEntryReceiver.h"
+#include "networktables2/NetworkTableEntry.h"
 #include <queue>
-#include "Synchronized.h"
+#include "OSAL/Synchronized.h"
 
 
 
@@ -33,7 +33,7 @@ class WriteManager : public OutgoingEntryReceiver, public PeriodicRunnable{
 private:
 	const static size_t queueSize = 500;
 	
-	ReentrantSemaphore transactionsLock;
+	NTReentrantSemaphore transactionsLock;
 	
 	NTThread* thread;
 	

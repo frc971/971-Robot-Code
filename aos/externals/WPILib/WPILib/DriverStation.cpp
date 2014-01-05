@@ -15,13 +15,13 @@
 #include "WPIErrors.h"
 #include <strLib.h>
 
-const UINT32 DriverStation::kBatteryModuleNumber;
-const UINT32 DriverStation::kBatteryChannel;
-const UINT32 DriverStation::kJoystickPorts;
-const UINT32 DriverStation::kJoystickAxes;
-const float DriverStation::kUpdatePeriod;
+const uint32_t DriverStation::kBatteryModuleNumber;
+const uint32_t DriverStation::kBatteryChannel;
+const uint32_t DriverStation::kJoystickPorts;
+const uint32_t DriverStation::kJoystickAxes;
+constexpr float DriverStation::kUpdatePeriod;
 DriverStation* DriverStation::m_instance = NULL;
-UINT8 DriverStation::m_updateNumber = 0;
+uint8_t DriverStation::m_updateNumber = 0;
 
 /**
  * DriverStation contructor.
@@ -89,7 +89,7 @@ DriverStation::DriverStation()
 
 	AddToSingletonList();
 
-	if (!m_task.Start((INT32)this))
+	if (!m_task.Start((int32_t)this))
 	{
 		wpi_setWPIError(DriverStationTaskError);
 	}
@@ -182,9 +182,9 @@ void DriverStation::GetData()
 void DriverStation::SetData()
 {
 	char *userStatusDataHigh;
-	INT32 userStatusDataHighSize;
+	int32_t userStatusDataHighSize;
 	char *userStatusDataLow;
-	INT32 userStatusDataLowSize;
+	int32_t userStatusDataLowSize;
 
 	Synchronized sync(m_statusDataSemaphore);
 
@@ -224,7 +224,7 @@ float DriverStation::GetBatteryVoltage()
  * @param axis The analog axis value to read from the joystick.
  * @return The value of the axis on the joystick.
  */
-float DriverStation::GetStickAxis(UINT32 stick, UINT32 axis)
+float DriverStation::GetStickAxis(uint32_t stick, uint32_t axis)
 {
 	if (axis < 1 || axis > kJoystickAxes)
 	{
@@ -232,7 +232,7 @@ float DriverStation::GetStickAxis(UINT32 stick, UINT32 axis)
 		return 0.0;
 	}
 
-	INT8 value;
+	int8_t value;
 	switch (stick)
 	{
 		case 1:
@@ -272,7 +272,7 @@ float DriverStation::GetStickAxis(UINT32 stick, UINT32 axis)
  * @param stick The joystick to read.
  * @return The state of the buttons on the joystick.
  */
-short DriverStation::GetStickButtons(UINT32 stick)
+short DriverStation::GetStickButtons(uint32_t stick)
 {
 	if (stick < 1 || stick > 4)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "stick must be between 1 and 4");
@@ -303,12 +303,12 @@ short DriverStation::GetStickButtons(UINT32 stick)
  * @param channel The analog input channel on the driver station to read from. Valid range is 1 - 4.
  * @return The analog voltage on the input.
  */
-float DriverStation::GetAnalogIn(UINT32 channel)
+float DriverStation::GetAnalogIn(uint32_t channel)
 {
 	if (channel < 1 || channel > 4)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 4");
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationCIO, channel, nUsageReporting::kDriverStationCIO_Analog);
@@ -335,12 +335,12 @@ float DriverStation::GetAnalogIn(UINT32 channel)
  * and switches on advanced operator interfaces.
  * @param channel The digital input to get. Valid range is 1 - 8.
  */
-bool DriverStation::GetDigitalIn(UINT32 channel)
+bool DriverStation::GetDigitalIn(uint32_t channel)
 {
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationCIO, channel, nUsageReporting::kDriverStationCIO_DigitalIn);
@@ -359,12 +359,12 @@ bool DriverStation::GetDigitalIn(UINT32 channel)
  * @param channel The digital output to set. Valid range is 1 - 8.
  * @param value The state to set the digital output.
  */
-void DriverStation::SetDigitalOut(UINT32 channel, bool value) 
+void DriverStation::SetDigitalOut(uint32_t channel, bool value) 
 {
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationCIO, channel, nUsageReporting::kDriverStationCIO_DigitalOut);
@@ -372,7 +372,7 @@ void DriverStation::SetDigitalOut(UINT32 channel, bool value)
 	}
 
 	m_digitalOut &= ~(0x1 << (channel-1));
-	m_digitalOut |= ((UINT8)value << (channel-1));
+	m_digitalOut |= ((uint8_t)value << (channel-1));
 }
 
 /**
@@ -380,7 +380,7 @@ void DriverStation::SetDigitalOut(UINT32 channel, bool value)
  * @param channel The digital ouput to monitor. Valid range is 1 through 8.
  * @return A digital value being output on the Drivers Station.
  */
-bool DriverStation::GetDigitalOut(UINT32 channel) 
+bool DriverStation::GetDigitalOut(uint32_t channel) 
 {
 	if (channel < 1 || channel > 8)
 		wpi_setWPIErrorWithContext(ParameterOutOfRange, "channel must be between 1 and 8");
@@ -440,7 +440,7 @@ bool DriverStation::IsFMSAttached()
  * Each time new data is received, the packet number (included with the sent data) is returned.
  * @return The driver station packet number
  */
-UINT32 DriverStation::GetPacketNumber()
+uint32_t DriverStation::GetPacketNumber()
 {
 	return m_controlData->packetIndex;
 }
@@ -463,7 +463,7 @@ DriverStation::Alliance DriverStation::GetAlliance()
  * This could return 1, 2, or 3
  * @return The location of the driver station
  */
-UINT32 DriverStation::GetLocation()
+uint32_t DriverStation::GetLocation()
 {
 	wpi_assert ((m_controlData->dsID_Position >= '1') && (m_controlData->dsID_Position <= '3'));
 	return m_controlData->dsID_Position - '0';
@@ -500,7 +500,7 @@ double DriverStation::GetMatchTime()
  * Return the team number that the Driver Station is configured for
  * @return The team number
  */
-UINT16 DriverStation::GetTeamNumber()
+uint16_t DriverStation::GetTeamNumber()
 {
 	return m_controlData->teamID;
 }

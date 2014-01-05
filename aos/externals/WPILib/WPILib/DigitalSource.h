@@ -20,8 +20,8 @@ class DigitalSource: public InterruptableSensorBase
 {
 public:
 	virtual ~DigitalSource();
-	virtual UINT32 GetChannelForRouting() = 0;
-	virtual UINT32 GetModuleForRouting() = 0;
+	virtual uint32_t GetChannelForRouting() = 0;
+	virtual uint32_t GetModuleForRouting() = 0;
 	virtual bool GetAnalogTriggerForRouting() = 0;
 	virtual void RequestInterrupts(tInterruptHandler handler, void *param) = 0;
 	virtual void RequestInterrupts() = 0;

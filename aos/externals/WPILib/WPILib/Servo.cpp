@@ -9,8 +9,8 @@
 #include "NetworkCommunication/UsageReporting.h"
 #include "LiveWindow/LiveWindow.h"
 
-const float Servo::kMaxServoAngle;
-const float Servo::kMinServoAngle;
+constexpr float Servo::kMaxServoAngle;
+constexpr float Servo::kMinServoAngle;
 
 /**
  * Common initialization code called by all constructors.
@@ -20,8 +20,8 @@ const float Servo::kMinServoAngle;
  */
 void Servo::InitServo()
 {
-	// TODO: compute the appropriate values based on digital loop timing
-	SetBounds(245, 0, 0, 0, 11);
+	m_table = NULL;
+	SetBounds(2.27, 1.513, 1.507, 1.5, .743);
 	SetPeriodMultiplier(kPeriodMultiplier_4X);
 
 
@@ -34,7 +34,7 @@ void Servo::InitServo()
  *
  * @param channel The PWM channel on the digital module to which the servo is attached.
  */
-Servo::Servo(UINT32 channel) : SafePWM(channel)
+Servo::Servo(uint32_t channel) : SafePWM(channel)
 {
 	InitServo();
 }
@@ -45,7 +45,7 @@ Servo::Servo(UINT32 channel) : SafePWM(channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The PWM channel on the digital module to which the servo is attached (1..10).
  */
-Servo::Servo(UINT8 moduleNumber, UINT32 channel) : SafePWM(moduleNumber, channel)
+Servo::Servo(uint8_t moduleNumber, uint32_t channel) : SafePWM(moduleNumber, channel)
 {
 	InitServo();
 }
@@ -134,11 +134,15 @@ void Servo::UpdateTable() {
 }
 
 void Servo::StartLiveWindowMode() {
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Servo::StopLiveWindowMode() {
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Servo::GetSmartDashboardType() {

@@ -15,6 +15,7 @@
  */
 void Accelerometer::InitAccelerometer()
 {
+	m_table = NULL;
 	m_voltsPerG = 1.0;
 	m_zeroGVoltage = 2.5;
 	nUsageReporting::report(nUsageReporting::kResourceType_Accelerometer, m_analogChannel->GetChannel(), m_analogChannel->GetModuleNumber() - 1);
@@ -27,7 +28,7 @@ void Accelerometer::InitAccelerometer()
  * The accelerometer is assumed to be in the first analog module in the given analog channel. The
  * constructor allocates desired analog channel.
  */
-Accelerometer::Accelerometer(UINT32 channel)
+Accelerometer::Accelerometer(uint32_t channel)
 {
 	m_analogChannel = new AnalogChannel(channel);
 	m_allocatedChannel = true;
@@ -43,7 +44,7 @@ Accelerometer::Accelerometer(UINT32 channel)
  * @param moduleNumber The analog module (1 or 2).
  * @param channel The analog channel (1..8)
  */
-Accelerometer::Accelerometer(UINT8 moduleNumber, UINT32 channel)
+Accelerometer::Accelerometer(uint8_t moduleNumber, uint32_t channel)
 {
 	m_analogChannel = new AnalogChannel(moduleNumber, channel);
 	m_allocatedChannel = true;

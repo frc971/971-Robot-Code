@@ -79,7 +79,7 @@ LiveWindow::~LiveWindow()
  * @param name The name of this component.
  * @param component A LiveWindowSendable component that represents a sensor.
  */
-void LiveWindow::AddSensor(char *subsystem, char *name,
+void LiveWindow::AddSensor(const char *subsystem, const char *name,
 		LiveWindowSendable *component)
 {
 	m_components[component].subsystem = subsystem;
@@ -93,7 +93,7 @@ void LiveWindow::AddSensor(char *subsystem, char *name,
  * @param name The name of this component.
  * @param component A LiveWindowSendable component that represents a actuator.
  */
-void LiveWindow::AddActuator(char *subsystem, char *name,
+void LiveWindow::AddActuator(const char *subsystem, const char *name,
 		LiveWindowSendable *component)
 {
 	m_components[component].subsystem = subsystem;

@@ -19,7 +19,7 @@
  * @param parity Select the type of parity checking to use.
  * @param stopBits The number of stop bits to use as defined by the enum StopBits.
  */
-SerialPort::SerialPort(UINT32 baudRate, UINT8 dataBits, SerialPort::Parity parity, SerialPort::StopBits stopBits)
+SerialPort::SerialPort(uint32_t baudRate, uint8_t dataBits, SerialPort::Parity parity, SerialPort::StopBits stopBits)
 	: m_resourceManagerHandle (0)
 	, m_portHandle (0)
 	, m_consoleModeEnabled (false)
@@ -28,7 +28,7 @@ SerialPort::SerialPort(UINT32 baudRate, UINT8 dataBits, SerialPort::Parity parit
 	localStatus = viOpenDefaultRM((ViSession*)&m_resourceManagerHandle);
 	wpi_setError(localStatus);
 
-	localStatus = viOpen(m_resourceManagerHandle, "ASRL1::INSTR", VI_NULL, VI_NULL, (ViSession*)&m_portHandle);
+	localStatus = viOpen(m_resourceManagerHandle, const_cast<char*>("ASRL1::INSTR"), VI_NULL, VI_NULL, (ViSession*)&m_portHandle);
 	wpi_setError(localStatus);
 	if (localStatus != 0)
 	{
@@ -122,9 +122,9 @@ void SerialPort::DisableTermination()
  * 
  * @return The number of bytes available to read.
  */
-INT32 SerialPort::GetBytesReceived()
+int32_t SerialPort::GetBytesReceived()
 {
-	INT32 bytes = 0;
+	int32_t bytes = 0;
 	if (!m_consoleModeEnabled)
 	{
 		ViStatus localStatus = viGetAttribute(m_portHandle, VI_ATTR_ASRL_AVAIL_NUM, &bytes);
@@ -178,9 +178,9 @@ void SerialPort::Scanf(const char *readFmt, ...)
  * @param count The maximum number of bytes to read.
  * @return The number of bytes actually read into the buffer.
  */ 
-UINT32 SerialPort::Read(char *buffer, INT32 count)
+uint32_t SerialPort::Read(char *buffer, int32_t count)
 {
-	UINT32 retCount = 0;
+	uint32_t retCount = 0;
 	if (!m_consoleModeEnabled)
 	{
 		ViStatus localStatus = viBufRead(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
@@ -204,9 +204,9 @@ UINT32 SerialPort::Read(char *buffer, INT32 count)
  * @param count The maximum number of bytes to write.
  * @return The number of bytes actually written into the port.
  */ 
-UINT32 SerialPort::Write(const char *buffer, INT32 count)
+uint32_t SerialPort::Write(const char *buffer, int32_t count)
 {
-	UINT32 retCount = 0;
+	uint32_t retCount = 0;
 	if (!m_consoleModeEnabled)
 	{
 		ViStatus localStatus = viBufWrite(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
@@ -227,7 +227,7 @@ void SerialPort::SetTimeout(float timeout)
 {
 	if (!m_consoleModeEnabled)
 	{
-		ViStatus localStatus = viSetAttribute(m_portHandle, VI_ATTR_TMO_VALUE, (UINT32)(timeout * 1e3));
+		ViStatus localStatus = viSetAttribute(m_portHandle, VI_ATTR_TMO_VALUE, (uint32_t)(timeout * 1e3));
 		wpi_setError(localStatus);
 	}
 }
@@ -244,7 +244,7 @@ void SerialPort::SetTimeout(float timeout)
  * 
  * @param size The read buffer size.
  */
-void SerialPort::SetReadBufferSize(UINT32 size)
+void SerialPort::SetReadBufferSize(uint32_t size)
 {
 	if (!m_consoleModeEnabled)
 	{
@@ -261,7 +261,7 @@ void SerialPort::SetReadBufferSize(UINT32 size)
  * 
  * @param size The write buffer size.
  */
-void SerialPort::SetWriteBufferSize(UINT32 size)
+void SerialPort::SetWriteBufferSize(uint32_t size)
 {
 	if (!m_consoleModeEnabled)
 	{
@@ -319,7 +319,7 @@ void SerialPort::Reset()
 	}
 }
 
-//void SerialPort::_internalHandler(UINT32 port, UINT32 eventType, UINT32 event)
+//void SerialPort::_internalHandler(uint32_t port, uint32_t eventType, uint32_t event)
 //{
 //}
 

@@ -8,7 +8,7 @@
 #ifndef IOSTREAMPROVIDER_H_
 #define IOSTREAMPROVIDER_H_
 
-#include "IOStream.h"
+#include "networktables2/stream/IOStream.h"
 
 /**
  * An object that will provide the IOStream of clients to a NetworkTable Server

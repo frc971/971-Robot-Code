@@ -12,8 +12,8 @@
 class SocketStreams;
 
 
-#include "IOStreamFactory.h"
-#include "IOStreamProvider.h"
+#include "networktables2/stream/IOStreamFactory.h"
+#include "networktables2/stream/IOStreamProvider.h"
 
 
 

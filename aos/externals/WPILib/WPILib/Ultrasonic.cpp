@@ -15,10 +15,10 @@
 #include "WPIErrors.h"
 #include "LiveWindow/LiveWindow.h"
 
-const double Ultrasonic::kPingTime;	///< Time (sec) for the ping trigger pulse.
-const UINT32 Ultrasonic::kPriority;	///< Priority that the ultrasonic round robin task runs.
-const double Ultrasonic::kMaxUltrasonicTime;	///< Max time (ms) between readings.
-const double Ultrasonic::kSpeedOfSoundInchesPerSec;
+constexpr double Ultrasonic::kPingTime;	///< Time (sec) for the ping trigger pulse.
+const uint32_t Ultrasonic::kPriority;	///< Priority that the ultrasonic round robin task runs.
+constexpr double Ultrasonic::kMaxUltrasonicTime;	///< Max time (ms) between readings.
+constexpr double Ultrasonic::kSpeedOfSoundInchesPerSec;
 Task Ultrasonic::m_task("UltrasonicChecker", (FUNCPTR)UltrasonicChecker); // task doing the round-robin automatic sensing
 Ultrasonic *Ultrasonic::m_firstSensor = NULL; // head of the ultrasonic sensor list
 bool Ultrasonic::m_automaticEnabled = false; // automatic round robin mode
@@ -56,6 +56,7 @@ void Ultrasonic::UltrasonicChecker()
  */
 void Ultrasonic::Initialize()
 {
+	m_table = NULL;
 	bool originalMode = m_automaticEnabled;
 	if (m_semaphore == 0) m_semaphore = semBCreate(SEM_Q_PRIORITY, SEM_FULL);
 	SetAutomaticMode(false); // kill task when adding a new sensor
@@ -90,7 +91,7 @@ void Ultrasonic::Initialize()
  * echo is high represents the round trip time of the ping, and the distance.
  * @param units The units returned in either kInches or kMilliMeters
  */
-Ultrasonic::Ultrasonic(UINT32 pingChannel, UINT32 echoChannel, DistanceUnit units)
+Ultrasonic::Ultrasonic(uint32_t pingChannel, uint32_t echoChannel, DistanceUnit units)
 {
 	m_pingChannel = new DigitalOutput(pingChannel);
 	m_echoChannel = new DigitalInput(echoChannel);
@@ -148,8 +149,8 @@ Ultrasonic::Ultrasonic(DigitalOutput &pingChannel, DigitalInput &echoChannel, Di
  * that the echo is high represents the round trip time of the ping, and the distance.
  * @param units The units returned in either kInches or kMilliMeters
  */
-Ultrasonic::Ultrasonic(UINT8 pingModuleNumber, UINT32 pingChannel,
-		UINT8 echoModuleNumber, UINT32 echoChannel, DistanceUnit units)
+Ultrasonic::Ultrasonic(uint8_t pingModuleNumber, uint32_t pingChannel,
+		uint8_t echoModuleNumber, uint32_t echoChannel, DistanceUnit units)
 {
 	m_pingChannel = new DigitalOutput(pingModuleNumber, pingChannel);
 	m_echoChannel = new DigitalInput(echoModuleNumber, echoChannel);

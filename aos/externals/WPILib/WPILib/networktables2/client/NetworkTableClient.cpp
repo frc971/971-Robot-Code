@@ -6,7 +6,6 @@
  */
 
 #include "networktables2/client/NetworkTableClient.h"
-#include "networktables2/TransactionDirtier.h"
 
 /**
  * Create a new NetworkTable Client
@@ -16,14 +15,22 @@
  */
 NetworkTableClient::NetworkTableClient(IOStreamFactory& streamFactory, NetworkTableEntryTypeManager& typeManager, NTThreadManager& threadManager):
 	NetworkTableNode(*new ClientNetworkTableEntryStore(*this)),
-	adapter((ClientNetworkTableEntryStore&)entryStore, threadManager, streamFactory, *this, typeManager),
-	writeManager(adapter, threadManager, GetEntryStore(), 1000){
+	adapter(*new ClientConnectionAdapter((ClientNetworkTableEntryStore&)entryStore, threadManager, streamFactory, *this, typeManager)),
+	writeManager(*new WriteManager(adapter, threadManager, GetEntryStore(), 1000)),
+	dirtier(new TransactionDirtier(writeManager)){
 	
-	GetEntryStore().SetOutgoingReceiver(new TransactionDirtier(writeManager));
+	GetEntryStore().SetOutgoingReceiver(dirtier);
 	GetEntryStore().SetIncomingReceiver(&OutgoingEntryReceiver_NULL);
 	writeManager.start();
 }
-NetworkTableClient::~NetworkTableClient(){}
+NetworkTableClient::~NetworkTableClient(){
+	//Closing this now will cause a reconnect from the write manager -James
+	//Close();
+	delete &writeManager;
+	delete &adapter;
+	delete &entryStore;
+	delete dirtier;
+}
 
 /**
  * force the client to disconnect and reconnect to the server again. Will connect if the client is currently disconnected

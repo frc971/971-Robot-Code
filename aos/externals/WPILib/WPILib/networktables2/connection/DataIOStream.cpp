@@ -5,23 +5,45 @@
 #include <malloc.h>
 #endif
 
+///This is used in case NULL is passed so all logic calls to IOstream can continue to assume there is never a null pointer
+class InertStream : public IOStream
+{
+protected:
+	virtual int read(void* ptr, int numbytes) {return numbytes;}  //return success
+	virtual int write(const void* ptr, int numbytes) {return numbytes;}
+	virtual void flush() {}
+	virtual void close() {}
+};
+
+static InertStream s_InertStream;
+
 DataIOStream::DataIOStream(IOStream* _iostream) :
-	iostream(*_iostream)
+	iostream(_iostream)
 {
 }
 DataIOStream::~DataIOStream()
 {
 	close();
-	delete &iostream;
+	if (iostream!=&s_InertStream)
+		delete iostream;
 }
+
+void DataIOStream::SetIOStream(IOStream* stream)
+{
+	IOStream *temp=iostream;
+	iostream=stream ? stream : &s_InertStream;  //We'll never assign NULL
+	if (temp!=&s_InertStream)
+		delete temp;
+}
+
 void DataIOStream::close()
 {
-	iostream.close();
+	iostream->close();
 }
 
 void DataIOStream::writeByte(uint8_t b)
 {
-	iostream.write(&b, 1);
+	iostream->write(&b, 1);
 }
 void DataIOStream::write2BytesBE(uint16_t s)
 {
@@ -31,16 +53,16 @@ void DataIOStream::write2BytesBE(uint16_t s)
 void DataIOStream::writeString(std::string& str)
 {
 	write2BytesBE(str.length());
-	iostream.write(str.c_str(), str.length());
+	iostream->write(str.c_str(), str.length());
 }
 void DataIOStream::flush()
 {
-	iostream.flush();
+	iostream->flush();
 }
 uint8_t DataIOStream::readByte()
 {
 	uint8_t value;
-	iostream.read(&value, 1);
+	iostream->read(&value, 1);
 	return value;
 }
 uint16_t DataIOStream::read2BytesBE()
@@ -58,7 +80,7 @@ std::string* DataIOStream::readString()
 #else
 	uint8_t* bytes = (uint8_t*)alloca(byteLength+1);
 #endif
-	iostream.read(bytes, byteLength);
+	iostream->read(bytes, byteLength);
 	bytes[byteLength] = 0;
 	return new std::string((char*)bytes);//FIXME implement UTF-8 aware version
 }

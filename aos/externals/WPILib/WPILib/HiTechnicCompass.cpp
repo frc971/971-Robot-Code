@@ -11,29 +11,30 @@
 #include "WPIErrors.h"
 #include "LiveWindow/LiveWindow.h"
 
-const UINT8 HiTechnicCompass::kAddress;
-const UINT8 HiTechnicCompass::kManufacturerBaseRegister;
-const UINT8 HiTechnicCompass::kManufacturerSize;
-const UINT8 HiTechnicCompass::kSensorTypeBaseRegister;
-const UINT8 HiTechnicCompass::kSensorTypeSize;
-const UINT8 HiTechnicCompass::kHeadingRegister;
+const uint8_t HiTechnicCompass::kAddress;
+const uint8_t HiTechnicCompass::kManufacturerBaseRegister;
+const uint8_t HiTechnicCompass::kManufacturerSize;
+const uint8_t HiTechnicCompass::kSensorTypeBaseRegister;
+const uint8_t HiTechnicCompass::kSensorTypeSize;
+const uint8_t HiTechnicCompass::kHeadingRegister;
 
 /**
  * Constructor.
  * 
  * @param moduleNumber The digital module that the sensor is plugged into (1 or 2).
  */
-HiTechnicCompass::HiTechnicCompass(UINT8 moduleNumber)
+HiTechnicCompass::HiTechnicCompass(uint8_t moduleNumber)
 	: m_i2c (NULL)
 {
+	m_table = NULL;
 	DigitalModule *module = DigitalModule::GetInstance(moduleNumber);
 	if (module)
 	{
 		m_i2c = module->GetI2C(kAddress);
 	
 		// Verify Sensor
-		const UINT8 kExpectedManufacturer[] = "HiTechnc";
-		const UINT8 kExpectedSensorType[] = "Compass ";
+		const uint8_t kExpectedManufacturer[] = "HiTechnc";
+		const uint8_t kExpectedSensorType[] = "Compass ";
 		if ( ! m_i2c->VerifySensor(kManufacturerBaseRegister, kManufacturerSize, kExpectedManufacturer) )
 		{
 			wpi_setWPIError(CompassManufacturerError);
@@ -67,10 +68,10 @@ HiTechnicCompass::~HiTechnicCompass()
  */
 float HiTechnicCompass::GetAngle()
 {
-	UINT16 heading = 0;
+	uint16_t heading = 0;
 	if (m_i2c)
 	{
-		m_i2c->Read(kHeadingRegister, sizeof(heading), (UINT8 *)&heading);
+		m_i2c->Read(kHeadingRegister, sizeof(heading), (uint8_t *)&heading);
 
 		// Sensor is little endian... swap bytes
 		heading = (heading >> 8) | (heading << 8);

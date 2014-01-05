@@ -12,11 +12,11 @@
 #include "WPIErrors.h"
 #include "LiveWindow/LiveWindow.h"
 
-const UINT32 Gyro::kOversampleBits;
-const UINT32 Gyro::kAverageBits;
-const float Gyro::kSamplesPerSecond;
-const float Gyro::kCalibrationSampleTime;
-const float Gyro::kDefaultVoltsPerDegreePerSecond;
+const uint32_t Gyro::kOversampleBits;
+const uint32_t Gyro::kAverageBits;
+constexpr float Gyro::kSamplesPerSecond;
+constexpr float Gyro::kCalibrationSampleTime;
+constexpr float Gyro::kDefaultVoltsPerDegreePerSecond;
 
 /**
  * Initialize the gyro.
@@ -28,6 +28,7 @@ const float Gyro::kDefaultVoltsPerDegreePerSecond;
  */
 void Gyro::InitGyro()
 {
+	m_table = NULL;
 	if (!m_analog->IsAccumulatorChannel())
 	{
 		wpi_setWPIErrorWithContext(ParameterOutOfRange,
@@ -52,16 +53,18 @@ void Gyro::InitGyro()
 	Wait(kCalibrationSampleTime);
 
 	INT64 value;
-	UINT32 count;
+	uint32_t count;
 	m_analog->GetAccumulatorOutput(&value, &count);
 
-	UINT32 center = (UINT32)((float)value / (float)count + .5);
+	m_center = (uint32_t)((float)value / (float)count + .5);
 
-	m_offset = ((float)value / (float)count) - (float)center;
+	m_offset = ((float)value / (float)count) - (float)m_center;
 
-	m_analog->SetAccumulatorCenter(center);
+	m_analog->SetAccumulatorCenter(m_center);
 	m_analog->SetAccumulatorDeadband(0); ///< TODO: compute / parameterize this
 	m_analog->ResetAccumulator();
+	
+	SetPIDSourceParameter(kAngle);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Gyro, m_analog->GetChannel(), m_analog->GetModuleNumber() - 1);
 	LiveWindow::GetInstance()->AddSensor("Gyro", m_analog->GetModuleNumber(), m_analog->GetChannel(), this);
@@ -73,7 +76,7 @@ void Gyro::InitGyro()
  * @param moduleNumber The analog module the gyro is connected to (1).
  * @param channel The analog channel the gyro is connected to (1 or 2).
  */
-Gyro::Gyro(UINT8 moduleNumber, UINT32 channel)
+Gyro::Gyro(uint8_t moduleNumber, uint32_t channel)
 {
 	m_analog = new AnalogChannel(moduleNumber, channel);
 	m_channelAllocated = true;
@@ -87,7 +90,7 @@ Gyro::Gyro(UINT8 moduleNumber, UINT32 channel)
  * 
  * @param channel The analog channel the gyro is connected to.
  */
-Gyro::Gyro(UINT32 channel)
+Gyro::Gyro(uint32_t channel)
 {
 	m_analog = new AnalogChannel(channel);
 	m_channelAllocated = true;
@@ -154,7 +157,7 @@ Gyro::~Gyro()
 float Gyro::GetAngle( void )
 {
 	INT64 rawValue;
-	UINT32 count;
+	uint32_t count;
 	m_analog->GetAccumulatorOutput(&rawValue, &count);
 
 	INT64 value = rawValue - (INT64)((float)count * m_offset);
@@ -163,6 +166,20 @@ float Gyro::GetAngle( void )
 		(m_analog->GetModule()->GetSampleRate() * m_voltsPerDegreePerSecond);
 
 	return (float)scaledValue;
+}
+
+
+/**
+ * Return the rate of rotation of the gyro
+ * 
+ * The rate is based on the most recent reading of the gyro analog value
+ * 
+ * @return the current rate in degrees per second
+ */
+double Gyro::GetRate( void )
+{
+	return (m_analog->GetAverageValue() - ((double)m_center + m_offset)) * 1e-9 * m_analog->GetLSBWeight() 
+			/ ((1 << m_analog->GetOversampleBits()) * m_voltsPerDegreePerSecond);
 }
 
 
@@ -178,6 +195,13 @@ void Gyro::SetSensitivity( float voltsPerDegreePerSecond )
 	m_voltsPerDegreePerSecond = voltsPerDegreePerSecond;
 }
 
+void Gyro::SetPIDSourceParameter(PIDSourceParameter pidSource)
+{
+	if(pidSource == 0 || pidSource > 2)
+		wpi_setWPIErrorWithContext(ParameterOutOfRange, "Gyro pidSource");
+    m_pidSource = pidSource;
+}
+
 /**
  * Get the angle in degrees for the PIDSource base object.
  * 
@@ -185,7 +209,14 @@ void Gyro::SetSensitivity( float voltsPerDegreePerSecond )
  */
 double Gyro::PIDGet()
 {
-	return GetAngle();
+	switch(m_pidSource){
+	case kRate:
+		return GetRate();
+	case kAngle:
+		return GetAngle();
+	default:
+		return 0;
+	}
 }
 
 void Gyro::UpdateTable() {

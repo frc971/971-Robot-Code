@@ -26,8 +26,8 @@
  *   - 56 = full "reverse"
  */
 void Victor::InitVictor() {
-	// TODO: compute the appropriate values based on digital loop timing
-	SetBounds(206, 131, 128, 125, 56);
+	SetBounds(2.027, 1.525, 1.507, 1.49, 1.026);
+	
 	SetPeriodMultiplier(kPeriodMultiplier_2X);
 	SetRaw(m_centerPwm);
 
@@ -40,7 +40,7 @@ void Victor::InitVictor() {
  * 
  * @param channel The PWM channel on the digital module that the Victor is attached to.
  */
-Victor::Victor(UINT32 channel) : SafePWM(channel)
+Victor::Victor(uint32_t channel) : SafePWM(channel)
 {
 	InitVictor();
 }
@@ -51,7 +51,7 @@ Victor::Victor(UINT32 channel) : SafePWM(channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The PWM channel on the digital module that the Victor is attached to (1..10).
  */
-Victor::Victor(UINT8 moduleNumber, UINT32 channel) : SafePWM(moduleNumber, channel)
+Victor::Victor(uint8_t moduleNumber, uint32_t channel) : SafePWM(moduleNumber, channel)
 {
 	InitVictor();
 }
@@ -69,7 +69,7 @@ Victor::~Victor()
  * @param speed The speed value between -1.0 and 1.0 to set.
  * @param syncGroup Unused interface.
  */
-void Victor::Set(float speed, UINT8 syncGroup)
+void Victor::Set(float speed, uint8_t syncGroup)
 {
 	SetSpeed(speed);
 }

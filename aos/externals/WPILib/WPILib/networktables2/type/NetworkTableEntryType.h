@@ -67,6 +67,16 @@ public:
 	 * @return A copy of the given value of this type.
 	 */
 	virtual EntryValue copyValue(EntryValue value);
+
+	/**
+	 * Compares two values to determine if they are equal
+	 * and should not push an update to other nodes
+	 * 
+	 * @param v1
+	 * @param v2
+	 * @return true if the two values are equal
+	 */
+	virtual bool areEqual(EntryValue v1, EntryValue v2) = 0;
 	
 	/**
 	 * Deletes a value of this type.

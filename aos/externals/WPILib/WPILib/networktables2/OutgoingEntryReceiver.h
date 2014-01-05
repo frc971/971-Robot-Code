@@ -10,7 +10,7 @@
 
 class OutgoingEntryReceiver;
 
-#include "NetworkTableEntry.h"
+#include "networktables2/NetworkTableEntry.h"
 
 class NetworkTableEntry;
 

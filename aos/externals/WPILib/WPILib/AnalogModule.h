@@ -25,38 +25,38 @@ public:
 	static const long kTimebase = 40000000; ///< 40 MHz clock
 	static const long kDefaultOversampleBits = 0;
 	static const long kDefaultAverageBits = 7;
-	static const float kDefaultSampleRate = 50000.0;
+	static constexpr float kDefaultSampleRate = 50000.0;
 
 	void SetSampleRate(float samplesPerSecond);
 	float GetSampleRate();
-	void SetAverageBits(UINT32 channel, UINT32 bits);
-	UINT32 GetAverageBits(UINT32 channel);
-	void SetOversampleBits(UINT32 channel, UINT32 bits);
-	UINT32 GetOversampleBits(UINT32 channel);
-	INT16 GetValue(UINT32 channel);
-	INT32 GetAverageValue(UINT32 channel);
-	float GetAverageVoltage(UINT32 channel);
-	float GetVoltage(UINT32 channel);
-	UINT32 GetLSBWeight(UINT32 channel);
-	INT32 GetOffset(UINT32 channel);
-	INT32 VoltsToValue(INT32 channel, float voltage);
+	void SetAverageBits(uint32_t channel, uint32_t bits);
+	uint32_t GetAverageBits(uint32_t channel);
+	void SetOversampleBits(uint32_t channel, uint32_t bits);
+	uint32_t GetOversampleBits(uint32_t channel);
+	int16_t GetValue(uint32_t channel);
+	int32_t GetAverageValue(uint32_t channel);
+	float GetAverageVoltage(uint32_t channel);
+	float GetVoltage(uint32_t channel);
+	uint32_t GetLSBWeight(uint32_t channel);
+	int32_t GetOffset(uint32_t channel);
+	int32_t VoltsToValue(int32_t channel, float voltage);
 
-	static AnalogModule* GetInstance(UINT8 moduleNumber);
+	static AnalogModule* GetInstance(uint8_t moduleNumber);
 
 protected:
-	explicit AnalogModule(UINT8 moduleNumber);
+	explicit AnalogModule(uint8_t moduleNumber);
 	virtual ~AnalogModule();
 
 private:
 	static SEM_ID m_registerWindowSemaphore;
 
-	UINT32 GetNumActiveChannels();
-	UINT32 GetNumChannelsToActivate();
-	void SetNumChannelsToActivate(UINT32 channels);
+	uint32_t GetNumActiveChannels();
+	uint32_t GetNumChannelsToActivate();
+	void SetNumChannelsToActivate(uint32_t channels);
 
 	tAI *m_module;
 	bool m_sampleRateSet;
-	UINT32 m_numChannelsToActivate;
+	uint32_t m_numChannelsToActivate;
 };
 
 #endif

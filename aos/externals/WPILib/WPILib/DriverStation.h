@@ -26,18 +26,18 @@ public:
 	virtual ~DriverStation();
 	static DriverStation *GetInstance();
 
-	static const UINT32 kBatteryModuleNumber = 1;
-	static const UINT32 kBatteryChannel = 8;
-	static const UINT32 kJoystickPorts = 4;
-	static const UINT32 kJoystickAxes = 6;
+	static const uint32_t kBatteryModuleNumber = 1;
+	static const uint32_t kBatteryChannel = 8;
+	static const uint32_t kJoystickPorts = 4;
+	static const uint32_t kJoystickAxes = 6;
 
-	float GetStickAxis(UINT32 stick, UINT32 axis);
-	short GetStickButtons(UINT32 stick);
+	float GetStickAxis(uint32_t stick, uint32_t axis);
+	short GetStickButtons(uint32_t stick);
 
-	float GetAnalogIn(UINT32 channel);
-	bool GetDigitalIn(UINT32 channel);
-	void SetDigitalOut(UINT32 channel, bool value);
-	bool GetDigitalOut(UINT32 channel);
+	float GetAnalogIn(uint32_t channel);
+	bool GetDigitalIn(uint32_t channel);
+	void SetDigitalOut(uint32_t channel, bool value);
+	bool GetDigitalOut(uint32_t channel);
 
 	bool IsEnabled();
 	bool IsDisabled();
@@ -47,13 +47,13 @@ public:
 	bool IsNewControlData();
 	bool IsFMSAttached();
 
-	UINT32 GetPacketNumber();
+	uint32_t GetPacketNumber();
 	Alliance GetAlliance();
-	UINT32 GetLocation();
+	uint32_t GetLocation();
 	void WaitForData();
 	double GetMatchTime();
 	float GetBatteryVoltage();
-	UINT16 GetTeamNumber();
+	uint16_t GetTeamNumber();
 
 	// Get the default dashboard packers. These instances stay around even after
 	// a call to SetHigh|LowPriorityDashboardPackerToUse() changes which packer
@@ -103,14 +103,14 @@ protected:
 private:
 	static void InitTask(DriverStation *ds);
 	static DriverStation *m_instance;
-	static UINT8 m_updateNumber;
+	static uint8_t m_updateNumber;
 	///< TODO: Get rid of this and use the semaphore signaling
-	static const float kUpdatePeriod = 0.02;
+	static constexpr float kUpdatePeriod = 0.02;
 
 	void Run();
 
 	struct FRCCommonControlData *m_controlData;
-	UINT8 m_digitalOut;
+	uint8_t m_digitalOut;
 	AnalogChannel *m_batteryChannel;
 	SEM_ID m_statusDataSemaphore;
 	Task m_task;

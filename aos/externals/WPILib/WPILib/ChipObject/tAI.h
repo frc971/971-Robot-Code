@@ -30,9 +30,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Channel : 3;
          unsigned Module : 1;
          unsigned Averaged : 1;
+#else
+         unsigned Averaged : 1;
+         unsigned Module : 1;
+         unsigned Channel : 3;
+#endif
       };
       struct{
          unsigned value : 5;
@@ -41,8 +47,13 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned ScanSize : 3;
          unsigned ConvertRate : 26;
+#else
+         unsigned ConvertRate : 26;
+         unsigned ScanSize : 3;
+#endif
       };
       struct{
          unsigned value : 29;
@@ -64,18 +75,18 @@ public:
 
    typedef enum
    {
-      kNumScanListElements = 8,
-   } tScanList_IfaceConstants;
+   } tLoopTiming_IfaceConstants;
 
-   virtual void writeScanList(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
-   virtual unsigned char readScanList(unsigned char bitfield_index, tRioStatusCode *status) = 0;
+   virtual unsigned int readLoopTiming(tRioStatusCode *status) = 0;
 
 
    typedef enum
    {
-   } tLoopTiming_IfaceConstants;
+      kNumOversampleBitsElements = 8,
+   } tOversampleBits_IfaceConstants;
 
-   virtual unsigned int readLoopTiming(tRioStatusCode *status) = 0;
+   virtual void writeOversampleBits(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
+   virtual unsigned char readOversampleBits(unsigned char bitfield_index, tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -89,11 +100,11 @@ public:
 
    typedef enum
    {
-      kNumOversampleBitsElements = 8,
-   } tOversampleBits_IfaceConstants;
+      kNumScanListElements = 8,
+   } tScanList_IfaceConstants;
 
-   virtual void writeOversampleBits(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
-   virtual unsigned char readOversampleBits(unsigned char bitfield_index, tRioStatusCode *status) = 0;
+   virtual void writeScanList(unsigned char bitfield_index, unsigned char value, tRioStatusCode *status) = 0;
+   virtual unsigned char readScanList(unsigned char bitfield_index, tRioStatusCode *status) = 0;
 
 
 
@@ -102,6 +113,13 @@ public:
    } tOutput_IfaceConstants;
 
    virtual signed int readOutput(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tLatchOutput_IfaceConstants;
+
+   virtual void strobeLatchOutput(tRioStatusCode *status) = 0;
 
 
    typedef enum
@@ -116,13 +134,6 @@ public:
    virtual unsigned char readReadSelect_Channel(tRioStatusCode *status) = 0;
    virtual unsigned char readReadSelect_Module(tRioStatusCode *status) = 0;
    virtual bool readReadSelect_Averaged(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
-   } tLatchOutput_IfaceConstants;
-
-   virtual void strobeLatchOutput(tRioStatusCode *status) = 0;
 
 
 

@@ -6,7 +6,7 @@
 
 #include "Watchdog.h"
 
-const double Watchdog::kDefaultWatchdogExpiration;
+constexpr double Watchdog::kDefaultWatchdogExpiration;
 
 /**
  * The Watchdog is born.
@@ -73,7 +73,7 @@ void Watchdog::Kill()
 double Watchdog::GetTimer()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 timer = m_fpgaWatchDog->readTimer(&localStatus);
+	uint32_t timer = m_fpgaWatchDog->readTimer(&localStatus);
 	wpi_setError(localStatus);
 	return timer / (kSystemClockTicksPerMicrosecond * 1e6);
 }
@@ -86,7 +86,7 @@ double Watchdog::GetTimer()
 double Watchdog::GetExpiration()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 expiration = m_fpgaWatchDog->readExpiration(&localStatus);
+	uint32_t expiration = m_fpgaWatchDog->readExpiration(&localStatus);
 	wpi_setError(localStatus);
 	return expiration / (kSystemClockTicksPerMicrosecond * 1e6);
 }
@@ -99,7 +99,7 @@ double Watchdog::GetExpiration()
 void Watchdog::SetExpiration(double expiration)
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	m_fpgaWatchDog->writeExpiration((UINT32)(expiration * (kSystemClockTicksPerMicrosecond * 1e6)), &localStatus);
+	m_fpgaWatchDog->writeExpiration((uint32_t)(expiration * (kSystemClockTicksPerMicrosecond * 1e6)), &localStatus);
 	wpi_setError(localStatus);
 }
 

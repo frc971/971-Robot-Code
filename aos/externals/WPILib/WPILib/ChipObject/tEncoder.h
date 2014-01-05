@@ -30,8 +30,13 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Direction : 1;
          signed Value : 31;
+#else
+         signed Value : 31;
+         unsigned Direction : 1;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -40,6 +45,7 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned ASource_Channel : 4;
          unsigned ASource_Module : 1;
          unsigned ASource_AnalogTrigger : 1;
@@ -52,6 +58,20 @@ public:
          unsigned IndexActiveHigh : 1;
          unsigned Reverse : 1;
          unsigned Enable : 1;
+#else
+         unsigned Enable : 1;
+         unsigned Reverse : 1;
+         unsigned IndexActiveHigh : 1;
+         unsigned IndexSource_AnalogTrigger : 1;
+         unsigned IndexSource_Module : 1;
+         unsigned IndexSource_Channel : 4;
+         unsigned BSource_AnalogTrigger : 1;
+         unsigned BSource_Module : 1;
+         unsigned BSource_Channel : 4;
+         unsigned ASource_AnalogTrigger : 1;
+         unsigned ASource_Module : 1;
+         unsigned ASource_Channel : 4;
+#endif
       };
       struct{
          unsigned value : 21;
@@ -60,9 +80,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Period : 23;
          signed Count : 8;
          unsigned Stalled : 1;
+#else
+         unsigned Stalled : 1;
+         signed Count : 8;
+         unsigned Period : 23;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -71,9 +97,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned StallPeriod : 24;
          unsigned AverageSize : 7;
          unsigned UpdateWhenEmpty : 1;
+#else
+         unsigned UpdateWhenEmpty : 1;
+         unsigned AverageSize : 7;
+         unsigned StallPeriod : 24;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -124,19 +156,19 @@ public:
 
    typedef enum
    {
-   } tReset_IfaceConstants;
-
-   virtual void strobeReset(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
    } tTimerOutput_IfaceConstants;
 
    virtual tTimerOutput readTimerOutput(tRioStatusCode *status) = 0;
    virtual unsigned int readTimerOutput_Period(tRioStatusCode *status) = 0;
    virtual signed char readTimerOutput_Count(tRioStatusCode *status) = 0;
    virtual bool readTimerOutput_Stalled(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tReset_IfaceConstants;
+
+   virtual void strobeReset(tRioStatusCode *status) = 0;
 
 
    typedef enum

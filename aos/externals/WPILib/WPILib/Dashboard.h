@@ -26,17 +26,17 @@ public:
 	enum Type {kI8, kI16, kI32, kU8, kU16, kU32, kFloat, kDouble, kBoolean, kString, kOther};
 	enum ComplexType {kArray, kCluster};
 
-	void AddI8(INT8 value);
-	void AddI16(INT16 value);
-	void AddI32(INT32 value);
-	void AddU8(UINT8 value);
-	void AddU16(UINT16 value);
-	void AddU32(UINT32 value);
+	void AddI8(int8_t value);
+	void AddI16(int16_t value);
+	void AddI32(int32_t value);
+	void AddU8(uint8_t value);
+	void AddU16(uint16_t value);
+	void AddU32(uint32_t value);
 	void AddFloat(float value);
 	void AddDouble(double value);
 	void AddBoolean(bool value);
 	void AddString(char* value);
-	void AddString(char* value, INT32 length);
+	void AddString(char* value, int32_t length);
 
 	void AddArray();
 	void FinalizeArray();
@@ -45,27 +45,27 @@ public:
 
 	void Printf(const char *writeFmt, ...);
 
-	INT32 Finalize();
-	void GetStatusBuffer(char** userStatusData, INT32* userStatusDataSize);
+	int32_t Finalize();
+	void GetStatusBuffer(char** userStatusData, int32_t* userStatusDataSize);
 	void Flush() {}
 private:
-	static const INT32 kMaxDashboardDataSize = USER_STATUS_DATA_SIZE - sizeof(UINT32) * 3 - sizeof(UINT8); // 13 bytes needed for 3 size parameters and the sequence number
+	static const int32_t kMaxDashboardDataSize = USER_STATUS_DATA_SIZE - sizeof(uint32_t) * 3 - sizeof(uint8_t); // 13 bytes needed for 3 size parameters and the sequence number
 
 	// Usage Guidelines...
 	DISALLOW_COPY_AND_ASSIGN(Dashboard);
 
-	bool ValidateAdd(INT32 size);
+	bool ValidateAdd(int32_t size);
 	void AddedElement(Type type);
 	bool IsArrayRoot();
 
 	char *m_userStatusData;
-	INT32 m_userStatusDataSize;
+	int32_t m_userStatusDataSize;
 	char *m_localBuffer;
 	char *m_localPrintBuffer;
 	char *m_packPtr;
 	std::vector<Type> m_expectedArrayElementType;
-	std::vector<INT32> m_arrayElementCount;
-	std::vector<INT32*> m_arraySizePtr;
+	std::vector<int32_t> m_arrayElementCount;
+	std::vector<int32_t*> m_arraySizePtr;
 	std::stack<ComplexType> m_complexTypeStack;
 	SEM_ID m_printSemaphore;
 	SEM_ID m_statusDataSemaphore;

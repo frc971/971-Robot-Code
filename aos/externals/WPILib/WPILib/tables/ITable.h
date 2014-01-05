@@ -20,7 +20,7 @@ typedef union EntryValue EntryValue;
 
 #include <string>
 #include "networktables2/type/ComplexData.h"
-#include "ITableListener.h"
+#include "tables/ITableListener.h"
 
 
 class ITable {

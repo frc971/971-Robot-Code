@@ -13,8 +13,8 @@
 #include <taskLib.h>
 #include <usrLib.h>
 
-const UINT32 Task::kDefaultPriority;
-const INT32 Task::kInvalidTaskID;
+const uint32_t Task::kDefaultPriority;
+const int32_t Task::kInvalidTaskID;
 
 /**
  * Create but don't launch a task.
@@ -23,7 +23,7 @@ const INT32 Task::kInvalidTaskID;
  * @param priority The VxWorks priority for the task.
  * @param stackSize The size of the stack for the task
  */
-Task::Task(const char* name, FUNCPTR function, INT32 priority, UINT32 stackSize)
+Task::Task(const char* name, FUNCPTR function, int32_t priority, uint32_t stackSize)
 {
 	m_taskID = kInvalidTaskID;
 	m_function = function;
@@ -33,7 +33,7 @@ Task::Task(const char* name, FUNCPTR function, INT32 priority, UINT32 stackSize)
 	strcpy(m_taskName, "FRC_");
 	strcpy(m_taskName+4, name);
 
-	static INT32 instances = 0;
+	static int32_t instances = 0;
 	instances++;
 	nUsageReporting::report(nUsageReporting::kResourceType_Task, instances, 0, m_taskName);
 }
@@ -49,8 +49,8 @@ Task::~Task()
  * Starts this task.
  * If it is already running or unable to start, it fails and returns false.
  */
-bool Task::Start(UINT32 arg0, UINT32 arg1, UINT32 arg2, UINT32 arg3, UINT32 arg4, 
-		UINT32 arg5, UINT32 arg6, UINT32 arg7, UINT32 arg8, UINT32 arg9)
+bool Task::Start(uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, 
+		uint32_t arg5, uint32_t arg6, uint32_t arg7, uint32_t arg8, uint32_t arg9)
 {
 	m_taskID = taskSpawn(m_taskName,
 						m_priority,
@@ -138,7 +138,7 @@ bool Task::Verify()
  * Gets the priority of a task.
  * @returns task priority or 0 if an error occured
  */
-INT32 Task::GetPriority()
+int32_t Task::GetPriority()
 {
 	if (HandleError(taskPriorityGet(m_taskID, &m_priority)))
 		return m_priority;
@@ -153,7 +153,7 @@ INT32 Task::GetPriority()
  * @param priority The priority the task should run at.
  * @returns true on success.
  */
-bool Task::SetPriority(INT32 priority)
+bool Task::SetPriority(int32_t priority)
 {
 	m_priority = priority;
 	return HandleError(taskPrioritySet(m_taskID, m_priority));
@@ -172,7 +172,7 @@ const char* Task::GetName()
  * Get the ID of a task
  * @returns Task ID of this task.  Task::kInvalidTaskID (-1) if the task has not been started or has already exited.
  */
-INT32 Task::GetID()
+int32_t Task::GetID()
 {
 	if (Verify())
 		return m_taskID;
