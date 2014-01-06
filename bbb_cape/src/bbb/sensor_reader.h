@@ -4,6 +4,7 @@
 #include <string>
 
 #include "aos/common/time.h"
+#include "aos/common/macros.h"
 
 #include "bbb/uart_reader.h"
 #include "bbb/packet_finder.h"
@@ -43,6 +44,8 @@ class SensorReader {
   int cape_resets_ = 0;
   ::aos::time::Time last_received_time_ = ::aos::time::Time::InSeconds(0);
   uint64_t last_cape_timestamp_;
+
+  DISALLOW_COPY_AND_ASSIGN(SensorReader);
 };
 
 }  // namespace bbb
