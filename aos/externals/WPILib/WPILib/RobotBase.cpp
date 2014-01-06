@@ -153,6 +153,7 @@ void RobotBase::WriteVersionString() {
 	FILE *file = fopen(FILE_NAME, "w");
 	if (file != NULL) {
 		fputs(VERSION_STRING, file);
+    fputs(" (customized by Team 971 Spartan Robotics)", file);
 		fclose(file);
 	}
 }
@@ -181,6 +182,7 @@ void RobotBase::startRobotTask(FUNCPTR factory)
 #else
 	printf("WPILib was compiled without -D'SVN_REV=nnnn'\n");
 #endif
+  printf("This WPILib has been fixed by Team 971 Spartan Robotics.\n");
 
 	// Check for startup code already running
 	int32_t oldId = taskNameToId(const_cast<char*>("FRC_RobotTask"));
