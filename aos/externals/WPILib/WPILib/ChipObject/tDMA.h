@@ -28,6 +28,7 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Pause : 1;
          unsigned Enable_AI0_Low : 1;
          unsigned Enable_AI0_High : 1;
@@ -48,6 +49,28 @@ public:
          unsigned Enable_Encoders : 1;
          unsigned Enable_EncoderTimers : 1;
          unsigned ExternalClock : 1;
+#else
+         unsigned ExternalClock : 1;
+         unsigned Enable_EncoderTimers : 1;
+         unsigned Enable_Encoders : 1;
+         unsigned Enable_CounterTimers_High : 1;
+         unsigned Enable_CounterTimers_Low : 1;
+         unsigned Enable_Counters_High : 1;
+         unsigned Enable_Counters_Low : 1;
+         unsigned Enable_AnalogTriggers : 1;
+         unsigned Enable_DI : 1;
+         unsigned Enable_Accumulator1 : 1;
+         unsigned Enable_Accumulator0 : 1;
+         unsigned Enable_AIAveraged1_High : 1;
+         unsigned Enable_AIAveraged1_Low : 1;
+         unsigned Enable_AI1_High : 1;
+         unsigned Enable_AI1_Low : 1;
+         unsigned Enable_AIAveraged0_High : 1;
+         unsigned Enable_AIAveraged0_Low : 1;
+         unsigned Enable_AI0_High : 1;
+         unsigned Enable_AI0_Low : 1;
+         unsigned Pause : 1;
+#endif
       };
       struct{
          unsigned value : 20;
@@ -56,11 +79,19 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned ExternalClockSource_Channel : 4;
          unsigned ExternalClockSource_Module : 1;
          unsigned ExternalClockSource_AnalogTrigger : 1;
          unsigned RisingEdge : 1;
          unsigned FallingEdge : 1;
+#else
+         unsigned FallingEdge : 1;
+         unsigned RisingEdge : 1;
+         unsigned ExternalClockSource_AnalogTrigger : 1;
+         unsigned ExternalClockSource_Module : 1;
+         unsigned ExternalClockSource_Channel : 4;
+#endif
       };
       struct{
          unsigned value : 8;

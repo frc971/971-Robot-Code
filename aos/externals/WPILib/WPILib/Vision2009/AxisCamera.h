@@ -44,7 +44,7 @@ enum FrcvCameraMetric {CAM_STARTS, CAM_STOPS,
 #define CAM_NUM_METRICS 17
 
 /** Private NI function needed to write to the VxWorks target */
-IMAQ_FUNC int Priv_SetWriteFileAllowed(UINT32 enable); 
+IMAQ_FUNC int Priv_SetWriteFileAllowed(uint32_t enable); 
 
 /**
 @brief Possible image sizes that you can set on the camera.

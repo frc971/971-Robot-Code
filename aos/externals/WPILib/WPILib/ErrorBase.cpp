@@ -13,6 +13,7 @@
 #include <errnoLib.h>
 #include <symLib.h>
 #include <sysSymTbl.h>
+#include <cstdio>
 
 Error ErrorBase::_globalError;
 
@@ -54,7 +55,7 @@ void ErrorBase::ClearError() const
  * @param lineNumber Line number of the error source
  */
 void ErrorBase::SetErrnoError(const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const
+		const char* filename, const char* function, uint32_t lineNumber) const
 {
 	char err[256];
 	int errNo = errnoGet();
@@ -91,7 +92,7 @@ void ErrorBase::SetErrnoError(const char *contextMessage,
  * @param function Function of the error source
  * @param lineNumber Line number of the error source
  */
-void ErrorBase::SetImaqError(int success, const char *contextMessage, const char* filename, const char* function, UINT32 lineNumber) const
+void ErrorBase::SetImaqError(int success, const char *contextMessage, const char* filename, const char* function, uint32_t lineNumber) const
 {
 	//  If there was an error
 	if (success <= 0) {
@@ -116,7 +117,7 @@ void ErrorBase::SetImaqError(int success, const char *contextMessage, const char
  * @param lineNumber Line number of the error source
  */
 void ErrorBase::SetError(Error::Code code, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const
+		const char* filename, const char* function, uint32_t lineNumber) const
 {
 	//  If there was an error
 	if (code != 0) {
@@ -137,7 +138,7 @@ void ErrorBase::SetError(Error::Code code, const char *contextMessage,
  * @param lineNumber Line number of the error source
  */
 void ErrorBase::SetWPIError(const char *errorMessage, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const
+		const char* filename, const char* function, uint32_t lineNumber) const
 {
 	char err[256];
 	snprintf(err, sizeof(err), "%s: %s", errorMessage, contextMessage);
@@ -175,7 +176,7 @@ bool ErrorBase::StatusIsFatal() const
  * @param lineNumber Line number of the error source
  */
 void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber)
+		const char* filename, const char* function, uint32_t lineNumber)
 {
   if (code != 0) {
 	  //  Set the current error information for this object.
@@ -193,7 +194,7 @@ void ErrorBase::SetGlobalError(Error::Code code, const char *contextMessage,
  * @param lineNumber Line number of the error source
  */
 void ErrorBase::SetGlobalWPIError(const char *errorMessage, const char *contextMessage,
-        const char* filename, const char* function, UINT32 lineNumber)
+        const char* filename, const char* function, uint32_t lineNumber)
 {
 	char err[256];
 	snprintf(err, sizeof(err), "%s: %s", errorMessage, contextMessage);

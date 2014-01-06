@@ -35,7 +35,7 @@
 
 /* error handling functions */
 int GetLastVisionError();
-char* GetVisionErrorText(int errorCode);
+const char* GetVisionErrorText(int errorCode);
 
 #endif
 

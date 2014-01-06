@@ -13,7 +13,7 @@
 #include "WPIErrors.h"
 
 /** Private NI function to decode JPEG */
-IMAQ_FUNC int Priv_ReadJPEGString_C(Image* _image, const unsigned char* _string, UINT32 _stringLength);
+IMAQ_FUNC int Priv_ReadJPEGString_C(Image* _image, const unsigned char* _string, uint32_t _stringLength);
 
 // Max packet without jumbo frames is 1500... add 36 because??
 #define kMaxPacketSize 1536
@@ -234,6 +234,7 @@ Authorization: Basic RlJDOkZSQw==\n\n";
 			ReadImagesFromCamera();
 		}
 	}
+	return 0;
 }
 
 /**

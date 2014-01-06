@@ -9,6 +9,8 @@
 #include "Buttons/HeldButtonScheduler.h"
 #include "Buttons/PressedButtonScheduler.h"
 #include "Buttons/ReleasedButtonScheduler.h"
+#include "Buttons/ToggleButtonScheduler.h"
+#include "Buttons/CancelButtonScheduler.h"
 
 Trigger::Trigger() {
 	m_table = NULL;
@@ -47,7 +49,15 @@ void Trigger::WhenInactive(Command *command)
 	rbs->Start();
 }
 
+void Trigger::CancelWhenActive(Command *command) {
+	CancelButtonScheduler *cbs = new CancelButtonScheduler(Grab(), this, command);
+	cbs->Start();
+}
 
+void Trigger::ToggleWhenActive(Command *command) {
+	ToggleButtonScheduler *tbs = new ToggleButtonScheduler(Grab(), this, command);
+	tbs->Start();
+}
 
 std::string Trigger::GetSmartDashboardType(){
 	return "Button";

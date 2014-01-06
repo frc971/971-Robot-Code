@@ -21,7 +21,7 @@ void SafePWM::InitSafePWM()
  * Constructor for a SafePWM object taking a channel number
  * @param channel The channel number to be used for the underlying PWM object
  */
-SafePWM::SafePWM(UINT32 channel): PWM(channel)
+SafePWM::SafePWM(uint32_t channel): PWM(channel)
 {
 	InitSafePWM();
 }
@@ -31,7 +31,7 @@ SafePWM::SafePWM(UINT32 channel): PWM(channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The PWM channel number on the module (1..10).
  */
-SafePWM::SafePWM(UINT8 moduleNumber, UINT32 channel): PWM(moduleNumber, channel)
+SafePWM::SafePWM(uint8_t moduleNumber, uint32_t channel): PWM(moduleNumber, channel)
 {
 	InitSafePWM();
 }
@@ -100,7 +100,7 @@ bool SafePWM::IsSafetyEnabled()
 
 void SafePWM::GetDescription(char *desc)
 {
-	snprintf(desc, 64, "PWM %d on module %d", GetChannel(), GetModuleNumber());
+	snprintf(desc, 64, "PWM %ld on module %ld", GetChannel(), GetModuleNumber());
 }
 
 /**

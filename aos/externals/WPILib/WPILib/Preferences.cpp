@@ -14,7 +14,7 @@
 #include <algorithm>
 
 /** Private NI function needed to write to the VxWorks target */
-extern "C" int Priv_SetWriteFileAllowed(UINT32 enable); 
+extern "C" int Priv_SetWriteFileAllowed(uint32_t enable); 
 
 /** The Preferences table name */
 static const char *kTableName = "Preferences";
@@ -41,7 +41,7 @@ Preferences::Preferences() :
 	m_tableLock = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE | SEM_DELETE_SAFE);
 
 	Synchronized sync(m_fileLock);
-	m_readTask.Start((UINT32)this);
+	m_readTask.Start((uint32_t)this);
 	semTake(m_fileOpStarted, WAIT_FOREVER);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_Preferences, 0);
@@ -324,7 +324,7 @@ void Preferences::PutLong(const char *key, INT64 value)
 void Preferences::Save()
 {
 	Synchronized sync(m_fileLock);
-	m_writeTask.Start((UINT32)this);
+	m_writeTask.Start((uint32_t)this);
 	semTake(m_fileOpStarted, WAIT_FOREVER);
 }
 

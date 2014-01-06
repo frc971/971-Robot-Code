@@ -10,7 +10,7 @@
 
 
 PeriodicNTThread::PeriodicNTThread(PeriodicRunnable* _r, const char* _name) : 
-			name(_name), thread(new Task(name, (FUNCPTR)PeriodicNTThread::taskMain)), r(_r), run(true){
+			name(_name), thread(new NTTask(name, (FUNCPTR)PeriodicNTThread::taskMain)), r(_r), run(true){
 	fprintf(stdout, "Starting task: %s\n", name);
 	fflush(stdout);
 	thread->Start((UINT32)this);
@@ -29,17 +29,16 @@ int PeriodicNTThread::_taskMain(){
 			r->run();
 		}
 	} catch (...) {
-		fprintf(stdout, "Task exited with uncaught exception %s\n", name);
+		fprintf(stdout, "NTTask exited with uncaught exception %s\n", name);
 		fflush(stdout);
 		return 1;
 	}
-	fprintf(stdout, "Task exited normally: %s\n", name);
+	fprintf(stdout, "NTTask exited normally: %s\n", name);
 	fflush(stdout);
 	return 0;
 }
 void PeriodicNTThread::stop() {
 	run = false;
-	//TODO thread->Stop();
 }
 bool PeriodicNTThread::isRunning() {
 	return thread->IsReady();

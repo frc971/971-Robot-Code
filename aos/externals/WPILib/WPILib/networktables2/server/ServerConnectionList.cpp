@@ -6,12 +6,13 @@
  */
 
 #include "networktables2/server/ServerConnectionList.h"
+#include "networktables2/server/ServerIncomingStreamMonitor.h"
 #include <algorithm>
 #include <stdio.h>
 
 
 
-ServerConnectionList::ServerConnectionList()
+ServerConnectionList::ServerConnectionList(ServerIncomingStreamMonitor *Factory) : m_Factory(Factory)
 {
 }
 ServerConnectionList::~ServerConnectionList()
@@ -22,27 +23,28 @@ ServerConnectionList::~ServerConnectionList()
 
 void ServerConnectionList::add(ServerConnectionAdapter& connection)
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	connections.push_back(&connection);
 }
 
 void ServerConnectionList::close(ServerConnectionAdapter& connectionAdapter, bool closeStream)
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	std::vector<ServerConnectionAdapter*>::iterator connectionPosition = std::find(connections.begin(), connections.end(), &connectionAdapter);
 	if (connectionPosition != connections.end() && (*connectionPosition)==&connectionAdapter)
 	{
-		fprintf(stdout, "Close: %p\n", &connectionAdapter);
+	        fprintf(stdout, "[NT] Close: %p\n", (void*)&connectionAdapter);
 		fflush(stdout);
 		connections.erase(connectionPosition);
-		connectionAdapter.shutdown(closeStream);
-		delete &connectionAdapter;
+		m_Factory->close(&connectionAdapter);
+		//connectionAdapter.shutdown(closeStream);
+		//delete &connectionAdapter;
 	}
 }
 
 void ServerConnectionList::closeAll()
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	while(connections.size() > 0)
 	{
 		close(*connections[0], true);
@@ -51,7 +53,7 @@ void ServerConnectionList::closeAll()
 
 void ServerConnectionList::offerOutgoingAssignment(NetworkTableEntry* entry)
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	for(unsigned int i = 0; i < connections.size(); ++i)
 	{
 		connections[i]->offerOutgoingAssignment(entry);
@@ -59,7 +61,7 @@ void ServerConnectionList::offerOutgoingAssignment(NetworkTableEntry* entry)
 }
 void ServerConnectionList::offerOutgoingUpdate(NetworkTableEntry* entry)
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	for(unsigned int i = 0; i < connections.size(); ++i)
 	{
 		connections[i]->offerOutgoingUpdate(entry);
@@ -67,7 +69,7 @@ void ServerConnectionList::offerOutgoingUpdate(NetworkTableEntry* entry)
 }
 void ServerConnectionList::flush()
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	for(unsigned int i = 0; i < connections.size(); ++i)
 	{
 		connections[i]->flush();
@@ -75,7 +77,7 @@ void ServerConnectionList::flush()
 }
 void ServerConnectionList::ensureAlive()
 { 
-	Synchronized sync(connectionsLock);
+	NTSynchronized sync(connectionsLock);
 	for(unsigned int i = 0; i < connections.size(); ++i)
 	{
 		connections[i]->ensureAlive();

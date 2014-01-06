@@ -11,7 +11,7 @@
 
 void ServerConnectionAdapter::gotoState(ServerConnectionState* newState){
 	if(connectionState!=newState){
-	  fprintf(stdout, "%p entered connection state: %s\n",this, newState->toString());
+	  fprintf(stdout, "[NT] %p entered connection state: %s\n", (void*)this, newState->toString());
 	  fflush(stdout);
 		connectionState = newState;
 	}
@@ -19,7 +19,7 @@ void ServerConnectionAdapter::gotoState(ServerConnectionState* newState){
 
 ServerConnectionAdapter::ServerConnectionAdapter(IOStream* stream, ServerNetworkTableEntryStore& _entryStore, IncomingEntryReceiver& _transactionReceiver, ServerAdapterManager& _adapterListener, NetworkTableEntryTypeManager& typeManager, NTThreadManager& threadManager) :
 	entryStore(_entryStore), transactionReceiver(_transactionReceiver), adapterListener(_adapterListener),
-	connection(stream, typeManager), monitorThread(*this, connection){
+	connection(stream, typeManager), monitorThread(*this, connection), m_IsAdapterListenerClosed(false) {
         connectionState = &ServerConnectionState::CLIENT_DISCONNECTED;
 	gotoState(&ServerConnectionState::GOT_CONNECTION_FROM_CLIENT);
 	readThread = threadManager.newBlockingPeriodicThread(&monitorThread, "Server Connection Reader Thread");
@@ -31,20 +31,22 @@ ServerConnectionAdapter::~ServerConnectionAdapter(){
 
 
 void ServerConnectionAdapter::badMessage(BadMessageException& e) {
-  fprintf(stdout, "Bad message: %s\n", e.what());
+  fprintf(stdout, "[NT] Bad message: %s\n", e.what());
   fflush(stdout);
 	gotoState(new ServerConnectionState_Error(e));
 	adapterListener.close(*this, true);
+	m_IsAdapterListenerClosed=true;
 }
 
 void ServerConnectionAdapter::ioException(IOException& e) {
-  fprintf(stdout, "IOException message: %s\n", e.what());
+  fprintf(stdout, "[NT] IOException message: %s\n", e.what());
   fflush(stdout);
 	if(e.isEOF())
 		gotoState(&ServerConnectionState::CLIENT_DISCONNECTED);
 	else
 		gotoState(new ServerConnectionState_Error(e));
 	adapterListener.close(*this, false);
+	m_IsAdapterListenerClosed=true;
 }
 
 
@@ -54,8 +56,8 @@ void ServerConnectionAdapter::shutdown(bool closeStream) {
 		connection.close();
 }
 
-void ServerConnectionAdapter::keepAlive() {
-	//just let it happen
+bool ServerConnectionAdapter::keepAlive() {
+	return !m_IsAdapterListenerClosed;  //returns true as long as the adapter listener has not been flagged for closing
 }
 
 void ServerConnectionAdapter::clientHello(ProtocolVersion protocolRevision) {

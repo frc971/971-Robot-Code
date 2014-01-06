@@ -12,6 +12,7 @@
 #include "Skeleton.h"
 #include "Synchronized.h"
 #include "WPIErrors.h"
+#include <cstring>
 
 #define kHeaderBundleID kFRC_NetworkCommunication_DynamicType_Kinect_Header
 #define kSkeletonExtraBundleID kFRC_NetworkCommunication_DynamicType_Kinect_Extra1
@@ -116,7 +117,7 @@ Kinect::Point4 Kinect::GetPosition(int skeletonIndex)
  * @param skeletonIndex the skeleton to read from
  * @return the quality value as defined in the Kinect SDK
  */
-UINT32 Kinect::GetQuality(int skeletonIndex)
+uint32_t Kinect::GetQuality(int skeletonIndex)
 {
 	if (skeletonIndex <= 0 || skeletonIndex > kNumSkeletons)
 	{
@@ -151,7 +152,7 @@ Kinect::SkeletonTrackingState Kinect::GetTrackingState(int skeletonIndex)
 void Kinect::UpdateData()
 {
 	Synchronized sync(m_dataLock);
-	UINT32 packetNumber = DriverStation::GetInstance()->GetPacketNumber();
+	uint32_t packetNumber = DriverStation::GetInstance()->GetPacketNumber();
 	if (m_recentPacketNumber != packetNumber)
 	{
 		m_recentPacketNumber = packetNumber;

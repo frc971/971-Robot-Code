@@ -26,18 +26,18 @@ class Resource
 {
 public:
 	virtual ~Resource();
-	static void CreateResourceObject(Resource **r, UINT32 elements);
-	UINT32 Allocate(const char *resourceDesc, const ErrorBase *error);
-	UINT32 Allocate(UINT32 index, const char *resourceDesc,
-                  const ErrorBase *error);
-	void Free(UINT32 index, const ErrorBase *error);
+	static void CreateResourceObject(Resource **r, uint32_t elements);
+	uint32_t Allocate(const char *resourceDesc, const ErrorBase *error);
+	uint32_t Allocate(uint32_t index, const char *resourceDesc,
+                    const ErrorBase *error);
+	void Free(uint32_t index, const ErrorBase *error);
 
 private:
-	explicit Resource(UINT32 size);
+	explicit Resource(uint32_t size);
 
 	bool *m_isAllocated;
 	ReentrantSemaphore m_allocateLock;
-	UINT32 m_size;
+	uint32_t m_size;
 
 	static ReentrantSemaphore m_createLock;
 

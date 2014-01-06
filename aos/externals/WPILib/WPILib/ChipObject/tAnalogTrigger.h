@@ -30,10 +30,17 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned InHysteresis : 1;
          unsigned OverLimit : 1;
          unsigned Rising : 1;
          unsigned Falling : 1;
+#else
+         unsigned Falling : 1;
+         unsigned Rising : 1;
+         unsigned OverLimit : 1;
+         unsigned InHysteresis : 1;
+#endif
       };
       struct{
          unsigned value : 4;
@@ -42,12 +49,21 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Channel : 3;
          unsigned Module : 1;
          unsigned Averaged : 1;
          unsigned Filter : 1;
          unsigned FloatingRollover : 1;
          signed RolloverLimit : 8;
+#else
+         signed RolloverLimit : 8;
+         unsigned FloatingRollover : 1;
+         unsigned Filter : 1;
+         unsigned Averaged : 1;
+         unsigned Module : 1;
+         unsigned Channel : 3;
+#endif
       };
       struct{
          unsigned value : 15;

@@ -8,7 +8,7 @@
 #define WPILIB_H_
 
 #include "string.h"
-#include <iostream.h>
+#include <iostream>
 
 #include "Accelerometer.h"
 #include "ADXL345_I2C.h"

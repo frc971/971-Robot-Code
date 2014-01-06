@@ -23,10 +23,10 @@
 class AxisCameraParams : public ErrorBase
 {
 public:
-	typedef enum Exposure_t {kExposure_Automatic, kExposure_Hold, kExposure_FlickerFree50Hz, kExposure_FlickerFree60Hz};
-	typedef enum WhiteBalance_t {kWhiteBalance_Automatic, kWhiteBalance_Hold, kWhiteBalance_FixedOutdoor1, kWhiteBalance_FixedOutdoor2, kWhiteBalance_FixedIndoor, kWhiteBalance_FixedFlourescent1, kWhiteBalance_FixedFlourescent2};
-	typedef enum Resolution_t {kResolution_640x480, kResolution_640x360, kResolution_320x240, kResolution_160x120};
-	typedef enum Rotation_t {kRotation_0, kRotation_180};
+	typedef enum Exposure_t {kExposure_Automatic, kExposure_Hold, kExposure_FlickerFree50Hz, kExposure_FlickerFree60Hz} Exposure;
+	typedef enum WhiteBalance_t {kWhiteBalance_Automatic, kWhiteBalance_Hold, kWhiteBalance_FixedOutdoor1, kWhiteBalance_FixedOutdoor2, kWhiteBalance_FixedIndoor, kWhiteBalance_FixedFlourescent1, kWhiteBalance_FixedFlourescent2} WhiteBalance;
+	typedef enum Resolution_t {kResolution_640x480, kResolution_640x360, kResolution_320x240, kResolution_160x120} Resolution;
+	typedef enum Rotation_t {kRotation_0, kRotation_180} Rotation;
 
 protected:
 	AxisCameraParams(const char* ipAddress);
@@ -66,7 +66,7 @@ protected:
 	int ReadCamParams();
 
 	Task m_paramTask;
-	UINT32 m_ipAddress; // IPv4
+	uint32_t m_ipAddress; // IPv4
 	SEM_ID m_paramChangedSem;
 	SEM_ID m_socketPossessionSem;
 

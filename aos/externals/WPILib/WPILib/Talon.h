@@ -17,10 +17,10 @@
 class Talon : public SafePWM, public SpeedController
 {
 public:
-	explicit Talon(UINT32 channel);
-	Talon(UINT8 moduleNumber, UINT32 channel);
+	explicit Talon(uint32_t channel);
+	Talon(uint8_t moduleNumber, uint32_t channel);
 	virtual ~Talon();
-	virtual void Set(float value, UINT8 syncGroup=0);
+	virtual void Set(float value, uint8_t syncGroup=0);
 	virtual float Get();
 	virtual void Disable();
 

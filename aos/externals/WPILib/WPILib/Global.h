@@ -17,16 +17,16 @@ class Global : public SensorBase {
  public:
   static Global *GetInstance();
 
-  UINT16 GetFPGAVersion();
-  UINT32 GetFPGARevision();
-  UINT32 GetFPGATime();
-  INT32 GetRIOUserSwitch();
-  void SetRIOUserLED(UINT32 state);
-  INT32 GetRIOUserLED();
-  INT32 ToggleRIOUserLED();
-  void SetRIO_FPGA_LED(UINT32 state);
-  INT32 GetRIO_FPGA_LED();
-  INT32 ToggleRIO_FPGA_LED();
+  uint16_t GetFPGAVersion();
+  uint32_t GetFPGARevision();
+  uint32_t GetFPGATime();
+  int32_t GetRIOUserSwitch();
+  void SetRIOUserLED(uint32_t state);
+  int32_t GetRIOUserLED();
+  int32_t ToggleRIOUserLED();
+  void SetRIO_FPGA_LED(uint32_t state);
+  int32_t GetRIO_FPGA_LED();
+  int32_t ToggleRIO_FPGA_LED();
 
  private:
   Global();

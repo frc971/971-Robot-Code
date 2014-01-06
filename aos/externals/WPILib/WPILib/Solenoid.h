@@ -20,8 +20,8 @@
  */
 class Solenoid : public SolenoidBase, public LiveWindowSendable, public ITableListener {
 public:
-	explicit Solenoid(UINT32 channel);
-	Solenoid(UINT8 moduleNumber, UINT32 channel);
+	explicit Solenoid(uint32_t channel);
+	Solenoid(uint8_t moduleNumber, uint32_t channel);
 	virtual ~Solenoid();
 	virtual void Set(bool on);
 	virtual bool Get();
@@ -38,7 +38,7 @@ void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool
 private:
 	void InitSolenoid();
 
-	UINT32 m_channel; ///< The channel on the module to control.
+	uint32_t m_channel; ///< The channel on the module to control.
 	
 	ITable *m_table;
 };

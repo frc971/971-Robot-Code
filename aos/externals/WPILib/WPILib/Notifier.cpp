@@ -9,7 +9,7 @@
 #include "Utility.h"
 #include "WPIErrors.h"
 
-const UINT32 Notifier::kTimerInterruptNumber;
+const uint32_t Notifier::kTimerInterruptNumber;
 Notifier *Notifier::timerQueueHead = NULL;
 ReentrantSemaphore Notifier::queueSemaphore;
 tAlarm *Notifier::talarm = NULL;
@@ -94,7 +94,7 @@ void Notifier::UpdateAlarm()
 	{
 		tRioStatusCode localStatus = NiFpga_Status_Success;
 		// write the first item in the queue into the trigger time
-		talarm->writeTriggerTime((UINT32)(timerQueueHead->m_expirationTime * 1e6), &localStatus);
+		talarm->writeTriggerTime((uint32_t)(timerQueueHead->m_expirationTime * 1e6), &localStatus);
 		// Enable the alarm.  The hardware disables itself after each alarm.
 		talarm->writeEnable(true, &localStatus);
 		wpi_setStaticError(timerQueueHead, localStatus);

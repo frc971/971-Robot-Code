@@ -51,7 +51,7 @@ AxisCameraParams::AxisCameraParams(const char* ipAddress)
 #else
 		DriverStation *ds = DriverStation::GetInstance();
 		ds->WaitForData();
-		UINT16 teamNumber = ds->GetTeamNumber();
+		uint16_t teamNumber = ds->GetTeamNumber();
 		char cameraIP[16];
 		snprintf(cameraIP, 16, "10.%d.%d.11", teamNumber / 100, teamNumber % 100);
 		m_ipAddress = inet_addr(cameraIP);
@@ -353,7 +353,7 @@ int AxisCameraParams::GetMaxFPS()
  */
 int AxisCameraParams::UpdateCamParam(const char* param)
 {
-	char *requestString =
+	const char *requestString =
 		"GET /axis-cgi/admin/param.cgi?action=update&%s HTTP/1.1\n\
 User-Agent: HTTPStreamClient\n\
 Connection: Keep-Alive\n\
@@ -378,7 +378,7 @@ Authorization: Basic RlJDOkZSQw==\n\n";
  */
 int AxisCameraParams::ReadCamParams()
 {
-	char * requestString =
+	const char * requestString =
 		"GET /axis-cgi/admin/param.cgi?action=list HTTP/1.1\n\
 User-Agent: HTTPStreamClient\n\
 Connection: Keep-Alive\n\

@@ -21,28 +21,28 @@ class DriverStation;
 class Joystick : public GenericHID, public ErrorBase
 {
 public:
-	static const UINT32 kDefaultXAxis = 1;
-	static const UINT32 kDefaultYAxis = 2;
-	static const UINT32 kDefaultZAxis = 3;
-	static const UINT32 kDefaultTwistAxis = 4;
-	static const UINT32 kDefaultThrottleAxis = 3;
+	static const uint32_t kDefaultXAxis = 1;
+	static const uint32_t kDefaultYAxis = 2;
+	static const uint32_t kDefaultZAxis = 3;
+	static const uint32_t kDefaultTwistAxis = 4;
+	static const uint32_t kDefaultThrottleAxis = 3;
 	typedef enum
 	{
 		kXAxis, kYAxis, kZAxis, kTwistAxis, kThrottleAxis, kNumAxisTypes
 	} AxisType;
-	static const UINT32 kDefaultTriggerButton = 1;
-	static const UINT32 kDefaultTopButton = 2;
+	static const uint32_t kDefaultTriggerButton = 1;
+	static const uint32_t kDefaultTopButton = 2;
 	typedef enum
 	{
 		kTriggerButton, kTopButton, kNumButtonTypes
 	} ButtonType;
 
-	explicit Joystick(UINT32 port);
-	Joystick(UINT32 port, UINT32 numAxisTypes, UINT32 numButtonTypes);
+	explicit Joystick(uint32_t port);
+	Joystick(uint32_t port, uint32_t numAxisTypes, uint32_t numButtonTypes);
 	virtual ~Joystick();
 
-	UINT32 GetAxisChannel(AxisType axis);
-	void SetAxisChannel(AxisType axis, UINT32 channel); 
+	uint32_t GetAxisChannel(AxisType axis);
+	void SetAxisChannel(AxisType axis, uint32_t channel); 
 
 	virtual float GetX(JoystickHand hand = kRightHand);
 	virtual float GetY(JoystickHand hand = kRightHand);
@@ -50,14 +50,14 @@ public:
 	virtual float GetTwist();
 	virtual float GetThrottle();
 	virtual float GetAxis(AxisType axis);
-	float GetRawAxis(UINT32 axis);
+	float GetRawAxis(uint32_t axis);
 
 	virtual bool GetTrigger(JoystickHand hand = kRightHand);
 	virtual bool GetTop(JoystickHand hand = kRightHand);
 	virtual bool GetBumper(JoystickHand hand = kRightHand);
 	virtual bool GetButton(ButtonType button);
-	bool GetRawButton(UINT32 button);
-	static Joystick* GetStickForPort(UINT32 port);
+	bool GetRawButton(uint32_t button);
+	static Joystick* GetStickForPort(uint32_t port);
 	
 	virtual float GetMagnitude();
 	virtual float GetDirectionRadians();
@@ -65,12 +65,12 @@ public:
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(Joystick);
-	void InitJoystick(UINT32 numAxisTypes, UINT32 numButtonTypes);
+	void InitJoystick(uint32_t numAxisTypes, uint32_t numButtonTypes);
 
 	DriverStation *m_ds;
-	UINT32 m_port;
-	UINT32 *m_axes;
-	UINT32 *m_buttons;
+	uint32_t m_port;
+	uint32_t *m_axes;
+	uint32_t *m_buttons;
 };
 
 #endif

@@ -32,3 +32,19 @@ void Button::WhileHeld(Command *command) {
 void Button::WhenReleased(Command *command) {
 	WhenInactive(command);
 }
+
+/**
+ * Cancels the specificed command when the button is pressed
+ * @param The command to be canceled
+ */
+void Button::CancelWhenPressed(Command *command) {
+	CancelWhenActive(command);
+}
+
+/**
+ * Toggle the specified command when the button is pressed
+ * @param The command to be toggled
+ */
+void Button::ToggleWhenPressed(Command *command) {
+	ToggleWhenActive(command);
+}

@@ -13,7 +13,7 @@
 #include "LiveWindow/LiveWindow.h"
 #include "networktables/NetworkTable.h"
 
-const double IterativeRobot::kDefaultPeriod;
+constexpr double IterativeRobot::kDefaultPeriod;
 
 /**
  * Constructor for RobotIterativeBase

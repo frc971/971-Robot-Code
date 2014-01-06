@@ -25,7 +25,7 @@
 class Watchdog : public SensorBase
 {
 public:
-	static const double kDefaultWatchdogExpiration = 0.5;
+	static constexpr double kDefaultWatchdogExpiration = 0.5;
 
 	Watchdog();
 	virtual ~Watchdog();

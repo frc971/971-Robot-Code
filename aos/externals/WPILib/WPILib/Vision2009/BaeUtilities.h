@@ -39,7 +39,7 @@ typedef enum DebugOutputType_enum {
 
 /* debug */
 void SetDebugFlag ( DebugOutputType flag  ); 
-void dprintf ( char * tempString, ...  );  /* Variable argument list */
+void dprintf ( const char * tempString, ...  );  /* Variable argument list */
 
 /* set FRC ranges for drive */
 double RangeToNormalized(double pixel, int range);

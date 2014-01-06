@@ -19,8 +19,8 @@
 class Servo : public SafePWM
 {
 public:
-	explicit Servo(UINT32 channel);
-	Servo(UINT8 moduleNumber, UINT32 channel);
+	explicit Servo(uint32_t channel);
+	Servo(uint8_t moduleNumber, uint32_t channel);
 	virtual ~Servo();
 	void Set(float value);
 	void SetOffline();
@@ -44,8 +44,8 @@ private:
 	void InitServo();
 	float GetServoAngleRange() {return kMaxServoAngle - kMinServoAngle;}
 
-	static const float kMaxServoAngle = 170.0;
-	static const float kMinServoAngle = 0.0;
+	static constexpr float kMaxServoAngle = 170.0;
+	static constexpr float kMinServoAngle = 0.0;
 };
 
 #endif

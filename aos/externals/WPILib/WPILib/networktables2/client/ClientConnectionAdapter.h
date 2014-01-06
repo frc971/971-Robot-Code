@@ -19,6 +19,7 @@ class ClientConnectionAdapter;
 #include "networktables2/thread/NTThread.h"
 #include "networktables2/client/ClientConnectionState.h"
 #include "networktables2/client/ClientConnectionListenerManager.h"
+#include "networktables2/connection/ConnectionMonitorThread.h"
 
 
 /**
@@ -35,13 +36,14 @@ private:
 	
 	ClientConnectionState* connectionState;
 	ClientConnectionListenerManager& connectionListenerManager;
-	ReentrantSemaphore LOCK;
+	NTReentrantSemaphore LOCK;
 	NetworkTableEntryTypeManager& typeManager;
 	NTThread* readThread;
+	ConnectionMonitorThread* monitor;
 	NetworkTableConnection* connection;
 
 	void gotoState(ClientConnectionState* newState);
-	
+	bool m_IsConnectionClosed;  //Keep track of when this is closed to issue reconnect
 public:
 	/**
 	 * @return the state of the connection
@@ -91,7 +93,7 @@ public:
 	NetworkTableEntry* GetEntry(EntryId id);
 	
 	
-	void keepAlive();
+	bool keepAlive();
 
 	void clientHello(ProtocolVersion protocolRevision);
 

@@ -34,7 +34,7 @@ public:
   void Clone(const Error &error);
 	void Clear();
 	void Set(Code code, const char* contextMessage, const char* filename,
-		const char *function, UINT32 lineNumber, const ErrorBase* originatingObject);
+		const char *function, uint32_t lineNumber, const ErrorBase* originatingObject);
 
   bool IsClear() const;
 	Code GetCode() const;
@@ -43,7 +43,7 @@ public:
   std::string GetMessage() const;
   std::string GetFilename() const;
   std::string GetFunction() const;
-	UINT32 GetLineNumber() const;
+	uint32_t GetLineNumber() const;
 	const ErrorBase* GetOriginatingObject() const;
 	double GetTime() const;
 
@@ -64,7 +64,7 @@ private:
 	std::string m_message;
 	std::string m_filename;
 	std::string m_function;
-	UINT32 m_lineNumber;
+	uint32_t m_lineNumber;
 	const ErrorBase* m_originatingObject;
 	double m_timestamp;
   // Used for protecting all modifications to instance data.

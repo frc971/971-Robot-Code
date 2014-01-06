@@ -13,7 +13,7 @@
 class FDIOStream;
 
 
-#include "IOStream.h"
+#include "networktables2/stream/IOStream.h"
 #include <stdio.h>
 
 

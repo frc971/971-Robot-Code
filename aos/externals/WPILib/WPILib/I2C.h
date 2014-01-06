@@ -24,22 +24,22 @@ class I2C : SensorBase
 	friend class DigitalModule;
 public:
 	virtual ~I2C();
-	bool Transaction(UINT8 *dataToSend, UINT8 sendSize, UINT8 *dataReceived, UINT8 receiveSize);
+	bool Transaction(uint8_t *dataToSend, uint8_t sendSize, uint8_t *dataReceived, uint8_t receiveSize);
 	bool AddressOnly();
-	bool Write(UINT8 registerAddress, UINT8 data);
-	bool Read(UINT8 registerAddress, UINT8 count, UINT8 *data);
-	void Broadcast(UINT8 registerAddress, UINT8 data);
+	bool Write(uint8_t registerAddress, uint8_t data);
+	bool Read(uint8_t registerAddress, uint8_t count, uint8_t *data);
+	void Broadcast(uint8_t registerAddress, uint8_t data);
 	void SetCompatibilityMode(bool enable);
 
-	bool VerifySensor(UINT8 registerAddress, UINT8 count, const UINT8 *expected);
+	bool VerifySensor(uint8_t registerAddress, uint8_t count, const uint8_t *expected);
 private:
 	static SEM_ID m_semaphore;
-	static UINT32 m_objCount;
+	static uint32_t m_objCount;
 
-	I2C(DigitalModule *module, UINT8 deviceAddress);
+	I2C(DigitalModule *module, uint8_t deviceAddress);
 
 	DigitalModule *m_module;
-	UINT8 m_deviceAddress;
+	uint8_t m_deviceAddress;
 	bool m_compatibilityMode;
 };
 

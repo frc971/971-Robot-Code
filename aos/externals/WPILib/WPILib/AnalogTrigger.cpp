@@ -18,15 +18,15 @@ static Resource *triggers = NULL;
  * Initialize an analog trigger from a slot and channel.
  * This is the common code for the two constructors that use a slot and channel.
  */
-void AnalogTrigger::InitTrigger(UINT8 moduleNumber, UINT32 channel)
+void AnalogTrigger::InitTrigger(uint8_t moduleNumber, uint32_t channel)
 {
 	Resource::CreateResourceObject(&triggers, tAnalogTrigger::kNumSystems);
-	UINT32 index = triggers->Allocate("Analog Trigger", this);
+	uint32_t index = triggers->Allocate("Analog Trigger", this);
 	if (index == ~0ul)
 	{
 		return;
 	}
-	m_index = (UINT8)index;
+	m_index = (uint8_t)index;
 	m_channel = channel;
 	m_analogModule = AnalogModule::GetInstance(moduleNumber);
 
@@ -45,7 +45,7 @@ void AnalogTrigger::InitTrigger(UINT8 moduleNumber, UINT32 channel)
  *
  * @param channel The analog channel (1..8).
  */
-AnalogTrigger::AnalogTrigger(UINT32 channel)
+AnalogTrigger::AnalogTrigger(uint32_t channel)
 {
 	InitTrigger(GetDefaultAnalogModule(), channel);
 }
@@ -56,7 +56,7 @@ AnalogTrigger::AnalogTrigger(UINT32 channel)
  * @param moduleNumber The analog module (1 or 2).
  * @param channel The analog channel (1..8).
  */
-AnalogTrigger::AnalogTrigger(UINT8 moduleNumber, UINT32 channel)
+AnalogTrigger::AnalogTrigger(uint8_t moduleNumber, uint32_t channel)
 {
 	InitTrigger(moduleNumber, channel);
 }
@@ -82,7 +82,7 @@ AnalogTrigger::~AnalogTrigger()
  * The limits are given in ADC codes.  If oversampling is used, the units must be scaled
  * appropriately.
  */
-void AnalogTrigger::SetLimitsRaw(INT32 lower, INT32 upper)
+void AnalogTrigger::SetLimitsRaw(int32_t lower, int32_t upper)
 {
 	if (StatusIsFatal()) return;
 	if (lower > upper)
@@ -148,7 +148,7 @@ void AnalogTrigger::SetFiltered(bool useFilteredValue)
  * This is the FPGA index of this analog trigger instance.
  * @return The index of the analog trigger.
  */
-UINT32 AnalogTrigger::GetIndex()
+uint32_t AnalogTrigger::GetIndex()
 {
 	if (StatusIsFatal()) return ~0ul;
 	return m_index;

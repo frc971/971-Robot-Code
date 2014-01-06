@@ -4,9 +4,18 @@
 #ifndef __tInterruptManager_h__
 #define __tInterruptManager_h__
 
-#include "NiRio.h"
 #include "tSystem.h"
-#include <semLib.h>
+
+namespace ni
+{
+   namespace dsc
+   {
+      namespace osdep
+      {
+         class CriticalSection;
+      }
+   }
+}
 
 namespace nFPGA
 {
@@ -24,6 +33,8 @@ public:
    void disable(tRioStatusCode *status);
    bool isEnabled(tRioStatusCode *status);
 private:
+   class tInterruptThread;
+   friend class tInterruptThread;
    void handler();
    static int handlerWrapper(tInterruptManager *pInterrupt);
 
@@ -32,7 +43,7 @@ private:
    void unreserve(tRioStatusCode *status);
    tInterruptHandler _handler;
    uint32_t _interruptMask;
-   int32_t _taskId;
+   tInterruptThread *_thread;
    NiFpga_IrqContext _rioContext;
    bool _watcher;
    bool _enabled;
@@ -40,7 +51,7 @@ private:
 
    // maintain the interrupts that are already dealt with.
    static uint32_t _globalInterruptMask;
-   static SEM_ID _globalInterruptMaskSemaphore;
+   static ni::dsc::osdep::CriticalSection *_globalInterruptMaskSemaphore;
 };
 
 }

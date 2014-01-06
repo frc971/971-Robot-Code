@@ -30,19 +30,19 @@ public:
 	typedef enum {kFlowControl_None=0, kFlowControl_XonXoff=1, kFlowControl_RtsCts=2, kFlowControl_DtrDsr=4} FlowControl;
 	typedef enum {kFlushOnAccess=1, kFlushWhenFull=2} WriteBufferMode;
 
-	SerialPort(UINT32 baudRate, UINT8 dataBits = 8, Parity parity = kParity_None, StopBits stopBits = kStopBits_One);
+	SerialPort(uint32_t baudRate, uint8_t dataBits = 8, Parity parity = kParity_None, StopBits stopBits = kStopBits_One);
 	~SerialPort();
 	void SetFlowControl(FlowControl flowControl);
 	void EnableTermination(char terminator = '\n');
 	void DisableTermination();
-	INT32 GetBytesReceived();
+	int32_t GetBytesReceived();
 	void Printf(const char *writeFmt, ...);
 	void Scanf(const char *readFmt, ...);
-	UINT32 Read(char *buffer, INT32 count);
-	UINT32 Write(const char *buffer, INT32 count);
+	uint32_t Read(char *buffer, int32_t count);
+	uint32_t Write(const char *buffer, int32_t count);
 	void SetTimeout(float timeout);
-	void SetReadBufferSize(UINT32 size);
-	void SetWriteBufferSize(UINT32 size);
+	void SetReadBufferSize(uint32_t size);
+	void SetWriteBufferSize(uint32_t size);
 	void SetWriteBufferMode(WriteBufferMode mode);
 	void Flush();
 	void Reset();
@@ -50,10 +50,10 @@ public:
 	/*
 	 * Do not call me!
 	 */
-	//void _internalHandler(UINT32 port, UINT32 eventType, UINT32 event);
+	//void _internalHandler(uint32_t port, uint32_t eventType, uint32_t event);
 private:
-	UINT32 m_resourceManagerHandle;
-	UINT32 m_portHandle;
+	uint32_t m_resourceManagerHandle;
+	uint32_t m_portHandle;
 	bool m_consoleModeEnabled;
 	DISALLOW_COPY_AND_ASSIGN(SerialPort);
 };

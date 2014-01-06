@@ -8,15 +8,15 @@
 
 #include "NetworkCommunication/LoadOut.h"
 
-const UINT32 SensorBase::kSystemClockTicksPerMicrosecond;
-const UINT32 SensorBase::kDigitalChannels;
-const UINT32 SensorBase::kAnalogChannels;
-const UINT32 SensorBase::kAnalogModules;
-const UINT32 SensorBase::kDigitalModules;
-const UINT32 SensorBase::kSolenoidChannels;
-const UINT32 SensorBase::kSolenoidModules;
-const UINT32 SensorBase::kPwmChannels;
-const UINT32 SensorBase::kRelayChannels;
+const uint32_t SensorBase::kSystemClockTicksPerMicrosecond;
+const uint32_t SensorBase::kDigitalChannels;
+const uint32_t SensorBase::kAnalogChannels;
+const uint32_t SensorBase::kAnalogModules;
+const uint32_t SensorBase::kDigitalModules;
+const uint32_t SensorBase::kSolenoidChannels;
+const uint32_t SensorBase::kSolenoidModules;
+const uint32_t SensorBase::kPwmChannels;
+const uint32_t SensorBase::kRelayChannels;
 SensorBase *SensorBase::m_singletonList = NULL;
 ReentrantSemaphore SensorBase::m_singletonListSemaphore;
 
@@ -74,7 +74,7 @@ void SensorBase::DeleteSingletons()
  * 
  * @return Analog module is valid and present
  */
-bool SensorBase::CheckAnalogModule(UINT8 moduleNumber)
+bool SensorBase::CheckAnalogModule(uint8_t moduleNumber)
 {
 	if (nLoadOut::getModulePresence(nLoadOut::kModuleType_Analog, moduleNumber - 1))
 		return true;
@@ -86,7 +86,7 @@ bool SensorBase::CheckAnalogModule(UINT8 moduleNumber)
  * 
  * @return Digital module is valid and present
  */
-bool SensorBase::CheckDigitalModule(UINT8 moduleNumber)
+bool SensorBase::CheckDigitalModule(uint8_t moduleNumber)
 {
 	if (nLoadOut::getModulePresence(nLoadOut::kModuleType_Digital, moduleNumber - 1))
 		return true;
@@ -98,7 +98,7 @@ bool SensorBase::CheckDigitalModule(UINT8 moduleNumber)
  * 
  * @return Digital module is valid and present
  */
-bool SensorBase::CheckPWMModule(UINT8 moduleNumber)
+bool SensorBase::CheckPWMModule(uint8_t moduleNumber)
 {
 	return CheckDigitalModule(moduleNumber);
 }
@@ -108,7 +108,7 @@ bool SensorBase::CheckPWMModule(UINT8 moduleNumber)
  * 
  * @return Digital module is valid and present
  */
-bool SensorBase::CheckRelayModule(UINT8 moduleNumber)
+bool SensorBase::CheckRelayModule(uint8_t moduleNumber)
 {
 	return CheckDigitalModule(moduleNumber);
 }
@@ -118,7 +118,7 @@ bool SensorBase::CheckRelayModule(UINT8 moduleNumber)
  * 
  * @return Solenoid module is valid and present
  */
-bool SensorBase::CheckSolenoidModule(UINT8 moduleNumber)
+bool SensorBase::CheckSolenoidModule(uint8_t moduleNumber)
 {
 	if (nLoadOut::getModulePresence(nLoadOut::kModuleType_Solenoid, moduleNumber - 1))
 		return true;
@@ -132,7 +132,7 @@ bool SensorBase::CheckSolenoidModule(UINT8 moduleNumber)
  * 
  * @return Digital channel is valid
  */
-bool SensorBase::CheckDigitalChannel(UINT32 channel)
+bool SensorBase::CheckDigitalChannel(uint32_t channel)
 {
 	if (channel > 0 && channel <= kDigitalChannels)
 		return true;
@@ -146,7 +146,7 @@ bool SensorBase::CheckDigitalChannel(UINT32 channel)
  * 
  * @return Relay channel is valid
  */
-bool SensorBase::CheckRelayChannel(UINT32 channel)
+bool SensorBase::CheckRelayChannel(uint32_t channel)
 {
 	if (channel > 0 && channel <= kRelayChannels)
 		return true;
@@ -160,7 +160,7 @@ bool SensorBase::CheckRelayChannel(UINT32 channel)
  * 
  * @return PWM channel is valid
  */
-bool SensorBase::CheckPWMChannel(UINT32 channel)
+bool SensorBase::CheckPWMChannel(uint32_t channel)
 {
 	if (channel > 0 && channel <= kPwmChannels)
 		return true;
@@ -174,7 +174,7 @@ bool SensorBase::CheckPWMChannel(UINT32 channel)
  * 
  * @return Analog channel is valid
  */
-bool SensorBase::CheckAnalogChannel(UINT32 channel)
+bool SensorBase::CheckAnalogChannel(uint32_t channel)
 {
 	if (channel > 0 && channel <= kAnalogChannels)
 		return true;
@@ -186,7 +186,7 @@ bool SensorBase::CheckAnalogChannel(UINT32 channel)
  * 
  * @return Solenoid channel is valid
  */
-bool SensorBase::CheckSolenoidChannel(UINT32 channel)
+bool SensorBase::CheckSolenoidChannel(uint32_t channel)
 {
 	if (channel > 0 && channel <= kSolenoidChannels)
 		return true;

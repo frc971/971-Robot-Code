@@ -18,8 +18,8 @@
 
 const double NetworkRobot::kDisableTime = 0.15;
 
-NetworkRobot::NetworkRobot(UINT16 receive_port, const char *sender_address,
-                           UINT16 send_port, const char *receiver_address)
+NetworkRobot::NetworkRobot(uint16_t receive_port, const char *sender_address,
+                           uint16_t send_port, const char *receiver_address)
     : receive_port_(receive_port), sender_address_(sender_address),
       send_port_(send_port), receiver_address_(receiver_address),
       receive_socket_(-1), send_socket_(-1),
@@ -415,8 +415,8 @@ void NetworkRobot::SendLoop() {
 }
 
 void NetworkRobot::CopyStickValues(int number,
-                                   const INT8 (&axes)[6],
-                                   UINT16 buttons) {
+                                   const int8_t (&axes)[6],
+                                   uint16_t buttons) {
   for (int i = 0; i < 6; ++i) {
     joystick_values_.joysticks[number].axes[i] = axes[i];
   }

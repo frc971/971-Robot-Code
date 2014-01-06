@@ -37,17 +37,17 @@ public:
 
    typedef enum
    {
-   } tFPGA_LED_IfaceConstants;
+   } tLocalTime_IfaceConstants;
 
-   virtual void writeFPGA_LED(bool value, tRioStatusCode *status) = 0;
-   virtual bool readFPGA_LED(tRioStatusCode *status) = 0;
+   virtual unsigned int readLocalTime(tRioStatusCode *status) = 0;
 
 
    typedef enum
    {
-   } tLocalTime_IfaceConstants;
+   } tFPGA_LED_IfaceConstants;
 
-   virtual unsigned int readLocalTime(tRioStatusCode *status) = 0;
+   virtual void writeFPGA_LED(bool value, tRioStatusCode *status) = 0;
+   virtual bool readFPGA_LED(tRioStatusCode *status) = 0;
 
 
    typedef enum

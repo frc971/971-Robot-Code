@@ -11,7 +11,7 @@ namespace nLoadOut
         kModuleType_Digital = 0x02,
         kModuleType_Solenoid = 0x03,
     } tModuleType;
-    bool getModulePresence(tModuleType moduleType, UINT8 moduleNumber);
+    bool getModulePresence(tModuleType moduleType, uint8_t moduleNumber);
     typedef enum {
         kTargetClass_Unknown = 0x00,
         kTargetClass_FRC1 = 0x10,
@@ -29,8 +29,8 @@ namespace nLoadOut
 extern "C" {
 #endif
 
-    UINT32 FRC_NetworkCommunication_nLoadOut_getModulePresence(UINT32 moduleType, UINT8 moduleNumber);
-    UINT32 FRC_NetworkCommunication_nLoadOut_getTargetClass();
+    uint32_t FRC_NetworkCommunication_nLoadOut_getModulePresence(uint32_t moduleType, uint8_t moduleNumber);
+    uint32_t FRC_NetworkCommunication_nLoadOut_getTargetClass();
 
 #ifdef __cplusplus
 }

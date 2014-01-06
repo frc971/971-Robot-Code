@@ -69,7 +69,7 @@ void NetworkTableNode::PutComplex(std::string& name, ComplexData& value){
 	
 void NetworkTableNode::retrieveValue(std::string& name, ComplexData& externalData){
 	{ 
-		Synchronized sync(entryStore.LOCK);
+		NTSynchronized sync(entryStore.LOCK);
 		NetworkTableEntry* entry = entryStore.GetEntry(name);
 		if(entry==NULL)
 			throw TableKeyNotDefinedException(name);
@@ -85,7 +85,7 @@ void NetworkTableNode::retrieveValue(std::string& name, ComplexData& externalDat
 void NetworkTableNode::PutValue(std::string& name, NetworkTableEntryType* type, EntryValue value){
 	if(type->isComplex()){
 		{ 
-			Synchronized sync(entryStore.LOCK);
+			NTSynchronized sync(entryStore.LOCK);
 			ComplexData* complexData = (ComplexData*)value.ptr;
 			ComplexEntryType* entryType = (ComplexEntryType*)type;
 			NetworkTableEntry* entry = entryStore.GetEntry(name);
@@ -93,7 +93,9 @@ void NetworkTableNode::PutValue(std::string& name, NetworkTableEntryType* type, 
 				entryStore.PutOutgoing(entry, entryType->internalizeValue(entry->name, *complexData, entry->GetValue()));
 			else{
 				EntryValue nullValue = {0};
-				entryStore.PutOutgoing(name, type, entryType->internalizeValue(name, *complexData, nullValue));
+				EntryValue entryValue = entryType->internalizeValue(name, *complexData, nullValue);
+				entryStore.PutOutgoing(name, type, entryValue);//TODO the entry gets copied when creating the entry should make lifecycle cleaner
+				type->deleteValue(entryValue);
 			}
 		}
 	}
@@ -104,7 +106,7 @@ void NetworkTableNode::PutValue(std::string& name, NetworkTableEntryType* type, 
 void NetworkTableNode::PutValue(NetworkTableEntry* entry, EntryValue value){
 	if(entry->GetType()->isComplex()){
 		{ 
-			Synchronized sync(entryStore.LOCK);
+			NTSynchronized sync(entryStore.LOCK);
 			ComplexEntryType* entryType = (ComplexEntryType*)entry->GetType();
 			
 			entryStore.PutOutgoing(entry, entryType->internalizeValue(entry->name, *(ComplexData*)value.ptr, entry->GetValue()));
@@ -116,7 +118,7 @@ void NetworkTableNode::PutValue(NetworkTableEntry* entry, EntryValue value){
 
 EntryValue NetworkTableNode::GetValue(std::string& name){//TODO don't allow get of complex types
 	{ 
-		Synchronized sync(entryStore.LOCK);
+		NTSynchronized sync(entryStore.LOCK);
 		NetworkTableEntry* entry = entryStore.GetEntry(name);
 		if(entry==NULL)
 			throw TableKeyNotDefinedException(name);

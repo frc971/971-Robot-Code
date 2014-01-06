@@ -20,26 +20,26 @@
  */
 class SolenoidBase : public SensorBase {
 public:
-	explicit SolenoidBase(UINT8 moduleNumber);
+	explicit SolenoidBase(uint8_t moduleNumber);
 	virtual ~SolenoidBase();
 
-	void Set(UINT8 value, UINT8 mask);
+	void Set(uint8_t value, uint8_t mask);
 
-	UINT8 GetAll();
+	uint8_t GetAll();
   /**
    * Set the value of all of the solenoids at the same time.
    *
    * @param value The values you want to set all of the solenoids to.
    */
-  void SetAll(UINT8 value) { Set(value, 0xFF); }
+  void SetAll(uint8_t value) { Set(value, 0xFF); }
 
 protected:
-	UINT32 m_moduleNumber; ///< Slot number where the module is plugged into the chassis.
+	uint32_t m_moduleNumber; ///< Slot number where the module is plugged into the chassis.
 	static Resource *m_allocated;
 
 private:
 	static tSolenoid *m_fpgaSolenoidModule; ///< FPGA Solenoid Module object.
-	static UINT32 m_refCount; ///< Reference count for the chip object.
+	static uint32_t m_refCount; ///< Reference count for the chip object.
 	static ReentrantSemaphore m_semaphore;
 };
 

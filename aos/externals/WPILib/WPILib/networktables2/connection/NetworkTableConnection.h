@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "Synchronized.h"
+#include "OSAL/Synchronized.h"
 #ifndef _WRS_KERNEL
 #include <stdint.h>
 #endif
@@ -19,12 +19,12 @@
 class NetworkTableConnection;
 typedef uint16_t ProtocolVersion;
 
-#include "DataIOStream.h"
-#include "../NetworkTableEntry.h"
-#include "../type/NetworkTableEntryType.h"
-#include "../type/NetworkTableEntryTypeManager.h"
-#include "ConnectionAdapter.h"
-#include "../NetworkTableMessageType.h"
+#include "networktables2/connection/DataIOStream.h"
+#include "networktables2/NetworkTableEntry.h"
+#include "networktables2/type/NetworkTableEntryType.h"
+#include "networktables2/type/NetworkTableEntryTypeManager.h"
+#include "networktables2/connection/ConnectionAdapter.h"
+#include "networktables2/NetworkTableMessageType.h"
 
 
 class NetworkTableConnection{
@@ -42,8 +42,9 @@ public:
 	void sendEntryAssignment(NetworkTableEntry& entry);
 	void sendEntryUpdate(NetworkTableEntry& entry);
 	void read(ConnectionAdapter& adapter);
+	void SetIOStream(IOStream* stream);
 private:
-	ReentrantSemaphore WRITE_LOCK;
+	NTReentrantSemaphore WRITE_LOCK;
 	DataIOStream* const ioStream;
 	NetworkTableEntryTypeManager& typeManager;
 	bool isValid;

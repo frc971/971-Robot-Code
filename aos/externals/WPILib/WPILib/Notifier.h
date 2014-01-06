@@ -28,7 +28,7 @@ private:
 	static tInterruptManager *manager;
 	static int refcount;
 
-	static const UINT32 kTimerInterruptNumber = 28;
+	static const uint32_t kTimerInterruptNumber = 28;
 	static void ProcessQueue(uint32_t mask, void *params); // process the timer queue on a timer event
 	static void UpdateAlarm();			// update the FPGA alarm since the queue has changed
 	void InsertInQueue(bool reschedule);	// insert this Notifier in the timer queue

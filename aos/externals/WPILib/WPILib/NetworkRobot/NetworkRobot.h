@@ -39,8 +39,8 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // Does not take ownership of *sender_address or *receiver_address.
   // A NULL for either address means to not do anything with that part (sending
   // or receiving).
-  NetworkRobot(UINT16 receive_port, const char *sender_address,
-               UINT16 send_port, const char *receiver_address);
+  NetworkRobot(uint16_t receive_port, const char *sender_address,
+               uint16_t send_port, const char *receiver_address);
   virtual ~NetworkRobot();
 
   // Called when a valid packet has been received into motors_.
@@ -95,11 +95,11 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // receiver_address_.
   void CreateSendSocket();
 
-  const UINT16 receive_port_;
+  const uint16_t receive_port_;
   const char *const sender_address_;
   struct in_addr expected_sender_address_;
 
-  const UINT16 send_port_;
+  const uint16_t send_port_;
   const char *const receiver_address_;
 
   int receive_socket_;
@@ -115,7 +115,7 @@ class NetworkRobot : public RobotBase, public ErrorBase {
   // Helper function to copy all of the data for a single joystick into
   // joystick_values_.
   // axes and buttons get copied into joystick_values_.joysticks[number].
-  void CopyStickValues(int number, const INT8 (&axes)[6], UINT16 buttons);
+  void CopyStickValues(int number, const int8_t (&axes)[6], uint16_t buttons);
 
   // Using Timer::GetPPCTimestamp() values.
   double last_received_timestamp_;
@@ -132,7 +132,7 @@ class NetworkRobot : public RobotBase, public ErrorBase {
 
   // A bitmask of all of the digital outputs that we have currently allocated.
   // In hardware order.
-  UINT16 allocated_digital_outputs_[2];
+  uint16_t allocated_digital_outputs_[2];
 
   DISALLOW_COPY_AND_ASSIGN(NetworkRobot);
 };

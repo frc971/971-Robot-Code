@@ -14,12 +14,12 @@ class TableListenerManager;
 class AbstractNetworkTableEntryStore;
 
 
-#include "Synchronized.h"
+#include "OSAL/Synchronized.h"
 #include <string>
-#include "NetworkTableEntry.h"
-#include "IncomingEntryReceiver.h"
-#include "OutgoingEntryReceiver.h"
-#include "type/NetworkTableEntryType.h"
+#include "networktables2/NetworkTableEntry.h"
+#include "networktables2/IncomingEntryReceiver.h"
+#include "networktables2/OutgoingEntryReceiver.h"
+#include "networktables2/type/NetworkTableEntryType.h"
 #include "tables/ITable.h"
 #include "tables/ITableListener.h"
 #include <map>
@@ -52,7 +52,7 @@ protected:
 public:
 	virtual ~AbstractNetworkTableEntryStore();
 
-	ReentrantSemaphore LOCK;
+	NTReentrantSemaphore LOCK;
 	NetworkTableEntry* GetEntry(EntryId entryId);
 	NetworkTableEntry* GetEntry(std::string& name);
 

@@ -8,7 +8,7 @@
 #ifndef SERVERINCOMINGCONNECTIONLISTENER_H_
 #define SERVERINCOMINGCONNECTIONLISTENER_H_
 
-#include "ServerConnectionAdapter.h"
+#include "networktables2/server/ServerConnectionAdapter.h"
 
 /**
  * Listener for new incoming server connections

@@ -11,9 +11,9 @@
 
 class ConnectionMonitorThread;
 
-#include "ConnectionAdapter.h"
-#include "NetworkTableConnection.h"
-#include "../thread/PeriodicRunnable.h"
+#include "networktables2/connection/ConnectionAdapter.h"
+#include "networktables2/connection/NetworkTableConnection.h"
+#include "networktables2/thread/PeriodicRunnable.h"
 
 
 
@@ -35,6 +35,8 @@ public:
 	 * @param connection
 	 */
 	ConnectionMonitorThread(ConnectionAdapter& adapter, NetworkTableConnection& connection);
+	//This can be used it identify which connection adapter instance the thread procedure is running (read-only)
+	const NetworkTableConnection *GetNetworkTableConnection() const {return &connection;}
 
 	void run();
 };

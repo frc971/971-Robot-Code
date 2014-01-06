@@ -92,7 +92,6 @@ private:
 					PIDSource *source, PIDOutput *output,
 					float period = 0.05);
 	static void CallCalculate(void *controller);
-	void Calculate();
 	
 	virtual ITable* GetTable();
 	virtual std::string GetSmartDashboardType();
@@ -102,6 +101,7 @@ private:
 	virtual void StopLiveWindowMode();
 protected:
 	ITable* m_table;
+	void Calculate();
 
 	DISALLOW_COPY_AND_ASSIGN(PIDController);
 };

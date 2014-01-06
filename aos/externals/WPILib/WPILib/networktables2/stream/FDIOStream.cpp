@@ -13,9 +13,12 @@
 #include <stdlib.h>
 #ifdef _WRS_KERNEL
 #include <ioLib.h>
+#include <selectLib.h>
 #else
 #include <unistd.h>
+#include <sys/time.h>
 #endif
+#include <string.h>
 #include <stdio.h>
 
 
@@ -34,18 +37,34 @@ int FDIOStream::read(void* ptr, int numbytes){
 		return 0;
 	char* bufferPointer = (char*)ptr;
 	int totalRead = 0;
+
+	struct timeval timeout;
+	fd_set fdSet;
+	
 	while (totalRead < numbytes) {
-		int numRead = ::read(fd, bufferPointer, numbytes-totalRead);
-		if(numRead == 0){
-			throw EOFException();
+		FD_ZERO(&fdSet);
+		FD_SET(fd, &fdSet);
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+		int select_result = select(FD_SETSIZE, &fdSet, NULL, NULL, &timeout);
+		if ( select_result < 0)
+		  throw IOException("Select returned an error on read");
+
+		int numRead = 0;
+		if (FD_ISSET(fd, &fdSet)) {
+		  numRead = ::read(fd, bufferPointer, numbytes-totalRead);
+
+		  if(numRead == 0){
+		    throw EOFException();
+		  }
+		  else if (numRead < 0) {
+		    perror("read error: ");
+		    fflush(stderr);
+		    throw IOException("Error on FDIO read");
+		  }
+		  bufferPointer += numRead;
+		  totalRead += numRead;
 		}
-		else if (numRead < 0) {
-			perror("read error: ");
-			fflush(stderr);
-			throw IOException("Error on FDIO read");
-		}
-		bufferPointer += numRead;
-		totalRead += numRead;
 	}
 	return totalRead;
 }

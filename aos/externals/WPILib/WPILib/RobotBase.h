@@ -24,7 +24,7 @@ class DriverStation;
 		return new _ClassName_(); \
 	} \
 	extern "C" { \
-		INT32 FRC_UserProgram_StartupLibraryInit() \
+		int32_t FRC_UserProgram_StartupLibraryInit() \
 		{ \
 			RobotBase::startRobotTask((FUNCPTR)FRC_userClassFactory); \
 			return 0; \
@@ -56,6 +56,7 @@ protected:
 	virtual ~RobotBase();
 	virtual void StartCompetition() = 0;
 	RobotBase();
+	static void WriteVersionString();
 
 	static void setInstance(RobotBase* robot);
 	static void robotTask(FUNCPTR factory, Task *task);
@@ -63,7 +64,6 @@ protected:
 	Task *m_task;
 	Watchdog m_watchdog;
 	DriverStation *m_ds;
-
 private:
 	static RobotBase *m_instance;
 	DISALLOW_COPY_AND_ASSIGN(RobotBase);
