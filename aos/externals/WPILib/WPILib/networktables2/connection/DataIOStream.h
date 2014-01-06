@@ -2,7 +2,7 @@
 #define DATAIOSTREAM_H_
 
 #include <stdlib.h>
-#include "../stream/IOStream.h"
+#include "networktables2/stream/IOStream.h"
 #include <exception>
 #include <string>
 
@@ -41,8 +41,10 @@ public:
 	std::string* readString();
 	
 	void close();
+	void SetIOStream(IOStream* stream);
+
 //private:
-	IOStream& iostream;
+	IOStream *iostream;
 };
 
 

@@ -11,7 +11,7 @@
 #include "WPIErrors.h"
 #include <strLib.h>
 
-const INT32 Dashboard::kMaxDashboardDataSize;
+const int32_t Dashboard::kMaxDashboardDataSize;
 
 /**
  * Dashboard contructor.
@@ -56,9 +56,9 @@ Dashboard::~Dashboard()
  * Pack a signed 8-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddI8(INT8 value)
+void Dashboard::AddI8(int8_t value)
 {
-	if (!ValidateAdd(sizeof(INT8))) return;
+	if (!ValidateAdd(sizeof(int8_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kI8);
@@ -68,9 +68,9 @@ void Dashboard::AddI8(INT8 value)
  * Pack a signed 16-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddI16(INT16 value)
+void Dashboard::AddI16(int16_t value)
 {
-	if (!ValidateAdd(sizeof(INT16))) return;
+	if (!ValidateAdd(sizeof(int16_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kI16);
@@ -80,9 +80,9 @@ void Dashboard::AddI16(INT16 value)
  * Pack a signed 32-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddI32(INT32 value)
+void Dashboard::AddI32(int32_t value)
 {
-	if (!ValidateAdd(sizeof(INT32))) return;
+	if (!ValidateAdd(sizeof(int32_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kI32);
@@ -92,9 +92,9 @@ void Dashboard::AddI32(INT32 value)
  * Pack an unsigned 8-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddU8(UINT8 value)
+void Dashboard::AddU8(uint8_t value)
 {
-	if (!ValidateAdd(sizeof(UINT8))) return;
+	if (!ValidateAdd(sizeof(uint8_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kU8);
@@ -104,9 +104,9 @@ void Dashboard::AddU8(UINT8 value)
  * Pack an unsigned 16-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddU16(UINT16 value)
+void Dashboard::AddU16(uint16_t value)
 {
-	if (!ValidateAdd(sizeof(UINT16))) return;
+	if (!ValidateAdd(sizeof(uint16_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kU16);
@@ -116,9 +116,9 @@ void Dashboard::AddU16(UINT16 value)
  * Pack an unsigned 32-bit int into the dashboard data structure.
  * @param value Data to be packed into the structure.
  */
-void Dashboard::AddU32(UINT32 value)
+void Dashboard::AddU32(uint32_t value)
 {
-	if (!ValidateAdd(sizeof(UINT32))) return;
+	if (!ValidateAdd(sizeof(uint32_t))) return;
 	memcpy(m_packPtr, (char*)&value, sizeof(value));
 	m_packPtr += sizeof(value);
 	AddedElement(kU32);
@@ -174,7 +174,7 @@ void Dashboard::AddString(char* value)
  * @param value Data to be packed into the structure.
  * @param length The number of bytes in the string to pack.
  */
-void Dashboard::AddString(char* value, INT32 length)
+void Dashboard::AddString(char* value, int32_t length)
 {
 	if (!ValidateAdd(length + sizeof(length))) return;
 	memcpy(m_packPtr, (char*)&length, sizeof(length));
@@ -195,11 +195,11 @@ void Dashboard::AddString(char* value, INT32 length)
  */
 void Dashboard::AddArray()
 {
-	if (!ValidateAdd(sizeof(INT32))) return;
+	if (!ValidateAdd(sizeof(int32_t))) return;
 	m_complexTypeStack.push(kArray);
 	m_arrayElementCount.push_back(0);
-	m_arraySizePtr.push_back((INT32*)m_packPtr);
-	m_packPtr += sizeof(INT32);
+	m_arraySizePtr.push_back((int32_t*)m_packPtr);
+	m_packPtr += sizeof(int32_t);
 }
 
 /**
@@ -264,7 +264,7 @@ void Dashboard::FinalizeCluster()
 void Dashboard::Printf(const char *writeFmt, ...)
 {
 	va_list args;
-	INT32 size;
+	int32_t size;
 
 	// Check if the buffer has already been used for packing.
 	if (m_packPtr != m_localBuffer)
@@ -295,7 +295,7 @@ void Dashboard::Printf(const char *writeFmt, ...)
  * Prepares a packet to go to the dashboard...
  * @return The total size of the data packed into the userData field of the status packet.
  */
-INT32 Dashboard::Finalize()
+int32_t Dashboard::Finalize()
 {
 	if (!m_complexTypeStack.empty())
 	{
@@ -328,7 +328,7 @@ INT32 Dashboard::Finalize()
  *   to the NetworkCommunication task.
  * This function is called while holding the m_statusDataSemaphore.
  */
-void Dashboard::GetStatusBuffer(char **userStatusData, INT32* userStatusDataSize)
+void Dashboard::GetStatusBuffer(char **userStatusData, int32_t* userStatusDataSize)
 {
 	// User printed strings
 	if (m_localPrintBuffer[0] != 0)
@@ -336,7 +336,7 @@ void Dashboard::GetStatusBuffer(char **userStatusData, INT32* userStatusDataSize
 		// Sequence number
 		DriverStation::GetInstance()->IncrementUpdateNumber();
 
-		INT32 printSize;
+		int32_t printSize;
 		Synchronized syncPrint(m_printSemaphore);
 		printSize = strlen(m_localPrintBuffer);
 		m_userStatusDataSize = printSize;
@@ -351,7 +351,7 @@ void Dashboard::GetStatusBuffer(char **userStatusData, INT32* userStatusDataSize
 /**
  * Validate that the data being packed will fit in the buffer.
  */
-bool Dashboard::ValidateAdd(INT32 size)
+bool Dashboard::ValidateAdd(int32_t size)
 {
 	if ((m_packPtr - m_localBuffer) + size > kMaxDashboardDataSize)
 	{

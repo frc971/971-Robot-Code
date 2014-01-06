@@ -55,10 +55,13 @@ class NetworkTable : public ITable, IRemote {
 private:
 	static DefaultThreadManager threadManager;
 	static NetworkTableProvider* staticProvider;
+	static NetworkTableNode* staticNode;
+	static void* streamFactory;
+	static NetworkTableEntryTypeManager* typeManager;
 	static NetworkTableMode* mode;
 	static int port;
 	static std::string ipAddress;
-	static ReentrantSemaphore STATIC_LOCK;
+	static NTReentrantSemaphore STATIC_LOCK;
 	
 	
 	
@@ -67,7 +70,7 @@ private:
 	NetworkTableKeyCache absoluteKeyCache;
 	NetworkTableProvider& provider;
 	NetworkTableNode& node;
-	ReentrantSemaphore LOCK;
+	NTReentrantSemaphore LOCK;
 	
 	
 	map<IRemoteConnectionListener*, NetworkTableConnectionListenerAdapter*> connectionListenerMap;
@@ -94,7 +97,8 @@ public:
 	 * @throws IOException
 	 */
 	static void Initialize();
-	
+	static void Shutdown();
+
 	/**
 	 * set the table provider for static network tables methods
 	 * This must be called before getTable

@@ -35,54 +35,54 @@ class DriverStationEnhancedIO : public ErrorBase
 	// BEGIN: Definitions from the Cypress firmware
 	typedef struct
 	{
-		UINT16 digital;
-		UINT16 digital_oe;
-		UINT16 digital_pe;
-		UINT16 pwm_compare[4];
-		UINT16 pwm_period[2];
-		UINT8 dac[2];
-		UINT8 leds;
+		uint16_t digital;
+		uint16_t digital_oe;
+		uint16_t digital_pe;
+		uint16_t pwm_compare[4];
+		uint16_t pwm_period[2];
+		uint8_t dac[2];
+		uint8_t leds;
 		union
 		{
 			struct
 			{
 				// Bits are inverted from cypress fw because of big-endian!
-				UINT8 pwm_enable : 4;
-				UINT8 comparator_enable : 2;
-				UINT8 quad_index_enable : 2;
+				uint8_t pwm_enable : 4;
+				uint8_t comparator_enable : 2;
+				uint8_t quad_index_enable : 2;
 			};
-			UINT8 enables;
+			uint8_t enables;
 		};
-		UINT8 fixed_digital_out;
+		uint8_t fixed_digital_out;
 	} output_t;  //data to IO (23 bytes)
 
 	typedef struct
 	{
-		UINT8 api_version;
-		UINT8 fw_version;
-		INT16 analog[8];
-		UINT16 digital;
-		INT16 accel[3];
-		INT16 quad[2];
-		UINT8 buttons;
-		UINT8 capsense_slider;
-		UINT8 capsense_proximity;
+		uint8_t api_version;
+		uint8_t fw_version;
+		int16_t analog[8];
+		uint16_t digital;
+		int16_t accel[3];
+		int16_t quad[2];
+		uint8_t buttons;
+		uint8_t capsense_slider;
+		uint8_t capsense_proximity;
 	} input_t;	//data from IO (33 bytes)
 	// END: Definitions from the Cypress firmware
 
 	// Dynamic block definitions
 	typedef struct
 	{
-		UINT8 size; // Must be 25 (size remaining in the block not counting the size variable)
-		UINT8 id; // Must be 18
+		uint8_t size; // Must be 25 (size remaining in the block not counting the size variable)
+		uint8_t id; // Must be 18
 		output_t data;
-		UINT8 flags;
+		uint8_t flags;
 	} status_block_t;
 
 	typedef struct
 	{
-		UINT8 size; // Must be 34
-		UINT8 id; // Must be 17
+		uint8_t size; // Must be 34
+		uint8_t id; // Must be 17
 		input_t data;
 	} control_block_t;
 #pragma pack(pop)
@@ -100,31 +100,31 @@ public:
 	enum tPWMPeriodChannels {kPWMChannels1and2, kPWMChannels3and4};
 
 	double GetAcceleration(tAccelChannel channel);
-	double GetAnalogIn(UINT32 channel);
-	double GetAnalogInRatio(UINT32 channel);
-	double GetAnalogOut(UINT32 channel);
-	void SetAnalogOut(UINT32 channel, double value);
-	bool GetButton(UINT32 channel);
-	UINT8 GetButtons();
-	void SetLED(UINT32 channel, bool value);
-	void SetLEDs(UINT8 value);
-	bool GetDigital(UINT32 channel);
-	UINT16 GetDigitals();
-	void SetDigitalOutput(UINT32 channel, bool value);
-	tDigitalConfig GetDigitalConfig(UINT32 channel);
-	void SetDigitalConfig(UINT32 channel, tDigitalConfig config);
+	double GetAnalogIn(uint32_t channel);
+	double GetAnalogInRatio(uint32_t channel);
+	double GetAnalogOut(uint32_t channel);
+	void SetAnalogOut(uint32_t channel, double value);
+	bool GetButton(uint32_t channel);
+	uint8_t GetButtons();
+	void SetLED(uint32_t channel, bool value);
+	void SetLEDs(uint8_t value);
+	bool GetDigital(uint32_t channel);
+	uint16_t GetDigitals();
+	void SetDigitalOutput(uint32_t channel, bool value);
+	tDigitalConfig GetDigitalConfig(uint32_t channel);
+	void SetDigitalConfig(uint32_t channel, tDigitalConfig config);
 	double GetPWMPeriod(tPWMPeriodChannels channels);
 	void SetPWMPeriod(tPWMPeriodChannels channels, double period);
-	bool GetFixedDigitalOutput(UINT32 channel);
-	void SetFixedDigitalOutput(UINT32 channel, bool value);
-	INT16 GetEncoder(UINT32 encoderNumber);
-	void ResetEncoder(UINT32 encoderNumber);
-	bool GetEncoderIndexEnable(UINT32 encoderNumber);
-	void SetEncoderIndexEnable(UINT32 encoderNumber, bool enable);
+	bool GetFixedDigitalOutput(uint32_t channel);
+	void SetFixedDigitalOutput(uint32_t channel, bool value);
+	int16_t GetEncoder(uint32_t encoderNumber);
+	void ResetEncoder(uint32_t encoderNumber);
+	bool GetEncoderIndexEnable(uint32_t encoderNumber);
+	void SetEncoderIndexEnable(uint32_t encoderNumber, bool enable);
 	double GetTouchSlider();
-	double GetPWMOutput(UINT32 channel);
-	void SetPWMOutput(UINT32 channel, double value);
-	UINT8 GetFirmwareVersion();
+	double GetPWMOutput(uint32_t channel);
+	void SetPWMOutput(uint32_t channel, double value);
+	uint8_t GetFirmwareVersion();
 
 private:
 	DriverStationEnhancedIO();
@@ -144,7 +144,7 @@ private:
 	bool m_outputValid;
 	bool m_configChanged;
 	bool m_requestEnhancedEnable;
-	INT16 m_encoderOffsets[2];
+	int16_t m_encoderOffsets[2];
 };
 
 #endif

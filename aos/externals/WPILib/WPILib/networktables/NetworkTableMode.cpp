@@ -21,11 +21,24 @@ NetworkTableClientMode NetworkTableMode::Client;
 NetworkTableServerMode::NetworkTableServerMode(){}
 NetworkTableClientMode::NetworkTableClientMode(){}
 
-NetworkTableNode* NetworkTableServerMode::CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager){
-	IOStreamProvider* streamProvider = new SocketServerStreamProvider(port);
-	return new NetworkTableServer(*streamProvider, *new NetworkTableEntryTypeManager(), threadManager);
+static void deleteIOStreamProvider(void* ptr){
+  delete (IOStreamProvider*)ptr;
 }
-NetworkTableNode* NetworkTableClientMode::CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager){
+static void deleteIOStreamFactory(void* ptr){
+  delete (IOStreamFactory*)ptr;
+}
+
+NetworkTableNode* NetworkTableServerMode::CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager, void*& streamFactory_out, StreamDeleter& streamDeleter_out, NetworkTableEntryTypeManager*& typeManager_out){
+	IOStreamProvider* streamProvider = new SocketServerStreamProvider(port);
+	streamFactory_out = streamProvider;
+	typeManager_out = new NetworkTableEntryTypeManager();
+	streamDeleter_out = deleteIOStreamFactory;
+	return new NetworkTableServer(*streamProvider, *typeManager_out, threadManager);
+}
+NetworkTableNode* NetworkTableClientMode::CreateNode(const char* ipAddress, int port, NTThreadManager& threadManager, void*& streamFactory_out, StreamDeleter& streamDeleter_out, NetworkTableEntryTypeManager*& typeManager_out){
 	IOStreamFactory* streamFactory = new SocketStreamFactory(ipAddress, port);
-	return new NetworkTableClient(*streamFactory, *new NetworkTableEntryTypeManager(), threadManager);
+	streamFactory_out = streamFactory;
+	typeManager_out = new NetworkTableEntryTypeManager();
+	streamDeleter_out = deleteIOStreamProvider;
+	return new NetworkTableClient(*streamFactory, *typeManager_out, threadManager);
 }

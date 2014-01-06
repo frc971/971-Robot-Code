@@ -30,7 +30,7 @@ class ServerConnectionAdapter;
  * @author Mitchell
  *
  */
-class ServerConnectionAdapter : ConnectionAdapter, IncomingEntryReceiver, FlushableOutgoingEntryReceiver{
+class ServerConnectionAdapter : public ConnectionAdapter, public IncomingEntryReceiver, public FlushableOutgoingEntryReceiver{
 private:
 	ServerNetworkTableEntryStore& entryStore;
 	IncomingEntryReceiver& transactionReceiver;
@@ -48,7 +48,7 @@ private:
 	ServerConnectionState* connectionState;
 
 	void gotoState(ServerConnectionState* newState);
-
+	bool m_IsAdapterListenerClosed;
 public:
 	/**
 	 * Create a server connection adapter for a given stream
@@ -63,44 +63,39 @@ public:
 	ServerConnectionAdapter(IOStream* stream, ServerNetworkTableEntryStore& entryStore, IncomingEntryReceiver& transactionReceiver, ServerAdapterManager& adapterListener, NetworkTableEntryTypeManager& typeManager, NTThreadManager& threadManager);
 	virtual ~ServerConnectionAdapter();
 
-	void badMessage(BadMessageException& e);
-	
-	void ioException(IOException& e);
-	
-	
 	/**
-	 * stop the read thread and close the stream
-	 */
+	* stop the read thread and close the stream
+	*/
 	void shutdown(bool closeStream);
 
-	void keepAlive();
-
-	void clientHello(ProtocolVersion protocolRevision);
-
-	void protocolVersionUnsupported(ProtocolVersion protocolRevision);
-
-	void serverHelloComplete();
-
-	void offerIncomingAssignment(NetworkTableEntry* entry);
-
-	void offerIncomingUpdate(NetworkTableEntry* entry, SequenceNumber sequenceNumber, EntryValue value);
-
-	NetworkTableEntry* GetEntry(EntryId id);
-
 	void offerOutgoingAssignment(NetworkTableEntry* entry);
-	
+
 	void offerOutgoingUpdate(NetworkTableEntry* entry);
 
 
 	void flush();
 
 	/**
-	 * @return the state of the connection
-	 */
+	* @return the state of the connection
+	*/
 	ServerConnectionState* getConnectionState();
 
 	void ensureAlive();
 
+	//return true once the close has been issued
+	bool IsAdapterListenerClosed() const {return m_IsAdapterListenerClosed;}
+	ConnectionAdapter &AsConnectionAdapter() {return *this;}
+protected:  //from ConnectionAdapter
+
+	bool keepAlive();
+	void badMessage(BadMessageException& e);
+	void ioException(IOException& e);
+	void clientHello(ProtocolVersion protocolRevision);
+	void protocolVersionUnsupported(ProtocolVersion protocolRevision);
+	void serverHelloComplete();
+	void offerIncomingAssignment(NetworkTableEntry* entry);
+	void offerIncomingUpdate(NetworkTableEntry* entry, SequenceNumber sequenceNumber, EntryValue value);
+	NetworkTableEntry* GetEntry(EntryId id);
 };
 
 

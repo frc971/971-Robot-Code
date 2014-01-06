@@ -13,8 +13,6 @@
     'onejar_version': '0.97',
     'ctemplate_version': '129',
     'gflags_version': '2.0',
-    'libusb_version': '1.0.9',
-    'libusb_apiversion': '1.0',
     'compiler_rt_version': 'RELEASE_32_final',
     'libevent_version': '2.0.21',
     'libcdd_version': '094g',
@@ -201,19 +199,6 @@
       },
       'direct_dependent_settings': {
         'include_dirs': ['<(compiled)/gflags-<(gflags_version)-prefix/include'],
-      },
-    },
-    {
-      'target_name': 'libusb',
-      'type': 'none',
-      'link_settings': {
-        'libraries': ['<(compiled_abs)/libusb-<(libusb_version)-prefix/lib/libusb-<(libusb_apiversion).a'],
-      },
-      'direct_dependent_settings': {
-        'include_dirs': ['<(compiled)/libusb-<(libusb_version)-prefix/include'],
-        'cflags': [
-          '-Wno-error=cast-align',
-        ],
       },
     },
     {

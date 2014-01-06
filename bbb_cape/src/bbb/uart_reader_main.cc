@@ -1,60 +1,33 @@
 #include <stdint.h>
 #include <inttypes.h>
-#include <stdlib.h>
 
 #include "aos/atom_code/init.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
 #include "bbb/gpo.h"
 #include "bbb/uart_reader.h"
-
-using ::aos::time::Time;
-
-#define DO_RESET 0
+#include "bbb/packet_finder.h"
+#include "bbb/data_struct.h"
 
 int main() {
   ::aos::Init();
 
-#if DO_RESET
-  // time since last good packet before we reset 
-  // the board.
-  static const Time kPacketTimeout = Time::InSeconds(1);
-
   ::bbb::Gpo reset_pin = bbb::Gpo(1, 6);
-#endif
+  
+  ::bbb::UartReader reader(750000);
+  ::bbb::PacketFinder receiver(&reader, DATA_STRUCT_SEND_SIZE - 4);
 
-  ::bbb::UartReader receiver(1500000);
-  receiver.ReadPacket();
-  // TODO(brians): Do this cleanly.
-  int chrt_result = system(
-      "bash -c 'chrt -r -p 55 $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
-  if (chrt_result == -1) {
-    LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
-  } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
-    LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
-        WEXITSTATUS(chrt_result));
-  }
-
-  Time last_packet_time = Time::Now();
   while (true) {
-#if DO_RESET
-    if (!last_packet_time.IsWithin(Time::Now(), kPacketTimeout.ToNSec())) {
-      LOG(ERROR, "No good packets for too long. Resetting cape.\n");
+    if (!receiver.ReadPacket(::aos::time::Time::Now() +
+                             ::aos::time::Time::InSeconds(1.5))) {
+      LOG(WARNING, "Could not read a packet. (Resetting board...)\n");
       reset_pin.Set(true);
-      ::aos::time::SleepFor(Time::InSeconds(1));
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(1));
       reset_pin.Set(false);
-      
-      last_packet_time = Time::Now();
-    }
-#endif
-
-    if (!receiver.ReadPacket()) {
-      LOG(WARNING, "Could not read a packet.\n");
       continue;
     }
-    last_packet_time = Time::Now();
 
-    const DataStruct *packet = receiver.get_packet<DataStruct>();
+    const ::bbb::DataStruct *packet = receiver.get_packet< ::bbb::DataStruct>();
     LOG(DEBUG, "got one!\n");
     LOG(DEBUG, "timestamp %" PRIu64 "\n", packet->timestamp);
     LOG(DEBUG, "gyro old=%d uninit=%d z=%d bad=%d %" PRId64 " \n",
@@ -65,6 +38,10 @@ int main() {
       LOG(DEBUG, "adc[%d]=%f (%" PRIx16 ")\n", i,
           3.3 * packet->test.analogs[i] / 0x3FF, packet->test.analogs[i]);
     }
+    LOG(DEBUG, "digitals=%x\n", packet->test.digitals);
+    LOG(DEBUG, "+=%" PRId32 "/%" PRIu8 " and -=%" PRId32 "/%" PRIu8 "\n",
+        packet->test.posedge_value, packet->test.posedge_count,
+        packet->test.negedge_value, packet->test.negedge_count);
   }
 
   ::aos::Cleanup();

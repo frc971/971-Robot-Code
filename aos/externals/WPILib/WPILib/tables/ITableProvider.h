@@ -21,6 +21,7 @@ class ITableProvider;
  *
  */
 class ITableProvider {
+public:
 	/**
 	 * Get a table by name
 	 * @param name the name of the table

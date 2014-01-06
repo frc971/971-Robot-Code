@@ -17,6 +17,9 @@ EntryValue ArrayEntryType::copyElement(EntryValue value){
 void ArrayEntryType::deleteElement(EntryValue value){
   m_elementType.deleteValue(value);
 }
+bool ArrayEntryType::areElementsEqual(EntryValue v1, EntryValue v2){
+  return m_elementType.areEqual(v1, v2);
+}
 
 
 void ArrayEntryType::sendValue(EntryValue value, DataIOStream& os) {
@@ -49,9 +52,9 @@ EntryValue ArrayEntryType::readValue(DataIOStream& is) {
 EntryValue ArrayEntryType::copyValue(EntryValue value){
 	ArrayEntryData* otherDataArray = (ArrayEntryData*) value.ptr;
 
-	EntryValue* array = (EntryValue*)malloc(otherDataArray->length*sizeof(EntryValue));//TODO cache object arrays
+	EntryValue* array = (EntryValue*)malloc(otherDataArray->length*sizeof(EntryValue));
 	for (int i = 0; i < otherDataArray->length; ++i) {
-		array[i] = m_elementType.copyValue(otherDataArray->array[i]);
+		array[i] = copyElement(otherDataArray->array[i]);
 	}
 	
 	ArrayEntryData* dataArray = (ArrayEntryData*)malloc(sizeof(ArrayEntryData));
@@ -66,35 +69,58 @@ void ArrayEntryType::deleteValue(EntryValue value){
 	ArrayEntryData* dataArray = (ArrayEntryData*) value.ptr;
 	if(dataArray!=NULL){
 	  for (int i = 0; i < dataArray->length; ++i) {
-	    m_elementType.deleteValue(dataArray->array[i]);
+	    deleteElement(dataArray->array[i]);
 	  }
-	  free(dataArray->array);
+	  if(dataArray->array != NULL)
+	    free(dataArray->array);
+
 	  free(dataArray);
 	}
+}
+bool ArrayEntryType::areEqual(EntryValue v1, EntryValue v2) {
+  ArrayEntryData* a1 = (ArrayEntryData*) v1.ptr;
+  ArrayEntryData* a2 = (ArrayEntryData*) v2.ptr;
+  if(a1->length != a2->length)
+    return false;
+  for (int i = 0; i < a1->length; ++i) {
+    if(!areElementsEqual(a1->array[i], a2->array[i]))
+      return false;
+  }
+  return true;
 }
 
 EntryValue ArrayEntryType::internalizeValue(std::string& key, ComplexData& externalRepresentation, EntryValue currentInteralValue) {
 	// TODO: Argument 'key' appears unused.
 	ArrayData& externalArrayData = (ArrayData&)externalRepresentation;
+
+	EntryValue eValue = currentInteralValue;
 	ArrayEntryData* internalArray = (ArrayEntryData*) currentInteralValue.ptr;
-	if(internalArray != NULL && internalArray->length==externalArrayData.size()){
+	if(internalArray == NULL){
+		internalArray = (ArrayEntryData*)malloc(sizeof(ArrayEntryData));
+		internalArray->length = 0;
+		internalArray->array = NULL;
+		eValue.ptr = internalArray;
+	}
+
+	if(internalArray->length==externalArrayData.size()){
 		for(int i = 0; i<internalArray->length; ++i){
-			m_elementType.deleteValue(internalArray->array[i]);
-			internalArray->array[i] = m_elementType.copyValue(externalArrayData._get(i));
+			deleteElement(internalArray->array[i]);
+			internalArray->array[i] = copyElement(externalArrayData._get(i));
 		}
-		return currentInteralValue;
 	}
 	else{
-		internalArray = (ArrayEntryData*)malloc(sizeof(ArrayEntryData));
-		internalArray->array = (EntryValue*)malloc(externalArrayData.size()*sizeof(EntryValue));//TODO cache object arrays
+	        if(internalArray->array != NULL)
+	                free(internalArray->array);
 		internalArray->length = externalArrayData.size();
+		if(internalArray->length == 0)
+		  internalArray->array = NULL;
+		else
+		  internalArray->array = (EntryValue*)malloc(externalArrayData.size()*sizeof(EntryValue));
 		for (int i = 0; i < internalArray->length; ++i) {
-			internalArray->array[i] = m_elementType.copyValue(externalArrayData._get(i));
+			internalArray->array[i] = copyElement(externalArrayData._get(i));
 		}
-		EntryValue eValue;
-		eValue.ptr = internalArray;
-		return eValue;
 	}
+	return eValue;
 }
 
 void ArrayEntryType::exportValue(std::string& key, EntryValue internalData, ComplexData& externalRepresentation) {
@@ -102,6 +128,6 @@ void ArrayEntryType::exportValue(std::string& key, EntryValue internalData, Comp
 	ArrayData& externalArrayData = (ArrayData&)externalRepresentation;
 	externalArrayData.setSize(internalArray->length);
 	for(int i = 0; i<internalArray->length; ++i){
-		externalArrayData._set(i, m_elementType.copyValue(internalArray->array[i]));
+		externalArrayData._set(i, copyElement(internalArray->array[i]));
 	}
 }

@@ -60,17 +60,17 @@ public:
 
    typedef enum
    {
-   } tReset_IfaceConstants;
-
-   virtual void strobeReset(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
    } tDeadband_IfaceConstants;
 
    virtual void writeDeadband(signed int value, tRioStatusCode *status) = 0;
    virtual signed int readDeadband(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tReset_IfaceConstants;
+
+   virtual void strobeReset(tRioStatusCode *status) = 0;
 
 
 

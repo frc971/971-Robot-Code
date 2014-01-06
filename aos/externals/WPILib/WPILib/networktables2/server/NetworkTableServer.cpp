@@ -13,9 +13,9 @@
 NetworkTableServer::NetworkTableServer(IOStreamProvider& _streamProvider, NetworkTableEntryTypeManager& typeManager, NTThreadManager& threadManager):
 		NetworkTableNode(*new ServerNetworkTableEntryStore(*this)),
 		streamProvider(_streamProvider),
-		connectionList(),
-		writeManager(connectionList, threadManager, GetEntryStore(), ULONG_MAX),
 		incomingStreamMonitor(streamProvider, (ServerNetworkTableEntryStore&)entryStore, *this, connectionList, typeManager, threadManager),
+		connectionList(&incomingStreamMonitor),
+		writeManager(connectionList, threadManager, GetEntryStore(), ULONG_MAX),
                 continuingReceiver(writeManager){
 	
 	GetEntryStore().SetIncomingReceiver(&continuingReceiver);
@@ -24,6 +24,7 @@ NetworkTableServer::NetworkTableServer(IOStreamProvider& _streamProvider, Networ
 	incomingStreamMonitor.start();
 	writeManager.start();
 }
+//TODO implement simplified NetworkTableServer constructor
 /*NetworkTableServer::NetworkTableServer(IOStreamProvider& streamProvider){
 	this(streamProvider, new NetworkTableEntryTypeManager(), new DefaultThreadManager());
 }*/
@@ -37,7 +38,6 @@ void NetworkTableServer::Close(){
 		incomingStreamMonitor.stop();
 		writeManager.stop();
 		connectionList.closeAll();
-		streamProvider.close();
 	} catch (const std::exception& ex) {
 	    //TODO print stack trace?
 	}

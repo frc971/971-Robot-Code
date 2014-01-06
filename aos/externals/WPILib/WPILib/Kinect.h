@@ -39,7 +39,7 @@ public:
 	Point4 GetGravityNormal();
 	Skeleton GetSkeleton(int skeletonIndex = 1);
 	Point4 GetPosition(int skeletonIndex = 1);
-	UINT32 GetQuality(int skeletonIndex = 1);
+	uint32_t GetQuality(int skeletonIndex = 1);
 	SkeletonTrackingState GetTrackingState(int skeletonIndex = 1);
 
 	static Kinect *GetInstance();
@@ -51,13 +51,13 @@ private:
 
 	DISALLOW_COPY_AND_ASSIGN(Kinect);
 
-	UINT32 m_recentPacketNumber;
+	uint32_t m_recentPacketNumber;
 	SEM_ID m_dataLock;
 	int m_numberOfPlayers;
 	Point4 m_floorClipPlane;
 	Point4 m_gravityNormal;
 	Point4 m_position[kNumSkeletons];
-	UINT32 m_quality[kNumSkeletons];
+	uint32_t m_quality[kNumSkeletons];
 	SkeletonTrackingState m_trackingState[kNumSkeletons];
 	Skeleton m_skeletons[kNumSkeletons];
 

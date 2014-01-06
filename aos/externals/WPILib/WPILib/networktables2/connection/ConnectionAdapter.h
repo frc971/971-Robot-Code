@@ -10,8 +10,8 @@
 
 class ConnectionAdapter;
 
-#include "../NetworkTableEntry.h"
-#include "BadMessageException.h"
+#include "networktables2/NetworkTableEntry.h"
+#include "networktables2/connection/BadMessageException.h"
 #include "networktables2/util/IOException.h"
 #include "tables/ITable.h"
 
@@ -21,7 +21,8 @@ public:
 	virtual ~ConnectionAdapter()
 	{
 	}
-	virtual void keepAlive() = 0;
+	//returns true if the connection should still be alive
+	virtual bool keepAlive() = 0;
 	virtual void clientHello(ProtocolVersion protocolRevision) = 0;
 	virtual void serverHelloComplete() = 0;
 	virtual void protocolVersionUnsupported(ProtocolVersion protocolRevision) = 0;

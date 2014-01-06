@@ -13,8 +13,9 @@
  * returns a standard value that will be used in the PID code.
  */
 class PIDSource
-{
+{	
 public:
+	typedef enum {kDistance, kRate, kAngle} PIDSourceParameter;
 	virtual double PIDGet() = 0;
 };
 

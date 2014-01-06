@@ -15,6 +15,7 @@ mkdir h\WPILib\Vision
 mkdir h\WPILib\Vision2009
 
 mkdir h\WPILib\LiveWindow
+mkdir h\WPILib\OSAL
 mkdir h\WPILib\networktables
 mkdir h\WPILib\tables
 mkdir h\WPILib\networktables2
@@ -41,6 +42,7 @@ copy c:\WindRiver\workspace\WPILib\Vision\*.h h\WPILib\Vision
 copy c:\WindRiver\workspace\WPILib\Vision2009\*.h h\WPILib\Vision2009
 
 copy C:\WindRiver\workspace\WPILib\LiveWindow\*.h h\WPILib\LiveWindow
+copy C:\WindRiver\workspace\WPILib\OSAL\*.h h\WPILib\OSAL
 copy C:\WindRiver\workspace\WPILib\networktables\*.h h\WPILib\networktables
 copy C:\WindRiver\workspace\WPILib\tables\*.h h\WPILib\tables
 copy C:\WindRiver\workspace\WPILib\networktables2\*.h h\WPILib\networktables2

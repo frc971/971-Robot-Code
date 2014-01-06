@@ -10,7 +10,7 @@
 
 class ServerAdapterManager;
 
-#include "ServerConnectionAdapter.h"
+#include "networktables2/server/ServerConnectionAdapter.h"
 
 /**
  * A class that manages connections to a server

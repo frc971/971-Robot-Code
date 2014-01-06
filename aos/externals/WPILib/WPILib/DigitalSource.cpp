@@ -39,7 +39,7 @@ DigitalSource::~DigitalSource()
 void DigitalSource::RequestInterrupts(tInterruptHandler handler, void *param)
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Async Interrupt", this);
+	uint32_t index = interruptsResource->Allocate("Async Interrupt", this);
 	if (index == ~0ul)
 	{
 		return;
@@ -69,7 +69,7 @@ void DigitalSource::RequestInterrupts(tInterruptHandler handler, void *param)
 void DigitalSource::RequestInterrupts()
 {
 	if (StatusIsFatal()) return;
-	UINT32 index = interruptsResource->Allocate("Sync Interrupt", this);
+	uint32_t index = interruptsResource->Allocate("Sync Interrupt", this);
 	if (index == ~0ul)
 	{
 		return;

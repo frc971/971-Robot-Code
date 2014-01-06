@@ -28,18 +28,17 @@ class DigitalSource;
 class Encoder: public SensorBase, public CounterBase, public PIDSource, public LiveWindowSendable
 {
 public:
-	typedef enum {kDistance, kRate} PIDSourceParameter;
 
-	Encoder(UINT32 aChannel, UINT32 bChannel, bool reverseDirection=false, EncodingType encodingType = k4X);
-	Encoder(UINT8 aModuleNumber, UINT32 aChannel, UINT8 bModuleNumber, UINT32 _bChannel, bool reverseDirection=false, EncodingType encodingType = k4X);
+	Encoder(uint32_t aChannel, uint32_t bChannel, bool reverseDirection=false, EncodingType encodingType = k4X);
+	Encoder(uint8_t aModuleNumber, uint32_t aChannel, uint8_t bModuleNumber, uint32_t _bChannel, bool reverseDirection=false, EncodingType encodingType = k4X);
 	Encoder(DigitalSource *aSource, DigitalSource *bSource, bool reverseDirection=false, EncodingType encodingType = k4X);
 	Encoder(DigitalSource &aSource, DigitalSource &bSource, bool reverseDirection=false, EncodingType encodingType = k4X);
 	virtual ~Encoder();
 
 	// CounterBase interface
 	void Start();
-	INT32 Get();
-	INT32 GetRaw();
+	int32_t Get();
+	int32_t GetRaw();
 	void Reset();
 	void Stop();
 	double GetPeriod();
@@ -51,7 +50,8 @@ public:
 	void SetMinRate(double minRate);
 	void SetDistancePerPulse(double distancePerPulse);
 	void SetReverseDirection(bool reverseDirection);
-
+	void SetSamplesToAverage(int samplesToAverage);
+	int GetSamplesToAverage();
 	void SetPIDSourceParameter(PIDSourceParameter pidSource);
 	double PIDGet();
 	
@@ -71,7 +71,7 @@ private:
 	bool m_allocatedASource;		// was the A source allocated locally?
 	bool m_allocatedBSource;		// was the B source allocated locally?
 	tEncoder* m_encoder;
-	UINT8 m_index;
+	uint8_t m_index;
 	double m_distancePerPulse;		// distance of travel for each encoder tick
 	Counter *m_counter;				// Counter object for 1x and 2x encoding
 	EncodingType m_encodingType;	// Encoding type

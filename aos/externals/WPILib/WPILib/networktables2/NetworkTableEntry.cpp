@@ -1,5 +1,5 @@
 #include "networktables2/NetworkTableEntry.h"
-
+#include "networktables2/AbstractNetworkTableEntryStore.h"
 
 
 NetworkTableEntry::NetworkTableEntry(std::string& _name, NetworkTableEntryType* _type, EntryValue _value)

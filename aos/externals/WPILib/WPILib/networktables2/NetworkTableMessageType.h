@@ -37,7 +37,7 @@ enum NetworkTableMessageType{
 	/**
 	 * a field update message
 	 */
-	FIELD_UPDATE = 0x11,
+	FIELD_UPDATE = 0x11
 };
 
 #endif /* NETWORKTABLEMESSAGETYPE_H_ */

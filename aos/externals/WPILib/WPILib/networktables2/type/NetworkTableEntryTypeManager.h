@@ -10,7 +10,7 @@
 
 class NetworkTableEntryTypeManager;
 
-#include "NetworkTableEntryType.h"
+#include "networktables2/type/NetworkTableEntryType.h"
 
 class NetworkTableEntryTypeManager
 {

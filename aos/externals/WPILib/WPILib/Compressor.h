@@ -26,15 +26,15 @@ class DigitalInput;
 class Compressor: public SensorBase, public LiveWindowSendable
 {
 public:
-	Compressor(UINT32 pressureSwitchChannel, UINT32 compressorRelayChannel);
-	Compressor(UINT8 pressureSwitchModuleNumber, UINT32 pressureSwitchChannel,
-			UINT8 compresssorRelayModuleNumber, UINT32 compressorRelayChannel);
+	Compressor(uint32_t pressureSwitchChannel, uint32_t compressorRelayChannel);
+	Compressor(uint8_t pressureSwitchModuleNumber, uint32_t pressureSwitchChannel,
+			uint8_t compresssorRelayModuleNumber, uint32_t compressorRelayChannel);
 	~Compressor();
 
 	void Start();
 	void Stop();
 	bool Enabled();
-	UINT32 GetPressureSwitchValue();
+	uint32_t GetPressureSwitchValue();
 	void SetRelayValue(Relay::Value relayValue);
 	
 	void UpdateTable();
@@ -45,8 +45,8 @@ public:
 	ITable * GetTable();
 
 private:
-	void InitCompressor(UINT8 pressureSwitchModuleNumber, UINT32 pressureSwitchChannel,
-				UINT8 compresssorRelayModuleNumber, UINT32 compressorRelayChannel);
+	void InitCompressor(uint8_t pressureSwitchModuleNumber, uint32_t pressureSwitchChannel,
+				uint8_t compresssorRelayModuleNumber, uint32_t compressorRelayChannel);
 
 	DigitalInput *m_pressureSwitch;
 	Relay *m_relay;

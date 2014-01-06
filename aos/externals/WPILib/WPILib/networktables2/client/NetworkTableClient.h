@@ -13,6 +13,7 @@ class NetworkTableClient;
 #include "networktables2/NetworkTableNode.h"
 #include "networktables2/client/ClientConnectionAdapter.h"
 #include "networktables2/WriteManager.h"
+#include "networktables2/TransactionDirtier.h"
 
 /**
  * A client node in NetworkTables 2.0
@@ -22,8 +23,9 @@ class NetworkTableClient;
  */
 class NetworkTableClient : public NetworkTableNode{
 private:
-	ClientConnectionAdapter adapter;
-	WriteManager writeManager;
+	ClientConnectionAdapter& adapter;
+	WriteManager& writeManager;
+        TransactionDirtier* dirtier;
 
 public:
 	/**

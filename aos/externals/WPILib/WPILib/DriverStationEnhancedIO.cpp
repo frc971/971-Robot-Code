@@ -51,7 +51,7 @@ DriverStationEnhancedIO::~DriverStationEnhancedIO()
  */
 void DriverStationEnhancedIO::UpdateData()
 {
-	INT32 retVal;
+	int32_t retVal;
 	{
 		status_block_t tempOutputData;
 		Synchronized sync(m_outputDataSemaphore);
@@ -176,7 +176,7 @@ double DriverStationEnhancedIO::GetAcceleration(tAccelChannel channel)
 		return 0.0;
 	}
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_Acceleration);
@@ -193,7 +193,7 @@ double DriverStationEnhancedIO::GetAcceleration(tAccelChannel channel)
  * @param channel The channel number to read. [1,8]
  * @return The analog input voltage for the channel.
  */
-double DriverStationEnhancedIO::GetAnalogIn(UINT32 channel)
+double DriverStationEnhancedIO::GetAnalogIn(uint32_t channel)
 {
 	// 3.3V is the analog reference voltage
 	return GetAnalogInRatio(channel) * kAnalogInputReference;
@@ -205,7 +205,7 @@ double DriverStationEnhancedIO::GetAnalogIn(UINT32 channel)
  * @param channel The channel number to read. [1,8]
  * @return The analog input percentage for the channel.
  */
-double DriverStationEnhancedIO::GetAnalogInRatio(UINT32 channel)
+double DriverStationEnhancedIO::GetAnalogInRatio(uint32_t channel)
 {
 	if (channel < 1 || channel > 8)
 	{
@@ -218,7 +218,7 @@ double DriverStationEnhancedIO::GetAnalogInRatio(UINT32 channel)
 		return 0.0;
 	}
 
-	static UINT16 reported_mask = 0;
+	static uint16_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_AnalogIn);
@@ -238,7 +238,7 @@ double DriverStationEnhancedIO::GetAnalogInRatio(UINT32 channel)
  * @param channel The analog output channel on the DS IO. [1,2]
  * @return The voltage being output on the channel.
  */
-double DriverStationEnhancedIO::GetAnalogOut(UINT32 channel)
+double DriverStationEnhancedIO::GetAnalogOut(uint32_t channel)
 {
 	if (channel < 1 || channel > 2)
 	{
@@ -268,7 +268,7 @@ double DriverStationEnhancedIO::GetAnalogOut(UINT32 channel)
  * @param channel The analog output channel on the DS IO. [1,2]
  * @param value The voltage to output on the channel.
  */
-void DriverStationEnhancedIO::SetAnalogOut(UINT32 channel, double value)
+void DriverStationEnhancedIO::SetAnalogOut(uint32_t channel, double value)
 {
 	if (channel < 1 || channel > 2)
 	{
@@ -283,7 +283,7 @@ void DriverStationEnhancedIO::SetAnalogOut(UINT32 channel, double value)
 	if (value < 0.0) value = 0.0;
 	if (value > kAnalogOutputReference) value = kAnalogOutputReference;
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_AnalogOut);
@@ -291,7 +291,7 @@ void DriverStationEnhancedIO::SetAnalogOut(UINT32 channel, double value)
 	}
 
 	Synchronized sync(m_outputDataSemaphore);
-	m_outputData.data.dac[channel-1] = (UINT8)(value / kAnalogOutputReference * kAnalogOutputResolution);
+	m_outputData.data.dac[channel-1] = (uint8_t)(value / kAnalogOutputReference * kAnalogOutputResolution);
 }
 
 /**
@@ -309,7 +309,7 @@ void DriverStationEnhancedIO::SetAnalogOut(UINT32 channel, double value)
  * @param channel The button channel to read. [1,6]
  * @return The state of the selected button.
  */
-bool DriverStationEnhancedIO::GetButton(UINT32 channel)
+bool DriverStationEnhancedIO::GetButton(uint32_t channel)
 {
 	if (channel < 1 || channel > 6)
 	{
@@ -317,7 +317,7 @@ bool DriverStationEnhancedIO::GetButton(UINT32 channel)
 		return false;
 	}
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_Button);
@@ -332,7 +332,7 @@ bool DriverStationEnhancedIO::GetButton(UINT32 channel)
  * 
  * @return The state of the 6 button channels in the 6 lsb of the returned byte.
  */
-UINT8 DriverStationEnhancedIO::GetButtons()
+uint8_t DriverStationEnhancedIO::GetButtons()
 {
 	if (!m_inputValid)
 	{
@@ -350,7 +350,7 @@ UINT8 DriverStationEnhancedIO::GetButtons()
  * @param channel The LED channel to set. [1,8]
  * @param value True to turn the LED on.
  */
-void DriverStationEnhancedIO::SetLED(UINT32 channel, bool value)
+void DriverStationEnhancedIO::SetLED(uint32_t channel, bool value)
 {
 	if (channel < 1 || channel > 8)
 	{
@@ -363,14 +363,14 @@ void DriverStationEnhancedIO::SetLED(UINT32 channel, bool value)
 		return;
 	}
 
-	static UINT16 reported_mask = 0;
+	static uint16_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_LED);
 		reported_mask |= (1 >> channel);
 	}
 
-	UINT8 leds;
+	uint8_t leds;
 	Synchronized sync(m_outputDataSemaphore);
 	leds = m_outputData.data.leds;
 
@@ -385,7 +385,7 @@ void DriverStationEnhancedIO::SetLED(UINT32 channel, bool value)
  * 
  * @param value The state of each LED.  LED1 is lsb and LED8 is msb.
  */
-void DriverStationEnhancedIO::SetLEDs(UINT8 value)
+void DriverStationEnhancedIO::SetLEDs(uint8_t value)
 {
 	if (!m_outputValid)
 	{
@@ -403,7 +403,7 @@ void DriverStationEnhancedIO::SetLEDs(UINT8 value)
  * @param channel The DIO channel to read. [1,16]
  * @return The state of the selected digital line.
  */
-bool DriverStationEnhancedIO::GetDigital(UINT32 channel)
+bool DriverStationEnhancedIO::GetDigital(uint32_t channel)
 {
 	if (channel < 1 || channel > 16)
 	{
@@ -411,7 +411,7 @@ bool DriverStationEnhancedIO::GetDigital(UINT32 channel)
 		return false;
 	}
 
-	static UINT32 reported_mask = 0;
+	static uint32_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_DigitalIn);
@@ -426,7 +426,7 @@ bool DriverStationEnhancedIO::GetDigital(UINT32 channel)
  * 
  * @return The state of all DIO lines. DIO1 is lsb and DIO16 is msb.
  */
-UINT16 DriverStationEnhancedIO::GetDigitals()
+uint16_t DriverStationEnhancedIO::GetDigitals()
 {
 	if (!m_inputValid)
 	{
@@ -444,7 +444,7 @@ UINT16 DriverStationEnhancedIO::GetDigitals()
  * @param channel The DIO channel to set. [1,16]
  * @param value The state to set the selected channel to.
  */
-void DriverStationEnhancedIO::SetDigitalOutput(UINT32 channel, bool value)
+void DriverStationEnhancedIO::SetDigitalOutput(uint32_t channel, bool value)
 {
 	if (channel < 1 || channel > 16)
 	{
@@ -457,14 +457,14 @@ void DriverStationEnhancedIO::SetDigitalOutput(UINT32 channel, bool value)
 		return;
 	}
 
-	static UINT32 reported_mask = 0;
+	static uint32_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_DigitalOut);
 		reported_mask |= (1 >> channel);
 	}
 
-	UINT16 digital;
+	uint16_t digital;
 	Synchronized sync(m_outputDataSemaphore);
 
 	if (m_outputData.data.digital_oe & (1 << (channel-1)))
@@ -491,7 +491,7 @@ void DriverStationEnhancedIO::SetDigitalOutput(UINT32 channel, bool value)
  * @param channel The DIO channel config to get. [1,16]
  * @return The configured mode for the DIO line.
  */
-DriverStationEnhancedIO::tDigitalConfig DriverStationEnhancedIO::GetDigitalConfig(UINT32 channel)
+DriverStationEnhancedIO::tDigitalConfig DriverStationEnhancedIO::GetDigitalConfig(uint32_t channel)
 {
 	if (channel < 1 || channel > 16)
 	{
@@ -560,7 +560,7 @@ DriverStationEnhancedIO::tDigitalConfig DriverStationEnhancedIO::GetDigitalConfi
  * @param channel The DIO line to configure. [1,16]
  * @param config The mode to put the DIO line in.
  */
-void DriverStationEnhancedIO::SetDigitalConfig(UINT32 channel, tDigitalConfig config)
+void DriverStationEnhancedIO::SetDigitalConfig(uint32_t channel, tDigitalConfig config)
 {
 	if (channel < 1 || channel > 16)
 	{
@@ -701,7 +701,7 @@ void DriverStationEnhancedIO::SetPWMPeriod(tPWMPeriodChannels channels, double p
 	{
 		Synchronized sync(m_outputDataSemaphore);
 		// Update the period
-		m_outputData.data.pwm_period[channels] = (UINT16)ticks;
+		m_outputData.data.pwm_period[channels] = (uint16_t)ticks;
 		m_configChanged = true;
 	}
 	// Restore the duty cycles
@@ -715,7 +715,7 @@ void DriverStationEnhancedIO::SetPWMPeriod(tPWMPeriodChannels channels, double p
  * @param channel The FixedDO line to get. [1,2]
  * @return The state of the FixedDO line.
  */
-bool DriverStationEnhancedIO::GetFixedDigitalOutput(UINT32 channel)
+bool DriverStationEnhancedIO::GetFixedDigitalOutput(uint32_t channel)
 {
 	if (channel < 1 || channel > 2)
 	{
@@ -746,7 +746,7 @@ bool DriverStationEnhancedIO::GetFixedDigitalOutput(UINT32 channel)
  * @param channel The FixedDO channel to set.
  * @param value The state to set the FixedDO.
  */
-void DriverStationEnhancedIO::SetFixedDigitalOutput(UINT32 channel, bool value)
+void DriverStationEnhancedIO::SetFixedDigitalOutput(uint32_t channel, bool value)
 {
 	if (channel < 1 || channel > 2)
 	{
@@ -759,14 +759,14 @@ void DriverStationEnhancedIO::SetFixedDigitalOutput(UINT32 channel, bool value)
 		return;
 	}
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_FixedDigitalOut);
 		reported_mask |= (1 >> channel);
 	}
 
-	UINT8 digital;
+	uint8_t digital;
 	Synchronized sync(m_outputDataSemaphore);
 	digital = m_outputData.data.fixed_digital_out;
 
@@ -790,7 +790,7 @@ void DriverStationEnhancedIO::SetFixedDigitalOutput(UINT32 channel, bool value)
  * @param encoderNumber The quadrature encoder to access. [1,2]
  * @return The current position of the quadrature encoder.
  */
-INT16 DriverStationEnhancedIO::GetEncoder(UINT32 encoderNumber)
+int16_t DriverStationEnhancedIO::GetEncoder(uint32_t encoderNumber)
 {
 	if (encoderNumber < 1 || encoderNumber > 2)
 	{
@@ -803,7 +803,7 @@ INT16 DriverStationEnhancedIO::GetEncoder(UINT32 encoderNumber)
 		return 0;
 	}
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> encoderNumber)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, encoderNumber, nUsageReporting::kDriverStationEIO_Encoder);
@@ -822,7 +822,7 @@ INT16 DriverStationEnhancedIO::GetEncoder(UINT32 encoderNumber)
  * 
  * @param encoderNumber The quadrature encoder to reset. [1,2]
  */
-void DriverStationEnhancedIO::ResetEncoder(UINT32 encoderNumber)
+void DriverStationEnhancedIO::ResetEncoder(uint32_t encoderNumber)
 {
 	if (encoderNumber < 1 || encoderNumber > 2)
 	{
@@ -848,7 +848,7 @@ void DriverStationEnhancedIO::ResetEncoder(UINT32 encoderNumber)
  * @param encoderNumber The quadrature encoder. [1,2]
  * @return Is the index channel of the encoder enabled.
  */
-bool DriverStationEnhancedIO::GetEncoderIndexEnable(UINT32 encoderNumber)
+bool DriverStationEnhancedIO::GetEncoderIndexEnable(uint32_t encoderNumber)
 {
 	if (encoderNumber < 1 || encoderNumber > 2)
 	{
@@ -879,7 +879,7 @@ bool DriverStationEnhancedIO::GetEncoderIndexEnable(UINT32 encoderNumber)
  * @param encoderNumber The quadrature encoder. [1,2]
  * @param enable If true, reset the encoder in an index condition.
  */
-void DriverStationEnhancedIO::SetEncoderIndexEnable(UINT32 encoderNumber, bool enable)
+void DriverStationEnhancedIO::SetEncoderIndexEnable(uint32_t encoderNumber, bool enable)
 {
 	if (encoderNumber < 1 || encoderNumber > 2)
 	{
@@ -909,7 +909,7 @@ double DriverStationEnhancedIO::GetTouchSlider()
 	nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, 1, nUsageReporting::kDriverStationEIO_TouchSlider);
 
 	Synchronized sync(m_inputDataSemaphore);
-	UINT8 value = m_inputData.data.capsense_slider;
+	uint8_t value = m_inputData.data.capsense_slider;
 	return value == 255 ? -1.0 : value / 254.0;
 }
 
@@ -919,7 +919,7 @@ double DriverStationEnhancedIO::GetTouchSlider()
  * @param channel The DIO line's PWM generator to get the duty-cycle from. [1,4]
  * @return The percent duty-cycle being output (if the DIO line is configured for PWM). [0.0,1.0]
  */
-double DriverStationEnhancedIO::GetPWMOutput(UINT32 channel)
+double DriverStationEnhancedIO::GetPWMOutput(uint32_t channel)
 {
 	if (channel < 1 || channel > 4)
 	{
@@ -945,7 +945,7 @@ double DriverStationEnhancedIO::GetPWMOutput(UINT32 channel)
  * @param channel The DIO line's PWM generator to set. [1,4]
  * @param value The percent duty-cycle to output from the PWM generator. [0.0,1.0]
  */
-void DriverStationEnhancedIO::SetPWMOutput(UINT32 channel, double value)
+void DriverStationEnhancedIO::SetPWMOutput(uint32_t channel, double value)
 {
 	if (channel < 1 || channel > 4)
 	{
@@ -958,7 +958,7 @@ void DriverStationEnhancedIO::SetPWMOutput(UINT32 channel, double value)
 		return;
 	}
 
-	static UINT8 reported_mask = 0;
+	static uint8_t reported_mask = 0;
 	if (!(reported_mask & (1 >> channel)))
 	{
 		nUsageReporting::report(nUsageReporting::kResourceType_DriverStationEIO, channel, nUsageReporting::kDriverStationEIO_PWM);
@@ -968,7 +968,7 @@ void DriverStationEnhancedIO::SetPWMOutput(UINT32 channel, double value)
 	if (value > 1.0) value = 1.0;
 	else if (value < 0.0) value = 0.0;
 	Synchronized sync(m_outputDataSemaphore);
-	m_outputData.data.pwm_compare[channel - 1] = (UINT16)(value * (double)m_outputData.data.pwm_period[(channel - 1) >> 1]);
+	m_outputData.data.pwm_compare[channel - 1] = (uint16_t)(value * (double)m_outputData.data.pwm_period[(channel - 1) >> 1]);
 }
 
 /**
@@ -980,7 +980,7 @@ void DriverStationEnhancedIO::SetPWMOutput(UINT32 channel, double value)
  * 
  * @return The version of the firmware running on the IO board.  0 if the board is not attached or not in Enhanced mode.
  */
-UINT8 DriverStationEnhancedIO::GetFirmwareVersion()
+uint8_t DriverStationEnhancedIO::GetFirmwareVersion()
 {
 	if (!m_inputValid)
 	{

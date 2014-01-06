@@ -14,7 +14,7 @@ class ServerNetworkTableEntryStore;
 
 #include "networktables2/AbstractNetworkTableEntryStore.h"
 #include "networktables2/NetworkTableEntry.h"
-#include "Synchronized.h"
+#include "OSAL/Synchronized.h"
 
 
 

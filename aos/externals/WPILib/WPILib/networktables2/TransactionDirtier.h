@@ -12,7 +12,7 @@
 class TransactionDirtier;
 
 
-#include "OutgoingEntryReceiver.h"
+#include "networktables2/OutgoingEntryReceiver.h"
 
 
 

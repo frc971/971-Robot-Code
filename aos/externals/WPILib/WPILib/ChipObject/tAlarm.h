@@ -30,18 +30,18 @@ public:
 
    typedef enum
    {
-   } tTriggerTime_IfaceConstants;
-
-   virtual void writeTriggerTime(unsigned int value, tRioStatusCode *status) = 0;
-   virtual unsigned int readTriggerTime(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
    } tEnable_IfaceConstants;
 
    virtual void writeEnable(bool value, tRioStatusCode *status) = 0;
    virtual bool readEnable(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tTriggerTime_IfaceConstants;
+
+   virtual void writeTriggerTime(unsigned int value, tRioStatusCode *status) = 0;
+   virtual unsigned int readTriggerTime(tRioStatusCode *status) = 0;
 
 
 

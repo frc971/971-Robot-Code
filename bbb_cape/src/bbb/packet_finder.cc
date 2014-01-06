@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #include <algorithm>
 
@@ -9,13 +10,16 @@
 #include "bbb_cape/src/cape/cows.h"
 #include "bbb/crc.h"
 
+using ::aos::time::Time;
+
 namespace bbb {
 
-PacketFinder::PacketFinder()
-    : buf_(new AlignedChar[kPacketSize]),
-    unstuffed_data_(new AlignedChar[kPacketSize - 4]) {
-  int remainder = kPacketSize % 4;
-  CHECK(remainder == 0);
+PacketFinder::PacketFinder(ByteReader *reader, size_t packet_size)
+    : reader_(reader),
+      packet_size_(packet_size),
+      buf_(new AlignedChar[packet_size_]),
+      unstuffed_data_(new AlignedChar[packet_size_ - 4]) {
+  CHECK((packet_size_ % 4) == 0);
 }
 
 PacketFinder::~PacketFinder() {
@@ -23,21 +27,38 @@ PacketFinder::~PacketFinder() {
   delete unstuffed_data_;
 }
 
-// TODO(brians): Figure out why this (sometimes) gets confused right after
-// flashing the cape.
-bool PacketFinder::FindPacket() {
+bool PacketFinder::FindPacket(const ::Time &timeout_time) {
   // How many 0 bytes we've found at the front so far.
   int zeros_found = 0;
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
-    ssize_t new_bytes =
-        ReadBytes(buf_ + already_read, kPacketSize - already_read);
+    ssize_t new_bytes = reader_->ReadBytes(
+        buf_ + already_read, packet_size_ - already_read, timeout_time);
     if (new_bytes < 0) {
-      if (errno == EINTR) continue;
-      LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-          buf_ + already_read, kPacketSize - already_read,
-          errno, strerror(errno));
+      if (new_bytes == -1) {
+        LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
+            buf_ + already_read, packet_size_ - already_read, errno,
+            strerror(errno));
+      } else if (new_bytes == -2) {
+        LOG(WARNING, "timed out\n");
+      } else {
+        LOG(WARNING, "bad ByteReader %p returned %zd\n", reader_, new_bytes);
+      }
       return false;
+    }
+
+    if (!irq_priority_increased_) {
+      // TODO(brians): Do this cleanly.
+      int chrt_result = system("bash -c 'chrt -r -p 55"
+                               " $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+      if (chrt_result == -1) {
+        LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+      } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
+        LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
+            WEXITSTATUS(chrt_result));
+      }
+
+      irq_priority_increased_ = true;
     }
 
     if (packet_bytes_ == -1) {
@@ -51,6 +72,7 @@ bool PacketFinder::FindPacket() {
             new_bytes -= to_check + 1;
             memmove(buf_, buf_ + to_check + 1, new_bytes);
             to_check = 0;
+            break;
           }
         } else {
           zeros_found = 0;
@@ -59,29 +81,29 @@ bool PacketFinder::FindPacket() {
     }
     if (packet_bytes_ != -1) {  // if we decided that these are good bytes
       packet_bytes_ += new_bytes;
-      if (packet_bytes_ == static_cast<int>(kPacketSize)) return true;
+      if (packet_bytes_ == static_cast<ssize_t>(packet_size_)) return true;
     }
   }
 }
 
 bool PacketFinder::ProcessPacket() {
   uint32_t unstuffed = cows_unstuff(
-      reinterpret_cast<uint32_t *>(buf_), kPacketSize,
-      reinterpret_cast<uint32_t *>(unstuffed_data_), kPacketSize);
+      reinterpret_cast<uint32_t *>(buf_), packet_size_,
+      reinterpret_cast<uint32_t *>(unstuffed_data_), packet_size_ - 4);
   if (unstuffed == 0) {
     LOG(WARNING, "invalid packet\n");
     return false;
-  } else if (unstuffed != (kPacketSize - 4) / 4) {
+  } else if (unstuffed != (packet_size_ - 4) / 4) {
     LOG(WARNING, "packet is %" PRIu32 " words instead of %" PRIu32 "\n",
-        unstuffed, (kPacketSize - 4) / 4);
+        unstuffed, (packet_size_ - 4) / 4);
     return false;
   }
 
   // Make sure the checksum checks out.
   uint32_t sent_checksum;
-  memcpy(&sent_checksum, unstuffed_data_ + kPacketSize - 8, 4);
+  memcpy(&sent_checksum, unstuffed_data_ + packet_size_ - 8, 4);
   uint32_t calculated_checksum = cape::CalculateChecksum(
-      reinterpret_cast<uint8_t *>(unstuffed_data_), kPacketSize - 8);
+      reinterpret_cast<uint8_t *>(unstuffed_data_), packet_size_ - 8);
   if (sent_checksum != calculated_checksum) {
     LOG(WARNING, "sent checksum: %" PRIx32 " vs calculated: %" PRIx32"\n",
         sent_checksum, calculated_checksum);
@@ -91,18 +113,18 @@ bool PacketFinder::ProcessPacket() {
   return true;
 }
 
-bool PacketFinder::ReadPacket() {
-  if (!FindPacket()) return false;
+bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
+  if (!FindPacket(timeout_time)) return false;
 
   if (!ProcessPacket()) {
     packet_bytes_ = -1;
     int zeros = 0;
-    for (uint32_t i = 0; i < kPacketSize; ++i) {
+    for (size_t i = 0; i < packet_size_; ++i) {
       if (buf_[i] == 0) {
         ++zeros;
         if (zeros == 4) {
           LOG(INFO, "found another packet start at %d\n", i);
-          packet_bytes_ = kPacketSize - (i + 1);
+          packet_bytes_ = packet_size_ - (i + 1);
           memmove(buf_, buf_ + i + 1, packet_bytes_);
           return false;
         }

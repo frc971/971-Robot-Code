@@ -10,7 +10,7 @@
 
 class DefaultEntryTypes;
 
-#include "NetworkTableEntryTypeManager.h"
+#include "networktables2/type/NetworkTableEntryTypeManager.h"
 
 
 
@@ -35,6 +35,8 @@ private:
 		 * See {@link NetworkTableEntryType}::readValue
 		 */
 		virtual EntryValue readValue(DataIOStream& is);
+
+		virtual bool areEqual(EntryValue v1, EntryValue v2);
 	};
 	/**
 	 * a double floating point entry type
@@ -52,6 +54,8 @@ private:
 		 * See {@link NetworkTableEntryType}::sendValue
 		 */
 		virtual EntryValue readValue(DataIOStream& is);
+
+		virtual bool areEqual(EntryValue v1, EntryValue v2);
 	};
 	/**
 	 * a string entry type
@@ -79,6 +83,8 @@ private:
 		 * See {@link NetworkTableEntryType}::deleteValue
 		 */
 		virtual void deleteValue(EntryValue value);
+
+		virtual bool areEqual(EntryValue v1, EntryValue v2);
 	};
 public:
 	/**

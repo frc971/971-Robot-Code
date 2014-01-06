@@ -9,5 +9,5 @@
 
 OutgoingEntryReceiver_NULL_t OutgoingEntryReceiver_NULL;
 
-void OutgoingEntryReceiver_NULL_t::offerOutgoingAssignment(NetworkTableEntry* entry){};
-void OutgoingEntryReceiver_NULL_t::offerOutgoingUpdate(NetworkTableEntry* entry){};
+void OutgoingEntryReceiver_NULL_t::offerOutgoingAssignment(NetworkTableEntry* entry){}
+void OutgoingEntryReceiver_NULL_t::offerOutgoingUpdate(NetworkTableEntry* entry){}

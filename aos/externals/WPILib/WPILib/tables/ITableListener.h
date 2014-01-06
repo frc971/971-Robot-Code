@@ -12,7 +12,7 @@
 class ITableListener;
 
 
-#include "ITable.h"
+#include "tables/ITable.h"
 
 
 
@@ -25,6 +25,7 @@ class ITableListener;
  */
 class ITableListener {
  public:
+  virtual ~ITableListener(){};
     /**
      * Called when a key-value pair is changed in a {@link ITable}
      * WARNING: If a new key-value is put in this method value changed will immediatly be called which could lead to recursive code

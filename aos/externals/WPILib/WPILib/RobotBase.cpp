@@ -14,8 +14,13 @@
 #include <moduleLib.h>
 #include <taskLib.h>
 #include <unldLib.h>
+#include <cstring>
 
 RobotBase* RobotBase::m_instance = NULL;
+
+const char *FILE_NAME = "/c/FRC_Lib_Version.ini";
+const char *VERSION_STRING = "C++ 2014 Update 0";
+
 
 void RobotBase::setInstance(RobotBase* robot)
 {
@@ -144,6 +149,15 @@ void RobotBase::robotTask(FUNCPTR factory, Task *task)
   instance->StartCompetition();
 }
 
+void RobotBase::WriteVersionString() {
+	FILE *file = fopen(FILE_NAME, "w");
+	if (file != NULL) {
+		fputs(VERSION_STRING, file);
+    fputs(" (customized by Team 971 Spartan Robotics)", file);
+		fclose(file);
+	}
+}
+
 /**
  * 
  * Start the robot code.
@@ -168,9 +182,10 @@ void RobotBase::startRobotTask(FUNCPTR factory)
 #else
 	printf("WPILib was compiled without -D'SVN_REV=nnnn'\n");
 #endif
+  printf("This WPILib has been fixed by Team 971 Spartan Robotics.\n");
 
 	// Check for startup code already running
-	INT32 oldId = taskNameToId("FRC_RobotTask");
+	int32_t oldId = taskNameToId(const_cast<char*>("FRC_RobotTask"));
 	if (oldId != ERROR)
 	{
 		// Find the startup code module.
@@ -194,12 +209,14 @@ void RobotBase::startRobotTask(FUNCPTR factory)
 
 	// Let the Usage Reporting framework know that there is a C++ program running
 	nUsageReporting::report(nUsageReporting::kResourceType_Language, nUsageReporting::kLanguage_CPlusPlus);
+	
+	RobotBase::WriteVersionString();
 
 	// Start robot task
 	// This is done to ensure that the C++ robot task is spawned with the floating point
 	// context save parameter.
 	Task *task = new Task("RobotTask", (FUNCPTR)RobotBase::robotTask, Task::kDefaultPriority, 64000);
-	task->Start((INT32)factory, (INT32)task);
+	task->Start((int32_t)factory, (int32_t)task);
 }
 
 /**

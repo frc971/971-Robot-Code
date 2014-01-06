@@ -16,8 +16,8 @@
 
 class ArrayEntryType;
 
-#include "ArrayData.h"
-#include "ComplexEntryType.h"
+#include "networktables2/type/ArrayData.h"
+#include "networktables2/type/ComplexEntryType.h"
 
 struct ArrayEntryData{
 	uint8_t length;
@@ -65,6 +65,13 @@ public:
 	 * @param value The value to delete.
 	 */
 	void deleteElement(EntryValue value);
+
+	/**
+	 * Compares two elements of the type of the array
+	 * 
+	 * @return true if the elements are equal
+	 */
+	bool areElementsEqual(EntryValue v1, EntryValue v2);
 	
 	/**
 	 * See {@link NetworkTableEntryType}::sendValue
@@ -85,6 +92,9 @@ public:
 	 * See {@link NetworkTableEntryType}::deleteValue
 	 */
 	void deleteValue(EntryValue value);
+
+
+	bool areEqual(EntryValue v1, EntryValue v2);
 	
 	/**
 	 * See {@link ComplexEntryType}::internalizeValue

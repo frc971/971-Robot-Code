@@ -21,11 +21,11 @@ class DigitalModule;
 class DigitalOutput : public DigitalSource, public ITableListener, public LiveWindowSendable
 {
 public:
-	explicit DigitalOutput(UINT32 channel);
-	DigitalOutput(UINT8 moduleNumber, UINT32 channel);
+	explicit DigitalOutput(uint32_t channel);
+	DigitalOutput(uint8_t moduleNumber, uint32_t channel);
 	virtual ~DigitalOutput();
-	void Set(UINT32 value);
-	UINT32 GetChannel();
+	void Set(uint32_t value);
+	uint32_t GetChannel();
 	void Pulse(float length);
 	bool IsPulsing();
 	void SetPWMRate(float rate);
@@ -34,8 +34,8 @@ public:
 	void UpdateDutyCycle(float dutyCycle);
 
 	// Digital Source Interface
-	virtual UINT32 GetChannelForRouting();
-	virtual UINT32 GetModuleForRouting();
+	virtual uint32_t GetChannelForRouting();
+	virtual uint32_t GetModuleForRouting();
 	virtual bool GetAnalogTriggerForRouting();
 	virtual void RequestInterrupts(tInterruptHandler handler, void *param);
 	virtual void RequestInterrupts();
@@ -51,10 +51,10 @@ public:
 	ITable * GetTable();
 
 private:
-	void InitDigitalOutput(UINT8 moduleNumber, UINT32 channel);
+	void InitDigitalOutput(uint8_t moduleNumber, uint32_t channel);
 
-	UINT32 m_channel;
-	UINT32 m_pwmGenerator;
+	uint32_t m_channel;
+	uint32_t m_pwmGenerator;
 	DigitalModule *m_module;
 	
 	ITable *m_table;

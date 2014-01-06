@@ -11,10 +11,10 @@
 #include "WPIErrors.h"
 #include <strLib.h>
 
-const UINT32 DriverStationLCD::kSyncTimeout_ms;
-const UINT16 DriverStationLCD::kFullDisplayTextCommand;
-const INT32 DriverStationLCD::kLineLength;
-const INT32 DriverStationLCD::kNumLines;
+const uint32_t DriverStationLCD::kSyncTimeout_ms;
+const uint16_t DriverStationLCD::kFullDisplayTextCommand;
+const int32_t DriverStationLCD::kLineLength;
+const int32_t DriverStationLCD::kNumLines;
 DriverStationLCD* DriverStationLCD::m_instance = NULL;
 
 /**
@@ -29,7 +29,7 @@ DriverStationLCD::DriverStationLCD()
 	m_textBuffer = new char[USER_DS_LCD_DATA_SIZE];
 	memset(m_textBuffer, ' ', USER_DS_LCD_DATA_SIZE);
 
-	*((UINT16 *)m_textBuffer) = kFullDisplayTextCommand;
+	*((uint16_t *)m_textBuffer) = kFullDisplayTextCommand;
 
 	m_textBufferSemaphore = semMCreate(SEM_DELETE_SAFE);
 
@@ -75,7 +75,7 @@ void DriverStationLCD::UpdateLCD()
  * @param startingColumn The column to start printing to.  This is a 1-based number.
  * @param writeFmt The printf format string describing how to print.
  */
-void DriverStationLCD::Printf(Line line, INT32 startingColumn, const char *writeFmt, ...)
+void DriverStationLCD::Printf(Line line, int32_t startingColumn, const char *writeFmt, ...)
 {
 	va_list args;
 	va_start (args, writeFmt);
@@ -83,10 +83,10 @@ void DriverStationLCD::Printf(Line line, INT32 startingColumn, const char *write
 	va_end (args);
 }
 
-void DriverStationLCD::VPrintf(Line line, INT32 startingColumn, const char *writeFmt, va_list args)
+void DriverStationLCD::VPrintf(Line line, int32_t startingColumn, const char *writeFmt, va_list args)
 {
-	UINT32 start = startingColumn - 1;
-	INT32 maxLength = kLineLength - start;
+	uint32_t start = startingColumn - 1;
+	int32_t maxLength = kLineLength - start;
 	char lineBuffer[kLineLength + 1];
 
 	if (startingColumn < 1 || startingColumn > kLineLength)
@@ -104,10 +104,10 @@ void DriverStationLCD::VPrintf(Line line, INT32 startingColumn, const char *writ
 	{
 		Synchronized sync(m_textBufferSemaphore);
 		// snprintf appends NULL to its output.  Therefore we can't write directly to the buffer.
-		INT32 length = vsnprintf(lineBuffer, kLineLength + 1, writeFmt, args);
+		int32_t length = vsnprintf(lineBuffer, kLineLength + 1, writeFmt, args);
 		if (length < 0) length = kLineLength;
 
-		memcpy(m_textBuffer + start + line * kLineLength + sizeof(UINT16), lineBuffer, std::min(maxLength,length));
+		memcpy(m_textBuffer + start + line * kLineLength + sizeof(uint16_t), lineBuffer, std::min(maxLength,length));
 	}
 }
 
@@ -141,7 +141,7 @@ void DriverStationLCD::VPrintfLine(Line line, const char *writeFmt, va_list args
 	{
 		Synchronized sync(m_textBufferSemaphore);
 		// snprintf appends NULL to its output.  Therefore we can't write directly to the buffer.
-		INT32 length = std::min(vsnprintf(lineBuffer, kLineLength + 1, writeFmt, args), kLineLength);
+		int32_t length = std::min(vsnprintf(lineBuffer, kLineLength + 1, writeFmt, args), (int)kLineLength);
 		if (length < 0) length = kLineLength;
 
 		// Fill the rest of the buffer
@@ -150,7 +150,7 @@ void DriverStationLCD::VPrintfLine(Line line, const char *writeFmt, va_list args
 			memset(lineBuffer + length, ' ', kLineLength - length);
 		}
 		
-		memcpy(m_textBuffer + line * kLineLength + sizeof(UINT16), lineBuffer, kLineLength);
+		memcpy(m_textBuffer + line * kLineLength + sizeof(uint16_t), lineBuffer, kLineLength);
 	}
 }
 
@@ -160,6 +160,6 @@ void DriverStationLCD::VPrintfLine(Line line, const char *writeFmt, va_list args
 void DriverStationLCD::Clear()
 {
 	Synchronized sync(m_textBufferSemaphore);
-	memset(m_textBuffer + sizeof(UINT16), ' ', kLineLength*kNumLines);
+	memset(m_textBuffer + sizeof(uint16_t), ' ', kLineLength*kNumLines);
 }
 

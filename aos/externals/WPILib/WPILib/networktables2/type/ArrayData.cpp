@@ -18,6 +18,9 @@ ArrayData::ArrayData(ArrayEntryType& type) : ComplexData(type), m_data_type(type
 	m_size = 0;
 	data = NULL;
 }
+ArrayData::~ArrayData(){
+        free(data);
+}
 
 EntryValue ArrayData::_get(unsigned int index){//TODO bounds checking
 	return data[index];

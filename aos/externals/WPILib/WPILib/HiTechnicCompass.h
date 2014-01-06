@@ -27,7 +27,7 @@ class I2C;
 class HiTechnicCompass : public SensorBase, public LiveWindowSendable
 {
 public:
-	explicit HiTechnicCompass(UINT8 moduleNumber);
+	explicit HiTechnicCompass(uint8_t moduleNumber);
 	virtual ~HiTechnicCompass();
 	float GetAngle();
 	
@@ -39,12 +39,12 @@ public:
 	ITable * GetTable();
 
 private:
-	static const UINT8 kAddress = 0x02;
-	static const UINT8 kManufacturerBaseRegister = 0x08;
-	static const UINT8 kManufacturerSize = 0x08;
-	static const UINT8 kSensorTypeBaseRegister = 0x10;
-	static const UINT8 kSensorTypeSize = 0x08;
-	static const UINT8 kHeadingRegister = 0x44;
+	static const uint8_t kAddress = 0x02;
+	static const uint8_t kManufacturerBaseRegister = 0x08;
+	static const uint8_t kManufacturerSize = 0x08;
+	static const uint8_t kSensorTypeBaseRegister = 0x10;
+	static const uint8_t kSensorTypeSize = 0x08;
+	static const uint8_t kHeadingRegister = 0x44;
 
 	I2C* m_i2c;
 	

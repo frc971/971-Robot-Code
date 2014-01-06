@@ -13,11 +13,11 @@ class NetworkTableServer;
 
 #include "networktables2/TransactionDirtier.h"
 #include "networktables2/NetworkTableNode.h"
-#include "ServerIncomingStreamMonitor.h"
-#include "ServerIncomingConnectionListener.h"
+#include "networktables2/server/ServerIncomingStreamMonitor.h"
+#include "networktables2/server/ServerIncomingConnectionListener.h"
 #include "networktables2/WriteManager.h"
 #include "networktables2/stream/IOStreamProvider.h"
-#include "ServerConnectionList.h"
+#include "networktables2/server/ServerConnectionList.h"
 
 /**
  * A server node in NetworkTables 2.0
@@ -28,9 +28,9 @@ class NetworkTableServer;
 class NetworkTableServer : public NetworkTableNode, public ServerIncomingConnectionListener{
 private:
 	IOStreamProvider& streamProvider;
+	ServerIncomingStreamMonitor incomingStreamMonitor;
 	ServerConnectionList connectionList;
 	WriteManager writeManager;
-	ServerIncomingStreamMonitor incomingStreamMonitor;
 	TransactionDirtier continuingReceiver;
 
   public:

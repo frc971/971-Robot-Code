@@ -12,7 +12,7 @@
 
 class DashboardBase : public ErrorBase {
 public:
-	virtual void GetStatusBuffer(char** userStatusData, INT32* userStatusDataSize) = 0;
+	virtual void GetStatusBuffer(char** userStatusData, int32_t* userStatusDataSize) = 0;
 	virtual void Flush() = 0;
 	virtual ~DashboardBase() {}
 protected:

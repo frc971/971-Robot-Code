@@ -12,7 +12,7 @@
 #include <taskLib.h>
 
 SEM_ID I2C::m_semaphore = NULL;
-UINT32 I2C::m_objCount = 0;
+uint32_t I2C::m_objCount = 0;
 
 /**
  * Constructor.
@@ -20,10 +20,10 @@ UINT32 I2C::m_objCount = 0;
  * @param module The Digital Module to which the device is conneted.
  * @param deviceAddress The address of the device on the I2C bus.
  */
-I2C::I2C(DigitalModule *module, UINT8 deviceAddress)
+I2C::I2C(DigitalModule *module, uint8_t deviceAddress)
 	: m_module (module)
 	, m_deviceAddress (deviceAddress)
-	, m_compatibilityMode (false)
+	, m_compatibilityMode (true)
 {
 	if (m_semaphore == NULL)
 	{
@@ -58,7 +58,7 @@ I2C::~I2C()
  * @param receiveSize Number of byted to read from the device. [0..7]
  * @return Transfer Aborted... false for success, true for aborted.
  */
-bool I2C::Transaction(UINT8 *dataToSend, UINT8 sendSize, UINT8 *dataReceived, UINT8 receiveSize)
+bool I2C::Transaction(uint8_t *dataToSend, uint8_t sendSize, uint8_t *dataReceived, uint8_t receiveSize)
 {
 	if (sendSize > 6)
 	{
@@ -71,16 +71,16 @@ bool I2C::Transaction(UINT8 *dataToSend, UINT8 sendSize, UINT8 *dataReceived, UI
 		return true;
 	}
 
-	UINT32 data=0;
-	UINT32 dataHigh=0;
-	UINT32 i;
+	uint32_t data=0;
+	uint32_t dataHigh=0;
+	uint32_t i;
 	for(i=0; i<sendSize && i<sizeof(data); i++)
 	{
-		data |= (UINT32)dataToSend[i] << (8*i);
+		data |= (uint32_t)dataToSend[i] << (8*i);
 	}
 	for(; i<sendSize; i++)
 	{
-		dataHigh |= (UINT32)dataToSend[i] << (8*(i-sizeof(data)));
+		dataHigh |= (uint32_t)dataToSend[i] << (8*(i-sizeof(data)));
 	}
 
 	bool aborted = true;
@@ -93,7 +93,7 @@ bool I2C::Transaction(UINT8 *dataToSend, UINT8 sendSize, UINT8 *dataReceived, UI
 		if (sendSize > 0) m_module->m_fpgaDIO->writeI2CDataToSend(data, &localStatus);
 		if (sendSize > sizeof(data)) m_module->m_fpgaDIO->writeI2CConfig_DataToSendHigh(dataHigh, &localStatus);
 		m_module->m_fpgaDIO->writeI2CConfig_BitwiseHandshake(m_compatibilityMode, &localStatus);
-		UINT8 transaction = m_module->m_fpgaDIO->readI2CStatus_Transaction(&localStatus);
+		uint8_t transaction = m_module->m_fpgaDIO->readI2CStatus_Transaction(&localStatus);
 		m_module->m_fpgaDIO->strobeI2CStart(&localStatus);
 		while(transaction == m_module->m_fpgaDIO->readI2CStatus_Transaction(&localStatus)) taskDelay(1);
 		while(!m_module->m_fpgaDIO->readI2CStatus_Done(&localStatus)) taskDelay(1);
@@ -137,9 +137,9 @@ bool I2C::AddressOnly()
  * @param data The byte to write to the register on the device.
  * @return Transfer Aborted... false for success, true for aborted.
  */
-bool I2C::Write(UINT8 registerAddress, UINT8 data)
+bool I2C::Write(uint8_t registerAddress, uint8_t data)
 {
-	UINT8 buffer[2];
+	uint8_t buffer[2];
 	buffer[0] = registerAddress;
 	buffer[1] = data;
 	return Transaction(buffer, sizeof(buffer), NULL, 0);
@@ -158,7 +158,7 @@ bool I2C::Write(UINT8 registerAddress, UINT8 data)
  * @param buffer A pointer to the array of bytes to store the data read from the device.
  * @return Transfer Aborted... false for success, true for aborted.
  */
-bool I2C::Read(UINT8 registerAddress, UINT8 count, UINT8 *buffer)
+bool I2C::Read(uint8_t registerAddress, uint8_t count, uint8_t *buffer)
 {
 	if (count < 1 || count > 7)
 	{
@@ -182,7 +182,7 @@ bool I2C::Read(UINT8 registerAddress, UINT8 count, UINT8 *buffer)
  * @param registerAddress The register to write on all devices on the bus.
  * @param data The value to write to the devices.
  */
-void I2C::Broadcast(UINT8 registerAddress, UINT8 data)
+void I2C::Broadcast(uint8_t registerAddress, uint8_t data)
 {
 }
 
@@ -191,7 +191,7 @@ void I2C::Broadcast(UINT8 registerAddress, UINT8 data)
  * 
  * Enables bitwise clock skewing detection.  This will reduce the I2C interface speed,
  * but will allow you to communicate with devices that skew the clock at abnormal times.
- *
+ * Compatability mode is enabled by default. 
  * @param enable Enable compatibility mode for this sensor or not.
  */
 void I2C::SetCompatibilityMode(bool enable)
@@ -216,17 +216,17 @@ void I2C::SetCompatibilityMode(bool enable)
  * @param count The size of the field to be verified.
  * @param expected A buffer containing the values expected from the device.
  */
-bool I2C::VerifySensor(UINT8 registerAddress, UINT8 count, const UINT8 *expected)
+bool I2C::VerifySensor(uint8_t registerAddress, uint8_t count, const uint8_t *expected)
 {
 	// TODO: Make use of all 7 read bytes
-	UINT8 deviceData[4];
-	for (UINT8 i=0, curRegisterAddress = registerAddress; i < count; i+=4, curRegisterAddress+=4)
+	uint8_t deviceData[4];
+	for (uint8_t i=0, curRegisterAddress = registerAddress; i < count; i+=4, curRegisterAddress+=4)
 	{
-		UINT8 toRead = count - i < 4 ? count - i : 4;
+		uint8_t toRead = count - i < 4 ? count - i : 4;
 		// Read the chunk of data.  Return false if the sensor does not respond.
 		if (Read(curRegisterAddress, toRead, deviceData)) return false;
 
-		for (UINT8 j=0; j<toRead; j++)
+		for (uint8_t j=0; j<toRead; j++)
 		{
 			if(deviceData[j] != expected[i + j]) return false;
 		}

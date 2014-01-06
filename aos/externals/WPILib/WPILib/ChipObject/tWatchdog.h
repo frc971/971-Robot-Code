@@ -28,10 +28,17 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned SystemActive : 1;
          unsigned Alive : 1;
          unsigned SysDisableCount : 15;
          unsigned DisableCount : 15;
+#else
+         unsigned DisableCount : 15;
+         unsigned SysDisableCount : 15;
+         unsigned Alive : 1;
+         unsigned SystemActive : 1;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -53,14 +60,6 @@ public:
 
    typedef enum
    {
-   } tImmortal_IfaceConstants;
-
-   virtual void writeImmortal(bool value, tRioStatusCode *status) = 0;
-   virtual bool readImmortal(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
    } tKill_IfaceConstants;
 
    virtual void strobeKill(tRioStatusCode *status) = 0;
@@ -75,6 +74,13 @@ public:
 
    typedef enum
    {
+   } tTimer_IfaceConstants;
+
+   virtual unsigned int readTimer(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
    } tExpiration_IfaceConstants;
 
    virtual void writeExpiration(unsigned int value, tRioStatusCode *status) = 0;
@@ -83,9 +89,10 @@ public:
 
    typedef enum
    {
-   } tTimer_IfaceConstants;
+   } tImmortal_IfaceConstants;
 
-   virtual unsigned int readTimer(tRioStatusCode *status) = 0;
+   virtual void writeImmortal(bool value, tRioStatusCode *status) = 0;
+   virtual bool readImmortal(tRioStatusCode *status) = 0;
 
 
 

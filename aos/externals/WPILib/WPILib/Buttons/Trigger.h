@@ -36,6 +36,8 @@ public:
 	void WhenActive(Command *command);
 	void WhileActive(Command *command);
 	void WhenInactive(Command *command);
+	void CancelWhenActive(Command *command);
+	void ToggleWhenActive(Command *command);
 	
 	virtual void InitTable(ITable* table);
 	virtual ITable* GetTable();

@@ -35,8 +35,8 @@ public:
 	SPI(DigitalOutput *clk, DigitalInput *miso);
 	virtual ~SPI();
 
-	void SetBitsPerWord(UINT32 bits);
-	UINT32 GetBitsPerWord();
+	void SetBitsPerWord(uint32_t bits);
+	uint32_t GetBitsPerWord();
 	void SetClockRate(double hz);
 
 	void SetMSBFirst();
@@ -54,14 +54,14 @@ public:
 
 	virtual void ApplyConfig();
 
-	virtual UINT16 GetOutputFIFOAvailable();
-	virtual UINT16 GetNumReceived();
+	virtual uint16_t GetOutputFIFOAvailable();
+	virtual uint16_t GetNumReceived();
 
 	virtual bool IsDone();
 	bool HadReceiveOverflow();
 
-	virtual void Write(UINT32 data);
-	virtual UINT32 Read(bool initiate = false);
+	virtual void Write(uint32_t data);
+	virtual uint32_t Read(bool initiate = false);
 
 	virtual void Reset();
 	virtual void ClearReceivedData();

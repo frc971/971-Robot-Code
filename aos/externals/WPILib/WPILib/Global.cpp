@@ -36,10 +36,10 @@ Global::~Global() {
  * For now, expect this to be competition year.
  * @return FPGA Version number.
  */
-UINT16 Global::GetFPGAVersion()
+uint16_t Global::GetFPGAVersion()
 {
 	tRioStatusCode status = NiFpga_Status_Success;
-	UINT16 version = global_->readVersion(&status);
+	uint16_t version = global_->readVersion(&status);
 	wpi_setError(status);
 	return version;
 }
@@ -52,10 +52,10 @@ UINT16 Global::GetFPGAVersion()
  * The 12 least significant bits are the Build Number.
  * @return FPGA Revision number.
  */
-UINT32 Global::GetFPGARevision()
+uint32_t Global::GetFPGARevision()
 {
 	tRioStatusCode status = NiFpga_Status_Success;
-	UINT32 revision = global_->readRevision(&status);
+	uint32_t revision = global_->readRevision(&status);
 	wpi_setError(status);
 	return revision;
 }
@@ -65,10 +65,10 @@ UINT32 Global::GetFPGARevision()
  *
  * @return The current time in microseconds according to the FPGA (since FPGA reset).
  */
-UINT32 Global::GetFPGATime()
+uint32_t Global::GetFPGATime()
 {
 	tRioStatusCode status = NiFpga_Status_Success;
-	UINT32 time = global_->readLocalTime(&status);
+	uint32_t time = global_->readLocalTime(&status);
 	wpi_setError(status);
 	return time;
 }
@@ -76,17 +76,17 @@ UINT32 Global::GetFPGATime()
 // RT hardware access functions exported from ni_emb.out
 extern "C"
 {
-	INT32 UserSwitchInput(INT32 nSwitch);
-	INT32 LedInput(INT32 led);
-	INT32 LedOutput(INT32 led, INT32 value);
+	int32_t UserSwitchInput(int32_t nSwitch);
+	int32_t LedInput(int32_t led);
+	int32_t LedOutput(int32_t led, int32_t value);
 }
 
 /**
  * Read the value of the USER1 DIP switch on the cRIO.
  */
-INT32 Global::GetRIOUserSwitch()
+int32_t Global::GetRIOUserSwitch()
 {
-	INT32 switchValue = UserSwitchInput(0);
+	int32_t switchValue = UserSwitchInput(0);
 	wpi_assert(switchValue >= 0);
 	return switchValue > 0;
 }
@@ -94,7 +94,7 @@ INT32 Global::GetRIOUserSwitch()
 /**
  * Set the state of the USER1 status LED on the cRIO.
  */
-void Global::SetRIOUserLED(UINT32 state)
+void Global::SetRIOUserLED(uint32_t state)
 {
 	LedOutput(0, state > 0);
 }
@@ -103,7 +103,7 @@ void Global::SetRIOUserLED(UINT32 state)
  * Get the current state of the USER1 status LED on the cRIO.
  * @return The curent state of the USER1 LED.
  */
-INT32 Global::GetRIOUserLED()
+int32_t Global::GetRIOUserLED()
 {
 	return LedInput(0);
 }
@@ -112,10 +112,10 @@ INT32 Global::GetRIOUserLED()
  * Toggle the state of the USER1 status LED on the cRIO.
  * @return The new state of the USER1 LED.
  */
-INT32 Global::ToggleRIOUserLED()
+int32_t Global::ToggleRIOUserLED()
 {
   Synchronized sync(led_toggle_lock_);
-	INT32 ledState = !GetRIOUserLED();
+	int32_t ledState = !GetRIOUserLED();
 	SetRIOUserLED(ledState);
 	return ledState;
 }
@@ -123,7 +123,7 @@ INT32 Global::ToggleRIOUserLED()
 /**
  * Set the state of the FPGA status LED on the cRIO.
  */
-void Global::SetRIO_FPGA_LED(UINT32 state)
+void Global::SetRIO_FPGA_LED(uint32_t state)
 {
 	tRioStatusCode status = NiFpga_Status_Success;
 	global_->writeFPGA_LED(state, &status);
@@ -134,7 +134,7 @@ void Global::SetRIO_FPGA_LED(UINT32 state)
  * Get the current state of the FPGA status LED on the cRIO.
  * @return The curent state of the FPGA LED.
  */
-INT32 Global::GetRIO_FPGA_LED()
+int32_t Global::GetRIO_FPGA_LED()
 {
 	tRioStatusCode status = NiFpga_Status_Success;
 	bool ledValue = global_->readFPGA_LED(&status);
@@ -146,10 +146,10 @@ INT32 Global::GetRIO_FPGA_LED()
  * Toggle the state of the FPGA status LED on the cRIO.
  * @return The new state of the FPGA LED.
  */
-INT32 Global::ToggleRIO_FPGA_LED()
+int32_t Global::ToggleRIO_FPGA_LED()
 {
   Synchronized sync(led_toggle_lock_);
-	INT32 ledState = !GetRIO_FPGA_LED();
+	int32_t ledState = !GetRIO_FPGA_LED();
 	SetRIO_FPGA_LED(ledState);
 	return ledState;
 }

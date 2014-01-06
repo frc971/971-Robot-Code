@@ -14,6 +14,7 @@
  */
 void Solenoid::InitSolenoid()
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckSolenoidModule(m_moduleNumber))
 	{
@@ -46,7 +47,7 @@ void Solenoid::InitSolenoid()
  * 
  * @param channel The channel on the solenoid module to control (1..8).
  */
-Solenoid::Solenoid(UINT32 channel)
+Solenoid::Solenoid(uint32_t channel)
 	: SolenoidBase (GetDefaultSolenoidModule())
 	, m_channel (channel)
 {
@@ -59,7 +60,7 @@ Solenoid::Solenoid(UINT32 channel)
  * @param moduleNumber The solenoid module (1 or 2).
  * @param channel The channel on the solenoid module to control (1..8).
  */
-Solenoid::Solenoid(UINT8 moduleNumber, UINT32 channel)
+Solenoid::Solenoid(uint8_t moduleNumber, uint32_t channel)
 	: SolenoidBase (moduleNumber)
 	, m_channel (channel)
 {
@@ -86,8 +87,8 @@ Solenoid::~Solenoid()
 void Solenoid::Set(bool on)
 {
 	if (StatusIsFatal()) return;
-	UINT8 value = on ? 0xFF : 0x00;
-	UINT8 mask = 1 << (m_channel - 1);
+	uint8_t value = on ? 0xFF : 0x00;
+	uint8_t mask = 1 << (m_channel - 1);
 
 	SolenoidBase::Set(value, mask);
 }
@@ -100,7 +101,7 @@ void Solenoid::Set(bool on)
 bool Solenoid::Get()
 {
 	if (StatusIsFatal()) return false;
-	UINT8 value = GetAll() & ( 1 << (m_channel - 1));
+	uint8_t value = GetAll() & ( 1 << (m_channel - 1));
 	return (value != 0);
 }
 
@@ -117,12 +118,16 @@ void Solenoid::UpdateTable() {
 
 void Solenoid::StartLiveWindowMode() {
 	Set(false);
-	m_table->AddTableListener("Value", this, true);
+	if (m_table != NULL) {
+		m_table->AddTableListener("Value", this, true);
+	}
 }
 
 void Solenoid::StopLiveWindowMode() {
 	Set(false);
-	m_table->RemoveTableListener(this);
+	if (m_table != NULL) {
+		m_table->RemoveTableListener(this);
+	}
 }
 
 std::string Solenoid::GetSmartDashboardType() {

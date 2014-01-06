@@ -10,7 +10,7 @@
 
 class NTThreadManager;
 
-#include "NTThread.h"
+#include "networktables2/thread/NTThread.h"
 #include "networktables2/thread/PeriodicRunnable.h"
 
 /**

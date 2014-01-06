@@ -15,8 +15,9 @@
  * Creates a digital input given a slot and channel. Common creation routine
  * for all constructors.
  */
-void DigitalInput::InitDigitalInput(UINT8 moduleNumber, UINT32 channel)
+void DigitalInput::InitDigitalInput(uint8_t moduleNumber, uint32_t channel)
 {
+	m_table = NULL;
 	char buf[64];
 	if (!CheckDigitalModule(moduleNumber))
 	{
@@ -43,7 +44,7 @@ void DigitalInput::InitDigitalInput(UINT8 moduleNumber, UINT32 channel)
  *
  * @param channel The digital channel (1..14).
  */
-DigitalInput::DigitalInput(UINT32 channel)
+DigitalInput::DigitalInput(uint32_t channel)
 {
 	InitDigitalInput(GetDefaultDigitalModule(), channel);
 }
@@ -55,7 +56,7 @@ DigitalInput::DigitalInput(UINT32 channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The digital channel (1..14).
  */
-DigitalInput::DigitalInput(UINT8 moduleNumber, UINT32 channel)
+DigitalInput::DigitalInput(uint8_t moduleNumber, uint32_t channel)
 {
 	InitDigitalInput(moduleNumber, channel);
 }
@@ -73,7 +74,7 @@ DigitalInput::~DigitalInput()
  * Get the value from a digital input channel.
  * Retrieve the value of a single digital input channel from the FPGA.
  */
-UINT32 DigitalInput::Get()
+uint32_t DigitalInput::Get()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetDIO(m_channel);
@@ -82,7 +83,7 @@ UINT32 DigitalInput::Get()
 /**
  * @return The GPIO channel number that this object represents.
  */
-UINT32 DigitalInput::GetChannel()
+uint32_t DigitalInput::GetChannel()
 {
 	return m_channel;
 }
@@ -90,7 +91,7 @@ UINT32 DigitalInput::GetChannel()
 /**
  * @return The value to be written to the channel field of a routing mux.
  */
-UINT32 DigitalInput::GetChannelForRouting()
+uint32_t DigitalInput::GetChannelForRouting()
 {
 	return DigitalModule::RemapDigitalChannel(GetChannel() - 1);
 }
@@ -98,7 +99,7 @@ UINT32 DigitalInput::GetChannelForRouting()
 /**
  * @return The value to be written to the module field of a routing mux.
  */
-UINT32 DigitalInput::GetModuleForRouting()
+uint32_t DigitalInput::GetModuleForRouting()
 {
 	if (StatusIsFatal()) return 0;
 	return m_module->GetNumber() - 1;

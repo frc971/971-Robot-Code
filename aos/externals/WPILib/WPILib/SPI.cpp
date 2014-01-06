@@ -7,6 +7,7 @@
 #include "SPI.h"
 
 #include "ChipObject/tSPI.h"
+#include "DigitalModule.h"
 #include "DigitalInput.h"
 #include "DigitalOutput.h"
 #include "NetworkCommunication/UsageReporting.h"
@@ -161,7 +162,7 @@ void SPI::Init(DigitalOutput *clk, DigitalOutput *mosi, DigitalInput *miso)
 
 	m_ss = NULL;
 
-	static INT32 instances = 0;
+	static int32_t instances = 0;
 	instances++;
 	nUsageReporting::report(nUsageReporting::kResourceType_SPI, instances);
 }
@@ -172,7 +173,7 @@ void SPI::Init(DigitalOutput *clk, DigitalOutput *mosi, DigitalInput *miso)
  *
  * @param bits	The number of bits in one frame (1 to 32 bits).
  */
-void SPI::SetBitsPerWord(UINT32 bits)
+void SPI::SetBitsPerWord(uint32_t bits)
 {
 	m_config.BusBitWidth = bits;
 }
@@ -183,7 +184,7 @@ void SPI::SetBitsPerWord(UINT32 bits)
  *
  * @return The number of bits in one frame (1 to 32 bits).
  */
-UINT32 SPI::GetBitsPerWord()
+uint32_t SPI::GetBitsPerWord()
 {
 	return m_config.BusBitWidth;
 }
@@ -197,21 +198,18 @@ UINT32 SPI::GetBitsPerWord()
 void SPI::SetClockRate(double hz)
 {
 	int delay = 0;
-	// TODO: compute the appropriate values based on digital loop timing
-	if (hz <= 76628.4)
-	{
-		double v = (1.0/hz)/1.305e-5;
-		int intv = (int)v;
-		if (v-intv > 0.5)
-			delay = intv;
-		else
-			delay = intv-1;
-	}
-	if (delay > 255)
-	{
-		wpi_setWPIError(SPIClockRateTooLow);
-		delay = 255;
-	}
+	tRioStatusCode localStatus = NiFpga_Status_Success;
+	int loopTiming = DigitalModule::GetInstance(m_spi->readChannels_SCLK_Module(&localStatus))->GetLoopTiming();
+    wpi_setError(localStatus);
+    double v = (1.0 / hz) / (2 * loopTiming / (kSystemClockTicksPerMicrosecond * 1e6));
+    if (v < 1) {
+        wpi_setWPIErrorWithContext(ParameterOutOfRange, "SPI Clock too high");
+    }
+    delay = (int) (v + .5);
+    if (delay > 255) {
+    	wpi_setWPIErrorWithContext(ParameterOutOfRange, "SPI Clock too low");
+    }
+
 	m_config.ClockHalfPeriodDelay = delay;
 }
 
@@ -377,10 +375,10 @@ void SPI::ApplyConfig()
  *
  * @return The number of words available to be written.
  */
-UINT16 SPI::GetOutputFIFOAvailable()
+uint16_t SPI::GetOutputFIFOAvailable()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT16 result = m_spi->readAvailableToLoad(&localStatus);
+	uint16_t result = m_spi->readAvailableToLoad(&localStatus);
 	wpi_setError(localStatus);
 	return result;
 }
@@ -391,10 +389,10 @@ UINT16 SPI::GetOutputFIFOAvailable()
  *
  * @return The number of words available to read.
  */
-UINT16 SPI::GetNumReceived()
+uint16_t SPI::GetNumReceived()
 {
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT16 result = m_spi->readReceivedElements(&localStatus);
+	uint16_t result = m_spi->readReceivedElements(&localStatus);
 	wpi_setError(localStatus);
 	return result;
 }
@@ -433,7 +431,7 @@ bool SPI::HadReceiveOverflow()
  * If not running in output only mode, also saves the data received
  * on the MISO input during the transfer into the receive FIFO.
  */
-void SPI::Write(UINT32 data)
+void SPI::Write(uint32_t data)
 {
 	if (m_channels.MOSI_Channel == 0 && m_channels.MOSI_Module == 0)
 	{
@@ -465,7 +463,7 @@ void SPI::Write(UINT32 data)
  *				    If false, this function assumes that data is
  *				    already in the receive FIFO from a previous write.
  */
-UINT32 SPI::Read(bool initiate)
+uint32_t SPI::Read(bool initiate)
 {
 	if (m_channels.MISO_Channel == 0 && m_channels.MISO_Module == 0)
 	{
@@ -474,7 +472,7 @@ UINT32 SPI::Read(bool initiate)
 	}
 
 	tRioStatusCode localStatus = NiFpga_Status_Success;
-	UINT32 data;
+	uint32_t data;
 	{
 		Synchronized sync(m_semaphore);
 

@@ -16,6 +16,11 @@ ServerIncomingStreamMonitor::ServerIncomingStreamMonitor(IOStreamProvider& _stre
 {
 }
 
+ServerIncomingStreamMonitor::~ServerIncomingStreamMonitor()
+{
+  stop();
+}
+
 /**
  * Start the monitor thread
  */
@@ -32,9 +37,11 @@ void ServerIncomingStreamMonitor::stop()
 {
 	if (monitorThread != NULL)
 	{
-		monitorThread->stop();
-		delete monitorThread;
-		monitorThread = NULL;
+		streamProvider.close();  //This would get called on deletion too
+		NTThread *temp=monitorThread;
+		monitorThread = NULL;  //call this before stop for the check below to ensure a new server connection adapter will not happen
+		temp->stop();
+		delete temp;
 	}
 }
 
@@ -42,11 +49,26 @@ void ServerIncomingStreamMonitor::run()
 {
 	try
 	{
-		IOStream* newStream = streamProvider.accept();
-		if(newStream != NULL)
+		while (monitorThread!=NULL)
 		{
-			ServerConnectionAdapter* connectionAdapter = new ServerConnectionAdapter(newStream, entryStore, entryStore, adapterListener, typeManager, threadManager);
-			incomingListener.OnNewConnection(*connectionAdapter);
+			IOStream* newStream = streamProvider.accept();
+			{
+				NTSynchronized sync(BlockDeletionList);
+				for (size_t i=0;i<m_DeletionList.size();i++)
+				{
+					ServerConnectionAdapter *Element=m_DeletionList[i];
+					Element->shutdown(true);  //TODO assume to always close stream
+					delete Element;
+				}
+				m_DeletionList.clear();
+			}
+			//Note: monitorThread must be checked to avoid crash on exit
+			//  [8/31/2013 Terminator]
+			if ((monitorThread!=NULL)&&(newStream != NULL))
+			{
+				ServerConnectionAdapter* connectionAdapter = new ServerConnectionAdapter(newStream, entryStore, entryStore, adapterListener, typeManager, threadManager);
+				incomingListener.OnNewConnection(*connectionAdapter);
+			}
 		}
 	}
 	catch (IOException& e)
@@ -55,3 +77,8 @@ void ServerIncomingStreamMonitor::run()
 	}
 }
 
+void ServerIncomingStreamMonitor::close(ServerConnectionAdapter *Adapter)
+{
+	NTSynchronized sync(BlockDeletionList);
+	m_DeletionList.push_back(Adapter);
+}

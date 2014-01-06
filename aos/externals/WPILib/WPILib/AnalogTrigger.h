@@ -17,27 +17,27 @@ class AnalogTrigger: public SensorBase
 {
 	friend class AnalogTriggerOutput;
 public:
-	AnalogTrigger(UINT8 moduleNumber, UINT32 channel);
-	explicit AnalogTrigger(UINT32 channel);
+	AnalogTrigger(uint8_t moduleNumber, uint32_t channel);
+	explicit AnalogTrigger(uint32_t channel);
 	explicit AnalogTrigger(AnalogChannel *channel);
 	virtual ~AnalogTrigger();
 
 	void SetLimitsVoltage(float lower, float upper);
-	void SetLimitsRaw(INT32 lower, INT32 upper);
+	void SetLimitsRaw(int32_t lower, int32_t upper);
 	void SetAveraged(bool useAveragedValue);
 	void SetFiltered(bool useFilteredValue);
-	UINT32 GetIndex();
+	uint32_t GetIndex();
 	bool GetInWindow();
 	bool GetTriggerState();
 	AnalogTriggerOutput *CreateOutput(AnalogTriggerOutput::Type type);
 
 private:
-	void InitTrigger(UINT8 moduleNumber, UINT32 channel);
+	void InitTrigger(uint8_t moduleNumber, uint32_t channel);
 
-	UINT8 m_index;
+	uint8_t m_index;
 	tAnalogTrigger *m_trigger;
 	AnalogModule *m_analogModule;
-	UINT32 m_channel;
+	uint32_t m_channel;
 };
 
 #endif

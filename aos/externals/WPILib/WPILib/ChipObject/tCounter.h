@@ -30,8 +30,13 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Direction : 1;
          signed Value : 31;
+#else
+         signed Value : 31;
+         unsigned Direction : 1;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -40,6 +45,7 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned UpSource_Channel : 4;
          unsigned UpSource_Module : 1;
          unsigned UpSource_AnalogTrigger : 1;
@@ -57,6 +63,25 @@ public:
          unsigned Mode : 2;
          unsigned PulseLengthThreshold : 6;
          unsigned Enable : 1;
+#else
+         unsigned Enable : 1;
+         unsigned PulseLengthThreshold : 6;
+         unsigned Mode : 2;
+         unsigned DownFallingEdge : 1;
+         unsigned DownRisingEdge : 1;
+         unsigned UpFallingEdge : 1;
+         unsigned UpRisingEdge : 1;
+         unsigned IndexActiveHigh : 1;
+         unsigned IndexSource_AnalogTrigger : 1;
+         unsigned IndexSource_Module : 1;
+         unsigned IndexSource_Channel : 4;
+         unsigned DownSource_AnalogTrigger : 1;
+         unsigned DownSource_Module : 1;
+         unsigned DownSource_Channel : 4;
+         unsigned UpSource_AnalogTrigger : 1;
+         unsigned UpSource_Module : 1;
+         unsigned UpSource_Channel : 4;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -65,9 +90,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Period : 23;
          signed Count : 8;
          unsigned Stalled : 1;
+#else
+         unsigned Stalled : 1;
+         signed Count : 8;
+         unsigned Period : 23;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -76,9 +107,15 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned StallPeriod : 24;
          unsigned AverageSize : 7;
          unsigned UpdateWhenEmpty : 1;
+#else
+         unsigned UpdateWhenEmpty : 1;
+         unsigned AverageSize : 7;
+         unsigned StallPeriod : 24;
+#endif
       };
       struct{
          unsigned value : 32;
@@ -139,19 +176,19 @@ public:
 
    typedef enum
    {
-   } tReset_IfaceConstants;
-
-   virtual void strobeReset(tRioStatusCode *status) = 0;
-
-
-   typedef enum
-   {
    } tTimerOutput_IfaceConstants;
 
    virtual tTimerOutput readTimerOutput(tRioStatusCode *status) = 0;
    virtual unsigned int readTimerOutput_Period(tRioStatusCode *status) = 0;
    virtual signed char readTimerOutput_Count(tRioStatusCode *status) = 0;
    virtual bool readTimerOutput_Stalled(tRioStatusCode *status) = 0;
+
+
+   typedef enum
+   {
+   } tReset_IfaceConstants;
+
+   virtual void strobeReset(tRioStatusCode *status) = 0;
 
 
    typedef enum

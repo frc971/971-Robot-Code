@@ -23,8 +23,7 @@
         '../output/output.gyp:MotorWriter',
         '../output/output.gyp:CameraServer',
         #'camera/camera.gyp:frc971',
-        '../../gyro_board/src/libusb-driver/libusb-driver.gyp:get',
-        #'../input/input.gyp:gyro_sensor_receiver',
+        '../input/input.gyp:sensor_receiver',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:*',
       ],
       'copies': [

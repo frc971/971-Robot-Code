@@ -8,7 +8,7 @@
 #ifndef IOSTREAMFACTORY_H_
 #define IOSTREAMFACTORY_H_
 
-#include "IOStream.h"
+#include "networktables2/stream/IOStream.h"
 
 /**
  * A factory that will create the same IOStream. A stream returned by this factory should be closed before calling createStream again

@@ -23,9 +23,8 @@ void Jaguar::InitJaguar()
 	 * Neutral ranges from 1.4482078ms to 1.5517922ms
 	 * Proportional forward ranges from 1.5517922ms to 2.3027789ms
 	 * Full forward ranges from 2.3027789ms to 2.328675ms
-	 * TODO: compute the appropriate values based on digital loop timing
 	 */
-	SetBounds(251, 135, 128, 120, 4);
+	SetBounds(2.31, 1.55, 1.507, 1.454, .697);
 	SetPeriodMultiplier(kPeriodMultiplier_1X);
 	SetRaw(m_centerPwm);
 
@@ -38,7 +37,7 @@ void Jaguar::InitJaguar()
  * 
  * @param channel The PWM channel on the digital module that the Jaguar is attached to.
  */
-Jaguar::Jaguar(UINT32 channel) : SafePWM(channel)
+Jaguar::Jaguar(uint32_t channel) : SafePWM(channel)
 {
 	InitJaguar();
 }
@@ -49,7 +48,7 @@ Jaguar::Jaguar(UINT32 channel) : SafePWM(channel)
  * @param moduleNumber The digital module (1 or 2).
  * @param channel The PWM channel on the digital module that the Jaguar is attached to.
  */
-Jaguar::Jaguar(UINT8 moduleNumber, UINT32 channel) : SafePWM(moduleNumber, channel)
+Jaguar::Jaguar(uint8_t moduleNumber, uint32_t channel) : SafePWM(moduleNumber, channel)
 {
 	InitJaguar();
 }
@@ -67,7 +66,7 @@ Jaguar::~Jaguar()
  * @param speed The speed value between -1.0 and 1.0 to set.
  * @param syncGroup Unused interface.
  */
-void Jaguar::Set(float speed, UINT8 syncGroup)
+void Jaguar::Set(float speed, uint8_t syncGroup)
 {
 	SetSpeed(speed);
 }

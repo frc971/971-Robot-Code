@@ -94,7 +94,7 @@ void PIDController::Initialize(float Kp, float Ki, float Kd, float Kf,
 
 	m_controlLoop->StartPeriodic(m_period);
 
-	static INT32 instances = 0;
+	static int32_t instances = 0;
 	instances++;
 	nUsageReporting::report(nUsageReporting::kResourceType_PIDController, instances);
 	

@@ -30,12 +30,21 @@ public:
    typedef
    union{
       struct{
+#ifdef __vxworks
          unsigned Source_Channel : 4;
          unsigned Source_Module : 1;
          unsigned Source_AnalogTrigger : 1;
          unsigned RisingEdge : 1;
          unsigned FallingEdge : 1;
          unsigned WaitForAck : 1;
+#else
+         unsigned WaitForAck : 1;
+         unsigned FallingEdge : 1;
+         unsigned RisingEdge : 1;
+         unsigned Source_AnalogTrigger : 1;
+         unsigned Source_Module : 1;
+         unsigned Source_Channel : 4;
+#endif
       };
       struct{
          unsigned value : 9;

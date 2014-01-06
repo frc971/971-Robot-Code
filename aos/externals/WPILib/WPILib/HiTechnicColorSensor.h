@@ -28,20 +28,20 @@ class HiTechnicColorSensor : public SensorBase
 public:
 	enum tColorMode {kActive = 0, kPassive = 1, kRaw = 3};
 	typedef struct{
-		UINT16 red;
-		UINT16 blue;
-		UINT16 green;
+		uint16_t red;
+		uint16_t blue;
+		uint16_t green;
 	}RGB;
-	explicit HiTechnicColorSensor(UINT8 moduleNumber);
+	explicit HiTechnicColorSensor(uint8_t moduleNumber);
 	virtual ~HiTechnicColorSensor();
-	UINT8 GetColor();
-	UINT8 GetRed();
-	UINT8 GetGreen();
-	UINT8 GetBlue();
+	uint8_t GetColor();
+	uint8_t GetRed();
+	uint8_t GetGreen();
+	uint8_t GetBlue();
 	RGB GetRGB();
-	UINT16 GetRawRed();
-	UINT16 GetRawGreen();
-	UINT16 GetRawBlue();
+	uint16_t GetRawRed();
+	uint16_t GetRawGreen();
+	uint16_t GetRawBlue();
 	RGB GetRawRGB();
 	void SetMode(tColorMode mode);
 	
@@ -55,19 +55,19 @@ public:
 	virtual void StopLiveWindowMode(); 
 
 private:
-	static const UINT8 kAddress = 0x02;
-	static const UINT8 kManufacturerBaseRegister = 0x08;
-	static const UINT8 kManufacturerSize = 0x08;
-	static const UINT8 kSensorTypeBaseRegister = 0x10;
-	static const UINT8 kSensorTypeSize = 0x08;
-	static const UINT8 kModeRegister = 0x41;
-	static const UINT8 kColorRegister = 0x42;
-	static const UINT8 kRedRegister = 0x43;
-	static const UINT8 kGreenRegister = 0x44;
-	static const UINT8 kBlueRegister = 0x45;
-	static const UINT8 kRawRedRegister = 0x43;
-	static const UINT8 kRawGreenRegister = 0x45;
-	static const UINT8 kRawBlueRegister = 0x47;
+	static const uint8_t kAddress = 0x02;
+	static const uint8_t kManufacturerBaseRegister = 0x08;
+	static const uint8_t kManufacturerSize = 0x08;
+	static const uint8_t kSensorTypeBaseRegister = 0x10;
+	static const uint8_t kSensorTypeSize = 0x08;
+	static const uint8_t kModeRegister = 0x41;
+	static const uint8_t kColorRegister = 0x42;
+	static const uint8_t kRedRegister = 0x43;
+	static const uint8_t kGreenRegister = 0x44;
+	static const uint8_t kBlueRegister = 0x45;
+	static const uint8_t kRawRedRegister = 0x43;
+	static const uint8_t kRawGreenRegister = 0x45;
+	static const uint8_t kRawBlueRegister = 0x47;
 	
 	int m_mode;
 	I2C* m_i2c;

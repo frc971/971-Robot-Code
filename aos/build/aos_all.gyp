@@ -21,6 +21,8 @@
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/util/util.gyp:wrapping_counter_test',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
         'Common',
       ],
     },

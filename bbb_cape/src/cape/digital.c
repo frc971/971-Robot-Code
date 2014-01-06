@@ -33,8 +33,6 @@ void digital_capture_11N(void) ALIAS_WEAK(digital_capture_default);
 void digital_capture_12P(void) ALIAS_WEAK(digital_capture_default);
 void digital_capture_12N(void) ALIAS_WEAK(digital_capture_default);
 
-typedef void (*EXTIHandler)(uint32_t);
-
 void EXTI2_IRQHandler(void) {
   uint32_t inputs = GPIOB->IDR;
   EXTI->PR = EXTI_PR_PR2;
@@ -72,7 +70,7 @@ static void EXTI7_Handler(uint32_t inputs) {
 }
 
 static void EXTI8_Handler(uint32_t inputs) {
-  if (inputs & (1 << 7)) {
+  if (inputs & (1 << 8)) {
     digital_capture_7N();
   } else {
     digital_capture_7P();
@@ -88,21 +86,21 @@ static void EXTI9_Handler(uint32_t inputs) {
 }
 
 void EXTI9_5_IRQHandler(void) {
-  uint32_t inputs = GPIOC->IDR;
+  uint32_t a_inputs = GPIOA->IDR, b_inputs = GPIOB->IDR, c_inputs = GPIOC->IDR;
   uint32_t exti = __clz(EXTI->PR);
   EXTI->PR = (1 << 31) >> exti;
   switch (exti) {
     case 31 - 5:
-      EXTI5_Handler(inputs);
+      EXTI5_Handler(c_inputs);
       break;
     case 31 - 7:
-      EXTI7_Handler(inputs);
+      EXTI7_Handler(a_inputs);
       break;
     case 31 - 8:
-      EXTI8_Handler(inputs);
+      EXTI8_Handler(b_inputs);
       break;
     case 31 - 9:
-      EXTI9_Handler(inputs);
+      EXTI9_Handler(b_inputs);
       break;
   }
 }
@@ -156,27 +154,27 @@ static void EXTI15_Handler(uint32_t inputs) {
 }
 
 void EXTI15_10_IRQHandler(void) {
-  uint32_t inputs = GPIOC->IDR;
+  uint32_t a_inputs = GPIOA->IDR, b_inputs = GPIOB->IDR, c_inputs = GPIOC->IDR;
   uint32_t exti = __clz(EXTI->PR);
   EXTI->PR = (1 << 31) >> exti;
   switch (exti) {
     case 31 - 10:
-      EXTI10_Handler(inputs);
+      EXTI10_Handler(b_inputs);
       break;
     case 31 - 11:
-      EXTI11_Handler(inputs);
+      EXTI11_Handler(a_inputs);
       break;
     case 31 - 12:
-      EXTI12_Handler(inputs);
+      EXTI12_Handler(a_inputs);
       break;
     case 31 - 13:
-      EXTI13_Handler(inputs);
+      EXTI13_Handler(c_inputs);
       break;
     case 31 - 14:
-      EXTI14_Handler(inputs);
+      EXTI14_Handler(c_inputs);
       break;
     case 31 - 15:
-      EXTI15_Handler(inputs);
+      EXTI15_Handler(c_inputs);
       break;
   }
 }

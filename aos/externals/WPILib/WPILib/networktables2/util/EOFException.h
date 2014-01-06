@@ -8,7 +8,7 @@
 #ifndef EOFEXCEPTION_H_
 #define EOFEXCEPTION_H_
 
-#include "IOException.h"
+#include "networktables2/util/IOException.h"
 
 
 /**

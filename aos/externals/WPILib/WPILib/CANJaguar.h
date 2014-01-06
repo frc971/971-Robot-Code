@@ -29,8 +29,8 @@ class CANJaguar : public MotorSafety,
 {
 public:
 	// The internal PID control loop in the Jaguar runs at 1kHz.
-	static const INT32 kControllerRate = 1000;
-	static const double kApproxBusVoltage = 12.0;
+	static const int32_t kControllerRate = 1000;
+	static constexpr double kApproxBusVoltage = 12.0;
 
 	typedef enum {kPercentVbus, kCurrent, kSpeed, kPosition, kVoltage} ControlMode;
 	typedef enum {kCurrentFault = 1, kTemperatureFault = 2, kBusVoltageFault = 4, kGateDriverFault = 8} Faults;
@@ -40,12 +40,12 @@ public:
 	typedef enum {kNeutralMode_Jumper = 0, kNeutralMode_Brake = 1, kNeutralMode_Coast = 2} NeutralMode;
 	typedef enum {kLimitMode_SwitchInputsOnly = 0, kLimitMode_SoftPositionLimits = 1} LimitMode;
 
-	explicit CANJaguar(UINT8 deviceNumber, ControlMode controlMode = kPercentVbus);
+	explicit CANJaguar(uint8_t deviceNumber, ControlMode controlMode = kPercentVbus);
 	virtual ~CANJaguar();
 
 	// SpeedController interface
 	virtual float Get();
-	virtual void Set(float value, UINT8 syncGroup=0);
+	virtual void Set(float value, uint8_t syncGroup=0);
 	virtual void Disable();
 
 	// PIDOutput interface
@@ -72,20 +72,20 @@ public:
 	double GetSpeed();
 	bool GetForwardLimitOK();
 	bool GetReverseLimitOK();
-	UINT16 GetFaults();
+	uint16_t GetFaults();
 	bool GetPowerCycled();
 	void SetVoltageRampRate(double rampRate);
-	virtual UINT32 GetFirmwareVersion();
-	UINT8 GetHardwareVersion();
+	virtual uint32_t GetFirmwareVersion();
+	uint8_t GetHardwareVersion();
 	void ConfigNeutralMode(NeutralMode mode);
-	void ConfigEncoderCodesPerRev(UINT16 codesPerRev);
-	void ConfigPotentiometerTurns(UINT16 turns);
+	void ConfigEncoderCodesPerRev(uint16_t codesPerRev);
+	void ConfigPotentiometerTurns(uint16_t turns);
 	void ConfigSoftPositionLimits(double forwardLimitPosition, double reverseLimitPosition);
 	void DisableSoftPositionLimits();
 	void ConfigMaxOutputVoltage(double voltage);
 	void ConfigFaultTime(float faultTime);
 
-	static void UpdateSyncGroup(UINT8 syncGroup);
+	static void UpdateSyncGroup(uint8_t syncGroup);
 
 	void SetExpiration(float timeout);
 	float GetExpiration();
@@ -96,23 +96,23 @@ public:
 	void GetDescription(char *desc);
 
 protected:
-	UINT8 packPercentage(UINT8 *buffer, double value);
-	UINT8 packFXP8_8(UINT8 *buffer, double value);
-	UINT8 packFXP16_16(UINT8 *buffer, double value);
-	UINT8 packINT16(UINT8 *buffer, INT16 value);
-	UINT8 packINT32(UINT8 *buffer, INT32 value);
-	double unpackPercentage(UINT8 *buffer);
-	double unpackFXP8_8(UINT8 *buffer);
-	double unpackFXP16_16(UINT8 *buffer);
-	INT16 unpackINT16(UINT8 *buffer);
-	INT32 unpackINT32(UINT8 *buffer);
-	virtual void setTransaction(UINT32 messageID, const UINT8 *data, UINT8 dataSize);
-	virtual void getTransaction(UINT32 messageID, UINT8 *data, UINT8 *dataSize);
+	uint8_t packPercentage(uint8_t *buffer, double value);
+	uint8_t packFXP8_8(uint8_t *buffer, double value);
+	uint8_t packFXP16_16(uint8_t *buffer, double value);
+	uint8_t packint16_t(uint8_t *buffer, int16_t value);
+	uint8_t packint32_t(uint8_t *buffer, int32_t value);
+	double unpackPercentage(uint8_t *buffer);
+	double unpackFXP8_8(uint8_t *buffer);
+	double unpackFXP16_16(uint8_t *buffer);
+	int16_t unpackint16_t(uint8_t *buffer);
+	int32_t unpackint32_t(uint8_t *buffer);
+	virtual void setTransaction(uint32_t messageID, const uint8_t *data, uint8_t dataSize);
+	virtual void getTransaction(uint32_t messageID, uint8_t *data, uint8_t *dataSize);
 
-	static INT32 sendMessage(UINT32 messageID, const UINT8 *data, UINT8 dataSize);
-	static INT32 receiveMessage(UINT32 *messageID, UINT8 *data, UINT8 *dataSize, float timeout = 0.02);
+	static int32_t sendMessage(uint32_t messageID, const uint8_t *data, uint8_t dataSize);
+	static int32_t receiveMessage(uint32_t *messageID, uint8_t *data, uint8_t *dataSize, float timeout = 0.02);
 
-	UINT8 m_deviceNumber;
+	uint8_t m_deviceNumber;
 	ControlMode m_controlMode;
 	SEM_ID m_transactionSemaphore;
 	double m_maxOutputVoltage;

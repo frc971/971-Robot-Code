@@ -66,20 +66,20 @@ public:
 
 	Error& GetError() const;
 	void SetErrnoError(const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const;
+		const char* filename, const char* function, uint32_t lineNumber) const;
 	void SetImaqError(int success, const char *contextMessage,
-        const char* filename, const char* function, UINT32 lineNumber) const;
+        const char* filename, const char* function, uint32_t lineNumber) const;
 	void SetError(Error::Code code, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const;
+		const char* filename, const char* function, uint32_t lineNumber) const;
 	void SetWPIError(const char *errorMessage, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber) const;
+		const char* filename, const char* function, uint32_t lineNumber) const;
 	void CloneError(const ErrorBase *rhs) const;
 	void ClearError() const;
 	bool StatusIsFatal() const;
 	static void SetGlobalError(Error::Code code, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber);
+		const char* filename, const char* function, uint32_t lineNumber);
 	static void SetGlobalWPIError(const char *errorMessage, const char *contextMessage,
-		const char* filename, const char* function, UINT32 lineNumber);
+		const char* filename, const char* function, uint32_t lineNumber);
 	static const Error& GetGlobalError();
 
 protected:

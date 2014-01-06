@@ -1,7 +1,5 @@
 #include "bbb/uart_reader.h"
 
-#define OLD_CUSTOM_SPEED 0
-
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/serial.h>
@@ -36,10 +34,10 @@ extern int aos_uart_reader_set_tty_options(int fd, int baud_rate);
 }  // extern "C"
 
 UartReader::UartReader(int32_t baud_rate)
-    : fd_(open(device, O_RDWR | O_NDELAY | O_NOCTTY)) {
+    : fd_(open(device, O_RDWR | O_NOCTTY | O_NONBLOCK)) {
   
   if (fd_ < 0) {
-    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY) failed with %d: %s."
+    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s."
                " Did you read my note in bbb/uart_reader.cc?\n",
         device, errno, strerror(errno));
   }
@@ -49,22 +47,35 @@ UartReader::UartReader(int32_t baud_rate)
         fd_, errno, strerror(errno));
   }
 
-  // Implement timeout.
-  fd_set readfd;
-  timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 500000;
-  FD_ZERO(&readfd);
-  FD_SET(fd_, &readfd);
-  select(fd_ + 1, &readfd, NULL, NULL, &tv);
+  FD_ZERO(&fd_set_);
+  FD_SET(fd_, &fd_set_);
 }
 
 UartReader::~UartReader() {
   if (fd_ > 0) close(fd_);
 }
 
-ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes) {
-  return read(fd_, dest, max_bytes);
+ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes,
+                              const ::aos::time::Time &timeout_time) {
+  do {
+    ::aos::time::Time timeout = timeout_time - ::aos::time::Time::Now();
+    if (timeout < ::aos::time::Time(0, 0)) return -2;
+    struct timeval timeout_timeval = timeout.ToTimeval();
+    switch (select(fd_ + 1, &fd_set_, NULL, NULL, &timeout_timeval)) {
+      case 0:
+        return -2;
+      case -1:
+        continue;
+      case 1:
+        break;
+      default:
+        LOG(WARNING, "unknown select return value\n");
+        return -1;
+    }
+    ssize_t r = read(fd_, dest, max_bytes);
+    if (r != -1) return r;
+  } while (errno == EINTR);
+  return -1;
 }
 
 }  // namespace bbb

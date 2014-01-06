@@ -18,12 +18,12 @@
 
 extern "C"
 {
-	extern char * cplusDemangle (char *source, char *dest, INT32 n);
+	extern char * cplusDemangle (char *source, char *dest, int32_t n);
 }
 
-void wpi_getLabel(UINT addr, char *label, INT32 *found)
+void wpi_getLabel(UINT addr, char *label, int32_t *found)
 {
-	INT32 pVal;
+	int pVal;
 	SYM_TYPE pType;
 	char name[MAX_SYS_SYM_LEN + 1];
   static const size_t kLabelSize = DBG_DEMANGLE_PRINT_LEN + 1 + 11;
@@ -49,12 +49,12 @@ void wpi_getLabel(UINT addr, char *label, INT32 *found)
 	}
 }
 /*
-static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, INT32 taskId, BOOL isKernelAdrs)
+static void wpiTracePrint(INSTR *caller, int32_t func, int32_t nargs, int32_t *args, int32_t taskId, BOOL isKernelAdrs)
 {
 	char buf [MAX_SYS_SYM_LEN * 2];
-	INT32 ix;
-	INT32 len = 0;
-	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x>: ", wpi_getLabel((UINT)caller), (INT32)caller);
+	int32_t ix;
+	int32_t len = 0;
+	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x>: ", wpi_getLabel((UINT)caller), (int32_t)caller);
 	len += snprintf (&buf [len], sizeof(buf) - len, "%s <%#010x> (", wpi_getLabel((UINT)func), func);
 	for (ix = 0; ix < nargs; ix++)
 	{
@@ -68,14 +68,14 @@ static void wpiTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, I
 	printf(buf);
 }
 */
-static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *args, INT32 taskId, BOOL isKernelAdrs)
+static void wpiCleanTracePrint(INSTR *caller, int32_t func, int32_t nargs, int32_t *args, int32_t taskId, BOOL isKernelAdrs)
 {
 	char buf [MAX_SYS_SYM_LEN];
-	INT32 ix;
-	INT32 len = 0;
-	INT32 nameFound = 0;
-	INT32 params = 0;
-	INT32 totalnargs = nargs;
+	int32_t ix;
+	int32_t len = 0;
+	int32_t nameFound = 0;
+	int32_t params = 0;
+	int32_t totalnargs = nargs;
   char funcName[DBG_DEMANGLE_PRINT_LEN + 1 + 11];
 	wpi_getLabel((UINT)func, funcName, &nameFound);
 	// Ignore names that are not exact symbol address matches.
@@ -112,7 +112,7 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	// If this is a member function, print out the this pointer value.
 	if (totalnargs - params == 1)
 	{
-		len += snprintf (buf + len, sizeof(buf) - len, "<this=%#x>", args [0]);
+		len += snprintf (&buf [len], sizeof(buf) - len, "<this=%#lx>", args [0]);
 	}
 
 	// Print out the argument values.
@@ -120,9 +120,9 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 	for (ix = totalnargs - params; ix < nargs; ix++)
 	{
 		if (ix != totalnargs - params) {
-			len += snprintf (buf + len, sizeof(buf) - len, ", ");
+			len += snprintf (&buf [len], sizeof(buf) - len, ", ");
     }
-		len += snprintf (buf + len, sizeof(buf) - len, "%#x", args [ix]);
+		len += snprintf (&buf [len], sizeof(buf) - len, "%#lx", args [ix]);
 	}
 	len += snprintf (buf + len, sizeof(buf) - len, ")\n");
 
@@ -131,10 +131,10 @@ static void wpiCleanTracePrint(INSTR *caller, INT32 func, INT32 nargs, INT32 *ar
 
 extern "C"
 {
-	extern void trcStack(REG_SET* pRegs, FUNCPTR printRtn, INT32 tid);
+	extern void trcStack(REG_SET* pRegs, FUNCPTR printRtn, int32_t tid);
 }
 
-static INT32 wpiStackTask(INT32 taskId)
+static int32_t wpiStackTask(int32_t taskId)
 {
   // Make sure it's suspended in spite of any scheduler weirdness or whatever.
   while (!taskIsSuspended(taskId)) {
@@ -155,7 +155,7 @@ static INT32 wpiStackTask(INT32 taskId)
 
 void wpi_selfTrace()
 {
-	INT32 priority=100;
+	int priority=100;
 	taskPriorityGet(0, &priority);
 	// Lower priority than the calling task.
 	Task traceTask("StackTrace", (FUNCPTR)wpiStackTask, priority + 1);
@@ -206,7 +206,7 @@ bool wpi_assert_impl(bool conditionValue,
 					 const char *conditionText,
 					 const char *message,
 					 const char *fileName,
-					 UINT32 lineNumber, 
+					 uint32_t lineNumber, 
 					 const char *funcName)
 {
 	if (!conditionValue)
@@ -217,10 +217,10 @@ bool wpi_assert_impl(bool conditionValue,
 		// If an error message was specified, include it
 		// Build error string
 		if(message != NULL) {
-			snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %d\n",
+			snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%s\" failed in %s() in %s at line %ld\n",
 							 message, conditionText, funcName, fileName, lineNumber);
 		} else {
-			snprintf(error, sizeof(error), "Assertion failed: \"%s\" in %s() in %s at line %d\n",
+			snprintf(error, sizeof(error), "Assertion failed: \"%s\" in %s() in %s at line %ld\n",
 							 conditionText, funcName, fileName, lineNumber);
 		}
 		
@@ -244,7 +244,7 @@ void wpi_assertEqual_common_impl(int valueA,
 					 	         const char *equalityType,
 						         const char *message,
 						         const char *fileName,
-						         UINT32 lineNumber, 
+						         uint32_t lineNumber, 
 						         const char *funcName)
 {
 	// Error string buffer
@@ -253,10 +253,10 @@ void wpi_assertEqual_common_impl(int valueA,
 	// If an error message was specified, include it
 	// Build error string
 	if(message != NULL) {
-		snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %d\n",
+		snprintf(error, sizeof(error), "Assertion failed: \"%s\", \"%d\" %s \"%d\" in %s() in %s at line %ld\n",
 						 message, valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	} else {
-		snprintf(error, sizeof(error), "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %d\n",
+		snprintf(error, sizeof(error), "Assertion failed: \"%d\" %s \"%d\" in %s() in %s at line %ld\n",
 						 valueA, equalityType, valueB, funcName, fileName, lineNumber);
 	}
 	
@@ -278,7 +278,7 @@ bool wpi_assertEqual_impl(int valueA,
 					 	  int valueB,
 						  const char *message,
 						  const char *fileName,
-						  UINT32 lineNumber, 
+						  uint32_t lineNumber, 
 						  const char *funcName)
 {
 	if(!(valueA == valueB))
@@ -298,7 +298,7 @@ bool wpi_assertNotEqual_impl(int valueA,
 					 	     int valueB,
 						     const char *message,
 						     const char *fileName,
-						     UINT32 lineNumber, 
+						     uint32_t lineNumber, 
 						     const char *funcName)
 {
 	if(!(valueA != valueB))

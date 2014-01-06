@@ -7,6 +7,7 @@
 
 #include "networktables2/WriteManager.h"
 #include "networktables2/util/System.h"
+#include "networktables2/AbstractNetworkTableEntryStore.h"
 #include <iostream>
 
 
@@ -24,9 +25,10 @@ WriteManager::WriteManager(FlushableOutgoingEntryReceiver& _receiver, NTThreadMa
 }
 
 WriteManager::~WriteManager(){
-	transactionsLock.take();
-
 	stop();
+
+	//Note: this must occur after stop() to avoid deadlock
+	transactionsLock.take();
 	
 	delete incomingAssignmentQueue;
 	delete incomingUpdateQueue;
@@ -44,7 +46,7 @@ void WriteManager::start(){
 void WriteManager::stop(){
   if(thread!=NULL){
     thread->stop();
-    //delete thread;
+    delete thread;
     thread = NULL;
   }
 }
@@ -52,7 +54,7 @@ void WriteManager::stop(){
 
 void WriteManager::offerOutgoingAssignment(NetworkTableEntry* entry) {
 	{ 
-		Synchronized sync(transactionsLock);
+		NTSynchronized sync(transactionsLock);
 		((std::queue<NetworkTableEntry*>*)incomingAssignmentQueue)->push(entry);
 		
 		if(((std::queue<NetworkTableEntry*>*)incomingAssignmentQueue)->size()>=queueSize){
@@ -65,7 +67,7 @@ void WriteManager::offerOutgoingAssignment(NetworkTableEntry* entry) {
 
 void WriteManager::offerOutgoingUpdate(NetworkTableEntry* entry) {
 	{ 
-		Synchronized sync(transactionsLock);
+		NTSynchronized sync(transactionsLock);
 		((std::queue<NetworkTableEntry*>*)incomingUpdateQueue)->push(entry);
 		if(((std::queue<NetworkTableEntry*>*)incomingUpdateQueue)->size()>=queueSize){
 			run();
@@ -77,7 +79,7 @@ void WriteManager::offerOutgoingUpdate(NetworkTableEntry* entry) {
 
 void WriteManager::run() {
 	{
-		Synchronized sync(transactionsLock);
+		NTSynchronized sync(transactionsLock);
 		//swap the assignment and update queue
 		volatile std::queue<NetworkTableEntry*>* tmp = incomingAssignmentQueue;
 		incomingAssignmentQueue = outgoingAssignmentQueue;
@@ -95,7 +97,7 @@ void WriteManager::run() {
 		entry = ((std::queue<NetworkTableEntry*>*)outgoingAssignmentQueue)->front();
 		((std::queue<NetworkTableEntry*>*)outgoingAssignmentQueue)->pop();
 		{
-			Synchronized sync(entryStore.LOCK);
+			NTSynchronized sync(entryStore.LOCK);
 			entry->MakeClean();
 			wrote = true;
 			receiver.offerOutgoingAssignment(entry);
@@ -106,7 +108,7 @@ void WriteManager::run() {
 		entry = ((std::queue<NetworkTableEntry*>*)outgoingUpdateQueue)->front();
 		((std::queue<NetworkTableEntry*>*)outgoingUpdateQueue)->pop();
 		{ 
-			Synchronized sync(entryStore.LOCK);
+			NTSynchronized sync(entryStore.LOCK);
 			entry->MakeClean();
 			wrote = true;
 			receiver.offerOutgoingUpdate(entry);
