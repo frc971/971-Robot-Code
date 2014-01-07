@@ -12,8 +12,8 @@
 int main() {
   ::aos::Init();
 
-  ::bbb::Gpo reset_pin = bbb::Gpo(1, 6);
-  
+  ::bbb::Gpo reset_pin(1, 6);
+
   ::bbb::UartReader reader(750000);
   ::bbb::PacketFinder receiver(&reader, DATA_STRUCT_SEND_SIZE - 4);
 

@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "aos/common/macros.h"
+
 // As it turns out, controlling the BBB's GPIO pins
 // from C++ is kind of a pain. The purpose of this
 // code is to provide a simple wrapper that masks
@@ -20,6 +22,10 @@ class Pin {
   // Not strictly necessary for this to be virtual,
   // but it's a good idea.
   virtual ~Pin();
+  // When you don't define this and use the 
+  // DISALLOW_COPY_AND_ASSIGN macro, the compiler
+  // doesn't seem to create a default one.
+  Pin();
 
  protected:
   // Set the pin direction.
@@ -33,6 +39,8 @@ class Pin {
 
   FILE *handle_ = NULL;
   int kernel_pin_ = -1;
+
+  DISALLOW_COPY_AND_ASSIGN(Pin);
 };
 
 }  // namespace bbb

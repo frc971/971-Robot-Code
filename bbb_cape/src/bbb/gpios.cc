@@ -7,6 +7,8 @@
 
 namespace bbb {
 
+Pin::Pin() {}
+
 Pin::~Pin() {
   // Unexport the pin.
   if ((handle_ = fopen("/sys/class/gpio/unexport", "ab")) == NULL) {

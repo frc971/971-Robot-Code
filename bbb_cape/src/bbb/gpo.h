@@ -14,6 +14,7 @@ class Gpo : public Pin {
   // If the argument is true, is sets it high.
   // Otherwise, it sets it low.
   bool Set(const bool high);
+
 };
 
 }  // namespace bbb

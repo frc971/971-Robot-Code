@@ -8,8 +8,8 @@ namespace bbb {
 
 Gpo::Gpo(int bank, int pin) {
   // All the failures here are fatal, seeing as
-  // if we can't initialize the pin, we're probably
-  // screwed anyway.
+  // failure to initialize the pin would at best
+  // severely cripple the calling process.
   if (!InitPin(bank, pin)) {
     LOG(FATAL, "Failed to export the pin.\n");
   }
