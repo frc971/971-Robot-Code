@@ -9,10 +9,11 @@ set -e
 PLATFORM=$1
 GYP_MAIN=$2
 DEBUG=$3
-ACTION=$4
+OUT_NAME=$4
+ACTION=$5
 
-shift 3
-shift || true # We might not have a 4th argument if ACTION is empty.
+shift 4
+shift || true # We might not have a 5th argument if ACTION is empty.
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
@@ -21,7 +22,7 @@ export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
 AOS=`dirname $0`/..
 
-OUTDIR=${AOS}/../output/${PLATFORM}
+OUTDIR=${AOS}/../output/${OUT_NAME}
 BUILD_NINJA=${OUTDIR}/build.ninja
 
 ${AOS}/build/download_externals.sh
@@ -40,7 +41,7 @@ if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
 {
   'target_defaults': {
     'configurations': {
-	  '${PLATFORM}': {}
+	  '${OUT_NAME}': {}
     }
   }
 }
@@ -71,7 +72,7 @@ else
   fi
   ${NINJA} -C ${OUTDIR} ${NINJA_ACTION} "$@"
   if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
-    [ ${PLATFORM} == atom ] && \
+    [[ ${PLATFORM} =~ .*atom ]] && \
       rsync --progress -c -r \
         ${OUTDIR}/outputs/* \
         driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin

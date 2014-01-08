@@ -2,4 +2,4 @@
 
 cd $(dirname $0)
 
-../../aos/build/build.sh atom atom_code.gyp no "$@"
+../../aos/build/build.sh atom atom_code.gyp no atom "$@"

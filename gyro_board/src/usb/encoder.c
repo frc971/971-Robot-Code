@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "fill_packet.h"
 #include "encoder.h"
 
@@ -11,6 +13,7 @@
 // How long (in ms) to wait after a falling edge on the bottom indexer sensor
 // before reading the indexer encoder.
 static const int kBottomFallDelayTime = 32;
+static const uint32_t kWheelStopThreshold = 250000000;
 
 #define ENC(gpio, a, b) readGPIO(gpio, a) * 2 + readGPIO(gpio, b)
 int encoder_bits(int channel) {
@@ -73,6 +76,39 @@ void EINT2_IRQHandler(void) {
   } else {
     ++encoder1_val;
   }
+}
+
+static inline void reset_TC(void) {
+  TIM2->TCR = (1 << 1); // Put it into reset and disabled.
+  while (TIM2->TC != 0);
+  TIM2->TCR = 1; // Take it out of reset + make sure it's enabled.
+}
+
+// TIM2
+volatile uint32_t shooter_cycle_ticks;
+void TIMER2_IRQHandler(void) {
+  // Apparently, this handler runs regardless of a match or capture event.
+  if (TIM2->IR & (1 << 4)) {
+    // Capture
+    TIM2->IR = (1 << 4); // Clear the interrupt.
+    
+    shooter_cycle_ticks = TIM2->CR0;
+  
+    reset_TC();
+  } else if (TIM2->IR & 1) {
+    // Match
+    TIM2->IR = 1; // Clear the interrupt
+
+    // Assume shooter is stopped.
+    shooter_cycle_ticks = 0;
+
+    // Disable timer.
+    TIM2->TCR = 0;
+  }
+
+  // It will only handle one interrupt per run.
+  // If there is another interrupt pending, it won't be cleared, and the ISR 
+  // will be run again to handle it.
 }
 
 // TODO(brians): Have this indicate some kind of error instead of just looping
@@ -288,30 +324,25 @@ static void ShooterHallRise(void) {
   capture_shooter_angle_rise = encoder2_val; 
 }
 
-// Count leading zeros.
-// Returns 0 if bit 31 is set etc.
-__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
-  uint32_t result;
-  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
-  return result;
+// Third robot shooter.
+static void ShooterPhotoFall(void) {
+  GPIOINT->IO0IntClr = (1 << 4);
+  // We reset TC to make sure we don't get a crap
+  // value from CR0 when the capture interrupt occurs
+  // if the shooter is just starting up again, and so
+  // that the match interrupt thing works right.
+  reset_TC();
 }
-inline static void IRQ_Dispatch(void) {
-  // There is no need to add a loop here to handle multiple interrupts at the
-  // same time because the processor has tail chaining of interrupts which we
-  // can't really beat with our own loop.
-  // It would actually be bad because a loop here would block EINT1/2 for longer
-  // lengths of time.
 
-  uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
-      (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
-
-  typedef void (*Handler)(void);
-  const static Handler table[] = {
+typedef void (*Handler)(void);
+// Contains default pointers for ISR functions.
+// (These can be used without modifications on the comp/practice bots.)
+Handler ISRTable[] = {
     Encoder5BFall,     // index 0: P2.3 Fall     #bit 31  //Encoder 5 B  //Dio 10
     Encoder5AFall,     // index 1: P2.2 Fall     #bit 30  //Encoder 5 A  //Dio 9
     Encoder4BFall,     // index 2: P2.1 Fall     #bit 29  //Encoder 4 B  //Dio 8
     Encoder4AFall,     // index 3: P2.0 Fall     #bit 28  //Encoder 4 A  //Dio 7
-    NoGPIO,            // index 4: NO GPIO       #bit 27
+    NoGPIO,            // index 4: NO GPIO       #bit 27  
     Encoder2AFall,     // index 5: P0.22 Fall    #bit 26  //Encoder 2 A
     Encoder2BFall,     // index 6: P0.21 Fall    #bit 25  //Encoder 2 B
     Encoder3AFall,     // index 7: P0.20 Fall    #bit 24  //Encoder 3 A
@@ -340,12 +371,31 @@ inline static void IRQ_Dispatch(void) {
     Encoder4BRise,     // index 30: P2.1 Rise    #bit 1   //Encoder 4 B    //Dio 8
     Encoder4ARise,     // index 31: P2.0 Rise    #bit 0   //Encoder 4 A    //Dio 7
     NoGPIO             // index 32: NO BITS SET  #False Alarm
-  };
-  table[index]();
+};
+
+// Count leading zeros.
+// Returns 0 if bit 31 is set etc.
+__attribute__((always_inline)) static __INLINE uint32_t __clz(uint32_t value) {
+  uint32_t result;
+  __asm__("clz %0, %1" : "=r" (result) : "r" (value));
+  return result;
+}
+inline static void IRQ_Dispatch(void) {
+  // There is no need to add a loop here to handle multiple interrupts at the
+  // same time because the processor has tail chaining of interrupts which we
+  // can't really beat with our own loop.
+  // It would actually be bad because a loop here would block EINT1/2 for longer
+  // lengths of time.
+
+  uint32_t index = __clz(GPIOINT->IO2IntStatR | GPIOINT->IO0IntStatR |
+      (GPIOINT->IO2IntStatF << 28) | (GPIOINT->IO0IntStatF << 4));
+
+  ISRTable[index]();
 }
 void EINT3_IRQHandler(void) {
   IRQ_Dispatch();
 }
+
 int32_t encoder_val(int chan) {
   int32_t val;
   switch (chan) {
@@ -386,73 +436,92 @@ int32_t encoder_val(int chan) {
 static volatile uint32_t sensor_timing_wraps = 0;
 
 void encoder_init(void) {
-  // Setup the encoder interface.
-  SC->PCONP |= PCONP_PCQEI;
-  PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
-  // Reset the count and velocity.
-  QEI->QEICON = 0x00000005;
-  QEI->QEICONF = 0x00000004;
-  // Wrap back to 0 when we wrap the int and vice versa.
-  QEI->QEIMAXPOS = 0xFFFFFFFF;
-
-  // Set up encoder 1.
-  // Make GPIOs 2.11 and 2.12 trigger EINT1 and EINT2 (respectively).
-  // PINSEL4[23:22] = {0 1}
-  // PINSEL4[25:24] = {0 1}
-  PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 22)) | (0x1 << 22);
-  PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 24)) | (0x1 << 24);
-  // Clear the interrupt flags for EINT1 and EINT2 (0x6 = 0b0110).
-  SC->EXTMODE = 0x6;
-  SC->EXTINT = 0x6;
-  NVIC_EnableIRQ(EINT1_IRQn);
-  NVIC_EnableIRQ(EINT2_IRQn);
-  encoder1_val = 0;
-
-  // Set up encoder 2.
-  GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 12);
-  PINCON->PINSEL1 &= ~(0x3 << 10);
-  encoder2_val = 0;
-
-  // Set up encoder 3.
-  GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
-  GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
-  GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL1 &= ~(0x3 << 8);
-  PINCON->PINSEL1 &= ~(0x3 << 6);
-  encoder3_val = 0;
-
-  // Set up encoder 4.
-  GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
-  GPIOINT->IO2IntEnF |= (1 << 1);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 1);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL4 &= ~(0x3 << 0);
-  PINCON->PINSEL4 &= ~(0x3 << 2);
-  encoder4_val = 0;
-
-  // Set up encoder 5.
-  GPIOINT->IO2IntEnF |= (1 << 2);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 2);  // Set GPIO rising interrupt.
-  GPIOINT->IO2IntEnF |= (1 << 3);  // Set GPIO falling interrupt.
-  GPIOINT->IO2IntEnR |= (1 << 3);  // Set GPIO rising interrupt.
-  // Make sure they're in mode 00 (the default, aka nothing special).
-  PINCON->PINSEL4 &= ~(0x3 << 4);
-  PINCON->PINSEL4 &= ~(0x3 << 6);
-  encoder5_val = 0;
-
   // Enable interrupts from the GPIO pins.
   NVIC_EnableIRQ(EINT3_IRQn);
 
   if (is_bot3) {
+    // Modify robot handler table for third robot.
+    ISRTable[23] = ShooterPhotoFall;
+
+    // Set up timer for bot3 photosensor.
+    // Make sure timer two is powered.
+    SC->PCONP |= (1 << 22);
+    // Select capture 2.0 function on pin 0.4.
+    PINCON->PINSEL0 |= (0x3 << 8);
+    // Set timer to capture and interrupt on rising edge.
+    TIM2->CCR = 0x5;
+    // Set up match interrupt.
+    TIM2->MR0 = kWheelStopThreshold;
+    TIM2->MCR = 1;
+    // Enable timer IRQ, and make it lower priority than the encoders.
+    NVIC_SetPriority(TIMER2_IRQn, 1);
+    NVIC_EnableIRQ(TIMER2_IRQn);
+    // Set up GPIO interrupt on other edge.
+    GPIOINT->IO0IntEnF |= (1 << 4);
+
   } else {  // is main robot
+    // Setup the encoder interface.
+    SC->PCONP |= PCONP_PCQEI;
+    PINCON->PINSEL3 = ((PINCON->PINSEL3 & 0xffff3dff) | 0x00004100);
+    // Reset the count and velocity.
+    QEI->QEICON = 0x00000005;
+    QEI->QEICONF = 0x00000004;
+    // Wrap back to 0 when we wrap the int and vice versa.
+    QEI->QEIMAXPOS = 0xFFFFFFFF;
+
+    // Set up encoder 1.
+    // Make GPIOs 2.11 and 2.12 trigger EINT1 and EINT2 (respectively).
+    // PINSEL4[23:22] = {0 1}
+    // PINSEL4[25:24] = {0 1}
+    PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 22)) | (0x1 << 22);
+    PINCON->PINSEL4 = (PINCON->PINSEL4 & ~(0x3 << 24)) | (0x1 << 24);
+    // Clear the interrupt flags for EINT1 and EINT2 (0x6 = 0b0110).
+    SC->EXTMODE = 0x6;
+    SC->EXTINT = 0x6;
+    NVIC_EnableIRQ(EINT1_IRQn);
+    NVIC_EnableIRQ(EINT2_IRQn);
+    encoder1_val = 0;
+        
+    // Set up encoder 2.
+    GPIOINT->IO0IntEnF |= (1 << 22);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 22);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 21);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 21);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 12);
+    PINCON->PINSEL1 &= ~(0x3 << 10);
+    encoder2_val = 0;
+
+    // Set up encoder 3.
+    GPIOINT->IO0IntEnF |= (1 << 20);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 20);  // Set GPIO rising interrupt.
+    GPIOINT->IO0IntEnF |= (1 << 19);  // Set GPIO falling interrupt.
+    GPIOINT->IO0IntEnR |= (1 << 19);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL1 &= ~(0x3 << 8);
+    PINCON->PINSEL1 &= ~(0x3 << 6);
+    encoder3_val = 0;
+    
+    // Set up encoder 4.
+    GPIOINT->IO2IntEnF |= (1 << 0);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 0);  // Set GPIO rising interrupt.
+    GPIOINT->IO2IntEnF |= (1 << 1);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 1);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL4 &= ~(0x3 << 0);
+    PINCON->PINSEL4 &= ~(0x3 << 2);
+    encoder4_val = 0;
+
+    // Set up encoder 5.
+    GPIOINT->IO2IntEnF |= (1 << 2);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 2);  // Set GPIO rising interrupt.
+    GPIOINT->IO2IntEnF |= (1 << 3);  // Set GPIO falling interrupt.
+    GPIOINT->IO2IntEnR |= (1 << 3);  // Set GPIO rising interrupt.
+    // Make sure they're in mode 00 (the default, aka nothing special).
+    PINCON->PINSEL4 &= ~(0x3 << 4);
+    PINCON->PINSEL4 &= ~(0x3 << 6);
+    encoder5_val = 0;
+
     xTaskCreate(vDelayCapture,
                 (signed char *) "SENSORs",
                 configMINIMAL_STACK_SIZE + 100,
@@ -502,6 +571,8 @@ void fillSensorPacket(struct DataStruct *packet) {
 
   if (is_bot3) {
     packet->robot_id = 1;
+
+    packet->bot3.shooter_cycle_ticks = shooter_cycle_ticks;
   } else {  // is main robot
     packet->robot_id = 2;
 

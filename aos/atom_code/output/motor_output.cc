@@ -14,6 +14,8 @@ namespace aos {
 // going 2 to each side to make sure we get the full range
 const MotorOutput::MotorControllerBounds MotorOutput::kTalonBounds
     {213, 135, 132, 129, 50};
+const MotorOutput::MotorControllerBounds MotorOutput::kVictorBounds
+    {210, 138, 132, 126, 56};
 
 uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
   if (value == 0.0) return kCenter;

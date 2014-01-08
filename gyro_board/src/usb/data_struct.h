@@ -129,6 +129,7 @@ struct DATA_STRUCT_NAME {
         };
         uint16_t booleans;
       };
+      uint32_t shooter_cycle_ticks;
     } bot3;
   };
 };

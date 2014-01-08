@@ -43,6 +43,8 @@ class MotorOutput {
  protected:
   // Brian got the values here by trying values with hardware on 11/23/12.
   static const MotorControllerBounds kTalonBounds;
+  // Taken from WPILib.
+  static const MotorControllerBounds kVictorBounds;
 
   // Helper methods for filling out values_.
   // All channels are the 1-indexed numbers that usually go into WPILib.
