@@ -1,7 +1,12 @@
 OBJDIR := .obj/
+UNAME_S := $(shell uname -s)
+
 $(shell mkdir -p $(OBJDIR))
 
+
 ifeq ($(OS),Windows_NT)
+  CROSS_COMPILE := arm-none-eabi-
+else ifeq ($(UNAME_S),Darwin)
   CROSS_COMPILE := arm-none-eabi-
 else
   CROSS_COMPILE := /opt/cortex-m3/bin/arm-eabi-
