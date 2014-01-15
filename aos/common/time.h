@@ -71,7 +71,7 @@ struct Time {
   }
   #endif  // SWIG
 
-  // CLOCK_MONOTONIC on the fitpc and CLOCK_REALTIME on the cRIO because the
+  // CLOCK_MONOTONIC on linux and CLOCK_REALTIME on the cRIO because the
   // cRIO doesn't have any others.
   // CLOCK_REALTIME is the default realtime clock and CLOCK_MONOTONIC doesn't
   // change when somebody changes the wall clock (like the ntp deamon or

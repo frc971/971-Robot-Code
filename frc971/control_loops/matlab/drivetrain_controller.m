@@ -46,7 +46,7 @@ L = place(dm.a', dm.c', [hlp, hlp, llp, llp])';
 
 % Plot what we computed
 
-fd = fopen('/home/aschuh/frc971/2012/trunk/src/atom_code/control_loops/Drivetrain.mat', 'w');
+fd = fopen('/home/aschuh/frc971/2012/trunk/src/prime/control_loops/Drivetrain.mat', 'w');
 n = 1;
 sm = [];
 writeMatHeader(fd, size(dm.a, 1), size(dm.b, 2));

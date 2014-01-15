@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "aos/atom_code/init.h"
-#include "aos/atom_code/input/joystick_input.h"
+#include "aos/linux_code/init.h"
+#include "aos/prime/input/joystick_input.h"
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"

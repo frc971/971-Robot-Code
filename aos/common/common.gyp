@@ -24,10 +24,10 @@
         '<(AOS)/build/aos.gyp:logging',
         'once',
         '<(EXTERNALS):gtest',
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
       ],
       'export_dependent_settings': [
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:shared_mem',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
        ],
     },
     {
@@ -57,10 +57,10 @@
         },
         {
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ],
         }]
       ],
@@ -224,18 +224,18 @@
       'target_name': 'condition',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/atom_code/ipc_lib/condition.cc',
+        '<(AOS)/linux_code/ipc_lib/condition.cc',
       ],
       'dependencies': [
         'mutex',
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
         # TODO(aschuh): Fix this dependency loop by
         # providing a logging interface.
         # '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         'mutex',
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
       ],
     },
     {
@@ -248,13 +248,13 @@
           ],
         }, {
           'sources': [
-            '<(AOS)/atom_code/ipc_lib/mutex.cpp',
+            '<(AOS)/linux_code/ipc_lib/mutex.cpp',
           ],
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:aos_sync',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
           ],
         }],
       ],
@@ -290,7 +290,7 @@
         'mutex',
         '<(AOS)/build/aos.gyp:logging',
         'queue_testutils',
-        '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:core_lib',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
        ],
     },
     {

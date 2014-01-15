@@ -1,6 +1,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 
 int main() {
   ::aos::Init();

@@ -7,11 +7,11 @@
         'CameraServer.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/output/output.gyp:http_server',
+        '<(AOS)/linux_code/output/output.gyp:http_server',
         '../frc971.gyp:constants',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/atom_code/atom_code.gyp:configuration',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
       'copies': [
         {
@@ -26,11 +26,11 @@
       'target_name': 'MotorWriter',
       'type': '<(aos_target)',
       'sources': [
-        'AtomMotorWriter.cc'
+        'motor_writer.cc'
       ],
       'dependencies': [
-        '<(AOS)/atom_code/output/output.gyp:motor_output',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/prime/output/output.gyp:motor_output',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',

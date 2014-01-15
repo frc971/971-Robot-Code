@@ -1,6 +1,6 @@
 #include <inttypes.h>
 
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/wrapping_counter.h"
 #include "aos/common/time.h"

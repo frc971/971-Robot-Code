@@ -7,8 +7,8 @@
         'JoystickReader.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/input/input.gyp:joystick_input',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/prime/input/input.gyp:joystick_input',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
 
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
@@ -34,7 +34,7 @@
         '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
         '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:wrapping_counter',
         '<(DEPTH)/frc971/frc971.gyp:constants',

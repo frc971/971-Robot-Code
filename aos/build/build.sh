@@ -17,7 +17,7 @@ shift || true # We might not have a 5th argument if ACTION is empty.
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
-[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "atom" ] || ( echo Platform "(${PLATFORM})" must be '"crio" or "atom"'. ; exit 1 )
+[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "linux" ] || ( echo Platform "(${PLATFORM})" must be '"crio" or "linux"'. ; exit 1 )
 [ "${DEBUG}" == "yes" -o "${DEBUG}" == "no" ] || ( echo Debug "(${DEBUG})" must be '"yes" or "no"'. ; exit 1 )
 
 AOS=`dirname $0`/..
@@ -65,31 +65,21 @@ fi
 if [ "${ACTION}" == "clean" ]; then
   rm -r ${OUTDIR} || true
 else
-  if [ "${ACTION}" != "deploy" -a "${ACTION}" != "tests" -a "${ACTION}" != "redeploy" ]; then
+  if [ "${ACTION}" != "deploy" -a "${ACTION}" != "tests" ]; then
     NINJA_ACTION=${ACTION}
   else
     NINJA_ACTION=
   fi
   ${NINJA} -C ${OUTDIR} ${NINJA_ACTION} "$@"
-  if [[ ${ACTION} == deploy || ${ACTION} == redeploy ]]; then
-    [[ ${PLATFORM} =~ .*atom ]] && \
+  if [[ ${ACTION} == deploy ]]; then
+    [[ ${PLATFORM} == linux ]] && \
       rsync --progress -c -r \
         ${OUTDIR}/outputs/* \
-        driver@`${AOS}/build/get_ip fitpc`:/home/driver/robot_code/bin
-	  ssh driver@`${AOS}/build/get_ip fitpc` "sync; sync; sync"
+        driver@`${AOS}/build/get_ip prime`:/home/driver/robot_code/bin
+	  ssh driver@`${AOS}/build/get_ip prime` "sync; sync; sync"
     [ ${PLATFORM} == crio ] && \
       ncftpput `${AOS}/build/get_ip robot` / \
       ${OUTDIR}/lib/FRC_UserProgram.out
-  fi
-  if [[ ${ACTION} == redeploy ]]; then
-    if [[ ${PLATFORM} != crio ]]; then
-      echo "Platform ${PLATFORM} does not support redeploy." 1>&2
-      exit 1
-    fi
-    ${OUTDIR}/../out_atom/outputs/netconsole <<"END"
-unld "FRC_UserProgram.out"
-ld < FRC_UserProgram.out
-END
   fi
   if [[ ${ACTION} == tests ]]; then
     find ${OUTDIR}/tests -executable -exec {} \;

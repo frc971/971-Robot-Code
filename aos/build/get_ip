@@ -2,7 +2,7 @@
 
 # This script provides a central location for getting IP addresses. It uses
 # output/ip_base.txt as the first 3 parts and then adds on whatever is
-# correct for its first argument (fitpc or robot).
+# correct for its first argument (prime or robot).
 # It will create output/ip_base.txt with a default value if it does not already
 # exist.
 
@@ -16,8 +16,8 @@ fi
 BASE=`cat ${FILE}`
 
 case $1 in
-	fitpc)
-		# This is the IP address that we use for our fitpc.
+	prime)
+		# This is the IP address that we use for the prime.
 		echo ${BASE}.179 ;;
 	robot)
 		# This is the IP address that the cRIO has to be on.

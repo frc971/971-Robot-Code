@@ -14,10 +14,10 @@ class MyRobot : public NetworkRobot {
  public:
   MyRobot() : NetworkRobot(static_cast<uint16_t>(::aos::NetworkPort::kMotors),
                            ::MakeIPAddress(::GetOwnIPAddress(),
-                               ::aos::NetworkAddress::kAtom),
+                               ::aos::NetworkAddress::kPrime),
                            static_cast<uint16_t>(::aos::NetworkPort::kDS),
                            ::MakeIPAddress(::GetOwnIPAddress(),
-                               ::aos::NetworkAddress::kAtom)) {}
+                               ::aos::NetworkAddress::kPrime)) {}
 };
 
 }  // namespace frc971

@@ -12,7 +12,7 @@
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
 #ifndef USE_UNSAFE
-#include "aos/atom_code/ipc_lib/queue.h"
+#include "aos/linux_code/ipc_lib/queue.h"
 #endif  // USE_UNSAFE
 #include "aos/common/time.h"
 
@@ -310,7 +310,7 @@ class QueueGroup {
 #ifdef USE_UNSAFE
 #include "aos/crio/queue-tmpl.h"
 #else
-#include "aos/atom_code/queue-tmpl.h"
+#include "aos/linux_code/queue-tmpl.h"
 #endif
 #undef USE_UNSAFE
 

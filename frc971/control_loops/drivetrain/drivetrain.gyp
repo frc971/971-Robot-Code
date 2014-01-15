@@ -77,7 +77,7 @@
         'drivetrain_main.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         'drivetrain_lib',
         'drivetrain_loop',
       ],

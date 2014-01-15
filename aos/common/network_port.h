@@ -8,15 +8,12 @@ namespace aos {
 // Constants representing the various ports used for communications and some
 // documentation about what each is used for.
 enum class NetworkPort : uint16_t {
-  // UDP socket sending motor values from the atom to the crio.
+  // UDP socket sending motor values from the prime to the crio.
   kMotors = 9710,
-  // UDP socket forwarding drivers station packets from the crio to the atom.
+  // UDP socket forwarding drivers station packets from the crio to the prime.
   kDS = 9711,
-  // UDP socket sending sensor values from the crio to the atom.
+  // UDP socket sending sensor values from the crio to the prime.
   kSensors = 9712,
-  // TCP socket(s) (automatically reconnects) sending logs from the crio to the
-  // atom.
-  kLogs = 9713,
   // HTTP server that sends out camera feeds in mjpg format.
   // Should not be changed because this number shows up elsewhere too.
   kCameraStreamer = 9714,
@@ -26,7 +23,7 @@ enum class NetworkPort : uint16_t {
 // last segment of their IP addresses.
 enum class NetworkAddress : uint8_t {
   // The computer that the cRIO talks to.
-  kAtom = 179,
+  kPrime = 179,
   kCRIO = 2,
 };
 

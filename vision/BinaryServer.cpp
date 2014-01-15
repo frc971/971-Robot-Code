@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 
 #include "aos/externals/libjpeg/include/jpeglib.h"
-#include "aos/atom_code/camera/Buffers.h"
+#include "aos/linux_code/camera/Buffers.h"
 #include "aos/common/time.h"
 
 namespace frc971 {

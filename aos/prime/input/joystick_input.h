@@ -1,0 +1,26 @@
+#ifndef AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_
+#define AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_
+
+#include "aos/common/input/driver_station_data.h"
+
+namespace aos {
+namespace input {
+
+// A class for handling joystick packet values.
+// It will call RunIteration each time a new packet is received.
+//
+// This class automatically handles updating ::aos::robot_state and logging (at
+// INFO) button edges.
+class JoystickInput {
+ public:
+  void Run();
+
+ private:
+  // Subclasses should do whatever they want with data here.
+  virtual void RunIteration(const driver_station::Data &data) = 0;
+};
+
+}  // namespace input
+}  // namespace aos
+
+#endif  // AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_

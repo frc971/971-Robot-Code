@@ -3,7 +3,7 @@
 
 #include "Socket.h"
 
-#include "aos/atom_code/configuration.h"
+#include "aos/linux_code/configuration.h"
 #include "aos/common/network_port.h"
 #include "aos/common/util.h"
 

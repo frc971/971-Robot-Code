@@ -1,7 +1,7 @@
 #ifndef AOS_COMMON_QUEUE_TESTUTILS_H_
 #define AOS_COMMON_QUEUE_TESTUTILS_H_
 
-#include "aos/atom_code/ipc_lib/shared_mem.h"
+#include "aos/linux_code/ipc_lib/shared_mem.h"
 
 // This file has some general helper functions for dealing with testing things
 // that use shared memory etc.

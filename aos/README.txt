@@ -9,10 +9,10 @@ config/ has some configuration files
 		restart it by running "invoke-rc.d starter restart" (doesn't always work very well...)
 	the .config files are for building linux kernels
 
-atom_code/ has code that only runs on the atom
+linux/ has code that only runs on linux systems
 crio/ has code that only runs on the crio
 
-common/ is where stuff that runs on both the crio and the atom is
+common/ is where stuff that runs on both the crio and linux is
 common/input/ is where the framework code for reading stuff into the queues system is
 common/output/ is where the framework for writing things out of the queues system is
 common/messages is where the c++ wrappers for "queues" are
@@ -27,8 +27,8 @@ Some functions need to be in separate translation units in order for them to be 
 	semantics. Furthermore, at the time of each such function entry the values of the parameters of the called
 	function and of all objects accessible via pointers therein would agree with the abstract semantics. In this
 	type of implementation, objects referred to by interrupt service routines activated by the signal function
-	would require explicit speciﬁcation of volatile storage, as well as other implementation-deﬁned
+	would require explicit specification of volatile storage, as well as other implementation-defined
 	restrictions.
-Everything that has to do different things when compiled for the crio or the atom uses #ifdef __VXWORKS__ etc.
+Everything that has to do different things when compiled for the crio or linux uses #ifdef __VXWORKS__ etc.
 The crio "queue" implementation uses 1 global instance and no synchronization, so it should only be used in code that gets called by the crio-side control loop infrastructure.
-The C++ namespace aos is used for all of the aos code. The crio and atom namespaces are for APIs that only make sense on one platform or the other.
+The C++ namespace aos is used for all of the aos code. The crio and linux_code namespaces are for APIs that only make sense on one platform or the other.

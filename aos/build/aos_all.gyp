@@ -1,22 +1,22 @@
 # This file has the executables etc that AOS builds.
-# User .gyp files for the atom should depend on :Atom.
+# User .gyp files for the prime should depend on :Prime.
 # User .gyp files for the crio should depend on :Crio.
 {
   'targets': [
     {
-      'target_name': 'Atom',
+      'target_name': 'Prime',
       'type': 'none',
       'variables': {
         'no_rsync': 1,
       },
       'dependencies': [
-        '../atom_code/camera/camera.gyp:CameraHTTPStreamer',
-        '../atom_code/camera/camera.gyp:CameraReader',
-        '../atom_code/core/core.gyp:*',
-        '../atom_code/ipc_lib/ipc_lib.gyp:raw_queue_test',
-        '../atom_code/ipc_lib/ipc_lib.gyp:ipc_stress_test',
-        '../atom_code/starter/starter.gyp:starter_exe',
-        '../atom_code/starter/starter.gyp:netconsole',
+        #'../linux_code/camera/camera.gyp:CameraHTTPStreamer',
+        #'../linux_code/camera/camera.gyp:CameraReader',
+        '../linux_code/core/core.gyp:*',
+        '../linux_code/ipc_lib/ipc_lib.gyp:raw_queue_test',
+        '../linux_code/ipc_lib/ipc_lib.gyp:ipc_stress_test',
+        '../linux_code/starter/starter.gyp:starter_exe',
+        '../linux_code/starter/starter.gyp:netconsole',
         '../common/common.gyp:queue_test',
         '../common/common.gyp:die_test',
         '../common/util/util.gyp:trapezoid_profile_test',

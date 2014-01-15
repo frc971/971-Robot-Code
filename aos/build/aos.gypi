@@ -7,7 +7,7 @@
     'aos_abs': '<!(readlink -f <(DEPTH)/aos)', # for use in non-path contexts
 # the .gyp file that has targets for the various external libraries
     'EXTERNALS': '<(AOS)/build/externals.gyp',
-# the directory that gets rsynced to the atom
+# the directory that gets rsynced to the target
     'rsync_dir': '<(PRODUCT_DIR)/outputs',
 # The directory that loadable_module and shared_library targets get put into
 # There's a target_conditions that puts loadable_modules here and
@@ -15,7 +15,7 @@
     'so_dir': '<(PRODUCT_DIR)/lib',
 # the directory that executables that depend on <(EXTERNALS):gtest get put into
     'test_dir': '<(PRODUCT_DIR)/tests',
-# 'executable' for the atom and 'static_library' for the cRIO
+# 'executable' for linux and 'static_library' for the cRIO
 # Useful for targets that should either be an executable or get compiled into
 # a .out file depending on the current platform.
 #   'aos_target': platform-dependent,

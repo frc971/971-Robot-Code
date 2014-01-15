@@ -2,7 +2,7 @@
 
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/autonomous/auto.h"

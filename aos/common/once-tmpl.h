@@ -9,7 +9,7 @@
 // It doesn't use pthread_once, because Brian looked at the pthreads
 // implementation for vxworks and noticed that it is completely and entirely
 // broken for doing just about anything (including its pthread_once). It has the
-// same implementation on the atom for simplicity.
+// same implementation under linux for simplicity.
 
 namespace aos {
 

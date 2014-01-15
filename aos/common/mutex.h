@@ -7,14 +7,14 @@
 
 #include "aos/common/macros.h"
 #include "aos/common/type_traits.h"
-#include "aos/atom_code/ipc_lib/aos_sync.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 
 class Condition;
 
-// An abstraction of a mutex that has implementations both for the
-// atom and for the cRIO.
+// An abstraction of a mutex that has implementations both for
+// linux and for the cRIO.
 // If there are multiple tasks or processes contending for the mutex,
 // higher priority ones will succeed in locking first,
 // and tasks of equal priorities have the same chance of getting the lock.

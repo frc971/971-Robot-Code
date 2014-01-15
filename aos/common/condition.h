@@ -2,7 +2,7 @@
 #define AOS_COMMON_CONDITION_H_
 
 #include "aos/common/mutex.h"
-#include "aos/atom_code/ipc_lib/aos_sync.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 

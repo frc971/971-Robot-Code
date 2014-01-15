@@ -1,12 +1,12 @@
 #include <string.h>
 
-#include "aos/atom_code/output/HTTPServer.h"
-#include "aos/atom_code/output/evhttp_ctemplate_emitter.h"
-#include "aos/atom_code/output/ctemplate_cache.h"
+#include "aos/linux_code/output/HTTPServer.h"
+#include "aos/linux_code/output/evhttp_ctemplate_emitter.h"
+#include "aos/linux_code/output/ctemplate_cache.h"
 #include "ctemplate/template.h"
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
-#include "aos/atom_code/configuration.h"
+#include "aos/linux_code/configuration.h"
 
 #include "frc971/constants.h"
 

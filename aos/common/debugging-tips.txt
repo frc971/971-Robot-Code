@@ -6,8 +6,8 @@ Check the logs! Very few things will fail without putting something in the logs.
     just run `LogStreamer` if you want to do simple testing without writing logs
     to a file. See `LogDisplayer --help` for options.
 All of the binaries get put in the same place. That is
-  src/out_atom/Default/outputs on the build machine and
-  /home/driver/robot_code/bin on the fitpc.
+  src/outputs/prime/outputs on the build machine and
+  /home/driver/robot_code/bin on linux.
 
 [Startup]
 Low level startup errors often end up in /aos_fatal_error.* on the cRIO and

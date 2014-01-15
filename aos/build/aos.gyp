@@ -12,15 +12,15 @@
         '<(AOS)/common/logging/logging_impl.cc',
       ],
       'conditions': [
-        ['OS=="atom"', {
+        ['OS=="linux"', {
           'sources': [
-            '<(AOS)/atom_code/logging/atom_logging.cc',
+            '<(AOS)/linux_code/logging/linux_logging.cc',
           ],
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ]
         }],
       ],

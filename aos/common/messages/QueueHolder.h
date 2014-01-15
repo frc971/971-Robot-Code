@@ -12,7 +12,7 @@
 #include "aos/common/type_traits.h"
 #include "aos/common/logging/logging.h"
 #ifndef __VXWORKS__
-#include "aos/atom_code/ipc_lib/queue.h"
+#include "aos/linux_code/ipc_lib/queue.h"
 #endif
 
 namespace aos {

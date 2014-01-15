@@ -2,7 +2,7 @@
 
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 #include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
 
 using ::frc971::control_loops::angle_adjust;

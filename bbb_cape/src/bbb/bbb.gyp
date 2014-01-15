@@ -126,7 +126,7 @@
       'dependencies': [
         'uart_reader',
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         'packet_finder',
         'data_struct',
         '<(AOS)/common/common.gyp:time',

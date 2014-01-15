@@ -60,7 +60,7 @@
         'index_main.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         'index_lib',
         'index_loop',
       ],

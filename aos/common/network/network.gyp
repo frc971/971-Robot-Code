@@ -7,7 +7,7 @@
         'team_number.cc',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/atom_code.gyp:configuration',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
         '<(AOS)/common/common.gyp:once',
         '<(AOS)/build/aos.gyp:logging',
       ],
@@ -53,7 +53,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:util',
-        '<(AOS)/atom_code/atom_code.gyp:configuration',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',

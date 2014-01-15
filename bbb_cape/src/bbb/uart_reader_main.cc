@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
 

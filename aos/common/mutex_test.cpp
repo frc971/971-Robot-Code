@@ -9,7 +9,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/atom_code/ipc_lib/aos_sync.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 namespace testing {

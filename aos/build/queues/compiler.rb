@@ -103,7 +103,7 @@ def build(filename,globals_template)
 	cpp_tree.add_cc_using("::aos::to_network")
 	cpp_tree.add_cc_using("::aos::to_host")
 	cpp_tree.add_swig_header_include("aos/common/queue.h".inspect)
-	cpp_tree.add_swig_body_include("aos/atom_code/queue-tmpl.h".inspect)
+	cpp_tree.add_swig_body_include("aos/linux_code/queue-tmpl.h".inspect)
 	cpp_tree.add_swig_header_include("aos/common/time.h".inspect)
 	cpp_tree.add_swig_include((rel_path + ".h").inspect)
 

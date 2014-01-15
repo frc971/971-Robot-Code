@@ -11,12 +11,12 @@
         'JPEGRoutines.cpp',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/common/common.gyp:time',
         '<(EXTERNALS):libevent',
         '<(EXTERNALS):libjpeg',
         '<(EXTERNALS):opencv',
-        '<(AOS)/atom_code/camera/camera.gyp:buffers',
+        '<(AOS)/linux_code/camera/camera.gyp:buffers',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
       ],
     },
@@ -28,7 +28,7 @@
         'SensorProcessor.cpp',
       ],
       'dependencies': [
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/common/common.gyp:time',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/build/aos.gyp:logging',

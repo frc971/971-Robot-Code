@@ -10,7 +10,7 @@
 #include "aos/common/mutex.h"
 #include "aos/common/queue_testutils.h"
 #include "aos/common/type_traits.h"
-#include "aos/atom_code/ipc_lib/core_lib.h"
+#include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
 

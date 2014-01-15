@@ -19,10 +19,10 @@
       'conditions': [
         ['OS!="crio"', {
           'dependencies': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ],
           'export_dependent_settings': [
-            '<(AOS)/atom_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
           ],
         }],
       ],

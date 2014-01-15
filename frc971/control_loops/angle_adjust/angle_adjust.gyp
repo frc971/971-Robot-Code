@@ -58,7 +58,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:timing',
         'angle_adjust_loop',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/common/common.gyp:queues',
       ],
     },
@@ -71,7 +71,7 @@
       'dependencies': [
         'angle_adjust_lib',
         'angle_adjust_loop',
-        '<(AOS)/atom_code/atom_code.gyp:init',
+        '<(AOS)/linux_code/linux_code.gyp:init',
       ],
     },
   ],

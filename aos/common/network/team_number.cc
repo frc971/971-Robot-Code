@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 #include "aos/common/once.h"
-#include "aos/atom_code/configuration.h"
+#include "aos/linux_code/configuration.h"
 #include "aos/common/logging/logging.h"
 
 namespace aos {

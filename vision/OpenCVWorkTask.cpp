@@ -14,8 +14,8 @@
 #include "libjpeg/include/jpeglib.h"
 
 #include "aos/common/time.h"
-#include "aos/atom_code/camera/Buffers.h"
-#include "aos/atom_code/init.h"
+#include "aos/linux_code/camera/Buffers.h"
+#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
 
 #include "vision/OpenCVWorkTask.h"
