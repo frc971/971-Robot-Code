@@ -7,16 +7,16 @@ queue_group WristsLoop {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-	// The angle of the bottom wrist.
-	double bottom_angle;
-	// How much higher the top wrist is.
-	double between_angle;
-	bool intake;
+    // The angle of the bottom wrist.
+    double bottom_angle;
+    // How much higher the top wrist is.
+    double between_angle;
+    bool intake;
   };
   message Position {
     double bottom_position, top_position;
-	bool bottom_hall_effect, top_hall_effect;
-	double bottom_calibration, top_calibration;
+    bool bottom_hall_effect, top_hall_effect;
+    double bottom_calibration, top_calibration;
   };
 
   queue Goal goal;
