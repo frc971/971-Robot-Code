@@ -25,46 +25,6 @@ struct ShifterHallEffect {
 
 // This structure contains current values for all of the things that change.
 struct Values {
-  // Wrist hall effect positive and negative edges.
-  // How many radians from horizontal to the location of interest.
-  double wrist_hall_effect_start_angle;
-  double wrist_hall_effect_stop_angle;
-
-  // Upper and lower extreme limits of travel for the wrist.
-  // These are the soft stops for up and down.
-  double wrist_upper_limit;
-  double wrist_lower_limit;
-
-  // Physical limits.  These are here for testing.
-  double wrist_upper_physical_limit;
-  double wrist_lower_physical_limit;
-
-  // Zeroing speed.
-  // The speed to move the wrist at when zeroing in rad/sec
-  double wrist_zeroing_speed;
-  // Zeroing off speed (in rad/sec).
-  double wrist_zeroing_off_speed;
-
-  // AngleAdjust hall effect positive and negative edges.
-  // These are the soft stops for up and down.
-  const double (&angle_adjust_hall_effect_start_angle)[2];
-  const double (&angle_adjust_hall_effect_stop_angle)[2];
-
-  // Upper and lower extreme limits of travel for the angle adjust.
-  double angle_adjust_upper_limit;
-  double angle_adjust_lower_limit;
-  // Physical limits.  These are here for testing.
-  double angle_adjust_upper_physical_limit;
-  double angle_adjust_lower_physical_limit;
-
-  // The speed to move the angle adjust when zeroing, in rad/sec
-  double angle_adjust_zeroing_speed;
-  // Zeroing off speed.
-  double angle_adjust_zeroing_off_speed;
-
-  // Deadband voltage.
-  double angle_adjust_deadband;
-
   // The ratio from the encoder shaft to the drivetrain wheels.
   double drivetrain_encoder_ratio;
 
@@ -79,10 +39,6 @@ struct Values {
 
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
-
-  // How many pixels off center the vertical line
-  // on the camera view is.
-  int camera_center;
 };
 
 // Creates (once) a Values instance and returns a reference to it.

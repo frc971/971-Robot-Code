@@ -1,22 +1,17 @@
 {
   'targets': [
     {
-      'target_name': 'JoystickReader',
+      'target_name': 'joystick_reader',
       'type': 'executable',
       'sources': [
-        'JoystickReader.cc',
+        'joystick_reader.cc',
       ],
       'dependencies': [
         '<(AOS)/prime/input/input.gyp:joystick_input',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
 
-        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
-        '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
-        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
-        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
       ],
@@ -30,10 +25,6 @@
       'dependencies': [
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
-        '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
-        '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
-        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
-        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:wrapping_counter',

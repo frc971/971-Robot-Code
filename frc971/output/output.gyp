@@ -23,7 +23,7 @@
       ],
     },
     {
-      'target_name': 'MotorWriter',
+      'target_name': 'motor_writer',
       'type': '<(aos_target)',
       'sources': [
         'motor_writer.cc'
@@ -32,10 +32,6 @@
         '<(AOS)/prime/output/output.gyp:motor_output',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
-        '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
-        '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
-        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
-        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',

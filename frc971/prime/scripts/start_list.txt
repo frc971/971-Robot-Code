@@ -1,11 +1,6 @@
 BinaryLogReader
-MotorWriter
-JoystickReader
+motor_writer
+joystick_reader
 drivetrain
-CRIOLogReader
-angle_adjust
-wrist
-index
-shooter
 auto
-gyro_sensor_receiver
+sensor_receiver

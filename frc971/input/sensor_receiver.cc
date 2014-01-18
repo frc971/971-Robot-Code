@@ -8,11 +8,7 @@
 #include "bbb/sensor_reader.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/control_loops/wrist/wrist_motor.q.h"
-#include "frc971/control_loops/angle_adjust/angle_adjust_motor.q.h"
-#include "frc971/control_loops/index/index_motor.q.h"
-#include "frc971/control_loops/shooter/shooter_motor.q.h"
-#include "frc971/queues/GyroAngle.q.h"
+#include "frc971/queues/gyro_angle.q.h"
 #include "frc971/constants.h"
 
 #ifndef M_PI
@@ -20,10 +16,6 @@
 #endif
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::control_loops::wrist;
-using ::frc971::control_loops::angle_adjust;
-using ::frc971::control_loops::shooter;
-using ::frc971::control_loops::index_loop;
 using ::frc971::sensors::gyro;
 using ::aos::util::WrappingCounter;
 
@@ -34,28 +26,6 @@ double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
       constants::GetValues().drivetrain_encoder_ratio *
       (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
-}
-
-double wrist_translate(int32_t in) {
-  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      (14.0 / 50.0 * 20.0 / 84.0) /*gears*/ * (2 * M_PI);
-}
-
-double angle_adjust_translate(int32_t in) {
-  static const double kCableDiameter = 0.060;
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      ((0.75 + kCableDiameter) / (16.61125 + kCableDiameter)) /*pulleys*/ *
-      (2 * M_PI);
-}
-
-double shooter_translate(int32_t in) {
- return static_cast<double>(in) / (32.0 /*cpr*/ * 4.0 /*quad*/) *
-      (15.0 / 34.0) /*gears*/ * (2 * M_PI);
-}
-
-double index_translate(int32_t in) {
-  return -static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*quad*/) *
-      (1.0) /*gears*/ * (2 * M_PI);
 }
 
 // Translates values from the ADC into voltage.
@@ -83,71 +53,6 @@ double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
   return (voltage - k.low) / (k.high - k.low);
 }
 
-WrappingCounter top_rise_;
-WrappingCounter top_fall_;
-WrappingCounter bottom_rise_;
-WrappingCounter bottom_fall_delay_;
-WrappingCounter bottom_fall_;
-void ProcessData(const ::bbb::DataStruct *data, bool bad_gyro) {
-  if (!bad_gyro) {
-    gyro.MakeWithBuilder()
-        .angle(gyro_translate(data->gyro_angle))
-        .Send();
-  }
-
-  drivetrain.position.MakeWithBuilder()
-      .right_encoder(drivetrain_translate(data->main.right_drive))
-      .left_encoder(-drivetrain_translate(data->main.left_drive))
-      .left_shifter_position(hall_translate(constants::GetValues().left_drive,
-                                            data->main.left_drive_hall))
-      .right_shifter_position(hall_translate(
-              constants::GetValues().right_drive, data->main.right_drive_hall))
-      .battery_voltage(battery_translate(data->main.battery_voltage))
-      .Send();
-
-  wrist.position.MakeWithBuilder()
-      .pos(wrist_translate(data->main.wrist))
-      .hall_effect(data->main.wrist_hall_effect)
-      .calibration(wrist_translate(data->main.capture_wrist_rise))
-      .Send();
-
-  angle_adjust.position.MakeWithBuilder()
-      .angle(angle_adjust_translate(data->main.shooter_angle))
-      .bottom_hall_effect(data->main.angle_adjust_bottom_hall_effect)
-      .middle_hall_effect(false)
-      .bottom_calibration(angle_adjust_translate(
-              data->main.capture_shooter_angle_rise))
-      .middle_calibration(angle_adjust_translate(
-              0))
-      .Send();
-
-  shooter.position.MakeWithBuilder()
-      .position(shooter_translate(data->main.shooter))
-      .Send();
-
-  index_loop.position.MakeWithBuilder()
-      .index_position(index_translate(data->main.indexer))
-      .top_disc_detect(data->main.top_disc)
-      .top_disc_posedge_count(top_rise_.Update(data->main.top_rise_count))
-      .top_disc_posedge_position(
-          index_translate(data->main.capture_top_rise))
-      .top_disc_negedge_count(top_fall_.Update(data->main.top_fall_count))
-      .top_disc_negedge_position(
-          index_translate(data->main.capture_top_fall))
-      .bottom_disc_detect(data->main.bottom_disc)
-      .bottom_disc_posedge_count(
-          bottom_rise_.Update(data->main.bottom_rise_count))
-      .bottom_disc_negedge_count(
-          bottom_fall_.Update(data->main.bottom_fall_count))
-      .bottom_disc_negedge_wait_position(index_translate(
-              data->main.capture_bottom_fall_delay))
-      .bottom_disc_negedge_wait_count(
-          bottom_fall_delay_.Update(data->main.bottom_fall_delay_count))
-      .loader_top(data->main.loader_top)
-      .loader_bottom(data->main.loader_bottom)
-      .Send();
-}
-
 void PacketReceived(const ::bbb::DataStruct *data,
                     const ::aos::time::Time &cape_timestamp) {
   LOG(DEBUG, "cape timestamp %010" PRId32 ".%09" PRId32 "s\n",
@@ -169,12 +74,22 @@ void PacketReceived(const ::bbb::DataStruct *data,
   } else {
     bad_gyro = false;
   }
-  static int i = 0;
-  ++i;
-  if (i == 5) {
-    i = 0;
-    ProcessData(data, bad_gyro);
+
+  if (!bad_gyro) {
+    gyro.MakeWithBuilder()
+        .angle(gyro_translate(data->gyro_angle))
+        .Send();
   }
+
+  drivetrain.position.MakeWithBuilder()
+      .right_encoder(drivetrain_translate(data->main.right_drive))
+      .left_encoder(-drivetrain_translate(data->main.left_drive))
+      .left_shifter_position(hall_translate(constants::GetValues().left_drive,
+                                            data->main.left_drive_hall))
+      .right_shifter_position(hall_translate(
+              constants::GetValues().right_drive, data->main.right_drive_hall))
+      .battery_voltage(battery_translate(data->main.battery_voltage))
+      .Send();
 }
 
 }  // namespace

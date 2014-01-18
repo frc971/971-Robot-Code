@@ -24,10 +24,6 @@
       'dependencies': [
         'auto_queue',
         '<(AOS)/common/common.gyp:controls',
-        '<(DEPTH)/frc971/control_loops/wrist/wrist.gyp:wrist_loop',
-        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
-        '<(DEPTH)/frc971/control_loops/index/index.gyp:index_loop',
-        '<(DEPTH)/frc971/control_loops/angle_adjust/angle_adjust.gyp:angle_adjust_loop',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
