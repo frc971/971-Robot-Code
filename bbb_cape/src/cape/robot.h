@@ -6,6 +6,9 @@
 
 #include "cape/fill_packet.h"
 
+// Has a default (weak empty) definition.
+void robot_init(void);
+
 void robot_fill_packet(struct DataStruct *packet);
 
 #endif  // CAPE_ROBOT_H_

@@ -47,6 +47,7 @@ OBJECTS_main_common := main \
 	analog \
 	digital \
 	util \
+	robot \
 
 OBJECTS_bootloader := bootloader \
 	uart_common \
@@ -56,7 +57,10 @@ OBJECTS_bootloader := bootloader \
 OBJECTS_main_test := $(OBJECTS_main_common) \
 	robot_test \
 
-OUTPUTS := main_test bootloader
+OBJECTS_main_comp := $(OBJECTS_main_common) \
+	robot_comp \
+
+OUTPUTS := main_test main_comp bootloader
 
 # The sort is to remove duplicates because Make warns about those.
 OBJECTS := $(sort $(foreach output,$(OUTPUTS),$(OBJECTS_$(output))))

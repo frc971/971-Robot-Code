@@ -53,3 +53,8 @@ fill_packet
 [utilities]
 crc
   CRC
+
+[robots]
+robot_comp
+  TIM11
+  TIM11_IRQ:3 (aka TIM1_TRG_COM)
