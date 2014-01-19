@@ -18,7 +18,6 @@ end
 $parts = {}
 
 def print_part(pn_string)
-	#puts pn + '|1'
 	pn = pn_string.intern
 	if $parts[pn]
 		$parts[pn] = $parts[pn] + 1
