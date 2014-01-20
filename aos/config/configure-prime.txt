@@ -1,0 +1,64 @@
+This file contains notes on setting up a new BBB image.
+Doing it right requires knowing what you're doing as a Debian sysadmin, so the
+main goal of this file is to avoid forgetting anything.
+
+Daniel last updated this on 2014-01-20 with Debian Wheezy.
+
+1.  Install Debian stable.
+    Follow the instructions here:
+    http://blogs.bu.edu/mhirsch/2013/11/install-debian-7-to-emmc-internal-flash-drive-of-beaglebone-black/
+    Create a "driver" user.
+2.  Install aos.conf and starter.
+	  I just changed aos.conf to give driver permissions instead of the group.
+3.  Install and configure exim4.
+    `apt-get install exim4-config`
+    `dpkg-reconfigure exim4-config` and select the option for making minimal
+    DNS queries (it also says some junk about modems).
+4.  Configure the network.
+    Edit /etc/network/interfaces to give it the right static IP address.
+	  Set up eth1 like the default eth0 in case the NIC gets assigned that (see
+    #8 below). That shouldn't be a problem any more, but it's probably good
+		to be on the safe side because it can be a pain to find a screen to fix
+		it otherwise.
+5.  Install stuff.
+    This includes the realtime kernel.
+    Note that at the time of this writing, you can't apt-get install the
+    realtime kernel packages directly on the beaglebone.
+    You must download them on your computer, copy them to the beaglebone,
+    and install them using dpkg -i.
+    <http://robotics.mvla.net/files/frc971/packages/>.
+    After you do this, you will still need to modify the zImage
+    symlink to point to the right kernel.
+    `rm /boot/zImage`
+    `ln -s /boot/vmlinuz-3.8.13.9-rt20+ /boot/zImage`
+    After you reboot, you should be running the rt kernel.
+    (Check it with `uname -r`.)
+    Besides the realtime kernel packages, you'll figure everything else out
+    as you start trying to run stuff.
+6.  Make SSH logins faster.
+    Add the line "UseDNS no" to /etc/ssh/sshd_config.
+7.  Make it so that the programming team can log in without passwords.
+    Everybody will have to run `ssh-copy-id -i ~/.ssh/id_rsa.pub BBB` (see
+    <http://www.debian-administration.org/articles/152> for details).
+8.  Make udev stop being annoying and naming NICs eth1.
+    udev wants to remember the ethernet NIC from each device and name the one
+    in a new BBB eth1, which breaks stuff. If that happens, removing
+    /etc/udev/rules.d/70-persistent-net.rules will make it autogenerate a
+    new one and fix it.
+    To prevent this problem from happening in the first place, follow the
+    directions in 10-net-eth0.rules.
+9. Make it automount the uSD card.
+    Open /etc/fstab on the bbb and add this line:
+    "/dev/mmcblk0p2 /media/driver/sdcard ext4 rw 0 2"
+    Obviously, replace mmcblk0p2 with the actual handle for the partition
+    on your uSD card that you want to mount, and make sure that
+    /media/driver/sdcard exists.
+    Note that now it won't boot up correctly unless it has a uSD card.
+10. Set up logging.
+    Fairly straightforward here. We want it to log to the uSD card, so:
+    `mkdir ~/tmp`
+    `mkdir /media/driver/sdcard/robot_logs`
+    `sudo ln -s /media/driver/sdcard/robot_logs ~/tmp/robot_logs`
+11.  Download the code!
+50. Clone the image to the rest of the disks.
+TODO (daniel): Fill this in as we work it out.
