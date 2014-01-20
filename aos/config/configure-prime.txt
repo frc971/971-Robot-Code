@@ -59,6 +59,9 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
     `mkdir ~/tmp`
     `mkdir /media/driver/sdcard/robot_logs`
     `sudo ln -s /media/driver/sdcard/robot_logs ~/tmp/robot_logs`
+11. Set the correct date.
+    `date` to check if date is correct.
+    `date -s <date string>` to set it if it isn't.
 11.  Download the code!
 50. Clone the image to the rest of the disks.
 TODO (daniel): Fill this in as we work it out.
