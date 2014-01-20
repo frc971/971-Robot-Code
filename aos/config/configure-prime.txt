@@ -11,6 +11,7 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
 2.  Install aos.conf and starter.
 	  I just changed aos.conf to give driver permissions instead of the group.
 3.  Install and configure exim4.
+    TODO (daniel): We might not need this.
     `apt-get install exim4-config`
     `dpkg-reconfigure exim4-config` and select the option for making minimal
     DNS queries (it also says some junk about modems).
@@ -48,20 +49,25 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
     To prevent this problem from happening in the first place, follow the
     directions in 10-net-eth0.rules.
 9. Make it automount the uSD card.
-    Open /etc/fstab on the bbb and add this line:
-    "/dev/mmcblk0p2 /media/driver/sdcard ext4 rw 0 2"
+    Open /etc/fstab on the bbb and remove the last two lines, which the
+    comments indicate mount both partitions on the uSD card.
+    Replace them with this line:
+    "/dev/mmcblk0p2 /media/driver/sdcard ext4 defaults,nobootwait 0 0"
     Obviously, replace mmcblk0p2 with the actual handle for the partition
     on your uSD card that you want to mount, and make sure that
     /media/driver/sdcard exists.
-    Note that now it won't boot up correctly unless it has a uSD card.
 10. Set up logging.
     Fairly straightforward here. We want it to log to the uSD card, so:
     `mkdir ~/tmp`
     `mkdir /media/driver/sdcard/robot_logs`
-    `sudo ln -s /media/driver/sdcard/robot_logs ~/tmp/robot_logs`
+    `ln -s /media/driver/sdcard/robot_logs ~/tmp/robot_logs`
 11. Set the correct date.
     `date` to check if date is correct.
     `date -s <date string>` to set it if it isn't.
 11.  Download the code!
 50. Clone the image to the rest of the disks.
-TODO (daniel): Fill this in as we work it out.
+    Boot up from a uSD card.
+    `dd if=/dev/mmcblk1 | gzip -c > BBB.img.gz`
+    You can then scp this image to your computer.
+    (Perhaps you want to give it a more descriptive name?)
+    Use this image to flash a new uSD card.
