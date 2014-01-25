@@ -11,7 +11,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "frc971/queues/GyroAngle.q.h"
+#include "frc971/queues/gyro_angle.q.h"
 
 
 using ::aos::time::Time;
