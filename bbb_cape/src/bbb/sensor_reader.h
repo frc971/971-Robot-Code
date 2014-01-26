@@ -1,6 +1,8 @@
 #ifndef BBB_CAPE_SRC_BBB_SENSOR_READER_H_
 #define BBB_CAPE_SRC_BBB_SENSOR_READER_H_
 
+#include <stdint.h>
+
 #include <string>
 
 #include "aos/common/time.h"
@@ -40,6 +42,8 @@ class SensorReader {
 
   UartReader reader_;
   PacketFinder packet_finder_;
+
+  const uint32_t expected_checksum_;
 
   int cape_resets_ = 0;
   ::aos::time::Time last_received_time_ = ::aos::time::Time::InSeconds(0);

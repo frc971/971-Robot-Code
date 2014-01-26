@@ -154,6 +154,9 @@
         'data_struct',
         '<(AOS)/common/common.gyp:time',
         'sensor_generation',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
+        'crc',
+        '<(EXTERNALS):stm32flash',
       ],
       'export_dependent_settings': [
         'uart_reader',

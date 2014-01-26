@@ -9,6 +9,10 @@
 // Where the main code's flash starts.
 #define MAIN_FLASH_START BOOTLOADER_FLASH_SIZE
 
+#define MAIN_FLASH_START_SECTOR 1
+#define MAIN_FLASH_END_SECTOR 11
+#define MAIN_FLASH_END 0x100000
+
 #define RAM_START 0x20000000
 #define RAM_SIZE 0x20000
 

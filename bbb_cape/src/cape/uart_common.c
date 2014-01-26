@@ -13,6 +13,12 @@ void uart_common_configure(int baud) {
   gpio_setup_alt(GPIOA, 10, 7);
   RCC->APB2ENR |= RCC_APB2ENR_UARTEN;
 
+  UART->CR1 =
+      //USART_CR1_M /* 9th bit for the parity */ |
+      //USART_CR1_PCE /* enable parity (even by default) */ |
+      //USART_CR1_OVER8 /* support going faster */ |
+      0;
+
   // baud = 60MHz / kMultiplier * (whole_part + fraction / kMultiplier))
   static const int kMultiplier = 16 /* 8 * (2 - OVER8) */;
   // The divisor of FPCLK that we want (*2).
@@ -22,10 +28,6 @@ void uart_common_configure(int baud) {
   // The fractional part of the divisor (*2).
   int fraction = divisor % (kMultiplier * 2);
   UART->BRR = (mantissa << 4) | ((fraction + 1) / 2);
-  UART->CR1 =
-      //USART_CR1_M /* 9th bit for the parity */ |
-      //USART_CR1_PCE /* enable parity (even by default) */ |
-      //USART_CR1_OVER8 /* support going faster */ |
-      0;
+
   UART->CR1 |= USART_CR1_UE;  // enable it
 }

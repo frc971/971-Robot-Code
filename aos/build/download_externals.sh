@@ -165,4 +165,12 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
 	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
 	&& make gmpdir=${GMP_PREFIX} && make install"
 
+# download stm32flash
+STM32FLASH_COMMIT=8399fbe1baf2b7d097746786458021d92895d71b
+STM32FLASH_DIR=${EXTERNALS}/stm32flash-${STM32FLASH_COMMIT}
+STM32FLASH_URL=https://git.gitorious.org/stm32flash/stm32flash.git
+[ -d ${STM32FLASH_DIR} ] || ( mkdir ${STM32FLASH_DIR} && \
+	git clone ${STM32FLASH_URL} ${STM32FLASH_DIR}/stm32flash && \
+	cd ${STM32FLASH_DIR}/stm32flash && git checkout ${STM32FLASH_COMMIT} )
+
 rm -rf ${TMPDIR}

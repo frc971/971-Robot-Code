@@ -5,6 +5,10 @@
 #include "cape/bootloader_handoff.h"
 #include "cape/led.h"
 
+// Actually runs the bootloader code.
+// Implemented in bootloader_impl.c.
+void bootloader_start(void) __attribute__((noreturn));
+
 // Sets everything up and then jumps to the main code.
 static void jump_to_main(void) __attribute__((noreturn));
 static void jump_to_main(void) {
@@ -54,7 +58,8 @@ static void setup_main_clock(void) {
 
 void _start(void) {
   // Enable the GPIO pin clocks.
-  // We don't have anything on the 1 port D pin, so don't bother enabling it.
+  // We don't have anything attached to the 1 port D pin, so don't bother
+  // enabling it.
   RCC->AHB1ENR |=
       RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOCEN;
   led_init();
@@ -66,5 +71,9 @@ void _start(void) {
   SYSCFG->CMPCR |= SYSCFG_CMPCR_CMP_PD;  // enable IO compensation cell
   while (!(SYSCFG->CMPCR & SYSCFG_CMPCR_READY)) {}  // wait for it to be ready
 
-  jump_to_main();
+  if (GPIOC->IDR & (1 << 2)) {
+    jump_to_main();
+  } else {
+    bootloader_start();
+  }
 }
