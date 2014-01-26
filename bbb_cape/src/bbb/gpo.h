@@ -6,15 +6,11 @@
 namespace bbb {
 
 // Gpios subclass for output pins.
-class Gpo : public Pin {
+class Gpo : public GpioPin {
  public:
-  // See the base class for what these args mean.
-  Gpo(int bank, int pin);
-  // Sets the pin to either high or low.
-  // If the argument is true, is sets it high.
-  // Otherwise, it sets it low.
-  bool Set(const bool high);
-
+  Gpo(int bank, int pin, bool initial_value = false);
+  // Sets the pin to either high (true) or low (false).
+  void Set(bool high);
 };
 
 }  // namespace bbb
