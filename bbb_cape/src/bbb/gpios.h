@@ -1,38 +1,32 @@
 #ifndef BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
 #define BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
 
-#include <stdint.h>
 #include <stdio.h>
 
-// As it turns out, controlling the BBB's GPIO pins
-// from C++ is kind of a pain. The purpose of this
-// code is to provide a simple wrapper that masks
-// all the ugly stuff and exposes a nice API.
+#include "aos/common/macros.h"
 
-// Based on example from 
+// Controlling GPIO pins
+// from C++ is a pain. This code provides a simple wrapper that makes it easy to
+// use cleanly.
+
+// Based on example from
 // <http://learnbuildshare.wordpress.com/2013/05/29/beaglebone-black-digital-ouput/>
 
+// This is a base class for all gpio related stuff.
+// Use either the Gpi or the Gpo subclass if you want to do things.
 namespace bbb {
 
-class Pin {
-  FILE *handle_;
-  int direction_;
-  int kernel_pin_;
-  bool exported_;
+class GpioPin {
+ protected:
+  // initial_value only matters if input is false.
+  GpioPin(int bank, int pin, bool input, bool initial_value = false);
+  virtual ~GpioPin();
 
-  int DoPinDirSet(int direction);
-  int DoExport();
+  FILE *value_handle_ = NULL;
+  const int bank_, pin_, kernel_pin_;
 
-public:
-  // Here, for example, if you wanted to use
-  // GPIO1_28, you would give the ctor
-  // 1, 28 as arguments.
-  Pin(int bank, int pin);
-  ~Pin();
-  int MakeInput();
-  int MakeOutput();
-  int Write(uint8_t value);
-  int Read();
+ private:
+  DISALLOW_COPY_AND_ASSIGN(GpioPin);
 };
 
 }  // namespace bbb
