@@ -130,6 +130,7 @@
         'packet_finder',
         'data_struct',
         '<(AOS)/common/common.gyp:time',
+        'gpios',
       ],
     },
     {
@@ -137,6 +138,8 @@
       'type': 'static_library',
       'sources': [
         'gpios.cc',
+        'gpi.cc',
+        'gpo.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
