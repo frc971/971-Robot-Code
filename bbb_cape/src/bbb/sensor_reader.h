@@ -8,9 +8,9 @@
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
 
-#include "bbb/uart_reader.h"
 #include "bbb/packet_finder.h"
 #include "bbb/data_struct.h"
+#include "bbb/cape_manager.h"
 
 namespace bbb {
 
@@ -25,7 +25,7 @@ class SensorReader {
 
   // cape_code is the name of the code that should be deployed to the cape if
   // it's not already there.
-  SensorReader(const ::std::string &cape_code);
+  explicit SensorReader(const ::std::string &cape_code);
 
   // Reads in 1 data packet, handles the gyro data in it, and returns a pointer
   // to it.
@@ -40,7 +40,9 @@ class SensorReader {
   // Called after a reset happens.
   void ResetHappened();
 
-  UartReader reader_;
+  const ::std::string hex_filename_;
+
+  CapeManager manager_;
   PacketFinder packet_finder_;
 
   const uint32_t expected_checksum_;

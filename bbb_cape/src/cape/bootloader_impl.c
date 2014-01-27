@@ -12,7 +12,7 @@
 // erases from MAIN_FLASH_START_SECTOR to MAIN_FLASH_END_SECTOR, and keeps
 // writing until MAIN_FLASH_END (if it gets data).
 //
-// The bootloader sends READY when it is first ready to receive bytes. It then
+// The bootloader sends a NACK when it is first ready to receive bytes. It then
 // expects DATA_BYTES-sized packets (+ the checksum calculated with the standard
 // CRC algorithm). When it successfully receives one and writes it out, it sends
 // ACK. If it has any errors, it waits until there's a 1-second gap (or it
@@ -22,7 +22,6 @@
 
 #define ACK 0x79
 #define NACK 0x1F
-#define READY 0x7F
 
 static void process_buffer(uint32_t *buffer) {
   static uint32_t *out_pointer = (uint32_t *)MAIN_FLASH_START;
@@ -67,7 +66,7 @@ __attribute__((noreturn)) void bootloader_start(void) {
   int error = 0;
   int bytes_received = 0;
 
-  uart_byte_send(READY);
+  uart_byte_send(NACK);
 
   while (1) {
     // Receive with a 1 second timeout.

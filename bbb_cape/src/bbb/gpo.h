@@ -1,7 +1,7 @@
 #ifndef BBB_CAPE_SRC_BBB_GPO_H_
 #define BBB_CAPE_SRC_BBB_GPO_H_
 
-#include "gpios.h"
+#include "bbb/gpios.h"
 
 namespace bbb {
 

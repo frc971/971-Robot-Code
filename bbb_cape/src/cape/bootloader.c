@@ -4,6 +4,7 @@
 
 #include "cape/bootloader_handoff.h"
 #include "cape/led.h"
+#include "cape/util.h"
 
 // Actually runs the bootloader code.
 // Implemented in bootloader_impl.c.
@@ -64,6 +65,7 @@ void _start(void) {
       RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOCEN;
   led_init();
   led_set(LED_HB, 1);
+  gpio_set_pupd(GPIOC, 2, 2);
 
   setup_main_clock();
 
@@ -72,8 +74,8 @@ void _start(void) {
   while (!(SYSCFG->CMPCR & SYSCFG_CMPCR_READY)) {}  // wait for it to be ready
 
   if (GPIOC->IDR & (1 << 2)) {
-    jump_to_main();
-  } else {
     bootloader_start();
+  } else {
+    jump_to_main();
   }
 }

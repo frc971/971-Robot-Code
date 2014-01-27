@@ -8,11 +8,11 @@
 #include "aos/common/logging/logging.h"
 
 // This is the code for receiving data from the cape via UART.
-// NOTE: In order for this to work, you MUST HAVE
-// "capemgr.enable_partno=BB_UART1"
-// in your BBB's /media/BEAGLEBONE/uEnv.txt file!
-// `su -c "echo BB-UART1 > /sys/devices/bone_capemgr.*/slots"` works too, but
-// you have to do it every time.
+// NOTE: In order for this to work, you must have the BB-UART1 device tree
+// fragment active.
+// `su -c "echo BB-UART1 > /sys/devices/bone_capemgr.*/slots"` works, but
+// you have to do it every time. It is also possible to set it up to do that
+// every time it boots.
 
 namespace bbb {
 namespace {
@@ -53,7 +53,7 @@ UartReader::~UartReader() {
   if (fd_ > 0) close(fd_);
 }
 
-ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes,
+ssize_t UartReader::ReadBytes(uint8_t *dest, size_t max_bytes,
                               const ::aos::time::Time &timeout_time) {
   do {
     ::aos::time::Time timeout = timeout_time - ::aos::time::Time::Now();
@@ -74,6 +74,16 @@ ssize_t UartReader::ReadBytes(AlignedChar *dest, size_t max_bytes,
     if (r != -1) return r;
   } while (errno == EINTR);
   return -1;
+}
+
+bool UartReader::WriteBytes(uint8_t *bytes, size_t number_bytes) {
+  size_t written = 0;
+  while (written < number_bytes) {
+    ssize_t r = write(fd_, &bytes[written], number_bytes - written);
+    if (r == -1) return false;
+    written += r;
+  }
+  return true;
 }
 
 }  // namespace bbb

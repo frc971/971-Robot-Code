@@ -5,7 +5,7 @@
 #include "aos/common/queue_testutils.h"
 #include "aos/common/time.h"
 
-#include "bbb/byte_reader.h"
+#include "bbb/byte_io.h"
 
 namespace bbb {
 namespace testing {
@@ -17,12 +17,12 @@ class PacketFinderTest : public ::testing::Test {
   }
 };
 
-class TestByteReader : public ByteReader {
+class TestByteReader : public ByteReaderInterface {
  public:
   TestByteReader(const void *data, size_t data_size)
       : data_(data), data_size_(data_size), bytes_left_(data_size) {}
 
-  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
+  virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
                             const ::aos::time::Time &/*timeout_time*/)
       override {
     size_t to_transfer = ::std::min(max_bytes, bytes_left_);

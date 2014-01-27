@@ -3,18 +3,21 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <algorithm>
 
 #include "aos/common/logging/logging.h"
-#include "bbb_cape/src/cape/cows.h"
+
+#include "cape/cows.h"
 #include "bbb/crc.h"
+#include "bbb/byte_io.h"
 
 using ::aos::time::Time;
 
 namespace bbb {
 
-PacketFinder::PacketFinder(ByteReader *reader, size_t packet_size)
+PacketFinder::PacketFinder(ByteReaderInterface *reader, size_t packet_size)
     : reader_(reader),
       packet_size_(packet_size),
       buf_(new AlignedChar[packet_size_]),
@@ -32,8 +35,9 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
   int zeros_found = 0;
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
-    ssize_t new_bytes = reader_->ReadBytes(
-        buf_ + already_read, packet_size_ - already_read, timeout_time);
+    ssize_t new_bytes =
+        reader_->ReadBytes((uint8_t *)(buf_ + already_read),
+                           packet_size_ - already_read, timeout_time);
     if (new_bytes < 0) {
       if (new_bytes == -1) {
         LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",

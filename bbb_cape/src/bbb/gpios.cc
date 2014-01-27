@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging.h"
 
 namespace bbb {
 

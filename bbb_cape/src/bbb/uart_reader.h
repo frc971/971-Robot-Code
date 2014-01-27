@@ -8,17 +8,18 @@
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
 
-#include "bbb/byte_reader.h"
+#include "bbb/byte_io.h"
 
 namespace bbb {
 
-class UartReader : public ByteReader {
+class UartReader : public ByteReaderWriterInterface {
  public:
-  UartReader(int32_t baud_rate);
+  explicit UartReader(int32_t baud_rate);
   virtual ~UartReader();
 
-  virtual ssize_t ReadBytes(AlignedChar *dest, size_t max_bytes,
+  virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
                             const ::aos::time::Time &timeout_time) override;
+  virtual bool WriteBytes(uint8_t *bytes, size_t number_bytes) override;
 
  private:
   const int fd_;
