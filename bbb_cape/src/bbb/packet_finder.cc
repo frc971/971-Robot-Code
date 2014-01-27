@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <algorithm>
 
@@ -44,7 +45,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
             buf_ + already_read, packet_size_ - already_read, errno,
             strerror(errno));
       } else if (new_bytes == -2) {
-        LOG(WARNING, "timed out\n");
+        LOG(INFO, "timed out\n");
       } else {
         LOG(WARNING, "bad ByteReader %p returned %zd\n", reader_, new_bytes);
       }
@@ -52,14 +53,20 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
     }
 
     if (!irq_priority_increased_) {
-      // TODO(brians): Do this cleanly.
-      int chrt_result = system("bash -c 'chrt -r -p 55"
-                               " $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
-      if (chrt_result == -1) {
-        LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
-      } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
-        LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
-            WEXITSTATUS(chrt_result));
+      // Iff we're root.
+      if (getuid() == 0) {
+        // TODO(brians): Do this cleanly.
+        int chrt_result =
+            system("bash -c 'chrt -r -p 55"
+                   " $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+        if (chrt_result == -1) {
+          LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+        } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
+          LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
+              WEXITSTATUS(chrt_result));
+        }
+      } else {
+        LOG(INFO, "not root, so not increasing priority of the IRQ\n");
       }
 
       irq_priority_increased_ = true;
@@ -95,7 +102,7 @@ bool PacketFinder::ProcessPacket() {
       reinterpret_cast<uint32_t *>(buf_), packet_size_,
       reinterpret_cast<uint32_t *>(unstuffed_data_), packet_size_ - 4);
   if (unstuffed == 0) {
-    LOG(WARNING, "invalid packet\n");
+    LOG(INFO, "invalid packet\n");
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
     LOG(WARNING, "packet is %" PRIu32 " words instead of %" PRIu32 "\n",
@@ -109,7 +116,7 @@ bool PacketFinder::ProcessPacket() {
   uint32_t calculated_checksum = cape::CalculateChecksum(
       reinterpret_cast<uint8_t *>(unstuffed_data_), packet_size_ - 8);
   if (sent_checksum != calculated_checksum) {
-    LOG(WARNING, "sent checksum: %" PRIx32 " vs calculated: %" PRIx32"\n",
+    LOG(INFO, "sent checksum: %" PRIx32 " vs calculated: %" PRIx32"\n",
         sent_checksum, calculated_checksum);
     return false;
   }
