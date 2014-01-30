@@ -2,152 +2,72 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging.h"
 
 namespace bbb {
 
-Pin::Pin(int bank, int pin)
-    : handle_(NULL),
-      direction_(0),
-      kernel_pin_(bank * 32 + pin),
-      exported_(false) {}
-
-Pin::~Pin() {
-  // Unexport the pin.
-  if ((handle_ = fopen("/sys/class/gpio/unexport", "ab")) == NULL) {
-    LOG(WARNING, "Could not unexport gpio pin.\n");
-    // There's nothing intelligent we can really do here.
-    return;
-  }
-
-  char gpio_num[2];
-  snprintf(gpio_num, sizeof(gpio_num), "%d", kernel_pin_);
-  fwrite(gpio_num, sizeof(char), 2, handle_);
-  fclose(handle_);
-}
-
-int Pin::DoExport() {
-  char gpio_num[2];
-  snprintf(gpio_num, sizeof(gpio_num), "%d", kernel_pin_);
-
+GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
+    : bank_(bank), pin_(pin), kernel_pin_(bank * 32 + pin) {
   // Export the pin.
-  if ((handle_ = fopen("/sys/class/gpio/export", "ab")) == NULL) {
-    LOG(ERROR, "Could not export GPIO pin.\n");
-    return -1;
-  }
-
-  fwrite(gpio_num, sizeof(char), 2, handle_);
-  fclose(handle_);
-
-  exported_ = true;
-  return 0;
-}
-
-int Pin::DoPinDirSet(int direction) {
-  char buf[4], type_path[64];
-  snprintf(type_path, sizeof(type_path), "/sys/class/gpio/gpio%d/direction",
-           kernel_pin_);
-
-  if ((handle_ = fopen(type_path, "rb+")) == NULL) {
-    LOG(ERROR, "Unable to set pin direction.\n");
-    return -1;
-  }
-
-  direction_ = direction;
-  switch (direction) {
-    case 1:
-      strcpy(buf, "in");
-      break;
-    case 2:
-      strcpy(buf, "low");
-      break;
-    case 0:
-      return 0;
-    default:
-      LOG(ERROR, "Invalid direction identifier %d.\n", direction);
-      direction_ = 0;
-      return -1;
-  }
-  fwrite(buf, sizeof(char), 3, handle_);
-  fclose(handle_);
-
-  return 0;
-}
-
-int Pin::MakeInput() {
-  if (!exported_) {
-    if (DoExport()) {
-      return -1;
+  FILE *export_handle = fopen("/sys/class/gpio/export", "a");
+  if (export_handle == NULL) {
+    LOG(WARNING,
+        "Could not open file to export pin (%d,%d) because of %d: %s.\n",
+        bank_, pin_, errno, strerror(errno));
+  } else {
+    if (fprintf(export_handle, "%d", kernel_pin_) < 0) {
+      LOG(WARNING, "Could not write to file %p to export pin (%d,%d) because "
+                   "of %d: %s.\n",
+          export_handle, bank_, pin_, errno, strerror(errno));
+    }
+    if (fclose(export_handle) == -1) {
+      LOG(WARNING, "fclose(%p) failed with %d: %s\n", export_handle, errno,
+          strerror(errno));
     }
   }
 
-  return DoPinDirSet(1);
+  char direction_path[64];
+  snprintf(direction_path, sizeof(direction_path),
+           "/sys/class/gpio/gpio%d/direction", kernel_pin_);
+
+  FILE *direction_handle = fopen(direction_path, "w");
+  if (direction_handle == NULL) {
+    LOG(FATAL, "fopen(%s, \"w+\") failed with %d: %s\n",
+        direction_path, errno, strerror(errno));
+  }
+
+  if (fputs(input ? "in" : (initial_value ? "high" : "low"),
+            direction_handle) < 0) {
+    LOG(FATAL, "setting direction for pin (%d,%d) failed with %d: %s\n",
+        bank_, pin_, errno, strerror(errno));
+  }
+  if (fclose(direction_handle) == -1) {
+    LOG(WARNING, "fclose(%p) failed with %d: %s\n", direction_handle, errno,
+        strerror(errno));
+  }
 }
 
-int Pin::MakeOutput() {
-  if (!exported_) {
-    if (DoExport()) {
-      return -1;
+GpioPin::~GpioPin() {
+  // Unexport the pin.
+  FILE *unexport_handle = fopen("/sys/class/gpio/unexport", "a");
+  if (unexport_handle == NULL) {
+    LOG(WARNING,
+        "Could not open file to unexport pin (%d,%d) because of %d: %s.\n",
+        bank_, pin_, errno, strerror(errno));
+  } else {
+    if (fprintf(unexport_handle, "%d", kernel_pin_) < 0) {
+      LOG(WARNING, "Could not write to file %p to unexport pin (%d,%d) because "
+                   "of %d: %s.\n",
+          unexport_handle, bank_, pin_, errno, strerror(errno));
+    }
+    if (fclose(unexport_handle) == -1) {
+      LOG(WARNING, "fclose(%p) failed with %d: %s\n", unexport_handle, errno,
+          strerror(errno));
     }
   }
-
-  return DoPinDirSet(2);
-}
-
-int Pin::Write(uint8_t value) {
-  if (direction_ != 2) {
-    LOG(ERROR, "Only pins set as output can be written to.\n");
-    return -1;
-  }
-
-  char buf, val_path[64];
-  snprintf(val_path, sizeof(val_path), "/sys/class/gpio/gpio%d/value",
-           kernel_pin_);
-  if (value != 0) {
-    value = 1;
-  }
-
-  if ((handle_ = fopen(val_path, "rb+")) == NULL) {
-    LOG(ERROR, "Unable to set pin value.\n");
-    return -1;
-  }
-
-  snprintf(&buf, sizeof(buf), "%d", value);
-  fwrite(&buf, sizeof(char), 1, handle_);
-  fclose(handle_);
-
-  return 0;
-}
-
-int Pin::Read() {
-  // NOTE: I can't find any docs confirming that one can indeed
-  // poll a pin's value using this method, but it seems that it
-  // should work. Really, the "right" (interrupt driven) way to
-  // do this is to set an event, but that involves messing with
-  // dev tree crap, which I'm not willing to do unless we need
-  // this functionality.
-
-  if (direction_ != 1) {
-    LOG(ERROR, "Only pins set as input can be read from.\n");
-    return -1;
-  }
-
-  char buf, val_path[64];
-  snprintf(val_path, sizeof(val_path), "/sys/class/gpio/gpio%d/value",
-           kernel_pin_);
-
-  if ((handle_ = fopen(val_path, "rb")) == NULL) {
-    LOG(ERROR, "Unable to read pin value.\n");
-    return -1;
-  }
-
-  if (fread(&buf, sizeof(char), 1, handle_) <= 0) {
-    LOG(ERROR, "Failed to read pin value from file.\n");
-    return -1;
-  }
-  fclose(handle_);
-  return atoi(&buf);
 }
 
 }  // namespace bbb

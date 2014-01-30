@@ -1,7 +1,0 @@
-FRC 2013 Vision Sample Program
---------------------------------
-This project is a camera vision sample that detects the Middle and High goal vision targets in
-the 2013 FRC game. Look at the comments in the code and the Vision Processing section of the
-documentation at http://wpilib.screenstepslive.com. Look in the VisionImages directory
-inside the project that is created for sample images as well as the NI Vision Assistant file
-that contains the vision command chain (open it with the Vision Assistant).

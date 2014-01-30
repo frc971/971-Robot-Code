@@ -16,6 +16,7 @@
     'compiler_rt_version': 'RELEASE_32_final',
     'libevent_version': '2.0.21',
     'libcdd_version': '094g',
+    'stm32flash_commit': '8399fbe1baf2b7d097746786458021d92895d71b',
   },
   'targets': [
     {
@@ -209,6 +210,24 @@
       },
       'direct_dependent_settings': {
         'include_dirs': ['<(compiled_abs)/'],
+      },
+    },
+    {
+      'target_name': 'stm32flash',
+      'type': 'static_library',
+      'sources': [
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/init.c',
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/parsers/hex.c',
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/serial_common.c',
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/serial_platform.c',
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/utils.c',
+        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/stm32.c',
+      ],
+      'cflags': [
+        '-Wno-error',
+      ],
+      'direct_dependent_settings': {
+        'include_dirs': ['<(externals_abs)/stm32flash-<(stm32flash_commit)'],
       },
     },
   ],

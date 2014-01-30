@@ -8,15 +8,15 @@
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
 
-#include "bbb/byte_reader.h"
-
 namespace bbb {
+
+class ByteReaderInterface;
 
 class PacketFinder {
  public:
   // *reader has to stay alive for the entire lifetime of this object but this
   // object does not take ownership.
-  explicit PacketFinder(ByteReader *reader, size_t packet_size);
+  PacketFinder(ByteReaderInterface *reader, size_t packet_size);
   ~PacketFinder();
 
   // Returns true if it succeeds or false if it gets an I/O error (or timeout)
@@ -37,7 +37,8 @@ class PacketFinder {
   }
 
  private:
-  typedef ByteReader::AlignedChar AlignedChar;
+  // We have 64-bit ints in some of our data.
+  typedef char __attribute__((aligned(8))) AlignedChar;
 
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
@@ -50,7 +51,7 @@ class PacketFinder {
   // data.
   bool ProcessPacket();
 
-  ByteReader *const reader_;
+  ByteReaderInterface *const reader_;
   const size_t packet_size_;
 
   AlignedChar *const buf_;

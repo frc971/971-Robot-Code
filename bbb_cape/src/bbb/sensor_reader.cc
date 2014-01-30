@@ -3,15 +3,32 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <stdint.h>
+
+#include "aos/linux_code/configuration.h"
 
 #include "bbb/sensor_generation.q.h"
+#include "bbb/crc.h"
+#include "bbb/hex_byte_reader.h"
 
 namespace bbb {
+namespace {
 
-SensorReader::SensorReader(const ::std::string &/*cape_code*/)
-    : reader_(750000), packet_finder_(&reader_, DATA_STRUCT_SEND_SIZE - 4) {
+uint32_t ReadChecksum(const ::std::string &filename) {
+  HexByteReader reader(filename);
+  return ::cape::CalculateChecksum(&reader);
+}
+
+}  // namespace
+
+SensorReader::SensorReader(const ::std::string &cape_code)
+    : hex_filename_(::std::string(::aos::configuration::GetRootDirectory()) +
+                    "/main_" + cape_code + ".hex"),
+      manager_(),
+      packet_finder_(manager_.uart(), DATA_STRUCT_SEND_SIZE - 4),
+      expected_checksum_(ReadChecksum(hex_filename_)) {
   static_assert(sizeof(SensorGeneration::reader_pid) >= sizeof(pid_t),
-                "pid_t is really big");
+                "pid_t is really big?");
   ResetHappened();
 }
 
@@ -23,12 +40,20 @@ const DataStruct *SensorReader::ReadPacket() {
     ::aos::time::Time next_timeout = last_received_time_ + kTimeout;
     if (next_timeout <= ::aos::time::Time::Now()) {
       LOG(WARNING, "too long since good packet received\n");
-      Reset(false);
+      manager_.Reset();
+      ResetHappened();
     }
     if (packet_finder_.ReadPacket(next_timeout)) {
       last_received_time_ = ::aos::time::Time::Now();
       const DataStruct *data = packet_finder_.get_packet<DataStruct>();
-      // TODO(brians): Check the flash checksum and reflash it if necessary.
+      if (data->flash_checksum != expected_checksum_) {
+        LOG(WARNING, "Cape code checksum is %" PRIu32 ". Expected %" PRIu32
+                     ". Reflashing.\n",
+            data->flash_checksum, expected_checksum_);
+        manager_.DownloadHex(hex_filename_);
+        ResetHappened();
+        continue;
+      }
       if (data->timestamp < last_cape_timestamp_) {
         LOG(WARNING, "cape timestamp decreased: %" PRIu64 " to %" PRIu64 "\n",
             last_cape_timestamp_, data->timestamp);
@@ -43,12 +68,6 @@ const DataStruct *SensorReader::ReadPacket() {
 
 ::aos::time::Time SensorReader::GetCapeTimestamp() {
   return ::aos::time::Time::InUS(last_cape_timestamp_ * 10);
-}
-
-void SensorReader::Reset(bool reflash) {
-  LOG(INFO, "Reset(%s)\n", reflash ? "true" : "false");
-  // TODO(brians): Actually reset it and maybe reflash it.
-  ResetHappened();
 }
 
 void SensorReader::ResetHappened() {
