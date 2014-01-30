@@ -23,8 +23,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
 
     config_data.lower_limit = GetValues().shooter_lower_limit;
     config_data.upper_limit = GetValues().shooter_upper_limit;
-    config_data.hall_effect_start_angle[0] =
-        GetValues().shooter_hall_effect_start_angle;
+    config_data.hall_effect_start_position[0] =
+        GetValues().shooter_hall_effect_start_position;
     config_data.zeroing_off_speed = GetValues().shooter_zeroing_off_speed;
     config_data.zeroing_speed = GetValues().shooter_zeroing_speed;
 
@@ -35,7 +35,7 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
   }
 }
 
-// Positive angle is up, and positive power is up.
+// Positive is up, and positive power is up.
 void ShooterMotor::RunIteration(
     const ::aos::control_loops::Goal *goal,
     const control_loops::ShooterLoop::Position *position,
