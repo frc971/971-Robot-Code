@@ -39,6 +39,12 @@ struct Values {
 
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
+
+  double claw_lower_limit;
+  double claw_upper_limit;
+  double claw_hall_effect_start_angle;
+  double claw_zeroing_off_speed;
+  double claw_zeroing_speed;
 };
 
 // Creates (once) a Values instance and returns a reference to it.

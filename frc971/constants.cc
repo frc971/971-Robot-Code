@@ -53,6 +53,11 @@ const Values *DoGetValues() {
             true,
             control_loops::MakeVClutchDrivetrainLoop,
             control_loops::MakeClutchDrivetrainLoop,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
       };
       break;
     case kPracticeTeamNumber:
@@ -65,6 +70,11 @@ const Values *DoGetValues() {
             false,
             control_loops::MakeVDogDrivetrainLoop,
             control_loops::MakeDogDrivetrainLoop,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
       };
       break;
     default:

@@ -5,9 +5,9 @@ import numpy
 import sys
 from matplotlib import pylab
 
-class Wrist(control_loop.ControlLoop):
-  def __init__(self, name="RawWrist"):
-    super(Wrist, self).__init__(name)
+class Claw(control_loop.ControlLoop):
+  def __init__(self, name="RawClaw"):
+    super(Claw, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = 1.4
     # Stall Current in Amps
@@ -16,7 +16,7 @@ class Wrist(control_loop.ControlLoop):
     self.free_speed = 6200.0
     # Free Current in Amps
     self.free_current = 1.5
-    # Moment of inertia of the wrist in kg m^2
+    # Moment of inertia of the claw in kg m^2
     # TODO(aschuh): Measure this in reality.  It doesn't seem high enough.
     # James measured 0.51, but that can't be right given what I am seeing.
     self.J = 2.0
@@ -58,9 +58,9 @@ class Wrist(control_loop.ControlLoop):
     self.InitializeState()
 
 
-class WristDeltaU(Wrist):
-  def __init__(self, name="Wrist"):
-    super(WristDeltaU, self).__init__(name)
+class ClawDeltaU(Claw):
+  def __init__(self, name="Claw"):
+    super(ClawDeltaU, self).__init__(name)
     A_unaugmented = self.A
     B_unaugmented = self.B
 
@@ -97,58 +97,74 @@ class WristDeltaU(Wrist):
     self.InitializeState()
 
 
-def ClipDeltaU(wrist, delta_u):
-  old_u = numpy.matrix([[wrist.X[2, 0]]])
-  new_u = numpy.clip(old_u + delta_u, wrist.U_min, wrist.U_max)
+def ClipDeltaU(claw, delta_u):
+  old_u = numpy.matrix([[claw.X[2, 0]]])
+  new_u = numpy.clip(old_u + delta_u, claw.U_min, claw.U_max)
   return new_u - old_u
 
 def main(argv):
   # Simulate the response of the system to a step input.
-  wrist = WristDeltaU()
+  claw = ClawDeltaU()
   simulated_x = []
   for _ in xrange(100):
-    wrist.Update(numpy.matrix([[12.0]]))
-    simulated_x.append(wrist.X[0, 0])
+    claw.Update(numpy.matrix([[12.0]]))
+    simulated_x.append(claw.X[0, 0])
 
   pylab.plot(range(100), simulated_x)
   pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
-  wrist = WristDeltaU()
+  top_claw = ClawDeltaU("TopClaw")
   close_loop_x = []
   close_loop_u = []
   R = numpy.matrix([[1.0], [0.0], [0.0]])
-  wrist.X[2, 0] = -5
+  top_claw.X[2, 0] = -5
   for _ in xrange(100):
-    U = numpy.clip(wrist.K * (R - wrist.X_hat), wrist.U_min, wrist.U_max)
-    U = ClipDeltaU(wrist, U)
-    wrist.UpdateObserver(U)
-    wrist.Update(U)
-    close_loop_x.append(wrist.X[0, 0] * 10)
-    close_loop_u.append(wrist.X[2, 0])
+    U = numpy.clip(top_claw.K * (R - top_claw.X_hat), top_claw.U_min, top_claw.U_max)
+    U = ClipDeltaU(top_claw, U)
+    top_claw.UpdateObserver(U)
+    top_claw.Update(U)
+    close_loop_x.append(top_claw.X[0, 0] * 10)
+    close_loop_u.append(top_claw.X[2, 0])
 
   pylab.plot(range(100), close_loop_x)
   pylab.plot(range(100), close_loop_u)
   pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 5:
+  if len(argv) != 9:
     print "Expected .h file name and .cc file name for"
     print "both the plant and unaugmented plant"
   else:
-    unaug_wrist = Wrist("RawWrist")
-    unaug_loop_writer = control_loop.ControlLoopWriter("RawWrist",
-                                                       [unaug_wrist])
-    if argv[3][-3:] == '.cc':
-      unaug_loop_writer.Write(argv[4], argv[3])
-    else:
-      unaug_loop_writer.Write(argv[3], argv[4])
-
-    loop_writer = control_loop.ControlLoopWriter("Wrist", [wrist])
+    top_unaug_claw = Claw("RawTopClaw")
+    top_unaug_loop_writer = control_loop.ControlLoopWriter("RawTopClaw",
+                                                           [top_unaug_claw])
     if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
+      top_unaug_loop_writer.Write(argv[2], argv[1])
     else:
-      loop_writer.Write(argv[1], argv[2])
+      top_unaug_loop_writer.Write(argv[1], argv[2])
+
+    top_loop_writer = control_loop.ControlLoopWriter("TopClaw", [top_claw])
+    if argv[3][-3:] == '.cc':
+      top_loop_writer.Write(argv[4], argv[3])
+    else:
+      top_loop_writer.Write(argv[3], argv[4])
+
+    bottom_claw = ClawDeltaU("BottomClaw")
+    bottom_unaug_claw = Claw("RawBottomClaw")
+    bottom_unaug_loop_writer = control_loop.ControlLoopWriter(
+        "RawBottomClaw", [bottom_unaug_claw])
+    if argv[5][-3:] == '.cc':
+      bottom_unaug_loop_writer.Write(argv[6], argv[5])
+    else:
+      bottom_unaug_loop_writer.Write(argv[5], argv[6])
+
+    bottom_loop_writer = control_loop.ControlLoopWriter("BottomClaw",
+                                                        [bottom_claw])
+    if argv[7][-3:] == '.cc':
+      bottom_loop_writer.Write(argv[8], argv[7])
+    else:
+      bottom_loop_writer.Write(argv[7], argv[8])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

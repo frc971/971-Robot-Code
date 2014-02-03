@@ -5,8 +5,8 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/wrists/wrists.q.h"
-#include "frc971/control_loops/wrists/wrists.h"
+#include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/control_loops/claw/claw.h"
 #include "frc971/constants.h"
 
 
@@ -18,17 +18,17 @@ namespace testing {
 
 // Class which simulates the wrist and sends out queue messages containing the
 // position.
-class WristMotorSimulation {
+class ClawMotorSimulation {
  public:
   // Constructs a motor simulation.  initial_position is the inital angle of the
   // wrist, which will be treated as 0 by the encoder.
-  WristMotorSimulation(double initial_position)
-      : wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawWristPlant())),
-        my_wrist_loop_(".frc971.control_loops.wrists",
-                       0x1a7b7094, ".frc971.control_loops.wrists.goal",
-                       ".frc971.control_loops.wrists.position",
-                       ".frc971.control_loops.wrists.output",
-                       ".frc971.control_loops.wrists.status") {
+  ClawMotorSimulation(double initial_position)
+      : wrist_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawClawPlant())),
+        my_wrist_loop_(".frc971.control_loops.claw",
+                       0x1a7b7094, ".frc971.control_loops.claw.goal",
+                       ".frc971.control_loops.claw.position",
+                       ".frc971.control_loops.claw.output",
+                       ".frc971.control_loops.claw.status") {
     Reinitialize(initial_position);
   }
 
@@ -57,7 +57,7 @@ class WristMotorSimulation {
   void SendPositionMessage() {
     const double angle = GetPosition();
 
-    ::aos::ScopedMessagePtr<control_loops::WristLoop::Position> position =
+    ::aos::ScopedMessagePtr<control_loops::ClawLoop::Position> position =
         my_wrist_loop_.position.MakeMessage();
     position->pos = angle;
 
@@ -103,27 +103,27 @@ class WristMotorSimulation {
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> wrist_plant_;
  private:
-  WristLoop my_wrist_loop_;
+  ClawLoop my_wrist_loop_;
   double initial_position_;
   double last_position_;
   double calibration_value_;
   double last_voltage_;
 };
 
-class WristTest : public ::testing::Test {
+class ClawTest : public ::testing::Test {
  protected:
   ::aos::common::testing::GlobalCoreInstance my_core;
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  WristLoop my_wrist_loop_;
+  ClawLoop my_wrist_loop_;
 
   // Create a loop and simulation plant.
-  WristMotor wrist_motor_;
-  WristMotorSimulation wrist_motor_plant_;
+  ClawMotor wrist_motor_;
+  ClawMotorSimulation wrist_motor_plant_;
 
-  WristTest() : my_wrist_loop_(".frc971.control_loops.wrist",
+  ClawTest() : my_wrist_loop_(".frc971.control_loops.wrist",
                                0x1a7b7094, ".frc971.control_loops.wrist.goal",
                                ".frc971.control_loops.wrist.position",
                                ".frc971.control_loops.wrist.output",
@@ -151,13 +151,13 @@ class WristTest : public ::testing::Test {
                 1e-4);
   }
 
-  virtual ~WristTest() {
+  virtual ~ClawTest() {
     ::aos::robot_state.Clear();
   }
 };
 
 // Tests that the wrist zeros correctly and goes to a position.
-TEST_F(WristTest, ZerosCorrectly) {
+TEST_F(ClawTest, ZerosCorrectly) {
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 400; ++i) {
     wrist_motor_plant_.SendPositionMessage();
@@ -169,7 +169,7 @@ TEST_F(WristTest, ZerosCorrectly) {
 }
 
 // Tests that the wrist zeros correctly starting on the hall effect sensor.
-TEST_F(WristTest, ZerosStartingOn) {
+TEST_F(ClawTest, ZerosStartingOn) {
   wrist_motor_plant_.Reinitialize(90 * M_PI / 180.0);
 
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
@@ -183,7 +183,7 @@ TEST_F(WristTest, ZerosStartingOn) {
 }
 
 // Tests that missing positions are correctly handled.
-TEST_F(WristTest, HandleMissingPosition) {
+TEST_F(ClawTest, HandleMissingPosition) {
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 400; ++i) {
     if (i % 23) {
@@ -197,7 +197,7 @@ TEST_F(WristTest, HandleMissingPosition) {
 }
 
 // Tests that loosing the encoder for a second triggers a re-zero.
-TEST_F(WristTest, RezeroWithMissingPos) {
+TEST_F(ClawTest, RezeroWithMissingPos) {
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 800; ++i) {
     // After 3 seconds, simulate the encoder going missing.
@@ -225,7 +225,7 @@ TEST_F(WristTest, RezeroWithMissingPos) {
 
 // Tests that disabling while zeroing sends the state machine into the
 // uninitialized state.
-TEST_F(WristTest, DisableGoesUninitialized) {
+TEST_F(ClawTest, DisableGoesUninitialized) {
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
   for (int i = 0; i < 800; ++i) {
     wrist_motor_plant_.SendPositionMessage();
@@ -256,7 +256,7 @@ TEST_F(WristTest, DisableGoesUninitialized) {
 
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
-TEST_F(WristTest, NoWindupNegative) {
+TEST_F(ClawTest, NoWindupNegative) {
   int capped_count = 0;
   double saved_zeroing_position = 0;
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
@@ -293,7 +293,7 @@ TEST_F(WristTest, NoWindupNegative) {
 
 // Tests that the wrist can't get too far away from the zeroing position if the
 // zeroing position is saturating the goal.
-TEST_F(WristTest, NoWindupPositive) {
+TEST_F(ClawTest, NoWindupPositive) {
   int capped_count = 0;
   double saved_zeroing_position = 0;
   my_wrist_loop_.goal.MakeWithBuilder().goal(0.1).Send();
