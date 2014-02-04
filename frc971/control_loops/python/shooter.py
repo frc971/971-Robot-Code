@@ -9,33 +9,37 @@ class Shooter(control_loop.ControlLoop):
   def __init__(self, name="RawShooter"):
     super(Shooter, self).__init__(name)
     # Stall Torque in N m
-    self.stall_torque = .4862
+    self.stall_torque = .4982
     # Stall Current in Amps
     self.stall_current = 85
     # Free Speed in RPM
     self.free_speed = 19300.0
     # Free Current in Amps
-    self.free_current = 1.4
+    self.free_current = 1.2
     # Moment of inertia of the shooter in kg m^2
-    # TODO(aschuh): Measure this in reality.  It doesn't seem high enough.
-    # James measured 0.51, but that can't be right given what I am seeing.
-    self.J = 2.0
-    # Resistance of the motor
-    self.R = 12.0 / self.stall_current + 0.024 + .003 #TODO comment on these constants
+    # Calculate Moment of Irtia
+    self.J = 0.3
+    # Resistance of the motor, divided by the number of motors.
+    self.R = 12.0 / self.stall_current / 2.0
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (13.5 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
+    # Spring constant for the springs, N/m
+    self.Ks = 3600.0
     # Gear ratio
     self.G = 1.0 / ((84.0 / 20.0) * (50.0 / 14.0) * (40.0 / 14.0) * (40.0 / 12.0))
     # Control loop time step
     self.dt = 0.01
 
+
     # State feedback matrices
+    # TODO(james): Make this work with origins other than at kx = 0.
     self.A_continuous = numpy.matrix(
         [[0, 1],
-         [0, -self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
+         [-self.Ks * 0.01 / self.J,
+          -self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
     self.B_continuous = numpy.matrix(
         [[0],
          [self.Kt / (self.J * self.G * self.R)]])
@@ -77,7 +81,7 @@ class ShooterDeltaU(Shooter):
     self.C = numpy.matrix([[1.0, 0.0, 0.0]])
     self.D = numpy.matrix([[0.0]])
 
-    self.PlaceControllerPoles([0.55, 0.35, 0.80])
+    self.PlaceControllerPoles([0.55, 0.45, 0.80])
 
     print "K"
     print self.K
@@ -104,28 +108,31 @@ def ClipDeltaU(shooter, delta_u):
 
 def main(argv):
   # Simulate the response of the system to a step input.
-  shooter = ShooterDeltaU()
+  shooter = Shooter()
   simulated_x = []
-  for _ in xrange(100):
-    shooter.Update(numpy.matrix([[12.0]]))
+  for _ in xrange(1000):
+    shooter.Update(numpy.matrix([[2.0]]))
     simulated_x.append(shooter.X[0, 0])
 
-  pylab.plot(range(100), simulated_x)
+  pylab.plot(range(1000), simulated_x)
   pylab.show()
 
-  # Simulate the closed loop response of the system to a step input.
-  shooter = ShooterDeltaU()
+  # Simulate the response of the system to a goal.
+  shooter = Shooter()
   close_loop_x = []
   close_loop_u = []
-  R = numpy.matrix([[1.0], [0.0], [0.0]])
-  shooter.X[2, 0] = -5
+  R = numpy.matrix([[1.0], [0.0]])
   for _ in xrange(100):
-    U = numpy.clip(shooter.K * (R - shooter.X_hat), shooter.U_min, shooter.U_max)
-    U = ClipDeltaU(shooter, U)
+    feed_forward = (-numpy.linalg.lstsq(shooter.B_continuous, numpy.identity(
+                         shooter.B_continuous.shape[0]))[0] *
+                   shooter.A_continuous * R)
+    U = numpy.clip(shooter.K * (R - shooter.X_hat) + feed_forward,
+                   shooter.U_min, shooter.U_max)
+#U = ClipDeltaU(shooter, U)
     shooter.UpdateObserver(U)
     shooter.Update(U)
     close_loop_x.append(shooter.X[0, 0] * 10)
-    close_loop_u.append(shooter.X[2, 0])
+    close_loop_u.append(U[0, 0])
 
   pylab.plot(range(100), close_loop_x)
   pylab.plot(range(100), close_loop_u)
