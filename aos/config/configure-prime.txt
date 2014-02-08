@@ -48,7 +48,7 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
     new one and fix it.
     To prevent this problem from happening in the first place, follow the
     directions in 10-net-eth0.rules.
-9. Make it automount the uSD card.
+9. Configure partition automounting.
     Open /etc/fstab on the bbb and remove the last two lines, which the
     comments indicate mount both partitions on the uSD card.
     Replace them with this line:
@@ -56,6 +56,10 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
     Obviously, replace mmcblk0p2 with the actual handle for the partition
     on your uSD card that you want to mount, and make sure that
     /media/driver/sdcard exists.
+    Another thing to add is:
+    "/dev/mmcblk0p1 /boot/uboot msdos defaults 0 2"
+    This mounts the uboot partition. (mmcblk0 is the eMMC when there's
+    no uSD card present.)
 10. Set up logging.
     Fairly straightforward here. We want it to log to the uSD card, so:
     `mkdir ~/tmp`
@@ -64,7 +68,10 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
 11. Set the correct date.
     `date` to check if date is correct.
     `date -s <date string>` to set it if it isn't.
-11.  Download the code!
+12. Make it export UART1 on boot.
+    Add the following to /boot/uboot/uenv.txt:
+    "optargs=capemgr.enable_partno=BB-UART1"
+13.  Download the code!
 50. Clone the image to the rest of the disks.
     Boot up from a uSD card.
     `dd if=/dev/mmcblk1 | gzip -c > BBB.img.gz`
