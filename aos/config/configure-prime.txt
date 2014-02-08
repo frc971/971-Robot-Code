@@ -48,18 +48,17 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
     new one and fix it.
     To prevent this problem from happening in the first place, follow the
     directions in 10-net-eth0.rules.
-9. Configure partition automounting.
+9.  Set up /etc/fstab sanely.
     Open /etc/fstab on the bbb and remove the last two lines, which the
     comments indicate mount both partitions on the uSD card.
-    Replace them with this line:
-    "/dev/mmcblk0p2 /media/driver/sdcard ext4 defaults,nobootwait 0 0"
-    Obviously, replace mmcblk0p2 with the actual handle for the partition
-    on your uSD card that you want to mount, and make sure that
-    /media/driver/sdcard exists.
-    Another thing to add is:
-    "/dev/mmcblk0p1 /boot/uboot msdos defaults 0 2"
-    This mounts the uboot partition. (mmcblk0 is the eMMC when there's
-    no uSD card present.)
+	Because the uSD card shows up as /dev/mmcblk0 and pushes the internal emmc
+	to /dev/mmcblk1 when it's plugged in, using those names for the two of them
+	doesn't work very well. Instead, we use /dev/disk/by-path.
+	Add "/dev/disk/by-path/platform-mmc.14-part1 /boot/uboot msdos defaults 0 2"
+	to mount the uboot partition.
+    Also add
+	"/dev/disk/by-path/platform-mmc.5-part1 /home/driver/tmp/robot_logs ext4 defaults,noatime,data=writeback 0 0"
+	to mount the uSD card in the right place for the logs to go to it.
 10. Set up logging.
     Fairly straightforward here. We want it to log to the uSD card, so:
     `mkdir ~/tmp`
@@ -71,10 +70,13 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
 12. Make it export UART1 on boot.
     Add the following to /boot/uboot/uenv.txt:
     "optargs=capemgr.enable_partno=BB-UART1"
-13.  Download the code!
-50. Clone the image to the rest of the disks.
+13. Fix the locale setup for SSHing in.
+    `dpkg-reconfigure locales`, leave it with "en_US.UTF-8" only being
+	enabled, and then select "None" instead of that for the default in
+	the second screen.
+30. Download the code!
+50. Clone the image to the rest of the BBBs.
     Boot up from a uSD card.
     `dd if=/dev/mmcblk1 | gzip -c > BBB.img.gz`
-    You can then scp this image to your computer.
-    (Perhaps you want to give it a more descriptive name?)
-    Use this image to flash a new uSD card.
+    You can then copy this image to your computer.
+    Use this image to flash other uSD cards and/or BBBs.
