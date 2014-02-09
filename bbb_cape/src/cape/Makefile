@@ -53,6 +53,8 @@ OBJECTS_bootloader := bootloader \
 	uart_common \
 	uart_byte \
 	led \
+	bootloader_impl \
+	crc \
 
 OBJECTS_main_test := $(OBJECTS_main_common) \
 	robot_test \

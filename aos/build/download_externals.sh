@@ -4,19 +4,28 @@ set -e
 
 AOS=$(readlink -f $(dirname $0)/..)
 . $(dirname $0)/tools_config
-COMPILED=${EXTERNALS}/../compiled-arm
 
-CROSS_COMPILE=arm-linux-gnueabihf-
+if [ "$1" == "arm" ]; then
+  COMPILED=${EXTERNALS}/../compiled-arm
 
-export CC=${CROSS_COMPILE}gcc-4.7
-export CXX=${CROSS_COMPILE}g++-4.7
-export CFLAGS="-mcpu=cortex-a8 -mfpu=neon"
-export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
-export OBJDUMP=${CROSS_COMPLIE}objdump
-# Flags that should get passed to all configure scripts.
-# Some of them need to set LDFLAGS separately to work around stupid configure
-# scripts, so we can't just set that here.
-CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
+  CROSS_COMPILE=arm-linux-gnueabihf-
+
+  export CC=${CROSS_COMPILE}gcc-4.7
+  export CXX=${CROSS_COMPILE}g++-4.7
+  export CFLAGS="-mcpu=cortex-a8 -mfpu=neon"
+  export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
+  export OBJDUMP=${CROSS_COMPILE}objdump
+  # Flags that should get passed to all configure scripts.
+  # Some of them need to set LDFLAGS separately to work around stupid configure
+  # scripts, so we can't just set that here.
+  CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
+else
+  COMPILED=${EXTERNALS}/../compiled-amd64
+
+  export CFLAGS="-march=atom -mfpmath=sse"
+  export CXXFLAGS="-march=atom -mfpmath=sse"
+  CONFIGURE_FLAGS="CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\""
+fi
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
@@ -164,5 +173,13 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
 	--disable-shared ${CONFIGURE_FLAGS} \
 	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
 	&& make gmpdir=${GMP_PREFIX} && make install"
+
+# download stm32flash
+STM32FLASH_COMMIT=8399fbe1baf2b7d097746786458021d92895d71b
+STM32FLASH_DIR=${EXTERNALS}/stm32flash-${STM32FLASH_COMMIT}
+STM32FLASH_URL=https://git.gitorious.org/stm32flash/stm32flash.git
+[ -d ${STM32FLASH_DIR} ] || ( mkdir ${STM32FLASH_DIR} && \
+	git clone ${STM32FLASH_URL} ${STM32FLASH_DIR}/stm32flash && \
+	cd ${STM32FLASH_DIR}/stm32flash && git checkout ${STM32FLASH_COMMIT} )
 
 rm -rf ${TMPDIR}

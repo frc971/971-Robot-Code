@@ -74,7 +74,8 @@ before:
   if (shm_address == MAP_FAILED) {
     fprintf(stderr, "shared_mem: mmap(%p, 0x%zx, stuff, stuff, %d, 0) failed"
             " with %d: %s\n",
-            (void *)SHM_START, SIZEOFSHMSEG, shm, errno, strerror(errno));
+            (void *)SHM_START, (size_t)SIZEOFSHMSEG, shm,
+            errno, strerror(errno));
     return -1;
   }
   printf("shared_mem: shm at: %p\n", shm_address);
@@ -115,7 +116,7 @@ int aos_core_free_shared_mem(){
   void *shm_address = global_core->shared_mem;
       if (munmap((void *)SHM_START, SIZEOFSHMSEG) == -1) {
           fprintf(stderr, "shared_mem: munmap(%p, 0x%zx) failed with %d: %s\n",
-        shm_address, SIZEOFSHMSEG, errno, strerror(errno));
+        shm_address, (size_t)SIZEOFSHMSEG, errno, strerror(errno));
           return -1;
       }
   if (global_core->owner) {

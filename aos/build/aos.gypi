@@ -30,9 +30,14 @@
           'aos_target': 'static_library',
         },
       }, {
-        'make_global_settings': [
-          ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
-          ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
+        'conditions': [
+          ['PLATFORM!="linux-amd64"', {
+              'make_global_settings': [
+                ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
+                ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
+              ],
+            },
+          ],
         ],
         'variables': {
           'aos_target': 'executable',
@@ -92,15 +97,24 @@
                 '-fno-builtin',
                 '-fno-strict-aliasing',
               ],
-            }, {
+            }],
+            ['PLATFORM=="linux"', {
               'cflags': [
                 '-mcpu=cortex-a8',
                 '-mfpu=neon',
 
                 '-fstack-protector-all',
               ],
-            }
-          ]],
+            }],
+            ['PLATFORM=="linux-amd64"', {
+              'cflags': [
+                '-march=atom',
+                '-mfpmath=sse',
+
+                '-fstack-protector-all',
+              ],
+            }],
+          ]
         }
       ],
       ['OS=="crio"', {

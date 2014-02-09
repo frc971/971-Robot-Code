@@ -57,6 +57,11 @@ static inline void gpio_setup_in(GPIO_TypeDef *port, int pin) {
   SET_BITS(port->MODER, 2, 0 /* input */, pin);
 }
 
+// dir: 0 => none, 1 => up, 2 => down
+static inline void gpio_set_pupd(GPIO_TypeDef *port, int pin, int dir) {
+  SET_BITS(port->PUPDR, 2, dir, pin);
+}
+
 // exti is which EXTI line to set
 // port is 0 for A, 1 for B, etc
 static inline void EXTI_set(int exti, int port) {

@@ -24,8 +24,15 @@ int uart_byte_receive(uint16_t timeout_count, uint16_t timeout_divider) {
     }
   }
 
+  int r = UART->DR;  // do it now to clear interrupts etc
+
+  if (UART->SR & USART_SR_PE) r = -2;
+  if (UART->SR & USART_SR_FE) r = -3;
+  if (UART->SR & USART_SR_NE) r = -4;
+  if (UART->SR & USART_SR_ORE) r = -5;
+
   TIMEOUT_TIM->CR1 &= ~TIM_CR1_CEN;
-  return UART->DR;
+  return r;
 }
 
 void uart_byte_send(uint8_t value) {

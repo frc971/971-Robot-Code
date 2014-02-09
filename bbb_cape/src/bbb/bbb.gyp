@@ -18,13 +18,15 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:once',
+        '<(AOS)/build/aos.gyp:logging',
+        'byte_io',
       ],
     },
     {
-      'target_name': 'byte_reader',
+      'target_name': 'byte_io',
       'type': 'static_library',
       'sources': [
-        # 'byte_reader.h',
+        # 'byte_io.h',
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:time',
@@ -43,11 +45,11 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
-        'byte_reader',
+        'byte_io',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:time',
-        'byte_reader',
+        'byte_io',
       ],
     },
     {
@@ -72,6 +74,7 @@
         'packet_finder',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(AOS)/common/common.gyp:time',
+        'byte_io',
       ],
     },
     {
@@ -92,16 +95,15 @@
         'packet_finder.cc',
       ],
       'dependencies': [
-        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:cows',
         '<(AOS)/build/aos.gyp:logging',
-        'crc',
         '<(AOS)/common/common.gyp:time',
-        'byte_reader',
+        '<(DEPTH)/bbb_cape/src/cape/cape.gyp:cows',
+        'crc',
+        'byte_io',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
-        'byte_reader',
       ],
     },
     {
@@ -137,6 +139,8 @@
       'type': 'static_library',
       'sources': [
         'gpios.cc',
+        'gpi.cc',
+        'gpo.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
@@ -149,17 +153,66 @@
         'sensor_reader.cc',
       ],
       'dependencies': [
-        'uart_reader',
         'packet_finder',
         'data_struct',
+        'cape_manager',
         '<(AOS)/common/common.gyp:time',
+        'hex_byte_reader',
+        'crc',
         'sensor_generation',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
       'export_dependent_settings': [
-        'uart_reader',
         'packet_finder',
         'data_struct',
+        'cape_manager',
         '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
+      'target_name': 'cape_flasher',
+      'type': 'static_library',
+      'sources': [
+        'cape_flasher.cc',
+      ],
+      'dependencies': [
+        'byte_io',
+        'crc',
+      ],
+    },
+    {
+      'target_name': 'hex_byte_reader',
+      'type': 'static_library',
+      'sources': [
+        'hex_byte_reader.cc',
+      ],
+      'dependencies': [
+        'byte_io',
+        '<(AOS)/common/common.gyp:time',
+        '<(EXTERNALS):stm32flash',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        'byte_io',
+        '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
+      'target_name': 'cape_manager',
+      'type': 'static_library',
+      'sources': [
+        'cape_manager.cc',
+      ],
+      'dependencies': [
+        'gpios',
+        'uart_reader',
+        'cape_flasher',
+        '<(AOS)/common/common.gyp:time',
+        'hex_byte_reader',
+      ],
+      'export_dependent_settings': [
+        'gpios',
+        'uart_reader',
       ],
     },
   ],
