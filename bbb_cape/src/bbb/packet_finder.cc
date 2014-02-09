@@ -105,7 +105,7 @@ bool PacketFinder::ProcessPacket() {
     LOG(INFO, "invalid packet\n");
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
-    LOG(WARNING, "packet is %" PRIu32 " words instead of %" PRIu32 "\n",
+    LOG(WARNING, "packet is %" PRIu32 " words instead of %zu\n",
         unstuffed, (packet_size_ - 4) / 4);
     return false;
   }
@@ -134,7 +134,7 @@ bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
       if (buf_[i] == 0) {
         ++zeros;
         if (zeros == 4) {
-          LOG(INFO, "found another packet start at %d\n", i);
+          LOG(INFO, "found another packet start at %zd\n", i);
           packet_bytes_ = packet_size_ - (i + 1);
           memmove(buf_, buf_ + i + 1, packet_bytes_);
           return false;

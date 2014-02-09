@@ -58,7 +58,7 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
   } else {
     Eigen::Matrix<double, 2, Eigen::Dynamic> region_vertices =
         region.Vertices();
-    double min_distance;
+    double min_distance = INFINITY;
     int closest_i = 0;
     for (int i = 0; i < region_vertices.outerSize(); i++) {
       const double length = ::std::abs(
