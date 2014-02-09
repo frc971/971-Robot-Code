@@ -46,8 +46,8 @@
 namespace frc971 {
 namespace control_loops {
 
-ClawMotor::ClawMotor(control_loops::ClawLoop *my_claw)
-    : aos::control_loops::ControlLoop<control_loops::ClawLoop>(my_claw),
+ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
+    : aos::control_loops::ControlLoop<control_loops::ClawGroup>(my_claw),
       zeroed_joint_(MakeTopClawLoop()) {
   {
     using ::frc971::constants::GetValues;
@@ -68,9 +68,9 @@ ClawMotor::ClawMotor(control_loops::ClawLoop *my_claw)
 }
 
 // Positive angle is up, and positive power is up.
-void ClawMotor::RunIteration(const control_loops::ClawLoop::Goal *goal,
-                             const control_loops::ClawLoop::Position *position,
-                             control_loops::ClawLoop::Output *output,
+void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
+                             const control_loops::ClawGroup::Position *position,
+                             control_loops::ClawGroup::Output *output,
                              ::aos::control_loops::Status *status) {
 
   // Disable the motors now so that all early returns will return with the

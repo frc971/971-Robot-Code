@@ -3,19 +3,22 @@ package frc971.control_loops;
 import "aos/common/control_loop/control_loops.q";
 
 // All angles here are 0 horizontal, positive up.
-queue_group ClawLoop {
+queue_group ClawGroup {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-    // The angle of the bottom wrist.
+    // The angle of the bottom claw.
     double bottom_angle;
-    // How much higher the top wrist is.
+    // How much higher the top claw is.
     double seperation_angle;
     bool intake;
   };
   message Position {
+    // Top claw position relative to power on.
     double top_position;
 
+
+    // Three Hall Effects with respect to the top claw
     bool top_front_hall_effect;
     int32_t top_front_hall_effect_posedge_count;
     int32_t top_front_hall_effect_negedge_count;
@@ -25,10 +28,18 @@ queue_group ClawLoop {
     bool top_back_hall_effect;
     int32_t top_back_hall_effect_posedge_count;
     int32_t top_back_hall_effect_negedge_count;
+
+    // The encoder value at the last posedge of any of the top claw hall effect
+    // sensors.
     double top_posedge_value;
+    // The encoder value at the last negedge of any of the top claw hall effect
+    // sensors.
     double top_negedge_value;
 
+    // bottom claw relative position
     double bottom_position;
+
+    // Three Hall Effects with respect to the bottom claw
     bool bottom_front_hall_effect;
     int32_t bottom_front_hall_effect_posedge_count;
     int32_t bottom_front_hall_effect_negedge_count;
@@ -38,7 +49,12 @@ queue_group ClawLoop {
     bool bottom_back_hall_effect;
     int32_t bottom_back_hall_effect_posedge_count;
     int32_t bottom_back_hall_effect_negedge_count;
+
+    // The encoder value at the last posedge of any of the bottom claw hall
+    // effect sensors.
     double bottom_posedge_value;
+    // The encoder value at the last negedge of any of the bottom claw hall
+    // effect sensors.
     double bottom_negedge_value;
   };
 
@@ -54,4 +70,4 @@ queue_group ClawLoop {
   queue aos.control_loops.Status status;
 };
 
-queue_group ClawLoop claw;
+queue_group ClawGroup claw_queue_group;
