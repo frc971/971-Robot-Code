@@ -97,7 +97,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
 
 int main() {
   ::aos::Init(::bbb::SensorReader::kRelativePriority);
-  ::bbb::SensorReader reader("main");
+  ::bbb::SensorReader reader("comp");
   while (true) {
     ::frc971::PacketReceived(reader.ReadPacket(), reader.GetCapeTimestamp());
   }

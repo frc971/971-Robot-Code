@@ -22,14 +22,14 @@ void CapeManager::DownloadHex(const ::std::string &filename) {
 }
 
 void CapeManager::DoReset(bool bootloader) {
-  static constexpr ::aos::time::Time kTimeout =
+  static constexpr ::aos::time::Time kWaitTime =
       ::aos::time::Time::InSeconds(0.1);
   reset_.Set(false);
-  ::aos::time::SleepFor(kTimeout);
-  custom_bootloader_.Set(bootloader);
-  ::aos::time::SleepFor(kTimeout);
+  ::aos::time::SleepFor(kWaitTime);
+  custom_bootloader_.Set(!bootloader);
+  ::aos::time::SleepFor(kWaitTime);
   reset_.Set(true);
-  ::aos::time::SleepFor(kTimeout);
+  ::aos::time::SleepFor(kWaitTime);
 }
 
 }  // namespace bbb

@@ -33,13 +33,13 @@ SensorReader::SensorReader(const ::std::string &cape_code)
 }
 
 const DataStruct *SensorReader::ReadPacket() {
-  static constexpr ::aos::time::Time kTimeout =
-      ::aos::time::Time::InSeconds(0.5);
+  static constexpr ::aos::time::Time kResetTimeout =
+      ::aos::time::Time::InSeconds(2.5);
 
   while (true) {
-    ::aos::time::Time next_timeout = last_received_time_ + kTimeout;
+    ::aos::time::Time next_timeout = last_received_time_ + kResetTimeout;
     if (next_timeout <= ::aos::time::Time::Now()) {
-      LOG(WARNING, "too long since good packet received\n");
+      LOG(WARNING, "Too long since good packet received. Resetting.\n");
       manager_.Reset();
       ResetHappened();
     }

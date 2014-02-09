@@ -160,5 +160,18 @@ TEST_F(PacketFinderTest, DropAnyByte) {
   }
 }
 
+// Tests to make sure that bitwise-NOTing any byte will result in missing that
+// packet and no future ones.
+TEST_F(PacketFinderTest, InvertAnyByte) {
+  static constexpr auto kTestData = kTestData1;
+  for (int i = 0; i < static_cast<int>(kTestData.size()); ++i) {
+    SCOPED_TRACE("inverting byte " + ::std::to_string(i));
+    ::std::array<uint8_t, kTestData.size()> data;
+    ::std::copy(kTestData.begin(), kTestData.end(), data.begin());
+    data.at(i) ^= 0xFF;
+    ReceivePackets(data, 7, ::std::array<int, 1>{{i / 148 + 1}});
+  }
+}
+
 }  // namespace testing
 }  // namespace bbb
