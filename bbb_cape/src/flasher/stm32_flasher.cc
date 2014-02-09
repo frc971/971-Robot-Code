@@ -8,6 +8,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/logging_impl.h"
+#include "aos/common/time.h"
 
 extern "C" {
 #include "stm32flash/parsers/parser.h"
@@ -17,10 +18,25 @@ extern "C" {
 #include "stm32flash/init.h"
 }
 
+#include "bbb/gpo.h"
+
 int main(int argc, char **argv) {
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
+
+  {
+    ::bbb::Gpo reset(2, 5, true);
+    ::bbb::Gpo bootloader(2, 2, false);
+    static constexpr ::aos::time::Time kWaitTime =
+        ::aos::time::Time::InSeconds(0.1);
+    reset.Set(false);
+    ::aos::time::SleepFor(kWaitTime);
+    bootloader.Set(false);
+    ::aos::time::SleepFor(kWaitTime);
+    reset.Set(true);
+    ::aos::time::SleepFor(kWaitTime);
+  }
 
   if (argc < 2) {
     fputs("Need an argument saying which target to download.\n", stderr);

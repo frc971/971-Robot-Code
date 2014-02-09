@@ -16,6 +16,8 @@
       'dependencies': [
         '<(EXTERNALS):stm32flash',
         '<(AOS)/build/aos.gyp:logging',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:gpios',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
   ],

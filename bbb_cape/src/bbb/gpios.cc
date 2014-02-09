@@ -48,6 +48,15 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
     LOG(WARNING, "fclose(%p) failed with %d: %s\n", direction_handle, errno,
         strerror(errno));
   }
+
+  char value_path[64];
+  snprintf(value_path, sizeof(value_path),
+           "/sys/class/gpio/gpio%d/value", kernel_pin_);
+  value_handle_ = fopen(value_path, "w+");
+  if (value_handle_ == NULL) {
+    LOG(FATAL, "fopen(%s, \"rw\") failed with %d: %s\n",
+        value_path, errno, strerror(errno));
+  }
 }
 
 GpioPin::~GpioPin() {

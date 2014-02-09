@@ -24,6 +24,7 @@ __attribute__((noreturn)) void DieParserError(parser_err_t perr) {
 
 HexByteReader::HexByteReader(const ::std::string &filename)
     : parser_status_(kParser.init()) {
+  LOG(DEBUG, "reading hex file %s\n", filename.c_str());
   if (parser_status_ == NULL) {
     LOG(FATAL, "%s parser failed to initialize.\n", kParser.name);
   }
