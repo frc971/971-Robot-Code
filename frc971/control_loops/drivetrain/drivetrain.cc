@@ -13,8 +13,8 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/GyroAngle.q.h"
-#include "frc971/queues/Piston.q.h"
+#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/piston.q.h"
 #include "frc971/constants.h"
 
 using frc971::sensors::gyro;
@@ -58,7 +58,7 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
   } else {
     Eigen::Matrix<double, 2, Eigen::Dynamic> region_vertices =
         region.Vertices();
-    double min_distance;
+    double min_distance = INFINITY;
     int closest_i = 0;
     for (int i = 0; i < region_vertices.outerSize(); i++) {
       const double length = ::std::abs(

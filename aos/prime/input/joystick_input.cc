@@ -28,7 +28,7 @@ void JoystickInput::Run() {
     }
 
     if (!joysticks.DeserializeFrom(buffer, received)) {
-      LOG(WARNING, "deserializing data from %zd bytes failed\n", received);
+      LOG(WARNING, "deserializing data from %d bytes failed\n", received);
       continue;
     }
 

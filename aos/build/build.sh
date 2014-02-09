@@ -17,7 +17,7 @@ shift || true # We might not have a 5th argument if ACTION is empty.
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
-[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "linux" ] || ( echo Platform "(${PLATFORM})" must be '"crio" or "linux"'. ; exit 1 )
+[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "linux" -o "${PLATFORM}" == "linux-amd64" ] || ( echo Platform "(${PLATFORM})" must be '"crio", "linux", or "linux-amd64"'. ; exit 1 )
 [ "${DEBUG}" == "yes" -o "${DEBUG}" == "no" ] || ( echo Debug "(${DEBUG})" must be '"yes" or "no"'. ; exit 1 )
 
 AOS=`dirname $0`/..
@@ -25,7 +25,8 @@ AOS=`dirname $0`/..
 OUTDIR=${AOS}/../output/${OUT_NAME}
 BUILD_NINJA=${OUTDIR}/build.ninja
 
-${AOS}/build/download_externals.sh
+${AOS}/build/download_externals.sh arm
+${AOS}/build/download_externals.sh amd64
 . $(dirname $0)/tools_config
 
 # The exciting quoting is so that it ends up with -DWHATEVER='"'`a command`'"'.
@@ -50,7 +51,8 @@ END
   echo "${GYP_INCLUDE}" | ${GYP} \
       --check --depth=${AOS}/.. --no-circular-check -f ninja \
       -I${AOS}/build/aos.gypi -I/dev/stdin -Goutput_dir=output \
-      -DOS=${PLATFORM} -DWIND_BASE=${WIND_BASE} -DDEBUG=${DEBUG} \
+      -DOS=$(echo ${PLATFORM} | sed 's/-.*//g') -DPLATFORM=${PLATFORM} \
+      -DWIND_BASE=${WIND_BASE} -DDEBUG=${DEBUG} \
       ${GYP_MAIN}
   # Have to substitute "command = $compiler" so that it doesn't try to
   #   substitute them in the linker commands, where it doesn't work.

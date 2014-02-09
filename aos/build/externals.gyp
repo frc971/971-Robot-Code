@@ -4,8 +4,13 @@
   'variables': {
     'externals': '<(AOS)/../output/downloaded',
     'externals_abs': '<!(readlink -f ../../output/downloaded)',
-    'compiled': '<(externals)/../compiled-arm',
-    'compiled_abs': '<(externals_abs)/../compiled-arm',
+    'conditions': [['PLATFORM=="linux-amd64"', {
+          'compiled': '<(externals)/../compiled-amd64',
+          'compiled_abs': '<(externals_abs)/../compiled-amd64',
+    }, {
+          'compiled': '<(externals)/../compiled-arm',
+          'compiled_abs': '<(externals_abs)/../compiled-arm',
+    }]],
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.1.3',

@@ -159,7 +159,7 @@ TEST_F(LoggingTest, Timing) {
   }
   time::Time end = time::Time::Now();
   time::Time diff = end - start;
-  printf("short message took %lld nsec for %ld\n",
+  printf("short message took %" PRId64 " nsec for %ld\n",
          diff.ToNSec(), kTimingCycles);
 
   start = time::Time::Now();
@@ -168,7 +168,7 @@ TEST_F(LoggingTest, Timing) {
   }
   end = time::Time::Now();
   diff = end - start;
-  printf("long message took %lld nsec for %ld\n",
+  printf("long message took %" PRId64 " nsec for %ld\n",
          diff.ToNSec(), kTimingCycles);
 }
 
