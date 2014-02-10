@@ -16,7 +16,7 @@ namespace cape {
 // length is the number of bytes of data to read. It must be a multiple of 4.
 // initial can be a previous return value to continue the same checksum over
 // more data.
-uint32_t CalculateChecksum(uint8_t *data, size_t length,
+uint32_t CalculateChecksum(const uint8_t *data, size_t length,
                            uint32_t initial = 0xFFFFFFFF);
 // Reads all data out of reader and does a checksum over all of it in reasonably
 // sized pieces. Does all of the reads with a timeout of 0. Stops on the first

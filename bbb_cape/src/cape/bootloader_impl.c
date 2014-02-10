@@ -6,6 +6,7 @@
 #include "cape/uart_common.h"
 #include "cape/crc.h"
 #include "cape/util.h"
+#include "cape/led.h"
 
 // The protocol is pretty simple. Basically, when the bootloader is started, it
 // expects repeated "packets" of data to write. It starts at MAIN_FLASH_START,
@@ -37,6 +38,11 @@ static void process_buffer(uint32_t *buffer) {
 }
 
 __attribute__((noreturn)) void bootloader_start(void) {
+  led_set(LED_ERR, 1);
+  led_set(LED_DB, 1);
+  led_set(LED_Z, 1);
+  led_set(LED_HB, 0);
+
   crc_init();
 
   // Unlock the flash so we can program it.
@@ -80,6 +86,7 @@ __attribute__((noreturn)) void bootloader_start(void) {
         error = 1;
       }
     } else {  // successfully received a byte
+      led_set(LED_HB, bytes_received & 1);
       if (error == 0) {
         buffer[bytes_received++] = (uint8_t)received;
         if (bytes_received == sizeof(buffer)) {

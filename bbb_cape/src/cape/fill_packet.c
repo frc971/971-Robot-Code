@@ -25,9 +25,6 @@ static uint8_t buffer1[DATA_STRUCT_SEND_SIZE] __attribute__((aligned(4)));
 static uint8_t buffer2[DATA_STRUCT_SEND_SIZE] __attribute__((aligned(4)));
 
 static uint32_t flash_checksum;
-// These aren't really integers; they're (4-byte) variables whose addresses mark
-// various locations.
-extern uint8_t __etext, __data_start__, __data_end__;
 
 static inline void do_fill_packet(struct DataStruct *packet) {
   static uint64_t timestamp = 0;
@@ -82,9 +79,9 @@ void fill_packet_start(void) {
   encoder_init();
   digital_init();
 
-  uint8_t *flash_end = &__etext + (&__data_start__ - &__data_end__) + 8;
-  flash_checksum = crc_calculate((void *)MAIN_FLASH_START,
-                                 (size_t)(flash_end - MAIN_FLASH_START) / 4);
+  flash_checksum =
+      crc_calculate((void *)MAIN_FLASH_START,
+                    (size_t)(MAIN_FLASH_END - MAIN_FLASH_START) / 4);
 
   led_set(LED_ERR, 0);
   gyro_init();

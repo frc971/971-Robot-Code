@@ -74,8 +74,8 @@ void _start(void) {
   while (!(SYSCFG->CMPCR & SYSCFG_CMPCR_READY)) {}  // wait for it to be ready
 
   if (GPIOC->IDR & (1 << 2)) {
-    bootloader_start();
-  } else {
     jump_to_main();
+  } else {
+    bootloader_start();
   }
 }

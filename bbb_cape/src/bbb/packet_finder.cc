@@ -57,8 +57,8 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
       if (getuid() == 0) {
         // TODO(brians): Do this cleanly.
         int chrt_result =
-            system("bash -c 'chrt -r -p 55"
-                   " $(top -n1 | fgrep irq/89 | cut -d\" \" -f2)'");
+            system("chrt -o 0 bash -c 'chrt -r -p 55"
+                   " $(pgrep irq/89)'");
         if (chrt_result == -1) {
           LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
         } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {

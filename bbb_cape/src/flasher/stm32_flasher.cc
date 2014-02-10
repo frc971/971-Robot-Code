@@ -20,23 +20,27 @@ extern "C" {
 
 #include "bbb/gpo.h"
 
+namespace {
+
+void Reset(bool into_bootloader) {
+  ::bbb::Gpo reset(2, 5, true);
+  ::bbb::Gpo bootloader(2, 2, into_bootloader);
+  static constexpr ::aos::time::Time kWaitTime =
+      ::aos::time::Time::InSeconds(0.1);
+  reset.Set(false);
+  ::aos::time::SleepFor(kWaitTime);
+  reset.Set(true);
+  ::aos::time::SleepFor(kWaitTime);
+}
+
+}  // namespace
+
 int main(int argc, char **argv) {
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 
-  {
-    ::bbb::Gpo reset(2, 5, true);
-    ::bbb::Gpo bootloader(2, 2, false);
-    static constexpr ::aos::time::Time kWaitTime =
-        ::aos::time::Time::InSeconds(0.1);
-    reset.Set(false);
-    ::aos::time::SleepFor(kWaitTime);
-    bootloader.Set(false);
-    ::aos::time::SleepFor(kWaitTime);
-    reset.Set(true);
-    ::aos::time::SleepFor(kWaitTime);
-  }
+  Reset(true);
 
   if (argc < 2) {
     fputs("Need an argument saying which target to download.\n", stderr);
@@ -223,6 +227,7 @@ int main(int argc, char **argv) {
 
   if (init_bl_exit(stm, serial, NULL /* GPIO sequence */)) {
     LOG(INFO, "all done\n");
+    Reset(false);
   } else {
     LOG(FATAL, "init_bl_exit failed\n");
   }

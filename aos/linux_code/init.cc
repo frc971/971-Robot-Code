@@ -84,8 +84,8 @@ void InitCreate() { DoInitNRT(aos_core_create::create); }
 void Init(int relative_priority) {
   if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
     LockAllMemory();
-    // Only let rt processes run for 1 second straight.
-    SetSoftRLimit(RLIMIT_RTTIME, 1000000, true);
+    // Only let rt processes run for 3 seconds straight.
+    SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
     // Allow rt processes up to priority 40.
     SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
     // Set our process to priority 40.

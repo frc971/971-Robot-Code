@@ -33,7 +33,8 @@ const uint32_t *GenerateTable() {
 
 }  // namespace
 
-uint32_t CalculateChecksum(uint8_t *data, size_t length, uint32_t initial) {
+uint32_t CalculateChecksum(const uint8_t *data, size_t length,
+                           uint32_t initial) {
   assert((length % 4) == 0);
 
   static ::aos::Once<const uint32_t> table_once(GenerateTable);
