@@ -37,8 +37,6 @@
       'dependencies': [
         ':trapezoid_profile',
         '<(EXTERNALS):gtest',
-        # TODO(brians): remove this when time no longer requires it
-        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {

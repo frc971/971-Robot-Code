@@ -8,75 +8,20 @@
 #include <errno.h>
 #include <unistd.h>
 #include <limits.h>
-#include <sys/prctl.h>
 
 #include <algorithm>
 
 #include "aos/common/die.h"
 #include "aos/common/logging/logging_impl.h"
-#include "aos/linux_code/thread_local.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 
 namespace aos {
 namespace logging {
 namespace {
 
-using internal::Context;
-
-AOS_THREAD_LOCAL Context *my_context(NULL);
-
-::std::string GetMyName() {
-  // The maximum number of characters that can make up a thread name.
-  // The docs are unclear if it can be 16 characters with no '\0', so we'll be
-  // safe by adding our own where necessary.
-  static const size_t kThreadNameLength = 16;
-
-  ::std::string process_name(program_invocation_short_name);
-
-  char thread_name_array[kThreadNameLength + 1];
-  if (prctl(PR_GET_NAME, thread_name_array) != 0) {
-    Die("prctl(PR_GET_NAME, %p) failed with %d: %s\n",
-        thread_name_array, errno, strerror(errno));
-  }
-  thread_name_array[sizeof(thread_name_array) - 1] = '\0';
-  ::std::string thread_name(thread_name_array);
-
-  // If the first bunch of characters are the same.
-  // We cut off comparing at the shorter of the 2 strings because one or the
-  // other often ends up cut off.
-  if (strncmp(thread_name.c_str(), process_name.c_str(),
-              ::std::min(thread_name.length(), process_name.length())) == 0) {
-    // This thread doesn't have an actual name.
-    return process_name;
-  }
-
-  return process_name + '.' + thread_name;
-}
-
 RawQueue *queue;
 
 }  // namespace
-namespace internal {
-
-Context *Context::Get() {
-  if (my_context == NULL) {
-    my_context = new Context();
-    my_context->name = GetMyName();
-    if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
-      Die("logging: process/thread name '%s' is too long\n",
-          my_context->name.c_str());
-    }
-    my_context->source = getpid();
-  }
-  return my_context;
-}
-
-void Context::Delete() {
-  delete my_context;
-  my_context = NULL;
-}
-
-}  // namespace internal
 namespace linux_code {
 namespace {
 

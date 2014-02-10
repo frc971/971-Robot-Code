@@ -8,11 +8,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef __VXWORKS__
-// Because the vxworks system headers miss the noreturn...
-extern "C" void abort(void) __attribute__((noreturn));
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,14 +25,13 @@ DECL_LEVEL(ERROR, -1); /* errors */ \
 DECL_LEVEL(FATAL, 4); \
 DECL_LEVEL(LOG_UNKNOWN, 5); /* unknown logging level */
 #define DECL_LEVEL(name, value) static const log_level name = value;
-#undef ERROR
 DECL_LEVELS;
 #undef DECL_LEVEL
 
 #define STRINGIFY(x) TO_STRING(x)
 #define TO_STRING(x) #x
 
-//not static const size_t for c code
+// Not static const size_t for C code.
 #define LOG_MESSAGE_LEN 400
 
 #ifdef __VXWORKS__
