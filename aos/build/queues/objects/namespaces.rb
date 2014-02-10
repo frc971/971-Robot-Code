@@ -150,6 +150,7 @@ class QualifiedName
 	end
 	def test_lookup(namespace)
 		@names.each do |name|
+			return nil if(!namespace.respond_to?(:[]))
 			namespace = namespace[name]
 			return nil if(!namespace)
 		end

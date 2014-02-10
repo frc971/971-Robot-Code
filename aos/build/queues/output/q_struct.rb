@@ -4,9 +4,6 @@ class Target::StructDec < Target::Node
 		@name = name
 		@members = []
 	end
-	def [](key)
-		return nil
-	end
 	def add_member(member)
 		@members << member
 	end
