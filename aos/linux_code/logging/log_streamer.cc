@@ -11,7 +11,7 @@
 #include <inttypes.h>
 
 #include "aos/linux_code/logging/linux_logging.h"
-#include "aos/linux_code/core/LogFileCommon.h"
+#include "aos/linux_code/logging/binary_log_file.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/logging/logging_impl.h"

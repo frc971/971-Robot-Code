@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <errno.h>
 
-#include "aos/linux_code/core/LogFileCommon.h"
+#include "aos/linux_code/logging/binary_log_file.h"
 #include "aos/common/logging/logging_impl.h"
 
 namespace {

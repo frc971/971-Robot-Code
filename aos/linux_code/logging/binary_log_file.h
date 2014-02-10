@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_CORE_LOG_FILE_COMMON_H_
-#define AOS_LINUX_CODE_CORE_LOG_FILE_COMMON_H_
+#ifndef AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
+#define AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
 
 #include <stdio.h>
 #include <errno.h>
@@ -196,4 +196,4 @@ class LogFileAccessor {
 }  // namespace logging
 }  // namespace aos
 
-#endif
+#endif  // AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
