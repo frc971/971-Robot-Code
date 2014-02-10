@@ -215,5 +215,16 @@
         'uart_reader',
       ],
     },
+    {
+      'target_name': 'test_sensor_receiver',
+      'type': 'executable',
+      'sources': [
+        'test_sensor_receiver.cc',
+      ],
+      'dependencies': [
+        'sensor_reader',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+    },
   ],
 }
