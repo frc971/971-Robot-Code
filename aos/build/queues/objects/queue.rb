@@ -1,12 +1,13 @@
 class MessageElementStmt < QStmt
 	attr_accessor :name
-	def initialize(type,name,length = nil) #lengths are for arrays
-		@type = type
+	def initialize(type_name,name,length = nil) #lengths are for arrays
+		@type_name = type_name
+		@type = type_name.to_s
 		@name = name
 		@length = length
 	end
 	CommonMistakes = {"short" => "int16_t","int" => "int32_t","long" => "int64_t"}
-	def check_type_error()
+	def check_type_error(locals)
 		if(!(Sizes[@type] || (@length != nil && @type == "char")) )
 			if(correction = CommonMistakes[@type])
 				raise QError.new(<<ERROR_MSG)
@@ -23,11 +24,13 @@ Hey! you have a \"#{@type}\" in your message statement.
 \tWot. Wot.
 ERROR_MSG
 			else
+				@is_struct_type = true
+				return if(lookup_type(locals))
 				raise QError.new(<<ERROR_MSG)
 Hey! you have a \"#{@type}\" in your message statement.
 \tThat is not in the list of supported types.
 \there is the list of supported types:
-\tint{8,16,32,64}_t,uint{8,16,32,64}_t,bool,float,double#{len_comment}
+\tint{8,16,32,64}_t,uint{8,16,32,64}_t,bool,float,double
 \tWot. Wot.
 ERROR_MSG
 			end
@@ -72,21 +75,30 @@ Somehow this slipped past me, but
 \tWot. Wot.
 ERROR_MSG
 	end
+	def lookup_type(locals)
+		return @type_name.lookup(locals)
+	end
 	def q_eval(locals)
-		check_type_error()
-		if(@length == nil)
-			member = Target::MessageElement.new(@type,@name)
+		check_type_error(locals)
+		if(@is_struct_type)
+			tval = lookup_type(locals)
+			member = Target::MessageStructElement.new(tval, name)
 		else
-			member = Target::MessageArrayElement.new(@type,@name,@length)
+			if(@length == nil)
+				member = Target::MessageElement.new(@type,@name)
+			else
+				member = Target::MessageArrayElement.new(@type,@name,@length)
+			end
+			member.size = size()
+			member.zero = Zero[@type] || "0";
+			member.printformat = toPrintFormat()
 		end
-		member.size = size()
-		member.zero = Zero[@type] || "0";
-		member.printformat = toPrintFormat()
 		locals.local.add_member(member)
 	end
 	def self.parse(tokens)
 		line = tokens.pos
-		type = tokens.expect(:tWord).data
+		#type = tokens.expect(:tWord).data
+		type_name = QualifiedName.parse(tokens)
 		len = nil
 		if(tokens.peak == :tOpenB)
 			tokens.expect(:tOpenB)
@@ -95,7 +107,7 @@ ERROR_MSG
 		end
 		name = tokens.expect(:tWord).data
 		tokens.expect(:tSemi)
-		return self.new(type,name,len).set_line(line)
+		return self.new(type_name,name,len).set_line(line)
 	end
 end
 class MessageStmt < QStmt

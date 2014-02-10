@@ -134,6 +134,8 @@ ERROR_MSG
 				suite << QueueStmt.parse(tokens)
 			when "interface"
 				suite << InterfaceStmt.parse(tokens)
+			when "struct"
+				suite << StructStmt.parse(tokens)
 			else
 				tokens.qError(<<ERROR_MSG)
 expected a "package","import","queue","queue_group", or "message" statement rather

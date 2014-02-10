@@ -8,6 +8,13 @@ module Target
 end
 class Target::Node
 	attr_accessor :created_by
+	def get_name()
+		if(@parent)
+			return "#{@parent.get_name}.#{@name}"
+		else
+			return "#{@name}"
+		end 
+	end
 end
 class Target::QFile < Target::Node
 	def initialize() #needs to know repo_path, 

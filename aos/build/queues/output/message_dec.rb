@@ -34,17 +34,13 @@ class Target::MessageDec < Target::Node
 		@members.each do |elem|
 			format += ", "
 			format += elem.toPrintFormat()
-			if (elem.type == 'bool')
-				args.push("#{elem.name} ? 'T' : 'f'")
-			else
-				args.push(elem.name)
-			end
+			elem.fetchPrintArgs(args)
 		end
-                format += "\""
-                member_func.suite << "size_t super_size = ::aos::Message::Print(buffer, length)"
-                member_func.suite << "buffer += super_size"
-                member_func.suite << "length -= super_size"
-                member_func.suite << "return super_size + snprintf(buffer, length, " + ([format] + args).join(", ") + ")";
+    format += "\""
+    member_func.suite << "size_t super_size = ::aos::Message::Print(buffer, length)"
+    member_func.suite << "buffer += super_size"
+    member_func.suite << "length -= super_size"
+    member_func.suite << "return super_size + snprintf(buffer, length, " + ([format] + args).join(", ") + ")";
 	end
 	def create_Serialize(type_class,cpp_tree)
 		member_func = CPP::MemberFunc.new(type_class,"size_t","Serialize")
@@ -221,26 +217,33 @@ class Target::MessageElement < Target::Node
 	def create_usage(cpp_tree)
 		"#{@type} #{@name}"
 	end
-	def toNetwork(offset,suite)
+	def toNetwork(offset,suite, parent = "")
 		offset = (offset == 0) ? "" : "#{offset} + "
 		suite << f_call = CPP::FuncCall.build("to_network",
-									 "&#{@name}",
+									 "&#{parent}#{@name}",
 									 "&buffer[#{offset}::aos::Message::Size()]")
 		f_call.args.dont_wrap = true
 	end
-	def toHost(offset,suite)
+	def toHost(offset,suite, parent = "")
 		offset = (offset == 0) ? "" : "#{offset} + "
 		suite << f_call = CPP::FuncCall.build("to_host",
 									 "&buffer[#{offset}::aos::Message::Size()]",
-									 "&#{@name}")
+									 "&#{parent}#{@name}")
 		f_call.args.dont_wrap = true
 	end
 	def set_message_builder(suite)
 		suite << "msg_ptr_->#{@name} = #{@name}"
 	end
 
-	def zeroCall(suite)
-		suite << CPP::Assign.new(@name,@zero)
+	def zeroCall(suite, parent = "")
+		suite << CPP::Assign.new(parent + @name,@zero)
+	end
+	def fetchPrintArgs(args, parent = "")
+		if (self.type == 'bool')
+			args.push("#{parent}#{self.name} ? 'T' : 'f'")
+		else
+			args.push("#{parent}#{self.name}")
+		end
 	end
 end
 class Target::MessageArrayElement < Target::Node
