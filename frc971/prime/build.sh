@@ -11,7 +11,23 @@ elif [[ "$1" == "arm" ]]; then
 fi
 
 [[ "$1" == "tests" ]] && NO_TARGET=1
+[[ "$1" == "deploy" ]] && NO_AMD64=1
 
-[[ ${NO_TARGET} ]] || ../../aos/build/build.sh linux prime.gyp no prime "$@"
-[[ ${NO_AMD64} ]] || \
-    ../../aos/build/build.sh linux-amd64 prime.gyp no prime-amd64 "$@"
+if [[ ! ${NO_TARGET} ]]; then
+	echo 'Building code for target...' 2>&1
+	../../aos/build/build.sh linux prime.gyp no prime "$@"
+    if [[ $? -ne 0 ]]; then
+		echo 'Building code for target failed!' 2>&1
+		exit 1
+	fi
+	echo 'Building code for target succeeded.' 2>&1
+fi
+if [[ ! ${NO_AMD64} ]]; then
+	echo 'Building code for amd64...' 2>&1
+	../../aos/build/build.sh linux-amd64 prime.gyp no prime-amd64 "$@"
+    if [[ $? -ne 0 ]]; then
+		echo 'Building code for amd64 failed!' 2>&1
+		exit 1
+	fi
+	echo 'Building code for amd64 succeeded.' 2>&1
+fi
