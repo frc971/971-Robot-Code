@@ -102,7 +102,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     return false;
   }
 
-  void SetPositionValues(const Claw &claw) {
+  void SetPositionValues(const HalfClawPosition &claw) {
     set_front_hall_effect_posedge_count(claw.front_hall_effect_posedge_count);
     set_front_hall_effect_negedge_count(claw.front_hall_effect_negedge_count);
     set_calibration_hall_effect_posedge_count(
