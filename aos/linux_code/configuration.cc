@@ -20,12 +20,13 @@ namespace {
 // Including the terminating '\0'.
 const size_t kMaxAddrLength = 18;
 
-// TODO(brians): Don't hard-code this.
+// TODO(brians): This shouldn't be necesary for running tests.  Provide a way to
+// set the IP address when running tests from the test.
 const char *const kLinuxNetInterface = "eth0";
 const in_addr *DoGetOwnIPAddress() {
     static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
     const char *override_ip = getenv(kOverrideVariable);
-    if (override_ip != NULL) {
+    if (override_ip != nullptr) {
         static in_addr r;
         if (inet_aton(override_ip, &r) != 0) {
             return &r;
@@ -43,8 +44,8 @@ const in_addr *DoGetOwnIPAddress() {
   // but it does do a very nice job of making sure that addrs gets freed.
   unique_c_ptr<ifaddrs, freeifaddrs> addrs_deleter(addrs);
 
-  for (; addrs != NULL; addrs = addrs->ifa_next) {
-    if (addrs->ifa_addr->sa_family == AF_INET) {
+  for (; addrs != nullptr; addrs = addrs->ifa_next) {
+    if (addrs->ifa_addr != nullptr && addrs->ifa_addr->sa_family == AF_INET) {
       if (strcmp(kLinuxNetInterface, addrs->ifa_name) == 0) {
         static const in_addr r =
             reinterpret_cast<sockaddr_in *>(__builtin_assume_aligned(

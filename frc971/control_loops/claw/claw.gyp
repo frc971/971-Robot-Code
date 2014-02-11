@@ -1,11 +1,11 @@
 {
   'targets': [
     {
-      'target_name': 'wrist_loops',
+      'target_name': 'claw_loops',
       'type': 'static_library',
-      'sources': ['wrists.q'],
+      'sources': ['claw.q'],
       'variables': {
-        'header_path': 'frc971/control_loops/wrists',
+        'header_path': 'frc971/control_loops/claw',
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:control_loop_queues',
@@ -18,48 +18,50 @@
       'includes': ['../../../aos/build/queues.gypi'],
     },
     {
-      'target_name': 'wrists_lib',
+      'target_name': 'claw_lib',
       'type': 'static_library',
       'sources': [
-        'wrists.cc',
-        'top_wrist_motor_plant.cc',
-        'top_wrist_motor_plant.cc',
+        'claw.cc',
+        'top_claw_motor_plant.cc',
+        'bottom_claw_motor_plant.cc',
+        'unaugmented_top_claw_motor_plant.cc',
+        'unaugmented_bottom_claw_motor_plant.cc',
       ],
       'dependencies': [
-        'wrist_loops',
+        'claw_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
       'export_dependent_settings': [
-        'wrist_loops',
+        'claw_loops',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
     },
     {
-      'target_name': 'wrists_lib_test',
+      'target_name': 'claw_lib_test',
       'type': 'executable',
       'sources': [
-        'wrists_lib_test.cc',
+        'claw_lib_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'wrist_loops',
-        'wrists_lib',
+        'claw_loops',
+        'claw_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
     },
     {
-      'target_name': 'wrists',
+      'target_name': 'claw',
       'type': 'executable',
       'sources': [
-        'wrists_main.cc',
+        'claw_main.cc',
       ],
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
-        'wrists_lib',
+        'claw_lib',
       ],
     },
   ],

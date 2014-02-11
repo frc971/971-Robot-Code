@@ -43,7 +43,7 @@ ERROR_MSG
 end
 class BoundSituation < LocalSituation
 	def initialize(locals,bind_to)
-		@globals = globals
+		@globals = locals.globals
 		@local = bind_to
 	end
 end
@@ -150,6 +150,7 @@ class QualifiedName
 	end
 	def test_lookup(namespace)
 		@names.each do |name|
+			return nil if(!namespace.respond_to?(:[]))
 			namespace = namespace[name]
 			return nil if(!namespace)
 		end
