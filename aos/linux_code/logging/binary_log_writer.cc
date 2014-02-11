@@ -95,6 +95,7 @@ int BinaryLogReaderMain() {
     output->time_sec = msg->seconds;
     output->time_nsec = msg->nseconds;
     output->sequence = msg->sequence;
+    output->type = LogFileMessageHeader::MessageType::kString;
     memcpy(output_strings, msg->name, name_size);
     memcpy(output_strings + name_size, msg->message, message_size);
     futex_set(&output->marker);
