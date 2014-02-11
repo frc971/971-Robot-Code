@@ -46,25 +46,12 @@ class ClawMotorSimulation {
 
   void Reinitialize(double initial_top_position,
                     double initial_bottom_position) {
+    LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
+        initial_bottom_position);
     ReinitializePartial(TOP_CLAW, initial_top_position);
     ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
     last_position_.Zero();
     SetPhysicalSensors(&last_position_);
-  }
-
-  // Resets the plant so that it starts at initial_position.
-  void ReinitializePartial(ClawType type, double initial_position) {
-    StateFeedbackPlant<2, 1, 1>* plant;
-    if (type == TOP_CLAW) {
-      plant = top_claw_plant_.get();
-    } else {
-      plant = bottom_claw_plant_.get();
-    }
-    initial_position_[type] = initial_position;
-    plant->X(0, 0) = initial_position_[type];
-    plant->X(1, 0) = 0.0;
-    plant->Y = plant->C() * plant->X;
-    last_voltage_[type] = 0.0;
   }
 
   // Returns the absolute angle of the wrist.
@@ -94,6 +81,7 @@ class ClawMotorSimulation {
 
     double pos[2] = {GetAbsolutePosition(TOP_CLAW),
                      GetAbsolutePosition(BOTTOM_CLAW)};
+    LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n", pos[TOP_CLAW], pos[BOTTOM_CLAW]);
 
     const frc971::constants::Values& values = constants::GetValues();
 
@@ -118,6 +106,9 @@ class ClawMotorSimulation {
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::ClawGroup::Position> position =
         claw_queue_group.position.MakeMessage();
+
+    // Initialize all the counters to their previous values.
+    *position = last_position_;
 
     SetPhysicalSensors(position.get());
 
@@ -301,6 +292,21 @@ class ClawMotorSimulation {
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> bottom_claw_plant_;
 
  private:
+  // Resets the plant so that it starts at initial_position.
+  void ReinitializePartial(ClawType type, double initial_position) {
+    StateFeedbackPlant<2, 1, 1>* plant;
+    if (type == TOP_CLAW) {
+      plant = top_claw_plant_.get();
+    } else {
+      plant = bottom_claw_plant_.get();
+    }
+    initial_position_[type] = initial_position;
+    plant->X(0, 0) = initial_position_[type];
+    plant->X(1, 0) = 0.0;
+    plant->Y = plant->C() * plant->X;
+    last_voltage_[type] = 0.0;
+  }
+
   void Simulate(ClawType type, StateFeedbackPlant<2, 1, 1>* plant,
                 const constants::Values::Claw &claw, double nl_voltage) {
     plant->U << last_voltage_[type];
@@ -346,7 +352,7 @@ class ClawTest : public ::testing::Test {
                          ".frc971.control_loops.claw_queue_group.output",
                          ".frc971.control_loops.claw_queue_group.status"),
         claw_motor_(&claw_queue_group),
-        claw_motor_plant_(0.2, 0.4),
+        claw_motor_plant_(0.4, 0.2),
         min_seperation_(constants::GetValues().claw_min_seperation) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
@@ -394,7 +400,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
 
 // Tests that the wrist zeros correctly starting on the hall effect sensor.
 TEST_F(ClawTest, ZerosStartingOn) {
-  claw_motor_plant_.Reinitialize(90 * M_PI / 180.0, 100 * M_PI / 180.0);
+  claw_motor_plant_.Reinitialize(100 * M_PI / 180.0, 90 * M_PI / 180.0);
 
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)

@@ -93,7 +93,9 @@ class DrivetrainMotorsSS {
   void SetRawPosition(double left, double right) {
     _raw_right = right;
     _raw_left = left;
-    loop_->Y << left, right;
+    Eigen::Matrix<double, 2, 1> Y;
+    Y << left, right;
+    loop_->Correct(Y);
   }
   void SetPosition(
       double left, double right, double gyro, bool control_loop_driving) {
@@ -108,8 +110,8 @@ class DrivetrainMotorsSS {
     SetRawPosition(left, right);
   }
 
-  void Update(bool update_observer, bool stop_motors) {
-    loop_->Update(update_observer, stop_motors);
+  void Update(bool stop_motors) {
+    loop_->Update(stop_motors);
   }
 
   void SendMotors(Drivetrain::Output *output) {
@@ -606,7 +608,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     }
   }
   dt_openloop.SetPosition(position);
-  dt_closedloop.Update(position, output == NULL);
+  dt_closedloop.Update(output == NULL);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
   if (control_loop_driving) {
