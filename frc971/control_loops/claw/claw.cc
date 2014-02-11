@@ -46,26 +46,45 @@
 namespace frc971 {
 namespace control_loops {
 
+void ZeroedStateFeedbackLoop::CapU() {
+  const double old_voltage = voltage_;
+  voltage_ += U(0, 0);
+
+  uncapped_voltage_ = voltage_;
+
+  double limit = zeroing_state_ != UNKNOWN_POSITION ? 12.0 : kZeroingMaxVoltage;
+
+  // Make sure that reality and the observer can't get too far off.  There is a
+  // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
+  // against last cycle's voltage.
+  if (X_hat(2, 0) > last_voltage_ + 2.0) {
+    voltage_ -= X_hat(2, 0) - (last_voltage_ + 2.0);
+    LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
+  } else if (X_hat(2, 0) < last_voltage_ -2.0) {
+    voltage_ += X_hat(2, 0) - (last_voltage_ - 2.0);
+    LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
+  }
+
+  voltage_ = std::min(limit, voltage_);
+  voltage_ = std::max(-limit, voltage_);
+  U(0, 0) = voltage_ - old_voltage;
+  //LOG(DEBUG, "abc %f\n", X_hat(2, 0) - voltage_);
+  //LOG(DEBUG, "error %f\n", X_hat(0, 0) - R(0, 0));
+
+  last_voltage_ = voltage_;
+}
+
 ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
     : aos::control_loops::ControlLoop<control_loops::ClawGroup>(my_claw),
-      zeroed_joint_(MakeTopClawLoop()) {
-  {
-    using ::frc971::constants::GetValues;
-    ZeroedJoint<1>::ConfigurationData config_data;
+      has_top_claw_goal_(false),
+      top_claw_goal_(0.0),
+      top_claw_(MakeTopClawLoop()),
+      has_bottom_claw_goal_(false),
+      bottom_claw_goal_(0.0),
+      bottom_claw_(MakeBottomClawLoop()),
+      was_enabled_(false) {}
 
-    config_data.lower_limit = GetValues().claw_lower_limit;
-    config_data.upper_limit = GetValues().claw_upper_limit;
-    config_data.hall_effect_start_angle[0] =
-        GetValues().claw_hall_effect_start_angle;
-    config_data.zeroing_off_speed = GetValues().claw_zeroing_off_speed;
-    config_data.zeroing_speed = GetValues().claw_zeroing_speed;
-
-    config_data.max_zeroing_voltage = 5.0;
-    config_data.deadband_voltage = 0.0;
-
-    zeroed_joint_.set_config_data(config_data);
-  }
-}
+const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
 // Positive angle is up, and positive power is up.
 void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
@@ -81,32 +100,131 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->intake_voltage = 0;
   }
 
-  ZeroedJoint<1>::PositionData transformed_position;
-  ZeroedJoint<1>::PositionData *transformed_position_ptr =
-      &transformed_position;
-  if (!position) {
-    transformed_position_ptr = NULL;
-  } else {
-    transformed_position.position = position->top_position;
-    transformed_position.hall_effects[0] = position->top_calibration_hall_effect;
-    transformed_position.hall_effect_positions[0] = position->top_posedge_value;
+  // TODO(austin): Handle the disabled state and the disabled -> enabled
+  // transition in all of these states.
+  // TODO(austin): Handle zeroing while disabled.
+
+  // TODO(austin): Save all the counters so we know when something actually
+  //               happens.
+  // TODO(austin): Helpers to find the position of the claw on an edge.
+
+  // TODO(austin): This may not be necesary because of the ControlLoop class.
+  ::aos::robot_state.FetchLatest();
+  if (::aos::robot_state.get() == nullptr) {
+    return;
   }
 
-  const double voltage =
-      zeroed_joint_.Update(transformed_position_ptr, output != NULL,
-                           goal->bottom_angle + goal->seperation_angle, 0.0);
+  if (position) {
+    if (!has_top_claw_goal_) {
+      has_top_claw_goal_ = true;
+      top_claw_goal_ = position->top.position;
+    }
+    if (!has_bottom_claw_goal_) {
+      has_bottom_claw_goal_ = true;
+      bottom_claw_goal_ = position->bottom.position;
+    }
+
+    top_claw_.set_front_hall_effect_posedge_count(
+        position->top.front_hall_effect_posedge_count);
+    top_claw_.set_front_hall_effect_negedge_count(
+        position->top.front_hall_effect_negedge_count);
+    top_claw_.set_calibration_hall_effect_posedge_count(
+        position->top.calibration_hall_effect_posedge_count);
+    top_claw_.set_calibration_hall_effect_negedge_count(
+        position->top.calibration_hall_effect_negedge_count);
+    top_claw_.set_back_hall_effect_posedge_count(
+        position->top.back_hall_effect_posedge_count);
+    top_claw_.set_back_hall_effect_negedge_count(
+        position->top.back_hall_effect_negedge_count);
+
+    bottom_claw_.set_front_hall_effect_posedge_count(
+        position->bottom.front_hall_effect_posedge_count);
+    bottom_claw_.set_front_hall_effect_negedge_count(
+        position->bottom.front_hall_effect_negedge_count);
+    bottom_claw_.set_calibration_hall_effect_posedge_count(
+        position->bottom.calibration_hall_effect_posedge_count);
+    bottom_claw_.set_calibration_hall_effect_negedge_count(
+        position->bottom.calibration_hall_effect_negedge_count);
+    bottom_claw_.set_back_hall_effect_posedge_count(
+        position->bottom.back_hall_effect_posedge_count);
+    bottom_claw_.set_back_hall_effect_negedge_count(
+        position->bottom.back_hall_effect_negedge_count);
+  }
+
+  bool autonomous = ::aos::robot_state->autonomous;
+
+  if ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
+       bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
+      (autonomous &&
+       ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+         top_claw_.zeroing_state() ==
+             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+        (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+         bottom_claw_.zeroing_state() ==
+             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION)))) {
+    // Ready to use the claw.
+    // Limit the goals here.
+  } else if (top_claw_.zeroing_state() !=
+                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
+             bottom_claw_.zeroing_state() !=
+                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+    // Time to fine tune the zero.
+    // Limit the goals here.
+    if (bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::CALIBRATED) {
+    } else {
+    }
+  } else {
+    if (!was_enabled_ && enabled) {
+      
+    }
+    // Limit the goals here.
+    if (top_claw_.zeroing_state() ==
+        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+    }
+    if (bottom_claw_.zeroing_state() ==
+        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+    }
+
+    if (bottom_claw_.zeroing_state() !=
+        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+      // Time to slowly move back up to find any position to narrow down the
+      // zero.
+    } else {
+      // We don't know where either claw is.  Slowly start moving down to find
+      // any hall effect.
+      LOG(INFO, "Unknown position\n");
+    }
+  }
+
+  // TODO(austin): Handle disabled.
 
   if (position) {
-    LOG(DEBUG, "pos: %f hall: %s absolute: %f\n", position->top_position,
-        position->top_calibration_hall_effect ? "true" : "false",
-        zeroed_joint_.absolute_position());
+    top_claw_.Y << position->top.position;
+    bottom_claw_.Y << position->bottom.position;
+  }
+
+  // TODO(austin): ...
+  top_claw_.R << goal->bottom_angle + goal->seperation_angle, 0.0, 0.0;
+  bottom_claw_.R << goal->bottom_angle, 0.0, 0.0;
+
+  top_claw_.Update(position != nullptr, output == nullptr);
+  bottom_claw_.Update(position != nullptr, output == nullptr);
+
+  if (position) {
+    //LOG(DEBUG, "pos: %f hall: %s absolute: %f\n", position->top_position,
+        //position->top_calibration_hall_effect ? "true" : "false",
+        //zeroed_joint_.absolute_position());
   }
 
   if (output) {
-    output->top_claw_voltage = voltage;
+    output->top_claw_voltage = top_claw_.voltage();
+    output->bottom_claw_voltage = bottom_claw_.voltage();
   }
-  status->done = ::std::abs(zeroed_joint_.absolute_position() -
-                            goal->bottom_angle - goal->seperation_angle) < 0.004;
+  status->done = false;
+      //::std::abs(zeroed_joint_.absolute_position() - goal->bottom_angle -
+                 //goal->seperation_angle) < 0.004;
+
+  was_enabled_ = ::aos::robot_state->enabled;
 }
 
 }  // namespace control_loops

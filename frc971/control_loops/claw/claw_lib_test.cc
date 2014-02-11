@@ -36,17 +36,24 @@ class ClawMotorSimulation {
       : top_claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawTopClawPlant())),
         bottom_claw_plant_(
             new StateFeedbackPlant<2, 1, 1>(MakeRawBottomClawPlant())),
-        claw_queue_group(".frc971.control_loops.claw", 0x1a7b7094,
-                         ".frc971.control_loops.claw.goal",
-                         ".frc971.control_loops.claw.position",
-                         ".frc971.control_loops.claw.output",
-                         ".frc971.control_loops.claw.status") {
-    Reinitialize(TOP_CLAW, initial_top_position);
-    Reinitialize(BOTTOM_CLAW, initial_bottom_position);
+        claw_queue_group(".frc971.control_loops.claw_queue_group", 0x9f1a99dd,
+                         ".frc971.control_loops.claw_queue_group.goal",
+                         ".frc971.control_loops.claw_queue_group.position",
+                         ".frc971.control_loops.claw_queue_group.output",
+                         ".frc971.control_loops.claw_queue_group.status") {
+    Reinitialize(initial_top_position, initial_bottom_position);
+  }
+
+  void Reinitialize(double initial_top_position,
+                    double initial_bottom_position) {
+    ReinitializePartial(TOP_CLAW, initial_top_position);
+    ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
+    last_position_.Zero();
+    SetPhysicalSensors(&last_position_);
   }
 
   // Resets the plant so that it starts at initial_position.
-  void Reinitialize(ClawType type, double initial_position) {
+  void ReinitializePartial(ClawType type, double initial_position) {
     StateFeedbackPlant<2, 1, 1>* plant;
     if (type == TOP_CLAW) {
       plant = top_claw_plant_.get();
@@ -57,8 +64,6 @@ class ClawMotorSimulation {
     plant->X(0, 0) = initial_position_[type];
     plant->X(1, 0) = 0.0;
     plant->Y = plant->C() * plant->X;
-    last_position_[type] = plant->Y(0, 0);
-    calibration_value_[type] = 0.0;
     last_voltage_[type] = 0.0;
   }
 
@@ -77,59 +82,207 @@ class ClawMotorSimulation {
   }
 
   // Makes sure pos is inside range (inclusive)
-  bool CheckRange(double pos, double low_limit, double hi_limit) {
-    return (pos >= low_limit && pos <= hi_limit);
+  bool CheckRange(double pos, struct constants::Values::AnglePair pair) {
+    return (pos >= pair.lower_angle && pos <= pair.upper_angle);
   }
 
-  double CheckCalibration(ClawType type, bool hall_effect, double start_angle,
-                          double stop_angle) {
-    if ((last_position_[type] < start_angle ||
-         last_position_[type] > stop_angle) &&
-        hall_effect) {
-      calibration_value_[type] = start_angle - initial_position_[type];
-    }
-    return calibration_value_[type];
+  // Sets the values of the physical sensors that can be directly observed
+  // (encoder, hall effect).
+  void SetPhysicalSensors(control_loops::ClawGroup::Position *position) {
+    position->top.position = GetPosition(TOP_CLAW);
+    position->bottom.position = GetPosition(BOTTOM_CLAW);
+
+    double pos[2] = {GetAbsolutePosition(TOP_CLAW),
+                     GetAbsolutePosition(BOTTOM_CLAW)};
+
+    const frc971::constants::Values& values = constants::GetValues();
+
+    // Signal that the hall effect sensor has been triggered if it is within
+    // the correct range.
+    position->top.front_hall_effect =
+        CheckRange(pos[TOP_CLAW], values.upper_claw.front);
+    position->top.calibration_hall_effect =
+        CheckRange(pos[TOP_CLAW], values.upper_claw.calibration);
+    position->top.back_hall_effect =
+        CheckRange(pos[TOP_CLAW], values.upper_claw.back);
+
+    position->bottom.front_hall_effect =
+        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.front);
+    position->bottom.calibration_hall_effect =
+        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.calibration);
+    position->bottom.back_hall_effect =
+        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.back);
   }
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::ClawGroup::Position> position =
         claw_queue_group.position.MakeMessage();
-    position->top_position = GetPosition(TOP_CLAW);
-    position->bottom_position = GetPosition(BOTTOM_CLAW);
 
-    // Signal that the hall effect sensor has been triggered if it is within
-    // the correct range.
-    double pos[2] = {GetAbsolutePosition(TOP_CLAW),
-                     GetAbsolutePosition(BOTTOM_CLAW)};
-    const frc971::constants::Values& v = constants::GetValues();
-    position->top_front_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_front_heffect_start_angle,
-                   v.claw_front_heffect_stop_angle);
-    position->top_calibration_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_calib_heffect_start_angle,
-                   v.claw_calib_heffect_stop_angle);
-    position->top_back_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_back_heffect_start_angle,
-                   v.claw_back_heffect_stop_angle);
-    position->bottom_front_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_front_heffect_start_angle,
-                   v.claw_front_heffect_stop_angle);
-    position->bottom_calibration_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_calib_heffect_start_angle,
-                   v.claw_calib_heffect_stop_angle);
-    position->bottom_back_hall_effect =
-        CheckRange(pos[TOP_CLAW], v.claw_back_heffect_start_angle,
-                   v.claw_back_heffect_stop_angle);
+    SetPhysicalSensors(position.get());
+
+    const frc971::constants::Values& values = constants::GetValues();
+
+    // Handle the front hall effect.
+    if (position->top.front_hall_effect &&
+        !last_position_.top.front_hall_effect) {
+      ++position->top.front_hall_effect_posedge_count;
+
+      if (last_position_.top.position < values.upper_claw.front.lower_angle) {
+        position->top.posedge_value =
+            values.upper_claw.front.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.posedge_value =
+            values.upper_claw.front.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->top.front_hall_effect &&
+        last_position_.top.front_hall_effect) {
+      ++position->top.front_hall_effect_negedge_count;
+
+      if (position->top.position < values.upper_claw.front.lower_angle) {
+        position->top.negedge_value =
+            values.upper_claw.front.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.negedge_value =
+            values.upper_claw.front.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+
+    // Handle the calibration hall effect.
+    if (position->top.calibration_hall_effect &&
+        !last_position_.top.calibration_hall_effect) {
+      ++position->top.calibration_hall_effect_posedge_count;
+
+      if (last_position_.top.position < values.upper_claw.calibration.lower_angle) {
+        position->top.posedge_value =
+            values.upper_claw.calibration.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.posedge_value =
+            values.upper_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->top.calibration_hall_effect &&
+        last_position_.top.calibration_hall_effect) {
+      ++position->top.calibration_hall_effect_negedge_count;
+
+      if (position->top.position < values.upper_claw.calibration.lower_angle) {
+        position->top.negedge_value =
+            values.upper_claw.calibration.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.negedge_value =
+            values.upper_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+
+    // Handle the back hall effect.
+    if (position->top.back_hall_effect &&
+        !last_position_.top.back_hall_effect) {
+      ++position->top.back_hall_effect_posedge_count;
+
+      if (last_position_.top.position < values.upper_claw.back.lower_angle) {
+        position->top.posedge_value =
+            values.upper_claw.back.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.posedge_value =
+            values.upper_claw.back.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->top.back_hall_effect &&
+        last_position_.top.back_hall_effect) {
+      ++position->top.back_hall_effect_negedge_count;
+
+      if (position->top.position < values.upper_claw.back.lower_angle) {
+        position->top.negedge_value =
+            values.upper_claw.back.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->top.negedge_value =
+            values.upper_claw.back.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+
+    // Now deal with the bottom part of the claw.
+    // Handle the front hall effect.
+    if (position->bottom.front_hall_effect &&
+        !last_position_.bottom.front_hall_effect) {
+      ++position->bottom.front_hall_effect_posedge_count;
+
+      if (last_position_.bottom.position < values.lower_claw.front.lower_angle) {
+        position->bottom.posedge_value =
+            values.lower_claw.front.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.posedge_value =
+            values.lower_claw.front.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->bottom.front_hall_effect &&
+        last_position_.bottom.front_hall_effect) {
+      ++position->bottom.front_hall_effect_negedge_count;
+
+      if (position->bottom.position < values.lower_claw.front.lower_angle) {
+        position->bottom.negedge_value =
+            values.lower_claw.front.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.negedge_value =
+            values.lower_claw.front.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+
+    // Handle the calibration hall effect.
+    if (position->bottom.calibration_hall_effect &&
+        !last_position_.bottom.calibration_hall_effect) {
+      ++position->bottom.calibration_hall_effect_posedge_count;
+
+      if (last_position_.bottom.position < values.lower_claw.calibration.lower_angle) {
+        position->bottom.posedge_value =
+            values.lower_claw.calibration.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.posedge_value =
+            values.lower_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->bottom.calibration_hall_effect &&
+        last_position_.bottom.calibration_hall_effect) {
+      ++position->bottom.calibration_hall_effect_negedge_count;
+
+      if (position->bottom.position < values.lower_claw.calibration.lower_angle) {
+        position->bottom.negedge_value =
+            values.lower_claw.calibration.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.negedge_value =
+            values.lower_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+
+    // Handle the back hall effect.
+    if (position->bottom.back_hall_effect &&
+        !last_position_.bottom.back_hall_effect) {
+      ++position->bottom.back_hall_effect_posedge_count;
+
+      if (last_position_.bottom.position < values.lower_claw.back.lower_angle) {
+        position->bottom.posedge_value =
+            values.lower_claw.back.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.posedge_value =
+            values.lower_claw.back.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
+    if (!position->bottom.back_hall_effect &&
+        last_position_.bottom.back_hall_effect) {
+      ++position->bottom.back_hall_effect_negedge_count;
+
+      if (position->bottom.position < values.lower_claw.back.lower_angle) {
+        position->bottom.negedge_value =
+            values.lower_claw.back.lower_angle - initial_position_[TOP_CLAW];
+      } else {
+        position->bottom.negedge_value =
+            values.lower_claw.back.upper_angle - initial_position_[TOP_CLAW];
+      }
+    }
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
-    position->top_calibration = CheckCalibration(
-        TOP_CLAW, position->top_calibration_hall_effect,
-        v.claw_calib_heffect_start_angle, v.claw_calib_heffect_stop_angle);
-    position->bottom_calibration = CheckCalibration(
-        BOTTOM_CLAW, position->bottom_calibration_hall_effect,
-        v.claw_calib_heffect_start_angle, v.claw_calib_heffect_stop_angle);
+    last_position_ = *position;
     position.Send();
   }
 
@@ -137,37 +290,35 @@ class ClawMotorSimulation {
   void Simulate() {
     const frc971::constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
-    Simulate(TOP_CLAW, top_claw_plant_.get(), v.claw_upper_limit,
-             v.claw_lower_limit, claw_queue_group.output->top_claw_voltage);
-    Simulate(BOTTOM_CLAW, bottom_claw_plant_.get(), v.claw_upper_limit,
-             v.claw_lower_limit, claw_queue_group.output->bottom_claw_voltage);
+    Simulate(TOP_CLAW, top_claw_plant_.get(), v.upper_claw,
+             claw_queue_group.output->top_claw_voltage);
+    Simulate(BOTTOM_CLAW, bottom_claw_plant_.get(), v.lower_claw,
+             claw_queue_group.output->bottom_claw_voltage);
   }
-
-  void Simulate(ClawType type, StateFeedbackPlant<2, 1, 1>* plant,
-                double upper_limit, double lower_limit, double nl_voltage) {
-    last_position_[type] = plant->Y(0, 0);
-    plant->U << last_voltage_[type];
-    plant->Update();
-
-    // check top claw inside limits
-    EXPECT_GE(upper_limit, plant->Y(0, 0));
-    EXPECT_LE(lower_limit, plant->Y(0, 0));
-    // check bottom claw inside limits
-    EXPECT_GE(upper_limit, plant->Y(0, 0));
-    EXPECT_LE(lower_limit, plant->Y(0, 0));
-    last_voltage_[type] = nl_voltage;
-  }
-
   // Top of the claw, the one with rollers
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> top_claw_plant_;
   // Bottom of the claw, the one with tusks
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> bottom_claw_plant_;
+
  private:
+  void Simulate(ClawType type, StateFeedbackPlant<2, 1, 1>* plant,
+                const constants::Values::Claw &claw, double nl_voltage) {
+    plant->U << last_voltage_[type];
+    plant->Update();
+
+    // check top claw inside limits
+    EXPECT_GE(claw.upper_limit, plant->Y(0, 0));
+    EXPECT_LE(claw.lower_limit, plant->Y(0, 0));
+
+    // TODO(austin): Check that the claws aren't too close to eachother.
+    last_voltage_[type] = nl_voltage;
+  }
+
   ClawGroup claw_queue_group;
   double initial_position_[CLAW_COUNT];
-  double last_position_[CLAW_COUNT];
-  double calibration_value_[CLAW_COUNT];
   double last_voltage_[CLAW_COUNT];
+
+  control_loops::ClawGroup::Position last_position_;
 };
 
 
@@ -189,13 +340,13 @@ class ClawTest : public ::testing::Test {
   double min_seperation_;
 
   ClawTest()
-      : claw_queue_group(".frc971.control_loops.wrist", 0x1a7b7094,
-                         ".frc971.control_loops.wrist.goal",
-                         ".frc971.control_loops.wrist.position",
-                         ".frc971.control_loops.wrist.output",
-                         ".frc971.control_loops.wrist.status"),
+      : claw_queue_group(".frc971.control_loops.claw_queue_group", 0x9f1a99dd,
+                         ".frc971.control_loops.claw_queue_group.goal",
+                         ".frc971.control_loops.claw_queue_group.position",
+                         ".frc971.control_loops.claw_queue_group.output",
+                         ".frc971.control_loops.claw_queue_group.status"),
         claw_motor_(&claw_queue_group),
-        claw_motor_plant_(0.5, 1.0),
+        claw_motor_plant_(0.2, 0.4),
         min_seperation_(constants::GetValues().claw_min_seperation) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
@@ -235,7 +386,6 @@ TEST_F(ClawTest, ZerosCorrectly) {
   for (int i = 0; i < 400; ++i) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
-    bottom_claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
     SendDSPacket(true);
   }
@@ -244,8 +394,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
 
 // Tests that the wrist zeros correctly starting on the hall effect sensor.
 TEST_F(ClawTest, ZerosStartingOn) {
-  claw_motor_plant_.Reinitialize(TOP_CLAW, 90 * M_PI / 180.0);
-  claw_motor_plant_.Reinitialize(BOTTOM_CLAW, 100 * M_PI / 180.0);
+  claw_motor_plant_.Reinitialize(90 * M_PI / 180.0, 100 * M_PI / 180.0);
 
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
@@ -254,7 +403,6 @@ TEST_F(ClawTest, ZerosStartingOn) {
   for (int i = 0; i < 500; ++i) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
-    bottom_claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
 
     SendDSPacket(true);
@@ -262,6 +410,7 @@ TEST_F(ClawTest, ZerosStartingOn) {
   VerifyNearGoal();
 }
 
+/*
 // Tests that missing positions are correctly handled.
 TEST_F(ClawTest, HandleMissingPosition) {
   claw_queue_group.goal.MakeWithBuilder()
@@ -273,7 +422,6 @@ TEST_F(ClawTest, HandleMissingPosition) {
       claw_motor_plant_.SendPositionMessage();
     }
     claw_motor_.Iterate();
-    bottom_claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
 
     SendDSPacket(true);
@@ -297,7 +445,6 @@ TEST_F(ClawTest, RezeroWithMissingPos) {
       if (i > 310) {
         // Should be re-zeroing now.
         EXPECT_TRUE(claw_motor_.is_uninitialized());
-        EXPECT_TRUE(bottom_claw_motor_.is_uninitialized());
       }
       claw_queue_group.goal.MakeWithBuilder()
           .bottom_angle(0.2)
@@ -333,8 +480,7 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
       if (i > 100) {
         // Give the loop a couple cycled to get the message and then verify that
         // it is in the correct state.
-        EXPECT_TRUE(top_claw_motor_.is_uninitialized());
-        EXPECT_TRUE(bottom_claw_motor_.is_uninitialized());
+        EXPECT_TRUE(claw_motor_.is_uninitialized());
         // When disabled, we should be applying 0 power.
         EXPECT_TRUE(claw_queue_group.output.FetchLatest());
         EXPECT_EQ(0, claw_queue_group.output->top_claw_voltage);
@@ -368,8 +514,7 @@ TEST_F(ClawTest, NoWindupNegative) {
   for (int i = 0; i < 500; ++i) {
     claw_motor_plant_.SendPositionMessage();
     if (i == 50) {
-      EXPECT_TRUE(top_claw_motor_.is_zeroing());
-      EXPECT_TRUE(bottom_claw_motor_.is_zeroing());
+      EXPECT_TRUE(claw_motor_.is_zeroing());
       // Move the zeroing position far away and verify that it gets moved back.
       saved_zeroing_position[TOP_CLAW] =
           top_claw_motor_.zeroed_joint_.zeroing_position_;
@@ -378,15 +523,15 @@ TEST_F(ClawTest, NoWindupNegative) {
           bottom_claw_motor_.zeroed_joint_.zeroing_position_;
       bottom_claw_motor_.zeroed_joint_.zeroing_position_ = -100.0;
     } else if (i == 51) {
-      EXPECT_TRUE(top_claw_motor_.is_zeroing());
+      EXPECT_TRUE(claw_motor_.is_zeroing());
+
       EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
                   top_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
-      EXPECT_TRUE(bottom_claw_motor_.is_zeroing());
       EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
                   bottom_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
     }
-    if (!top_claw_motor_.is_ready()) {
-      if (top_claw_motor_.capped_goal()) {
+    if (!claw_motor_.top().is_ready()) {
+      if (claw_motor_.top().capped_goal()) {
         ++capped_count[TOP_CLAW];
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
@@ -395,8 +540,8 @@ TEST_F(ClawTest, NoWindupNegative) {
         ASSERT_GT(5, ::std::abs(top_claw_motor_.zeroed_joint_.U_uncapped()));
       }
     }
-    if (!bottom_claw_motor_.is_ready()) {
-      if (bottom_claw_motor_.capped_goal()) {
+    if (!claw_motor_.bottom().is_ready()) {
+      if (claw_motor_.bottom().capped_goal()) {
         ++capped_count[BOTTOM_CLAW];
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
@@ -406,8 +551,7 @@ TEST_F(ClawTest, NoWindupNegative) {
       }
     }
 
-    top_claw_motor_.Iterate();
-    bottom_claw_motor_.Iterate();
+    claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
     SendDSPacket(true);
   }
@@ -439,12 +583,12 @@ TEST_F(ClawTest, NoWindupPositive) {
       top_claw_motor_.zeroed_joint_.zeroing_position_ = 100.0;
     } else {
       if (i == 51) {
-        EXPECT_TRUE(top_claw_motor_.is_zeroing());
+        EXPECT_TRUE(claw_motor_.top().is_zeroing());
+        EXPECT_TRUE(claw_motor_.bottom().is_zeroing());
         EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
-                    top_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
-        EXPECT_TRUE(bottom_claw_motor_.is_zeroing());
+                    claw_motor_.top().zeroing_position_, 0.4);
         EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
-                    bottom_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
+                    claw_motor_.bottom().zeroing_position_, 0.4);
       }
     }
     if (!top_claw_motor_.is_ready()) {
@@ -452,9 +596,9 @@ TEST_F(ClawTest, NoWindupPositive) {
         ++capped_count[TOP_CLAW];
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(top_claw_motor_.zeroed_joint_.U_uncapped()));
+        ASSERT_LT(5, ::std::abs(claw_motor_.top().zeroed_joint_.U_uncapped()));
       } else {
-        ASSERT_GT(5, ::std::abs(top_claw_motor_.zeroed_joint_.U_uncapped()));
+        ASSERT_GT(5, ::std::abs(claw_motor_.top().zeroed_joint_.U_uncapped()));
       }
     }
     if (!bottom_claw_motor_.is_ready()) {
@@ -462,14 +606,13 @@ TEST_F(ClawTest, NoWindupPositive) {
         ++capped_count[BOTTOM_CLAW];
         // The cycle after we kick the zero position is the only cycle during
         // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(bottom_claw_motor_.zeroed_joint_.U_uncapped()));
+        ASSERT_LT(5, ::std::abs(claw_motor_.bottom().zeroed_joint_.U_uncapped()));
       } else {
-        ASSERT_GT(5, ::std::abs(bottom_claw_motor_.zeroed_joint_.U_uncapped()));
+        ASSERT_GT(5, ::std::abs(claw_motor_.bottom().zeroed_joint_.U_uncapped()));
       }
     }
 
-    top_claw_motor_.Iterate();
-    bottom_claw_motor_.Iterate();
+    claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
     SendDSPacket(true);
   }
@@ -477,6 +620,7 @@ TEST_F(ClawTest, NoWindupPositive) {
   EXPECT_GT(3, capped_count[TOP_CLAW]);
   EXPECT_GT(3, capped_count[BOTTOM_CLAW]);
 }
+*/
 
 }  // namespace testing
 }  // namespace control_loops
