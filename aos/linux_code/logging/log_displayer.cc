@@ -137,15 +137,18 @@ int main(int argc, char **argv) {
             filename, strerror(errno));
     exit(EXIT_FAILURE);
   }
-  ::aos::logging::LogFileAccessor accessor(fd, false);
+  ::aos::logging::linux_code::LogFileAccessor accessor(fd, false);
   if (!start_at_beginning) {
     accessor.MoveToEnd();
   }
-  const ::aos::logging::LogFileMessageHeader *msg;
+  const ::aos::logging::linux_code::LogFileMessageHeader *msg;
   ::aos::logging::LogMessage log_message;
   do {
     msg = accessor.ReadNextMessage(follow);
-    if (msg == NULL) continue;
+    if (msg == NULL) {
+      fputs("reached end of file\n", stderr);
+      return 0;
+    }
     if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
     if (filter_name != NULL &&
         strcmp(filter_name,

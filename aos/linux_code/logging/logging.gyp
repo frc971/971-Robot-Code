@@ -1,5 +1,6 @@
 {
   'targets': [
+    # linux_* is dealt with by aos/build/aos.gyp:logging.
     {
       'target_name': 'binary_log_writer',
       'type': 'executable',
@@ -10,6 +11,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
+        'binary_log_file',
       ],
     },
     {
@@ -34,6 +36,20 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:init',
+        'binary_log_file',
+      ],
+    },
+    {
+      'target_name': 'binary_log_file',
+      'type': 'static_library',
+      'sources': [
+        'binary_log_file.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],
