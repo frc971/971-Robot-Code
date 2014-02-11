@@ -24,7 +24,7 @@ if [[ ! ${NO_TARGET} ]]; then
 fi
 if [[ ! ${NO_AMD64} ]]; then
 	echo 'Building code for amd64...' 2>&1
-	../../aos/build/build.sh linux-amd64 prime.gyp no prime-amd64 "$@"
+	../../aos/build/build.sh linux-amd64 prime.gyp yes prime-amd64 "$@"
     if [[ $? -ne 0 ]]; then
 		echo 'Building code for amd64 failed!' 2>&1
 		exit 1
