@@ -1,4 +1,4 @@
-class Target::StructDec < Target::Node
+class Target::StructDec < Target::StructBase
 	attr_accessor :name,:loc,:parent, :extern
 	def initialize(name)
 		@name = name
@@ -6,6 +6,21 @@ class Target::StructDec < Target::Node
 	end
 	def add_member(member)
 		@members << member
+	end
+	def add_TypeRegister(o_type, member_func)
+		type = cpp_tree.get(self)
+		if(@loc == o_type.loc) #use relative name
+			tName = type.name
+		else #use full name
+			tName = @loc.to_cpp_id(type.name)
+		end 
+		member_func.suite << "#{tName}::TypeGet()" 
+	end
+	def create_GetType(type_class, cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType& ","GetType")
+		member_func.static = true
+		member_func.suite << "static ::aos::Once<const ::aos::MessageType> getter(#{type_class.name}::DoGetType)"
+		member_func.suite << CPP::Return.new("*getter.Get()")
 	end
 	def create(cpp_tree)
 		return self if(@extern)
@@ -20,15 +35,9 @@ class Target::StructDec < Target::Node
 		@members.each do |elem|
 			type_class.add_member(elem.create_usage(cpp_tree))
 		end
+		create_DoGetType(type_class, cpp_tree)
+		create_GetType(type_class, cpp_tree)
 		return type_class
-	end
-	def size()
-		return @size if(@size)
-		@size = 0
-		@members.each do |elem|
-			@size += elem.size
-		end
-		return @size
 	end
 	def getPrintFormat()
 		return "{" + @members.collect { |elem| elem.toPrintFormat() }.join(", ") + "}"
@@ -97,5 +106,10 @@ class Target::MessageStructElement < Target::Node
 	def zeroCall(suite, parent = "")
 		@type.zeroCall(suite, parent + "#{@name}.")
 	end
-	
+	def simpleStr()
+		"#{@type.simpleStr()} #{@name}"
+	end
+	def getTypeID()
+		return @type.getTypeID()
+	end
 end

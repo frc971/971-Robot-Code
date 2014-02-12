@@ -391,6 +391,7 @@ module Types
 		end
 	end
 	class Struct < Type
+		attr_accessor :members
 		def add_member(member)
 			@members.push(member)
 			return member
