@@ -7,20 +7,12 @@ class Target::StructDec < Target::StructBase
 	def add_member(member)
 		@members << member
 	end
-	def add_TypeRegister(o_type, member_func)
-		type = cpp_tree.get(self)
-		if(@loc == o_type.loc) #use relative name
-			tName = type.name
-		else #use full name
-			tName = @loc.to_cpp_id(type.name)
-		end 
-		member_func.suite << "#{tName}::TypeGet()" 
-	end
 	def create_GetType(type_class, cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType& ","GetType")
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType*","GetType")
+		type_class.add_member(member_func)
 		member_func.static = true
 		member_func.suite << "static ::aos::Once<const ::aos::MessageType> getter(#{type_class.name}::DoGetType)"
-		member_func.suite << CPP::Return.new("*getter.Get()")
+		member_func.suite << CPP::Return.new("getter.Get()")
 	end
 	def create(cpp_tree)
 		return self if(@extern)
@@ -89,6 +81,11 @@ class Target::MessageStructElement < Target::Node
 	end
 	def create_usage(cpp_tree)
 		return "#{type_name(cpp_tree)} #{@name}"
+	end
+	def add_TypeRegister(cpp_tree, o_type, member_func)
+		type = cpp_tree.get(@type)
+		tName = @type.loc.to_cpp_id(type.name)
+		member_func.suite << "#{tName}::GetType()"
 	end
 	def fetchPrintArgs(args, parent = "")
 		@type.fetchPrintArgs(args, parent + "#{@name}.")

@@ -6,26 +6,28 @@ end
 
 class Target::StructBase < Target::Node
 	def create_DoGetType(type_class, cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType* ","DoGetType")
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType*","DoGetType")
 		member_func.static = true
-#		member_func.const = true
 		fields = []
+    register_members = []
 		@members.each do |member|
 			tId = member.getTypeID()
 			fieldName = member.name.inspect
 			if(member.respond_to?(:add_TypeRegister))
-				member.add_TypeRegister(type_class, member_func)
+        register_members.push(member)
 			end
 			fields << "new ::aos::MessageType::Field{#{tId}, #{fieldName}}"
 		end
+    register_members.uniq do |member|
+      member.type
+    end.each do |member|
+			member.add_TypeRegister(cpp_tree, type_class, member_func)
+    end
 		id = getTypeID()
 		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{id}, #{@name.inspect}, {" +
 		  "#{fields.join(", ")}})");
 		type_class.add_member(member_func)
-#		val = CPP::StaticVar.new(type_class, "const int", "asdf")
-#		val.args << 0
-#		type_class.add_member(val)
-		member_func.suite << "::type_cache::Add(&kMsgMessageType)"
+		member_func.suite << "::aos::type_cache::Add(kMsgMessageType)"
 		member_func.suite << CPP::Return.new("&kMsgMessageType")
 	end
 	def simpleStr()
@@ -132,10 +134,11 @@ class Target::MessageDec < Target::StructBase
 							"::aos::Message::Size()"))
 	end
 	def create_GetType(type_class, cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType& ","GetType")
-		member_func.const = true
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType*","GetType")
+		type_class.add_member(member_func)
+		member_func.static = true
 		member_func.suite << "static ::aos::Once<const ::aos::MessageType> getter(#{type_class.name}::DoGetType)"
-		member_func.suite << CPP::Return.new("*getter.Get()")
+		member_func.suite << CPP::Return.new("getter.Get()")
 	end
 	def self.builder_loc(loc)
 		return @builder_loc if(@builder_loc)
@@ -278,7 +281,7 @@ class Target::MessageElement < Target::Node
 		f_call.args.dont_wrap = true
 	end
 	def getTypeID()
-		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) & 0x4000 #ensures is primative
+		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) | 0x4000 #ensures is primative
 	end
 	def simpleStr()
 		"#{@type} #{@name}"

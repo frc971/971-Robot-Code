@@ -49,7 +49,7 @@ class Message {
   // Writes the contents of the message to the provided buffer.
   size_t Print(char *buffer, int length) const;
 
-  const MessageType *GetType() const;
+  static const MessageType *GetType();
 };
 
 template <class T> class Queue;

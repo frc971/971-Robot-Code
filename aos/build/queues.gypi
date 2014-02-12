@@ -118,6 +118,7 @@
   },
   'dependencies': [
     '<(AOS)/common/common.gyp:queues',
+    '<(AOS)/common/common.gyp:once',
   ],
   'export_dependent_settings': [
     '<(AOS)/common/common.gyp:queues',

@@ -155,7 +155,6 @@ COMMENT_END
 		cons = CPP::Constructor.new(init_class)
 		init_class.add_member(:public,cons)
 		cons.suite << if_stmt = CPP::If.new("0 == #{counter}++")
-		if_stmt.suite << "printf(#{"making a #{@name}!\n".inspect})"
 
 		cons_call = CPP::FuncCall.new("new #{type_name}")
 		cons_call.args.push(@loc.queue_name(@name).inspect)
@@ -165,12 +164,10 @@ COMMENT_END
 			cons_call.args.push(@loc.queue_name(@name + "." + queue.name).inspect)
 		end
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr",cons_call)
-		if_stmt.else_suite << CPP::FuncCall.build("printf","already made a #{@name}\n".inspect)
 
 
 		destruct = CPP::Destructor.new(init_class)
 		destruct.suite << if_stmt = CPP::If.new("0 == --#{counter}")
-		if_stmt.suite << "printf(#{"deleting a #{@name}!! :) !!\n".inspect})"
 		if_stmt.suite << "delete #{@name}_ptr"
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr","NULL")
 
