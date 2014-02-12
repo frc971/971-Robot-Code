@@ -18,6 +18,34 @@ class CPP::TODO < CPP::Comment
 		@text = "TODO(#{owner}): #{text}"
 	end
 end
+class CPP::StaticVar
+	class ForwardDec
+		def initialize(func) ; @func = func ; end
+		def pp(state) ; @func.pp_forward_dec(state) ; end
+	end
+	attr_accessor :args, :static
+	def initialize(type_class, val_type, name, args = CPP::Args.new())
+		@type_class = type_class
+		@val_type = val_type
+		@name = name
+		@args = args
+		@static = true
+	end
+	def forward_dec() ; ForwardDec.new(self) ; end
+	def pp_forward_dec(state)
+    if (@static)
+      state.print("static ")
+		end
+		state.print("#{@val_type} #{@name}")
+	end
+	def pp(state)
+		state.print("#{@val_type} #{@type_class.chop_method_prefix}#{@name}(")
+		state.pp(@args)
+		state.print(")")
+	end
+	alias_method :pp_header_file, :pp_forward_dec
+	alias_method :pp_cc_file, :pp
+end
 class CPP::MemberFunc
 	class ForwardDec
 		def initialize(func) ; @func = func ; end

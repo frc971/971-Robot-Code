@@ -4,7 +4,50 @@ rescue LoadError
   require "digest/sha1"
 end
 
-class Target::MessageDec < Target::Node
+class Target::StructBase < Target::Node
+	def create_DoGetType(type_class, cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType* ","DoGetType")
+		member_func.static = true
+#		member_func.const = true
+		fields = []
+		@members.each do |member|
+			tId = member.getTypeID()
+			fieldName = member.name.inspect
+			if(member.respond_to?(:add_TypeRegister))
+				member.add_TypeRegister(type_class, member_func)
+			end
+			fields << "new ::aos::MessageType::Field{#{tId}, #{fieldName}}"
+		end
+		id = getTypeID()
+		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{id}, #{@name.inspect}, {" +
+		  "#{fields.join(", ")}})");
+		type_class.add_member(member_func)
+#		val = CPP::StaticVar.new(type_class, "const int", "asdf")
+#		val.args << 0
+#		type_class.add_member(val)
+		member_func.suite << "::type_cache::Add(&kMsgMessageType)"
+		member_func.suite << CPP::Return.new("&kMsgMessageType")
+	end
+	def simpleStr()
+		return "{\n" + @members.collect() { |elem| elem.simpleStr() + "\n"}.join("") + "}"
+	end
+	def getTypeID()
+		return "0x" + (((Digest::SHA1.hexdigest(simpleStr())[0..3].to_i(16)) << 16) + size).to_s(16)
+	end
+	def add_member(member)
+		@members << member
+	end
+	def size()
+		return @size if(@size)
+		@size = 0
+		@members.each do |elem|
+			@size += elem.size
+		end
+		return @size
+	end
+end
+
+class Target::MessageDec < Target::StructBase
 	attr_accessor :name,:loc,:parent,:msg_hash
 	def initialize(name)
 		@name = name
@@ -19,9 +62,6 @@ class Target::MessageDec < Target::Node
 		else
 			return "#{@name}"
 		end
-	end
-	def add_member(member)
-		@members << member
 	end
 	def create_Print(type_class,cpp_tree)
 		member_func = CPP::MemberFunc.new(type_class,"size_t","Print")
@@ -91,6 +131,12 @@ class Target::MessageDec < Target::Node
 		member_func.suite << CPP::Return.new(CPP::Add.new(size,
 							"::aos::Message::Size()"))
 	end
+	def create_GetType(type_class, cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType& ","GetType")
+		member_func.const = true
+		member_func.suite << "static ::aos::Once<const ::aos::MessageType> getter(#{type_class.name}::DoGetType)"
+		member_func.suite << CPP::Return.new("*getter.Get()")
+	end
 	def self.builder_loc(loc)
 		return @builder_loc if(@builder_loc)
 		return @builder_loc = loc.root.get_make("aos")
@@ -116,9 +162,7 @@ class Target::MessageDec < Target::Node
 		end
 		cpp_tree.set(self,type_class)
 		type_class.set_parent("public ::aos::Message")
-		ts = (@members.collect { |elem|
-			elem.type + " " + elem.name
-		}).join(";")
+		ts = self.simpleStr()
 		self.msg_hash = "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
 		type_class.add_member("enum {kQueueLength = 1234, kHash = #{self.msg_hash}}")
 		@members.each do |elem|
@@ -130,6 +174,8 @@ class Target::MessageDec < Target::Node
 		create_Zero(type_class,cpp_tree)
 		create_Size(type_class,cpp_tree)
 		create_Print(type_class,cpp_tree)
+		create_GetType(type_class, cpp_tree)
+		create_DoGetType(type_class, cpp_tree)
 
 		b_namespace = cpp_tree.get(b_loc = self.class.builder_loc(@loc))
 
@@ -230,6 +276,12 @@ class Target::MessageElement < Target::Node
 									 "&buffer[#{offset}::aos::Message::Size()]",
 									 "&#{parent}#{@name}")
 		f_call.args.dont_wrap = true
+	end
+	def getTypeID()
+		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) & 0x4000 #ensures is primative
+	end
+	def simpleStr()
+		"#{@type} #{@name}"
 	end
 	def set_message_builder(suite)
 		suite << "msg_ptr_->#{@name} = #{@name}"
