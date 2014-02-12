@@ -9,6 +9,7 @@
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 #include "aos/common/logging/logging.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
+#include "aos/common/mutex.h"
 
 namespace aos {
 
@@ -110,7 +111,8 @@ struct CacheEntry {
   const MessageType &type;
   bool in_shm;
 
-  CacheEntry(const MessageType &type) : type(type), in_shm(false) {}
+  CacheEntry(const MessageType &type, bool in_shm)
+      : type(type), in_shm(in_shm) {}
 };
 
 struct ShmType {
@@ -122,20 +124,26 @@ struct ShmType {
 };
 
 ::std::unordered_map<uint32_t, CacheEntry> cache;
+::aos::Mutex cache_lock;
 
 }  // namespace
 
 void Add(const MessageType &type) {
+  ::aos::MutexLocker locker(&cache_lock);
   if (cache.count(type.id) == 0) {
-    cache.emplace(type.id, type);
+    cache.emplace(::std::piecewise_construct, ::std::forward_as_tuple(type.id),
+                  ::std::forward_as_tuple(type, false));
   }
 }
 
 const MessageType &Get(uint32_t type_id) {
+  ::aos::MutexLocker locker(&cache_lock);
   if (cache.count(type_id) > 0) {
     return cache.at(type_id).type;
   }
 
+  // No need to lock because the only thing that happens is somebody adds on to
+  // the end, and they shouldn't be adding the one we're looking for.
   const volatile ShmType *c = static_cast<volatile ShmType *>(
       global_core->mem_struct->queue_types.pointer);
   while (c != nullptr) {
@@ -143,7 +151,9 @@ const MessageType &Get(uint32_t type_id) {
       size_t bytes = c->serialized_size;
       MessageType *type = MessageType::Deserialize(
           const_cast<const char *>(c->serialized), &bytes);
-      cache.emplace(type_id, *type);
+      cache.emplace(::std::piecewise_construct,
+                    ::std::forward_as_tuple(type_id),
+                    ::std::forward_as_tuple(*type, true));
       return *type;
     }
     c = c->next;
@@ -152,6 +162,7 @@ const MessageType &Get(uint32_t type_id) {
 }
 
 void AddShm(uint32_t type_id) {
+  ::aos::MutexLocker locker(&cache_lock);
   CacheEntry &cached = cache.at(type_id);
   if (cached.in_shm) return;
 
@@ -191,6 +202,12 @@ void AddShm(uint32_t type_id) {
     current->next = shm;
   }
   mutex_unlock(&global_core->mem_struct->queue_types.lock);
+
+  for (int i = 0; i < cached.type.number_fields; ++i) {
+    if (!MessageType::IsPrimitive(cached.type.fields[i]->type)) {
+      AddShm(cached.type.fields[i]->type);
+    }
+  }
 }
 
 }  // namespace type_cache

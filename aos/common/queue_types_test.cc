@@ -4,6 +4,8 @@
 
 #include "gtest/gtest.h"
 
+#include "aos/common/test_queue.q.h"
+
 namespace aos {
 
 typedef MessageType::Field Field;

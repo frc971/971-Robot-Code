@@ -1,5 +1,16 @@
 package aos.common.testing;
 
+struct Structure {
+  bool struct_bool;
+  uint16_t struct_int;
+};
+
+message MessageWithStructure {
+  bool other_member;
+  Structure struct1;
+  Structure struct2;
+};
+
 message TestingMessage {
   bool test_bool;
   int32_t test_int;

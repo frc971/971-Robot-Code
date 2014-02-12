@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'queue_test_queue',
+      'target_name': 'test_queue',
       'type': 'static_library',
       'sources': [
         '<(AOS)/common/test_queue.q',
@@ -51,6 +51,7 @@
         '<(AOS)/build/aos.gyp:logging_interface',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+        'mutex',
       ],
     },
     {
@@ -62,6 +63,7 @@
       'dependencies': [
         'queue_types',
         '<(EXTERNALS):gtest',
+        'test_queue',
       ],
     },
     {
@@ -177,7 +179,7 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'queue_testutils',
-        'queue_test_queue',
+        'test_queue',
         '<(AOS)/common/util/util.gyp:thread',
         'die',
       ],

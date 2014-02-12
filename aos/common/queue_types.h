@@ -95,14 +95,20 @@ struct MessageType {
   DISALLOW_COPY_AND_ASSIGN(MessageType);
 };
 
+// Implements a cache of types which usually works per-process but can (when
+// explicitly instructed) put a type in shared memory which other processes will
+// automatically receive.
+// All of these functions are thread-safe.
 namespace type_cache {
 
 // Makes sure a type is in the type cache. This will store a reference to type.
+// The types of any non-primitive fields of type must already be added.
 void Add(const MessageType &type);
 // Retrieves a type from the type cache or shm. LOG(FATAL)s if it can't find it.
 const MessageType &Get(uint32_t type_id);
 // Makes sure a type is in the list in shm. Add must have already been called
 // for type.
+// Also adds the types of any non-primitive fields of type.
 void AddShm(uint32_t type_id);
 
 }  // namespace type_cache
