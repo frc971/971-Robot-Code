@@ -25,6 +25,7 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/common.gyp:queue_types',
       ],
     },
     {

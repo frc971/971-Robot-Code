@@ -11,15 +11,14 @@
 
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
-#ifndef SWIG
-#include "aos/common/queue_types.h"
-#endif  // SWIG
 #ifndef USE_UNSAFE
 #include "aos/linux_code/ipc_lib/queue.h"
 #endif  // USE_UNSAFE
 #include "aos/common/time.h"
 
 namespace aos {
+
+class MessageType;
 
 // This class is a base class for all messages sent over queues.
 class Message {
@@ -50,9 +49,7 @@ class Message {
   // Writes the contents of the message to the provided buffer.
   size_t Print(char *buffer, int length) const;
 
-#ifndef SWIG
-  const MessageType &GetType() const;
-#endif  // SWIG
+  const MessageType *GetType() const;
 };
 
 template <class T> class Queue;

@@ -42,6 +42,24 @@
       ],
     },
     {
+      'target_name': 'queue_types',
+      'type': 'static_library',
+      'sources': [
+        'queue_types.cc',
+      ],
+    },
+    {
+      'target_name': 'queue_types_test',
+      'type': 'executable',
+      'sources': [
+        'queue_types_test.cc',
+      ],
+      'dependencies': [
+        'queue_types',
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
       'target_name': 'queues',
       'type': 'static_library',
       'sources': [

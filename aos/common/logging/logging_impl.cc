@@ -14,7 +14,6 @@ namespace {
 using internal::Context;
 using internal::global_top_implementation;
 
-
 // The root LogImplementation. It only logs to stderr/stdout.
 // Some of the things specified in the LogImplementation documentation doesn't
 // apply here (mostly the parts about being able to use LOG) because this is the
