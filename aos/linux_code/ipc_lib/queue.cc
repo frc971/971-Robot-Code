@@ -116,17 +116,17 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   if (kFetchDebug) {
     printf("fetching queue %s\n", name);
   }
-  if (mutex_lock(&global_core->mem_struct->queues.alloc_lock) != 0) {
+  if (mutex_lock(&global_core->mem_struct->queues.lock) != 0) {
     return NULL;
   }
   RawQueue *current = static_cast<RawQueue *>(
-      global_core->mem_struct->queues.queue_list);
+      global_core->mem_struct->queues.pointer);
   if (current != NULL) {
     while (true) {
       // If we found a matching queue.
       if (strcmp(current->name_, name) == 0 && current->length_ == length &&
           current->hash_ == hash && current->queue_length_ == queue_length) {
-        mutex_unlock(&global_core->mem_struct->queues.alloc_lock);
+        mutex_unlock(&global_core->mem_struct->queues.lock);
         return current;
       } else {
         if (kFetchDebug) {
@@ -143,12 +143,12 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   RawQueue *r = new (shm_malloc(sizeof(RawQueue)))
       RawQueue(name, length, hash, queue_length);
   if (current == NULL) {  // if we don't already have one
-    global_core->mem_struct->queues.queue_list = r;
+    global_core->mem_struct->queues.pointer = r;
   } else {
     current->next_ = r;
   }
 
-  mutex_unlock(&global_core->mem_struct->queues.alloc_lock);
+  mutex_unlock(&global_core->mem_struct->queues.lock);
   return r;
 }
 RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,

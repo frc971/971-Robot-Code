@@ -18,10 +18,12 @@ extern struct aos_core *global_core;
 // can have regular pointers to other stuff in shared memory.
 #define SHM_START 0x20000000
 
-typedef struct aos_queue_global_t {
-  mutex alloc_lock;
-  void *queue_list;  // an aos::Queue* declared in C code
-} aos_queue_global;
+// A structure that represents some kind of global pointer that everything
+// shares.
+typedef struct aos_global_pointer_t {
+  mutex lock;
+  void *pointer;
+} aos_global_pointer;
 
 typedef struct aos_shm_core_t {
   // clock_gettime(CLOCK_REALTIME, &identifier) gets called to identify
@@ -32,7 +34,12 @@ typedef struct aos_shm_core_t {
   mutex creation_condition;
   mutex msg_alloc_lock;
   void *msg_alloc;
-  aos_queue_global queues;
+  // A pointer to the head of the linked list of queues.
+  // pointer points to a ::aos::Queue.
+  aos_global_pointer queues;
+  // A pointer to the head of the linked list of queue message types.
+  // pointer points to a ::aos::type_cache::ShmType.
+  aos_global_pointer queue_types;
 } aos_shm_core;
 
 enum aos_core_create {

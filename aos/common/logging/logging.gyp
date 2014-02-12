@@ -11,5 +11,15 @@
         '<(AOS)/build/aos.gyp:logging',
       ],
     },
+    {
+      'target_name': 'queue_logging',
+      'type': 'static_library',
+      'sources': [
+        'queue_logging.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:queue_types',
+      ],
+    },
   ],
 }

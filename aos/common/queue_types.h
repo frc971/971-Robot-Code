@@ -39,7 +39,7 @@ struct MessageType {
   // Constructs a MessageType that doesn't own the storage for any of its
   // names.
   MessageType(uint32_t id, const char *name,
-              ::std::initializer_list<Field *> fields_initializer)
+              ::std::initializer_list<const Field *> fields_initializer)
       : id(id), name(name), owns_names(false) {
     number_fields = fields_initializer.size();
     fields = new const Field *[number_fields];
@@ -61,11 +61,11 @@ struct MessageType {
     }
   }
 
-  // Returns -1 for error (in errno).
+  // Returns -1 if max_bytes is too small.
   ssize_t Serialize(char *buffer, size_t max_bytes) const;
   // bytes should start out as the number of bytes available in buffer and gets
   // reduced by the number actually read before returning.
-  // Returns a new instance allocated with new or NULL for error (in errno).
+  // Returns a new instance allocated with new or nullptr for error.
   static MessageType *Deserialize(const char *buffer, size_t *bytes);
 
   static bool IsPrimitive(uint32_t type_id) {

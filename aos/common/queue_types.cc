@@ -1,10 +1,14 @@
 #include "aos/common/queue_types.h"
 
-#include <errno.h>
+#include <inttypes.h>
 
 #include <memory>
+#include <unordered_map>
 
 #include "aos/common/byteorder.h"
+#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/common/logging/logging.h"
+#include "aos/linux_code/ipc_lib/core_lib.h"
 
 namespace aos {
 
@@ -20,7 +24,6 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   }
   if (max_bytes < sizeof(id) + sizeof(name_length) + sizeof(number_fields) +
                       name_length + fields_size) {
-    errno = EOVERFLOW;
     return -1;
   }
   to_network(&id, buffer);
@@ -49,7 +52,6 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   decltype(MessageType::id) id;
   decltype(MessageType::number_fields) number_fields;
   if (*bytes < sizeof(id) + sizeof(name_length) + sizeof(number_fields)) {
-    errno = EOVERFLOW;
     return nullptr;
   }
   *bytes -= sizeof(id) + sizeof(name_length) + sizeof(number_fields);
@@ -62,7 +64,6 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   buffer += sizeof(number_fields);
 
   if (*bytes < name_length) {
-    errno = EOVERFLOW;
     return nullptr;
   }
   *bytes -= name_length;
@@ -79,7 +80,6 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   for (int i = 0; i < number_fields; ++i) {
     size_t field_name_length;
     if (*bytes < sizeof(fields[i]->type) + sizeof(field_name_length)) {
-      errno = EOVERFLOW;
       return nullptr;
     }
     *bytes -= sizeof(fields[i]->type) + sizeof(field_name_length);
@@ -90,7 +90,6 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
     buffer += sizeof(field_name_length);
 
     if (*bytes < field_name_length) {
-      errno = EOVERFLOW;
       return nullptr;
     }
     *bytes -= field_name_length;
@@ -104,4 +103,95 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   return r.release();
 }
 
+namespace type_cache {
+namespace {
+
+struct CacheEntry {
+  const MessageType &type;
+  bool in_shm;
+
+  CacheEntry(const MessageType &type) : type(type), in_shm(false) {}
+};
+
+struct ShmType {
+  uint32_t id;
+  volatile ShmType *next;
+
+  size_t serialized_size;
+  char serialized[];
+};
+
+::std::unordered_map<uint32_t, CacheEntry> cache;
+
+}  // namespace
+
+void Add(const MessageType &type) {
+  if (cache.count(type.id) == 0) {
+    cache.emplace(type.id, type);
+  }
+}
+
+const MessageType &Get(uint32_t type_id) {
+  if (cache.count(type_id) > 0) {
+    return cache.at(type_id).type;
+  }
+
+  const volatile ShmType *c = static_cast<volatile ShmType *>(
+      global_core->mem_struct->queue_types.pointer);
+  while (c != nullptr) {
+    if (c->id == type_id) {
+      size_t bytes = c->serialized_size;
+      MessageType *type = MessageType::Deserialize(
+          const_cast<const char *>(c->serialized), &bytes);
+      cache.emplace(type_id, *type);
+      return *type;
+    }
+    c = c->next;
+  }
+  LOG(FATAL, "MessageType for id 0x%" PRIx32 " not found\n", type_id);
+}
+
+void AddShm(uint32_t type_id) {
+  CacheEntry &cached = cache.at(type_id);
+  if (cached.in_shm) return;
+
+  if (mutex_lock(&global_core->mem_struct->queue_types.lock) != 0) {
+    LOG(FATAL, "locking queue_types lock failed\n");
+  }
+  volatile ShmType *current = static_cast<volatile ShmType *>(
+      global_core->mem_struct->queue_types.pointer);
+  if (current != nullptr) {
+    while (true) {
+      if (current->id == type_id) {
+        cached.in_shm = true;
+        mutex_unlock(&global_core->mem_struct->queue_types.lock);
+        return;
+      }
+      if (current->next == nullptr) break;
+      current = current->next;
+    }
+  }
+  char buffer[512];
+  ssize_t size = cached.type.Serialize(buffer, sizeof(buffer));
+  if (size == -1) {
+    LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
+        cached.type.name, sizeof(buffer));
+  }
+
+  volatile ShmType *shm =
+      static_cast<volatile ShmType *>(shm_malloc(sizeof(ShmType) + size));
+  shm->id = type_id;
+  shm->next = nullptr;
+  shm->serialized_size = size;
+  memcpy(const_cast<char *>(shm->serialized), buffer, size);
+
+  if (current == NULL) {
+    global_core->mem_struct->queue_types.pointer = const_cast<ShmType *>(shm);
+  } else {
+    current->next = shm;
+  }
+  mutex_unlock(&global_core->mem_struct->queue_types.lock);
+}
+
+}  // namespace type_cache
 }  // namespace aos

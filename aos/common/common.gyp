@@ -47,6 +47,11 @@
       'sources': [
         'queue_types.cc',
       ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+      ],
     },
     {
       'target_name': 'queue_types_test',
