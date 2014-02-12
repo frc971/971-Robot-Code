@@ -174,6 +174,7 @@
         'queue_testutils',
         'queue_test_queue',
         '<(AOS)/common/util/util.gyp:thread',
+        'die',
       ],
     },
     {
@@ -285,6 +286,7 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'mutex',
+        'die',
       ],
     },
     {
@@ -302,6 +304,7 @@
         '<(AOS)/build/aos.gyp:logging',
         'queue_testutils',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+        'die',
        ],
     },
     {

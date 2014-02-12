@@ -6,8 +6,8 @@
 
 namespace aos {
 
-static_assert(shm_ok<Condition>::value, "Condition should work"
-              " in shared memory");
+static_assert(shm_ok<Condition>::value,
+              "Condition should work in shared memory");
 
 Condition::Condition(Mutex *m) : impl_(), m_(m) {}
 

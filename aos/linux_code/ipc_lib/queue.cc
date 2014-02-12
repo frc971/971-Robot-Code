@@ -38,6 +38,7 @@ const int RawQueue::kOverride;
 struct RawQueue::MessageHeader {
   int ref_count;
   int index;  // in pool_
+  // Gets the message header immediately preceding msg.
   static MessageHeader *Get(const void *msg) {
     return reinterpret_cast<MessageHeader *>(__builtin_assume_aligned(
         static_cast<uint8_t *>(const_cast<void *>(msg)) - sizeof(MessageHeader),
@@ -50,8 +51,8 @@ struct RawQueue::MessageHeader {
     memcpy(this, &temp, sizeof(*this));
   }
 };
-static_assert(shm_ok<RawQueue::MessageHeader>::value, "the whole point"
-              " is to stick it in shared memory");
+static_assert(shm_ok<RawQueue::MessageHeader>::value,
+              "the whole point is to stick it in shared memory");
 
 struct RawQueue::ReadData {
   bool writable_start;
@@ -73,7 +74,7 @@ void RawQueue::DecrementMessageReferenceCount(const void *msg) {
 }
 
 RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
-  : readable_(&data_lock_), writable_(&data_lock_) {
+    : readable_(&data_lock_), writable_(&data_lock_) {
   const size_t name_size = strlen(name) + 1;
   char *temp = static_cast<char *>(shm_malloc(name_size));
   memcpy(temp, name, name_size);

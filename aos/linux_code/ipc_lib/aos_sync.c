@@ -18,13 +18,19 @@ static inline uint32_t xchg(mutex *pointer, uint32_t value) {
   return result;
 }
 
-// this code is based on something that appears to be based on <http://www.akkadia.org/drepper/futex.pdf>, which also has a lot of useful information
-// should probably use <http://lxr.linux.no/linux+v2.6.34/Documentation/robust-futexes.txt> once it becomes available
+// this code is based on something that appears to be based on
+//   <http://www.akkadia.org/drepper/futex.pdf>, which also has a lot of useful
+//   information
+// should probably use
+// <http://lxr.linux.no/linux+v2.6.34/Documentation/robust-futexes.txt> once it
+// becomes available
 //   (sys_set_robust_list appears to be the function name)
 // <http://locklessinc.com/articles/futex_cheat_sheet/> and
 //   <http://locklessinc.com/articles/mutex_cv_futex/> are useful
-// <http://lwn.net/Articles/360699/> has a nice overview of futexes in late 2009 (fairly recent compared to everything else...)
-// can't use PRIVATE futex operations because they use the pid (or something) as part of the hash
+// <http://lwn.net/Articles/360699/> has a nice overview of futexes in late 2009
+//   (fairly recent compared to everything else...)
+// can't use PRIVATE futex operations because they use the pid (or something) as
+//   part of the hash
 //
 // Remember that EAGAIN and EWOUDBLOCK are the same! (ie if you get EAGAIN from
 // FUTEX_WAIT, the docs call it EWOULDBLOCK...)
@@ -60,7 +66,6 @@ static inline int mutex_get(mutex *m, uint8_t signals_fail, const
   if (c == 1) c = xchg(m, 2);
   while (c) {
     /* Wait in the kernel */
-    //printf("sync here %d\n", __LINE__);
     if (sys_futex(m, FUTEX_WAIT, 2, timeout, NULL, 0) == -1) {
       if (signals_fail && errno == EINTR) {
         return 1;
@@ -69,7 +74,6 @@ static inline int mutex_get(mutex *m, uint8_t signals_fail, const
         return 2;
       }
     }
-    //printf("sync here %d\n", __LINE__);
     c = xchg(m, 2);
   }
   return 0;
@@ -148,6 +152,8 @@ void condition_wait(mutex *c, mutex *m) {
   mutex_unlock(m);
 
   while (1) {
+    // Wait in the kernel iff the value of it doesn't change (ie somebody else
+    // does a wake) from before we unlocked the mutex.
     if (sys_futex(c, FUTEX_WAIT, wait_start, NULL, NULL, 0) == -1) {
       // If it failed for some reason other than somebody else doing a wake
       // before we actually made it to sleep.
@@ -161,8 +167,12 @@ void condition_wait(mutex *c, mutex *m) {
         abort();
       }
     }
+    // Relock the mutex now that we're done waiting.
     // Simplified mutex_lock that always leaves it
     // contended in case anybody else got requeued.
+    // If we got requeued above, this will just succeed the first time because
+    // the person waking us from the above wait (changed to be on the mutex
+    // instead of the condition) will have just set it to 0.
     while (xchg(m, 2) != 0) {
       if (sys_futex(m, FUTEX_WAIT, 2, NULL, NULL, 0) == -1) {
         // Try again if it was because of a signal or somebody else unlocked it
@@ -180,7 +190,11 @@ void condition_wait(mutex *c, mutex *m) {
 }
 
 void condition_signal(mutex *c) {
+  // This will cause anybody else who is in between unlocking the mutex and
+  // going to sleep in the kernel to not go to sleep and return immediately
+  // instead.
   __sync_fetch_and_add(c, 1);
+  // Wake at most 1 person who is waiting in the kernel.
   if (sys_futex(c, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
     fprintf(stderr, "sync: FUTEX_WAKE(%p, 1, NULL, NULL, 0)"
         " failed with %d: %s\n",
@@ -192,7 +206,9 @@ void condition_signal(mutex *c) {
 
 void condition_broadcast(mutex *c, mutex *m) {
   __sync_fetch_and_add(c, 1);
-  // Wake 1 waiter and requeue the rest.
+  // Wake at most 1 waiter and requeue the rest.
+  // Everybody else is going to have to wait for the 1st person to take the
+  // mutex anyways.
   if (sys_futex_requeue(c, FUTEX_REQUEUE, 1, INT_MAX, m) == -1) {
     fprintf(stderr, "sync: FUTEX_REQUEUE(%p, 1, INT_MAX, %p, 0)"
         " failed with %d: %s\n",

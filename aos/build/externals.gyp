@@ -14,7 +14,7 @@
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.1.3',
-    'gtest_version': '1.6.0',
+    'gtest_version': '1.6.0-p1',
     'onejar_version': '0.97',
     'ctemplate_version': '129',
     'gflags_version': '2.0',
@@ -180,8 +180,11 @@
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/gtest-<(gtest_version)/include'],
         'target_conditions': [
-          ['_type=="executable"', {
+          ['_type=="executable" and is_special_test==0', {
               'product_dir': '<(test_dir)',
+            },
+          ], ['_type=="executable" and is_special_test==1', {
+              'product_dir': '<(test_dir)-special',
             },
           ],
         ],
