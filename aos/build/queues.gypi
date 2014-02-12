@@ -28,9 +28,6 @@
     'output_h': '<(out_dir)/<(RULE_INPUT_ROOT).q.h',
     'output_cc': '<(out_dir)/<(RULE_INPUT_ROOT).q.cc',
     'output_main': '<(out_dir)/<(RULE_INPUT_ROOT)_main.cc',
-    'output_swg': '<(out_dir)/<(RULE_INPUT_ROOT).q.swig',
-    'output_java_wrap': '<(out_dir)/<(RULE_INPUT_ROOT)_java_wrap.cc',
-    'java_dir': '<(out_dir)/<(RULE_INPUT_ROOT).q_java',
     'no_rsync': 1,
   },
   'rules': [
@@ -44,19 +41,6 @@
         '<(output_h)',
         '<(output_cc)',
       ],
-      'conditions': [
-        ['OS=="crio"', {
-          'outputs': [
-            # cRIO doesn't do swig for a good reason.
-          ]
-        },{
-          'outputs': [
-            '<(output_swg)',
-            '<(output_java_wrap)',
-            '<(java_dir)',
-          ]
-        }]
-      ],
       'inputs': [
         '<(script)',
         '<!@(find <(AOS)/build/queues/ -name *.rb)',
@@ -64,8 +48,6 @@
         '<(AOS)/common/time.h',
       ],
       'action': ['ruby', '<(script)',
-        '--swig',
-        '--swigccout', '<(output_java_wrap)',
         '-I', '<(DEPTH)',
         '<(RULE_INPUT_PATH)',
         '-cpp_out',
@@ -98,14 +80,7 @@
       'process_outputs_as_sources': 1,
     },
   ],
-  'cflags': [
-# For the swig-generated C++ code.
-    '-fno-strict-aliasing',
-    '-Wno-cast-qual',
-  ],
   'include_dirs': [
-    '/usr/lib/jvm/default-java/include',
-    '/usr/lib/jvm/default-java/include/linux',
     '<(prefix_dir)/<(_target_name)',
   ],
   'direct_dependent_settings': {
@@ -119,6 +94,7 @@
   'dependencies': [
     '<(AOS)/common/common.gyp:queues',
     '<(AOS)/common/common.gyp:once',
+    '<(AOS)/common/common.gyp:queue_types',
   ],
   'export_dependent_settings': [
     '<(AOS)/common/common.gyp:queues',

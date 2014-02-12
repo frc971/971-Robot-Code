@@ -98,7 +98,6 @@ class Target::QueueGroupDec < Target::Node
 		type_class.set_parent("public ::aos::QueueGroup")
 		@queues.each do |queue|
 			type_class.add_member(:public,queue.create_usage(cpp_tree))
-			namespace.add_pre_swig("%immutable #{@name}::#{queue.name}")
 		end
 		create_Constructor(type_class,cpp_tree)
 		namespace.add(type_class)
@@ -179,15 +178,11 @@ COMMENT_END
 Create a reference to the new object in the pointer.  Since we have already
 created the initializer
 COMMENT_END
-		comments = str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}
-		comments << "static UNUSED_VARIABLE #{type_name} &#{@name} = " +
-		            "#{@name}_initializer.get()"
-		namespace.add_post_swig("%immutable #{@name}_initializer")
-		namespace.add_post_swig(CPP::SwigPragma.new("java", "modulecode", CPP::Suite.new(["public static final #{@name} = get#{@name.capitalize}_initializer().get()"])))
-		ifdef_statement = CPP::IfnDef.new(CPP::Suite.new(comments))
-		ifdef_statement.name = "SWIG"
-		namespace.add(ifdef_statement)
-
+		str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}.each do |comment|
+      namespace.add(comment)
+    end
+		namespace.add("static UNUSED_VARIABLE #{type_name} &#{@name}" +
+                  " = #{@name}_initializer.get()")
 
 		get = init_class.def_func(type_name,"get") #.add_dep(type)
 		get.pre_func_types = "&"

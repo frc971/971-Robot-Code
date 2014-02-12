@@ -195,7 +195,6 @@ class Target::MessageDec < Target::StructBase
 		msg_bld_t = "MessageBuilder< #{t}>"
 		safetemplate.add_member(:private,"#{safemsg_ptr_t} msg_ptr_")
 		template.add_member(:private,"#{msg_ptr_t} msg_ptr_")
-		namespace.add_pre_swig("%feature(\"valuewrapper\") #{safemsg_bld_t}")
 		template.add_member(:private,"#{msg_bld_t}(const #{msg_bld_t}&)")
 		template.add_member(:private,"void operator=(const #{msg_bld_t}&)")
 		safetemplate.add_member(:private,"friend class ::aos::Queue< #{t}>")
@@ -219,13 +218,6 @@ class Target::MessageDec < Target::StructBase
 		DefineMembers(cpp_tree, safetemplate, safemsg_bld_t)
 		DefineMembers(cpp_tree, template, msg_bld_t)
 
-		java_type_name = java_type_name(cpp_tree)
-		namespace.add_post_swig("%template(#{java_type_name}) ::aos::Queue< #{t}>")
-		namespace.add_post_swig("%template(#{java_ptr_name(cpp_tree)}) ::aos::SafeScopedMessagePtr< #{t}>")
-		namespace.add_post_swig("%template(#{java_builder_name(cpp_tree)}) ::aos::SafeMessageBuilder< #{t}>")
-		# TODO(aschuh): Figure out why this doesn't work and fix it.
-		#namespace.add_post_swig("%typemap(javabase) #{@name} \"aos.Message\"")
-
 	end
 	def DefineMembers(cpp_tree, template, msg_bld_t) 
 		send = template.def_func("bool","Send")
@@ -244,15 +236,6 @@ class Target::MessageDec < Target::StructBase
 			setter.suite << CPP::Return.new("*this")
 
 		end
-	end
-	def java_ptr_name(cpp_tree)
-		return "#{@name}MessagePtr"
-	end
-	def java_builder_name(cpp_tree)
-		return "#{@name}MessageBuilder"
-	end
-	def java_type_name(cpp_tree)
-		return "#{@name}Queue"
 	end
 end
 class Target::MessageElement < Target::Node

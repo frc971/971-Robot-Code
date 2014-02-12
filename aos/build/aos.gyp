@@ -52,21 +52,5 @@
         'logging_interface',
       ],
     },
-    {
-# Private to make Brian happy.  Don't use elsewhere in so targets or risk things
-# breaking.
-      'target_name': 'aos_swig',
-      'type': 'static_library',
-      'sources': [
-        '<(AOS)/aos.swig',
-      ],
-      'variables': {
-        'package': 'aos',
-      },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
-      'includes': ['../build/swig.gypi'],
-    },
   ],
 }

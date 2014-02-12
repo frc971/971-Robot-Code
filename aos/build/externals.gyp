@@ -75,26 +75,6 @@
       },
     },
     {
-      'target_name': 'javacv',
-      'type': 'none',
-      'variables': {
-        'javacv_dir': '<(externals_abs)/javacv-bin',
-      },
-      'direct_dependent_settings': {
-        'include_dirs': [
-          '/usr/lib/jvm/default-java/include',
-          '/usr/lib/jvm/default-java/include/linux',
-        ],
-        'variables': {
-          'classpath': [
-            '<(javacv_dir)/javacv.jar',
-            '<(javacv_dir)/javacpp.jar',
-            '<(javacv_dir)/javacv-linux-x86.jar',
-          ],
-        },
-      },
-    },
-    {
       'target_name': 'opencv',
       'type': 'none',
       'link_settings': {

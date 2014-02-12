@@ -103,10 +103,6 @@ class CPP::MemberFunc
 		state.pp(@suite)
 		state.v_pad(2)
 	end
-  def pp_pre_swig_file(state)
-  end
-  def pp_post_swig_file(state)
-  end
 	alias_method :pp_header_file, :pp_forward_dec
 	alias_method :pp_cc_file, :pp
 	

@@ -182,14 +182,6 @@
                 'product_dir': '<(so_dir)',
               }
             ],
-            ['_type=="loadable_module" or _type=="shared_library"', {
-                'ldflags': [
-# Support loading other shared objects that are in the same directory but not
-#   the shared object load path. Required for using the swig-generated libs.
-                  '-Wl,-rpath=\\$$ORIGIN',
-                ],
-              }
-            ],
           ],
           'ldflags': [
             '-pthread',
