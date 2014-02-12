@@ -36,12 +36,14 @@ namespace aos {
 // arguments to pass to it.
 // Using --gtest_filter is a bad idea because it seems to result in a lot of
 // swapping which causes everything to be disk-bound (at least for me).
-static const char * kTests[][] = {
+static const size_t kTestMaxArgs = 10;
+static const char * kTests[][kTestMaxArgs] = {
   {"queue_test"},
   {"condition_test"},
   {"mutex_test"},
   {"raw_queue_test"},
 };
+static const size_t kTestsLength = sizeof(kTests) / sizeof(kTests[0]);
 // These arguments get inserted before any per-test arguments.
 static const char *kDefaultArgs[] = {
   "--gtest_repeat=30",
@@ -78,7 +80,7 @@ static_assert(shm_ok<Shared>::value,
 
 // Gets called after each child forks to run a test.
 void __attribute__((noreturn)) DoRunTest(
-    Shared *shared, const ::std::array<const char *> &test, int pipes[2]) {
+    Shared *shared, const char *(*test)[kTestMaxArgs], int pipes[2]) {
   if (close(pipes[0]) == -1) {
     Die("close(%d) of read end of pipe failed with %d: %s\n",
         pipes[0], errno, strerror(errno));
@@ -96,14 +98,15 @@ void __attribute__((noreturn)) DoRunTest(
         pipes[1], STDERR_FILENO, errno, strerror(errno));
   }
 
-  size_t size = test.size();
-  size_t default_size = kDefaultArgs.size();
+  size_t size = kTestMaxArgs;
+  size_t default_size = sizeof(kDefaultArgs) / sizeof(kDefaultArgs[0]);
   // There's no chance to free this because we either exec or Die.
   const char **args = new const char *[size + default_size + 1];
   // The actual executable to run.
   ::std::string executable;
   int i = 0;
-  for (const ::std::string &c : test) {
+  for (size_t test_i = 0; test_i < size; ++test_i) {
+    const char *c = (*test)[test_i];
     if (i == 0) {
       executable = ::std::string(shared->path) + "/" + c;
       args[0] = executable.c_str();
@@ -111,7 +114,7 @@ void __attribute__((noreturn)) DoRunTest(
         args[++i] = ci.c_str();
       }
     } else {
-      args[i] = c.c_str();
+      args[i] = c;
     }
     ++i;
   }
@@ -126,7 +129,7 @@ void DoRun(Shared *shared) {
   // An iterator pointing to a random one of the tests.
   // We randomize based on PID because otherwise they all end up running the
   // same test at the same time for the whole test.
-  const char *(*test)[] = &kTests[getpid() % kTestsLength];
+  const char *(*test)[kTestMaxArgs] = &kTests[getpid() % kTestsLength];
   int pipes[2];
   while (time::Time::Now() < shared->stop_time) {
     if (pipe(pipes) == -1) {
@@ -134,7 +137,7 @@ void DoRun(Shared *shared) {
     }
     switch (fork()) {
       case 0:  // in runner
-        DoRunTest(shared, *test, pipes);
+        DoRunTest(shared, test, pipes);
       case -1:
         Die("fork() failed with %d: %s\n", errno, strerror(errno));
     }
@@ -175,22 +178,21 @@ void DoRun(Shared *shared) {
       if (WEXITSTATUS(status) != 0) {
         MutexLocker sync(&shared->output_mutex);
         fprintf(stderr, "Test %s exited with status %d. output:\n",
-                test->at(0).c_str(), WEXITSTATUS(status));
+                (*test)[0], WEXITSTATUS(status));
         fputs(output.c_str(), stderr);
       }
     } else if (WIFSIGNALED(status)) {
       MutexLocker sync(&shared->output_mutex);
-      fprintf(stderr, "Test %s terminated by signal %d: %s.\n",
-              test->at(0).c_str(),
+      fprintf(stderr, "Test %s terminated by signal %d: %s.\n", (*test)[0],
               WTERMSIG(status), strsignal(WTERMSIG(status)));
         fputs(output.c_str(), stderr);
     } else {
       assert(WIFSTOPPED(status));
-      Die("Test %s was stopped.\n", test->at(0).c_str());
+      Die("Test %s was stopped.\n", (*test)[0]);
     }
 
     ++test;
-    if (test == kTests.end()) test = kTests.begin();
+    if (test == kTests + 1) test = kTests;
     ++iterations;
   }
   {
