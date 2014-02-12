@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/common/control_loop/ControlLoop.h"
+#include "frc971/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/top_claw_motor_plant.h"
@@ -32,6 +33,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         voltage_(0.0),
         last_voltage_(0.0),
         uncapped_voltage_(0.0),
+        offset_(0.0),
         front_hall_effect_posedge_count_(0.0),
         previous_front_hall_effect_posedge_count_(0.0),
         front_hall_effect_negedge_count_(0.0),
@@ -44,7 +46,11 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         previous_back_hall_effect_posedge_count_(0.0),
         back_hall_effect_negedge_count_(0.0),
         previous_back_hall_effect_negedge_count_(0.0),
-        zeroing_state_(UNKNOWN_POSITION) {}
+        zeroing_state_(UNKNOWN_POSITION),
+        posedge_value_(0.0),
+        negedge_value_(0.0),
+        encoder_(0.0),
+        last_encoder_(0.0) {}
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -77,6 +83,42 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   }
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
+  // Sets the calibration offset given the absolute angle and the corrisponding
+  // encoder value.
+  void SetCalibration(double edge_encoder, double edge_angle) {
+    offset_ = edge_angle - edge_encoder;
+  }
+
+  bool SetCalibrationOnEdge(const constants::Values::Claw &claw_values,
+                            JointZeroingState zeroing_state) {
+    double edge_encoder;
+    double edge_angle;
+    if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
+      LOG(INFO, "Calibration edge.\n");
+      SetCalibration(edge_encoder, edge_angle);
+      set_zeroing_state(zeroing_state);
+      return true;
+    }
+    return false;
+  }
+
+  void SetPositionValues(const HalfClawPosition &claw) {
+    set_front_hall_effect_posedge_count(claw.front_hall_effect_posedge_count);
+    set_front_hall_effect_negedge_count(claw.front_hall_effect_negedge_count);
+    set_calibration_hall_effect_posedge_count(
+        claw.calibration_hall_effect_posedge_count);
+    set_calibration_hall_effect_negedge_count(
+        claw.calibration_hall_effect_negedge_count);
+    set_back_hall_effect_posedge_count(claw.back_hall_effect_posedge_count);
+    set_back_hall_effect_negedge_count(claw.back_hall_effect_negedge_count);
+
+    posedge_value_ = claw.posedge_value;
+    negedge_value_ = claw.negedge_value;
+    Eigen::Matrix<double, 1, 1> Y;
+    Y << claw.position;
+    Correct(Y);
+  }
+
 #define COUNT_SETTER_GETTER(variable)              \
   void set_##variable(int32_t value) {             \
     previous_##variable##_ = variable##_;          \
@@ -87,6 +129,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     return previous_##variable##_ != variable##_;  \
   }
 
+  // TODO(austin): Pull all this out of the new sub structure.
   COUNT_SETTER_GETTER(front_hall_effect_posedge_count);
   COUNT_SETTER_GETTER(front_hall_effect_negedge_count);
   COUNT_SETTER_GETTER(calibration_hall_effect_posedge_count);
@@ -103,6 +146,15 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
            back_hall_effect_negedge_count_changed();
   }
 
+  double position() const { return X_hat(0, 0); }
+  double encoder() const { return encoder_; }
+  double last_encoder() const { return last_encoder_; }
+
+  // Returns true if an edge was detected in the last cycle and then sets the
+  // edge_position to the absolute position of the edge.
+  bool GetPositionOfEdge(const constants::Values::Claw &claw,
+                         double *edge_encoder, double *edge_angle);
+
 #undef COUNT_SETTER_GETTER
 
  private:
@@ -110,6 +162,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double voltage_;
   double last_voltage_;
   double uncapped_voltage_;
+  double offset_;
+
+  double previous_position_;
 
   int32_t front_hall_effect_posedge_count_;
   int32_t previous_front_hall_effect_posedge_count_;
@@ -125,6 +180,10 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   int32_t previous_back_hall_effect_negedge_count_;
 
   JointZeroingState zeroing_state_;
+  double posedge_value_;
+  double negedge_value_;
+  double encoder_;
+  double last_encoder_;
 };
 
 class ClawMotor
@@ -142,8 +201,8 @@ class ClawMotor
                             control_loops::ClawGroup::Output *output,
                             ::aos::control_loops::Status *status);
 
-  double top_absolute_position() const { return top_claw_.X_hat(0, 0); }
-  double bottom_absolute_position() const { return bottom_claw_.X_hat(0, 0); }
+  double top_absolute_position() const { return top_claw_.position(); }
+  double bottom_absolute_position() const { return bottom_claw_.position(); }
 
  private:
   // Friend the test classes for acces to the internal state.
