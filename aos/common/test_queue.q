@@ -3,6 +3,7 @@ package aos.common.testing;
 struct Structure {
   bool struct_bool;
   uint16_t struct_int;
+  float struct_float;
 };
 
 message MessageWithStructure {

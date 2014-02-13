@@ -44,14 +44,35 @@
     {
       'target_name': 'queue_types',
       'type': 'static_library',
+      'variables': {
+        'print_field_cc': '<(SHARED_INTERMEDIATE_DIR)/print_field.cc',
+      },
       'sources': [
         'queue_types.cc',
+        '<(print_field_cc)',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging_interface',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
         'mutex',
+      ],
+      'actions': [
+        {
+          'variables': {
+            'script': '<(AOS)/build/queues/print_field.rb',
+          },
+          'action_name': 'gen_print_field',
+          'inputs': [
+            '<(script)',
+            '<!@(find <(AOS)/build/queues/ -name *.rb)',
+          ],
+          'outputs': [
+            '<(print_field_cc)',
+          ],
+          'action': ['ruby', '<(script)', '<(print_field_cc)'],
+          'message': 'Generating print_field.cc',
+        },
       ],
     },
     {

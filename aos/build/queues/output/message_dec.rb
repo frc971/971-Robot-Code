@@ -34,7 +34,7 @@ class Target::StructBase < Target::Node
 		return "{\n" + @members.collect() { |elem| elem.simpleStr() + "\n"}.join("") + "}"
 	end
 	def getTypeID()
-		return "0x" + (((Digest::SHA1.hexdigest(simpleStr())[0..3].to_i(16)) << 16) + size).to_s(16)
+		return "0x" + (((Digest::SHA1.hexdigest(simpleStr())[0..3].to_i(16)) << 16) | size).to_s(16)
 	end
 	def add_member(member)
 		@members << member
@@ -264,7 +264,9 @@ class Target::MessageElement < Target::Node
 		f_call.args.dont_wrap = true
 	end
 	def getTypeID()
-		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) | 0x4000 #ensures is primative
+		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) |
+                0x2000 | # marks it as primitive
+                size
 	end
 	def simpleStr()
 		"#{@type} #{@name}"

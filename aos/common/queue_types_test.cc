@@ -5,8 +5,13 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/test_queue.q.h"
+#include "aos/common/byteorder.h"
+
+using ::aos::common::testing::Structure;
+using ::aos::common::testing::MessageWithStructure;
 
 namespace aos {
+namespace testing {
 
 typedef MessageType::Field Field;
 
@@ -70,4 +75,57 @@ TEST_F(QueueTypesTest, Serialization) {
   EXPECT_TRUE(Equal(kTestType1, *deserialized));
 }
 
+class PrintFieldTest : public ::testing::Test {
+ public:
+  char input[128], output[128];
+  size_t input_bytes, output_bytes;
+};
+
+TEST_F(PrintFieldTest, Basic) {
+  static const uint16_t kData = 971;
+  input_bytes = sizeof(kData);
+  to_network(&kData, input);
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
+                         Structure::GetType()->fields[1]->type));
+  EXPECT_EQ(0u, input_bytes);
+  EXPECT_EQ(sizeof(output) - 4, output_bytes);
+  EXPECT_EQ(::std::string("971\0", 4),
+            ::std::string(output, sizeof(output) - output_bytes));
+}
+
+// Tests PrintField with trailing input bytes and no extra output bytes.
+TEST_F(PrintFieldTest, OtherSizes) {
+  static const float kData = 16.78;
+  static const ::std::string kString("16.780001");
+  static const size_t kExtraInputBytes = 4;
+  input_bytes = sizeof(kData) + kExtraInputBytes;
+  to_network(&kData, input);
+  output_bytes = kString.size() + 1;
+  assert(output_bytes <= sizeof(output));
+  ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
+                         Structure::GetType()->fields[2]->type));
+  EXPECT_EQ(kExtraInputBytes, input_bytes);
+  EXPECT_EQ(0u, output_bytes);
+  EXPECT_EQ(kString, ::std::string(output));
+}
+
+TEST_F(PrintFieldTest, InputTooSmall) {
+  static const float kData = 0;
+  input_bytes = sizeof(kData) - 1;
+  output_bytes = sizeof(output);
+  EXPECT_FALSE(PrintField(output, &output_bytes, input, &input_bytes,
+                          Structure::GetType()->fields[2]->type));
+}
+
+TEST_F(PrintFieldTest, OutputTooSmall) {
+  static const uint16_t kData = 12345;
+  input_bytes = sizeof(input);
+  to_network(&kData, input);
+  output_bytes = 5;
+  EXPECT_FALSE(PrintField(output, &output_bytes, input, &input_bytes,
+                          Structure::GetType()->fields[1]->type));
+}
+
+}  // namespace testing
 }  // namespace aos
