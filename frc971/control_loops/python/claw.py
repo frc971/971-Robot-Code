@@ -9,17 +9,16 @@ class Claw(control_loop.ControlLoop):
   def __init__(self, name="RawClaw"):
     super(Claw, self).__init__(name)
     # Stall Torque in N m
-    self.stall_torque = 1.4
+    self.stall_torque = 2.42
     # Stall Current in Amps
-    self.stall_current = 86
-    # Free Speed in RPM
-    self.free_speed = 6200.0
+    self.stall_current = 133
+    # Free Speed in RPM, pulled from drivetrain
+    self.free_speed = 4650.0
     # Free Current in Amps
-    self.free_current = 1.5
+    self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
-    # TODO(aschuh): Measure this in reality.  It doesn't seem high enough.
-    # James measured 0.51, but that can't be right given what I am seeing.
-    self.J = 2.0
+    # approzimately 0.76 (without ball) in CAD
+    self.J = 0.76
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -28,7 +27,7 @@ class Claw(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratio
-    self.G = 1.0 / ((84.0 / 20.0) * (50.0 / 14.0) * (40.0 / 14.0) * (40.0 / 12.0))
+    self.G = 14.0 / 48.0 * 18.0 / 32.0 * 18.0 / 66.0 * 12.0 / 60.0
     # Control loop time step
     self.dt = 0.01
 

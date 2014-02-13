@@ -17,19 +17,19 @@ class Shooter(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 1.2
     # Moment of inertia of the shooter in kg m^2
-    # Calculate Moment of Irtia
-    self.J = 0.3
+    # Needs to be figured out in practice.
+    self.J = 5
     # Resistance of the motor, divided by the number of motors.
     self.R = 12.0 / self.stall_current / 2.0
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
-               (13.5 - self.R * self.free_current))
+               (12.0 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Spring constant for the springs, N/m
-    self.Ks = 3600.0
-    # Gear ratio
-    self.G = 1.0 / ((84.0 / 20.0) * (50.0 / 14.0) * (40.0 / 14.0) * (40.0 / 12.0))
+    self.Ks = 2800.0
+    # Gear ratio multiplied by radius of final sprocket.
+    self.G = 10.0 / 40.0 * 20.0 / 54.0 * 24.0 / 54.0 * 20.0 / 84.0 * 0.0182
     # Control loop time step
     self.dt = 0.01
 
@@ -38,23 +38,26 @@ class Shooter(control_loop.ControlLoop):
     # TODO(james): Make this work with origins other than at kx = 0.
     self.A_continuous = numpy.matrix(
         [[0, 1],
-         [-self.Ks * 0.01 / self.J,
+         [-self.Ks / self.J,
           -self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
     self.B_continuous = numpy.matrix(
         [[0],
          [self.Kt / (self.J * self.G * self.R)]])
+    print "Continuous A, B:", self.A_continuous, self.B_continuous
     self.C = numpy.matrix([[1, 0]])
     self.D = numpy.matrix([[0]])
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
+    print "Discrete A, B: ", self.A, self.B
+    print "Eigenvalues A: ", numpy.linalg.eig(self.A)[0]
 
-    self.PlaceControllerPoles([0.85, 0.45])
+    self.PlaceControllerPoles([0.85, 0.85])
 
     self.rpl = .05
     self.ipl = 0.008
-    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl])
+    self.PlaceObserverPoles([self.rpl,
+                             self.rpl])
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
@@ -110,11 +113,16 @@ def main(argv):
   # Simulate the response of the system to a step input.
   shooter = Shooter()
   simulated_x = []
-  for _ in xrange(1000):
-    shooter.Update(numpy.matrix([[2.0]]))
+  u = []
+  shooter.X[0, 0] = 1
+  for _ in xrange(2000):
+    U = shooter.X[1, 0] / shooter.G / shooter.Kv
+    shooter.Update(numpy.matrix([[U]]))
     simulated_x.append(shooter.X[0, 0])
+    u.append(U / 10.0)
 
-  pylab.plot(range(1000), simulated_x)
+  pylab.plot(range(2000), simulated_x)
+  pylab.plot(range(2000), u)
   pylab.show()
 
   # Simulate the response of the system to a goal.
