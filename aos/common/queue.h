@@ -21,6 +21,8 @@ namespace aos {
 class MessageType;
 
 // This class is a base class for all messages sent over queues.
+// All of the methods are overloaded in (generated) subclasses to do the same
+// thing for the whole thing.
 class Message {
  public:
   typedef ::aos::time::Time Time;
@@ -30,17 +32,13 @@ class Message {
   Message() : sent_time(0, 0) {}
 
   // Zeros out the time.
-  // Overriden to zero the whole message.
   void Zero();
   // Returns the size of the common fields.
-  // Overriden to return the size of the whole message.
   static size_t Size() { return sizeof(Time); }
 
   // Deserializes the common fields from the buffer.
-  // Overriden to deserialize the whole message.
   size_t Deserialize(const char *buffer);
   // Serializes the common fields into the buffer.
-  // Overriden to serialize the whole message.
   size_t Serialize(char *buffer) const;
 
   // Populates sent_time with the current time.

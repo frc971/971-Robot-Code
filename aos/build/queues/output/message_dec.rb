@@ -24,11 +24,80 @@ class Target::StructBase < Target::Node
 			member.add_TypeRegister(cpp_tree, type_class, member_func)
     end
 		id = getTypeID()
-		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{id}, #{@name.inspect}, {" +
+		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{type_class.parent_class ? type_class.parent_class + '::Size()' : 0}, #{id}, #{@loc.queue_name(@name).inspect}, {" +
 		  "#{fields.join(", ")}})");
 		type_class.add_member(member_func)
 		member_func.suite << "::aos::type_cache::Add(kMsgMessageType)"
 		member_func.suite << CPP::Return.new("&kMsgMessageType")
+	end
+        def create_InOrderConstructor(type_class, cpp_tree)
+          cons = CPP::Constructor.new(type_class)
+          type_class.add_member(cons)
+          @members.each do |member|
+            if member.respond_to?(:type_name)
+              type_name = member.type_name(cpp_tree)
+            else
+              type_name = member.type
+            end
+
+            cons.args << "#{type_name} #{member.name}_in"
+            cons.add_cons(member.name, member.name + '_in')
+          end
+        end
+        def create_DefaultConstructor(type_class, cpp_tree)
+          cons = CPP::Constructor.new(type_class)
+          type_class.add_member(cons)
+          cons.add_cons(type_class.parent_class) if type_class.parent_class
+          cons.suite << CPP::FuncCall.build('Zero')
+        end
+	def create_Zero(type_class,cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"void","Zero")
+		type_class.add_member(member_func)
+		@members.each do |elem|
+			elem.zeroCall(member_func.suite)
+		end
+                member_func.suite << CPP::FuncCall.new(type_class.parent_class + '::Zero') if type_class.parent_class
+	end
+	def create_Size(type_class,cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"size_t","Size")
+		member_func.inline = true
+        member_func.static = true
+		type_class.add_member(member_func.forward_dec)
+		size = 0
+		@members.each do |elem|
+			size += elem.size
+		end
+                if type_class.parent_class
+		  member_func.suite << CPP::Return.new(CPP::Add.new(size,
+							"#{type_class.parent_class}::Size()"))
+                else
+                  member_func.suite << CPP::Return.new(size)
+                end
+	end
+	def create_Serialize(type_class,cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"size_t","Serialize")
+		type_class.add_member(member_func)
+		member_func.args << "char *buffer"
+		member_func.suite << "#{type_class.parent_class}::Serialize(buffer)" if type_class.parent_class
+		member_func.const = true
+		offset = type_class.parent_class ? type_class.parent_class + '::Size()' : '0'
+		@members.each do |elem|
+			elem.toNetwork(offset,member_func.suite)
+			offset += " + #{elem.size}";
+		end
+                member_func.suite << CPP::Return.new(CPP::FuncCall.new('Size'))
+	end
+	def create_Deserialize(type_class,cpp_tree)
+		member_func = CPP::MemberFunc.new(type_class,"size_t","Deserialize")
+		type_class.add_member(member_func)
+		member_func.args << "const char *buffer"
+		member_func.suite << "#{type_class.parent_class}::Deserialize(buffer)" if type_class.parent_class
+		offset = type_class.parent_class ? type_class.parent_class + '::Size()' : '0'
+		@members.each do |elem|
+			elem.toHost(offset,member_func.suite)
+			offset += " + #{elem.size}";
+		end
+                member_func.suite << CPP::Return.new(CPP::FuncCall.new('Size'))
 	end
 	def simpleStr()
 		return "{\n" + @members.collect() { |elem| elem.simpleStr() + "\n"}.join("") + "}"
@@ -84,55 +153,6 @@ class Target::MessageDec < Target::StructBase
     member_func.suite << "length -= super_size"
     member_func.suite << "return super_size + snprintf(buffer, length, " + ([format] + args).join(", ") + ")";
 	end
-	def create_Serialize(type_class,cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"size_t","Serialize")
-		type_class.add_member(member_func)
-		#cpp_tree.cc_file.add_funct(member_func)
-		member_func.args << "char *buffer"
-		member_func.suite << "::aos::Message::Serialize(buffer)"
-		member_func.const = true
-		offset = 0
-		@members.each do |elem|
-			elem.toNetwork(offset,member_func.suite)
-			offset += elem.size;
-		end
-                member_func.suite << "return Size()"
-	end
-	def create_Deserialize(type_class,cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"size_t","Deserialize")
-		type_class.add_member(member_func)
-		#cpp_tree.cc_file.add_funct(member_func)
-		member_func.args << "const char *buffer"
-		member_func.suite << "::aos::Message::Deserialize(buffer)"
-		offset = 0
-		@members.each do |elem|
-			elem.toHost(offset,member_func.suite)
-			offset += elem.size;
-		end
-                member_func.suite << "return Size()"
-	end
-	def create_Zero(type_class,cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"void","Zero")
-		type_class.add_member(member_func)
-		#cpp_tree.cc_file.add_funct(member_func)
-		@members.each do |elem|
-			elem.zeroCall(member_func.suite)
-		end
-		member_func.suite << "::aos::Message::Zero()"
-	end
-	def create_Size(type_class,cpp_tree)
-		member_func = CPP::MemberFunc.new(type_class,"size_t","Size")
-		member_func.inline = true
-        member_func.static = true
-		type_class.add_member(member_func.forward_dec)
-		#cpp_tree.cc_file.add_funct(member_func)
-		size = 0
-		@members.each do |elem|
-			size += elem.size
-		end
-		member_func.suite << CPP::Return.new(CPP::Add.new(size,
-							"::aos::Message::Size()"))
-	end
 	def create_GetType(type_class, cpp_tree)
 		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType*","GetType")
 		type_class.add_member(member_func)
@@ -179,6 +199,8 @@ class Target::MessageDec < Target::StructBase
 		create_Print(type_class,cpp_tree)
 		create_GetType(type_class, cpp_tree)
 		create_DoGetType(type_class, cpp_tree)
+    create_DefaultConstructor(type_class, cpp_tree)
+    create_InOrderConstructor(type_class, cpp_tree)
 
 		b_namespace = cpp_tree.get(b_loc = self.class.builder_loc(@loc))
 
@@ -250,16 +272,14 @@ class Target::MessageElement < Target::Node
 		"#{@type} #{@name}"
 	end
 	def toNetwork(offset,suite, parent = "")
-		offset = (offset == 0) ? "" : "#{offset} + "
 		suite << f_call = CPP::FuncCall.build("to_network",
 									 "&#{parent}#{@name}",
-									 "&buffer[#{offset}::aos::Message::Size()]")
+									 "&buffer[#{offset}]")
 		f_call.args.dont_wrap = true
 	end
 	def toHost(offset,suite, parent = "")
-		offset = (offset == 0) ? "" : "#{offset} + "
 		suite << f_call = CPP::FuncCall.build("to_host",
-									 "&buffer[#{offset}::aos::Message::Size()]",
+									 "&buffer[#{offset}]",
 									 "&#{parent}#{@name}")
 		f_call.args.dont_wrap = true
 	end

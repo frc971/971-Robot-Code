@@ -29,6 +29,12 @@ class Target::StructDec < Target::StructBase
 		end
 		create_DoGetType(type_class, cpp_tree)
 		create_GetType(type_class, cpp_tree)
+    create_DefaultConstructor(type_class, cpp_tree)
+    create_InOrderConstructor(type_class, cpp_tree)
+    create_Zero(type_class, cpp_tree)
+    create_Size(type_class, cpp_tree)
+    create_Serialize(type_class, cpp_tree)
+    create_Deserialize(type_class, cpp_tree)
 		return type_class
 	end
 	def getPrintFormat()
@@ -42,13 +48,13 @@ class Target::StructDec < Target::StructBase
 	def toHost(offset, suite, parent)
 		@members.each do |elem|
 			elem.toHost(offset, suite, parent)
-			offset += elem.size()
+			offset += " + #{elem.size()}"
 		end
 	end
 	def toNetwork(offset, suite, parent)
 		@members.each do |elem|
 			elem.toNetwork(offset, suite, parent)
-			offset += elem.size()
+			offset += " + #{elem.size()}"
 		end
 	end
 	def zeroCall(suite, parent)

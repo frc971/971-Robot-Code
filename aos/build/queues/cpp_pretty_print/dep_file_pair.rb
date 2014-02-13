@@ -182,6 +182,9 @@ module Types
 			@protections = {}
 			@deps = []
 		end
+    def parent_class
+      @parent.split(' ')[1] if @parent
+    end
 		class ProtectionGroup
 			def initialize(name)
 				@name = name

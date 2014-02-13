@@ -58,6 +58,14 @@ def parse_args(globals,args)
 		exit!(-1)
 	end
 end
+def format_pipeline(output)
+  read_in, write_in = IO.pipe()
+  child = Process.spawn('clang-format-3.4 --style=google',
+                        {:in=>read_in, write_in=>:close,
+                         :out=>output})
+  read_in.close
+  [child, write_in]
+end
 def build(filename,globals_template)
 	globals = Globals.new()
 	globals_template.paths.each do |path|
@@ -85,10 +93,20 @@ def build(filename,globals_template)
 
 	header_file = File.open(h_file_path,"w+")
 	cc_file = File.open(cc_file_path,"w+")
-	cpp_tree.write_header_file($cpp_base,header_file)
-	cpp_tree.write_cc_file($cpp_base,cc_file)
-	cc_file.close()
-	header_file.close()
+  header_child, header_output = format_pipeline(header_file)
+  cc_child, cc_output = format_pipeline(cc_file)
+	cpp_tree.write_header_file($cpp_base,header_output)
+	cpp_tree.write_cc_file($cpp_base,cc_output)
+	cc_output.close()
+	header_output.close()
+  if !Process.wait2(cc_child)[1].success?
+    $stderr.puts "Formatting cc file failed."
+    exit 1
+  end
+  if !Process.wait2(header_child)[1].success?
+    $stderr.puts "Formatting header file failed."
+    exit 1
+  end
 end
 begin
 	args = ARGV.dup

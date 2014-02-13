@@ -9,13 +9,14 @@
 
 using ::aos::common::testing::Structure;
 using ::aos::common::testing::MessageWithStructure;
+using ::aos::common::testing::OtherTestingMessage;
 
 namespace aos {
 namespace testing {
 
 typedef MessageType::Field Field;
 
-static const MessageType kTestType1(0x1234, "TestType1",
+static const MessageType kTestType1(5, 0x1234, "TestType1",
                                     {new Field{0, "field1"},
                                      new Field{0, "field2"},
                                      new Field{0, "field3"}});
@@ -27,7 +28,7 @@ class QueueTypesTest : public ::testing::Test {
     if (l.id != r.id) {
       return AssertionFailure() << "id " << l.id << " != " << r.id;
     }
-    if (strcmp(l.name, r.name) != 0) {
+    if (l.name != r.name) {
       return AssertionFailure() << "name '" << l.name << "' != '" << r.name
                                 << "'";
     }
@@ -41,7 +42,7 @@ class QueueTypesTest : public ::testing::Test {
         return AssertionFailure() << "type " << l.fields[i]->type
                                   << " != " << r.fields[i]->type;
       }
-      if (strcmp(l.fields[i]->name, r.fields[i]->name) != 0) {
+      if (l.fields[i]->name != r.fields[i]->name) {
         return AssertionFailure() << "name '" << l.fields[i]->name << "' != '"
                                   << r.fields[i]->name << "'";
       }
@@ -57,7 +58,8 @@ TEST_F(QueueTypesTest, Serialization) {
   ::std::unique_ptr<MessageType> deserialized;
 
   size = kTestType1.Serialize(buffer, sizeof(buffer));
-  EXPECT_GT(size, 1);
+  ASSERT_GT(size, 1);
+  ASSERT_LE(static_cast<size_t>(size), sizeof(buffer));
 
   out_size = size;
   deserialized.reset(MessageType::Deserialize(buffer, &out_size));
@@ -80,6 +82,7 @@ class PrintFieldTest : public ::testing::Test {
   char input[128], output[128];
   size_t input_bytes, output_bytes;
 };
+typedef PrintFieldTest PrintMessageTest;
 
 TEST_F(PrintFieldTest, Basic) {
   static const uint16_t kData = 971;
@@ -125,6 +128,50 @@ TEST_F(PrintFieldTest, OutputTooSmall) {
   output_bytes = 5;
   EXPECT_FALSE(PrintField(output, &output_bytes, input, &input_bytes,
                           Structure::GetType()->fields[1]->type));
+}
+
+static const OtherTestingMessage kTestMessage1(true, 8971, 3.2);
+static const ::std::string kTestMessage1String =
+    ".aos.common.testing.OtherTestingMessage{test_bool:T,test_int:8971"
+    ",test_double:3.200000}";
+static const Structure kTestStructure1(false, 973, 8.56);
+static const ::std::string kTestStructure1String =
+    ".aos.common.testing.Structure{struct_bool:f,struct_int:973"
+    ",struct_float:8.560000}";
+
+TEST_F(PrintMessageTest, Basic) {
+  assert(sizeof(input) >= kTestMessage1.Size());
+  input_bytes = kTestMessage1.Serialize(input);
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
+                           *kTestMessage1.GetType()));
+  EXPECT_EQ(kTestMessage1String, ::std::string(output));
+  EXPECT_EQ(kTestMessage1String.size() + 1, sizeof(output) - output_bytes);
+}
+
+TEST_F(PrintMessageTest, OutputTooSmall) {
+  assert(sizeof(input) >= kTestMessage1.Size());
+  input_bytes = kTestMessage1.Serialize(input);
+  output_bytes = kTestMessage1String.size();
+  EXPECT_FALSE(PrintMessage(output, &output_bytes, input, &input_bytes,
+                           *kTestMessage1.GetType()));
+}
+
+TEST_F(PrintMessageTest, InputTooSmall) {
+  input_bytes = kTestMessage1.Size() - 1;
+  output_bytes = sizeof(output);
+  EXPECT_FALSE(PrintMessage(output, &output_bytes, input, &input_bytes,
+                           *kTestMessage1.GetType()));
+}
+
+TEST_F(PrintMessageTest, Structure) {
+  assert(sizeof(input) >= kTestStructure1.Size());
+  input_bytes = kTestStructure1.Serialize(input);
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
+                           *kTestStructure1.GetType()));
+  EXPECT_EQ(kTestStructure1String, ::std::string(output));
+  EXPECT_EQ(kTestStructure1String.size() + 1, sizeof(output) - output_bytes);
 }
 
 }  // namespace testing
