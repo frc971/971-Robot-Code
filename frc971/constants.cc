@@ -60,6 +60,8 @@ const Values *DoGetValues() {
 
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+            0.02, // claw_unimportant_epsilon
+            50505.05, // start_fine_tune_pos
       };
       break;
     case kPracticeTeamNumber:
@@ -78,6 +80,8 @@ const Values *DoGetValues() {
             1.57,
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+            0.02, // claw_unimportant_epsilon
+            50505.05, //start_fine_tune_pos
       };
       break;
     default:

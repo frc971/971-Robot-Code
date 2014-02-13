@@ -82,7 +82,8 @@ ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
       has_bottom_claw_goal_(false),
       bottom_claw_goal_(0.0),
       bottom_claw_(MakeBottomClawLoop()),
-      was_enabled_(false) {}
+      was_enabled_(false),
+      doing_calibration_fine_tune_(false) {}
 
 const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
@@ -219,7 +220,73 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     // Time to fine tune the zero.
     // Limit the goals here.
     if (bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::CALIBRATED) {
+        // always get the bottom claw to calibrated first
+		if (!doing_calibration_fine_tune_) {
+			if (position->bottom.position > values.start_fine_tune_pos - 
+					values.claw_unimportant_epsilon &&
+					position->bottom.position < values.start_fine_tune_pos + 
+					values.claw_unimportant_epsilon) {
+				doing_calibration_fine_tune_ = true;
+        		bottom_claw_goal_ += values.claw_zeroing_off_speed * dt;
+			} else {
+				// send bottom to zeroing start
+        		bottom_claw_goal_ = values.start_fine_tune_pos;
+			}
+		} else {
+			if (position->bottom.front_hall_effect ||
+					position->bottom.back_hall_effect ||
+					position->top.front_hall_effect ||
+					position->top.back_hall_effect) {
+				// this should not happen, but now we know it won't
+				doing_calibration_fine_tune_ = false;
+				bottom_claw_goal_ = values.start_fine_tune_pos;
+			}
+			if (position->bottom.calibration_hall_effect) {
+                // do calibration
+      			bottom_claw_.SetCalibration(
+				    position->bottom.posedge_value,
+         	 		    values.lower_claw.calibration.lower_angle);
+				bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+                // calinrated so we are done fine tuning bottom
+				doing_calibration_fine_tune_ = false;
+			}
+		}
+        // now set the top claw to track
+        top_claw_goal_ = bottom_claw_goal_ + goal->seperation_angle;
     } else {
+        // bottom claw must be calibrated, start on the top
+		if (!doing_calibration_fine_tune_) {
+			if (position->top.position > values.start_fine_tune_pos - 
+					values.claw_unimportant_epsilon &&
+					position->top.position < values.start_fine_tune_pos + 
+					values.claw_unimportant_epsilon) {
+				doing_calibration_fine_tune_ = true;
+        		top_claw_goal_ += values.claw_zeroing_off_speed * dt;
+			} else {
+				// send top to zeroing start
+        		top_claw_goal_ = values.start_fine_tune_pos;
+			}
+		} else {
+			if (position->top.front_hall_effect ||
+					position->top.back_hall_effect ||
+					position->top.front_hall_effect ||
+					position->top.back_hall_effect) {
+				// this should not happen, but now we know it won't
+				doing_calibration_fine_tune_ = false;
+				top_claw_goal_ = values.start_fine_tune_pos;
+			}
+			if (position->top.calibration_hall_effect) {
+                // do calibration
+      			top_claw_.SetCalibration(
+				    position->top.posedge_value,
+         	 		    values.upper_claw.calibration.lower_angle);
+				top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+                // calinrated so we are done fine tuning top
+				doing_calibration_fine_tune_ = false;
+			}
+		}
+        // now set the bottom claw to track
+        bottom_claw_goal_ = top_claw_goal_ - goal->seperation_angle;
     }
   } else {
     if (!was_enabled_ && enabled) {

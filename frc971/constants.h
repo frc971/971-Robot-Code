@@ -61,8 +61,12 @@ struct Values {
     AnglePair back;
   };
 
+
   Claw upper_claw;
   Claw lower_claw;
+
+  double claw_unimportant_epsilon;
+  double start_fine_tune_pos;
 };
 
 // Creates (once) a Values instance and returns a reference to it.

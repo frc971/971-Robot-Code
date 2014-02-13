@@ -50,7 +50,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         posedge_value_(0.0),
         negedge_value_(0.0),
         encoder_(0.0),
-        last_encoder_(0.0) {}
+        last_encoder_(0.0){}
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -186,6 +186,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double last_encoder_;
 };
 
+
 class ClawMotor
     : public aos::control_loops::ControlLoop<control_loops::ClawGroup> {
  public:
@@ -219,6 +220,7 @@ class ClawMotor
   ZeroedStateFeedbackLoop bottom_claw_;
 
   bool was_enabled_;
+  bool doing_calibration_fine_tune_;
 
   DISALLOW_COPY_AND_ASSIGN(ClawMotor);
 };
