@@ -16,9 +16,11 @@ class Shooter(control_loop.ControlLoop):
     self.free_speed = 19300.0
     # Free Current in Amps
     self.free_current = 1.2
-    # Moment of inertia of the shooter in kg m^2
-    # Needs to be figured out in practice.
-    self.J = 5
+    # Effective mass of the shooter in kg.
+    # This rough estimate should about include the effect of the masses
+    # of the gears. If this number is too low, the eigen values of self.A
+    # will start to become extremely small.
+    self.J = 12
     # Resistance of the motor, divided by the number of motors.
     self.R = 12.0 / self.stall_current / 2.0
     # Motor velocity constant
@@ -43,16 +45,13 @@ class Shooter(control_loop.ControlLoop):
     self.B_continuous = numpy.matrix(
         [[0],
          [self.Kt / (self.J * self.G * self.R)]])
-    print "Continuous A, B:", self.A_continuous, self.B_continuous
     self.C = numpy.matrix([[1, 0]])
     self.D = numpy.matrix([[0]])
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
-    print "Discrete A, B: ", self.A, self.B
-    print "Eigenvalues A: ", numpy.linalg.eig(self.A)[0]
 
-    self.PlaceControllerPoles([0.85, 0.85])
+    self.PlaceControllerPoles([0.45, 0.45])
 
     self.rpl = .05
     self.ipl = 0.008
@@ -113,28 +112,24 @@ def main(argv):
   # Simulate the response of the system to a step input.
   shooter = Shooter()
   simulated_x = []
-  u = []
-  shooter.X[0, 0] = 1
   for _ in xrange(2000):
-    U = shooter.X[1, 0] / shooter.G / shooter.Kv
+    U = 2.0
     shooter.Update(numpy.matrix([[U]]))
     simulated_x.append(shooter.X[0, 0])
-    u.append(U / 10.0)
 
   pylab.plot(range(2000), simulated_x)
-  pylab.plot(range(2000), u)
   pylab.show()
 
   # Simulate the response of the system to a goal.
   shooter = Shooter()
   close_loop_x = []
   close_loop_u = []
-  R = numpy.matrix([[1.0], [0.0]])
-  for _ in xrange(100):
-    feed_forward = (-numpy.linalg.lstsq(shooter.B_continuous, numpy.identity(
+  R = numpy.matrix([[0.3], [0.0]])
+  for _ in xrange(500):
+    augment = (-numpy.linalg.lstsq(shooter.B_continuous, numpy.identity(
                          shooter.B_continuous.shape[0]))[0] *
                    shooter.A_continuous * R)
-    U = numpy.clip(shooter.K * (R - shooter.X_hat) + feed_forward,
+    U = numpy.clip(shooter.K * (R - shooter.X_hat) + augment,
                    shooter.U_min, shooter.U_max)
 #U = ClipDeltaU(shooter, U)
     shooter.UpdateObserver(U)
@@ -142,8 +137,8 @@ def main(argv):
     close_loop_x.append(shooter.X[0, 0] * 10)
     close_loop_u.append(U[0, 0])
 
-  pylab.plot(range(100), close_loop_x)
-  pylab.plot(range(100), close_loop_u)
+  pylab.plot(range(500), close_loop_x)
+  pylab.plot(range(500), close_loop_u)
   pylab.show()
 
   # Write the generated constants out to a file.
