@@ -24,7 +24,7 @@ class Target::StructBase < Target::Node
 			member.add_TypeRegister(cpp_tree, type_class, member_func)
     end
 		id = getTypeID()
-		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{type_class.parent_class ? type_class.parent_class + '::Size()' : 0}, #{id}, #{@loc.queue_name(@name).inspect}, {" +
+		member_func.suite << ("static const ::aos::MessageType kMsgMessageType(#{type_class.parent_class ? type_class.parent_class + '::Size()' : 0}, #{id}, #{(@loc.respond_to?(:queue_name) ? @loc.queue_name(@name) : "#{@loc.get_name()}.#{@name}").inspect}, {" +
 		  "#{fields.join(", ")}})");
 		type_class.add_member(member_func)
 		member_func.suite << "::aos::type_cache::Add(kMsgMessageType)"
