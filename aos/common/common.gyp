@@ -182,6 +182,7 @@
         'timing',
         'time',
         'control_loop_queues',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
@@ -189,6 +190,7 @@
         'timing',
         'time',
         'control_loop_queues',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
     },
     {

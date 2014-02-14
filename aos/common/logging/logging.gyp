@@ -18,7 +18,12 @@
         'queue_logging.cc',
       ],
       'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:die',
         '<(AOS)/common/common.gyp:queue_types',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
   ],

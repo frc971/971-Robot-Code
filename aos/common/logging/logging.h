@@ -71,41 +71,45 @@ void log_uncork(int line, const char *function, log_level level,
 #define LOG_SOURCENAME __FILE__
 
 // The basic logging call.
-#define LOG(level, format, args...) do {\
-  log_do(level, LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": %s: " format, \
-         LOG_CURRENT_FUNCTION, ##args); \
-  /* so that GCC knows that it won't return */ \
-  if (level == FATAL) { \
-    fprintf(stderr, "log_do(FATAL) fell through!!!!!\n"); \
-    printf("see stderr\n"); \
-    abort(); \
-  } \
-} while (0)
+#define LOG(level, format, args...)                                        \
+  do {                                                                     \
+    log_do(level, LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": %s: " format, \
+           LOG_CURRENT_FUNCTION, ##args);                                  \
+    /* so that GCC knows that it won't return */                           \
+    if (level == FATAL) {                                                  \
+      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");                \
+      printf("see stderr\n");                                              \
+      abort();                                                             \
+    }                                                                      \
+  } while (0)
 
 // Allows format to not be a string constant.
-#define LOG_DYNAMIC(level, format, args...) do { \
-	static char log_buf[LOG_MESSAGE_LEN]; \
-	int ret = snprintf(log_buf, sizeof(log_buf), format, ##args); \
-	if (ret < 0 || (uintmax_t)ret >= LOG_MESSAGE_LEN) { \
-		LOG(ERROR, "next message was too long so not subbing in args\n"); \
-		LOG(level, "%s", format); \
-	}else{ \
-		LOG(level, "%s", log_buf); \
-	} \
-} while (0)
+#define LOG_DYNAMIC(level, format, args...)                             \
+  do {                                                                  \
+    static char log_buf[LOG_MESSAGE_LEN];                               \
+    int ret = snprintf(log_buf, sizeof(log_buf), format, ##args);       \
+    if (ret < 0 || (uintmax_t)ret >= LOG_MESSAGE_LEN) {                 \
+      LOG(ERROR, "next message was too long so not subbing in args\n"); \
+      LOG(level, "%s", format);                                         \
+    } else {                                                            \
+      LOG(level, "%s", log_buf);                                        \
+    }                                                                   \
+  } while (0)
 
 // Allows "bottling up" multiple log fragments which can then all be logged in
 // one message with LOG_UNCORK.
 // Calls from a given thread/task will be grouped together.
-#define LOG_CORK(format, args...) do { \
-  log_cork(__LINE__, LOG_CURRENT_FUNCTION, format, ##args); \
-} while (0)
+#define LOG_CORK(format, args...)                             \
+  do {                                                        \
+    log_cork(__LINE__, LOG_CURRENT_FUNCTION, format, ##args); \
+  } while (0)
 // Actually logs all of the saved up log fragments (including format and args on
 // the end).
-#define LOG_UNCORK(level, format, args...) do { \
-  log_uncork(__LINE__, LOG_CURRENT_FUNCTION, level, LOG_SOURCENAME, \
-             format, ##args); \
-} while (0)
+#define LOG_UNCORK(level, format, args...)                                    \
+  do {                                                                        \
+    log_uncork(__LINE__, LOG_CURRENT_FUNCTION, level, LOG_SOURCENAME, format, \
+               ##args);                                                       \
+  } while (0)
 
 #ifdef __cplusplus
 }
@@ -154,8 +158,8 @@ namespace aos {
 // controlled by NDEBUG, so the check will be executed regardless of
 // compilation mode.  Therefore, it is safe to do things like:
 //    CHECK(fp->Write(x) == 4)
-#define CHECK(condition)  \
-  if (__builtin_expect(!(condition), 0)) { \
+#define CHECK(condition)                          \
+  if (__builtin_expect(!(condition), 0)) {        \
     LOG(FATAL, "CHECK(%s) failed\n", #condition); \
   }
 
@@ -163,16 +167,16 @@ namespace aos {
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
 // unnamed enum type.
-#define DEFINE_CHECK_OP_IMPL(name, op) \
-  template <typename T1, typename T2> \
-  inline void LogImpl##name(const T1& v1, const T2& v2,    \
-                            const char* exprtext) { \
-    if (!__builtin_expect(v1 op v2, 1)) { \
-      LOG(FATAL, "CHECK(%s) failed\n", exprtext); \
-    } \
-  } \
-  inline void LogImpl##name(int v1, int v2, const char* exprtext) { \
-    ::aos::LogImpl##name<int, int>(v1, v2, exprtext); \
+#define DEFINE_CHECK_OP_IMPL(name, op)                              \
+  template <typename T1, typename T2>                               \
+  inline void LogImpl##name(const T1 &v1, const T2 &v2,             \
+                            const char *exprtext) {                 \
+    if (!__builtin_expect(v1 op v2, 1)) {                           \
+      LOG(FATAL, "CHECK(%s) failed\n", exprtext);                   \
+    }                                                               \
+  }                                                                 \
+  inline void LogImpl##name(int v1, int v2, const char *exprtext) { \
+    ::aos::LogImpl##name<int, int>(v1, v2, exprtext);               \
   }
 
 // We use the full name Check_EQ, Check_NE, etc. in case the file including
@@ -186,7 +190,7 @@ DEFINE_CHECK_OP_IMPL(Check_LT, < )
 DEFINE_CHECK_OP_IMPL(Check_GE, >=)
 DEFINE_CHECK_OP_IMPL(Check_GT, > )
 
-#define CHECK_OP(name, op, val1, val2) \
+#define CHECK_OP(name, op, val1, val2)  \
   ::aos::LogImplCheck##name(val1, val2, \
                             STRINGIFY(val1) STRINGIFY(op) STRINGIFY(val2))
 
@@ -208,8 +212,7 @@ inline T* CheckNotNull(const char *value_name, T *t) {
 
 // Check that the input is non NULL.  This very useful in constructor
 // initializer lists.
-#define CHECK_NOTNULL(val) \
-  ::aos::CheckNotNull(STRINGIFY(val), val)
+#define CHECK_NOTNULL(val) ::aos::CheckNotNull(STRINGIFY(val), val)
 
 }  // namespace aos
 

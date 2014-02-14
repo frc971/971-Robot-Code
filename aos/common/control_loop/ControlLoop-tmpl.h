@@ -3,6 +3,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/messages/RobotState.q.h"
+#include "aos/common/logging/queue_logging.h"
 
 namespace aos {
 namespace control_loops {
@@ -19,9 +20,6 @@ void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::Iterate() {
-  // Temporary storage for printing out inputs and outputs.
-  char state[1024];
-
   // Fetch the latest control loop goal and position.  If there is no new
   // goal, we will just reuse the old one.
   // If there is no goal, we haven't started up fully.  It isn't worth
@@ -35,8 +33,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     ZeroOutputs();
     return;
   }
-  goal->Print(state, sizeof(state));
-  LOG(DEBUG, "goal={%s}\n", state);
+  LOG_STRUCT(DEBUG, "goal", *goal);
 
   // Only pass in a position if we got one this cycle.
   const PositionType *position = NULL;
@@ -67,8 +64,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
       }
     }
     if (position) {
-      position->Print(state, sizeof(state));
-      LOG(DEBUG, "position={%s}\n", state);
+      LOG_STRUCT(DEBUG, "position", *position);
     }
   }
 
@@ -100,8 +96,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
         control_loop_->output.MakeMessage();
     RunIteration(goal, position, output.get(), status.get());
 
-    output->Print(state, sizeof(state));
-    LOG(DEBUG, "output={%s}\n", state);
+    LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
     // The outputs are disabled, so pass NULL in for the output.
@@ -109,8 +104,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     ZeroOutputs();
   }
 
-  status->Print(state, sizeof(state));
-  LOG(DEBUG, "status={%s}\n", state);
+  LOG_STRUCT(DEBUG, "status", *status);
   status.Send();
 }
 

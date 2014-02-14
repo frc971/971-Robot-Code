@@ -36,15 +36,11 @@ void ExecuteFormat(char *output, size_t output_size,
   }
 }
 
-}  // namespace internal
-
-using internal::Context;
-
-void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
-                   int levels) {
+void RunWithCurrentImplementation(
+    int levels, ::std::function<void(LogImplementation *)> function) {
   Context *context = Context::Get();
 
-  LogImplementation *top_implementation = context->implementation;
+  LogImplementation *const top_implementation = context->implementation;
   LogImplementation *new_implementation = top_implementation;
   LogImplementation *implementation = NULL;
   assert(levels >= 1);
@@ -56,12 +52,34 @@ void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
     new_implementation = new_implementation->next();
   }
   context->implementation = new_implementation;
-  implementation->DoLog(level, format, ap);
+  function(implementation);
   context->implementation = top_implementation;
+}
 
-  if (level == FATAL) {
-    VDie(format, ap);
-  }
+}  // namespace internal
+
+using internal::Context;
+
+void LogImplementation::LogStruct(
+    log_level level, const ::std::string &message, size_t size,
+    const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
+  (void)level;
+  (void)message;
+  (void)size;
+  (void)type;
+  (void)serialize;
+}
+
+void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
+                               int levels) {
+  internal::RunWithCurrentImplementation(
+      levels, [&](LogImplementation * implementation) {
+    implementation->DoLog(level, format, ap);
+
+    if (level == FATAL) {
+      VDie(format, ap);
+    }
+  });
 }
 
 void VLog(log_level level, const char *format, va_list ap) {
