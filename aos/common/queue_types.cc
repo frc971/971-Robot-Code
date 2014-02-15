@@ -108,10 +108,10 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   return r.release();
 }
 
-bool PrintMessage(char *output, size_t *output_bytes, void *input,
+bool PrintMessage(char *output, size_t *output_bytes, const void *input,
                   size_t *input_bytes, const MessageType &type) {
   *input_bytes -= type.super_size;
-  input = static_cast<char *>(input) + type.super_size;
+  input = static_cast<const char *>(input) + type.super_size;
 
   if (*output_bytes < type.name.size() + 1) return false;
   *output_bytes -= type.name.size() + 1;
@@ -153,7 +153,8 @@ bool PrintMessage(char *output, size_t *output_bytes, void *input,
     // subcall put on.
     output += output_bytes_before - *output_bytes - 1;
     *output_bytes += 1;
-    input = static_cast<char *>(input) + input_bytes_before - *input_bytes;
+    input =
+        static_cast<const char *>(input) + input_bytes_before - *input_bytes;
   }
   if (*output_bytes < 2) return false;
   *output_bytes -= 2;

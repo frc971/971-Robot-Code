@@ -18,7 +18,7 @@ File.open(ARGV[0], 'w') do |output|
 
 namespace aos {
 
-bool PrintField(char *output, size_t *output_bytes, void *input,
+bool PrintField(char *output, size_t *output_bytes, const void *input,
                 size_t *input_bytes, uint32_t type) {
   switch (type) {
 #{TypeNames.collect do |name|
