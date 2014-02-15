@@ -4,6 +4,7 @@
       'gyro_angle.q',
       'photo_sensor.q',
       'piston.q',
+      'to_log.q',
     ]
   },
   'targets': [

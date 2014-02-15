@@ -31,6 +31,7 @@
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_reader',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
     },
   ],
