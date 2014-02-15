@@ -32,6 +32,13 @@ struct Values {
   // gear.
   double low_gear_ratio;
   double high_gear_ratio;
+  
+  double shooter_lower_limit;
+  double shooter_upper_limit;
+  double shooter_hall_effect_start_position;
+  double shooter_zeroing_off_speed;
+  double shooter_zeroing_speed;
+  double pos;
 
   ShifterHallEffect left_drive, right_drive;
 

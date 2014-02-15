@@ -5,6 +5,13 @@ import "aos/common/control_loop/control_loops.q";
 queue_group ShooterLoop {
   implements aos.control_loops.ControlLoop;
 
+  message Output {
+    // The energy to load to in joules.
+    double voltage;
+    // Shoots as soon as this is true.
+    bool latched;
+    bool locked; //Disc brake locked
+  };
   message Goal {
     // encoder ticks of shot energy.
     double shot_power;
@@ -57,6 +64,7 @@ queue_group ShooterLoop {
     bool cocked;
     // How many times we've shot.
     int32_t shots;
+    bool done;
   };
 
   message Output {
@@ -69,7 +77,7 @@ queue_group ShooterLoop {
   };
   queue Goal goal;
   queue Position position;
-  queue aos.control_loops.Output output;
+  queue Output output;
   queue Status status;
 };
 

@@ -24,17 +24,6 @@ const size_t kMaxAddrLength = 18;
 // set the IP address when running tests from the test.
 const char *const kLinuxNetInterface = "eth0";
 const in_addr *DoGetOwnIPAddress() {
-    static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
-    const char *override_ip = getenv(kOverrideVariable);
-    if (override_ip != nullptr) {
-        static in_addr r;
-        if (inet_aton(override_ip, &r) != 0) {
-            return &r;
-        } else {
-            LOG(WARNING, "error parsing %s value '%s'\n", kOverrideVariable, override_ip);
-        }
-    }
-
   ifaddrs *addrs;
   if (getifaddrs(&addrs) != 0) {
     LOG(FATAL, "getifaddrs(%p) failed with %d: %s\n", &addrs,

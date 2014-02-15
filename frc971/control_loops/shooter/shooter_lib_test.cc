@@ -5,10 +5,10 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "frc971/control_loops/shootershooter.q.h"
+#include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/shooter/shooter.h"
+#include "frc971/control_loops/shooter/unaugmented_shooter_motor_plant.h"
 #include "frc971/constants.h"
-#include "frc971/control_loops/shooter/shooter_motor_plant.h"
 
 
 using ::aos::time::Time;
@@ -245,19 +245,13 @@ class ShooterTest : public ::testing::Test {
   ShooterMotor shooter_motor_;
   ShooterMotorSimulation shooter_motor_plant_;
 
-  // Minimum amount of acceptable seperation between the top and bottom of the
-  // claw.
-  double min_seperation_;
-
-
-  ShooterTest()
-      : shooter_queue_group(".frc971.control_loops.claw_queue_group", 0x9f1a99dd,
-                         ".frc971.control_loops.claw_queue_group.goal",
-                         ".frc971.control_loops.claw_queue_group.position",
-                         ".frc971.control_loops.claw_queue_group.output",
-                         ".frc971.control_loops.claw_queue_group.status"),
-        shooter_motor_(&claw_queue_group),
-        shooter_motor_plant_(0.4, 0.2) {
+  ShooterTest() : my_shooter_loop_(".frc971.control_loops.shooter",
+                               0x1a7b7094, ".frc971.control_loops.shooter.goal",
+                               ".frc971.control_loops.shooter.position",
+                               ".frc971.control_loops.shooter.output",
+                               ".frc971.control_loops.shooter.status"),
+                shooter_motor_(&my_shooter_loop_),
+                shooter_motor_plant_(0.5) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
