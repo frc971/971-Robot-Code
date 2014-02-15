@@ -35,33 +35,93 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
   }
 }
 
-// Positive is up, and positive power is up.
+enum {
+	STATE_INITIALIZE,
+	STATE_REQUEST_LOAD,
+	STATE_LOAD_BACKTRACK,
+	STATE_LOAD,
+	STATE_LOADING_PROBLEM,
+	STATE_PREPARE_SHOT,
+	STATE_BRAKE_SET,
+	STATE_READY,
+	STATE_REQUEST_FIRE,
+	STATE_PREPARE_FIRE,
+	STATE_FIRE,
+	STATE_UNLOAD,
+	STATE_UNLOAD_MOVE,
+	STATE_READY_UNLOAD
+} State;
+
+// Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
     const ::aos::control_loops::Goal *goal,
     const control_loops::ShooterLoop::Position *position,
     ::aos::control_loops::Output *output,
     ::aos::control_loops::Status * status) {
+  constexpr double dt = 0.01;
+
+  if (goal == NULL || position == NULL ||
+          output == NULL || status == NULL) {
+      transform-position_ptr = NULL;
+      if (output) output->voltage = 0;
+      LOG(ERROR, "Thought I would just check for null and die.\n");
+  }
 
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
-  if (output) {
-    output->voltage = 0;
-  }
+  output->voltage = 0;
 
   ZeroedJoint<1>::PositionData transformed_position;
   ZeroedJoint<1>::PositionData *transformed_position_ptr =
       &transformed_position;
-  if (!position) {
-    transformed_position_ptr = NULL;
-  } else {
-    transformed_position.position = position->pos;
-    transformed_position.hall_effects[0] = position->hall_effect;
-    transformed_position.hall_effect_positions[0] = position->calibration;
-  }
+  transformed_position.position = position->pos;
+  transformed_position.hall_effects[0] = position->hall_effect;
+  transformed_position.hall_effect_positions[0] = position->calibration;
 
   const double voltage = zeroed_joint_.Update(transformed_position_ptr,
     output != NULL,
     goal->goal, 0.0);
+
+  const frc971::constants::Values &values = constants::GetValues();
+
+  switch (state_) {
+	  case STATE_INITIALIZE:
+	  	  shooter_.zeroing_state() = ZeroedStateFeedbackLoop::UNKNOWN_POSITION;
+		  if (position->pusher_distal_hall_effect){
+		  } else if (position->pusher_proximal_hall_effect) {
+		  	  calibration_position_ = position->position -
+		  } else {
+		  }
+
+
+	  	  break;
+	  case STATE_REQUEST_LOAD:
+	  	  break;
+	  case STATE_LOAD_BACKTRACK:
+	  	  break;
+	  case STATE_LOAD:
+	  	  break;
+	  case STATE_LOADING_PROBLEM:
+	  	  break;
+	  case STATE_PREPARE_SHOT:
+	  	  break;
+	  case STATE_BRAKE_SET:
+	  	  break;
+	  case STATE_READY:
+	  	  break;
+	  case STATE_REQUEST_FIRE:
+	  	  break;
+	  case STATE_PREPARE_FIRE:
+	  	  break;
+	  case STATE_FIRE:
+	  	  break;
+	  case STATE_UNLOAD:
+	  	  break;
+	  case STATE_UNLOAD_MOVE:
+	  	  break;
+	  case STATE_READY_UNLOAD:
+	  	  break;
+  }
 
   if (position) {
     LOG(DEBUG, "pos: %f hall: %s absolute: %f\n",
@@ -70,9 +130,7 @@ void ShooterMotor::RunIteration(
         zeroed_joint_.absolute_position());
   }
 
-  if (output) {
-    output->voltage = voltage;
-  }
+  output->voltage = voltage;
   status->done = ::std::abs(zeroed_joint_.absolute_position() - goal->goal) < 0.004;
 }
 
