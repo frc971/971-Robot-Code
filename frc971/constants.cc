@@ -38,6 +38,12 @@ const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
                                                   0.47};
 const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
                                                    0.55};
+const double shooter_lower_limit=0.0;
+const double shooter_upper_limit=0.0;
+const double shooter_hall_effect_start_position=0.0;
+const double shooter_zeroing_off_speed=0.0;
+const double shooter_zeroing_speed=0.0;
+const double pos=0.0;
 
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
@@ -48,6 +54,12 @@ const Values *DoGetValues() {
             kCompDrivetrainEncoderRatio,
             kCompLowGearRatio,
             kCompHighGearRatio,
+            shooter_lower_limit,
+            shooter_upper_limit,
+            shooter_hall_effect_start_position,
+            shooter_zeroing_off_speed,
+            shooter_zeroing_speed,
+            pos,
             kCompLeftDriveShifter,
             kCompRightDriveShifter,
             true,
@@ -60,6 +72,12 @@ const Values *DoGetValues() {
             kPracticeDrivetrainEncoderRatio,
             kPracticeLowGearRatio,
             kPracticeHighGearRatio,
+            shooter_lower_limit,
+            shooter_upper_limit,
+            shooter_hall_effect_start_position,
+            shooter_zeroing_off_speed,
+            shooter_zeroing_speed,
+            pos,
             kPracticeLeftDriveShifter,
             kPracticeRightDriveShifter,
             false,
