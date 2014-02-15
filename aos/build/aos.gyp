@@ -50,6 +50,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:once',
         'logging_interface',
+        '<(AOS)/common/common.gyp:queue_types',
       ],
     },
   ],

@@ -60,16 +60,6 @@ void RunWithCurrentImplementation(
 
 using internal::Context;
 
-void LogImplementation::LogStruct(
-    log_level level, const ::std::string &message, size_t size,
-    const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
-  (void)level;
-  (void)message;
-  (void)size;
-  (void)type;
-  (void)serialize;
-}
-
 void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
                                int levels) {
   internal::RunWithCurrentImplementation(

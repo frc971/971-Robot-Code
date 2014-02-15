@@ -17,6 +17,7 @@
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
+        '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
       ],
       'copies': [
         {

@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <string>
 #include <functional>
@@ -118,6 +119,12 @@ class LogImplementation {
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.
   virtual void DoLog(log_level level, const char *format, va_list ap) = 0;
+  void DoLogVariadic(log_level level, const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+    DoLog(level, format, ap);
+    va_end(ap);
+  }
 
   // Logs the contents of an auto-generated structure. The implementation here
   // just converts it to a string with PrintMessage and then calls DoLog with

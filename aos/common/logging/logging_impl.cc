@@ -6,6 +6,7 @@
 #include "aos/common/time.h"
 #include "aos/common/inttypes.h"
 #include "aos/common/once.h"
+#include "aos/common/queue_types.h"
 
 namespace aos {
 namespace logging {
@@ -83,6 +84,26 @@ void PrintMessage(FILE *output, const LogMessage &message) {
 }
 
 }  // namespace internal
+
+void LogImplementation::LogStruct(
+    log_level level, const ::std::string &message, size_t size,
+    const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
+  char serialized[1024];
+  if (size > sizeof(serialized)) {
+    LOG(FATAL, "structure of type %s too big to serialize\n",
+        type->name.c_str());
+  }
+  size_t used = serialize(serialized);
+  char printed[LOG_MESSAGE_LEN];
+  size_t printed_bytes = sizeof(printed);
+  if (!PrintMessage(printed, &printed_bytes, serialized, &used, *type)) {
+    LOG(FATAL, "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",
+        printed, &printed_bytes, printed_bytes, serialized, &used, used, type,
+        type->name.c_str());
+  }
+  DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
+                message.data(), static_cast<int>(printed_bytes), printed);
+}
 
 StreamLogImplementation::StreamLogImplementation(FILE *stream)
     : stream_(stream) {}
