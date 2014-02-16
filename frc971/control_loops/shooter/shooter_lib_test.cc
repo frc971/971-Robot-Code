@@ -48,7 +48,7 @@ class ShooterSimulation {
 
   // Returns the absolute angle of the wrist.
   double GetAbsolutePosition() const {
-      return shooter_plant_->Y(0, 0);
+      return shooter_plant_->Y(0,0);
   }
 
 
@@ -113,7 +113,7 @@ class ShooterSimulation {
   void SendPositionMessage() {
     const frc971::constants::Values& values = constants::GetValues();
     ::aos::ScopedMessagePtr<control_loops::ShooterGroup::Position> position =
-        _queue_group.position.MakeMessage();
+        shooter_queue_group.position.MakeMessage();
 
     // Initialize all the counters to their previous values.
     *position = last_position_;
@@ -197,24 +197,21 @@ class ShooterSimulation {
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.
     last_position_ = *position;
-    position.Send();
   }
 
 
   // Simulates the claw moving for one timestep.
   void Simulate() {
-    const frc971::constants::Values& v = constants::GetValues();
-    StateFeedbackPlant<2, 1, 1>* plant = shooter_plant_.get();
-    EXPECT_TRUE(shooter_queue_group.output.FetchLatest());
-    plant->U << last_voltage_;
-    plant->Update();
+    last_position_ = shooter_plant_->Y(0, 0);
+    EXPECT_TRUE(my_shooter_loop_.output.FetchLatest());
+    shooter_plant_->U << last_voltage_;
+    shooter_plant_->Update();
 
-    // check top claw inside limits
-    EXPECT_GE(v.upper_limit, plant->Y(0, 0));
-    EXPECT_LE(v.lower_limit, plant->Y(0, 0));
-
-    // TODO(austin): Check that the claws aren't too close to eachother.
-    last_voltage_ = shooter_queue_group.output->voltage;
+    EXPECT_GE(constants::GetValues().shooter_upper_physical_limit,
+              shooter_plant_->Y(0, 0));
+    EXPECT_LE(constants::GetValues().shooter_lower_physical_limit,
+              shooter_plant_->Y(0, 0));
+    last_voltage_ = my_shooter_loop_.output->voltage;
   }
 
 

@@ -2,11 +2,10 @@ package frc971.control_loops;
 
 import "aos/common/control_loop/control_loops.q";
 
-queue_group ShooterLoop {
+queue_group ShooterGroup {
   implements aos.control_loops.ControlLoop;
 
   message Output {
-    // The energy to load to in joules.
     double voltage;
     // true: latch engaged, false: latch open
     bool latch_piston;
@@ -67,14 +66,6 @@ queue_group ShooterLoop {
     bool done;
   };
 
-  message Output {
-	// desired motor voltage
-    double voltage;
-	// true: close latch, false: open latch
-    double latch_piston;
-	// true: brake engaded, false: brake release
-    double brake_piston;
-  };
   queue Goal goal;
   queue Position position;
   queue Output output;
