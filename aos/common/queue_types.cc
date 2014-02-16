@@ -201,26 +201,35 @@ const MessageType &Get(uint32_t type_id) {
     return cache.at(type_id).type;
   }
 
-  // No need to lock because the only thing that happens is somebody adds on to
-  // the end, and they shouldn't be adding the one we're looking for.
-  const volatile ShmType *c = static_cast<volatile ShmType *>(
-      global_core->mem_struct->queue_types.pointer);
-  while (c != nullptr) {
-    if (c->id == type_id) {
-      size_t bytes = c->serialized_size;
-      MessageType *type = MessageType::Deserialize(
-          const_cast<const char *>(c->serialized), &bytes);
-      cache.emplace(::std::piecewise_construct,
-                    ::std::forward_as_tuple(type_id),
-                    ::std::forward_as_tuple(*type, true));
-      return *type;
+  if (aos_core_is_init()) {
+    // No need to lock because the only thing that happens is somebody adds on
+    // to the end, and they shouldn't be adding the one we're looking for.
+    const volatile ShmType *c = static_cast<volatile ShmType *>(
+        global_core->mem_struct->queue_types.pointer);
+    while (c != nullptr) {
+      if (c->id == type_id) {
+        size_t bytes = c->serialized_size;
+        MessageType *type = MessageType::Deserialize(
+            const_cast<const char *>(c->serialized), &bytes);
+        cache.emplace(::std::piecewise_construct,
+                      ::std::forward_as_tuple(type_id),
+                      ::std::forward_as_tuple(*type, true));
+        return *type;
+      }
+      c = c->next;
     }
-    c = c->next;
+  } else {
+    LOG(INFO, "FYI: no shm. going to LOG(FATAL) now\n");
   }
+
   LOG(FATAL, "MessageType for id 0x%" PRIx32 " not found\n", type_id);
 }
 
 void AddShm(uint32_t type_id) {
+  if (!aos_core_is_init()) {
+    LOG(FATAL, "can't AddShm(%" PRIu32 ") without shm!\n", type_id);
+  }
+
   ::aos::MutexLocker locker(&cache_lock);
   CacheEntry &cached = cache.at(type_id);
   if (cached.in_shm) return;

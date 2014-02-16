@@ -139,8 +139,9 @@ void PrintMessage(FILE *output, const LogMessage &message) {
             type_cache::Get(message.structure.type_id).name.c_str());
       }
       fprintf(output, BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
-              static_cast<int>(message.message_length), message.message,
-              static_cast<int>(output_length), buffer);
+              static_cast<int>(message.structure.string_length),
+              message.structure.serialized,
+              static_cast<int>(sizeof(buffer) - output_length), buffer);
       break;
   }
 }

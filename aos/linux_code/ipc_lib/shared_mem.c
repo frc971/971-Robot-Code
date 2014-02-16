@@ -130,3 +130,7 @@ int aos_core_free_shared_mem(){
   }
   return 0;
 }
+
+int aos_core_is_init(void) {
+  return global_core != NULL;
+}

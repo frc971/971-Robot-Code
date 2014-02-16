@@ -69,6 +69,9 @@ int aos_core_use_address_as_shared_mem(void *address, size_t size);
 int aos_core_create_shared_mem(enum aos_core_create to_create);
 int aos_core_free_shared_mem(void);
 
+// Returns whether or not the shared memory system is active.
+int aos_core_is_init(void);
+
 #ifdef __cplusplus
 }
 #endif
