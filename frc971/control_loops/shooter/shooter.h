@@ -103,16 +103,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   	  // austin said something about which matrix to set, but I didn't under
 	  // very much of it
 	  //some_matrix = {desired_position, desired_velocity};
-	  printf("%s:%d : seg fault (%.2f, %.2f)\n", __FILE__, __LINE__,
-	  		  desired_position, desired_velocity);
-	  *(const char **)(NULL) = "seg fault";
-  }
-
-  // apply a small amout of voltage outside the loop so we can
-  // take up backlash in gears
-  void ApplySomeVoltage() {
-	  printf("%s:%d : seg fault\n", __FILE__, __LINE__);
-	  *(const char **)(NULL) = "seg fault";
+	  R << desired_position, desired_velocity, 0;
   }
 
   double position() const { return X_hat(0, 0); }

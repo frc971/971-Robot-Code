@@ -79,7 +79,11 @@ void ShooterMotor::RunIteration(
 
   double real_position = position->position - calibration_position_;
 
+  // don't even let the control loops run
   bool shooter_loop_disable = false;
+
+  // adds voltage to take up slack in gears before shot
+  bool apply_some_voltage = false;
 
   switch (state_) {
 	  case STATE_INITIALIZE:
@@ -209,7 +213,7 @@ void ShooterMotor::RunIteration(
         if (position->plunger_back_hall_effect) {
             prepare_fire_end_time_ = Time::Now(Time::kDefaultClock)
 				+ Time::InMS(40.0);
-            shooter_.ApplySomeVoltage();
+            apply_some_voltage = true;
             state_ = STATE_PREPARE_FIRE;
         } else {
             state_ = STATE_REQUEST_LOAD;
@@ -218,7 +222,7 @@ void ShooterMotor::RunIteration(
 	  case STATE_PREPARE_FIRE:
         shooter_loop_disable = true;
         if (Time::Now(Time::kDefaultClock) < prepare_fire_end_time_) {
-            shooter_.ApplySomeVoltage();
+            apply_some_voltage = true;
         } else {
             state_ = STATE_FIRE;
             cycles_not_moved_ = 0;
@@ -287,9 +291,14 @@ void ShooterMotor::RunIteration(
         real_position, position->position);
   }
 
-  if (!shooter_loop_disable) {
+  if (apply_some_voltage) {
+  	  output->voltage = 2.0;
+  } else if (!shooter_loop_disable) {
   	output->voltage = shooter_.voltage();
+  } else {
+  	output->voltage = 0.0;
   }
+
   status->done = ::std::abs(position->position - PowerToPosition(goal->shot_power)) < 0.004;
 }
 
