@@ -21,18 +21,17 @@ namespace testing {
 // position.
 class ShooterSimulation {
  public:
-  // Constructs a motor simulation. 
+  // Constructs a motor simulation.
   ShooterSimulation(double initial_position)
       : shooter_plant_(new StateFeedbackPlant<3, 1, 1>(MakeShooterPlant())),
-        shooter_queue_group_(".frc971.control_loops.shooter_queue_group", 0x9f1a99dd,
-                         ".frc971.control_loops.shooter_queue_group.goal",
-                         ".frc971.control_loops.shooter_queue_group.position",
-                         ".frc971.control_loops.shooter_queue_group.output",
-                         ".frc971.control_loops.shooter_queue_group.status") {
+        shooter_queue_group_(
+            ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
+            ".frc971.control_loops.shooter_queue_group.goal",
+            ".frc971.control_loops.shooter_queue_group.position",
+            ".frc971.control_loops.shooter_queue_group.output",
+            ".frc971.control_loops.shooter_queue_group.status") {
     Reinitialize(initial_position);
   }
-
-
   void Reinitialize(double initial_position) {
     LOG(INFO, "Reinitializing to {top: %f}\n", initial_position);
     StateFeedbackPlant<3, 1, 1>* plant = shooter_plant_.get();
@@ -82,12 +81,11 @@ class ShooterSimulation {
         CheckRange(position->position, values.shooter.pusher_proximal);
   }
 
-
-  void UpdateEffectEdge(bool effect, bool last_effect,
-		  double upper_angle, double lower_angle, double position,
-  		   double &posedge_value, double &negedge_value,
-		  int64_t &posedge_count, int64_t &negedge_count) {
-	  if (effect && !last_effect) {
+  void UpdateEffectEdge(bool effect, bool last_effect, double upper_angle,
+                        double lower_angle, double position,
+                        double &posedge_value, double &negedge_value,
+                        int64_t &posedge_count, int64_t &negedge_count) {
+   if (effect && !last_effect) {
 	  	  ++posedge_count;
 		  if (last_position_message_.position < lower_angle) {
 		  	  posedge_value = lower_angle - initial_position_;
@@ -116,42 +114,37 @@ class ShooterSimulation {
     SetPhysicalSensors(position.get());
 
 	// Handle plunger hall effect
-	UpdateEffectEdge(
-			position->plunger_back_hall_effect,
-			last_position_message_.plunger_back_hall_effect,
-			values.shooter.plunger_back.upper_limit,
-			values.shooter.plunger_back.lower_limit,
-			position->position,
-			position->posedge_value,
-			position->negedge_value,
-			position->plunger_back_hall_effect_posedge_count,
-			position->plunger_back_hall_effect_negedge_count);
+    UpdateEffectEdge(position->plunger_back_hall_effect,
+                     last_position_message_.plunger_back_hall_effect,
+                     values.shooter.plunger_back.upper_limit,
+                     values.shooter.plunger_back.lower_limit,
+                     position->position, position->posedge_value,
+                     position->negedge_value,
+                     position->plunger_back_hall_effect_posedge_count,
+                     position->plunger_back_hall_effect_negedge_count);
 
-	// Handle pusher distal hall effect
-	UpdateEffectEdge(
-			position->pusher_distal_hall_effect,
-			last_position_message_.pusher_distal_hall_effect,
-			values.shooter.pusher_distal.upper_limit,
-			values.shooter.pusher_distal.lower_limit,
-			position->position,
-			position->posedge_value,
-			position->negedge_value,
-			position->pusher_distal_hall_effect_posedge_count,
-			position->pusher_distal_hall_effect_negedge_count);
+ // Handle pusher distal hall effect
+    UpdateEffectEdge(position->pusher_distal_hall_effect,
+                     last_position_message_.pusher_distal_hall_effect,
+                     values.shooter.pusher_distal.upper_limit,
+                     values.shooter.pusher_distal.lower_limit,
+                     position->position, position->posedge_value,
+                     position->negedge_value,
+                     position->pusher_distal_hall_effect_posedge_count,
+                     position->pusher_distal_hall_effect_negedge_count);
 
-	// Handle pusher proximal hall effect
-	UpdateEffectEdge(
-			position->pusher_proximal_hall_effect,
-			last_position_message_.pusher_proximal_hall_effect,
-			values.shooter.pusher_proximal.upper_limit,
-			values.shooter.pusher_proximal.lower_limit,
-			position->position,
-			position->posedge_value,
-			position->negedge_value,
-			position->pusher_proximal_hall_effect_posedge_count,
-			position->pusher_proximal_hall_effect_negedge_count);
+ // Handle pusher proximal hall effect
+    UpdateEffectEdge(position->pusher_proximal_hall_effect,
+                     last_position_message_.pusher_proximal_hall_effect,
+                     values.shooter.pusher_proximal.upper_limit,
+                     values.shooter.pusher_proximal.lower_limit,
+                     position->position, position->posedge_value,
+                     position->negedge_value,
+                     position->pusher_proximal_hall_effect_posedge_count,
+                     position->pusher_proximal_hall_effect_negedge_count);
 
     last_position_message_ = *position;
+    position.Send();
   }
 
 
@@ -198,13 +191,15 @@ class ShooterTest : public ::testing::Test {
   ShooterMotor shooter_motor_;
   ShooterSimulation shooter_motor_plant_;
 
-  ShooterTest() : shooter_queue_group_(".frc971.control_loops.shooter",
-                               0x1a7b7094, ".frc971.control_loops.shooter.goal",
-                               ".frc971.control_loops.shooter.position",
-                               ".frc971.control_loops.shooter.output",
-                               ".frc971.control_loops.shooter.status"),
-                shooter_motor_(&shooter_queue_group_),
-                shooter_motor_plant_(0.5) {
+  ShooterTest()
+      : shooter_queue_group_(
+            ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
+            ".frc971.control_loops.shooter_queue_group.goal",
+            ".frc971.control_loops.shooter_queue_group.position",
+            ".frc971.control_loops.shooter_queue_group.output",
+            ".frc971.control_loops.shooter_queue_group.status"),
+        shooter_motor_(&shooter_queue_group_),
+        shooter_motor_plant_(0.5) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -219,7 +214,6 @@ class ShooterTest : public ::testing::Test {
     ::aos::robot_state.FetchLatest();
   }
 
-
   void VerifyNearGoal() {
     shooter_queue_group_.goal.FetchLatest();
     shooter_queue_group_.position.FetchLatest();
@@ -227,17 +221,26 @@ class ShooterTest : public ::testing::Test {
     EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 1e-4);
   }
 
-  virtual ~ShooterTest() {
-    ::aos::robot_state.Clear();
-  }
+  virtual ~ShooterTest() { ::aos::robot_state.Clear(); }
 };
 
 
+TEST_F(ShooterTest, PowerConversion) {
+  // test a couple of values return the right thing
+  EXPECT_EQ(2.1, shooter_motor_.PowerToPosition(2.1));
+  EXPECT_EQ(50.99, shooter_motor_.PowerToPosition(50.99));
+
+  const frc971::constants::Values &values = constants::GetValues();
+  // value too large should get max
+  EXPECT_EQ(values.shooter.upper_limit,
+            shooter_motor_.PowerToPosition(505050.99));
+  // negative values should zero
+  EXPECT_EQ(0.0, shooter_motor_.PowerToPosition(-123.4));
+}
+
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, ZerosCorrectly) {
-  shooter_queue_group_.goal.MakeWithBuilder()
-      .shot_power(5050.1)
-      .Send();
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(2.1).Send();
   for (int i = 0; i < 400; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();

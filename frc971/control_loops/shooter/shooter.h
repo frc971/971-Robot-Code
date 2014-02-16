@@ -141,6 +141,16 @@ class ShooterMotor
   // True if the goal was moved to avoid goal windup.
   //bool capped_goal() const { return shooter_.capped_goal(); }
 
+  double PowerToPosition(double power) {
+    LOG(WARNING, "power to position not correctly implemented");
+    const frc971::constants::Values &values = constants::GetValues();
+    double new_pos =
+        (power > values.shooter.upper_limit) ? values.shooter.upper_limit
+         : (power < 0.0) ? 0.0 : power;
+
+    return new_pos;
+  }
+
 typedef enum {
 	STATE_INITIALIZE,
 	STATE_REQUEST_LOAD,
@@ -158,8 +168,6 @@ typedef enum {
 } State;
 
  protected:
-
- double PowerToPosition(double power) { return power; }
 
   virtual void RunIteration(
       const ShooterGroup::Goal *goal,
