@@ -99,3 +99,31 @@ def c2d(A, B, dt):
       diage[count, count] = (numpy.exp(eig * dt) - 1.0) / eig
 
   return (P * diag * numpy.linalg.inv(P), P * diage * numpy.linalg.inv(P) * B)
+
+def ctrb(A, B):
+  """Returns the controlability matrix.
+
+    This matrix must have full rank for all the states to be controlable.
+  """
+  n = A.shape[0]
+  output = B
+  intermediate = B
+  for i in xrange(0, n):
+    intermediate = A * intermediate
+    output = numpy.concatenate((output, intermediate), axis=1)
+
+  return output
+
+def dlqr(A, B, Q, R):
+  """Solves for the optimal lqr controller.
+
+    x(n+1) = A * x(n) + B * u(n)
+    J = sum(0, inf, x.T * Q * x + u.T * R * u)
+  """
+
+  # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P *B) * (A.T * P.T * B).T + Q
+
+  P, rcond, w, S, T = slycot.sb02od(A.shape[0], B.shape[1], A, B, Q, R, 'D')
+
+  F = numpy.linalg.inv(R + B.T * P *B) * B.T * P * A
+  return F

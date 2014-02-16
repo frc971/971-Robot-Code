@@ -208,7 +208,7 @@ class ControlLoop(object):
     first = True
     for x in xrange(matrix.shape[0]):
       for y in xrange(matrix.shape[1]):
-	element = matrix[x, y]
+        element = matrix[x, y]
         if first:
           ans.append('  %s << ' % matrix_name)
           first = False
