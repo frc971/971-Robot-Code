@@ -39,7 +39,7 @@ SensorReader::SensorReader(const ::std::string &cape_code)
 
 const DataStruct *SensorReader::ReadPacket() {
   static constexpr ::aos::time::Time kResetTimeout =
-      ::aos::time::Time::InSeconds(2.5);
+      ::aos::time::Time::InSeconds(5);
 
   while (true) {
     ::aos::time::Time next_timeout = last_received_time_ + kResetTimeout;

@@ -67,10 +67,7 @@ Daniel last updated this on 2014-01-20 with Debian Wheezy.
 11. Set the correct date.
     `date` to check if date is correct.
     `date -s <date string>` to set it if it isn't.
-12. Make it export UART1 on boot.
-    Add the following to /boot/uboot/uenv.txt:
-    "optargs=capemgr.enable_partno=BB-UART1"
-13. Fix the locale setup for SSHing in.
+12. Fix the locale setup for SSHing in.
     `dpkg-reconfigure locales`, leave it with "en_US.UTF-8" only being
 	enabled, and then select "None" instead of that for the default in
 	the second screen.
