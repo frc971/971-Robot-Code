@@ -25,15 +25,29 @@ RawQueue *queue;
 namespace linux_code {
 namespace {
 
-class linuxQueueLogImplementation : public LogImplementation {
-  virtual void DoLog(log_level level, const char *format, va_list ap) {
+class LinuxQueueLogImplementation : public LogImplementation {
+  LogMessage *GetMessageOrDie() {
     LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
     if (message == NULL) {
-      LOG(FATAL, "queue get message failed\n");
+      LOG(FATAL, "%p->GetMessage() failed\n", queue);
+    } else {
+      return message;
     }
+  }
 
+  virtual void DoLog(log_level level, const char *format, va_list ap) override {
+    LogMessage *message = GetMessageOrDie();
     internal::FillInMessage(level, format, ap, message);
+    Write(message);
+  }
 
+  virtual void LogStruct(log_level level, const ::std::string &message_string,
+                         size_t size, const MessageType *type,
+                         const ::std::function<size_t(char *)> &serialize)
+      override {
+    LogMessage *message = GetMessageOrDie();
+    internal::FillInMessageStructure(level, message_string, size, type,
+                                     serialize, message);
     Write(message);
   }
 };
@@ -48,7 +62,7 @@ void Register() {
     Die("logging: couldn't fetch queue\n");
   }
 
-  AddImplementation(new linuxQueueLogImplementation());
+  AddImplementation(new LinuxQueueLogImplementation());
 }
 
 const LogMessage *ReadNext(int flags, int *index) {

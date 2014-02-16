@@ -40,21 +40,30 @@ namespace logging {
 // using a gcc function attribute.
 
 // The struct that the code uses for making logging calls.
-// Packed so that it ends up the same under both linux and vxworks.
-struct __attribute__((packed)) LogMessage {
-#ifdef __VXWORKS__
-  static_assert(sizeof(pid_t) == sizeof(int),
-                "we use task IDs (aka ints) and pid_t interchangeably");
-#endif
-  // Actually the task ID (aka a pointer to the TCB) on the cRIO.
+struct LogMessage {
+  enum class Type : uint8_t {
+    kString, kStruct,
+  };
+
+  int32_t seconds, nseconds;
+  // message_length is the length of everything in message for all types.
+  size_t message_length, name_length;
   pid_t source;
   static_assert(sizeof(source) == 4, "that's how they get printed");
   // Per task/thread.
   uint16_t sequence;
+  Type type;
   log_level level;
-  int32_t seconds, nseconds;
   char name[100];
-  char message[LOG_MESSAGE_LEN];
+  union {
+    char message[LOG_MESSAGE_LEN];
+    struct {
+      uint32_t type_id;
+      size_t string_length;
+      // The message string and then the serialized structure.
+      char serialized[LOG_MESSAGE_LEN - sizeof(type) - sizeof(string_length)];
+    } structure;
+  };
 };
 static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
 
@@ -245,8 +254,16 @@ struct Context {
   } cork_data;
 };
 
-// Fills in *message according to the given inputs. Used for implementing
-// LogImplementation::DoLog.
+// Fills in all the parts of message according to the given inputs (with type
+// kStruct).
+void FillInMessageStructure(log_level level,
+                            const ::std::string &message_string, size_t size,
+                            const MessageType *type,
+                            const ::std::function<size_t(char *)> &serialize,
+                            LogMessage *message);
+
+// Fills in *message according to the given inputs (with type kString).
+// Used for implementing LogImplementation::DoLog.
 void FillInMessage(log_level level, const char *format, va_list ap,
                    LogMessage *message);
 
@@ -255,8 +272,8 @@ void PrintMessage(FILE *output, const LogMessage &message);
 
 // Prints format (with ap) into output and correctly deals with the result
 // being too long etc.
-void ExecuteFormat(char *output, size_t output_size, const char *format,
-                   va_list ap);
+size_t ExecuteFormat(char *output, size_t output_size, const char *format,
+                     va_list ap);
 
 // Runs the given function with the current LogImplementation (handles switching
 // it out while running function etc).

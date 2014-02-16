@@ -11,6 +11,7 @@
 namespace aos {
 namespace logging {
 
+#if 1
 #define LOG_STRUCT(level, message, structure)                          \
   do {                                                                 \
     static const ::std::string kAosLoggingMessage(                     \
@@ -23,6 +24,9 @@ namespace logging {
       abort();                                                         \
     }                                                                  \
   } while (false)
+#else
+#define LOG_STRUCT(level, message, structure)
+#endif
 
 template <class T>
 void DoLogStruct(log_level level, const ::std::string &message,
