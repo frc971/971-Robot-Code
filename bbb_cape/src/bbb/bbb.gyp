@@ -100,10 +100,12 @@
         '<(DEPTH)/bbb_cape/src/cape/cape.gyp:cows',
         'crc',
         'byte_io',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
     },
     {
@@ -161,12 +163,14 @@
         'crc',
         'sensor_generation',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
       'export_dependent_settings': [
         'packet_finder',
         'data_struct',
         'cape_manager',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
     },
     {
