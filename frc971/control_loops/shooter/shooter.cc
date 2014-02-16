@@ -20,8 +20,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
     using ::frc971::constants::GetValues;
     ZeroedJoint<1>::ConfigurationData config_data;
 
-    config_data.lower_limit = GetValues().shooter_lower_limit;
-    config_data.upper_limit = GetValues().shooter_upper_limit;
+    config_data.lower_limit = GetValues().shooter_lower_physical_limit;
+    config_data.upper_limit = GetValues().shooter_upper_physical_limit;
     //config_data.hall_effect_start_position[0] =
     //    GetValues().shooter_hall_effect_start_position;
     config_data.zeroing_off_speed = GetValues().shooter_zeroing_off_speed;

@@ -44,20 +44,60 @@ class ShooterMotorSimulation {
 
   // Returns the absolute angle of the shooter.
   double GetAbsolutePosition() const {
-      return 0.0;
+      return shooter_plant_->Y(0,0);
   }
 
   // Returns the adjusted angle of the shooter.
   double GetPosition() const {
-      return 0.0;
+    return shooter_plant_->Y(0, 0);
   }
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
+    const double current_pos = GetPosition();
+
+    ::aos::ScopedMessagePtr<control_loops::ShooterLoop::Position> position =
+        my_shooter_loop_.position.MakeMessage();
+    position->position = current_pos;
+
+    // Signal that the hall effect sensor has been triggered if it is within
+    // the correct range.
+    double abs_position = GetAbsolutePosition();
+    if (abs_position >= constants::GetValues().shooter_lower_physical_limit &&
+        abs_position <= constants::GetValues().shooter_upper_physical_limit) {
+      //position->plunger_back_hall_effect = true;
+    } else {
+      //position->plunger_back_hall_effect = false;
+    }
+
+    // Only set calibration if it changed last cycle.  Calibration starts out
+    // with a value of 0.
+    if ((last_position_ <
+             constants::GetValues().shooter_lower_physical_limit ||
+         last_position_ >
+             constants::GetValues().shooter_lower_physical_limit)/* &&
+        position->hall_effect*/) {
+      calibration_value_ =
+          constants::GetValues().shooter_hall_effect_start_position -
+          initial_position_;
+    }
+
+    position->back_calibration = calibration_value_;
+    position.Send();
   }
 
   // Simulates the shooter moving for one timestep.
   void Simulate() {
+    last_position_ = shooter_plant_->Y(0, 0);
+    EXPECT_TRUE(my_shooter_loop_.output.FetchLatest());
+    shooter_plant_->U << last_voltage_;
+    shooter_plant_->Update();
+
+    EXPECT_GE(constants::GetValues().shooter_upper_physical_limit,
+              shooter_plant_->Y(0, 0));
+    EXPECT_LE(constants::GetValues().shooter_lower_physical_limit,
+              shooter_plant_->Y(0, 0));
+    last_voltage_ = my_shooter_loop_.output->voltage;
   }
 
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
@@ -115,23 +155,26 @@ class ShooterTest : public ::testing::Test {
   }
 };
 
-// Tests that the shooter zeros correctly and goes to a position.
-//TEST_F(ShooterTest, ZerosCorrectly) {
-//  my_shooter.goal.MakeWithBuilder().goal(0.1).Send();
-//  for (int i = 0; i < 400; ++i) {
-//    shooter_motor_plant_.SendPositionMessage();
-//    shooter_motor_.Iterate();
-//    shooter_motor_plant_.Simulate();
-//    SendDSPacket(true);
-//  }
-//  VerifyNearGoal();
+//TEST_F(ShooterTest, EmptyTest) {
+//    EXPECT_TRUE(true);
 //}
+// Tests that the shooter zeros correctly and goes to a position.
+TEST_F(ShooterTest, ZerosCorrectly) {
+  my_shooter_loop_.goal.MakeWithBuilder().goal(0.1).Send();
+  for (int i = 0; i < 400; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
 
 // Tests that the shooter zeros correctly starting on the hall effect sensor.
-TEST_F(ShooterTest, ZerosStartingOn) {
-    printf("test");
-    EXPECT_TRUE(true);
-}
+//TEST_F(ShooterTest, ZerosStartingOn) {
+//    printf("test");
+//    EXPECT_TRUE(true);
+//}
 
 //// Tests that missing positions are correctly handled.
 //TEST_F(ShooterTest, HandleMissingPosition) {

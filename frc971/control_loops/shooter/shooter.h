@@ -22,7 +22,7 @@ class ShooterMotor
     : public aos::control_loops::ControlLoop<control_loops::ShooterLoop> {
  public:
   explicit ShooterMotor(
-      control_loops::ShooterLoop *my_shooter = &control_loops::shooter);
+      control_loops::ShooterLoop *my_shooter = &control_loops::shooter_queue_group);
 
   // True if the goal was moved to avoid goal windup.
   bool capped_goal() const { return zeroed_joint_.capped_goal(); }
