@@ -8,9 +8,10 @@ queue_group ShooterLoop {
   message Output {
     // The energy to load to in joules.
     double voltage;
-    // Shoots as soon as this is true.
-    bool latched;
-    bool locked; //Disc brake locked
+    // true: latch engaged, false: latch open
+    bool latch_piston;
+	// true: brake engaged false: brake released
+    bool brake_piston;
   };
   message Goal {
     // encoder ticks of shot energy.
@@ -48,7 +49,6 @@ queue_group ShooterLoop {
 
     // In meters, out is positive.
     double position;
-    double back_calibration;
 
 	// last positive edge
 	double posedge_value;
