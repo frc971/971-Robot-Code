@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "aos/common/control_loop/control_loops.q.h"
+#include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
@@ -13,6 +14,7 @@
 namespace frc971 {
 namespace control_loops {
 
+using ::aos::time::Time;
 	
 void ZeroedStateFeedbackLoop::CapU() {
   const double old_voltage = voltage_;
@@ -42,38 +44,28 @@ void ZeroedStateFeedbackLoop::CapU() {
   last_voltage_ = voltage_;
 }
 
-ShooterMotor::ShooterMotor(control_loops::ShooterLoop *my_shooter)
-    : aos::control_loops::ControlLoop<control_loops::ShooterLoop>(my_shooter),
-      shooter_(MakeShooterLoop()) {
-  {
-    using ::frc971::constants::GetValues;
-    ZeroedJoint<1>::ConfigurationData config_data;
-
-    config_data.lower_limit = GetValues().shooter_lower_physical_limit;
-    config_data.upper_limit = GetValues().shooter_upper_physical_limit;
-    //config_data.hall_effect_start_position[0] =
-    //    GetValues().shooter_hall_effect_start_position;
-    config_data.zeroing_off_speed = GetValues().shooter_zeroing_off_speed;
-    config_data.zeroing_speed = GetValues().shooter_zeroing_speed;
-    config_data.max_zeroing_voltage = 5.0;
-    config_data.deadband_voltage = 0.0;
-
-    zeroed_joint_.set_config_data(config_data);
-  }
-}
+ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
+    : aos::control_loops::ControlLoop<control_loops::ShooterGroup>(my_shooter),
+      shooter_(MakeShooterLoop()),
+		calibration_position_(0.0),
+		state_(STATE_INITIALIZE),
+		loading_problem_end_time_(0,0),
+		shooter_brake_set_time_(0,0),
+		prepare_fire_end_time_(0,0),
+		shot_end_time_(0,0),
+		cycles_not_moved_(0) { }
 
 
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
-    const ShooterLoop::Goal *goal,
-    const control_loops::ShooterLoop::Position *position,
-    ::aos::control_loops::Output *output,
-    ::aos::control_loops::Status * status) {
+    const control_loops::ShooterGroup::Goal *goal,
+    const control_loops::ShooterGroup::Position *position,
+    control_loops::ShooterGroup::Output *output,
+    control_loops::ShooterGroup::Status * status) {
   constexpr double dt = 0.01;
 
   // we must always have these or we have issues.
   if (goal == NULL || status == NULL) {
-      transform-position_ptr = NULL;
       if (output) output->voltage = 0;
       LOG(ERROR, "Thought I would just check for null and die.\n");
 	  return;
@@ -83,36 +75,22 @@ void ShooterMotor::RunIteration(
   // motors disabled.
   if (output) output->voltage = 0;
 
-  ZeroedJoint<1>::PositionData transformed_position;
-  ZeroedJoint<1>::PositionData *transformed_position_ptr =
-      &transformed_position;
-  if (position) {
-  	transformed_position.position = position->pos;
-  	transformed_position.hall_effects[0] = position->hall_effect;
-  	transformed_position.hall_effect_positions[0] = position->calibration;
-  }
-
-  const double voltage = shooter_.Update(transformed_position_ptr,
-    output != NULL,
-    goal->goal, 0.0);
-
   const frc971::constants::Values &values = constants::GetValues();
 
-  double absolute_position = postiion->position - calibration_position_;
+  double real_position = position->position - calibration_position_;
 
+  bool shooter_loop_disable = false;
 
   switch (state_) {
 	  case STATE_INITIALIZE:
-	  	  shooter_.zeroing_state() = ZeroedStateFeedbackLoop::UNKNOWN_POSITION;
-
 		  // start off with the assumption that we are at the value
 		  // futhest back given our sensors
 		  if (position && position->pusher_distal_hall_effect){
 		  	  calibration_position_ = position->position -
-			  	  values.pusher_distal_heffect.lower_edge;
+			  	  values.shooter.pusher_distal.lower_limit;
 		  } else if (position && position->pusher_proximal_hall_effect) {
 		  	  calibration_position_ = position->position -
-			  	  values.pusher_proximal_heffect.lower_edge;
+			  	  values.shooter.pusher_proximal.lower_limit;
 		  } else {
 		  	  calibration_position_ = values.shooter_total_length;
 		  }
@@ -120,9 +98,9 @@ void ShooterMotor::RunIteration(
       state_ = STATE_REQUEST_LOAD;
 
 		  // zero out initial goal
-		  shooter_.SetGoalPositionVelocity(0.0, 0.0);
+		  shooter_.SetGoalPosition(0.0, 0.0);
       if (position) {
-        output->latch_pistion = position->plunger_back_hall_effect;
+        output->latch_piston = position->plunger_back_hall_effect;
       } else {
           // we don't know what is going on so just close the latch to be safe
           output->latch_piston = true;
@@ -133,26 +111,26 @@ void ShooterMotor::RunIteration(
       if (position->plunger_back_hall_effect && position->latch_hall_effect) {
           // already latched
           state_ = STATE_PREPARE_SHOT;
-      } else if (postion->pusher_back_distal_hall_effect ||
-              (relative_position) < 0) {
-          state_ = STATE_LOADING_BACKTRACK;
-          if (relative_position) {
+      } else if (position->pusher_distal_hall_effect ||
+              (real_position) < 0) {
+          state_ = STATE_LOAD_BACKTRACK;
+          if (position) {
               calibration_position_ = position->position;
           }
       } else {
           state_ = STATE_LOAD;
       }
 
-		  shooter_.SetGoalPositionVelocity(0.0, 0.0);
+		  shooter_.SetGoalPosition(0.0, 0.0);
       if (position && output) output->latch_piston = position->plunger_back_hall_effect;
       output->brake_piston = false;
 	  	break;
 	  case STATE_LOAD_BACKTRACK:
-      if (absolute_position < values.pusher_back_distal_heffect.lower_edge + 0.01) {
-		    shooter_.SetGoalPositionVelocity(position->position + values.shooter_zero_speed*dt,
-                values.shooter_zero_speed);
+      if (real_position < values.shooter.pusher_distal.upper_limit + 0.01) {
+		    shooter_.SetGoalPosition(position->position + values.shooter_zeroing_speed*dt,
+                values.shooter_zeroing_speed);
       } else {
-          state = STATE_LOAD;
+          state_ = STATE_LOAD;
       }
 
       output->latch_piston = false;
@@ -160,18 +138,17 @@ void ShooterMotor::RunIteration(
 	  	  break;
 	  case STATE_LOAD:
         if (position->pusher_proximal_hall_effect &&
-              !last_position_.pusher_back_proximal_hall_effect) {
+              !last_position_.pusher_proximal_hall_effect) {
 		  	  calibration_position_ = position->position -
-			  	  values.pusher_promimal_heffect.lower_edge;
+			  	  values.shooter.pusher_proximal.upper_limit;
         }
         if (position->pusher_distal_hall_effect &&
-              !last_position_.pusher_back_distal_hall_effect) {
+              !last_position_.pusher_distal_hall_effect) {
 		  	  calibration_position_ = position->position -
-			  	  values.pusher_distal_heffect.lower_edge;
-
+			  	  values.shooter.pusher_distal.lower_limit;
         }
 
-		  shooter_.SetGoalPositionVelocity(calibration_position_, 0.0);
+	  shooter_.SetGoalPosition(calibration_position_, 0.0);
       if (position && output) output->latch_piston = position->plunger_back_hall_effect;
       if(output) output->brake_piston = false;
 
@@ -181,36 +158,37 @@ void ShooterMotor::RunIteration(
               position->position == PowerToPosition(goal->shot_power)) {
           //TODO_ben: I'm worried it will bounce states if the position is drifting slightly
           state_ = STATE_LOADING_PROBLEM;
-          loading_problem_end_time_ = clock() + 3 * CLOCKS_PER_SECOND;
+          loading_problem_end_time_ = Time::Now(Time::kDefaultClock) + Time::InSeconds(3.0);
       }
 	  	  break;
 	  case STATE_LOADING_PROBLEM:
       if (position->plunger_back_hall_effect && position->latch_hall_effect) {
           state_ = STATE_PREPARE_SHOT;
-      } else if (absolute_position < -0.02 || clock() > loading_problem_end_time_) {
-          state = STATE_UNLOAD;
+      } else if (real_position < -0.02 || Time::Now() > loading_problem_end_time_) {
+          state_ = STATE_UNLOAD;
       }
 
-		  shooter_.SetGoalPositionVelocity(position->position - values.shooter_zero_speed*dt,
-                values.shooter_zero_speed);
+		  shooter_.SetGoalPosition(position->position - values.shooter_zeroing_speed*dt,
+                values.shooter_zeroing_speed);
       if (output) output->latch_piston = true;
       if (output) output->brake_piston = false;
 	  	  break;
 	  case STATE_PREPARE_SHOT:
         shooter_.SetGoalPosition(
-                PowerToPosition(shot_power), 0.0);
-        if (position->position == shooter.goal_position) {
+                PowerToPosition(goal->shot_power), 0.0);
+        //TODO_ben: I'm worried it will bounce states if the position is drifting slightly
+        if (position->position == PowerToPosition(goal->shot_power)) {
             state_ = STATE_READY;
             output->latch_piston = true;
             output->brake_piston = true;
-            shooter_brake_set_time_ = clock() + 5 * CLOCKS_PER_SECOND;
+            shooter_brake_set_time_ = Time::Now(Time::kDefaultClock) + Time::InSeconds(3.0);
         } else {
             output->latch_piston =true;
             output->brake_piston = false;
         }
 	  	  break;
 	  case STATE_READY:
-        if (clock() > shooter_brake_set_time_) {
+        if (Time::Now() > shooter_brake_set_time_) {
           shooter_loop_disable = true;
           if (goal->unload_requested) {
               state_ = STATE_UNLOAD;
@@ -229,7 +207,9 @@ void ShooterMotor::RunIteration(
 	  case STATE_REQUEST_FIRE:
         shooter_loop_disable = true;
         if (position->plunger_back_hall_effect) {
-            prepare_fire_end_time_ = clock() + 10;
+            prepare_fire_end_time_ = Time::Now(Time::kDefaultClock)
+				+ Time::InMS(40.0);
+            shooter_.ApplySomeVoltage();
             state_ = STATE_PREPARE_FIRE;
         } else {
             state_ = STATE_REQUEST_LOAD;
@@ -237,12 +217,13 @@ void ShooterMotor::RunIteration(
 	  	  break;
 	  case STATE_PREPARE_FIRE:
         shooter_loop_disable = true;
-        if (clock() < prepare_fire_end_time_) {
+        if (Time::Now(Time::kDefaultClock) < prepare_fire_end_time_) {
             shooter_.ApplySomeVoltage();
         } else {
-            State_ = STATE_FIRE;
+            state_ = STATE_FIRE;
             cycles_not_moved_ = 0;
-            shot_end_time_ = clock() + 0.5 * CLOCKS_PER_SECOND;
+            shot_end_time_ = Time::Now(Time::kDefaultClock) +
+				Time::InMS(500);
         }
 
         output->latch_piston = true;
@@ -252,18 +233,22 @@ void ShooterMotor::RunIteration(
 	  case STATE_FIRE:
         shooter_loop_disable = true;
         //TODO_ben: need approamately equal
-        if (last_position->position - position->position < 7) {
-            cycles_not_moved++;
+        if (last_position_.position - position->position < 7) {
+            cycles_not_moved_++;
         } else {
-            cycles_not_moved = 0;
+            cycles_not_moved_ = 0;
         }
+		if ((real_position < 10.0 && cycles_not_moved_ > 5) ||
+				Time::Now(Time::kDefaultClock) > shot_end_time_) {
+			state_ = STATE_REQUEST_LOAD;
+		}
         output->latch_piston = true;
-        ouput->brake_piston = true;
+        output->brake_piston = true;
 	  	  break;
 	  case STATE_UNLOAD:
-        if (position->plunger_back_hall_effect && position->latch_piston) {
-            shooter_SetGoalPosition(0.02, 0.0);
-            if (ablsolute_position == 0.02) {
+        if (position->plunger_back_hall_effect && position->latch_hall_effect) {
+            shooter_.SetGoalPosition(0.02, 0.0);
+            if (real_position == 0.02) {
                 output->latch_piston = false;
             }
         } else {
@@ -274,12 +259,12 @@ void ShooterMotor::RunIteration(
         output->brake_piston = false;
 	  	  break;
 	  case STATE_UNLOAD_MOVE:
-        if (position->position > values.shooter_length - 0.03) {
-          shooter_.SetPosition(position->position, 0.0);
-          state_ = STATE_READY_UNLOADED;
+        if (position->position > values.shooter_total_length - 0.03) {
+          shooter_.SetGoalPosition(position->position, 0.0);
+          state_ = STATE_READY_UNLOAD;
         } else {
-            shooter_.SetPosition(
-                    position->position + values.shooter_zeroing_speed*dt
+            shooter_.SetGoalPosition(
+                    position->position + values.shooter_zeroing_speed*dt,
                     values.shooter_zeroing_speed);
         }
 
@@ -297,14 +282,15 @@ void ShooterMotor::RunIteration(
   }
 
   if (position) {
-    LOG(DEBUG, "pos:  hall:  absolute: %f\n",
-        //position->pos,
-        //position->hall_effect ? "true" : "false",
-        zeroed_joint_.absolute_position());
+  	last_position_ = *position;
+    LOG(DEBUG, "pos:  hall: real: %.2f absolute: %.2f\n",
+        real_position, position->position);
   }
 
-  output->voltage = voltage;
-  status->done = ::std::abs(zeroed_joint_.absolute_position() - goal->goal) < 0.004;
+  if (!shooter_loop_disable) {
+  	output->voltage = shooter_.voltage();
+  }
+  status->done = ::std::abs(position->position - PowerToPosition(goal->shot_power)) < 0.004;
 }
 
 }  // namespace control_loops

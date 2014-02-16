@@ -32,10 +32,25 @@ struct Values {
   // gear.
   double low_gear_ratio;
   double high_gear_ratio;
+
+  // Three hall effects are known as front, calib and back
+  struct Pair {
+    double lower_limit;
+    double upper_limit;
+  };
+  
+  struct ShooterLimits {
+    double lower_limit;
+    double upper_limit;
+    Pair plunger_back;
+    Pair pusher_distal;
+    Pair pusher_proximal;
+  };
+
+  ShooterLimits shooter;
   
   double shooter_voltage;
-  double shooter_lower_physical_limit;
-  double shooter_upper_physical_limit;
+  double shooter_total_length;
   double shooter_hall_effect_start_position;
   double shooter_zeroing_off_speed;
   double shooter_zeroing_speed;

@@ -55,9 +55,12 @@ const Values *DoGetValues() {
             kCompDrivetrainEncoderRatio,
             kCompLowGearRatio,
             kCompHighGearRatio,
+			// ShooterLimits
+			// TODO_ben: make these real numbers
+			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
             shooter_voltage,
-            shooter_lower_physical_limit,
-            shooter_upper_physical_limit,
+			// shooter_total_length
+			100.0,
             shooter_hall_effect_start_position,
             shooter_zeroing_off_speed,
             shooter_zeroing_speed,
@@ -71,7 +74,6 @@ const Values *DoGetValues() {
             0.1,
             0.0,
             1.57,
-
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             0.02, // claw_unimportant_epsilon
@@ -83,9 +85,12 @@ const Values *DoGetValues() {
             kPracticeDrivetrainEncoderRatio,
             kPracticeLowGearRatio,
             kPracticeHighGearRatio,
+			// ShooterLimits
+			// TODO_ben: make these real numbers
+			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
             shooter_voltage,
-            shooter_lower_physical_limit,
-            shooter_upper_physical_limit,
+			// shooter_total_length
+			100.0,
             shooter_hall_effect_start_position,
             shooter_zeroing_off_speed,
             shooter_zeroing_speed,
