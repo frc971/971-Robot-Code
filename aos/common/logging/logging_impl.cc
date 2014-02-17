@@ -121,7 +121,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               static_cast<int>(message.message_length), message.message);
       break;
     case LogMessage::Type::kStruct:
-      char buffer[LOG_MESSAGE_LEN];
+      char buffer[1024];
       size_t output_length = sizeof(buffer);
       size_t input_length = message.message_length;
       if (!PrintMessage(
@@ -157,7 +157,7 @@ void LogImplementation::LogStruct(
         type->name.c_str());
   }
   size_t used = serialize(serialized);
-  char printed[LOG_MESSAGE_LEN * 5];
+  char printed[1024];
   size_t printed_bytes = sizeof(printed);
   if (!PrintMessage(printed, &printed_bytes, serialized, &used, *type)) {
     LOG(FATAL, "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",

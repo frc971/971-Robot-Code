@@ -91,7 +91,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   void SetPositionValues(double position) {
     Eigen::Matrix<double, 1, 1> Y;
     Y << position;
-    LOG(INFO, "Setting position to %f\n", position);
+    LOG(DEBUG, "Setting position to %f\n", position);
     Correct(Y);
   }
 
@@ -99,7 +99,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     // austin said something about which matrix to set, but I didn't under
     // very much of it
     //some_matrix = {desired_position, desired_velocity};
-    LOG(INFO, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
+    LOG(DEBUG, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
     R << desired_position, desired_velocity, 0;
   }
 

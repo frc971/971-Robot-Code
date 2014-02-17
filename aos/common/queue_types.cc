@@ -231,50 +231,57 @@ void AddShm(uint32_t type_id) {
     LOG(FATAL, "can't AddShm(%" PRIu32 ") without shm!\n", type_id);
   }
 
-  ::aos::MutexLocker locker(&cache_lock);
-  CacheEntry &cached = cache.at(type_id);
-  if (cached.in_shm) return;
+  const MessageType::Field **fields;
+  int number_fields;
+  {
+    ::aos::MutexLocker locker(&cache_lock);
+    CacheEntry &cached = cache.at(type_id);
+    if (cached.in_shm) return;
 
-  if (mutex_lock(&global_core->mem_struct->queue_types.lock) != 0) {
-    LOG(FATAL, "locking queue_types lock failed\n");
-  }
-  volatile ShmType *current = static_cast<volatile ShmType *>(
-      global_core->mem_struct->queue_types.pointer);
-  if (current != nullptr) {
-    while (true) {
-      if (current->id == type_id) {
-        cached.in_shm = true;
-        mutex_unlock(&global_core->mem_struct->queue_types.lock);
-        return;
-      }
-      if (current->next == nullptr) break;
-      current = current->next;
+    fields = cached.type.fields;
+    number_fields = cached.type.number_fields;
+
+    if (mutex_lock(&global_core->mem_struct->queue_types.lock) != 0) {
+      LOG(FATAL, "locking queue_types lock failed\n");
     }
-  }
-  char buffer[512];
-  ssize_t size = cached.type.Serialize(buffer, sizeof(buffer));
-  if (size == -1) {
-    LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
-        cached.type.name.c_str(), sizeof(buffer));
+    volatile ShmType *current = static_cast<volatile ShmType *>(
+        global_core->mem_struct->queue_types.pointer);
+    if (current != nullptr) {
+      while (true) {
+        if (current->id == type_id) {
+          cached.in_shm = true;
+          mutex_unlock(&global_core->mem_struct->queue_types.lock);
+          return;
+        }
+        if (current->next == nullptr) break;
+        current = current->next;
+      }
+    }
+    char buffer[512];
+    ssize_t size = cached.type.Serialize(buffer, sizeof(buffer));
+    if (size == -1) {
+      LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
+          cached.type.name.c_str(), sizeof(buffer));
+    }
+
+    volatile ShmType *shm =
+        static_cast<volatile ShmType *>(shm_malloc(sizeof(ShmType) + size));
+    shm->id = type_id;
+    shm->next = nullptr;
+    shm->serialized_size = size;
+    memcpy(const_cast<char *>(shm->serialized), buffer, size);
+
+    if (current == NULL) {
+      global_core->mem_struct->queue_types.pointer = const_cast<ShmType *>(shm);
+    } else {
+      current->next = shm;
+    }
+    mutex_unlock(&global_core->mem_struct->queue_types.lock);
   }
 
-  volatile ShmType *shm =
-      static_cast<volatile ShmType *>(shm_malloc(sizeof(ShmType) + size));
-  shm->id = type_id;
-  shm->next = nullptr;
-  shm->serialized_size = size;
-  memcpy(const_cast<char *>(shm->serialized), buffer, size);
-
-  if (current == NULL) {
-    global_core->mem_struct->queue_types.pointer = const_cast<ShmType *>(shm);
-  } else {
-    current->next = shm;
-  }
-  mutex_unlock(&global_core->mem_struct->queue_types.lock);
-
-  for (int i = 0; i < cached.type.number_fields; ++i) {
-    if (!MessageType::IsPrimitive(cached.type.fields[i]->type)) {
-      AddShm(cached.type.fields[i]->type);
+  for (int i = 0; i < number_fields; ++i) {
+    if (!MessageType::IsPrimitive(fields[i]->type)) {
+      AddShm(fields[i]->type);
     }
   }
 }

@@ -32,12 +32,13 @@ int open_device() {
     LOG(INFO, "unexporting BB-UART1\n");
     if (system("bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
                " | fgrep BB-UART1"
-               " | cut -d : -f 1) > /sys/devices/bone_capemgr.*/slots'") ==
-        -1) {
+               " | cut -d : -f 1 | tr -d \" \")"
+               " > /sys/devices/bone_capemgr.*/slots'") == -1) {
       LOG(FATAL, "system([disable OMAP UART]) failed with %d: %s\n", errno,
           strerror(errno));
     }
     while (easy_access(device)) {
+      LOG(DEBUG, "waiting for BB-UART1 to be unexported\n");
       ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
     }
   }
@@ -52,6 +53,7 @@ int open_device() {
         strerror(errno));
   }
   while (!easy_access(device)) {
+    LOG(DEBUG, "waiting for BB-UART1 to be exported\n");
     ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
   }
 
