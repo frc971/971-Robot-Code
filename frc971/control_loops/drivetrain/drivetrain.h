@@ -7,6 +7,7 @@
 #include "aos/common/control_loop/ControlLoop.h"
 #include "aos/controls/polytope.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "aos/common/util/log_interval.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -35,6 +36,10 @@ class DrivetrainLoop
       const control_loops::Drivetrain::Position *position,
       control_loops::Drivetrain::Output *output,
       control_loops::Drivetrain::Status *status);
+
+  typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
+  SimpleLogInterval no_position_ = SimpleLogInterval(
+      ::aos::time::Time::InSeconds(0.25), WARNING, "no position");
 };
 
 }  // namespace control_loops

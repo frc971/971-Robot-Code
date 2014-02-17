@@ -7,8 +7,13 @@
 #include <inttypes.h>
 #include <errno.h>
 
+#include <algorithm>
+
 #include "aos/linux_code/logging/binary_log_file.h"
 #include "aos/common/logging/logging_impl.h"
+#include "aos/common/queue_types.h"
+
+using ::aos::logging::linux_code::LogFileMessageHeader;
 
 namespace {
 
@@ -45,9 +50,15 @@ void PrintHelpAndExit() {
 
 int main(int argc, char **argv) {
   const char *filter_name = NULL;
+  size_t filter_length = 0;
   log_level filter_level = INFO;
-  bool follow = false, start_at_beginning = true;
+  bool follow = false;
+  // Whether we need to skip everything until we get to the end of the file.
+  bool skip_to_end = false;
   const char *filename = "aos_log-current";
+
+  ::aos::logging::AddImplementation(
+      new ::aos::logging::StreamLogImplementation(stdout));
 
   while (true) {
     static struct option long_options[] = {
@@ -80,6 +91,7 @@ int main(int argc, char **argv) {
         abort();
       case 'n':
         filter_name = optarg;
+        filter_length = strlen(filter_name);
         break;
       case 'l':
         filter_level = ::aos::logging::str_log(optarg);
@@ -93,16 +105,16 @@ int main(int argc, char **argv) {
         break;
       case 'f':
         follow = true;
-        start_at_beginning = false;
+        skip_to_end = true;
         break;
       case 't':
         follow = false;
         break;
       case 'b':
-        start_at_beginning = true;
+        skip_to_end = false;
         break;
       case 'e':
-        start_at_beginning = false;
+        skip_to_end = true;
         break;
       case 'm':
         abort();
@@ -138,10 +150,12 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
   ::aos::logging::linux_code::LogFileAccessor accessor(fd, false);
-  if (!start_at_beginning) {
-    accessor.MoveToEnd();
+
+  if (skip_to_end) {
+    fputs("skipping old logs...\n", stderr);
   }
-  const ::aos::logging::linux_code::LogFileMessageHeader *msg;
+
+  const LogFileMessageHeader *msg;
   ::aos::logging::LogMessage log_message;
   do {
     msg = accessor.ReadNextMessage(follow);
@@ -149,11 +163,33 @@ int main(int argc, char **argv) {
       fputs("reached end of file\n", stderr);
       return 0;
     }
-    if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
-    if (filter_name != NULL &&
-        strcmp(filter_name,
-               reinterpret_cast<const char *>(msg) + sizeof(*msg)) != 0) {
+
+    if (msg->type == LogFileMessageHeader::MessageType::kStructType) {
+      size_t bytes = msg->message_size;
+      ::aos::MessageType *type = ::aos::MessageType::Deserialize(
+          reinterpret_cast<const char *>(msg + 1), &bytes);
+      ::aos::type_cache::Add(*type);
       continue;
+    }
+
+    if (skip_to_end) {
+      if (accessor.IsLastPage()) {
+        fputs("done skipping old logs\n", stderr);
+        skip_to_end = false;
+      } else {
+        continue;
+      }
+    }
+
+    if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
+    if (filter_name != NULL) {
+      if (filter_length != msg->name_size) continue;
+      if (memcmp(filter_name,
+                 reinterpret_cast<const char *>(msg) + sizeof(*msg),
+                 filter_length) !=
+          0) {
+        continue;
+      }
     }
 
     log_message.source = msg->source;
@@ -161,13 +197,47 @@ int main(int argc, char **argv) {
     log_message.level = msg->level;
     log_message.seconds = msg->time_sec;
     log_message.nseconds = msg->time_nsec;
-    strncpy(log_message.name,
-            reinterpret_cast<const char *>(msg) + sizeof(*msg),
-            sizeof(log_message.name));
-    strncpy(log_message.message,
-            reinterpret_cast<const char *>(msg) + sizeof(*msg) +
-            msg->name_size,
-            sizeof(log_message.message));
+    memcpy(log_message.name, reinterpret_cast<const char *>(msg) + sizeof(*msg),
+           ::std::min<size_t>(sizeof(log_message.name), msg->name_size));
+    log_message.message_length = msg->message_size;
+    log_message.name_length = msg->name_size;
+
+    switch (msg->type) {
+      case LogFileMessageHeader::MessageType::kStruct: {
+        const char *position =
+            reinterpret_cast<const char *>(msg + 1) + msg->name_size;
+        memcpy(&log_message.structure.type_id, position,
+               sizeof(log_message.structure.type_id));
+        position += sizeof(log_message.structure.type_id);
+
+        uint32_t length;
+        memcpy(&length, position, sizeof(length));
+        log_message.structure.string_length = length;
+        position += sizeof(length);
+        memcpy(log_message.structure.serialized, position, length);
+        position += length;
+
+        log_message.message_length -=
+            sizeof(log_message.structure.type_id) + sizeof(uint32_t) +
+            log_message.structure.string_length;
+        memcpy(log_message.structure.serialized +
+                   log_message.structure.string_length,
+               position, log_message.message_length);
+
+        log_message.type = ::aos::logging::LogMessage::Type::kStruct;
+        break;
+      }
+      case LogFileMessageHeader::MessageType::kString:
+        memcpy(
+            log_message.message,
+            reinterpret_cast<const char *>(msg) + sizeof(*msg) + msg->name_size,
+            ::std::min<size_t>(sizeof(log_message.message), msg->message_size));
+        log_message.type = ::aos::logging::LogMessage::Type::kString;
+        break;
+      case LogFileMessageHeader::MessageType::kStructType:
+        LOG(FATAL, "shouldn't get here\n");
+        break;
+    };
     ::aos::logging::internal::PrintMessage(stdout, log_message);
   } while (msg != NULL);
 }

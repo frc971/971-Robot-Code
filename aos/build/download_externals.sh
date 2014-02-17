@@ -49,13 +49,6 @@ EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
 
-# get the javacv binaries
-JAVACV_VERSION=0.2
-JAVACV_DIR=${EXTERNALS}/javacv-bin
-JAVACV_ZIP=${EXTERNALS}/javacv-${JAVACV_VERSION}-bin.zip
-[ -f ${JAVACV_ZIP} ] || wget http://javacv.googlecode.com/files/javacv-${JAVACV_VERSION}-bin.zip -O ${JAVACV_ZIP}
-[ -d ${JAVACV_DIR} ] || ( cd ${EXTERNALS} && unzip ${JAVACV_ZIP} )
-
 # get the simple one-jar template jar
 ONEJAR_VERSION=0.97
 ONEJAR_JAR=${EXTERNALS}/one-jar-boot-${ONEJAR_VERSION}.jar
@@ -77,7 +70,7 @@ LIBJPEG_TAR=${EXTERNALS}/jpegsrc.v${LIBJPEG_VERSION}.tar.gz
 
 # get gtest
 GTEST_VERSION=1.6.0
-GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}
+GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p1
 GTEST_ZIP=${EXTERNALS}/gtest-${GTEST_VERSION}.zip
 [ -f ${GTEST_ZIP} ] || wget http://googletest.googlecode.com/files/gtest-${GTEST_VERSION}.zip -O ${GTEST_ZIP}
 [ -d ${GTEST_DIR} ] || ( unzip ${GTEST_ZIP} -d ${TMPDIR} && mv ${TMPDIR}/gtest-${GTEST_VERSION} ${GTEST_DIR} && cd ${GTEST_DIR} && patch -p1 < ${AOS}/externals/gtest.patch )

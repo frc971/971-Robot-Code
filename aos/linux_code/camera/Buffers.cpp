@@ -61,24 +61,21 @@ void Buffers::MMap() {
 }
 
 void Buffers::Release() {
-  if (message_ != NULL) {
-    queue_->FreeMessage(message_);
-    message_ = NULL;
-  }
+  message_.reset();
 }
-const void *Buffers::GetNext(bool block,
-                       uint32_t *bytesused, timeval *timestamp, uint32_t *sequence) {
+const void *Buffers::GetNext(bool block, uint32_t *bytesused,
+                             timeval *timestamp, uint32_t *sequence) {
   Release();
 
   // TODO(brians) make sure the camera reader process hasn't died
   do {
     if (block) {
-      message_ = static_cast<const Message *>(queue_->ReadMessage(
-              RawQueue::kPeek | RawQueue::kBlock));
+      message_.reset(static_cast<const Message *>(
+          queue_->ReadMessage(RawQueue::kPeek | RawQueue::kBlock)));
     } else {
       static int index = 0;
-      message_ = static_cast<const Message *>(queue_->ReadMessageIndex(
-              RawQueue::kBlock, &index));
+      message_.reset(static_cast<const Message *>(
+          queue_->ReadMessageIndex(RawQueue::kBlock, &index)));
     }
   } while (block && message_ == NULL);
   if (message_ != NULL) {
@@ -132,9 +129,12 @@ int Buffers::FetchFD() {
   
   return myfds[0];
 }
-Buffers::Buffers() : server_(CreateSocket(connect)), fd_(FetchFD()), message_(NULL) {
+Buffers::Buffers()
+    : server_(CreateSocket(connect)),
+      fd_(FetchFD()),
+      queue_(RawQueue::Fetch(kQueueName.c_str(), sizeof(Message), 971, 1)),
+      message_(queue_) {
   MMap();
-  queue_ = RawQueue::Fetch(kQueueName.c_str(), sizeof(Message), 971, 1);
 }
 
 Buffers::~Buffers() {

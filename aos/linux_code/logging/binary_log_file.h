@@ -35,7 +35,7 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
     LogFileMessageHeader {
   // Represents the type of an individual message.
   enum class MessageType : uint16_t {
-    // '\0'-terminated string.
+    // char[] (no '\0' on the end).
     kString,
     kStructType,
     kStruct,
@@ -63,8 +63,7 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
   int32_t source;
   static_assert(sizeof(source) >= sizeof(LogMessage::source), "PIDs won't fit");
 
-  // Both including all of the bytes in that part of the message (ie any '\0's
-  // etc).
+  // Both including all of the bytes in that part of the message.
   uint32_t name_size, message_size;
 
   uint16_t sequence;
@@ -94,8 +93,7 @@ class LogFileAccessor {
   // Asynchronously syncs all open mappings.
   void Sync() const;
 
-  // TODO(brians): This won't work any more.
-  void MoveToEnd();
+  bool IsLastPage();
 
  private:
   // The size of the chunks that get mmaped/munmapped together. Large enough so
@@ -114,6 +112,9 @@ class LogFileAccessor {
   off_t offset_;
   char *current_;
   size_t position_;
+
+  // 0 = unknown, 1 = no, 2 = yes
+  int is_last_page_ = 0;
 
   void MapNextPage();
   void Unmap(void *location);

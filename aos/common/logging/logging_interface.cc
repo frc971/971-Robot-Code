@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <type_traits>
+
 #include "aos/common/die.h"
 
 // This file only contains the code necessary to link (ie no implementations).
@@ -21,30 +23,28 @@ Context::Context()
   cork_data.Reset();
 }
 
-void ExecuteFormat(char *output, size_t output_size,
-                   const char *format, va_list ap) {
-  static const char *continued = "...\n";
+size_t ExecuteFormat(char *output, size_t output_size, const char *format,
+                     va_list ap) {
+  static const char *const continued = "...\n";
   const size_t size = output_size - strlen(continued);
   const int ret = vsnprintf(output, size, format, ap);
+  typedef ::std::common_type<typeof(ret), typeof(size)>::type RetType;
   if (ret < 0) {
     LOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed with %d (%s)\n",
         output, size, format, errno, strerror(errno));
-  } else if (static_cast<uintmax_t>(ret) >= static_cast<uintmax_t>(size)) {
+  } else if (static_cast<RetType>(ret) >= static_cast<RetType>(size)) {
     // Overwrite the '\0' at the end of the existing data and
     // copy in the one on the end of continued.
     memcpy(&output[size - 1], continued, strlen(continued) + 1);
   }
+  return ::std::min<RetType>(ret, size);
 }
 
-}  // namespace internal
-
-using internal::Context;
-
-void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
-                   int levels) {
+void RunWithCurrentImplementation(
+    int levels, ::std::function<void(LogImplementation *)> function) {
   Context *context = Context::Get();
 
-  LogImplementation *top_implementation = context->implementation;
+  LogImplementation *const top_implementation = context->implementation;
   LogImplementation *new_implementation = top_implementation;
   LogImplementation *implementation = NULL;
   assert(levels >= 1);
@@ -56,12 +56,24 @@ void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
     new_implementation = new_implementation->next();
   }
   context->implementation = new_implementation;
-  implementation->DoLog(level, format, ap);
+  function(implementation);
   context->implementation = top_implementation;
+}
 
-  if (level == FATAL) {
-    VDie(format, ap);
-  }
+}  // namespace internal
+
+using internal::Context;
+
+void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
+                               int levels) {
+  internal::RunWithCurrentImplementation(
+      levels, [&](LogImplementation * implementation) {
+    implementation->DoLog(level, format, ap);
+
+    if (level == FATAL) {
+      VDie(format, ap);
+    }
+  });
 }
 
 void VLog(log_level level, const char *format, va_list ap) {

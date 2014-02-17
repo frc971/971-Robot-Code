@@ -22,6 +22,7 @@
         '../linux_code/starter/starter.gyp:netconsole',
         '../common/common.gyp:queue_test',
         '../common/common.gyp:die_test',
+        '../common/common.gyp:queue_types_test',
         '../common/util/util.gyp:trapezoid_profile_test',
         '../common/util/util.gyp:wrapping_counter_test',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',

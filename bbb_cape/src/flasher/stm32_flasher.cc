@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
   // Read all of the 0xFFs that the parser inserts to pad the data out.
   {
     uint8_t garbage[1024];
-    uint32_t length = start_address;
+    size_t length = start_address;
     while (length > 0) {
       uint32_t read = ::std::min(sizeof(garbage), length);
       if (parser->read(p_st, garbage, &read) != PARSER_ERR_OK) {
@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
   uint32_t kFlashStart = 0x08000000;
 
   uint8_t buffer[256];  // 256 is the biggest size supported
-  uint32_t completed = 0;
+  size_t completed = 0;
   while (completed < size) {
     uint32_t address = start_address + completed + kFlashStart;
     uint32_t length = ::std::min(size - completed, sizeof(buffer));
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
           address, address + length);
     }
     completed += length;
-    printf("\rWrote and verified 0x%08x/0x%08x",
+    printf("\rWrote and verified 0x%08zx/0x%08x",
            completed, size);
     fflush(stdout);
   }

@@ -6,6 +6,7 @@
 #include "aos/common/test_queue.q.h"
 #include "aos/common/queue_testutils.h"
 #include "aos/common/util/thread.h"
+#include "aos/common/die.h"
 
 using ::aos::time::Time;
 
@@ -15,6 +16,10 @@ namespace testing {
 
 class QueueTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    SetDieTestMode(true);
+  }
+
   GlobalCoreInstance my_core;
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that

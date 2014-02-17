@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'queue_test_queue',
+      'target_name': 'test_queue',
       'type': 'static_library',
       'sources': [
         '<(AOS)/common/test_queue.q',
@@ -39,6 +39,52 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging_interface',
         'mutex',
+      ],
+    },
+    {
+      'target_name': 'queue_types',
+      'type': 'static_library',
+      'variables': {
+        'print_field_cc': '<(SHARED_INTERMEDIATE_DIR)/print_field.cc',
+      },
+      'sources': [
+        'queue_types.cc',
+        '<(print_field_cc)',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+        'mutex',
+      ],
+      'actions': [
+        {
+          'variables': {
+            'script': '<(AOS)/build/queues/print_field.rb',
+          },
+          'action_name': 'gen_print_field',
+          'inputs': [
+            '<(script)',
+            '<!@(find <(AOS)/build/queues/ -name *.rb)',
+          ],
+          'outputs': [
+            '<(print_field_cc)',
+          ],
+          'action': ['ruby', '<(script)', '<(print_field_cc)'],
+          'message': 'Generating print_field.cc',
+        },
+      ],
+    },
+    {
+      'target_name': 'queue_types_test',
+      'type': 'executable',
+      'sources': [
+        'queue_types_test.cc',
+      ],
+      'dependencies': [
+        'queue_types',
+        '<(EXTERNALS):gtest',
+        'test_queue',
       ],
     },
     {
@@ -136,6 +182,8 @@
         'timing',
         'time',
         'control_loop_queues',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
@@ -143,6 +191,8 @@
         'timing',
         'time',
         'control_loop_queues',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
     },
     {
@@ -154,8 +204,9 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'queue_testutils',
-        'queue_test_queue',
+        'test_queue',
         '<(AOS)/common/util/util.gyp:thread',
+        'die',
       ],
     },
     {
@@ -267,6 +318,7 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'mutex',
+        'die',
       ],
     },
     {
@@ -284,6 +336,7 @@
         '<(AOS)/build/aos.gyp:logging',
         'queue_testutils',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+        'die',
        ],
     },
     {

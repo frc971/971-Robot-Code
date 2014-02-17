@@ -17,6 +17,15 @@
 using ::aos::time::Time;
 
 namespace bbb {
+namespace {
+
+// Enabling all of the debugging logs during normal operation on the BBB causes
+// it to use most of the CPU when it runs into trouble.
+const bool kDebugLogs = false;
+
+}  // namespace
+
+constexpr ::aos::time::Time PacketFinder::kDebugLogInterval;
 
 PacketFinder::PacketFinder(ByteReaderInterface *reader, size_t packet_size)
     : reader_(reader),
@@ -102,7 +111,8 @@ bool PacketFinder::ProcessPacket() {
       reinterpret_cast<uint32_t *>(buf_), packet_size_,
       reinterpret_cast<uint32_t *>(unstuffed_data_), packet_size_ - 4);
   if (unstuffed == 0) {
-    LOG(INFO, "invalid packet\n");
+    if (kDebugLogs) LOG(INFO, "invalid\n");
+    LOG_INTERVAL(invalid_packet_);
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
     LOG(WARNING, "packet is %" PRIu32 " words instead of %zu\n",
@@ -116,8 +126,11 @@ bool PacketFinder::ProcessPacket() {
   uint32_t calculated_checksum = cape::CalculateChecksum(
       reinterpret_cast<uint8_t *>(unstuffed_data_), packet_size_ - 8);
   if (sent_checksum != calculated_checksum) {
-    LOG(INFO, "sent checksum: %" PRIx32 " vs calculated: %" PRIx32"\n",
-        sent_checksum, calculated_checksum);
+    if (kDebugLogs) {
+      LOG(INFO, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
+          calculated_checksum);
+    }
+    LOG_INTERVAL(bad_checksum_);
     return false;
   }
 
@@ -134,7 +147,7 @@ bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
       if (buf_[i] == 0) {
         ++zeros;
         if (zeros == 4) {
-          LOG(INFO, "found another packet start at %zd\n", i);
+          if (kDebugLogs) LOG(INFO, "start at %zd\n", i);
           packet_bytes_ = packet_size_ - (i + 1);
           memmove(buf_, buf_ + i + 1, packet_bytes_);
           return false;

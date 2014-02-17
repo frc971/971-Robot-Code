@@ -1,4 +1,4 @@
-BinaryLogReader
+binary_log_writer
 motor_writer
 joystick_reader
 drivetrain

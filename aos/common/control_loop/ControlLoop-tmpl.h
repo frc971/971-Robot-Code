@@ -3,11 +3,16 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/messages/RobotState.q.h"
+#include "aos/common/logging/queue_logging.h"
 
 namespace aos {
 namespace control_loops {
 
 // TODO(aschuh): Tests.
+
+template <class T, bool has_position, bool fail_no_position>
+constexpr ::aos::time::Time
+    ControlLoop<T, has_position, fail_no_position>::kStaleLogInterval;
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
@@ -19,9 +24,6 @@ void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::Iterate() {
-  // Temporary storage for printing out inputs and outputs.
-  char state[1024];
-
   // Fetch the latest control loop goal and position.  If there is no new
   // goal, we will just reuse the old one.
   // If there is no goal, we haven't started up fully.  It isn't worth
@@ -31,12 +33,11 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   // goals.
   const GoalType *goal = control_loop_->goal.get();
   if (goal == NULL) {
-    LOG(ERROR, "No prior control loop goal.\n");
+    LOG_INTERVAL(no_prior_goal_);
     ZeroOutputs();
     return;
   }
-  goal->Print(state, sizeof(state));
-  LOG(DEBUG, "goal={%s}\n", state);
+  LOG_STRUCT(DEBUG, "goal", *goal);
 
   // Only pass in a position if we got one this cycle.
   const PositionType *position = NULL;
@@ -51,15 +52,15 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
       if (control_loop_->position.get()) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
-          LOG(ERROR, "Stale position. %d ms > %d ms.  Outputs disabled.\n",
-              msec_age, kPositionTimeoutMs);
+          LOG_INTERVAL(very_stale_position_);
           ZeroOutputs();
           return;
         } else {
-          LOG(ERROR, "Stale position. %d ms\n", msec_age);
+          LOG(ERROR, "Stale position. %d ms (< %d ms)\n", msec_age,
+              kPositionTimeoutMs);
         }
       } else {
-        LOG(ERROR, "Never had a position.\n");
+        LOG_INTERVAL(no_prior_position_);
         if (fail_no_position) {
           ZeroOutputs();
           return;
@@ -67,8 +68,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
       }
     }
     if (position) {
-      position->Print(state, sizeof(state));
-      LOG(DEBUG, "position={%s}\n", state);
+      LOG_STRUCT(DEBUG, "position", *position);
     }
   }
 
@@ -81,10 +81,9 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     outputs_enabled = true;
   } else {
     if (aos::robot_state.get()) {
-      int msec_age = aos::robot_state.Age().ToMSec();
-      LOG(ERROR, "Driver Station packet is too old (%d ms).\n", msec_age);
+      LOG_INTERVAL(driver_station_old_);
     } else {
-      LOG(ERROR, "No Driver Station packet.\n");
+      LOG_INTERVAL(no_driver_station_);
     }
   }
 
@@ -100,8 +99,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
         control_loop_->output.MakeMessage();
     RunIteration(goal, position, output.get(), status.get());
 
-    output->Print(state, sizeof(state));
-    LOG(DEBUG, "output={%s}\n", state);
+    LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
     // The outputs are disabled, so pass NULL in for the output.
@@ -109,8 +107,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     ZeroOutputs();
   }
 
-  status->Print(state, sizeof(state));
-  LOG(DEBUG, "status={%s}\n", state);
+  LOG_STRUCT(DEBUG, "status", *status);
   status.Send();
 }
 

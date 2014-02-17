@@ -12,6 +12,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
         'binary_log_file',
+        '<(AOS)/common/common.gyp:queue_types',
       ],
     },
     {
@@ -37,6 +38,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:init',
         'binary_log_file',
+        '<(AOS)/common/common.gyp:queue_types',
       ],
     },
     {

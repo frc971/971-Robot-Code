@@ -67,7 +67,7 @@ const DataStruct *SensorReader::ReadPacket() {
       last_cape_timestamp_ = data->timestamp;
       return data;
     }
-    LOG(WARNING, "receiving packet failed\n");
+    LOG_INTERVAL(receive_failed_);
   }
 }
 

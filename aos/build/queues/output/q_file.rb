@@ -98,7 +98,6 @@ class Target::QueueGroupDec < Target::Node
 		type_class.set_parent("public ::aos::QueueGroup")
 		@queues.each do |queue|
 			type_class.add_member(:public,queue.create_usage(cpp_tree))
-			namespace.add_pre_swig("%immutable #{@name}::#{queue.name}")
 		end
 		create_Constructor(type_class,cpp_tree)
 		namespace.add(type_class)
@@ -155,7 +154,6 @@ COMMENT_END
 		cons = CPP::Constructor.new(init_class)
 		init_class.add_member(:public,cons)
 		cons.suite << if_stmt = CPP::If.new("0 == #{counter}++")
-		if_stmt.suite << "printf(#{"making a #{@name}!\n".inspect})"
 
 		cons_call = CPP::FuncCall.new("new #{type_name}")
 		cons_call.args.push(@loc.queue_name(@name).inspect)
@@ -165,12 +163,10 @@ COMMENT_END
 			cons_call.args.push(@loc.queue_name(@name + "." + queue.name).inspect)
 		end
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr",cons_call)
-		if_stmt.else_suite << CPP::FuncCall.build("printf","already made a #{@name}\n".inspect)
 
 
 		destruct = CPP::Destructor.new(init_class)
 		destruct.suite << if_stmt = CPP::If.new("0 == --#{counter}")
-		if_stmt.suite << "printf(#{"deleting a #{@name}!! :) !!\n".inspect})"
 		if_stmt.suite << "delete #{@name}_ptr"
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr","NULL")
 
@@ -182,15 +178,11 @@ COMMENT_END
 Create a reference to the new object in the pointer.  Since we have already
 created the initializer
 COMMENT_END
-		comments = str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}
-		comments << "static UNUSED_VARIABLE #{type_name} &#{@name} = " +
-		            "#{@name}_initializer.get()"
-		namespace.add_post_swig("%immutable #{@name}_initializer")
-		namespace.add_post_swig(CPP::SwigPragma.new("java", "modulecode", CPP::Suite.new(["public static final #{@name} = get#{@name.capitalize}_initializer().get()"])))
-		ifdef_statement = CPP::IfnDef.new(CPP::Suite.new(comments))
-		ifdef_statement.name = "SWIG"
-		namespace.add(ifdef_statement)
-
+		str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}.each do |comment|
+      namespace.add(comment)
+    end
+		namespace.add("static UNUSED_VARIABLE #{type_name} &#{@name}" +
+                  " = #{@name}_initializer.get()")
 
 		get = init_class.def_func(type_name,"get") #.add_dep(type)
 		get.pre_func_types = "&"

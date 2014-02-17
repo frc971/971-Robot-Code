@@ -15,6 +15,7 @@
 #include "aos/common/queue_testutils.h"
 #include "aos/common/time.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/die.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -136,6 +137,9 @@ class QueueTest : public ::testing::Test {
 
   void SetUp() override {
     ::testing::Test::SetUp();
+
+    SetDieTestMode(true);
+
     fatal_failure = static_cast<char *>(shm_malloc(sizeof(fatal_failure)));
     static bool registered = false;
     if (!registered) {

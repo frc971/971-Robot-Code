@@ -15,6 +15,11 @@ void VDie(const char *format, va_list args)
     __attribute__((noreturn))
     __attribute__((format(gnu_printf, 1, 0)));
 
+// Turns on (or off) "test mode", where (V)Die doesn't write out files and
+// doesn't print to stdout.
+// Test mode defaults to false.
+void SetDieTestMode(bool test_mode);
+
 }  // namespace aos
 
 #endif  // AOS_COMMON_DIE_H_

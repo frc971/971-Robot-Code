@@ -86,6 +86,6 @@ else
       ${OUTDIR}/lib/FRC_UserProgram.out
   fi
   if [[ ${ACTION} == tests ]]; then
-    find ${OUTDIR}/tests -executable -exec {} \;
+    find ${OUTDIR}/tests -executable -exec ${AOS}/build/run_test.sh {} \;
   fi
 fi
