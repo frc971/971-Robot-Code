@@ -42,12 +42,18 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
 
   ::bbb::sensor_generation.FetchLatest();
   if (::bbb::sensor_generation.get() == nullptr) {
+    LOG_INTERVAL(no_sensor_generation_);
     ZeroOutputs();
     return;
   }
   if (!has_sensor_reset_counters_ ||
       ::bbb::sensor_generation->reader_pid != reader_pid_ ||
       ::bbb::sensor_generation->cape_resets != cape_resets_) {
+    char buffer[128];
+    size_t characters = ::bbb::sensor_generation->Print(buffer, sizeof(buffer));
+    LOG(INFO, "new sensor_generation message %.*s\n",
+        static_cast<int>(characters), buffer);
+
     reader_pid_ = ::bbb::sensor_generation->reader_pid;
     cape_resets_ = ::bbb::sensor_generation->cape_resets;
     has_sensor_reset_counters_ = true;

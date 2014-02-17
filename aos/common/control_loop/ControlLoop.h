@@ -164,6 +164,9 @@ class ControlLoop : public SerializableControlLoop {
   SimpleLogInterval driver_station_old_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "driver station packet is too old");
+  SimpleLogInterval no_sensor_generation_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "no sensor_generation message");
 };
 
 }  // namespace control_loops
