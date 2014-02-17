@@ -132,12 +132,12 @@ TEST_F(PrintFieldTest, OutputTooSmall) {
 
 static const OtherTestingMessage kTestMessage1(true, 8971, 3.2);
 static const ::std::string kTestMessage1String =
-    ".aos.common.testing.OtherTestingMessage{test_bool:T,test_int:8971"
-    ",test_double:3.200000}";
+    ".aos.common.testing.OtherTestingMessage{test_bool:T, test_int:8971"
+    ", test_double:3.200000}";
 static const Structure kTestStructure1(false, 973, 8.56);
 static const ::std::string kTestStructure1String =
-    ".aos.common.testing.Structure{struct_bool:f,struct_int:973"
-    ",struct_float:8.560000}";
+    ".aos.common.testing.Structure{struct_bool:f, struct_int:973"
+    ", struct_float:8.560000}";
 
 TEST_F(PrintMessageTest, Basic) {
   assert(sizeof(input) >= kTestMessage1.Size());

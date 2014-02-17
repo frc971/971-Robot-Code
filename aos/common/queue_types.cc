@@ -124,9 +124,10 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
     if (first) {
       first = false;
     } else {
-      if (*output_bytes < 1) return false;
-      *output_bytes -= 1;
+      if (*output_bytes < 2) return false;
+      *output_bytes -= 2;
       *(output++) = ',';
+      *(output++) = ' ';
     }
 
     if (*output_bytes < type.fields[i]->name.size() + 1) return false;
