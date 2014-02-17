@@ -13,8 +13,7 @@
 namespace frc971 {
 namespace control_loops {
 namespace testing {
-class ClawTest_NoWindupPositive_Test;
-class ClawTest_NoWindupNegative_Test;
+class WindupClawTest;
 };
 
 // Note: Everything in this file assumes that there is a 1 cycle delay between
@@ -193,11 +192,29 @@ class ClawMotor
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }
 
+  double uncapped_average_voltage() const {
+    return claw_.uncapped_average_voltage();
+  }
+
+  // True if the claw is zeroing.
+  bool is_zeroing() const;
+
   // True if the state machine is ready.
-  bool is_ready() const { return false; }
+  bool is_ready() const;
 
   void ChangeTopOffset(double doffset);
   void ChangeBottomOffset(double doffset);
+
+  enum CalibrationMode {
+    READY,
+    PREP_FINE_TUNE_TOP,
+    FINE_TUNE_TOP,
+    PREP_FINE_TUNE_BOTTOM,
+    FINE_TUNE_BOTTOM,
+    UNKNOWN_LOCATION
+  };
+
+  CalibrationMode mode() const { return mode_; }
 
  protected:
   virtual void RunIteration(const control_loops::ClawGroup::Goal *goal,
@@ -212,8 +229,7 @@ class ClawMotor
 
  private:
   // Friend the test classes for acces to the internal state.
-  friend class testing::ClawTest_NoWindupPositive_Test;
-  friend class testing::ClawTest_NoWindupNegative_Test;
+  friend class testing::WindupClawTest;
 
   // The zeroed joint to use.
   bool has_top_claw_goal_;
@@ -232,12 +248,18 @@ class ClawMotor
 
   // The initial seperation when disabled.  Used as the safe seperation
   // distance.
-  double initial_seperation_;
+  double initial_separation_;
 
   bool capped_goal_;
+  CalibrationMode mode_;
 
   DISALLOW_COPY_AND_ASSIGN(ClawMotor);
 };
+
+// Modifies the bottom and top goal such that they are within the limits and
+// their separation isn't too much or little.
+void LimitClawGoal(double *bottom_goal, double *top_goal,
+                   const frc971::constants::Values &values);
 
 }  // namespace control_loops
 }  // namespace frc971

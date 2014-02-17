@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include "aos/common/network/team_number.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
@@ -15,6 +16,16 @@ using ::aos::time::Time;
 namespace frc971 {
 namespace control_loops {
 namespace testing {
+
+class TeamNumberEnvironment : public ::testing::Environment {
+ public:
+  // Override this to define how to set up the environment.
+  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
+};
+
+::testing::Environment* const team_number_env =
+    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
+
 
 // Class which simulates the shooter and sends out queue messages containing the
 // position.
@@ -247,6 +258,11 @@ class ShooterTest : public ::testing::Test {
     // test.
     ::aos::robot_state.Clear();
     SendDSPacket(true);
+    ::bbb::sensor_generation.Clear();
+    ::bbb::sensor_generation.MakeWithBuilder()
+        .reader_pid(254)
+        .cape_resets(5)
+        .Send();
     ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
   }
 
@@ -265,6 +281,7 @@ class ShooterTest : public ::testing::Test {
 
   virtual ~ShooterTest() {
     ::aos::robot_state.Clear();
+    ::bbb::sensor_generation.Clear();
     ::aos::time::Time::DisableMockTime();
   }
 };

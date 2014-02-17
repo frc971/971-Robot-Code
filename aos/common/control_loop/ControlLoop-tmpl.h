@@ -5,6 +5,8 @@
 #include "aos/common/messages/RobotState.q.h"
 #include "aos/common/logging/queue_logging.h"
 
+#include "bbb/sensor_generation.q.h"
+
 namespace aos {
 namespace control_loops {
 
@@ -37,6 +39,21 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     ZeroOutputs();
     return;
   }
+
+  ::bbb::sensor_generation.FetchLatest();
+  if (::bbb::sensor_generation.get() == nullptr) {
+    ZeroOutputs();
+    return;
+  }
+  if (!has_sensor_reset_counters_ ||
+      ::bbb::sensor_generation->reader_pid != reader_pid_ ||
+      ::bbb::sensor_generation->cape_resets != cape_resets_) {
+    reader_pid_ = ::bbb::sensor_generation->reader_pid;
+    cape_resets_ = ::bbb::sensor_generation->cape_resets;
+    has_sensor_reset_counters_ = true;
+    reset_ = true;
+  }
+    
   LOG_STRUCT(DEBUG, "goal", *goal);
 
   // Only pass in a position if we got one this cycle.
@@ -75,12 +92,12 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   bool outputs_enabled = false;
 
   // Check to see if we got a driver station packet recently.
-  if (aos::robot_state.FetchLatest()) {
+  if (::aos::robot_state.FetchLatest()) {
     outputs_enabled = true;
-  } else if (aos::robot_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
+  } else if (::aos::robot_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
     outputs_enabled = true;
   } else {
-    if (aos::robot_state.get()) {
+    if (::aos::robot_state.get()) {
       LOG_INTERVAL(driver_station_old_);
     } else {
       LOG_INTERVAL(no_driver_station_);

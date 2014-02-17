@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include "aos/common/network/team_number.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "aos/controls/polytope.h"
@@ -31,6 +32,14 @@ class Environment : public ::testing::Environment {
 ::testing::Environment* const holder_env =
   ::testing::AddGlobalTestEnvironment(new Environment);
 
+class TeamNumberEnvironment : public ::testing::Environment {
+ public:
+  // Override this to define how to set up the environment.
+  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
+};
+
+::testing::Environment* const team_number_env =
+    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
 
 // Class which simulates the drivetrain and sends out queue messages containing the
 // position.
@@ -119,6 +128,11 @@ class DrivetrainTest : public ::testing::Test {
     // Flush the robot state queue so we can use clean shared memory for this
     // test, also for the gyro.
     ::aos::robot_state.Clear();
+    ::bbb::sensor_generation.Clear();
+    ::bbb::sensor_generation.MakeWithBuilder()
+        .reader_pid(254)
+        .cape_resets(5)
+        .Send();
     ::frc971::sensors::gyro.Clear();
     SendDSPacket(true);
   }
@@ -144,6 +158,7 @@ class DrivetrainTest : public ::testing::Test {
   virtual ~DrivetrainTest() {
     ::aos::robot_state.Clear();
     ::frc971::sensors::gyro.Clear();
+    ::bbb::sensor_generation.Clear();
   }
 };
 
