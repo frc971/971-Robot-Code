@@ -2,6 +2,23 @@ package frc971.control_loops;
 
 import "aos/common/control_loop/control_loops.q";
 
+struct GearLogging {
+  int8_t controller_index;
+  bool left_loop_high;
+  bool right_loop_high;
+  int8_t left_state;
+  int8_t right_state;
+};
+
+struct CIMLogging {
+  bool left_in_gear;
+  bool right_in_gear;
+  double left_motor_speed;
+  double right_motor_speed;
+  double left_velocity;
+  double right_velocity;
+};
+
 queue_group Drivetrain {
   implements aos.control_loops.ControlLoop;
 
@@ -28,6 +45,8 @@ queue_group Drivetrain {
   message Output {
     float left_voltage;
     float right_voltage;
+	bool left_high;
+	bool right_high;
   };
 
   message Status {

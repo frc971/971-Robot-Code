@@ -9,13 +9,11 @@
 #include "aos/common/time.h"
 #include "aos/common/logging/queue_logging.h"
 
-#include "frc971/queues/piston.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 using ::aos::util::SimpleLogInterval;
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::control_loops::shifters;
 
 namespace frc971 {
 namespace output {
@@ -42,17 +40,14 @@ class MotorWriter : public ::aos::MotorOutput {
         SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
         SetPWMOutput(5, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
         SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+        SetSolenoid(1, drivetrain.output->left_high);
+        SetSolenoid(2, drivetrain.output->right_high);
       } else {
         DisablePWMOutput(2);
         DisablePWMOutput(3);
         DisablePWMOutput(5);
         DisablePWMOutput(6);
         LOG_INTERVAL(drivetrain_old_);
-      }
-      shifters.FetchLatest();
-      if (shifters.get()) {
-        SetSolenoid(1, shifters->set);
-        SetSolenoid(2, !shifters->set);
       }
     }
   }

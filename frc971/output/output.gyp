@@ -37,6 +37,7 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/util/util.gyp:log_interval',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
     },
   ],

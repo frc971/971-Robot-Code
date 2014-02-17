@@ -10,11 +10,12 @@
 #include "aos/common/queue.h"
 #include "aos/controls/polytope.h"
 #include "aos/common/commonmath.h"
+#include "aos/common/logging/queue_logging.h"
+
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro_angle.q.h"
-#include "frc971/queues/piston.q.h"
 #include "frc971/constants.h"
 
 using frc971::sensors::gyro;
@@ -121,7 +122,6 @@ class DrivetrainMotorsSS {
     }
   }
   void PrintMotors() const {
-    // LOG(DEBUG, "Left Power %f Right Power %f lg %f rg %f le %f re %f gyro %f\n", U[0], U[1], R[0], R[2], Y[0], Y[1], _gyro);
     ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
     LOG(DEBUG, "E[0, 0]: %f E[1, 0] %f E[2, 0] %f E[3, 0] %f\n", E(0, 0), E(1, 0), E(2, 0), E(3, 0));
   }
@@ -308,53 +308,31 @@ class PolyDrivetrain {
     }
 
     if (position) {
+      GearLogging gear_logging;
       // Switch to the correct controller.
       // TODO(austin): Un-hard code 0.57
       if (position->left_shifter_position < 0.57) {
         if (position->right_shifter_position < 0.57 || right_gear_ == LOW) {
-          LOG(DEBUG, "Loop Left low, Right low\n");
-          loop_->set_controller_index(0);
+          gear_logging.left_loop_high = false;
+          gear_logging.right_loop_high = false;
+          loop_->set_controller_index(gear_logging.controller_index = 0);
         } else {
-          LOG(DEBUG, "Loop Left low, Right high\n");
-          loop_->set_controller_index(1);
+          gear_logging.left_loop_high = false;
+          gear_logging.right_loop_high = true;
+          loop_->set_controller_index(gear_logging.controller_index = 1);
         }
       } else {
         if (position->right_shifter_position < 0.57 || left_gear_ == LOW) {
-          LOG(DEBUG, "Loop Left high, Right low\n");
-          loop_->set_controller_index(2);
+          gear_logging.left_loop_high = true;
+          gear_logging.right_loop_high = false;
+          loop_->set_controller_index(gear_logging.controller_index = 2);
         } else {
-          LOG(DEBUG, "Loop Left high, Right high\n");
-          loop_->set_controller_index(3);
+          gear_logging.left_loop_high = true;
+          gear_logging.right_loop_high = true;
+          loop_->set_controller_index(gear_logging.controller_index = 3);
         }
       }
-      switch (left_gear_) {
-        case LOW:
-          LOG(DEBUG, "Left is in low\n");
-          break;
-        case HIGH:
-          LOG(DEBUG, "Left is in high\n");
-          break;
-        case SHIFTING_UP:
-          LOG(DEBUG, "Left is shifting up\n");
-          break;
-        case SHIFTING_DOWN:
-          LOG(DEBUG, "Left is shifting down\n");
-          break;
-      }
-      switch (right_gear_) {
-        case LOW:
-          LOG(DEBUG, "Right is in low\n");
-          break;
-        case HIGH:
-          LOG(DEBUG, "Right is in high\n");
-          break;
-        case SHIFTING_UP:
-          LOG(DEBUG, "Right is shifting up\n");
-          break;
-        case SHIFTING_DOWN:
-          LOG(DEBUG, "Right is shifting down\n");
-          break;
-      }
+
       // TODO(austin): Constants.
       if (position->left_shifter_position > 0.9 && left_gear_ == SHIFTING_UP) {
         left_gear_ = HIGH;
@@ -368,6 +346,10 @@ class PolyDrivetrain {
       if (position->right_shifter_position < 0.1 && right_gear_ == SHIFTING_DOWN) {
         right_gear_ = LOW;
       }
+
+      gear_logging.left_state = left_gear_;
+      gear_logging.right_state = right_gear_;
+      LOG_STRUCT(DEBUG, "state", gear_logging);
     }
   }
 
@@ -433,19 +415,30 @@ class PolyDrivetrain {
     const double right_motor_speed =
         MotorSpeed(position_.right_shifter_position, current_right_velocity);
 
-    // Reset the CIM model to the current conditions to be ready for when we shift.
-    if (IsInGear(left_gear_)) {
-      left_cim_->X_hat(0, 0) = left_motor_speed;
-      LOG(DEBUG, "Setting left CIM to %f at robot speed %f\n", left_motor_speed,
-          current_left_velocity);
+    {
+      CIMLogging logging;
+
+      // Reset the CIM model to the current conditions to be ready for when we
+      // shift.
+      if (IsInGear(left_gear_)) {
+        logging.left_in_gear = true;
+        left_cim_->X_hat(0, 0) = left_motor_speed;
+      } else {
+        logging.left_in_gear = false;
+      }
+      logging.left_motor_speed = left_motor_speed;
+      logging.left_velocity = current_left_velocity;
+      if (IsInGear(right_gear_)) {
+        logging.right_in_gear = true;
+        right_cim_->X_hat(0, 0) = right_motor_speed;
+      } else {
+        logging.right_in_gear = false;
+      }
+      logging.right_motor_speed = right_motor_speed;
+      logging.right_velocity = current_right_velocity;
+
+      LOG_STRUCT(DEBUG, "currently", logging);
     }
-    if (IsInGear(right_gear_)) {
-      right_cim_->X_hat(0, 0) = right_motor_speed;
-      LOG(DEBUG, "Setting right CIM to %f at robot speed %f\n",
-          right_motor_speed, current_right_velocity);
-    }
-    LOG(DEBUG, "robot speed l=%f r=%f\n", current_left_velocity,
-        current_right_velocity);
 
     if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
       // FF * X = U (steady state)
@@ -505,7 +498,8 @@ class PolyDrivetrain {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
       R_left(0, 0) = left_motor_speed;
-      const double wiggle = (static_cast<double>((counter_ % 4) / 2) - 0.5) * 3.5;
+      const double wiggle =
+          (static_cast<double>((counter_ % 4) / 2) - 0.5) * 3.5;
 
       loop_->U(0, 0) =
           ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -position_.battery_voltage,
@@ -528,14 +522,8 @@ class PolyDrivetrain {
     if (output != NULL) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
-    }
-    // Go in high gear if anything wants to be in high gear.
-    // TODO(austin): Seperate these.
-    if (left_gear_ == HIGH || left_gear_ == SHIFTING_UP ||
-        right_gear_ == HIGH || right_gear_ == SHIFTING_UP) {
-      shifters.MakeWithBuilder().set(false).Send();
-    } else {
-      shifters.MakeWithBuilder().set(true).Send();
+      output->left_high = left_gear_ == HIGH || left_gear_ == SHIFTING_UP;
+      output->right_high = right_gear_ == HIGH || right_gear_ == SHIFTING_UP;
     }
   }
 
@@ -600,7 +588,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
     if (gyro.FetchLatest()) {
-      LOG(DEBUG, "gyro %f\n", gyro->angle);
+      LOG_STRUCT(DEBUG, "using", *gyro);
       dt_closedloop.SetPosition(left_encoder, right_encoder, gyro->angle,
                                 control_loop_driving);
     } else {
