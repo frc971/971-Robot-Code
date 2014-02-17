@@ -32,7 +32,7 @@ int open_device() {
     LOG(INFO, "unexporting BB-UART1\n");
     if (system("bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
                " | fgrep BB-UART1"
-               " | cut -c 2) > /sys/devices/bone_capemgr.*/slots'") ==
+               " | cut -d : -f 1) > /sys/devices/bone_capemgr.*/slots'") ==
         -1) {
       LOG(FATAL, "system([disable OMAP UART]) failed with %d: %s\n", errno,
           strerror(errno));

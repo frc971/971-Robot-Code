@@ -14,6 +14,8 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
+        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
       ],
     },
     {

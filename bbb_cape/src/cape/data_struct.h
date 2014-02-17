@@ -83,15 +83,15 @@ struct DATA_STRUCT_NAME {
       // The length of the pulse from the ultrasonic sensor in 100kHZ ticks.
       uint32_t ultrasonic_pulse_length;
 
-      int32_t shooter_position, shooter_posedge_position,
-          shooter_negedge_position;
+      int32_t shooter_position, pusher_distal_posedge_position,
+          pusher_proximal_posedge_position;
 
       uint16_t left_drive_hall;
       uint16_t right_drive_hall;
 
       uint16_t battery_voltage;
 
-      HallEffectEdges plunger, pusher_distal, pusher_proximal, latch;
+      HallEffectEdges pusher_distal, pusher_proximal;
 
       struct {
         uint8_t plunger : 1;

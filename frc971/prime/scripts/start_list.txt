@@ -4,3 +4,5 @@ joystick_reader
 drivetrain
 auto
 sensor_receiver
+claw
+shooter

@@ -10,6 +10,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro_angle.q.h"
 #include "frc971/autonomous/auto.q.h"
+#include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/control_loops/shooter/shooter.q.h"
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::sensors::gyro;
@@ -51,10 +53,9 @@ class Reader : public ::aos::input::JoystickInput {
       double right_goal = 0.0;
       const double wheel = -data.GetAxis(kSteeringWheel);
       const double throttle = -data.GetAxis(kDriveThrottle);
-      LOG(DEBUG, "wheel %f throttle %f\n", wheel, throttle);
       const double kThrottleGain = 1.0 / 2.5;
-      if (data.IsPressed(kDriveControlLoopEnable1) ||
-          data.IsPressed(kDriveControlLoopEnable2)) {
+      if (false && (data.IsPressed(kDriveControlLoopEnable1) ||
+                    data.IsPressed(kDriveControlLoopEnable2))) {
         static double distance = 0.0;
         static double angle = 0.0;
         static double filtered_goal_distance = 0.0;
@@ -89,12 +90,12 @@ class Reader : public ::aos::input::JoystickInput {
 
         LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
       }
-      if (!(drivetrain.goal.MakeWithBuilder()
-                .steering(wheel)
-                .throttle(throttle)
-                .highgear(is_high_gear).quickturn(data.IsPressed(kQuickTurn))
-                .control_loop_driving(is_control_loop_driving)
-                .left_goal(left_goal).right_goal(right_goal).Send())) {
+      if (!drivetrain.goal.MakeWithBuilder()
+          .steering(wheel)
+          .throttle(throttle)
+          .highgear(is_high_gear).quickturn(data.IsPressed(kQuickTurn))
+          .control_loop_driving(is_control_loop_driving)
+          .left_goal(left_goal).right_goal(right_goal).Send()) {
         LOG(WARNING, "sending stick values failed\n");
       }
 
@@ -103,6 +104,20 @@ class Reader : public ::aos::input::JoystickInput {
       }
       if (data.PosEdge(kShiftLow)) {
         is_high_gear = true;
+      }
+
+      if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+          .bottom_angle(0)
+          .separation_angle(0)
+          .intake(false).Send()) {
+        LOG(WARNING, "sending claw goal failed\n");
+      }
+      if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
+          .shot_power(0)
+          .shot_requested(false)
+          .unload_requested(true)
+          .Send()) {
+        LOG(WARNING, "sending shooter goal failed\n");
       }
     }
   }

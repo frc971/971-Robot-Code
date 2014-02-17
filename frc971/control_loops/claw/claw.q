@@ -45,6 +45,7 @@ queue_group ClawGroup {
     double intake_voltage;
     double top_claw_voltage;
     double bottom_claw_voltage;
+	double tusk_voltage;
   };
 
   queue Goal goal;

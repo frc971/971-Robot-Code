@@ -80,7 +80,8 @@ double claw_translate(int32_t in) {
   return in;
 }
 
-void CopyHallEffectEdges(HallEffectStruct *output,
+template<typename Structure>
+void CopyHallEffectEdges(Structure *output,
                          const ::bbb::HallEffectEdges &input,
                          State::HallEffectCounters *state) {
   output->posedge_count = state->posedges.Update(input.posedges);
@@ -153,9 +154,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
     auto shooter_position =
         control_loops::shooter_queue_group.position.MakeMessage();
 
-    CopyHallEffectEdges(&shooter_position->plunger, data->main.plunger,
-                        &state->plunger);
-    shooter_position->plunger.current = data->main.bools.plunger;
+    shooter_position->plunger = data->main.bools.plunger;
     CopyHallEffectEdges(&shooter_position->pusher_distal,
                         data->main.pusher_distal, &state->pusher_distal);
     shooter_position->pusher_distal.current = data->main.bools.pusher_distal;
@@ -163,15 +162,13 @@ void PacketReceived(const ::bbb::DataStruct *data,
                         data->main.pusher_proximal, &state->pusher_proximal);
     shooter_position->pusher_proximal.current =
         data->main.bools.pusher_proximal;
-    CopyHallEffectEdges(&shooter_position->latch, data->main.latch,
-                        &state->latch);
-    shooter_position->latch.current = data->main.bools.latch;
+    shooter_position->latch = data->main.bools.latch;
 
     shooter_position->position = shooter_translate(data->main.shooter_position);
-    shooter_position->pusher_posedge_value =
-        shooter_translate(data->main.shooter_posedge_position);
-    shooter_position->pusher_negedge_value =
-        shooter_translate(data->main.shooter_negedge_position);
+    shooter_position->pusher_distal.posedge_value =
+        shooter_translate(data->main.pusher_distal_posedge_position);
+    shooter_position->pusher_proximal.posedge_value =
+        shooter_translate(data->main.pusher_proximal_posedge_position);
 
     shooter_position.Send();
   }
