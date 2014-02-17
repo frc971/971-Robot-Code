@@ -38,7 +38,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         uncapped_voltage_(0.0),
         offset_(0.0),
         encoder_(0.0),
-        last_encoder_(0.0){}
+        last_encoder_(0.0) {}
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -61,14 +61,11 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     CALIBRATED
   };
 
-
   void set_zeroing_state(JointZeroingState zeroing_state) {
     zeroing_state_ = zeroing_state;
   }
-  
 
   JointZeroingState zeroing_state() const { return zeroing_state_; }
-
 
   // Sets the calibration offset given the absolute angle and the corrisponding
   // encoder value.
@@ -76,9 +73,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     offset_ = known_position - encoder_val;
   }
 
-
-  bool SetCalibrationOnEdge(const constants::Values::ShooterLimits &shooter_values,
-                            JointZeroingState zeroing_state) {
+  bool SetCalibrationOnEdge(
+      const constants::Values::ShooterLimits &shooter_values,
+      JointZeroingState zeroing_state) {
     double edge_encoder;
     double known_position;
     if (GetPositionOfEdge(shooter_values, &edge_encoder, &known_position)) {
@@ -90,20 +87,21 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     return false;
   }
 
+  void SetPositionDirectly(double position) { X_hat(0, 0) = position; }
 
   void SetPositionValues(double position) {
     Eigen::Matrix<double, 1, 1> Y;
     Y << position;
+    LOG(INFO, "Setting position to %f\n", position);
     Correct(Y);
   }
 
-
-  void SetGoalPosition(double desired_position,
-  		  double desired_velocity) {
-  	  // austin said something about which matrix to set, but I didn't under
-	  // very much of it
-	  //some_matrix = {desired_position, desired_velocity};
-	  R << desired_position, desired_velocity, 0;
+  void SetGoalPosition(double desired_position, double desired_velocity) {
+    // austin said something about which matrix to set, but I didn't under
+    // very much of it
+    //some_matrix = {desired_position, desired_velocity};
+    LOG(INFO, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
+    R << desired_position, desired_velocity, 0;
   }
 
   double position() const { return X_hat(0, 0); }
@@ -131,49 +129,53 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double last_encoder_;
 };
 
-
 class ShooterMotor
     : public aos::control_loops::ControlLoop<control_loops::ShooterGroup> {
  public:
-  explicit ShooterMotor(
-      control_loops::ShooterGroup *my_shooter = &control_loops::shooter_queue_group);
+  explicit ShooterMotor(control_loops::ShooterGroup *my_shooter =
+                            &control_loops::shooter_queue_group);
 
   // True if the goal was moved to avoid goal windup.
   //bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power) {
-    LOG(WARNING, "power to position not correctly implemented");
+    //LOG(WARNING, "power to position not correctly implemented\n");
     const frc971::constants::Values &values = constants::GetValues();
     double new_pos =
         (power > values.shooter.upper_limit) ? values.shooter.upper_limit
-         : (power < 0.0) ? 0.0 : power;
+                                             : (power < 0.0)
+            ? 0.0
+            : power;
 
     return new_pos;
   }
 
-typedef enum {
-	STATE_INITIALIZE,
-	STATE_REQUEST_LOAD,
-	STATE_LOAD_BACKTRACK,
-	STATE_LOAD,
-	STATE_LOADING_PROBLEM,
-	STATE_PREPARE_SHOT,
-	STATE_READY,
-	STATE_REQUEST_FIRE,
-	STATE_PREPARE_FIRE,
-	STATE_FIRE,
-	STATE_UNLOAD,
-	STATE_UNLOAD_MOVE,
-	STATE_READY_UNLOAD
-} State;
+  typedef enum {
+    STATE_INITIALIZE = 0,
+    STATE_REQUEST_LOAD = 1,
+    STATE_LOAD_BACKTRACK = 2,
+    STATE_LOAD = 3,
+    STATE_LOADING_PROBLEM = 4,
+    STATE_PREPARE_SHOT = 5,
+    STATE_READY = 6,
+    STATE_REQUEST_FIRE = 7,
+    STATE_PREPARE_FIRE = 8,
+    STATE_FIRE = 9,
+    STATE_UNLOAD = 10,
+    STATE_UNLOAD_MOVE = 11,
+    STATE_READY_UNLOAD = 12
+  } State;
+
+  State GetState() {return state_;}
+
+  double GetPosition() { return shooter_.position() - calibration_position_; }
 
  protected:
 
   virtual void RunIteration(
       const ShooterGroup::Goal *goal,
       const control_loops::ShooterGroup::Position *position,
-      ShooterGroup::Output *output,
-      ShooterGroup::Status *status);
+      ShooterGroup::Output *output, ShooterGroup::Status *status);
 
  private:
   // Friend the test classes for acces to the internal state.
@@ -205,6 +207,9 @@ typedef enum {
 
   // track cycles that we are stuck to detect errors
   int cycles_not_moved_;
+
+  // setup on the intial loop may involve shortcuts
+  bool initial_loop_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };
