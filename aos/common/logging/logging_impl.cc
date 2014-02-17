@@ -157,7 +157,7 @@ void LogImplementation::LogStruct(
         type->name.c_str());
   }
   size_t used = serialize(serialized);
-  char printed[LOG_MESSAGE_LEN];
+  char printed[LOG_MESSAGE_LEN * 5];
   size_t printed_bytes = sizeof(printed);
   if (!PrintMessage(printed, &printed_bytes, serialized, &used, *type)) {
     LOG(FATAL, "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",
@@ -165,7 +165,8 @@ void LogImplementation::LogStruct(
         type->name.c_str());
   }
   DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
-                message.data(), static_cast<int>(printed_bytes), printed);
+                message.data(),
+                static_cast<int>(sizeof(printed) - printed_bytes), printed);
 }
 
 StreamLogImplementation::StreamLogImplementation(FILE *stream)
