@@ -45,7 +45,7 @@ struct Values {
 
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
-  
+
   struct ShooterLimits {
     double lower_limit;
     double upper_limit;
@@ -55,7 +55,7 @@ struct Values {
   };
 
   ShooterLimits shooter;
-  
+
   double shooter_voltage;
   double shooter_total_length;
   double shooter_hall_effect_start_position;
