@@ -339,11 +339,11 @@ class ClawMotorSimulation {
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
-    EXPECT_GE(v.upper_claw.upper_limit, claw_plant_->Y(0, 0));
-    EXPECT_LE(v.upper_claw.lower_limit, claw_plant_->Y(0, 0));
+    EXPECT_GE(v.upper_claw.upper_hard_limit, claw_plant_->Y(0, 0));
+    EXPECT_LE(v.upper_claw.lower_hard_limit, claw_plant_->Y(0, 0));
 
-    EXPECT_GE(v.lower_claw.upper_limit, claw_plant_->Y(1, 0));
-    EXPECT_LE(v.lower_claw.lower_limit, claw_plant_->Y(1, 0));
+    EXPECT_GE(v.lower_claw.upper_hard_limit, claw_plant_->Y(1, 0));
+    EXPECT_LE(v.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
 
     EXPECT_LE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw_max_seperation);

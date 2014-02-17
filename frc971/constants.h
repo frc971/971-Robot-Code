@@ -55,6 +55,8 @@ struct Values {
   };
 
   struct Claw {
+    double lower_hard_limit;
+    double upper_hard_limit;
     double lower_limit;
     double upper_limit;
     AnglePair front;

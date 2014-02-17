@@ -45,45 +45,44 @@ const Values *DoGetValues() {
   switch (team) {
     case kCompTeamNumber:
       return new Values{
-            kCompDrivetrainEncoderRatio,
-            kCompLowGearRatio,
-            kCompHighGearRatio,
-            kCompLeftDriveShifter,
-            kCompRightDriveShifter,
-            true,
-            control_loops::MakeVClutchDrivetrainLoop,
-            control_loops::MakeClutchDrivetrainLoop,
-            0.5,
-            0.1,
-            0.1,
-            0.0,
-            1.57,
-
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.01, // claw_unimportant_epsilon
-            0.9, // start_fine_tune_pos
+          kCompDrivetrainEncoderRatio,
+          kCompLowGearRatio,
+          kCompHighGearRatio,
+          kCompLeftDriveShifter,
+          kCompRightDriveShifter,
+          true,
+          control_loops::MakeVClutchDrivetrainLoop,
+          control_loops::MakeClutchDrivetrainLoop,
+          0.5,
+          0.1,
+          0.1,
+          0.0,
+          1.57,
+          {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          0.01,  // claw_unimportant_epsilon
+          0.9,   // start_fine_tune_pos
       };
       break;
     case kPracticeTeamNumber:
       return new Values{
-            kPracticeDrivetrainEncoderRatio,
-            kPracticeLowGearRatio,
-            kPracticeHighGearRatio,
-            kPracticeLeftDriveShifter,
-            kPracticeRightDriveShifter,
-            false,
-            control_loops::MakeVDogDrivetrainLoop,
-            control_loops::MakeDogDrivetrainLoop,
-            0.5,
-            0.2,
-            0.1,
-            0.0,
-            1.57,
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.01, // claw_unimportant_epsilon
-            0.9, //start_fine_tune_pos
+          kPracticeDrivetrainEncoderRatio,
+          kPracticeLowGearRatio,
+          kPracticeHighGearRatio,
+          kPracticeLeftDriveShifter,
+          kPracticeRightDriveShifter,
+          false,
+          control_loops::MakeVDogDrivetrainLoop,
+          control_loops::MakeDogDrivetrainLoop,
+          0.5,
+          0.2,
+          0.1,
+          0.0,
+          1.57,
+          {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          0.01,  // claw_unimportant_epsilon
+          0.9,  // start_fine_tune_pos
       };
       break;
     default:

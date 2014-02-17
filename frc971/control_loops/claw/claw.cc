@@ -10,10 +10,6 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
 
-// TODO(austin): Switch the control loop over to a seperation and a bottom
-// position.  This will make things a lot more robust and allows for different
-// stiffnesses.
-
 // Zeroing plan.
 // There are 2 types of zeros.  Enabled and disabled ones.
 // Disabled ones are only valid during auto mode, and can be used to speed up
@@ -217,12 +213,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   // TODO(austin): Handle zeroing while disabled correctly (only use a single
   //     edge and direction when zeroing.)
 
-  // TODO(austin): Save all the counters so we know when something actually
-  //     happens.
-  // TODO(austin): Helpers to find the position of the claw on an edge.
-
-  // TODO(austin): This may not be necesary because of the ControlLoop class.
-  ::aos::robot_state.FetchLatest();
   if (::aos::robot_state.get() == nullptr) {
     return;
   }
@@ -315,24 +305,28 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           bottom_claw_goal_ = values.start_fine_tune_pos;
           LOG(DEBUG, "Found a limit, starting over.\n");
         }
-        // TODO(austin): We have a count for this...  Need to double check that
-        // it ticked, just in case.
+
         if (bottom_claw_.calibration_hall_effect()) {
-          // do calibration
-          bottom_claw_.SetCalibration(
-              position->bottom.posedge_value,
-              values.lower_claw.calibration.lower_angle);
-          bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
-          // calibrated so we are done fine tuning bottom
-          doing_calibration_fine_tune_ = false;
-          LOG(DEBUG, "Calibrated the bottom correctly!\n");
+          if (bottom_claw_.calibration_hall_effect_posedge_count_changed() &&
+              position) {
+            // do calibration
+            bottom_claw_.SetCalibration(
+                position->bottom.posedge_value,
+                values.lower_claw.calibration.lower_angle);
+            bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+            // calibrated so we are done fine tuning bottom
+            doing_calibration_fine_tune_ = false;
+            LOG(DEBUG, "Calibrated the bottom correctly!\n");
+          } else {
+            doing_calibration_fine_tune_ = false;
+            bottom_claw_goal_ = values.start_fine_tune_pos;
+          }
         } else {
           LOG(DEBUG, "Fine tuning\n");
         }
       }
       // now set the top claw to track
 
-      // TODO(austin): Some safe distance!
       top_claw_goal_ = bottom_claw_goal_ + values.claw_zeroing_separation;
     } else {
       // bottom claw must be calibrated, start on the top
@@ -358,13 +352,19 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           LOG(DEBUG, "Found a limit, starting over.\n");
         }
         if (top_claw_.calibration_hall_effect()) {
-          // do calibration
-          top_claw_.SetCalibration(position->top.posedge_value,
-                                   values.upper_claw.calibration.lower_angle);
-          top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
-          // calinrated so we are done fine tuning top
-          doing_calibration_fine_tune_ = false;
-          LOG(DEBUG, "Calibrated the top correctly!\n");
+          if (top_claw_.calibration_hall_effect_posedge_count_changed() &&
+              position) {
+            // do calibration
+            top_claw_.SetCalibration(position->top.posedge_value,
+                                     values.upper_claw.calibration.lower_angle);
+            top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+            // calinrated so we are done fine tuning top
+            doing_calibration_fine_tune_ = false;
+            LOG(DEBUG, "Calibrated the top correctly!\n");
+          } else {
+            doing_calibration_fine_tune_ = false;
+            top_claw_goal_ = values.start_fine_tune_pos;
+          }
         }
       }
       // now set the bottom claw to track
@@ -430,7 +430,23 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     mode = UNKNOWN_LOCATION;
   }
 
-  // TODO(austin): Handle disabled.
+  // TODO(austin): Handle disabled properly everwhere...  Restart and all that
+  // jazz.
+
+  // TODO(Joe): Write this.
+  if (bottom_claw_goal_ < values.bottom.lower_limit) {
+    bottom_claw_goal_ = values.bottom.lower_limit;
+  }
+  if (bottom_claw_goal_ > values.bottom.upper_limit) {
+    bottom_claw_goal_ = values.bottom.upper_limit;
+  }
+
+  if (top_claw_goal_ < values.bottom.lower_limit) {
+    top_claw_goal_ = values.bottom.lower_limit;
+  }
+  if (top_claw_goal_ > values.top.upper_limit) {
+    top_claw_goal_ = values.top.upper_limit;
+  }
 
   // TODO(austin): ...
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
@@ -447,8 +463,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     claw_.Update(true);
   }
 
-  (void)mode;
-
+  (void) mode;
   /*
   switch (mode) {
     case READY:
