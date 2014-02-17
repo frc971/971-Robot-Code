@@ -69,8 +69,8 @@ struct Values {
     double claw_zeroing_separation;
 
     // claw seperation that would be considered a collision
-    double claw_min_seperation;
-    double claw_max_seperation;
+    double claw_min_separation;
+    double claw_max_separation;
 
     // Three hall effects are known as front, calib and back
     struct AnglePair {

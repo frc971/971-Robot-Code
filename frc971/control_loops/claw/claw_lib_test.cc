@@ -224,9 +224,9 @@ class ClawMotorSimulation {
     EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
 
     EXPECT_LE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
-              v.claw.claw_max_seperation);
+              v.claw.claw_max_separation);
     EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
-              v.claw.claw_min_seperation);
+              v.claw.claw_min_separation);
   }
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
@@ -269,7 +269,7 @@ class ClawTest : public ::testing::Test {
                          ".frc971.control_loops.claw_queue_group.status"),
         claw_motor_(&claw_queue_group),
         claw_motor_plant_(0.4, 0.2),
-        min_seperation_(constants::GetValues().claw.claw_min_seperation) {
+        min_seperation_(constants::GetValues().claw.claw_min_separation) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -322,6 +322,81 @@ TEST_F(ClawTest, ZerosCorrectly) {
   }
   VerifyNearGoal();
 }
+
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(ClawTest, LimitClawGoal) {
+  frc971::constants::Values values;
+  values.claw.claw_min_separation = -2.0;
+  values.claw.claw_max_separation = 1.0;
+  values.claw.upper_claw.lower_limit = -5.0;
+  values.claw.upper_claw.upper_limit = 7.5;
+  values.claw.lower_claw.lower_limit = -5.5;
+  values.claw.lower_claw.upper_limit = 8.0;
+
+  double bottom_goal = 0.0;
+  double top_goal = 0.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(0.0, bottom_goal, 1e-4);
+  EXPECT_NEAR(0.0, top_goal, 1e-4);
+
+  bottom_goal = 0.0;
+  top_goal = -4.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(-1.0, bottom_goal, 1e-4);
+  EXPECT_NEAR(-3.0, top_goal, 1e-4);
+
+  bottom_goal = 0.0;
+  top_goal = 4.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(1.5, bottom_goal, 1e-4);
+  EXPECT_NEAR(2.5, top_goal, 1e-4);
+
+  bottom_goal = -10.0;
+  top_goal = -9.5;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(-5.5, bottom_goal, 1e-4);
+  EXPECT_NEAR(-5.0, top_goal, 1e-4);
+
+  bottom_goal = -20.0;
+  top_goal = -4.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(-5.5, bottom_goal, 1e-4);
+  EXPECT_NEAR(-4.5, top_goal, 1e-4);
+
+  bottom_goal = -20.0;
+  top_goal = -4.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(-5.5, bottom_goal, 1e-4);
+  EXPECT_NEAR(-4.5, top_goal, 1e-4);
+
+  bottom_goal = -5.0;
+  top_goal = -10.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(-3.0, bottom_goal, 1e-4);
+  EXPECT_NEAR(-5.0, top_goal, 1e-4);
+
+  bottom_goal = 10.0;
+  top_goal = 9.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(8.0, bottom_goal, 1e-4);
+  EXPECT_NEAR(7.0, top_goal, 1e-4);
+
+  bottom_goal = 8.0;
+  top_goal = 9.0;
+
+  LimitClawGoal(&bottom_goal, &top_goal, values);
+  EXPECT_NEAR(6.5, bottom_goal, 1e-4);
+  EXPECT_NEAR(7.5, top_goal, 1e-4);
+}
+
 
 class ZeroingClawTest
     : public ClawTest,
@@ -513,7 +588,8 @@ class WindupClawTest : public ClawTest {
     }
     EXPECT_TRUE(kicked);
     EXPECT_TRUE(measured);
-    EXPECT_EQ(1, capped_count);
+    EXPECT_LE(1, capped_count);
+    EXPECT_GE(3, capped_count);
   }
 };
 

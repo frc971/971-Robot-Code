@@ -256,6 +256,11 @@ class ClawMotor
   DISALLOW_COPY_AND_ASSIGN(ClawMotor);
 };
 
+// Modifies the bottom and top goal such that they are within the limits and
+// their separation isn't too much or little.
+void LimitClawGoal(double *bottom_goal, double *top_goal,
+                   const frc971::constants::Values &values);
+
 }  // namespace control_loops
 }  // namespace frc971
 
