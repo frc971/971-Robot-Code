@@ -1,6 +1,7 @@
 package frc971.control_loops;
 
 import "aos/common/control_loop/control_loops.q";
+import "frc971/control_loops/control_loops.q";
 
 queue_group ShooterGroup {
   implements aos.control_loops.ControlLoop;
@@ -20,42 +21,23 @@ queue_group ShooterGroup {
     bool unload_requested;
   };
   message Position {
-	// back on the plunger
-    bool plunger_back_hall_effect;
-	// truely back on the pusher
-	bool pusher_distal_hall_effect;
-	// warning that we are back on the pusher
-	bool pusher_proximal_hall_effect;
-	// the latch is closed
-	bool latch_hall_effect;
-
-	// count of positive edges
-	int64_t plunger_back_hall_effect_posedge_count;
-	// count of negative edges
-	int64_t plunger_back_hall_effect_negedge_count;
-	// count of positive edges
-	int64_t pusher_distal_hall_effect_posedge_count;
-	// count of negative edges
-	int64_t pusher_distal_hall_effect_negedge_count;
-	// count of positive edges
-	int64_t pusher_proximal_hall_effect_posedge_count;
-	// count of negative edges
-	int64_t pusher_proximal_hall_effect_negedge_count;
-	// count of positive edges
-	int64_t latch_hall_effect_posedge_count;
-	// count of negative edges
-	int64_t latch_hall_effect_negedge_count;
+    //  Gets triggered when the plunger is latched.
+    HallEffectStruct plunger;
+    // Gets triggered when the pusher is all the way back.
+	HallEffectStruct pusher_distal;
+    // Triggers just before pusher_distal.
+	HallEffectStruct pusher_proximal;
+    // Triggers when the latch engages.
+	HallEffectStruct latch;
 
     // In meters, out is positive.
     double position;
 
-	// last positive edge
-	double posedge_value;
-	// last negative edge
-	double negedge_value;
+	// position at the last positive edge of either of the pusher hall effects.
+	double pusher_posedge_value;
+	// position at the last negative edge of either of the pusher hall effects.
+	double pusher_negedge_value;
   };
-  // I don't think this is needed, but it is here
-  // so I won't delete it yet.
   message Status {
     // Whether it's ready to shoot right now.
     bool ready;

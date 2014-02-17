@@ -53,8 +53,8 @@ class ShooterSimulation {
   }
 
   // Makes sure pos is inside range (inclusive)
-  bool CheckRange(double pos, struct constants::Values::Pair pair) {
-    return (pos >= pair.lower_limit && pos <= pair.upper_limit);
+  bool CheckRange(double pos, struct constants::Values::AnglePair pair) {
+    return (pos >= pair.lower_angle && pos <= pair.upper_angle);
   }
 
   // Sets the values of the physical sensors that can be directly observed
@@ -67,33 +67,33 @@ class ShooterSimulation {
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
-    position->plunger_back_hall_effect =
+    position->plunger.current =
         CheckRange(position->position, values.shooter.plunger_back);
-    position->pusher_distal_hall_effect =
+    position->pusher_distal.current =
         CheckRange(position->position, values.shooter.pusher_distal);
-    position->pusher_proximal_hall_effect =
+    position->pusher_proximal.current =
         CheckRange(position->position, values.shooter.pusher_proximal);
   }
 
-  void UpdateEffectEdge(bool &effect, bool last_effect, double upper_limit,
-                        double lower_limit, double position,
-                        double &posedge_value, double &negedge_value,
-                        int64_t &posedge_count, int64_t &negedge_count) {
-    if (effect && !last_effect) {
-      ++posedge_count;
-      if (last_position_message_.position < lower_limit) {
-        posedge_value = lower_limit - initial_position_;
+  void UpdateEffectEdge(HallEffectStruct *sensor,
+                        const HallEffectStruct &last_sensor,
+                        const constants::Values::AnglePair &limits,
+                        control_loops::ShooterGroup::Position *position,
+                        const control_loops::ShooterGroup::Position &last_position) {
+    if (sensor->current && !last_sensor.current) {
+      ++sensor->posedge_count;
+      if (last_position.position < limits.lower_angle) {
+        position->pusher_posedge_value = limits.lower_angle - initial_position_;
       } else {
-        posedge_value = upper_limit - initial_position_;
+        position->pusher_posedge_value = limits.upper_angle - initial_position_;
       }
     }
-
-    if (!effect && last_effect) {
-      ++negedge_count;
-      if (position < lower_limit) {
-        negedge_value = lower_limit - initial_position_;
+    if (!sensor->current && last_sensor.current) {
+      ++sensor->negedge_count;
+      if (position->position < limits.lower_angle) {
+        position->pusher_negedge_value = limits.lower_angle - initial_position_;
       } else {
-        negedge_value = upper_limit - initial_position_;
+        position->pusher_negedge_value = limits.upper_angle - initial_position_;
       }
     }
   }
@@ -111,14 +111,14 @@ class ShooterSimulation {
       LOG(DEBUG, "latching simulation: %dp\n", latch_delay_count_);
       if (latch_delay_count_ == 1) {
         latch_piston_state_ = true;
-        position->latch_hall_effect = true;
+        position->latch.current = true;
       }
       latch_delay_count_--;
     } else if (latch_piston_state_ && latch_delay_count_ < 0) {
       LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
-        position->latch_hall_effect = false;
+        position->latch.current = false;
       }
       latch_delay_count_++;
     }
@@ -137,42 +137,31 @@ class ShooterSimulation {
     }
 
     // Handle plunger hall effect
-    UpdateEffectEdge(position->plunger_back_hall_effect,
-                     last_position_message_.plunger_back_hall_effect,
-                     values.shooter.plunger_back.upper_limit,
-                     values.shooter.plunger_back.lower_limit,
-                     position->position, position->posedge_value,
-                     position->negedge_value,
-                     position->plunger_back_hall_effect_posedge_count,
-                     position->plunger_back_hall_effect_negedge_count);
+    UpdateEffectEdge(&position->plunger,
+                     last_position_message_.plunger,
+                     values.shooter.plunger_back,
+                     position.get(),
+                     last_position_message_);
     LOG(INFO, "seteffect: plunger back: %d\n",
-        position->plunger_back_hall_effect);
+        position->plunger.current);
 
     // Handle pusher distal hall effect
-    UpdateEffectEdge(position->pusher_distal_hall_effect,
-                     last_position_message_.pusher_distal_hall_effect,
-                     values.shooter.pusher_distal.upper_limit,
-                     values.shooter.pusher_distal.lower_limit,
-                     position->position, position->posedge_value,
-                     position->negedge_value,
-                     position->pusher_distal_hall_effect_posedge_count,
-                     position->pusher_distal_hall_effect_negedge_count);
+    UpdateEffectEdge(&position->pusher_distal,
+                     last_position_message_.pusher_distal,
+                     values.shooter.pusher_distal,
+                     position.get(),
+                     last_position_message_);
     LOG(INFO, "seteffect: pusher distal: %d\n",
-        position->plunger_back_hall_effect);
+        position->plunger.current);
 
     // Handle pusher proximal hall effect
-    UpdateEffectEdge(position->pusher_proximal_hall_effect,
-                     last_position_message_.pusher_proximal_hall_effect,
-                     values.shooter.pusher_proximal.upper_limit,
-                     values.shooter.pusher_proximal.lower_limit,
-                     position->position, position->posedge_value,
-                     position->negedge_value,
-                     position->pusher_proximal_hall_effect_posedge_count,
-                     position->pusher_proximal_hall_effect_negedge_count);
+    UpdateEffectEdge(&position->pusher_proximal,
+                     last_position_message_.pusher_proximal,
+                     values.shooter.pusher_proximal,
+                     position.get(),
+                     last_position_message_);
     LOG(INFO, "seteffect: pusher proximal: %d\n",
-        position->plunger_back_hall_effect);
-
-
+        position->plunger.current);
 
     last_position_message_ = *position;
     position.Send();

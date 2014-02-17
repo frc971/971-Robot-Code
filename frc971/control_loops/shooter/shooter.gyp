@@ -9,11 +9,11 @@
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:control_loop_queues',
-        '<(AOS)/common/common.gyp:queues',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:control_loop_queues',
-        '<(AOS)/common/common.gyp:queues',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
       'includes': ['../../../aos/build/queues.gypi'],
     },

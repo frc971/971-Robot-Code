@@ -97,43 +97,43 @@ void ShooterMotor::RunIteration(
         calibration_position_, state_);
   }
 
-  // don't even let the control loops run
+  // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
-  // adds voltage to take up slack in gears before shot
+  // Adds voltage to take up slack in gears before shot.
   bool apply_some_voltage = false;
 
   switch (state_) {
     case STATE_INITIALIZE:
-      // start off with the assumption that we are at the value
-      // futhest back given our sensors
-      if (position && position->pusher_distal_hall_effect) {
+      // Start off with the assumption that we are at the value
+      // futhest back given our sensors.
+      if (position && position->pusher_distal.current) {
         //TODO_ben: use posedge
         calibration_position_ =
-            position->position - values.shooter.pusher_distal.lower_limit;
-      } else if (position && position->pusher_proximal_hall_effect) {
+            position->position - values.shooter.pusher_distal.lower_angle;
+      } else if (position && position->pusher_proximal.current) {
         //TODO_ben: use posedge
         calibration_position_ =
-            position->position - values.shooter.pusher_proximal.lower_limit;
+            position->position - values.shooter.pusher_proximal.lower_angle;
       }
 
       state_ = STATE_REQUEST_LOAD;
 
-      // zero out initial goal
+      // Zero out initial goal.
       shooter_.SetGoalPosition(real_position, 0.0);
       if (position) {
-        output->latch_piston = position->plunger_back_hall_effect;
+        output->latch_piston = position->plunger.current;
       } else {
-        // we don't know what is going on so just close the latch to be safe
+        // We don't know what is going on so just close the latch to be safe.
         output->latch_piston = true;
       }
       output->brake_piston = false;
       break;
     case STATE_REQUEST_LOAD:
-      if (position->plunger_back_hall_effect && position->latch_hall_effect) {
-        // already latched
+      if (position->plunger.current && position->latch.current) {
+        // Already latched.
         state_ = STATE_PREPARE_SHOT;
-      } else if (position->pusher_distal_hall_effect ||
+      } else if (position->pusher_distal.current ||
                  (adjusted_position) < 0) {
         state_ = STATE_LOAD_BACKTRACK;
         //TODO_ben: double check that rezero is the right thing to do here
@@ -146,11 +146,11 @@ void ShooterMotor::RunIteration(
 
       shooter_.SetGoalPosition(0.0, 0.0);
       if (position && output)
-        output->latch_piston = position->plunger_back_hall_effect;
+        output->latch_piston = position->plunger.current;
       if (output) output->brake_piston = false;
       break;
     case STATE_LOAD_BACKTRACK:
-      if (adjusted_position > values.shooter.pusher_distal.upper_limit + 0.01) {
+      if (adjusted_position > values.shooter.pusher_distal.upper_angle + 0.01) {
         shooter_.SetGoalPosition(
             real_position - values.shooter_zeroing_speed * dt,
             values.shooter_zeroing_speed);
@@ -162,27 +162,27 @@ void ShooterMotor::RunIteration(
       if (output) output->brake_piston = true;
       break;
     case STATE_LOAD:
-      if (position && position->pusher_proximal_hall_effect &&
-          !last_position_.pusher_proximal_hall_effect) {
+      if (position && position->pusher_proximal.current &&
+          !last_position_.pusher_proximal.current) {
         //TODO_ben: use posedge
         calibration_position_ =
-            position->position - values.shooter.pusher_proximal.upper_limit;
+            position->position - values.shooter.pusher_proximal.upper_angle;
       }
-      if (position && position->pusher_distal_hall_effect &&
-          !last_position_.pusher_distal_hall_effect) {
+      if (position && position->pusher_distal.current &&
+          !last_position_.pusher_distal.current) {
         //TODO_ben: use posedge
         calibration_position_ =
-            position->position - values.shooter.pusher_distal.lower_limit;
+            position->position - values.shooter.pusher_distal.lower_angle;
       }
 
       shooter_.SetGoalPosition(calibration_position_, 0.0);
       if (position && output) {
-        output->latch_piston = position->plunger_back_hall_effect;
+        output->latch_piston = position->plunger.current;
       }
 
-      if (position->plunger_back_hall_effect && position->latch_hall_effect) {
+      if (position->plunger.current && position->latch.current) {
         state_ = STATE_PREPARE_SHOT;
-      } else if (position->plunger_back_hall_effect &&
+      } else if (position->plunger.current &&
                  fabs(adjusted_position - PowerToPosition(goal->shot_power)) <
                  0.05) {
         state_ = STATE_LOADING_PROBLEM;
@@ -194,13 +194,13 @@ void ShooterMotor::RunIteration(
     case STATE_LOADING_PROBLEM:
       if (Time::Now() > loading_problem_end_time_) {
         state_ = STATE_UNLOAD;
-      } else if (position->plunger_back_hall_effect &&
-                 position->latch_hall_effect) {
+      } else if (position->plunger.current &&
+                 position->latch.current) {
         state_ = STATE_PREPARE_SHOT;
       }
       shooter_.SetGoalPosition(calibration_position_, 0.0);
       LOG(DEBUG, "Waiting on latch: plunger %d, latch: %d\n",
-          position->plunger_back_hall_effect, position->latch_hall_effect);
+          position->plunger.current, position->latch.current);
 
       if (output) output->latch_piston = true;
       if (output) output->brake_piston = false;
@@ -242,7 +242,7 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_FIRE:
       shooter_loop_disable = true;
-      if (position->plunger_back_hall_effect) {
+      if (position->plunger.current) {
         prepare_fire_end_time_ =
             Time::Now(Time::kDefaultClock) + Time::InMS(40.0);
         apply_some_voltage = true;
@@ -281,7 +281,7 @@ void ShooterMotor::RunIteration(
       output->brake_piston = true;
       break;
     case STATE_UNLOAD:
-      if (position->plunger_back_hall_effect && position->latch_hall_effect) {
+      if (position->plunger.current && position->latch.current) {
         shooter_.SetGoalPosition(0.02, 0.0);
         if (adjusted_position < 0.04) {
           output->latch_piston = false;
