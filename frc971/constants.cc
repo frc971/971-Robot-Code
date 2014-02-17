@@ -43,7 +43,7 @@ const double shooter_upper_physical_limit=0.0;
 const double shooter_voltage=0.0;
 const double shooter_hall_effect_start_position=0.0;
 const double shooter_zeroing_off_speed=0.0;
-const double shooter_zeroing_speed=0.0;
+const double shooter_zeroing_speed=1.0;
 const double position=0.0;
 
 const Values *DoGetValues() {
@@ -57,10 +57,10 @@ const Values *DoGetValues() {
             kCompHighGearRatio,
 			// ShooterLimits
 			// TODO_ben: make these real numbers
-			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
+			{0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}},
             shooter_voltage,
 			// shooter_total_length
-			100.0,
+			1.0,
             shooter_hall_effect_start_position,
             shooter_zeroing_off_speed,
             shooter_zeroing_speed,
@@ -87,10 +87,10 @@ const Values *DoGetValues() {
             kPracticeHighGearRatio,
 			// ShooterLimits
 			// TODO_ben: make these real numbers
-			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
+			{0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}},
             shooter_voltage,
 			// shooter_total_length
-			100.0,
+			1.0,
             shooter_hall_effect_start_position,
             shooter_zeroing_off_speed,
             shooter_zeroing_speed,

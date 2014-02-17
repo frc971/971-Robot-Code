@@ -10,7 +10,6 @@
 #include "frc971/control_loops/shooter/unaugmented_shooter_motor_plant.h"
 #include "frc971/constants.h"
 
-
 using ::aos::time::Time;
 
 namespace frc971 {
@@ -23,7 +22,7 @@ class ShooterSimulation {
  public:
   // Constructs a motor simulation.
   ShooterSimulation(double initial_position)
-      : shooter_plant_(new StateFeedbackPlant<3, 1, 1>(MakeShooterPlant())),
+      : shooter_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawShooterPlant())),
         shooter_queue_group_(
             ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
             ".frc971.control_loops.shooter_queue_group.goal",
@@ -32,9 +31,10 @@ class ShooterSimulation {
             ".frc971.control_loops.shooter_queue_group.status") {
     Reinitialize(initial_position);
   }
+
   void Reinitialize(double initial_position) {
-    LOG(INFO, "Reinitializing to {top: %f}\n", initial_position);
-    StateFeedbackPlant<3, 1, 1>* plant = shooter_plant_.get();
+    LOG(INFO, "Reinitializing to {pos: %f}\n", initial_position);
+    StateFeedbackPlant<2, 1, 1> *plant = shooter_plant_.get();
     initial_position_ = initial_position;
     plant->X(0, 0) = initial_position_;
     plant->X(1, 0) = 0.0;
@@ -44,30 +44,24 @@ class ShooterSimulation {
     SetPhysicalSensors(&last_position_message_);
   }
 
-
   // Returns the absolute angle of the wrist.
-  double GetAbsolutePosition() const {
-      return shooter_plant_->Y(0,0);
-  }
-
+  double GetAbsolutePosition() const { return shooter_plant_->Y(0, 0); }
 
   // Returns the adjusted angle of the wrist.
   double GetPosition() const {
     return GetAbsolutePosition() - initial_position_;
   }
 
-
   // Makes sure pos is inside range (inclusive)
   bool CheckRange(double pos, struct constants::Values::Pair pair) {
     return (pos >= pair.lower_limit && pos <= pair.upper_limit);
   }
 
-
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
   void SetPhysicalSensors(control_loops::ShooterGroup::Position *position) {
-    const frc971::constants::Values& values = constants::GetValues();
-    position->position = GetPosition();
+    const frc971::constants::Values &values = constants::GetValues();
+    position->position = GetAbsolutePosition();
 
     LOG(DEBUG, "Physical shooter at {%f}\n", position->position);
 
@@ -81,39 +75,68 @@ class ShooterSimulation {
         CheckRange(position->position, values.shooter.pusher_proximal);
   }
 
-  void UpdateEffectEdge(bool effect, bool last_effect, double upper_angle,
-                        double lower_angle, double position,
+  void UpdateEffectEdge(bool &effect, bool last_effect, double upper_limit,
+                        double lower_limit, double position,
                         double &posedge_value, double &negedge_value,
                         int64_t &posedge_count, int64_t &negedge_count) {
-   if (effect && !last_effect) {
-	  	  ++posedge_count;
-		  if (last_position_message_.position < lower_angle) {
-		  	  posedge_value = lower_angle - initial_position_;
-		  } else {
-		  	  posedge_value = upper_angle - initial_position_;
-		  }
-	  }
+    if (effect && !last_effect) {
+      ++posedge_count;
+      if (last_position_message_.position < lower_limit) {
+        posedge_value = lower_limit - initial_position_;
+      } else {
+        posedge_value = upper_limit - initial_position_;
+      }
+    }
 
-	if (!effect && last_effect) {
-		++negedge_count;
-		if (position < lower_angle) {
-			negedge_value = lower_angle - initial_position_;
-		} else {
-			negedge_value = upper_angle - initial_position_;
-		}
-	}
+    if (!effect && last_effect) {
+      ++negedge_count;
+      if (position < lower_limit) {
+        negedge_value = lower_limit - initial_position_;
+      } else {
+        negedge_value = upper_limit - initial_position_;
+      }
+    }
   }
-
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
-    const frc971::constants::Values& values = constants::GetValues();
+    const frc971::constants::Values &values = constants::GetValues();
     ::aos::ScopedMessagePtr<control_loops::ShooterGroup::Position> position =
         shooter_queue_group_.position.MakeMessage();
 
     SetPhysicalSensors(position.get());
 
-	// Handle plunger hall effect
+    // Handle latch hall effect
+    if (!latch_piston_state_ && latch_delay_count_ > 0) {
+      LOG(DEBUG, "latching simulation: %dp\n", latch_delay_count_);
+      if (latch_delay_count_ == 1) {
+        latch_piston_state_ = true;
+        position->latch_hall_effect = true;
+      }
+      latch_delay_count_--;
+    } else if (latch_piston_state_ && latch_delay_count_ < 0) {
+      LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
+      if (latch_delay_count_ == -1) {
+        latch_piston_state_ = false;
+        position->latch_hall_effect = false;
+      }
+      latch_delay_count_++;
+    }
+
+    // Handle brake internal state
+    if (!brake_piston_state_ && brake_delay_count_ > 0) {
+      if (brake_delay_count_ == 1) {
+        brake_piston_state_ = true;
+      }
+      brake_delay_count_--;
+    } else if (brake_piston_state_ && brake_delay_count_ < 0) {
+      if (brake_delay_count_ == -1) {
+        brake_piston_state_ = false;
+      }
+      brake_delay_count_++;
+    }
+
+    // Handle plunger hall effect
     UpdateEffectEdge(position->plunger_back_hall_effect,
                      last_position_message_.plunger_back_hall_effect,
                      values.shooter.plunger_back.upper_limit,
@@ -122,8 +145,10 @@ class ShooterSimulation {
                      position->negedge_value,
                      position->plunger_back_hall_effect_posedge_count,
                      position->plunger_back_hall_effect_negedge_count);
+    LOG(INFO, "seteffect: plunger back: %d\n",
+        position->plunger_back_hall_effect);
 
- // Handle pusher distal hall effect
+    // Handle pusher distal hall effect
     UpdateEffectEdge(position->pusher_distal_hall_effect,
                      last_position_message_.pusher_distal_hall_effect,
                      values.shooter.pusher_distal.upper_limit,
@@ -132,8 +157,10 @@ class ShooterSimulation {
                      position->negedge_value,
                      position->pusher_distal_hall_effect_posedge_count,
                      position->pusher_distal_hall_effect_negedge_count);
+    LOG(INFO, "seteffect: pusher distal: %d\n",
+        position->plunger_back_hall_effect);
 
- // Handle pusher proximal hall effect
+    // Handle pusher proximal hall effect
     UpdateEffectEdge(position->pusher_proximal_hall_effect,
                      last_position_message_.pusher_proximal_hall_effect,
                      values.shooter.pusher_proximal.upper_limit,
@@ -142,11 +169,12 @@ class ShooterSimulation {
                      position->negedge_value,
                      position->pusher_proximal_hall_effect_posedge_count,
                      position->pusher_proximal_hall_effect_negedge_count);
+    LOG(INFO, "seteffect: pusher proximal: %d\n",
+        position->plunger_back_hall_effect);
 
     last_position_message_ = *position;
     position.Send();
   }
-
 
   // Simulates the claw moving for one timestep.
   void Simulate() {
@@ -155,17 +183,42 @@ class ShooterSimulation {
     shooter_plant_->U << last_voltage_;
     shooter_plant_->Update();
 
+    if (shooter_queue_group_.output->latch_piston && !latch_piston_state_ &&
+        latch_delay_count_ == 0) {
+      latch_delay_count_ = 6;
+    } else if (!shooter_queue_group_.output->latch_piston &&
+               latch_piston_state_ && latch_delay_count_ == 0) {
+      latch_delay_count_ = -6;
+    }
+
+    if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
+        brake_delay_count_ == 0) {
+      brake_delay_count_ = 5;
+    } else if (!shooter_queue_group_.output->brake_piston &&
+               brake_piston_state_ && brake_delay_count_ == 0) {
+      brake_delay_count_ = -5;
+    }
+
     EXPECT_GE(constants::GetValues().shooter.upper_limit,
               shooter_plant_->Y(0, 0));
-    EXPECT_LE(constants::GetValues().shooter.lower_limit,
+    // we okay within a millimeter
+    EXPECT_LE(constants::GetValues().shooter.lower_limit - 1.0,
               shooter_plant_->Y(0, 0));
     last_voltage_ = shooter_queue_group_.output->voltage;
   }
 
-
   // pointer to plant
-  ::std::unique_ptr<StateFeedbackPlant<3, 1, 1>> shooter_plant_;
+  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
 
+  // true latch closed
+  int latch_piston_state_;
+  // greater than zero, delaying close. less than zero delaying open
+  int latch_delay_count_;
+
+  // true brake locked
+  int brake_piston_state_;
+  // greater than zero, delaying close. less than zero delaying open
+  int brake_delay_count_;
 
  private:
 
@@ -176,7 +229,6 @@ class ShooterSimulation {
   control_loops::ShooterGroup::Position last_position_message_;
   double last_plant_position_;
 };
-
 
 class ShooterTest : public ::testing::Test {
  protected:
@@ -206,11 +258,9 @@ class ShooterTest : public ::testing::Test {
     SendDSPacket(true);
   }
 
-
   void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder().enabled(enabled)
-                                        .autonomous(false)
-                                        .team_id(971).Send();
+    ::aos::robot_state.MakeWithBuilder().enabled(enabled).autonomous(false)
+        .team_id(971).Send();
     ::aos::robot_state.FetchLatest();
   }
 
@@ -224,11 +274,10 @@ class ShooterTest : public ::testing::Test {
   virtual ~ShooterTest() { ::aos::robot_state.Clear(); }
 };
 
-
 TEST_F(ShooterTest, PowerConversion) {
   // test a couple of values return the right thing
-  EXPECT_EQ(2.1, shooter_motor_.PowerToPosition(2.1));
-  EXPECT_EQ(50.99, shooter_motor_.PowerToPosition(50.99));
+  EXPECT_EQ(0.021, shooter_motor_.PowerToPosition(0.021));
+  EXPECT_EQ(0.475, shooter_motor_.PowerToPosition(0.475));
 
   const frc971::constants::Values &values = constants::GetValues();
   // value too large should get max
@@ -239,9 +288,21 @@ TEST_F(ShooterTest, PowerConversion) {
 }
 
 // Tests that the wrist zeros correctly and goes to a position.
-TEST_F(ShooterTest, ZerosCorrectly) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(2.1).Send();
-  for (int i = 0; i < 400; ++i) {
+TEST_F(ShooterTest, GoesToValue) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.021).Send();
+  for (int i = 0; i < 100; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  VerifyNearGoaliand state();
+}
+
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(ShooterTest, ) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.021).Send();
+  for (int i = 0; i < 100; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
