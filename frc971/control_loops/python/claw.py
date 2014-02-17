@@ -51,7 +51,7 @@ class Claw(control_loop.ControlLoop):
         [[0, 0],
          [0, 0],
          [self.motor_feedforward, 0],
-         [-self.motor_feedforward, self.motor_feedforward]])
+         [0.0, self.motor_feedforward]])
     self.C = numpy.matrix([[1, 0, 0, 0],
                            [1, 1, 0, 0]])
     self.D = numpy.matrix([[0, 0],
@@ -63,7 +63,17 @@ class Claw(control_loop.ControlLoop):
     #controlability = controls.ctrb(self.A, self.B);
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
-    self.PlaceControllerPoles([0.85, 0.45, 0.45, 0.85])
+    self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
+                           [0.0, (1.0 / (0.03 ** 2.0)), 0.0, 0.0],
+                           [0.0, 0.0, 0.2, 0.0],
+                           [0.0, 0.0, 0.0, 2.00]])
+
+    self.R = numpy.matrix([[(1.0 / (20.0 ** 2.0)), 0.0],
+                           [0.0, (1.0 / (20.0 ** 2.0))]])
+    self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+
+    print "K unaugmented"
+    print self.K
 
     self.rpl = .05
     self.ipl = 0.008
@@ -72,8 +82,8 @@ class Claw(control_loop.ControlLoop):
                              self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 
-    self.U_max = numpy.matrix([[12.0], [12.0]])
-    self.U_min = numpy.matrix([[-12.0], [-12.0]])
+    self.U_max = numpy.matrix([[12.0], [24.0]])
+    self.U_min = numpy.matrix([[-12.0], [-24.0]])
 
     self.InitializeState()
 
@@ -152,6 +162,52 @@ class ClawDeltaU(Claw):
     self.InitializeState()
 
 
+def FullSeparationPriority(claw, U):
+  bottom_u = U[0, 0]
+  top_u = U[1, 0] + bottom_u
+
+  #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
+  if bottom_u > claw.U_max[0, 0]:
+    #print "Bottom is too big.  Was", new_unclipped_bottom_u, "changing top by", new_unclipped_bottom_u - claw.U_max[0, 0]
+    top_u -= bottom_u - claw.U_max[0, 0]
+    if top_u < claw.U_min[1, 0]:
+      top_u = claw.U_min[1, 0]
+
+    bottom_u = claw.U_max[0, 0]
+  if top_u > claw.U_max[1, 0]:
+    bottom_u -= top_u - claw.U_max[1, 0]
+    if bottom_u < claw.U_min[0, 0]:
+      bottom_u = claw.U_min[0, 0]
+
+    top_u = claw.U_max[1, 0]
+  if top_u < claw.U_min[1, 0]:
+    bottom_u -= top_u - claw.U_min[1, 0]
+    if bottom_u > claw.U_max[0, 0]:
+      bottom_u = claw.U_max[0, 0]
+
+    top_u = claw.U_min[1, 0]
+  if bottom_u < claw.U_min[0, 0]:
+    top_u -= bottom_u - claw.U_min[0, 0]
+    if top_u > claw.U_max[1, 0]:
+      top_u = claw.U_max[1, 0]
+
+    bottom_u = claw.U_min[0, 0]
+
+  return numpy.matrix([[bottom_u], [top_u - bottom_u]])
+
+def AverageUFix(claw, U):
+  bottom_u = U[0, 0]
+  top_u = U[1, 0] + bottom_u
+
+  #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
+  if (bottom_u > claw.U_max[0, 0] or top_u > claw.U_max[1, 0] or
+      top_u < claw.U_min[1, 0] or bottom_u < claw.U_min[0, 0]):
+    scalar = 12.0 / max(numpy.abs(top_u), numpy.abs(bottom_u))
+    top_u *= scalar
+    bottom_u *= scalar
+
+  return numpy.matrix([[bottom_u], [top_u - bottom_u]])
+
 def ClipDeltaU(claw, U):
   delta_u = U[0, 0]
   top_u = U[1, 0]
@@ -192,65 +248,47 @@ def main(argv):
   #pylab.show()
 
   # Simulate the closed loop response of the system to a step input.
-  top_claw = ClawDeltaU("TopClaw")
+  claw = Claw("TopClaw")
+  t = []
   close_loop_x_bottom = []
   close_loop_x_sep = []
   close_loop_u_bottom = []
   close_loop_u_top = []
-  R = numpy.matrix([[1.0], [0.0], [0.0], [0.0], [0.0]])
-  top_claw.X[0, 0] = 0
-  for _ in xrange(50):
-    #print "Error is", (R - top_claw.X_hat)
-    U = top_claw.K * (R - top_claw.X_hat)
-    U = ClipDeltaU(top_claw, U)
-    top_claw.UpdateObserver(U)
-    top_claw.Update(U)
-    close_loop_x_bottom.append(top_claw.X[0, 0] * 10)
-    close_loop_u_bottom.append(top_claw.X[4, 0])
-    close_loop_x_sep.append(top_claw.X[1, 0] * 10)
-    close_loop_u_top.append(U[1, 0])
+  R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
+  claw.X[0, 0] = 0
+  for i in xrange(100):
+    #print "Error is", (R - claw.X_hat)
+    U = claw.K * (R - claw.X_hat)
+    #U = numpy.clip(claw.K * (R - claw.X_hat), claw.U_min, claw.U_max)
+    #U = FullSeparationPriority(claw, U)
+    U = AverageUFix(claw, U)
+    #U = claw.K * (R - claw.X_hat)
+    #U = ClipDeltaU(claw, U)
+    claw.UpdateObserver(U)
+    claw.Update(U)
+    close_loop_x_bottom.append(claw.X[0, 0] * 10)
+    close_loop_u_bottom.append(U[0, 0])
+    close_loop_x_sep.append(claw.X[1, 0] * 10)
+    close_loop_u_top.append(U[1, 0] + U[0, 0])
+    t.append(0.01 * i)
 
-  pylab.plot(range(50), close_loop_x_bottom, label='x bottom')
-  pylab.plot(range(50), close_loop_u_bottom, label='u bottom')
-  pylab.plot(range(50), close_loop_x_sep, label='seperation')
-  pylab.plot(range(50), close_loop_u_top, label='u top')
+  pylab.plot(t, close_loop_x_bottom, label='x bottom')
+  pylab.plot(t, close_loop_x_sep, label='seperation')
+  pylab.plot(t, close_loop_u_bottom, label='u bottom')
+  pylab.plot(t, close_loop_u_top, label='u top')
   pylab.legend()
   pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 9:
-    print "Expected .h file name and .cc file name for"
-    print "both the plant and unaugmented plant"
+  if len(argv) != 3:
+    print "Expected .h file name and .cc file name for the claw."
   else:
-    top_unaug_claw = Claw("RawTopClaw")
-    top_unaug_loop_writer = control_loop.ControlLoopWriter("RawTopClaw",
-                                                           [top_unaug_claw])
+    claw = Claw("Claw")
+    loop_writer = control_loop.ControlLoopWriter("Claw", [claw])
     if argv[1][-3:] == '.cc':
-      top_unaug_loop_writer.Write(argv[2], argv[1])
+      loop_writer.Write(argv[2], argv[1])
     else:
-      top_unaug_loop_writer.Write(argv[1], argv[2])
-
-    top_loop_writer = control_loop.ControlLoopWriter("TopClaw", [top_claw])
-    if argv[3][-3:] == '.cc':
-      top_loop_writer.Write(argv[4], argv[3])
-    else:
-      top_loop_writer.Write(argv[3], argv[4])
-
-    bottom_claw = ClawDeltaU("BottomClaw")
-    bottom_unaug_claw = Claw("RawBottomClaw")
-    bottom_unaug_loop_writer = control_loop.ControlLoopWriter(
-        "RawBottomClaw", [bottom_unaug_claw])
-    if argv[5][-3:] == '.cc':
-      bottom_unaug_loop_writer.Write(argv[6], argv[5])
-    else:
-      bottom_unaug_loop_writer.Write(argv[5], argv[6])
-
-    bottom_loop_writer = control_loop.ControlLoopWriter("BottomClaw",
-                                                        [bottom_claw])
-    if argv[7][-3:] == '.cc':
-      bottom_loop_writer.Write(argv[8], argv[7])
-    else:
-      bottom_loop_writer.Write(argv[7], argv[8])
+      loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

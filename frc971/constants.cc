@@ -55,13 +55,14 @@ const Values *DoGetValues() {
             control_loops::MakeClutchDrivetrainLoop,
             0.5,
             0.1,
+            0.1,
             0.0,
             1.57,
 
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.02, // claw_unimportant_epsilon
-            50505.05, // start_fine_tune_pos
+            0.01, // claw_unimportant_epsilon
+            0.9, // start_fine_tune_pos
       };
       break;
     case kPracticeTeamNumber:
@@ -75,13 +76,14 @@ const Values *DoGetValues() {
             control_loops::MakeVDogDrivetrainLoop,
             control_loops::MakeDogDrivetrainLoop,
             0.5,
+            0.2,
             0.1,
             0.0,
             1.57,
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
             {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.02, // claw_unimportant_epsilon
-            50505.05, //start_fine_tune_pos
+            0.01, // claw_unimportant_epsilon
+            0.9, //start_fine_tune_pos
       };
       break;
     default:

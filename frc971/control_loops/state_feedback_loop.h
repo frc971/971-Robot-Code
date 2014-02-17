@@ -4,8 +4,11 @@
 #include <assert.h>
 
 #include <vector>
+#include <iostream>
 
 #include "Eigen/Dense"
+
+#include "aos/common/logging/logging.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
 class StateFeedbackPlantCoefficients {
@@ -129,8 +132,8 @@ class StateFeedbackPlant {
   // Assert that U is within the hardware range.
   virtual void CheckU() {
     for (int i = 0; i < kNumOutputs; ++i) {
-      assert(U(i, 0) <= U_max(i, 0));
-      assert(U(i, 0) >= U_min(i, 0));
+      assert(U(i, 0) <= U_max(i, 0) + 0.00001);
+      assert(U(i, 0) >= U_min(i, 0) - 0.00001);
     }
   }
 
@@ -286,6 +289,23 @@ class StateFeedbackLoop {
 
   // Corrects X_hat given the observation in Y.
   void Correct(const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
+  /*
+    auto eye =
+        Eigen::Matrix<double, number_of_states, number_of_states>::Identity();
+    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
+    ::std::cout << "Identity " << eye << ::std::endl;
+    ::std::cout << "X_hat " << X_hat << ::std::endl;
+    ::std::cout << "LC " << L() * C() << ::std::endl;
+    ::std::cout << "L " << L() << ::std::endl;
+    ::std::cout << "C " << C() << ::std::endl;
+    ::std::cout << "y " << Y << ::std::endl;
+    ::std::cout << "z " << (Y - C() * X_hat) << ::std::endl;
+    ::std::cout << "correction " << L() * (Y - C() * X_hat) << ::std::endl;
+    X_hat = (eye - L() * C()) * X_hat + L() * Y;
+    ::std::cout << "X_hat after " << X_hat << ::std::endl;
+    ::std::cout << ::std::endl;
+    */
+    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
     Y_ = Y;
     new_y_ = true;
   }
@@ -299,12 +319,16 @@ class StateFeedbackLoop {
       CapU();
     }
 
+    //::std::cout << "Predict xhat before " << X_hat;
+    //::std::cout << "Measurement error is " << Y_ - C() * X_hat;
+    //X_hat = A() * X_hat + B() * U;
     if (new_y_) {
       X_hat = (A() - L() * C()) * X_hat + L() * Y_ + B() * U;
       new_y_ = false;
     } else {
       X_hat = A() * X_hat + B() * U;
     }
+    //::std::cout << "Predict xhat after " << X_hat;
   }
 
   // Sets the current controller to be index and verifies that it isn't out of
