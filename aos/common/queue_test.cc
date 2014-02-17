@@ -212,7 +212,7 @@ TEST_F(GroupTest, Hash) {
 
 // Tests that the hash works.
 TEST_F(GroupTest, RealHash) {
-  EXPECT_EQ(static_cast<uint32_t>(0x5b25097f), test_queuegroup.hash());
+  EXPECT_EQ(static_cast<uint32_t>(0x93596b2f), test_queuegroup.hash());
 }
 
 // Tests that name works.
@@ -267,7 +267,7 @@ TEST_F(MessageTest, Print) {
   msg.test_int = 2056;
   msg.sent_time = Time(971, 254);
 
-  std::string golden("971.000000254s, t, 2056");
+  std::string golden("971.000000254s, T, 2056");
   EXPECT_EQ(golden.size(), msg.Print(printdata, sizeof(printdata)));
 
   EXPECT_EQ(golden, std::string(printdata));
@@ -277,7 +277,7 @@ TEST_F(MessageTest, Print) {
 // hash routine or changed the message declaration.  Both changes need to be
 // validated by hand.
 TEST_F(MessageTest, Hash) {
-  EXPECT_EQ(static_cast<uint32_t>(0xcf740cc1),
+  EXPECT_EQ(static_cast<uint32_t>(0xc33651ac),
             static_cast<uint32_t>(TestingMessage::kHash));
 }
 
