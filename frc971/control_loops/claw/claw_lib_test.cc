@@ -83,8 +83,22 @@ class ClawMotorSimulation {
   }
 
   // Makes sure pos is inside range (inclusive)
-  bool CheckRange(double pos, struct constants::Values::Claws::AnglePair pair) {
+  bool CheckRange(double pos, const constants::Values::Claws::AnglePair &pair) {
     return (pos >= pair.lower_angle && pos <= pair.upper_angle);
+  }
+
+  void SetHallEffect(double pos,
+                     const constants::Values::Claws::AnglePair &pair,
+                     HallEffectStruct *hall_effect) {
+    hall_effect->current = CheckRange(pos, pair);
+  }
+
+  void SetClawHallEffects(double pos,
+                          const constants::Values::Claws::Claw &claw,
+                          control_loops::HalfClawPosition *half_claw) {
+    SetHallEffect(pos, claw.front, &half_claw->front);
+    SetHallEffect(pos, claw.calibration, &half_claw->calibration);
+    SetHallEffect(pos, claw.back, &half_claw->back);
   }
 
   // Sets the values of the physical sensors that can be directly observed
@@ -95,25 +109,76 @@ class ClawMotorSimulation {
 
     double pos[2] = {GetAbsolutePosition(TOP_CLAW),
                      GetAbsolutePosition(BOTTOM_CLAW)};
-    LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n", pos[TOP_CLAW], pos[BOTTOM_CLAW]);
+    LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n", pos[TOP_CLAW],
+        pos[BOTTOM_CLAW]);
 
     const frc971::constants::Values& values = constants::GetValues();
 
-    // Signal that the hall effect sensor has been triggered if it is within
+    // Signal that each hall effect sensor has been triggered if it is within
     // the correct range.
-    position->top.front_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.front);
-    position->top.calibration_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.calibration);
-    position->top.back_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.back);
+    SetClawHallEffects(pos[TOP_CLAW], values.claw.upper_claw, &position->top);
+    SetClawHallEffects(pos[BOTTOM_CLAW], values.claw.lower_claw,
+                       &position->bottom);
+  }
 
-    position->bottom.front_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.front);
-    position->bottom.calibration_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.calibration);
-    position->bottom.back_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.back);
+  void UpdateHallEffect(double angle,
+                        double last_angle,
+                        double initial_position,
+                        double *posedge_value,
+                        double *negedge_value,
+                        HallEffectStruct *position,
+                        const HallEffectStruct &last_position,
+                        const constants::Values::Claws::AnglePair &pair,
+                        const char *claw_name, const char *hall_effect_name) {
+    if (position->current && !last_position.current) {
+      ++position->posedge_count;
+
+      if (last_angle < pair.lower_angle) {
+        LOG(DEBUG, "%s: Positive lower edge on %s hall effect\n", claw_name,
+            hall_effect_name);
+        *posedge_value = pair.lower_angle - initial_position;
+      } else {
+        LOG(DEBUG, "%s: Positive upper edge on %s hall effect\n", claw_name,
+            hall_effect_name);
+        *posedge_value = pair.upper_angle - initial_position;
+      }
+    }
+    if (!position->current && last_position.current) {
+      ++position->negedge_count;
+
+      if (angle < pair.lower_angle) {
+        LOG(DEBUG, "%s: Negative lower edge on %s hall effect\n", claw_name,
+            hall_effect_name);
+        *negedge_value = pair.lower_angle - initial_position;
+      } else {
+        LOG(DEBUG, "%s: Negative upper edge on %s hall effect\n", claw_name,
+            hall_effect_name);
+        *negedge_value = pair.upper_angle - initial_position;
+      }
+    }
+  }
+
+  void UpdateClawHallEffects(
+      control_loops::HalfClawPosition *position,
+      const control_loops::HalfClawPosition &last_position,
+      const constants::Values::Claws::Claw &claw, double initial_position,
+      const char *claw_name) {
+    UpdateHallEffect(position->position + initial_position,
+                     last_position.position + initial_position,
+                     initial_position, &position->posedge_value,
+                     &position->negedge_value, &position->front,
+                     last_position.front, claw.front, claw_name, "front");
+    UpdateHallEffect(position->position + initial_position,
+                     last_position.position + initial_position,
+                     initial_position, &position->posedge_value,
+                     &position->negedge_value, &position->calibration,
+                     last_position.calibration, claw.calibration, claw_name,
+                     "calibration");
+    UpdateHallEffect(position->position + initial_position,
+                     last_position.position + initial_position,
+                     initial_position, &position->posedge_value,
+                     &position->negedge_value, &position->back,
+                     last_position.back, claw.back, claw_name, "back");
   }
 
   // Sends out the position queue messages.
@@ -127,212 +192,13 @@ class ClawMotorSimulation {
     SetPhysicalSensors(position.get());
 
     const frc971::constants::Values& values = constants::GetValues();
-    double last_top_position =
-        last_position_.top.position + initial_position_[TOP_CLAW];
-    double last_bottom_position =
-        last_position_.bottom.position + initial_position_[BOTTOM_CLAW];
-    double top_position =
-        position->top.position + initial_position_[TOP_CLAW];
-    double bottom_position =
-        position->bottom.position + initial_position_[BOTTOM_CLAW];
 
-    // Handle the front hall effect.
-    if (position->top.front_hall_effect &&
-        !last_position_.top.front_hall_effect) {
-      ++position->top.front_hall_effect_posedge_count;
-
-      if (last_top_position < values.claw.upper_claw.front.lower_angle) {
-        LOG(DEBUG, "Top: Positive lower edge front hall effect\n");
-        position->top.posedge_value = values.claw.upper_claw.front.lower_angle -
-                                      initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Positive upper edge front hall effect\n");
-        position->top.posedge_value = values.claw.upper_claw.front.upper_angle -
-                                      initial_position_[TOP_CLAW];
-      }
-    }
-    if (!position->top.front_hall_effect &&
-        last_position_.top.front_hall_effect) {
-      ++position->top.front_hall_effect_negedge_count;
-
-      if (top_position < values.claw.upper_claw.front.lower_angle) {
-        LOG(DEBUG, "Top: Negative lower edge front hall effect\n");
-        position->top.negedge_value = values.claw.upper_claw.front.lower_angle -
-                                      initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Negative upper edge front hall effect\n");
-        position->top.negedge_value = values.claw.upper_claw.front.upper_angle -
-                                      initial_position_[TOP_CLAW];
-      }
-    }
-
-    // Handle the calibration hall effect.
-    if (position->top.calibration_hall_effect &&
-        !last_position_.top.calibration_hall_effect) {
-      ++position->top.calibration_hall_effect_posedge_count;
-
-      if (last_top_position < values.claw.upper_claw.calibration.lower_angle) {
-        LOG(DEBUG, "Top: Positive lower edge calibration hall effect\n");
-        position->top.posedge_value =
-            values.claw.upper_claw.calibration.lower_angle -
-            initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Positive upper edge calibration hall effect\n");
-        position->top.posedge_value =
-            values.claw.upper_claw.calibration.upper_angle -
-            initial_position_[TOP_CLAW];
-      }
-    }
-    if (!position->top.calibration_hall_effect &&
-        last_position_.top.calibration_hall_effect) {
-      ++position->top.calibration_hall_effect_negedge_count;
-
-      if (top_position < values.claw.upper_claw.calibration.lower_angle) {
-        LOG(DEBUG, "Top: Negative lower edge calibration hall effect\n");
-        position->top.negedge_value =
-            values.claw.upper_claw.calibration.lower_angle -
-            initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Negative upper edge calibration hall effect\n");
-        position->top.negedge_value =
-            values.claw.upper_claw.calibration.upper_angle -
-            initial_position_[TOP_CLAW];
-      }
-    }
-
-    // Handle the back hall effect.
-    if (position->top.back_hall_effect &&
-        !last_position_.top.back_hall_effect) {
-      ++position->top.back_hall_effect_posedge_count;
-
-      if (last_top_position < values.claw.upper_claw.back.lower_angle) {
-        LOG(DEBUG, "Top: Positive lower edge back hall effect\n");
-        position->top.posedge_value = values.claw.upper_claw.back.lower_angle -
-                                      initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Positive upper edge back hall effect\n");
-        position->top.posedge_value = values.claw.upper_claw.back.upper_angle -
-                                      initial_position_[TOP_CLAW];
-      }
-    }
-    if (!position->top.back_hall_effect &&
-        last_position_.top.back_hall_effect) {
-      ++position->top.back_hall_effect_negedge_count;
-
-      if (top_position < values.claw.upper_claw.back.lower_angle) {
-        LOG(DEBUG, "Top: Negative upper edge back hall effect\n");
-        position->top.negedge_value = values.claw.upper_claw.back.lower_angle -
-                                      initial_position_[TOP_CLAW];
-      } else {
-        LOG(DEBUG, "Top: Negative lower edge back hall effect\n");
-        position->top.negedge_value = values.claw.upper_claw.back.upper_angle -
-                                      initial_position_[TOP_CLAW];
-      }
-    }
-
-    // Now deal with the bottom part of the claw.
-    // Handle the front hall effect.
-    if (position->bottom.front_hall_effect &&
-        !last_position_.bottom.front_hall_effect) {
-      ++position->bottom.front_hall_effect_posedge_count;
-
-      if (last_bottom_position < values.claw.lower_claw.front.lower_angle) {
-        LOG(DEBUG, "Bottom: Positive lower edge front hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.front.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Positive upper edge front hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.front.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
-    if (!position->bottom.front_hall_effect &&
-        last_position_.bottom.front_hall_effect) {
-      ++position->bottom.front_hall_effect_negedge_count;
-
-      if (bottom_position < values.claw.lower_claw.front.lower_angle) {
-        LOG(DEBUG, "Bottom: Negative lower edge front hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.front.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Negative upper edge front hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.front.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
-
-    // Handle the calibration hall effect.
-    if (position->bottom.calibration_hall_effect &&
-        !last_position_.bottom.calibration_hall_effect) {
-      ++position->bottom.calibration_hall_effect_posedge_count;
-
-      if (last_bottom_position <
-          values.claw.lower_claw.calibration.lower_angle) {
-        LOG(DEBUG, "Bottom: Positive lower edge calibration hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.calibration.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Positive upper edge calibration hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.calibration.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
-    if (!position->bottom.calibration_hall_effect &&
-        last_position_.bottom.calibration_hall_effect) {
-      ++position->bottom.calibration_hall_effect_negedge_count;
-
-      if (bottom_position < values.claw.lower_claw.calibration.lower_angle) {
-        LOG(DEBUG, "Bottom: Negative lower edge calibration hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.calibration.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Negative upper edge calibration hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.calibration.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
-
-    // Handle the back hall effect.
-    if (position->bottom.back_hall_effect &&
-        !last_position_.bottom.back_hall_effect) {
-      ++position->bottom.back_hall_effect_posedge_count;
-
-      if (last_bottom_position < values.claw.lower_claw.back.lower_angle) {
-        LOG(DEBUG, "Bottom: Positive lower edge back hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.back.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Positive upper edge back hall effect\n");
-        position->bottom.posedge_value =
-            values.claw.lower_claw.back.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
-    if (!position->bottom.back_hall_effect &&
-        last_position_.bottom.back_hall_effect) {
-      ++position->bottom.back_hall_effect_negedge_count;
-
-      if (bottom_position < values.claw.lower_claw.back.lower_angle) {
-        LOG(DEBUG, "Bottom: Negative lower edge back hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.back.lower_angle -
-            initial_position_[BOTTOM_CLAW];
-      } else {
-        LOG(DEBUG, "Bottom: Negative upper edge back hall effect\n");
-        position->bottom.negedge_value =
-            values.claw.lower_claw.back.upper_angle -
-            initial_position_[BOTTOM_CLAW];
-      }
-    }
+    UpdateClawHallEffects(&position->top, last_position_.top,
+                          values.claw.upper_claw, initial_position_[TOP_CLAW],
+                          "Top");
+    UpdateClawHallEffects(&position->bottom, last_position_.bottom,
+                          values.claw.lower_claw,
+                          initial_position_[BOTTOM_CLAW], "Bottom");
 
     // Only set calibration if it changed last cycle.  Calibration starts out
     // with a value of 0.

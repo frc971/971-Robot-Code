@@ -86,10 +86,43 @@ ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
 
 const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
+bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
+    const constants::Values::Claws::AnglePair &angles, double *edge_encoder,
+    double *edge_angle, const HallEffectTracker &sensor,
+    const char *hall_effect_name) {
+  if (sensor.posedge_count_changed()) {
+    if (posedge_value_ < last_encoder()) {
+      *edge_angle = angles.upper_angle;
+      LOG(INFO, "%s Posedge upper of %s -> %f\n", name_,
+          hall_effect_name, *edge_angle);
+    } else {
+      *edge_angle = angles.lower_angle;
+      LOG(INFO, "%s Posedge lower of %s -> %f\n", name_,
+          hall_effect_name, *edge_angle);
+    }
+    *edge_encoder = posedge_value_;
+    return true;
+  }
+  if (sensor.negedge_count_changed()) {
+    if (negedge_value_ > last_encoder()) {
+      *edge_angle = angles.upper_angle;
+      LOG(INFO, "%s Negedge upper of %s -> %f\n", name_,
+          hall_effect_name, *edge_angle);
+    } else {
+      *edge_angle = angles.lower_angle;
+      LOG(INFO, "%s Negedge lower of %s -> %f\n", name_,
+          hall_effect_name, *edge_angle);
+    }
+    *edge_encoder = negedge_value_;
+    return true;
+  }
+
+  return false;
+}
+
 bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
     const constants::Values::Claws::Claw &claw_values, double *edge_encoder,
     double *edge_angle) {
-
   // TODO(austin): Validate that the hall effect edge makes sense.
   // We must now be on the side of the edge that we expect to be, and the
   // encoder must have been on either side of the edge before and after.
@@ -97,72 +130,16 @@ bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
   // TODO(austin): Compute the last off range min and max and compare the edge
   // value to the middle of the range.  This will be quite a bit more reliable.
 
-  if (front_hall_effect_posedge_count_changed()) {
-    if (posedge_value_ - last_encoder() < 0) {
-      *edge_angle = claw_values.front.upper_angle;
-      LOG(INFO, "%s Posedge front upper edge -> %f\n", name_, *edge_angle);
-    } else {
-      *edge_angle = claw_values.front.lower_angle;
-      LOG(INFO, "%s Posedge front lower edge -> %f\n", name_, *edge_angle);
-    }
-    *edge_encoder = posedge_value_;
+  if (DoGetPositionOfEdge(claw_values.front, edge_encoder, edge_angle,
+                          front_, "front")) {
     return true;
   }
-  if (front_hall_effect_negedge_count_changed()) {
-    if (negedge_value_ - last_encoder() > 0) {
-      *edge_angle = claw_values.front.upper_angle;
-      LOG(INFO, "%s Negedge front upper edge -> %f\n", name_, *edge_angle);
-    } else {
-      *edge_angle = claw_values.front.lower_angle;
-      LOG(INFO, "%s Negedge front lower edge -> %f\n", name_, *edge_angle);
-    }
-    *edge_encoder = negedge_value_;
+  if (DoGetPositionOfEdge(claw_values.calibration, edge_encoder, edge_angle,
+                          calibration_, "calibration")) {
     return true;
   }
-  if (calibration_hall_effect_posedge_count_changed()) {
-    if (posedge_value_ - last_encoder() < 0) {
-      *edge_angle = claw_values.calibration.upper_angle;
-      LOG(INFO, "%s Posedge calibration upper edge -> %f\n", name_,
-          *edge_angle);
-    } else {
-      *edge_angle = claw_values.calibration.lower_angle;
-      LOG(INFO, "%s Posedge calibration lower edge -> %f\n", name_,
-          *edge_angle);
-    }
-    *edge_encoder = posedge_value_;
-    return true;
-  }
-  if (calibration_hall_effect_negedge_count_changed()) {
-    if (negedge_value_ - last_encoder() > 0) {
-      *edge_angle = claw_values.calibration.upper_angle;
-      LOG(INFO, "%s Negedge calibration upper edge -> %f\n", name_, *edge_angle);
-    } else {
-      *edge_angle = claw_values.calibration.lower_angle;
-      LOG(INFO, "%s Negedge calibration lower edge -> %f\n", name_, *edge_angle);
-    }
-    *edge_encoder = negedge_value_;
-    return true;
-  }
-  if (back_hall_effect_posedge_count_changed()) {
-    if (posedge_value_ - last_encoder() < 0) {
-      *edge_angle = claw_values.back.upper_angle;
-      LOG(INFO, "%s Posedge back upper edge -> %f\n", name_, *edge_angle);
-    } else {
-      *edge_angle = claw_values.back.lower_angle;
-      LOG(INFO, "%s Posedge back lower edge -> %f\n", name_, *edge_angle);
-    }
-    *edge_encoder = posedge_value_;
-    return true;
-  }
-  if (back_hall_effect_negedge_count_changed()) {
-    if (negedge_value_ - last_encoder() > 0) {
-      *edge_angle = claw_values.back.upper_angle;
-      LOG(INFO, "%s Negedge back upper edge -> %f\n", name_, *edge_angle);
-    } else {
-      *edge_angle = claw_values.back.lower_angle;
-      LOG(INFO, "%s Negedge back lower edge -> %f\n", name_, *edge_angle);
-    }
-    *edge_encoder = negedge_value_;
+  if (DoGetPositionOfEdge(claw_values.back, edge_encoder, edge_angle,
+                          back_, "back")) {
     return true;
   }
   return false;
@@ -324,9 +301,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       } else {
         mode_ = FINE_TUNE_BOTTOM;
         bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
-        if (top_claw_.front_hall_effect() || top_claw_.back_hall_effect() ||
-            bottom_claw_.front_hall_effect() ||
-            bottom_claw_.back_hall_effect()) {
+        if (top_claw_.front_or_back_triggered() ||
+            bottom_claw_.front_or_back_triggered()) {
           // We shouldn't hit a limit, but if we do, go back to the zeroing
           // point and try again.
           doing_calibration_fine_tune_ = false;
@@ -335,8 +311,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           mode_ = PREP_FINE_TUNE_BOTTOM;
         }
 
-        if (bottom_claw_.calibration_hall_effect()) {
-          if (bottom_claw_.calibration_hall_effect_posedge_count_changed() &&
+        if (bottom_claw_.calibration().value()) {
+          if (bottom_claw_.calibration().posedge_count_changed() &&
               position) {
             // do calibration
             bottom_claw_.SetCalibration(
@@ -377,17 +353,16 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       } else {
         mode_ = FINE_TUNE_TOP;
         top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
-        if (top_claw_.front_hall_effect() || top_claw_.back_hall_effect() ||
-            bottom_claw_.front_hall_effect() ||
-            bottom_claw_.back_hall_effect()) {
+        if (top_claw_.front_or_back_triggered() ||
+            bottom_claw_.front_or_back_triggered()) {
           // this should not happen, but now we know it won't
           doing_calibration_fine_tune_ = false;
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           LOG(DEBUG, "Found a limit, starting over.\n");
           mode_ = PREP_FINE_TUNE_TOP;
         }
-        if (top_claw_.calibration_hall_effect()) {
-          if (top_claw_.calibration_hall_effect_posedge_count_changed() &&
+        if (top_claw_.calibration().value()) {
+          if (top_claw_.calibration().posedge_count_changed() &&
               position) {
             // do calibration
             top_claw_.SetCalibration(
@@ -425,8 +400,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
     if ((bottom_claw_.zeroing_state() !=
              ZeroedStateFeedbackLoop::UNKNOWN_POSITION ||
-         bottom_claw_.front_hall_effect() || top_claw_.front_hall_effect()) &&
-        !top_claw_.back_hall_effect() && !bottom_claw_.back_hall_effect()) {
+         bottom_claw_.front().value() || top_claw_.front().value()) &&
+        !top_claw_.back().value() && !bottom_claw_.back().value()) {
       if (enabled) {
         // Time to slowly move back up to find any position to narrow down the
         // zero.
