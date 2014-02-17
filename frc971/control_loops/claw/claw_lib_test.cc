@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "aos/common/network/team_number.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/claw/claw.q.h"
@@ -24,6 +25,15 @@ typedef enum {
 
 	CLAW_COUNT
 } ClawType;
+
+class TeamNumberEnvironment : public ::testing::Environment {
+ public:
+  // Override this to define how to set up the environment.
+  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
+};
+
+::testing::Environment* const team_number_env =
+    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
 
 // Class which simulates the wrist and sends out queue messages containing the
 // position.
