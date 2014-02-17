@@ -35,6 +35,8 @@
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/common/util/util.gyp:log_interval',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
   ],

@@ -67,7 +67,7 @@ class PacketFinder {
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   static constexpr ::aos::time::Time kDebugLogInterval =
-      ::aos::time::Time::InSeconds(0.25);
+      ::aos::time::Time::InSeconds(0.3);
   SimpleLogInterval invalid_packet_ =
       SimpleLogInterval(kDebugLogInterval, INFO, "invalid packet");
   SimpleLogInterval bad_checksum_ =

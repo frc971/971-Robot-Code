@@ -74,8 +74,7 @@ UartReader::UartReader(int32_t baud_rate)
     : fd_(open_device()) {
   
   if (fd_ < 0) {
-    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s."
-               " Did you read my note in bbb/uart_reader.cc?\n",
+    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s\n",
         device, errno, strerror(errno));
   }
 

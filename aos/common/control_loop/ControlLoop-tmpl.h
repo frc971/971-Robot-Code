@@ -11,6 +11,10 @@ namespace control_loops {
 // TODO(aschuh): Tests.
 
 template <class T, bool has_position, bool fail_no_position>
+constexpr ::aos::time::Time
+    ControlLoop<T, has_position, fail_no_position>::kStaleLogInterval;
+
+template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
@@ -29,7 +33,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   // goals.
   const GoalType *goal = control_loop_->goal.get();
   if (goal == NULL) {
-    LOG(ERROR, "No prior control loop goal.\n");
+    LOG_INTERVAL(no_prior_goal_);
     ZeroOutputs();
     return;
   }
@@ -48,15 +52,15 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
       if (control_loop_->position.get()) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
-          LOG(ERROR, "Stale position. %d ms > %d ms.  Outputs disabled.\n",
-              msec_age, kPositionTimeoutMs);
+          LOG_INTERVAL(very_stale_position_);
           ZeroOutputs();
           return;
         } else {
-          LOG(ERROR, "Stale position. %d ms\n", msec_age);
+          LOG(ERROR, "Stale position. %d ms (< %d ms)\n", msec_age,
+              kPositionTimeoutMs);
         }
       } else {
-        LOG(ERROR, "Never had a position.\n");
+        LOG_INTERVAL(no_prior_position_);
         if (fail_no_position) {
           ZeroOutputs();
           return;
@@ -77,10 +81,9 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     outputs_enabled = true;
   } else {
     if (aos::robot_state.get()) {
-      int msec_age = aos::robot_state.Age().ToMSec();
-      LOG(ERROR, "Driver Station packet is too old (%d ms).\n", msec_age);
+      LOG_INTERVAL(driver_station_old_);
     } else {
-      LOG(ERROR, "No Driver Station packet.\n");
+      LOG_INTERVAL(no_driver_station_);
     }
   }
 

@@ -5,9 +5,14 @@
 #include "aos/prime/output/motor_output.h"
 #include "aos/common/logging/logging.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/util/log_interval.h"
+#include "aos/common/time.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/queues/piston.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+
+using ::aos::util::SimpleLogInterval;
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::control_loops::shifters;
@@ -18,7 +23,8 @@ namespace output {
 class MotorWriter : public ::aos::MotorOutput {
   // Maximum age of an output packet before the motors get zeroed instead.
   static const int kOutputMaxAgeMS = 20;
-  static const int kEnableDrivetrain = true;
+  static constexpr ::aos::time::Time kOldLogInterval =
+      ::aos::time::Time::InSeconds(0.5);
 
   virtual void RunIteration() {
     values_.digital_module = 0;
@@ -26,28 +32,36 @@ class MotorWriter : public ::aos::MotorOutput {
     values_.compressor_channel = 1;
     values_.solenoid_module = 0;
 
-    drivetrain.output.FetchLatest();
-    if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS) && kEnableDrivetrain) {
-      SetPWMOutput(2, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(5, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
-      SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
-    } else {
-      DisablePWMOutput(2);
-      DisablePWMOutput(3);
-      DisablePWMOutput(5);
-      DisablePWMOutput(6);
-      if (kEnableDrivetrain) {
-        LOG(WARNING, "drivetrain not new enough\n");
+    if (true) {
+      drivetrain.output.FetchLatest();
+      if (drivetrain.output.get()) {
+        LOG_STRUCT(DEBUG, "will output", *drivetrain.output.get());
+      }
+      if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS)) {
+        SetPWMOutput(2, drivetrain.output->right_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(5, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+      } else {
+        DisablePWMOutput(2);
+        DisablePWMOutput(3);
+        DisablePWMOutput(5);
+        DisablePWMOutput(6);
+        LOG_INTERVAL(drivetrain_old_);
+      }
+      shifters.FetchLatest();
+      if (shifters.get()) {
+        SetSolenoid(1, shifters->set);
+        SetSolenoid(2, !shifters->set);
       }
     }
-    shifters.FetchLatest();
-    if (shifters.get()) {
-      SetSolenoid(1, shifters->set);
-      SetSolenoid(2, !shifters->set);
-    }
   }
+
+  SimpleLogInterval drivetrain_old_ =
+      SimpleLogInterval(kOldLogInterval, WARNING, "drivetrain too old");
 };
+
+constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
 
 }  // namespace output
 }  // namespace frc971

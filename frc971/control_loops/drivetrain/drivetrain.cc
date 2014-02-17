@@ -581,7 +581,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
   bool bad_pos = false;
   if (position == nullptr) {
-    LOG(WARNING, "no position\n");
+    LOG_INTERVAL(no_position_);
     bad_pos = true;
   }
 

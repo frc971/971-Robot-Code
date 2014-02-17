@@ -46,6 +46,8 @@ class LogInterval {
     return r;
   }
 
+  const ::aos::time::Time &interval() const { return interval_; }
+
  private:
   int count_;
   const ::aos::time::Time interval_;
@@ -65,8 +67,9 @@ class SimpleLogInterval {
   void Hit(const char *context) {
     interval_.WantToLog();
     if (interval_.ShouldLog()) {
-      log_do(level_, "%s: %.*s %d times\n", context, message_.size(),
-             message_.data(), interval_.Count());
+      log_do(level_, "%s: %.*s %d times over %f sec\n", context,
+             message_.size(), message_.data(), interval_.Count(),
+             interval_.interval().ToSeconds());
     }
   }
 

@@ -47,6 +47,7 @@
         '<(DEPTH)/aos/build/externals.gyp:libcdd',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
       'export_dependent_settings': [
         '<(DEPTH)/aos/build/externals.gyp:libcdd',
