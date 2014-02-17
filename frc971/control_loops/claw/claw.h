@@ -8,6 +8,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
+#include "frc971/control_loops/hall_effect_tracker.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -53,21 +54,6 @@ class ZeroedStateFeedbackLoop {
       : offset_(0.0),
         name_(name),
         motor_(motor),
-        front_hall_effect_posedge_count_(0.0),
-        previous_front_hall_effect_posedge_count_(0.0),
-        front_hall_effect_negedge_count_(0.0),
-        previous_front_hall_effect_negedge_count_(0.0),
-        calibration_hall_effect_posedge_count_(0.0),
-        previous_calibration_hall_effect_posedge_count_(0.0),
-        calibration_hall_effect_negedge_count_(0.0),
-        previous_calibration_hall_effect_negedge_count_(0.0),
-        back_hall_effect_posedge_count_(0.0),
-        previous_back_hall_effect_posedge_count_(0.0),
-        back_hall_effect_negedge_count_(0.0),
-        previous_back_hall_effect_negedge_count_(0.0),
-        front_hall_effect_(false),
-        calibration_hall_effect_(false),
-        back_hall_effect_(false),
         zeroing_state_(UNKNOWN_POSITION),
         posedge_value_(0.0),
         negedge_value_(0.0),
@@ -94,56 +80,29 @@ class ZeroedStateFeedbackLoop {
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
   void SetPositionValues(const HalfClawPosition &claw) {
-    set_front_hall_effect_posedge_count(claw.front_hall_effect_posedge_count);
-    set_front_hall_effect_negedge_count(claw.front_hall_effect_negedge_count);
-    set_calibration_hall_effect_posedge_count(
-        claw.calibration_hall_effect_posedge_count);
-    set_calibration_hall_effect_negedge_count(
-        claw.calibration_hall_effect_negedge_count);
-    set_back_hall_effect_posedge_count(claw.back_hall_effect_posedge_count);
-    set_back_hall_effect_negedge_count(claw.back_hall_effect_negedge_count);
+    front_.Update(claw.front);
+    calibration_.Update(claw.calibration);
+    back_.Update(claw.back);
 
     posedge_value_ = claw.posedge_value;
     negedge_value_ = claw.negedge_value;
     last_encoder_ = encoder_;
     encoder_ = claw.position;
-
-    front_hall_effect_ = claw.front_hall_effect;
-    calibration_hall_effect_ = claw.calibration_hall_effect;
-    back_hall_effect_ = claw.back_hall_effect;
   }
 
   double absolute_position() const { return encoder() + offset(); }
 
-  bool front_hall_effect() const { return front_hall_effect_; }
-  bool calibration_hall_effect() const { return calibration_hall_effect_; }
-  bool back_hall_effect() const { return back_hall_effect_; }
-
-#define COUNT_SETTER_GETTER(variable)              \
-  void set_##variable(int32_t value) {             \
-    previous_##variable##_ = variable##_;          \
-    variable##_ = value;                           \
-  }                                                \
-  int32_t variable() const { return variable##_; } \
-  bool variable##_changed() const {                \
-    return previous_##variable##_ != variable##_;  \
-  }
-
-  // TODO(austin): Pull all this out of the new sub structure.
-  COUNT_SETTER_GETTER(front_hall_effect_posedge_count);
-  COUNT_SETTER_GETTER(front_hall_effect_negedge_count);
-  COUNT_SETTER_GETTER(calibration_hall_effect_posedge_count);
-  COUNT_SETTER_GETTER(calibration_hall_effect_negedge_count);
-  COUNT_SETTER_GETTER(back_hall_effect_posedge_count);
-  COUNT_SETTER_GETTER(back_hall_effect_negedge_count);
+  const HallEffectTracker &front() const { return front_; }
+  const HallEffectTracker &calibration() const { return calibration_; }
+  const HallEffectTracker &back() const { return back_; }
 
   bool any_hall_effect_changed() const {
-    return front_hall_effect_posedge_count_changed() ||
-           front_hall_effect_negedge_count_changed() ||
-           calibration_hall_effect_posedge_count_changed() ||
-           calibration_hall_effect_negedge_count_changed() ||
-           back_hall_effect_posedge_count_changed() ||
-           back_hall_effect_negedge_count_changed();
+    return front().either_count_changed() ||
+           calibration().either_count_changed() ||
+           back().either_count_changed();
+  }
+  bool front_or_back_triggered() const {
+    return front().value() || back().value();
   }
 
   double encoder() const { return encoder_; }
@@ -165,27 +124,20 @@ class ZeroedStateFeedbackLoop {
 
   ClawMotor *motor_;
 
-  int32_t front_hall_effect_posedge_count_;
-  int32_t previous_front_hall_effect_posedge_count_;
-  int32_t front_hall_effect_negedge_count_;
-  int32_t previous_front_hall_effect_negedge_count_;
-  int32_t calibration_hall_effect_posedge_count_;
-  int32_t previous_calibration_hall_effect_posedge_count_;
-  int32_t calibration_hall_effect_negedge_count_;
-  int32_t previous_calibration_hall_effect_negedge_count_;
-  int32_t back_hall_effect_posedge_count_;
-  int32_t previous_back_hall_effect_posedge_count_;
-  int32_t back_hall_effect_negedge_count_;
-  int32_t previous_back_hall_effect_negedge_count_;
-  bool front_hall_effect_;
-  bool calibration_hall_effect_;
-  bool back_hall_effect_;
+  HallEffectTracker front_, calibration_, back_;
 
   JointZeroingState zeroing_state_;
   double posedge_value_;
   double negedge_value_;
   double encoder_;
   double last_encoder_;
+
+ private:
+  // Does the edges of 1 sensor for GetPositionOfEdge.
+  bool DoGetPositionOfEdge(const constants::Values::Claws::AnglePair &angles,
+                           double *edge_encoder, double *edge_angle,
+                           const HallEffectTracker &sensor,
+                           const char *hall_effect_name);
 };
 
 class TopZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
