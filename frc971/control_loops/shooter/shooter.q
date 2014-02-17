@@ -28,6 +28,8 @@ queue_group ShooterGroup {
 	bool pusher_proximal_hall_effect;
 	// the latch is closed
 	bool latch_hall_effect;
+	// the brake is closed
+	bool brake_hall_effect;
 
 	// count of positive edges
 	int64_t plunger_back_hall_effect_posedge_count;
