@@ -83,7 +83,7 @@ class ClawMotorSimulation {
   }
 
   // Makes sure pos is inside range (inclusive)
-  bool CheckRange(double pos, struct constants::Values::AnglePair pair) {
+  bool CheckRange(double pos, struct constants::Values::Claws::AnglePair pair) {
     return (pos >= pair.lower_angle && pos <= pair.upper_angle);
   }
 
@@ -102,18 +102,18 @@ class ClawMotorSimulation {
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
     position->top.front_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.upper_claw.front);
+        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.front);
     position->top.calibration_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.upper_claw.calibration);
+        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.calibration);
     position->top.back_hall_effect =
-        CheckRange(pos[TOP_CLAW], values.upper_claw.back);
+        CheckRange(pos[TOP_CLAW], values.claw.upper_claw.back);
 
     position->bottom.front_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.front);
+        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.front);
     position->bottom.calibration_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.calibration);
+        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.calibration);
     position->bottom.back_hall_effect =
-        CheckRange(pos[BOTTOM_CLAW], values.lower_claw.back);
+        CheckRange(pos[BOTTOM_CLAW], values.claw.lower_claw.back);
   }
 
   // Sends out the position queue messages.
@@ -141,28 +141,28 @@ class ClawMotorSimulation {
         !last_position_.top.front_hall_effect) {
       ++position->top.front_hall_effect_posedge_count;
 
-      if (last_top_position < values.upper_claw.front.lower_angle) {
+      if (last_top_position < values.claw.upper_claw.front.lower_angle) {
         LOG(DEBUG, "Top: Positive lower edge front hall effect\n");
-        position->top.posedge_value =
-            values.upper_claw.front.lower_angle - initial_position_[TOP_CLAW];
+        position->top.posedge_value = values.claw.upper_claw.front.lower_angle -
+                                      initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Positive upper edge front hall effect\n");
-        position->top.posedge_value =
-            values.upper_claw.front.upper_angle - initial_position_[TOP_CLAW];
+        position->top.posedge_value = values.claw.upper_claw.front.upper_angle -
+                                      initial_position_[TOP_CLAW];
       }
     }
     if (!position->top.front_hall_effect &&
         last_position_.top.front_hall_effect) {
       ++position->top.front_hall_effect_negedge_count;
 
-      if (top_position < values.upper_claw.front.lower_angle) {
+      if (top_position < values.claw.upper_claw.front.lower_angle) {
         LOG(DEBUG, "Top: Negative lower edge front hall effect\n");
-        position->top.negedge_value =
-            values.upper_claw.front.lower_angle - initial_position_[TOP_CLAW];
+        position->top.negedge_value = values.claw.upper_claw.front.lower_angle -
+                                      initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Negative upper edge front hall effect\n");
-        position->top.negedge_value =
-            values.upper_claw.front.upper_angle - initial_position_[TOP_CLAW];
+        position->top.negedge_value = values.claw.upper_claw.front.upper_angle -
+                                      initial_position_[TOP_CLAW];
       }
     }
 
@@ -171,29 +171,32 @@ class ClawMotorSimulation {
         !last_position_.top.calibration_hall_effect) {
       ++position->top.calibration_hall_effect_posedge_count;
 
-      if (last_top_position < values.upper_claw.calibration.lower_angle) {
+      if (last_top_position < values.claw.upper_claw.calibration.lower_angle) {
         LOG(DEBUG, "Top: Positive lower edge calibration hall effect\n");
         position->top.posedge_value =
-            values.upper_claw.calibration.lower_angle -
+            values.claw.upper_claw.calibration.lower_angle -
             initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Positive upper edge calibration hall effect\n");
         position->top.posedge_value =
-            values.upper_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+            values.claw.upper_claw.calibration.upper_angle -
+            initial_position_[TOP_CLAW];
       }
     }
     if (!position->top.calibration_hall_effect &&
         last_position_.top.calibration_hall_effect) {
       ++position->top.calibration_hall_effect_negedge_count;
 
-      if (top_position < values.upper_claw.calibration.lower_angle) {
+      if (top_position < values.claw.upper_claw.calibration.lower_angle) {
         LOG(DEBUG, "Top: Negative lower edge calibration hall effect\n");
         position->top.negedge_value =
-            values.upper_claw.calibration.lower_angle - initial_position_[TOP_CLAW];
+            values.claw.upper_claw.calibration.lower_angle -
+            initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Negative upper edge calibration hall effect\n");
         position->top.negedge_value =
-            values.upper_claw.calibration.upper_angle - initial_position_[TOP_CLAW];
+            values.claw.upper_claw.calibration.upper_angle -
+            initial_position_[TOP_CLAW];
       }
     }
 
@@ -202,28 +205,28 @@ class ClawMotorSimulation {
         !last_position_.top.back_hall_effect) {
       ++position->top.back_hall_effect_posedge_count;
 
-      if (last_top_position < values.upper_claw.back.lower_angle) {
+      if (last_top_position < values.claw.upper_claw.back.lower_angle) {
         LOG(DEBUG, "Top: Positive lower edge back hall effect\n");
-        position->top.posedge_value =
-            values.upper_claw.back.lower_angle - initial_position_[TOP_CLAW];
+        position->top.posedge_value = values.claw.upper_claw.back.lower_angle -
+                                      initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Positive upper edge back hall effect\n");
-        position->top.posedge_value =
-            values.upper_claw.back.upper_angle - initial_position_[TOP_CLAW];
+        position->top.posedge_value = values.claw.upper_claw.back.upper_angle -
+                                      initial_position_[TOP_CLAW];
       }
     }
     if (!position->top.back_hall_effect &&
         last_position_.top.back_hall_effect) {
       ++position->top.back_hall_effect_negedge_count;
 
-      if (top_position < values.upper_claw.back.lower_angle) {
+      if (top_position < values.claw.upper_claw.back.lower_angle) {
         LOG(DEBUG, "Top: Negative upper edge back hall effect\n");
-        position->top.negedge_value =
-            values.upper_claw.back.lower_angle - initial_position_[TOP_CLAW];
+        position->top.negedge_value = values.claw.upper_claw.back.lower_angle -
+                                      initial_position_[TOP_CLAW];
       } else {
         LOG(DEBUG, "Top: Negative lower edge back hall effect\n");
-        position->top.negedge_value =
-            values.upper_claw.back.upper_angle - initial_position_[TOP_CLAW];
+        position->top.negedge_value = values.claw.upper_claw.back.upper_angle -
+                                      initial_position_[TOP_CLAW];
       }
     }
 
@@ -233,28 +236,32 @@ class ClawMotorSimulation {
         !last_position_.bottom.front_hall_effect) {
       ++position->bottom.front_hall_effect_posedge_count;
 
-      if (last_bottom_position < values.lower_claw.front.lower_angle) {
+      if (last_bottom_position < values.claw.lower_claw.front.lower_angle) {
         LOG(DEBUG, "Bottom: Positive lower edge front hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.front.lower_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.front.lower_angle -
+            initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Positive upper edge front hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.front.upper_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.front.upper_angle -
+            initial_position_[BOTTOM_CLAW];
       }
     }
     if (!position->bottom.front_hall_effect &&
         last_position_.bottom.front_hall_effect) {
       ++position->bottom.front_hall_effect_negedge_count;
 
-      if (bottom_position < values.lower_claw.front.lower_angle) {
+      if (bottom_position < values.claw.lower_claw.front.lower_angle) {
         LOG(DEBUG, "Bottom: Negative lower edge front hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.front.lower_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.front.lower_angle -
+            initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Negative upper edge front hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.front.upper_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.front.upper_angle -
+            initial_position_[BOTTOM_CLAW];
       }
     }
 
@@ -263,15 +270,16 @@ class ClawMotorSimulation {
         !last_position_.bottom.calibration_hall_effect) {
       ++position->bottom.calibration_hall_effect_posedge_count;
 
-      if (last_bottom_position < values.lower_claw.calibration.lower_angle) {
+      if (last_bottom_position <
+          values.claw.lower_claw.calibration.lower_angle) {
         LOG(DEBUG, "Bottom: Positive lower edge calibration hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.calibration.lower_angle -
+            values.claw.lower_claw.calibration.lower_angle -
             initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Positive upper edge calibration hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.calibration.upper_angle -
+            values.claw.lower_claw.calibration.upper_angle -
             initial_position_[BOTTOM_CLAW];
       }
     }
@@ -279,15 +287,15 @@ class ClawMotorSimulation {
         last_position_.bottom.calibration_hall_effect) {
       ++position->bottom.calibration_hall_effect_negedge_count;
 
-      if (bottom_position < values.lower_claw.calibration.lower_angle) {
+      if (bottom_position < values.claw.lower_claw.calibration.lower_angle) {
         LOG(DEBUG, "Bottom: Negative lower edge calibration hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.calibration.lower_angle -
+            values.claw.lower_claw.calibration.lower_angle -
             initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Negative upper edge calibration hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.calibration.upper_angle -
+            values.claw.lower_claw.calibration.upper_angle -
             initial_position_[BOTTOM_CLAW];
       }
     }
@@ -297,28 +305,32 @@ class ClawMotorSimulation {
         !last_position_.bottom.back_hall_effect) {
       ++position->bottom.back_hall_effect_posedge_count;
 
-      if (last_bottom_position < values.lower_claw.back.lower_angle) {
+      if (last_bottom_position < values.claw.lower_claw.back.lower_angle) {
         LOG(DEBUG, "Bottom: Positive lower edge back hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.back.lower_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.back.lower_angle -
+            initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Positive upper edge back hall effect\n");
         position->bottom.posedge_value =
-            values.lower_claw.back.upper_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.back.upper_angle -
+            initial_position_[BOTTOM_CLAW];
       }
     }
     if (!position->bottom.back_hall_effect &&
         last_position_.bottom.back_hall_effect) {
       ++position->bottom.back_hall_effect_negedge_count;
 
-      if (bottom_position < values.lower_claw.back.lower_angle) {
+      if (bottom_position < values.claw.lower_claw.back.lower_angle) {
         LOG(DEBUG, "Bottom: Negative lower edge back hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.back.lower_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.back.lower_angle -
+            initial_position_[BOTTOM_CLAW];
       } else {
         LOG(DEBUG, "Bottom: Negative upper edge back hall effect\n");
         position->bottom.negedge_value =
-            values.lower_claw.back.upper_angle - initial_position_[BOTTOM_CLAW];
+            values.claw.lower_claw.back.upper_angle -
+            initial_position_[BOTTOM_CLAW];
       }
     }
 
@@ -339,16 +351,16 @@ class ClawMotorSimulation {
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
-    EXPECT_GE(v.upper_claw.upper_hard_limit, claw_plant_->Y(0, 0));
-    EXPECT_LE(v.upper_claw.lower_hard_limit, claw_plant_->Y(0, 0));
+    EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0, 0));
+    EXPECT_LE(v.claw.upper_claw.lower_hard_limit, claw_plant_->Y(0, 0));
 
-    EXPECT_GE(v.lower_claw.upper_hard_limit, claw_plant_->Y(1, 0));
-    EXPECT_LE(v.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
+    EXPECT_GE(v.claw.lower_claw.upper_hard_limit, claw_plant_->Y(1, 0));
+    EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
 
     EXPECT_LE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
-              v.claw_max_seperation);
+              v.claw.claw_max_seperation);
     EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
-              v.claw_min_seperation);
+              v.claw.claw_min_seperation);
   }
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
@@ -391,7 +403,7 @@ class ClawTest : public ::testing::Test {
                          ".frc971.control_loops.claw_queue_group.status"),
         claw_motor_(&claw_queue_group),
         claw_motor_plant_(0.4, 0.2),
-        min_seperation_(constants::GetValues().claw_min_seperation) {
+        min_seperation_(constants::GetValues().claw.claw_min_seperation) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();

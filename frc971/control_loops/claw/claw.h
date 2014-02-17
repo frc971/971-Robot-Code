@@ -143,7 +143,7 @@ class ZeroedStateFeedbackLoop {
 
   // Returns true if an edge was detected in the last cycle and then sets the
   // edge_position to the absolute position of the edge.
-  bool GetPositionOfEdge(const constants::Values::Claw &claw,
+  bool GetPositionOfEdge(const constants::Values::Claws::Claw &claw,
                          double *edge_encoder, double *edge_angle);
 
 #undef COUNT_SETTER_GETTER
@@ -186,7 +186,7 @@ class TopZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
   // encoder value.
   void SetCalibration(double edge_encoder, double edge_angle);
 
-  bool SetCalibrationOnEdge(const constants::Values::Claw &claw_values,
+  bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
                             JointZeroingState zeroing_state) {
     double edge_encoder;
     double edge_angle;
@@ -208,7 +208,7 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
   // encoder value.
   void SetCalibration(double edge_encoder, double edge_angle);
 
-  bool SetCalibrationOnEdge(const constants::Values::Claw &claw_values,
+  bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
                             JointZeroingState zeroing_state) {
     double edge_encoder;
     double edge_angle;
