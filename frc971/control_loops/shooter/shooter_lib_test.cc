@@ -172,6 +172,8 @@ class ShooterSimulation {
     LOG(INFO, "seteffect: pusher proximal: %d\n",
         position->plunger_back_hall_effect);
 
+
+
     last_position_message_ = *position;
     position.Send();
   }
@@ -182,7 +184,6 @@ class ShooterSimulation {
     EXPECT_TRUE(shooter_queue_group_.output.FetchLatest());
     shooter_plant_->U << last_voltage_;
     shooter_plant_->Update();
-
     if (shooter_queue_group_.output->latch_piston && !latch_piston_state_ &&
         latch_delay_count_ == 0) {
       latch_delay_count_ = 6;
@@ -205,6 +206,7 @@ class ShooterSimulation {
     EXPECT_LE(constants::GetValues().shooter.lower_limit - 1.0,
               shooter_plant_->Y(0, 0));
     last_voltage_ = shooter_queue_group_.output->voltage;
+    ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
   }
 
   // pointer to plant
@@ -256,6 +258,7 @@ class ShooterTest : public ::testing::Test {
     // test.
     ::aos::robot_state.Clear();
     SendDSPacket(true);
+    ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
   }
 
   void SendDSPacket(bool enabled) {
@@ -271,7 +274,10 @@ class ShooterTest : public ::testing::Test {
     EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 1e-4);
   }
 
-  virtual ~ShooterTest() { ::aos::robot_state.Clear(); }
+  virtual ~ShooterTest() {
+    ::aos::robot_state.Clear();
+    ::aos::time::Time::DisableMockTime();
+  }
 };
 
 TEST_F(ShooterTest, PowerConversion) {
@@ -289,18 +295,21 @@ TEST_F(ShooterTest, PowerConversion) {
 
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, GoesToValue) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.021).Send();
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.21).Send();
   for (int i = 0; i < 100; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
   }
-  VerifyNearGoaliand state();
+  //EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
+  double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.GetState());
 }
 
 // Tests that the wrist zeros correctly and goes to a position.
-TEST_F(ShooterTest, ) {
+TEST_F(ShooterTest, Fire) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.021).Send();
   for (int i = 0; i < 100; ++i) {
     shooter_motor_plant_.SendPositionMessage();
@@ -308,7 +317,35 @@ TEST_F(ShooterTest, ) {
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
   }
-  VerifyNearGoal();
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.GetState());
+  shooter_queue_group_.goal.MakeWithBuilder().shot_requested(true).Send();
+
+  bool hit_requestfire = false;
+  bool hit_preparefire = false;
+  bool hit_fire = false;
+  for (int i = 0; i < 100; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+	printf("MOTORSTATE = %d\n", shooter_motor_.GetState());
+	if (shooter_motor_.GetState() == ShooterMotor::STATE_REQUEST_FIRE){
+		hit_requestfire = true;
+	}
+	if (shooter_motor_.GetState() == ShooterMotor::STATE_PREPARE_FIRE){
+		hit_preparefire = true;
+	}
+	if (shooter_motor_.GetState() == ShooterMotor::STATE_FIRE){
+		hit_fire = true;
+	}
+  }
+
+  double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.GetState());
+  EXPECT_TRUE(hit_requestfire);
+  EXPECT_TRUE(hit_preparefire);
+  EXPECT_TRUE(hit_fire);
 }
 
 }  // namespace testing

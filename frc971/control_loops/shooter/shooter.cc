@@ -183,7 +183,7 @@ void ShooterMotor::RunIteration(
       if (position->plunger_back_hall_effect && position->latch_hall_effect) {
         state_ = STATE_PREPARE_SHOT;
       } else if (position->plunger_back_hall_effect &&
-                 abs(adjusted_position - PowerToPosition(goal->shot_power)) <
+                 fabs(adjusted_position - PowerToPosition(goal->shot_power)) <
                  0.05) {
         state_ = STATE_LOADING_PROBLEM;
         loading_problem_end_time_ =
@@ -207,12 +207,14 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_PREPARE_SHOT:
       shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
-      if (abs(adjusted_position - PowerToPosition(goal->shot_power)) < 0.05) {
+      LOG(DEBUG, "PDIFF: adjusted_position: %.2f, pow: %.2f\n",
+          adjusted_position, PowerToPosition(goal->shot_power));
+      if (fabs(adjusted_position - PowerToPosition(goal->shot_power)) < 0.05) {
         state_ = STATE_READY;
         output->latch_piston = true;
         output->brake_piston = true;
         shooter_brake_set_time_ =
-            Time::Now(Time::kDefaultClock) + Time::InSeconds(3.0);
+            Time::Now(Time::kDefaultClock) + Time::InSeconds(0.03);
       } else {
         output->latch_piston = true;
         output->brake_piston = false;
@@ -222,15 +224,19 @@ void ShooterMotor::RunIteration(
       if (Time::Now() > shooter_brake_set_time_) {
         shooter_loop_disable = true;
         if (goal->unload_requested) {
+			printf("GHA\n");
           state_ = STATE_UNLOAD;
-        } else if (abs(adjusted_position - PowerToPosition(goal->shot_power)) >
+        } else if (fabs(adjusted_position - PowerToPosition(goal->shot_power)) >
                    0.05) {
+			printf("GHB\n");
           state_ = STATE_PREPARE_SHOT;
         } else if (goal->shot_requested) {
+			printf("GHC\n");
           state_ = STATE_REQUEST_FIRE;
         }
-
       }
+      shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
+
       output->latch_piston = true;
       output->brake_piston = true;
       break;
@@ -262,7 +268,7 @@ void ShooterMotor::RunIteration(
     case STATE_FIRE:
       shooter_loop_disable = true;
       //TODO_ben: need approamately equal
-      if (abs(last_position_.position - adjusted_position) < 0.07) {
+      if (fabs(last_position_.position - adjusted_position) < 0.07) {
         cycles_not_moved_++;
       } else {
         cycles_not_moved_ = 0;
@@ -323,7 +329,7 @@ void ShooterMotor::RunIteration(
   }
 
   status->done =
-      ::std::abs(adjusted_position - PowerToPosition(goal->shot_power)) < 0.004;
+      ::std::fabs(adjusted_position - PowerToPosition(goal->shot_power)) < 0.004;
 }
 
 }  // namespace control_loops

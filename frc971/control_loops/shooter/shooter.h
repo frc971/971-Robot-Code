@@ -166,6 +166,10 @@ class ShooterMotor
     STATE_READY_UNLOAD = 12
   } State;
 
+  State GetState() {return state_;}
+
+  double GetPosition() { return shooter_.position() - calibration_position_; }
+
  protected:
 
   virtual void RunIteration(
