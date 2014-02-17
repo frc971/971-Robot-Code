@@ -68,8 +68,8 @@ class SimpleLogInterval {
     interval_.WantToLog();
     if (interval_.ShouldLog()) {
       log_do(level_, "%s: %.*s %d times over %f sec\n", context,
-             message_.size(), message_.data(), interval_.Count(),
-             interval_.interval().ToSeconds());
+             static_cast<int>(message_.size()), message_.data(),
+             interval_.Count(), interval_.interval().ToSeconds());
     }
   }
 

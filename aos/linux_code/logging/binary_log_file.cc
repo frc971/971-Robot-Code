@@ -91,7 +91,7 @@ bool LogFileAccessor::IsLastPage() {
     LOG(FATAL, "fstat(%d, %p) failed with %d: %s\n", fd_, &info, errno,
         strerror(errno));
   }
-  bool r = offset_ == info.st_size - kPageSize;
+  bool r = offset_ == static_cast<off_t>(info.st_size - kPageSize);
   is_last_page_ = r ? 2 : 1;
   return r;
 }
