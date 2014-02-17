@@ -6,10 +6,6 @@ class Target::QueueDec < Target::Node
 	def msg_hash()
 		return @type.msg_hash
 	end
-	def java_type_name(cpp_tree)
-		type = cpp_tree.get(@type)
-		return "#{type.name}Queue"
-	end
 	def full_message_name(cpp_tree)
 		type = cpp_tree.get(@type)
 		return @type.loc.to_cpp_id(type.name)
@@ -62,18 +58,15 @@ COMMENT_END
 		cons = CPP::Constructor.new(init_class)
 		init_class.add_member(:public,cons)
 		cons.suite << if_stmt = CPP::If.new("0 == #{counter}++")
-		if_stmt.suite << "printf(#{"making a #{@name} queue!\n".inspect})"
 
 		cons_call = CPP::FuncCall.new("new #{type_name}")
 		cons_call.args.push(@loc.queue_name(@name).inspect)
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr",cons_call)
-		if_stmt.else_suite << CPP::FuncCall.build("printf","already made a #{@name}\n".inspect)
 
 
 		destruct = CPP::Destructor.new(init_class)
 		init_class.add_member(:public,destruct)
 		destruct.suite << if_stmt = CPP::If.new("0 == --#{counter}")
-		if_stmt.suite << "printf(#{"deleting a #{@name}!! :) !!\n".inspect})"
 		if_stmt.suite << "delete #{@name}_ptr"
 		if_stmt.suite << CPP::Assign.new("#{@name}_ptr","NULL")
 
@@ -84,16 +77,11 @@ COMMENT_END
 Create a reference to the new object in the pointer.  Since we have already
 created the initializer
 COMMENT_END
-		comments = str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}
-		comments << "static UNUSED_VARIABLE #{type_name} &#{@name} = " +
-		            "#{@name}_initializer.get()"
-		namespace.add_post_swig("%immutable #{@name}_initializer")
-		java_type_name = java_type_name(cpp_tree)
-		namespace.add_post_swig(CPP::SwigPragma.new("java", "modulecode", CPP::Suite.new(["public static final #{java_type_name} #{@name} = get#{@name.capitalize}_initializer().get()"])))
-
-		ifdef_statement = CPP::IfnDef.new(CPP::Suite.new(comments))
-		ifdef_statement.name = "SWIG"
-		namespace.add(ifdef_statement)
+		str.split(/\n/).map{|str_sec| CPP::Comment.new(str_sec)}.each do |comment|
+      namespace.add(comment)
+    end
+		namespace.add("static UNUSED_VARIABLE #{type_name} &#{@name}" +
+                  " = #{@name}_initializer.get()")
 
 		get = init_class.def_func(full_type_name,"get")
 		get.pre_func_types = "&"

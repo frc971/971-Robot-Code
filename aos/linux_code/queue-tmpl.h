@@ -52,7 +52,6 @@ class SafeScopedMessagePtr {
     return msg;
   }
 
-#ifndef SWIG
   operator bool() {
     return msg_ != NULL;
   }
@@ -70,7 +69,6 @@ class SafeScopedMessagePtr {
     assert(msg != NULL);
     return msg;
   }
-#endif  // SWIG
 
   // Sends the message and removes our reference to it.
   // If the queue is full, over-rides the oldest message in it with our new
@@ -114,7 +112,6 @@ class SafeScopedMessagePtr {
     reset();
   }
 
-#ifndef SWIG
   // Implements a move constructor to take the message pointer from the
   // temporary object to save work.
   SafeScopedMessagePtr(SafeScopedMessagePtr<T> &&ptr)
@@ -122,7 +119,6 @@ class SafeScopedMessagePtr {
       msg_(ptr.msg_) {
     ptr.msg_ = NULL;
   }
-#endif  // SWIG
 
   // Copy constructor actually copies the data.
   SafeScopedMessagePtr(const SafeScopedMessagePtr<T> &ptr)
@@ -130,13 +126,11 @@ class SafeScopedMessagePtr {
         msg_(NULL) {
     reset(new T(*ptr.get()));
   }
-#ifndef SWIG
   // Equal operator copies the data.
   void operator=(const SafeScopedMessagePtr<T> &ptr) {
     queue_ = ptr.queue_;
     reset(new T(*ptr.get()));
   }
-#endif  // SWIG
 
  private:
   // Provide access to private constructor.
@@ -254,7 +248,7 @@ aos::MessageBuilder<T> Queue<T>::MakeWithBuilder() {
 
 
 // This builder uses the safe message pointer so that it can be safely copied
-// and used by SWIG or in places where it could be leaked.
+// in places where it could be leaked.
 template <class T>
 class SafeMessageBuilder {
  public:

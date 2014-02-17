@@ -25,6 +25,12 @@ struct ShifterHallEffect {
 
 // This structure contains current values for all of the things that change.
 struct Values {
+  // This is useful for representing the 2 sides of a hall effect sensor etc.
+  struct Pair {
+    double lower_limit;
+    double upper_limit;
+  };
+
   // The ratio from the encoder shaft to the drivetrain wheels.
   double drivetrain_encoder_ratio;
 
@@ -39,6 +45,23 @@ struct Values {
 
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
+  
+  struct ShooterLimits {
+    double lower_limit;
+    double upper_limit;
+    Pair plunger_back;
+    Pair pusher_distal;
+    Pair pusher_proximal;
+  };
+
+  ShooterLimits shooter;
+  
+  double shooter_voltage;
+  double shooter_total_length;
+  double shooter_hall_effect_start_position;
+  double shooter_zeroing_off_speed;
+  double shooter_zeroing_speed;
+  double position;
 
   struct Claws {
     double claw_zeroing_off_speed;

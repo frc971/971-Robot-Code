@@ -7,6 +7,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
+#include "aos/common/util/log_interval.h"
 
 namespace bbb {
 
@@ -63,6 +64,14 @@ class PacketFinder {
 
   // Whether we've increased the priority of the IRQ yet.
   bool irq_priority_increased_ = false;
+
+  typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
+  static constexpr ::aos::time::Time kDebugLogInterval =
+      ::aos::time::Time::InSeconds(0.3);
+  SimpleLogInterval invalid_packet_ =
+      SimpleLogInterval(kDebugLogInterval, INFO, "invalid packet");
+  SimpleLogInterval bad_checksum_ =
+      SimpleLogInterval(kDebugLogInterval, INFO, "bad checksum");
 
   DISALLOW_COPY_AND_ASSIGN(PacketFinder);
 };

@@ -48,6 +48,8 @@ int mutex_trylock(mutex *m) __attribute__((warn_unused_result));
 // They are designed for signalling when something happens (possibly to
 // multiple listeners). A mutex manipulated with them can only be set or unset.
 //
+// Another name for this kind of synchronization mechanism is a "notification".
+//
 // They are different from the condition_ functions in that they do NOT work
 // correctly as standard condition variables. While it is possible to keep
 // track of the "condition" using the value part of the futex_* functions, the

@@ -69,6 +69,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
+	killall starter_loop.sh
 	start-stop-daemon --stop --quiet --retry=INT/10/KILL/5 --pidfile $PIDFILE
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
@@ -80,7 +81,7 @@ do_stop()
 	# sleep for some time.
 	#start-stop-daemon --stop --quiet --oknodo --retry=INT/10/KILL/5
 	#[ "$?" = 2 ] && return 2
-	sleep 10
+	sleep 5
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"

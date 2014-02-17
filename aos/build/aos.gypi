@@ -79,6 +79,15 @@
     'include_dirs': [
       '<(DEPTH)',
     ],
+    # These have to be here because apparently gyp evaluates target_conditions
+    # even if the target is never used.
+    'variables': {
+      # Set this to 1 to disable rsyncing the file to the target.
+      'no_rsync%': 0,
+      # Set this to 1 if this file isn't a test that should get run by
+      # `build.sh tests`.
+      'is_special_test%': 0,
+    },
     'conditions': [
       ['DEBUG=="yes"', {
           'cflags': [
@@ -163,9 +172,6 @@
             'NOMINMAX',
           ],
         }, {
-          'variables': {
-            'no_rsync%': 0,
-          },
           'target_conditions': [
 # default to putting outputs into rsync_dir
             ['no_rsync==0 and _type!="static_library"', {
@@ -174,14 +180,6 @@
             ],
             ['_type=="loadable_module"', {
                 'product_dir': '<(so_dir)',
-              }
-            ],
-            ['_type=="loadable_module" or _type=="shared_library"', {
-                'ldflags': [
-# Support loading other shared objects that are in the same directory but not
-#   the shared object load path. Required for using the swig-generated libs.
-                  '-Wl,-rpath=\\$$ORIGIN',
-                ],
               }
             ],
           ],

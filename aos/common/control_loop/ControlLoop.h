@@ -7,6 +7,7 @@
 #include "aos/common/type_traits.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"
+#include "aos/common/util/log_interval.h"
 
 namespace aos {
 namespace control_loops {
@@ -129,6 +130,25 @@ class ControlLoop : public SerializableControlLoop {
  private:
   // Pointer to the queue group
   T *control_loop_;
+
+  typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
+  static constexpr ::aos::time::Time kStaleLogInterval =
+      ::aos::time::Time::InSeconds(0.1);
+  SimpleLogInterval very_stale_position_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "outputs disabled because position is very stale");
+  SimpleLogInterval no_prior_goal_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "no prior goal");
+  SimpleLogInterval no_prior_position_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "no prior position");
+  SimpleLogInterval no_driver_station_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "no driver station packet");
+  SimpleLogInterval driver_station_old_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR,
+                        "driver station packet is too old");
 };
 
 }  // namespace control_loops

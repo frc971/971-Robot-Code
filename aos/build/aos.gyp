@@ -50,23 +50,8 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:once',
         'logging_interface',
+        '<(AOS)/common/common.gyp:queue_types',
       ],
-    },
-    {
-# Private to make Brian happy.  Don't use elsewhere in so targets or risk things
-# breaking.
-      'target_name': 'aos_swig',
-      'type': 'static_library',
-      'sources': [
-        '<(AOS)/aos.swig',
-      ],
-      'variables': {
-        'package': 'aos',
-      },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
-      'includes': ['../build/swig.gypi'],
     },
   ],
 }

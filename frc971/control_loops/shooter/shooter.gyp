@@ -23,6 +23,7 @@
       'sources': [
         'shooter.cc',
         'shooter_motor_plant.cc',
+        'unaugmented_shooter_motor_plant.cc',
       ],
       'dependencies': [
         'shooter_loop',

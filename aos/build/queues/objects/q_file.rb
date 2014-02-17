@@ -138,7 +138,7 @@ ERROR_MSG
 				suite << StructStmt.parse(tokens)
 			else
 				tokens.qError(<<ERROR_MSG)
-expected a "package","import","queue","queue_group", or "message" statement rather
+expected a "package","import","queue","struct","queue_group", or "message" statement rather
 	than a #{token.data.inspect}, (whatever that is?)
 	oh! no! a feature request!?
 	Wot. Wot.

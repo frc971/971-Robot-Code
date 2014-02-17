@@ -7,6 +7,7 @@
 
 #include "aos/common/time.h"
 #include "aos/common/macros.h"
+#include "aos/common/util/log_interval.h"
 
 #include "bbb/packet_finder.h"
 #include "bbb/data_struct.h"
@@ -50,6 +51,10 @@ class SensorReader {
   int cape_resets_ = 0;
   ::aos::time::Time last_received_time_ = ::aos::time::Time::InSeconds(0);
   uint64_t last_cape_timestamp_;
+
+  ::aos::util::SimpleLogInterval receive_failed_ =
+      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
+                                     "receive failed");
 
   DISALLOW_COPY_AND_ASSIGN(SensorReader);
 };

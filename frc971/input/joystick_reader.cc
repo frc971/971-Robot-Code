@@ -9,11 +9,9 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro_angle.q.h"
-#include "frc971/queues/piston.q.h"
 #include "frc971/autonomous/auto.q.h"
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::control_loops::shifters;
 using ::frc971::sensors::gyro;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -32,9 +30,7 @@ const ButtonLocation kQuickTurn(1, 5);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {
-    shifters.MakeWithBuilder().set(true).Send();
-  }
+  Reader() {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     static bool is_high_gear = false;

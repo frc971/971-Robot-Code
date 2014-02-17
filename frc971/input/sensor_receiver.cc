@@ -4,12 +4,14 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/wrapping_counter.h"
 #include "aos/common/time.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "bbb/sensor_reader.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro_angle.q.h"
 #include "frc971/constants.h"
+#include "frc971/queues/to_log.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -55,8 +57,9 @@ double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
 
 void PacketReceived(const ::bbb::DataStruct *data,
                     const ::aos::time::Time &cape_timestamp) {
-  LOG(DEBUG, "cape timestamp %010" PRId32 ".%09" PRId32 "s\n",
-      cape_timestamp.sec(), cape_timestamp.nsec());
+  ::frc971::logging_structs::CapeReading reading_to_log(cape_timestamp.sec(),
+                                                        cape_timestamp.nsec());
+  LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
   if (data->uninitialized_gyro) {
     LOG(DEBUG, "uninitialized gyro\n");

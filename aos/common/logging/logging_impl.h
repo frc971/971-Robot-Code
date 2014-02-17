@@ -7,12 +7,20 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <string>
+#include <functional>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
 #include "aos/common/mutex.h"
+
+namespace aos {
+
+class MessageType;
+
+}  // namespace aos
 
 // This file has all of the logging implementation. It can't be #included by C
 // code like logging.h can.
@@ -32,21 +40,30 @@ namespace logging {
 // using a gcc function attribute.
 
 // The struct that the code uses for making logging calls.
-// Packed so that it ends up the same under both linux and vxworks.
-struct __attribute__((packed)) LogMessage {
-#ifdef __VXWORKS__
-  static_assert(sizeof(pid_t) == sizeof(int),
-                "we use task IDs (aka ints) and pid_t interchangeably");
-#endif
-  // Actually the task ID (aka a pointer to the TCB) on the cRIO.
+struct LogMessage {
+  enum class Type : uint8_t {
+    kString, kStruct,
+  };
+
+  int32_t seconds, nseconds;
+  // message_length is the length of everything in message for all types.
+  size_t message_length, name_length;
   pid_t source;
   static_assert(sizeof(source) == 4, "that's how they get printed");
   // Per task/thread.
   uint16_t sequence;
+  Type type;
   log_level level;
-  int32_t seconds, nseconds;
   char name[100];
-  char message[LOG_MESSAGE_LEN];
+  union {
+    char message[LOG_MESSAGE_LEN];
+    struct {
+      uint32_t type_id;
+      size_t string_length;
+      // The message string and then the serialized structure.
+      char serialized[LOG_MESSAGE_LEN - sizeof(type) - sizeof(string_length)];
+    } structure;
+  };
 };
 static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
 
@@ -85,6 +102,10 @@ void VUnCork(int line, log_level level, const char *file,
 void LogNext(log_level level, const char *format, ...)
   __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
 
+// Will take a structure and log it.
+template <class T>
+void DoLogStruct(log_level, const ::std::string &, const T &);
+
 // Represents a system that can actually take log messages and do something
 // useful with them.
 // All of the code (transitively too!) in the DoLog here can make
@@ -107,13 +128,38 @@ class LogImplementation {
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.
   virtual void DoLog(log_level level, const char *format, va_list ap) = 0;
+  void DoLogVariadic(log_level level, const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+    DoLog(level, format, ap);
+    va_end(ap);
+  }
 
-  // Function of this class so that it can access DoLog.
-  // Levels is how many LogImplementations to not use off the stack.
+  // Logs the contents of an auto-generated structure. The implementation here
+  // just converts it to a string with PrintMessage and then calls DoLog with
+  // that, however some implementations can be a lot more efficient than that.
+  // size and type are the result of calling Size() and Type() on the type of
+  // the message.
+  // serialize will call Serialize on the message.
+  virtual void LogStruct(log_level level, const ::std::string &message,
+                         size_t size, const MessageType *type,
+                         const ::std::function<size_t(char *)> &serialize);
+
+  // These functions call similar methods on the "current" LogImplementation or
+  // Die if they can't find one.
+  // levels is how many LogImplementations to not use off the stack.
   static void DoVLog(log_level, const char *format, va_list ap, int levels);
-  // Friends so that they can access DoVLog.
+  // This one is implemented in queue_logging.cc.
+  static void DoLogStruct(log_level level, const ::std::string &message,
+                          size_t size, const MessageType *type,
+                          const ::std::function<size_t(char *)> &serialize,
+                          int levels);
+
+  // Friends so that they can access the static Do* functions.
   friend void VLog(log_level, const char *, va_list);
   friend void LogNext(log_level, const char *, ...);
+  template <class T>
+  friend void DoLogStruct(log_level, const ::std::string &, const T &);
 
   LogImplementation *next_;
 };
@@ -208,8 +254,16 @@ struct Context {
   } cork_data;
 };
 
-// Fills in *message according to the given inputs. Used for implementing
-// LogImplementation::DoLog.
+// Fills in all the parts of message according to the given inputs (with type
+// kStruct).
+void FillInMessageStructure(log_level level,
+                            const ::std::string &message_string, size_t size,
+                            const MessageType *type,
+                            const ::std::function<size_t(char *)> &serialize,
+                            LogMessage *message);
+
+// Fills in *message according to the given inputs (with type kString).
+// Used for implementing LogImplementation::DoLog.
 void FillInMessage(log_level level, const char *format, va_list ap,
                    LogMessage *message);
 
@@ -218,8 +272,13 @@ void PrintMessage(FILE *output, const LogMessage &message);
 
 // Prints format (with ap) into output and correctly deals with the result
 // being too long etc.
-void ExecuteFormat(char *output, size_t output_size, const char *format,
-                   va_list ap);
+size_t ExecuteFormat(char *output, size_t output_size, const char *format,
+                     va_list ap);
+
+// Runs the given function with the current LogImplementation (handles switching
+// it out while running function etc).
+void RunWithCurrentImplementation(
+    int levels, ::std::function<void(LogImplementation *)> function);
 
 }  // namespace internal
 }  // namespace logging

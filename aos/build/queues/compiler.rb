@@ -1,22 +1,7 @@
-$LOAD_PATH.unshift(".")
-["tokenizer.rb","q_file.rb","queue_group.rb","queue.rb","namespaces.rb",
-"interface.rb","errors.rb", "q_struct.rb"].each do |name|
-	require File.dirname(__FILE__) + "/objects/" + name
-end
-["standard_types.rb","auto_gen.rb","file_pair_types.rb",
-"dep_file_pair.rb","swig.rb"].each do |name|
-	require File.dirname(__FILE__) + "/cpp_pretty_print/" + name
-end
-["q_file.rb","message_dec.rb","queue_dec.rb", "q_struct.rb"].each do |name|
-	require File.dirname(__FILE__) + "/output/" + name
-end
-require "fileutils"
-require "pathname"
+require File.dirname(__FILE__) + '/load.rb'
 
 def parse_args(globals,args)
 	i = 0
-	$swig = false
-	$swigccout_path = ""
 	while(i < args.length)
 		if(args[i] == "-I")
 			args.delete_at(i)
@@ -28,9 +13,6 @@ def parse_args(globals,args)
 			end
 			path = args.delete_at(i)
 			globals.add_path(path)
-		elsif(args[i] == "--swigccout")
-			args.delete_at(i)
-			$swigccout_path = args.delete_at(i)
 		elsif(args[i] == "-cpp_out")
 			args.delete_at(i)
 			path = args.delete_at(i)
@@ -47,9 +29,6 @@ def parse_args(globals,args)
 				exit!(-1)
 			end
 			$cpp_out = path.split(/\\|\//)
-		elsif(args[i] == "--swig")
-			$swig = true
-			args.delete_at(i)
 		elsif(args[i] == "-cpp_base")
 			args.delete_at(i)
 			path = args.delete_at(i)
@@ -79,6 +58,14 @@ def parse_args(globals,args)
 		exit!(-1)
 	end
 end
+def format_pipeline(output)
+  read_in, write_in = IO.pipe()
+  child = Process.spawn('clang-format-3.4 --style=google',
+                        {:in=>read_in, write_in=>:close,
+                         :out=>output})
+  read_in.close
+  [child, write_in]
+end
 def build(filename,globals_template)
 	globals = Globals.new()
 	globals_template.paths.each do |path|
@@ -96,41 +83,30 @@ def build(filename,globals_template)
 
 	h_file_path = $cpp_base + "/" + rel_path + ".h"
 	cc_file_path = $cpp_base + "/" + rel_path + ".cc"
-	swig_file_path = $cpp_base + "/" + rel_path + ".swig"
-	java_directory = $cpp_base + "/" + rel_path + "_java/"
 	cpp_tree.add_cc_include((rel_path + ".h").inspect)
 	cpp_tree.add_cc_include("aos/common/byteorder.h".inspect)
 	cpp_tree.add_cc_include("aos/common/inttypes.h".inspect)
+	cpp_tree.add_cc_include("aos/common/queue_types.h".inspect)
+  cpp_tree.add_cc_include("aos/common/once.h".inspect)
 	cpp_tree.add_cc_using("::aos::to_network")
 	cpp_tree.add_cc_using("::aos::to_host")
-	cpp_tree.add_swig_header_include("aos/common/queue.h".inspect)
-	cpp_tree.add_swig_body_include("aos/linux_code/queue-tmpl.h".inspect)
-	cpp_tree.add_swig_header_include("aos/common/time.h".inspect)
-	cpp_tree.add_swig_include((rel_path + ".h").inspect)
 
 	header_file = File.open(h_file_path,"w+")
 	cc_file = File.open(cc_file_path,"w+")
-	cpp_tree.write_header_file($cpp_base,header_file)
-	cpp_tree.write_cc_file($cpp_base,cc_file)
-	cc_file.close()
-	header_file.close()
-	if ($swig)
-		swig_file = File.open(swig_file_path,"w+")
-		cpp_tree.write_swig_file($cpp_base,swig_file,q_filename)
-		swig_file.close()
-		namespace = q_file.namespace.get_name()[1..-1]
-		FileUtils.mkdir_p(java_directory)
-		includes = globals.paths.collect { |a| "-I#{a}" }
-
-		if (!system('/usr/bin/swig', *(includes + ['-I' + $cpp_base + '/',
-				    '-package', namespace,
-				    '-outdir', java_directory,
-				    '-o', $swigccout_path,
-				    '-c++', '-Wall', '-Wextra', '-java', swig_file_path])))
-			puts "Swig failed."
-			exit -1
-		end
-	end
+  header_child, header_output = format_pipeline(header_file)
+  cc_child, cc_output = format_pipeline(cc_file)
+	cpp_tree.write_header_file($cpp_base,header_output)
+	cpp_tree.write_cc_file($cpp_base,cc_output)
+	cc_output.close()
+	header_output.close()
+  if !Process.wait2(cc_child)[1].success?
+    $stderr.puts "Formatting cc file failed."
+    exit 1
+  end
+  if !Process.wait2(header_child)[1].success?
+    $stderr.puts "Formatting header file failed."
+    exit 1
+  end
 end
 begin
 	args = ARGV.dup

@@ -1,6 +1,21 @@
 {
   'targets': [
     {
+      'target_name': 'log_interval',
+      'type': 'static_library',
+      'sources': [
+        #'log_interval.h',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'thread',
       'type': 'static_library',
       'sources': [

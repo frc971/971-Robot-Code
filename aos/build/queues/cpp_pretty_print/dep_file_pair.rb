@@ -54,36 +54,6 @@ class MemberElementInline < GroupElement
 		end
 	end
 end
-class MemberElementPreSWIG < GroupElement
-	def initialize(elem)
-		@elem = elem
-	end
-	def pp(state)
-		if(@elem.respond_to?(:pp_pre_swig_file))
-			@elem.pp_pre_swig_file(state)
-		else
-			state.pp(@elem)
-		end
-	end
-	def self.check(plan,elem)
-		plan.push(self.new(elem)) if(elem.respond_to?(:pp_pre_swig_file))
-	end
-end
-class MemberElementPostSWIG < GroupElement
-	def initialize(elem)
-		@elem = elem
-	end
-	def pp(state)
-		if(@elem.respond_to?(:pp_post_swig_file))
-			@elem.pp_post_swig_file(state)
-		else
-			state.pp(@elem)
-		end
-	end
-	def self.check(plan,elem)
-		plan.push(self.new(elem)) if(elem.respond_to?(:pp_post_swig_file))
-	end
-end
 class MemberElementCC < GroupElement
 	attr_accessor :pp_override
 	def initialize(elem)
@@ -181,36 +151,6 @@ class GroupPlan < GroupElement
 		end
 	end
 end
-class SWIGPre_Mask
-	def initialize(elem)
-		@elem = elem
-	end
-	def plan_cc(plan)
-	end
-	def plan_pre_swig(plan)
-		elem = MemberElementPreSWIG.new(@elem)
-		plan.push(elem)
-	end
-	def plan_post_swig(plan)
-	end
-	def plan_header(plan);
-	end
-end
-class SWIGPost_Mask
-	def initialize(elem)
-		@elem = elem
-	end
-	def plan_cc(plan)
-	end
-	def plan_pre_swig(plan)
-	end
-	def plan_post_swig(plan)
-		elem = MemberElementPostSWIG.new(@elem)
-		plan.push(elem)
-	end
-	def plan_header(plan);
-	end
-end
 class CC_Mask
 	def initialize(elem)
 		@elem = elem
@@ -221,10 +161,6 @@ class CC_Mask
 		plan.push(elem)
 	end
 	def plan_header(plan);
-	end
-	def plan_pre_swig(plan);
-	end
-	def plan_post_swig(plan);
 	end
 end
 module Types
@@ -246,6 +182,9 @@ module Types
 			@protections = {}
 			@deps = []
 		end
+    def parent_class
+      @parent.split(' ')[1] if @parent
+    end
 		class ProtectionGroup
 			def initialize(name)
 				@name = name
@@ -278,30 +217,6 @@ module Types
 		def add_cc_comment(*args)
 			args.each do |arg|
 				@members.push(CC_Mask.new(CPP::Comment.new(arg)))
-			end
-		end
-		def add_pre_swig(arg)
-			@members.push(SWIGPre_Mask.new(arg))
-		end
-		def add_post_swig(arg)
-			@members.push(SWIGPost_Mask.new(arg))
-		end
-		def plan_pre_swig(plan)
-			@members.each do |member|
-				if(member.respond_to?(:plan_pre_swig))
-					member.plan_pre_swig(plan)
-				elsif(member.respond_to?(:pp_pre_swig_file))
-					plan.push(MemberElementPreSWIG.new(member))
-				end
-			end
-		end
-		def plan_post_swig(plan)
-			@members.each do |member|
-				if(member.respond_to?(:plan_post_swig))
-					member.plan_post_swig(plan)
-				elsif(member.respond_to?(:pp_post_swig_file))
-					plan.push(MemberElementPostSWIG.new(member))
-				end
 			end
 		end
 		def plan_cc(plan)
@@ -391,6 +306,7 @@ module Types
 		end
 	end
 	class Struct < Type
+		attr_accessor :members
 		def add_member(member)
 			@members.push(member)
 			return member
@@ -456,12 +372,6 @@ class DepFilePair
 		def add_cc(arg)
 			@members.push(CC_Mask.new(arg))
 		end
-		def add_pre_swig(arg)
-			@members.push(SWIGPre_Mask.new(arg))
-		end
-		def add_post_swig(arg)
-			@members.push(SWIGPost_Mask.new(arg))
-		end
 		def chop_method_prefix()
 			""
 		end
@@ -473,25 +383,6 @@ class DepFilePair
 		end
 		def add_var_dec(arg)
 			add DepMask.new(arg)
-		end
-		def plan_pre_swig(plan)
-			plan.implicit = ImplicitName.new(@name,plan.implicit)
-			@members.each do |member|
-				if(member.respond_to?(:plan_pre_swig))
-					member.plan_pre_swig(plan)
-				else
-					MemberElementPreSWIG.check(plan,member)
-				end
-			end
-		end
-		def plan_post_swig(plan)
-			@members.each do |member|
-				if(member.respond_to?(:plan_post_swig))
-					member.plan_post_swig(plan)
-				else
-					MemberElementPostSWIG.check(plan,member)
-				end
-			end
 		end
 		def plan_cc(plan)
 			plan.implicit = ImplicitName.new(@name,plan.implicit)
@@ -523,22 +414,10 @@ class DepFilePair
 	def initialize(rel_path)
 		@rel_path = rel_path
 		@cc_includes = []
-		@swig_includes_h = []
-		@swig_includes_swig = []
 		@header_includes = []
 		@spaces = []
 		@cc_usings = []
 		@cache = {}
-	end
-	def add_swig_body_include(inc_path)
-		@swig_includes_swig << CPP::SwigInclude.new(inc_path)
-	end
-	def add_swig_header_include(inc_path)
-		@swig_includes_h << CPP::Include.new(inc_path)
-	end
-	def add_swig_include(inc_path)
-		@swig_includes_h << CPP::Include.new(inc_path)
-		@swig_includes_swig << CPP::SwigInclude.new(inc_path)
 	end
 	def add_cc_include(inc_path)
 		@cc_includes << CPP::Include.new(inc_path)
@@ -587,31 +466,5 @@ class DepFilePair
 		include_guard = CPP::IncludeGuard.new(suite)
 		include_guard.name = @rel_path.upcase.gsub(/[\.\/\\]/,"_") + "_H_"
 		CPP.pretty_print(include_guard,header_file)
-	end
-	def write_swig_file(cpp_base,swig_file,q_filename)
-		plan_pre_swig = GroupPlan.new(nil, elems_cc = [])
-		plan_post_swig = GroupPlan.new(nil, elems_cc = [])
-		q_filename_underscore = q_filename.gsub(".","_")
-		@spaces.each do |space|
-			space.plan_pre_swig(plan_pre_swig)
-			space.plan_post_swig(plan_post_swig)
-		end
-                header_includes = CPP::SWIGBraces.new(CPP::Suite.new(@swig_includes_h))
-		# TODO(aschuh): I should probably %import any other headers from this queue's dependencies.
-                suite = CPP::Suite.new(["%module \"#{q_filename_underscore}\"",
-				        "%typemap(javaimports) SWIGTYPE, SWIGTYPE * \"import aos.QueueGroup; import aos.Message; import aos.Time;\"",
-				        "%pragma(java) jniclassimports=\"import aos.QueueGroup; import aos.Message; import aos.Time;\"",
-                                        "%pragma(java) moduleimports=\"import aos.QueueGroup; import aos.Message; import aos.Time;\"",
-                                        "%include \"std_string.i\"",
-                                        "%include \"stdint.i\""] +
-                                       [header_includes] +
-                                       #["%import \"aos/common/time.h\"",
-                                        #"%import \"aos/common/queue.h\""] +
-                                       ["%import \"aos/aos.swig\""] +
-                                       [plan_pre_swig] +
-                                       @swig_includes_swig +
-                                       [plan_post_swig]
-                                      )
-		CPP.pretty_print(suite, swig_file)
 	end
 end
