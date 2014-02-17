@@ -217,8 +217,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->intake_voltage = 0;
   }
 
-  // TODO(austin): Handle the disabled state and the disabled -> enabled
-  //     transition in all of these states.
   // TODO(austin): Handle zeroing while disabled correctly (only use a single
   //     edge and direction when zeroing.)
 
@@ -280,7 +278,10 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                  ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
     // Time to fine tune the zero.
     // Limit the goals here.
-    // TODO(austin): Handle disabled state here.
+    if (!enabled) {
+      // If we are disabled, start the fine tune process over again.
+      doing_calibration_fine_tune_ = false;
+    }
     if (bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::CALIBRATED) {
       // always get the bottom claw to calibrated first
       LOG(DEBUG, "Calibrating the bottom of the claw\n");
