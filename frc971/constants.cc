@@ -52,62 +52,62 @@ const Values *DoGetValues() {
   switch (team) {
     case kCompTeamNumber:
       return new Values{
-            kCompDrivetrainEncoderRatio,
-            kCompLowGearRatio,
-            kCompHighGearRatio,
-			// ShooterLimits
-			// TODO_ben: make these real numbers
-			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
-            shooter_voltage,
-			// shooter_total_length
-			100.0,
-            shooter_hall_effect_start_position,
-            shooter_zeroing_off_speed,
-            shooter_zeroing_speed,
-            position,
-            kCompLeftDriveShifter,
-            kCompRightDriveShifter,
-            true,
-            control_loops::MakeVClutchDrivetrainLoop,
-            control_loops::MakeClutchDrivetrainLoop,
-            0.5,
-            0.1,
-            0.0,
-            1.57,
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.02, // claw_unimportant_epsilon
-            50505.05, // start_fine_tune_pos
+          kCompDrivetrainEncoderRatio,
+          kCompLowGearRatio,
+          kCompHighGearRatio,
+          kCompLeftDriveShifter,
+          kCompRightDriveShifter,
+          true,
+          control_loops::MakeVClutchDrivetrainLoop,
+          control_loops::MakeClutchDrivetrainLoop,
+			    // ShooterLimits
+			    // TODO(ben): make these real numbers
+			    {0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
+          shooter_voltage,
+			    // shooter_total_length
+			    100.0,
+          shooter_hall_effect_start_position,
+          shooter_zeroing_off_speed,
+          shooter_zeroing_speed,
+          position,
+          0.5,
+          0.1,
+          0.0,
+          1.57,
+          {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          0.02, // claw_unimportant_epsilon
+          50505.05, // start_fine_tune_pos
       };
       break;
     case kPracticeTeamNumber:
       return new Values{
-            kPracticeDrivetrainEncoderRatio,
-            kPracticeLowGearRatio,
-            kPracticeHighGearRatio,
-			// ShooterLimits
-			// TODO_ben: make these real numbers
-			{0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
-            shooter_voltage,
-			// shooter_total_length
-			100.0,
-            shooter_hall_effect_start_position,
-            shooter_zeroing_off_speed,
-            shooter_zeroing_speed,
-            position,
-            kPracticeLeftDriveShifter,
-            kPracticeRightDriveShifter,
-            false,
-            control_loops::MakeVDogDrivetrainLoop,
-            control_loops::MakeDogDrivetrainLoop,
-            0.5,
-            0.1,
-            0.0,
-            1.57,
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-            0.02, // claw_unimportant_epsilon
-            50505.05, //start_fine_tune_pos
+          kPracticeDrivetrainEncoderRatio,
+          kPracticeLowGearRatio,
+          kPracticeHighGearRatio,
+          kPracticeLeftDriveShifter,
+          kPracticeRightDriveShifter,
+          false,
+          control_loops::MakeVDogDrivetrainLoop,
+          control_loops::MakeDogDrivetrainLoop,
+			    // ShooterLimits
+			    // TODO(ben): make these real numbers
+			    {0.0, 100.0, {-3.0, 2.0}, {-1, 4.0}, {2.0, 7.0}},
+          shooter_voltage,
+			    // shooter_total_length
+			    100.0,
+          shooter_hall_effect_start_position,
+          shooter_zeroing_off_speed,
+          shooter_zeroing_speed,
+          position,
+          0.5,
+          0.1,
+          0.0,
+          1.57,
+          {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          {0.0, 2.05, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+          0.02, // claw_unimportant_epsilon
+          50505.05, //start_fine_tune_pos
       };
       break;
     default:
