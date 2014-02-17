@@ -93,8 +93,7 @@ class LogFileAccessor {
   // Asynchronously syncs all open mappings.
   void Sync() const;
 
-  // TODO(brians): This won't work any more.
-  void MoveToEnd();
+  bool IsLastPage();
 
  private:
   // The size of the chunks that get mmaped/munmapped together. Large enough so
@@ -113,6 +112,9 @@ class LogFileAccessor {
   off_t offset_;
   char *current_;
   size_t position_;
+
+  // 0 = unknown, 1 = no, 2 = yes
+  int is_last_page_ = 0;
 
   void MapNextPage();
   void Unmap(void *location);

@@ -71,6 +71,9 @@ const LogFileMessageHeader *LogFileAccessor::ReadNextMessage(bool wait) {
   }
   position_ += sizeof(LogFileMessageHeader) + r->name_size + r->message_size;
   AlignPosition();
+  if (position_ >= kPageSize) {
+    LOG(FATAL, "corrupt log file running over page size\n");
+  }
   return r;
 }
 
@@ -78,15 +81,19 @@ void LogFileAccessor::Sync() const {
   msync(current_, kPageSize, MS_ASYNC | MS_INVALIDATE);
 }
 
-void LogFileAccessor::MoveToEnd() {
-  Unmap(current_);
+bool LogFileAccessor::IsLastPage() {
+  if (is_last_page_ != 0) {
+    return is_last_page_ == 2;
+  }
+
   struct stat info;
   if (fstat(fd_, &info) == -1) {
     LOG(FATAL, "fstat(%d, %p) failed with %d: %s\n", fd_, &info, errno,
         strerror(errno));
   }
-  offset_ = info.st_size - kPageSize;
-  MapNextPage();
+  bool r = offset_ == info.st_size - kPageSize;
+  is_last_page_ = r ? 2 : 1;
+  return r;
 }
 
 void LogFileAccessor::MapNextPage() {
@@ -116,6 +123,7 @@ void LogFileAccessor::Unmap(void *location) {
     LOG(FATAL, "munmap(%p, %zd) failed with %d: %s. aborting\n", location,
         kPageSize, errno, strerror(errno));
   }
+  is_last_page_ = 0;
 }
 
 }  // namespace linux_code

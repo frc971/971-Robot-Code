@@ -54,6 +54,8 @@ void CheckTypeWritten(uint32_t type_id, LogFileAccessor &writer) {
 
   output->type = LogFileMessageHeader::MessageType::kStructType;
   futex_set(&output->marker);
+
+  written_type_ids.insert(type_id);
 }
 
 int BinaryLogReaderMain() {

@@ -50,10 +50,15 @@ void PrintHelpAndExit() {
 
 int main(int argc, char **argv) {
   const char *filter_name = NULL;
-  size_t filter_length;
+  size_t filter_length = 0;
   log_level filter_level = INFO;
-  bool follow = false, start_at_beginning = true;
+  bool follow = false;
+  // Whether we need to skip everything until we get to the end of the file.
+  bool skip_to_end = false;
   const char *filename = "aos_log-current";
+
+  ::aos::logging::AddImplementation(
+      new ::aos::logging::StreamLogImplementation(stdout));
 
   while (true) {
     static struct option long_options[] = {
@@ -100,16 +105,16 @@ int main(int argc, char **argv) {
         break;
       case 'f':
         follow = true;
-        start_at_beginning = false;
+        skip_to_end = true;
         break;
       case 't':
         follow = false;
         break;
       case 'b':
-        start_at_beginning = true;
+        skip_to_end = false;
         break;
       case 'e':
-        start_at_beginning = false;
+        skip_to_end = true;
         break;
       case 'm':
         abort();
@@ -145,8 +150,9 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
   ::aos::logging::linux_code::LogFileAccessor accessor(fd, false);
-  if (!start_at_beginning) {
-    accessor.MoveToEnd();
+
+  if (skip_to_end) {
+    fputs("skipping old logs...\n", stderr);
   }
 
   const LogFileMessageHeader *msg;
@@ -164,6 +170,15 @@ int main(int argc, char **argv) {
           reinterpret_cast<const char *>(msg + 1), &bytes);
       ::aos::type_cache::Add(*type);
       continue;
+    }
+
+    if (skip_to_end) {
+      if (accessor.IsLastPage()) {
+        fputs("done skipping old logs\n", stderr);
+        skip_to_end = false;
+      } else {
+        continue;
+      }
     }
 
     if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
