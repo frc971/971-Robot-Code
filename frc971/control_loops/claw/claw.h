@@ -24,11 +24,21 @@ class ClawTest_NoWindupNegative_Test;
 class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
  public:
   ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
-      : StateFeedbackLoop<4, 2, 2>(loop) {}
+      : StateFeedbackLoop<4, 2, 2>(loop),
+        uncapped_average_voltage_(0.0),
+        is_zeroing_(true) {}
   virtual void CapU();
+
+  void set_is_zeroing(bool is_zeroing) { is_zeroing_ = is_zeroing; }
 
   void ChangeTopOffset(double doffset);
   void ChangeBottomOffset(double doffset);
+
+  double uncapped_average_voltage() const { return uncapped_average_voltage_; }
+
+ private:
+  double uncapped_average_voltage_;
+  bool is_zeroing_;
 };
 
 class ClawMotor;
@@ -229,6 +239,9 @@ class ClawMotor
                          &control_loops::claw_queue_group);
 
   // True if the state machine is ready.
+  bool capped_goal() const { return capped_goal_; }
+
+  // True if the state machine is ready.
   bool is_ready() const { return false; }
 
   void ChangeTopOffset(double doffset);
@@ -268,6 +281,8 @@ class ClawMotor
   // The initial seperation when disabled.  Used as the safe seperation
   // distance.
   double initial_seperation_;
+
+  bool capped_goal_;
 
   DISALLOW_COPY_AND_ASSIGN(ClawMotor);
 };

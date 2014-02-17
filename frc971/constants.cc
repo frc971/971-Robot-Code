@@ -79,6 +79,7 @@ const Values *DoGetValues() {
            {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
+           4.0,
           }
       };
       break;
@@ -111,6 +112,7 @@ const Values *DoGetValues() {
            {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
            0.01,  // claw_unimportant_epsilon
            0.9,  // start_fine_tune_pos
+           4.0,
           }
       };
       break;
