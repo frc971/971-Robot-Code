@@ -220,6 +220,11 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   // TODO(austin): Handle zeroing while disabled correctly (only use a single
   //     edge and direction when zeroing.)
 
+  if (reset()) {
+    bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
+    top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
+  }
+
   if (::aos::robot_state.get() == nullptr) {
     return;
   }
