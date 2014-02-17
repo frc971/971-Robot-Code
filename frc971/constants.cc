@@ -62,7 +62,7 @@ const Values *DoGetValues() {
           control_loops::MakeClutchDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}}
+          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}},
           shooter_voltage,
           // shooter_total_length
           1.0,
@@ -95,7 +95,7 @@ const Values *DoGetValues() {
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}}
+          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07}},
           shooter_voltage,
           // shooter_total_length
           1.0,
