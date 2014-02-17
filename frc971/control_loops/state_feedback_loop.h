@@ -4,8 +4,11 @@
 #include <assert.h>
 
 #include <vector>
+#include <iostream>
 
 #include "Eigen/Dense"
+
+#include "aos/common/logging/logging.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
 class StateFeedbackPlantCoefficients {
@@ -129,8 +132,8 @@ class StateFeedbackPlant {
   // Assert that U is within the hardware range.
   virtual void CheckU() {
     for (int i = 0; i < kNumOutputs; ++i) {
-      assert(U(i, 0) <= U_max(i, 0));
-      assert(U(i, 0) >= U_min(i, 0));
+      assert(U(i, 0) <= U_max(i, 0) + 0.00001);
+      assert(U(i, 0) >= U_min(i, 0) - 0.00001);
     }
   }
 
@@ -218,7 +221,6 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_inputs, 1> U;
   Eigen::Matrix<double, number_of_inputs, 1> U_uncapped;
   Eigen::Matrix<double, number_of_outputs, 1> U_ff;
-  Eigen::Matrix<double, number_of_outputs, 1> Y;
 
   const StateFeedbackController<number_of_states, number_of_inputs,
                                 number_of_outputs> &controller() const {
@@ -237,7 +239,6 @@ class StateFeedbackLoop {
     U.setZero();
     U_uncapped.setZero();
     U_ff.setZero();
-    Y.setZero();
   }
 
   StateFeedbackLoop(const StateFeedbackController<
@@ -286,9 +287,31 @@ class StateFeedbackLoop {
     }
   }
 
-  // update_observer is whether or not to use the values in Y.
+  // Corrects X_hat given the observation in Y.
+  void Correct(const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
+  /*
+    auto eye =
+        Eigen::Matrix<double, number_of_states, number_of_states>::Identity();
+    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
+    ::std::cout << "Identity " << eye << ::std::endl;
+    ::std::cout << "X_hat " << X_hat << ::std::endl;
+    ::std::cout << "LC " << L() * C() << ::std::endl;
+    ::std::cout << "L " << L() << ::std::endl;
+    ::std::cout << "C " << C() << ::std::endl;
+    ::std::cout << "y " << Y << ::std::endl;
+    ::std::cout << "z " << (Y - C() * X_hat) << ::std::endl;
+    ::std::cout << "correction " << L() * (Y - C() * X_hat) << ::std::endl;
+    X_hat = (eye - L() * C()) * X_hat + L() * Y;
+    ::std::cout << "X_hat after " << X_hat << ::std::endl;
+    ::std::cout << ::std::endl;
+    */
+    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
+    Y_ = Y;
+    new_y_ = true;
+  }
+
   // stop_motors is whether or not to output all 0s.
-  void Update(bool update_observer, bool stop_motors) {
+  void Update(bool stop_motors) {
     if (stop_motors) {
       U.setZero();
     } else {
@@ -296,11 +319,16 @@ class StateFeedbackLoop {
       CapU();
     }
 
-    if (update_observer) {
-      X_hat = (A() - L() * C()) * X_hat + L() * Y + B() * U;
+    //::std::cout << "Predict xhat before " << X_hat;
+    //::std::cout << "Measurement error is " << Y_ - C() * X_hat;
+    //X_hat = A() * X_hat + B() * U;
+    if (new_y_) {
+      X_hat = (A() - L() * C()) * X_hat + L() * Y_ + B() * U;
+      new_y_ = false;
     } else {
       X_hat = A() * X_hat + B() * U;
     }
+    //::std::cout << "Predict xhat after " << X_hat;
   }
 
   // Sets the current controller to be index and verifies that it isn't out of
@@ -325,6 +353,11 @@ class StateFeedbackLoop {
   static const int kNumStates = number_of_states;
   static const int kNumOutputs = number_of_outputs;
   static const int kNumInputs = number_of_inputs;
+
+  // Temporary storage for a measurement until I can figure out why I can't
+  // correct when the measurement is made.
+  Eigen::Matrix<double, number_of_outputs, 1> Y_;
+  bool new_y_ = false;
 
   int controller_index_;
 };

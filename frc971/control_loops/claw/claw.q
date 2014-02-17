@@ -2,23 +2,33 @@ package frc971.control_loops;
 
 import "aos/common/control_loop/control_loops.q";
 
-struct Claw {
+struct HalfClawPosition {
+  // The current position of this half of the claw.
   double position;
+  // The value of the front hall effect sensor.
   bool front_hall_effect;
+  // The number of positive and negative edges that have been captured on the
+  // front hall effect sensor.
   int32_t front_hall_effect_posedge_count;
   int32_t front_hall_effect_negedge_count;
+  // The value of the calibration hall effect sensor.
   bool calibration_hall_effect;
+  // The number of positive and negative edges that have been captured on the
+  // calibration hall effect sensor.
   int32_t calibration_hall_effect_posedge_count;
   int32_t calibration_hall_effect_negedge_count;
+  // The value of the back hall effect sensor.
   bool back_hall_effect;
+  // The number of positive and negative edges that have been captured on the
+  // back hall effect sensor.
   int32_t back_hall_effect_posedge_count;
   int32_t back_hall_effect_negedge_count;
 
   // The encoder value at the last posedge of any of the claw hall effect
-  // sensors.
+  // sensors (front, calibration, or back).
   double posedge_value;
   // The encoder value at the last negedge of any of the claw hall effect
-  // sensors.
+  // sensors (front, calibration, or back).
   double negedge_value;
 };
 
@@ -35,50 +45,10 @@ queue_group ClawGroup {
   };
 
   message Position {
-    // Top claw position relative to power on.
-    //double top_position;
-
-    Claw top;
-    Claw bottom;
-
-    // Three Hall Effects with respect to the top claw
-    //bool top_front_hall_effect;
-    //int32_t top_front_hall_effect_posedge_count;
-    //int32_t top_front_hall_effect_negedge_count;
-    //bool top_calibration_hall_effect;
-    //int32_t top_calibration_hall_effect_posedge_count;
-    //int32_t top_calibration_hall_effect_negedge_count;
-    //bool top_back_hall_effect;
-    //int32_t top_back_hall_effect_posedge_count;
-    //int32_t top_back_hall_effect_negedge_count;
-
-    // The encoder value at the last posedge of any of the top claw hall effect
-    // sensors.
-    //double top_posedge_value;
-    // The encoder value at the last negedge of any of the top claw hall effect
-    // sensors.
-    //double top_negedge_value;
-
-    // bottom claw relative position
-    //double bottom_position;
-
-    // Three Hall Effects with respect to the bottom claw
-    //bool bottom_front_hall_effect;
-    //int32_t bottom_front_hall_effect_posedge_count;
-    //int32_t bottom_front_hall_effect_negedge_count;
-    //bool bottom_calibration_hall_effect;
-    //int32_t bottom_calibration_hall_effect_posedge_count;
-    //int32_t bottom_calibration_hall_effect_negedge_count;
-    //bool bottom_back_hall_effect;
-    //int32_t bottom_back_hall_effect_posedge_count;
-    //int32_t bottom_back_hall_effect_negedge_count;
-
-    // The encoder value at the last posedge of any of the bottom claw hall
-    // effect sensors.
-    //double bottom_posedge_value;
-    // The encoder value at the last negedge of any of the bottom claw hall
-    // effect sensors.
-    //double bottom_negedge_value;
+    // All the top claw information.
+    HalfClawPosition top;
+    // All the bottom claw information.
+    HalfClawPosition bottom;
   };
 
   message Output {

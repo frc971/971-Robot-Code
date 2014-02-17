@@ -22,10 +22,7 @@
       'type': 'static_library',
       'sources': [
         'claw.cc',
-        'top_claw_motor_plant.cc',
-        'bottom_claw_motor_plant.cc',
-        'unaugmented_top_claw_motor_plant.cc',
-        'unaugmented_bottom_claw_motor_plant.cc',
+        'claw_motor_plant.cc',
       ],
       'dependencies': [
         'claw_loops',

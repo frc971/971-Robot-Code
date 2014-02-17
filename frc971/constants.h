@@ -40,29 +40,38 @@ struct Values {
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
-  double claw_zeroing_off_speed;
-  double claw_zeroing_speed;
+  struct Claws {
+    double claw_zeroing_off_speed;
+    double claw_zeroing_speed;
+    double claw_zeroing_separation;
 
-  // claw seperation that would be considered a collision
-  double claw_min_seperation;
-  double claw_max_seperation;
+    // claw seperation that would be considered a collision
+    double claw_min_seperation;
+    double claw_max_seperation;
 
-  // Three hall effects are known as front, calib and back
-  struct AnglePair {
-    double lower_angle;
-    double upper_angle;
+    // Three hall effects are known as front, calib and back
+    struct AnglePair {
+      double lower_angle;
+      double upper_angle;
+    };
+
+    struct Claw {
+      double lower_hard_limit;
+      double upper_hard_limit;
+      double lower_limit;
+      double upper_limit;
+      AnglePair front;
+      AnglePair calibration;
+      AnglePair back;
+    };
+
+    Claw upper_claw;
+    Claw lower_claw;
+
+    double claw_unimportant_epsilon;
+    double start_fine_tune_pos;
   };
-
-  struct Claw {
-    double lower_limit;
-    double upper_limit;
-    AnglePair front;
-    AnglePair calibration;
-    AnglePair back;
-  };
-
-  Claw upper_claw;
-  Claw lower_claw;
+  Claws claw;
 };
 
 // Creates (once) a Values instance and returns a reference to it.
