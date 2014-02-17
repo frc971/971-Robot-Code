@@ -13,15 +13,16 @@ class Claw(control_loop.ControlLoop):
     self.stall_torque = 2.42
     # Stall Current in Amps
     self.stall_current = 133
-    # Free Speed in RPM, pulled from drivetrain
-    self.free_speed = 4650.0
+    # Free Speed in RPM
+    self.free_speed = 5500.0
     # Free Current in Amps
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
-    # approzimately 0.76 (without ball) in CAD
-    self.J = 0.76
+    # measured from CAD
+    self.J_top = 0.3
+    self.J_bottom = 0.9
     # Resistance of the motor
-    self.R = 12.0 / self.stall_current + 0.024 + .003
+    self.R = 12.0 / self.stall_current
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (13.5 - self.R * self.free_current))
@@ -34,23 +35,32 @@ class Claw(control_loop.ControlLoop):
 
     # State is [bottom position, top - bottom position,
     #           bottom velocity, top - bottom velocity]
-    # Input is [bottom power, top power]
-    # Motor time constant.
-    self.motor_timeconstant = self.Kt / self.Kv / (self.J * self.G * self.G * self.R)
+    # Input is [bottom power, top - bottom power]
+    # Motor time constants. difference_bottom refers to the constant for how the
+    # bottom velocity affects the difference of the top and bottom velocities.
+    self.common_motor_constant = -self.Kt / self.Kv / (self.G * self.G * self.R)
+    self.bottom_bottom = self.common_motor_constant / self.J_bottom
+    self.difference_bottom = self.common_motor_constant * (1 / self.J_bottom
+                                                        - 1 / self.J_top)
+    self.difference_difference = self.common_motor_constant / self.J_top
     # State feedback matrices
     self.A_continuous = numpy.matrix(
         [[0, 0, 1, 0],
          [0, 0, 0, 1],
-         [0, 0, -self.motor_timeconstant, 0],
-         [0, 0, 0, -self.motor_timeconstant]])
+         [0, 0, self.bottom_bottom, 0],
+         [0, 0, self.difference_bottom, self.difference_difference]])
 
-    self.motor_feedforward = self.Kt / (self.J * self.G * self.R)
-
+    self.motor_feedforward = self.Kt / (self.G * self.R)
+    self.motor_feedforward_bottom = self.motor_feedforward / self.J_top
+    self.motor_feedforward_difference = self.motor_feedforward / self.J_bottom
+    self.motor_feedforward_difference_bottom = (
+        self.motor_feedforward * (1 / self.J_bottom - 1 / self.J_top))
     self.B_continuous = numpy.matrix(
         [[0, 0],
          [0, 0],
-         [self.motor_feedforward, 0],
-         [0.0, self.motor_feedforward]])
+         [self.motor_feedforward_bottom, 0],
+         [self.motor_feedforward_difference_bottom,
+          self.motor_feedforward_difference]])
     self.C = numpy.matrix([[1, 0, 0, 0],
                            [1, 1, 0, 0]])
     self.D = numpy.matrix([[0, 0],
@@ -81,6 +91,8 @@ class Claw(control_loop.ControlLoop):
                              self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 
+    # The box formed by U_min and U_max must encompass all possible values,
+    # or else Austin's code gets angry.
     self.U_max = numpy.matrix([[12.0], [24.0]])
     self.U_min = numpy.matrix([[-12.0], [-24.0]])
 
@@ -199,8 +211,8 @@ def AverageUFix(claw, U):
   top_u = U[1, 0] + bottom_u
 
   #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
-  if (bottom_u > claw.U_max[0, 0] or top_u > claw.U_max[1, 0] or
-      top_u < claw.U_min[1, 0] or bottom_u < claw.U_min[0, 0]):
+  if (bottom_u > claw.U_max[0, 0] or top_u > claw.U_max[0, 0] or
+      top_u < claw.U_min[0, 0] or bottom_u < claw.U_min[0, 0]):
     scalar = 12.0 / max(numpy.abs(top_u), numpy.abs(bottom_u))
     top_u *= scalar
     bottom_u *= scalar
