@@ -73,9 +73,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     offset_ = known_position - encoder_val;
   }
 
-  bool SetCalibrationOnEdge(
-      const constants::Values::ShooterLimits &shooter_values,
-      JointZeroingState zeroing_state) {
+  bool SetCalibrationOnEdge(const constants::Values::Shooter &shooter_values,
+                            JointZeroingState zeroing_state) {
     double edge_encoder;
     double known_position;
     if (GetPositionOfEdge(shooter_values, &edge_encoder, &known_position)) {
@@ -110,7 +109,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   // Returns true if an edge was detected in the last cycle and then sets the
   // edge_position to the absolute position of the edge.
-  bool GetPositionOfEdge(const constants::Values::ShooterLimits &shooter,
+  bool GetPositionOfEdge(const constants::Values::Shooter &shooter,
                          double *edge_encoder, double *known_position);
 
 #undef COUNT_SETTER_GETTER

@@ -46,22 +46,17 @@ struct Values {
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
-  struct ShooterLimits {
+  struct Shooter {
     double lower_limit;
     double upper_limit;
     AnglePair plunger_back;
     AnglePair pusher_distal;
     AnglePair pusher_proximal;
+    double zeroing_off_speed;
+    double zeroing_speed;
   };
 
-  ShooterLimits shooter;
-
-  double shooter_voltage;
-  double shooter_total_length;
-  double shooter_hall_effect_start_position;
-  double shooter_zeroing_off_speed;
-  double shooter_zeroing_speed;
-  double position;
+  Shooter shooter;
 
   struct Claws {
     double claw_zeroing_off_speed;

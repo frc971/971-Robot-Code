@@ -23,7 +23,7 @@ class TeamNumberEnvironment : public ::testing::Environment {
   virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
 };
 
-::testing::Environment* const team_number_env =
+::testing::Environment *const team_number_env =
     ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
 
 
@@ -78,7 +78,7 @@ class ShooterSimulation {
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
-    position->plunger.current =
+    position->plunger =
         CheckRange(position->position, values.shooter.plunger_back);
     position->pusher_distal.current =
         CheckRange(position->position, values.shooter.pusher_distal);
@@ -86,26 +86,21 @@ class ShooterSimulation {
         CheckRange(position->position, values.shooter.pusher_proximal);
   }
 
-  void UpdateEffectEdge(HallEffectStruct *sensor,
-                        const HallEffectStruct &last_sensor,
-                        const constants::Values::AnglePair &limits,
-                        control_loops::ShooterGroup::Position *position,
-                        const control_loops::ShooterGroup::Position &last_position) {
+  void UpdateEffectEdge(
+      PosedgeOnlyCountedHallEffectStruct *sensor,
+      const PosedgeOnlyCountedHallEffectStruct &last_sensor,
+      const constants::Values::AnglePair &limits,
+      const control_loops::ShooterGroup::Position &last_position) {
     if (sensor->current && !last_sensor.current) {
       ++sensor->posedge_count;
       if (last_position.position < limits.lower_angle) {
-        position->pusher_posedge_value = limits.lower_angle - initial_position_;
+        sensor->posedge_value = limits.lower_angle - initial_position_;
       } else {
-        position->pusher_posedge_value = limits.upper_angle - initial_position_;
+        sensor->posedge_value = limits.upper_angle - initial_position_;
       }
     }
     if (!sensor->current && last_sensor.current) {
       ++sensor->negedge_count;
-      if (position->position < limits.lower_angle) {
-        position->pusher_negedge_value = limits.lower_angle - initial_position_;
-      } else {
-        position->pusher_negedge_value = limits.upper_angle - initial_position_;
-      }
     }
   }
 
@@ -122,14 +117,14 @@ class ShooterSimulation {
       LOG(DEBUG, "latching simulation: %dp\n", latch_delay_count_);
       if (latch_delay_count_ == 1) {
         latch_piston_state_ = true;
-        position->latch.current = true;
+        position->latch = true;
       }
       latch_delay_count_--;
     } else if (latch_piston_state_ && latch_delay_count_ < 0) {
       LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
-        position->latch.current = false;
+        position->latch = false;
       }
       latch_delay_count_++;
     }
@@ -147,32 +142,17 @@ class ShooterSimulation {
       brake_delay_count_++;
     }
 
-    // Handle plunger hall effect
-    UpdateEffectEdge(&position->plunger,
-                     last_position_message_.plunger,
-                     values.shooter.plunger_back,
-                     position.get(),
-                     last_position_message_);
-    LOG(INFO, "seteffect: plunger back: %d\n",
-        position->plunger.current);
-
     // Handle pusher distal hall effect
-    UpdateEffectEdge(&position->pusher_distal,
-                     last_position_message_.pusher_distal,
-                     values.shooter.pusher_distal,
-                     position.get(),
-                     last_position_message_);
-    LOG(INFO, "seteffect: pusher distal: %d\n",
-        position->plunger.current);
+    UpdateEffectEdge(
+        &position->pusher_distal, last_position_message_.pusher_distal,
+        values.shooter.pusher_distal, last_position_message_);
+    LOG(INFO, "seteffect: pusher distal: %d\n", position->plunger);
 
     // Handle pusher proximal hall effect
-    UpdateEffectEdge(&position->pusher_proximal,
-                     last_position_message_.pusher_proximal,
-                     values.shooter.pusher_proximal,
-                     position.get(),
-                     last_position_message_);
-    LOG(INFO, "seteffect: pusher proximal: %d\n",
-        position->plunger.current);
+    UpdateEffectEdge(
+        &position->pusher_proximal, last_position_message_.pusher_proximal,
+        values.shooter.pusher_proximal, last_position_message_);
+    LOG(INFO, "seteffect: pusher proximal: %d\n", position->plunger);
 
     last_position_message_ = *position;
     position.Send();
@@ -203,7 +183,7 @@ class ShooterSimulation {
     EXPECT_GE(constants::GetValues().shooter.upper_limit,
               shooter_plant_->Y(0, 0));
     // we okay within a millimeter
-    EXPECT_LE(constants::GetValues().shooter.lower_limit - 1.0,
+    EXPECT_LE(constants::GetValues().shooter.lower_limit - 0.001,
               shooter_plant_->Y(0, 0));
     last_voltage_ = shooter_queue_group_.output->voltage;
     ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
@@ -223,7 +203,6 @@ class ShooterSimulation {
   int brake_delay_count_;
 
  private:
-
   ShooterGroup shooter_queue_group_;
   double initial_position_;
   double last_voltage_;
@@ -267,8 +246,11 @@ class ShooterTest : public ::testing::Test {
   }
 
   void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder().enabled(enabled).autonomous(false)
-        .team_id(971).Send();
+    ::aos::robot_state.MakeWithBuilder()
+        .enabled(enabled)
+        .autonomous(false)
+        .team_id(971)
+        .Send();
     ::aos::robot_state.FetchLatest();
   }
 
@@ -308,7 +290,7 @@ TEST_F(ShooterTest, GoesToValue) {
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
   }
-  //EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
+  // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.GetState());
@@ -334,16 +316,16 @@ TEST_F(ShooterTest, Fire) {
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
-	printf("MOTORSTATE = %d\n", shooter_motor_.GetState());
-	if (shooter_motor_.GetState() == ShooterMotor::STATE_REQUEST_FIRE){
-		hit_requestfire = true;
-	}
-	if (shooter_motor_.GetState() == ShooterMotor::STATE_PREPARE_FIRE){
-		hit_preparefire = true;
-	}
-	if (shooter_motor_.GetState() == ShooterMotor::STATE_FIRE){
-		hit_fire = true;
-	}
+    printf("MOTORSTATE = %d\n", shooter_motor_.GetState());
+    if (shooter_motor_.GetState() == ShooterMotor::STATE_REQUEST_FIRE) {
+      hit_requestfire = true;
+    }
+    if (shooter_motor_.GetState() == ShooterMotor::STATE_PREPARE_FIRE) {
+      hit_preparefire = true;
+    }
+    if (shooter_motor_.GetState() == ShooterMotor::STATE_FIRE) {
+      hit_fire = true;
+    }
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();

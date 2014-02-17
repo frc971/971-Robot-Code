@@ -74,6 +74,7 @@ void ShooterMotor::RunIteration(
   }
 
   if (initial_loop_) {
+    // TODO(austin): If 'reset()', we are lost, start over.
     initial_loop_ = false;
     shooter_.SetPositionDirectly(position->position);
   } else {
@@ -108,11 +109,11 @@ void ShooterMotor::RunIteration(
       // Start off with the assumption that we are at the value
       // futhest back given our sensors.
       if (position && position->pusher_distal.current) {
-        //TODO_ben: use posedge
+        //TODO(ben): use posedge
         calibration_position_ =
             position->position - values.shooter.pusher_distal.lower_angle;
       } else if (position && position->pusher_proximal.current) {
-        //TODO_ben: use posedge
+        //TODO(ben): use posedge
         calibration_position_ =
             position->position - values.shooter.pusher_proximal.lower_angle;
       }
@@ -122,7 +123,7 @@ void ShooterMotor::RunIteration(
       // Zero out initial goal.
       shooter_.SetGoalPosition(real_position, 0.0);
       if (position) {
-        output->latch_piston = position->plunger.current;
+        output->latch_piston = position->plunger;
       } else {
         // We don't know what is going on so just close the latch to be safe.
         output->latch_piston = true;
@@ -130,13 +131,12 @@ void ShooterMotor::RunIteration(
       output->brake_piston = false;
       break;
     case STATE_REQUEST_LOAD:
-      if (position->plunger.current && position->latch.current) {
+      if (position->plunger && position->latch) {
         // Already latched.
         state_ = STATE_PREPARE_SHOT;
-      } else if (position->pusher_distal.current ||
-                 (adjusted_position) < 0) {
+      } else if (position->pusher_distal.current || (adjusted_position) < 0) {
         state_ = STATE_LOAD_BACKTRACK;
-        //TODO_ben: double check that rezero is the right thing to do here
+        // TODO(ben): double check that rezero is the right thing to do here
         if (position) {
           calibration_position_ = position->position;
         }
@@ -145,15 +145,18 @@ void ShooterMotor::RunIteration(
       }
 
       shooter_.SetGoalPosition(0.0, 0.0);
-      if (position && output)
-        output->latch_piston = position->plunger.current;
-      if (output) output->brake_piston = false;
+      if (position && output) {
+        output->latch_piston = position->plunger;
+      }
+      if (output) {
+        output->brake_piston = false;
+      }
       break;
     case STATE_LOAD_BACKTRACK:
       if (adjusted_position > values.shooter.pusher_distal.upper_angle + 0.01) {
         shooter_.SetGoalPosition(
-            real_position - values.shooter_zeroing_speed * dt,
-            values.shooter_zeroing_speed);
+            real_position - values.shooter.zeroing_speed * dt,
+            values.shooter.zeroing_speed);
       } else {
         state_ = STATE_LOAD;
       }
@@ -164,27 +167,27 @@ void ShooterMotor::RunIteration(
     case STATE_LOAD:
       if (position && position->pusher_proximal.current &&
           !last_position_.pusher_proximal.current) {
-        //TODO_ben: use posedge
+        //TODO(ben): use posedge
         calibration_position_ =
             position->position - values.shooter.pusher_proximal.upper_angle;
       }
       if (position && position->pusher_distal.current &&
           !last_position_.pusher_distal.current) {
-        //TODO_ben: use posedge
+        //TODO(ben): use posedge
         calibration_position_ =
             position->position - values.shooter.pusher_distal.lower_angle;
       }
 
       shooter_.SetGoalPosition(calibration_position_, 0.0);
       if (position && output) {
-        output->latch_piston = position->plunger.current;
+        output->latch_piston = position->plunger;
       }
 
-      if (position->plunger.current && position->latch.current) {
+      if (position->plunger && position->latch) {
         state_ = STATE_PREPARE_SHOT;
-      } else if (position->plunger.current &&
+      } else if (position->plunger &&
                  fabs(adjusted_position - PowerToPosition(goal->shot_power)) <
-                 0.05) {
+                     0.05) {
         state_ = STATE_LOADING_PROBLEM;
         loading_problem_end_time_ =
             Time::Now(Time::kDefaultClock) + Time::InSeconds(3.0);
@@ -194,13 +197,12 @@ void ShooterMotor::RunIteration(
     case STATE_LOADING_PROBLEM:
       if (Time::Now() > loading_problem_end_time_) {
         state_ = STATE_UNLOAD;
-      } else if (position->plunger.current &&
-                 position->latch.current) {
+      } else if (position->plunger && position->latch) {
         state_ = STATE_PREPARE_SHOT;
       }
       shooter_.SetGoalPosition(calibration_position_, 0.0);
       LOG(DEBUG, "Waiting on latch: plunger %d, latch: %d\n",
-          position->plunger.current, position->latch.current);
+          position->plunger, position->latch);
 
       if (output) output->latch_piston = true;
       if (output) output->brake_piston = false;
@@ -242,7 +244,7 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_FIRE:
       shooter_loop_disable = true;
-      if (position->plunger.current) {
+      if (position->plunger) {
         prepare_fire_end_time_ =
             Time::Now(Time::kDefaultClock) + Time::InMS(40.0);
         apply_some_voltage = true;
@@ -267,7 +269,7 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_FIRE:
       shooter_loop_disable = true;
-      //TODO_ben: need approamately equal
+      //TODO(ben): need approamately equal
       if (fabs(last_position_.position - adjusted_position) < 0.07) {
         cycles_not_moved_++;
       } else {
@@ -281,7 +283,7 @@ void ShooterMotor::RunIteration(
       output->brake_piston = true;
       break;
     case STATE_UNLOAD:
-      if (position->plunger.current && position->latch.current) {
+      if (position->plunger && position->latch) {
         shooter_.SetGoalPosition(0.02, 0.0);
         if (adjusted_position < 0.04) {
           output->latch_piston = false;
@@ -294,13 +296,13 @@ void ShooterMotor::RunIteration(
       output->brake_piston = false;
       break;
     case STATE_UNLOAD_MOVE:
-      if (adjusted_position > values.shooter_total_length - 0.03) {
+      if (adjusted_position > values.shooter.upper_limit - 0.03) {
         shooter_.SetGoalPosition(real_position, 0.0);
         state_ = STATE_READY_UNLOAD;
       } else {
         shooter_.SetGoalPosition(
-            real_position + values.shooter_zeroing_speed * dt,
-            values.shooter_zeroing_speed);
+            real_position + values.shooter.zeroing_speed * dt,
+            values.shooter.zeroing_speed);
       }
 
       output->latch_piston = false;

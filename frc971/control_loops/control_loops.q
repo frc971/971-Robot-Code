@@ -13,3 +13,11 @@ struct HallEffectPositions {
   double posedge;
   double negedge;
 };
+
+// Records edges captured on a single hall effect sensor.
+struct PosedgeOnlyCountedHallEffectStruct {
+  bool current;
+  int32_t posedge_count;
+  int32_t negedge_count;
+  double posedge_value;
+};

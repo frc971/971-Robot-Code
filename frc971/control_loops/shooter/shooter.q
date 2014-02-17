@@ -10,33 +10,31 @@ queue_group ShooterGroup {
     double voltage;
     // true: latch engaged, false: latch open
     bool latch_piston;
-	// true: brake engaged false: brake released
+    // true: brake engaged false: brake released
     bool brake_piston;
   };
   message Goal {
-    // encoder ticks of shot energy.
+    // Shot power in joules.
     double shot_power;
     // Shoots as soon as this is true.
     bool shot_requested;
     bool unload_requested;
   };
+
+  // Back is when the springs are all the way stretched.
   message Position {
-    //  Gets triggered when the plunger is latched.
-    HallEffectStruct plunger;
+    // If the latch piston is fired and this hall effect has been triggered, the
+    // plunger is all the way back and latched.
+    bool plunger;
     // Gets triggered when the pusher is all the way back.
-	HallEffectStruct pusher_distal;
+    PosedgeOnlyCountedHallEffectStruct pusher_distal;
     // Triggers just before pusher_distal.
-	HallEffectStruct pusher_proximal;
+    PosedgeOnlyCountedHallEffectStruct pusher_proximal;
     // Triggers when the latch engages.
-	HallEffectStruct latch;
+    bool latch;
 
     // In meters, out is positive.
     double position;
-
-	// position at the last positive edge of either of the pusher hall effects.
-	double pusher_posedge_value;
-	// position at the last negative edge of either of the pusher hall effects.
-	double pusher_negedge_value;
   };
   message Status {
     // Whether it's ready to shoot right now.
