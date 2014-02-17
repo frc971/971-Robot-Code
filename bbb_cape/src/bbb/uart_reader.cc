@@ -8,7 +8,6 @@
 #include "aos/common/logging/logging.h"
 
 // This is the code for receiving data from the cape via UART.
-// NOTE: In order for this to work, you must have the BB-UART1 device tree
 // fragment active.
 // `su -c "echo BB-UART1 > /sys/devices/bone_capemgr.*/slots"` works, but
 // you have to do it every time. It is also possible to set it up to do that
@@ -16,9 +15,49 @@
 
 namespace bbb {
 namespace {
+
 // TODO(brians): Determine this in some way that allows easy switching for
 // testing with /dev/ttyUSB0 for example.
 const char *device = "/dev/ttyO1";
+
+bool easy_access(const char *path) {
+  if (access(path, R_OK | W_OK) == 0) return true;
+  if (errno == EACCES || errno == ENOENT) return false;
+  LOG(FATAL, "access(%s, F_OK) failed with %d: %s\n", path, errno,
+      strerror(errno));
+}
+
+int open_device() {
+  if (easy_access(device)) {
+    LOG(INFO, "unexporting BB-UART1\n");
+    if (system("bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
+               " | fgrep BB-UART1"
+               " | cut -c 2) > /sys/devices/bone_capemgr.*/slots'") ==
+        -1) {
+      LOG(FATAL, "system([disable OMAP UART]) failed with %d: %s\n", errno,
+          strerror(errno));
+    }
+    while (easy_access(device)) {
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+    }
+  }
+
+  LOG(INFO, "exporting BB-UART1\n");
+  // 2 strings to work around a VIM bug where the indenter locks up when they're
+  // combined as 1...
+  if (system("bash -c 'echo BB-UART1 > /sys/devices/bone_capemgr.*"
+             "/slots'") ==
+      -1) {
+    LOG(FATAL, "system([enable OMAP UART]) failed with %d: %s\n", errno,
+        strerror(errno));
+  }
+  while (!easy_access(device)) {
+    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+  }
+
+  return open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
+}
+
 }  // namespace
 
 extern "C" {
@@ -32,7 +71,7 @@ extern int aos_uart_reader_set_tty_options(int fd, int baud_rate);
 }  // extern "C"
 
 UartReader::UartReader(int32_t baud_rate)
-    : fd_(open(device, O_RDWR | O_NOCTTY | O_NONBLOCK)) {
+    : fd_(open_device()) {
   
   if (fd_ < 0) {
     LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s."

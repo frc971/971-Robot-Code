@@ -36,6 +36,7 @@ COMMONFLAGS='-DLOG_SOURCENAME='"'\"'"'`basename $in`'"'\"' "
 
 if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
   			"`find ${AOS}/.. -newer ${BUILD_NINJA} \( -name '*.gyp' -or -name '*.gypi' \)`" ) ]]; then
+  echo 'Running gyp...' 1>&2
   # This is a gyp "file" that we pipe into gyp so that it will put the output
   # in a directory named what we want where we want it.
   GYP_INCLUDE=$(cat <<END
@@ -62,6 +63,7 @@ END
   if [ ${PLATFORM} == crio ]; then
     sed -i 's/nm -gD/nm/g' ${BUILD_NINJA}
   fi
+  echo 'Done running gyp.' 1>&2
 fi
 
 if [ "${ACTION}" == "clean" ]; then
