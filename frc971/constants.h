@@ -11,8 +11,8 @@ namespace constants {
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
 
-const uint16_t kCompTeamNumber = 8971;
-const uint16_t kPracticeTeamNumber = 971;
+const uint16_t kCompTeamNumber = 971;
+const uint16_t kPracticeTeamNumber = 8971;
 
 // Contains the voltages for an analog hall effect sensor on a shifter.
 struct ShifterHallEffect {

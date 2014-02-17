@@ -53,12 +53,10 @@ void ClawLimitedLoop::CapU() {
       const double difference =
           uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
       U(0, 0) -= difference;
-      U(1, 0) -= difference;
     } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
       const double difference =
           -uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
       U(0, 0) += difference;
-      U(1, 0) += difference;
     }
   }
 
@@ -83,7 +81,8 @@ ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
       claw_(MakeClawLoop()),
       was_enabled_(false),
       doing_calibration_fine_tune_(false),
-      capped_goal_(false) {}
+      capped_goal_(false),
+      mode_(UNKNOWN_LOCATION) {}
 
 const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
@@ -211,6 +210,21 @@ void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
   LOG(INFO, "Changing bottom offset by %f\n", doffset);
 }
 
+bool ClawMotor::is_ready() const {
+  return (
+      (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
+       bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
+      (::aos::robot_state->autonomous &&
+       ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+         top_claw_.zeroing_state() ==
+             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+        (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+         bottom_claw_.zeroing_state() ==
+             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION))));
+}
+
+bool ClawMotor::is_zeroing() const { return !is_ready(); }
+
 // Positive angle is up, and positive power is up.
 void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                              const control_loops::ClawGroup::Position *position,
@@ -249,13 +263,13 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     if (!has_top_claw_goal_) {
       has_top_claw_goal_ = true;
       top_claw_goal_ = top_claw_.absolute_position();
-      initial_seperation_ =
+      initial_separation_ =
           top_claw_.absolute_position() - bottom_claw_.absolute_position();
     }
     if (!has_bottom_claw_goal_) {
       has_bottom_claw_goal_ = true;
       bottom_claw_goal_ = bottom_claw_.absolute_position();
-      initial_seperation_ =
+      initial_separation_ =
           top_claw_.absolute_position() - bottom_claw_.absolute_position();
     }
     LOG(DEBUG, "Claw position is (top: %f bottom: %f\n",
@@ -264,14 +278,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
   bool autonomous = ::aos::robot_state->autonomous;
   bool enabled = ::aos::robot_state->enabled;
-
-  enum CalibrationMode {
-    READY,
-    FINE_TUNE,
-    UNKNOWN_LOCATION
-  };
-
-  CalibrationMode mode;
 
   if ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
@@ -290,13 +296,14 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     has_top_claw_goal_ = true;
     doing_calibration_fine_tune_ = false;
 
-    mode = READY;
+    mode_ = READY;
   } else if (top_claw_.zeroing_state() !=
                  ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
              bottom_claw_.zeroing_state() !=
                  ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
     // Time to fine tune the zero.
     // Limit the goals here.
+    // TODO(austin): Handle disabled state here.
     if (bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::CALIBRATED) {
       // always get the bottom claw to calibrated first
       LOG(DEBUG, "Calibrating the bottom of the claw\n");
@@ -307,12 +314,15 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = true;
           bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           LOG(DEBUG, "Ready to fine tune the bottom\n");
+          mode_ = FINE_TUNE_BOTTOM;
         } else {
           // send bottom to zeroing start
           bottom_claw_goal_ = values.claw.start_fine_tune_pos;
           LOG(DEBUG, "Going to the start position for the bottom\n");
+          mode_ = PREP_FINE_TUNE_BOTTOM;
         }
       } else {
+        mode_ = FINE_TUNE_BOTTOM;
         bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
         if (top_claw_.front_hall_effect() || top_claw_.back_hall_effect() ||
             bottom_claw_.front_hall_effect() ||
@@ -322,6 +332,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = false;
           bottom_claw_goal_ = values.claw.start_fine_tune_pos;
           LOG(DEBUG, "Found a limit, starting over.\n");
+          mode_ = PREP_FINE_TUNE_BOTTOM;
         }
 
         if (bottom_claw_.calibration_hall_effect()) {
@@ -338,6 +349,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           } else {
             doing_calibration_fine_tune_ = false;
             bottom_claw_goal_ = values.claw.start_fine_tune_pos;
+            mode_ = PREP_FINE_TUNE_BOTTOM;
           }
         } else {
           LOG(DEBUG, "Fine tuning\n");
@@ -355,12 +367,15 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = true;
           top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           LOG(DEBUG, "Ready to fine tune the top\n");
+          mode_ = FINE_TUNE_TOP;
         } else {
           // send top to zeroing start
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           LOG(DEBUG, "Going to the start position for the top\n");
+          mode_ = PREP_FINE_TUNE_TOP;
         }
       } else {
+        mode_ = FINE_TUNE_TOP;
         top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
         if (top_claw_.front_hall_effect() || top_claw_.back_hall_effect() ||
             bottom_claw_.front_hall_effect() ||
@@ -369,6 +384,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = false;
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           LOG(DEBUG, "Found a limit, starting over.\n");
+          mode_ = PREP_FINE_TUNE_TOP;
         }
         if (top_claw_.calibration_hall_effect()) {
           if (top_claw_.calibration_hall_effect_posedge_count_changed() &&
@@ -378,26 +394,26 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                 position->top.posedge_value,
                 values.claw.upper_claw.calibration.lower_angle);
             top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
-            // calinrated so we are done fine tuning top
+            // calibrated so we are done fine tuning top
             doing_calibration_fine_tune_ = false;
             LOG(DEBUG, "Calibrated the top correctly!\n");
           } else {
             doing_calibration_fine_tune_ = false;
             top_claw_goal_ = values.claw.start_fine_tune_pos;
+            mode_ = PREP_FINE_TUNE_TOP;
           }
         }
       }
       // now set the bottom claw to track
       bottom_claw_goal_ = top_claw_goal_ - values.claw.claw_zeroing_separation;
     }
-    mode = FINE_TUNE;
   } else {
     doing_calibration_fine_tune_ = false;
     if (!was_enabled_ && enabled) {
       if (position) {
         top_claw_goal_ = position->top.position;
         bottom_claw_goal_ = position->bottom.position;
-        initial_seperation_ =
+        initial_separation_ =
             position->top.position - position->bottom.position;
       } else {
         has_top_claw_goal_ = false;
@@ -441,11 +457,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       bottom_claw_.SetCalibrationOnEdge(
           values.claw.lower_claw, ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
     }
-    mode = UNKNOWN_LOCATION;
+    mode_ = UNKNOWN_LOCATION;
   }
-
-  // TODO(austin): Handle disabled properly everwhere...  Restart and all that
-  // jazz.
 
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
     claw_.R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, 0, 0;
@@ -457,18 +470,21 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         claw_.R(1, 0), separation);
 
     // Only cap power when one of the halves of the claw is unknown.
-    claw_.set_is_zeroing(mode == UNKNOWN_LOCATION);
+    claw_.set_is_zeroing(mode_ == UNKNOWN_LOCATION || mode_ == FINE_TUNE_TOP ||
+                         mode_ == FINE_TUNE_BOTTOM);
     claw_.Update(output == nullptr);
   } else {
     claw_.Update(true);
   }
 
   capped_goal_ = false;
-  switch (mode) {
+  switch (mode_) {
     case READY:
+    case PREP_FINE_TUNE_TOP:
+    case PREP_FINE_TUNE_BOTTOM:
       break;
-    case FINE_TUNE:
-      break;
+    case FINE_TUNE_BOTTOM:
+    case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
         double dx = (claw_.uncapped_average_voltage() -
@@ -478,6 +494,10 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         top_claw_goal_ -= dx;
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+        LOG(DEBUG, "Uncapped is %f, max is %f, difference is %f\n",
+            claw_.uncapped_average_voltage(), values.claw.max_zeroing_voltage,
+            (claw_.uncapped_average_voltage() -
+             values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
         double dx = (claw_.uncapped_average_voltage() +

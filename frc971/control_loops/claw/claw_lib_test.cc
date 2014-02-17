@@ -430,6 +430,7 @@ class ClawTest : public ::testing::Test {
     EXPECT_TRUE(min_seperation_ <= seperation);
   }
 
+
   virtual ~ClawTest() {
     ::aos::robot_state.Clear();
   }
@@ -441,28 +442,10 @@ TEST_F(ClawTest, ZerosCorrectly) {
       .bottom_angle(0.1)
       .seperation_angle(0.2)
       .Send();
-  for (int i = 0; i < 400; ++i) {
-    claw_motor_plant_.SendPositionMessage();
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-    SendDSPacket(true);
-  }
-  VerifyNearGoal();
-}
-
-// Tests that the wrist zeros correctly starting on the hall effect sensor.
-TEST_F(ClawTest, ZerosInTheMiddle) {
-  claw_motor_plant_.Reinitialize(0.5, 0.4);
-
-  claw_queue_group.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .seperation_angle(0.2)
-      .Send();
   for (int i = 0; i < 500; ++i) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
-
     SendDSPacket(true);
   }
   VerifyNearGoal();
@@ -480,7 +463,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
       .bottom_angle(0.1)
       .seperation_angle(0.2)
       .Send();
-  for (int i = 0; i < 600; ++i) {
+  for (int i = 0; i < 700; ++i) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -498,7 +481,7 @@ TEST_P(ZeroingClawTest, HandleMissingPosition) {
       .bottom_angle(0.1)
       .seperation_angle(0.2)
       .Send();
-  for (int i = 0; i < 600; ++i) {
+  for (int i = 0; i < 700; ++i) {
     if (i % 23) {
       claw_motor_plant_.SendPositionMessage();
     }
@@ -607,126 +590,99 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
   }
   VerifyNearGoal();
 }
-
-// Tests that the wrist can't get too far away from the zeroing position if the
-// zeroing position is saturating the goal.
-TEST_F(ClawTest, NoWindupNegative) {
-  int capped_count[2] = {0, 0};
-  double saved_zeroing_position[2] = {0, 0};
-  claw_queue_group.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .seperation_angle(0.2)
-      .Send();
-  for (int i = 0; i < 500; ++i) {
-    claw_motor_plant_.SendPositionMessage();
-    if (i == 50) {
-      EXPECT_TRUE(claw_motor_.is_zeroing());
-      // Move the zeroing position far away and verify that it gets moved back.
-      saved_zeroing_position[TOP_CLAW] =
-          top_claw_motor_.zeroed_joint_.zeroing_position_;
-      top_claw_motor_.zeroed_joint_.zeroing_position_ = -100.0;
-      saved_zeroing_position[BOTTOM_CLAW] =
-          bottom_claw_motor_.zeroed_joint_.zeroing_position_;
-      bottom_claw_motor_.zeroed_joint_.zeroing_position_ = -100.0;
-    } else if (i == 51) {
-      EXPECT_TRUE(claw_motor_.is_zeroing());
-
-      EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
-                  top_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
-      EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
-                  bottom_claw_motor_.zeroed_joint_.zeroing_position_, 0.4);
-    }
-    if (!claw_motor_.top().is_ready()) {
-      if (claw_motor_.top().capped_goal()) {
-        ++capped_count[TOP_CLAW];
-        // The cycle after we kick the zero position is the only cycle during
-        // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(top_claw_motor_.zeroed_joint_.U_uncapped()));
-      } else {
-        ASSERT_GT(5, ::std::abs(top_claw_motor_.zeroed_joint_.U_uncapped()));
-      }
-    }
-    if (!claw_motor_.bottom().is_ready()) {
-      if (claw_motor_.bottom().capped_goal()) {
-        ++capped_count[BOTTOM_CLAW];
-        // The cycle after we kick the zero position is the only cycle during
-        // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(bottom_claw_motor_.zeroed_joint_.U_uncapped()));
-      } else {
-        ASSERT_GT(5, ::std::abs(bottom_claw_motor_.zeroed_joint_.U_uncapped()));
-      }
-    }
-
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-    SendDSPacket(true);
-  }
-  VerifyNearGoal();
-  EXPECT_GT(3, capped_count[TOP_CLAW]);
-  EXPECT_GT(3, capped_count[BOTTOM_CLAW]);
-}
-
-// Tests that the wrist can't get too far away from the zeroing position if the
-// zeroing position is saturating the goal.
-TEST_F(ClawTest, NoWindupPositive) {
-  int capped_count[2] = {0, 0};
-  double saved_zeroing_position[2] = {0, 0};
-  claw_queue_group.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .seperation_angle(0.2)
-      .Send();
-  for (int i = 0; i < 500; ++i) {
-    claw_motor_plant_.SendPositionMessage();
-    if (i == 50) {
-      EXPECT_TRUE(top_claw_motor_.is_zeroing());
-      EXPECT_TRUE(top_claw_motor_.is_zeroing());
-      // Move the zeroing position far away and verify that it gets moved back.
-      saved_zeroing_position[TOP_CLAW] =
-          top_claw_motor_.zeroed_joint_.zeroing_position_;
-      top_claw_motor_.zeroed_joint_.zeroing_position_ = 100.0;
-      saved_zeroing_position[BOTTOM_CLAW] =
-          bottom_claw_motor_.zeroed_joint_.zeroing_position_;
-      top_claw_motor_.zeroed_joint_.zeroing_position_ = 100.0;
-    } else {
-      if (i == 51) {
-        EXPECT_TRUE(claw_motor_.top().is_zeroing());
-        EXPECT_TRUE(claw_motor_.bottom().is_zeroing());
-        EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
-                    claw_motor_.top().zeroing_position_, 0.4);
-        EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
-                    claw_motor_.bottom().zeroing_position_, 0.4);
-      }
-    }
-    if (!top_claw_motor_.is_ready()) {
-      if (top_claw_motor_.capped_goal()) {
-        ++capped_count[TOP_CLAW];
-        // The cycle after we kick the zero position is the only cycle during
-        // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(claw_motor_.top().zeroed_joint_.U_uncapped()));
-      } else {
-        ASSERT_GT(5, ::std::abs(claw_motor_.top().zeroed_joint_.U_uncapped()));
-      }
-    }
-    if (!bottom_claw_motor_.is_ready()) {
-      if (bottom_claw_motor_.capped_goal()) {
-        ++capped_count[BOTTOM_CLAW];
-        // The cycle after we kick the zero position is the only cycle during
-        // which we should expect to see a high uncapped power during zeroing.
-        ASSERT_LT(5, ::std::abs(claw_motor_.bottom().zeroed_joint_.U_uncapped()));
-      } else {
-        ASSERT_GT(5, ::std::abs(claw_motor_.bottom().zeroed_joint_.U_uncapped()));
-      }
-    }
-
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-    SendDSPacket(true);
-  }
-  VerifyNearGoal();
-  EXPECT_GT(3, capped_count[TOP_CLAW]);
-  EXPECT_GT(3, capped_count[BOTTOM_CLAW]);
-}
 */
+
+class WindupClawTest : public ClawTest {
+ protected:
+  void TestWindup(ClawMotor::CalibrationMode mode, int start_time, double offset) {
+    int capped_count = 0;
+    double saved_zeroing_position[2] = {0, 0};
+    const frc971::constants::Values& values = constants::GetValues();
+    bool kicked = false;
+    bool measured = false;
+    for (int i = 0; i < 600; ++i) {
+      claw_motor_plant_.SendPositionMessage();
+      if (i >= start_time && mode == claw_motor_.mode() && !kicked) {
+        EXPECT_EQ(mode, claw_motor_.mode());
+        // Move the zeroing position far away and verify that it gets moved
+        // back.
+        saved_zeroing_position[TOP_CLAW] = claw_motor_.top_claw_goal_;
+        saved_zeroing_position[BOTTOM_CLAW] = claw_motor_.bottom_claw_goal_;
+        claw_motor_.top_claw_goal_ += offset;
+        claw_motor_.bottom_claw_goal_ += offset;
+        kicked = true;
+      } else {
+        if (kicked && !measured) {
+          measured = true;
+          EXPECT_EQ(mode, claw_motor_.mode());
+
+          EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
+                      claw_motor_.top_claw_goal_, 0.1);
+          EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
+                      claw_motor_.bottom_claw_goal_, 0.1);
+        }
+      }
+      if (claw_motor_.mode() == mode) {
+        if (claw_motor_.capped_goal()) {
+          ++capped_count;
+          // The cycle after we kick the zero position is the only cycle during
+          // which we should expect to see a high uncapped power during zeroing.
+          ASSERT_LT(values.claw.max_zeroing_voltage,
+                    ::std::abs(claw_motor_.uncapped_average_voltage()));
+        } else {
+          ASSERT_GT(values.claw.max_zeroing_voltage,
+                    ::std::abs(claw_motor_.uncapped_average_voltage()));
+        }
+      }
+
+      claw_motor_.Iterate();
+      claw_motor_plant_.Simulate();
+      SendDSPacket(true);
+    }
+    EXPECT_TRUE(kicked);
+    EXPECT_TRUE(measured);
+    EXPECT_EQ(1, capped_count);
+  }
+};
+
+// Tests that the wrist can't get too far away from the zeroing position if the
+// zeroing position is saturating the goal.
+TEST_F(WindupClawTest, NoWindupPositive) {
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(0.1)
+      .seperation_angle(0.2)
+      .Send();
+
+  TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, 971.0);
+
+  VerifyNearGoal();
+}
+
+// Tests that the wrist can't get too far away from the zeroing position if the
+// zeroing position is saturating the goal.
+TEST_F(WindupClawTest, NoWindupNegative) {
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(0.1)
+      .seperation_angle(0.2)
+      .Send();
+
+  TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, -971.0);
+
+  VerifyNearGoal();
+}
+
+// Tests that the wrist can't get too far away from the zeroing position if the
+// zeroing position is saturating the goal.
+TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(0.1)
+      .seperation_angle(0.2)
+      .Send();
+
+  TestWindup(ClawMotor::FINE_TUNE_BOTTOM, 200, -971.0);
+
+  VerifyNearGoal();
+}
 
 }  // namespace testing
 }  // namespace control_loops
