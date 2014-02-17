@@ -32,6 +32,8 @@
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_reader',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
+        '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
       ],
     },
   ],
