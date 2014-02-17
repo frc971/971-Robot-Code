@@ -13,7 +13,10 @@
         '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:*',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
       ],
       'copies': [
         {

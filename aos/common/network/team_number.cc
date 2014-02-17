@@ -11,7 +11,10 @@ namespace aos {
 namespace network {
 namespace {
 
+uint16_t override_team = 0;
+
 uint16_t *DoGetTeamNumber() {
+  if (override_team != 0) return &override_team;
   const in_addr &address = configuration::GetOwnIPAddress();
   static uint16_t r =
       (((address.s_addr & 0xFF00) >> 8) * 100) +
@@ -26,6 +29,8 @@ uint16_t GetTeamNumber() {
   static Once<uint16_t> once(DoGetTeamNumber);
   return *once.Get();
 }
+
+void OverrideTeamNumber(uint16_t team) { override_team = team; }
 
 }  // namespace network
 }  // namespace aos

@@ -37,9 +37,7 @@
         'time.cc'
       ],
       'dependencies': [
-        # TODO(aschuh): Fix this dependency loop by
-        # providing a logging interface.
-        # '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/build/aos.gyp:logging_interface',
         'mutex',
       ],
     },
@@ -229,9 +227,7 @@
       'dependencies': [
         'mutex',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
-        # TODO(aschuh): Fix this dependency loop by
-        # providing a logging interface.
-        # '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
       'export_dependent_settings': [
         'mutex',
@@ -259,9 +255,7 @@
         }],
       ],
       'dependencies': [
-        # TODO(aschuh): Fix this dependency loop by
-        # providing a logging interface.
-        # '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
     },
     {
@@ -273,7 +267,6 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'mutex',
-        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {

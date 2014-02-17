@@ -116,5 +116,11 @@
       'gen_srcdir_parents': ['<(out_dir)'],
     },
   },
+  'dependencies': [
+    '<(AOS)/common/common.gyp:queues',
+  ],
+  'export_dependent_settings': [
+    '<(AOS)/common/common.gyp:queues',
+  ],
   'hard_dependency': 1,
 }

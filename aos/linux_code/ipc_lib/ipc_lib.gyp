@@ -44,8 +44,7 @@
         '<(AOS)/common/common.gyp:condition',
         '<(AOS)/common/common.gyp:mutex',
         'core_lib',
-        # TODO(brians): fix this once there's a nice logging interface to use
-        # '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
     },
     {

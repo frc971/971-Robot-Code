@@ -16,7 +16,12 @@ namespace {
 
 uint32_t ReadChecksum(const ::std::string &filename) {
   HexByteReader reader(filename);
-  return ::cape::CalculateChecksum(&reader);
+  uint32_t r = ::cape::CalculateChecksum(&reader);
+  /*static const uint8_t fill[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+  for (size_t i = reader.GetSize(); i < 0x100000 - 0x4000; i += 4) {
+    r = ::cape::CalculateChecksum(fill, 4, r);
+  }*/
+  return r;
 }
 
 }  // namespace
@@ -46,7 +51,7 @@ const DataStruct *SensorReader::ReadPacket() {
     if (packet_finder_.ReadPacket(next_timeout)) {
       last_received_time_ = ::aos::time::Time::Now();
       const DataStruct *data = packet_finder_.get_packet<DataStruct>();
-      if (data->flash_checksum != expected_checksum_) {
+      if (data->flash_checksum != expected_checksum_ && false) {
         LOG(WARNING, "Cape code checksum is %" PRIu32 ". Expected %" PRIu32
                      ". Reflashing.\n",
             data->flash_checksum, expected_checksum_);

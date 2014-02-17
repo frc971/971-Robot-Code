@@ -23,5 +23,15 @@
         '<(AOS)/build/aos.gyp:logging',
       ],
     },
+    {
+      'target_name': 'core',
+      'type': 'executable',
+      'sources': [
+        'core.cc',
+      ],
+      'dependencies': [
+        'init',
+      ],
+    },
   ],
 }

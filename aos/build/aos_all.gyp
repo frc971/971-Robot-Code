@@ -12,7 +12,10 @@
       'dependencies': [
         #'../linux_code/camera/camera.gyp:CameraHTTPStreamer',
         #'../linux_code/camera/camera.gyp:CameraReader',
-        '../linux_code/core/core.gyp:*',
+        '../linux_code/linux_code.gyp:core',
+        '../linux_code/logging/logging.gyp:binary_log_writer',
+        '../linux_code/logging/logging.gyp:log_streamer',
+        '../linux_code/logging/logging.gyp:log_displayer',
         '../linux_code/ipc_lib/ipc_lib.gyp:raw_queue_test',
         '../linux_code/ipc_lib/ipc_lib.gyp:ipc_stress_test',
         '../linux_code/starter/starter.gyp:starter_exe',

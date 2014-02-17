@@ -18,6 +18,10 @@
 // code like logging.h can.
 // It is useful for the rest of the logging implementation and other C++ code
 // that needs to do special things with logging.
+//
+// It is implemented in logging_impl.cc and logging_interface.cc. They are
+// separate so that code used by logging_impl.cc can link in
+// logging_interface.cc to use logging.
 
 namespace aos {
 namespace logging {
@@ -151,6 +155,8 @@ void Cleanup();
 // goes.
 namespace internal {
 
+extern LogImplementation *global_top_implementation;
+
 // An separate instance of this class is accessible from each task/thread.
 // NOTE: It will get deleted in the child of a fork.
 struct Context {
@@ -209,6 +215,11 @@ void FillInMessage(log_level level, const char *format, va_list ap,
 
 // Prints message to output.
 void PrintMessage(FILE *output, const LogMessage &message);
+
+// Prints format (with ap) into output and correctly deals with the result
+// being too long etc.
+void ExecuteFormat(char *output, size_t output_size, const char *format,
+                   va_list ap);
 
 }  // namespace internal
 }  // namespace logging
