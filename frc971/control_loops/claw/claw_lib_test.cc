@@ -274,6 +274,11 @@ class ClawTest : public ::testing::Test {
     // test.
     ::aos::robot_state.Clear();
     SendDSPacket(true);
+    ::bbb::sensor_generation.Clear();
+    ::bbb::sensor_generation.MakeWithBuilder()
+        .reader_pid(254)
+        .cape_resets(5)
+        .Send();
   }
 
   void SendDSPacket(bool enabled) {
@@ -299,6 +304,7 @@ class ClawTest : public ::testing::Test {
 
   virtual ~ClawTest() {
     ::aos::robot_state.Clear();
+    ::bbb::sensor_generation.Clear();
   }
 };
 

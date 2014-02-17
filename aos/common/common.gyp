@@ -184,6 +184,7 @@
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/util/util.gyp:log_interval',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_generation',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:aos_queues',
@@ -193,6 +194,7 @@
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/util/util.gyp:log_interval',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_generation',
       ],
     },
     {

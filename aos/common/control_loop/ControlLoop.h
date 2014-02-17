@@ -60,8 +60,10 @@ class ControlLoop : public SerializableControlLoop {
   // Maximum age of driver station packets before the loop will be disabled.
   static const int kDSPacketTimeoutMs = 500;
 
-  ControlLoop(T *control_loop) : control_loop_(control_loop) {}
-
+  ControlLoop(T *control_loop)
+      : control_loop_(control_loop),
+        reset_(true),
+        has_sensor_reset_counters_(false) {}
   // Create some convenient typedefs to reference the Goal, Position, Status,
   // and Output structures.
   typedef typename std::remove_reference<
@@ -80,6 +82,14 @@ class ControlLoop : public SerializableControlLoop {
   // Constructs and sends a message on the output queue which will stop all the
   // motors.  Calls Zero to clear all the state.
   void ZeroOutputs();
+
+  // Returns true if the device reading the sensors reset and potentially lost
+  // track of encoder counts.  Calling this read method clears the flag.
+  bool reset() {
+    bool ans = reset_;
+    reset_ = false;
+    return ans;
+  }
 
   // Sets the output to zero.
   // Over-ride if a value of zero is not "off" for this subsystem.
@@ -130,6 +140,11 @@ class ControlLoop : public SerializableControlLoop {
  private:
   // Pointer to the queue group
   T *control_loop_;
+
+  bool reset_;
+  bool has_sensor_reset_counters_;
+  int32_t reader_pid_;
+  uint32_t cape_resets_;
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   static constexpr ::aos::time::Time kStaleLogInterval =
