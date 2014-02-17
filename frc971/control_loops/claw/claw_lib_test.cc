@@ -451,8 +451,8 @@ TEST_F(ClawTest, ZerosCorrectly) {
 }
 
 // Tests that the wrist zeros correctly starting on the hall effect sensor.
-TEST_F(ClawTest, ZerosStartingOn) {
-  claw_motor_plant_.Reinitialize(100 * M_PI / 180.0, 90 * M_PI / 180.0);
+TEST_F(ClawTest, ZerosInTheMiddle) {
+  claw_motor_plant_.Reinitialize(0.5, 0.4);
 
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
@@ -468,13 +468,37 @@ TEST_F(ClawTest, ZerosStartingOn) {
   VerifyNearGoal();
 }
 
-// Tests that missing positions are correctly handled.
-TEST_F(ClawTest, HandleMissingPosition) {
+class ZeroingClawTest
+    : public ClawTest,
+      public ::testing::WithParamInterface< ::std::pair<double, double>> {};
+
+// Tests that the wrist zeros correctly starting on the hall effect sensor.
+TEST_P(ZeroingClawTest, ParameterizedZero) {
+  claw_motor_plant_.Reinitialize(GetParam().first, GetParam().second);
+
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
       .seperation_angle(0.2)
       .Send();
-  for (int i = 0; i < 500; ++i) {
+  for (int i = 0; i < 600; ++i) {
+    claw_motor_plant_.SendPositionMessage();
+    claw_motor_.Iterate();
+    claw_motor_plant_.Simulate();
+
+    SendDSPacket(true);
+  }
+  VerifyNearGoal();
+}
+
+// Tests that missing positions are correctly handled.
+TEST_P(ZeroingClawTest, HandleMissingPosition) {
+  claw_motor_plant_.Reinitialize(GetParam().first, GetParam().second);
+
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(0.1)
+      .seperation_angle(0.2)
+      .Send();
+  for (int i = 0; i < 600; ++i) {
     if (i % 23) {
       claw_motor_plant_.SendPositionMessage();
     }
@@ -485,6 +509,30 @@ TEST_F(ClawTest, HandleMissingPosition) {
   }
   VerifyNearGoal();
 }
+
+INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
+                        ::testing::Values(::std::make_pair(0.04, 0.02),
+                                          ::std::make_pair(0.2, 0.1),
+                                          ::std::make_pair(0.3, 0.2),
+                                          ::std::make_pair(0.4, 0.3),
+                                          ::std::make_pair(0.5, 0.4),
+                                          ::std::make_pair(0.6, 0.5),
+                                          ::std::make_pair(0.7, 0.6),
+                                          ::std::make_pair(0.8, 0.7),
+                                          ::std::make_pair(0.9, 0.8),
+                                          ::std::make_pair(1.0, 0.9),
+                                          ::std::make_pair(1.1, 1.0),
+                                          ::std::make_pair(1.15, 1.05),
+                                          ::std::make_pair(1.05, 0.95),
+                                          ::std::make_pair(1.1, 1.0),
+                                          ::std::make_pair(1.2, 1.1),
+                                          ::std::make_pair(1.3, 1.2),
+                                          ::std::make_pair(1.4, 1.3),
+                                          ::std::make_pair(1.5, 1.4),
+                                          ::std::make_pair(1.6, 1.5),
+                                          ::std::make_pair(1.7, 1.6),
+                                          ::std::make_pair(1.8, 1.7),
+                                          ::std::make_pair(2.015, 2.01)));
 
 /*
 // Tests that loosing the encoder for a second triggers a re-zero.

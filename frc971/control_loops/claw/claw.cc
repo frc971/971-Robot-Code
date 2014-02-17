@@ -46,7 +46,25 @@ namespace frc971 {
 namespace control_loops {
 
 void ClawLimitedLoop::CapU() {
-  double max_value = ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
+  uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
+  if (is_zeroing_) {
+    const frc971::constants::Values &values = constants::GetValues();
+    if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
+      const double difference =
+          uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
+      U(0, 0) -= difference;
+      U(1, 0) -= difference;
+    } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
+      const double difference =
+          -uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
+      U(0, 0) += difference;
+      U(1, 0) += difference;
+    }
+  }
+
+  double max_value =
+      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
+
   if (max_value > 12.0) {
     LOG(DEBUG, "Capping U because max is %f\n", max_value);
     U = U * 12.0 / max_value;
@@ -64,7 +82,8 @@ ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
       bottom_claw_(this),
       claw_(MakeClawLoop()),
       was_enabled_(false),
-      doing_calibration_fine_tune_(false) {}
+      doing_calibration_fine_tune_(false),
+      capped_goal_(false) {}
 
 const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
@@ -91,7 +110,6 @@ bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
     return true;
   }
   if (front_hall_effect_negedge_count_changed()) {
-    LOG(INFO, "%s Value is %f last is %f\n", name_, negedge_value_, last_encoder());
     if (negedge_value_ - last_encoder() > 0) {
       *edge_angle = claw_values.front.upper_angle;
       LOG(INFO, "%s Negedge front upper edge -> %f\n", name_, *edge_angle);
@@ -388,17 +406,11 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     }
 
     // TODO(austin): Limit the goals here.
-    // Need to prevent windup, limit voltage, deal with windup on only 1 claw,
-    // ...
-    if (top_claw_.zeroing_state() ==
-        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
-    }
-    if (bottom_claw_.zeroing_state() ==
-        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
-    }
 
-    if (bottom_claw_.zeroing_state() !=
-        ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+    if ((bottom_claw_.zeroing_state() !=
+             ZeroedStateFeedbackLoop::UNKNOWN_POSITION ||
+         bottom_claw_.front_hall_effect() || top_claw_.front_hall_effect()) &&
+        !top_claw_.back_hall_effect() && !bottom_claw_.back_hall_effect()) {
       if (enabled) {
         // Time to slowly move back up to find any position to narrow down the
         // zero.
@@ -435,22 +447,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   // TODO(austin): Handle disabled properly everwhere...  Restart and all that
   // jazz.
 
-  // TODO(Joe): Write this.
-  if (bottom_claw_goal_ < values.bottom.lower_limit) {
-    bottom_claw_goal_ = values.bottom.lower_limit;
-  }
-  if (bottom_claw_goal_ > values.bottom.upper_limit) {
-    bottom_claw_goal_ = values.bottom.upper_limit;
-  }
-
-  if (top_claw_goal_ < values.bottom.lower_limit) {
-    top_claw_goal_ = values.bottom.lower_limit;
-  }
-  if (top_claw_goal_ > values.top.upper_limit) {
-    top_claw_goal_ = values.top.upper_limit;
-  }
-
-  // TODO(austin): ...
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
     claw_.R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, 0, 0;
     double separation = -971;
@@ -460,40 +456,39 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     LOG(DEBUG, "Goal is %f (bottom) %f, separation is %f\n", claw_.R(0, 0),
         claw_.R(1, 0), separation);
 
+    // Only cap power when one of the halves of the claw is unknown.
+    claw_.set_is_zeroing(mode == UNKNOWN_LOCATION);
     claw_.Update(output == nullptr);
   } else {
     claw_.Update(true);
   }
 
-  (void) mode;
-  /*
+  capped_goal_ = false;
   switch (mode) {
     case READY:
       break;
     case FINE_TUNE:
       break;
-    case UNKNOWN_LOCATION:
-      if (top_claw_->uncapped_voltage() > values.max_zeroing_voltage) {
-        double dx =
-            (top_claw_->uncapped_voltage() - values.max_zeroing_voltage) /
-            top_claw_->K(0, 0);
-        zeroing_position_ -= dx;
+    case UNKNOWN_LOCATION: {
+      if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
+        double dx = (claw_.uncapped_average_voltage() -
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        bottom_claw_goal_ -= dx;
+        top_claw_goal_ -= dx;
         capped_goal_ = true;
-      } else if (top_claw_->uncapped_voltage() < -values.max_zeroing_voltage) {
-        double dx =
-            (top_claw_->uncapped_voltage() + values.max_zeroing_voltage) /
-            top_claw_->K(0, 0);
-        zeroing_position_ -= dx;
+        LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+      } else if (claw_.uncapped_average_voltage() <
+                 -values.claw.max_zeroing_voltage) {
+        double dx = (claw_.uncapped_average_voltage() +
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        bottom_claw_goal_ -= dx;
+        top_claw_goal_ -= dx;
         capped_goal_ = true;
+        LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }
-      break;
-  }
-  */
-
-  if (position) {
-    //LOG(DEBUG, "pos: %f hall: %s absolute: %f\n", position->top_position,
-        //position->top_calibration_hall_effect ? "true" : "false",
-        //zeroed_joint_.absolute_position());
+    } break;
   }
 
   if (output) {
@@ -501,8 +496,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->bottom_claw_voltage =  claw_.U(0, 0);
   }
   status->done = false;
-      //::std::abs(zeroed_joint_.absolute_position() - goal->bottom_angle -
-                 //goal->seperation_angle) < 0.004;
 
   was_enabled_ = ::aos::robot_state->enabled;
 }

@@ -70,6 +70,7 @@ struct Values {
 
     double claw_unimportant_epsilon;
     double start_fine_tune_pos;
+    double max_zeroing_voltage;
   };
   Claws claw;
 };
