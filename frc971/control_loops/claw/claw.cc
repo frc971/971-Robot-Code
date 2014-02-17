@@ -192,6 +192,37 @@ void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
   X_hat(1, 0) -= doffset;
   LOG(INFO, "Changing bottom offset by %f\n", doffset);
 }
+//void FixClawPos(double * bottom_goal, double * top_goal, frc971::constants::Values &values) {
+//  //first update position based on angle limit
+//
+//  double goal_angle = *top_goal - *bottom_goal;
+//  if (goal_angle > values.lower_claw.front.upper_angle) {
+//    *bottom_goal += goal_angle - values.lower_claw.front.upper_angle;
+//  }
+//  if (goal_angle < values.lower_claw.front.lower_angle) {
+//    *bottom_goal += goal_angle - values.lower_claw.front.lower_angle;
+//  }
+//
+//  //now move both goals in unison
+//  if (*bottom_goal < values.bottom.lower_limit) {
+//    *bottom_goal += *bottom_goal - values.lower_claw.lower_limit;
+//    *top_goal += *bottom_goal - values.bottom.lower_limit;
+//  }
+//  if (*bottom_goal > values.bottom.upper_limit) {
+//    *bottom_goal -= *bottom_goal - values.bottom.upper_limit;
+//    *top_goal -= *bottom_goal - values.bottom.upper_limit;
+//  }
+//
+//  if (*top_goal < values.bottom.lower_limit) {
+//    *top_goal += *top_goal - values.bottom.lower_limit;
+//    *bottom_goal += *top_goal - values.bottom.lower_limit;
+//  }
+//  if (*top_goal > values.top.upper_limit) {
+//    *top_goal -= *top_goal - values.top.upper_limit;
+//    *bottom_goal -= *top_goal - values.top.upper_limit;
+//  }
+//}
+
 
 // Positive angle is up, and positive power is up.
 void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
@@ -434,19 +465,11 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   // jazz.
 
   // TODO(Joe): Write this.
-  if (bottom_claw_goal_ < values.bottom.lower_limit) {
-    bottom_claw_goal_ = values.bottom.lower_limit;
-  }
-  if (bottom_claw_goal_ > values.bottom.upper_limit) {
-    bottom_claw_goal_ = values.bottom.upper_limit;
-  }
-
-  if (top_claw_goal_ < values.bottom.lower_limit) {
-    top_claw_goal_ = values.bottom.lower_limit;
-  }
-  if (top_claw_goal_ > values.top.upper_limit) {
-    top_claw_goal_ = values.top.upper_limit;
-  }
+  // make sure this is possible phsically
+  // fix goals to make it possible
+  // break into function at some point?
+  // 
+  //FixClawPos(&bottom_claw_goal_, &top_claw_goal_, values);
 
   // TODO(austin): ...
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
