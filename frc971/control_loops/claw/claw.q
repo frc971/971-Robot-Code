@@ -30,7 +30,7 @@ queue_group ClawGroup {
     // The angle of the bottom claw.
     double bottom_angle;
     // How much higher the top claw is.
-    double seperation_angle;
+    double separation_angle;
     bool intake;
   };
 

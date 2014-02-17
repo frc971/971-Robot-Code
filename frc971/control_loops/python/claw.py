@@ -273,7 +273,7 @@ def main(argv):
     t.append(0.01 * i)
 
   pylab.plot(t, close_loop_x_bottom, label='x bottom')
-  pylab.plot(t, close_loop_x_sep, label='seperation')
+  pylab.plot(t, close_loop_x_sep, label='separation')
   pylab.plot(t, close_loop_u_bottom, label='u bottom')
   pylab.plot(t, close_loop_u_top, label='u top')
   pylab.legend()

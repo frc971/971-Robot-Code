@@ -257,9 +257,9 @@ class ClawTest : public ::testing::Test {
   ClawMotor claw_motor_;
   ClawMotorSimulation claw_motor_plant_;
 
-  // Minimum amount of acceptable seperation between the top and bottom of the
+  // Minimum amount of acceptable separation between the top and bottom of the
   // claw.
-  double min_seperation_;
+  double min_separation_;
 
   ClawTest()
       : claw_queue_group(".frc971.control_loops.claw_queue_group", 0x9f1a99dd,
@@ -269,7 +269,7 @@ class ClawTest : public ::testing::Test {
                          ".frc971.control_loops.claw_queue_group.status"),
         claw_motor_(&claw_queue_group),
         claw_motor_plant_(0.4, 0.2),
-        min_seperation_(constants::GetValues().claw.claw_min_separation) {
+        min_separation_(constants::GetValues().claw.claw_min_separation) {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -294,11 +294,11 @@ class ClawTest : public ::testing::Test {
     claw_queue_group.goal.FetchLatest();
     claw_queue_group.position.FetchLatest();
     double bottom = claw_motor_plant_.GetAbsolutePosition(BOTTOM_CLAW);
-    double seperation =
+    double separation =
         claw_motor_plant_.GetAbsolutePosition(TOP_CLAW) - bottom;
     EXPECT_NEAR(claw_queue_group.goal->bottom_angle, bottom, 1e-4);
-    EXPECT_NEAR(claw_queue_group.goal->seperation_angle, seperation, 1e-4);
-    EXPECT_TRUE(min_seperation_ <= seperation);
+    EXPECT_NEAR(claw_queue_group.goal->separation_angle, separation, 1e-4);
+    EXPECT_TRUE(min_separation_ <= separation);
   }
 
 
@@ -312,7 +312,7 @@ class ClawTest : public ::testing::Test {
 TEST_F(ClawTest, ZerosCorrectly) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
   for (int i = 0; i < 500; ++i) {
     claw_motor_plant_.SendPositionMessage();
@@ -408,7 +408,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
 
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
   for (int i = 0; i < 700; ++i) {
     claw_motor_plant_.SendPositionMessage();
@@ -426,7 +426,7 @@ TEST_P(ZeroingClawTest, HandleMissingPosition) {
 
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
   for (int i = 0; i < 700; ++i) {
     if (i % 23) {
@@ -469,7 +469,7 @@ INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
 TEST_F(ClawTest, RezeroWithMissingPos) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
   for (int i = 0; i < 800; ++i) {
     // After 3 seconds, simulate the encoder going missing.
@@ -484,7 +484,7 @@ TEST_F(ClawTest, RezeroWithMissingPos) {
       }
       claw_queue_group.goal.MakeWithBuilder()
           .bottom_angle(0.2)
-          .seperation_angle(0.2)
+          .separation_angle(0.2)
           .Send();
     }
     if (i == 410) {
@@ -506,7 +506,7 @@ TEST_F(ClawTest, RezeroWithMissingPos) {
 TEST_F(ClawTest, DisableGoesUninitialized) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
   for (int i = 0; i < 800; ++i) {
     claw_motor_plant_.SendPositionMessage();
@@ -598,7 +598,7 @@ class WindupClawTest : public ClawTest {
 TEST_F(WindupClawTest, NoWindupPositive) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, 971.0);
@@ -611,7 +611,7 @@ TEST_F(WindupClawTest, NoWindupPositive) {
 TEST_F(WindupClawTest, NoWindupNegative) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, -971.0);
@@ -624,7 +624,7 @@ TEST_F(WindupClawTest, NoWindupNegative) {
 TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
   claw_queue_group.goal.MakeWithBuilder()
       .bottom_angle(0.1)
-      .seperation_angle(0.2)
+      .separation_angle(0.2)
       .Send();
 
   TestWindup(ClawMotor::FINE_TUNE_BOTTOM, 200, -971.0);

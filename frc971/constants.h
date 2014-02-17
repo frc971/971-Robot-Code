@@ -63,7 +63,7 @@ struct Values {
     double claw_zeroing_speed;
     double claw_zeroing_separation;
 
-    // claw seperation that would be considered a collision
+    // claw separation that would be considered a collision
     double claw_min_separation;
     double claw_max_separation;
 
