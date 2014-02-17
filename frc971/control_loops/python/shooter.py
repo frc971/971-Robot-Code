@@ -132,17 +132,17 @@ def main(argv):
   pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 3:
+  if len(argv) != 5:
     print "Expected .h file name and .cc file name for"
     print "both the plant and unaugmented plant"
   else:
     unaug_shooter = Shooter("RawShooter")
     unaug_loop_writer = control_loop.ControlLoopWriter("RawShooter",
                                                        [unaug_shooter])
-    #if argv[3][-3:] == '.cc':
-    #  unaug_loop_writer.Write(argv[4], argv[3])
-    #else:
-    #  unaug_loop_writer.Write(argv[3], argv[4])
+    if argv[3][-3:] == '.cc':
+      unaug_loop_writer.Write(argv[4], argv[3])
+    else:
+      unaug_loop_writer.Write(argv[3], argv[4])
 
     loop_writer = control_loop.ControlLoopWriter("Shooter", [shooter])
     if argv[1][-3:] == '.cc':

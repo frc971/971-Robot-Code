@@ -4,7 +4,7 @@
 
 int main() {
   ::aos::Init();
-  frc971::control_loops::ShooterLoop shooter;
+  frc971::control_loops::ShooterMotor shooter;
   shooter.Run();
   ::aos::Cleanup();
   return 0;
