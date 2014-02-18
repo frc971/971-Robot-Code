@@ -95,12 +95,12 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     Correct(Y);
   }
 
-  void SetGoalPosition(double desired_position, double desired_velocity) {
+  void SetGoalPosition(double, double) {
     // austin said something about which matrix to set, but I didn't under
     // very much of it
     //some_matrix = {desired_position, desired_velocity};
-    LOG(DEBUG, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
-    R << desired_position, desired_velocity, 0;
+    //LOG(DEBUG, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
+    //R << desired_position, desired_velocity, 0;
   }
 
   double position() const { return X_hat(0, 0); }

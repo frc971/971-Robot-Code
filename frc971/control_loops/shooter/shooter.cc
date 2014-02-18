@@ -73,12 +73,14 @@ void ShooterMotor::RunIteration(
     return;
   }
 
-  if (initial_loop_) {
-    // TODO(austin): If 'reset()', we are lost, start over.
-    initial_loop_ = false;
-    shooter_.SetPositionDirectly(position->position);
-  } else {
-    shooter_.SetPositionValues(position->position);
+  if (position) {
+    if (initial_loop_) {
+      // TODO(austin): If 'reset()', we are lost, start over.
+      initial_loop_ = false;
+      shooter_.SetPositionDirectly(position->position);
+    } else {
+      shooter_.SetPositionValues(position->position);
+    }
   }
 
   // Disable the motors now so that all early returns will return with the
