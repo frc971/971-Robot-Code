@@ -72,15 +72,15 @@ double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
   return (voltage - k.low) / (k.high - k.low);
 }
 
-double shooter_translate(int32_t in) {
+double claw_translate(int32_t in) {
   return static_cast<double>(in)
       / (256.0 /*cpr*/ * 4.0 /*quad*/)
-      * (18.0 / 48.0 /*encoder gears*/)
-      * (12.0 / 60.0 /*chain reduction*/)
+      / (18.0 / 48.0 /*encoder gears*/)
+      / (12.0 / 60.0 /*chain reduction*/)
       * (M_PI / 180.0);
 }
 
-double claw_translate(int32_t in) {
+double shooter_translate(int32_t in) {
   return static_cast<double>(in)
       / (256.0 /*cpr*/ * 4.0 /*quad*/)
       * 16 /*sprocket teeth*/ * 0.375 /*chain pitch*/
@@ -97,22 +97,29 @@ void CopyHallEffectEdges(Structure *output,
 
 void CopyClawPosition(control_loops::HalfClawPosition *output,
                       const ::bbb::SingleClawPosition &input,
-                      State::SingleClawState *state) {
+                      State::SingleClawState *state,
+                      bool reversed) {
   CopyHallEffectEdges(&output->front, input.front, &state->front);
+  output->front.current = input.bools.front;
   CopyHallEffectEdges(&output->calibration, input.calibration,
                       &state->calibration);
+  output->calibration.current = input.bools.calibration;
   CopyHallEffectEdges(&output->back, input.back, &state->back);
+  output->back.current = input.bools.back;
 
-  output->position = claw_translate(input.position);
-  output->posedge_value = claw_translate(input.posedge_position);
-  output->negedge_value = claw_translate(input.negedge_position);
+  const double multiplier = reversed ? -1.0 : 1.0;
+
+  output->position = multiplier * claw_translate(input.position);
+  output->posedge_value = multiplier * claw_translate(input.posedge_position);
+  output->negedge_value = multiplier * claw_translate(input.negedge_position);
 }
 
 void PacketReceived(const ::bbb::DataStruct *data,
                     const ::aos::time::Time &cape_timestamp,
                     State *state) {
-  ::frc971::logging_structs::CapeReading reading_to_log(cape_timestamp.sec(),
-                                                        cape_timestamp.nsec());
+  ::frc971::logging_structs::CapeReading reading_to_log(
+      cape_timestamp.sec(), cape_timestamp.nsec(),
+      data->main.ultrasonic_pulse_length);
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
   if (data->uninitialized_gyro) {
@@ -151,9 +158,9 @@ void PacketReceived(const ::bbb::DataStruct *data,
   {
     auto claw_position = control_loops::claw_queue_group.position.MakeMessage();
     CopyClawPosition(&claw_position->top, data->main.top_claw,
-                     &state->top_claw);
+                     &state->top_claw, false);
     CopyClawPosition(&claw_position->bottom, data->main.bottom_claw,
-                     &state->bottom_claw);
+                     &state->bottom_claw, true);
     claw_position.Send();
   }
 

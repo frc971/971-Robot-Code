@@ -88,8 +88,12 @@ class ShooterSimulation {
 
     // Signal that the hall effect sensor has been triggered if it is within
     // the correct range.
-    position->plunger =
-        CheckRange(GetAbsolutePosition(), values.shooter.plunger_back);
+    if (plunger_latched_) {
+      position->plunger = true;
+    } else {
+      position->plunger =
+          CheckRange(GetAbsolutePosition(), values.shooter.plunger_back);
+    }
     position->pusher_distal.current =
         CheckRange(GetAbsolutePosition(), values.shooter.pusher_distal);
     position->pusher_proximal.current =
@@ -150,18 +154,22 @@ class ShooterSimulation {
     last_plant_position_ = GetAbsolutePosition();
     EXPECT_TRUE(shooter_queue_group_.output.FetchLatest());
     if (shooter_queue_group_.output->latch_piston && !latch_piston_state_ &&
-        latch_delay_count_ == 0) {
+        latch_delay_count_ <= 0) {
+      ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
       latch_delay_count_ = 6;
     } else if (!shooter_queue_group_.output->latch_piston &&
-               latch_piston_state_ && latch_delay_count_ == 0) {
+               latch_piston_state_ && latch_delay_count_ >= 0) {
+      ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
       latch_delay_count_ = -6;
     }
 
     if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
-        brake_delay_count_ == 0) {
+        brake_delay_count_ <= 0) {
+      ASSERT_EQ(0, brake_delay_count_) << ": The test doesn't support that.";
       brake_delay_count_ = 5;
     } else if (!shooter_queue_group_.output->brake_piston &&
-               brake_piston_state_ && brake_delay_count_ == 0) {
+               brake_piston_state_ && brake_delay_count_ >= 0) {
+      ASSERT_EQ(0, brake_delay_count_) << ": The test doesn't support that.";
       brake_delay_count_ = -5;
     }
 
@@ -195,16 +203,20 @@ class ShooterSimulation {
         latch_piston_state_ = true;
         EXPECT_GE(constants::GetValues().shooter.latch_max_safe_position,
                   GetAbsolutePosition());
+        plunger_latched_ = true;
       }
       latch_delay_count_--;
     } else if (latch_piston_state_ && latch_delay_count_ < 0) {
       LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
+      EXPECT_GE(last_voltage_, 1) << ": Must preload the gearbox when firing.";
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
         EXPECT_TRUE(brake_piston_state_)
             << ": Must have the brake set when releasing the latch.";
+        plunger_latched_ = false;
         // TODO(austin): The brake should be set for a number of cycles after
         // this as well.
+        shooter_plant_->X(0, 0) += 0.005;
       }
       latch_delay_count_++;
     }
@@ -225,6 +237,9 @@ class ShooterSimulation {
   bool latch_piston_state_;
   // greater than zero, delaying close. less than zero delaying open
   int latch_delay_count_;
+
+  // Goes to true after latch_delay_count_ hits 0 while the plunger is back.
+  bool plunger_latched_;
 
   // true brake locked
   bool brake_piston_state_;
