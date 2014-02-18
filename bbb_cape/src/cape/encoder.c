@@ -109,9 +109,13 @@ static void encoder_setup(TIM_TypeDef *timer) {
       TIM_CR1_URS /* don't generate spurious update interrupts that
                      might be shared with other timers */;
   timer->SMCR = 3;  // 4x quadrature encoder mode
+  timer->CCER = 0;
   timer->CCMR1 =
       TIM_CCMR1_CC2S_0 | /* input pin 2 -> timer input 2 */
-      TIM_CCMR1_CC1S_0;  /* input pin 1 -> timer input 1 */
+      TIM_CCMR1_CC1S_0 | /* input pin 1 -> timer input 1 */
+      (3 << 4) |
+      (3 << 12);
+  timer->PSC = 0;
   timer->EGR = TIM_EGR_UG;
   timer->CR1 |= TIM_CR1_CEN;
 }

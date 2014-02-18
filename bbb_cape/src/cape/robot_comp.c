@@ -102,7 +102,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
 void robot_init(void) {
   gpio_setup_alt(GPIOB, 9, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
-  TIM11->CR1 = 0;
+  TIM11->CR1 = TIM_CR1_URS;
   TIM11->SMCR = 5 << 4 /* TI1 */ |
       6 << 0 /* start on rising edge */;
   TIM11->DIER = TIM_DIER_CC1IE;
