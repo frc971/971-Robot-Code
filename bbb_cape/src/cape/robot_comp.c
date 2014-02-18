@@ -59,8 +59,6 @@ static volatile struct {
     packet->main.bools.latch = digital_read(latch_num);                     \
   }
 
-SHOOTER(0, 1, 2, 3, 0)
-
 typedef struct {
   int32_t posedge, negedge;
   EdgeCounts front, calibration, back;
@@ -89,8 +87,9 @@ typedef struct {
     digital_capture_enable(back_num);                                       \
   }
 
-CLAW(4, 5, 7, top_claw, 2);
-CLAW(8, 9, 10, bottom_claw, 7);
+CLAW(0, 2, 1, top_claw, 2);
+CLAW(9, 11, 10, bottom_claw, 7);
+SHOOTER(7, 5, 4, 8, 0)
 
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
   TIM11->SR = ~TIM_SR_CC1IF;
