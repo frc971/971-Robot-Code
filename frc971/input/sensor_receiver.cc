@@ -39,9 +39,11 @@ struct State {
 };
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      constants::GetValues().drivetrain_encoder_ratio *
-      (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
+      // * constants::GetValues().drivetrain_encoder_ratio
+      * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 // Translates values from the ADC into voltage.
@@ -71,13 +73,18 @@ double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
 }
 
 double shooter_translate(int32_t in) {
-  // TODO(brians): Put real numbers in.
-  return in;
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * (18.0 / 48.0 /*encoder gears*/)
+      * (12.0 / 60.0 /*chain reduction*/)
+      * (M_PI / 180.0);
 }
 
 double claw_translate(int32_t in) {
-  // TODO(brians): Put real numbers in.
-  return in;
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * 16 /*sprocket teeth*/ * 0.375 /*chain pitch*/
+      * (2.54 / 100.0 /*in to m*/);
 }
 
 template<typename Structure>
