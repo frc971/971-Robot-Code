@@ -29,15 +29,19 @@ void ZeroedStateFeedbackLoop::CapU() {
   // Make sure that reality and the observer can't get too far off.  There is a
   // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
   // against last cycle's voltage.
-  if (X_hat(2, 0) > last_voltage_ + 2.0) {
-    voltage_ -= X_hat(2, 0) - (last_voltage_ + 2.0);
-  } else if (X_hat(2, 0) < last_voltage_ - 2.0) {
-    voltage_ += X_hat(2, 0) - (last_voltage_ - 2.0);
+  if (X_hat(2, 0) > last_voltage_ + 4.0) {
+    voltage_ -= X_hat(2, 0) - (last_voltage_ + 4.0);
+    LOG(INFO, "Capping due to runawway\n");
+  } else if (X_hat(2, 0) < last_voltage_ - 4.0) {
+    voltage_ += X_hat(2, 0) - (last_voltage_ - 4.0);
+    LOG(INFO, "Capping due to runawway\n");
   }
 
   voltage_ = std::min(limit, voltage_);
   voltage_ = std::max(-limit, voltage_);
   U(0, 0) = voltage_ - old_voltage;
+
+  LOG(INFO, "X_hat is %f, applied is %f\n", X_hat(2, 0), voltage_);
 
   last_voltage_ = voltage_;
 }
@@ -107,9 +111,6 @@ void ShooterMotor::RunIteration(
 
   const frc971::constants::Values &values = constants::GetValues();
 
-  double relative_position = shooter_.position();
-  double absolute_position = shooter_.absolute_position();
-
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
@@ -122,7 +123,6 @@ void ShooterMotor::RunIteration(
 
   switch (state_) {
     case STATE_INITIALIZE:
-      LOG(DEBUG, "Initializing\n");
       if (position) {
         // Reinitialize the internal filter state.
         shooter_.InitializeState(position->position);
@@ -157,8 +157,6 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_LOAD:
       if (position) {
-        // Need to go forward a little if we are starting with the
-        // back_distal_sensor triggered
         if (position->plunger && position->latch) {
           // The plunger is back and we are latched, get ready to shoot.
           state_ = STATE_PREPARE_SHOT;
@@ -288,10 +286,11 @@ void ShooterMotor::RunIteration(
       shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
 
       LOG(DEBUG, "PDIFF: absolute_position: %.2f, pow: %.2f\n",
-          absolute_position, PowerToPosition(goal->shot_power));
-      // TODO(austin): Goal velocity too...
+          shooter_.absolute_position(), PowerToPosition(goal->shot_power));
       if (::std::abs(shooter_.absolute_position() -
-                     PowerToPosition(goal->shot_power)) < 0.001) {
+                     PowerToPosition(goal->shot_power)) +
+              ::std::abs(shooter_.absolute_velocity()) <
+          0.001) {
         // We are there, set the brake and move on.
         latch_piston_ = true;
         brake_piston_ = true;
@@ -307,9 +306,19 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_READY:
       LOG(DEBUG, "In ready\n");
-      // Wait until the brake is set, and a shot is requested or the shot power is changed.
-      if (Time::Now() > shooter_brake_set_time_) {
-        // We have waited long enough for the brake to set, turn the shooter control loop off.
+      // Wait until the brake is set, and a shot is requested or the shot power
+      // is changed.
+      if (::std::abs(shooter_.absolute_position() -
+                     PowerToPosition(goal->shot_power)) > 0.002) {
+        // TODO(austin): Add a state to release the brake.
+
+        // TODO(austin): Do we want to set the brake here or after shooting?
+        // Depends on air usage.
+        LOG(DEBUG, "Preparing shot again.\n");
+        state_ = STATE_PREPARE_SHOT;
+      } else if (Time::Now() > shooter_brake_set_time_) {
+        // We have waited long enough for the brake to set, turn the shooter
+        // control loop off.
         shooter_loop_disable = true;
         LOG(DEBUG, "Brake is now set\n");
         if (goal->shot_requested && !disabled) {
@@ -320,14 +329,6 @@ void ShooterMotor::RunIteration(
           apply_some_voltage = true;
           state_ = STATE_PREPARE_FIRE;
         }
-      } else if (::std::abs(shooter_.absolute_position() -
-                            PowerToPosition(goal->shot_power)) > 0.001) {
-        // TODO(austin): If the goal has changed, go back to prepare shot, not if we are off.
-        // TODO(austin): Add a state to release the brake.
-
-        // TODO(austin): Do we want to set the brake here or after shooting?
-        LOG(DEBUG, "Preparing shot again.\n");
-        state_ = STATE_PREPARE_SHOT;
       } else {
         LOG(DEBUG, "Nothing %d %d\n", goal->shot_requested, !disabled);
       }
@@ -491,13 +492,13 @@ void ShooterMotor::RunIteration(
   }
 
   status->done =
-      ::std::abs(absolute_position - PowerToPosition(goal->shot_power)) < 0.004;
+      ::std::abs(shooter_.absolute_position() - PowerToPosition(goal->shot_power)) < 0.004;
 
   if (position) {
     last_position_ = *position;
     LOG(DEBUG,
-        "pos > real: %.2f adjusted: %.2f raw: %.2f state= %d\n",
-        relative_position, absolute_position, position->position,
+        "pos > absolute: %f velocity: %f state= %d\n",
+        shooter_.absolute_position(), shooter_.absolute_velocity(),
         state_);
   }
   if (position) {

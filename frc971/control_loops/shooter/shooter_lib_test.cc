@@ -50,7 +50,7 @@ class ShooterSimulation {
 
   // The difference between the position with 0 at the back, and the position
   // with 0 measured where the spring has 0 force.
-  constexpr static double kPositionOffset = 0.3;
+  constexpr static double kPositionOffset = 0.305054 + 0.0254;
 
   void Reinitialize(double initial_position) {
     LOG(INFO, "Reinitializing to {pos: %f}\n", initial_position);
@@ -162,7 +162,10 @@ class ShooterSimulation {
                latch_piston_state_ && latch_delay_count_ >= 0) {
       ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
       latch_delay_count_ = -6;
-      EXPECT_GE(last_voltage_, 1) << ": Must preload the gearbox when firing.";
+      if (GetAbsolutePosition() > 0.01) {
+        EXPECT_GE(last_voltage_, 1)
+            << ": Must preload the gearbox when firing.";
+      }
     }
 
     if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
@@ -212,8 +215,11 @@ class ShooterSimulation {
       LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
-        EXPECT_TRUE(brake_piston_state_)
-            << ": Must have the brake set when releasing the latch.";
+        if (GetAbsolutePosition() > 0.002) {
+          EXPECT_TRUE(brake_piston_state_) << ": Must have the brake set when "
+                                              "releasing the latch for "
+                                              "powerful shots..";
+        }
         plunger_latched_ = false;
         // TODO(austin): The brake should be set for a number of cycles after
         // this as well.
@@ -343,7 +349,7 @@ TEST_F(ShooterTest, GoesToValue) {
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, Fire) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.021).Send();
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < 120; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -359,7 +365,6 @@ TEST_F(ShooterTest, Fire) {
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
-    LOG(DEBUG, "MOTORSTATE = %d\n", shooter_motor_.state());
     if (shooter_motor_.state() == ShooterMotor::STATE_PREPARE_FIRE) {
       hit_preparefire = true;
     }
@@ -379,6 +384,98 @@ TEST_F(ShooterTest, Fire) {
   EXPECT_TRUE(hit_preparefire);
   EXPECT_TRUE(hit_fire);
 }
+
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(ShooterTest, FireLong) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.21).Send();
+  for (int i = 0; i < 150; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+  shooter_queue_group_.goal.MakeWithBuilder().shot_requested(true).Send();
+
+  bool hit_preparefire = false;
+  bool hit_fire = false;
+  for (int i = 0; i < 400; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+    if (shooter_motor_.state() == ShooterMotor::STATE_PREPARE_FIRE) {
+      hit_preparefire = true;
+    }
+    if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
+      if (!hit_fire) {
+        shooter_queue_group_.goal.MakeWithBuilder()
+            .shot_requested(false)
+            .Send();
+      }
+      hit_fire = true;
+    }
+  }
+
+  double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+  EXPECT_TRUE(hit_preparefire);
+  EXPECT_TRUE(hit_fire);
+}
+
+
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(ShooterTest, MoveGoal) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.21).Send();
+  for (int i = 0; i < 150; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.11).Send();
+
+  for (int i = 0; i < 50; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+
+  double pos = shooter_motor_plant_.GetAbsolutePosition();
+  EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+}
+
+
+// Tests that the wrist zeros correctly and goes to a position.
+TEST_F(ShooterTest, Unload) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.21).Send();
+  for (int i = 0; i < 150; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+
+  for (int i = 0; i < 400; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+
+  EXPECT_NEAR(constants::GetValues().shooter.upper_limit,
+              shooter_motor_plant_.GetAbsolutePosition(), 0.01);
+  EXPECT_EQ(ShooterMotor::STATE_READY_UNLOAD, shooter_motor_.state());
+}
+
+// TODO(austin): Windup.
+// TODO(austin): Slip the encoder somewhere.
 
 // TODO(austin): Test all the timeouts...
 

@@ -59,6 +59,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double offset() const { return offset_; }
 
   double absolute_position() const { return X_hat(0, 0) + kPositionOffset; }
+  double absolute_velocity() const { return X_hat(1, 0); }
 
   void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
@@ -74,11 +75,11 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
-    LOG(DEBUG, "Goal position: %.2f Goal velocity: %.2f\n", desired_position, desired_velocity);
+    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position, desired_velocity);
 
     R << desired_position - kPositionOffset, desired_velocity,
-        -A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
-            A(1, 1) / A(1, 2) * desired_velocity;
+        (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
+         A(1, 1) / A(1, 2) * desired_velocity);
   }
 
   double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }
