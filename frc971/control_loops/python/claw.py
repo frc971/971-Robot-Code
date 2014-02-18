@@ -33,9 +33,9 @@ class Claw(control_loop.ControlLoop):
     # Control loop time step
     self.dt = 0.01
 
-    # State is [bottom position, top - bottom position,
-    #           bottom velocity, top - bottom velocity]
-    # Input is [bottom power, top - bottom power]
+    # State is [bottom position, bottom velocity, top - bottom position,
+    #           top - bottom velocity]
+    # Input is [bottom power, top power - bottom power * J_top / J_bottom]
     # Motor time constants. difference_bottom refers to the constant for how the
     # bottom velocity affects the difference of the top and bottom velocities.
     self.common_motor_constant = -self.Kt / self.Kv / (self.G * self.G * self.R)
@@ -44,11 +44,24 @@ class Claw(control_loop.ControlLoop):
                                                         - 1 / self.J_top)
     self.difference_difference = self.common_motor_constant / self.J_top
     # State feedback matrices
+
     self.A_continuous = numpy.matrix(
-        [[0, 0, 1, 0],
-         [0, 0, 0, 1],
+        [[0, 0, 0, 0],
+         [0, 0, 0, 0],
          [0, 0, self.bottom_bottom, 0],
          [0, 0, self.difference_bottom, self.difference_difference]])
+
+    self.A_bottom_cont = numpy.matrix(
+        [[0, 1],
+         [0, self.bottom_bottom]])
+
+    self.A_diff_cont = numpy.matrix(
+        [[0, 1],
+         [0, self.difference_difference]])
+
+    self.A_continuous[0:2, 0:2] = self.A_bottom_cont
+    self.A_continuous[2:4, 2:4] = self.A_diff_cont
+    self.A_continuous[3, 1] = self.difference_bottom
 
     self.motor_feedforward = self.Kt / (self.G * self.R)
     self.motor_feedforward_bottom = self.motor_feedforward / self.J_bottom
@@ -57,10 +70,19 @@ class Claw(control_loop.ControlLoop):
         self.motor_feedforward * (1 / self.J_bottom - 1 / self.J_top))
     self.B_continuous = numpy.matrix(
         [[0, 0],
-         [0, 0],
          [self.motor_feedforward_bottom, 0],
-         [self.motor_feedforward_difference_bottom,
+         [0, 0],
+         [0,#self.motor_feedforward_difference_bottom,
           self.motor_feedforward_difference]])
+
+    self.B_bottom_cont = numpy.matrix(
+        [[0],
+         [self.motor_feedforward_bottom]])
+
+    self.B_diff_cont = numpy.matrix(
+        [[0],
+         [self.motor_feedforward_difference]])
+
     self.C = numpy.matrix([[1, 0, 0, 0],
                            [1, 1, 0, 0]])
     self.D = numpy.matrix([[0, 0],
@@ -68,6 +90,13 @@ class Claw(control_loop.ControlLoop):
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
+
+    self.A_bottom, self.B_bottom = controls.c2d(
+        self.A_bottom_cont, self.B_bottom_cont, self.dt)
+    self.A_diff, self.B_diff = controls.c2d(
+        self.A_diff_cont, self.B_diff_cont, self.dt)
+
+    print self.A, self.B
 
     #controlability = controls.ctrb(self.A, self.B);
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
@@ -79,16 +108,40 @@ class Claw(control_loop.ControlLoop):
 
     self.R = numpy.matrix([[(1.0 / (40.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (5.0 ** 2.0))]])
-    self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+   #self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+
+    # TODO(james): Fix this for discrete time domain.
+    self.K = numpy.matrix([[0, 0, 0.0, 0.0],
+                           [0.0, self.A[3, 1] / self.B[3, 1], 0, 0]])
+    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [0.5, 0.5])
+    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [0.5, 0.5])
+    self.K[0, 0:2] = self.K_bottom
+    self.K[1, 2:4] = self.K_diff
+   #lstsq_A = numpy.identity(2)
+   #lstsq_A[0] = self.B[1]
+   #lstsq_A[1] = self.B[3]
+   #self.K[0:2, 0] = numpy.linalg.lstsq(lstsq_A, numpy.matrix([[0.0], [0.0]]))[0]
+   #self.K[0:2, 2] = numpy.linalg.lstsq(
+   #                     lstsq_A,
+   #                     numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]))[0]
 
     print "K unaugmented"
     print self.K
+    print "B * K unaugmented"
+    print self.B * self.K
+    F = self.A - self.B * self.K
+    F[1, 2] = 0.0
+    F[3, 2] = 0.0
+    print "A - B * K unaugmented"
+    print F
+    print "eigenvalues"
+    print numpy.linalg.eig(F)[0]
 
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl,
                              self.rpl + 1j * self.ipl,
+                             self.rpl - 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 
     # The box formed by U_min and U_max must encompass all possible values,
