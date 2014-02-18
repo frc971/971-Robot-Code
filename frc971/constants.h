@@ -49,6 +49,11 @@ struct Values {
   struct Shooter {
     double lower_limit;
     double upper_limit;
+    double lower_hard_limit;
+    double upper_hard_limit;
+    // If the plunger is further back than this position, it is safe for the
+    // latch to be down.  Anything else would be considered a collision.
+    double latch_max_safe_position;
     AnglePair plunger_back;
     AnglePair pusher_distal;
     AnglePair pusher_proximal;
