@@ -5,7 +5,7 @@
 #include "cape/util.h"
 
 // Here is where each encoder is hooked up:
-// 0: PC6,PC7 TIM8
+// 0: PC6,PC7 TIM8(APB2)
 // 1: PC0,PC1 EXTI0,EXTI1
 // 2: PA0,PA1 TIM5(32)
 // 3: PA2,PA3 TIM9.1,EXTI3
@@ -104,17 +104,18 @@ void TIM3_IRQHandler(void) {
 	encoder4_value = new_value;
 }
 
-static void encoder_setup(TIM_TypeDef *timer) {
+static void encoder_setup(TIM_TypeDef *timer, int fast) {
   timer->CR1 =
-      TIM_CR1_URS /* don't generate spurious update interrupts that
-                     might be shared with other timers */;
+      TIM_CR1_URS | /* don't generate spurious update interrupts that
+                     might be shared with other timers */
+      (fast ? (1 << 8) : 0) /* divide filter clock by 2 on fast encoders */;
   timer->SMCR = 3;  // 4x quadrature encoder mode
   timer->CCER = 0;
   timer->CCMR1 =
       TIM_CCMR1_CC2S_0 | /* input pin 2 -> timer input 2 */
       TIM_CCMR1_CC1S_0 | /* input pin 1 -> timer input 1 */
-      (3 << 4) |
-      (3 << 12);
+      (0xE << 4) | /* divide filter clock by 32, need 6 in a row to trigger */
+      (0xE << 12) /* same for other input */;
   timer->PSC = 0;
   timer->EGR = TIM_EGR_UG;
   timer->CR1 |= TIM_CR1_CEN;
@@ -168,25 +169,25 @@ void encoder_init(void) {
   gpio_setup_alt(GPIOA, 5, 1);
   gpio_setup_alt(GPIOB, 3, 1);
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-  encoder_setup(TIM2);
+  encoder_setup(TIM2, 0);
 
   gpio_setup_alt(GPIOA, 6, 2);
   gpio_setup_alt(GPIOB, 5, 2);
   RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
-  encoder_setup(TIM3);
+  encoder_setup(TIM3, 0);
 
   gpio_setup_alt(GPIOB, 6, 2);
   gpio_setup_alt(GPIOB, 7, 2);
   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
-  encoder_setup(TIM4);
+  encoder_setup(TIM4, 0);
 
   gpio_setup_alt(GPIOA, 0, 2);
   gpio_setup_alt(GPIOA, 1, 2);
   RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
-  encoder_setup(TIM5);
+  encoder_setup(TIM5, 0);
 
   gpio_setup_alt(GPIOC, 6, 3);
   gpio_setup_alt(GPIOC, 7, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
-  encoder_setup(TIM8);
+  encoder_setup(TIM8, 1);
 }
