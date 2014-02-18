@@ -31,18 +31,13 @@ void ZeroedStateFeedbackLoop::CapU() {
   // against last cycle's voltage.
   if (X_hat(2, 0) > last_voltage_ + 2.0) {
     voltage_ -= X_hat(2, 0) - (last_voltage_ + 2.0);
-    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
   } else if (X_hat(2, 0) < last_voltage_ - 2.0) {
     voltage_ += X_hat(2, 0) - (last_voltage_ - 2.0);
-    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
   }
 
   voltage_ = std::min(limit, voltage_);
   voltage_ = std::max(-limit, voltage_);
   U(0, 0) = voltage_ - old_voltage;
-  //LOG(DEBUG, "abc %f\n", X_hat(2, 0) - voltage_);
-  //LOG(DEBUG, "error %f\n", X_hat(0, 0) - R(0, 0));
-  LOG(DEBUG, "Voltage sums up by %f\n", U(0, 0));
 
   last_voltage_ = voltage_;
 }
@@ -127,6 +122,7 @@ void ShooterMotor::RunIteration(
 
   switch (state_) {
     case STATE_INITIALIZE:
+      LOG(DEBUG, "Initializing\n");
       if (position) {
         // Reinitialize the internal filter state.
         shooter_.InitializeState(position->position);
@@ -360,11 +356,12 @@ void ShooterMotor::RunIteration(
         firing_starting_position_ = shooter_.absolute_position();
         shot_end_time_ = Time::Now() + Time::InSeconds(1);
         state_ = STATE_FIRE;
+        latch_piston_ = false;
       } else {
         apply_some_voltage = true;
+        latch_piston_ = true;
       }
 
-      latch_piston_ = true;
       brake_piston_ = true;
       break;
 

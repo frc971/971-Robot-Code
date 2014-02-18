@@ -36,6 +36,7 @@ class ShooterSimulation {
       : shooter_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawShooterPlant())),
         latch_piston_state_(false),
         latch_delay_count_(0),
+        plunger_latched_(false),
         brake_piston_state_(true),
         brake_delay_count_(0),
         shooter_queue_group_(
@@ -161,6 +162,7 @@ class ShooterSimulation {
                latch_piston_state_ && latch_delay_count_ >= 0) {
       ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
       latch_delay_count_ = -6;
+      EXPECT_GE(last_voltage_, 1) << ": Must preload the gearbox when firing.";
     }
 
     if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
@@ -208,7 +210,6 @@ class ShooterSimulation {
       latch_delay_count_--;
     } else if (latch_piston_state_ && latch_delay_count_ < 0) {
       LOG(DEBUG, "latching simulation: %dn\n", latch_delay_count_);
-      EXPECT_GE(last_voltage_, 1) << ": Must preload the gearbox when firing.";
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
         EXPECT_TRUE(brake_piston_state_)
