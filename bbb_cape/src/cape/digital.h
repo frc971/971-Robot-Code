@@ -71,10 +71,12 @@ static inline enum IRQn digital_capture_getirqn(int num) {
   }
 }
 
+// May disable other capture inputs too.
 static inline void digital_capture_disable(int num) {
   NVIC_DisableIRQ(digital_capture_getirqn(num));
 }
 
+// May enable other capture inputs too.
 static inline void digital_capture_enable(int num) {
   NVIC_EnableIRQ(digital_capture_getirqn(num));
 }

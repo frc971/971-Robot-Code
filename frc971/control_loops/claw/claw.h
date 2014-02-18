@@ -246,7 +246,7 @@ class ClawMotor
   bool was_enabled_;
   bool doing_calibration_fine_tune_;
 
-  // The initial seperation when disabled.  Used as the safe seperation
+  // The initial separation when disabled.  Used as the safe separation
   // distance.
   double initial_separation_;
 

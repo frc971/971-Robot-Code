@@ -8,6 +8,21 @@
 // In the prime code, bbb_cape/src/bbb/data_struct.h #includes this file.
 
 #pragma pack(push, 1)
+typedef struct {
+  uint8_t posedges, negedges;
+} HallEffectEdges;
+typedef struct {
+  int32_t position, posedge_position, negedge_position;
+
+  HallEffectEdges front, calibration, back;
+
+  struct {
+    uint16_t front : 1;
+    uint16_t calibration : 1;
+    uint16_t back : 1;
+  } bools;
+} SingleClawPosition;
+
 // Be careful with declaration order in here. ARM doesn't like unaligned
 // accesses and this structure is packed, so messing the order up will cause the
 // compiler to generate very inefficient code to access fields.
@@ -60,18 +75,30 @@ struct DATA_STRUCT_NAME {
 
     // This is for the comp and practice robots.
     struct {
+      SingleClawPosition top_claw, bottom_claw;
+
       int32_t left_drive;
       int32_t right_drive;
+
+      // The length of the pulse from the ultrasonic sensor in 100kHZ ticks.
+      uint32_t ultrasonic_pulse_length;
+
+      int32_t shooter_position, pusher_distal_posedge_position,
+          pusher_proximal_posedge_position;
+
       uint16_t left_drive_hall;
       uint16_t right_drive_hall;
 
       uint16_t battery_voltage;
 
-      // The length of the pulse from the ultrasonic sensor in 100kHZ ticks.
-      uint32_t ultrasonic_pulse_length;
+      HallEffectEdges pusher_distal, pusher_proximal;
 
       struct {
-      };
+        uint8_t plunger : 1;
+        uint8_t pusher_distal : 1;
+        uint8_t pusher_proximal : 1;
+        uint8_t latch : 1;
+      } bools;
     } main;
   };
 } __attribute__((aligned(8)));

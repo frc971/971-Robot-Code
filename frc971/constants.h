@@ -26,9 +26,9 @@ struct ShifterHallEffect {
 // This structure contains current values for all of the things that change.
 struct Values {
   // This is useful for representing the 2 sides of a hall effect sensor etc.
-  struct Pair {
-    double lower_limit;
-    double upper_limit;
+  struct AnglePair {
+    double lower_angle;
+    double upper_angle;
   };
 
   // The ratio from the encoder shaft to the drivetrain wheels.
@@ -46,37 +46,29 @@ struct Values {
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
-  struct ShooterLimits {
+  struct Shooter {
     double lower_limit;
     double upper_limit;
-    Pair plunger_back;
-    Pair pusher_distal;
-    Pair pusher_proximal;
+    AnglePair plunger_back;
+    AnglePair pusher_distal;
+    AnglePair pusher_proximal;
+    double zeroing_off_speed;
+    double zeroing_speed;
   };
 
-  ShooterLimits shooter;
-
-  double shooter_voltage;
-  double shooter_total_length;
-  double shooter_hall_effect_start_position;
-  double shooter_zeroing_off_speed;
-  double shooter_zeroing_speed;
-  double position;
+  Shooter shooter;
 
   struct Claws {
     double claw_zeroing_off_speed;
     double claw_zeroing_speed;
     double claw_zeroing_separation;
 
-    // claw seperation that would be considered a collision
+    // claw separation that would be considered a collision
     double claw_min_separation;
     double claw_max_separation;
 
     // Three hall effects are known as front, calib and back
-    struct AnglePair {
-      double lower_angle;
-      double upper_angle;
-    };
+    typedef Values::AnglePair AnglePair;
 
     struct Claw {
       double lower_hard_limit;

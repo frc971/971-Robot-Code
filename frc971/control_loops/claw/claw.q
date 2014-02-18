@@ -30,7 +30,7 @@ queue_group ClawGroup {
     // The angle of the bottom claw.
     double bottom_angle;
     // How much higher the top claw is.
-    double seperation_angle;
+    double separation_angle;
     bool intake;
   };
 
@@ -45,6 +45,7 @@ queue_group ClawGroup {
     double intake_voltage;
     double top_claw_voltage;
     double bottom_claw_voltage;
+	double tusk_voltage;
   };
 
   queue Goal goal;

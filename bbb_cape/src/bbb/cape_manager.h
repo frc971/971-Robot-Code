@@ -29,7 +29,7 @@ class CapeManager {
 
   UartReader uart_;
 
-  Gpo reset_, custom_bootloader_;
+  Gpo reset_, custom_bootloader_, bootloader_;
 
   DISALLOW_COPY_AND_ASSIGN(CapeManager);
 };

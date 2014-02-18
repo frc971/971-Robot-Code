@@ -12,6 +12,8 @@
 #include "frc971/queues/gyro_angle.q.h"
 #include "frc971/constants.h"
 #include "frc971/queues/to_log.q.h"
+#include "frc971/control_loops/shooter/shooter.q.h"
+#include "frc971/control_loops/claw/claw.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -24,13 +26,28 @@ using ::aos::util::WrappingCounter;
 namespace frc971 {
 namespace {
 
+struct State {
+  struct HallEffectCounters {
+    WrappingCounter posedges, negedges;
+  };
+
+  HallEffectCounters plunger, pusher_distal, pusher_proximal, latch;
+
+  struct SingleClawState {
+    HallEffectCounters front, calibration, back;
+  } top_claw, bottom_claw;
+};
+
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
-      constants::GetValues().drivetrain_encoder_ratio *
-      (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
+      // * constants::GetValues().drivetrain_encoder_ratio
+      * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 // Translates values from the ADC into voltage.
+// TODO(brian): Fix this.
 double adc_translate(uint16_t in) {
   static const double kVRefN = 0;
   static const double kVRefP = 3.3;
@@ -55,8 +72,45 @@ double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
   return (voltage - k.low) / (k.high - k.low);
 }
 
+double shooter_translate(int32_t in) {
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * (18.0 / 48.0 /*encoder gears*/)
+      * (12.0 / 60.0 /*chain reduction*/)
+      * (M_PI / 180.0);
+}
+
+double claw_translate(int32_t in) {
+  return static_cast<double>(in)
+      / (256.0 /*cpr*/ * 4.0 /*quad*/)
+      * 16 /*sprocket teeth*/ * 0.375 /*chain pitch*/
+      * (2.54 / 100.0 /*in to m*/);
+}
+
+template<typename Structure>
+void CopyHallEffectEdges(Structure *output,
+                         const ::bbb::HallEffectEdges &input,
+                         State::HallEffectCounters *state) {
+  output->posedge_count = state->posedges.Update(input.posedges);
+  output->negedge_count = state->negedges.Update(input.negedges);
+}
+
+void CopyClawPosition(control_loops::HalfClawPosition *output,
+                      const ::bbb::SingleClawPosition &input,
+                      State::SingleClawState *state) {
+  CopyHallEffectEdges(&output->front, input.front, &state->front);
+  CopyHallEffectEdges(&output->calibration, input.calibration,
+                      &state->calibration);
+  CopyHallEffectEdges(&output->back, input.back, &state->back);
+
+  output->position = claw_translate(input.position);
+  output->posedge_value = claw_translate(input.posedge_position);
+  output->negedge_value = claw_translate(input.negedge_position);
+}
+
 void PacketReceived(const ::bbb::DataStruct *data,
-                    const ::aos::time::Time &cape_timestamp) {
+                    const ::aos::time::Time &cape_timestamp,
+                    State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(cape_timestamp.sec(),
                                                         cape_timestamp.nsec());
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
@@ -93,6 +147,38 @@ void PacketReceived(const ::bbb::DataStruct *data,
               constants::GetValues().right_drive, data->main.right_drive_hall))
       .battery_voltage(battery_translate(data->main.battery_voltage))
       .Send();
+
+  {
+    auto claw_position = control_loops::claw_queue_group.position.MakeMessage();
+    CopyClawPosition(&claw_position->top, data->main.top_claw,
+                     &state->top_claw);
+    CopyClawPosition(&claw_position->bottom, data->main.bottom_claw,
+                     &state->bottom_claw);
+    claw_position.Send();
+  }
+
+  {
+    auto shooter_position =
+        control_loops::shooter_queue_group.position.MakeMessage();
+
+    shooter_position->plunger = data->main.bools.plunger;
+    CopyHallEffectEdges(&shooter_position->pusher_distal,
+                        data->main.pusher_distal, &state->pusher_distal);
+    shooter_position->pusher_distal.current = data->main.bools.pusher_distal;
+    CopyHallEffectEdges(&shooter_position->pusher_proximal,
+                        data->main.pusher_proximal, &state->pusher_proximal);
+    shooter_position->pusher_proximal.current =
+        data->main.bools.pusher_proximal;
+    shooter_position->latch = data->main.bools.latch;
+
+    shooter_position->position = shooter_translate(data->main.shooter_position);
+    shooter_position->pusher_distal.posedge_value =
+        shooter_translate(data->main.pusher_distal_posedge_position);
+    shooter_position->pusher_proximal.posedge_value =
+        shooter_translate(data->main.pusher_proximal_posedge_position);
+
+    shooter_position.Send();
+  }
 }
 
 }  // namespace
@@ -101,8 +187,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
 int main() {
   ::aos::Init(::bbb::SensorReader::kRelativePriority);
   ::bbb::SensorReader reader("comp");
+  ::frc971::State state;
   while (true) {
-    ::frc971::PacketReceived(reader.ReadPacket(), reader.GetCapeTimestamp());
+    ::frc971::PacketReceived(reader.ReadPacket(), reader.GetCapeTimestamp(),
+                             &state);
   }
   ::aos::Cleanup();
 }

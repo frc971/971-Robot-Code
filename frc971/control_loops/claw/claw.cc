@@ -311,7 +311,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     // Ready to use the claw.
     // Limit the goals here.
     bottom_claw_goal_ = goal->bottom_angle;
-    top_claw_goal_ = goal->bottom_angle + goal->seperation_angle;
+    top_claw_goal_ = goal->bottom_angle + goal->separation_angle;
     has_bottom_claw_goal_ = true;
     has_top_claw_goal_ = true;
     doing_calibration_fine_tune_ = false;

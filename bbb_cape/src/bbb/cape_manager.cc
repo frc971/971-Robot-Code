@@ -11,7 +11,10 @@
 namespace bbb {
 
 CapeManager::CapeManager()
-    : uart_(750000), reset_(2, 5, true), custom_bootloader_(2, 3, true) {}
+    : uart_(750000),
+      reset_(2, 5, true),
+      custom_bootloader_(2, 3, true),
+      bootloader_(2, 2, false) {}
 
 void CapeManager::DownloadHex(const ::std::string &filename) {
   HexByteReader file(filename);

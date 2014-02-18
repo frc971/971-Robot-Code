@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'claw_loops',
+      'target_name': 'claw_loop',
       'type': 'static_library',
       'sources': ['claw.q'],
       'variables': {
@@ -25,13 +25,13 @@
         'claw_motor_plant.cc',
       ],
       'dependencies': [
-        'claw_loops',
+        'claw_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
       'export_dependent_settings': [
-        'claw_loops',
+        'claw_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
@@ -44,7 +44,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'claw_loops',
+        'claw_loop',
         'claw_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
