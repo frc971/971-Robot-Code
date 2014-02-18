@@ -37,7 +37,6 @@ class Shooter(control_loop.ControlLoop):
 
 
     # State feedback matrices
-    # TODO(james): Make this work with origins other than at kx = 0.
     self.A_continuous = numpy.matrix(
         [[0, 1],
          [-self.Ks / self.J,
