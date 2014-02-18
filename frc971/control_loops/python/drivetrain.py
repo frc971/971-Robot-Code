@@ -50,8 +50,8 @@ class CIM(control_loop.ControlLoop):
 
 
 class Drivetrain(control_loop.ControlLoop):
-  def __init__(self, left_low=True, right_low=True, is_clutch=False):
-    super(Drivetrain, self).__init__(("Clutch" if is_clutch else "Dog" )+"Drivetrain")
+  def __init__(self, left_low=True, right_low=True):
+    super(Drivetrain, self).__init__("Drivetrain")
     # Stall Torque in N m
     self.stall_torque = 2.42
     # Stall Current in Amps
@@ -70,19 +70,15 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the wheels, in meters.
     self.r = .04445
     # Resistance of the motor, divided by the number of motors.
-    self.R = (12.0 / self.stall_current / 4 + 0.03) / (0.93 ** 2.0)
+    self.R = 12.0 / self.stall_current / 4
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (12.0 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    if is_clutch:
-      self.G_low = 14.0 / 60.0 * 15.0 / 50.0
-      self.G_high = 30.0 / 44.0 * 15.0 / 50.0
-    else:
-      self.G_low = 16.0 / 60.0 * 17.0 / 50.0
-      self.G_high = 28.0 / 48.0 * 17.0 / 50.0
+    self.G_low = 18.0 / 60.0 * 18.0 / 50.0
+    self.G_high = 28.0 / 50.0 * 18.0 / 50.0
     if left_low:
       self.Gl = self.G_low
     else:
@@ -204,23 +200,16 @@ def main(argv):
   #pylab.show()
 
   # Write the generated constants out to a file.
-  dog_drivetrain = Drivetrain(is_clutch=False)
-  clutch_drivetrain = Drivetrain(is_clutch=True)
+  drivetrain = Drivetrain()
 
   if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
-    dog_loop_writer = control_loop.ControlLoopWriter("DogDrivetrain", [dog_drivetrain])
+    dog_loop_writer = control_loop.ControlLoopWriter("Drivetrain", [drivetrain])
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
     else:
       dog_loop_writer.Write(argv[1], argv[2])
-
-    clutch_loop_writer = control_loop.ControlLoopWriter("ClutchDrivetrain", [clutch_drivetrain])
-    if argv[3][-3:] == '.cc':
-      clutch_loop_writer.Write(argv[4], argv[3])
-    else:
-      clutch_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

@@ -314,6 +314,7 @@ class StateFeedbackLoop {
   void Update(bool stop_motors) {
     if (stop_motors) {
       U.setZero();
+      U_uncapped.setZero();
     } else {
       U = U_uncapped = K() * (R - X_hat);
       CapU();
