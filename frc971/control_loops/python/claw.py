@@ -51,8 +51,8 @@ class Claw(control_loop.ControlLoop):
          [0, 0, self.difference_bottom, self.difference_difference]])
 
     self.motor_feedforward = self.Kt / (self.G * self.R)
-    self.motor_feedforward_bottom = self.motor_feedforward / self.J_top
-    self.motor_feedforward_difference = self.motor_feedforward / self.J_bottom
+    self.motor_feedforward_bottom = self.motor_feedforward / self.J_bottom
+    self.motor_feedforward_difference = self.motor_feedforward / self.J_top
     self.motor_feedforward_difference_bottom = (
         self.motor_feedforward * (1 / self.J_bottom - 1 / self.J_top))
     self.B_continuous = numpy.matrix(
@@ -72,13 +72,13 @@ class Claw(control_loop.ControlLoop):
     #controlability = controls.ctrb(self.A, self.B);
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
-    self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
-                           [0.0, (1.0 / (0.03 ** 2.0)), 0.0, 0.0],
+    self.Q = numpy.matrix([[(1.0 / (0.40 ** 2.0)), 0.0, 0.0, 0.0],
+                           [0.0, (1.0 / (0.007 ** 2.0)), 0.0, 0.0],
                            [0.0, 0.0, 0.2, 0.0],
                            [0.0, 0.0, 0.0, 2.00]])
 
-    self.R = numpy.matrix([[(1.0 / (20.0 ** 2.0)), 0.0],
-                           [0.0, (1.0 / (20.0 ** 2.0))]])
+    self.R = numpy.matrix([[(1.0 / (40.0 ** 2.0)), 0.0],
+                           [0.0, (1.0 / (5.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
     print "K unaugmented"
@@ -208,7 +208,8 @@ def FullSeparationPriority(claw, U):
 
 def AverageUFix(claw, U):
   bottom_u = U[0, 0]
-  top_u = U[1, 0] + bottom_u
+  top_u = bottom_u + U[1, 0]
+#top_u = claw.J_top * (bottom_u / claw.J_bottom - U[1, 0])
 
   #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
   if (bottom_u > claw.U_max[0, 0] or top_u > claw.U_max[0, 0] or
@@ -218,6 +219,7 @@ def AverageUFix(claw, U):
     bottom_u *= scalar
 
   return numpy.matrix([[bottom_u], [top_u - bottom_u]])
+ #return numpy.matrix([[bottom_u], [bottom_u / claw.J_bottom - top_u / claw.J_top]])
 
 def ClipDeltaU(claw, U):
   delta_u = U[0, 0]
@@ -258,15 +260,17 @@ def main(argv):
   #pylab.plot(range(100), simulated_x)
   #pylab.show()
 
-  # Simulate the closed loop response of the system to a step input.
+  # Simulate the closed loop response of the system.
   claw = Claw("TopClaw")
   t = []
   close_loop_x_bottom = []
   close_loop_x_sep = []
+  close_loop_x_top = []
   close_loop_u_bottom = []
   close_loop_u_top = []
-  R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
+  R = numpy.matrix([[1.1], [0.05], [0.0], [0.0]])
   claw.X[0, 0] = 0
+  claw.X[1, 0] = .05
   for i in xrange(100):
     #print "Error is", (R - claw.X_hat)
     U = claw.K * (R - claw.X_hat)
@@ -279,12 +283,14 @@ def main(argv):
     claw.Update(U)
     close_loop_x_bottom.append(claw.X[0, 0] * 10)
     close_loop_u_bottom.append(U[0, 0])
-    close_loop_x_sep.append(claw.X[1, 0] * 10)
+    close_loop_x_sep.append(claw.X[1, 0] * 100)
+    close_loop_x_top.append((claw.X[1, 0] + claw.X[0, 0]) * 10)
     close_loop_u_top.append(U[1, 0] + U[0, 0])
     t.append(0.01 * i)
 
   pylab.plot(t, close_loop_x_bottom, label='x bottom')
-  pylab.plot(t, close_loop_x_sep, label='seperation')
+  pylab.plot(t, close_loop_x_sep, label='separation')
+  pylab.plot(t, close_loop_x_top, label='x top')
   pylab.plot(t, close_loop_u_bottom, label='u bottom')
   pylab.plot(t, close_loop_u_top, label='u top')
   pylab.legend()
