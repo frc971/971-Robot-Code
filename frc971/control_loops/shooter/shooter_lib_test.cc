@@ -34,6 +34,10 @@ class ShooterSimulation {
   // Constructs a motor simulation.
   ShooterSimulation(double initial_position)
       : shooter_plant_(new StateFeedbackPlant<2, 1, 1>(MakeRawShooterPlant())),
+        latch_piston_state_(false),
+        latch_delay_count_(0),
+        brake_piston_state_(true),
+        brake_delay_count_(0),
         shooter_queue_group_(
             ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
             ".frc971.control_loops.shooter_queue_group.goal",
@@ -218,12 +222,12 @@ class ShooterSimulation {
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
 
   // true latch closed
-  int latch_piston_state_;
+  bool latch_piston_state_;
   // greater than zero, delaying close. less than zero delaying open
   int latch_delay_count_;
 
   // true brake locked
-  int brake_piston_state_;
+  bool brake_piston_state_;
   // greater than zero, delaying close. less than zero delaying open
   int brake_delay_count_;
 
@@ -334,7 +338,7 @@ TEST_F(ShooterTest, Fire) {
 
   bool hit_preparefire = false;
   bool hit_fire = false;
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < 400; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -344,6 +348,11 @@ TEST_F(ShooterTest, Fire) {
       hit_preparefire = true;
     }
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
+      if (!hit_fire) {
+        shooter_queue_group_.goal.MakeWithBuilder()
+            .shot_requested(false)
+            .Send();
+      }
       hit_fire = true;
     }
   }

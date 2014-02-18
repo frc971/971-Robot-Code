@@ -192,8 +192,8 @@ void ShooterMotor::RunIteration(
       // TODO(austin): Windup here and below!
       if (!disabled) {
         shooter_.SetGoalPosition(
-            shooter_.goal_position() - values.shooter.zeroing_speed * dt,
-            -values.shooter.zeroing_speed);
+            shooter_.goal_position() + values.shooter.zeroing_speed * dt,
+            values.shooter.zeroing_speed);
       }
 
       if (position) {
