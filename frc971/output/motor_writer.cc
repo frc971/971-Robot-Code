@@ -70,10 +70,10 @@ class MotorWriter : public ::aos::MotorOutput {
         LOG_STRUCT(DEBUG, "will output", *claw.get());
         SetPWMOutput(6, claw->intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(7, claw->intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(1, claw->bottom_claw_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(1, -claw->bottom_claw_voltage / 12.0, kTalonBounds);
         SetPWMOutput(2, claw->top_claw_voltage / 12.0, kTalonBounds);
         SetPWMOutput(5, claw->tusk_voltage / 12.0, kTalonBounds);  // left
-        SetPWMOutput(4, claw->tusk_voltage / 12.0, kTalonBounds);  // right
+        SetPWMOutput(4, -claw->tusk_voltage / 12.0, kTalonBounds);  // right
       } else {
         DisablePWMOutput(6);
         DisablePWMOutput(7);

@@ -22,10 +22,6 @@ void ZeroedStateFeedbackLoop::CapU() {
 
   uncapped_voltage_ = voltage_;
 
-  // TODO(ben): Limit the voltage if we are ever not certain that things are
-  // working.
-  double limit = 12.0;
-
   // Make sure that reality and the observer can't get too far off.  There is a
   // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
   // against last cycle's voltage.
@@ -37,13 +33,54 @@ void ZeroedStateFeedbackLoop::CapU() {
     LOG(INFO, "Capping due to runawway\n");
   }
 
-  voltage_ = std::min(limit, voltage_);
-  voltage_ = std::max(-limit, voltage_);
+  voltage_ = std::min(max_voltage_, voltage_);
+  voltage_ = std::max(-max_voltage_, voltage_);
   U(0, 0) = voltage_ - old_voltage;
 
   LOG(INFO, "X_hat is %f, applied is %f\n", X_hat(2, 0), voltage_);
 
   last_voltage_ = voltage_;
+  capped_goal_ = false;
+}
+
+void ZeroedStateFeedbackLoop::CapGoal() {
+  if (uncapped_voltage() > max_voltage_) {
+    double dx;
+    if (controller_index() == 0) {
+      dx = (uncapped_voltage() - max_voltage_) /
+           (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
+      R(0, 0) -= dx;
+      R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+    } else {
+      dx = (uncapped_voltage() - max_voltage_) / K(0, 0);
+      R(0, 0) -= dx;
+    }
+    capped_goal_ = true;
+    LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+  } else if (uncapped_voltage() < -max_voltage_) {
+    double dx;
+    if (controller_index() == 0) {
+      dx = (uncapped_voltage() + max_voltage_) /
+           (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
+      R(0, 0) -= dx;
+      R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+    } else {
+      dx = (uncapped_voltage() + max_voltage_) / K(0, 0);
+      R(0, 0) -= dx;
+    }
+    capped_goal_ = true;
+    LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+  } else {
+    capped_goal_ = false;
+  }
+}
+
+void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
+  if (controller_index() == 0) {
+    R(2, 0) = (-A(1, 0) / A(1, 2) * R(0, 0) - A(1, 1) / A(1, 2) * R(1, 0));
+  } else {
+    R(2, 0) = -A(1, 1) / A(1, 2) * R(1, 0);
+  }
 }
 
 void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
@@ -60,6 +97,9 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   Y_(0, 0) += doffset;
   // Offset the goal so we don't move.
   R(0, 0) += doffset;
+  if (controller_index() == 0) {
+    R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
+  }
   LOG(INFO, "Validation: position is %f\n", absolute_position());
 }
 
@@ -117,16 +157,35 @@ void ShooterMotor::RunIteration(
   // Adds voltage to take up slack in gears before shot.
   bool apply_some_voltage = false;
 
-  // TODO(austin): Observe not seeing the sensors when we should by moving the
-  // calibration offset correclty.
+
   const bool disabled = !::aos::robot_state->enabled;
+  // If true, move the goal if we saturate.
+  bool cap_goal = false;
+
+  // TODO(austin): Move the offset if we see or don't see a hall effect when we
+  // expect to see one.
+  // Probably not needed yet.
+
+  if (position) {
+    int last_controller_index = shooter_.controller_index();
+    if (position->plunger && position->latch) {
+      // Use the controller without the spring if the latch is set and the
+      // plunger is back
+      shooter_.set_controller_index(1);
+    } else {
+      // Otherwise use the controller with the spring.
+      shooter_.set_controller_index(0);
+    }
+    if (shooter_.controller_index() != last_controller_index) {
+      shooter_.RecalculatePowerGoal();
+    }
+  }
 
   switch (state_) {
     case STATE_INITIALIZE:
       if (position) {
         // Reinitialize the internal filter state.
         shooter_.InitializeState(position->position);
-        // TODO(austin): Test all of these initial states.
 
         // Start off with the assumption that we are at the value
         // futhest back given our sensors.
@@ -135,7 +194,7 @@ void ShooterMotor::RunIteration(
                                   values.shooter.pusher_distal.lower_angle);
         } else if (position->pusher_proximal.current) {
           shooter_.SetCalibration(position->position,
-                                  values.shooter.pusher_proximal.lower_angle);
+                                  values.shooter.pusher_proximal.upper_angle);
         } else {
           shooter_.SetCalibration(position->position,
                                   values.shooter.upper_limit);
@@ -183,12 +242,13 @@ void ShooterMotor::RunIteration(
       // to zero.  Move backwards until we don't see the sensor anymore.
       // The plunger is contacting the pusher (or will be shortly).
 
-      // TODO(austin): Windup here and below!
       if (!disabled) {
         shooter_.SetGoalPosition(
             shooter_.goal_position() + values.shooter.zeroing_speed * dt,
             values.shooter.zeroing_speed);
       }
+      cap_goal = true;
+      shooter_.set_max_voltage(12.0);
 
       if (position) {
         if (!position->pusher_distal.current) {
@@ -434,21 +494,25 @@ void ShooterMotor::RunIteration(
         unload_timeout_ = Time::Now() + Time::InSeconds(2.0);
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
       }
-      // TODO(austin): Windup...
+      cap_goal = true;
+      shooter_.set_max_voltage(6.0);
 
       // Slowly move back until we hit the upper limit.
-      double goal_position =
-          shooter_.goal_position() + values.shooter.zeroing_speed * dt;
-      // If during this cycle, we would move past the limit, we are done
-      // unloading.
-      if (goal_position > values.shooter.upper_limit) {
+      // If we were at the limit last cycle, we are done unloading.
+      // This is because if we saturate, we might hit the limit before we are
+      // actually there.
+      if (shooter_.goal_position() >= values.shooter.upper_limit) {
         shooter_.SetGoalPosition(values.shooter.upper_limit, 0.0);
         // We don't want the loop fighting the spring when we are unloaded.
         // Turn it off.
         shooter_loop_disable = true;
         state_ = STATE_READY_UNLOAD;
       } else {
-        shooter_.SetGoalPosition(goal_position, values.shooter.zeroing_speed);
+        shooter_.SetGoalPosition(
+            ::std::min(
+                values.shooter.upper_limit,
+                shooter_.goal_position() + values.shooter.zeroing_speed * dt),
+            values.shooter.zeroing_speed);
       }
 
       latch_piston_ = false;
@@ -475,14 +539,22 @@ void ShooterMotor::RunIteration(
 
   if (apply_some_voltage) {
     shooter_.Update(true);
+    shooter_.ZeroPower();
     if (output) output->voltage = 2.0;
   } else if (!shooter_loop_disable) {
     LOG(DEBUG, "Running the loop, goal is %f, position is %f\n",
         shooter_.goal_position(), shooter_.absolute_position());
+    if (!cap_goal) {
+      shooter_.set_max_voltage(12.0);
+    }
     shooter_.Update(output == NULL);
+    if (cap_goal) {
+      shooter_.CapGoal();
+    }
     if (output) output->voltage = shooter_.voltage();
   } else {
     shooter_.Update(true);
+    shooter_.ZeroPower();
     if (output) output->voltage = 0.0;
   }
 
@@ -491,8 +563,8 @@ void ShooterMotor::RunIteration(
     output->brake_piston = brake_piston_;
   }
 
-  status->done =
-      ::std::abs(shooter_.absolute_position() - PowerToPosition(goal->shot_power)) < 0.004;
+  status->done = ::std::abs(shooter_.absolute_position() -
+                            PowerToPosition(goal->shot_power)) < 0.004;
 
   if (position) {
     last_position_ = *position;

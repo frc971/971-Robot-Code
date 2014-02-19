@@ -45,6 +45,38 @@ const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
   LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
   switch (team) {
+    case 1:  // for tests
+      return new Values{
+          kCompDrivetrainEncoderRatio,
+          kCompLowGearRatio,
+          kCompHighGearRatio,
+          kCompLeftDriveShifter,
+          kCompRightDriveShifter,
+          true,
+          control_loops::MakeVClutchDrivetrainLoop,
+          control_loops::MakeClutchDrivetrainLoop,
+          // ShooterLimits
+          // TODO(ben): make these real numbers
+          {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
+           {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
+           shooter_zeroing_off_speed,
+           shooter_zeroing_speed
+          },
+          {0.5,
+           0.1,
+           0.1,
+           0.0,
+           1.57,
+           0,
+           0,
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
+           0.01,  // claw_unimportant_epsilon
+           0.9,   // start_fine_tune_pos
+           4.0,
+          }
+      };
+      break;
     case kCompTeamNumber:
       return new Values{
           kCompDrivetrainEncoderRatio,
@@ -58,7 +90,7 @@ const Values *DoGetValues() {
           // ShooterLimits
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
-           {-0.001778, 0.000762}, {-0.001778, 0.009906}, {0.006096, 0.026416},
+           {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
            shooter_zeroing_off_speed,
            shooter_zeroing_speed
           },
@@ -67,8 +99,10 @@ const Values *DoGetValues() {
            0.1,
            0.0,
            1.57,
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05}, {1.0, 1.1}, {2.0, 2.1}},
+           0,
+           0,
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
@@ -87,19 +121,28 @@ const Values *DoGetValues() {
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
-           {-0.001778, 0.000762}, {-0.001778, 0.009906}, {0.006096, 0.026416},
+          {-0.000446, 0.300038, -0.001, 0.304354,
+            0.014436,
+           {-2, 0.001786, 0.001786, -2}, {-2, -0.000446, -2, 0.026938}, {0.006096, 0.026416, 0, 0},
            shooter_zeroing_off_speed,
            shooter_zeroing_speed
           },
           {0.5,
            0.2,
            0.1,
-           0.0,
-           1.57,
-           // TODO(austin): Radians...
-           {-196.70, 121.42, 0.02, 2.02, {-196.92, -180.99}, {-15.17, -3.30}, {106.26, 129.55}},
-           {-142.96, 179.45, 0.02, 2.02, {-147.01, -127.93}, {-17.84, -5.39}, {167.75, 192.25}},
+           -0.446558,
+           0.90675,
+           -0.39110,
+           0.843349,
+#if 0
+         separations (top, bottom)
+           hard min position:-0.253845, position:-0.001136,
+           soft min position:-0.244528, position:-0.047269,
+           soft max position:0.526326, position:-0.510872,
+           hard max position:0.517917, position:-0.582685,
+#endif
+           {-1.62102, 1.039699, -1.606248, 0.989702, {-1.65, -1.546252, -1.65, -1.548752}, {-0.13249, -0.02113, -0.134763, -0.021589}, {0.934024, 1.05, 0.92970, 1.05}},
+           {-1.420352, 1.348313, -1.161281, 1.264001, {-1.45, -1.283771, -1.45, -1.28468}, {-0.332476, -0.214984, -0.334294, -0.217029}, {1.248547, 1.37, 1.245366, 1.37}},
            0.01,  // claw_unimportant_epsilon
            0.9,  // start_fine_tune_pos
            4.0,

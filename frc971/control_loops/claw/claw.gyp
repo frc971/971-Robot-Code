@@ -51,6 +51,19 @@
       ],
     },
     {
+      'target_name': 'claw_calibration',
+      'type': 'executable',
+      'sources': [
+        'claw_calibration.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        'claw_loop',
+        '<(AOS)/common/common.gyp:controls',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+      ],
+    },
+    {
       'target_name': 'claw',
       'type': 'executable',
       'sources': [
