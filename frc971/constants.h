@@ -27,8 +27,10 @@ struct ShifterHallEffect {
 struct Values {
   // This is useful for representing the 2 sides of a hall effect sensor etc.
   struct AnglePair {
-    double lower_angle;
-    double upper_angle;
+    // The angles for increasing values (posedge on lower, negedge on upper).
+    double lower_angle, upper_angle;
+    // The angles for decreasing values (negedge on lower, posedge on upper).
+    double lower_decreasing_angle, upper_decreasing_angle;
   };
 
   // The ratio from the encoder shaft to the drivetrain wheels.
@@ -71,6 +73,10 @@ struct Values {
     // claw separation that would be considered a collision
     double claw_min_separation;
     double claw_max_separation;
+
+    // We should never get closer/farther than these.
+    double soft_min_separation;
+    double soft_max_separation;
 
     // Three hall effects are known as front, calib and back
     typedef Values::AnglePair AnglePair;
