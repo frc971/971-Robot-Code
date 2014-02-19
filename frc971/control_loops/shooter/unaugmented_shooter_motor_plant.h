@@ -6,6 +6,10 @@
 namespace frc971 {
 namespace control_loops {
 
+StateFeedbackPlantCoefficients<2, 1, 1> MakeRawSprungShooterPlantCoefficients();
+
+StateFeedbackController<2, 1, 1> MakeRawSprungShooterController();
+
 StateFeedbackPlantCoefficients<2, 1, 1> MakeRawShooterPlantCoefficients();
 
 StateFeedbackController<2, 1, 1> MakeRawShooterController();

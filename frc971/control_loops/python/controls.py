@@ -85,7 +85,7 @@ def dplace(A, B, poles, alpha=1e-6):
 
 def c2d(A, B, dt):
   """Converts from continuous time state space representation to discrete time.
-     Evaluates e^(A dt) for the discrete time version of A, and
+     Evaluates e^(A dt) - I for the discrete time version of A, and
      integral(e^(A t) * B, 0, dt).
      Returns (A, B).  C and D are unchanged."""
   e, P = numpy.linalg.eig(A)
