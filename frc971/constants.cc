@@ -38,8 +38,8 @@ const ShifterHallEffect kPracticeLeftDriveShifter{5, 0, 0.60,
                                                   0.47};
 const ShifterHallEffect kPracticeRightDriveShifter{5, 0, 0.62,
                                                    0.55};
-const double shooter_zeroing_off_speed=0.0;
-const double shooter_zeroing_speed=1.0;
+const double shooter_zeroing_off_speed = 0.0;
+const double shooter_zeroing_speed = 0.1;
 
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();

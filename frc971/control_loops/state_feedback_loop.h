@@ -324,6 +324,7 @@ class StateFeedbackLoop {
     //::std::cout << "Measurement error is " << Y_ - C() * X_hat;
     //X_hat = A() * X_hat + B() * U;
     if (new_y_) {
+      LOG(INFO, "Got Y.  R is (%f, %f, %f)\n", R(0, 0), R(1, 0), R(2, 0));
       X_hat = (A() - L() * C()) * X_hat + L() * Y_ + B() * U;
       new_y_ = false;
     } else {
@@ -344,7 +345,7 @@ class StateFeedbackLoop {
     }
   }
 
-  void controller_index() const { return controller_index_; }
+  int controller_index() const { return controller_index_; }
 
  protected:
   ::std::vector<StateFeedbackController<number_of_states, number_of_inputs,

@@ -14,8 +14,8 @@
 namespace frc971 {
 namespace control_loops {
 namespace testing {
-class ShooterTest_NoWindupPositive_Test;
-class ShooterTest_NoWindupNegative_Test;
+class ShooterTest_UnloadWindupPositive_Test;
+class ShooterTest_UnloadWindupNegative_Test;
 };
 
 using ::aos::time::Time;
@@ -36,7 +36,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         voltage_(0.0),
         last_voltage_(0.0),
         uncapped_voltage_(0.0),
-        offset_(0.0) {}
+        offset_(0.0),
+        max_voltage_(12.0),
+        capped_goal_(false) {}
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -59,6 +61,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double offset() const { return offset_; }
 
   double absolute_position() const { return X_hat(0, 0) + kPositionOffset; }
+  double absolute_velocity() const { return X_hat(1, 0); }
 
   void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
@@ -67,6 +70,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
     Correct(Y);
   }
 
+  // Recomputes the power goal for the current controller and position/velocity.
+  void RecalculatePowerGoal();
+
   double goal_position() const { return R(0, 0) + kPositionOffset; }
   double goal_velocity() const { return R(1, 0); }
   void InitializeState(double position) {
@@ -74,14 +80,19 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
-    LOG(DEBUG, "Goal position: %.2f Goal velocity: %.2f\n", desired_position, desired_velocity);
+    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position, desired_velocity);
 
     R << desired_position - kPositionOffset, desired_velocity,
-        -A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
-            A(1, 1) / A(1, 2) * desired_velocity;
+        (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
+         A(1, 1) / A(1, 2) * desired_velocity);
   }
 
   double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }
+
+  void set_max_voltage(const double max_voltage) { max_voltage_ = max_voltage; }
+  bool capped_goal() const { return capped_goal_; }
+
+  void CapGoal();
 
  private:
   // The offset between what is '0' (0 rate on the spring) and the 0 (all the
@@ -92,6 +103,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double last_voltage_;
   double uncapped_voltage_;
   double offset_;
+  double max_voltage_;
+  bool capped_goal_;
 };
 
 class ShooterMotor
@@ -101,7 +114,7 @@ class ShooterMotor
                             &control_loops::shooter_queue_group);
 
   // True if the goal was moved to avoid goal windup.
-  //bool capped_goal() const { return shooter_.capped_goal(); }
+  bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
 
@@ -131,8 +144,8 @@ class ShooterMotor
 
  private:
   // Friend the test classes for acces to the internal state.
-  friend class testing::ShooterTest_NoWindupPositive_Test;
-  friend class testing::ShooterTest_NoWindupNegative_Test;
+  friend class testing::ShooterTest_UnloadWindupPositive_Test;
+  friend class testing::ShooterTest_UnloadWindupNegative_Test;
 
   // Enter state STATE_UNLOAD
   void Unload() {
