@@ -165,8 +165,8 @@ class Claw(control_loop.ControlLoop):
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
-    self.U_max = numpy.matrix([[12.0], [24.0]])
-    self.U_min = numpy.matrix([[-12.0], [-24.0]])
+    self.U_max = numpy.matrix([[12.0], [12.0]])
+    self.U_min = numpy.matrix([[-12.0], [-12.0]])
 
     self.InitializeState()
 

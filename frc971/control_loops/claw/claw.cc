@@ -46,28 +46,54 @@ namespace frc971 {
 namespace control_loops {
 
 void ClawLimitedLoop::CapU() {
-  uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
+  uncapped_average_voltage_ = (U(0, 0) + U(1, 0)) / 2.0;
   if (is_zeroing_) {
     const frc971::constants::Values &values = constants::GetValues();
     if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
       const double difference =
           uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
       U(0, 0) -= difference;
+      U(1, 0) -= difference;
     } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
       const double difference =
           -uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
       U(0, 0) += difference;
+      U(1, 0) += difference;
     }
   }
 
   double max_value =
-      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
+      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0)));
+  double scalar = 12.0 / max_value;
+  bool bottom_big = (::std::abs(U(0, 0)) > 12.0) &&
+                    (::std::abs(U(0, 0)) > ::std::abs(U(1, 0)));
+  bool top_big = (::std::abs(U(1, 0)) > 12.0) && (!bottom_big);
+  double separation_voltage = U(1, 0) - U(0, 0) / 3.0000;
+  double u_top = U(1, 0);
+  double u_bottom = U(0, 0);
 
-  if (max_value > 12.0) {
-    LOG(DEBUG, "Capping U because max is %f\n", max_value);
-    U = U * 12.0 / max_value;
-    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+  if (bottom_big) {
+    LOG(DEBUG, "Capping U because bottom is %f\n", max_value);
+    u_bottom *= scalar;
+    u_top = separation_voltage + u_bottom / 3.0000;
+    // If we can't maintain the separation, just clip it.
+    if (u_top > 12.0) u_top = 12.0;
+    else if (u_top < -12.0) u_top = -12.0;
   }
+  else if (top_big) {
+    LOG(DEBUG, "Capping U because top is %f\n", max_value);
+    u_top *= scalar;
+    u_bottom = (u_top - separation_voltage) * 3.0000;
+    if (u_bottom > 12.0) u_bottom = 12.0;
+    else if (u_bottom < -12.0) u_bottom = -12.0;
+  }
+
+  U(0, 0) = u_bottom;
+  U(1, 0) = u_top;
+
+  LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+  LOG(DEBUG, "Separation Voltage was %f, is now %f\n", separation_voltage,
+      U(1, 0) - U(0, 0) / 3.0000);
 }
 
 ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
@@ -391,7 +417,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       if (!doing_calibration_fine_tune_) {
         if (::std::abs(top_absolute_position() -
                        values.claw.start_fine_tune_pos) <
-            values.claw.claw_unimportant_epsilon) {
+            values.claw.claw_unimportant_epsilon) {//HERE
           doing_calibration_fine_tune_ = true;
           top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           top_claw_velocity_ = bottom_claw_velocity_ =
@@ -429,7 +455,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
             // calibrated so we are done fine tuning top
             doing_calibration_fine_tune_ = false;
             LOG(DEBUG, "Calibrated the top correctly!\n");
-          } else {
+          } else { //HERE
             doing_calibration_fine_tune_ = false;
             top_claw_goal_ = values.claw.start_fine_tune_pos;
             top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
@@ -553,7 +579,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   }
 
   if (output) {
-    output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
+    output->top_claw_voltage = claw_.U(1, 0);
     output->bottom_claw_voltage =  claw_.U(0, 0);
   }
   status->done = false;
