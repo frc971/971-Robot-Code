@@ -136,17 +136,11 @@ const Values *DoGetValues() {
            0.90675,
            -0.39110,
            0.843349,
-#if 0
-         separations (top, bottom)
-           hard min position:-0.253845, position:-0.001136,
-           soft min position:-0.244528, position:-0.047269,
-           soft max position:0.526326, position:-0.510872,
-           hard max position:0.517917, position:-0.582685,
-#endif
            {-1.62102, 1.039699, -1.606248, 0.989702, {-1.65, -1.546252, -1.65, -1.548752}, {-0.13249, -0.02113, -0.134763, -0.021589}, {0.934024, 1.05, 0.92970, 1.05}},
            {-1.420352, 1.348313, -1.161281, 1.264001, {-1.45, -1.283771, -1.45, -1.28468}, {-0.332476, -0.214984, -0.334294, -0.217029}, {1.248547, 1.37, 1.245366, 1.37}},
            0.01,  // claw_unimportant_epsilon
-           0.9,  // start_fine_tune_pos
+           -0.4,  // start_fine_tune_pos
+           // TODO(austin): Different for the two halfs.
            4.0,
           }
       };

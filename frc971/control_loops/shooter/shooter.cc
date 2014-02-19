@@ -463,7 +463,14 @@ void ShooterMotor::RunIteration(
 
       // If it is latched and the plunger is back, move the pusher back to catch
       // the plunger.
-      if (position->plunger && position->latch) {
+      bool all_back;
+      if (position) {
+        all_back = position->plunger && position->latch;
+      } else {
+        all_back = last_position_.plunger && last_position_.latch;
+      }
+
+      if (all_back) {
         // Pull back to 0, 0.
         shooter_.SetGoalPosition(0.0, 0.0);
         if (shooter_.absolute_position() < 0.005) {

@@ -86,7 +86,22 @@ class ZeroedStateFeedbackLoop {
     posedge_value_ = claw.posedge_value;
     negedge_value_ = claw.negedge_value;
     last_encoder_ = encoder_;
+    if (front().value() || calibration().value() || back().value()) {
+      last_on_encoder_ = encoder_;
+    } else {
+      last_off_encoder_ = encoder_;
+    }
     encoder_ = claw.position;
+  }
+
+  void Reset() {
+    front_.Reset();
+    calibration_.Reset();
+    back_.Reset();
+  }
+
+  bool ready() {
+    return front_.ready() && calibration_.ready() && back_.ready();
   }
 
   double absolute_position() const { return encoder() + offset(); }
@@ -130,6 +145,8 @@ class ZeroedStateFeedbackLoop {
   double negedge_value_;
   double encoder_;
   double last_encoder_;
+  double last_on_encoder_;
+  double last_off_encoder_;
 
  private:
   // Does the edges of 1 sensor for GetPositionOfEdge.
@@ -152,7 +169,7 @@ class TopZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
     double edge_encoder;
     double edge_angle;
     if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
-      LOG(INFO, "Calibration edge.\n");
+      LOG(INFO, "Calibration edge edge should be %f.\n", edge_angle);
       SetCalibration(edge_encoder, edge_angle);
       set_zeroing_state(zeroing_state);
       return true;

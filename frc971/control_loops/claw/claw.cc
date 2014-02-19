@@ -45,9 +45,12 @@
 namespace frc971 {
 namespace control_loops {
 
+static const double kMaxVoltage = 1.5;
+
 void ClawLimitedLoop::CapU() {
   uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
   if (is_zeroing_) {
+    LOG(DEBUG, "zeroing\n");
     const frc971::constants::Values &values = constants::GetValues();
     if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
       const double difference =
@@ -63,9 +66,9 @@ void ClawLimitedLoop::CapU() {
   double max_value =
       ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
 
-  if (max_value > 12.0) {
+  if (max_value > kMaxVoltage) {
     LOG(DEBUG, "Capping U because max is %f\n", max_value);
-    U = U * 12.0 / max_value;
+    U = U * kMaxVoltage / max_value;
     LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
   }
 }
@@ -90,34 +93,35 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     const constants::Values::Claws::AnglePair &angles, double *edge_encoder,
     double *edge_angle, const HallEffectTracker &sensor,
     const char *hall_effect_name) {
+  bool found_edge = false;
   if (sensor.posedge_count_changed()) {
-    if (posedge_value_ < last_encoder()) {
+    if (posedge_value_ < last_off_encoder_) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Posedge upper of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge upper of %s -> %f posedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, posedge_value_, last_off_encoder_);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Posedge lower of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge lower of %s -> %f posedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, posedge_value_, last_off_encoder_);
     }
     *edge_encoder = posedge_value_;
-    return true;
+    found_edge = true;
   }
   if (sensor.negedge_count_changed()) {
-    if (negedge_value_ > last_encoder()) {
+    if (negedge_value_ > last_on_encoder_) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Negedge upper of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Negedge upper of %s -> %f negedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, negedge_value_, last_on_encoder_);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Negedge lower of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Negedge lower of %s -> %f negedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, negedge_value_, last_on_encoder_);
     }
     *edge_encoder = negedge_value_;
-    return true;
+    found_edge = true;
   }
 
-  return false;
+  return found_edge;
 }
 
 bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
@@ -260,6 +264,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (reset()) {
     bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
+    top_claw_.Reset();
+    bottom_claw_.Reset();
   }
 
   if (::aos::robot_state.get() == nullptr) {
@@ -555,6 +561,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (output) {
     output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
     output->bottom_claw_voltage =  claw_.U(0, 0);
+
+    if (output->top_claw_voltage > kMaxVoltage) {
+      output->top_claw_voltage = kMaxVoltage;
+    } else if (output->top_claw_voltage < -kMaxVoltage) {
+      output->top_claw_voltage = -kMaxVoltage;
+    }
+
+    if (output->bottom_claw_voltage > kMaxVoltage) {
+      output->bottom_claw_voltage = kMaxVoltage;
+    } else if (output->bottom_claw_voltage < -kMaxVoltage) {
+      output->bottom_claw_voltage = -kMaxVoltage;
+    }
   }
   status->done = false;
 
