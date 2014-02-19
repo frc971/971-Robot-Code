@@ -34,9 +34,9 @@ const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
 const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
 const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
 
-const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
+const ShifterHallEffect kPracticeLeftDriveShifter{5, 0, 0.60,
                                                   0.47};
-const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
+const ShifterHallEffect kPracticeRightDriveShifter{5, 0, 0.62,
                                                    0.55};
 const double shooter_zeroing_off_speed=0.0;
 const double shooter_zeroing_speed=1.0;
@@ -123,7 +123,9 @@ const Values *DoGetValues() {
           // TODO(ben): make these real numbers
           {-0.000446, 0.300038, -0.001, 0.304354,
             0.014436,
-           {-2, 0.001786, 0.001786, -2}, {-2, -0.000446, -2, 0.026938}, {0.006096, 0.026416, 0, 0},
+           {-2, 0.001786, 0.001786, -2},
+           {-2, -0.000446, -2, 0.026938},
+           {0.005358, 0.014436, 0.014436, 0.026491},
            shooter_zeroing_off_speed,
            shooter_zeroing_speed
           },

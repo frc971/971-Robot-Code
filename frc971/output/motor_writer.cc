@@ -28,7 +28,7 @@ class MotorWriter : public ::aos::MotorOutput {
 
   virtual void RunIteration() {
     values_.digital_module = 0;
-    values_.pressure_switch_channel = 14;
+    values_.pressure_switch_channel = 1;
     values_.compressor_channel = 1;
     values_.solenoid_module = 0;
 
