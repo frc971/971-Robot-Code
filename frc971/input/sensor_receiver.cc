@@ -49,13 +49,13 @@ double drivetrain_translate(int32_t in) {
 // Translates values from the ADC into voltage.
 // TODO(brian): Fix this.
 double adc_translate(uint16_t in) {
-  static const double kVRefN = 0;
-  static const double kVRefP = 3.3;
-  static const int kMaximumValue = 0xFFF;
-  static const double kDividerGnd = 31.6, kDividerOther = 28;
-  return (kVRefN +
-      (static_cast<double>(in) / static_cast<double>(kMaximumValue) *
-       (kVRefP - kVRefN))) * (kDividerGnd + kDividerOther) / kDividerGnd;
+  static const double kVcc = 5;
+  static const double kR1 = 5, kR2 = 6.65;
+  static const uint16_t kMaximumValue = 0x3FF;
+  return (kVcc *
+              (static_cast<double>(in) / static_cast<double>(kMaximumValue)) -
+          kVcc * kR1) /
+         kR2;
 }
 
 double gyro_translate(int64_t in) {
