@@ -36,9 +36,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         voltage_(0.0),
         last_voltage_(0.0),
         uncapped_voltage_(0.0),
-        offset_(0.0),
-        encoder_(0.0),
-        last_encoder_(0.0) {}
+        offset_(0.0) {}
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -54,78 +52,47 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   // Zeros the accumulator.
   void ZeroPower() { voltage_ = 0.0; }
 
-  enum JointZeroingState {
-    // We don't know where the joint is at all.
-    UNKNOWN_POSITION,
-    // Ready for use during teleop.
-    CALIBRATED
-  };
-
-  void set_zeroing_state(JointZeroingState zeroing_state) {
-    zeroing_state_ = zeroing_state;
-  }
-
-  JointZeroingState zeroing_state() const { return zeroing_state_; }
-
   // Sets the calibration offset given the absolute angle and the corrisponding
   // encoder value.
-  void SetCalibration(double encoder_val, double known_position) {
-    offset_ = known_position - encoder_val;
-  }
+  void SetCalibration(double encoder_val, double known_position);
 
-  bool SetCalibrationOnEdge(const constants::Values::Shooter &shooter_values,
-                            JointZeroingState zeroing_state) {
-    double edge_encoder;
-    double known_position;
-    if (GetPositionOfEdge(shooter_values, &edge_encoder, &known_position)) {
-      LOG(INFO, "Calibration edge.\n");
-      SetCalibration(edge_encoder, known_position);
-      set_zeroing_state(zeroing_state);
-      return true;
-    }
-    return false;
-  }
+  double offset() const { return offset_; }
 
-  void SetPositionDirectly(double position) { X_hat(0, 0) = position; }
+  double absolute_position() const { return X_hat(0, 0) + kPositionOffset; }
+  double absolute_velocity() const { return X_hat(1, 0); }
 
-  void SetPositionValues(double position) {
+  void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
-    Y << position;
+    Y << position + offset_ - kPositionOffset;
     LOG(DEBUG, "Setting position to %f\n", position);
     Correct(Y);
   }
 
-  void SetGoalPosition(double desired_position, double desired_velocity) {
-    // austin said something about which matrix to set, but I didn't under
-    // very much of it
-    //some_matrix = {desired_position, desired_velocity};
-    LOG(DEBUG, "ZSFL> dp: %.2f dz: %.2f\n", desired_position, desired_velocity);
-    R << desired_position, desired_velocity, 0;
+  double goal_position() const { return R(0, 0) + kPositionOffset; }
+  double goal_velocity() const { return R(1, 0); }
+  void InitializeState(double position) {
+    X_hat(0, 0) = position - kPositionOffset;
   }
 
-  double position() const { return X_hat(0, 0); }
-  double encoder() const { return encoder_; }
-  double last_encoder() const { return last_encoder_; }
+  void SetGoalPosition(double desired_position, double desired_velocity) {
+    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position, desired_velocity);
 
-  // Returns true if an edge was detected in the last cycle and then sets the
-  // edge_position to the absolute position of the edge.
-  bool GetPositionOfEdge(const constants::Values::Shooter &shooter,
-                         double *edge_encoder, double *known_position);
+    R << desired_position - kPositionOffset, desired_velocity,
+        (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
+         A(1, 1) / A(1, 2) * desired_velocity);
+  }
 
-#undef COUNT_SETTER_GETTER
+  double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }
 
  private:
+  // The offset between what is '0' (0 rate on the spring) and the 0 (all the
+  // way cocked).
+  constexpr static double kPositionOffset = 0.305054 + 0.0254;
   // The accumulated voltage to apply to the motor.
   double voltage_;
   double last_voltage_;
   double uncapped_voltage_;
   double offset_;
-
-  double previous_position_;
-
-  JointZeroingState zeroing_state_;
-  double encoder_;
-  double last_encoder_;
 };
 
 class ShooterMotor
@@ -137,17 +104,7 @@ class ShooterMotor
   // True if the goal was moved to avoid goal windup.
   //bool capped_goal() const { return shooter_.capped_goal(); }
 
-  double PowerToPosition(double power) {
-    //LOG(WARNING, "power to position not correctly implemented\n");
-    const frc971::constants::Values &values = constants::GetValues();
-    double new_pos =
-        (power > values.shooter.upper_limit) ? values.shooter.upper_limit
-                                             : (power < 0.0)
-            ? 0.0
-            : power;
-
-    return new_pos;
-  }
+  double PowerToPosition(double power);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -157,20 +114,17 @@ class ShooterMotor
     STATE_LOADING_PROBLEM = 4,
     STATE_PREPARE_SHOT = 5,
     STATE_READY = 6,
-    STATE_REQUEST_FIRE = 7,
-    STATE_PREPARE_FIRE = 8,
-    STATE_FIRE = 9,
-    STATE_UNLOAD = 10,
-    STATE_UNLOAD_MOVE = 11,
-    STATE_READY_UNLOAD = 12
+    STATE_PREPARE_FIRE = 7,
+    STATE_FIRE = 8,
+    STATE_UNLOAD = 9,
+    STATE_UNLOAD_MOVE = 10,
+    STATE_READY_UNLOAD = 11,
+    STATE_ESTOP = 12
   } State;
 
-  State GetState() {return state_;}
-
-  double GetPosition() { return shooter_.position() - calibration_position_; }
+  State state() { return state_; }
 
  protected:
-
   virtual void RunIteration(
       const ShooterGroup::Goal *goal,
       const control_loops::ShooterGroup::Position *position,
@@ -181,12 +135,20 @@ class ShooterMotor
   friend class testing::ShooterTest_NoWindupPositive_Test;
   friend class testing::ShooterTest_NoWindupNegative_Test;
 
+  // Enter state STATE_UNLOAD
+  void Unload() {
+    state_ = STATE_UNLOAD;
+    unload_timeout_ = Time::Now() + Time::InSeconds(1);
+  }
+  // Enter state STATE_LOAD
+  void Load() {
+    state_ = STATE_LOAD;
+    load_timeout_ = Time::Now() + Time::InSeconds(1);
+  }
+
   control_loops::ShooterGroup::Position last_position_;
 
   ZeroedStateFeedbackLoop shooter_;
-
-  // position need to zero
-  double calibration_position_;
 
   // state machine state
   State state_;
@@ -194,8 +156,14 @@ class ShooterMotor
   // time to giving up on loading problem
   Time loading_problem_end_time_;
 
+  // The end time when loading for it to timeout.
+  Time load_timeout_;
+
   // wait for brake to set
   Time shooter_brake_set_time_;
+  
+  // The timeout for unloading.
+  Time unload_timeout_;
 
   // we are attempting to take up some of the backlash
   // in the gears before the plunger hits
@@ -207,8 +175,13 @@ class ShooterMotor
   // track cycles that we are stuck to detect errors
   int cycles_not_moved_;
 
-  // setup on the intial loop may involve shortcuts
-  bool initial_loop_;
+  double firing_starting_position_;
+
+  // True if the latch should be engaged and the brake should be engaged.
+  bool latch_piston_;
+  bool brake_piston_;
+  int32_t last_distal_posedge_count_;
+  int32_t last_proximal_posedge_count_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

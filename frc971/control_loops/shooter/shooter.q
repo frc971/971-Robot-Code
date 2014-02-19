@@ -19,10 +19,14 @@ queue_group ShooterGroup {
     // Shoots as soon as this is true.
     bool shot_requested;
     bool unload_requested;
+    bool load_requested;
   };
 
   // Back is when the springs are all the way stretched.
   message Position {
+    // In meters, out is positive.
+    double position;
+
     // If the latch piston is fired and this hall effect has been triggered, the
     // plunger is all the way back and latched.
     bool plunger;
@@ -32,9 +36,6 @@ queue_group ShooterGroup {
     PosedgeOnlyCountedHallEffectStruct pusher_proximal;
     // Triggers when the latch engages.
     bool latch;
-
-    // In meters, out is positive.
-    double position;
   };
   message Status {
     // Whether it's ready to shoot right now.

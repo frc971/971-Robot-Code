@@ -37,7 +37,6 @@ class Shooter(control_loop.ControlLoop):
 
 
     # State feedback matrices
-    # TODO(james): Make this work with origins other than at kx = 0.
     self.A_continuous = numpy.matrix(
         [[0, 1],
          [-self.Ks / self.J,
@@ -154,6 +153,7 @@ def main(argv):
     else:
       unaug_loop_writer.Write(argv[3], argv[4])
 
+    shooter = ShooterDeltaU()
     loop_writer = control_loop.ControlLoopWriter("Shooter", [shooter])
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])

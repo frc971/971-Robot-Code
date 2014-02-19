@@ -38,8 +38,8 @@ const ShifterHallEffect kPracticeLeftDriveShifter{2.082283, 0.834433, 0.60,
                                                   0.47};
 const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
                                                    0.55};
-const double shooter_zeroing_off_speed=0.0;
-const double shooter_zeroing_speed=1.0;
+const double shooter_zeroing_off_speed = 0.0;
+const double shooter_zeroing_speed = 0.1;
 
 const Values *DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
@@ -57,9 +57,10 @@ const Values *DoGetValues() {
           control_loops::MakeClutchDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07},
-          shooter_zeroing_off_speed,
-          shooter_zeroing_speed
+          {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
+           {-0.001778, 0.000762}, {-0.001778, 0.009906}, {0.006096, 0.026416},
+           shooter_zeroing_off_speed,
+           shooter_zeroing_speed
           },
           {0.5,
            0.1,
@@ -86,9 +87,10 @@ const Values *DoGetValues() {
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {0.0, 1.0, {-0.03, 0.02}, {-0.01, 0.04}, {0.02, 0.07},
-          shooter_zeroing_off_speed,
-          shooter_zeroing_speed,
+          {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
+           {-0.001778, 0.000762}, {-0.001778, 0.009906}, {0.006096, 0.026416},
+           shooter_zeroing_off_speed,
+           shooter_zeroing_speed
           },
           {0.5,
            0.2,
