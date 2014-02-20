@@ -109,13 +109,15 @@ void FillInMessage(log_level level, const char *format, va_list ap,
 }
 
 void PrintMessage(FILE *output, const LogMessage &message) {
-#define BASE_FORMAT \
-  "%.*s(%" PRId32 ")(%05" PRIu16 "): %s at %010" PRId32 ".%09" PRId32 "s: "
+#define NSECONDS_DIGITS 5
+#define BASE_FORMAT                                      \
+  "%.*s(%" PRId32 ")(%05" PRIu16 "): %7s at %010" PRId32 \
+  ".%-" STRINGIFY(NSECONDS_DIGITS) PRId32 "s: "
 #define BASE_ARGS                                             \
   static_cast<int>(message.name_length), message.name,        \
       static_cast<int32_t>(message.source), message.sequence, \
-      log_str(message.level), message.seconds, message.nseconds
-  switch (message.type) {
+      log_str(message.level), message.seconds, message.nseconds / 10000
+      switch (message.type) {
     case LogMessage::Type::kString:
       fprintf(output, BASE_FORMAT "%.*s", BASE_ARGS,
               static_cast<int>(message.message_length), message.message);
@@ -144,6 +146,9 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               static_cast<int>(sizeof(buffer) - output_length), buffer);
       break;
   }
+#undef NSECONDS_DIGITS
+#undef BASE_FORMAT
+#undef BASE_ARGS
 }
 
 }  // namespace internal
