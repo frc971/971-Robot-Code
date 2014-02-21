@@ -110,9 +110,12 @@ bool PacketFinder::ProcessPacket() {
   uint32_t unstuffed = cows_unstuff(
       reinterpret_cast<uint32_t *>(buf_), packet_size_,
       reinterpret_cast<uint32_t *>(unstuffed_data_), packet_size_ - 4);
+  LOG_INTERVAL(invalid_packet_);
+  LOG_INTERVAL(bad_checksum_);
+
   if (unstuffed == 0) {
     if (kDebugLogs) LOG(INFO, "invalid\n");
-    LOG_INTERVAL(invalid_packet_);
+    invalid_packet_.WantToLog();
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
     LOG(WARNING, "packet is %" PRIu32 " words instead of %zu\n",
@@ -130,7 +133,7 @@ bool PacketFinder::ProcessPacket() {
       LOG(INFO, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
           calculated_checksum);
     }
-    LOG_INTERVAL(bad_checksum_);
+    bad_checksum_.WantToLog();
     return false;
   }
 

@@ -42,6 +42,8 @@ const DataStruct *SensorReader::ReadPacket() {
       ::aos::time::Time::InSeconds(5);
 
   while (true) {
+    LOG_INTERVAL(receive_failed_);
+
     ::aos::time::Time next_timeout = last_received_time_ + kResetTimeout;
     if (next_timeout <= ::aos::time::Time::Now()) {
       LOG(WARNING, "Too long since good packet received. Resetting.\n");
@@ -67,7 +69,7 @@ const DataStruct *SensorReader::ReadPacket() {
       last_cape_timestamp_ = data->timestamp;
       return data;
     }
-    LOG_INTERVAL(receive_failed_);
+    receive_failed_.WantToLog();
   }
 }
 
