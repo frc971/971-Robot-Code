@@ -62,8 +62,10 @@ class ControlLoopWriter(object):
     """Returns a template name for StateFeedbackPlantCoefficients."""
     return self._GenericType('StateFeedbackPlantCoefficients')
 
-  def WriteHeader(self, header_file):
-    """Writes the header file to the file named header_file."""
+  def WriteHeader(self, header_file, double_appendage=False, MoI_ratio=0.0):
+    """Writes the header file to the file named header_file.
+       Set double_appendage to true in order to include a ratio of
+       moments of inertia constant. Currently, only used for 2014 claw."""
     with open(header_file, 'w') as fd:
       header_guard = self._HeaderGuard(header_file)
       fd.write('#ifndef %s\n'
@@ -84,6 +86,10 @@ class ControlLoopWriter(object):
 
       fd.write('%s Make%sLoop();\n\n' %
                (self._LoopType(), self._gain_schedule_name))
+
+      fd.write('const double k%sMomentOfInertiaRatio = %f;\n\n' %
+               (self._gain_schedule_name,
+                self._loops[0].J_top / self._loops[0].J_bottom))
 
       fd.write(self._namespace_end)
       fd.write('\n\n')
