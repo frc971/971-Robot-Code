@@ -569,9 +569,10 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 
   bool bad_pos = false;
   if (position == nullptr) {
-    LOG_INTERVAL(no_position_);
+    no_position_.WantToLog();
     bad_pos = true;
   }
+  LOG_INTERVAL(no_position_);
 
   double wheel = goal->steering;
   double throttle = goal->throttle;

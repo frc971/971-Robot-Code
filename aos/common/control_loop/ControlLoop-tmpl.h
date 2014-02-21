@@ -26,6 +26,13 @@ void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::Iterate() {
+  LOG_INTERVAL(no_prior_goal_);
+  LOG_INTERVAL(no_sensor_generation_);
+  LOG_INTERVAL(very_stale_position_);
+  LOG_INTERVAL(no_prior_position_);
+  LOG_INTERVAL(driver_station_old_);
+  LOG_INTERVAL(no_driver_station_);
+
   // Fetch the latest control loop goal and position.  If there is no new
   // goal, we will just reuse the old one.
   // If there is no goal, we haven't started up fully.  It isn't worth
@@ -35,14 +42,14 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   // goals.
   const GoalType *goal = control_loop_->goal.get();
   if (goal == NULL) {
-    LOG_INTERVAL(no_prior_goal_);
+    no_prior_goal_.WantToLog();
     ZeroOutputs();
     return;
   }
 
   ::bbb::sensor_generation.FetchLatest();
   if (::bbb::sensor_generation.get() == nullptr) {
-    LOG_INTERVAL(no_sensor_generation_);
+    no_sensor_generation_.WantToLog();
     ZeroOutputs();
     return;
   }
@@ -75,7 +82,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
       if (control_loop_->position.get()) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
-          LOG_INTERVAL(very_stale_position_);
+          very_stale_position_.WantToLog();
           ZeroOutputs();
           return;
         } else {
@@ -83,7 +90,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
               kPositionTimeoutMs);
         }
       } else {
-        LOG_INTERVAL(no_prior_position_);
+        no_prior_position_.WantToLog();
         if (fail_no_position) {
           ZeroOutputs();
           return;
@@ -104,9 +111,9 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     outputs_enabled = true;
   } else {
     if (::aos::robot_state.get()) {
-      LOG_INTERVAL(driver_station_old_);
+      driver_station_old_.WantToLog();
     } else {
-      LOG_INTERVAL(no_driver_station_);
+      no_driver_station_.WantToLog();
     }
   }
 

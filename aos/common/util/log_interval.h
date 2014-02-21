@@ -34,7 +34,7 @@ class LogInterval {
   }
   bool ShouldLog() {
     const ::aos::time::Time now = ::aos::time::Time::Now();
-    const bool r = (now - last_done_) >= interval_;
+    const bool r = (now - last_done_) >= interval_ && count_ > 0;
     if (r) {
       last_done_ = now;
     }
@@ -55,17 +55,19 @@ class LogInterval {
 };
 
 // This one is even easier to use. It always logs with a message "%s %d
-// times\n".
+// times\n". Call WantToLog() like with LogInterval and insert a LOG_INTERVAL
+// call somewhere that will always get run (ie not after a conditional return).
 class SimpleLogInterval {
  public:
   SimpleLogInterval(const ::aos::time::Time &interval, log_level level,
                     const ::std::string &message)
       : interval_(interval), level_(level), message_(message) {}
 
+  void WantToLog() { interval_.WantToLog(); }
+
 #define LOG_INTERVAL(simple_log) \
-  simple_log.Hit(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
-  void Hit(const char *context) {
-    interval_.WantToLog();
+  simple_log.Print(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
+  void Print(const char *context) {
     if (interval_.ShouldLog()) {
       log_do(level_, "%s: %.*s %d times over %f sec\n", context,
              static_cast<int>(message_.size()), message_.data(),
