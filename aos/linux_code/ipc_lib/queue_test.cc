@@ -381,6 +381,31 @@ TEST_F(QueueTest, MultiRead) {
   // TODO(brians) finish this
 }
 
+// There used to be a bug where reading first without an index and then with an
+// index would crash. This test makes sure that's fixed.
+TEST_F(QueueTest, ReadIndexAndNot) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+
+  // Write a message, read it (with ReadMessage), and then write another
+  // message (before freeing the read one so the queue allocates a distinct
+  // message to use for it).
+  TestMessage *msg = static_cast<TestMessage *>(queue->GetMessage());
+  ASSERT_NE(nullptr, msg);
+  ASSERT_TRUE(queue->WriteMessage(msg, 0));
+  const void *read_msg = queue->ReadMessage(0);
+  EXPECT_NE(nullptr, read_msg);
+  msg = static_cast<TestMessage *>(queue->GetMessage());
+  queue->FreeMessage(read_msg);
+  ASSERT_NE(nullptr, msg);
+  ASSERT_TRUE(queue->WriteMessage(msg, 0));
+
+  int index = 0;
+  const void *second_read_msg = queue->ReadMessageIndex(0, &index);
+  EXPECT_NE(nullptr, second_read_msg);
+  EXPECT_NE(read_msg, second_read_msg)
+      << "We already took that message out of the queue.";
+}
+
 TEST_F(QueueTest, Recycle) {
   // TODO(brians) basic test of recycle queue
   // include all of the ways a message can get into the recycle queue
