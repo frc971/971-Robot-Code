@@ -29,6 +29,7 @@
     'output_cc': '<(out_dir)/<(RULE_INPUT_ROOT).q.cc',
     'output_main': '<(out_dir)/<(RULE_INPUT_ROOT)_main.cc',
     'no_rsync': 1,
+    'aos_q_dependent_paths%': [],
   },
   'rules': [
     {
@@ -46,6 +47,7 @@
         '<!@(find <(AOS)/build/queues/ -name *.rb)',
         '<(AOS)/common/queue.h',
         '<(AOS)/common/time.h',
+        '>@(aos_q_dependent_paths)',
       ],
       'action': ['ruby', '<(script)',
         '-I', '<(DEPTH)',
@@ -66,7 +68,7 @@
       '<(prefix_dir)/<(_target_name)',
     ],
     'variables': {
-      'gen_srcdir_parents': ['<(out_dir)'],
+      'aos_q_dependent_paths': ['<@(_sources)'],
     },
   },
   'dependencies': [
