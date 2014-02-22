@@ -82,9 +82,14 @@ class ClawMotorSimulation {
     return GetAbsolutePosition(type) - initial_position_[type];
   }
 
-  // Makes sure pos is inside range (inclusive)
+  // Makes sure pos is inside range (exclusive)
   bool CheckRange(double pos, const constants::Values::Claws::AnglePair &pair) {
-    return (pos >= pair.lower_angle && pos <= pair.upper_angle);
+    // Note: If the >= and <= signs are used, then the there exists a case
+    // where the wrist starts precisely on the edge and because initial
+    // position and the *edge_value_ are the same, then the comparison
+    // in ZeroedStateFeedbackLoop::DoGetPositionOfEdge will return that
+    // the lower, rather than upper, edge of the hall effect was passed.
+    return (pos > pair.lower_angle && pos < pair.upper_angle);
   }
 
   void SetHallEffect(double pos,
@@ -212,8 +217,7 @@ class ClawMotorSimulation {
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
 
     claw_plant_->U << claw_queue_group.output->bottom_claw_voltage,
-        claw_queue_group.output->top_claw_voltage -
-            claw_queue_group.output->bottom_claw_voltage;
+        claw_queue_group.output->top_claw_voltage;
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
@@ -454,7 +458,6 @@ INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
                                           ::std::make_pair(1.1, 1.0),
                                           ::std::make_pair(1.15, 1.05),
                                           ::std::make_pair(1.05, 0.95),
-                                          ::std::make_pair(1.1, 1.0),
                                           ::std::make_pair(1.2, 1.1),
                                           ::std::make_pair(1.3, 1.2),
                                           ::std::make_pair(1.4, 1.3),
@@ -462,7 +465,8 @@ INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
                                           ::std::make_pair(1.6, 1.5),
                                           ::std::make_pair(1.7, 1.6),
                                           ::std::make_pair(1.8, 1.7),
-                                          ::std::make_pair(2.015, 2.01)));
+                                          ::std::make_pair(2.015, 2.01)
+));
 
 /*
 // Tests that loosing the encoder for a second triggers a re-zero.
@@ -547,7 +551,7 @@ class WindupClawTest : public ClawTest {
     const frc971::constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
-    for (int i = 0; i < 600; ++i) {
+    for (int i = 0; i < 700; ++i) {
       claw_motor_plant_.SendPositionMessage();
       if (i >= start_time && mode == claw_motor_.mode() && !kicked) {
         EXPECT_EQ(mode, claw_motor_.mode());

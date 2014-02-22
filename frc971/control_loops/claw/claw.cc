@@ -54,30 +54,41 @@ ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
       is_zeroing_(true) {}
 
 void ClawLimitedLoop::CapU() {
-  uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
-  if (is_zeroing_) {
-    LOG(DEBUG, "zeroing\n");
-    const frc971::constants::Values &values = constants::GetValues();
-    if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
-      const double difference =
-          uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
-      U(0, 0) -= difference;
-    } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
-      const double difference =
-          -uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
-      U(0, 0) += difference;
-    }
-  }
-
-  double max_value =
-      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
+  uncapped_average_voltage_ = (U(0, 0) + U(1, 0)) / 2.0;
 
   const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
-  if (max_value > k_max_voltage) {
-    LOG(DEBUG, "Capping U because max is %f\n", max_value);
-    U = U * k_max_voltage / max_value;
-    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+  double max_value =
+      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0)));
+  double scalar = k_max_voltage / max_value;
+  bool bottom_big = (::std::abs(U(0, 0)) > k_max_voltage) &&
+                    (::std::abs(U(0, 0)) > ::std::abs(U(1, 0)));
+  bool top_big = (::std::abs(U(1, 0)) > k_max_voltage) && (!bottom_big);
+  double separation_voltage = U(1, 0) - U(0, 0) * kClawMomentOfInertiaRatio;
+  double u_top = U(1, 0);
+  double u_bottom = U(0, 0);
+
+  if (bottom_big) {
+    LOG(DEBUG, "Capping U because bottom is %f\n", max_value);
+    u_bottom *= scalar;
+    u_top = separation_voltage + u_bottom * kClawMomentOfInertiaRatio;
+    // If we can't maintain the separation, just clip it.
+    if (u_top > k_max_voltage) u_top = k_max_voltage;
+    else if (u_top < -k_max_voltage) u_top = -k_max_voltage;
   }
+  else if (top_big) {
+    LOG(DEBUG, "Capping U because top is %f\n", max_value);
+    u_top *= scalar;
+    u_bottom = (u_top - separation_voltage) / kClawMomentOfInertiaRatio;
+    if (u_bottom > k_max_voltage) u_bottom = k_max_voltage;
+    else if (u_bottom < -k_max_voltage) u_bottom = -k_max_voltage;
+  }
+
+  U(0, 0) = u_bottom;
+  U(1, 0) = u_top;
+
+  LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+  LOG(DEBUG, "Separation Voltage was %f, is now %f\n", separation_voltage,
+      U(1, 0) - U(0, 0) * kClawMomentOfInertiaRatio);
 }
 
 ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
@@ -657,12 +668,20 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_BOTTOM:
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
+      Eigen::Matrix<double, 2, 1> U = claw_.K() * (claw_.R - claw_.X_hat);
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
-        double dx = (claw_.uncapped_average_voltage() -
+        double dx_bot = (U(0, 0) -
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
+        double dx_top = (U(1, 0) -
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx = ::std::max(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
+        Eigen::Matrix<double, 4, 1> R;
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
+        U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
         LOG(DEBUG, "Uncapped is %f, max is %f, difference is %f\n",
@@ -671,11 +690,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
              values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
-        double dx = (claw_.uncapped_average_voltage() +
+        double dx_bot = (U(0, 0) +
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
+        double dx_top = (U(1, 0) +
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx = ::std::min(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
+        Eigen::Matrix<double, 4, 1> R;
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
+        U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }
@@ -683,7 +709,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   }
 
   if (output) {
-    output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
+    output->top_claw_voltage = claw_.U(1, 0);
     output->bottom_claw_voltage =  claw_.U(0, 0);
 
     if (output->top_claw_voltage > kMaxVoltage) {
