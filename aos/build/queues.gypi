@@ -57,28 +57,6 @@
       'message': 'Generating C++ code from <(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).q',
       'process_outputs_as_sources': 1,
     },
-    {
-      'variables': {
-        'script': '<(AOS)/build/act_builder.rb',
-      },
-      'rule_name': 'genact',
-      'extension': 'act',
-      'outputs': [
-        '<(output_h)',
-        '<(output_cc)',
-        '<(output_main)',
-      ],
-      'inputs': [
-        '<(script)',
-      ],
-      'action': ['ruby', '<(script)',
-        '<(gen_namespace)',
-        '<(RULE_INPUT_PATH)',
-        '<(DEPTH)',
-        '<(out_dir)', 'header', 'cpp', 'main'],
-      #'message': 'Generating C++ code from <(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).act',
-      'process_outputs_as_sources': 1,
-    },
   ],
   'include_dirs': [
     '<(prefix_dir)/<(_target_name)',

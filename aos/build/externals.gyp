@@ -2,6 +2,7 @@
 # download_externals.sh makes sure that all of them have been downloaded.
 {
   'variables': {
+    # TODO(brians): Would we not have to do this hackery if we named it externals_path etc?
     'externals': '<(AOS)/../output/downloaded',
     'externals_abs': '<!(readlink -f ../../output/downloaded)',
     'conditions': [['PLATFORM=="linux-amd64"', {
