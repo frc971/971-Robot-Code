@@ -45,7 +45,8 @@
 namespace frc971 {
 namespace control_loops {
 
-static const double kMaxVoltage = 1.5;
+static const double kZeroingVoltage = 4.0;
+static const double kMaxVoltage = 12.0;
 
 void ClawLimitedLoop::CapU() {
   uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
@@ -66,9 +67,10 @@ void ClawLimitedLoop::CapU() {
   double max_value =
       ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
 
-  if (max_value > kMaxVoltage) {
+  const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
+  if (max_value > k_max_voltage) {
     LOG(DEBUG, "Capping U because max is %f\n", max_value);
-    U = U * kMaxVoltage / max_value;
+    U = U * k_max_voltage / max_value;
     LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
   }
 }
@@ -516,7 +518,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     LOG(DEBUG, "Goal is %f (bottom) %f, separation is %f\n", claw_.R(0, 0),
         claw_.R(1, 0), separation);
 
-    // Only cap power when one of the halves of the claw is unknown.
+    // Only cap power when one of the halves of the claw is moving slowly and
+    // could wind up.
     claw_.set_is_zeroing(mode_ == UNKNOWN_LOCATION || mode_ == FINE_TUNE_TOP ||
                          mode_ == FINE_TUNE_BOTTOM);
     claw_.Update(output == nullptr);

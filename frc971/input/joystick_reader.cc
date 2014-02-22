@@ -29,10 +29,12 @@ const ButtonLocation kDriveControlLoopEnable1(1, 7),
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
+const ButtonLocation kClawClosed(3, 7);
+const ButtonLocation kClawOpen(3, 9);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader() {}
+  Reader() : closed_(true) {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     static bool is_high_gear = false;
@@ -105,10 +107,18 @@ class Reader : public ::aos::input::JoystickInput {
       if (data.PosEdge(kShiftLow)) {
         is_high_gear = true;
       }
+      if (data.PosEdge(kClawClosed)) {
+        closed_ = true;
+      }
+      if (data.PosEdge(kClawOpen)) {
+        closed_ = false;
+      }
 
+      double separation_angle = closed_ ? 0.0 : 0.5;
+      double goal_angle = closed_ ? 0.0 : -0.2;
       if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-          .bottom_angle(0)
-          .separation_angle(0)
+          .bottom_angle(goal_angle)
+          .separation_angle(separation_angle)
           .intake(false).Send()) {
         LOG(WARNING, "sending claw goal failed\n");
       }
@@ -121,6 +131,9 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
   }
+  
+ private:
+  bool closed_;
 };
 
 }  // namespace joysticks

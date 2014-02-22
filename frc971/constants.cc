@@ -129,8 +129,8 @@ const Values *DoGetValues() {
            shooter_zeroing_off_speed,
            shooter_zeroing_speed
           },
-          {0.200000,
-          0.100000,
+          {0.400000,
+          0.200000,
           0.000000,
           -0.762218,
           0.912207,
