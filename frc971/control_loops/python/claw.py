@@ -122,10 +122,10 @@ class Claw(control_loop.ControlLoop):
     #controlability = controls.ctrb(self.A, self.B);
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
-    self.Q = numpy.matrix([[(1.0 / (0.40 ** 2.0)), 0.0, 0.0, 0.0],
-                           [0.0, (1.0 / (0.007 ** 2.0)), 0.0, 0.0],
-                           [0.0, 0.0, 0.2, 0.0],
-                           [0.0, 0.0, 0.0, 2.00]])
+    self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
+                           [0.0, (1.0 / (0.06 ** 2.0)), 0.0, 0.0],
+                           [0.0, 0.0, 0.10, 0.0],
+                           [0.0, 0.0, 0.0, 0.1]])
 
     self.R = numpy.matrix([[(1.0 / (40.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (5.0 ** 2.0))]])

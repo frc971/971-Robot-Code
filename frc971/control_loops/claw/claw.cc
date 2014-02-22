@@ -45,29 +45,19 @@
 namespace frc971 {
 namespace control_loops {
 
+static const double kZeroingVoltage = 4.0;
+static const double kMaxVoltage = 12.0;
+
 void ClawLimitedLoop::CapU() {
   uncapped_average_voltage_ = (U(0, 0) + U(1, 0)) / 2.0;
-  if (is_zeroing_) {
-    const frc971::constants::Values &values = constants::GetValues();
-    if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
-      const double difference =
-          1 / uncapped_average_voltage_ * values.claw.max_zeroing_voltage;
-      U(0, 0) *= difference;
-      U(1, 0) *= difference;
-    } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
-      const double difference =
-           1 / uncapped_average_voltage_ * values.claw.max_zeroing_voltage;
-      U(0, 0) *= difference;
-      U(1, 0) *= difference;
-    }
-  }
 
+  const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
   double max_value =
       ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0)));
-  double scalar = 12.0 / max_value;
-  bool bottom_big = (::std::abs(U(0, 0)) > 12.0) &&
+  double scalar = k_max_voltage / max_value;
+  bool bottom_big = (::std::abs(U(0, 0)) > k_max_voltage) &&
                     (::std::abs(U(0, 0)) > ::std::abs(U(1, 0)));
-  bool top_big = (::std::abs(U(1, 0)) > 12.0) && (!bottom_big);
+  bool top_big = (::std::abs(U(1, 0)) > k_max_voltage) && (!bottom_big);
   double separation_voltage = U(1, 0) - U(0, 0) * kClawMomentOfInertiaRatio;
   double u_top = U(1, 0);
   double u_bottom = U(0, 0);
@@ -77,15 +67,15 @@ void ClawLimitedLoop::CapU() {
     u_bottom *= scalar;
     u_top = separation_voltage + u_bottom * kClawMomentOfInertiaRatio;
     // If we can't maintain the separation, just clip it.
-    if (u_top > 12.0) u_top = 12.0;
-    else if (u_top < -12.0) u_top = -12.0;
+    if (u_top > k_max_voltage) u_top = k_max_voltage;
+    else if (u_top < -k_max_voltage) u_top = -k_max_voltage;
   }
   else if (top_big) {
     LOG(DEBUG, "Capping U because top is %f\n", max_value);
     u_top *= scalar;
     u_bottom = (u_top - separation_voltage) / kClawMomentOfInertiaRatio;
-    if (u_bottom > 12.0) u_bottom = 12.0;
-    else if (u_bottom < -12.0) u_bottom = -12.0;
+    if (u_bottom > k_max_voltage) u_bottom = k_max_voltage;
+    else if (u_bottom < -k_max_voltage) u_bottom = -k_max_voltage;
   }
 
   U(0, 0) = u_bottom;
@@ -116,34 +106,35 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     const constants::Values::Claws::AnglePair &angles, double *edge_encoder,
     double *edge_angle, const HallEffectTracker &sensor,
     const char *hall_effect_name) {
+  bool found_edge = false;
   if (sensor.posedge_count_changed()) {
-    if (posedge_value_ < last_encoder()) {
+    if (posedge_value_ < last_off_encoder_) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Posedge upper of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge upper of %s -> %f posedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, posedge_value_, last_off_encoder_);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Posedge lower of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge lower of %s -> %f posedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, posedge_value_, last_off_encoder_);
     }
     *edge_encoder = posedge_value_;
-    return true;
+    found_edge = true;
   }
   if (sensor.negedge_count_changed()) {
-    if (negedge_value_ > last_encoder()) {
+    if (negedge_value_ > last_on_encoder_) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Negedge lower of %s -> %f, last_encoder: %f, negedge_value: %f\n", name_,
-          hall_effect_name, *edge_angle, last_encoder(), negedge_value_);
+      LOG(INFO, "%s Negedge upper of %s -> %f negedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, negedge_value_, last_on_encoder_);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Negedge lower of %s -> %f, last_encoder: %f, negedge_value: %f\n", name_,
-          hall_effect_name, *edge_angle, last_encoder(), negedge_value_);
+      LOG(INFO, "%s Negedge lower of %s -> %f negedge: %f last_encoder: %f\n", name_,
+          hall_effect_name, *edge_angle, negedge_value_, last_on_encoder_);
     }
     *edge_encoder = negedge_value_;
-    return true;
+    found_edge = true;
   }
 
-  return false;
+  return found_edge;
 }
 
 bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
@@ -286,6 +277,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (reset()) {
     bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
+    top_claw_.Reset();
+    bottom_claw_.Reset();
   }
 
   if (::aos::robot_state.get() == nullptr) {
@@ -536,7 +529,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     LOG(DEBUG, "Goal is %f (bottom) %f, separation is %f\n", claw_.R(0, 0),
         claw_.R(1, 0), separation);
 
-    // Only cap power when one of the halves of the claw is unknown.
+    // Only cap power when one of the halves of the claw is moving slowly and
+    // could wind up.
     claw_.set_is_zeroing(mode_ == UNKNOWN_LOCATION || mode_ == FINE_TUNE_TOP ||
                          mode_ == FINE_TUNE_BOTTOM);
     claw_.Update(output == nullptr);
@@ -596,6 +590,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (output) {
     output->top_claw_voltage = claw_.U(1, 0);
     output->bottom_claw_voltage =  claw_.U(0, 0);
+
+    if (output->top_claw_voltage > kMaxVoltage) {
+      output->top_claw_voltage = kMaxVoltage;
+    } else if (output->top_claw_voltage < -kMaxVoltage) {
+      output->top_claw_voltage = -kMaxVoltage;
+    }
+
+    if (output->bottom_claw_voltage > kMaxVoltage) {
+      output->bottom_claw_voltage = kMaxVoltage;
+    } else if (output->bottom_claw_voltage < -kMaxVoltage) {
+      output->bottom_claw_voltage = -kMaxVoltage;
+    }
   }
   status->done = false;
 

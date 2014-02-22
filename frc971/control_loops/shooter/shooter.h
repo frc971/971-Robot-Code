@@ -107,6 +107,13 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   bool capped_goal_;
 };
 
+const Time kUnloadTimeout = Time::InSeconds(10);
+const Time kLoadTimeout = Time::InSeconds(10);
+const Time kLoadProblemEndTimeout = Time::InSeconds(0.5);
+const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
+const Time kShotEndTimeout = Time::InSeconds(1.0);
+const Time kPrepareFireEndTime = Time::InMS(40);
+
 class ShooterMotor
     : public aos::control_loops::ControlLoop<control_loops::ShooterGroup> {
  public:
@@ -150,12 +157,12 @@ class ShooterMotor
   // Enter state STATE_UNLOAD
   void Unload() {
     state_ = STATE_UNLOAD;
-    unload_timeout_ = Time::Now() + Time::InSeconds(1);
+    unload_timeout_ = Time::Now() + kUnloadTimeout;
   }
   // Enter state STATE_LOAD
   void Load() {
     state_ = STATE_LOAD;
-    load_timeout_ = Time::Now() + Time::InSeconds(1);
+    load_timeout_ = Time::Now() + kLoadTimeout;
   }
 
   control_loops::ShooterGroup::Position last_position_;

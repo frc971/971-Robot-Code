@@ -174,7 +174,7 @@ void ShooterMotor::RunIteration(
       shooter_.set_controller_index(1);
     } else {
       // Otherwise use the controller with the spring.
-      shooter_.set_controller_index(0);
+      shooter_.set_controller_index(1);
     }
     if (shooter_.controller_index() != last_controller_index) {
       shooter_.RecalculatePowerGoal();
@@ -216,16 +216,24 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_LOAD:
       if (position) {
-        if (position->plunger && position->latch) {
-          // The plunger is back and we are latched, get ready to shoot.
-          state_ = STATE_PREPARE_SHOT;
-          latch_piston_ = true;
-        } else if (position->pusher_distal.current) {
+        if (position->pusher_distal.current) {
           // We started on the sensor, back up until we are found.
           // If the plunger is all the way back and not latched, it won't be
           // there for long.
           state_ = STATE_LOAD_BACKTRACK;
-          latch_piston_ = false;
+
+          // The plunger is already back and latched.  Don't release it.
+          if (position->plunger && position->latch) {
+            latch_piston_ = true;
+          } else {
+            latch_piston_ = false;
+          }
+        } else if (position->plunger && position->latch) {
+          // The plunger is back and we are latched.  We most likely got here
+          // from Initialize, in which case we want to 'load' again anyways to
+          // zero.
+          Load();
+          latch_piston_ = true;
         } else {
           // Off the sensor, start loading.
           Load();
@@ -248,7 +256,7 @@ void ShooterMotor::RunIteration(
             values.shooter.zeroing_speed);
       }
       cap_goal = true;
-      shooter_.set_max_voltage(12.0);
+      shooter_.set_max_voltage(4.0);
 
       if (position) {
         if (!position->pusher_distal.current) {
@@ -289,17 +297,19 @@ void ShooterMotor::RunIteration(
 
         // Latch if the plunger is far enough back to trigger the hall effect.
         // This happens when the distal sensor is triggered.
-        latch_piston_ = position->pusher_distal.current;
+        latch_piston_ = position->pusher_distal.current || position->plunger;
 
-        // Check if we are latched and back.
-        if (position->plunger && position->latch) {
+        // Check if we are latched and back.  Make sure the plunger is all the
+        // way back as well.
+        if (position->plunger && position->latch &&
+            position->pusher_distal.current) {
           state_ = STATE_PREPARE_SHOT;
         } else if (position->plunger &&
                    ::std::abs(shooter_.absolute_position() -
                               shooter_.goal_position()) < 0.001) {
           // We are at the goal, but not latched.
           state_ = STATE_LOADING_PROBLEM;
-          loading_problem_end_time_ = Time::Now() + Time::InSeconds(0.5);
+          loading_problem_end_time_ = Time::Now() + kLoadProblemEndTimeout;
         }
       }
       if (load_timeout_ < Time::Now()) {
@@ -354,7 +364,7 @@ void ShooterMotor::RunIteration(
         // We are there, set the brake and move on.
         latch_piston_ = true;
         brake_piston_ = true;
-        shooter_brake_set_time_ = Time::Now() + Time::InSeconds(0.05);
+        shooter_brake_set_time_ = Time::Now() + kShooterBrakeSetTime;
         state_ = STATE_READY;
       } else {
         latch_piston_ = true;
@@ -384,8 +394,7 @@ void ShooterMotor::RunIteration(
         if (goal->shot_requested && !disabled) {
           LOG(DEBUG, "Shooting now\n");
           shooter_loop_disable = true;
-          prepare_fire_end_time_ =
-              Time::Now(Time::kDefaultClock) + Time::InMS(40.0);
+          prepare_fire_end_time_ = Time::Now() + kPrepareFireEndTime;
           apply_some_voltage = true;
           state_ = STATE_PREPARE_FIRE;
         }
@@ -408,14 +417,13 @@ void ShooterMotor::RunIteration(
       shooter_loop_disable = true;
       if (disabled) {
         // If we are disabled, reset the backlash bias timer.
-        prepare_fire_end_time_ =
-            Time::Now(Time::kDefaultClock) + Time::InMS(40.0);
+        prepare_fire_end_time_ = Time::Now() + kPrepareFireEndTime;
         break;
       }
       if (Time::Now() > prepare_fire_end_time_) {
         cycles_not_moved_ = 0;
         firing_starting_position_ = shooter_.absolute_position();
-        shot_end_time_ = Time::Now() + Time::InSeconds(1);
+        shot_end_time_ = Time::Now() + kShotEndTimeout;
         state_ = STATE_FIRE;
         latch_piston_ = false;
       } else {
@@ -432,7 +440,7 @@ void ShooterMotor::RunIteration(
           if (position->plunger) {
             // If disabled and the plunger is still back there, reset the
             // timeout.
-            shot_end_time_ = Time::Now() + Time::InSeconds(1);
+            shot_end_time_ = Time::Now() + kShotEndTimeout;
           }
         }
       }
@@ -463,7 +471,14 @@ void ShooterMotor::RunIteration(
 
       // If it is latched and the plunger is back, move the pusher back to catch
       // the plunger.
-      if (position->plunger && position->latch) {
+      bool all_back;
+      if (position) {
+        all_back = position->plunger && position->latch;
+      } else {
+        all_back = last_position_.plunger && last_position_.latch;
+      }
+
+      if (all_back) {
         // Pull back to 0, 0.
         shooter_.SetGoalPosition(0.0, 0.0);
         if (shooter_.absolute_position() < 0.005) {
@@ -478,7 +493,7 @@ void ShooterMotor::RunIteration(
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
         latch_piston_ = false;
         state_ = STATE_UNLOAD_MOVE;
-        unload_timeout_ = Time::Now() + Time::InSeconds(2.0);
+        unload_timeout_ = Time::Now() + kUnloadTimeout;
       }
 
       if (Time::Now() > unload_timeout_) {
@@ -491,11 +506,11 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_UNLOAD_MOVE: {
       if (disabled) {
-        unload_timeout_ = Time::Now() + Time::InSeconds(2.0);
+        unload_timeout_ = Time::Now() + kUnloadTimeout;
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
       }
       cap_goal = true;
-      shooter_.set_max_voltage(6.0);
+      shooter_.set_max_voltage(5.0);
 
       // Slowly move back until we hit the upper limit.
       // If we were at the limit last cycle, we are done unloading.
