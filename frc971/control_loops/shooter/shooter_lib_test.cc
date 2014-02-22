@@ -606,6 +606,9 @@ TEST_F(ShooterTest, StartsOnProximal) {
 
 // TODO(austin): Test all the timeouts...
 
+// TODO(austin): Test starting latched and with the plunger back.
+// TODO(austin): Verify that we zeroed if we started latched and all the way back.
+
 }  // namespace testing
 }  // namespace control_loops
 }  // namespace frc971
