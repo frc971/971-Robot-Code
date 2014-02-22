@@ -59,10 +59,6 @@ class Claw(control_loop.ControlLoop):
         [[0, 1],
          [0, self.difference_difference]])
 
-  # self.A_continuous[0:2, 0:2] = self.A_bottom_cont
-  # self.A_continuous[2:4, 2:4] = self.A_diff_cont
-  # self.A_continuous[3, 1] = self.difference_bottom
-
     self.motor_feedforward = self.Kt / (self.G * self.R)
     self.motor_feedforward_bottom = self.motor_feedforward / self.J_bottom
     self.motor_feedforward_difference = self.motor_feedforward / self.J_top
@@ -72,8 +68,7 @@ class Claw(control_loop.ControlLoop):
         [[0, 0],
          [0, 0],
          [self.motor_feedforward_bottom, 0],
-         [-self.motor_feedforward_bottom,
-          self.motor_feedforward_difference]])
+         [-self.motor_feedforward_bottom, self.motor_feedforward_difference]])
 
     print "Cont X_ss", self.motor_feedforward / -self.common_motor_constant
 
@@ -103,25 +98,25 @@ class Claw(control_loop.ControlLoop):
     print "B"
     print self.B
 
+    # Compute the steady state velocities for a given applied voltage.
+    # The top and bottom of the claw should spin at the same rate if the
+    # physics is right.
     X_ss = numpy.matrix([[0], [0], [0.0], [0]])
     
     U = numpy.matrix([[1.0],[1.0]])
     A = self.A
     B = self.B
-   #X_ss[2, 0] = X_ss[2, 0] * A[2, 2] + B[2, 0] * U[0, 0]
+    #X_ss[2, 0] = X_ss[2, 0] * A[2, 2] + B[2, 0] * U[0, 0]
     X_ss[2, 0] = 1 / (1 - A[2, 2]) * B[2, 0] * U[0, 0]
-   #X_ss[3, 0] = X_ss[3, 0] * A[3, 3] + X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
-   #X_ss[3, 0] * (1 - A[3, 3]) = X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    #X_ss[3, 0] = X_ss[3, 0] * A[3, 3] + X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    #X_ss[3, 0] * (1 - A[3, 3]) = X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
     X_ss[3, 0] = 1 / (1 - A[3, 3]) * (X_ss[2, 0] * A[3, 2] + B[3, 1] * U[1, 0] + B[3, 0] * U[0, 0])
-   #X_ss[3, 0] = 1 / (1 - A[3, 3]) / (1 - A[2, 2]) * B[2, 0] * U[0, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    #X_ss[3, 0] = 1 / (1 - A[3, 3]) / (1 - A[2, 2]) * B[2, 0] * U[0, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
     X_ss[0, 0] = A[0, 2] * X_ss[2, 0] + B[0, 0] * U[0, 0]
     X_ss[1, 0] = A[1, 2] * X_ss[2, 0] + A[1, 3] * X_ss[3, 0] + B[1, 0] * U[0, 0] + B[1, 1] * U[1, 0]
 
     print "X_ss", X_ss
     
-    #controlability = controls.ctrb(self.A, self.B);
-    #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
-
     self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (0.06 ** 2.0)), 0.0, 0.0],
                            [0.0, 0.0, 0.10, 0.0],
@@ -129,18 +124,21 @@ class Claw(control_loop.ControlLoop):
 
     self.R = numpy.matrix([[(1.0 / (40.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (5.0 ** 2.0))]])
-   #self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+    #self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    self.K = numpy.matrix([[50, 0.0, 1, 0.0],
+    self.K = numpy.matrix([[50, 0.0, 1.0, 0.0],
                            [0.0, 300, 0.0, 1.1]])
+
+    # Compute the feed forwards aceleration term.
+    self.K[1, 0] = -self.B[1, 0] * self.K[0, 0] / self.B[1, 1]
+
     lstsq_A = numpy.identity(2)
-    lstsq_A[0] = self.B[1]
-    lstsq_A[1] = self.B[3]
+    lstsq_A[0, :] = self.B[1, :]
+    lstsq_A[1, :] = self.B[3, :]
     print "System of Equations coefficients:"
-    print  lstsq_A
+    print lstsq_A
     print "det", numpy.linalg.det(lstsq_A)
-    self.K[1, 0] = -lstsq_A[0, 0] * self.K[0, 0] / lstsq_A[0, 1]
-   #self.K[0:2, 0] = numpy.linalg.lstsq(lstsq_A, numpy.matrix([[0.0], [0.0]]))[0]
+
     out_x = numpy.linalg.lstsq(
                          lstsq_A,
                          numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]))[0]
@@ -285,7 +283,7 @@ def AverageUFix(claw, U, preserve_v3=False):
       claw: claw object containing moments of inertia and U limits.
       U: Input matrix to clip as necessary.
       preserve_v3: There are two ways to attempt to clip the voltages:
-        -If you preserve the imaginary v3, then it will attempt to 
+        -If you preserve the imaginary v3, then it will attempt to
           preserve the effect on the separation of the two claws.
           If it is not able to do this, then it calls itself with preserve_v3
           set to False.
@@ -297,12 +295,9 @@ def AverageUFix(claw, U, preserve_v3=False):
   top_u = U[1, 0]
   seperation_u = top_u - bottom_u * claw.J_top / claw.J_bottom
 
-  top_big = top_u > claw.U_max[0, 0]
-  top_small = top_u < claw.U_min[0, 0]
-  bot_big = bottom_u > claw.U_max[0, 0]
-  bot_small = top_u < claw.U_min[0, 0]
-  bottom_bad = bot_big or bot_small
-  top_bad = top_big or top_small
+  bottom_bad = bottom_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]
+  top_bad = top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]
+
   scalar = claw.U_max[0, 0] / max(numpy.abs(top_u), numpy.abs(bottom_u))
   if bottom_bad and preserve_v3:
     bottom_u *= scalar
@@ -330,7 +325,6 @@ def ClipDeltaU(claw, U):
 
   #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
   if new_unclipped_bottom_u > claw.U_max[0, 0]:
-    #print "Bottom is too big.  Was", new_unclipped_bottom_u, "changing top by", new_unclipped_bottom_u - claw.U_max[0, 0]
     top_u -= new_unclipped_bottom_u - claw.U_max[0, 0]
     new_unclipped_bottom_u = claw.U_max[0, 0]
   if top_u > claw.U_max[1, 0]:
