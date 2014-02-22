@@ -20,7 +20,7 @@ class SprungShooter(control_loop.ControlLoop):
     # This rough estimate should about include the effect of the masses
     # of the gears. If this number is too low, the eigen values of self.A
     # will start to become extremely small.
-    self.J = 20
+    self.J = 200
     # Resistance of the motor, divided by the number of motors.
     self.R = 12.0 / self.stall_current / 2.0
     # Motor velocity constant
@@ -110,7 +110,7 @@ class SprungShooterDeltaU(SprungShooter):
     self.C = numpy.matrix([[1.0, 0.0, 0.0]])
     self.D = numpy.matrix([[0.0]])
 
-    self.PlaceControllerPoles([0.55, 0.45, 0.80])
+    self.PlaceControllerPoles([0.50, 0.35, 0.80])
 
     print "K"
     print self.K

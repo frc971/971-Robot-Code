@@ -29,7 +29,7 @@ typedef enum {
 class TeamNumberEnvironment : public ::testing::Environment {
  public:
   // Override this to define how to set up the environment.
-  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
+  virtual void SetUp() { aos::network::OverrideTeamNumber(1); }
 };
 
 ::testing::Environment* const team_number_env =

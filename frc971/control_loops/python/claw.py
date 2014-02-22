@@ -14,12 +14,12 @@ class Claw(control_loop.ControlLoop):
     # Stall Current in Amps
     self.stall_current = 133
     # Free Speed in RPM, pulled from drivetrain
-    self.free_speed = 4650.0
+    self.free_speed = 5500.0
     # Free Current in Amps
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
     # approzimately 0.76 (without ball) in CAD
-    self.J = 0.76
+    self.J = 0.70
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -63,9 +63,9 @@ class Claw(control_loop.ControlLoop):
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
     self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
-                           [0.0, (1.0 / (0.03 ** 2.0)), 0.0, 0.0],
-                           [0.0, 0.0, 0.2, 0.0],
-                           [0.0, 0.0, 0.0, 2.00]])
+                           [0.0, (1.0 / (0.06 ** 2.0)), 0.0, 0.0],
+                           [0.0, 0.0, 0.10, 0.0],
+                           [0.0, 0.0, 0.0, 0.1]])
 
     self.R = numpy.matrix([[(1.0 / (20.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (20.0 ** 2.0))]])
@@ -73,6 +73,8 @@ class Claw(control_loop.ControlLoop):
 
     print "K unaugmented"
     print self.K
+    print "Placed controller poles"
+    print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
     self.rpl = .05
     self.ipl = 0.008
