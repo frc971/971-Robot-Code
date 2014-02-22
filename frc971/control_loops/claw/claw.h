@@ -84,8 +84,10 @@ class ZeroedStateFeedbackLoop {
     back_.Update(claw.back);
 
 	if (any_hall_effect_changed()) {
-		min_current_hall_edge_ = claw.position;
-		max_current_hall_edge_ = claw.position;
+		// if the hall effect has changed we are new edge
+		// so we zero out the interval this new edge has covered
+		min_current_hall_effect_edge_ = claw.position;
+		max_current_hall_effect_edge_ = claw.position;
 	} else if (claw.position > max_current_hall_effect_edge_) {
 		max_current_hall_effect_edge_ = claw.position;
 	} else if (claw.position < min_current_hall_effect_edge_) {
@@ -137,6 +139,9 @@ class ZeroedStateFeedbackLoop {
   JointZeroingState zeroing_state_;
   double posedge_value_;
   double negedge_value_;
+  double last_edge_value_;
+  double min_current_hall_effect_edge_;
+  double max_current_hall_effect_edge_;
   double encoder_;
   double last_encoder_;
 

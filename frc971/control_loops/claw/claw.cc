@@ -272,6 +272,12 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (reset()) {
     bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
+    // close up the min and max edge positions as they are no longer valid and
+    // will be expanded in future iterations
+    top_claw_.min_current_hall_effect_edge_ =
+        top_claw_.max_current_hall_effect_edge_ = position->top.position;
+    bottom_claw_.min_current_hall_effect_edge_ =
+        bottom_claw_.max_current_hall_effect_edge_ = position->bottom.position;
   }
 
   if (::aos::robot_state.get() == nullptr) {
