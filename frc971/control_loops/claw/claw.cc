@@ -91,29 +91,41 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     double *edge_angle, const HallEffectTracker &sensor,
     const char *hall_effect_name) {
   if (sensor.posedge_count_changed()) {
-    if (posedge_value_ < last_encoder()) {
+    if (min_current_hall_effect_edge_ == max_curent_hall_effect_edge_) {
+      // we oddly got two of the same edge.
+      *edge_angle = last_edge_value_;
+	  return true;
+    } else if (posedge_value_ <
+        (min_current_hall_effect_edge_ + max_current_hall_effect_edge_) / 2) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Posedge upper of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge upper of %s -> %f\n", name_, hall_effect_name,
+          *edge_angle);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Posedge lower of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Posedge lower of %s -> %f\n", name_, hall_effect_name,
+          *edge_angle);
     }
     *edge_encoder = posedge_value_;
+    last_edge_value_ = posedge_value_;
     return true;
   }
   if (sensor.negedge_count_changed()) {
-    if (negedge_value_ > last_encoder()) {
+    // we oddly got two of the same edge.
+    if (min_current_hall_effect_edge_ == max_curent_hall_effect_edge_) {
+      *edge_angle = last_edge_value_;
+	  return true;
+    } else if (negedge_value_ > (min_current_hall_effect_edge_ +
+                                 max_current_hall_effect_edge_) / 2) {
       *edge_angle = angles.upper_angle;
-      LOG(INFO, "%s Negedge upper of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Negedge upper of %s -> %f\n", name_, hall_effect_name,
+          *edge_angle);
     } else {
       *edge_angle = angles.lower_angle;
-      LOG(INFO, "%s Negedge lower of %s -> %f\n", name_,
-          hall_effect_name, *edge_angle);
+      LOG(INFO, "%s Negedge lower of %s -> %f\n", name_, hall_effect_name,
+          *edge_angle);
     }
     *edge_encoder = negedge_value_;
+    last_edge_value_ = posedge_value_;
     return true;
   }
 

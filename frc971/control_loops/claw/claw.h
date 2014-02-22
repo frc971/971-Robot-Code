@@ -83,6 +83,15 @@ class ZeroedStateFeedbackLoop {
     calibration_.Update(claw.calibration);
     back_.Update(claw.back);
 
+	if (any_hall_effect_changed()) {
+		min_current_hall_edge_ = claw.position;
+		max_current_hall_edge_ = claw.position;
+	} else if (claw.position > max_current_hall_effect_edge_) {
+		max_current_hall_effect_edge_ = claw.position;
+	} else if (claw.position < min_current_hall_effect_edge_) {
+		min_current_hall_effect_edge_ = claw.position;
+	}
+
     posedge_value_ = claw.posedge_value;
     negedge_value_ = claw.negedge_value;
     last_encoder_ = encoder_;
