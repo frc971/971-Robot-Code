@@ -218,7 +218,8 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_LOAD:
       if (position) {
-        if (position->pusher_distal.current) {
+        if (position->pusher_distal.current ||
+            position->pusher_proximal.current) {
           // We started on the sensor, back up until we are found.
           // If the plunger is all the way back and not latched, it won't be
           // there for long.
@@ -261,7 +262,8 @@ void ShooterMotor::RunIteration(
       shooter_.set_max_voltage(4.0);
 
       if (position) {
-        if (!position->pusher_distal.current) {
+        if (!position->pusher_distal.current &&
+            !position->pusher_proximal.current) {
           Load();
         }
       }
