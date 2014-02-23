@@ -103,6 +103,7 @@ struct Values {
 
 // Creates (once) a Values instance and returns a reference to it.
 const Values &GetValues();
+const Values &GetValuesForTeam(uint16_t team_number);
 
 }  // namespace constants
 }  // namespace frc971
