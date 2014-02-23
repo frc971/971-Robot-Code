@@ -5,6 +5,10 @@
 
 namespace frc971 {
 namespace control_loops {
+static const double kMaxExtension = 0.323850;
+
+static const double kSpringConstant = 0.280000;
+
 
 StateFeedbackPlantCoefficients<3, 1, 1> MakeSprungShooterPlantCoefficients();
 

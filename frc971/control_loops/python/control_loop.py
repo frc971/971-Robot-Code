@@ -1,8 +1,21 @@
 import controls
 import numpy
 
+class Constant(object):
+    def __init__ (self, name, formatt, value):
+        self.name = name
+        self.formatt = formatt
+        self.value = value
+        self.formatToType = {}
+        self.formatToType['%f'] = "double";
+        self.formatToType['%d'] = "int";
+    def __str__ (self):
+        return str("\nstatic const %s %s = "+ self.formatt +";\n") % \
+            (self.formatToType[self.formatt], self.name, self.value)
+
+
 class ControlLoopWriter(object):
-  def __init__(self, gain_schedule_name, loops, namespaces=None):
+  def __init__(self, gain_schedule_name, loops, namespaces=None, write_constants=False):
     """Constructs a control loop writer.
 
     Args:
@@ -24,6 +37,11 @@ class ControlLoopWriter(object):
 
     self._namespace_end = '\n'.join(
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
+    
+    self._constant_list = []
+    if (write_constants):
+        self._constant_list.append(Constant("kMaxExtension", "%f", 0.32385));
+        self._constant_list.append(Constant("kSpringConstant", "%f", 0.28));
 
   def _TopDirectory(self):
     return self._namespaces[0]
@@ -72,6 +90,10 @@ class ControlLoopWriter(object):
       fd.write('\n')
 
       fd.write(self._namespace_start)
+
+      for const in self._constant_list:
+          fd.write(str(const))
+
       fd.write('\n\n')
       for loop in self._loops:
         fd.write(loop.DumpPlantHeader())

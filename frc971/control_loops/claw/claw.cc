@@ -685,8 +685,11 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (output) {
     if (goal) {
       //setup the intake
-      output->intake_voltage = goal->intake;
+      output->intake_voltage = (goal->intake > 12.0) ? 12 :
+	  	  (goal->intake < -12.0) ? -12.0 : goal->intake;
       output->tusk_voltage = goal->centering;
+      output->tusk_voltage = (goal->centering > 12.0) ? 12 :
+	  	  (goal->centering < -12.0) ? -12.0 : goal->centering;
     }
     output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
     output->bottom_claw_voltage =  claw_.U(0, 0);

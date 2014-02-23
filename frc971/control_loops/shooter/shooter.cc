@@ -116,9 +116,31 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
       cycles_not_moved_(0) {}
 
 double ShooterMotor::PowerToPosition(double power) {
-  // LOG(WARNING, "power to position not correctly implemented\n");
   const frc971::constants::Values &values = constants::GetValues();
-  double new_pos = ::std::min(::std::max(power, values.shooter.lower_limit),
+  double maxpower = 0.5 * kSpringConstant *
+                    (kMaxExtension * kMaxExtension -
+                     (kMaxExtension - values.shooter.upper_limit) *
+                         (kMaxExtension - values.shooter.upper_limit));
+  if (power < 0) {
+    //LOG(ERROR, "Power too low giving minimum (%f) (%f).\n", power,
+	//		0.0);
+    power = 0;
+  } else if (power > maxpower) {
+    //LOG(ERROR, "Power too high giving maximum (%f) (%f).\n", power,
+    //    maxpower);
+    power = maxpower;
+  }
+
+  double mp = kMaxExtension * kMaxExtension - (power + power) / kSpringConstant;
+  double new_pos = 0.10;
+  if (mp < 0) {
+    LOG(ERROR,
+        "Power calculation has negative number before square root (%f).\n", mp);
+  } else {
+    new_pos = kMaxExtension - ::std::sqrt(mp);
+  }
+
+  new_pos = ::std::min(::std::max(new_pos, values.shooter.lower_limit),
                               values.shooter.upper_limit);
   return new_pos;
 }

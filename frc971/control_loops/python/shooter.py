@@ -235,7 +235,9 @@ def main(argv):
 
     sprung_shooter = SprungShooterDeltaU()
     shooter = ShooterDeltaU()
-    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter, shooter])
+    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter,
+                                                             shooter],
+                                                             write_constants=True)
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:
