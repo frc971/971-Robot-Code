@@ -38,8 +38,8 @@ const ShifterHallEffect kPracticeLeftDriveShifter{5, 0, 0.60,
                                                   0.47};
 const ShifterHallEffect kPracticeRightDriveShifter{5, 0, 0.62,
                                                    0.55};
-const double shooter_zeroing_off_speed = 0.0;
 const double shooter_zeroing_speed = 0.05;
+const double shooter_unload_speed = 0.08;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
@@ -57,8 +57,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
            {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
           {0.5,
            0.1,
@@ -89,8 +89,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
            {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
           {0.5,
            0.1,
@@ -123,8 +123,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {-0.002, 0.000446, -0.002, 0.000446},
            {-0.002, 0.009078, -0.002, 0.009078},
            {0.003869, 0.026194, 0.003869, 0.026194},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
           {0.400000,
           0.200000,

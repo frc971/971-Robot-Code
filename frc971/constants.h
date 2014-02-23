@@ -59,8 +59,8 @@ struct Values {
     AnglePair plunger_back;
     AnglePair pusher_distal;
     AnglePair pusher_proximal;
-    double zeroing_off_speed;
     double zeroing_speed;
+    double unload_speed;
   };
 
   Shooter shooter;

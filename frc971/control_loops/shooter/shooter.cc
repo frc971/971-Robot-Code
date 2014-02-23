@@ -266,9 +266,9 @@ void ShooterMotor::RunIteration(
             !position->pusher_proximal.current) {
           Load();
         }
+        latch_piston_ = position->plunger;
       }
 
-      latch_piston_ = false;
       brake_piston_ = false;
       break;
     case STATE_LOAD:
@@ -382,15 +382,7 @@ void ShooterMotor::RunIteration(
       LOG(DEBUG, "In ready\n");
       // Wait until the brake is set, and a shot is requested or the shot power
       // is changed.
-      if (::std::abs(shooter_.absolute_position() -
-                     PowerToPosition(goal->shot_power)) > 0.002) {
-        // TODO(austin): Add a state to release the brake.
-
-        // TODO(austin): Do we want to set the brake here or after shooting?
-        // Depends on air usage.
-        LOG(DEBUG, "Preparing shot again.\n");
-        state_ = STATE_PREPARE_SHOT;
-      } else if (Time::Now() > shooter_brake_set_time_) {
+      if (Time::Now() > shooter_brake_set_time_) {
         // We have waited long enough for the brake to set, turn the shooter
         // control loop off.
         shooter_loop_disable = true;
@@ -402,9 +394,18 @@ void ShooterMotor::RunIteration(
           apply_some_voltage = true;
           state_ = STATE_PREPARE_FIRE;
         }
-      } else {
-        LOG(DEBUG, "Nothing %d %d\n", goal->shot_requested, !disabled);
       }
+      if (state_ == STATE_READY &&
+          ::std::abs(shooter_.absolute_position() -
+                     PowerToPosition(goal->shot_power)) > 0.002) {
+        // TODO(austin): Add a state to release the brake.
+
+        // TODO(austin): Do we want to set the brake here or after shooting?
+        // Depends on air usage.
+        LOG(DEBUG, "Preparing shot again.\n");
+        state_ = STATE_PREPARE_SHOT;
+      }
+
       shooter_.SetGoalPosition(PowerToPosition(goal->shot_power), 0.0);
 
       latch_piston_ = true;
@@ -514,7 +515,7 @@ void ShooterMotor::RunIteration(
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
       }
       cap_goal = true;
-      shooter_.set_max_voltage(5.0);
+      shooter_.set_max_voltage(6.0);
 
       // Slowly move back until we hit the upper limit.
       // If we were at the limit last cycle, we are done unloading.
@@ -530,8 +531,8 @@ void ShooterMotor::RunIteration(
         shooter_.SetGoalPosition(
             ::std::min(
                 values.shooter.upper_limit,
-                shooter_.goal_position() + values.shooter.zeroing_speed * dt),
-            values.shooter.zeroing_speed);
+                shooter_.goal_position() + values.shooter.unload_speed * dt),
+            values.shooter.unload_speed);
       }
 
       latch_piston_ = false;
