@@ -31,10 +31,10 @@ queue_group ClawGroup {
     double bottom_angle;
     // How much higher the top claw is.
     double separation_angle;
-	// top claw intake roller
+    // top claw intake roller
     double intake;
-	// bottom claw tusk centering
-	double centering;
+    // bottom claw tusk centering
+    double centering;
   };
 
   message Position {

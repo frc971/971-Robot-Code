@@ -34,10 +34,8 @@ const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
 const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
 const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
 
-const ShifterHallEffect kPracticeLeftDriveShifter{5, 0, 0.60,
-                                                  0.47};
-const ShifterHallEffect kPracticeRightDriveShifter{5, 0, 0.62,
-                                                   0.55};
+const ShifterHallEffect kPracticeRightDriveShifter{2.575, 3.16, 0.98, 0.40};
+const ShifterHallEffect kPracticeLeftDriveShifter{2.57, 3.15, 0.98, 0.4};
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
 
@@ -126,17 +124,17 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            shooter_zeroing_speed,
            shooter_unload_speed
           },
-          {0.400000,
-          0.200000,
-          0.000000,
-          -0.762218,
-          0.912207,
-          -0.362218,
-          0.512207,
-          {-1.682379, 1.043334, -1.282379, 0.643334, {-1.7, -1.544662, -1.7, -1.547616}, {-0.130218, -0.019771, -0.132036, -0.018862}, {0.935842, 1.1, 0.932660, 1.1}},
-          {-1.225821, 1.553752, -0.825821, 1.153752, {-1.3, -1.088331, -1.3, -1.088331}, {-0.134536, -0.018408, -0.136127, -0.019771}, {1.447396, 1.6, 1.443987, 1.6}},
-          0.020000,  // claw_unimportant_epsilon
-          -0.200000,   // start_fine_tune_pos
+          {0.400000 * 2.0,
+          0.200000 * 2.0,
+          0.000000 * 2.0,
+          -0.762218 * 2.0,
+          0.912207 * 2.0,
+          -0.849484,
+          1.42308,
+          {-1.682379 * 2.0, 1.043334 * 2.0, -3.166136, 0.643334 * 2.0, {-1.7 * 2.0, -1.544662 * 2.0, -1.7 * 2.0, -1.547616 * 2.0}, {-0.130218 * 2.0, -0.019771 * 2.0, -0.132036 * 2.0, -0.018862 * 2.0}, {0.935842 * 2.0, 1.1 * 2.0, 0.932660 * 2.0, 1.1 * 2.0}},
+          {-1.225821 * 2.0, 1.553752 * 2.0, -2.273474, 1.153752 * 2.0, {-1.3 * 2.0, -1.088331 * 2.0, -1.3 * 2.0, -1.088331 * 2.0}, {-0.134536 * 2.0, -0.018408 * 2.0, -0.136127 * 2.0, -0.019771 * 2.0}, {1.447396 * 2.0, 1.6 * 2.0, 1.443987 * 2.0, 1.6 * 2.0}},
+          0.020000 * 2.0,  // claw_unimportant_epsilon
+          -0.200000 * 2.0,   // start_fine_tune_pos
           4.000000,
           }
       };

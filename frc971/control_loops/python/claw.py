@@ -19,7 +19,7 @@ class Claw(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
     # approzimately 0.76 (without ball) in CAD
-    self.J = 0.70
+    self.J = 0.80
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -62,13 +62,13 @@ class Claw(control_loop.ControlLoop):
     #controlability = controls.ctrb(self.A, self.B);
     #print "Rank of controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
-    self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
-                           [0.0, (1.0 / (0.06 ** 2.0)), 0.0, 0.0],
-                           [0.0, 0.0, 0.10, 0.0],
-                           [0.0, 0.0, 0.0, 0.1]])
+    self.Q = numpy.matrix([[(1.0 / (0.12 ** 2.0)), 0.0, 0.0, 0.0],
+                           [0.0, (1.0 / (0.08 ** 2.0)), 0.0, 0.0],
+                           [0.0, 0.0, 0.050, 0.0],
+                           [0.0, 0.0, 0.0, 0.07]])
 
-    self.R = numpy.matrix([[(1.0 / (20.0 ** 2.0)), 0.0],
-                           [0.0, (1.0 / (20.0 ** 2.0))]])
+    self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
+                           [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
     print "K unaugmented"
