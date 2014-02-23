@@ -93,29 +93,17 @@ class Claw(control_loop.ControlLoop):
     self.A_diff, self.B_diff = controls.c2d(
         self.A_diff_cont, self.B_diff_cont, self.dt)
 
+    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [.65, .45])
+    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.40, .28])
+
+    print "K_diff", self.K_diff
+    print "K_bottom", self.K_bottom
+
     print "A"
     print self.A
     print "B"
     print self.B
 
-    # Compute the steady state velocities for a given applied voltage.
-    # The top and bottom of the claw should spin at the same rate if the
-    # physics is right.
-    X_ss = numpy.matrix([[0], [0], [0.0], [0]])
-    
-    U = numpy.matrix([[1.0],[1.0]])
-    A = self.A
-    B = self.B
-    #X_ss[2, 0] = X_ss[2, 0] * A[2, 2] + B[2, 0] * U[0, 0]
-    X_ss[2, 0] = 1 / (1 - A[2, 2]) * B[2, 0] * U[0, 0]
-    #X_ss[3, 0] = X_ss[3, 0] * A[3, 3] + X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
-    #X_ss[3, 0] * (1 - A[3, 3]) = X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
-    X_ss[3, 0] = 1 / (1 - A[3, 3]) * (X_ss[2, 0] * A[3, 2] + B[3, 1] * U[1, 0] + B[3, 0] * U[0, 0])
-    #X_ss[3, 0] = 1 / (1 - A[3, 3]) / (1 - A[2, 2]) * B[2, 0] * U[0, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
-    X_ss[0, 0] = A[0, 2] * X_ss[2, 0] + B[0, 0] * U[0, 0]
-    X_ss[1, 0] = A[1, 2] * X_ss[2, 0] + A[1, 3] * X_ss[3, 0] + B[1, 0] * U[0, 0] + B[1, 1] * U[1, 0]
-
-    print "X_ss", X_ss
     
     self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (0.06 ** 2.0)), 0.0, 0.0],
@@ -126,8 +114,8 @@ class Claw(control_loop.ControlLoop):
                            [0.0, (1.0 / (5.0 ** 2.0))]])
     #self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    self.K = numpy.matrix([[50, 0.0, 1.0, 0.0],
-                           [0.0, 300, 0.0, 1.1]])
+    self.K = numpy.matrix([[self.K_bottom[0, 0], 0.0, self.K_bottom[0, 1], 0.0],
+                           [0.0, self.K_diff[0, 0], 0.0, self.K_diff[0, 1]]])
 
     # Compute the feed forwards aceleration term.
     self.K[1, 0] = -self.B[1, 0] * self.K[0, 0] / self.B[1, 1]
@@ -165,6 +153,25 @@ class Claw(control_loop.ControlLoop):
     # or else Austin's code gets angry.
     self.U_max = numpy.matrix([[12.0], [12.0]])
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
+
+    # Compute the steady state velocities for a given applied voltage.
+    # The top and bottom of the claw should spin at the same rate if the
+    # physics is right.
+    X_ss = numpy.matrix([[0], [0], [0.0], [0]])
+    
+    U = numpy.matrix([[1.0],[1.0]])
+    A = self.A
+    B = self.B
+    #X_ss[2, 0] = X_ss[2, 0] * A[2, 2] + B[2, 0] * U[0, 0]
+    X_ss[2, 0] = 1 / (1 - A[2, 2]) * B[2, 0] * U[0, 0]
+    #X_ss[3, 0] = X_ss[3, 0] * A[3, 3] + X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    #X_ss[3, 0] * (1 - A[3, 3]) = X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    X_ss[3, 0] = 1 / (1 - A[3, 3]) * (X_ss[2, 0] * A[3, 2] + B[3, 1] * U[1, 0] + B[3, 0] * U[0, 0])
+    #X_ss[3, 0] = 1 / (1 - A[3, 3]) / (1 - A[2, 2]) * B[2, 0] * U[0, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
+    X_ss[0, 0] = A[0, 2] * X_ss[2, 0] + B[0, 0] * U[0, 0]
+    X_ss[1, 0] = A[1, 2] * X_ss[2, 0] + A[1, 3] * X_ss[3, 0] + B[1, 0] * U[0, 0] + B[1, 1] * U[1, 0]
+
+    print "X_ss", X_ss
 
     self.InitializeState()
 
@@ -245,11 +252,9 @@ class ClawDeltaU(Claw):
 
 def FullSeparationPriority(claw, U):
   bottom_u = U[0, 0]
-  top_u = U[1, 0] + bottom_u
+  top_u = U[1, 0]
 
-  #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
   if bottom_u > claw.U_max[0, 0]:
-    #print "Bottom is too big.  Was", new_unclipped_bottom_u, "changing top by", new_unclipped_bottom_u - claw.U_max[0, 0]
     top_u -= bottom_u - claw.U_max[0, 0]
     if top_u < claw.U_min[1, 0]:
       top_u = claw.U_min[1, 0]
@@ -274,7 +279,7 @@ def FullSeparationPriority(claw, U):
 
     bottom_u = claw.U_min[0, 0]
 
-  return numpy.matrix([[bottom_u], [top_u - bottom_u]])
+  return numpy.matrix([[bottom_u], [top_u]])
 
 def AverageUFix(claw, U, preserve_v3=False):
   """Clips U as necessary.
@@ -295,7 +300,7 @@ def AverageUFix(claw, U, preserve_v3=False):
   top_u = U[1, 0]
   seperation_u = top_u - bottom_u * claw.J_top / claw.J_bottom
 
-  bottom_bad = bottom_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]
+  bottom_bad = bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0]
   top_bad = top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]
 
   scalar = claw.U_max[0, 0] / max(numpy.abs(top_u), numpy.abs(bottom_u))
@@ -312,6 +317,7 @@ def AverageUFix(claw, U, preserve_v3=False):
   elif (bottom_bad or top_bad) and not preserve_v3:
     top_u *= scalar
     bottom_u *= scalar
+    print "Scaling"
 
   return numpy.matrix([[bottom_u], [top_u]])
 
@@ -364,36 +370,38 @@ def main(argv):
   close_loop_u_bottom = []
   close_loop_u_top = []
   R = numpy.matrix([[0.0], [0.00], [0.0], [0.0]])
-  claw.X[0, 0] = 1
-  claw.X[1, 0] = .0
+  claw.X[0, 0] = 1.0
+  claw.X[1, 0] = 0.0
+  claw.X[2, 0] = 0.0
+  claw.X[3, 0] = 0.0
   claw.X_hat = claw.X
- #X_actual = claw.X
+  #X_actual = claw.X
   for i in xrange(100):
     #print "Error is", (R - claw.X_hat)
     U = claw.K * (R - claw.X)
     #U = numpy.clip(claw.K * (R - claw.X_hat), claw.U_min, claw.U_max)
     #U = FullSeparationPriority(claw, U)
-   #U = AverageUFix(claw, U, preserve_v3=True)
+    U = AverageUFix(claw, U, preserve_v3=False)
     #U = claw.K * (R - claw.X_hat)
     #U = ClipDeltaU(claw, U)
     claw.UpdateObserver(U)
     claw.Update(U)
-   #X_actual = claw.A_actual * X_actual + claw.B_actual * U
-   #claw.Y = claw.C * X_actual
+    #X_actual = claw.A_actual * X_actual + claw.B_actual * U
+    #claw.Y = claw.C * X_actual
     close_loop_x_bottom.append(claw.X[0, 0] * 10)
     close_loop_u_bottom.append(U[0, 0])
-   #actual_sep.append(X_actual[2, 0] * 100)
-   #actual_x_bottom.append(X_actual[0, 0] * 10)
-    close_loop_x_sep.append(claw.X[1, 0] * 100)
+    #actual_sep.append(X_actual[2, 0] * 100)
+    #actual_x_bottom.append(X_actual[0, 0] * 10)
+    close_loop_x_sep.append(claw.X[1, 0] * 10)
     close_loop_x_top.append((claw.X[1, 0] + claw.X[0, 0]) * 10)
     close_loop_u_top.append(U[1, 0])
     t.append(0.01 * i)
 
-  pylab.plot(t, close_loop_x_bottom, label='x bottom')
-  pylab.plot(t, close_loop_x_sep, label='separation')
- #pylab.plot(t, actual_x_bottom, label='true x bottom')
- #pylab.plot(t, actual_sep, label='true separation')
-  pylab.plot(t, close_loop_x_top, label='x top')
+  pylab.plot(t, close_loop_x_bottom, label='x bottom * 10')
+  pylab.plot(t, close_loop_x_sep, label='separation * 10')
+  #pylab.plot(t, actual_x_bottom, label='true x bottom')
+  #pylab.plot(t, actual_sep, label='true separation')
+  pylab.plot(t, close_loop_x_top, label='x top * 10')
   pylab.plot(t, close_loop_u_bottom, label='u bottom')
   pylab.plot(t, close_loop_u_top, label='u top')
   pylab.legend()
