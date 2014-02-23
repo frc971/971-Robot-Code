@@ -56,7 +56,7 @@
         '<(header_path)',
         '-cpp_base',
         '<(prefix_dir)/<(_target_name)'],
-      'message': 'Generating C++ code from <(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).q',
+      'message': 'Generating C++ code for <(header_path)/<(RULE_INPUT_PATH)',
       'process_outputs_as_sources': 1,
     },
   ],

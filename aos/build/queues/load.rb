@@ -10,5 +10,6 @@ end
 ["q_file.rb","message_dec.rb","queue_dec.rb", "q_struct.rb"].each do |name|
 	require File.dirname(__FILE__) + "/output/" + name
 end
+require File.dirname(__FILE__) + '/write_iff_changed.rb'
 require "fileutils"
 require "pathname"
