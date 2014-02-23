@@ -118,7 +118,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
 double ShooterMotor::PowerToPosition(double power) {
   // LOG(WARNING, "power to position not correctly implemented\n");
   const frc971::constants::Values &values = constants::GetValues();
-  double new_pos = ::std::min(::std::max(power, values.shooter.lower_limit),
+  double new_pos = kMaxExtension - sqrt((power + power) / kSpringConstant);
+  new_pos = ::std::min(::std::max(power, values.shooter.lower_limit),
                               values.shooter.upper_limit);
   return new_pos;
 }
