@@ -42,7 +42,7 @@ namespace logging {
 // The struct that the code uses for making logging calls.
 struct LogMessage {
   enum class Type : uint8_t {
-    kString, kStruct,
+    kString, kStruct, kMatrix
   };
 
   int32_t seconds, nseconds;
@@ -63,6 +63,13 @@ struct LogMessage {
       // The message string and then the serialized structure.
       char serialized[LOG_MESSAGE_LEN - sizeof(type) - sizeof(string_length)];
     } structure;
+    struct {
+      // The type ID of the element type.
+      uint32_t type;
+      int rows, columns;
+      char
+          data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(columns)];
+    } matrix;
   };
 };
 static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
@@ -102,9 +109,12 @@ void VUnCork(int line, log_level level, const char *file,
 void LogNext(log_level level, const char *format, ...)
   __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
 
-// Will take a structure and log it.
+// Takes a structure and log it.
 template <class T>
 void DoLogStruct(log_level, const ::std::string &, const T &);
+// Takes a matrix and logs it.
+template <class T>
+void DoLogMatrix(log_level, const ::std::string &, const T &);
 
 // Represents a system that can actually take log messages and do something
 // useful with them.
@@ -144,6 +154,12 @@ class LogImplementation {
   virtual void LogStruct(log_level level, const ::std::string &message,
                          size_t size, const MessageType *type,
                          const ::std::function<size_t(char *)> &serialize);
+  // Similiar to LogStruct, except for matrixes.
+  // type_id is the type of the elements of the matrix.
+  // data points to rows*cols*type_id.Size() bytes of data in row-major order.
+  virtual void LogMatrix(log_level level, const ::std::string &message,
+                         uint32_t type_id, int rows, int cols,
+                         const void *data);
 
   // These functions call similar methods on the "current" LogImplementation or
   // Die if they can't find one.
@@ -154,12 +170,17 @@ class LogImplementation {
                           size_t size, const MessageType *type,
                           const ::std::function<size_t(char *)> &serialize,
                           int levels);
+  static void DoLogMatrix(log_level level, const ::std::string &message,
+                          uint32_t type_id, int rows, int cols,
+                          const void *data);
 
   // Friends so that they can access the static Do* functions.
   friend void VLog(log_level, const char *, va_list);
   friend void LogNext(log_level, const char *, ...);
   template <class T>
   friend void DoLogStruct(log_level, const ::std::string &, const T &);
+  template <class T>
+  friend void DoLogMatrix(log_level, const ::std::string &, const T &);
 
   LogImplementation *next_;
 };

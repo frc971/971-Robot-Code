@@ -49,6 +49,7 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/util/util.gyp:log_interval',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/logging/logging.gyp:matrix_logging',
       ],
       'export_dependent_settings': [
         '<(DEPTH)/aos/build/externals.gyp:libcdd',

@@ -46,12 +46,11 @@
       'type': 'static_library',
       'variables': {
         'print_field_cc': '<(SHARED_INTERMEDIATE_DIR)/print_field.cc',
-        'queue_primitives_h': '<(SHARED_INTERMEDIATE_DIR)/aos/queue_primitives.h',
+        'queue_primitives_h': '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives/aos/queue_primitives.h',
       },
       'sources': [
         'queue_types.cc',
         '<(print_field_cc)',
-        '<(queue_primitives_h)',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging_interface',
@@ -91,6 +90,11 @@
           'message': 'Generating queue_primitives.h',
         },
       ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives',
+        ],
+      },
       'hard_dependency': 1,
     },
     {

@@ -1,6 +1,6 @@
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/queue_logging.h"
 
-#include "aos/common/die.h"
+#include "aos/common/logging/logging_impl.h"
 #include "aos/common/queue_types.h"
 
 namespace aos {
