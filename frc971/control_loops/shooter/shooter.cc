@@ -172,9 +172,11 @@ void ShooterMotor::RunIteration(
       // Use the controller without the spring if the latch is set and the
       // plunger is back
       shooter_.set_controller_index(1);
+	  LOG(DEBUG, "Using controller 1\n");
     } else {
       // Otherwise use the controller with the spring.
       shooter_.set_controller_index(0);
+	  LOG(DEBUG, "Using controller 0\n");
     }
     if (shooter_.controller_index() != last_controller_index) {
       shooter_.RecalculatePowerGoal();
@@ -568,10 +570,12 @@ void ShooterMotor::RunIteration(
 
   if (position) {
     last_position_ = *position;
-    LOG(DEBUG,
-        "pos > absolute: %f velocity: %f state= %d\n",
+    LOG(DEBUG, "pos > absolute: %f velocity: %f state= %d l= %d pp= %d, pd= %d "
+               "p= %d b=%d\n",
         shooter_.absolute_position(), shooter_.absolute_velocity(),
-        state_);
+		state_, position->latch, position->pusher_proximal.current,
+		position->pusher_distal.current,
+		position->plunger, brake_piston_); 
   }
   if (position) {
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;

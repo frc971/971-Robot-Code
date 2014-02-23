@@ -41,9 +41,7 @@ const ShifterHallEffect kPracticeRightDriveShifter{2.070124, 0.838993, 0.62,
 const double shooter_zeroing_off_speed = 0.0;
 const double shooter_zeroing_speed = 0.1;
 
-const Values *DoGetValues() {
-  uint16_t team = ::aos::network::GetTeamNumber();
-  LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
       return new Values{
@@ -154,11 +152,21 @@ const Values *DoGetValues() {
   }
 }
 
+const Values *DoGetValues() {
+  uint16_t team = ::aos::network::GetTeamNumber();
+  LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+  return DoGetValuesForTeam(team);
+}
+
 }  // namespace
 
 const Values &GetValues() {
   static ::aos::Once<const Values> once(DoGetValues);
   return *once.Get();
+}
+
+const Values &GetValuesForTeam(uint16_t team_number) {
+  return *(DoGetValuesForTeam(team_number));
 }
 
 }  // namespace constants

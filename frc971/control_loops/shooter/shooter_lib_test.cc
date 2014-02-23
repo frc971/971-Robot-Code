@@ -83,7 +83,8 @@ class ShooterSimulation {
   // (encoder, hall effect).
   void SetPhysicalSensors(control_loops::ShooterGroup::Position *position) {
     const frc971::constants::Values &values = constants::GetValues();
-    position->position = GetPosition();
+
+   	position->position = GetPosition();
 
     LOG(DEBUG, "Physical shooter at {%f}\n", GetAbsolutePosition());
 
@@ -134,13 +135,30 @@ class ShooterSimulation {
     }
   }
 
-  // Sends out the position queue messages.
   void SendPositionMessage() {
+    // the first bool is false
+    SendPositionMessage(false, false, false, false);
+  }
+
+  // Sends out the position queue messages.
+  // if the first bool is false then this is
+  // just the default state, otherwise will force
+  // it into a state using the passed values
+  void SendPositionMessage(bool use_passed, bool plunger_in,
+                           bool latch_in, bool brake_in) {
     const frc971::constants::Values &values = constants::GetValues();
     ::aos::ScopedMessagePtr<control_loops::ShooterGroup::Position> position =
         shooter_queue_group_.position.MakeMessage();
 
     SetPhysicalSensors(position.get());
+
+    if (use_passed) {
+      position->plunger = plunger_in;
+      plunger_latched_ = latch_in && plunger_in;
+      position->latch = latch_in;
+      latch_piston_state_ = latch_in;
+      brake_piston_state_ = brake_in;
+    }
 
     position->latch = latch_piston_state_;
 
@@ -272,6 +290,7 @@ class ShooterSimulation {
 };
 
 class ShooterTest : public ::testing::Test {
+
  protected:
   ::aos::common::testing::GlobalCoreInstance my_core;
 
@@ -602,9 +621,52 @@ TEST_F(ShooterTest, StartsOnProximal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
+class ShooterZeroingTest : public ShooterTest,
+                    public ::testing::WithParamInterface<
+                        ::std::tr1::tuple<bool, bool, bool, double>> {};
+
+TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
+  bool latch = ::std::tr1::get<0>(GetParam());
+  bool brake = ::std::tr1::get<1>(GetParam());
+  bool plunger_back = ::std::tr1::get<2>(GetParam());
+  double start_pos = ::std::tr1::get<3>(GetParam());
+  // flag to initialize test
+	printf("@@@@ l= %d b= %d p= %d s= %.3f\n",
+			latch, brake, plunger_back, start_pos);
+  bool init = false;
+  Reinitialize(start_pos);
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(0.25).Send();
+  for (int i = 0; i < 200; ++i) {
+    shooter_motor_plant_.SendPositionMessage(!init, plunger_back, latch, brake);
+    init = true;
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+  // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
+  double pos = shooter_motor_plant_.GetAbsolutePosition();
+  ASSERT_NEAR(shooter_queue_group_.goal->shot_power, pos, 0.05);
+  ASSERT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShooterZeroingTest, ShooterZeroingTest,
+    ::testing::Combine(
+        ::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
+        ::testing::Values(
+            0.05, constants::GetValuesForTeam(971).shooter.upper_limit - 0.05,
+            HallEffectMiddle(constants::GetValuesForTeam(971)
+                                 .shooter.pusher_proximal),
+            HallEffectMiddle(constants::GetValuesForTeam(971)
+                                 .shooter.pusher_distal),
+            constants::GetValuesForTeam(971).shooter.latch_max_safe_position -
+                0.001)));
+
 // TODO(austin): Slip the encoder somewhere.
 
 // TODO(austin): Test all the timeouts...
+
+// TODO(austin): Starting all the way up just failed?? that seems tlike same state as starting anywhere up??
 
 }  // namespace testing
 }  // namespace control_loops
