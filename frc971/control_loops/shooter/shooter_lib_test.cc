@@ -351,16 +351,17 @@ class ShooterTest : public ::testing::Test {
 };
 
 TEST_F(ShooterTest, PowerConversion) {
-  // test a couple of values return the right thing
-  EXPECT_EQ(0.021, shooter_motor_.PowerToPosition(0.021));
-  EXPECT_EQ(0.175, shooter_motor_.PowerToPosition(0.175));
-
   const frc971::constants::Values &values = constants::GetValues();
+  // test a couple of values return the right thing
+  EXPECT_NEAR(0.254001, shooter_motor_.PowerToPosition(0.014), 0.00001);
+  EXPECT_NEAR(0.00058, shooter_motor_.PowerToPosition(0.000053),0.00001);
+  EXPECT_NEAR(0.095251238129837101, shooter_motor_.PowerToPosition(0.007367),0.00001);
+
   // value too large should get max
-  EXPECT_EQ(values.shooter.upper_limit,
+  EXPECT_EQ(shooter_motor_.PowerToPosition(values.shooter.upper_limit),
             shooter_motor_.PowerToPosition(505050.99));
   // negative values should zero
-  EXPECT_EQ(values.shooter.lower_limit, shooter_motor_.PowerToPosition(-123.4));
+  EXPECT_NEAR(0, shooter_motor_.PowerToPosition(-123.4), 0.00001);
 }
 
 // Tests that the wrist zeros correctly and goes to a position.
