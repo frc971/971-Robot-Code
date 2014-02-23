@@ -122,12 +122,12 @@ double ShooterMotor::PowerToPosition(double power) {
                      (kMaxExtension - values.shooter.upper_limit) *
                          (kMaxExtension - values.shooter.upper_limit));
   if (power < 0) {
-    LOG(ERROR, "Power too low giving minimum (%f) (%f).\n", power,
-			0.0);
+    //LOG(ERROR, "Power too low giving minimum (%f) (%f).\n", power,
+	//		0.0);
     power = 0;
   } else if (power > maxpower) {
-    LOG(ERROR, "Power too high giving maximum (%f) (%f).\n", power,
-        maxpower);
+    //LOG(ERROR, "Power too high giving maximum (%f) (%f).\n", power,
+    //    maxpower);
     power = maxpower;
   }
 
