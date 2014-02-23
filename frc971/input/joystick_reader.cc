@@ -61,7 +61,7 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
       : is_high_gear_(false),
-        shot_power_(0.1),
+        shot_power_(30.0),
         goal_angle_(0.0),
         separation_angle_(0.0) {}
 
@@ -163,13 +163,13 @@ class Reader : public ::aos::input::JoystickInput {
     // TODO(austin): Wait for the claw to go to position before shooting, and
     // open the claw as part of the actual fire step.
     if (data.IsPressed(kLongShot)) {
-      shot_power_ = 0.25;
+      shot_power_ = 120.0;
       SetGoal(kLongShotGoal);
     } else if (data.IsPressed(kMediumShot)) {
-      shot_power_ = 0.15;
+      shot_power_ = 60.0;
       SetGoal(kMediumShotGoal);
     } else if (data.IsPressed(kShortShot)) {
-      shot_power_ = 0.07;
+      shot_power_ = 30.0;
       SetGoal(kShortShotGoal);
     }
 

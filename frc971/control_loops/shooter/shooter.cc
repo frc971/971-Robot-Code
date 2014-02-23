@@ -194,11 +194,9 @@ void ShooterMotor::RunIteration(
       // Use the controller without the spring if the latch is set and the
       // plunger is back
       shooter_.set_controller_index(1);
-      LOG(DEBUG, "Using controller 1\n");
     } else {
       // Otherwise use the controller with the spring.
       shooter_.set_controller_index(0);
-      LOG(DEBUG, "Using controller 0\n");
     }
     if (shooter_.controller_index() != last_controller_index) {
       shooter_.RecalculatePowerGoal();
