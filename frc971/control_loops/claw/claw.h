@@ -71,10 +71,6 @@ class ZeroedStateFeedbackLoop {
 
   void Reset(const HalfClawPosition &claw);
 
-  bool ready() {
-    return front_.ready() && calibration_.ready() && back_.ready();
-  }
-
   double absolute_position() const { return encoder() + offset(); }
 
   const HallEffectTracker &front() const { return front_; }
@@ -103,6 +99,14 @@ class ZeroedStateFeedbackLoop {
   bool GetPositionOfEdge(const constants::Values::Claws::Claw &claw,
                          double *edge_encoder, double *edge_angle);
 
+  bool SawFilteredPosedge(const HallEffectTracker &this_sensor,
+                          const HallEffectTracker &sensorA,
+                          const HallEffectTracker &sensorB);
+
+  bool SawFilteredNegedge(const HallEffectTracker &this_sensor,
+                          const HallEffectTracker &sensorA,
+                          const HallEffectTracker &sensorB);
+
 #undef COUNT_SETTER_GETTER
 
  protected:
@@ -117,7 +121,6 @@ class ZeroedStateFeedbackLoop {
   JointZeroingState zeroing_state_;
   double posedge_value_;
   double negedge_value_;
-  double last_edge_value_;
   double min_hall_effect_on_angle_;
   double max_hall_effect_on_angle_;
   double min_hall_effect_off_angle_;
@@ -128,11 +131,16 @@ class ZeroedStateFeedbackLoop {
   double last_off_encoder_;
   bool any_triggered_last_;
 
+  const HallEffectTracker* posedge_filter_ = nullptr;
+  const HallEffectTracker* negedge_filter_ = nullptr;
+
  private:
   // Does the edges of 1 sensor for GetPositionOfEdge.
   bool DoGetPositionOfEdge(const constants::Values::Claws::AnglePair &angles,
                            double *edge_encoder, double *edge_angle,
                            const HallEffectTracker &sensor,
+                           const HallEffectTracker &sensorA,
+                           const HallEffectTracker &sensorB,
                            const char *hall_effect_name);
 };
 
