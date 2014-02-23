@@ -10,7 +10,7 @@ class Constant(object):
         self.formatToType['%f'] = "double";
         self.formatToType['%d'] = "int";
     def __str__ (self):
-        return str("\nstatic const %s %s = "+ self.formatt +";\n") % \
+        return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
             (self.formatToType[self.formatt], self.name, self.value)
 
 
@@ -39,9 +39,14 @@ class ControlLoopWriter(object):
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
     
     self._constant_list = []
-    if (write_constants):
-        self._constant_list.append(Constant("kMaxExtension", "%f", 0.32385));
-        self._constant_list.append(Constant("kSpringConstant", "%f", 0.28));
+
+  def AddConstant(self, constant):
+    """Adds a constant to write.
+
+    Args:
+      constant: Constant, the constant to add to the header.
+    """
+    self._constant_list.append(constant)
 
   def _TopDirectory(self):
     return self._namespaces[0]
