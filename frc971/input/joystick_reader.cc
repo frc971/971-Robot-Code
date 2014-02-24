@@ -32,13 +32,14 @@ const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
 const ButtonLocation kFire(3, 11);
-const ButtonLocation kUnload(3, 1);
-const ButtonLocation kReload(3, 9);
+const ButtonLocation kUnload(2, 11);
+const ButtonLocation kReload(2, 6);
 
 const ButtonLocation kRollersOut(3, 12);
 const ButtonLocation kRollersIn(3, 10);
 
 const ButtonLocation kTuck(3, 8);
+const ButtonLocation kIntakeOpenPosition(3, 9);
 const ButtonLocation kIntakePosition(3, 7);
 
 const ButtonLocation kLongShot(3, 5);
@@ -52,16 +53,17 @@ struct ClawGoal {
 
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
 const ClawGoal kIntakeGoal = {-2.273474, 0.0};
+const ClawGoal kIntakeOpenGoal = {-2.0, 1.2};
 
-const ClawGoal kLongShotGoal = {-M_PI / 2.0 + 0.5, 0.05};
-const ClawGoal kMediumShotGoal = {-0.8, 0.05};
-const ClawGoal kShortShotGoal = {-0.2, 0.05};
+const ClawGoal kLongShotGoal = {-M_PI / 2.0 + 0.43, 0.10};
+const ClawGoal kMediumShotGoal = {-0.9, 0.10};
+const ClawGoal kShortShotGoal = {-0.04, 0.11};
 
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
       : is_high_gear_(false),
-        shot_power_(30.0),
+        shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(0.0) {}
 
@@ -154,7 +156,9 @@ class Reader : public ::aos::input::JoystickInput {
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     HandleDrivetrain(data);
 
-    if (data.IsPressed(kRollersIn) || data.IsPressed(kIntakePosition)) {
+    if (data.IsPressed(kIntakeOpenPosition)) {
+      SetGoal(kIntakeOpenGoal);
+    } else if (data.IsPressed(kIntakePosition)) {
       SetGoal(kIntakeGoal);
     } else if (data.IsPressed(kTuck)) {
       SetGoal(kTuckGoal);
@@ -163,13 +167,13 @@ class Reader : public ::aos::input::JoystickInput {
     // TODO(austin): Wait for the claw to go to position before shooting, and
     // open the claw as part of the actual fire step.
     if (data.IsPressed(kLongShot)) {
-      shot_power_ = 120.0;
+      shot_power_ = 160.0;
       SetGoal(kLongShotGoal);
     } else if (data.IsPressed(kMediumShot)) {
-      shot_power_ = 60.0;
+      shot_power_ = 100.0;
       SetGoal(kMediumShotGoal);
     } else if (data.IsPressed(kShortShot)) {
-      shot_power_ = 30.0;
+      shot_power_ = 70.0;
       SetGoal(kShortShotGoal);
     }
 
