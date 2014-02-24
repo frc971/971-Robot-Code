@@ -200,18 +200,24 @@ class PolyDrivetrain {
   }
   static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
-  static double MotorSpeed(double shifter_position, double velocity) {
+  static double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
+                           double shifter_position, double velocity) {
     // TODO(austin): G_high, G_low and kWheelRadius
-    if (shifter_position > 0.57) {
+    const double avg_hall_effect =
+        (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
+
+    if (shifter_position > avg_hall_effect) {
       return velocity / constants::GetValues().high_gear_ratio / kWheelRadius;
     } else {
       return velocity / constants::GetValues().low_gear_ratio / kWheelRadius;
     }
   }
 
-  Gear ComputeGear(double velocity, Gear current) {
-    const double low_omega = MotorSpeed(0, ::std::abs(velocity));
-    const double high_omega = MotorSpeed(1.0, ::std::abs(velocity));
+  Gear ComputeGear(const constants::ShifterHallEffect &hall_effect,
+                   double velocity, Gear current) {
+    const double low_omega = MotorSpeed(hall_effect, 0.0, ::std::abs(velocity));
+    const double high_omega =
+        MotorSpeed(hall_effect, 1.0, ::std::abs(velocity));
 
     double high_torque = ((12.0 - high_omega / Kv) * Kt / kR);
     double low_torque = ((12.0 - low_omega / Kv) * Kt / kR);
@@ -246,6 +252,7 @@ class PolyDrivetrain {
     // TODO(austin): Fix the upshift logic to include states.
     Gear requested_gear;
     if (false) {
+      const auto &values = constants::GetValues();
       const double current_left_velocity =
           (position_.left_encoder - last_position_.left_encoder) /
           position_time_delta_;
@@ -253,8 +260,10 @@ class PolyDrivetrain {
           (position_.right_encoder - last_position_.right_encoder) /
           position_time_delta_;
 
-      Gear left_requested = ComputeGear(current_left_velocity, left_gear_);
-      Gear right_requested = ComputeGear(current_right_velocity, right_gear_);
+      Gear left_requested =
+          ComputeGear(values.left_drive, current_left_velocity, left_gear_);
+      Gear right_requested =
+          ComputeGear(values.right_drive, current_right_velocity, right_gear_);
       requested_gear =
           (left_requested == HIGH || right_requested == HIGH) ? HIGH : LOW;
     } else {
@@ -298,6 +307,7 @@ class PolyDrivetrain {
     }
   }
   void SetPosition(const Drivetrain::Position *position) {
+    const auto &values = constants::GetValues();
     if (position == NULL) {
       ++stale_count_;
     } else {
@@ -310,9 +320,14 @@ class PolyDrivetrain {
     if (position) {
       GearLogging gear_logging;
       // Switch to the correct controller.
-      // TODO(austin): Un-hard code 0.57
-      if (position->left_shifter_position < 0.57) {
-        if (position->right_shifter_position < 0.57 || right_gear_ == LOW) {
+      const double left_middle_shifter_position =
+          (values.left_drive.clear_high + values.left_drive.clear_low) / 2.0;
+      const double right_middle_shifter_position =
+          (values.right_drive.clear_high + values.right_drive.clear_low) / 2.0;
+
+      if (position->left_shifter_position < left_middle_shifter_position) {
+        if (position->right_shifter_position < right_middle_shifter_position ||
+            right_gear_ == LOW) {
           gear_logging.left_loop_high = false;
           gear_logging.right_loop_high = false;
           loop_->set_controller_index(gear_logging.controller_index = 0);
@@ -322,7 +337,8 @@ class PolyDrivetrain {
           loop_->set_controller_index(gear_logging.controller_index = 1);
         }
       } else {
-        if (position->right_shifter_position < 0.57 || left_gear_ == LOW) {
+        if (position->right_shifter_position < right_middle_shifter_position ||
+            left_gear_ == LOW) {
           gear_logging.left_loop_high = true;
           gear_logging.right_loop_high = false;
           loop_->set_controller_index(gear_logging.controller_index = 2);
@@ -334,16 +350,16 @@ class PolyDrivetrain {
       }
 
       // TODO(austin): Constants.
-      if (position->left_shifter_position > 0.9 && left_gear_ == SHIFTING_UP) {
+      if (position->left_shifter_position > values.left_drive.clear_high && left_gear_ == SHIFTING_UP) {
         left_gear_ = HIGH;
       }
-      if (position->left_shifter_position < 0.1 && left_gear_ == SHIFTING_DOWN) {
+      if (position->left_shifter_position < values.left_drive.clear_low && left_gear_ == SHIFTING_DOWN) {
         left_gear_ = LOW;
       }
-      if (position->right_shifter_position > 0.9 && right_gear_ == SHIFTING_UP) {
+      if (position->right_shifter_position > values.right_drive.clear_high && right_gear_ == SHIFTING_UP) {
         right_gear_ = HIGH;
       }
-      if (position->right_shifter_position < 0.1 && right_gear_ == SHIFTING_DOWN) {
+      if (position->right_shifter_position < values.right_drive.clear_low && right_gear_ == SHIFTING_DOWN) {
         right_gear_ = LOW;
       }
 
@@ -401,6 +417,7 @@ class PolyDrivetrain {
   }
 
   void Update() {
+    const auto &values = constants::GetValues();
     // TODO(austin): Observer for the current velocity instead of difference
     // calculations.
     ++counter_;
@@ -411,9 +428,11 @@ class PolyDrivetrain {
         (position_.right_encoder - last_position_.right_encoder) /
         position_time_delta_;
     const double left_motor_speed =
-        MotorSpeed(position_.left_shifter_position, current_left_velocity);
+        MotorSpeed(values.left_drive, position_.left_shifter_position,
+                   current_left_velocity);
     const double right_motor_speed =
-        MotorSpeed(position_.right_shifter_position, current_right_velocity);
+        MotorSpeed(values.right_drive, position_.right_shifter_position,
+                   current_right_velocity);
 
     {
       CIMLogging logging;

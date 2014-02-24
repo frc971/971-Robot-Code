@@ -7,6 +7,7 @@
 
 namespace frc971 {
 
+// TODO(brians): Have a Reset() for when the cape resets.
 class HallEffectTracker {
  public:
   int32_t get_posedges() const { return posedges_.count(); }
@@ -19,11 +20,20 @@ class HallEffectTracker {
   bool negedge_count_changed() const { return negedges_.count_changed(); }
 
   bool value() const { return value_; }
+  bool last_value() const { return last_value_; }
 
   void Update(const HallEffectStruct &position) {
+    last_value_ = value_;
     value_ = position.current;
     posedges_.update(position.posedge_count);
     negedges_.update(position.negedge_count);
+  }
+
+  void Reset(const HallEffectStruct &position) {
+    posedges_.Reset(position.posedge_count);
+    negedges_.Reset(position.negedge_count);
+    value_ = position.current;
+    last_value_ = position.current;
   }
 
  private:
@@ -34,9 +44,9 @@ class HallEffectTracker {
       count_ = count;
     }
 
-    bool count_changed() const {
-      return previous_count_ != count_;
-    }
+    void Reset(int32_t count) { count_ = count; }
+
+    bool count_changed() const { return previous_count_ != count_; }
 
     int32_t count() const { return count_; }
 
@@ -45,6 +55,7 @@ class HallEffectTracker {
     int32_t previous_count_ = 0;
   } posedges_, negedges_;
   bool value_ = false;
+  bool last_value_ = false;
 };
 
 }  // namespace frc971

@@ -37,7 +37,7 @@ class MotorWriter : public ::aos::MotorOutput {
       if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *drivetrain.output.get());
         SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(8, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
         SetSolenoid(7, drivetrain.output->left_high);
         SetSolenoid(8, drivetrain.output->right_high);
       } else {
@@ -54,7 +54,7 @@ class MotorWriter : public ::aos::MotorOutput {
       shooter.FetchLatest();
       if (shooter.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *shooter.get());
-        SetPWMOutput(9, shooter->voltage / 12.0, kTalonBounds);
+        SetPWMOutput(7, shooter->voltage / 12.0, kTalonBounds);
         SetSolenoid(6, !shooter->latch_piston);
         SetSolenoid(5, !shooter->brake_piston);
       } else {
@@ -70,12 +70,12 @@ class MotorWriter : public ::aos::MotorOutput {
       claw.FetchLatest();
       if (claw.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *claw.get());
-        SetPWMOutput(6, claw->intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(7, claw->intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(1, claw->bottom_claw_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(9, claw->intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(8, claw->intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(1, -claw->bottom_claw_voltage / 12.0, kTalonBounds);
         SetPWMOutput(2, claw->top_claw_voltage / 12.0, kTalonBounds);
         SetPWMOutput(5, claw->tusk_voltage / 12.0, kTalonBounds);  // left
-        SetPWMOutput(4, claw->tusk_voltage / 12.0, kTalonBounds);  // right
+        SetPWMOutput(4, -claw->tusk_voltage / 12.0, kTalonBounds);  // right
       } else {
         DisablePWMOutput(6);
         DisablePWMOutput(7);

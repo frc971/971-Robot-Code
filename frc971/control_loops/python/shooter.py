@@ -20,7 +20,7 @@ class SprungShooter(control_loop.ControlLoop):
     # This rough estimate should about include the effect of the masses
     # of the gears. If this number is too low, the eigen values of self.A
     # will start to become extremely small.
-    self.J = 20
+    self.J = 200
     # Resistance of the motor, divided by the number of motors.
     self.R = 12.0 / self.stall_current / 2.0
     # Motor velocity constant
@@ -30,6 +30,9 @@ class SprungShooter(control_loop.ControlLoop):
     self.Kt = self.stall_torque / self.stall_current
     # Spring constant for the springs, N/m
     self.Ks = 2800.0
+    # Maximum extension distance (Distance from the 0 force point on the
+    # spring to the latch position.)
+    self.max_extension = 0.32385
     # Gear ratio multiplied by radius of final sprocket.
     self.G = 10.0 / 40.0 * 20.0 / 54.0 * 24.0 / 54.0 * 20.0 / 84.0 * 16.0 * (3.0 / 8.0) / (2.0 * numpy.pi) * 0.0254
 
@@ -110,7 +113,7 @@ class SprungShooterDeltaU(SprungShooter):
     self.C = numpy.matrix([[1.0, 0.0, 0.0]])
     self.D = numpy.matrix([[0.0]])
 
-    self.PlaceControllerPoles([0.55, 0.45, 0.80])
+    self.PlaceControllerPoles([0.50, 0.35, 0.80])
 
     print "K"
     print self.K
@@ -235,7 +238,13 @@ def main(argv):
 
     sprung_shooter = SprungShooterDeltaU()
     shooter = ShooterDeltaU()
-    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter, shooter])
+    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter,
+                                                             shooter])
+
+    loop_writer.AddConstant(control_loop.Constant("kMaxExtension", "%f",
+                                                  sprung_shooter.max_extension))
+    loop_writer.AddConstant(control_loop.Constant("kSpringConstant", "%f",
+                                                  sprung_shooter.Ks))
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:

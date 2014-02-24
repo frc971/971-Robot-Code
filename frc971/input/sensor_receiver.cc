@@ -50,12 +50,9 @@ double drivetrain_translate(int32_t in) {
 // TODO(brian): Fix this.
 double adc_translate(uint16_t in) {
   static const double kVcc = 5;
-  static const double kR1 = 5, kR2 = 6.65;
+  //static const double kR1 = 5, kR2 = 6.65;
   static const uint16_t kMaximumValue = 0x3FF;
-  return (kVcc *
-              (static_cast<double>(in) / static_cast<double>(kMaximumValue)) -
-          kVcc * kR1) /
-         kR2;
+  return (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
 }
 
 double gyro_translate(int64_t in) {
@@ -77,7 +74,8 @@ double claw_translate(int32_t in) {
       / (256.0 /*cpr*/ * 4.0 /*quad*/)
       / (18.0 / 48.0 /*encoder gears*/)
       / (12.0 / 60.0 /*chain reduction*/)
-      * (M_PI / 180.0);
+      * (M_PI / 180.0)
+      * 2.0 /*TODO(austin): Debug this, encoders read too little*/;
 }
 
 double shooter_translate(int32_t in) {

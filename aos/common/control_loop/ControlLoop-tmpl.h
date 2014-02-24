@@ -79,7 +79,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     if (control_loop_->position.FetchLatest()) {
       position = control_loop_->position.get();
     } else {
-      if (control_loop_->position.get()) {
+      if (control_loop_->position.get() && !reset_) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
           very_stale_position_.WantToLog();
@@ -133,7 +133,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     output.Send();
   } else {
     // The outputs are disabled, so pass NULL in for the output.
-    RunIteration(goal, position, NULL, status.get());
+    RunIteration(goal, position, nullptr, status.get());
     ZeroOutputs();
   }
 

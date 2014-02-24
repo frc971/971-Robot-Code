@@ -23,10 +23,7 @@ class WindupClawTest;
 
 class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
  public:
-  ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
-      : StateFeedbackLoop<4, 2, 2>(loop),
-        uncapped_average_voltage_(0.0),
-        is_zeroing_(true) {}
+  ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop);
   virtual void CapU();
 
   void set_is_zeroing(bool is_zeroing) { is_zeroing_ = is_zeroing; }
@@ -49,15 +46,7 @@ class ClawMotor;
 // controller.
 class ZeroedStateFeedbackLoop {
  public:
-  ZeroedStateFeedbackLoop(const char *name, ClawMotor *motor)
-      : offset_(0.0),
-        name_(name),
-        motor_(motor),
-        zeroing_state_(UNKNOWN_POSITION),
-        posedge_value_(0.0),
-        negedge_value_(0.0),
-        encoder_(0.0),
-        last_encoder_(0.0) {}
+  ZeroedStateFeedbackLoop(const char *name, ClawMotor *motor);
 
   const static int kZeroingMaxVoltage = 5;
 
@@ -78,16 +67,9 @@ class ZeroedStateFeedbackLoop {
   }
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
-  void SetPositionValues(const HalfClawPosition &claw) {
-    front_.Update(claw.front);
-    calibration_.Update(claw.calibration);
-    back_.Update(claw.back);
+  void SetPositionValues(const HalfClawPosition &claw);
 
-    posedge_value_ = claw.posedge_value;
-    negedge_value_ = claw.negedge_value;
-    last_encoder_ = encoder_;
-    encoder_ = claw.position;
-  }
+  void Reset(const HalfClawPosition &claw);
 
   double absolute_position() const { return encoder() + offset(); }
 
@@ -103,6 +85,9 @@ class ZeroedStateFeedbackLoop {
   bool front_or_back_triggered() const {
     return front().value() || back().value();
   }
+  bool any_triggered() const {
+    return calibration().value() || front().value() || back().value();
+  }
 
   double encoder() const { return encoder_; }
   double last_encoder() const { return last_encoder_; }
@@ -113,6 +98,14 @@ class ZeroedStateFeedbackLoop {
   // edge_position to the absolute position of the edge.
   bool GetPositionOfEdge(const constants::Values::Claws::Claw &claw,
                          double *edge_encoder, double *edge_angle);
+
+  bool SawFilteredPosedge(const HallEffectTracker &this_sensor,
+                          const HallEffectTracker &sensorA,
+                          const HallEffectTracker &sensorB);
+
+  bool SawFilteredNegedge(const HallEffectTracker &this_sensor,
+                          const HallEffectTracker &sensorA,
+                          const HallEffectTracker &sensorB);
 
 #undef COUNT_SETTER_GETTER
 
@@ -128,14 +121,26 @@ class ZeroedStateFeedbackLoop {
   JointZeroingState zeroing_state_;
   double posedge_value_;
   double negedge_value_;
+  double min_hall_effect_on_angle_;
+  double max_hall_effect_on_angle_;
+  double min_hall_effect_off_angle_;
+  double max_hall_effect_off_angle_;
   double encoder_;
   double last_encoder_;
+  double last_on_encoder_;
+  double last_off_encoder_;
+  bool any_triggered_last_;
+
+  const HallEffectTracker* posedge_filter_ = nullptr;
+  const HallEffectTracker* negedge_filter_ = nullptr;
 
  private:
   // Does the edges of 1 sensor for GetPositionOfEdge.
   bool DoGetPositionOfEdge(const constants::Values::Claws::AnglePair &angles,
                            double *edge_encoder, double *edge_angle,
                            const HallEffectTracker &sensor,
+                           const HallEffectTracker &sensorA,
+                           const HallEffectTracker &sensorB,
                            const char *hall_effect_name);
 };
 
@@ -148,17 +153,7 @@ class TopZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
   void SetCalibration(double edge_encoder, double edge_angle);
 
   bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
-                            JointZeroingState zeroing_state) {
-    double edge_encoder;
-    double edge_angle;
-    if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
-      LOG(INFO, "Calibration edge.\n");
-      SetCalibration(edge_encoder, edge_angle);
-      set_zeroing_state(zeroing_state);
-      return true;
-    }
-    return false;
-  }
+                            JointZeroingState zeroing_state);
 };
 
 class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
@@ -170,17 +165,7 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
   void SetCalibration(double edge_encoder, double edge_angle);
 
   bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
-                            JointZeroingState zeroing_state) {
-    double edge_encoder;
-    double edge_angle;
-    if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
-      LOG(INFO, "Calibration edge.\n");
-      SetCalibration(edge_encoder, edge_angle);
-      set_zeroing_state(zeroing_state);
-      return true;
-    }
-    return false;
-  }
+                            JointZeroingState zeroing_state);
 };
 
 class ClawMotor

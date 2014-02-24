@@ -34,16 +34,12 @@ const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
 const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
 const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
 
-const ShifterHallEffect kPracticeLeftDriveShifter{5, 0, 0.60,
-                                                  0.47};
-const ShifterHallEffect kPracticeRightDriveShifter{5, 0, 0.62,
-                                                   0.55};
-const double shooter_zeroing_off_speed = 0.0;
-const double shooter_zeroing_speed = 0.1;
+const ShifterHallEffect kPracticeRightDriveShifter{2.575, 3.16, 0.98, 0.40};
+const ShifterHallEffect kPracticeLeftDriveShifter{2.57, 3.15, 0.98, 0.4};
+const double shooter_zeroing_speed = 0.05;
+const double shooter_unload_speed = 0.08;
 
-const Values *DoGetValues() {
-  uint16_t team = ::aos::network::GetTeamNumber();
-  LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
       return new Values{
@@ -59,8 +55,8 @@ const Values *DoGetValues() {
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
            {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
           {0.5,
            0.1,
@@ -69,8 +65,8 @@ const Values *DoGetValues() {
            1.57,
            0,
            0,
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, 0, 0}, {1.0, 1.1, 0, 0}, {2.0, 2.1, 0, 0}},
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
+           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
@@ -91,8 +87,8 @@ const Values *DoGetValues() {
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
            {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
           {0.5,
            0.1,
@@ -121,33 +117,25 @@ const Values *DoGetValues() {
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
-          {-0.000446, 0.300038, -0.001, 0.304354,
-            0.014436,
-           {-2, 0.001786, 0.001786, -2},
-           {-2, -0.000446, -2, 0.026938},
-           {0.005358, 0.014436, 0.014436, 0.026491},
-           shooter_zeroing_off_speed,
-           shooter_zeroing_speed
+          {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
+           {-0.002, 0.000446, -0.002, 0.000446},
+           {-0.002, 0.009078, -0.002, 0.009078},
+           {0.003869, 0.026194, 0.003869, 0.026194},
+           shooter_zeroing_speed,
+           shooter_unload_speed
           },
-          {0.5,
-           0.2,
-           0.1,
-           -0.446558,
-           0.90675,
-           -0.39110,
-           0.843349,
-#if 0
-         separations (top, bottom)
-           hard min position:-0.253845, position:-0.001136,
-           soft min position:-0.244528, position:-0.047269,
-           soft max position:0.526326, position:-0.510872,
-           hard max position:0.517917, position:-0.582685,
-#endif
-           {-1.62102, 1.039699, -1.606248, 0.989702, {-1.65, -1.546252, -1.65, -1.548752}, {-0.13249, -0.02113, -0.134763, -0.021589}, {0.934024, 1.05, 0.92970, 1.05}},
-           {-1.420352, 1.348313, -1.161281, 1.264001, {-1.45, -1.283771, -1.45, -1.28468}, {-0.332476, -0.214984, -0.334294, -0.217029}, {1.248547, 1.37, 1.245366, 1.37}},
-           0.01,  // claw_unimportant_epsilon
-           0.9,  // start_fine_tune_pos
-           4.0,
+          {0.400000 * 2.0,
+          0.200000 * 2.0,
+          0.000000 * 2.0,
+          -0.762218 * 2.0,
+          0.912207 * 2.0,
+          -0.849484,
+          1.42308,
+          {-1.682379 * 2.0, 1.043334 * 2.0, -3.166136, 0.643334 * 2.0, {-1.7 * 2.0, -1.544662 * 2.0, -1.7 * 2.0, -1.547616 * 2.0}, {-0.130218 * 2.0, -0.019771 * 2.0, -0.132036 * 2.0, -0.018862 * 2.0}, {0.935842 * 2.0, 1.1 * 2.0, 0.932660 * 2.0, 1.1 * 2.0}},
+          {-1.225821 * 2.0, 1.553752 * 2.0, -2.273474, 1.153752 * 2.0, {-1.3 * 2.0, -1.088331 * 2.0, -1.3 * 2.0, -1.088331 * 2.0}, {-0.134536 * 2.0, -0.018408 * 2.0, -0.136127 * 2.0, -0.019771 * 2.0}, {1.447396 * 2.0, 1.6 * 2.0, 1.443987 * 2.0, 1.6 * 2.0}},
+          0.020000 * 2.0,  // claw_unimportant_epsilon
+          -0.200000 * 2.0,   // start_fine_tune_pos
+          4.000000,
           }
       };
       break;
@@ -156,11 +144,21 @@ const Values *DoGetValues() {
   }
 }
 
+const Values *DoGetValues() {
+  uint16_t team = ::aos::network::GetTeamNumber();
+  LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+  return DoGetValuesForTeam(team);
+}
+
 }  // namespace
 
 const Values &GetValues() {
   static ::aos::Once<const Values> once(DoGetValues);
   return *once.Get();
+}
+
+const Values &GetValuesForTeam(uint16_t team_number) {
+  return *(DoGetValuesForTeam(team_number));
 }
 
 }  // namespace constants

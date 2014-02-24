@@ -97,7 +97,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  private:
   // The offset between what is '0' (0 rate on the spring) and the 0 (all the
   // way cocked).
-  constexpr static double kPositionOffset = 0.305054 + 0.0254;
+  constexpr static double kPositionOffset = kMaxExtension;
   // The accumulated voltage to apply to the motor.
   double voltage_;
   double last_voltage_;
@@ -106,6 +106,14 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double max_voltage_;
   bool capped_goal_;
 };
+
+const Time kUnloadTimeout = Time::InSeconds(10);
+const Time kLoadTimeout = Time::InSeconds(10);
+const Time kLoadProblemEndTimeout = Time::InSeconds(0.5);
+const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
+// Time to wait after releasing the latch piston before winching back again.
+const Time kShotEndTimeout = Time::InSeconds(0.2);
+const Time kPrepareFireEndTime = Time::InMS(40);
 
 class ShooterMotor
     : public aos::control_loops::ControlLoop<control_loops::ShooterGroup> {
@@ -150,12 +158,12 @@ class ShooterMotor
   // Enter state STATE_UNLOAD
   void Unload() {
     state_ = STATE_UNLOAD;
-    unload_timeout_ = Time::Now() + Time::InSeconds(1);
+    unload_timeout_ = Time::Now() + kUnloadTimeout;
   }
   // Enter state STATE_LOAD
   void Load() {
     state_ = STATE_LOAD;
-    load_timeout_ = Time::Now() + Time::InSeconds(1);
+    load_timeout_ = Time::Now() + kLoadTimeout;
   }
 
   control_loops::ShooterGroup::Position last_position_;
