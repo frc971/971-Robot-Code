@@ -43,9 +43,9 @@ class MotorWriter : public ::aos::MotorOutput {
       } else {
         DisablePWMOutput(3);
         DisablePWMOutput(8);
-        drivetrain_old_.WantToLog();
+        LOG_INTERVAL(drivetrain_old_);
       }
-      LOG_INTERVAL(drivetrain_old_);
+      drivetrain_old_.Print();
     }
 
     {
@@ -60,9 +60,9 @@ class MotorWriter : public ::aos::MotorOutput {
       } else {
         DisablePWMOutput(9);
         SetSolenoid(5, false);  // engage the brake
-        shooter_old_.WantToLog();
+        LOG_INTERVAL(shooter_old_);
       }
-      LOG_INTERVAL(shooter_old_);
+      shooter_old_.Print();
     }
 
     {
@@ -83,9 +83,9 @@ class MotorWriter : public ::aos::MotorOutput {
         DisablePWMOutput(2);
         DisablePWMOutput(4);
         DisablePWMOutput(5);
-        claw_old_.WantToLog();
+        LOG_INTERVAL(claw_old_);
       }
-      LOG_INTERVAL(claw_old_);
+      claw_old_.Print();
     }
   }
 
