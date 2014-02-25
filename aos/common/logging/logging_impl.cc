@@ -112,7 +112,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
 #define NSECONDS_DIGITS 5
 #define BASE_FORMAT                                      \
   "%.*s(%" PRId32 ")(%05" PRIu16 "): %-7s at %010" PRId32 \
-  ".%-" STRINGIFY(NSECONDS_DIGITS) PRId32 "s: "
+  ".%0" STRINGIFY(NSECONDS_DIGITS) PRId32 "s: "
 #define BASE_ARGS                                             \
   static_cast<int>(message.name_length), message.name,        \
       static_cast<int32_t>(message.source), message.sequence, \
