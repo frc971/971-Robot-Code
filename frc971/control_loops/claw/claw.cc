@@ -738,7 +738,19 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       output->bottom_claw_voltage = -kMaxVoltage;
     }
   }
-  status->done = false;
+
+  bool bottom_done =
+      ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.005;
+  bool separation_done =
+      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                 goal->separation_angle) <
+      0.005;
+  status->done = is_ready() && separation_done && bottom_done;
+
+  status->bottom = bottom_absolute_position();
+  status->separation = top_absolute_position() - bottom_absolute_position();
+  status->bottom_velocity = claw_.X_hat(2, 0);
+  status->separation_velocity = claw_.X_hat(3, 0);
 
   was_enabled_ = ::aos::robot_state->enabled;
 }

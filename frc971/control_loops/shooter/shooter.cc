@@ -157,6 +157,7 @@ void ShooterMotor::RunIteration(
     LOG(ERROR, "Thought I would just check for null and die.\n");
     return;
   }
+  status->ready = false;
 
   if (reset()) {
     state_ = STATE_INITIALIZE;
@@ -397,6 +398,7 @@ void ShooterMotor::RunIteration(
       // Wait until the brake is set, and a shot is requested or the shot power
       // is changed.
       if (Time::Now() > shooter_brake_set_time_) {
+        status->ready = true;
         // We have waited long enough for the brake to set, turn the shooter
         // control loop off.
         shooter_loop_disable = true;
@@ -416,6 +418,7 @@ void ShooterMotor::RunIteration(
 
         // TODO(austin): Do we want to set the brake here or after shooting?
         // Depends on air usage.
+        status->ready = false;
         LOG(DEBUG, "Preparing shot again.\n");
         state_ = STATE_PREPARE_SHOT;
       }
@@ -569,9 +572,6 @@ void ShooterMotor::RunIteration(
     output->latch_piston = latch_piston_;
     output->brake_piston = brake_piston_;
   }
-
-  status->done = ::std::abs(shooter_.absolute_position() -
-                            PowerToPosition(goal->shot_power)) < 0.004;
 
   if (position) {
     last_position_ = *position;
