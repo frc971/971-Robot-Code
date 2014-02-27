@@ -134,7 +134,6 @@ class ShooterMotor
     STATE_LOADING_PROBLEM = 4,
     STATE_PREPARE_SHOT = 5,
     STATE_READY = 6,
-    STATE_PREPARE_FIRE = 7,
     STATE_FIRE = 8,
     STATE_UNLOAD = 9,
     STATE_UNLOAD_MOVE = 10,
@@ -181,13 +180,9 @@ class ShooterMotor
 
   // wait for brake to set
   Time shooter_brake_set_time_;
-  
+
   // The timeout for unloading.
   Time unload_timeout_;
-
-  // we are attempting to take up some of the backlash
-  // in the gears before the plunger hits
-  Time prepare_fire_end_time_;
 
   // time that shot must have completed
   Time shot_end_time_;
