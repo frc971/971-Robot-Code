@@ -1,6 +1,6 @@
 package frc971.actions;
 
-queue_group ShootAction {
+queue_group ShootActionQueueGroup {
   message Status {
     bool running;
   };
@@ -18,4 +18,4 @@ queue_group ShootAction {
   queue Status status;
 };
 
-queue_group ShootAction shoot_action;
+queue_group ShootActionQueueGroup shoot_action;

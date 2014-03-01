@@ -70,7 +70,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
-          }
+          },
+          {0.01, 0.1} // shooter_action
       };
       break;
     case kCompTeamNumber:
@@ -102,7 +103,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
-          }
+          },
+          //TODO(james): Get realer numbers for shooter_action.
+          {0.01, 0.1} // shooter_action
       };
       break;
     case kPracticeTeamNumber:
@@ -136,7 +139,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.020000 * 2.0,  // claw_unimportant_epsilon
           -0.200000 * 2.0,   // start_fine_tune_pos
           4.000000,
-          }
+          },
+          //TODO(james): Get realer numbers for shooter_action.
+          {0.01, 0.1} // shooter_action
       };
       break;
     default:

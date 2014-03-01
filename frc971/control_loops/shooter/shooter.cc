@@ -460,6 +460,7 @@ void ShooterMotor::RunIteration(
            cycles_not_moved_ > 3) ||
           Time::Now() > shot_end_time_) {
         state_ = STATE_REQUEST_LOAD;
+        status->shots += 1;
       }
       latch_piston_ = false;
       brake_piston_ = true;

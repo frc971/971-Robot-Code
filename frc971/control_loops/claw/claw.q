@@ -64,7 +64,7 @@ queue_group ClawGroup {
   queue Goal goal;
   queue Position position;
   queue Output output;
-  queue aos.control_loops.Status status;
+  queue Status status;
 };
 
 queue_group ClawGroup claw_queue_group;

@@ -205,7 +205,7 @@ class ClawMotor
   virtual void RunIteration(const control_loops::ClawGroup::Goal *goal,
                             const control_loops::ClawGroup::Position *position,
                             control_loops::ClawGroup::Output *output,
-                            ::aos::control_loops::Status *status);
+                            control_loops::ClawGroup::Status *status);
 
   double top_absolute_position() const {
     return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);

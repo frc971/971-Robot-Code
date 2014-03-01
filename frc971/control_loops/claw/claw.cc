@@ -399,7 +399,7 @@ bool ClawMotor::is_zeroing() const { return !is_ready(); }
 void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                              const control_loops::ClawGroup::Position *position,
                              control_loops::ClawGroup::Output *output,
-                             ::aos::control_loops::Status *status) {
+                             control_loops::ClawGroup::Status *status) {
   constexpr double dt = 0.01;
 
   // Disable the motors now so that all early returns will return with the
