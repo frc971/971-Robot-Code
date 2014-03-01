@@ -1,7 +1,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
 
-#include "frc971/autonomous/shoot_action.q.h"
+#include "frc971/actions/shoot_action.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/constants.h"
@@ -9,68 +9,21 @@
 namespace frc971 {
 namespace actions {
 
-class ShootAction {
- public:
-  void Run() {
-    ::frc971::actions::shoot_action.goal.FetchLatest();
-    while (!::frc971::actions::shoot_action.goal.get()) {
-      ::frc971::actions::shoot_action.goal.FetchNextBlocking();
-    }
-
-    if (!::frc971::actions::shoot_action.status.MakeWithBuilder().running(false)
-            .Send()) {
-      LOG(ERROR, "Failed to send the status.\n");
-    }
-    while (true) {
-      while (!::frc971::actions::shoot_action.goal->run) {
-        LOG(INFO, "Waiting for an action request.\n");
-        ::frc971::actions::shoot_action.goal.FetchNextBlocking();
-      }
-      LOG(INFO, "Starting action\n");
-      if (!::frc971::actions::shoot_action.status.MakeWithBuilder().running(
-              true).Send()) {
-        LOG(ERROR, "Failed to send the status.\n");
-      }
-      RunAction();
-      if (!::frc971::actions::shoot_action.status.MakeWithBuilder().running(
-              false).Send()) {
-        LOG(ERROR, "Failed to send the status.\n");
-      }
-
-      while (::frc971::actions::shoot_action.goal->run) {
-        LOG(INFO, "Waiting for the action to be stopped.\n");
-        ::frc971::actions::shoot_action.goal.FetchNextBlocking();
-      }
-    }
-  }
-
-  // Actually execute the action of moving the claw and shooter into position
-  // and actually firing them.
-  void RunAction();
-
- protected:
-  // Returns true if the action should be canceled.
-  bool ShouldCancel() {
-    shoot_action.goal.FetchLatest();
-    bool ans = !::frc971::actions::shoot_action.goal->run;
-    if (ans) {
-      LOG(INFO, "Time to exit auto mode\n");
-    }
-    return ans;
-  }
-};
+ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
+    : actions::ActionBase<actions::ShootActionQueueGroup>(s) {}
 
 void ShootAction::RunAction() {
   if (!control_loops::shooter_queue_group.goal.MakeWithBuilder().shot_power(
-          shoot_action.goal->shot_power).shot_requested(false)
-          .unload_requested(false).load_requested(false).Send()) {
+          shoot_action.goal->shot_power)
+          .shot_requested(false).unload_requested(false).load_requested(false)
+          .Send()) {
     LOG(ERROR, "Failed to send the shoot action\n");
     return;
   }
 
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle).separation_angle(0.0).intake(2.0)
-          .centering(1.0).Send()) {
+          shoot_action.goal->shot_angle)
+          .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }
@@ -95,7 +48,7 @@ void ShootAction::RunAction() {
     if (ShouldCancel()) return;
   }
 
-  const frc971::constants::Values &values = frc971::constants::GetValues();
+  const frc971::constants::Values& values = frc971::constants::GetValues();
 
   // Open up the claw in preparation for shooting.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
@@ -111,7 +64,8 @@ void ShootAction::RunAction() {
   // Make sure we have the latest status.
   control_loops::claw_queue_group.status.FetchLatest();
   while (true) {
-    if (control_loops::claw_queue_group.status->separation > values.shooter_action.claw_shooting_separation) {
+    if (control_loops::claw_queue_group.status->separation >
+        values.shooter_action.claw_shooting_separation) {
       LOG(INFO, "Opened up enough to shoot.\n");
       break;
     }
@@ -124,14 +78,15 @@ void ShootAction::RunAction() {
 
   // Shoot!
   if (!control_loops::shooter_queue_group.goal.MakeWithBuilder().shot_power(
-          shoot_action.goal->shot_power).shot_requested(true)
-          .unload_requested(false).load_requested(false).Send()) {
+          shoot_action.goal->shot_power)
+          .shot_requested(true).unload_requested(false).load_requested(false)
+          .Send()) {
     LOG(WARNING, "sending shooter goal failed\n");
     return;
   }
 
   if (ShouldCancel()) return;
-  
+
   // Make sure that we have the latest shooter status.
   control_loops::shooter_queue_group.status.FetchLatest();
   // Get the number of shots fired up to this point. This should not be updated
