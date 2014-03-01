@@ -13,6 +13,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
+#include "frc971/actions/shoot_action.q.h"
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::sensors::gyro;
@@ -153,48 +154,45 @@ class Reader : public ::aos::input::JoystickInput {
     separation_angle_ = goal.separation;
   }
 
+  // cycle throught all known actions and if they are running
+  // cancel them all.
+  // TODO(ben): make this more generic and s.t. we can only
+  // cancel if we need those exact resources (ie claw shooter drivetrain)
+  void CancelAllActions() {
+    frc971::actions::shoot_action.status
+        .FetchLatest();
+	while (::frc971::actions::shoot_action.status->running) {
+      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(false);
+      ::frc971::actions::shoot_action.status.FetchLatest();
+    }
+  }
+
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     HandleDrivetrain(data);
 
     if (data.IsPressed(kIntakeOpenPosition)) {
+      CancelAllActions();
       SetGoal(kIntakeOpenGoal);
     } else if (data.IsPressed(kIntakePosition)) {
+      CancelAllActions();
       SetGoal(kIntakeGoal);
     } else if (data.IsPressed(kTuck)) {
+      CancelAllActions();
       SetGoal(kTuckGoal);
     }
 
-    // TODO(austin): Wait for the claw to go to position before shooting, and
-    // open the claw as part of the actual fire step.
-    if (data.IsPressed(kLongShot)) {
-      shot_power_ = 160.0;
-      SetGoal(kLongShotGoal);
+    if (data.PosEdge(kLongShot)) {
+      CancelAllActions();
+      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
+          .shot_power(160.0).shot_angle(kLongShotGoal.angle).Send();
     } else if (data.IsPressed(kMediumShot)) {
-      shot_power_ = 100.0;
-      SetGoal(kMediumShotGoal);
+      CancelAllActions();
+      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
+          .shot_power(100.0).shot_angle(kMediumShotGoal.angle).Send();
     } else if (data.IsPressed(kShortShot)) {
-      shot_power_ = 70.0;
-      SetGoal(kShortShotGoal);
-    }
-
-    if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-             .bottom_angle(goal_angle_)
-             .separation_angle(separation_angle_)
-             .intake(data.IsPressed(kRollersIn)
-                         ? 12.0
-                         : (data.IsPressed(kRollersOut) ? -12.0 : 0.0))
-             .centering(data.IsPressed(kRollersIn) ? 12.0 : 0.0)
-             .Send()) {
-      LOG(WARNING, "sending claw goal failed\n");
-    }
-
-    if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
-             .shot_power(shot_power_)
-             .shot_requested(data.IsPressed(kFire))
-             .unload_requested(data.IsPressed(kUnload))
-             .load_requested(data.IsPressed(kReload))
-             .Send()) {
-      LOG(WARNING, "sending shooter goal failed\n");
+      CancelAllActions();
+      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
+          .shot_power(70.0).shot_angle(kShortShotGoal.angle).Send();
     }
   }
 
