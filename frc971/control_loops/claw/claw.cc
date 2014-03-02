@@ -758,6 +758,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   status->done_with_ball =
       is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
 
+  status->zeroed = is_ready();
+
   was_enabled_ = ::aos::robot_state->enabled;
 }
 

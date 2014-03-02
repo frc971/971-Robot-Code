@@ -52,10 +52,12 @@ queue_group ClawGroup {
   };
 
   message Status {
+    // True if zeroed.
+    bool zeroed;
     // True if zeroed and within tolerance for separation and bottom angle.
     bool done;
     // True if zeroed and within tolerance for separation and bottom angle.
-	// seperation allowance much wider as a ball may be included
+    // seperation allowance much wider as a ball may be included
     bool done_with_ball;
     // Dump the values of the state matrix.
     double bottom;
