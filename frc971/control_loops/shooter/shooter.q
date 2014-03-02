@@ -46,6 +46,9 @@ queue_group ShooterGroup {
     // How many times we've shot.
     int32_t shots;
     bool done;
+    // What we think the current position of the hard stop on the shooter is, in
+    // shot power (Joules).
+    double hard_stop_power;
   };
 
   queue Goal goal;

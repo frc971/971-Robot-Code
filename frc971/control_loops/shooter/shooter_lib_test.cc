@@ -361,6 +361,22 @@ TEST_F(ShooterTest, PowerConversion) {
   EXPECT_NEAR(0, shooter_motor_.PowerToPosition(-123.4), 0.00001);
 }
 
+// Test that PowerToPosition and PositionToPower are inverses of each other.
+// Note that PowerToPosition will cap position whereas PositionToPower will not
+// cap power.
+TEST_F(ShooterTest, InversePowerConversion) {
+  // Test a few values.
+  double power = 140.0;
+  double position = shooter_motor_.PowerToPosition(power);
+  EXPECT_NEAR(power, shooter_motor_.PositionToPower(position), 1e-5);
+  power = .53;
+  position = shooter_motor_.PowerToPosition(power);
+  EXPECT_NEAR(power, shooter_motor_.PositionToPower(position), 1e-5);
+  power = 71.971;
+  position = shooter_motor_.PowerToPosition(power);
+  EXPECT_NEAR(power, shooter_motor_.PositionToPower(position), 1e-5);
+}
+
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, GoesToValue) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
