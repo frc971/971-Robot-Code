@@ -1,12 +1,5 @@
-//#include "aos/common/control_loop/Timing.h"
-//#include "aos/common/logging/logging.h"
-
 #include "frc971/actions/shoot_action.q.h"
 #include "frc971/actions/action.h"
-
-//#include "frc971/control_loops/shooter/shooter.q.h"
-//#include "frc971/control_loops/claw/claw.q.h"
-//#include "frc971/constants.h"
 
 namespace frc971 {
 namespace actions {
@@ -26,6 +19,15 @@ class ShootAction : public ActionBase<actions::ShootActionQueueGroup> {
   static constexpr double kOffsetRadians = 0.2;
 
  protected:
+  // completed shot
+  bool DoneShot();
+  // ready for shot
+  bool DonePreShotOpen();
+  // in the right place
+  bool DoneSetupShot();
+
+  // to track when shot is complete
+  int previous_shots_;
 };
 
 }  // namespace actions
