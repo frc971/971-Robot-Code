@@ -8,7 +8,8 @@ queue_group SelfCatchActionGroup {
   message Goal {
     // If true, run this action.  If false, cancel the action if it is
     // currently running.
-    bool run; // Shot power in joules.
+    bool run;
+    double shot_angle;
   };
 
   queue Goal goal;

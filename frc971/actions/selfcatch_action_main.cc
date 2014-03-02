@@ -5,7 +5,7 @@
 #include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
 #include "frc971/actions/selfcatch_action.q.h"
-#include "frc971/actions/self_catch_action.h"
+#include "frc971/actions/selfcatch_action.h"
 
 using ::aos::time::Time;
 

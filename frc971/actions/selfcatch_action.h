@@ -21,6 +21,7 @@ class SelfCatchAction : public ActionBase<actions::SelfCatchActionGroup> {
   static constexpr double kShotPower = 100.0;
   static constexpr double kCatchSeperation = 1.0;
   static constexpr double kCatchIntake = 12.0;
+  static constexpr double kSonarTriggerDist = 0.8;
   static constexpr double kCatchCentering = 12.0;
   static constexpr double kFinishAngle = 0.2;
 
@@ -40,7 +41,6 @@ class SelfCatchAction : public ActionBase<actions::SelfCatchActionGroup> {
 
   // to track when shot is complete
   int previous_shots_;
-  aos::Time::Time action_step_start_;
 };
 
 }  // namespace actions
