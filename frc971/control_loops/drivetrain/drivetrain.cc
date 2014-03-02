@@ -542,24 +542,15 @@ class PolyDrivetrain {
     } else {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
-      R_left(0, 0) = left_motor_speed;
-      const double wiggle =
-          (static_cast<double>((counter_ % 4) / 2) - 0.5) * 3.5;
-
-      loop_->U(0, 0) =
-          ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -position_.battery_voltage,
-                      position_.battery_voltage);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
-                          right_cim_->B() * loop_->U(0, 0);
-
       ::Eigen::Matrix<double, 1, 1> R_right;
+      R_left(0, 0) = left_motor_speed;
       R_right(0, 0) = right_motor_speed;
-      loop_->U(1, 0) =
-          ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -position_.battery_voltage,
-                      position_.battery_voltage);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
-                          right_cim_->B() * loop_->U(1, 0);
-      loop_->U *= 12.0 / position_.battery_voltage;
+
+      const double wiggle =
+          (static_cast<double>((counter_ % 4) / 4.0) - 0.5) * 4.0;
+
+      loop_->U(0, 0) = ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -12.0, 12.0);
+      loop_->U(1, 0) = ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -12.0, 12.0);
     }
   }
 
@@ -649,8 +640,10 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     dt_closedloop.SendMotors(output);
   } else {
     dt_openloop.SendMotors(output);
-    dt_closedloop.SetExternalMotors(output->left_voltage,
-                                    output->right_voltage);
+    if (output) {
+      dt_closedloop.SetExternalMotors(output->left_voltage,
+                                      output->right_voltage);
+    }
     dt_closedloop.Update(output == NULL);
   }
   
@@ -668,7 +661,6 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     status->is_done = done;
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
   }
-
 }
 
 }  // namespace control_loops
