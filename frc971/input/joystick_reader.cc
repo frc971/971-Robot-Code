@@ -86,24 +86,35 @@ class TypedAction : public Action {
   TypedAction(T *queue_group)
       : queue_group_(queue_group),
         goal_(queue_group_->goal.MakeMessage()),
-        has_seen_response_(false) {}
+        has_started_(false) {}
 
   // Returns the current goal that will be sent when the action is sent.
   GoalType *GetGoal() { return goal_.get(); }
 
+  ~TypedAction() {
+    LOG(INFO, "Calling destructor\n");
+    DoCancel();
+  }
+
  private:
   // Cancels the action.
-  virtual void DoCancel() { queue_group_->goal.MakeWithBuilder().run(false).Send(); }
+  virtual void DoCancel() {
+    LOG(INFO, "Canceling action\n");
+    queue_group_->goal.MakeWithBuilder().run(false).Send();
+  }
 
   // Returns true if the action is running or we don't have an initial response
   // back from it to signal whether or not it is running.
   virtual bool DoRunning() {
-    if (has_seen_response_) {
+    if (has_started_) {
       queue_group_->status.FetchLatest();
     } else if (queue_group_->status.FetchLatest()) {
-      has_seen_response_ = true;
+      if (queue_group_->status->running) {
+        // Wait until it reports that it is running to start.
+        has_started_ = true;
+      }
     }
-    return !has_seen_response_ ||
+    return !has_started_ ||
            (queue_group_->status.get() && queue_group_->status->running);
   }
 
@@ -112,9 +123,10 @@ class TypedAction : public Action {
     if (goal_) {
       goal_->run = true;
       goal_.Send();
-      has_seen_response_ = false;
+      has_started_ = false;
+      LOG(INFO, "Starting action\n");
     } else {
-      has_seen_response_ = true;
+      has_started_ = true;
     }
   }
 
@@ -122,7 +134,7 @@ class TypedAction : public Action {
   ::aos::ScopedMessagePtr<GoalType> goal_;
   // Track if we have seen a response to the start message.
   // If we haven't, we are considered running regardless.
-  bool has_seen_response_;
+  bool has_started_;
 };
 
 // Makes a new ShootAction action.
@@ -140,9 +152,11 @@ class ActionQueue {
   // Queues up an action for sending.
   void QueueAction(::std::unique_ptr<Action> action) {
     if (current_action_) {
+      LOG(INFO, "Queueing action, canceling prior\n");
       current_action_->Cancel();
       next_action_ = ::std::move(action);
     } else {
+      LOG(INFO, "Queueing action\n");
       current_action_ = ::std::move(action);
       current_action_->Start();
     }
@@ -151,6 +165,7 @@ class ActionQueue {
   // Cancels the current action, and runs the next one when the current one has
   // finished.
   void CancelCurrentAction() {
+    LOG(INFO, "Canceling current action\n");
     if (current_action_) {
       current_action_->Cancel();
     }
@@ -158,6 +173,7 @@ class ActionQueue {
 
   // Cancels all running actions.
   void CancelAllActions() {
+    LOG(INFO, "Canceling all actions\n");
     if (current_action_) {
       current_action_->Cancel();
     }
@@ -168,8 +184,10 @@ class ActionQueue {
   void Tick() {
     if (current_action_) {
       if (!current_action_->Running()) {
-        if (next_action_) {
-          current_action_ = ::std::move(next_action_);
+        LOG(INFO, "Action is done.\n");
+        current_action_ = ::std::move(next_action_);
+        if (current_action_) {
+          LOG(INFO, "Running next action\n");
           current_action_->Start();
         }
       }
@@ -280,6 +298,9 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     HandleDrivetrain(data);
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      action_queue_.CancelAllActions();
+    }
 
     if (data.IsPressed(kIntakeOpenPosition)) {
       action_queue_.CancelAllActions();
@@ -313,7 +334,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.PosEdge(kShortShot)) {
       auto shoot_action = MakeShootAction();
 
-      shot_power_ = 70.0;
+      shot_power_ = 20.0;
       shoot_action->GetGoal()->shot_power = shot_power_;
       shoot_action->GetGoal()->shot_angle = kShortShotGoal.angle;
       SetGoal(kShortShotGoal);
@@ -322,6 +343,9 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     action_queue_.Tick();
+    if (data.IsPressed(kUnload) || data.IsPressed(kReload)) {
+      action_queue_.CancelAllActions();
+    }
 
     // Send out the claw and shooter goals if no actions are running.
     if (!action_queue_.Running()) {

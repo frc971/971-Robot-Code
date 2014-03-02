@@ -18,27 +18,35 @@ ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
 double ShootAction::SpeedToAngleOffset(double speed) {
   const frc971::constants::Values& values = frc971::constants::GetValues();
   // scale speed to a [0.0-1.0] on something close to the max
-  return (speed / values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
+  return -(speed / values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
 }
 
 void ShootAction::RunAction() {
   const frc971::constants::Values& values = frc971::constants::GetValues();
+  LOG(INFO, "Shooting at angle %f, power %f\n", shoot_action.goal->shot_angle,
+      shoot_action.goal->shot_power);
 
   // Set shot power
-  if (!control_loops::shooter_queue_group.goal.MakeWithBuilder().shot_power(
-          shoot_action.goal->shot_power)
-          .shot_requested(false).unload_requested(false).load_requested(false)
-          .Send()) {
+  if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
+           .shot_power(shoot_action.goal->shot_power)
+           .shot_requested(false)
+           .unload_requested(false)
+           .load_requested(false)
+           .Send()) {
     LOG(ERROR, "Failed to send the shoot action\n");
     return;
   }
 
   // Set claw angle
   control_loops::drivetrain.status.FetchLatest();
-  if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle +
-          SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
-          .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(shoot_action.goal->shot_angle +
+                         SpeedToAngleOffset(
+                             control_loops::drivetrain.status->robot_speed))
+           .separation_angle(0.0)
+           .intake(2.0)
+           .centering(1.0)
+           .Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }
@@ -47,11 +55,14 @@ void ShootAction::RunAction() {
   if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this))) return;
 
   // Open up the claw in preparation for shooting.
-  if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle +
-          SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
-          .separation_angle(values.shooter_action.claw_separation_goal)
-          .intake(2.0).centering(1.0).Send()) {
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(shoot_action.goal->shot_angle +
+                         SpeedToAngleOffset(
+                             control_loops::drivetrain.status->robot_speed))
+           .separation_angle(values.shooter_action.claw_separation_goal)
+           .intake(2.0)
+           .centering(1.0)
+           .Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }
@@ -77,7 +88,6 @@ void ShootAction::RunAction() {
   if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
 
   // done with action
-  return;
 }
 
 bool ShootAction::DoneSetupShot() {
@@ -90,7 +100,7 @@ bool ShootAction::DoneSetupShot() {
   // Make sure that both the shooter and claw have reached the necessary
   // states.
   if (control_loops::shooter_queue_group.status->ready &&
-      control_loops::claw_queue_group.status->done) {
+      control_loops::claw_queue_group.status->done_with_ball) {
     LOG(INFO, "Claw and Shooter ready for shooting.\n");
     // TODO(james): Get realer numbers for shooter_action.
     return true;
@@ -100,16 +110,21 @@ bool ShootAction::DoneSetupShot() {
   // TODO(ben): the claw may never reach the goal if the velocity is
   // continually changing, we will need testing to see
   control_loops::drivetrain.status.FetchLatest();
-  if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle +
-          SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
-          .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
+  if (ShouldCancel()) return false;
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(shoot_action.goal->shot_angle +
+                         SpeedToAngleOffset(
+                             control_loops::drivetrain.status->robot_speed))
+           .separation_angle(0.0)
+           .intake(2.0)
+           .centering(1.0)
+           .Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     abort_ = true;
     return true;
-  } else {
-    LOG(INFO, "Updating claw angle for velocity offset(%.4f).\n",
-        SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed));
+  //} else {
+    //LOG(INFO, "Updating claw angle for velocity offset(%.4f).\n",
+        //SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed));
   }
   return false;
 }

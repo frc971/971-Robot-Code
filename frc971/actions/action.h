@@ -37,6 +37,7 @@ template <class T> class ActionBase {
         LOG(ERROR, "Failed to send the status.\n");
       }
       RunAction();
+      LOG(INFO, "Done with action\n");
       if (!action_q_->status.MakeWithBuilder().running(false).Send()) {
         LOG(ERROR, "Failed to send the status.\n");
       }
