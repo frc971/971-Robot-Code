@@ -57,7 +57,7 @@ class LinuxQueueLogImplementation : public LogImplementation {
 void Register() {
   Init();
 
-  queue = RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 20000);
+  queue = RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 80000);
   if (queue == NULL) {
     Die("logging: couldn't fetch queue\n");
   }
