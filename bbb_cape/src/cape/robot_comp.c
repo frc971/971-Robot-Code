@@ -93,21 +93,20 @@ SHOOTER(7, 5, 4, 8, 0)
 
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
   TIM11->SR = ~TIM_SR_CC1IF;
-  TIM11->CR1 = 0;
-  ultrasonic_pulse_length = TIM11->CCR1;
-  ultrasonic_pulse_length = 1;
-  TIM11->CNT = 0;
+  if (digital_read(6)) {
+    TIM11->EGR = TIM_EGR_UG;
+  } else {
+    ultrasonic_pulse_length = TIM11->CCR1;
+  }
 }
 
 void robot_init(void) {
   gpio_setup_alt(GPIOB, 9, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
   TIM11->CR1 = TIM_CR1_URS;
-  TIM11->SMCR = 5 << 4 /* TI1 */ |
-      6 << 0 /* start on rising edge */;
   TIM11->DIER = TIM_DIER_CC1IE;
   TIM11->CCMR1 = TIM_CCMR1_CC1S_0 /* input pin 1 -> timer input 1 */;
-  TIM11->CCER = TIM_CCER_CC1P /* go on falling edge */ | TIM_CCER_CC1E;
+  TIM11->CCER = TIM_CCER_CC1P | TIM_CCER_CC1NP | TIM_CCER_CC1E;
   TIM11->EGR = TIM_EGR_UG;
   TIM11->PSC = 1200 - 1;  // 100kHZ timer
   TIM11->CR1 |= TIM_CR1_CEN;
@@ -118,8 +117,10 @@ void robot_init(void) {
 void robot_fill_packet(struct DataStruct *packet) {
   packet->main.left_drive = encoder_read(6);
   packet->main.right_drive = encoder_read(5);
-  packet->main.left_drive_hall = analog_get(7);
-  packet->main.right_drive_hall = analog_get(0);
+  packet->main.low_left_drive_hall = analog_get(7);
+  packet->main.low_right_drive_hall = analog_get(0);
+  packet->main.high_left_drive_hall = analog_get(6);
+  packet->main.high_right_drive_hall = analog_get(1);
 
   packet->main.ultrasonic_pulse_length = ultrasonic_pulse_length;
 

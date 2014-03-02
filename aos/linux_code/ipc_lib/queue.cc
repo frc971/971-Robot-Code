@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include <memory>
+#include <algorithm>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
@@ -319,7 +320,8 @@ bool RawQueue::ReadCommonStart(int options, int *index, ReadData *read_data) {
     }
   }
   if (kReadDebug) {
-    printf("queue: %p->read start=%d end=%d\n", this, data_start_, data_end_);
+    printf("queue: %p->read(%p) start=%d end=%d\n", this, index, data_start_,
+           data_end_);
   }
   return true;
 }
@@ -390,7 +392,6 @@ const void *RawQueue::ReadMessage(int options) {
         printf("queue: %p reading from d2: %d\n", this, data_start_);
       }
       msg = data_[data_start_];
-      // TODO(brians): Doesn't this need to increment the ref count?
       data_start_ = (data_start_ + 1) % data_length_;
     }
   }
@@ -419,20 +420,23 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
 
   // TODO(parker): Handle integer wrap on the index.
 
-  // How many unread messages we have.
-  const int offset = messages_ - *index;
   // Where we're going to start reading.
-  int my_start = data_end_ - offset;
-  if (my_start < 0) {  // If we want to read off the end of the buffer.
-    // Unwrap it.
-    my_start += data_length_;
-  }
-  if (offset >= data_length_) {  // If we're behind the available messages.
+  int my_start;
+
+  const int unread_messages = messages_ - *index;
+  const int current_messages = ::std::abs(data_start_ - data_end_);
+  if (unread_messages > current_messages) {  // If we're behind the available messages.
     // Catch index up to the last available message.
-    *index += data_start_ - my_start;
+    *index = messages_ - current_messages;
     // And that's the one we're going to read.
     my_start = data_start_;
+  } else {
+    // Just start reading at the first available message that we haven't yet
+    // read.
+    my_start = (data_start_ + unread_messages - 1) % data_length_;
   }
+
+
   if (options & kPeek) {
     msg = ReadPeek(options, my_start);
   } else {
@@ -453,6 +457,10 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       if (kReadDebug) {
         printf("queue: %p reading from d1: %d\n", this, my_start);
       }
+      // This assert checks that we're either within both endpoints (duh) or
+      // outside of both of them (if the queue is wrapped around).
+      assert((my_start >= data_start_ && my_start < data_end_) ||
+             (my_start > data_end_ && my_start <= data_start_));
       msg = data_[my_start];
       ++(*index);
     }

@@ -29,6 +29,7 @@
     'output_cc': '<(out_dir)/<(RULE_INPUT_ROOT).q.cc',
     'output_main': '<(out_dir)/<(RULE_INPUT_ROOT)_main.cc',
     'no_rsync': 1,
+    'aos_q_dependent_paths%': [],
   },
   'rules': [
     {
@@ -46,6 +47,7 @@
         '<!@(find <(AOS)/build/queues/ -name *.rb)',
         '<(AOS)/common/queue.h',
         '<(AOS)/common/time.h',
+        '>@(aos_q_dependent_paths)',
       ],
       'action': ['ruby', '<(script)',
         '-I', '<(DEPTH)',
@@ -54,29 +56,7 @@
         '<(header_path)',
         '-cpp_base',
         '<(prefix_dir)/<(_target_name)'],
-      'message': 'Generating C++ code from <(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).q',
-      'process_outputs_as_sources': 1,
-    },
-    {
-      'variables': {
-        'script': '<(AOS)/build/act_builder.rb',
-      },
-      'rule_name': 'genact',
-      'extension': 'act',
-      'outputs': [
-        '<(output_h)',
-        '<(output_cc)',
-        '<(output_main)',
-      ],
-      'inputs': [
-        '<(script)',
-      ],
-      'action': ['ruby', '<(script)',
-        '<(gen_namespace)',
-        '<(RULE_INPUT_PATH)',
-        '<(DEPTH)',
-        '<(out_dir)', 'header', 'cpp', 'main'],
-      #'message': 'Generating C++ code from <(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).act',
+      'message': 'Generating C++ code for <(header_path)/<(RULE_INPUT_PATH)',
       'process_outputs_as_sources': 1,
     },
   ],
@@ -88,7 +68,7 @@
       '<(prefix_dir)/<(_target_name)',
     ],
     'variables': {
-      'gen_srcdir_parents': ['<(out_dir)'],
+      'aos_q_dependent_paths': ['<@(_sources)'],
     },
   },
   'dependencies': [

@@ -197,6 +197,7 @@ class ShooterMotor
   bool brake_piston_;
   int32_t last_distal_posedge_count_;
   int32_t last_proximal_posedge_count_;
+  uint32_t shot_count_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

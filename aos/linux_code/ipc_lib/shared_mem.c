@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "aos/linux_code/ipc_lib/core_lib.h"
 
@@ -38,29 +39,41 @@ struct aos_core *global_core = NULL;
 int aos_core_create_shared_mem(enum aos_core_create to_create) {
   static struct aos_core global_core_data;
   global_core = &global_core_data;
+
+  {
+    char *shm_name = getenv("AOS_SHM_NAME");
+    if (shm_name == NULL) {
+      global_core->shm_name = AOS_SHM_NAME;
+    } else {
+      global_core->shm_name = shm_name;
+    }
+  }
+
   int shm;
 before:
   if (to_create == create) {
-    printf("shared_mem: creating\n");
-    shm = shm_open(AOS_SHM_NAME, O_RDWR | O_CREAT | O_EXCL, 0666);
+    printf("shared_mem: creating %s\n", global_core->shm_name);
+    shm = shm_open(global_core->shm_name, O_RDWR | O_CREAT | O_EXCL, 0666);
     global_core->owner = 1;
     if (shm == -1 && errno == EEXIST) {
-      printf("shared_mem: going to shm_unlink(" AOS_SHM_NAME ")\n");
-      if (shm_unlink(AOS_SHM_NAME) == -1) {
-        fprintf(stderr, "shared_mem: shm_unlink(" AOS_SHM_NAME ") failed with of %d: %s\n", errno, strerror(errno));
+      printf("shared_mem: going to shm_unlink(%s)\n", global_core->shm_name);
+      if (shm_unlink(global_core->shm_name) == -1) {
+        fprintf(stderr, "shared_mem: shm_unlink(%s) failed with of %d: %s\n",
+                global_core->shm_name, errno, strerror(errno));
       } else {
         goto before;
       }
     }
   } else {
     printf("shared_mem: not creating\n");
-    shm = shm_open(AOS_SHM_NAME, O_RDWR, 0);
+    shm = shm_open(global_core->shm_name, O_RDWR, 0);
     global_core->owner = 0;
   }
   if (shm == -1) {
     fprintf(stderr, "shared_mem:"
-            " shm_open(" AOS_SHM_NAME ", O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
-            " failed with %d: %s\n", errno, strerror(errno));
+                    " shm_open(%s, O_RDWR [| O_CREAT | O_EXCL, 0|0666)"
+                    " failed with %d: %s\n",
+            global_core->shm_name, errno, strerror(errno));
     return -1;
   }
   if (global_core->owner) {
@@ -96,7 +109,8 @@ before:
 int aos_core_use_address_as_shared_mem(void *address, size_t size) {
   global_core->mem_struct = address;
   global_core->size = size;
-  global_core->shared_mem = (uint8_t *)address + sizeof(*global_core->mem_struct);
+  global_core->shared_mem =
+      (uint8_t *)address + sizeof(*global_core->mem_struct);
   if (global_core->owner) {
     global_core->mem_struct->msg_alloc = (uint8_t *)address + global_core->size;
     init_shared_mem_core(global_core->mem_struct);
@@ -122,9 +136,9 @@ int aos_core_free_shared_mem(){
           return -1;
       }
   if (global_core->owner) {
-        if (shm_unlink(AOS_SHM_NAME)) {
-            fprintf(stderr, "shared_mem: shm_unlink(" AOS_SHM_NAME ") failed with %d: %s\n",
-          errno, strerror(errno));
+        if (shm_unlink(global_core->shm_name)) {
+          fprintf(stderr, "shared_mem: shm_unlink(%s) failed with %d: %s\n",
+                  global_core->shm_name, errno, strerror(errno));
             return -1;
         }
   }

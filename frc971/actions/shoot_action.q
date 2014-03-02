@@ -11,7 +11,7 @@ queue_group ShootActionQueueGroup {
     bool run; // Shot power in joules.
     double shot_power;
     // Claw angle when shooting.
-    bool shot_angle;
+    double shot_angle;
   };
 
   queue Goal goal;

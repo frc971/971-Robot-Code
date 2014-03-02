@@ -64,9 +64,21 @@ double battery_translate(uint16_t in) {
   return adc_translate(in) * kDividerBig / kDividerSmall;
 }
 
-double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
-  const double voltage = adc_translate(in);
-  return (voltage - k.low) / (k.high - k.low);
+double hall_translate(const constants::ShifterHallEffect &k, uint16_t in_low,
+                      uint16_t in_high) {
+  const double low_ratio =
+      0.5 * (in_low - static_cast<double>(k.low_gear_low)) /
+      static_cast<double>(k.low_gear_middle - k.low_gear_low);
+  const double high_ratio =
+      0.5 + 0.5 * (in_high - static_cast<double>(k.high_gear_middle)) /
+      static_cast<double>(k.high_gear_high - k.high_gear_middle);
+
+  // Return low when we are below 1/2, and high when we are above 1/2.
+  if (low_ratio + high_ratio < 1.0) {
+    return low_ratio;
+  } else {
+    return high_ratio;
+  }
 }
 
 double claw_translate(int32_t in) {
@@ -117,7 +129,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp.sec(), cape_timestamp.nsec(),
-      data->main.ultrasonic_pulse_length);
+      data->main.ultrasonic_pulse_length, sizeof(*data));
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
   if (data->uninitialized_gyro) {
@@ -147,9 +159,11 @@ void PacketReceived(const ::bbb::DataStruct *data,
       .right_encoder(drivetrain_translate(data->main.right_drive))
       .left_encoder(-drivetrain_translate(data->main.left_drive))
       .left_shifter_position(hall_translate(constants::GetValues().left_drive,
-                                            data->main.left_drive_hall))
-      .right_shifter_position(hall_translate(
-              constants::GetValues().right_drive, data->main.right_drive_hall))
+                                            data->main.low_left_drive_hall,
+                                            data->main.high_left_drive_hall))
+      .right_shifter_position(hall_translate(constants::GetValues().right_drive,
+                                             data->main.low_right_drive_hall,
+                                             data->main.high_right_drive_hall))
       .battery_voltage(battery_translate(data->main.battery_voltage))
       .Send();
 

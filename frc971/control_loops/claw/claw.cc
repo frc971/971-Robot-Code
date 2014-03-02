@@ -747,22 +747,23 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     }
   }
 
-  bool bottom_done =
-      ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.005;
-  bool separation_done =
-      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
-                 goal->separation_angle) < 0.005;
-  bool separation_done_with_ball =
-      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
-                 goal->separation_angle) < 0.06;
-  status->done = is_ready() && separation_done && bottom_done;
-  status->done_with_ball =
-      is_ready() && separation_done_with_ball && bottom_done;
-
   status->bottom = bottom_absolute_position();
   status->separation = top_absolute_position() - bottom_absolute_position();
   status->bottom_velocity = claw_.X_hat(2, 0);
   status->separation_velocity = claw_.X_hat(3, 0);
+
+  bool bottom_done =
+      ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.020;
+  bool bottom_velocity_done = ::std::abs(status->bottom_velocity) < 0.2;
+  bool separation_done =
+      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                 goal->separation_angle) < 0.020;
+  bool separation_done_with_ball =
+      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                 goal->separation_angle) < 0.06;
+  status->done = is_ready() && separation_done && bottom_done && bottom_velocity_done;
+  status->done_with_ball =
+      is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
 
   was_enabled_ = ::aos::robot_state->enabled;
 }

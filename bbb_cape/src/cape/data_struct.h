@@ -86,8 +86,10 @@ struct DATA_STRUCT_NAME {
       int32_t shooter_position, pusher_distal_posedge_position,
           pusher_proximal_posedge_position;
 
-      uint16_t left_drive_hall;
-      uint16_t right_drive_hall;
+      uint16_t low_left_drive_hall;
+      uint16_t high_left_drive_hall;
+      uint16_t low_right_drive_hall;
+      uint16_t high_right_drive_hall;
 
       uint16_t battery_voltage;
 

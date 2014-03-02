@@ -78,7 +78,7 @@ const char *DoGetRootDirectory() {
           r, size, errno, strerror(errno));
     }
     if (ret < size) {
-      void *last_slash = memrchr(r, '/', size);
+      void *last_slash = memrchr(r, '/', ret);
       if (last_slash == NULL) {
         r[ret] = '\0';
         LOG(FATAL, "couldn't find a '/' in \"%s\"\n", r);

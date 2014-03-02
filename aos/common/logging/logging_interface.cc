@@ -68,7 +68,10 @@ void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
                                int levels) {
   internal::RunWithCurrentImplementation(
       levels, [&](LogImplementation * implementation) {
-    implementation->DoLog(level, format, ap);
+    va_list ap1;
+    va_copy(ap1, ap);
+    implementation->DoLog(level, format, ap1);
+    va_end(ap1);
 
     if (level == FATAL) {
       VDie(format, ap);

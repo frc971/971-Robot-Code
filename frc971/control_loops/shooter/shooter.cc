@@ -111,7 +111,8 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
       shooter_brake_set_time_(0, 0),
       unload_timeout_(0, 0),
       shot_end_time_(0, 0),
-      cycles_not_moved_(0) {}
+      cycles_not_moved_(0),
+      shot_count_(0) {}
 
 double ShooterMotor::PowerToPosition(double power) {
   const frc971::constants::Values &values = constants::GetValues();
@@ -465,7 +466,7 @@ void ShooterMotor::RunIteration(
            cycles_not_moved_ > 3) ||
           Time::Now() > shot_end_time_) {
         state_ = STATE_REQUEST_LOAD;
-        status->shots += 1;
+        ++shot_count_;
       }
       latch_piston_ = false;
       brake_piston_ = true;
@@ -592,6 +593,8 @@ void ShooterMotor::RunIteration(
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;
     last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
   }
+
+  status->shots = shot_count_;
 }
 
 }  // namespace control_loops
