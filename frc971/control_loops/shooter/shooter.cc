@@ -575,7 +575,7 @@ void ShooterMotor::RunIteration(
     if (output) output->voltage = 0.0;
   }
 
-  status->hard_stop_power = PowerToPosition(shooter_.absolute_position());
+  status->hard_stop_power = PositionToPower(shooter_.absolute_position());
 
   if (output) {
     output->latch_piston = latch_piston_;
