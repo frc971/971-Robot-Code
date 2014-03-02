@@ -79,7 +79,7 @@ class RawQueue {
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
-  // Returns truen on success.
+  // Returns true on success.
   bool WriteMessage(void *msg, int options);
 
   // Reads a message out of the queue.

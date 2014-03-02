@@ -26,6 +26,13 @@ void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::Iterate() {
+  no_prior_goal_.Print();
+  no_sensor_generation_.Print();
+  very_stale_position_.Print();
+  no_prior_position_.Print();
+  driver_station_old_.Print();
+  no_driver_station_.Print();
+
   // Fetch the latest control loop goal and position.  If there is no new
   // goal, we will just reuse the old one.
   // If there is no goal, we haven't started up fully.  It isn't worth

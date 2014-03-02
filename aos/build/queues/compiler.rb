@@ -62,7 +62,7 @@ def format_pipeline(output)
   read_in, write_in = IO.pipe()
   child = Process.spawn('clang-format-3.4 --style=google',
                         {:in=>read_in, write_in=>:close,
-                         :out=>output})
+                         :out=>output.fileno})
   read_in.close
   [child, write_in]
 end
@@ -91,14 +91,14 @@ def build(filename,globals_template)
 	cpp_tree.add_cc_using("::aos::to_network")
 	cpp_tree.add_cc_using("::aos::to_host")
 
-	header_file = File.open(h_file_path,"w+")
-	cc_file = File.open(cc_file_path,"w+")
+	header_file = WriteIffChanged.new(h_file_path)
+	cc_file = WriteIffChanged.new(cc_file_path)
   header_child, header_output = format_pipeline(header_file)
   cc_child, cc_output = format_pipeline(cc_file)
 	cpp_tree.write_header_file($cpp_base,header_output)
 	cpp_tree.write_cc_file($cpp_base,cc_output)
-	cc_output.close()
 	header_output.close()
+	cc_output.close()
   if !Process.wait2(cc_child)[1].success?
     $stderr.puts "Formatting cc file failed."
     exit 1
@@ -107,6 +107,8 @@ def build(filename,globals_template)
     $stderr.puts "Formatting header file failed."
     exit 1
   end
+  header_file.close()
+  cc_file.close()
 end
 begin
 	args = ARGV.dup

@@ -187,7 +187,7 @@ class Target::MessageDec < Target::StructBase
 		type_class.set_parent("public ::aos::Message")
 		ts = self.simpleStr()
 		self.msg_hash = "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
-		type_class.add_member("enum {kQueueLength = 1234, kHash = #{self.msg_hash}}")
+		type_class.add_member("enum {kQueueLength = 200, kHash = #{self.msg_hash}}")
 		@members.each do |elem|
 			type_class.add_member(elem.create_usage(cpp_tree))
 		end

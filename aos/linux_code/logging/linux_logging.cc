@@ -57,7 +57,7 @@ class LinuxQueueLogImplementation : public LogImplementation {
 void Register() {
   Init();
 
-  queue = RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 1500);
+  queue = RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 80000);
   if (queue == NULL) {
     Die("logging: couldn't fetch queue\n");
   }
@@ -91,8 +91,8 @@ void Free(const LogMessage *msg) {
 }
 
 void Write(LogMessage *msg) {
-  if (!queue->WriteMessage(msg, RawQueue::kOverride)) {
-    LOG(FATAL, "writing failed");
+  if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
+    LOG(FATAL, "writing failed\n");
   }
 }
 

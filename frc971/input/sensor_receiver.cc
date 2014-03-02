@@ -129,7 +129,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp.sec(), cape_timestamp.nsec(),
-      data->main.ultrasonic_pulse_length);
+      data->main.ultrasonic_pulse_length, sizeof(*data));
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
   if (data->uninitialized_gyro) {

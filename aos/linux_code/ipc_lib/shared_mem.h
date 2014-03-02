@@ -52,6 +52,8 @@ struct aos_core {
   // How large the chunk of shared memory is.
   ptrdiff_t size;
   aos_shm_core *mem_struct;
+  // For the owner to store the name of the file to unlink when closing.
+  const char *shm_name;
 };
 
 void init_shared_mem_core(aos_shm_core *shm_core);
