@@ -71,7 +71,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.9,   // start_fine_tune_pos
            4.0,
           },
-          {0.01, 0.1} // shooter_action
+          {0.01, 0.1}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     case kCompTeamNumber:
@@ -105,7 +107,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            4.0,
           },
           //TODO(james): Get realer numbers for shooter_action.
-          {0.01, 0.1} // shooter_action
+          {0.01, 0.1}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     case kPracticeTeamNumber:
@@ -119,7 +123,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           control_loops::MakeVDogDrivetrainLoop,
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
-          // TODO(ben): make these real numbers
           {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
            {-0.002, 0.000446, -0.002, 0.000446},
            {-0.002, 0.009078, -0.002, 0.009078},
@@ -141,7 +144,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           4.000000,
           },
           //TODO(james): Get realer numbers for shooter_action.
-          {0.01, 0.1} // shooter_action
+          {0.01, 0.1}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     default:

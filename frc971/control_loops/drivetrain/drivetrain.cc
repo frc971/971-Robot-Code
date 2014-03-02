@@ -111,8 +111,34 @@ class DrivetrainMotorsSS {
     SetRawPosition(left, right);
   }
 
+  void SetExternalMotors(double left_voltage, double right_voltage) {
+    loop_->U << left_voltage, right_voltage;
+  }
+
   void Update(bool stop_motors) {
-    loop_->Update(stop_motors);
+    if (_control_loop_driving) {
+      loop_->Update(stop_motors);
+    } else {
+      if (stop_motors) {
+        loop_->U.setZero();
+        loop_->U_uncapped.setZero();
+      }
+      loop_->UpdateObserver();
+    }
+  }
+
+  double GetEstimatedRobotSpeed() {
+    // lets just call the average of left and right velocities close enough
+    return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
+  }
+  
+  double GetEstimatedLeftEncoder() {
+    // lets just call the average of left and right velocities close enough
+    return loop_->X_hat(0, 0);
+  }
+  
+  double GetEstimatedRightEncoder() {
+    return loop_->X_hat(2, 0);
   }
 
   void SendMotors(Drivetrain::Output *output) {
@@ -581,7 +607,7 @@ constexpr double PolyDrivetrain::Kt;
 void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
                                   const Drivetrain::Position *position,
                                   Drivetrain::Output *output,
-                                  Drivetrain::Status * /*status*/) {
+                                  Drivetrain::Status * status) {
   // TODO(aschuh): These should be members of the class.
   static DrivetrainMotorsSS dt_closedloop;
   static PolyDrivetrain dt_openloop;
@@ -615,14 +641,34 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     }
   }
   dt_openloop.SetPosition(position);
-  dt_closedloop.Update(output == NULL);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
+
   if (control_loop_driving) {
+    dt_closedloop.Update(output == NULL);
     dt_closedloop.SendMotors(output);
   } else {
     dt_openloop.SendMotors(output);
+    dt_closedloop.SetExternalMotors(output->left_voltage,
+                                    output->right_voltage);
+    dt_closedloop.Update(output == NULL);
   }
+  
+  // set the output status of the controll loop state
+  if (status) {
+    bool done = false;
+    if (goal) {
+      done = ((::std::abs(goal->left_goal -
+                          dt_closedloop.GetEstimatedLeftEncoder()) <
+               constants::GetValues().drivetrain_done_distance) &&
+              (::std::abs(goal->right_goal -
+                          dt_closedloop.GetEstimatedRightEncoder()) <
+               constants::GetValues().drivetrain_done_distance));
+    }
+    status->is_done = done;
+    status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
+  }
+
 }
 
 }  // namespace control_loops

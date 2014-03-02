@@ -112,6 +112,8 @@ struct Values {
     double claw_separation_goal;
    };
   ShooterAction shooter_action;
+  double drivetrain_done_distance;
+  double drivetrain_max_speed;
 };
 
 // Creates (once) a Values instance and returns a reference to it.

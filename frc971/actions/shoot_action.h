@@ -11,14 +11,19 @@
 namespace frc971 {
 namespace actions {
 
-class ShootAction : public ActionBase <actions::ShootActionQueueGroup> {
+class ShootAction : public ActionBase<actions::ShootActionQueueGroup> {
  public:
 
-	 explicit ShootAction (actions::ShootActionQueueGroup * s);
+  explicit ShootAction(actions::ShootActionQueueGroup* s);
 
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.
   void RunAction();
+
+  // calc an offset to our requested shot based on robot speed
+  double SpeedToAngleOffset(double speed);
+
+  static constexpr double kOffsetRadians = 0.2;
 
  protected:
 };

@@ -5,12 +5,21 @@
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/constants.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
 namespace actions {
 
+
 ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
     : actions::ActionBase<actions::ShootActionQueueGroup>(s) {}
+
+double ShootAction::SpeedToAngleOffset(double speed) {
+  const frc971::constants::Values& values = frc971::constants::GetValues();
+	// scale speed to a [0.0-1.0] on something close to the max
+	return (speed/values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
+}
+
 
 void ShootAction::RunAction() {
   if (!control_loops::shooter_queue_group.goal.MakeWithBuilder().shot_power(
@@ -21,8 +30,10 @@ void ShootAction::RunAction() {
     return;
   }
 
+  control_loops::drivetrain.status.FetchLatest();
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle)
+          shoot_action.goal->shot_angle +
+          SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
           .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
@@ -40,6 +51,22 @@ void ShootAction::RunAction() {
       // TODO(james): Get realer numbers for shooter_action.
       break;
     }
+
+	// update the claw position to track velocity
+	// TODO(ben): the claw may never reach the goal if the velocity is 
+	// continually changing, we will need testing to see
+    control_loops::drivetrain.status.FetchLatest();
+    if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
+            shoot_action.goal->shot_angle +
+            SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
+            .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
+      LOG(WARNING, "sending claw goal failed\n");
+      return;
+    } else {
+      LOG(INFO, "Updating claw angle for velocity offset(%.4f).\n",
+          SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed));
+	}
+
 
     // Wait until we have a new status.
     control_loops::shooter_queue_group.status.FetchNextBlocking();

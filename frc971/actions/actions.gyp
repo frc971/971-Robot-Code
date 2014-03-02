@@ -43,6 +43,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
       ],
     },
     {
