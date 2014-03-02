@@ -9,14 +9,14 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/othersensors.q.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/actions/shoot_action.q.h"
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::sensors::gyro;
+using ::frc971::sensors::othersensors;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -224,12 +224,12 @@ class Reader : public ::aos::input::JoystickInput {
       static double filtered_goal_distance = 0.0;
       if (data.PosEdge(kDriveControlLoopEnable1) ||
           data.PosEdge(kDriveControlLoopEnable2)) {
-        if (drivetrain.position.FetchLatest() && gyro.FetchLatest()) {
+        if (drivetrain.position.FetchLatest() && othersensors.FetchLatest()) {
           distance = (drivetrain.position->left_encoder +
                       drivetrain.position->right_encoder) /
                          2.0 -
                      throttle * kThrottleGain / 2.0;
-          angle = gyro->angle;
+          angle = othersensors->gyro_angle;
           filtered_goal_distance = distance;
         }
       }

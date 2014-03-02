@@ -12,7 +12,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/othersensors.q.h"
 
 
 using ::aos::time::Time;
@@ -133,7 +133,7 @@ class DrivetrainTest : public ::testing::Test {
         .reader_pid(254)
         .cape_resets(5)
         .Send();
-    ::frc971::sensors::gyro.Clear();
+    ::frc971::sensors::othersensors.Clear();
     SendDSPacket(true);
   }
 
@@ -157,7 +157,7 @@ class DrivetrainTest : public ::testing::Test {
 
   virtual ~DrivetrainTest() {
     ::aos::robot_state.Clear();
-    ::frc971::sensors::gyro.Clear();
+    ::frc971::sensors::othersensors.Clear();
     ::bbb::sensor_generation.Clear();
   }
 };

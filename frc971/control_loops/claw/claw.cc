@@ -36,7 +36,8 @@
 // correct side of the zero and go zero.
 
 // Valid region plan.
-// Difference between the arms has a range, and the values of each arm has a range.
+// Difference between the arms has a range, and the values of each arm has a
+// range.
 // If a claw runs up against a static limit, don't let the goal change outside
 // the limit.
 // If a claw runs up against a movable limit, move both claws outwards to get
@@ -196,13 +197,13 @@ bool ZeroedStateFeedbackLoop::SawFilteredPosedge(
   if (posedge_filter_ == nullptr && this_sensor.posedge_count_changed() &&
       !sensorA.posedge_count_changed() && !sensorB.posedge_count_changed() &&
       this_sensor.value() && !this_sensor.last_value()) {
-   posedge_filter_ = &this_sensor;
+    posedge_filter_ = &this_sensor;
   } else if (posedge_filter_ == &this_sensor &&
              !this_sensor.posedge_count_changed() &&
              !sensorA.posedge_count_changed() &&
              !sensorB.posedge_count_changed() && this_sensor.value()) {
     posedge_filter_ = nullptr;
-	return true;
+    return true;
   } else if (posedge_filter_ == &this_sensor) {
     posedge_filter_ = nullptr;
   }
@@ -221,7 +222,7 @@ bool ZeroedStateFeedbackLoop::SawFilteredNegedge(
              !sensorA.negedge_count_changed() &&
              !sensorB.negedge_count_changed() && !this_sensor.value()) {
     negedge_filter_ = nullptr;
-	return true;
+    return true;
   } else if (negedge_filter_ == &this_sensor) {
     negedge_filter_ = nullptr;
   }
@@ -237,7 +238,7 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredPosedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_off_angle_ == max_hall_effect_off_angle_) {
-	  LOG(INFO, "%s: Uncertain which side, rejecting posedge\n", name_);
+      LOG(INFO, "%s: Uncertain which side, rejecting posedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_off_angle_ + max_hall_effect_off_angle_) / 2.0;
@@ -259,7 +260,7 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredNegedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_on_angle_ == max_hall_effect_on_angle_) {
-	  LOG(INFO, "%s: Uncertain which side, rejecting negedge\n", name_);
+      LOG(INFO, "%s: Uncertain which side, rejecting negedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_on_angle_ + max_hall_effect_on_angle_) / 2.0;
@@ -285,16 +286,16 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
     const constants::Values::Claws::Claw &claw_values, double *edge_encoder,
     double *edge_angle) {
-  if (DoGetPositionOfEdge(claw_values.front, edge_encoder, edge_angle,
-                          front_, calibration_, back_, "front")) {
+  if (DoGetPositionOfEdge(claw_values.front, edge_encoder, edge_angle, front_,
+                          calibration_, back_, "front")) {
     return true;
   }
   if (DoGetPositionOfEdge(claw_values.calibration, edge_encoder, edge_angle,
                           calibration_, front_, back_, "calibration")) {
     return true;
   }
-  if (DoGetPositionOfEdge(claw_values.back, edge_encoder, edge_angle,
-                          back_, calibration_, front_, "back")) {
+  if (DoGetPositionOfEdge(claw_values.back, edge_encoder, edge_angle, back_,
+                          calibration_, front_, "back")) {
     return true;
   }
   return false;
@@ -471,9 +472,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
     mode_ = READY;
   } else if (top_claw_.zeroing_state() !=
-                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
+             ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
              bottom_claw_.zeroing_state() !=
-                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+             ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
     // Time to fine tune the zero.
     // Limit the goals here.
     if (!enabled) {
@@ -515,10 +516,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           mode_ = PREP_FINE_TUNE_BOTTOM;
         }
 
-        if (position &&
-            bottom_claw_.SawFilteredPosedge(
-                bottom_claw_.calibration(),
-                bottom_claw_.front(), bottom_claw_.back())) {
+        if (position && bottom_claw_.SawFilteredPosedge(
+                            bottom_claw_.calibration(), bottom_claw_.front(),
+                            bottom_claw_.back())) {
           // do calibration
           bottom_claw_.SetCalibration(
               position->bottom.posedge_value,
@@ -588,7 +588,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
           mode_ = PREP_FINE_TUNE_TOP;
-		}
+        }
       }
       // now set the bottom claw to track
       bottom_claw_goal_ = top_claw_goal_ - values.claw.claw_zeroing_separation;
@@ -691,8 +691,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case UNKNOWN_LOCATION: {
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
         double dx = (claw_.uncapped_average_voltage() -
-                     values.claw.max_zeroing_voltage) /
-                    claw_.K(0, 0);
+                     values.claw.max_zeroing_voltage) / claw_.K(0, 0);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         capped_goal_ = true;
@@ -704,8 +703,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
         double dx = (claw_.uncapped_average_voltage() +
-                     values.claw.max_zeroing_voltage) /
-                    claw_.K(0, 0);
+                     values.claw.max_zeroing_voltage) / claw_.K(0, 0);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         capped_goal_ = true;
@@ -717,14 +715,17 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (output) {
     if (goal) {
       //setup the intake
-      output->intake_voltage = (goal->intake > 12.0) ? 12 :
-	  	  (goal->intake < -12.0) ? -12.0 : goal->intake;
+      output->intake_voltage =
+          (goal->intake > 12.0) ? 12 : (goal->intake < -12.0) ? -12.0
+                                                              : goal->intake;
       output->tusk_voltage = goal->centering;
-      output->tusk_voltage = (goal->centering > 12.0) ? 12 :
-	  	  (goal->centering < -12.0) ? -12.0 : goal->centering;
+      output->tusk_voltage =
+          (goal->centering > 12.0) ? 12 : (goal->centering < -12.0)
+              ? -12.0
+              : goal->centering;
     }
     output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
-    output->bottom_claw_voltage =  claw_.U(0, 0);
+    output->bottom_claw_voltage = claw_.U(0, 0);
 
     if (output->top_claw_voltage > kMaxVoltage) {
       output->top_claw_voltage = kMaxVoltage;
@@ -743,9 +744,13 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.005;
   bool separation_done =
       ::std::abs((top_absolute_position() - bottom_absolute_position()) -
-                 goal->separation_angle) <
-      0.005;
+                 goal->separation_angle) < 0.005;
+  bool separation_done_with_ball =
+      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                 goal->separation_angle) < 0.06;
   status->done = is_ready() && separation_done && bottom_done;
+  status->done_with_ball =
+      is_ready() && separation_done_with_ball && bottom_done;
 
   status->bottom = bottom_absolute_position();
   status->separation = top_absolute_position() - bottom_absolute_position();
@@ -757,3 +762,4 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
 }  // namespace control_loops
 }  // namespace frc971
+

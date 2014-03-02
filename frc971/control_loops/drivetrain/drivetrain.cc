@@ -15,10 +15,10 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/othersensors.q.h"
 #include "frc971/constants.h"
 
-using frc971::sensors::gyro;
+using frc971::sensors::othersensors;
 
 namespace frc971 {
 namespace control_loops {
@@ -632,9 +632,9 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   if (!bad_pos) {
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
-    if (gyro.FetchLatest()) {
-      LOG_STRUCT(DEBUG, "using", *gyro);
-      dt_closedloop.SetPosition(left_encoder, right_encoder, gyro->angle,
+    if (othersensors.FetchLatest()) {
+      LOG(DEBUG, "using %.3f", othersensors->gyro_angle);
+      dt_closedloop.SetPosition(left_encoder, right_encoder, othersensors->gyro_angle,
                                 control_loop_driving);
     } else {
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
