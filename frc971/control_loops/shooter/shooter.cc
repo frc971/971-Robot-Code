@@ -144,6 +144,11 @@ double ShooterMotor::PowerToPosition(double power) {
   return new_pos;
 }
 
+double ShooterMotor::PositionToPower(double position) {
+  double power = kSpringConstant * position * (kMaxExtension - position / 2.0);
+  return power;
+}
+
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
     const control_loops::ShooterGroup::Goal *goal,
@@ -569,6 +574,8 @@ void ShooterMotor::RunIteration(
     shooter_.ZeroPower();
     if (output) output->voltage = 0.0;
   }
+
+  status->hard_stop_power = PowerToPosition(shooter_.absolute_position());
 
   if (output) {
     output->latch_piston = latch_piston_;

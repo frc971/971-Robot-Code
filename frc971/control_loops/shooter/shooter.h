@@ -125,6 +125,7 @@ class ShooterMotor
   bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
+  double PositionToPower(double position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
