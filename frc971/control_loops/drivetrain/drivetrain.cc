@@ -209,8 +209,6 @@ class PolyDrivetrain {
                  /*[*/ 12 /*]]*/).finished()),
         loop_(new StateFeedbackLoop<2, 2, 2>(
             constants::GetValues().make_v_drivetrain_loop())),
-        left_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
-        right_cim_(new StateFeedbackLoop<1, 1, 1>(MakeCIMLoop())),
         ttrust_(1.1),
         wheel_(0.0),
         throttle_(0.0),
@@ -467,7 +465,6 @@ class PolyDrivetrain {
       // shift.
       if (IsInGear(left_gear_)) {
         logging.left_in_gear = true;
-        left_cim_->X_hat(0, 0) = left_motor_speed;
       } else {
         logging.left_in_gear = false;
       }
@@ -475,7 +472,6 @@ class PolyDrivetrain {
       logging.left_velocity = current_left_velocity;
       if (IsInGear(right_gear_)) {
         logging.right_in_gear = true;
-        right_cim_->X_hat(0, 0) = right_motor_speed;
       } else {
         logging.right_in_gear = false;
       }
@@ -547,7 +543,7 @@ class PolyDrivetrain {
       R_right(0, 0) = right_motor_speed;
 
       const double wiggle =
-          (static_cast<double>((counter_ % 4) / 4.0) - 0.5) * 4.0;
+          (static_cast<double>((counter_ % 10) / 5) - 0.5) * 5.0;
 
       loop_->U(0, 0) = ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -12.0, 12.0);
       loop_->U(1, 0) = ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -12.0, 12.0);
@@ -567,8 +563,6 @@ class PolyDrivetrain {
   const ::aos::controls::HPolytope<2> U_Poly_;
 
   ::std::unique_ptr<StateFeedbackLoop<2, 2, 2>> loop_;
-  ::std::unique_ptr<StateFeedbackLoop<1, 1, 1>> left_cim_;
-  ::std::unique_ptr<StateFeedbackLoop<1, 1, 1>> right_cim_;
 
   const double ttrust_;
   double wheel_;

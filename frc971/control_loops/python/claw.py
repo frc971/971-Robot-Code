@@ -19,7 +19,7 @@ class Claw(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
     # approzimately 0.76 (without ball) in CAD
-    self.J = 0.80
+    self.J = 1.00
     # Resistance of the motor
     self.R = 12.0 / self.stall_current + 0.024 + .003
     # Motor velocity constant
@@ -76,8 +76,8 @@ class Claw(control_loop.ControlLoop):
     print "Placed controller poles"
     print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
-    self.rpl = .05
-    self.ipl = 0.008
+    self.rpl = .02
+    self.ipl = 0.004
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl,
                              self.rpl + 1j * self.ipl,

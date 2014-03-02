@@ -86,8 +86,37 @@ void ShootAction::RunAction() {
 
   // wait for record of shot having been fired
   if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
+}
 
-  // done with action
+bool ClawIsReady() {
+  control_loops::claw_queue_group.goal.FetchLatest();
+  control_loops::claw_queue_group.status.FetchLatest();
+  bool ans =
+      control_loops::claw_queue_group.status->zeroed &&
+      (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
+       0.5) &&
+      (::std::abs(control_loops::claw_queue_group.status->bottom -
+                  control_loops::claw_queue_group.goal->bottom_angle) < 0.02) &&
+      (::std::abs(control_loops::claw_queue_group.status->separation -
+                  control_loops::claw_queue_group.goal->separation_angle) <
+       0.2);
+  LOG(INFO, "Claw is ready %d\n", ans);
+  return ans;
+}
+
+bool ShooterIsReady() {
+  control_loops::shooter_queue_group.goal.FetchLatest();
+  control_loops::shooter_queue_group.status.FetchLatest();
+  LOG(INFO, "Power error is %f - %f -> %f, ready %d\n",
+      control_loops::shooter_queue_group.status->hard_stop_power,
+      control_loops::shooter_queue_group.goal->shot_power,
+      ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
+                 control_loops::shooter_queue_group.goal->shot_power),
+      control_loops::shooter_queue_group.status->ready);
+  return (::std::abs(
+              control_loops::shooter_queue_group.status->hard_stop_power -
+              control_loops::shooter_queue_group.goal->shot_power) < 0.1) &&
+         control_loops::shooter_queue_group.status->ready;
 }
 
 bool ShootAction::DoneSetupShot() {
@@ -99,10 +128,8 @@ bool ShootAction::DoneSetupShot() {
   }
   // Make sure that both the shooter and claw have reached the necessary
   // states.
-  if (control_loops::shooter_queue_group.status->ready &&
-      control_loops::claw_queue_group.status->done_with_ball) {
+  if (ShooterIsReady() && ClawIsReady()) {
     LOG(INFO, "Claw and Shooter ready for shooting.\n");
-    // TODO(james): Get realer numbers for shooter_action.
     return true;
   }
 
@@ -122,9 +149,6 @@ bool ShootAction::DoneSetupShot() {
     LOG(WARNING, "sending claw goal failed\n");
     abort_ = true;
     return true;
-  //} else {
-    //LOG(INFO, "Updating claw angle for velocity offset(%.4f).\n",
-        //SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed));
   }
   return false;
 }

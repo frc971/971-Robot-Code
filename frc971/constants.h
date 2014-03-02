@@ -22,7 +22,7 @@ struct ShifterHallEffect {
   double high_gear_high, high_gear_middle;
 
   // The numbers for when the dog is clear of each gear.
-  double clear_high, clear_low;
+  double clear_low, clear_high;
 };
 
 // This structure contains current values for all of the things that change.
