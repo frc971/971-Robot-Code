@@ -185,11 +185,11 @@ class Reader : public ::aos::input::JoystickInput {
       CancelAllActions();
       ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
           .shot_power(160.0).shot_angle(kLongShotGoal.angle).Send();
-    } else if (data.IsPressed(kMediumShot)) {
+    } else if (data.PosEdge(kMediumShot)) {
       CancelAllActions();
       ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
           .shot_power(100.0).shot_angle(kMediumShotGoal.angle).Send();
-    } else if (data.IsPressed(kShortShot)) {
+    } else if (data.PosEdge(kShortShot)) {
       CancelAllActions();
       ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
           .shot_power(70.0).shot_angle(kShortShotGoal.angle).Send();
