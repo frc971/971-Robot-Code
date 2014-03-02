@@ -60,6 +60,131 @@ const ClawGoal kLongShotGoal = {-M_PI / 2.0 + 0.43, 0.10};
 const ClawGoal kMediumShotGoal = {-0.9, 0.10};
 const ClawGoal kShortShotGoal = {-0.04, 0.11};
 
+class Action {
+ public:
+  // Cancels the action.
+  void Cancel() { DoCancel(); }
+  // Returns true if the action is currently running.
+  bool Running() { return DoRunning(); }
+  // Starts the action.
+  void Start() { DoStart(); }
+
+ private:
+  virtual void DoCancel() = 0;
+  virtual bool DoRunning() = 0;
+  virtual void DoStart() = 0;
+};
+
+// Templated subclass to hold the type information.
+template <typename T>
+class TypedAction : public Action {
+ public:
+  typedef typename std::remove_reference<
+      decltype(*(static_cast<T *>(NULL)->goal.MakeMessage().get()))>::type
+        GoalType;
+
+  TypedAction(T *queue_group)
+      : queue_group_(queue_group),
+        goal_(queue_group_->goal.MakeMessage()),
+        has_seen_response_(false) {}
+
+  // Returns the current goal that will be sent when the action is sent.
+  GoalType *GetGoal() { return goal_.get(); }
+
+ private:
+  // Cancels the action.
+  virtual void DoCancel() { queue_group_->goal.MakeWithBuilder().run(false).Send(); }
+
+  // Returns true if the action is running or we don't have an initial response
+  // back from it to signal whether or not it is running.
+  virtual bool DoRunning() {
+    if (has_seen_response_) {
+      queue_group_->status.FetchLatest();
+    } else if (queue_group_->status.FetchLatest()) {
+      has_seen_response_ = true;
+    }
+    return !has_seen_response_ ||
+           (queue_group_->status.get() && queue_group_->status->running);
+  }
+
+  // Starts the action if a goal has been created.
+  virtual void DoStart() {
+    if (goal_) {
+      goal_->run = true;
+      goal_.Send();
+      has_seen_response_ = false;
+    } else {
+      has_seen_response_ = true;
+    }
+  }
+
+  T *queue_group_;
+  ::aos::ScopedMessagePtr<GoalType> goal_;
+  // Track if we have seen a response to the start message.
+  // If we haven't, we are considered running regardless.
+  bool has_seen_response_;
+};
+
+// Makes a new ShootAction action.
+::std::unique_ptr<TypedAction< ::frc971::actions::ShootActionQueueGroup>>
+MakeShootAction() {
+  return ::std::unique_ptr<
+      TypedAction< ::frc971::actions::ShootActionQueueGroup>>(
+      new TypedAction< ::frc971::actions::ShootActionQueueGroup>(
+          &::frc971::actions::shoot_action));
+}
+
+// A queue which queues Actions and cancels them.
+class ActionQueue {
+ public:
+  // Queues up an action for sending.
+  void QueueAction(::std::unique_ptr<Action> action) {
+    if (current_action_) {
+      current_action_->Cancel();
+      next_action_ = ::std::move(action);
+    } else {
+      current_action_ = ::std::move(action);
+      current_action_->Start();
+    }
+  }
+
+  // Cancels the current action, and runs the next one when the current one has
+  // finished.
+  void CancelCurrentAction() {
+    if (current_action_) {
+      current_action_->Cancel();
+    }
+  }
+
+  // Cancels all running actions.
+  void CancelAllActions() {
+    if (current_action_) {
+      current_action_->Cancel();
+    }
+    next_action_.reset();
+  }
+
+  // Runs the next action when the current one is finished running.
+  void Tick() {
+    if (current_action_) {
+      if (!current_action_->Running()) {
+        if (next_action_) {
+          current_action_ = ::std::move(next_action_);
+          current_action_->Start();
+        }
+      }
+    }
+  }
+
+  // Returns true if any action is running or could be running.
+  // For a one cycle faster response, call Tick before running this.
+  bool Running() { return (bool)current_action_; }
+
+ private:
+  ::std::unique_ptr<Action> current_action_;
+  ::std::unique_ptr<Action> next_action_;
+};
+
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
@@ -69,7 +194,6 @@ class Reader : public ::aos::input::JoystickInput {
         separation_angle_(0.0) {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
-
     if (data.GetControlBit(ControlBit::kAutonomous)) {
       if (data.PosEdge(ControlBit::kEnabled)){
         LOG(INFO, "Starting auto mode\n");
@@ -154,45 +278,72 @@ class Reader : public ::aos::input::JoystickInput {
     separation_angle_ = goal.separation;
   }
 
-  // cycle throught all known actions and if they are running
-  // cancel them all.
-  // TODO(ben): make this more generic and s.t. we can only
-  // cancel if we need those exact resources (ie claw shooter drivetrain)
-  void CancelAllActions() {
-    frc971::actions::shoot_action.status
-        .FetchLatest();
-	while (::frc971::actions::shoot_action.status->running) {
-      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(false);
-      ::frc971::actions::shoot_action.status.FetchLatest();
-    }
-  }
-
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
     HandleDrivetrain(data);
 
     if (data.IsPressed(kIntakeOpenPosition)) {
-      CancelAllActions();
+      action_queue_.CancelAllActions();
       SetGoal(kIntakeOpenGoal);
     } else if (data.IsPressed(kIntakePosition)) {
-      CancelAllActions();
+      action_queue_.CancelAllActions();
       SetGoal(kIntakeGoal);
     } else if (data.IsPressed(kTuck)) {
-      CancelAllActions();
+      action_queue_.CancelAllActions();
       SetGoal(kTuckGoal);
     }
 
     if (data.PosEdge(kLongShot)) {
-      CancelAllActions();
-      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
-          .shot_power(160.0).shot_angle(kLongShotGoal.angle).Send();
+      auto shoot_action = MakeShootAction();
+
+      shot_power_ = 160.0;
+      shoot_action->GetGoal()->shot_power = shot_power_;
+      shoot_action->GetGoal()->shot_angle = kLongShotGoal.angle;
+      SetGoal(kLongShotGoal);
+
+      action_queue_.QueueAction(::std::move(shoot_action));
     } else if (data.PosEdge(kMediumShot)) {
-      CancelAllActions();
-      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
-          .shot_power(100.0).shot_angle(kMediumShotGoal.angle).Send();
+      auto shoot_action = MakeShootAction();
+
+      shot_power_ = 100.0;
+      shoot_action->GetGoal()->shot_power = shot_power_;
+      shoot_action->GetGoal()->shot_angle = kMediumShotGoal.angle;
+      SetGoal(kMediumShotGoal);
+
+      action_queue_.QueueAction(::std::move(shoot_action));
     } else if (data.PosEdge(kShortShot)) {
-      CancelAllActions();
-      ::frc971::actions::shoot_action.goal.MakeWithBuilder().run(true)
-          .shot_power(70.0).shot_angle(kShortShotGoal.angle).Send();
+      auto shoot_action = MakeShootAction();
+
+      shot_power_ = 70.0;
+      shoot_action->GetGoal()->shot_power = shot_power_;
+      shoot_action->GetGoal()->shot_angle = kShortShotGoal.angle;
+      SetGoal(kShortShotGoal);
+
+      action_queue_.QueueAction(::std::move(shoot_action));
+    }
+
+    action_queue_.Tick();
+
+    // Send out the claw and shooter goals if no actions are running.
+    if (!action_queue_.Running()) {
+      if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+               .bottom_angle(goal_angle_)
+               .separation_angle(separation_angle_)
+               .intake(data.IsPressed(kRollersIn)
+                           ? 12.0
+                           : (data.IsPressed(kRollersOut) ? -12.0 : 0.0))
+               .centering(data.IsPressed(kRollersIn) ? 12.0 : 0.0)
+               .Send()) {
+        LOG(WARNING, "sending claw goal failed\n");
+      }
+
+      if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
+               .shot_power(shot_power_)
+               .shot_requested(data.IsPressed(kFire))
+               .unload_requested(data.IsPressed(kUnload))
+               .load_requested(data.IsPressed(kReload))
+               .Send()) {
+        LOG(WARNING, "sending shooter goal failed\n");
+      }
     }
   }
 
@@ -201,6 +352,8 @@ class Reader : public ::aos::input::JoystickInput {
   double shot_power_;
   double goal_angle_;
   double separation_angle_;
+  
+  ActionQueue action_queue_;
 };
 
 }  // namespace joysticks
