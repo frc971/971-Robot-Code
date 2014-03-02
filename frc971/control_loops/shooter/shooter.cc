@@ -151,6 +151,11 @@ void ShooterMotor::RunIteration(
     control_loops::ShooterGroup::Status *status) {
   constexpr double dt = 0.01;
 
+  if (::std::isnan(goal->shot_power)) {
+	  state_ = STATE_ESTOP;
+    LOG(ERROR, "Got a shot power of NAN.\n");
+  }
+
   // we must always have these or we have issues.
   if (goal == NULL || status == NULL) {
     if (output) output->voltage = 0;
