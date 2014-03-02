@@ -12,7 +12,7 @@ namespace bbb {
 GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
     : bank_(bank), pin_(pin), kernel_pin_(bank * 32 + pin) {
   // Export the pin.
-  FILE *export_handle = fopen("/sys/class/gpio/export", "a");
+  FILE *export_handle = fopen("/sys/class/gpio/export", "w");
   if (export_handle == NULL) {
     LOG(WARNING,
         "Could not open file to export pin (%d,%d) because of %d: %s.\n",
@@ -35,7 +35,7 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
 
   FILE *direction_handle = fopen(direction_path, "w");
   if (direction_handle == NULL) {
-    LOG(FATAL, "fopen(%s, \"w+\") failed with %d: %s\n",
+    LOG(FATAL, "fopen(%s, \"w\") failed with %d: %s\n",
         direction_path, errno, strerror(errno));
   }
 
@@ -54,7 +54,7 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
            "/sys/class/gpio/gpio%d/value", kernel_pin_);
   value_handle_ = fopen(value_path, "w+");
   if (value_handle_ == NULL) {
-    LOG(FATAL, "fopen(%s, \"rw\") failed with %d: %s\n",
+    LOG(FATAL, "fopen(%s, \"w+\") failed with %d: %s\n",
         value_path, errno, strerror(errno));
   }
 }
