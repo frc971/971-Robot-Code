@@ -69,6 +69,8 @@ class Action {
   // Starts the action.
   void Start() { DoStart(); }
 
+  virtual ~Action() {}
+
  private:
   virtual void DoCancel() = 0;
   virtual bool DoRunning() = 0;
@@ -91,7 +93,7 @@ class TypedAction : public Action {
   // Returns the current goal that will be sent when the action is sent.
   GoalType *GetGoal() { return goal_.get(); }
 
-  ~TypedAction() {
+  virtual ~TypedAction() {
     LOG(INFO, "Calling destructor\n");
     DoCancel();
   }
