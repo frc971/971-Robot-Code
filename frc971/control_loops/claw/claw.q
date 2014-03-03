@@ -51,10 +51,23 @@ queue_group ClawGroup {
     double tusk_voltage;
   };
 
+  message Status {
+    // True if zeroed and within tolerance for separation and bottom angle.
+    bool done;
+    // True if zeroed and within tolerance for separation and bottom angle.
+	// seperation allowance much wider as a ball may be included
+    bool done_with_ball;
+    // Dump the values of the state matrix.
+    double bottom;
+    double bottom_velocity;
+    double separation;
+    double separation_velocity;
+  };
+
   queue Goal goal;
   queue Position position;
   queue Output output;
-  queue aos.control_loops.Status status;
+  queue Status status;
 };
 
 queue_group ClawGroup claw_queue_group;

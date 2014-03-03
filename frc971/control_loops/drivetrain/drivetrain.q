@@ -45,12 +45,13 @@ queue_group Drivetrain {
   message Output {
     float left_voltage;
     float right_voltage;
-	bool left_high;
-	bool right_high;
+    bool left_high;
+    bool right_high;
   };
 
   message Status {
     bool is_done;
+    double robot_speed;
   };
 
   queue Goal goal;

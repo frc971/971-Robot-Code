@@ -9,7 +9,7 @@
 #include "bbb/sensor_reader.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/othersensors.q.h"
 #include "frc971/constants.h"
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
@@ -20,7 +20,7 @@
 #endif
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::sensors::gyro;
+using ::frc971::sensors::othersensors;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
@@ -64,9 +64,21 @@ double battery_translate(uint16_t in) {
   return adc_translate(in) * kDividerBig / kDividerSmall;
 }
 
-double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
-  const double voltage = adc_translate(in);
-  return (voltage - k.low) / (k.high - k.low);
+double hall_translate(const constants::ShifterHallEffect &k, uint16_t in_low,
+                      uint16_t in_high) {
+  const double low_ratio =
+      0.5 * (in_low - static_cast<double>(k.low_gear_low)) /
+      static_cast<double>(k.low_gear_middle - k.low_gear_low);
+  const double high_ratio =
+      0.5 + 0.5 * (in_high - static_cast<double>(k.high_gear_middle)) /
+      static_cast<double>(k.high_gear_high - k.high_gear_middle);
+
+  // Return low when we are below 1/2, and high when we are above 1/2.
+  if (low_ratio + high_ratio < 1.0) {
+    return low_ratio;
+  } else {
+    return high_ratio;
+  }
 }
 
 double claw_translate(int32_t in) {
@@ -129,7 +141,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
   } else if (data->bad_gyro) {
     LOG(ERROR, "bad gyro\n");
     bad_gyro = true;
-    gyro.MakeWithBuilder().angle(0).Send();
+    othersensors.MakeWithBuilder().gyro_angle(0).Send();
   } else if (data->old_gyro_reading) {
     LOG(WARNING, "old/bad gyro reading\n");
     bad_gyro = true;
@@ -138,8 +150,8 @@ void PacketReceived(const ::bbb::DataStruct *data,
   }
 
   if (!bad_gyro) {
-    gyro.MakeWithBuilder()
-        .angle(gyro_translate(data->gyro_angle))
+    othersensors.MakeWithBuilder()
+        .gyro_angle(gyro_translate(data->gyro_angle))
         .Send();
   }
 
@@ -147,9 +159,11 @@ void PacketReceived(const ::bbb::DataStruct *data,
       .right_encoder(drivetrain_translate(data->main.right_drive))
       .left_encoder(-drivetrain_translate(data->main.left_drive))
       .left_shifter_position(hall_translate(constants::GetValues().left_drive,
-                                            data->main.left_drive_hall))
-      .right_shifter_position(hall_translate(
-              constants::GetValues().right_drive, data->main.right_drive_hall))
+                                            data->main.low_left_drive_hall,
+                                            data->main.high_left_drive_hall))
+      .right_shifter_position(hall_translate(constants::GetValues().right_drive,
+                                             data->main.low_right_drive_hall,
+                                             data->main.high_right_drive_hall))
       .battery_voltage(battery_translate(data->main.battery_voltage))
       .Send();
 

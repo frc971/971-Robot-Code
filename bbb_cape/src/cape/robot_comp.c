@@ -117,8 +117,10 @@ void robot_init(void) {
 void robot_fill_packet(struct DataStruct *packet) {
   packet->main.left_drive = encoder_read(6);
   packet->main.right_drive = encoder_read(5);
-  packet->main.left_drive_hall = analog_get(7);
-  packet->main.right_drive_hall = analog_get(0);
+  packet->main.low_left_drive_hall = analog_get(7);
+  packet->main.low_right_drive_hall = analog_get(0);
+  packet->main.high_left_drive_hall = analog_get(6);
+  packet->main.high_right_drive_hall = analog_get(1);
 
   packet->main.ultrasonic_pulse_length = ultrasonic_pulse_length;
 

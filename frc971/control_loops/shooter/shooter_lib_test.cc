@@ -186,10 +186,6 @@ class ShooterSimulation {
                latch_piston_state_ && latch_delay_count_ >= 0) {
       ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
       latch_delay_count_ = -6;
-      if (GetAbsolutePosition() > 0.01) {
-        EXPECT_GE(last_voltage_, 1)
-            << ": Must preload the gearbox when firing.";
-      }
     }
 
     if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
@@ -397,16 +393,12 @@ TEST_F(ShooterTest, Fire) {
       .shot_requested(true)
       .Send();
 
-  bool hit_preparefire = false;
   bool hit_fire = false;
   for (int i = 0; i < 400; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
-    if (shooter_motor_.state() == ShooterMotor::STATE_PREPARE_FIRE) {
-      hit_preparefire = true;
-    }
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
         shooter_queue_group_.goal.MakeWithBuilder()
@@ -423,7 +415,6 @@ TEST_F(ShooterTest, Fire) {
       shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  EXPECT_TRUE(hit_preparefire);
   EXPECT_TRUE(hit_fire);
 }
 
@@ -439,16 +430,12 @@ TEST_F(ShooterTest, FireLong) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().shot_requested(true).Send();
 
-  bool hit_preparefire = false;
   bool hit_fire = false;
   for (int i = 0; i < 400; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SendDSPacket(true);
-    if (shooter_motor_.state() == ShooterMotor::STATE_PREPARE_FIRE) {
-      hit_preparefire = true;
-    }
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
         shooter_queue_group_.goal.MakeWithBuilder()
@@ -462,7 +449,6 @@ TEST_F(ShooterTest, FireLong) {
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power), pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  EXPECT_TRUE(hit_preparefire);
   EXPECT_TRUE(hit_fire);
 }
 

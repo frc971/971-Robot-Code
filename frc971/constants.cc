@@ -31,11 +31,11 @@ const double kPracticeDrivetrainEncoderRatio =
 const double kPracticeLowGearRatio = 16.0 / 60.0 * 19.0 / 50.0;
 const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
 
-const ShifterHallEffect kCompLeftDriveShifter{0.83, 2.32, 1.2, 1.0};
-const ShifterHallEffect kCompRightDriveShifter{0.865, 2.375, 1.2, 1.0};
+const ShifterHallEffect kCompRightDriveShifter{525, 635, 603, 529, 0.3, 0.7};
+const ShifterHallEffect kCompLeftDriveShifter{525, 645, 620, 533, 0.3, 0.7};
 
-const ShifterHallEffect kPracticeRightDriveShifter{2.575, 3.16, 0.98, 0.40};
-const ShifterHallEffect kPracticeLeftDriveShifter{2.57, 3.15, 0.98, 0.4};
+const ShifterHallEffect kPracticeRightDriveShifter{550, 640, 635, 550, 0.2, 0.7};
+const ShifterHallEffect kPracticeLeftDriveShifter{540, 620, 640, 550, 0.2, 0.7};
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
 
@@ -70,7 +70,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
-          }
+          },
+          {0.07, 0.15}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     case kCompTeamNumber:
@@ -102,7 +105,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.01,  // claw_unimportant_epsilon
            0.9,   // start_fine_tune_pos
            4.0,
-          }
+          },
+          //TODO(james): Get realer numbers for shooter_action.
+          {0.07, 0.15}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     case kPracticeTeamNumber:
@@ -116,7 +123,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           control_loops::MakeVDogDrivetrainLoop,
           control_loops::MakeDogDrivetrainLoop,
           // ShooterLimits
-          // TODO(ben): make these real numbers
           {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
            {-0.002, 0.000446, -0.002, 0.000446},
            {-0.002, 0.009078, -0.002, 0.009078},
@@ -136,7 +142,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.020000 * 2.0,  // claw_unimportant_epsilon
           -0.200000 * 2.0,   // start_fine_tune_pos
           4.000000,
-          }
+          },
+          //TODO(james): Get realer numbers for shooter_action.
+          {0.07, 0.15}, // shooter_action
+          0.02, // drivetrain done delta
+          5.0 // drivetrain max speed
       };
       break;
     default:

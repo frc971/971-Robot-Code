@@ -13,6 +13,7 @@
         '../control_loops/shooter/shooter.gyp:shooter',
         '../control_loops/shooter/shooter.gyp:shooter_lib_test',
         '../autonomous/autonomous.gyp:auto',
+        '../actions/actions.gyp:shoot_action',
         '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',

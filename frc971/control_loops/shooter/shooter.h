@@ -134,7 +134,6 @@ class ShooterMotor
     STATE_LOADING_PROBLEM = 4,
     STATE_PREPARE_SHOT = 5,
     STATE_READY = 6,
-    STATE_PREPARE_FIRE = 7,
     STATE_FIRE = 8,
     STATE_UNLOAD = 9,
     STATE_UNLOAD_MOVE = 10,
@@ -181,13 +180,9 @@ class ShooterMotor
 
   // wait for brake to set
   Time shooter_brake_set_time_;
-  
+
   // The timeout for unloading.
   Time unload_timeout_;
-
-  // we are attempting to take up some of the backlash
-  // in the gears before the plunger hits
-  Time prepare_fire_end_time_;
 
   // time that shot must have completed
   Time shot_end_time_;
@@ -202,6 +197,7 @@ class ShooterMotor
   bool brake_piston_;
   int32_t last_distal_posedge_count_;
   int32_t last_proximal_posedge_count_;
+  uint32_t shot_count_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

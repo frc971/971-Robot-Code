@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "aos/common/control_loop/control_loops.q.h"
-#include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 
 #include "frc971/constants.h"
@@ -111,9 +110,9 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
       load_timeout_(0, 0),
       shooter_brake_set_time_(0, 0),
       unload_timeout_(0, 0),
-      prepare_fire_end_time_(0, 0),
       shot_end_time_(0, 0),
-      cycles_not_moved_(0) {}
+      cycles_not_moved_(0),
+      shot_count_(0) {}
 
 double ShooterMotor::PowerToPosition(double power) {
   const frc971::constants::Values &values = constants::GetValues();
@@ -153,12 +152,18 @@ void ShooterMotor::RunIteration(
     control_loops::ShooterGroup::Status *status) {
   constexpr double dt = 0.01;
 
+  if (::std::isnan(goal->shot_power)) {
+	  state_ = STATE_ESTOP;
+    LOG(ERROR, "Got a shot power of NAN.\n");
+  }
+
   // we must always have these or we have issues.
   if (goal == NULL || status == NULL) {
     if (output) output->voltage = 0;
     LOG(ERROR, "Thought I would just check for null and die.\n");
     return;
   }
+  status->ready = false;
 
   if (reset()) {
     state_ = STATE_INITIALIZE;
@@ -175,10 +180,6 @@ void ShooterMotor::RunIteration(
 
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
-
-  // Adds voltage to take up slack in gears before shot.
-  bool apply_some_voltage = false;
-
 
   const bool disabled = !::aos::robot_state->enabled;
   // If true, move the goal if we saturate.
@@ -403,6 +404,7 @@ void ShooterMotor::RunIteration(
       // Wait until the brake is set, and a shot is requested or the shot power
       // is changed.
       if (Time::Now() > shooter_brake_set_time_) {
+        status->ready = true;
         // We have waited long enough for the brake to set, turn the shooter
         // control loop off.
         shooter_loop_disable = true;
@@ -410,9 +412,9 @@ void ShooterMotor::RunIteration(
         if (goal->shot_requested && !disabled) {
           LOG(DEBUG, "Shooting now\n");
           shooter_loop_disable = true;
-          prepare_fire_end_time_ = Time::Now() + kPrepareFireEndTime;
-          apply_some_voltage = true;
-          state_ = STATE_PREPARE_FIRE;
+          shot_end_time_ = Time::Now() + kShotEndTimeout;
+          firing_starting_position_ = shooter_.absolute_position();
+          state_ = STATE_FIRE;
         }
       }
       if (state_ == STATE_READY &&
@@ -422,6 +424,7 @@ void ShooterMotor::RunIteration(
 
         // TODO(austin): Do we want to set the brake here or after shooting?
         // Depends on air usage.
+        status->ready = false;
         LOG(DEBUG, "Preparing shot again.\n");
         state_ = STATE_PREPARE_SHOT;
       }
@@ -434,29 +437,6 @@ void ShooterMotor::RunIteration(
       if (goal->unload_requested) {
         Unload();
       }
-      break;
-
-    case STATE_PREPARE_FIRE:
-      // Apply a bit of voltage to bias the gears for a little bit of time, and
-      // then fire.
-      shooter_loop_disable = true;
-      if (disabled) {
-        // If we are disabled, reset the backlash bias timer.
-        prepare_fire_end_time_ = Time::Now() + kPrepareFireEndTime;
-        break;
-      }
-      if (Time::Now() > prepare_fire_end_time_) {
-        cycles_not_moved_ = 0;
-        firing_starting_position_ = shooter_.absolute_position();
-        shot_end_time_ = Time::Now() + kShotEndTimeout;
-        state_ = STATE_FIRE;
-        latch_piston_ = false;
-      } else {
-        apply_some_voltage = true;
-        latch_piston_ = true;
-      }
-
-      brake_piston_ = true;
       break;
 
     case STATE_FIRE:
@@ -486,6 +466,7 @@ void ShooterMotor::RunIteration(
            cycles_not_moved_ > 3) ||
           Time::Now() > shot_end_time_) {
         state_ = STATE_REQUEST_LOAD;
+        ++shot_count_;
       }
       latch_piston_ = false;
       brake_piston_ = true;
@@ -562,7 +543,7 @@ void ShooterMotor::RunIteration(
       if (goal->load_requested) {
         state_ = STATE_REQUEST_LOAD;
       }
-      // If we are ready to load again, 
+      // If we are ready to load again,
       shooter_loop_disable = true;
 
       latch_piston_ = false;
@@ -577,11 +558,7 @@ void ShooterMotor::RunIteration(
       break;
   }
 
-  if (apply_some_voltage) {
-    shooter_.Update(true);
-    shooter_.ZeroPower();
-    if (output) output->voltage = 2.0;
-  } else if (!shooter_loop_disable) {
+  if (!shooter_loop_disable) {
     LOG(DEBUG, "Running the loop, goal is %f, position is %f\n",
         shooter_.goal_position(), shooter_.absolute_position());
     if (!cap_goal) {
@@ -603,22 +580,21 @@ void ShooterMotor::RunIteration(
     output->brake_piston = brake_piston_;
   }
 
-  status->done = ::std::abs(shooter_.absolute_position() -
-                            PowerToPosition(goal->shot_power)) < 0.004;
-
   if (position) {
     last_position_ = *position;
     LOG(DEBUG, "pos > absolute: %f velocity: %f state= %d l= %d pp= %d, pd= %d "
                "p= %d b=%d\n",
         shooter_.absolute_position(), shooter_.absolute_velocity(),
-		state_, position->latch, position->pusher_proximal.current,
-		position->pusher_distal.current,
-		position->plunger, brake_piston_); 
+        state_, position->latch, position->pusher_proximal.current,
+        position->pusher_distal.current,
+        position->plunger, brake_piston_);
   }
   if (position) {
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;
     last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
   }
+
+  status->shots = shot_count_;
 }
 
 }  // namespace control_loops

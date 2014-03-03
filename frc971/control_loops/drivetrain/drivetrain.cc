@@ -15,10 +15,10 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/othersensors.q.h"
 #include "frc971/constants.h"
 
-using frc971::sensors::gyro;
+using frc971::sensors::othersensors;
 
 namespace frc971 {
 namespace control_loops {
@@ -111,8 +111,34 @@ class DrivetrainMotorsSS {
     SetRawPosition(left, right);
   }
 
+  void SetExternalMotors(double left_voltage, double right_voltage) {
+    loop_->U << left_voltage, right_voltage;
+  }
+
   void Update(bool stop_motors) {
-    loop_->Update(stop_motors);
+    if (_control_loop_driving) {
+      loop_->Update(stop_motors);
+    } else {
+      if (stop_motors) {
+        loop_->U.setZero();
+        loop_->U_uncapped.setZero();
+      }
+      loop_->UpdateObserver();
+    }
+  }
+
+  double GetEstimatedRobotSpeed() {
+    // lets just call the average of left and right velocities close enough
+    return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
+  }
+  
+  double GetEstimatedLeftEncoder() {
+    // lets just call the average of left and right velocities close enough
+    return loop_->X_hat(0, 0);
+  }
+  
+  double GetEstimatedRightEncoder() {
+    return loop_->X_hat(2, 0);
   }
 
   void SendMotors(Drivetrain::Output *output) {
@@ -516,24 +542,15 @@ class PolyDrivetrain {
     } else {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
-      R_left(0, 0) = left_motor_speed;
-      const double wiggle =
-          (static_cast<double>((counter_ % 4) / 2) - 0.5) * 3.5;
-
-      loop_->U(0, 0) =
-          ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -position_.battery_voltage,
-                      position_.battery_voltage);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
-                          right_cim_->B() * loop_->U(0, 0);
-
       ::Eigen::Matrix<double, 1, 1> R_right;
+      R_left(0, 0) = left_motor_speed;
       R_right(0, 0) = right_motor_speed;
-      loop_->U(1, 0) =
-          ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -position_.battery_voltage,
-                      position_.battery_voltage);
-      right_cim_->X_hat = right_cim_->A() * right_cim_->X_hat +
-                          right_cim_->B() * loop_->U(1, 0);
-      loop_->U *= 12.0 / position_.battery_voltage;
+
+      const double wiggle =
+          (static_cast<double>((counter_ % 4) / 4.0) - 0.5) * 4.0;
+
+      loop_->U(0, 0) = ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -12.0, 12.0);
+      loop_->U(1, 0) = ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -12.0, 12.0);
     }
   }
 
@@ -581,7 +598,7 @@ constexpr double PolyDrivetrain::Kt;
 void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
                                   const Drivetrain::Position *position,
                                   Drivetrain::Output *output,
-                                  Drivetrain::Status * /*status*/) {
+                                  Drivetrain::Status * status) {
   // TODO(aschuh): These should be members of the class.
   static DrivetrainMotorsSS dt_closedloop;
   static PolyDrivetrain dt_openloop;
@@ -607,22 +624,43 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   if (!bad_pos) {
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
-    if (gyro.FetchLatest()) {
-      LOG_STRUCT(DEBUG, "using", *gyro);
-      dt_closedloop.SetPosition(left_encoder, right_encoder, gyro->angle,
+    if (othersensors.FetchLatest()) {
+      LOG(DEBUG, "using %.3f", othersensors->gyro_angle);
+      dt_closedloop.SetPosition(left_encoder, right_encoder, othersensors->gyro_angle,
                                 control_loop_driving);
     } else {
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
   }
   dt_openloop.SetPosition(position);
-  dt_closedloop.Update(output == NULL);
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
   dt_openloop.Update();
+
   if (control_loop_driving) {
+    dt_closedloop.Update(output == NULL);
     dt_closedloop.SendMotors(output);
   } else {
     dt_openloop.SendMotors(output);
+    if (output) {
+      dt_closedloop.SetExternalMotors(output->left_voltage,
+                                      output->right_voltage);
+    }
+    dt_closedloop.Update(output == NULL);
+  }
+  
+  // set the output status of the controll loop state
+  if (status) {
+    bool done = false;
+    if (goal) {
+      done = ((::std::abs(goal->left_goal -
+                          dt_closedloop.GetEstimatedLeftEncoder()) <
+               constants::GetValues().drivetrain_done_distance) &&
+              (::std::abs(goal->right_goal -
+                          dt_closedloop.GetEstimatedRightEncoder()) <
+               constants::GetValues().drivetrain_done_distance));
+    }
+    status->is_done = done;
+    status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
   }
 }
 
