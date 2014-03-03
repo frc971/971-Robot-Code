@@ -19,6 +19,7 @@ template <class T> class ActionBase {
 
   // runs action while enabled
   void Run() {
+    LOG(DEBUG, "Waiting for input to start\n");
     action_q_->goal.FetchLatest();
     while (!action_q_->goal.get()) {
       action_q_->goal.FetchNextBlocking();

@@ -48,7 +48,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
-          true,
+          false,
           control_loops::MakeVClutchDrivetrainLoop,
           control_loops::MakeClutchDrivetrainLoop,
           // ShooterLimits
@@ -83,7 +83,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
-          true,
+          false,
           control_loops::MakeVClutchDrivetrainLoop,
           control_loops::MakeClutchDrivetrainLoop,
           // ShooterLimits
