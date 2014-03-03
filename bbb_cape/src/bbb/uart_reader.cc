@@ -84,9 +84,6 @@ UartReader::UartReader(int32_t baud_rate)
     LOG(FATAL, "aos_uart_reader_set_tty_options(%d) failed with %d: %s\n",
         fd_, errno, strerror(errno));
   }
-
-  FD_ZERO(&fd_set_);
-  FD_SET(fd_, &fd_set_);
 }
 
 UartReader::~UartReader() {
@@ -99,7 +96,10 @@ ssize_t UartReader::ReadBytes(uint8_t *dest, size_t max_bytes,
     ::aos::time::Time timeout = timeout_time - ::aos::time::Time::Now();
     if (timeout < ::aos::time::Time(0, 0)) return -2;
     struct timeval timeout_timeval = timeout.ToTimeval();
-    switch (select(fd_ + 1, &fd_set_, NULL, NULL, &timeout_timeval)) {
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(fd_, &fds);
+    switch (select(fd_ + 1, &fds, NULL, NULL, &timeout_timeval)) {
       case 0:
         return -2;
       case -1:
