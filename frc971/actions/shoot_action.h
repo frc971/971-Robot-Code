@@ -16,7 +16,9 @@ class ShootAction : public ActionBase<actions::ShootActionQueueGroup> {
   // calc an offset to our requested shot based on robot speed
   double SpeedToAngleOffset(double speed);
 
-  static constexpr double kOffsetRadians = 0.2;
+  static constexpr double kOffsetRadians = 0.4;
+  static constexpr double kClawShootingSeparation = 0.10;
+  static constexpr double kClawShootingSeparationGoal = 0.10;
 
  protected:
   // completed shot
