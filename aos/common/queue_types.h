@@ -53,18 +53,18 @@ struct MessageType {
   }
 
   // How many (serialized) bytes the superclass takes up.
-  size_t super_size;
+  uint16_t super_size;
   // The type ID for this.
   uint32_t id;
   ::std::string name;
 
-  int number_fields;
+  uint16_t number_fields;
   const Field **fields;
 
  private:
   // Internal constructor for Deserialize to use.
-  MessageType(size_t super_size, uint32_t id, ::std::string &&name,
-              int number_fields, Field **fields)
+  MessageType(uint16_t super_size, uint32_t id, ::std::string &&name,
+              uint16_t number_fields, Field **fields)
       : super_size(super_size),
         id(id),
         name(name),

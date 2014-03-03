@@ -110,7 +110,7 @@ void LogFileAccessor::MapNextPage() {
            MAP_SHARED, fd_, offset_));
   if (current_ == MAP_FAILED) {
     LOG(FATAL,
-        "mmap(NULL, %zd, PROT_READ | PROT_WRITE, MAP_SHARED, %d, %jd)"
+        "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
         " failed with %d: %s. aborting\n",
         kPageSize, fd_, static_cast<intmax_t>(offset_), errno,
         strerror(errno));
