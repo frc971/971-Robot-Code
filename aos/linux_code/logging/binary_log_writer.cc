@@ -62,10 +62,10 @@ void CheckTypeWritten(uint32_t type_id, LogFileAccessor &writer) {
 
 void AllocateLogName(char **filename, const char *directory) {
   int fileindex = 0;
-  DIR* d;
+  DIR *d;
   if ((d = opendir(directory))) {
     int index = 0;
-    struct dirent* dir;
+    struct dirent *dir;
     while ((dir = readdir(d)) != NULL) {
       if (sscanf(dir->d_name, "aos_log-%d", &index) == 1) {
         if (index >= fileindex) {
@@ -75,26 +75,30 @@ void AllocateLogName(char **filename, const char *directory) {
     }
     closedir(d);
   } else {
-	  aos::Die("could not open directory %s because of %d (%s).",
-	  		  directory, errno, strerror(errno));
+    aos::Die("could not open directory %s because of %d (%s).\n", directory,
+             errno, strerror(errno));
   }
 
   char previous[512];
-  ::std::string path = ::std::string(directory)+"/aos_log-current";
-  ssize_t len = ::readlink(path.c_str(), previous, sizeof(previous) - 1);
+  ::std::string path = ::std::string(directory) + "/aos_log-current";
+  ssize_t len = ::readlink(path.c_str(), previous, sizeof(previous));
   if (len != -1) {
     previous[len] = '\0';
   } else {
-  	previous[0] = '\0';
-  	LOG(INFO, "Could not find aos_log-current\n");
-  	printf("Could not find aos_log-current\n");
+    previous[0] = '\0';
+    LOG(INFO, "Could not find aos_log-current\n");
+    printf("Could not find aos_log-current\n");
   }
   if (asprintf(filename, "%s/aos_log-%d", directory, fileindex) == -1) {
-	  aos::Die("BinaryLogReader: couldn't create final name because of %d (%s)."
-            " exiting\n", errno, strerror(errno));
+    aos::Die("couldn't create final name because of %d (%s)\n",
+             errno, strerror(errno));
   }
-  LOG(INFO, "Created log file (aos_log-%d) in directory (%s). Pervious file was (%s)\n", fileindex, directory, previous);
-  printf("Created log file (aos_log-%d) in directory (%s). Pervious file was (%s)\n", fileindex, directory, previous);
+  LOG(INFO, "Created log file (aos_log-%d) in directory (%s). Previous file "
+            "was (%s).\n",
+      fileindex, directory, previous);
+  printf("Created log file (aos_log-%d) in directory (%s). Previous file was "
+         "(%s).\n",
+         fileindex, directory, previous);
 }
 
 int BinaryLogReaderMain() {
