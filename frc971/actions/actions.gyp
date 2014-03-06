@@ -31,6 +31,21 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'catch_action_queue',
+      'type': 'static_library',
+      'sources': ['catch_action.q'],
+      'variables': {
+        'header_path': 'frc971/actions',
+      },
+      'dependencies': [
+        '<(AOS)/common/common.gyp:queues',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:queues',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
 	  'target_name': 'action',
       'type': 'static_library',
       'dependencies': [
@@ -80,6 +95,22 @@
       ],
     },
     {
+      'target_name': 'catch_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'catch_action.cc',
+      ],
+      'dependencies': [
+        'catch_action_queue',
+        'action',
+        '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/common.gyp:timing',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
+      ],
+    },
+    {
       'target_name': 'shoot_action',
       'type': 'executable',
       'sources': [
@@ -103,6 +134,19 @@
         'selfcatch_action_queue',
         'selfcatch_action_lib',
 		'action',
+      ],
+    },
+    {
+      'target_name': 'catch_action',
+      'type': 'executable',
+      'sources': [
+        'catch_action_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        'catch_action_queue',
+        'catch_action_lib',
+		    'action',
       ],
     },
   ],
