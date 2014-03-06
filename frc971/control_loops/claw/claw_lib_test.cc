@@ -311,6 +311,19 @@ class ClawTest : public ::testing::Test {
   }
 };
 
+TEST_F(ClawTest, HandlesNAN) {
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(::std::nan(""))
+      .separation_angle(::std::nan(""))
+      .Send();
+  for (int i = 0; i < 500; ++i) {
+    claw_motor_plant_.SendPositionMessage();
+    claw_motor_.Iterate();
+    claw_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+}
+
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ClawTest, ZerosCorrectly) {
   claw_queue_group.goal.MakeWithBuilder()

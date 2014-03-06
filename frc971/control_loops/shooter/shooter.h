@@ -66,7 +66,6 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
     Y << position + offset_ - kPositionOffset;
-    LOG(DEBUG, "Setting position to %f\n", position);
     Correct(Y);
   }
 
@@ -108,7 +107,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 };
 
 const Time kUnloadTimeout = Time::InSeconds(10);
-const Time kLoadTimeout = Time::InSeconds(10);
+const Time kLoadTimeout = Time::InSeconds(2);
 const Time kLoadProblemEndTimeout = Time::InSeconds(0.5);
 const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
 // Time to wait after releasing the latch piston before winching back again.
@@ -199,6 +198,11 @@ class ShooterMotor
   int32_t last_distal_posedge_count_;
   int32_t last_proximal_posedge_count_;
   uint32_t shot_count_;
+  bool zeroed_;
+  int distal_posedge_validation_cycles_left_;
+  int proximal_posedge_validation_cycles_left_;
+  bool last_distal_current_;
+  bool last_proximal_current_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

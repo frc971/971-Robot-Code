@@ -112,7 +112,12 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
       unload_timeout_(0, 0),
       shot_end_time_(0, 0),
       cycles_not_moved_(0),
-      shot_count_(0) {}
+      shot_count_(0),
+      zeroed_(false),
+      distal_posedge_validation_cycles_left_(0),
+      proximal_posedge_validation_cycles_left_(0),
+      last_distal_current_(true),
+      last_proximal_current_(true) {}
 
 double ShooterMotor::PowerToPosition(double power) {
   const frc971::constants::Values &values = constants::GetValues();
@@ -157,6 +162,11 @@ void ShooterMotor::RunIteration(
     control_loops::ShooterGroup::Status *status) {
   constexpr double dt = 0.01;
 
+  if (::std::isnan(goal->shot_power)) {
+	  state_ = STATE_ESTOP;
+    LOG(ERROR, "Got a shot power of NAN.\n");
+  }
+
   // we must always have these or we have issues.
   if (goal == NULL || status == NULL) {
     if (output) output->voltage = 0;
@@ -167,6 +177,8 @@ void ShooterMotor::RunIteration(
 
   if (reset()) {
     state_ = STATE_INITIALIZE;
+    last_distal_current_ = position->pusher_distal.current;
+    last_proximal_current_ = position->pusher_proximal.current;
   }
   if (position) {
     shooter_.CorrectPosition(position->position);
@@ -239,6 +251,7 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_REQUEST_LOAD:
       if (position) {
+        zeroed_ = false;
         if (position->pusher_distal.current ||
             position->pusher_proximal.current) {
           // We started on the sensor, back up until we are found.
@@ -306,18 +319,48 @@ void ShooterMotor::RunIteration(
       shooter_.SetGoalPosition(0.0, 0.0);
 
       if (position) {
+        // TODO(austin): Validate that this is the right edge.
         // If we see a posedge on any of the hall effects,
         if (position->pusher_proximal.posedge_count !=
-            last_proximal_posedge_count_) {
-          LOG(DEBUG, "Setting calibration using proximal sensor\n");
-          shooter_.SetCalibration(position->pusher_proximal.posedge_value,
-                                  values.shooter.pusher_proximal.upper_angle);
+                last_proximal_posedge_count_ &&
+            !last_proximal_current_) {
+          proximal_posedge_validation_cycles_left_ = 2;
         }
+        if (proximal_posedge_validation_cycles_left_ > 0) {
+          if (position->pusher_proximal.current) {
+            --proximal_posedge_validation_cycles_left_;
+            if (proximal_posedge_validation_cycles_left_ == 0) {
+              shooter_.SetCalibration(
+                  position->pusher_proximal.posedge_value,
+                  values.shooter.pusher_proximal.upper_angle);
+
+              LOG(DEBUG, "Setting calibration using proximal sensor\n");
+              zeroed_ = true;
+            }
+          } else {
+            proximal_posedge_validation_cycles_left_ = 0;
+          }
+        }
+
         if (position->pusher_distal.posedge_count !=
-            last_distal_posedge_count_) {
-          LOG(DEBUG, "Setting calibration using distal sensor\n");
-          shooter_.SetCalibration(position->pusher_distal.posedge_value,
-                                  values.shooter.pusher_distal.upper_angle);
+                last_distal_posedge_count_ &&
+            !last_distal_current_) {
+          distal_posedge_validation_cycles_left_ = 2;
+        }
+        if (distal_posedge_validation_cycles_left_ > 0) {
+          if (position->pusher_distal.current) {
+            --distal_posedge_validation_cycles_left_;
+            if (distal_posedge_validation_cycles_left_ == 0) {
+              shooter_.SetCalibration(
+                  position->pusher_distal.posedge_value,
+                  values.shooter.pusher_distal.upper_angle);
+
+              LOG(DEBUG, "Setting calibration using distal sensor\n");
+              zeroed_ = true;
+            }
+          } else {
+            distal_posedge_validation_cycles_left_ = 0;
+          }
         }
 
         // Latch if the plunger is far enough back to trigger the hall effect.
@@ -328,7 +371,11 @@ void ShooterMotor::RunIteration(
         // way back as well.
         if (position->plunger && position->latch &&
             position->pusher_distal.current) {
-          state_ = STATE_PREPARE_SHOT;
+          if (!zeroed_) {
+            state_ = STATE_REQUEST_LOAD;
+          } else {
+            state_ = STATE_PREPARE_SHOT;
+          }
         } else if (position->plunger &&
                    ::std::abs(shooter_.absolute_position() -
                               shooter_.goal_position()) < 0.001) {
@@ -351,7 +398,8 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_LOADING_PROBLEM:
       if (disabled) {
-        Load();
+        state_ = STATE_REQUEST_LOAD;
+        break;
       }
       // We got to the goal, but the latch hasn't registered as down.  It might
       // be stuck, or on it's way but not there yet.
@@ -594,6 +642,8 @@ void ShooterMotor::RunIteration(
   if (position) {
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;
     last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
+    last_distal_current_ = position->pusher_distal.current;
+    last_proximal_current_ = position->pusher_proximal.current;
   }
 
   status->shots = shot_count_;

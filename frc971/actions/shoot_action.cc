@@ -18,11 +18,10 @@ ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
 double ShootAction::SpeedToAngleOffset(double speed) {
   const frc971::constants::Values& values = frc971::constants::GetValues();
   // scale speed to a [0.0-1.0] on something close to the max
-  return -(speed / values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
+  return (speed / values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
 }
 
 void ShootAction::RunAction() {
-  const frc971::constants::Values& values = frc971::constants::GetValues();
   LOG(INFO, "Shooting at angle %f, power %f\n", shoot_action.goal->shot_angle,
       shoot_action.goal->shot_power);
 
@@ -59,7 +58,7 @@ void ShootAction::RunAction() {
            .bottom_angle(shoot_action.goal->shot_angle +
                          SpeedToAngleOffset(
                              control_loops::drivetrain.status->robot_speed))
-           .separation_angle(values.shooter_action.claw_separation_goal)
+           .separation_angle(kClawShootingSeparationGoal)
            .intake(2.0)
            .centering(1.0)
            .Send()) {
@@ -69,6 +68,21 @@ void ShootAction::RunAction() {
 
   // wait for the claw to open up a little before we shoot
   if (WaitUntil(::std::bind(&ShootAction::DonePreShotOpen, this))) return;
+
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.2));
+
+  // Open up the claw in preparation for shooting.
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(shoot_action.goal->shot_angle +
+                         SpeedToAngleOffset(
+                             control_loops::drivetrain.status->robot_speed))
+           .separation_angle(kClawShootingSeparationGoal)
+           .intake(0.0)
+           .centering(0.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+    return;
+  }
 
   // Make sure that we have the latest shooter status.
   control_loops::shooter_queue_group.status.FetchLatest();
@@ -96,26 +110,37 @@ bool ClawIsReady() {
       (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
        0.5) &&
       (::std::abs(control_loops::claw_queue_group.status->bottom -
-                  control_loops::claw_queue_group.goal->bottom_angle) < 0.02) &&
+                  control_loops::claw_queue_group.goal->bottom_angle) < 0.04) &&
       (::std::abs(control_loops::claw_queue_group.status->separation -
                   control_loops::claw_queue_group.goal->separation_angle) <
        0.2);
-  LOG(INFO, "Claw is ready %d\n", ans);
+  if (!ans) {
+    LOG(INFO,
+        "Claw is ready %d zeroed %d bottom_velocity %f bottom %f sep %f\n", ans,
+        control_loops::claw_queue_group.status->zeroed,
+        ::std::abs(control_loops::claw_queue_group.status->bottom_velocity),
+        ::std::abs(control_loops::claw_queue_group.status->bottom -
+                   control_loops::claw_queue_group.goal->bottom_angle),
+        ::std::abs(control_loops::claw_queue_group.status->separation -
+                   control_loops::claw_queue_group.goal->separation_angle));
+  }
   return ans;
 }
 
 bool ShooterIsReady() {
   control_loops::shooter_queue_group.goal.FetchLatest();
   control_loops::shooter_queue_group.status.FetchLatest();
-  LOG(INFO, "Power error is %f - %f -> %f, ready %d\n",
-      control_loops::shooter_queue_group.status->hard_stop_power,
-      control_loops::shooter_queue_group.goal->shot_power,
-      ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
-                 control_loops::shooter_queue_group.goal->shot_power),
-      control_loops::shooter_queue_group.status->ready);
+  if (control_loops::shooter_queue_group.status->ready) {
+    LOG(INFO, "Power error is %f - %f -> %f, ready %d\n",
+        control_loops::shooter_queue_group.status->hard_stop_power,
+        control_loops::shooter_queue_group.goal->shot_power,
+        ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
+                   control_loops::shooter_queue_group.goal->shot_power),
+        control_loops::shooter_queue_group.status->ready);
+  }
   return (::std::abs(
               control_loops::shooter_queue_group.status->hard_stop_power -
-              control_loops::shooter_queue_group.goal->shot_power) < 0.1) &&
+              control_loops::shooter_queue_group.goal->shot_power) < 1.0) &&
          control_loops::shooter_queue_group.status->ready;
 }
 
@@ -154,12 +179,11 @@ bool ShootAction::DoneSetupShot() {
 }
 
 bool ShootAction::DonePreShotOpen() {
-  const frc971::constants::Values& values = frc971::constants::GetValues();
   if (!control_loops::claw_queue_group.status.FetchLatest()) {
     control_loops::claw_queue_group.status.FetchNextBlocking();
   }
   if (control_loops::claw_queue_group.status->separation >
-      values.shooter_action.claw_shooting_separation) {
+      kClawShootingSeparation) {
     LOG(INFO, "Opened up enough to shoot.\n");
     return true;
   }

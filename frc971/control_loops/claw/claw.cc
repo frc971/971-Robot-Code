@@ -409,6 +409,13 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->top_claw_voltage = 0;
     output->bottom_claw_voltage = 0;
     output->intake_voltage = 0;
+    output->tusk_voltage = 0;
+  }
+
+  if (::std::isnan(goal->bottom_angle) ||
+      ::std::isnan(goal->separation_angle) || ::std::isnan(goal->intake) ||
+      ::std::isnan(goal->centering)) {
+    return;
   }
 
   if (reset()) {

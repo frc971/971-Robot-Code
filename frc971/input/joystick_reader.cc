@@ -318,7 +318,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kLongShot)) {
       auto shoot_action = MakeShootAction();
 
-      shot_power_ = 160.0;
+      shot_power_ = 145.0;
       shoot_action->GetGoal()->shot_power = shot_power_;
       shoot_action->GetGoal()->shot_angle = kLongShotGoal.angle;
       SetGoal(kLongShotGoal);

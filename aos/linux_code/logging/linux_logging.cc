@@ -91,7 +91,8 @@ void Free(const LogMessage *msg) {
 }
 
 void Write(LogMessage *msg) {
-  if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
+  // TODO(brians): Keep track of if we overflow the queue.
+  if (!queue->WriteMessage(msg, RawQueue::kOverride)) {
     LOG(FATAL, "writing failed\n");
   }
 }
