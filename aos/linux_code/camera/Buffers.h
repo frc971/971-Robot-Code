@@ -8,7 +8,7 @@
 
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/type_traits.h"
-#include "aos/atom_code/ipc_lib/unique_message_ptr.h"
+#include "aos/linux_code/ipc_lib/unique_message_ptr.h"
 
 namespace aos {
 namespace camera {
