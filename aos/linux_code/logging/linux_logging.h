@@ -10,7 +10,7 @@ namespace linux_code {
 // Calls AddImplementation to register the usual linux logging implementation
 // which sends the messages through a queue. This implementation relies on
 // another process(es) to read the log messages that it puts into the queue.
-// It gets called by aos::Init*.
+// This function is usually called by aos::Init*.
 void Register();
 
 // Fairly simple wrappers around the raw queue calls.

@@ -267,6 +267,14 @@ void FillInMessageStructure(log_level level,
 void FillInMessage(log_level level, const char *format, va_list ap,
                    LogMessage *message);
 
+static inline void FillInMessageVarargs(log_level level, LogMessage *message,
+                                        const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  FillInMessage(level, format, ap, message);
+  va_end(ap);
+}
+
 // Prints message to output.
 void PrintMessage(FILE *output, const LogMessage &message);
 

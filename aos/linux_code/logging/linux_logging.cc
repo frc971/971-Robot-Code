@@ -14,27 +14,28 @@
 #include "aos/common/die.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/linux_code/ipc_lib/queue.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace logging {
-namespace {
-
-RawQueue *queue;
-
-}  // namespace
 namespace linux_code {
 namespace {
 
-class LinuxQueueLogImplementation : public LogImplementation {
-  LogMessage *GetMessageOrDie() {
-    LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
-    if (message == NULL) {
-      LOG(FATAL, "%p->GetMessage() failed\n", queue);
-    } else {
-      return message;
-    }
-  }
+RawQueue *queue = NULL;
 
+int dropped_messages = 0;
+::aos::time::Time dropped_start(0, 0);
+
+LogMessage *GetMessageOrDie() {
+  LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
+  if (message == NULL) {
+    LOG(FATAL, "%p->GetMessage() failed\n", queue);
+  } else {
+    return message;
+  }
+}
+
+class LinuxQueueLogImplementation : public LogImplementation {
   virtual void DoLog(log_level level, const char *format, va_list ap) override {
     LogMessage *message = GetMessageOrDie();
     internal::FillInMessage(level, format, ap, message);
@@ -91,9 +92,26 @@ void Free(const LogMessage *msg) {
 }
 
 void Write(LogMessage *msg) {
-  // TODO(brians): Keep track of if we overflow the queue.
-  if (!queue->WriteMessage(msg, RawQueue::kOverride)) {
-    LOG(FATAL, "writing failed\n");
+  if (__builtin_expect(dropped_messages > 0, 0)) {
+    LogMessage *dropped_message = GetMessageOrDie();
+    internal::FillInMessageVarargs(ERROR, dropped_message,
+                                   "%d logs starting at %f dropped\n",
+                                   dropped_messages, dropped_start.ToSeconds());
+    if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
+      dropped_messages = 0;
+    } else {
+      // Don't even bother trying to write this message because it's not likely
+      // to work and it would be confusing to have one log in the middle of a
+      // string of failures get through.
+      ++dropped_messages;
+      return;
+    }
+  }
+  if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
+    if (dropped_messages == 0) {
+      dropped_start = ::aos::time::Time::Now();
+    }
+    ++dropped_messages;
   }
 }
 
