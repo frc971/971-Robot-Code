@@ -449,5 +449,17 @@ TEST_F(QueueTest, Recycle) {
   EXPECT_RETURNS(ReadTestMessage, &recycle);
 }
 
+// Makes sure that when a message doesn't get written with kNonBlock it does get
+// freed.
+TEST_F(QueueTest, NonBlockFailFree) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+
+  void *message1 = queue->GetMessage();
+  void *message2 = queue->GetMessage();
+  ASSERT_TRUE(queue->WriteMessage(message1, RawQueue::kNonBlock));
+  ASSERT_FALSE(queue->WriteMessage(message2, RawQueue::kNonBlock));
+  EXPECT_EQ(message2, queue->GetMessage());
+}
+
 }  // namespace testing
 }  // namespace aos

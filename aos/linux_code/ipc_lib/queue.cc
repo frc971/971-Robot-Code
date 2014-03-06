@@ -251,6 +251,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
         if (kWriteDebug) {
           printf("queue: not blocking on %p. returning false\n", this);
         }
+        DecrementMessageReferenceCount(msg);
         return false;
       } else if (options & kOverride) {
         if (kWriteDebug) {
