@@ -115,7 +115,9 @@ ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
       shot_count_(0),
       zeroed_(false),
       distal_posedge_validation_cycles_left_(0),
-      proximal_posedge_validation_cycles_left_(0) {}
+      proximal_posedge_validation_cycles_left_(0),
+      last_distal_current_(true),
+      last_proximal_current_(true) {}
 
 double ShooterMotor::PowerToPosition(double power) {
   const frc971::constants::Values &values = constants::GetValues();
@@ -175,6 +177,8 @@ void ShooterMotor::RunIteration(
 
   if (reset()) {
     state_ = STATE_INITIALIZE;
+    last_distal_current_ = position->pusher_distal.current;
+    last_proximal_current_ = position->pusher_proximal.current;
   }
   if (position) {
     shooter_.CorrectPosition(position->position);
@@ -318,7 +322,8 @@ void ShooterMotor::RunIteration(
         // TODO(austin): Validate that this is the right edge.
         // If we see a posedge on any of the hall effects,
         if (position->pusher_proximal.posedge_count !=
-            last_proximal_posedge_count_) {
+                last_proximal_posedge_count_ &&
+            !last_proximal_current_) {
           proximal_posedge_validation_cycles_left_ = 2;
         }
         if (proximal_posedge_validation_cycles_left_ > 0) {
@@ -338,7 +343,8 @@ void ShooterMotor::RunIteration(
         }
 
         if (position->pusher_distal.posedge_count !=
-            last_distal_posedge_count_) {
+                last_distal_posedge_count_ &&
+            !last_distal_current_) {
           distal_posedge_validation_cycles_left_ = 2;
         }
         if (distal_posedge_validation_cycles_left_ > 0) {
@@ -636,6 +642,8 @@ void ShooterMotor::RunIteration(
   if (position) {
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;
     last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
+    last_distal_current_ = position->pusher_distal.current;
+    last_proximal_current_ = position->pusher_proximal.current;
   }
 
   status->shots = shot_count_;
