@@ -6,3 +6,4 @@ auto
 sensor_receiver
 claw
 shooter
+shoot_action

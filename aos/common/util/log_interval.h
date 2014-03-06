@@ -55,23 +55,28 @@ class LogInterval {
 };
 
 // This one is even easier to use. It always logs with a message "%s %d
-// times\n". Call WantToLog() like with LogInterval and insert a LOG_INTERVAL
-// call somewhere that will always get run (ie not after a conditional return).
+// times\n". Call LOG_INTERVAL wherever it should log and make sure Print gets
+// called often (ie not after a conditional return)
 class SimpleLogInterval {
  public:
   SimpleLogInterval(const ::aos::time::Time &interval, log_level level,
                     const ::std::string &message)
       : interval_(interval), level_(level), message_(message) {}
 
-  void WantToLog() { interval_.WantToLog(); }
-
 #define LOG_INTERVAL(simple_log) \
-  simple_log.Print(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
-  void Print(const char *context) {
+  simple_log.WantToLog(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
+  void WantToLog(const char *context) {
+    context_ = context;
+    interval_.WantToLog();
+  }
+
+  void Print() {
     if (interval_.ShouldLog()) {
-      log_do(level_, "%s: %.*s %d times over %f sec\n", context,
+      CHECK_NOTNULL(context_);
+      log_do(level_, "%s: %.*s %d times over %f sec\n", context_,
              static_cast<int>(message_.size()), message_.data(),
              interval_.Count(), interval_.interval().ToSeconds());
+      context_ = NULL;
     }
   }
 
@@ -79,6 +84,7 @@ class SimpleLogInterval {
   LogInterval interval_;
   const log_level level_;
   const ::std::string message_;
+  const char *context_ = NULL;
 };
 
 }  // namespace util

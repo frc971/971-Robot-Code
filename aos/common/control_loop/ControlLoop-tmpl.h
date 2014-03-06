@@ -26,12 +26,12 @@ void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
 
 template <class T, bool has_position, bool fail_no_position>
 void ControlLoop<T, has_position, fail_no_position>::Iterate() {
-  LOG_INTERVAL(no_prior_goal_);
-  LOG_INTERVAL(no_sensor_generation_);
-  LOG_INTERVAL(very_stale_position_);
-  LOG_INTERVAL(no_prior_position_);
-  LOG_INTERVAL(driver_station_old_);
-  LOG_INTERVAL(no_driver_station_);
+  no_prior_goal_.Print();
+  no_sensor_generation_.Print();
+  very_stale_position_.Print();
+  no_prior_position_.Print();
+  driver_station_old_.Print();
+  no_driver_station_.Print();
 
   // Fetch the latest control loop goal and position.  If there is no new
   // goal, we will just reuse the old one.
@@ -42,14 +42,14 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   // goals.
   const GoalType *goal = control_loop_->goal.get();
   if (goal == NULL) {
-    no_prior_goal_.WantToLog();
+    LOG_INTERVAL(no_prior_goal_);
     ZeroOutputs();
     return;
   }
 
   ::bbb::sensor_generation.FetchLatest();
   if (::bbb::sensor_generation.get() == nullptr) {
-    no_sensor_generation_.WantToLog();
+    LOG_INTERVAL(no_sensor_generation_);
     ZeroOutputs();
     return;
   }
@@ -79,10 +79,10 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     if (control_loop_->position.FetchLatest()) {
       position = control_loop_->position.get();
     } else {
-      if (control_loop_->position.get()) {
+      if (control_loop_->position.get() && !reset_) {
         int msec_age = control_loop_->position.Age().ToMSec();
         if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
-          very_stale_position_.WantToLog();
+          LOG_INTERVAL(very_stale_position_);
           ZeroOutputs();
           return;
         } else {
@@ -90,7 +90,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
               kPositionTimeoutMs);
         }
       } else {
-        no_prior_position_.WantToLog();
+        LOG_INTERVAL(no_prior_position_);
         if (fail_no_position) {
           ZeroOutputs();
           return;
@@ -111,9 +111,9 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     outputs_enabled = true;
   } else {
     if (::aos::robot_state.get()) {
-      driver_station_old_.WantToLog();
+      LOG_INTERVAL(driver_station_old_);
     } else {
-      no_driver_station_.WantToLog();
+      LOG_INTERVAL(no_driver_station_);
     }
   }
 
@@ -133,7 +133,7 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
     output.Send();
   } else {
     // The outputs are disabled, so pass NULL in for the output.
-    RunIteration(goal, position, NULL, status.get());
+    RunIteration(goal, position, nullptr, status.get());
     ZeroOutputs();
   }
 

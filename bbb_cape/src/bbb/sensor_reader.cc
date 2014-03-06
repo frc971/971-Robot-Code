@@ -42,7 +42,7 @@ const DataStruct *SensorReader::ReadPacket() {
       ::aos::time::Time::InSeconds(5);
 
   while (true) {
-    LOG_INTERVAL(receive_failed_);
+    receive_failed_.Print();
 
     ::aos::time::Time next_timeout = last_received_time_ + kResetTimeout;
     if (next_timeout <= ::aos::time::Time::Now()) {
@@ -69,7 +69,7 @@ const DataStruct *SensorReader::ReadPacket() {
       last_cape_timestamp_ = data->timestamp;
       return data;
     }
-    receive_failed_.WantToLog();
+    LOG_INTERVAL(receive_failed_);
   }
 }
 

@@ -9,9 +9,9 @@ namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeRawSprungShooterPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.997145287595, 0.00115072867987, -0.322204030364, -0.000199174994385;
+  A << 0.999391114909, 0.00811316740387, -0.113584343654, 0.64780421498;
   Eigen::Matrix<double, 2, 1> B;
-  B << 0.000356210952805, 0.0402046120149;
+  B << 7.59766686183e-05, 0.0141730519709;
   Eigen::Matrix<double, 1, 2> C;
   C << 1, 0;
   Eigen::Matrix<double, 1, 1> D;
@@ -25,9 +25,9 @@ StateFeedbackPlantCoefficients<2, 1, 1> MakeRawSprungShooterPlantCoefficients() 
 
 StateFeedbackPlantCoefficients<2, 1, 1> MakeRawShooterPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 1.0, 0.00115359397892, 0.0, 0.000172163011452;
+  A << 1.0, 0.00811505488455, 0.0, 0.648331305446;
   Eigen::Matrix<double, 2, 1> B;
-  B << 0.000356613321821, 0.0403047209622;
+  B << 7.59852687598e-05, 0.0141763492481;
   Eigen::Matrix<double, 1, 2> C;
   C << 1, 0;
   Eigen::Matrix<double, 1, 1> D;
@@ -41,17 +41,17 @@ StateFeedbackPlantCoefficients<2, 1, 1> MakeRawShooterPlantCoefficients() {
 
 StateFeedbackController<2, 1, 1> MakeRawSprungShooterController() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 0.896946112601, 1.86767549049;
+  L << 1.54719532989, 43.9345489758;
   Eigen::Matrix<double, 1, 2> K;
-  K << 743.451871215, -4.17563006819;
+  K << 2126.06977433, 41.3223370936;
   return StateFeedbackController<2, 1, 1>(L, K, MakeRawSprungShooterPlantCoefficients());
 }
 
 StateFeedbackController<2, 1, 1> MakeRawShooterController() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 0.900172163011, 2.15224193635;
+  L << 1.54833130545, 44.1155797675;
   Eigen::Matrix<double, 1, 2> K;
-  K << 750.532425926, -4.15528738406;
+  K << 2133.83569145, 41.3499425476;
   return StateFeedbackController<2, 1, 1>(L, K, MakeRawShooterPlantCoefficients());
 }
 

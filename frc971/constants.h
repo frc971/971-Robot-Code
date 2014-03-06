@@ -11,16 +11,18 @@ namespace constants {
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
 
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 8971;
+const uint16_t kCompTeamNumber = 8971;
+const uint16_t kPracticeTeamNumber = 971;
 
 // Contains the voltages for an analog hall effect sensor on a shifter.
 struct ShifterHallEffect {
   // The numbers to use for scaling raw voltages to 0-1.
-  double high, low;
+  // Low is near 0.0, high is near 1.0
+  double low_gear_middle, low_gear_low;
+  double high_gear_high, high_gear_middle;
 
   // The numbers for when the dog is clear of each gear.
-  double clear_high, clear_low;
+  double clear_low, clear_high;
 };
 
 // This structure contains current values for all of the things that change.
@@ -59,8 +61,8 @@ struct Values {
     AnglePair plunger_back;
     AnglePair pusher_distal;
     AnglePair pusher_proximal;
-    double zeroing_off_speed;
     double zeroing_speed;
+    double unload_speed;
   };
 
   Shooter shooter;
@@ -99,10 +101,26 @@ struct Values {
     double max_zeroing_voltage;
   };
   Claws claw;
+
+  // Has all the constants for the ShootAction class.
+  struct ShooterAction {
+    // Minimum separation required between the claws in order to be able to
+    // shoot.
+    double claw_shooting_separation;
+
+    // Goal to send to the claw when opening it up in preparation for shooting;
+    // should be larger than claw_shooting_separation so that we can shoot
+    // promptly.
+    double claw_separation_goal;
+   };
+  ShooterAction shooter_action;
+  double drivetrain_done_distance;
+  double drivetrain_max_speed;
 };
 
 // Creates (once) a Values instance and returns a reference to it.
 const Values &GetValues();
+const Values &GetValuesForTeam(uint16_t team_number);
 
 }  // namespace constants
 }  // namespace frc971

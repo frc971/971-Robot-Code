@@ -84,7 +84,9 @@ class ControlLoop : public SerializableControlLoop {
   void ZeroOutputs();
 
   // Returns true if the device reading the sensors reset and potentially lost
-  // track of encoder counts.  Calling this read method clears the flag.
+  // track of encoder counts.  Calling this read method clears the flag.  After
+  // a reset, RunIteration will not be called until there is a valid position
+  // message.
   bool reset() {
     bool ans = reset_;
     reset_ = false;

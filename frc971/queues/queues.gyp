@@ -1,7 +1,7 @@
 {
   'variables': {
     'queue_files': [
-      'gyro_angle.q',
+      'othersensors.q',
       'to_log.q',
     ]
   },

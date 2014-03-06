@@ -15,18 +15,18 @@ namespace aos {
 
 ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   char *const buffer_start = buffer;
-  size_t fields_size = 0;
+  uint16_t fields_size = 0;
   for (int i = 0; i < number_fields; ++i) {
     fields_size += sizeof(fields[i]->type);
-    fields_size += sizeof(size_t);
+    fields_size += sizeof(uint16_t);
     fields_size += fields[i]->name.size();
   }
-  if (max_bytes < sizeof(id) + sizeof(super_size) + sizeof(size_t) +
+  if (max_bytes < sizeof(id) + sizeof(super_size) + sizeof(uint16_t) +
                       sizeof(number_fields) + name.size() + fields_size) {
     return -1;
   }
 
-  size_t length;
+  uint16_t length;
 
   to_network(&super_size, buffer);
   buffer += sizeof(super_size);
@@ -37,7 +37,7 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   buffer += sizeof(length);
   to_network(&number_fields, buffer);
   buffer += sizeof(number_fields);
-  memcpy(buffer, name.data(), name.size());
+  memcpy(buffer, name.data(), length);
   buffer += name.size();
 
   for (int i = 0; i < number_fields; ++i) {
@@ -46,7 +46,7 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
     length = fields[i]->name.size();
     to_network(&length, buffer);
     buffer += sizeof(length);
-    memcpy(buffer, fields[i]->name.data(), fields[i]->name.size());
+    memcpy(buffer, fields[i]->name.data(), length);
     buffer += length;
   }
 
@@ -54,7 +54,7 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
 }
 
 MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
-  size_t name_length;
+  uint16_t name_length;
   decltype(MessageType::super_size) super_size;
   decltype(MessageType::id) id;
   decltype(MessageType::number_fields) number_fields;
@@ -86,7 +86,7 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   buffer += name_length;
 
   for (int i = 0; i < number_fields; ++i) {
-    size_t field_name_length;
+    uint16_t field_name_length;
     if (*bytes < sizeof(fields[i]->type) + sizeof(field_name_length)) {
       return nullptr;
     }

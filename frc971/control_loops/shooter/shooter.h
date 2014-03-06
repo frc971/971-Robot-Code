@@ -66,7 +66,6 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
     Y << position + offset_ - kPositionOffset;
-    LOG(DEBUG, "Setting position to %f\n", position);
     Correct(Y);
   }
 
@@ -97,7 +96,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  private:
   // The offset between what is '0' (0 rate on the spring) and the 0 (all the
   // way cocked).
-  constexpr static double kPositionOffset = 0.305054 + 0.0254;
+  constexpr static double kPositionOffset = kMaxExtension;
   // The accumulated voltage to apply to the motor.
   double voltage_;
   double last_voltage_;
@@ -106,6 +105,14 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double max_voltage_;
   bool capped_goal_;
 };
+
+const Time kUnloadTimeout = Time::InSeconds(10);
+const Time kLoadTimeout = Time::InSeconds(2);
+const Time kLoadProblemEndTimeout = Time::InSeconds(0.5);
+const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
+// Time to wait after releasing the latch piston before winching back again.
+const Time kShotEndTimeout = Time::InSeconds(0.2);
+const Time kPrepareFireEndTime = Time::InMS(40);
 
 class ShooterMotor
     : public aos::control_loops::ControlLoop<control_loops::ShooterGroup> {
@@ -117,6 +124,7 @@ class ShooterMotor
   bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
+  double PositionToPower(double position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -126,7 +134,6 @@ class ShooterMotor
     STATE_LOADING_PROBLEM = 4,
     STATE_PREPARE_SHOT = 5,
     STATE_READY = 6,
-    STATE_PREPARE_FIRE = 7,
     STATE_FIRE = 8,
     STATE_UNLOAD = 9,
     STATE_UNLOAD_MOVE = 10,
@@ -150,12 +157,12 @@ class ShooterMotor
   // Enter state STATE_UNLOAD
   void Unload() {
     state_ = STATE_UNLOAD;
-    unload_timeout_ = Time::Now() + Time::InSeconds(1);
+    unload_timeout_ = Time::Now() + kUnloadTimeout;
   }
   // Enter state STATE_LOAD
   void Load() {
     state_ = STATE_LOAD;
-    load_timeout_ = Time::Now() + Time::InSeconds(1);
+    load_timeout_ = Time::Now() + kLoadTimeout;
   }
 
   control_loops::ShooterGroup::Position last_position_;
@@ -173,13 +180,9 @@ class ShooterMotor
 
   // wait for brake to set
   Time shooter_brake_set_time_;
-  
+
   // The timeout for unloading.
   Time unload_timeout_;
-
-  // we are attempting to take up some of the backlash
-  // in the gears before the plunger hits
-  Time prepare_fire_end_time_;
 
   // time that shot must have completed
   Time shot_end_time_;
@@ -194,6 +197,10 @@ class ShooterMotor
   bool brake_piston_;
   int32_t last_distal_posedge_count_;
   int32_t last_proximal_posedge_count_;
+  uint32_t shot_count_;
+  bool zeroed_;
+  int distal_posedge_validation_cycles_left_;
+  int proximal_posedge_validation_cycles_left_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

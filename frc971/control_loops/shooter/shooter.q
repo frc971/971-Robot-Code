@@ -41,10 +41,14 @@ queue_group ShooterGroup {
     // Whether it's ready to shoot right now.
     bool ready;
     // Whether the plunger is in and out of the way of grabbing a ball.
+    // TODO(ben): Populate these!
     bool cocked;
     // How many times we've shot.
     int32_t shots;
     bool done;
+    // What we think the current position of the hard stop on the shooter is, in
+    // shot power (Joules).
+    double hard_stop_power;
   };
 
   queue Goal goal;

@@ -323,14 +323,17 @@ class StateFeedbackLoop {
     //::std::cout << "Predict xhat before " << X_hat;
     //::std::cout << "Measurement error is " << Y_ - C() * X_hat;
     //X_hat = A() * X_hat + B() * U;
+    //::std::cout << "Predict xhat after " << X_hat;
+    UpdateObserver();
+  }
+
+  void UpdateObserver() {
     if (new_y_) {
-      LOG(DEBUG, "Got Y.  R is (%f, %f, %f)\n", R(0, 0), R(1, 0), R(2, 0));
       X_hat = (A() - L() * C()) * X_hat + L() * Y_ + B() * U;
       new_y_ = false;
     } else {
       X_hat = A() * X_hat + B() * U;
     }
-    //::std::cout << "Predict xhat after " << X_hat;
   }
 
   // Sets the current controller to be index and verifies that it isn't out of

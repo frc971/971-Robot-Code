@@ -8,69 +8,144 @@ namespace frc971 {
 
 typedef constants::Values::Claws Claws;
 
-bool DoGetPositionOfEdge(
-    const double start_position,
-    const control_loops::HalfClawPosition &last_claw_position,
-    const control_loops::HalfClawPosition &claw_position,
-    const HallEffectStruct &last_hall_effect,
-    const HallEffectStruct &hall_effect,
-    Claws::AnglePair *limits) {
+class Sensor {
+ public:
+  Sensor(const double start_position,
+         const HallEffectStruct &initial_hall_effect)
+      : start_position_(start_position),
+        last_hall_effect_(initial_hall_effect),
+        last_posedge_count_(initial_hall_effect.posedge_count),
+        last_negedge_count_(initial_hall_effect.negedge_count) {
+    last_on_min_position_ = start_position;
+    last_on_max_position_ = start_position;
+    last_off_min_position_ = start_position;
+    last_off_max_position_ = start_position;
+  }
 
-  if (hall_effect.posedge_count != last_hall_effect.posedge_count) {
-    if (claw_position.posedge_value < last_claw_position.position) {
-      limits->upper_angle = claw_position.posedge_value - start_position;
-    } else {
-      limits->lower_decreasing_angle =
-          claw_position.posedge_value - start_position;
+  bool DoGetPositionOfEdge(
+      const control_loops::HalfClawPosition &claw_position,
+      const HallEffectStruct &hall_effect, Claws::AnglePair *limits) {
+    bool print = false;
+
+    if (hall_effect.posedge_count != last_posedge_count_) {
+      const double avg_off_position = (last_off_min_position_ + last_off_max_position_) / 2.0;
+      if (claw_position.posedge_value < avg_off_position) {
+        printf("Posedge upper current %f posedge %f avg_off %f [%f, %f]\n",
+               claw_position.position, claw_position.posedge_value,
+               avg_off_position, last_off_min_position_,
+               last_off_max_position_);
+        limits->upper_decreasing_angle = claw_position.posedge_value - start_position_;
+      } else {
+        printf("Posedge lower current %f posedge %f avg_off %f [%f, %f]\n",
+               claw_position.position, claw_position.posedge_value,
+               avg_off_position, last_off_min_position_,
+               last_off_max_position_);
+        limits->lower_angle =
+            claw_position.posedge_value - start_position_;
+      }
+      print = true;
     }
-    return true;
-  }
-  if (hall_effect.negedge_count != last_hall_effect.negedge_count) {
-    if (claw_position.negedge_value > last_claw_position.position) {
-      limits->upper_decreasing_angle =
-          claw_position.negedge_value - start_position;
-    } else {
-      limits->lower_angle = claw_position.negedge_value - start_position;
+    if (hall_effect.negedge_count != last_negedge_count_) {
+      const double avg_on_position = (last_on_min_position_ + last_on_max_position_) / 2.0;
+      if (claw_position.negedge_value > avg_on_position) {
+        printf("Negedge upper current %f negedge %f last_on %f [%f, %f]\n",
+               claw_position.position, claw_position.negedge_value,
+               avg_on_position, last_on_min_position_,
+               last_on_max_position_);
+        limits->upper_angle =
+            claw_position.negedge_value - start_position_;
+      } else {
+        printf("Negedge lower current %f negedge %f last_on %f [%f, %f]\n",
+               claw_position.position, claw_position.negedge_value,
+               avg_on_position, last_on_min_position_,
+               last_on_max_position_);
+        limits->lower_decreasing_angle = claw_position.negedge_value - start_position_;
+      }
+      print = true;
     }
-    return true;
+
+    if (hall_effect.current) {
+      if (!last_hall_effect_.current) {
+        last_on_min_position_ = last_on_max_position_ = claw_position.position;
+      } else {
+        last_on_min_position_ =
+            ::std::min(claw_position.position, last_on_min_position_);
+        last_on_max_position_ =
+            ::std::max(claw_position.position, last_on_max_position_);
+      }
+    } else {
+      if (last_hall_effect_.current) {
+        last_off_min_position_ = last_off_max_position_ = claw_position.position;
+      } else {
+        last_off_min_position_ =
+            ::std::min(claw_position.position, last_off_min_position_);
+        last_off_max_position_ =
+            ::std::max(claw_position.position, last_off_max_position_);
+      }
+    }
+
+    last_hall_effect_ = hall_effect;
+    last_posedge_count_ = hall_effect.posedge_count;
+    last_negedge_count_ = hall_effect.negedge_count;
+
+    return print;
   }
 
-  return false;
-}
+ private:
+  const double start_position_;
+  HallEffectStruct last_hall_effect_;
+  int32_t last_posedge_count_;
+  int32_t last_negedge_count_;
+  double last_on_min_position_;
+  double last_off_min_position_;
+  double last_on_max_position_;
+  double last_off_max_position_;
+};
 
-bool GetPositionOfEdge(
-    const double start_position,
-    const control_loops::HalfClawPosition &last_claw_position,
-    const control_loops::HalfClawPosition &claw_position, Claws::Claw *claw) {
+class ClawSensors {
+ public:
+  ClawSensors(const double start_position,
+              const control_loops::HalfClawPosition &initial_claw_position)
+      : start_position_(start_position),
+        front_(start_position, initial_claw_position.front),
+        calibration_(start_position, initial_claw_position.calibration),
+        back_(start_position, initial_claw_position.back) {}
 
-  if (DoGetPositionOfEdge(start_position, last_claw_position, claw_position,
-                          last_claw_position.front, claw_position.front,
-                          &claw->front)) {
-    return true;
-  }
-  if (DoGetPositionOfEdge(start_position, last_claw_position, claw_position,
-                          last_claw_position.calibration,
-                          claw_position.calibration, &claw->calibration)) {
-    return true;
-  }
-  if (DoGetPositionOfEdge(start_position, last_claw_position, claw_position,
-                          last_claw_position.back, claw_position.back,
-                          &claw->back)) {
-    return true;
+  bool GetPositionOfEdge(const control_loops::HalfClawPosition &claw_position,
+                         Claws::Claw *claw) {
+
+    bool print = false;
+    if (front_.DoGetPositionOfEdge(claw_position,
+                                   claw_position.front, &claw->front)) {
+      print = true;
+    } else if (calibration_.DoGetPositionOfEdge(claw_position,
+                                                claw_position.calibration,
+                                                &claw->calibration)) {
+      print = true;
+    } else if (back_.DoGetPositionOfEdge(claw_position,
+                                         claw_position.back, &claw->back)) {
+      print = true;
+    }
+
+    double position = claw_position.position - start_position_;
+
+    if (position > claw->upper_limit) {
+      claw->upper_hard_limit = claw->upper_limit = position;
+      print = true;
+    }
+    if (position < claw->lower_limit) {
+      claw->lower_hard_limit = claw->lower_limit = position;
+      print = true;
+    }
+    return print;
   }
 
-  double position = claw_position.position - start_position;
-
-  if (position > claw->upper_limit) {
-    claw->upper_hard_limit = claw->upper_limit = position;
-    return true;
-  }
-  if (position < claw->lower_limit) {
-    claw->lower_hard_limit = claw->lower_limit = position;
-    return true;
-  }
-  return false;
-}
+ private:
+  const double start_position_;
+  Sensor front_;
+  Sensor calibration_;
+  Sensor back_;
+};
 
 int Main() {
   while (!control_loops::claw_queue_group.position.FetchNextBlocking());
@@ -79,6 +154,11 @@ int Main() {
       control_loops::claw_queue_group.position->top.position;
   const double bottom_start_position =
       control_loops::claw_queue_group.position->bottom.position;
+
+  ClawSensors top(top_start_position,
+                  control_loops::claw_queue_group.position->top);
+  ClawSensors bottom(bottom_start_position,
+                     control_loops::claw_queue_group.position->bottom);
 
   Claws limits;
 
@@ -138,17 +218,16 @@ int Main() {
   while (true) {
     if (control_loops::claw_queue_group.position.FetchNextBlocking()) {
       bool print = false;
-      if (GetPositionOfEdge(top_start_position, last_position.top,
-                            control_loops::claw_queue_group.position->top,
-                            &limits.upper_claw)) {
+      if (top.GetPositionOfEdge(control_loops::claw_queue_group.position->top,
+                                &limits.upper_claw)) {
         print = true;
-        LOG(DEBUG, "Got an edge on the upper claw\n");
+        printf("Got an edge on the upper claw\n");
       }
-      if (GetPositionOfEdge(bottom_start_position, last_position.bottom,
-                            control_loops::claw_queue_group.position->bottom,
-                            &limits.lower_claw)) {
+      if (bottom.GetPositionOfEdge(
+              control_loops::claw_queue_group.position->bottom,
+              &limits.lower_claw)) {
         print = true;
-        LOG(DEBUG, "Got an edge on the lower claw\n");
+        printf("Got an edge on the lower claw\n");
       }
       const double top_position =
           control_loops::claw_queue_group.position->top.position -

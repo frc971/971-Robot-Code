@@ -89,6 +89,8 @@ class Drivetrain(control_loop.ControlLoop):
       self.Gr = self.G_high
     # Control loop time step
     self.dt = 0.01
+    
+    print "THE NUMBER I WANT" + str((self.free_speed / 60.0 * 2.0 * numpy.pi) * self.G_high * self.r)
 
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.
@@ -118,6 +120,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.D = numpy.matrix([[0, 0],
                            [0, 0]])
 
+    #print "THE NUMBER I WANT" + str(numpy.linalg.inv(self.A_continuous) * -self.B_continuous * numpy.matrix([[12.0], [12.0]]))
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
