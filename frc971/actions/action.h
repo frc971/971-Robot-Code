@@ -57,13 +57,13 @@ template <class T> class ActionBase {
   bool WaitUntil(::std::function<bool(void)> done_condition) {
     while (!done_condition()) {
       if (ShouldCancel() || abort_) {
-        // clear abort bit as we have just aqborted
+        // Clear abort bit as we have just aborted.
         abort_ = false;
         return true;
       }
     }
     if (ShouldCancel() || abort_) {
-      // clear abort bit as we have just aqborted
+      // Clear abort bit as we have just aborted.
       abort_ = false;
       return true;
     } else {

@@ -1,5 +1,3 @@
-#include "stdio.h"
-
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"

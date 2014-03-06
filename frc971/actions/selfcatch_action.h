@@ -5,10 +5,10 @@
 namespace frc971 {
 namespace actions {
 
-class SelfCatchAction : public ActionBase<actions::SelfCatchActionGroup> {
+class SelfCatchAction : public ActionBase<SelfCatchActionGroup> {
  public:
 
-  explicit SelfCatchAction(actions::SelfCatchActionGroup* s);
+  explicit SelfCatchAction(SelfCatchActionGroup* s);
 
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.

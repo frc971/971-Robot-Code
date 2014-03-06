@@ -110,7 +110,7 @@ void SelfCatchAction::RunAction() {
   // head to a finshed pose
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
           kFinishAngle)
-          .separation_angle(kFinishAngle).intake(0.0).centering(0.0).Send()) {
+          .separation_angle(0.0).intake(0.0).centering(0.0).Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }

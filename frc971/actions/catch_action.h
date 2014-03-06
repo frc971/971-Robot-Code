@@ -5,10 +5,10 @@
 namespace frc971 {
 namespace actions {
 
-class CatchAction : public ActionBase<actions::CatchActionGroup> {
+class CatchAction : public ActionBase<CatchActionGroup> {
  public:
 
-  explicit CatchAction(actions::CatchActionGroup* s);
+  explicit CatchAction(CatchActionGroup* s);
 
   // Actually executes the action of moving the claw into position and closing
   // it.
