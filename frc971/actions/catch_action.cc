@@ -5,7 +5,7 @@
 
 #include "frc971/actions/catch_action.h"
 #include "frc971/control_loops/claw/claw.q.h"
-#include "frc971/queues/othersensors.q.h"
+#include "frc971/queues/other_sensors.q.h"
 
 namespace frc971 {
 namespace actions {
@@ -94,12 +94,12 @@ bool CatchAction::DoneClawWithBall() {
 }
 
 bool CatchAction::DoneFoundSonar() {
-  if (!sensors::othersensors.FetchLatest()) {
-    sensors::othersensors.FetchNextBlocking();
+  if (!sensors::other_sensors.FetchLatest()) {
+    sensors::other_sensors.FetchNextBlocking();
   }
-  LOG(DEBUG, "Sonar at %.2f.\n", sensors::othersensors->sonar_distance);
-  if (sensors::othersensors->sonar_distance > 0.3 &&
-      sensors::othersensors->sonar_distance < kSonarTriggerDist) {
+  LOG(DEBUG, "Sonar at %.2f.\n", sensors::other_sensors->sonar_distance);
+  if (sensors::other_sensors->sonar_distance > 0.3 &&
+      sensors::other_sensors->sonar_distance < kSonarTriggerDist) {
     return true;
   }
   return false;

@@ -8,7 +8,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
-#include "frc971/queues/othersensors.q.h"
+#include "frc971/queues/other_sensors.q.h"
 
 namespace frc971 {
 namespace actions {
@@ -124,12 +124,12 @@ void SelfCatchAction::RunAction() {
 
 
 bool SelfCatchAction::DoneBallIn() {
-  if (!sensors::othersensors.FetchLatest()) {
-  	sensors::othersensors.FetchNextBlocking();
+  if (!sensors::other_sensors.FetchLatest()) {
+  	sensors::other_sensors.FetchNextBlocking();
   }
-  if (sensors::othersensors->travis_hall_effect_distance > 0.005) {
+  if (sensors::other_sensors->plunger_hall_effect_distance > 0.005) {
     LOG(INFO, "Ball in at %.2f.\n",
-        sensors::othersensors->travis_hall_effect_distance);
+        sensors::other_sensors->plunger_hall_effect_distance);
   	return true;
   }
   return false;
@@ -149,12 +149,12 @@ bool SelfCatchAction::DoneClawWithBall() {
 }
 
 bool SelfCatchAction::DoneFoundSonar() {
-  if (!sensors::othersensors.FetchLatest()) {
-  	sensors::othersensors.FetchNextBlocking();
+  if (!sensors::other_sensors.FetchLatest()) {
+  	sensors::other_sensors.FetchNextBlocking();
   }
-  if (sensors::othersensors->sonar_distance > 0.3 &&
-      sensors::othersensors->sonar_distance < kSonarTriggerDist) {
-    LOG(INFO, "Hit Sonar at %.2f.\n", sensors::othersensors->sonar_distance);
+  if (sensors::other_sensors->sonar_distance > 0.3 &&
+      sensors::other_sensors->sonar_distance < kSonarTriggerDist) {
+    LOG(INFO, "Hit Sonar at %.2f.\n", sensors::other_sensors->sonar_distance);
   	return true;
   }
   return false;

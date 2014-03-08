@@ -1,7 +1,7 @@
 {
   'variables': {
     'queue_files': [
-      'othersensors.q',
+      'other_sensors.q',
       'to_log.q',
     ]
   },

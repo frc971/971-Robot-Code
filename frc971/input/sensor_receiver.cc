@@ -9,7 +9,7 @@
 #include "bbb/sensor_reader.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/othersensors.q.h"
+#include "frc971/queues/other_sensors.q.h"
 #include "frc971/constants.h"
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
@@ -20,7 +20,8 @@
 #endif
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::sensors::othersensors;
+using ::frc971::sensors::other_sensors;
+using ::frc971::sensors::gyro_reading;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
@@ -154,12 +155,14 @@ void PacketReceived(const ::bbb::DataStruct *data,
   }
 
   if (!bad_gyro) {
-    othersensors.MakeWithBuilder()
-        .gyro_angle(gyro_translate(data->gyro_angle))
-        .sonar_distance(
-            sonar_translate(data->main.ultrasonic_pulse_length))
+    gyro_reading.MakeWithBuilder()
+        .angle(gyro_translate(data->gyro_angle))
         .Send();
   }
+
+  other_sensors.MakeWithBuilder()
+      .sonar_distance(sonar_translate(data->main.ultrasonic_pulse_length))
+      .Send();
 
   drivetrain.position.MakeWithBuilder()
       .right_encoder(drivetrain_translate(data->main.right_drive))
