@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include <algorithm>
 
@@ -24,7 +25,7 @@ namespace {
 RawQueue *queue = NULL;
 
 int dropped_messages = 0;
-::aos::time::Time dropped_start(0, 0);
+int32_t dropped_start_seconds, dropped_start_nseconds;
 
 LogMessage *GetMessageOrDie() {
   LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
@@ -94,22 +95,26 @@ void Free(const LogMessage *msg) {
 void Write(LogMessage *msg) {
   if (__builtin_expect(dropped_messages > 0, 0)) {
     LogMessage *dropped_message = GetMessageOrDie();
-    internal::FillInMessageVarargs(ERROR, dropped_message,
-                                   "%d logs starting at %f dropped\n",
-                                   dropped_messages, dropped_start.ToSeconds());
+    internal::FillInMessageVarargs(
+        ERROR, dropped_message,
+        "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
+        dropped_messages, dropped_start_seconds, dropped_start_nseconds);
     if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
       dropped_messages = 0;
+      internal::PrintMessage(stderr, *dropped_message);
     } else {
       // Don't even bother trying to write this message because it's not likely
       // to work and it would be confusing to have one log in the middle of a
       // string of failures get through.
       ++dropped_messages;
+      queue->FreeMessage(msg);
       return;
     }
   }
   if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
     if (dropped_messages == 0) {
-      dropped_start = ::aos::time::Time::Now();
+      dropped_start_seconds = msg->seconds;
+      dropped_start_nseconds = msg->nseconds;
     }
     ++dropped_messages;
   }
