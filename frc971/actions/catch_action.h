@@ -12,9 +12,10 @@ class CatchAction : public ActionBase<CatchActionGroup> {
 
   // Actually executes the action of moving the claw into position and closing
   // it.
-  void RunAction();
+  virtual void RunAction();
 
   static constexpr double kCatchSeparation = 1.0;
+  static constexpr double kCatchMinSeparation = 0.6;
   static constexpr double kCatchIntake = 12.0;
   static constexpr double kSonarTriggerDist = 0.8;
   static constexpr double kCatchCentering = 12.0;

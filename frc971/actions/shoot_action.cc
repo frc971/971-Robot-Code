@@ -46,7 +46,7 @@ void ShootAction::RunAction() {
   // wait for record of shot having been fired
   if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
 
-  // Open up the claw in preparation for shooting.
+  // Turn the intake off.
   control_loops::claw_queue_group.goal.FetchLatest();
 
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
@@ -62,8 +62,10 @@ void ShootAction::RunAction() {
 }
 
 bool ClawIsReady() {
-  control_loops::claw_queue_group.goal.FetchLatest();
-  control_loops::claw_queue_group.status.FetchLatest();
+  if (!control_loops::claw_queue_group.goal.FetchLatest()) {
+    control_loops::claw_queue_group.goal.FetchLatest();
+  }
+
   bool ans =
       control_loops::claw_queue_group.status->zeroed &&
       (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
@@ -141,6 +143,14 @@ bool ShootAction::DoneShot() {
     return true;
   }
   return false;
+}
+
+::std::unique_ptr<TypedAction< ::frc971::actions::ShootActionQueueGroup>>
+MakeShootAction() {
+  return ::std::unique_ptr<
+      TypedAction< ::frc971::actions::ShootActionQueueGroup>>(
+      new TypedAction< ::frc971::actions::ShootActionQueueGroup>(
+          &::frc971::actions::shoot_action));
 }
 
 }  // namespace actions

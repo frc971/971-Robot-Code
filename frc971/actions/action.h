@@ -1,3 +1,6 @@
+#ifndef FRC971_ACTIONS_ACTION_H_
+#define FRC971_ACTIONS_ACTION_H_
+
 #include <stdio.h>
 
 #include <functional>
@@ -93,3 +96,4 @@ template <class T> class ActionBase {
 }  // namespace actions
 }  // namespace frc971
 
+#endif  // FRC971_ACTIONS_ACTION_H_

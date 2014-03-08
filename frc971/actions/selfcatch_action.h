@@ -12,7 +12,7 @@ class SelfCatchAction : public ActionBase<SelfCatchActionGroup> {
 
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.
-  void RunAction();
+  virtual void RunAction();
 
   // calc an offset to our requested shot based on robot speed
   double SpeedToAngleOffset(double speed);

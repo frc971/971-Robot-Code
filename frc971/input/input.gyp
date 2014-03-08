@@ -18,6 +18,9 @@
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/actions/actions.gyp:shoot_action_queue',
+        '<(DEPTH)/frc971/actions/actions.gyp:action_client',
+        '<(DEPTH)/frc971/actions/actions.gyp:catch_action_queue',
+        '<(DEPTH)/frc971/actions/actions.gyp:shoot_action_lib',
       ],
     },
     {

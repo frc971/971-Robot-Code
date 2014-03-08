@@ -16,6 +16,7 @@
         '../actions/actions.gyp:shoot_action',
         '../actions/actions.gyp:selfcatch_action',
         '../actions/actions.gyp:catch_action',
+        '../actions/actions.gyp:drivetrain_action',
         '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
