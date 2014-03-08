@@ -1,3 +1,6 @@
+#ifndef FRC971_ACTIONS_ACTION_H_
+#define FRC971_ACTIONS_ACTION_H_
+
 #include <stdio.h>
 
 #include <functional>
@@ -57,13 +60,13 @@ template <class T> class ActionBase {
   bool WaitUntil(::std::function<bool(void)> done_condition) {
     while (!done_condition()) {
       if (ShouldCancel() || abort_) {
-        // clear abort bit as we have just aqborted
+        // Clear abort bit as we have just aborted.
         abort_ = false;
         return true;
       }
     }
     if (ShouldCancel() || abort_) {
-      // clear abort bit as we have just aqborted
+      // Clear abort bit as we have just aborted.
       abort_ = false;
       return true;
     } else {
@@ -93,3 +96,4 @@ template <class T> class ActionBase {
 }  // namespace actions
 }  // namespace frc971
 
+#endif  // FRC971_ACTIONS_ACTION_H_

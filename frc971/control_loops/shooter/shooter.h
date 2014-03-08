@@ -201,6 +201,8 @@ class ShooterMotor
   bool zeroed_;
   int distal_posedge_validation_cycles_left_;
   int proximal_posedge_validation_cycles_left_;
+  bool last_distal_current_;
+  bool last_proximal_current_;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

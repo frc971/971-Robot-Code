@@ -141,7 +141,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
   } else if (data->bad_gyro) {
     LOG(ERROR, "bad gyro\n");
     bad_gyro = true;
-    othersensors.MakeWithBuilder().gyro_angle(0).Send();
+    othersensors.MakeWithBuilder()
+        .gyro_angle(0)
+        .sonar_distance(data->main.ultrasonic_pulse_length)
+        .Send();
   } else if (data->old_gyro_reading) {
     LOG(WARNING, "old/bad gyro reading\n");
     bad_gyro = true;
@@ -152,6 +155,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
   if (!bad_gyro) {
     othersensors.MakeWithBuilder()
         .gyro_angle(gyro_translate(data->gyro_angle))
+        .sonar_distance(data->main.ultrasonic_pulse_length)
         .Send();
   }
 

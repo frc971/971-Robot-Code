@@ -110,7 +110,7 @@ void SelfCatchAction::RunAction() {
   // head to a finshed pose
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
           kFinishAngle)
-          .separation_angle(kFinishAngle).intake(0.0).centering(0.0).Send()) {
+          .separation_angle(0.0).intake(0.0).centering(0.0).Send()) {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }
@@ -124,12 +124,12 @@ void SelfCatchAction::RunAction() {
 
 
 bool SelfCatchAction::DoneBallIn() {
-  if (!queues::othersensors.FetchLatest()) {
-  	queues::othersensors.FetchNextBlocking();
+  if (!sensors::othersensors.FetchLatest()) {
+  	sensors::othersensors.FetchNextBlocking();
   }
-  if (queues::othersensors->travis_hall_effect_distance > 0.005)
+  if (sensors::othersensors->travis_hall_effect_distance > 0.005) {
     LOG(INFO, "Ball in at %.2f.\n",
-        queues::othersensors->travis_hall_effect_distance);
+        sensors::othersensors->travis_hall_effect_distance);
   	return true;
   }
   return false;
@@ -149,12 +149,12 @@ bool SelfCatchAction::DoneClawWithBall() {
 }
 
 bool SelfCatchAction::DoneFoundSonar() {
-  if (!queues::othersensors.FetchLatest()) {
-  	queues::othersensors.FetchNextBlocking();
+  if (!sensors::othersensors.FetchLatest()) {
+  	sensors::othersensors.FetchNextBlocking();
   }
-  if (queues::othersensors->sonar_distance > 0.3 &&
-      queues::othersensors->sonar_distance < kSonarTriggerDist) {
-    LOG(INFO, "Hit Sonar at %.2f.\n", queues::othersensors->sonar_distance);
+  if (sensors::othersensors->sonar_distance > 0.3 &&
+      sensors::othersensors->sonar_distance < kSonarTriggerDist) {
+    LOG(INFO, "Hit Sonar at %.2f.\n", sensors::othersensors->sonar_distance);
   	return true;
   }
   return false;
@@ -167,10 +167,30 @@ bool SelfCatchAction::DoneSetupShot() {
   if (!control_loops::claw_queue_group.status.FetchLatest()) {
   	control_loops::claw_queue_group.status.FetchNextBlocking();
   }
+  if (!control_loops::shooter_queue_group.goal.FetchLatest()) {
+    LOG(ERROR, "Failed to fetch shooter goal.\n");
+  }
+  if (!control_loops::claw_queue_group.goal.FetchLatest()) {
+    LOG(ERROR, "Failed to fetch claw goal.\n");
+  }
   // Make sure that both the shooter and claw have reached the necessary
   // states.
+  // Check the current positions of the various mechanisms to make sure that we
+  // avoid race conditions where we send it a new goal but it still thinks that
+  // it has the old goal and thinks that it is already done.
+  bool shooter_power_correct =
+      ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
+                 control_loops::shooter_queue_group.goal->shot_power) <
+      0.005;
+
+  bool claw_angle_correct =
+      ::std::abs(control_loops::claw_queue_group.status->bottom -
+                 control_loops::claw_queue_group.goal->bottom_angle) <
+      0.005;
+
   if (control_loops::shooter_queue_group.status->ready &&
-      control_loops::claw_queue_group.status->done_with_ball) {
+      control_loops::claw_queue_group.status->done_with_ball &&
+      shooter_power_correct && claw_angle_correct) {
     LOG(INFO, "Claw and Shooter ready for shooting.\n");
     // TODO(james): Get realer numbers for shooter_action.
     return true;
@@ -181,7 +201,7 @@ bool SelfCatchAction::DoneSetupShot() {
   // continually changing, we will need testing to see
   control_loops::drivetrain.status.FetchLatest();
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder().bottom_angle(
-          shoot_action.goal->shot_angle +
+          selfcatch_action.goal->shot_angle +
           SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed))
           .separation_angle(0.0).intake(2.0).centering(1.0).Send()) {
     LOG(WARNING, "sending claw goal failed\n");
@@ -199,6 +219,7 @@ bool SelfCatchAction::DonePreShotOpen() {
   if (!control_loops::claw_queue_group.status.FetchLatest()) {
   	control_loops::claw_queue_group.status.FetchNextBlocking();
   }
+
   if (control_loops::claw_queue_group.status->separation >
       values.shooter_action.claw_shooting_separation) {
     LOG(INFO, "Opened up enough to shoot.\n");

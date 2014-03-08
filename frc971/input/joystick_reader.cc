@@ -9,11 +9,15 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/constants.h"
 #include "frc971/queues/othersensors.q.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/actions/shoot_action.q.h"
+#include "frc971/actions/action_client.h"
+#include "frc971/actions/catch_action.q.h"
+#include "frc971/actions/shoot_action.h"
 
 using ::frc971::control_loops::drivetrain;
 using ::frc971::sensors::othersensors;
@@ -32,120 +36,70 @@ const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
-const ButtonLocation kFire(3, 11);
+const ButtonLocation kCatch(3, 10);
+
+const ButtonLocation kFire(3, 9);
 const ButtonLocation kUnload(2, 11);
 const ButtonLocation kReload(2, 6);
 
-const ButtonLocation kRollersOut(3, 12);
-const ButtonLocation kRollersIn(3, 10);
+const ButtonLocation kRollersOut(3, 8);
+const ButtonLocation kRollersIn(3, 3);
 
-const ButtonLocation kTuck(3, 8);
-const ButtonLocation kIntakeOpenPosition(3, 9);
-const ButtonLocation kIntakePosition(3, 7);
+const ButtonLocation kTuck(3, 4);
+const ButtonLocation kIntakePosition(3, 5);
+const ButtonLocation kIntakeOpenPosition(3, 11);
+//const ButtonLocation kFlipRobot(3, 7);
+const JoystickAxis kFlipRobot(3, 3);
+// Truss shot. (3, 1)
 
-const ButtonLocation kLongShot(3, 5);
-const ButtonLocation kMediumShot(3, 3);
-const ButtonLocation kShortShot(3, 6);
+const ButtonLocation kLongShot(3, 7);
+const ButtonLocation kMediumShot(3, 6);
+const ButtonLocation kShortShot(3, 2);
 
 struct ClawGoal {
   double angle;
   double separation;
 };
 
+struct ShotGoal {
+  ClawGoal claw;
+  double shot_power;
+  bool velocity_compensation;
+  double intake_power;
+};
+
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
 const ClawGoal kIntakeGoal = {-2.273474, 0.0};
 const ClawGoal kIntakeOpenGoal = {-2.0, 1.2};
 
-const ClawGoal kLongShotGoal = {-M_PI / 2.0 + 0.43, 0.10};
-const ClawGoal kMediumShotGoal = {-0.9, 0.10};
-const ClawGoal kShortShotGoal = {-0.04, 0.11};
+// TODO(austin): Tune these by hand...
+const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
+const ClawGoal kFlippedIntakeGoal = {2.0, 0.0};
+const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
-class Action {
- public:
-  // Cancels the action.
-  void Cancel() { DoCancel(); }
-  // Returns true if the action is currently running.
-  bool Running() { return DoRunning(); }
-  // Starts the action.
-  void Start() { DoStart(); }
+const double kIntakePower = 2.0;
+const double kShootSeparation = 0.08;
 
-  virtual ~Action() {}
+const ShotGoal kLongShotGoal = {
+    {-M_PI / 2.0 + 0.43, kShootSeparation}, 145, false, kIntakePower};
+const ShotGoal kMediumShotGoal = {
+    {-0.9, kShootSeparation}, 100, true, kIntakePower};
+const ShotGoal kShortShotGoal = {
+    {-0.04, kShootSeparation}, 10, false, kIntakePower};
 
- private:
-  virtual void DoCancel() = 0;
-  virtual bool DoRunning() = 0;
-  virtual void DoStart() = 0;
-};
-
-// Templated subclass to hold the type information.
-template <typename T>
-class TypedAction : public Action {
- public:
-  typedef typename std::remove_reference<
-      decltype(*(static_cast<T *>(NULL)->goal.MakeMessage().get()))>::type
-        GoalType;
-
-  TypedAction(T *queue_group)
-      : queue_group_(queue_group),
-        goal_(queue_group_->goal.MakeMessage()),
-        has_started_(false) {}
-
-  // Returns the current goal that will be sent when the action is sent.
-  GoalType *GetGoal() { return goal_.get(); }
-
-  virtual ~TypedAction() {
-    LOG(INFO, "Calling destructor\n");
-    DoCancel();
-  }
-
- private:
-  // Cancels the action.
-  virtual void DoCancel() {
-    LOG(INFO, "Canceling action\n");
-    queue_group_->goal.MakeWithBuilder().run(false).Send();
-  }
-
-  // Returns true if the action is running or we don't have an initial response
-  // back from it to signal whether or not it is running.
-  virtual bool DoRunning() {
-    if (has_started_) {
-      queue_group_->status.FetchLatest();
-    } else if (queue_group_->status.FetchLatest()) {
-      if (queue_group_->status->running) {
-        // Wait until it reports that it is running to start.
-        has_started_ = true;
-      }
-    }
-    return !has_started_ ||
-           (queue_group_->status.get() && queue_group_->status->running);
-  }
-
-  // Starts the action if a goal has been created.
-  virtual void DoStart() {
-    if (goal_) {
-      goal_->run = true;
-      goal_.Send();
-      has_started_ = false;
-      LOG(INFO, "Starting action\n");
-    } else {
-      has_started_ = true;
-    }
-  }
-
-  T *queue_group_;
-  ::aos::ScopedMessagePtr<GoalType> goal_;
-  // Track if we have seen a response to the start message.
-  // If we haven't, we are considered running regardless.
-  bool has_started_;
-};
+const ShotGoal kFlippedLongShotGoal = {
+    {M_PI / 2.0 - 0.43, kShootSeparation}, 145, false, kIntakePower};
+const ShotGoal kFlippedMediumShotGoal = {
+    {0.9, kShootSeparation}, 100, true, kIntakePower};
+const ShotGoal kFlippedShortShotGoal = {
+    {0.04, kShootSeparation}, 10, false, kIntakePower};
 
 // Makes a new ShootAction action.
-::std::unique_ptr<TypedAction< ::frc971::actions::ShootActionQueueGroup>>
-MakeShootAction() {
-  return ::std::unique_ptr<
-      TypedAction< ::frc971::actions::ShootActionQueueGroup>>(
-      new TypedAction< ::frc971::actions::ShootActionQueueGroup>(
-          &::frc971::actions::shoot_action));
+::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
+MakeCatchAction() {
+  return ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>(
+      new TypedAction< ::frc971::actions::CatchActionGroup>(
+          &::frc971::actions::catch_action));
 }
 
 // A queue which queues Actions and cancels them.
@@ -205,24 +159,30 @@ class ActionQueue {
   ::std::unique_ptr<Action> next_action_;
 };
 
+
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
       : is_high_gear_(false),
         shot_power_(80.0),
         goal_angle_(0.0),
-        separation_angle_(0.0) {}
+        separation_angle_(0.0),
+        velocity_compensation_(false),
+        intake_power_(0.0),
+        was_running_(false) {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     if (data.GetControlBit(ControlBit::kAutonomous)) {
       if (data.PosEdge(ControlBit::kEnabled)){
         LOG(INFO, "Starting auto mode\n");
         ::frc971::autonomous::autonomous.MakeWithBuilder()
-            .run_auto(true).Send();
+            .run_auto(true)
+            .Send();
       } else if (data.NegEdge(ControlBit::kEnabled)) {
         LOG(INFO, "Stopping auto mode\n");
         ::frc971::autonomous::autonomous.MakeWithBuilder()
-            .run_auto(false).Send();
+            .run_auto(false)
+            .Send();
       }
     } else {
       HandleTeleop(data);
@@ -296,6 +256,16 @@ class Reader : public ::aos::input::JoystickInput {
   void SetGoal(ClawGoal goal) {
     goal_angle_ = goal.angle;
     separation_angle_ = goal.separation;
+    velocity_compensation_ = false;
+    intake_power_ = 0.0;
+  }
+
+  void SetGoal(ShotGoal goal) {
+    goal_angle_ = goal.claw.angle;
+    separation_angle_ = goal.claw.separation;
+    shot_power_ = goal.shot_power;
+    velocity_compensation_ = goal.velocity_compensation;
+    intake_power_ = goal.intake_power;
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
@@ -303,61 +273,96 @@ class Reader : public ::aos::input::JoystickInput {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
     }
-
-    if (data.IsPressed(kIntakeOpenPosition)) {
-      action_queue_.CancelAllActions();
-      SetGoal(kIntakeOpenGoal);
-    } else if (data.IsPressed(kIntakePosition)) {
-      action_queue_.CancelAllActions();
-      SetGoal(kIntakeGoal);
-    } else if (data.IsPressed(kTuck)) {
-      action_queue_.CancelAllActions();
-      SetGoal(kTuckGoal);
+    if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
+      intake_power_ = 0.0;
     }
 
-    if (data.PosEdge(kLongShot)) {
-      auto shoot_action = MakeShootAction();
+    if (data.GetAxis(kFlipRobot) < 0.5) {
+      if (data.IsPressed(kIntakeOpenPosition)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedIntakeOpenGoal);
+      } else if (data.IsPressed(kIntakePosition)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedIntakeGoal);
+      } else if (data.IsPressed(kTuck)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedTuckGoal);
+      } else if (data.PosEdge(kLongShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedLongShotGoal);
+      } else if (data.PosEdge(kMediumShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedMediumShotGoal);
+      } else if (data.PosEdge(kShortShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kFlippedShortShotGoal);
+      }
+    } else {
+      if (data.IsPressed(kIntakeOpenPosition)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kIntakeOpenGoal);
+      } else if (data.IsPressed(kIntakePosition)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kIntakeGoal);
+      } else if (data.IsPressed(kTuck)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kTuckGoal);
+      } else if (data.PosEdge(kLongShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kLongShotGoal);
+      } else if (data.PosEdge(kMediumShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kMediumShotGoal);
+      } else if (data.PosEdge(kShortShot)) {
+        action_queue_.CancelAllActions();
+        SetGoal(kShortShotGoal);
+      }
+    }
 
-      shot_power_ = 145.0;
-      shoot_action->GetGoal()->shot_power = shot_power_;
-      shoot_action->GetGoal()->shot_angle = kLongShotGoal.angle;
-      SetGoal(kLongShotGoal);
+    if (data.PosEdge(kCatch)) {
+      auto catch_action = MakeCatchAction();
+      catch_action->GetGoal()->catch_angle = goal_angle_;
+      action_queue_.QueueAction(::std::move(catch_action));
+    }
 
-      action_queue_.QueueAction(::std::move(shoot_action));
-    } else if (data.PosEdge(kMediumShot)) {
-      auto shoot_action = MakeShootAction();
-
-      shot_power_ = 100.0;
-      shoot_action->GetGoal()->shot_power = shot_power_;
-      shoot_action->GetGoal()->shot_angle = kMediumShotGoal.angle;
-      SetGoal(kMediumShotGoal);
-
-      action_queue_.QueueAction(::std::move(shoot_action));
-    } else if (data.PosEdge(kShortShot)) {
-      auto shoot_action = MakeShootAction();
-
-      shot_power_ = 20.0;
-      shoot_action->GetGoal()->shot_power = shot_power_;
-      shoot_action->GetGoal()->shot_angle = kShortShotGoal.angle;
-      SetGoal(kShortShotGoal);
-
-      action_queue_.QueueAction(::std::move(shoot_action));
+    if (data.PosEdge(kFire)) {
+      action_queue_.QueueAction(actions::MakeShootAction());
     }
 
     action_queue_.Tick();
     if (data.IsPressed(kUnload) || data.IsPressed(kReload)) {
       action_queue_.CancelAllActions();
+      intake_power_ = 0.0;
+      velocity_compensation_ = false;
     }
 
     // Send out the claw and shooter goals if no actions are running.
     if (!action_queue_.Running()) {
+      // If the action just ended, turn the intake off and stop velocity
+      // compensating.
+      if (was_running_) {
+        intake_power_ = 0.0;
+        velocity_compensation_ = false;
+      }
+
+      control_loops::drivetrain.status.FetchLatest();
+      const double goal_angle =
+          goal_angle_ +
+          (velocity_compensation_
+               ? SpeedToAngleOffset(
+                     control_loops::drivetrain.status->robot_speed)
+               : 0.0);
+
+      bool intaking = data.IsPressed(kRollersIn) ||
+                      data.IsPressed(kIntakePosition) ||
+                      data.IsPressed(kIntakeOpenPosition);
       if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-               .bottom_angle(goal_angle_)
+               .bottom_angle(goal_angle)
                .separation_angle(separation_angle_)
-               .intake(data.IsPressed(kRollersIn)
-                           ? 12.0
-                           : (data.IsPressed(kRollersOut) ? -12.0 : 0.0))
-               .centering(data.IsPressed(kRollersIn) ? 12.0 : 0.0)
+               .intake(intaking ? 12.0
+                                : (data.IsPressed(kRollersOut) ? -12.0
+                                                               : intake_power_))
+               .centering(intaking ? 12.0 : 0.0)
                .Send()) {
         LOG(WARNING, "sending claw goal failed\n");
       }
@@ -371,6 +376,14 @@ class Reader : public ::aos::input::JoystickInput {
         LOG(WARNING, "sending shooter goal failed\n");
       }
     }
+    was_running_ = action_queue_.Running();
+  }
+
+  double SpeedToAngleOffset(double speed) {
+    const frc971::constants::Values &values = frc971::constants::GetValues();
+    // scale speed to a [0.0-1.0] on something close to the max
+    // TODO(austin): Change the scale factor for different shots.
+    return (speed / values.drivetrain_max_speed) * 0.3;
   }
 
  private:
@@ -378,6 +391,9 @@ class Reader : public ::aos::input::JoystickInput {
   double shot_power_;
   double goal_angle_;
   double separation_angle_;
+  bool velocity_compensation_;
+  double intake_power_;
+  bool was_running_;
   
   ActionQueue action_queue_;
 };

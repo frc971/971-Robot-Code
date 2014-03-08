@@ -1,6 +1,6 @@
 package frc971.actions;
 
-queue_group SelfCatchActionGroup {
+queue_group DrivetrainActionQueueGroup {
   message Status {
     bool running;
   };
@@ -9,11 +9,14 @@ queue_group SelfCatchActionGroup {
     // If true, run this action.  If false, cancel the action if it is
     // currently running.
     bool run;
-    double shot_angle;
+    double left_initial_position;
+    double right_initial_position;
+    double y_offset;
+    double maximum_velocity;
   };
 
   queue Goal goal;
   queue Status status;
 };
 
-queue_group SelfCatchActionGroup selfcatch_action;
+queue_group DrivetrainActionQueueGroup drivetrain_action;
