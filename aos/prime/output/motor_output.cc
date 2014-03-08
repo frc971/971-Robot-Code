@@ -50,7 +50,6 @@ void MotorOutput::Run() {
     values_.pressure_switch_channel = 0;
     values_.compressor_channel = 0;
     values_.solenoid_module = -1;
-    values_.solenoid_values = 0;
 
     RunIteration();
 
