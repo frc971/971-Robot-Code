@@ -14,6 +14,8 @@
         '../control_loops/shooter/shooter.gyp:shooter_lib_test',
         '../autonomous/autonomous.gyp:auto',
         '../actions/actions.gyp:shoot_action',
+        '../actions/actions.gyp:selfcatch_action',
+        '../actions/actions.gyp:catch_action',
         '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',

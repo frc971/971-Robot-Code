@@ -1,6 +1,6 @@
 package frc971.actions;
 
-queue_group SelfCatchActionGroup {
+queue_group CatchActionGroup {
   message Status {
     bool running;
   };
@@ -9,11 +9,11 @@ queue_group SelfCatchActionGroup {
     // If true, run this action.  If false, cancel the action if it is
     // currently running.
     bool run;
-    double shot_angle;
+    double catch_angle;
   };
 
   queue Goal goal;
   queue Status status;
 };
 
-queue_group SelfCatchActionGroup selfcatch_action;
+queue_group CatchActionGroup catch_action;
