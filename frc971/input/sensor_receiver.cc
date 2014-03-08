@@ -64,6 +64,10 @@ double battery_translate(uint16_t in) {
   return adc_translate(in) * kDividerBig / kDividerSmall;
 }
 
+double sonar_translate(uint32_t in) {
+  return static_cast<double>(in) / 1000.0;
+}
+
 double hall_translate(const constants::ShifterHallEffect &k, uint16_t in_low,
                       uint16_t in_high) {
   const double low_ratio =
@@ -129,9 +133,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp.sec(), cape_timestamp.nsec(),
-      data->main.ultrasonic_pulse_length, sizeof(*data));
+      sizeof(*data), sonar_translate(data->main.ultrasonic_pulse_length));
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
+  // TODO(brians): Switch to LogInterval for these things.
   if (data->uninitialized_gyro) {
     LOG(DEBUG, "uninitialized gyro\n");
     bad_gyro = true;
@@ -141,10 +146,6 @@ void PacketReceived(const ::bbb::DataStruct *data,
   } else if (data->bad_gyro) {
     LOG(ERROR, "bad gyro\n");
     bad_gyro = true;
-    othersensors.MakeWithBuilder()
-        .gyro_angle(0)
-        .sonar_distance(data->main.ultrasonic_pulse_length)
-        .Send();
   } else if (data->old_gyro_reading) {
     LOG(WARNING, "old/bad gyro reading\n");
     bad_gyro = true;
@@ -155,7 +156,8 @@ void PacketReceived(const ::bbb::DataStruct *data,
   if (!bad_gyro) {
     othersensors.MakeWithBuilder()
         .gyro_angle(gyro_translate(data->gyro_angle))
-        .sonar_distance(data->main.ultrasonic_pulse_length)
+        .sonar_distance(
+            sonar_translate(data->main.ultrasonic_pulse_length))
         .Send();
   }
 
