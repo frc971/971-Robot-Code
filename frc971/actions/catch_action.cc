@@ -97,7 +97,7 @@ bool CatchAction::DoneFoundSonar() {
   if (!sensors::othersensors.FetchLatest()) {
     sensors::othersensors.FetchNextBlocking();
   }
-  LOG(INFO, "Sonar at %.2f.\n", sensors::othersensors->sonar_distance);
+  LOG(DEBUG, "Sonar at %.2f.\n", sensors::othersensors->sonar_distance);
   if (sensors::othersensors->sonar_distance > 0.3 &&
       sensors::othersensors->sonar_distance < kSonarTriggerDist) {
     return true;

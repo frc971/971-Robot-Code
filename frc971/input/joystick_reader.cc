@@ -129,7 +129,7 @@ class ActionQueue {
 
   // Cancels all running actions.
   void CancelAllActions() {
-    LOG(INFO, "Canceling all actions\n");
+    LOG(DEBUG, "Cancelling all actions\n");
     if (current_action_) {
       current_action_->Cancel();
     }

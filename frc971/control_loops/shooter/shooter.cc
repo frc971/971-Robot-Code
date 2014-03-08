@@ -26,17 +26,17 @@ void ZeroedStateFeedbackLoop::CapU() {
   // against last cycle's voltage.
   if (X_hat(2, 0) > last_voltage_ + 4.0) {
     voltage_ -= X_hat(2, 0) - (last_voltage_ + 4.0);
-    LOG(INFO, "Capping due to runawway\n");
+    LOG(DEBUG, "Capping due to runaway\n");
   } else if (X_hat(2, 0) < last_voltage_ - 4.0) {
     voltage_ += X_hat(2, 0) - (last_voltage_ - 4.0);
-    LOG(INFO, "Capping due to runawway\n");
+    LOG(DEBUG, "Capping due to runaway\n");
   }
 
   voltage_ = std::min(max_voltage_, voltage_);
   voltage_ = std::max(-max_voltage_, voltage_);
   U(0, 0) = voltage_ - old_voltage;
 
-  LOG(INFO, "X_hat is %f, applied is %f\n", X_hat(2, 0), voltage_);
+  LOG(DEBUG, "X_hat is %f, applied is %f\n", X_hat(2, 0), voltage_);
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
