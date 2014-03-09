@@ -55,6 +55,7 @@ const JoystickAxis kFlipRobot(3, 3);
 const ButtonLocation kLongShot(3, 7);
 const ButtonLocation kMediumShot(3, 6);
 const ButtonLocation kShortShot(3, 2);
+const ButtonLocation kTrussShot(3, 1);
 
 struct ClawGoal {
   double angle;
@@ -77,22 +78,26 @@ const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
 const ClawGoal kFlippedIntakeGoal = {2.0, 0.0};
 const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
-const double kIntakePower = 2.0;
-const double kShootSeparation = 0.08;
+const double kIntakePower = 4.0;
+const double kShootSeparation = 0.11;
 
+//const ShotGoal kLongShotGoal = {
+    //{-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
 const ShotGoal kLongShotGoal = {
-    {-M_PI / 2.0 + 0.43, kShootSeparation}, 145, false, kIntakePower};
+    {-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
 const ShotGoal kMediumShotGoal = {
-    {-0.9, kShootSeparation}, 100, true, kIntakePower};
+    {-0.95, kShootSeparation}, 95, true, kIntakePower};
 const ShotGoal kShortShotGoal = {
-    {-0.04, kShootSeparation}, 10, false, kIntakePower};
+    {-0.670, kShootSeparation}, 71.0, false, kIntakePower};
+const ShotGoal kTrussShotGoal = {
+    {-0.05, kShootSeparation}, 61.0, false, kIntakePower};
 
 const ShotGoal kFlippedLongShotGoal = {
     {M_PI / 2.0 - 0.43, kShootSeparation}, 145, false, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
-    {0.9, kShootSeparation}, 100, true, kIntakePower};
+    {0.85, kShootSeparation}, 105, true, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.04, kShootSeparation}, 10, false, kIntakePower};
+    {0.57, kShootSeparation}, 80.0, false, kIntakePower};
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -272,6 +277,7 @@ class Reader : public ::aos::input::JoystickInput {
     HandleDrivetrain(data);
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
     }
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
@@ -280,50 +286,72 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.GetAxis(kFlipRobot) < 0.5) {
       if (data.IsPressed(kIntakeOpenPosition)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeGoal);
       } else if (data.IsPressed(kTuck)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedLongShotGoal);
       } else if (data.PosEdge(kMediumShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedMediumShotGoal);
       } else if (data.PosEdge(kShortShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedShortShotGoal);
+      } else if (data.PosEdge(kTrussShot)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kTrussShotGoal);
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeOpenGoal);
       } else if (data.IsPressed(kIntakePosition)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeGoal);
       } else if (data.IsPressed(kTuck)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kTuckGoal);
       } else if (data.PosEdge(kLongShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kLongShotGoal);
       } else if (data.PosEdge(kMediumShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kMediumShotGoal);
       } else if (data.PosEdge(kShortShot)) {
         action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
         SetGoal(kShortShotGoal);
+      } else if (data.PosEdge(kTrussShot)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kTrussShotGoal);
       }
     }
 
+    /*
     if (data.PosEdge(kCatch)) {
       auto catch_action = MakeCatchAction();
       catch_action->GetGoal()->catch_angle = goal_angle_;
       action_queue_.QueueAction(::std::move(catch_action));
     }
+    */
 
     if (data.PosEdge(kFire)) {
       action_queue_.QueueAction(actions::MakeShootAction());
@@ -332,6 +360,7 @@ class Reader : public ::aos::input::JoystickInput {
     action_queue_.Tick();
     if (data.IsPressed(kUnload) || data.IsPressed(kReload)) {
       action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
       intake_power_ = 0.0;
       velocity_compensation_ = false;
     }
@@ -346,19 +375,26 @@ class Reader : public ::aos::input::JoystickInput {
       }
 
       control_loops::drivetrain.status.FetchLatest();
-      const double goal_angle =
+      double goal_angle =
           goal_angle_ +
           (velocity_compensation_
                ? SpeedToAngleOffset(
                      control_loops::drivetrain.status->robot_speed)
                : 0.0);
+      double separation_angle = separation_angle_;
 
-      bool intaking = data.IsPressed(kRollersIn) ||
-                      data.IsPressed(kIntakePosition) ||
-                      data.IsPressed(kIntakeOpenPosition);
+      if (data.IsPressed(kCatch)) {
+        const double kCatchSeparation = 1.0;
+        goal_angle -= kCatchSeparation / 2.0;
+        separation_angle = kCatchSeparation;
+      }
+
+      bool intaking =
+          data.IsPressed(kRollersIn) || data.IsPressed(kIntakePosition) ||
+          data.IsPressed(kIntakeOpenPosition) || data.IsPressed(kCatch);
       if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
                .bottom_angle(goal_angle)
-               .separation_angle(separation_angle_)
+               .separation_angle(separation_angle)
                .intake(intaking ? 12.0
                                 : (data.IsPressed(kRollersOut) ? -12.0
                                                                : intake_power_))
@@ -383,7 +419,7 @@ class Reader : public ::aos::input::JoystickInput {
     const frc971::constants::Values &values = frc971::constants::GetValues();
     // scale speed to a [0.0-1.0] on something close to the max
     // TODO(austin): Change the scale factor for different shots.
-    return (speed / values.drivetrain_max_speed) * 0.3;
+    return (speed / values.drivetrain_max_speed) * 0.2;
   }
 
  private:
