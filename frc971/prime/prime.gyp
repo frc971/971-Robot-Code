@@ -30,7 +30,7 @@
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'scripts/start_list.txt',
+            'start_list.txt',
           ],
         },
       ],
