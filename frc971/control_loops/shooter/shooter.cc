@@ -649,5 +649,13 @@ void ShooterMotor::RunIteration(
   status->shots = shot_count_;
 }
 
+void ShooterMotor::ZeroOutputs() {
+  queue_group()->output.MakeWithBuilder()
+      .voltage(0)
+      .latch_piston(latch_piston_)
+      .brake_piston(brake_piston_)
+      .Send();
+}
+
 }  // namespace control_loops
 }  // namespace frc971

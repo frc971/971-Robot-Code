@@ -150,6 +150,9 @@ class ShooterMotor
       ShooterGroup::Output *output, ShooterGroup::Status *status);
 
  private:
+  // We have to override this to keep the pistons in the correct positions.
+  virtual void ZeroOutputs();
+
   // Friend the test classes for acces to the internal state.
   friend class testing::ShooterTest_UnloadWindupPositive_Test;
   friend class testing::ShooterTest_UnloadWindupNegative_Test;
