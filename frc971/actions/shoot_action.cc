@@ -20,12 +20,45 @@ double ShootAction::SpeedToAngleOffset(double speed) {
   // scale speed to a [0.0-1.0] on something close to the max
   return (speed / values.drivetrain_max_speed) * ShootAction::kOffsetRadians;
 }
-
 void ShootAction::RunAction() {
+  InnerRunAction();
+
+  // Now do our 'finally' block and make sure that we aren't requesting shots
+  // continually.
+  control_loops::shooter_queue_group.goal.FetchLatest();
+  if (control_loops::shooter_queue_group.goal.get() == nullptr) {
+    return;
+  }
+  if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
+           .shot_power(control_loops::shooter_queue_group.goal->shot_power)
+           .shot_requested(false)
+           .unload_requested(false)
+           .load_requested(false)
+           .Send()) {
+    LOG(WARNING, "sending shooter goal failed\n");
+    return;
+  }
+}
+
+void ShootAction::InnerRunAction() {
   LOG(INFO, "Shooting at the original angle and power.\n");
 
   // wait for claw to be ready
   if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this))) return;
+
+  // Turn the intake off.
+  control_loops::claw_queue_group.goal.FetchLatest();
+
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(control_loops::claw_queue_group.goal->bottom_angle)
+           .separation_angle(
+                control_loops::claw_queue_group.goal->separation_angle)
+           .intake(0.0)
+           .centering(0.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+    return;
+  }
 
   // Make sure that we have the latest shooter status.
   control_loops::shooter_queue_group.status.FetchLatest();

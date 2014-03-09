@@ -15,6 +15,7 @@ class ShootAction : public ActionBase<actions::ShootActionQueueGroup> {
   // Actually execute the action of moving the claw and shooter into position
   // and actually firing them.
   virtual void RunAction();
+  void InnerRunAction();
 
   // calc an offset to our requested shot based on robot speed
   double SpeedToAngleOffset(double speed);
