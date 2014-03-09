@@ -108,7 +108,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
 const Time kUnloadTimeout = Time::InSeconds(10);
 const Time kLoadTimeout = Time::InSeconds(2);
-const Time kLoadProblemEndTimeout = Time::InSeconds(0.5);
+const Time kLoadProblemEndTimeout = Time::InSeconds(1.0);
 const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
 // Time to wait after releasing the latch piston before winching back again.
 const Time kShotEndTimeout = Time::InSeconds(0.2);

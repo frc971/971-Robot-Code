@@ -235,13 +235,17 @@ void ShooterMotor::RunIteration(
                                   values.shooter.upper_limit);
         }
 
-        state_ = STATE_REQUEST_LOAD;
-
         // Go to the current position.
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
         // If the plunger is all the way back, we want to be latched.
         latch_piston_ = position->plunger;
         brake_piston_ = false;
+        if (position->latch == latch_piston_) {
+          state_ = STATE_REQUEST_LOAD;
+        } else {
+          shooter_loop_disable = true;
+          LOG(DEBUG, "Not moving on until the latch has moved to avoid a crash\n");
+        }
       } else {
         // If we can't start yet because we don't know where we are, set the
         // latch and brake to their defaults.
