@@ -121,9 +121,9 @@ void PositionClawBackIntake() {
 void PositionClawForShot() {
   // Turn the claw on, keep it straight up until the ball has been grabbed.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(0.9)
-           .separation_angle(0.1)
-           .intake(3.0)
+           .bottom_angle(0.85)
+           .separation_angle(0.10)
+           .intake(4.0)
            .centering(1.0)
            .Send()) {
     LOG(WARNING, "sending claw goal failed\n");
@@ -131,6 +131,7 @@ void PositionClawForShot() {
 }
 
 void SetShotPower(double power) {
+  LOG(INFO, "Setting shot power to %f\n", power);
   if (!control_loops::shooter_queue_group.goal.MakeWithBuilder()
            .shot_power(power)
            .shot_requested(false)
@@ -159,13 +160,15 @@ void Shoot() {
 }
 
 ::std::unique_ptr<TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>
-SetDriveGoal(double distance, double maximum_velocity = 1.5) {
+SetDriveGoal(double distance, double maximum_velocity = 1.7) {
+  LOG(INFO, "Driving to %f\n", distance);
   auto drivetrain_action = actions::MakeDrivetrainAction();
   drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
   drivetrain_action->GetGoal()->right_initial_position = right_initial_position;
   drivetrain_action->GetGoal()->y_offset = distance;
   drivetrain_action->GetGoal()->maximum_velocity = maximum_velocity;
   drivetrain_action->Start();
+  // Uncomment to make relative again.
   left_initial_position += distance;
   right_initial_position += distance;
   return ::std::move(drivetrain_action);
@@ -184,7 +187,39 @@ void InitializeEncoders() {
 
 }
 
+void WaitUntilClawDone() {
+  while (true) {
+    // Poll the running bit and auto done bits.
+    ::aos::time::PhasedLoop10MS(5000);
+    control_loops::claw_queue_group.status.FetchLatest();
+    control_loops::claw_queue_group.goal.FetchLatest();
+    if (ShouldExitAuto()) {
+      return;
+    }
+    if (control_loops::claw_queue_group.status.get() == nullptr ||
+        control_loops::claw_queue_group.goal.get() == nullptr) {
+      continue;
+    }
+    bool ans =
+        control_loops::claw_queue_group.status->zeroed &&
+        (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
+         1.0) &&
+        (::std::abs(control_loops::claw_queue_group.status->bottom -
+                    control_loops::claw_queue_group.goal->bottom_angle) <
+         0.10) &&
+        (::std::abs(control_loops::claw_queue_group.status->separation -
+                    control_loops::claw_queue_group.goal->separation_angle) <
+         0.4);
+    if (ans) {
+      return;
+    }
+  }
+}
+
 void HandleAuto() {
+  // The front of the robot is 1.854 meters from the wall
+  const double kShootDistance = 3.15;
+  const double kPickupDistance = 0.5;
   LOG(INFO, "Handling auto mode\n");
   ResetDrivetrain();
 
@@ -192,21 +227,26 @@ void HandleAuto() {
   InitializeEncoders();
 
   // Turn the claw on, keep it straight up until the ball has been grabbed.
+  LOG(INFO, "Claw going up\n");
   PositionClawVertically(12.0, 4.0);
-  SetShotPower(100.0);
+  SetShotPower(115.0);
 
   // Wait for the ball to enter the claw.
-  time::SleepFor(time::Time::InSeconds(0.5));
+  time::SleepFor(time::Time::InSeconds(0.25));
   if (ShouldExitAuto()) return;
-  PositionClawForShot();
+  LOG(INFO, "Readying claw for shot\n");
 
   {
     if (ShouldExitAuto()) return;
     // Drive to the goal.
-    auto drivetrain_action = SetDriveGoal(3.0);
+    auto drivetrain_action = SetDriveGoal(-kShootDistance);
+    time::SleepFor(time::Time::InSeconds(0.75));
+    PositionClawForShot();
+    LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
+  LOG(INFO, "Shooting\n");
 
   // Shoot.
   Shoot();
@@ -215,22 +255,31 @@ void HandleAuto() {
   {
     if (ShouldExitAuto()) return;
     // Intake the new ball.
+    LOG(INFO, "Claw ready for intake\n");
     PositionClawBackIntake();
-    auto drivetrain_action = SetDriveGoal(-0.3);
+    auto drivetrain_action = SetDriveGoal(kShootDistance + kPickupDistance);
+    LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
+    if (ShouldExitAuto()) return;
+    LOG(INFO, "Wait for the claw.\n");
+    WaitUntilClawDone();
     if (ShouldExitAuto()) return;
   }
 
   // Drive back.
   {
-    auto drivetrain_action = SetDriveGoal(3.0);
-    time::SleepFor(time::Time::InSeconds(0.5));
+    LOG(INFO, "Driving back\n");
+    auto drivetrain_action = SetDriveGoal(-(kShootDistance + kPickupDistance));
+    time::SleepFor(time::Time::InSeconds(0.3));
     if (ShouldExitAuto()) return;
     PositionClawForShot();
+    LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
+    WaitUntilClawDone();
     if (ShouldExitAuto()) return;
   }
 
+  LOG(INFO, "Shooting\n");
   // Shoot
   Shoot();
   if (ShouldExitAuto()) return;
