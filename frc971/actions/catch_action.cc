@@ -14,9 +14,15 @@ CatchAction::CatchAction(actions::CatchActionGroup* s)
     : actions::ActionBase<actions::CatchActionGroup>(s) {}
 
 void CatchAction::RunAction() {
+  control_loops::claw_queue_group.goal.FetchLatest();
+  if (control_loops::claw_queue_group.goal.get() == nullptr) {
+    LOG(WARNING, "no claw goal\n");
+    return;
+  }
+
   // Set claw angle.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(action_q_->goal->catch_angle)
+           .bottom_angle(action_q_->goal->catch_angle - kCatchSeparation / 2.0)
            .separation_angle(kCatchSeparation)
            .intake(kCatchIntake)
            .centering(kCatchCentering)
@@ -24,11 +30,16 @@ void CatchAction::RunAction() {
     LOG(WARNING, "sending claw goal failed\n");
     return;
   }
+
+  control_loops::claw_queue_group.goal.FetchLatest();
+
   LOG(INFO, "Waiting for the claw to be ready\n");
 
   // wait for claw to be ready
   if (WaitUntil(::std::bind(&CatchAction::DoneSetupCatch, this))) return;
   LOG(INFO, "Waiting for the sonar\n");
+
+  close_count_ = 0;
 
   // wait for the sonar to trigger
   if (WaitUntil(::std::bind(&CatchAction::DoneFoundSonar, this))) return;
@@ -37,7 +48,7 @@ void CatchAction::RunAction() {
 
   // close the claw
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(action_q_->goal->catch_angle + kCatchSeparation / 2.0)
+           .bottom_angle(action_q_->goal->catch_angle)
            .separation_angle(0.0)
            .intake(kCatchIntake)
            .centering(kCatchCentering)
@@ -46,10 +57,15 @@ void CatchAction::RunAction() {
     return;
   }
 
+  control_loops::claw_queue_group.goal.FetchLatest();
+
   // claw now closed
   if (WaitUntil(::std::bind(&CatchAction::DoneClawWithBall, this))) return;
 
-  return;
+  for (int i = 0; i < 5; ++i) {
+    aos::time::SleepFor(aos::time::Time::InSeconds(0.05));
+    if (ShouldCancel()) return;
+  }
 }
 
 
@@ -73,7 +89,7 @@ bool CatchAction::DoneClawWithBall() {
   bool ans =
       control_loops::claw_queue_group.status->zeroed &&
       (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
-       0.5) &&
+       1.0) &&
       (::std::abs(control_loops::claw_queue_group.status->bottom -
                   control_loops::claw_queue_group.goal->bottom_angle) < 0.10) &&
       (::std::abs(control_loops::claw_queue_group.status->separation -
@@ -98,8 +114,13 @@ bool CatchAction::DoneFoundSonar() {
     sensors::other_sensors.FetchNextBlocking();
   }
   LOG(DEBUG, "Sonar at %.2f.\n", sensors::other_sensors->sonar_distance);
-  if (sensors::other_sensors->sonar_distance > 0.3 &&
+  if (sensors::other_sensors->sonar_distance > 0.1 &&
       sensors::other_sensors->sonar_distance < kSonarTriggerDist) {
+    ++close_count_;
+  } else {
+    close_count_ = 0;
+  }
+  if (close_count_ > 50) {
     return true;
   }
   return false;
@@ -116,7 +137,7 @@ bool CatchAction::DoneSetupCatch() {
   // it has the old goal and thinks that it is already done.
   bool claw_angle_correct =
       ::std::abs(control_loops::claw_queue_group.status->bottom -
-                 action_q_->goal->catch_angle) < 0.15;
+                 control_loops::claw_queue_group.goal->bottom_angle) < 0.15;
   bool open_enough =
       control_loops::claw_queue_group.status->separation > kCatchMinSeparation;
 

@@ -14,10 +14,10 @@ class CatchAction : public ActionBase<CatchActionGroup> {
   // it.
   virtual void RunAction();
 
-  static constexpr double kCatchSeparation = 1.0;
-  static constexpr double kCatchMinSeparation = 0.6;
+  static constexpr double kCatchSeparation = 0.8;
+  static constexpr double kCatchMinSeparation = 0.65;
   static constexpr double kCatchIntake = 12.0;
-  static constexpr double kSonarTriggerDist = 0.8;
+  static constexpr double kSonarTriggerDist = 0.725;
   static constexpr double kCatchCentering = 12.0;
   static constexpr double kFinishAngle = 0.2;
 
@@ -32,6 +32,9 @@ class CatchAction : public ActionBase<CatchActionGroup> {
   bool DoneClawWithBall();
   // hall effect reports the ball is in
   bool DoneBallIn();
+
+ private:
+  int close_count_;
 };
 
 }  // namespace actions
