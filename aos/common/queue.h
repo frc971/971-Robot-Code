@@ -214,8 +214,6 @@ class Queue {
   // Fetches the next message from the queue.
   // Returns true if there was a new message available and we successfully
   // fetched it.  This removes the message from the queue for all readers.
-  // TODO(aschuh): Fix this to use a different way of fetching messages so other
-  // readers can also FetchNext.
   bool FetchNext();
   bool FetchNextBlocking();
 

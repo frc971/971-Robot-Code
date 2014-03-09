@@ -769,6 +769,13 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
 
   status->zeroed = is_ready();
+  status->zeroed_for_auto =
+      (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+       top_claw_.zeroing_state() ==
+           ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+      (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+       bottom_claw_.zeroing_state() ==
+           ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
 
   was_enabled_ = ::aos::robot_state->enabled;
 }

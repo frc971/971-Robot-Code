@@ -52,8 +52,10 @@ queue_group ClawGroup {
   };
 
   message Status {
-    // True if zeroed.
+    // True if zeroed enough for the current period (autonomous or teleop).
     bool zeroed;
+    // True if zeroed as much as we will force during autonomous.
+    bool zeroed_for_auto;
     // True if zeroed and within tolerance for separation and bottom angle.
     bool done;
     // True if zeroed and within tolerance for separation and bottom angle.
