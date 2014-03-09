@@ -619,9 +619,9 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
     if (gyro_reading.FetchLatest()) {
-      LOG(DEBUG, "using %.3f", gyro_reading->angle);
-      dt_closedloop.SetPosition(left_encoder, right_encoder, gyro_reading->angle,
-                                control_loop_driving);
+      LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
+      dt_closedloop.SetPosition(left_encoder, right_encoder,
+                                gyro_reading->angle, control_loop_driving);
     } else {
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
