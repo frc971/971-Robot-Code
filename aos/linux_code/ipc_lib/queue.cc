@@ -425,7 +425,8 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   int my_start;
 
   const int unread_messages = messages_ - *index;
-  const int current_messages = ::std::abs(data_start_ - data_end_);
+  int current_messages = data_end_ - data_start_;
+  if (current_messages < 0) current_messages += data_length_ - 1;
   if (unread_messages > current_messages) {  // If we're behind the available messages.
     // Catch index up to the last available message.
     *index = messages_ - current_messages;
@@ -434,9 +435,9 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   } else {
     // Just start reading at the first available message that we haven't yet
     // read.
-    my_start = (data_start_ + unread_messages - 1) % data_length_;
+    my_start = (data_end_ - unread_messages) % data_length_;
+    if (my_start < 0) my_start = data_start_ + unread_messages - 1;
   }
-
 
   if (options & kPeek) {
     msg = ReadPeek(options, my_start);
@@ -458,10 +459,13 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       if (kReadDebug) {
         printf("queue: %p reading from d1: %d\n", this, my_start);
       }
+#if 0
+      // TODO(brians): Do this check right? (make sure full queue works etc)
       // This assert checks that we're either within both endpoints (duh) or
       // outside of both of them (if the queue is wrapped around).
       assert((my_start >= data_start_ && my_start < data_end_) ||
              (my_start > data_end_ && my_start <= data_start_));
+#endif
       msg = data_[my_start];
       ++(*index);
     }

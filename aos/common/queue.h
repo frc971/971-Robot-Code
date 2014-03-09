@@ -287,6 +287,7 @@ class Queue {
   T *MakeRawMessage();
   // Pointer to the queue that this object fetches from.
   RawQueue *queue_;
+  int index_ = 0;
 #endif
   // Scoped pointer holding the latest message or NULL.
   ScopedMessagePtr<const T> queue_msg_;
