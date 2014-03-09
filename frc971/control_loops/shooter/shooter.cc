@@ -6,6 +6,7 @@
 
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/shooter/shooter_motor_plant.h"
@@ -36,7 +37,7 @@ void ZeroedStateFeedbackLoop::CapU() {
   voltage_ = std::max(-max_voltage_, voltage_);
   U(0, 0) = voltage_ - old_voltage;
 
-  LOG(DEBUG, "X_hat is %f, applied is %f\n", X_hat(2, 0), voltage_);
+  LOG_STRUCT(DEBUG, "output", ShooterVoltageToLog(X_hat(2, 0), voltage_));
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
@@ -55,7 +56,7 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+    LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
   } else if (uncapped_voltage() < -max_voltage_) {
     double dx;
     if (controller_index() == 0) {
@@ -68,7 +69,7 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
+    LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
   } else {
     capped_goal_ = false;
   }
@@ -84,13 +85,10 @@ void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
 
 void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
                                              double known_position) {
-  LOG(INFO, "Setting calibration such that %f -> %f\n", encoder_val,
-      known_position);
-  LOG(INFO, "Position was %f\n", absolute_position());
+  double old_position = absolute_position();
   double previous_offset = offset_;
   offset_ = known_position - encoder_val;
   double doffset = offset_ - previous_offset;
-  LOG(INFO, "Changing offset from %f to %f\n", previous_offset, offset_);
   X_hat(0, 0) += doffset;
   // Offset our measurements because the offset is baked into them.
   Y_(0, 0) += doffset;
@@ -99,7 +97,10 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   if (controller_index() == 0) {
     R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
   }
-  LOG(INFO, "Validation: position is %f\n", absolute_position());
+  LOG_STRUCT(
+      INFO, "sensor edge",
+      ShooterChangeCalibration(encoder_val, known_position, old_position,
+                               absolute_position(), previous_offset, offset_));
 }
 
 ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
@@ -164,7 +165,7 @@ void ShooterMotor::RunIteration(
 
   if (::std::isnan(goal->shot_power)) {
 	  state_ = STATE_ESTOP;
-    LOG(ERROR, "Got a shot power of NAN.\n");
+    LOG(ERROR, "Estopping because got a shot power of NAN.\n");
   }
 
   // we must always have these or we have issues.
@@ -244,7 +245,8 @@ void ShooterMotor::RunIteration(
           state_ = STATE_REQUEST_LOAD;
         } else {
           shooter_loop_disable = true;
-          LOG(DEBUG, "Not moving on until the latch has moved to avoid a crash\n");
+          LOG(DEBUG,
+              "Not moving on until the latch has moved to avoid a crash\n");
         }
       } else {
         // If we can't start yet because we don't know where we are, set the
@@ -393,6 +395,7 @@ void ShooterMotor::RunIteration(
           if (!position->pusher_distal.current ||
               !position->pusher_proximal.current) {
             state_ = STATE_ESTOP;
+            LOG(ERROR, "Estopping because took too long to load.\n");
           }
         }
       } else if (goal->unload_requested) {
@@ -558,6 +561,7 @@ void ShooterMotor::RunIteration(
         // We have been stuck trying to unload for way too long, give up and
         // turn everything off.
         state_ = STATE_ESTOP;
+        LOG(ERROR, "Estopping because took too long to unload.\n");
       }
 
       brake_piston_ = false;
@@ -603,6 +607,7 @@ void ShooterMotor::RunIteration(
       break;
 
     case STATE_ESTOP:
+      LOG(DEBUG, "estopped\n");
       // Totally lost, go to a safe state.
       shooter_loop_disable = true;
       latch_piston_ = true;
@@ -611,8 +616,9 @@ void ShooterMotor::RunIteration(
   }
 
   if (!shooter_loop_disable) {
-    LOG(DEBUG, "Running the loop, goal is %f, position is %f\n",
-        shooter_.goal_position(), shooter_.absolute_position());
+    LOG_STRUCT(DEBUG, "running the loop",
+               ShooterStatusToLog(shooter_.goal_position(),
+                                  shooter_.absolute_position()));
     if (!cap_goal) {
       shooter_.set_max_voltage(12.0);
     }
@@ -635,15 +641,15 @@ void ShooterMotor::RunIteration(
   }
 
   if (position) {
+    LOG_STRUCT(DEBUG, "internal state",
+               ShooterStateToLog(
+                   shooter_.absolute_position(), shooter_.absolute_velocity(),
+                   state_, position->latch, position->pusher_proximal.current,
+                   position->pusher_distal.current, position->plunger,
+                   brake_piston_, latch_piston_));
+
     last_position_ = *position;
-    LOG(DEBUG, "pos > absolute: %f velocity: %f state= %d l= %d pp= %d, pd= %d "
-               "p= %d b=%d\n",
-        shooter_.absolute_position(), shooter_.absolute_velocity(),
-        state_, position->latch, position->pusher_proximal.current,
-        position->pusher_distal.current,
-        position->plunger, brake_piston_);
-  }
-  if (position) {
+
     last_distal_posedge_count_ = position->pusher_distal.posedge_count;
     last_proximal_posedge_count_ = position->pusher_proximal.posedge_count;
     last_distal_current_ = position->pusher_distal.current;

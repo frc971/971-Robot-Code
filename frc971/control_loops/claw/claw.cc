@@ -6,6 +6,7 @@
 
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
@@ -75,9 +76,9 @@ void ClawLimitedLoop::CapU() {
 
   const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
   if (max_value > k_max_voltage) {
-    LOG(DEBUG, "Capping U because max is %f\n", max_value);
     U = U * k_max_voltage / max_value;
-    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+    LOG(DEBUG, "Capping U is now %f %f (max is %f)\n",
+        U(0, 0), U(1, 0), max_value);
   }
 }
 
@@ -238,7 +239,7 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredPosedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_off_angle_ == max_hall_effect_off_angle_) {
-      LOG(INFO, "%s: Uncertain which side, rejecting posedge\n", name_);
+      LOG(WARNING, "%s: Uncertain which side, rejecting posedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_off_angle_ + max_hall_effect_off_angle_) / 2.0;
@@ -260,7 +261,7 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 
   if (SawFilteredNegedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_on_angle_ == max_hall_effect_on_angle_) {
-      LOG(INFO, "%s: Uncertain which side, rejecting negedge\n", name_);
+      LOG(WARNING, "%s: Uncertain which side, rejecting negedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_on_angle_ + max_hall_effect_on_angle_) / 2.0;
@@ -450,8 +451,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       initial_separation_ =
           top_claw_.absolute_position() - bottom_claw_.absolute_position();
     }
-    LOG(DEBUG, "Claw position is (top: %f bottom: %f\n",
-        top_claw_.absolute_position(), bottom_claw_.absolute_position());
+    LOG_STRUCT(DEBUG, "absolute position",
+               ClawPositionToLog(top_claw_.absolute_position(),
+                                 bottom_claw_.absolute_position()));
   }
 
   const bool autonomous = ::aos::robot_state->autonomous;
@@ -675,8 +677,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     if (position != nullptr) {
       separation = position->top.position - position->bottom.position;
     }
-    LOG(DEBUG, "Goal is %f (bottom) %f, separation is %f\n", claw_.R(0, 0),
-        claw_.R(1, 0), separation);
+    LOG_STRUCT(DEBUG, "actual goal",
+               ClawGoalToLog(claw_.R(0, 0), claw_.R(1, 0), separation));
 
     // Only cap power when one of the halves of the claw is moving slowly and
     // could wind up.
@@ -702,8 +704,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         capped_goal_ = true;
-        LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
-        LOG(DEBUG, "Uncapped is %f, max is %f, difference is %f\n",
+        LOG(DEBUG, "Moving the goal by %f to prevent windup."
+            " Uncapped is %f, max is %f, difference is %f\n",
+            dx,
             claw_.uncapped_average_voltage(), values.claw.max_zeroing_voltage,
             (claw_.uncapped_average_voltage() -
              values.claw.max_zeroing_voltage));
