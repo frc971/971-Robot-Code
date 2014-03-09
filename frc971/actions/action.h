@@ -35,6 +35,11 @@ template <class T> class ActionBase {
       while (!action_q_->goal->run) {
         LOG(INFO, "Waiting for an action request.\n");
         action_q_->goal.FetchNextBlocking();
+        if (!action_q_->goal->run) {
+          if (!action_q_->status.MakeWithBuilder().running(false).Send()) {
+            LOG(ERROR, "Failed to send the status.\n");
+          }
+        }
       }
       LOG(INFO, "Starting action\n");
       if (!action_q_->status.MakeWithBuilder().running(true).Send()) {
@@ -79,7 +84,7 @@ template <class T> class ActionBase {
     action_q_->goal.FetchLatest();
     bool ans = !action_q_->goal->run;
     if (ans) {
-      LOG(INFO, "Time to exit auto mode\n");
+      LOG(INFO, "Time to stop action\n");
     }
     return ans;
   }
