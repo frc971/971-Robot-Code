@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import control_loop
+import controls
 import numpy
 import sys
 from matplotlib import pylab
@@ -90,8 +91,6 @@ class Drivetrain(control_loop.ControlLoop):
     # Control loop time step
     self.dt = 0.01
     
-    print "THE NUMBER I WANT" + str((self.free_speed / 60.0 * 2.0 * numpy.pi) * self.G_high * self.r)
-
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.
     self.msp = 1.0 / self.m + self.rb * self.rb / self.J
@@ -127,7 +126,22 @@ class Drivetrain(control_loop.ControlLoop):
     # Poles from last year.
     self.hp = 0.65
     self.lp = 0.83
-    self.PlaceControllerPoles([self.hp, self.hp, self.lp, self.lp])
+    self.PlaceControllerPoles([self.hp, self.lp, self.hp, self.lp])
+    print self.K
+    q_pos = 0.07
+    q_vel = 1.0
+    self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
+                           [0.0, (1.0 / (q_vel ** 2.0)), 0.0, 0.0],
+                           [0.0, 0.0, (1.0 / (q_pos ** 2.0)), 0.0],
+                           [0.0, 0.0, 0.0, (1.0 / (q_vel ** 2.0))]])
+
+    self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
+                           [0.0, (1.0 / (12.0 ** 2.0))]])
+    self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
+    print self.A
+    print self.B
+    print self.K
+    print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
     self.hlp = 0.07
     self.llp = 0.09
@@ -203,6 +217,7 @@ def main(argv):
   #pylab.show()
 
   # Write the generated constants out to a file.
+  print "Output one"
   drivetrain = Drivetrain()
 
   if len(argv) != 5:

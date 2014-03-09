@@ -6,25 +6,25 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowLowPlantCoefficients();
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowLowPlantCoefficients();
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainLowLowController();
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowLowController();
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowHighPlantCoefficients();
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowHighPlantCoefficients();
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainLowHighController();
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowHighController();
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighLowPlantCoefficients();
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighLowPlantCoefficients();
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainHighLowController();
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighLowController();
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighHighPlantCoefficients();
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighHighPlantCoefficients();
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainHighHighController();
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighHighController();
 
-StateFeedbackPlant<2, 2, 2> MakeVDogDrivetrainPlant();
+StateFeedbackPlant<2, 2, 2> MakeVelocityDrivetrainPlant();
 
-StateFeedbackLoop<2, 2, 2> MakeVDogDrivetrainLoop();
+StateFeedbackLoop<2, 2, 2> MakeVelocityDrivetrainLoop();
 
 }  // namespace control_loops
 }  // namespace frc971

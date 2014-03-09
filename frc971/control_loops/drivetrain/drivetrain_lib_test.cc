@@ -49,7 +49,7 @@ class DrivetrainSimulation {
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(
-            new StateFeedbackPlant<4, 2, 2>(MakeDogDrivetrainPlant())),
+            new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
         my_drivetrain_loop_(".frc971.control_loops.drivetrain",
                        0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
                        ".frc971.control_loops.drivetrain.position",

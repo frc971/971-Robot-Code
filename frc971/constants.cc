@@ -9,9 +9,7 @@
 #include "aos/common/network/team_number.h"
 
 #include "frc971/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
-#include "frc971/control_loops/drivetrain/polydrivetrain_clutch_motor_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "frc971/control_loops/drivetrain/drivetrain_clutch_motor_plant.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -49,8 +47,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
-          control_loops::MakeVClutchDrivetrainLoop,
-          control_loops::MakeClutchDrivetrainLoop,
+          control_loops::MakeVelocityDrivetrainLoop,
+          control_loops::MakeDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
@@ -84,8 +82,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
-          control_loops::MakeVClutchDrivetrainLoop,
-          control_loops::MakeClutchDrivetrainLoop,
+          control_loops::MakeVelocityDrivetrainLoop,
+          control_loops::MakeDrivetrainLoop,
           // ShooterLimits
           // TODO(ben): make these real numbers
           {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
@@ -120,8 +118,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kPracticeLeftDriveShifter,
           kPracticeRightDriveShifter,
           false,
-          control_loops::MakeVDogDrivetrainLoop,
-          control_loops::MakeDogDrivetrainLoop,
+          control_loops::MakeVelocityDrivetrainLoop,
+          control_loops::MakeDrivetrainLoop,
           // ShooterLimits
           {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
            {-0.002, 0.000446, -0.002, 0.000446},

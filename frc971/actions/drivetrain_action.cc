@@ -27,7 +27,7 @@ void DrivetrainAction::RunAction() {
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
 
-  profile.set_maximum_acceleration(2.0);
+  profile.set_maximum_acceleration(2.2);
   profile.set_maximum_velocity(action_q_->goal->maximum_velocity);
 
   while (true) {

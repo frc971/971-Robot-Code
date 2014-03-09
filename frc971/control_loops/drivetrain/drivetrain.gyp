@@ -22,9 +22,7 @@
       'type': 'static_library',
       'sources': [
         'polydrivetrain_dog_motor_plant.cc',
-        'polydrivetrain_clutch_motor_plant.cc',
         'drivetrain_dog_motor_plant.cc',
-        'drivetrain_clutch_motor_plant.cc',
       ],
       'dependencies': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
