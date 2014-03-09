@@ -48,9 +48,7 @@ const ButtonLocation kRollersIn(3, 3);
 const ButtonLocation kTuck(3, 4);
 const ButtonLocation kIntakePosition(3, 5);
 const ButtonLocation kIntakeOpenPosition(3, 11);
-//const ButtonLocation kFlipRobot(3, 7);
 const JoystickAxis kFlipRobot(3, 3);
-// Truss shot. (3, 1)
 
 const ButtonLocation kLongShot(3, 7);
 const ButtonLocation kMediumShot(3, 6);
@@ -84,16 +82,16 @@ const double kShootSeparation = 0.11;
 //const ShotGoal kLongShotGoal = {
     //{-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
 const ShotGoal kLongShotGoal = {
-    {-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
+    {-0.60, kShootSeparation}, 80, false, kIntakePower};
 const ShotGoal kMediumShotGoal = {
-    {-0.95, kShootSeparation}, 95, true, kIntakePower};
+    {-0.90, kShootSeparation}, 105, true, kIntakePower};
 const ShotGoal kShortShotGoal = {
     {-0.670, kShootSeparation}, 71.0, false, kIntakePower};
 const ShotGoal kTrussShotGoal = {
     {-0.05, kShootSeparation}, 61.0, false, kIntakePower};
 
 const ShotGoal kFlippedLongShotGoal = {
-    {M_PI / 2.0 - 0.43, kShootSeparation}, 145, false, kIntakePower};
+    {0.55, kShootSeparation}, 80, false, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
     {0.85, kShootSeparation}, 105, true, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
@@ -281,6 +279,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
+      separation_angle_ = 0.0;
     }
 
     if (data.GetAxis(kFlipRobot) < 0.5) {
