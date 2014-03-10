@@ -1,4 +1,5 @@
 #include "aos/common/logging/logging.h"
+#include "aos/linux_code/init.h"
 
 #include "bbb/led.h"
 
@@ -7,6 +8,8 @@
 using ::frc971::control_loops::claw_queue_group;
 
 int main() {
+  ::aos::InitNRT();
+
   ::bbb::LED claw_zeroed(3);
 
   while (true) {
