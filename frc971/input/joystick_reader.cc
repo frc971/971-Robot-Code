@@ -282,7 +282,7 @@ class Reader : public ::aos::input::JoystickInput {
       separation_angle_ = 0.0;
     }
 
-    if (data.GetAxis(kFlipRobot) < 0.5) {
+    if (data.GetAxis(kFlipRobot) > 0.5) {
       if (data.IsPressed(kIntakeOpenPosition)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
