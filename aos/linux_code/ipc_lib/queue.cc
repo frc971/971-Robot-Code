@@ -427,7 +427,8 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   const int unread_messages = messages_ - *index;
   int current_messages = data_end_ - data_start_;
   if (current_messages < 0) current_messages += data_length_ - 1;
-  if (unread_messages > current_messages) {  // If we're behind the available messages.
+  // If we're behind the available messages.
+  if (unread_messages > current_messages) {
     // Catch index up to the last available message.
     *index = messages_ - current_messages;
     // And that's the one we're going to read.
@@ -435,8 +436,10 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   } else {
     // Just start reading at the first available message that we haven't yet
     // read.
-    my_start = (data_end_ - unread_messages) % data_length_;
-    if (my_start < 0) my_start = data_start_ + unread_messages - 1;
+    my_start = data_end_ - unread_messages;
+    if (my_start < 0) {
+      my_start += data_length_;
+    }
   }
 
   if (options & kPeek) {

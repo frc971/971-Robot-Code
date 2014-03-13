@@ -36,6 +36,7 @@ ptrdiff_t aos_core_get_mem_usage(void) {
 
 struct aos_core *global_core = NULL;
 
+// TODO(brians): madvise(2) it to put this shm in core dumps.
 int aos_core_create_shared_mem(enum aos_core_create to_create) {
   static struct aos_core global_core_data;
   global_core = &global_core_data;
