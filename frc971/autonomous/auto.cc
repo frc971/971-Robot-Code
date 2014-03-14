@@ -121,7 +121,7 @@ void PositionClawBackIntake() {
 void PositionClawForShot() {
   // Turn the claw on, keep it straight up until the ball has been grabbed.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(0.85)
+           .bottom_angle(0.87)
            .separation_angle(0.10)
            .intake(4.0)
            .centering(1.0)
@@ -270,7 +270,7 @@ void HandleAuto() {
   {
     LOG(INFO, "Driving back\n");
     auto drivetrain_action = SetDriveGoal(-(kShootDistance + kPickupDistance));
-    time::SleepFor(time::Time::InSeconds(0.3));
+    time::SleepFor(time::Time::InSeconds(0.7));
     if (ShouldExitAuto()) return;
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
