@@ -70,17 +70,18 @@ struct ShotGoal {
   double intake_power;
 };
 
+const double kIntakePower = 4.0;
+const double kGrabSeparation = -0.04;
+const double kShootSeparation = 0.11 + kGrabSeparation;
+
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
-const ClawGoal kIntakeGoal = {-2.273474, 0.0};
+const ClawGoal kIntakeGoal = {-2.273474, kGrabSeparation};
 const ClawGoal kIntakeOpenGoal = {-2.0, 1.2};
 
 // TODO(austin): Tune these by hand...
 const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
-const ClawGoal kFlippedIntakeGoal = {2.0, 0.0};
+const ClawGoal kFlippedIntakeGoal = {2.0, kGrabSeparation};
 const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
-
-const double kIntakePower = 4.0;
-const double kShootSeparation = 0.11;
 
 //const ShotGoal kLongShotGoal = {
     //{-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
@@ -172,7 +173,7 @@ class Reader : public ::aos::input::JoystickInput {
       : is_high_gear_(false),
         shot_power_(80.0),
         goal_angle_(0.0),
-        separation_angle_(0.0),
+        separation_angle_(kGrabSeparation),
         velocity_compensation_(false),
         intake_power_(0.0),
         was_running_(false) {}
@@ -282,7 +283,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
-      separation_angle_ = 0.0;
+      separation_angle_ = kGrabSeparation;
     }
 
     static const double kAdjustClawGoalDeadband = 0.08;
