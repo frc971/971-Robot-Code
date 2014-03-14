@@ -177,7 +177,8 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
 }
 
 ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
-    : aos::control_loops::ControlLoop<control_loops::ClawGroup>(my_claw),
+    : aos::control_loops::ControlLoop<control_loops::ClawGroup, true, true,
+                                      false>(my_claw),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -386,7 +387,8 @@ bool ClawMotor::is_ready() const {
   return (
       (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
-      (::aos::robot_state->autonomous &&
+      (((::aos::robot_state.get() == NULL) ? true
+                                           : ::aos::robot_state->autonomous) &&
        ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
          top_claw_.zeroing_state() ==
              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
@@ -413,19 +415,17 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->tusk_voltage = 0;
   }
 
-  if (::std::isnan(goal->bottom_angle) ||
-      ::std::isnan(goal->separation_angle) || ::std::isnan(goal->intake) ||
-      ::std::isnan(goal->centering)) {
-    return;
+  if (goal) {
+    if (::std::isnan(goal->bottom_angle) ||
+        ::std::isnan(goal->separation_angle) || ::std::isnan(goal->intake) ||
+        ::std::isnan(goal->centering)) {
+      return;
+    }
   }
 
   if (reset()) {
     top_claw_.Reset(position->top);
     bottom_claw_.Reset(position->bottom);
-  }
-
-  if (::aos::robot_state.get() == nullptr) {
-    return;
   }
 
   const frc971::constants::Values &values = constants::GetValues();
@@ -456,21 +456,28 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                                  bottom_claw_.absolute_position()));
   }
 
-  const bool autonomous = ::aos::robot_state->autonomous;
-  const bool enabled = ::aos::robot_state->enabled;
+  bool autonomous, enabled;
+  if (::aos::robot_state.get() == nullptr) {
+    autonomous = true;
+    enabled = false;
+  } else {
+    autonomous = ::aos::robot_state->autonomous;
+    enabled = ::aos::robot_state->enabled;
+  }
 
   double bottom_claw_velocity_ = 0.0;
   double top_claw_velocity_ = 0.0;
 
-  if ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
-       bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
-      (autonomous &&
-       ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
-         top_claw_.zeroing_state() ==
-             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
-        (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
-         bottom_claw_.zeroing_state() ==
-             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION)))) {
+  if (goal != NULL &&
+      ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
+        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
+       (autonomous &&
+        ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+          top_claw_.zeroing_state() ==
+              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+         (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+          bottom_claw_.zeroing_state() ==
+              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION))))) {
     // Ready to use the claw.
     // Limit the goals here.
     bottom_claw_goal_ = goal->bottom_angle;
@@ -755,18 +762,22 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   status->bottom_velocity = claw_.X_hat(2, 0);
   status->separation_velocity = claw_.X_hat(3, 0);
 
-  bool bottom_done =
-      ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.020;
-  bool bottom_velocity_done = ::std::abs(status->bottom_velocity) < 0.2;
-  bool separation_done =
-      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
-                 goal->separation_angle) < 0.020;
-  bool separation_done_with_ball =
-      ::std::abs((top_absolute_position() - bottom_absolute_position()) -
-                 goal->separation_angle) < 0.06;
-  status->done = is_ready() && separation_done && bottom_done && bottom_velocity_done;
-  status->done_with_ball =
-      is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
+  if (goal) {
+    bool bottom_done =
+        ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.020;
+    bool bottom_velocity_done = ::std::abs(status->bottom_velocity) < 0.2;
+    bool separation_done =
+        ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                   goal->separation_angle) < 0.020;
+    bool separation_done_with_ball =
+        ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                   goal->separation_angle) < 0.06;
+    status->done = is_ready() && separation_done && bottom_done && bottom_velocity_done;
+    status->done_with_ball =
+        is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
+  } else {
+    status->done = status->done_with_ball = false;
+  }
 
   status->zeroed = is_ready();
   status->zeroed_for_auto =
@@ -777,7 +788,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
        bottom_claw_.zeroing_state() ==
            ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
 
-  was_enabled_ = ::aos::robot_state->enabled;
+  was_enabled_ = enabled;
 }
 
 }  // namespace control_loops

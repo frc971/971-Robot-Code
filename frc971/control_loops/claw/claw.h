@@ -168,8 +168,8 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
                             JointZeroingState zeroing_state);
 };
 
-class ClawMotor
-    : public aos::control_loops::ControlLoop<control_loops::ClawGroup> {
+class ClawMotor : public aos::control_loops::ControlLoop<
+    control_loops::ClawGroup, true, true, false> {
  public:
   explicit ClawMotor(control_loops::ClawGroup *my_claw =
                          &control_loops::claw_queue_group);

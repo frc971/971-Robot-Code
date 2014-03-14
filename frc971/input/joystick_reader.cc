@@ -55,6 +55,9 @@ const ButtonLocation kMediumShot(3, 6);
 const ButtonLocation kShortShot(3, 2);
 const ButtonLocation kTrussShot(3, 1);
 
+const JoystickAxis kAdjustClawGoal(3, 2);
+const JoystickAxis kAdjustClawSeparation(3, 1);
+
 struct ClawGoal {
   double angle;
   double separation;
@@ -282,7 +285,31 @@ class Reader : public ::aos::input::JoystickInput {
       separation_angle_ = 0.0;
     }
 
-    if (data.GetAxis(kFlipRobot) < 0.5) {
+    static const double kAdjustClawGoalDeadband = 0.08;
+    double claw_goal_adjust = data.GetAxis(kAdjustClawGoal);
+    if (::std::abs(claw_goal_adjust) < kAdjustClawGoalDeadband) {
+      claw_goal_adjust = 0;
+    } else {
+      claw_goal_adjust = (claw_goal_adjust -
+                          ((claw_goal_adjust < 0) ? -kAdjustClawGoalDeadband
+                                                  : kAdjustClawGoalDeadband)) *
+                         0.035;
+    }
+    double claw_separation_adjust = data.GetAxis(kAdjustClawSeparation);
+    if (::std::abs(claw_separation_adjust) < kAdjustClawGoalDeadband) {
+      claw_separation_adjust = 0;
+    } else {
+      claw_separation_adjust =
+          (claw_separation_adjust -
+           ((claw_separation_adjust < 0) ? -kAdjustClawGoalDeadband
+                                         : kAdjustClawGoalDeadband)) *
+          -0.035;
+    }
+
+    if (data.GetAxis(kFlipRobot) > 0.5) {
+      claw_goal_adjust += claw_separation_adjust;
+      claw_goal_adjust *= -1;
+
       if (data.IsPressed(kIntakeOpenPosition)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
@@ -366,6 +393,9 @@ class Reader : public ::aos::input::JoystickInput {
 
     // Send out the claw and shooter goals if no actions are running.
     if (!action_queue_.Running()) {
+      goal_angle_ += claw_goal_adjust;
+      separation_angle_ += claw_separation_adjust;
+
       // If the action just ended, turn the intake off and stop velocity
       // compensating.
       if (was_running_) {

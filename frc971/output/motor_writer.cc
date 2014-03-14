@@ -26,6 +26,12 @@ class MotorWriter : public ::aos::MotorOutput {
   static constexpr ::aos::time::Time kOldLogInterval =
       ::aos::time::Time::InSeconds(0.5);
 
+  double Cap(double value, double max) {
+    if (value > max) return max;
+    if (value < -max) return -max;
+    return value;
+  }
+
   virtual void RunIteration() {
     values_.digital_module = 0;
     values_.pressure_switch_channel = 1;
