@@ -51,7 +51,8 @@ time::Time NextLoopTime(time::Time start = time::Time::Now());
 // If has_position is false, the control loop will always use NULL as the
 // position and not check the queue.  This is used for "loops" that control
 // motors open loop.
-template <class T, bool has_position = true, bool fail_no_position = true>
+template <class T, bool has_position = true, bool fail_no_position = true,
+         bool fail_no_goal = true>
 class ControlLoop : public SerializableControlLoop {
  public:
   // Maximum age of position packets before the loop will be disabled due to

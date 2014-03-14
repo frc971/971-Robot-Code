@@ -12,20 +12,21 @@ namespace control_loops {
 
 // TODO(aschuh): Tests.
 
-template <class T, bool has_position, bool fail_no_position>
-constexpr ::aos::time::Time
-    ControlLoop<T, has_position, fail_no_position>::kStaleLogInterval;
+template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
+constexpr ::aos::time::Time ControlLoop<T, has_position, fail_no_position,
+                                        fail_no_goal>::kStaleLogInterval;
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::ZeroOutputs() {
+template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
+void
+ControlLoop<T, has_position, fail_no_position, fail_no_goal>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::Iterate() {
+template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
+void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
   no_prior_goal_.Print();
   no_sensor_generation_.Print();
   very_stale_position_.Print();
@@ -43,8 +44,10 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   const GoalType *goal = control_loop_->goal.get();
   if (goal == NULL) {
     LOG_INTERVAL(no_prior_goal_);
-    ZeroOutputs();
-    return;
+    if (fail_no_goal) {
+      ZeroOutputs();
+      return;
+    }
   }
 
   ::bbb::sensor_generation.FetchLatest();
@@ -56,18 +59,18 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   if (!has_sensor_reset_counters_ ||
       ::bbb::sensor_generation->reader_pid != reader_pid_ ||
       ::bbb::sensor_generation->cape_resets != cape_resets_) {
-    char buffer[128];
-    size_t characters = ::bbb::sensor_generation->Print(buffer, sizeof(buffer));
-    LOG(INFO, "new sensor_generation message %.*s\n",
-        static_cast<int>(characters), buffer);
+    LOG_STRUCT(INFO, "new sensor_generation message",
+               *::bbb::sensor_generation.get());
 
     reader_pid_ = ::bbb::sensor_generation->reader_pid;
     cape_resets_ = ::bbb::sensor_generation->cape_resets;
     has_sensor_reset_counters_ = true;
     reset_ = true;
   }
-    
-  LOG_STRUCT(DEBUG, "goal", *goal);
+
+  if (goal) {
+    LOG_STRUCT(DEBUG, "goal", *goal);
+  }
 
   // Only pass in a position if we got one this cycle.
   const PositionType *position = NULL;
@@ -141,8 +144,8 @@ void ControlLoop<T, has_position, fail_no_position>::Iterate() {
   status.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position>
-void ControlLoop<T, has_position, fail_no_position>::Run() {
+template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
+void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Run() {
   while (true) {
     time::SleepUntil(NextLoopTime());
     Iterate();
