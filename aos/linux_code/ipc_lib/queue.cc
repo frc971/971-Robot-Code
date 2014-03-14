@@ -22,6 +22,7 @@ const bool kReadDebug = false;
 const bool kWriteDebug = false;
 const bool kRefDebug = false;
 const bool kFetchDebug = false;
+const bool kReadIndexDebug = false;
 
 // The number of extra messages the pool associated with each queue will be able
 // to hold (for readers who are slow about freeing them or who leak one when
@@ -425,23 +426,39 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   int my_start;
 
   const int unread_messages = messages_ - *index;
+  assert(unread_messages > 0);
   int current_messages = data_end_ - data_start_;
-  if (current_messages < 0) current_messages += data_length_ - 1;
+  if (current_messages < 0) current_messages += data_length_;
+  if (kReadIndexDebug) {
+    printf("queue: %p start=%d end=%d current=%d\n",
+           this, data_start_, data_end_, current_messages);
+  }
+  assert(current_messages > 0);
   // If we're behind the available messages.
   if (unread_messages > current_messages) {
     // Catch index up to the last available message.
     *index = messages_ - current_messages;
     // And that's the one we're going to read.
     my_start = data_start_;
+    if (kReadIndexDebug) {
+      printf("queue: %p jumping ahead to message %d (have %d) (at %d)\n",
+             this, *index, messages_, data_start_);
+    }
   } else {
     // Just start reading at the first available message that we haven't yet
     // read.
     my_start = data_end_ - unread_messages;
-    if (my_start < 0) {
-      my_start += data_length_;
+    if (kReadIndexDebug) {
+      printf("queue: %p original read from %d\n", this, my_start);
+    }
+    if (data_start_ < data_end_) {
+      assert(my_start >= data_start_);
+    } else {
+      if (my_start < 0) my_start += data_length_;
     }
   }
 
+  // TODO(brians): Test kPeek and kFromEnd.
   if (options & kPeek) {
     msg = ReadPeek(options, my_start);
   } else {
@@ -462,13 +479,10 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       if (kReadDebug) {
         printf("queue: %p reading from d1: %d\n", this, my_start);
       }
-#if 0
-      // TODO(brians): Do this check right? (make sure full queue works etc)
       // This assert checks that we're either within both endpoints (duh) or
-      // outside of both of them (if the queue is wrapped around).
+      // not between them (if the queue is wrapped around).
       assert((my_start >= data_start_ && my_start < data_end_) ||
-             (my_start > data_end_ && my_start <= data_start_));
-#endif
+             ((my_start >= data_start_) == (my_start > data_end_)));
       msg = data_[my_start];
       ++(*index);
     }

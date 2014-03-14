@@ -300,7 +300,7 @@ class RawQueueTest : public ::testing::Test {
   void PushMessage(RawQueue *queue, uint16_t data) {
     TestMessage *message = static_cast<TestMessage *>(queue->GetMessage());
     message->data = data;
-    ASSERT_TRUE(queue->WriteMessage(message, RawQueue::kNonBlock));
+    ASSERT_TRUE(queue->WriteMessage(message, RawQueue::kOverride));
   }
 
  private:
@@ -468,7 +468,35 @@ TEST_F(RawQueueTest, NonBlockFailFree) {
   EXPECT_EQ(message2, queue->GetMessage());
 }
 
-TEST_F(RawQueueTest, ReadIndexLittleBehind) {
+TEST_F(RawQueueTest, ReadIndexNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+
+  int index = 0;
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(971, message->data);
+  EXPECT_EQ(1, index);
+
+  PushMessage(queue, 1768);
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(1768, message->data);
+  EXPECT_EQ(2, index);
+
+  PushMessage(queue, 254);
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexNotBehind) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
   const TestMessage *message;
 
@@ -480,6 +508,24 @@ TEST_F(RawQueueTest, ReadIndexLittleBehind) {
       queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
   ASSERT_NE(nullptr, message);
   EXPECT_EQ(971, message->data);
+  EXPECT_EQ(1, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexLittleBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(1768, message->data);
+  EXPECT_EQ(2, index);
 }
 
 TEST_F(RawQueueTest, ReadIndexMoreBehind) {
@@ -498,6 +544,25 @@ TEST_F(RawQueueTest, ReadIndexMoreBehind) {
   ASSERT_NE(nullptr, message);
   EXPECT_EQ(1768, message->data);
   EXPECT_EQ(2, index);
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexMoreBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
   message = static_cast<const TestMessage *>(
       queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
   ASSERT_NE(nullptr, message);
@@ -528,6 +593,77 @@ TEST_F(RawQueueTest, ReadIndexLotBehind) {
   ASSERT_NE(nullptr, message);
   EXPECT_EQ(973, message->data);
   EXPECT_EQ(4, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexLotBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(973, message->data);
+  EXPECT_EQ(4, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexEvenMoreBehind) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 1114);
+
+  int index = 0;
+
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(973, message->data);
+  EXPECT_EQ(4, index);
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(1114, message->data);
+  EXPECT_EQ(5, index);
+}
+
+TEST_F(RawQueueTest, ReadIndexEvenMoreBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 1114);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(1114, message->data);
+  EXPECT_EQ(5, index);
 }
 
 }  // namespace testing

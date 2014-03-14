@@ -56,6 +56,8 @@ class RawQueue {
   // The non-conflicting ones can be combined with bitwise-or.
 
   // Causes the returned message to be left in the queue.
+  // NOTE: When used with ReadMessageIndex, this means the index will not be
+  // updated.
   // For reading only.
   static const int kPeek = 0x0001;
   // Reads the last message in the queue instead of just the next one.
@@ -94,7 +96,7 @@ class RawQueue {
   // same message twice with the same index argument. However, it may not
   // return some messages that pass through the queue.
   // *index should start as 0. index does not have to be in shared memory, but
-  // it can be
+  // it can be.
   const void *ReadMessageIndex(int options, int *index);
 
   // Retrieves ("allocates") a message that can then be written to the queue.
