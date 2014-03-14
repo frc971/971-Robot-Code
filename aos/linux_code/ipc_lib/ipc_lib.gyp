@@ -51,7 +51,7 @@
       'target_name': 'raw_queue_test',
       'type': 'executable',
       'sources': [
-        'queue_test.cc',
+        'raw_queue_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
