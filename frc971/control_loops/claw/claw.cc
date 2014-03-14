@@ -613,8 +613,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     doing_calibration_fine_tune_ = false;
     if (!was_enabled_ && enabled) {
       if (position) {
-        top_claw_goal_ = position->top.position;
-        bottom_claw_goal_ = position->bottom.position;
+        top_claw_goal_ = position->top.position + top_claw_.offset();
+        bottom_claw_goal_ = position->bottom.position + bottom_claw_.offset();
         initial_separation_ =
             position->top.position - position->bottom.position;
       } else {
