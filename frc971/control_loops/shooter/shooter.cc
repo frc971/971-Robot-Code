@@ -98,7 +98,7 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
     R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
   }
   LOG_STRUCT(
-      INFO, "sensor edge",
+      DEBUG, "sensor edge (fake?)",
       ShooterChangeCalibration(encoder_val, known_position, old_position,
                                absolute_position(), previous_offset, offset_));
 }
