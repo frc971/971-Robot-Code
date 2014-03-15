@@ -85,7 +85,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
-          false,
+          true,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits
