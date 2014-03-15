@@ -134,7 +134,9 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp.sec(), cape_timestamp.nsec(),
-      sizeof(*data), sonar_translate(data->main.ultrasonic_pulse_length));
+      sizeof(*data), sonar_translate(data->main.ultrasonic_pulse_length),
+      data->main.low_left_drive_hall, data->main.high_left_drive_hall,
+      data->main.low_right_drive_hall, data->main.high_right_drive_hall);
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
   // TODO(brians): Switch to LogInterval for these things.
