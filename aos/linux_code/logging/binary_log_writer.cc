@@ -89,7 +89,7 @@ void AllocateLogName(char **filename, const char *directory) {
     LOG(INFO, "Could not find aos_log-current\n");
     printf("Could not find aos_log-current\n");
   }
-  if (asprintf(filename, "%s/aos_log-%d", directory, fileindex) == -1) {
+  if (asprintf(filename, "%s/aos_log-%03d", directory, fileindex) == -1) {
     aos::Die("couldn't create final name because of %d (%s)\n",
              errno, strerror(errno));
   }
