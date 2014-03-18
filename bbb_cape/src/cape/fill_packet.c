@@ -40,6 +40,7 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->uninitialized_gyro = !gyro_output.initialized;
   packet->zeroing_gyro = !gyro_output.zeroed;
   packet->bad_gyro = gyro_output.gyro_bad;
+  packet->analog_errors = analog_get_errors();
 
   robot_fill_packet(packet);
   //counter_update_u64_u16(&timestamp, TIMESTAMP_TIM->CNT);
