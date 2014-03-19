@@ -38,6 +38,8 @@ struct DATA_STRUCT_NAME {
       // contents of flash for the main code (aka what's in the .hex file).
       uint32_t flash_checksum;
 
+      uint8_t analog_errors;
+
       struct {
         // If the current gyro_angle has been not updated because of a bad
         // reading from the sensor.

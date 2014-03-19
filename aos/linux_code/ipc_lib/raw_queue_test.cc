@@ -25,7 +25,7 @@ using ::aos::common::testing::GlobalCoreInstance;
 namespace aos {
 namespace testing {
 
-class QueueTest : public ::testing::Test {
+class RawQueueTest : public ::testing::Test {
  protected:
   static const size_t kFailureSize = 400;
   static char *fatal_failure;
@@ -297,15 +297,22 @@ class QueueTest : public ::testing::Test {
     }
   }
 
+  void PushMessage(RawQueue *queue, uint16_t data) {
+    TestMessage *message = static_cast<TestMessage *>(queue->GetMessage());
+    message->data = data;
+    ASSERT_TRUE(queue->WriteMessage(message, RawQueue::kOverride));
+  }
+
  private:
   GlobalCoreInstance my_core;
 };
-char *QueueTest::fatal_failure;
-std::map<QueueTest::ChildID, QueueTest::ForkedProcess *> QueueTest::children_;
-constexpr time::Time QueueTest::kHangTime;
-constexpr time::Time QueueTest::kForkSleep;
+char *RawQueueTest::fatal_failure;
+std::map<RawQueueTest::ChildID, RawQueueTest::ForkedProcess *>
+    RawQueueTest::children_;
+constexpr time::Time RawQueueTest::kHangTime;
+constexpr time::Time RawQueueTest::kForkSleep;
 
-TEST_F(QueueTest, Reading) {
+TEST_F(RawQueueTest, Reading) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, -1};
 
@@ -337,7 +344,7 @@ TEST_F(QueueTest, Reading) {
   args.data = 971;
   EXPECT_RETURNS_FAILS(ReadTestMessage, &args);
 }
-TEST_F(QueueTest, Writing) {
+TEST_F(RawQueueTest, Writing) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 973};
 
@@ -368,7 +375,7 @@ TEST_F(QueueTest, Writing) {
   EXPECT_RETURNS(ReadTestMessage, &args);
 }
 
-TEST_F(QueueTest, MultiRead) {
+TEST_F(RawQueueTest, MultiRead) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, 1323};
 
@@ -383,7 +390,7 @@ TEST_F(QueueTest, MultiRead) {
 
 // There used to be a bug where reading first without an index and then with an
 // index would crash. This test makes sure that's fixed.
-TEST_F(QueueTest, ReadIndexAndNot) {
+TEST_F(RawQueueTest, ReadIndexAndNot) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
 
   // Write a message, read it (with ReadMessage), and then write another
@@ -406,7 +413,7 @@ TEST_F(QueueTest, ReadIndexAndNot) {
       << "We already took that message out of the queue.";
 }
 
-TEST_F(QueueTest, Recycle) {
+TEST_F(RawQueueTest, Recycle) {
   // TODO(brians) basic test of recycle queue
   // include all of the ways a message can get into the recycle queue
   RawQueue *recycle_queue = reinterpret_cast<RawQueue *>(23);
@@ -451,7 +458,7 @@ TEST_F(QueueTest, Recycle) {
 
 // Makes sure that when a message doesn't get written with kNonBlock it does get
 // freed.
-TEST_F(QueueTest, NonBlockFailFree) {
+TEST_F(RawQueueTest, NonBlockFailFree) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
 
   void *message1 = queue->GetMessage();
@@ -459,6 +466,296 @@ TEST_F(QueueTest, NonBlockFailFree) {
   ASSERT_TRUE(queue->WriteMessage(message1, RawQueue::kNonBlock));
   ASSERT_FALSE(queue->WriteMessage(message2, RawQueue::kNonBlock));
   EXPECT_EQ(message2, queue->GetMessage());
+}
+
+TEST_F(RawQueueTest, ReadIndexNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  EXPECT_EQ(0, queue->messages_used());
+  PushMessage(queue, 971);
+  EXPECT_EQ(1, queue->messages_used());
+
+  int index = 0;
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(971, message->data);
+  EXPECT_EQ(1, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  PushMessage(queue, 1768);
+  EXPECT_EQ(2, queue->messages_used());
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(1768, message->data);
+  EXPECT_EQ(2, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  PushMessage(queue, 254);
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  EXPECT_EQ(2, queue->messages_used());
+}
+
+TEST_F(RawQueueTest, ReadIndexNotBehind) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  EXPECT_EQ(0, queue->messages_used());
+  PushMessage(queue, 971);
+  EXPECT_EQ(1, queue->messages_used());
+  PushMessage(queue, 1768);
+  EXPECT_EQ(2, queue->messages_used());
+
+  int index = 0;
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(971, message->data);
+  EXPECT_EQ(1, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexLittleBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(1768, message->data);
+  EXPECT_EQ(2, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+}
+
+TEST_F(RawQueueTest, ReadIndexMoreBehind) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(1768, message->data);
+  EXPECT_EQ(2, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexMoreBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexLotBehind) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  {
+    const void *message1, *message2;
+    message1 = queue->ReadMessage(RawQueue::kNonBlock);
+    ASSERT_NE(nullptr, message1);
+    PushMessage(queue, 254);
+    message2 = queue->ReadMessage(RawQueue::kNonBlock);
+    ASSERT_NE(nullptr, message2);
+    PushMessage(queue, 973);
+    EXPECT_EQ(4, queue->messages_used());
+    queue->FreeMessage(message1);
+    EXPECT_EQ(3, queue->messages_used());
+    queue->FreeMessage(message2);
+    EXPECT_EQ(2, queue->messages_used());
+  }
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(254, message->data);
+  EXPECT_EQ(3, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(973, message->data);
+  EXPECT_EQ(4, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexLotBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(973, message->data);
+  EXPECT_EQ(4, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexEvenMoreBehind) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 1114);
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(973, message->data);
+  EXPECT_EQ(4, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(1114, message->data);
+  EXPECT_EQ(5, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
+}
+
+TEST_F(RawQueueTest, ReadIndexEvenMoreBehindNotFull) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  const TestMessage *message, *peek_message;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 254);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 973);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+  PushMessage(queue, 1114);
+  ASSERT_NE(nullptr, queue->ReadMessage(RawQueue::kNonBlock));
+
+  int index = 0;
+
+  peek_message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
+  message = static_cast<const TestMessage *>(
+      queue->ReadMessageIndex(RawQueue::kNonBlock, &index));
+  ASSERT_NE(nullptr, message);
+  EXPECT_EQ(message, peek_message);
+  EXPECT_EQ(1114, message->data);
+  EXPECT_EQ(5, index);
+  queue->FreeMessage(message);
+  queue->FreeMessage(peek_message);
 }
 
 }  // namespace testing

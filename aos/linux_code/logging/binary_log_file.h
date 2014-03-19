@@ -118,6 +118,9 @@ class LogFileAccessor {
 
   void MapNextPage();
   void Unmap(void *location);
+  // Tries reading from the current page to see if it fails because the file
+  // isn't big enough.
+  void CheckCurrentPageReadable();
 
   // Advances position to the next (aligned) location.
   void AlignPosition() {

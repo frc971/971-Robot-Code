@@ -22,6 +22,7 @@ const bool kReadDebug = false;
 const bool kWriteDebug = false;
 const bool kRefDebug = false;
 const bool kFetchDebug = false;
+const bool kReadIndexDebug = false;
 
 // The number of extra messages the pool associated with each queue will be able
 // to hold (for readers who are slow about freeing them or who leak one when
@@ -62,6 +63,7 @@ struct RawQueue::ReadData {
 // TODO(brians) maybe do this with atomic integer instructions so it doesn't
 //   have to lock/unlock pool_lock_
 void RawQueue::DecrementMessageReferenceCount(const void *msg) {
+  // TODO(brians): Test this function.
   MutexLocker locker(&pool_lock_);
   MessageHeader *header = MessageHeader::Get(msg);
   --header->ref_count;
@@ -226,6 +228,7 @@ void RawQueue::DoFreeMessage(const void *msg) {
 }
 
 bool RawQueue::WriteMessage(void *msg, int options) {
+  // TODO(brians): Test this function.
   if (kWriteDebug) {
     printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
   }
@@ -326,9 +329,10 @@ bool RawQueue::ReadCommonStart(int options, int *index, ReadData *read_data) {
   }
   return true;
 }
-void *RawQueue::ReadPeek(int options, int start) {
+void *RawQueue::ReadPeek(int options, int start) const {
   void *ret;
   if (options & kFromEnd) {
+    // TODO(brians): Test this block with ReadMessageIndex.
     int pos = data_end_ - 1;
     if (pos < 0) {  // if it needs to wrap
       pos = data_length_ - 1;
@@ -338,6 +342,7 @@ void *RawQueue::ReadPeek(int options, int start) {
     }
     ret = data_[pos];
   } else {
+    assert(start != -1);
     if (kReadDebug) {
       printf("queue: %p reading from line %d: %d\n", this, __LINE__, start);
     }
@@ -351,6 +356,7 @@ void *RawQueue::ReadPeek(int options, int start) {
   return ret;
 }
 const void *RawQueue::ReadMessage(int options) {
+  // TODO(brians): Test this function.
   if (kReadDebug) {
     printf("queue: %p->ReadMessage(%x)\n", this, options);
   }
@@ -424,21 +430,40 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
   // Where we're going to start reading.
   int my_start;
 
-  const int unread_messages = messages_ - *index;
-  int current_messages = data_end_ - data_start_;
-  if (current_messages < 0) current_messages += data_length_ - 1;
-  // If we're behind the available messages.
-  if (unread_messages > current_messages) {
-    // Catch index up to the last available message.
-    *index = messages_ - current_messages;
-    // And that's the one we're going to read.
-    my_start = data_start_;
+  if (options & kFromEnd) {
+    my_start = -1;
   } else {
-    // Just start reading at the first available message that we haven't yet
-    // read.
-    my_start = data_end_ - unread_messages;
-    if (my_start < 0) {
-      my_start += data_length_;
+    const int unread_messages = messages_ - *index;
+    assert(unread_messages > 0);
+    int current_messages = data_end_ - data_start_;
+    if (current_messages < 0) current_messages += data_length_;
+    if (kReadIndexDebug) {
+      printf("queue: %p start=%d end=%d current=%d\n",
+             this, data_start_, data_end_, current_messages);
+    }
+    assert(current_messages > 0);
+    // If we're behind the available messages.
+    if (unread_messages > current_messages) {
+      // Catch index up to the last available message.
+      *index = messages_ - current_messages;
+      // And that's the one we're going to read.
+      my_start = data_start_;
+      if (kReadIndexDebug) {
+        printf("queue: %p jumping ahead to message %d (have %d) (at %d)\n",
+               this, *index, messages_, data_start_);
+      }
+    } else {
+      // Just start reading at the first available message that we haven't yet
+      // read.
+      my_start = data_end_ - unread_messages;
+      if (kReadIndexDebug) {
+        printf("queue: %p original read from %d\n", this, my_start);
+      }
+      if (data_start_ < data_end_) {
+        assert(my_start >= data_start_);
+      } else {
+        if (my_start < 0) my_start += data_length_;
+      }
     }
   }
 
@@ -446,10 +471,14 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
     msg = ReadPeek(options, my_start);
   } else {
     if (options & kFromEnd) {
+      // TODO(brians): Test this block.
       if (kReadDebug) {
         printf("queue: %p start of c1\n", this);
       }
       int pos = data_end_ - 1;
+      if (kReadIndexDebug) {
+        printf("queue: %p end pos start %d\n", this, pos);
+      }
       if (pos < 0) {  // If it wrapped.
         pos = data_length_ - 1;  // Unwrap it.
       }
@@ -462,13 +491,12 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       if (kReadDebug) {
         printf("queue: %p reading from d1: %d\n", this, my_start);
       }
-#if 0
-      // TODO(brians): Do this check right? (make sure full queue works etc)
       // This assert checks that we're either within both endpoints (duh) or
-      // outside of both of them (if the queue is wrapped around).
+      // not between them (if the queue is wrapped around).
       assert((my_start >= data_start_ && my_start < data_end_) ||
-             (my_start > data_end_ && my_start <= data_start_));
-#endif
+             ((my_start >= data_start_) == (my_start > data_end_)));
+      // More sanity checking.
+      assert((my_start >= 0) && (my_start < data_length_));
       msg = data_[my_start];
       ++(*index);
     }
@@ -483,6 +511,7 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
 }
 
 void *RawQueue::GetMessage() {
+  // TODO(brians): Test this function.
   MutexLocker locker(&pool_lock_);
   MessageHeader *header;
   if (pool_length_ - messages_used_ > 0) {

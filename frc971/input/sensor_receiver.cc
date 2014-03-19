@@ -162,6 +162,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
         .Send();
   }
 
+  if (data->analog_errors != 0) {
+    LOG(WARNING, "%" PRIu8 " analog errors\n", data->analog_errors);
+  }
+
   other_sensors.MakeWithBuilder()
       .sonar_distance(sonar_translate(data->main.ultrasonic_pulse_length))
       .Send();

@@ -2,8 +2,6 @@
 
 #include <string.h>
 
-#include <STM32F2XX.h>
-
 #include "cape/util.h"
 #include "cape/led.h"
 
@@ -20,27 +18,13 @@
 
 #define NUM_CHANNELS 8
 
+// This file handles reading values from the MCP3008-I/SL ADC.
+
 uint16_t analog_readings[NUM_CHANNELS] __attribute__((aligned(8)));
 static volatile int current_channel;
 static volatile int partial_reading;
 static volatile int frame;
-
-static void start_read(int channel) {
-  // This needs to wait 13 cycles between enabling the CSEL pin and starting to
-  // send data.
-  // (100ns+8ns)*120MHz = 12.96
-
-  // Clear the CSEL pin to select it.
-  for (int i = 0; i < 9; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
-  current_channel = channel;
-  partial_reading = 0;
-  frame = 0;
-  SPI->DR = 1;  // start bit
-  uint16_t data = (1 << 15) /* not differential */ |
-      (channel << 12);
-  while (!(SPI->SR & SPI_SR_TXE));
-  SPI->DR = data;
-}
+static volatile int analog_errors;
 
 void SPI_IRQHandler(void) {
   uint32_t status = SPI->SR;
@@ -50,15 +34,15 @@ void SPI_IRQHandler(void) {
       frame = 1;
       partial_reading = value;
     } else {
+      frame = 2;
       // Masking off the high bits is important because there's nothing driving
       // the MISO line during the time the MCU receives them.
-      analog_readings[current_channel] = (partial_reading << 16 | value) & 0x3FF;
+      analog_readings[current_channel] =
+          (partial_reading << 16 | value) & 0x3FF;
       for (int i = 0; i < 100; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
       gpio_on(CSEL_GPIO, CSEL_NUM);
 
-      TIM->CR1 = TIM_CR1_OPM;
-      TIM->EGR = TIM_EGR_UG;
-      TIM->CR1 |= TIM_CR1_CEN;
+      current_channel = (current_channel + 1) % NUM_CHANNELS;
     }
   }
 }
@@ -66,7 +50,27 @@ void SPI_IRQHandler(void) {
 void TIM_IRQHandler(void) {
   TIM->SR = ~TIM_SR_CC1IF;
 
-  start_read((current_channel + 1) % NUM_CHANNELS);
+  if (frame != 2) {
+    // We're not done with the previous reading yet, so we're going to reset and
+    // try again.
+    // 270ns*120MHz = 32.4
+    for (int i = 0; i < 33; ++i) gpio_on(CSEL_GPIO, CSEL_NUM);
+    ++analog_errors;
+  }
+
+  // This needs to wait 13 cycles between enabling the CSEL pin and starting to
+  // send data.
+  // (100ns+8ns)*120MHz = 12.96
+
+  // Clear the CSEL pin to select it.
+  for (int i = 0; i < 9; ++i) gpio_off(CSEL_GPIO, CSEL_NUM);
+  partial_reading = 0;
+  frame = 0;
+  SPI->DR = 1;  // start bit
+  uint16_t data = (1 << 15) /* not differential */ |
+      (current_channel << 12);
+  while (!(SPI->SR & SPI_SR_TXE));
+  SPI->DR = data;
 }
 
 void analog_init(void) {
@@ -87,7 +91,7 @@ void analog_init(void) {
   NVIC_SetPriority(TIM_IRQn, 6);
   NVIC_EnableIRQ(TIM_IRQn);
 
-  TIM->CR1 = TIM_CR1_OPM;
+  TIM->CR1 = 0;
   TIM->DIER = TIM_DIER_CC1IE;
   TIM->CCMR1 = 0;
   // Make each tick take 1500ns.
@@ -104,5 +108,17 @@ void analog_init(void) {
   SPI->CR2 = SPI_CR2_RXNEIE;
   SPI->CR1 |= SPI_CR1_SPE;  // enable it
 
-  start_read(0);
+  current_channel = 0;
+  analog_errors = 0;
+
+  TIM->EGR = TIM_EGR_UG;
+  TIM->CR1 |= TIM_CR1_CEN;
+}
+
+int analog_get_errors(void) {
+  NVIC_DisableIRQ(TIM_IRQn);
+  int r = analog_errors;
+  analog_errors = 0;
+  NVIC_EnableIRQ(TIM_IRQn);
+  return r;
 }
