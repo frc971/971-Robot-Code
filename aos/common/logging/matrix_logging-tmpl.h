@@ -10,8 +10,10 @@ namespace logging {
 template <class T>
 void DoLogMatrix(log_level level, const ::std::string &message,
                  const T &matrix) {
+  static_assert(!T::IsRowMajor, "we only handle column-major storage");
   LogImplementation::DoLogMatrix(level, message, TypeID<typename T::Scalar>::id,
-                                 matrix.rows(), matrix.cols(), matrix.data());
+                                 matrix.rows(), matrix.cols(), matrix.data(),
+                                 1);
 }
 
 }  // namespace logging

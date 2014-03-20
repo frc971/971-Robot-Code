@@ -284,9 +284,9 @@ class Target::MessageElement < Target::Node
 		f_call.args.dont_wrap = true
 	end
 	def getTypeID()
-		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) |
+		'0x' + ((Digest::SHA1.hexdigest(@type)[0..3].to_i(16) << 16) |
                 0x2000 | # marks it as primitive
-                size
+                size).to_s(16)
 	end
 	def simpleStr()
 		"#{@type} #{@name}"

@@ -6,6 +6,7 @@
 
 #include "aos/common/test_queue.q.h"
 #include "aos/common/byteorder.h"
+#include "aos/queue_primitives.h"
 
 using ::aos::common::testing::Structure;
 using ::aos::common::testing::MessageWithStructure;
@@ -172,6 +173,20 @@ TEST_F(PrintMessageTest, Structure) {
                            *kTestStructure1.GetType()));
   EXPECT_EQ(kTestStructure1String, ::std::string(output));
   EXPECT_EQ(kTestStructure1String.size() + 1, sizeof(output) - output_bytes);
+}
+
+TEST_F(PrintMessageTest, Matrix) {
+  static const uint16_t kTestMatrix[] = {971, 254, 1768, 8971, 9971, 973};
+  uint16_t test_matrix[sizeof(kTestMatrix) / sizeof(kTestMatrix[0])];
+  SerializeMatrix(queue_primitive_types::uint16_t_p, test_matrix, kTestMatrix,
+                  3, 2);
+  static const ::std::string kOutput =
+      "[[971, 8971], [254, 9971], [1768, 973]]";
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintMatrix(output, &output_bytes, test_matrix,
+                          queue_primitive_types::uint16_t_p, 3, 2));
+  EXPECT_EQ(kOutput, ::std::string(output));
+  EXPECT_EQ(kOutput.size() + 1, sizeof(output) - output_bytes);
 }
 
 }  // namespace testing

@@ -15,17 +15,16 @@ WriteIffChanged.open(ARGV[0]) do |output|
 #include <stdint.h>
 
 namespace aos {
-
-enum class QueuePrimitiveTypes : uint32_t {
+namespace queue_primitive_types {
 #{TypeNames.collect do |name|
   message_element = Target::MessageElement.new(name, 'value')
   statement = MessageElementStmt.new(name, 'value')
   message_element.size = statement.size
   next <<END2
-  #{name}_p = #{message_element.getTypeID()},
+  static const uint32_t #{name}_p = #{message_element.getTypeID()};
 END2
 end.join('')}
-};
+}  // namespace queue_primitive_types
 
 // A class for mapping an actual type to a type ID.
 // There are specializations for all of the actual primitive types.

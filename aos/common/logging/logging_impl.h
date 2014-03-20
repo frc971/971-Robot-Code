@@ -46,7 +46,8 @@ struct LogMessage {
   };
 
   int32_t seconds, nseconds;
-  // message_length is the length of everything in message for all types.
+  // message_length is just the length of the actual data (which member depends
+  // on the type).
   size_t message_length, name_length;
   pid_t source;
   static_assert(sizeof(source) == 4, "that's how they get printed");
@@ -66,9 +67,11 @@ struct LogMessage {
     struct {
       // The type ID of the element type.
       uint32_t type;
-      int rows, columns;
+      int rows, cols;
+      size_t string_length;
+      // The message string and then the serialized matrix.
       char
-          data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(columns)];
+          data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(cols)];
     } matrix;
   };
 };
@@ -170,9 +173,10 @@ class LogImplementation {
                           size_t size, const MessageType *type,
                           const ::std::function<size_t(char *)> &serialize,
                           int levels);
+  // This one is implemented in matrix_logging.cc.
   static void DoLogMatrix(log_level level, const ::std::string &message,
                           uint32_t type_id, int rows, int cols,
-                          const void *data);
+                          const void *data, int levels);
 
   // Friends so that they can access the static Do* functions.
   friend void VLog(log_level, const char *, va_list);

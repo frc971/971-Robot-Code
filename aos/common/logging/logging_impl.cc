@@ -122,7 +122,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
       fprintf(output, BASE_FORMAT "%.*s", BASE_ARGS,
               static_cast<int>(message.message_length), message.message);
       break;
-    case LogMessage::Type::kStruct:
+    case LogMessage::Type::kStruct: {
       char buffer[1024];
       size_t output_length = sizeof(buffer);
       size_t input_length = message.message_length;
@@ -144,7 +144,30 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               static_cast<int>(message.structure.string_length),
               message.structure.serialized,
               static_cast<int>(sizeof(buffer) - output_length), buffer);
-      break;
+    } break;
+    case LogMessage::Type::kMatrix: {
+      char buffer[1024];
+      size_t output_length = sizeof(buffer);
+      if (message.message_length !=
+          static_cast<size_t>(message.matrix.rows * message.matrix.cols *
+                              MessageType::Sizeof(message.matrix.type))) {
+        LOG(FATAL, "expected %d bytes of matrix data but have %zu\n",
+            message.matrix.rows * message.matrix.cols *
+                MessageType::Sizeof(message.matrix.type),
+            message.message_length);
+      }
+      if (!PrintMatrix(buffer, &output_length,
+                       message.matrix.data + message.matrix.string_length,
+                       message.matrix.type, message.matrix.rows,
+                       message.matrix.cols)) {
+        LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
+            message.matrix.rows, message.matrix.cols, message.matrix.type);
+      }
+      fprintf(output, BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
+              static_cast<int>(message.matrix.string_length),
+              message.structure.serialized,
+              static_cast<int>(sizeof(buffer) - output_length), buffer);
+    } break;
   }
 #undef NSECONDS_DIGITS
 #undef BASE_FORMAT
@@ -168,6 +191,28 @@ void LogImplementation::LogStruct(
     LOG(FATAL, "PrintMessage(%p, %p(=%zd), %p, %p(=%zd), %p(name=%s)) failed\n",
         printed, &printed_bytes, printed_bytes, serialized, &used, used, type,
         type->name.c_str());
+  }
+  DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
+                message.data(),
+                static_cast<int>(sizeof(printed) - printed_bytes), printed);
+}
+
+void LogImplementation::LogMatrix(
+    log_level level, const ::std::string &message, uint32_t type_id,
+    int rows, int cols, const void *data) {
+  char serialized[1024];
+  if (static_cast<size_t>(rows * cols * MessageType::Sizeof(type_id)) >
+      sizeof(serialized)) {
+    LOG(FATAL, "matrix of size %u too big to serialize\n",
+        rows * cols * MessageType::Sizeof(type_id));
+  }
+  SerializeMatrix(type_id, serialized, data, rows, cols);
+  char printed[1024];
+  size_t printed_bytes = sizeof(printed);
+  if (!PrintMatrix(printed, &printed_bytes, serialized, type_id, rows, cols)) {
+    LOG(FATAL, "PrintMatrix(%p, %p(=%zd), %p, %" PRIu32 ", %d, %d) failed\n",
+        printed, &printed_bytes, printed_bytes, serialized, type_id, rows,
+        cols);
   }
   DoLogVariadic(level, "%.*s: %.*s\n", static_cast<int>(message.size()),
                 message.data(),
