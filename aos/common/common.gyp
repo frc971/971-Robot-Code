@@ -46,6 +46,7 @@
       'type': 'static_library',
       'variables': {
         'print_field_cc': '<(SHARED_INTERMEDIATE_DIR)/print_field.cc',
+        'queue_primitives_h': '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives/aos/queue_primitives.h',
       },
       'sources': [
         'queue_types.cc',
@@ -73,7 +74,28 @@
           'action': ['ruby', '<(script)', '<(print_field_cc)'],
           'message': 'Generating print_field.cc',
         },
+        {
+          'variables': {
+            'script': '<(AOS)/build/queues/queue_primitives.rb',
+          },
+          'action_name': 'gen_queue_primitives',
+          'inputs': [
+            '<(script)',
+            '<!@(find <(AOS)/build/queues/ -name *.rb)',
+          ],
+          'outputs': [
+            '<(queue_primitives_h)',
+          ],
+          'action': ['ruby', '<(script)', '<(queue_primitives_h)'],
+          'message': 'Generating queue_primitives.h',
+        },
       ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives',
+        ],
+      },
+      'hard_dependency': 1,
     },
     {
       'target_name': 'queue_types_test',
@@ -213,7 +235,7 @@
     },
     {
       'target_name': 'type_traits_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'type_traits_test.cpp',
       ],
@@ -243,7 +265,7 @@
     },
     {
       'target_name': 'once_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'once_test.cc',
       ],
@@ -254,7 +276,7 @@
     },
     {
       'target_name': 'time_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'time_test.cc',
       ],
@@ -313,7 +335,7 @@
     },
     {
       'target_name': 'mutex_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'mutex_test.cpp',
       ],

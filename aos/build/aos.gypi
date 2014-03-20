@@ -15,10 +15,6 @@
     'so_dir': '<(PRODUCT_DIR)/lib',
 # the directory that executables that depend on <(EXTERNALS):gtest get put into
     'test_dir': '<(PRODUCT_DIR)/tests',
-# 'executable' for linux and 'static_library' for the cRIO
-# Useful for targets that should either be an executable or get compiled into
-# a .out file depending on the current platform.
-#   'aos_target': platform-dependent,
   },
   'conditions': [
     ['OS=="crio"', {
@@ -26,9 +22,6 @@
           ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
-        'variables': {
-          'aos_target': 'static_library',
-        },
       }, {
         'conditions': [
           ['PLATFORM!="linux-amd64"', {
@@ -39,9 +32,6 @@
             },
           ],
         ],
-        'variables': {
-          'aos_target': 'executable',
-        },
       }
     ],
   ],
@@ -111,8 +101,6 @@
               'cflags': [
                 '-mcpu=cortex-a8',
                 '-mfpu=neon',
-
-                '-fstack-protector-all',
               ],
             }],
             ['PLATFORM=="linux-amd64"', {

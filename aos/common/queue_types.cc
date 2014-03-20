@@ -164,6 +164,95 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
   return true;
 }
 
+bool PrintMatrix(char *output, size_t *output_bytes, const void *input,
+                 uint32_t type_id, int rows, int cols) {
+  CHECK(MessageType::IsPrimitive(type_id));
+  const size_t element_size = MessageType::Sizeof(type_id);
+
+  if (*output_bytes < 1) return false;
+  *output_bytes -= 1;
+  *(output++) = '[';
+
+  bool first_row = true;
+  for (int row = 0; row < rows; ++row) {
+    if (first_row) {
+      first_row = false;
+    } else {
+      if (*output_bytes < 2) return false;
+      *output_bytes -= 2;
+      *(output++) = ',';
+      *(output++) = ' ';
+    }
+
+    if (*output_bytes < 1) return false;
+    *output_bytes -= 1;
+    *(output++) = '[';
+
+    bool first_col = true;
+    for (int col = 0; col < cols; ++col) {
+      if (first_col) {
+        first_col = false;
+      } else {
+        if (*output_bytes < 2) return false;
+        *output_bytes -= 2;
+        *(output++) = ',';
+        *(output++) = ' ';
+      }
+
+      const size_t output_bytes_before = *output_bytes;
+      size_t input_bytes = element_size;
+      if (!PrintField(output, output_bytes,
+                      static_cast<const char *>(input) +
+                          (row + col * rows) * element_size,
+                      &input_bytes, type_id)) {
+        return false;
+      }
+      CHECK_EQ(0u, input_bytes);
+      // Update the output pointer, ignoring the trailing '\0' that
+      // the subcall put on.
+      output += output_bytes_before - *output_bytes - 1;
+      *output_bytes += 1;
+    }
+
+    if (*output_bytes < 1) return false;
+    *output_bytes -= 1;
+    *(output++) = ']';
+  }
+  if (*output_bytes < 2) return false;
+  *output_bytes -= 2;
+  *(output++) = ']';
+  *(output++) = '\0';
+  return true;
+}
+
+void SerializeMatrix(int type_id, void *output_void, const void *input_void,
+                     int rows, int cols) {
+  char *const output = static_cast<char *>(output_void);
+  const char *const input = static_cast<const char *>(input_void);
+
+  CHECK(MessageType::IsPrimitive(type_id));
+  const size_t element_size = MessageType::Sizeof(type_id);
+
+  for (int i = 0; i < rows * cols; ++i) {
+    switch(element_size) {
+      case 1:
+        to_network<1>(&input[i * element_size], &output[i * element_size]);
+        break;
+      case 2:
+        to_network<2>(&input[i * element_size], &output[i * element_size]);
+        break;
+      case 4:
+        to_network<4>(&input[i * element_size], &output[i * element_size]);
+        break;
+      case 8:
+        to_network<8>(&input[i * element_size], &output[i * element_size]);
+        break;
+      default:
+        LOG(FATAL, "illegal primitive type size %zu\n", element_size);
+    }
+  }
+}
+
 namespace type_cache {
 namespace {
 

@@ -2,7 +2,7 @@
   'targets': [
     {
       'target_name': 'logging_impl_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'logging_impl_test.cc',
       ],
@@ -24,6 +24,26 @@
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:die',
+      ],
+    },
+    {
+      'target_name': 'matrix_logging',
+      'type': 'static_library',
+      'sources': [
+        'matrix_logging.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/common.gyp:queue_types',
+        '<(EXTERNALS):eigen',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/common.gyp:queue_types',
+        '<(EXTERNALS):eigen',
       ],
     },
   ],

@@ -11,6 +11,7 @@
 #include "aos/controls/polytope.h"
 #include "aos/common/commonmath.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/logging/matrix_logging.h"
 
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
@@ -125,6 +126,8 @@ class DrivetrainMotorsSS {
       }
       loop_->UpdateObserver();
     }
+    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
+    LOG_MATRIX(DEBUG, "E", E);
   }
 
   double GetEstimatedRobotSpeed() {
@@ -146,10 +149,6 @@ class DrivetrainMotorsSS {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
     }
-  }
-  void PrintMotors() const {
-    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
-    LOG(DEBUG, "E[0, 0]: %f E[1, 0] %f E[2, 0] %f E[3, 0] %f\n", E(0, 0), E(1, 0), E(2, 0), E(3, 0));
   }
 
  private:

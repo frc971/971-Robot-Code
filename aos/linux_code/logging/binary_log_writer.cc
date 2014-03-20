@@ -178,10 +178,11 @@ int BinaryLogReaderMain() {
                msg->message_length);
         output->type = LogFileMessageHeader::MessageType::kString;
         break;
-      case LogMessage::Type::kStruct:
+      case LogMessage::Type::kStruct: {
         char *position = output_strings + msg->name_length;
 
-        memcpy(position, &msg->structure.type_id, sizeof(msg->structure.type_id));
+        memcpy(position, &msg->structure.type_id,
+               sizeof(msg->structure.type_id));
         position += sizeof(msg->structure.type_id);
         output->message_size += sizeof(msg->structure.type_id);
 
@@ -197,7 +198,34 @@ int BinaryLogReaderMain() {
                msg->message_length);
 
         output->type = LogFileMessageHeader::MessageType::kStruct;
-        break;
+      } break;
+      case LogMessage::Type::kMatrix: {
+        char *position = output_strings + msg->name_length;
+
+        memcpy(position, &msg->matrix.type, sizeof(msg->matrix.type));
+        position += sizeof(msg->matrix.type);
+        output->message_size += sizeof(msg->matrix.type);
+
+        uint32_t length = msg->matrix.string_length;
+        memcpy(position, &length, sizeof(length));
+        position += sizeof(length);
+        memcpy(position, msg->matrix.data, length);
+        position += length;
+        output->message_size += sizeof(length) + length;
+
+        uint16_t rows = msg->matrix.rows, cols = msg->matrix.cols;
+        memcpy(position, &rows, sizeof(rows));
+        position += sizeof(rows);
+        memcpy(position, &cols, sizeof(cols));
+        position += sizeof(cols);
+        output->message_size += sizeof(rows) + sizeof(cols);
+        CHECK_EQ(msg->message_length,
+                 MessageType::Sizeof(msg->matrix.type) * rows * cols);
+
+        memcpy(position,
+               msg->matrix.data + msg->matrix.string_length,
+               msg->message_length);
+      } break;
     }
 
     futex_set(&output->marker);
