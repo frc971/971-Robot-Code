@@ -126,6 +126,8 @@ class DrivetrainMotorsSS {
       }
       loop_->UpdateObserver();
     }
+    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
+    LOG_MATRIX(DEBUG, "E", E);
   }
 
   double GetEstimatedRobotSpeed() {
@@ -147,10 +149,6 @@ class DrivetrainMotorsSS {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
     }
-  }
-  void PrintMotors() const {
-    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
-    LOG_MATRIX(DEBUG, "E", E);
   }
 
  private:
