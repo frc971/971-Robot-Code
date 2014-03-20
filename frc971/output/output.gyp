@@ -24,7 +24,7 @@
     },
     {
       'target_name': 'motor_writer',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'motor_writer.cc'
       ],

@@ -2,7 +2,7 @@
   'targets': [
     {
       'target_name': 'logging_impl_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'logging_impl_test.cc',
       ],

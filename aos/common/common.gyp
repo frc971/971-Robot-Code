@@ -235,7 +235,7 @@
     },
     {
       'target_name': 'type_traits_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'type_traits_test.cpp',
       ],
@@ -265,7 +265,7 @@
     },
     {
       'target_name': 'once_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'once_test.cc',
       ],
@@ -276,7 +276,7 @@
     },
     {
       'target_name': 'time_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'time_test.cc',
       ],
@@ -335,7 +335,7 @@
     },
     {
       'target_name': 'mutex_test',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'mutex_test.cpp',
       ],
