@@ -20,7 +20,7 @@ namespace constants {
 namespace {
 
 const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 8971;
+const uint16_t kPracticeTeamNumber = 9971;
 
 const double kCompDrivetrainEncoderRatio =
     (15.0 / 50.0) /*output reduction*/ * (36.0 / 24.0) /*encoder gears*/;
