@@ -36,6 +36,7 @@ uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
 
 MotorOutput::MotorOutput()
   : socket_(NetworkPort::kMotors, ::aos::NetworkAddress::kCRIO) {
+  values_.solenoid_values = 0;
 }
 
 void MotorOutput::Run() {
