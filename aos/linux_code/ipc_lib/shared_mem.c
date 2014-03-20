@@ -104,7 +104,10 @@ before:
         (void *)SHM_START, shm_address);
     return -1;
   }
-  return aos_core_use_address_as_shared_mem(shm_address, SIZEOFSHMSEG);
+  int r = aos_core_use_address_as_shared_mem(shm_address, SIZEOFSHMSEG);
+  fprintf(stderr, "shared_mem: end of create_shared_mem owner=%d r=%d\n",
+          global_core->owner, r);
+  return r;
 }
 
 int aos_core_use_address_as_shared_mem(void *address, size_t size) {
@@ -124,8 +127,6 @@ int aos_core_use_address_as_shared_mem(void *address, size_t size) {
       return -1;
     }
   }
-  fprintf(stderr, "shared_mem: end of create_shared_mem owner=%d\n",
-          global_core->owner);
   return 0;
 }
 
