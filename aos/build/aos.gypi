@@ -101,8 +101,6 @@
               'cflags': [
                 '-mcpu=cortex-a8',
                 '-mfpu=neon',
-
-                '-fstack-protector-all',
               ],
             }],
             ['PLATFORM=="linux-amd64"', {
