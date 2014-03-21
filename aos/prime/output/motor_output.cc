@@ -5,6 +5,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network_port.h"
+#include "aos/common/messages/RobotState.q.h"
 
 namespace aos {
 
@@ -51,6 +52,12 @@ void MotorOutput::Run() {
     values_.pressure_switch_channel = 0;
     values_.compressor_channel = 0;
     values_.solenoid_module = -1;
+
+    ::aos::robot_state.FetchLatest();
+    if (!::aos::robot_state.get() || ::aos::robot_state->fake) {
+      LOG(DEBUG, "fake robot state -> not outputting\n");
+      continue;
+    }
 
     RunIteration();
 
