@@ -287,6 +287,13 @@ void FillInMessageStructure(log_level level,
                             const ::std::function<size_t(char *)> &serialize,
                             LogMessage *message);
 
+// Fills in all the parts of the message according to the given inputs (with
+// type kMatrix).
+void FillInMessageMatrix(log_level level,
+                         const ::std::string &message_string, uint32_t type_id,
+                         int rows, int cols, const void *data,
+                         LogMessage *message);
+
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.
 void FillInMessage(log_level level, const char *format, va_list ap,

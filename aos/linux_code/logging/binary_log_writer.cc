@@ -154,12 +154,17 @@ int BinaryLogReaderMain() {
     const LogMessage *const msg = ReadNext();
     if (msg == NULL) continue;
 
-    size_t output_length =
+    const size_t raw_output_length =
         sizeof(LogFileMessageHeader) + msg->name_length + msg->message_length;
+    size_t output_length = raw_output_length;
     if (msg->type == LogMessage::Type::kStruct) {
       output_length += sizeof(msg->structure.type_id) + sizeof(uint32_t) +
                        msg->structure.string_length;
       CheckTypeWritten(msg->structure.type_id, writer);
+    } else if (msg->type == LogMessage::Type::kMatrix) {
+      output_length +=
+          sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
+          sizeof(uint16_t) + msg->matrix.string_length;
     }
     LogFileMessageHeader *const output = writer.GetWritePosition(output_length);;
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
@@ -209,9 +214,7 @@ int BinaryLogReaderMain() {
         uint32_t length = msg->matrix.string_length;
         memcpy(position, &length, sizeof(length));
         position += sizeof(length);
-        memcpy(position, msg->matrix.data, length);
-        position += length;
-        output->message_size += sizeof(length) + length;
+        output->message_size += sizeof(length);
 
         uint16_t rows = msg->matrix.rows, cols = msg->matrix.cols;
         memcpy(position, &rows, sizeof(rows));
@@ -222,10 +225,17 @@ int BinaryLogReaderMain() {
         CHECK_EQ(msg->message_length,
                  MessageType::Sizeof(msg->matrix.type) * rows * cols);
 
-        memcpy(position,
-               msg->matrix.data + msg->matrix.string_length,
-               msg->message_length);
+        memcpy(position, msg->matrix.data, msg->message_length + length);
+        output->message_size += length;
+
+        output->type = LogFileMessageHeader::MessageType::kMatrix;
       } break;
+    }
+
+    if (output->message_size - msg->message_length !=
+        output_length - raw_output_length) {
+      LOG(FATAL, "%zu != %zu\n", output->message_size - msg->message_length,
+          output_length - raw_output_length);
     }
 
     futex_set(&output->marker);

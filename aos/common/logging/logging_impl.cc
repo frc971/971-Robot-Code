@@ -99,6 +99,35 @@ void FillInMessageStructure(log_level level,
   message->type = LogMessage::Type::kStruct;
 }
 
+void FillInMessageMatrix(log_level level,
+                         const ::std::string &message_string, uint32_t type_id,
+                         int rows, int cols, const void *data,
+                         LogMessage *message) {
+  CHECK(MessageType::IsPrimitive(type_id));
+  message->matrix.type = type_id;
+
+  const auto element_size = MessageType::Sizeof(type_id);
+
+  FillInMessageBase(level, message);
+
+  message->message_length = rows * cols * element_size;
+  if (message_string.size() + message->message_length >
+      sizeof(message->matrix.data)) {
+    LOG(FATAL, "%dx%d matrix of type %" PRIu32
+               " (size %u) and message %s is too big\n",
+        rows, cols, type_id, element_size, message_string.c_str());
+  }
+  message->matrix.string_length = message_string.size();
+  memcpy(message->matrix.data, message_string.data(),
+         message->matrix.string_length);
+
+  message->matrix.rows = rows;
+  message->matrix.cols = cols;
+  SerializeMatrix(type_id, &message->matrix.data[message->matrix.string_length],
+                  data, rows, cols);
+  message->type = LogMessage::Type::kMatrix;
+}
+
 void FillInMessage(log_level level, const char *format, va_list ap,
                    LogMessage *message) {
   FillInMessageBase(level, message);
@@ -165,7 +194,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
       }
       fprintf(output, BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
               static_cast<int>(message.matrix.string_length),
-              message.structure.serialized,
+              message.matrix.data,
               static_cast<int>(sizeof(buffer) - output_length), buffer);
     } break;
   }

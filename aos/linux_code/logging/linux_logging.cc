@@ -52,6 +52,15 @@ class LinuxQueueLogImplementation : public LogImplementation {
                                      serialize, message);
     Write(message);
   }
+
+  virtual void LogMatrix(log_level level, const ::std::string &message_string,
+                         uint32_t type_id, int rows, int cols, const void *data)
+      override {
+    LogMessage *message = GetMessageOrDie();
+    internal::FillInMessageMatrix(level, message_string, type_id, rows, cols,
+                                  data, message);
+    Write(message);
+  }
 };
 
 }  // namespace

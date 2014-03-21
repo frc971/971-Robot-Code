@@ -39,6 +39,7 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
     kString,
     kStructType,
     kStruct,
+    kMatrix,
   };
 
   // Gets futex_set once this one has been written
