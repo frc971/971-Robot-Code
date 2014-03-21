@@ -199,7 +199,7 @@
         'control_loop/ControlLoop.cc',
       ],
       'dependencies': [
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',
@@ -209,7 +209,7 @@
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_generation',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
         'timing',
         'time',

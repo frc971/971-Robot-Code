@@ -6,7 +6,7 @@
 
 #include "aos/common/network_port.h"
 #include "aos/common/network/ReceiveSocket.h"
-#include "aos/common/messages/RobotState.q.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 

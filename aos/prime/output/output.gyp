@@ -11,7 +11,7 @@
         '<(AOS)/common/common.gyp:timing',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/network/network.gyp:socket',

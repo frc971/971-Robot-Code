@@ -2,7 +2,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/control_loop/Timing.h"
-#include "aos/common/messages/RobotState.q.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
 
 #include "bbb/sensor_generation.q.h"

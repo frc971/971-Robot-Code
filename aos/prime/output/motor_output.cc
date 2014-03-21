@@ -5,7 +5,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network_port.h"
-#include "aos/common/messages/RobotState.q.h"
+#include "aos/common/messages/robot_state.q.h"
 
 namespace aos {
 
