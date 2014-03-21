@@ -156,6 +156,8 @@ class RawQueue {
   void DoFreeMessage(const void *msg);
   // Calls DoFreeMessage if appropriate.
   void DecrementMessageReferenceCount(const void *msg);
+  // Only does the actual incrementing of the reference count.
+  void IncrementMessageReferenceCount(const void *msg) const;
 
   // Must be called with data_lock_ locked.
   // *read_data will be initialized.
