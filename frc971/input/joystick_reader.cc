@@ -71,7 +71,9 @@ struct ShotGoal {
 };
 
 const double kIntakePower = 4.0;
-const double kGrabSeparation = -0.04;
+// TODO(brians): This wants to be -0.04 on the comp bot. Make them both the
+// same.
+const double kGrabSeparation = 0;
 const double kShootSeparation = 0.11 + kGrabSeparation;
 
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
