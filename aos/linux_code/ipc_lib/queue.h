@@ -113,9 +113,9 @@ class RawQueue {
     if (msg != NULL) DecrementMessageReferenceCount(msg);
   }
 
-  // Returns the number of messages from this queue that are currently used (in
-  // the queue and/or given out as references).
-  int messages_used() const { return messages_used_; }
+  // UNSAFE! Returns the number of free messages we have. Only safe to use when
+  // only 1 task is using this object (ie in tests).
+  int FreeMessages() const;
 
  private:
   struct MessageHeader;
@@ -145,12 +145,9 @@ class RawQueue {
   int messages_;  // that have passed through
   void **data_;  // array of messages (with headers)
 
-  Mutex pool_lock_;
   size_t msg_length_;  // sizeof(each message) including the header
-  int messages_used_;
-  // The number of messages in pool_.
-  int pool_length_;
-  MessageHeader **pool_;  // array of pointers to messages
+  // A pointer to the first in the linked list of free messages.
+  MessageHeader *free_messages_;
 
   // Actually frees the given message.
   void DoFreeMessage(const void *msg);

@@ -25,6 +25,9 @@ using ::aos::common::testing::GlobalCoreInstance;
 namespace aos {
 namespace testing {
 
+// The same constant from queue.cc. This will have to be updated if that one is.
+const int kExtraMessages = 20;
+
 class RawQueueTest : public ::testing::Test {
  protected:
   static const size_t kFailureSize = 400;
@@ -472,9 +475,9 @@ TEST_F(RawQueueTest, ReadIndexNotFull) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
   const TestMessage *message, *peek_message;
 
-  EXPECT_EQ(0, queue->messages_used());
+  EXPECT_EQ(0, kExtraMessages + 2 - queue->FreeMessages());
   PushMessage(queue, 971);
-  EXPECT_EQ(1, queue->messages_used());
+  EXPECT_EQ(1, kExtraMessages + 2 - queue->FreeMessages());
 
   int index = 0;
   peek_message = static_cast<const TestMessage *>(
@@ -489,7 +492,7 @@ TEST_F(RawQueueTest, ReadIndexNotFull) {
   queue->FreeMessage(peek_message);
 
   PushMessage(queue, 1768);
-  EXPECT_EQ(2, queue->messages_used());
+  EXPECT_EQ(2, kExtraMessages + 2 - queue->FreeMessages());
   peek_message = static_cast<const TestMessage *>(
       queue->ReadMessageIndex(RawQueue::kNonBlock | RawQueue::kPeek, &index));
   message = static_cast<const TestMessage *>(
@@ -525,18 +528,18 @@ TEST_F(RawQueueTest, ReadIndexNotFull) {
   queue->FreeMessage(message);
   queue->FreeMessage(peek_message);
 
-  EXPECT_EQ(2, queue->messages_used());
+  EXPECT_EQ(2, kExtraMessages + 2 - queue->FreeMessages());
 }
 
 TEST_F(RawQueueTest, ReadIndexNotBehind) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
   const TestMessage *message, *peek_message;
 
-  EXPECT_EQ(0, queue->messages_used());
+  EXPECT_EQ(0, kExtraMessages + 2 - queue->FreeMessages());
   PushMessage(queue, 971);
-  EXPECT_EQ(1, queue->messages_used());
+  EXPECT_EQ(1, kExtraMessages + 2 - queue->FreeMessages());
   PushMessage(queue, 1768);
-  EXPECT_EQ(2, queue->messages_used());
+  EXPECT_EQ(2, kExtraMessages + 2 - queue->FreeMessages());
 
   int index = 0;
   peek_message = static_cast<const TestMessage *>(
@@ -689,11 +692,11 @@ TEST_F(RawQueueTest, ReadIndexLotBehind) {
     message2 = queue->ReadMessage(RawQueue::kNonBlock);
     ASSERT_NE(nullptr, message2);
     PushMessage(queue, 973);
-    EXPECT_EQ(4, queue->messages_used());
+    EXPECT_EQ(4, kExtraMessages + 2 - queue->FreeMessages());
     queue->FreeMessage(message1);
-    EXPECT_EQ(3, queue->messages_used());
+    EXPECT_EQ(3, kExtraMessages + 2 - queue->FreeMessages());
     queue->FreeMessage(message2);
-    EXPECT_EQ(2, queue->messages_used());
+    EXPECT_EQ(2, kExtraMessages + 2 - queue->FreeMessages());
   }
 
   int index = 0;
@@ -861,17 +864,17 @@ TEST_F(RawQueueTest, MessageReferenceCounts) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
   const void *message1, *message2;
 
-  EXPECT_EQ(0, queue->messages_used());
+  EXPECT_EQ(0, kExtraMessages + 2 - queue->FreeMessages());
   message1 = queue->GetMessage();
   EXPECT_NE(nullptr, message1);
-  EXPECT_EQ(1, queue->messages_used());
+  EXPECT_EQ(1, kExtraMessages + 2 - queue->FreeMessages());
   message2 = queue->GetMessage();
   EXPECT_NE(nullptr, message2);
-  EXPECT_EQ(2, queue->messages_used());
+  EXPECT_EQ(2, kExtraMessages + 2 - queue->FreeMessages());
   queue->FreeMessage(message1);
-  EXPECT_EQ(1, queue->messages_used());
+  EXPECT_EQ(1, kExtraMessages + 2 - queue->FreeMessages());
   queue->FreeMessage(message2);
-  EXPECT_EQ(0, queue->messages_used());
+  EXPECT_EQ(0, kExtraMessages + 2 - queue->FreeMessages());
 }
 
 }  // namespace testing
