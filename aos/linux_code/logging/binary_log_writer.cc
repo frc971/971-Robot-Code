@@ -166,7 +166,7 @@ int BinaryLogReaderMain() {
           sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
           sizeof(uint16_t) + msg->matrix.string_length;
     }
-    LogFileMessageHeader *const output = writer.GetWritePosition(output_length);;
+    LogFileMessageHeader *const output = writer.GetWritePosition(output_length);
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
     output->name_size = msg->name_length;
     output->message_size = msg->message_length;
