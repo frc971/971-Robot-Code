@@ -241,8 +241,8 @@ void RawQueue::DoFreeMessage(const void *msg) {
     other_header->index = header->index;
     // Put the one we're freeing at the end.
     pool_[messages_used_] = header;
+    header->index = messages_used_;
   }
-  header->index = -1;
 }
 
 bool RawQueue::WriteMessage(void *msg, int options) {
@@ -524,8 +524,7 @@ void *RawQueue::GetMessage() {
   MessageHeader *header;
   if (pool_length_ > messages_used_) {
     header = pool_[messages_used_];
-    //assert(header->index == messages_used_);
-    assert(header->index == -1);
+    assert(header->index == messages_used_);
   } else {
     if (pool_length_ >= mem_length_) {
       LOG(FATAL, "overused pool of queue %p\n", this);
@@ -533,8 +532,8 @@ void *RawQueue::GetMessage() {
     header = pool_[pool_length_] =
         static_cast<MessageHeader *>(shm_malloc(msg_length_));
     ++pool_length_;
+    header->index = messages_used_;
   }
-  header->index = messages_used_;
   void *msg = reinterpret_cast<uint8_t *>(header) + sizeof(MessageHeader);
   header->ref_count = 1;
   static_assert(
