@@ -544,8 +544,13 @@ class PolyDrivetrain {
       const double wiggle =
           (static_cast<double>((counter_ % 10) / 5) - 0.5) * 5.0;
 
-      loop_->U(0, 0) = ::aos::Clip((R_left / Kv)(0, 0) + wiggle, -12.0, 12.0);
-      loop_->U(1, 0) = ::aos::Clip((R_right / Kv)(0, 0) + wiggle, -12.0, 12.0);
+      loop_->U(0, 0) = ::aos::Clip(
+          (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
+          -12.0, 12.0);
+      loop_->U(1, 0) = ::aos::Clip(
+          (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
+          -12.0, 12.0);
+      loop_->U *= 12.0 / position_.battery_voltage;
     }
   }
 

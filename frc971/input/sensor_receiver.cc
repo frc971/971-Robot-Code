@@ -48,21 +48,26 @@ double drivetrain_translate(int32_t in) {
 }
 
 // Translates values from the ADC into voltage.
-// TODO(brian): Fix this.
+// TODO(brian): Tune this to the actual hardware.
 double adc_translate(uint16_t in) {
   static const double kVcc = 5;
-  //static const double kR1 = 5, kR2 = 6.65;
+  static const double kR1 = 5, kR2 = 6.65;
   static const uint16_t kMaximumValue = 0x3FF;
-  return (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
+  const double raw =
+      (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
+  return (raw * (kR1 + kR2) - (kVcc / 2) * kR2) / kR1;
 }
 
 double gyro_translate(int64_t in) {
   return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
-double battery_translate(uint16_t in) {
-  static const double kDividerBig = 98.9, kDividerSmall = 17.8;
-  return adc_translate(in) * kDividerBig / kDividerSmall;
+double battery_translate(uint16_t in_high, uint16_t in_low) {
+  const double high = adc_translate(in_high), low = adc_translate(in_low);
+  static const double kDividerBig = 5.55, kDividerSmall = 2.66;
+  static const double kSensorVcc = 5.0;
+  return (high - low) * (kDividerBig + kDividerSmall) / kDividerSmall +
+         kDividerBig / kDividerSmall * kSensorVcc;
 }
 
 double sonar_translate(uint32_t in) {
@@ -179,7 +184,8 @@ void PacketReceived(const ::bbb::DataStruct *data,
       .right_shifter_position(hall_translate(constants::GetValues().right_drive,
                                              data->main.low_right_drive_hall,
                                              data->main.high_right_drive_hall))
-      .battery_voltage(battery_translate(data->main.battery_voltage))
+      .battery_voltage(battery_translate(data->main.battery_voltage_high,
+                                         data->main.battery_voltage_low))
       .Send();
 
   {

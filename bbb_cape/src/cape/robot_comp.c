@@ -122,6 +122,9 @@ void robot_fill_packet(struct DataStruct *packet) {
   packet->main.high_left_drive_hall = analog_get(6);
   packet->main.high_right_drive_hall = analog_get(1);
 
+  packet->main.battery_voltage_high = analog_get(5);
+  packet->main.battery_voltage_low = analog_get(3);
+
   packet->main.ultrasonic_pulse_length = ultrasonic_pulse_length;
 
   fill_top_claw_values(packet);

@@ -93,7 +93,7 @@ struct DATA_STRUCT_NAME {
       uint16_t low_right_drive_hall;
       uint16_t high_right_drive_hall;
 
-      uint16_t battery_voltage;
+      uint16_t battery_voltage_high, battery_voltage_low;
 
       HallEffectEdges pusher_distal, pusher_proximal;
 
