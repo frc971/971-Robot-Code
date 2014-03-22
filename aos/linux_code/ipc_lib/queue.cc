@@ -118,12 +118,16 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
   data_end_ = 0;
   messages_ = 0;
 
-  mem_length_ = queue_length + kExtraMessages;
-  pool_length_ = 0;
+  pool_length_ = queue_length + kExtraMessages;
   messages_used_ = 0;
   msg_length_ = length + sizeof(MessageHeader);
   pool_ = static_cast<MessageHeader **>(
-      shm_malloc(sizeof(MessageHeader *) * mem_length_));
+      shm_malloc(sizeof(MessageHeader *) * pool_length_));
+  for (int i = 0; i < pool_length_; ++i) {
+    pool_[i] =
+        static_cast<MessageHeader *>(shm_malloc(msg_length_));
+    pool_[i]->index = i;
+  }
 
   if (kFetchDebug) {
     printf("made queue %s\n", name);
@@ -521,19 +525,11 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
 void *RawQueue::GetMessage() {
   // TODO(brians): Test this function.
   MutexLocker locker(&pool_lock_);
-  MessageHeader *header;
-  if (pool_length_ > messages_used_) {
-    header = pool_[messages_used_];
-    assert(header->index == messages_used_);
-  } else {
-    if (pool_length_ >= mem_length_) {
-      LOG(FATAL, "overused pool of queue %p\n", this);
-    }
-    header = pool_[pool_length_] =
-        static_cast<MessageHeader *>(shm_malloc(msg_length_));
-    ++pool_length_;
-    header->index = messages_used_;
+  MessageHeader *const header = pool_[messages_used_];
+  if (messages_used_ >= pool_length_) {
+    LOG(FATAL, "overused pool of queue %p\n", this);
   }
+  assert(header->index == messages_used_);
   void *msg = reinterpret_cast<uint8_t *>(header) + sizeof(MessageHeader);
   header->ref_count = 1;
   static_assert(

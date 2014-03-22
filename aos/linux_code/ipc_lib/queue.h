@@ -147,9 +147,9 @@ class RawQueue {
 
   Mutex pool_lock_;
   size_t msg_length_;  // sizeof(each message) including the header
-  int mem_length_;  // the max number of messages that will ever be allocated
   int messages_used_;
-  int pool_length_;  // the number of allocated messages
+  // The number of messages in pool_.
+  int pool_length_;
   MessageHeader **pool_;  // array of pointers to messages
 
   // Actually frees the given message.
