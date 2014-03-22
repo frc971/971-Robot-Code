@@ -127,12 +127,10 @@ double ShooterMotor::PowerToPosition(double power) {
                      (kMaxExtension - values.shooter.upper_limit) *
                          (kMaxExtension - values.shooter.upper_limit));
   if (power < 0) {
-    //LOG(ERROR, "Power too low giving minimum (%f) (%f).\n", power,
-	//		0.0);
+    LOG_STRUCT(WARNING, "negative power", PowerAdjustment(power, 0));
     power = 0;
   } else if (power > maxpower) {
-    //LOG(ERROR, "Power too high giving maximum (%f) (%f).\n", power,
-    //    maxpower);
+    LOG_STRUCT(WARNING, "power too high", PowerAdjustment(power, maxpower));
     power = maxpower;
   }
 
@@ -607,7 +605,7 @@ void ShooterMotor::RunIteration(
       break;
 
     case STATE_ESTOP:
-      LOG(DEBUG, "estopped\n");
+      LOG(WARNING, "estopped\n");
       // Totally lost, go to a safe state.
       shooter_loop_disable = true;
       latch_piston_ = true;

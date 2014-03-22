@@ -93,3 +93,8 @@ struct ShooterStatusToLog {
 	double goal;
 	double position;
 };
+
+struct PowerAdjustment {
+	double requested_power;
+	double actual_power;
+};

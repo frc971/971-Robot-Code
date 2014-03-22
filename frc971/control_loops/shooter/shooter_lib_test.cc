@@ -468,6 +468,21 @@ TEST_F(ShooterTest, FireLong) {
   EXPECT_TRUE(hit_fire);
 }
 
+// Verifies that it doesn't try to go out too far if you give it a ridicilous
+// power.
+TEST_F(ShooterTest, LoadTooFar) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(500.0).Send();
+  for (int i = 0; i < 300; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SendDSPacket(true);
+    EXPECT_LT(
+        shooter_motor_plant_.GetAbsolutePosition(),
+        constants::GetValuesForTeam(971).shooter.upper_limit);
+  }
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+}
 
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, MoveGoal) {
