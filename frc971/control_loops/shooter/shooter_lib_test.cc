@@ -472,7 +472,7 @@ TEST_F(ShooterTest, FireLong) {
 // power.
 TEST_F(ShooterTest, LoadTooFar) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(500.0).Send();
-  for (int i = 0; i < 300; ++i) {
+  for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();

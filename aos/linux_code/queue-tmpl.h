@@ -177,6 +177,7 @@ void Queue<T>::Clear() {
     queue_ = NULL;
     queue_msg_.set_queue(NULL);
   }
+  index_ = 0;
 }
 
 template <class T>

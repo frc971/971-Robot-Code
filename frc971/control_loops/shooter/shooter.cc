@@ -192,7 +192,8 @@ void ShooterMotor::RunIteration(
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
 
-  const bool disabled = !::aos::robot_state->enabled;
+  const bool disabled =
+      !::aos::robot_state.get() || !::aos::robot_state->enabled;
   // If true, move the goal if we saturate.
   bool cap_goal = false;
 
