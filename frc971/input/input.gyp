@@ -10,6 +10,8 @@
         '<(AOS)/prime/input/input.gyp:joystick_input',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:log_interval',
 
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',

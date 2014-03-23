@@ -7,6 +7,8 @@
 #include "aos/prime/input/joystick_input.h"
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/util/log_interval.h"
+#include "aos/common/time.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/constants.h"
@@ -66,7 +68,7 @@ struct ClawGoal {
 struct ShotGoal {
   ClawGoal claw;
   double shot_power;
-  bool velocity_compensation;
+  double velocity_compensation;
   double intake_power;
 };
 
@@ -88,20 +90,20 @@ const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 //const ShotGoal kLongShotGoal = {
     //{-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
 const ShotGoal kLongShotGoal = {
-    {-0.60, kShootSeparation}, 80, false, kIntakePower};
+    {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kMediumShotGoal = {
-    {-0.90, kShootSeparation}, 105, true, kIntakePower};
+    {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kShortShotGoal = {
-    {-0.670, kShootSeparation}, 71.0, false, kIntakePower};
+    {-0.670, kShootSeparation}, 71.0, 0, kIntakePower};
 const ShotGoal kTrussShotGoal = {
-    {-0.05, kShootSeparation}, 61.0, false, kIntakePower};
+    {-0.05, kShootSeparation}, 61.0, 0, kIntakePower};
 
 const ShotGoal kFlippedLongShotGoal = {
-    {0.55, kShootSeparation}, 80, false, kIntakePower};
+    {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
-    {0.85, kShootSeparation}, 105, true, kIntakePower};
+    {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.57, kShootSeparation}, 80.0, false, kIntakePower};
+    {0.57, kShootSeparation}, 80.0, 0, kIntakePower};
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -176,7 +178,7 @@ class Reader : public ::aos::input::JoystickInput {
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
-        velocity_compensation_(false),
+        velocity_compensation_(0.0),
         intake_power_(0.0),
         was_running_(false) {}
 
@@ -265,7 +267,7 @@ class Reader : public ::aos::input::JoystickInput {
   void SetGoal(ClawGoal goal) {
     goal_angle_ = goal.angle;
     separation_angle_ = goal.separation;
-    velocity_compensation_ = false;
+    velocity_compensation_ = 0.0;
     intake_power_ = 0.0;
   }
 
@@ -391,7 +393,7 @@ class Reader : public ::aos::input::JoystickInput {
       action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
       intake_power_ = 0.0;
-      velocity_compensation_ = false;
+      velocity_compensation_ = 0.0;
     }
 
     // Send out the claw and shooter goals if no actions are running.
@@ -403,16 +405,17 @@ class Reader : public ::aos::input::JoystickInput {
       // compensating.
       if (was_running_) {
         intake_power_ = 0.0;
-        velocity_compensation_ = false;
+        velocity_compensation_ = 0.0;
       }
 
       control_loops::drivetrain.status.FetchLatest();
-      double goal_angle =
-          goal_angle_ +
-          (velocity_compensation_
-               ? SpeedToAngleOffset(
-                     control_loops::drivetrain.status->robot_speed)
-               : 0.0);
+      double goal_angle = goal_angle_;
+      if (control_loops::drivetrain.status.get()) {
+        goal_angle +=
+            SpeedToAngleOffset(control_loops::drivetrain.status->robot_speed);
+      } else {
+        LOG_INTERVAL(no_drivetrain_status_);
+      }
       double separation_angle = separation_angle_;
 
       if (data.IsPressed(kCatch)) {
@@ -451,7 +454,7 @@ class Reader : public ::aos::input::JoystickInput {
     const frc971::constants::Values &values = frc971::constants::GetValues();
     // scale speed to a [0.0-1.0] on something close to the max
     // TODO(austin): Change the scale factor for different shots.
-    return (speed / values.drivetrain_max_speed) * 0.2;
+    return (speed / values.drivetrain_max_speed) * velocity_compensation_;
   }
 
  private:
@@ -459,11 +462,15 @@ class Reader : public ::aos::input::JoystickInput {
   double shot_power_;
   double goal_angle_;
   double separation_angle_;
-  bool velocity_compensation_;
+  double velocity_compensation_;
   double intake_power_;
   bool was_running_;
   
   ActionQueue action_queue_;
+
+  ::aos::util::SimpleLogInterval no_drivetrain_status_ =
+      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
+                                     "no drivetrain status");
 };
 
 }  // namespace joysticks
