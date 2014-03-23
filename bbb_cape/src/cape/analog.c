@@ -48,7 +48,7 @@ void SPI_IRQHandler(void) {
 }
 
 void TIM_IRQHandler(void) {
-  TIM->SR = ~TIM_SR_CC1IF;
+  TIM->SR = ~TIM_SR_UIF;
 
   if (frame != 2) {
     // We're not done with the previous reading yet, so we're going to reset and
@@ -92,12 +92,12 @@ void analog_init(void) {
   NVIC_EnableIRQ(TIM_IRQn);
 
   TIM->CR1 = 0;
-  TIM->DIER = TIM_DIER_CC1IE;
-  TIM->CCMR1 = 0;
+  TIM->DIER = TIM_DIER_UIE;
+  // TODO(brians): Actually figure out what the timing here should be.
   // Make each tick take 1500ns.
   TIM->PSC = (60 * 1500 / 1000) - 1;
-  // Call the interrupt after 1 tick.
-  TIM->CCR1 = 1;
+  // Only count to 1.
+  TIM->ARR = 0x30;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
