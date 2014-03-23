@@ -122,7 +122,6 @@ class RawQueue {
 
  private:
   struct MessageHeader;
-  struct ReadData;
 
   bool is_readable() { return data_end_ != data_start_; }
   bool is_writable() { return ((data_end_ + 1) % data_length_) != data_start_; }
@@ -152,6 +151,10 @@ class RawQueue {
   // A pointer to the first in the linked list of free messages.
   MessageHeader *free_messages_;
 
+  // Keeps track of if the queue was writable before a read so we can Signal() a
+  // reader if we transition it.
+  bool writable_start_;
+
   // Actually frees the given message.
   void DoFreeMessage(const void *msg);
   // Calls DoFreeMessage if appropriate.
@@ -162,11 +165,11 @@ class RawQueue {
   // Must be called with data_lock_ locked.
   // *read_data will be initialized.
   // Returns with a readable message in data_ or false.
-  bool ReadCommonStart(int options, int *index, ReadData *read_data);
+  bool ReadCommonStart(int options, int *index);
   // Deals with setting/unsetting readable_ and writable_.
   // Must be called after data_lock_ has been unlocked.
   // read_data should be the same thing that was passed in to ReadCommonStart.
-  void ReadCommonEnd(ReadData *read_data);
+  void ReadCommonEnd();
   // Returns the index of the last message.
   // Useful for reading with kPeek.
   int LastMessageIndex() const;
