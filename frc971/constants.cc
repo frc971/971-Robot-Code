@@ -23,14 +23,13 @@ const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
 
 const double kCompDrivetrainEncoderRatio =
-    (15.0 / 50.0) /*output reduction*/ * (36.0 / 24.0) /*encoder gears*/;
-const double kCompLowGearRatio = 14.0 / 60.0 * 15.0 / 50.0;
-const double kCompHighGearRatio = 30.0 / 44.0 * 15.0 / 50.0;
+    (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0) /*encoder gears*/;
+const double kCompLowGearRatio = 18.0 / 60.0 * 18.0 / 50.0;
+const double kCompHighGearRatio = 28.0 / 50.0 * 18.0 / 50.0;
 
-const double kPracticeDrivetrainEncoderRatio =
-    (17.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/;
-const double kPracticeLowGearRatio = 16.0 / 60.0 * 19.0 / 50.0;
-const double kPracticeHighGearRatio = 28.0 / 48.0 * 19.0 / 50.0;
+const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
+const double kPracticeLowGearRatio = kCompLowGearRatio;
+const double kPracticeHighGearRatio = kCompHighGearRatio;
 
 const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
 const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};

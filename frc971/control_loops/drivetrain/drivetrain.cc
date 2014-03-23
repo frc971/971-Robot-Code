@@ -542,7 +542,7 @@ class PolyDrivetrain {
       R_right(0, 0) = right_motor_speed;
 
       const double wiggle =
-          (static_cast<double>((counter_ % 10) / 5) - 0.5) * 5.0;
+          (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
 
       loop_->U(0, 0) = ::aos::Clip(
           (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
