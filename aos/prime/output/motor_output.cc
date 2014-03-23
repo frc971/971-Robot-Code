@@ -53,13 +53,13 @@ void MotorOutput::Run() {
     values_.compressor_channel = 0;
     values_.solenoid_module = -1;
 
+    RunIteration();
+
     ::aos::robot_state.FetchLatest();
     if (!::aos::robot_state.get() || ::aos::robot_state->fake) {
       LOG(DEBUG, "fake robot state -> not outputting\n");
       continue;
     }
-
-    RunIteration();
 
     char buffer[sizeof(values_) + ::buffers::kOverhead];
     ssize_t size = values_.SerializeTo(buffer, sizeof(buffer));
