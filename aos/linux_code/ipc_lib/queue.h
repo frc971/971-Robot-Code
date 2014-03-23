@@ -33,6 +33,7 @@ class RawQueue {
   // length is how large each message will be
   // hash can differentiate multiple otherwise identical queues
   // queue_length is how many messages the queue will be able to hold
+  // Will never return NULL.
   static RawQueue *Fetch(const char *name, size_t length, int hash,
                       int queue_length);
   // Same as above, except sets up the returned queue so that it will put
@@ -47,6 +48,7 @@ class RawQueue {
   // NOTE: calling this function with the same (name,length,hash,queue_length)
   // but multiple recycle_queue_lengths will result in each freed message being
   // put onto an undefined one of the recycle queues.
+  // Will never return NULL.
   static RawQueue *Fetch(const char *name, size_t length, int hash,
                       int queue_length,
                       int recycle_hash, int recycle_queue_length,
@@ -81,7 +83,8 @@ class RawQueue {
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
-  // Returns true on success.
+  // Returns true on success. A return value of false means msg has already been
+  // freed.
   bool WriteMessage(void *msg, int options);
 
   // Reads a message out of the queue.
@@ -92,9 +95,9 @@ class RawQueue {
   // IMPORTANT: The return value (if not NULL) must eventually be passed to
   // FreeMessage.
   const void *ReadMessage(int options);
-  // Exactly the same as aos_queue_read_msg, except it will never return the
-  // same message twice with the same index argument. However, it may not
-  // return some messages that pass through the queue.
+  // The same as ReadMessage, except it will never return the
+  // same message twice (when used with the same index argument). However,
+  // may not return some messages that pass through the queue.
   // *index should start as 0. index does not have to be in shared memory, but
   // it can be.
   const void *ReadMessageIndex(int options, int *index);
@@ -105,7 +108,7 @@ class RawQueue {
   // valid memory where it's pointing to.
   // Returns NULL for error.
   // IMPORTANT: The return value (if not NULL) must eventually be passed to
-  // FreeMessage.
+  // FreeMessage or WriteMessage.
   void *GetMessage();
 
   // It is ok to call this method with a NULL msg.
@@ -164,9 +167,9 @@ class RawQueue {
   // Must be called after data_lock_ has been unlocked.
   // read_data should be the same thing that was passed in to ReadCommonStart.
   void ReadCommonEnd(ReadData *read_data);
-  // Handles reading with kPeek.
-  // start can be -1 if options has kFromEnd set.
-  void *ReadPeek(int options, int start) const;
+  // Returns the index of the last message.
+  // Useful for reading with kPeek.
+  int LastMessageIndex() const;
 
   // Gets called by Fetch when necessary (with placement new).
   RawQueue(const char *name, size_t length, int hash, int queue_length);
