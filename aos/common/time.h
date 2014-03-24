@@ -47,7 +47,7 @@ struct Time {
   static const int32_t kNSecInUSec = 1000;
   static const int32_t kMSecInSec = 1000;
   static const int32_t kUSecInSec = 1000000;
-  constexpr Time(int32_t sec, int32_t nsec)
+  constexpr Time(int32_t sec = 0, int32_t nsec = 0)
       : sec_(sec), nsec_(CheckConstexpr(nsec)) {
   }
   #ifndef SWIG

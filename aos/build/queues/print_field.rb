@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/load.rb'
 
 TypeNames = [8, 16, 32, 64].collect do |size|
   ["uint#{size}_t", "int#{size}_t"]
-end.flatten + ['bool', 'float', 'char', 'double']
+end.flatten + ['bool', 'float', 'char', 'double', '::aos::time::Time']
 
 WriteIffChanged.open(ARGV[0]) do |output|
   output.puts <<END
@@ -15,6 +15,7 @@ WriteIffChanged.open(ARGV[0]) do |output|
 #include <stdio.h>
 
 #include "aos/common/byteorder.h"
+#include "aos/common/time.h"
 
 namespace aos {
 

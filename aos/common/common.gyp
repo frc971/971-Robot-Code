@@ -57,6 +57,10 @@
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
         'mutex',
+        'time',
+      ],
+      'export_dependent_settings': [
+        'time',
       ],
       'actions': [
         {

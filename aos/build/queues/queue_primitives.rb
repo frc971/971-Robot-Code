@@ -4,7 +4,7 @@ require 'fileutils'
 
 TypeNames = [8, 16, 32, 64].collect do |size|
   ["uint#{size}_t", "int#{size}_t"]
-end.flatten + ['bool', 'float', 'char', 'double']
+end.flatten + ['bool', 'float', 'char', 'double', '::aos::time::Time']
 
 FileUtils.mkdir_p(File.dirname(ARGV[0]))
 WriteIffChanged.open(ARGV[0]) do |output|
@@ -14,12 +14,15 @@ WriteIffChanged.open(ARGV[0]) do |output|
 
 #include <stdint.h>
 
+#include "aos/common/time.h"
+
 namespace aos {
 namespace queue_primitive_types {
 #{TypeNames.collect do |name|
   message_element = Target::MessageElement.new(name, 'value')
   statement = MessageElementStmt.new(name, 'value')
   message_element.size = statement.size
+  name = 'Time' if name == '::aos::time::Time'
   next <<END2
   static const uint32_t #{name}_p = #{message_element.getTypeID()};
 END2
@@ -40,7 +43,7 @@ class TypeID {
   message_element.size = statement.size
   next <<END2
 template<>
-class TypeID<#{name}> {
+class TypeID< #{name}> {
  public:
   static const uint32_t id = #{message_element.getTypeID()};
 };

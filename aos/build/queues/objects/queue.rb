@@ -3,10 +3,11 @@ class MessageElementStmt < QStmt
 	def initialize(type_name,name,length = nil) #lengths are for arrays
 		@type_name = type_name
 		@type = type_name.to_s
+    @type = '::aos::time::Time' if @type == 'Time'
 		@name = name
 		@length = length
 	end
-	CommonMistakes = {"short" => "int16_t","int" => "int32_t","long" => "int64_t"}
+	CommonMistakes = {"short" => "int16_t","int" => "int32_t","long" => "int64_t","time" => "Time"}
 	def check_type_error(locals)
 		if(!(Sizes[@type] || (@length != nil && @type == "char")) )
 			if(correction = CommonMistakes[@type])
@@ -48,7 +49,8 @@ ERROR_MSG
                        "int8_t" => "%\" PRId8 \"",
                        "int16_t" => "%\" PRId16 \"",
                        "int32_t" => "%\" PRId32 \"",
-                       "int64_t" => "%\" PRId64 \""}
+                       "int64_t" => "%\" PRId64 \"",
+                       "::aos::time::Time" => "%010\" PRId32 \".%05\" PRId32 \"s"}
         def toPrintFormat()
 		if(format = PrintFormat[@type])
 			return format;
@@ -60,12 +62,12 @@ Somehow this slipped past me, but
 ERROR_MSG
 	end
 
-	Sizes = {"bool" => 1, "float" => 4,"double" => 8}
+	Sizes = {"bool" => 1, "float" => 4,"double" => 8,"::aos::time::Time" => 8}
 	[8,16,32,64].each do |len|
 		Sizes["int#{len}_t"] = len / 8
 		Sizes["uint#{len}_t"] = len / 8
 	end
-	Zero = {"float" => "0.0f","double" => "0.0","bool" => "false"}
+	Zero = {"float" => "0.0f","double" => "0.0","bool" => "false","::aos::time::Time" => "::aos::time::Time(0, 0)"}
 	def size()
 		if(size = Sizes[@type]); return size; end
 		return 1 if(@type == "char")

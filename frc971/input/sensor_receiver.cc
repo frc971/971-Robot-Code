@@ -138,8 +138,8 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     const ::aos::time::Time &cape_timestamp,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
-      cape_timestamp.sec(), cape_timestamp.nsec(),
-      sizeof(*data), sonar_translate(data->main.ultrasonic_pulse_length),
+      cape_timestamp, static_cast<uint16_t>(sizeof(*data)),
+      sonar_translate(data->main.ultrasonic_pulse_length),
       data->main.low_left_drive_hall, data->main.high_left_drive_hall,
       data->main.low_right_drive_hall, data->main.high_right_drive_hall);
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
