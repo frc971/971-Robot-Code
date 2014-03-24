@@ -91,13 +91,15 @@ void analog_init(void) {
   NVIC_SetPriority(TIM_IRQn, 6);
   NVIC_EnableIRQ(TIM_IRQn);
 
+  // We set it up to trigger at 4.44KHz (each sensor at just over 500Hz).
+  // 1/(1.875MHz)*32 = 17067ns (58.6Khz), and we don't want to be close (other
+  // interrupts do get in the way, and there's no reason to be).
   TIM->CR1 = 0;
   TIM->DIER = TIM_DIER_UIE;
-  // TODO(brians): Actually figure out what the timing here should be.
-  // Make each tick take 1500ns.
-  TIM->PSC = (60 * 1500 / 1000) - 1;
-  // Only count to 1.
-  TIM->ARR = 0x30;
+  // Make each tick take 45000ns.
+  TIM->PSC = (60 * 45000 / 1000) - 1;
+  // Only count to 5 before triggering the interrupt and wrapping around.
+  TIM->ARR = 5;
 
   SPI->CR1 = 0;  // make sure it's disabled
   SPI->CR1 =
