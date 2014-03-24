@@ -148,12 +148,12 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
                         type_cache::Get(type.fields[i]->type))) {
         return false;
       }
+      // Ignore the trailing '\0' that the subcall put on.
+      output -= 1;
     }
 
-    // Update the input and output pointers, ignoring the trailing '\0' that the
-    // subcall put on.
-    output += output_bytes_before - *output_bytes - 1;
-    *output_bytes += 1;
+    // Update the input and output pointers.
+    output += output_bytes_before - *output_bytes;
     input =
         static_cast<const char *>(input) + input_bytes_before - *input_bytes;
   }
@@ -208,10 +208,8 @@ bool PrintMatrix(char *output, size_t *output_bytes, const void *input,
         return false;
       }
       CHECK_EQ(0u, input_bytes);
-      // Update the output pointer, ignoring the trailing '\0' that
-      // the subcall put on.
-      output += output_bytes_before - *output_bytes - 1;
-      *output_bytes += 1;
+      // Update the output pointer.
+      output += output_bytes_before - *output_bytes;
     }
 
     if (*output_bytes < 1) return false;

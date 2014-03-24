@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + '/load.rb'
 
-TypeNames = [8, 16, 32, 64].collect do |size|
-  ["uint#{size}_t", "int#{size}_t"]
-end.flatten + ['bool', 'float', 'char', 'double', '::aos::time::Time']
+# TODO(brians): Special-case Time too and float/double if we can find a good way to do it.
+GenericTypeNames = ['float', 'double', 'char', '::aos::time::Time']
+IntegerSizes = [8, 16, 32, 64]
 
 WriteIffChanged.open(ARGV[0]) do |output|
   output.puts <<END
@@ -16,13 +16,14 @@ WriteIffChanged.open(ARGV[0]) do |output|
 
 #include "aos/common/byteorder.h"
 #include "aos/common/time.h"
+#include "aos/common/print_field_helpers.h"
 
 namespace aos {
 
 bool PrintField(char *output, size_t *output_bytes, const void *input,
                 size_t *input_bytes, uint32_t type) {
   switch (type) {
-#{TypeNames.collect do |name|
+#{GenericTypeNames.collect do |name|
   message_element = Target::MessageElement.new(name, 'value')
   statement = MessageElementStmt.new(name, 'value')
   message_element.size = statement.size
@@ -40,11 +41,45 @@ bool PrintField(char *output, size_t *output_bytes, const void *input,
                            #{print_args[0]});
         if (ret < 0) return false;
         if (static_cast<unsigned int>(ret) >= *output_bytes) return false;
-        *output_bytes -= ret + 1;
+        *output_bytes -= ret;
         return true;
       }
 END2
 end.join('')}
+#{IntegerSizes.collect do |size|
+  [true, false].collect do |signed|
+    size_bytes = size / 8
+    name = "#{signed ? '' : 'u'}int#{size}_t"
+    message_element = Target::MessageElement.new(name, 'value')
+    message_element.size = size_bytes
+    next <<END2
+    case #{message_element.getTypeID()}:
+      {
+        if (*input_bytes < #{size_bytes}) return false;
+        *input_bytes -= #{size_bytes};
+        #{name} value;
+        to_host(static_cast<const char *>(input), &value);
+        return PrintInteger<#{name}>(output, value, output_bytes);
+      }
+END2
+  end
+end.flatten.join('')}
+#{
+  message_element = Target::MessageElement.new('bool', 'value')
+  message_element.size = 1
+  r = <<END2
+    case #{message_element.getTypeID()}:
+      {
+        if (*input_bytes < 1) return false;
+        if (*output_bytes < 1) return false;
+        *input_bytes -= 1;
+        bool value = static_cast<const char *>(input)[0];
+        *output_bytes += 1;
+        *output = value ? 'T' : 'f';
+        return true;
+      }
+END2
+}
     default:
       return false;
   }
