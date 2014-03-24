@@ -8,6 +8,7 @@
 #include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network/team_number.h"
+#include "aos/common/time.h"
 
 #include "frc971/constants.h"
 
@@ -57,16 +58,23 @@ template <class T> class ActionBase {
     }
   }
 
-  // will run until the done condition is met.
+  // will run until the done condition is met or times out.
   // will return false if successful and true if the action was canceled or
-  // failed.
+  // failed or end_time was reached before it succeeded.
   // done condition are defined as functions that return true when done and have
   // some sort of blocking statement(FetchNextBlocking) to throttle spin rate.
-  bool WaitUntil(::std::function<bool(void)> done_condition) {
+  // end_time is when to stop and return true. Time(0, 0) (the default) means
+  // never time out.
+  bool WaitUntil(::std::function<bool(void)> done_condition,
+                 const ::aos::time::Time &end_time = ::aos::time::Time(0, 0)) {
     while (!done_condition()) {
       if (ShouldCancel() || abort_) {
         // Clear abort bit as we have just aborted.
         abort_ = false;
+        return true;
+      }
+      if (::aos::time::Time::Now() >= end_time) {
+        LOG(INFO, "WaitUntil timed out\n");
         return true;
       }
     }

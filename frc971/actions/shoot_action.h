@@ -1,5 +1,7 @@
 #include <memory>
 
+#include "aos/common/time.h"
+
 #include "frc971/actions/shoot_action.q.h"
 #include "frc971/actions/action.h"
 #include "frc971/actions/action_client.h"
@@ -23,6 +25,9 @@ class ShootAction : public ActionBase<actions::ShootActionQueueGroup> {
   static constexpr double kOffsetRadians = 0.4;
   static constexpr double kClawShootingSeparation = 0.10;
   static constexpr double kClawShootingSeparationGoal = 0.10;
+  // If we don't get to actually shooting within this amount of time, we stop to
+  // avoid firing unexpectedly after a long delay.
+  static constexpr ::aos::time::Time kTimeout = ::aos::time::Time::InSeconds(1);
 
  protected:
   // completed shot

@@ -8,10 +8,7 @@ queue_group ShootActionQueueGroup {
   message Goal {
     // If true, run this action.  If false, cancel the action if it is
     // currently running.
-    bool run; // Shot power in joules.
-    double shot_power;
-    // Claw angle when shooting.
-    double shot_angle;
+    bool run;
   };
 
   queue Goal goal;

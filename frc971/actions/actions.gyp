@@ -97,6 +97,7 @@
         'action',
         'shoot_action_queue',
         'action_client',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {
@@ -134,12 +135,14 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/network/network.gyp:team_number',
         '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(AOS)/common/common.gyp:time',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:timing',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/network/network.gyp:team_number',
         '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

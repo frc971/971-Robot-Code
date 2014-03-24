@@ -12,6 +12,11 @@
 namespace frc971 {
 namespace actions {
 
+constexpr double ShootAction::kOffsetRadians;
+constexpr double ShootAction::kClawShootingSeparation;
+constexpr double ShootAction::kClawShootingSeparationGoal;
+constexpr ::aos::time::Time ShootAction::kTimeout;
+
 ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
     : actions::ActionBase<actions::ShootActionQueueGroup>(s) {}
 
@@ -38,13 +43,18 @@ void ShootAction::RunAction() {
     LOG(WARNING, "sending shooter goal failed\n");
     return;
   }
+
+  LOG(INFO, "finished\n");
 }
 
 void ShootAction::InnerRunAction() {
-  LOG(INFO, "Shooting at the original angle and power.\n");
+  LOG(INFO, "Shooting at the current angle and power.\n");
+  const ::aos::time::Time end_time = ::aos::time::Time::Now() + kTimeout;
 
   // wait for claw to be ready
-  if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this))) return;
+  if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this), end_time)) {
+    return;
+  }
 
   // Turn the intake off.
   control_loops::claw_queue_group.goal.FetchLatest();
@@ -77,7 +87,7 @@ void ShootAction::InnerRunAction() {
   }
 
   // wait for record of shot having been fired
-  if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
+  if (WaitUntil(::std::bind(&ShootAction::DoneShot, this), end_time)) return;
 
   // Turn the intake off.
   control_loops::claw_queue_group.goal.FetchLatest();
