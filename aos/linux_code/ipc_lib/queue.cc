@@ -23,7 +23,7 @@ static_assert(shm_ok<RawQueue>::value,
               "RawQueue instances go into shared memory");
 
 const bool kReadDebug = false;
-const bool kWriteDebug = false;
+const bool kWriteDebug = true;
 const bool kRefDebug = false;
 const bool kFetchDebug = false;
 const bool kReadIndexDebug = false;
@@ -146,8 +146,6 @@ inline void RawQueue::DoFreeMessage(const void *msg) {
 }
 
 void *RawQueue::GetMessage() {
-  // TODO(brians): Test this function.
-
   MessageHeader *header = __atomic_load_n(&free_messages_, __ATOMIC_RELAXED);
   do {
     if (__builtin_expect(header == nullptr, 0)) {
@@ -280,18 +278,8 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
 }
 
 bool RawQueue::WriteMessage(void *msg, int options) {
-  // TODO(brians): Test this function.
   if (kWriteDebug) {
     printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
-  }
-  if (msg == NULL || msg < reinterpret_cast<void *>(global_core->mem_struct) ||
-      msg > static_cast<void *>((
-              reinterpret_cast<char *>(global_core->mem_struct) +
-              global_core->size))) {
-    fprintf(stderr, "queue: attempt to write bad message %p to %p. aborting\n",
-            msg, this);
-    printf("see stderr\n");
-    abort();
   }
   {
     MutexLocker locker(&data_lock_);

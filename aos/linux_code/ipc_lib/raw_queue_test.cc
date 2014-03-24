@@ -471,6 +471,12 @@ TEST_F(RawQueueTest, NonBlockFailFree) {
   EXPECT_EQ(message2, queue->GetMessage());
 }
 
+// All of the tests from here down are designed to test every branch to
+// make sure it does what it's supposed to. They are generally pretty repetitive
+// and boring, and some of them may duplicate other tests above, but these ones
+// make it a lot easier to figure out what's wrong with bugs not related to race
+// conditions.
+
 TEST_F(RawQueueTest, ReadIndexNotFull) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
   const TestMessage *message, *peek_message;
@@ -875,6 +881,48 @@ TEST_F(RawQueueTest, MessageReferenceCounts) {
   EXPECT_EQ(1, kExtraMessages + 2 - queue->FreeMessages());
   queue->FreeMessage(message2);
   EXPECT_EQ(0, kExtraMessages + 2 - queue->FreeMessages());
+}
+
+// Tests that writing with kNonBlock fails and frees the message.
+TEST_F(RawQueueTest, WriteDontBlock) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+  void *message;
+
+  PushMessage(queue, 971);
+  int free_before = queue->FreeMessages();
+  message = queue->GetMessage();
+  ASSERT_NE(nullptr, message);
+  EXPECT_NE(free_before, queue->FreeMessages());
+  EXPECT_FALSE(queue->WriteMessage(message, RawQueue::kNonBlock));
+  EXPECT_EQ(free_before, queue->FreeMessages());
+}
+
+// Tests that writing with kOverride pushes the last message out of the queue.
+TEST_F(RawQueueTest, WriteOverride) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 2);
+  TestMessage *message1;
+
+  PushMessage(queue, 971);
+  PushMessage(queue, 1768);
+  int free_before = queue->FreeMessages();
+  message1 = static_cast<TestMessage *>(queue->GetMessage());
+  ASSERT_NE(nullptr, message1);
+  EXPECT_NE(free_before, queue->FreeMessages());
+  message1->data = 254;
+  EXPECT_TRUE(queue->WriteMessage(message1, RawQueue::kOverride));
+  EXPECT_EQ(free_before, queue->FreeMessages());
+
+  const TestMessage *message2;
+  message2 =
+      static_cast<const TestMessage *>(queue->ReadMessage(RawQueue::kNonBlock));
+  EXPECT_EQ(1768, message2->data);
+  queue->FreeMessage(message2);
+  EXPECT_EQ(free_before + 1, queue->FreeMessages());
+  message2 =
+      static_cast<const TestMessage *>(queue->ReadMessage(RawQueue::kNonBlock));
+  EXPECT_EQ(254, message2->data);
+  queue->FreeMessage(message2);
+  EXPECT_EQ(free_before + 2, queue->FreeMessages());
 }
 
 }  // namespace testing
