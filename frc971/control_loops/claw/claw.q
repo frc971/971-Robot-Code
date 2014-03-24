@@ -22,7 +22,7 @@ struct HalfClawPosition {
   double negedge_value;
 };
 
-// All angles here are 0 horizontal, positive up.
+// All angles here are 0 vertical, positive "up" (aka backwards).
 queue_group ClawGroup {
   implements aos.control_loops.ControlLoop;
 

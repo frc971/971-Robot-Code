@@ -87,23 +87,29 @@ const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
 const ClawGoal kFlippedIntakeGoal = {2.0, kGrabSeparation};
 const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
-//const ShotGoal kLongShotGoal = {
-    //{-M_PI / 2.0 + 0.46, kShootSeparation}, 120, false, kIntakePower};
+// 34" between near edge of colored line and rear edge of bumper
 const ShotGoal kLongShotGoal = {
-    {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
-const ShotGoal kMediumShotGoal = {
-    {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
-const ShotGoal kShortShotGoal = {
-    {-0.670, kShootSeparation}, 71.0, 0, kIntakePower};
-const ShotGoal kTrussShotGoal = {
-    {-0.05, kShootSeparation}, 61.0, 0, kIntakePower};
-
+    {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
+// 3/4" plunger {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
     {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
+// 3/4 " plunger {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
+
+// 78" between near edge of colored line and rear edge of bumper
+const ShotGoal kMediumShotGoal = {
+    {-0.95, kShootSeparation}, 105, 0.2, kIntakePower};
+// 3/4" plunger {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
     {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
+// 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
+
+const ShotGoal kShortShotGoal = {
+    {-0.670, kShootSeparation}, 71.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.57, kShootSeparation}, 80.0, 0, kIntakePower};
+    {0.57, kShootSeparation}, 80.0, 0.4, kIntakePower};
+
+const ShotGoal kTrussShotGoal = {
+    {-0.05, kShootSeparation}, 73.0, 0, kIntakePower};
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
