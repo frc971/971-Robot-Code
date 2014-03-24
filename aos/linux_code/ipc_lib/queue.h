@@ -1,6 +1,8 @@
 #ifndef AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
 #define AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
 
+#include <assert.h>
+
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 #include "aos/common/mutex.h"
 #include "aos/common/condition.h"
@@ -123,8 +125,11 @@ class RawQueue {
  private:
   struct MessageHeader;
 
+  // Adds 1 to the given index and handles wrapping correctly.
+  int index_add1(int index);
+
   bool is_readable() { return data_end_ != data_start_; }
-  bool is_writable() { return ((data_end_ + 1) % data_length_) != data_start_; }
+  bool is_writable() { return index_add1(data_end_) != data_start_; }
 
   // These next 4 allow finding the right one.
   const char *name_;

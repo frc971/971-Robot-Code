@@ -65,6 +65,17 @@ struct RawQueue::MessageHeader {
 #endif
 };
 
+inline int RawQueue::index_add1(int index) {
+  // Doing it this way instead of with % is more efficient on ARM.
+  int r = index + 1;
+  assert(index <= data_length_);
+  if (r == data_length_) {
+    return 0;
+  } else {
+    return r;
+  }
+}
+
 void RawQueue::DecrementMessageReferenceCount(const void *msg) {
   MessageHeader *header = MessageHeader::Get(msg);
   __atomic_sub_fetch(&header->ref_count, 1, __ATOMIC_RELAXED);
@@ -287,7 +298,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
 
     int new_end;
     while (true) {
-      new_end = (data_end_ + 1) % data_length_;
+      new_end = index_add1(data_end_);
       // If there is room in the queue right now.
       if (new_end != data_start_) break;
       if (options & kNonBlock) {
@@ -302,7 +313,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
         }
         // Avoid leaking the message that we're going to overwrite.
         DecrementMessageReferenceCount(data_[data_start_]);
-        data_start_ = (data_start_ + 1) % data_length_;
+        data_start_ = index_add1(data_start_);
       } else {  // kBlock
         if (kWriteDebug) {
           printf("queue: going to wait for writable_ of %p\n", this);
@@ -409,7 +420,7 @@ const void *RawQueue::ReadMessage(int options) {
         }
         // This loop pulls each message out of the buffer.
         const int pos = data_start_;
-        data_start_ = (data_start_ + 1) % data_length_;
+        data_start_ = index_add1(data_start_);
         // If this is the last one.
         if (data_start_ == data_end_) {
           if (kReadDebug) {
@@ -430,7 +441,7 @@ const void *RawQueue::ReadMessage(int options) {
     if (options & kPeek) {
       IncrementMessageReferenceCount(msg);
     } else {
-      data_start_ = (data_start_ + 1) % data_length_;
+      data_start_ = index_add1(data_start_);
     }
   }
   ReadCommonEnd();
