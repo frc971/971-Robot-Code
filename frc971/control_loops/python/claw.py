@@ -2,6 +2,8 @@
 
 import control_loop
 import controls
+import polytope
+import polydrivetrain
 import numpy
 import sys
 from matplotlib import pylab
@@ -173,6 +175,16 @@ class Claw(control_loop.ControlLoop):
 
     print "X_ss", X_ss
 
+    self.U_poly = polytope.HPolytope(
+        numpy.matrix([[1, 0],
+                      [-1, 0],
+                      [0, 1],
+                      [0, -1]]),
+        numpy.matrix([[12],
+                      [12],
+                      [12],
+                      [12]]))
+
     self.InitializeState()
 
 
@@ -281,6 +293,63 @@ def FullSeparationPriority(claw, U):
 
   return numpy.matrix([[bottom_u], [top_u]])
 
+def ScaleU(claw, U, K, error):
+  """Clips U as necessary.
+
+    Args:
+      claw: claw object containing moments of inertia and U limits.
+      U: Input matrix to clip as necessary.
+  """
+  bottom_u = U[0, 0]
+  top_u = U[1, 0]
+
+  if (bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0] or
+      top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]):
+
+    position_K = K[:, 0:2]
+    velocity_K = K[:, 2:]
+    position_error = error[0:2, 0]
+    velocity_error = error[2:, 0]
+
+    # H * U <= k
+    # U = UPos + UVel
+    # H * (UPos + UVel) <= k
+    # H * UPos <= k - H * UVel
+    #
+    # Now, we can do a coordinate transformation and say the following.
+    #
+    # UPos = position_K * position_error
+    # (H * position_K) * position_error <= k - H * UVel
+    #
+    # Add in the constraint that 0 <= t <= 1
+    # Now, there are 2 ways this can go.  Either we have a region, or we don't
+    # have a region.  If we have a region, then pick the largest t and go for it.
+    # If we don't have a region, we need to pick a good comprimise.
+
+    # First prototype! -> Only cap the position power, leave the velocity power active.
+
+    #u_velocity = velocity_K * velocity_error
+    #u_position = position_K * position_error
+    #scalar = min(1.0, claw.U_max[0, 0] / max(numpy.abs(u_position[0, 0]), numpy.abs(u_position[1, 0])))
+    #return u_velocity + scalar * u_position
+
+    pos_poly = polytope.HPolytope(
+        claw.U_poly.H * position_K,
+        claw.U_poly.k - claw.U_poly.H * velocity_K * velocity_error)
+
+    adjusted_pos_error = polydrivetrain.CoerceGoal(pos_poly, numpy.matrix([[position_error[1, 0], -position_error[0, 0]]]), 0.0, position_error)
+
+    return velocity_K * velocity_error + position_K * adjusted_pos_error
+
+    #U = Kpos * poserror + Kvel * velerror
+      
+    #scalar = claw.U_max[0, 0] / max(numpy.abs(top_u), numpy.abs(bottom_u))
+
+    #top_u *= scalar
+    #bottom_u *= scalar
+
+  return numpy.matrix([[bottom_u], [top_u]])
+
 def AverageUFix(claw, U, preserve_v3=False):
   """Clips U as necessary.
 
@@ -381,9 +450,11 @@ def main(argv):
     U = claw.K * (R - claw.X)
     #U = numpy.clip(claw.K * (R - claw.X_hat), claw.U_min, claw.U_max)
     #U = FullSeparationPriority(claw, U)
-    U = AverageUFix(claw, U, preserve_v3=False)
+    #U = AverageUFix(claw, U, preserve_v3=False)
     #U = claw.K * (R - claw.X_hat)
     #U = ClipDeltaU(claw, U)
+    # TODO(austin): This scales the velocity power as well, which is really bad.  Need to just scale the position power.
+    U = ScaleU(claw, U, claw.K, R - claw.X)
     claw.UpdateObserver(U)
     claw.Update(U)
     #X_actual = claw.A_actual * X_actual + claw.B_actual * U
