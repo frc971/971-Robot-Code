@@ -1,3 +1,7 @@
+#if !QUEUE_DEBUG
+#define NDEBUG
+#endif
+
 #include "aos/linux_code/ipc_lib/queue.h"
 
 #include <stdio.h>
@@ -11,9 +15,6 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
-
-#undef assert
-#define assert(...)
 
 namespace aos {
 namespace {
