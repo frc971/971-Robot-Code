@@ -50,7 +50,8 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
         min_distance = length;
       }
     }
-    return region_vertices.col(closest_i);
+    return (Eigen::Matrix<double, 2, 1>() << region_vertices(0, closest_i),
+            region_vertices(1, closest_i)).finished();
   }
 }
 

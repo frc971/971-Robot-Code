@@ -1,7 +1,5 @@
 #include "frc971/control_loops/claw/claw.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 
 #include "aos/common/control_loop/control_loops.q.h"
@@ -51,44 +49,71 @@ static const double kMaxVoltage = 12.0;
 ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
     : StateFeedbackLoop<4, 2, 2>(loop),
       uncapped_average_voltage_(0.0),
-      is_zeroing_(true) {}
+      is_zeroing_(true),
+      U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,
+               -1, 0,
+               0, 1,
+               0, -1).finished(),
+              (Eigen::Matrix<double, 4, 1>() << kMaxVoltage, kMaxVoltage,
+               kMaxVoltage, kMaxVoltage).finished()) {
+  ::aos::controls::HPolytope<0>::Init();
+}
 
+// Caps the voltage prioritizing reducing velocity error over reducing
+// positional error.
+// Uses the polytope libararies which we used to just use for the drivetrain.
+// Uses a region representing the maximum voltage and then transforms it such
+// that the points represent different amounts of positional error and
+// constrains the region such that, if at all possible, it will maintain its
+// current efforts to reduce velocity error.
 void ClawLimitedLoop::CapU() {
-  uncapped_average_voltage_ = (U(0, 0) + U(1, 0)) / 2.0;
+  Eigen::Matrix<double, 4, 1> error = R - X_hat;
 
-  const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
-  double max_value =
-      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0)));
-  double scalar = k_max_voltage / max_value;
-  bool bottom_big = (::std::abs(U(0, 0)) > k_max_voltage) &&
-                    (::std::abs(U(0, 0)) > ::std::abs(U(1, 0)));
-  bool top_big = (::std::abs(U(1, 0)) > k_max_voltage) && (!bottom_big);
-  double separation_voltage = U(1, 0) - U(0, 0) * kClawMomentOfInertiaRatio;
   double u_top = U(1, 0);
   double u_bottom = U(0, 0);
 
-  if (bottom_big) {
-    LOG(DEBUG, "Capping U because bottom is %f\n", max_value);
-    u_bottom *= scalar;
-    u_top = separation_voltage + u_bottom * kClawMomentOfInertiaRatio;
-    // If we can't maintain the separation, just clip it.
-    if (u_top > k_max_voltage) u_top = k_max_voltage;
-    else if (u_top < -k_max_voltage) u_top = -k_max_voltage;
-  }
-  else if (top_big) {
-    LOG(DEBUG, "Capping U because top is %f\n", max_value);
-    u_top *= scalar;
-    u_bottom = (u_top - separation_voltage) / kClawMomentOfInertiaRatio;
-    if (u_bottom > k_max_voltage) u_bottom = k_max_voltage;
-    else if (u_bottom < -k_max_voltage) u_bottom = -k_max_voltage;
+  uncapped_average_voltage_ = (u_top + u_bottom) / 2;
+
+  double max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
+
+  if (::std::abs(u_bottom) > max_voltage or ::std::abs(u_top) > max_voltage) {
+    // H * U <= k
+    // U = UPos + UVel
+    // H * (UPos + UVel) <= k
+    // H * UPos <= k - H * UVel
+
+    // Now, we can do a coordinate transformation and say the following.
+
+    // UPos = position_K * position_error
+    // (H * position_K) * position_error <= k - H * UVel
+
+    Eigen::Matrix<double, 2, 2> position_K;
+    position_K << K(0, 0), K(0, 1),
+                  K(1, 0), K(1, 1);
+    Eigen::Matrix<double, 2, 2> velocity_K;
+    velocity_K << K(0, 2), K(0, 3),
+                  K(1, 2), K(1, 3);
+
+    Eigen::Matrix<double, 2, 1> position_error;
+    position_error << error(0, 0), error(1, 0);
+    Eigen::Matrix<double, 2, 1> velocity_error;
+    velocity_error << error(2, 0), error(3, 0);
+
+    Eigen::Matrix<double, 4, 1> pos_poly_k =
+        U_Poly_.k() - U_Poly_.H() * velocity_K * velocity_error;
+    Eigen::Matrix<double, 4, 2> pos_poly_H = U_Poly_.H() * position_K;
+    ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+
+
+    Eigen::Matrix<double, 2, 1> adjusted_pos_error = CoerceGoal(
+        pos_poly, (Eigen::Matrix<double, 1, 2>() << position_error(1, 0),
+                   -position_error(0, 0)).finished(),
+        0.0, position_error);
+
+    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+    U = velocity_K * velocity_error + position_K * adjusted_pos_error;
   }
 
-  U(0, 0) = u_bottom;
-  U(1, 0) = u_top;
-
-  LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
-  LOG(DEBUG, "Separation Voltage was %f, is now %f\n", separation_voltage,
-      U(1, 0) - U(0, 0) * kClawMomentOfInertiaRatio);
 }
 
 ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
@@ -669,6 +694,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
       Eigen::Matrix<double, 2, 1> U = claw_.K() * (claw_.R - claw_.X_hat);
+      LOG(DEBUG, "Uncapped voltages: Top: %f, Bottom: %f\n", U(1, 0), U(0, 0));
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
         double dx_bot = (U(0, 0) -
                      values.claw.max_zeroing_voltage) /

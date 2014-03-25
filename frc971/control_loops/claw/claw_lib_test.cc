@@ -547,7 +547,6 @@ class WindupClawTest : public ClawTest {
  protected:
   void TestWindup(ClawMotor::CalibrationMode mode, int start_time, double offset) {
     int capped_count = 0;
-    double saved_zeroing_position[2] = {0, 0};
     const frc971::constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
@@ -557,8 +556,6 @@ class WindupClawTest : public ClawTest {
         EXPECT_EQ(mode, claw_motor_.mode());
         // Move the zeroing position far away and verify that it gets moved
         // back.
-        saved_zeroing_position[TOP_CLAW] = claw_motor_.top_claw_goal_;
-        saved_zeroing_position[BOTTOM_CLAW] = claw_motor_.bottom_claw_goal_;
         claw_motor_.top_claw_goal_ += offset;
         claw_motor_.bottom_claw_goal_ += offset;
         kicked = true;
@@ -567,10 +564,19 @@ class WindupClawTest : public ClawTest {
           measured = true;
           EXPECT_EQ(mode, claw_motor_.mode());
 
-          EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
-                      claw_motor_.top_claw_goal_, 0.1);
-          EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
-                      claw_motor_.bottom_claw_goal_, 0.1);
+          Eigen::Matrix<double, 4, 1> R;
+          R << claw_motor_.bottom_claw_goal_,
+              claw_motor_.top_claw_goal_ - claw_motor_.bottom_claw_goal_, 0.0,
+              0.0;
+          Eigen::Matrix<double, 2, 1> uncapped_voltage =
+              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat);
+          // Use a factor of 1.8 because so long as it isn't actually running
+          // away, the CapU function will deal with getting the actual output
+          // down.
+          EXPECT_LT(::std::abs(uncapped_voltage(0, 0)),
+                    values.claw.max_zeroing_voltage * 1.8);
+          EXPECT_LT(::std::abs(uncapped_voltage(1, 0)),
+                    values.claw.max_zeroing_voltage * 1.8);
         }
       }
       if (claw_motor_.mode() == mode) {

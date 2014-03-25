@@ -417,66 +417,90 @@ def ClipDeltaU(claw, U):
 
   return numpy.matrix([[new_bottom_u - old_bottom_u], [new_top_u]])
 
-def main(argv):
-  # Simulate the response of the system to a step input.
-  #claw = ClawDeltaU()
-  #simulated_x = []
-  #for _ in xrange(100):
-  #  claw.Update(numpy.matrix([[12.0]]))
-  #  simulated_x.append(claw.X[0, 0])
+def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=True, iterations=200):
+  """Runs the claw plant on a given claw (claw) with an initial condition (initial_X) and goal (goal).
 
-  #pylab.plot(range(100), simulated_x)
-  #pylab.show()
+    The tests themselves are not terribly sophisticated; I just test for 
+    whether the goal has been reached and whether the separation goes
+    outside of the initial and goal values by more then max_separation_error.
+    Prints out something for a failure of either condition and returns
+    False if tests fail.
+    Args:
+      claw: claw object to use.
+      initial_X: starting state.
+      goal: goal state.
+      show_graph: Whether or not to display a graph showing the changing
+           states and voltages.
+      iterations: Number of timesteps to run the model for."""
 
-  # Simulate the closed loop response of the system.
-  claw = Claw("TopClaw")
+  claw.X = initial_X
+
+  # Various lists for graphing things.
   t = []
-  close_loop_x_bottom = []
-  close_loop_x_sep = []
-  actual_sep = []
-  actual_x_bottom = []
-  close_loop_x_top = []
-  close_loop_u_bottom = []
-  close_loop_u_top = []
-  R = numpy.matrix([[0.0], [0.00], [0.0], [0.0]])
-  claw.X[0, 0] = 1.0
-  claw.X[1, 0] = 0.0
-  claw.X[2, 0] = 0.0
-  claw.X[3, 0] = 0.0
-  claw.X_hat = claw.X
-  #X_actual = claw.X
-  for i in xrange(100):
-    #print "Error is", (R - claw.X_hat)
-    U = claw.K * (R - claw.X)
-    #U = numpy.clip(claw.K * (R - claw.X_hat), claw.U_min, claw.U_max)
-    #U = FullSeparationPriority(claw, U)
-    #U = AverageUFix(claw, U, preserve_v3=False)
-    #U = claw.K * (R - claw.X_hat)
-    #U = ClipDeltaU(claw, U)
-    # TODO(austin): This scales the velocity power as well, which is really bad.  Need to just scale the position power.
-    U = ScaleU(claw, U, claw.K, R - claw.X)
-    claw.UpdateObserver(U)
-    claw.Update(U)
-    #X_actual = claw.A_actual * X_actual + claw.B_actual * U
-    #claw.Y = claw.C * X_actual
-    close_loop_x_bottom.append(claw.X[0, 0] * 10)
-    close_loop_u_bottom.append(U[0, 0])
-    #actual_sep.append(X_actual[2, 0] * 100)
-    #actual_x_bottom.append(X_actual[0, 0] * 10)
-    close_loop_x_sep.append(claw.X[1, 0] * 10)
-    close_loop_x_top.append((claw.X[1, 0] + claw.X[0, 0]) * 10)
-    close_loop_u_top.append(U[1, 0])
-    t.append(0.01 * i)
+  x_bottom = []
+  x_top = []
+  u_bottom = []
+  u_top = []
+  x_separation = []
 
-  pylab.plot(t, close_loop_x_bottom, label='x bottom * 10')
-  pylab.plot(t, close_loop_x_sep, label='separation * 10')
-  #pylab.plot(t, actual_x_bottom, label='true x bottom')
-  #pylab.plot(t, actual_sep, label='true separation')
-  pylab.plot(t, close_loop_x_top, label='x top * 10')
-  pylab.plot(t, close_loop_u_bottom, label='u bottom')
-  pylab.plot(t, close_loop_u_top, label='u top')
-  pylab.legend()
-  pylab.show()
+  tests_passed = True
+
+  # Bounds which separation should not exceed.
+  lower_bound = (initial_X[1, 0] if initial_X[1, 0] < goal[1, 0]
+                 else goal[1, 0]) - max_separation_error
+  upper_bound = (initial_X[1, 0] if initial_X[1, 0] > goal[1, 0]
+                 else goal[1, 0]) + max_separation_error
+
+  for i in xrange(iterations):
+    U = claw.K * (goal - claw.X)
+    U = ScaleU(claw, U, claw.K, goal - claw.X)
+    claw.Update(U)
+
+    if claw.X[1, 0] > upper_bound or claw.X[1, 0] < lower_bound:
+      tests_passed = False
+      print "Claw separation was", claw.X[1, 0]
+      print "Should have been between", lower_bound, "and", upper_bound
+
+    t.append(i * claw.dt)
+    x_bottom.append(claw.X[0, 0] * 10.0)
+    x_top.append((claw.X[1, 0] + claw.X[0, 0]) * 10.0)
+    u_bottom.append(U[0, 0])
+    u_top.append(U[1, 0])
+    x_separation.append(claw.X[1, 0] * 10.0)
+
+  if show_graph:
+    pylab.plot(t, x_bottom, label='x bottom * 10')
+    pylab.plot(t, x_top, label='x top * 10')
+    pylab.plot(t, u_bottom, label='u bottom')
+    pylab.plot(t, u_top, label='u top')
+    pylab.plot(t, x_separation, label='separation * 10')
+    pylab.legend()
+    pylab.show()
+
+  # Test to make sure that we are near the goal.
+  if numpy.max(abs(claw.X - goal)) > 1e-4:
+    tests_passed = False
+    print "X was", claw.X, "Expected", goal
+
+  return tests_passed
+
+def main(argv):
+  claw = Claw()
+
+  # Test moving the claw with constant separation.
+  initial_X = numpy.matrix([[-1.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[1.0], [0.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R)
+
+  # Test just changing separation.
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[0.0], [1.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R)
+
+  # Test changing both separation and position at once..
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R)
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
