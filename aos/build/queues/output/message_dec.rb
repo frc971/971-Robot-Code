@@ -302,7 +302,7 @@ class Target::MessageElement < Target::Node
 		if (self.type == 'bool')
 			args.push("#{parent}#{self.name} ? 'T' : 'f'")
     elsif (self.type == '::aos::time::Time')
-      args.push("#{parent}#{self.name}.sec(), #{parent}#{self.name}.nsec()")
+      args.push("AOS_TIME_ARGS(#{parent}#{self.name}.sec(), #{parent}#{self.name}.nsec())")
 		else
 			args.push("#{parent}#{self.name}")
 		end

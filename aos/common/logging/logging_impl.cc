@@ -7,6 +7,7 @@
 #include "aos/common/inttypes.h"
 #include "aos/common/once.h"
 #include "aos/common/queue_types.h"
+#include "aos/common/logging/logging_printf_formats.h"
 
 namespace aos {
 namespace logging {
@@ -138,17 +139,13 @@ void FillInMessage(log_level level, const char *format, va_list ap,
 }
 
 void PrintMessage(FILE *output, const LogMessage &message) {
-#define NSECONDS_DIGITS 5
-#define BASE_FORMAT                                      \
-  "%.*s(%" PRId32 ")(%05" PRIu16 "): %-7s at %010" PRId32 \
-  ".%0" STRINGIFY(NSECONDS_DIGITS) PRId32 "s: "
-#define BASE_ARGS                                             \
-  static_cast<int>(message.name_length), message.name,        \
-      static_cast<int32_t>(message.source), message.sequence, \
-      log_str(message.level), message.seconds, (message.nseconds + 5000) / 10000
-      switch (message.type) {
+#define BASE_ARGS                                                              \
+  AOS_LOGGING_BASE_ARGS(                                                       \
+      message.name_length, message.name, static_cast<int32_t>(message.source), \
+      message.sequence, message.level, message.seconds, message.nseconds)
+  switch (message.type) {
     case LogMessage::Type::kString:
-      fprintf(output, BASE_FORMAT "%.*s", BASE_ARGS,
+      fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s", BASE_ARGS,
               static_cast<int>(message.message_length), message.message);
       break;
     case LogMessage::Type::kStruct: {
@@ -169,7 +166,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
         LOG(WARNING, "%zu extra bytes on message of type %s\n", input_length,
             type_cache::Get(message.structure.type_id).name.c_str());
       }
-      fprintf(output, BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
+      fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
               static_cast<int>(message.structure.string_length),
               message.structure.serialized,
               static_cast<int>(sizeof(buffer) - output_length), buffer);
@@ -192,14 +189,12 @@ void PrintMessage(FILE *output, const LogMessage &message) {
         LOG(FATAL, "printing %dx%d matrix of type %" PRIu32 " failed\n",
             message.matrix.rows, message.matrix.cols, message.matrix.type);
       }
-      fprintf(output, BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
+      fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s: %.*s\n", BASE_ARGS,
               static_cast<int>(message.matrix.string_length),
               message.matrix.data,
               static_cast<int>(sizeof(buffer) - output_length), buffer);
     } break;
   }
-#undef NSECONDS_DIGITS
-#undef BASE_FORMAT
 #undef BASE_ARGS
 }
 

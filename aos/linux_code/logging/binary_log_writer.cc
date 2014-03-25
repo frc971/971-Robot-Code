@@ -186,21 +186,16 @@ int BinaryLogReaderMain() {
       case LogMessage::Type::kStruct: {
         char *position = output_strings + msg->name_length;
 
-        memcpy(position, &msg->structure.type_id,
-               sizeof(msg->structure.type_id));
+        memcpy(position, &msg->structure.type_id, sizeof(msg->structure.type_id));
         position += sizeof(msg->structure.type_id);
         output->message_size += sizeof(msg->structure.type_id);
 
-        uint32_t length = msg->structure.string_length;
+        const uint32_t length = msg->structure.string_length;
         memcpy(position, &length, sizeof(length));
         position += sizeof(length);
-        memcpy(position, msg->structure.serialized, length);
-        position += length;
+        memcpy(position, msg->structure.serialized, length + msg->message_length);
+        position += length + msg->message_length;
         output->message_size += sizeof(length) + length;
-
-        memcpy(position,
-               msg->structure.serialized + msg->structure.string_length,
-               msg->message_length);
 
         output->type = LogFileMessageHeader::MessageType::kStruct;
       } break;

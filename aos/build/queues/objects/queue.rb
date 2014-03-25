@@ -50,7 +50,7 @@ ERROR_MSG
                        "int16_t" => "%\" PRId16 \"",
                        "int32_t" => "%\" PRId32 \"",
                        "int64_t" => "%\" PRId64 \"",
-                       "::aos::time::Time" => "%010\" PRId32 \".%05\" PRId32 \"s"}
+                       "::aos::time::Time" => "\" AOS_TIME_FORMAT \""}
         def toPrintFormat()
 		if(format = PrintFormat[@type])
 			return format;

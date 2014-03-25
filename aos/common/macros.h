@@ -22,4 +22,7 @@
 #define UNUSED_VARIABLE
 #endif
 
+#define STRINGIFY(x) TO_STRING(x)
+#define TO_STRING(x) #x
+
 #endif  // _AOS_COMMON_MACROS_H_

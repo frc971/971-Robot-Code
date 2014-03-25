@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "aos/common/macros.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,9 +29,6 @@ DECL_LEVEL(LOG_UNKNOWN, 5); /* unknown logging level */
 #define DECL_LEVEL(name, value) static const log_level name = value;
 DECL_LEVELS;
 #undef DECL_LEVEL
-
-#define STRINGIFY(x) TO_STRING(x)
-#define TO_STRING(x) #x
 
 // Not static const size_t for C code.
 #define LOG_MESSAGE_LEN 400
