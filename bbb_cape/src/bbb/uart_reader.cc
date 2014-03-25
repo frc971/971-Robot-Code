@@ -7,6 +7,8 @@
 
 #include "aos/common/logging/logging.h"
 
+#include "bbb/export_uart.h"
+
 // This is the code for receiving data from the cape via UART.
 // fragment active.
 // `su -c "echo BB-UART1 > /sys/devices/bone_capemgr.*/slots"` works, but
@@ -16,48 +18,10 @@
 namespace bbb {
 namespace {
 
-// TODO(brians): Determine this in some way that allows easy switching for
-// testing with /dev/ttyUSB0 for example.
-const char *device = "/dev/ttyO1";
-
-bool easy_access(const char *path) {
-  if (access(path, R_OK | W_OK) == 0) return true;
-  if (errno == EACCES || errno == ENOENT) return false;
-  LOG(FATAL, "access(%s, F_OK) failed with %d: %s\n", path, errno,
-      strerror(errno));
-}
-
 int open_device() {
-  if (easy_access(device)) {
-    LOG(INFO, "unexporting BB-UART1\n");
-    if (system("bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
-               " | fgrep BB-UART1"
-               " | cut -d : -f 1 | tr -d \" \")"
-               " > /sys/devices/bone_capemgr.*/slots'") == -1) {
-      LOG(FATAL, "system([disable OMAP UART]) failed with %d: %s\n", errno,
-          strerror(errno));
-    }
-    while (easy_access(device)) {
-      LOG(DEBUG, "waiting for BB-UART1 to be unexported\n");
-      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
-    }
-  }
+  ExportUart();
 
-  LOG(INFO, "exporting BB-UART1\n");
-  // 2 strings to work around a VIM bug where the indenter locks up when they're
-  // combined as 1...
-  if (system("bash -c 'echo BB-UART1 > /sys/devices/bone_capemgr.*"
-             "/slots'") ==
-      -1) {
-    LOG(FATAL, "system([enable OMAP UART]) failed with %d: %s\n", errno,
-        strerror(errno));
-  }
-  while (!easy_access(device)) {
-    LOG(DEBUG, "waiting for BB-UART1 to be exported\n");
-    ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
-  }
-
-  return open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
+  return open(UartDevice(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 }
 
 }  // namespace
@@ -77,7 +41,7 @@ UartReader::UartReader(int32_t baud_rate)
   
   if (fd_ < 0) {
     LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s\n",
-        device, errno, strerror(errno));
+        UartDevice(), errno, strerror(errno));
   }
 
   if (aos_uart_reader_set_tty_options(fd_, baud_rate) != 0) {

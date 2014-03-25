@@ -46,6 +46,17 @@
       ],
     },
     {
+      'target_name': 'export_uart',
+      'type': 'static_library',
+      'sources': [
+        'export_uart.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
       'target_name': 'uart_reader',
       'type': 'static_library',
       'sources': [
@@ -56,6 +67,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
         'byte_io',
+        'export_uart',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/common.gyp:time',

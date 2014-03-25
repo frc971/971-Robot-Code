@@ -19,6 +19,7 @@ extern "C" {
 }
 
 #include "bbb/gpo.h"
+#include "bbb/export_uart.h"
 
 namespace {
 
@@ -48,9 +49,6 @@ int main(int argc, char **argv) {
   }
   ::std::string target = argv[1];
 
-  //::std::string device = "/dev/ttyUSB0";
-  // TODO(brians): Figure out an intelligent way to set the device to use.
-  ::std::string device = "/dev/ttyO1";
   serial_baud_t baud_rate = SERIAL_BAUD_57600;
 
   ::std::string filename =
@@ -112,17 +110,21 @@ int main(int argc, char **argv) {
     LOG(FATAL, "opening file %s failed\n", filename.c_str());
   }
 
-  serial_t *serial = serial_open(device.c_str());
+  ::bbb::ExportUart();
+
+  const char *device = ::bbb::UartDevice();
+
+  serial_t *serial = serial_open(device);
   if (serial == NULL) {
     LOG(FATAL, "failed to open serial port %s because of %d: %s\n",
-        device.c_str(), errno, strerror(errno));
+        device, errno, strerror(errno));
   }
   if (serial_setup(serial, baud_rate,
                    SERIAL_BITS_8,
                    SERIAL_PARITY_EVEN,
                    SERIAL_STOPBIT_1) != SERIAL_ERR_OK) {
     LOG(FATAL, "setting up serial port %s failed because of %d: %s\n",
-        device.c_str(), errno, strerror(errno));
+        device, errno, strerror(errno));
   }
   LOG(INFO, "serial configuration: %s\n", serial_get_setup_str(serial));
 

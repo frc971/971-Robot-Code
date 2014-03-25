@@ -17,6 +17,7 @@
         '<(EXTERNALS):stm32flash',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:gpios',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:export_uart',
         '<(AOS)/common/common.gyp:time',
       ],
     },
