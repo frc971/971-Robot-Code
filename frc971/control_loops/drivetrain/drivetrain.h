@@ -12,11 +12,6 @@
 namespace frc971 {
 namespace control_loops {
 
-Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
-                                       const Eigen::Matrix<double, 1, 2> &K,
-                                       double w,
-                                       const Eigen::Matrix<double, 2, 1> &R);
-
 class DrivetrainLoop
     : public aos::control_loops::ControlLoop<control_loops::Drivetrain, true, false> {
  public:
