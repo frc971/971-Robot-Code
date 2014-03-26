@@ -11,13 +11,8 @@
 
 #include <errno.h>
 #include <stdlib.h>
-#ifdef _WRS_KERNEL
 #include <ioLib.h>
 #include <selectLib.h>
-#else
-#include <unistd.h>
-#include <sys/time.h>
-#endif
 #include <string.h>
 #include <stdio.h>
 
