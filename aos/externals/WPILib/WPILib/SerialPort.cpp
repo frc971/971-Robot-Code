@@ -183,12 +183,17 @@ uint32_t SerialPort::Read(char *buffer, int32_t count)
 	uint32_t retCount = 0;
 	if (!m_consoleModeEnabled)
 	{
-		ViStatus localStatus = viBufRead(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
+		ViStatus localStatus = viRead(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
 		switch (localStatus)
 		{
 		case VI_SUCCESS_TERM_CHAR:
 		case VI_SUCCESS_MAX_CNT:
 		case VI_ERROR_TMO: // Timeout
+			break;
+		case VI_ERROR_IO:
+		case VI_ERROR_ASRL_OVERRUN:	
+			wpi_setError(localStatus);
+			Reset();
 			break;
 		default:
 			wpi_setError(localStatus);
@@ -209,7 +214,7 @@ uint32_t SerialPort::Write(const char *buffer, int32_t count)
 	uint32_t retCount = 0;
 	if (!m_consoleModeEnabled)
 	{
-		ViStatus localStatus = viBufWrite(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
+		ViStatus localStatus = viWrite(m_portHandle, (ViPBuf)buffer, count, (ViPUInt32)&retCount);
 		wpi_setError(localStatus);
 	}
 	return retCount;

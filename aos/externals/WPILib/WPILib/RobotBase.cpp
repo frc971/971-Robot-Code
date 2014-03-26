@@ -19,7 +19,7 @@
 RobotBase* RobotBase::m_instance = NULL;
 
 const char *FILE_NAME = "/c/FRC_Lib_Version.ini";
-const char *VERSION_STRING = "C++ 2014 Update 0";
+const char *VERSION_STRING = "C++ 2014 Update 1";
 
 
 void RobotBase::setInstance(RobotBase* robot)

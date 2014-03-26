@@ -162,11 +162,11 @@ void DriverStation::GetData()
 	getCommonControlData(m_controlData, WAIT_FOREVER);
 	if (!lastEnabled && IsEnabled()) 
 	{
-		// If starting teleop, assume that autonomous just took up 15 seconds
+		// If starting teleop, assume that autonomous just took up 10 seconds
 		if (IsAutonomous())
 			m_approxMatchTimeOffset = Timer::GetFPGATimestamp();
 		else
-			m_approxMatchTimeOffset = Timer::GetFPGATimestamp() - 15.0;
+			m_approxMatchTimeOffset = Timer::GetFPGATimestamp() - 10.0;
 	}
 	else if (lastEnabled && !IsEnabled())
 	{

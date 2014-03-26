@@ -32,7 +32,7 @@
 	 */
 	NetworkTableEntry* AbstractNetworkTableEntryStore::GetEntry(std::string& name){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::map<std::string, NetworkTableEntry*>::iterator value_itr = namedEntries.find(name);
 			if(value_itr != namedEntries.end()) {
 				return value_itr->second;
@@ -43,7 +43,7 @@
 	
 	NetworkTableEntry* AbstractNetworkTableEntryStore::GetEntry(EntryId entryId){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			
 			std::map<EntryId, NetworkTableEntry*>::iterator value_itr = idEntries.find(entryId);
 			if(value_itr != idEntries.end()) {
@@ -55,7 +55,7 @@
 	
 	std::vector<std::string>* AbstractNetworkTableEntryStore::keys(){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::vector<std::string>* keys = new std::vector<std::string>();
 			std::map<std::string, NetworkTableEntry*>::iterator itr;
 			
@@ -77,7 +77,7 @@
 	 */
 	void AbstractNetworkTableEntryStore::clearEntries(){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			namedEntries.clear();
 			idEntries.clear();
 		}
@@ -88,7 +88,7 @@
 	 */
 	void AbstractNetworkTableEntryStore::clearIds(){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::map<std::string, NetworkTableEntry*>::iterator itr;
 			idEntries.clear();
 			
@@ -119,7 +119,7 @@
 	 */
 	void AbstractNetworkTableEntryStore::PutOutgoing(std::string& name, NetworkTableEntryType* type, EntryValue value){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::map<std::string, NetworkTableEntry*>::iterator index = namedEntries.find(name);
 			NetworkTableEntry* tableEntry;
 			if(index == namedEntries.end())//if the name does not exist in the current entries
@@ -167,7 +167,7 @@
 	
 	void AbstractNetworkTableEntryStore::offerIncomingAssignment(NetworkTableEntry* entry){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::map<std::string, NetworkTableEntry*>::iterator itr = namedEntries.find(entry->name);
 			NetworkTableEntry* tableEntry;
 			if(addEntry(entry)){
@@ -203,7 +203,7 @@
 	 */
 	void AbstractNetworkTableEntryStore::notifyEntries(ITable* table, ITableListener* listener){
 		{ 
-			NTSynchronized sync(LOCK);
+			NTSynchronized sync(block_namedEntries);
 			std::map<std::string, NetworkTableEntry*>::iterator itr;
 			for(itr = namedEntries.begin(); itr != namedEntries.end(); itr++)
 			{

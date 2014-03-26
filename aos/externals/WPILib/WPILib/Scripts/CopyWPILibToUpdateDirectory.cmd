@@ -6,7 +6,7 @@ mkdir vxworks-6.3\target\h\WPILib\Buttons
 mkdir vxworks-6.3\target\h\WPILib\CAN
 mkdir vxworks-6.3\target\h\WPILib\ChipObject
 mkdir vxworks-6.3\target\h\WPILib\ChipObject\fpgainterfacecapi
-mkdir vxworks-6.3\target\h\WPILib\CInterfaces
+mkdir vxworks-6.3\target\h\WPILib\Interfaces
 mkdir vxworks-6.3\target\h\WPILib\Commands
 mkdir vxworks-6.3\target\h\WPILib\NetworkCommunication
 mkdir vxworks-6.3\target\h\WPILib\SmartDashboard
@@ -32,7 +32,7 @@ del vxworks-6.3\target\h\WPIlib\*.h
 del vxworks-6.3\target\h\WPIlib\Buttons\*.h
 del vxworks-6.3\target\h\WPIlib\CAN\*.h
 del vxworks-6.3\target\h\WPIlib\ChipObject\*.h
-del vxworks-6.3\target\h\WPIlib\CInterfaces\*.h
+del vxworks-6.3\target\h\WPIlib\Interfaces\*.h
 del vxworks-6.3\target\h\WPIlib\Commands\*.h
 del vxworks-6.3\target\h\WPIlib\NetworkCommunication\*.h
 del vxworks-6.3\target\h\WPIlib\SmartDashboard\*.h
@@ -61,7 +61,7 @@ copy C:\WindRiver\workspace\WPILib\Buttons\*.h vxworks-6.3\target\h\WPILib\Butto
 copy C:\WindRiver\workspace\WPILib\CAN\*.h vxworks-6.3\target\h\WPILib\CAN
 copy C:\WindRiver\workspace\WPILib\ChipObject\*.h vxworks-6.3\target\h\WPILib\ChipObject
 copy C:\WindRiver\workspace\WPILib\ChipObject\fpgainterfacecapi\*.h vxworks-6.3\target\h\WPILib\ChipObject\fpgainterfacecapi
-copy C:\WindRiver\workspace\WPILib\CInterfaces\*.h vxworks-6.3\target\h\WPILib\CInterfaces
+copy C:\WindRiver\workspace\WPILib\Interfaces\*.h vxworks-6.3\target\h\WPILib\Interfaces
 copy C:\WindRiver\workspace\WPILib\Commands\*.h vxworks-6.3\target\h\WPILib\Commands
 copy C:\WindRiver\workspace\WPILib\NetworkCommunication\*.h vxworks-6.3\target\h\WPILib\NetworkCommunication
 copy C:\WindRiver\workspace\WPILib\SmartDashboard\*.h vxworks-6.3\target\h\WPILib\SmartDashboard

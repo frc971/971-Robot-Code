@@ -17,7 +17,7 @@ ClientNetworkTableEntryStore::~ClientNetworkTableEntryStore(){}
 
 bool ClientNetworkTableEntryStore::addEntry(NetworkTableEntry* newEntry){
 	{
-		NTSynchronized sync(LOCK);
+		NTSynchronized sync(block_namedEntries);
 		NetworkTableEntry* entry = (NetworkTableEntry*)namedEntries[newEntry->name];
 
 		if(entry!=NULL){
