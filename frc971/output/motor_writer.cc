@@ -12,10 +12,9 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
+#include "frc971/queues/output_check.q.h"
 
 using ::aos::util::SimpleLogInterval;
-
-using ::frc971::control_loops::drivetrain;
 
 namespace frc971 {
 namespace output {
@@ -39,13 +38,14 @@ class MotorWriter : public ::aos::MotorOutput {
     values_.solenoid_module = 0;
 
     if (true) {
-      drivetrain.output.FetchLatest();
-      if (drivetrain.output.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *drivetrain.output.get());
-        SetPWMOutput(3, drivetrain.output->right_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(6, -drivetrain.output->left_voltage / 12.0, kTalonBounds);
-        SetSolenoid(7, drivetrain.output->left_high);
-        SetSolenoid(8, drivetrain.output->right_high);
+      static auto &drivetrain = ::frc971::control_loops::drivetrain.output;
+      drivetrain.FetchLatest();
+      if (drivetrain.IsNewerThanMS(kOutputMaxAgeMS)) {
+        LOG_STRUCT(DEBUG, "will output", *drivetrain);
+        SetPWMOutput(3, drivetrain->right_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(6, -drivetrain->left_voltage / 12.0, kTalonBounds);
+        SetSolenoid(7, drivetrain->left_high);
+        SetSolenoid(8, drivetrain->right_high);
       } else {
         DisablePWMOutput(3);
         DisablePWMOutput(8);
@@ -59,7 +59,7 @@ class MotorWriter : public ::aos::MotorOutput {
           ::frc971::control_loops::shooter_queue_group.output;
       shooter.FetchLatest();
       if (shooter.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *shooter.get());
+        LOG_STRUCT(DEBUG, "will output", *shooter);
         SetPWMOutput(7, shooter->voltage / 12.0, kTalonBounds);
         SetSolenoid(6, !shooter->latch_piston);
         SetSolenoid(5, !shooter->brake_piston);
@@ -75,7 +75,7 @@ class MotorWriter : public ::aos::MotorOutput {
       static auto &claw = ::frc971::control_loops::claw_queue_group.output;
       claw.FetchLatest();
       if (claw.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *claw.get());
+        LOG_STRUCT(DEBUG, "will output", *claw);
         SetPWMOutput(9, claw->intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(8, claw->intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(1, -claw->bottom_claw_voltage / 12.0, kTalonBounds);
@@ -94,11 +94,15 @@ class MotorWriter : public ::aos::MotorOutput {
       claw_old_.Print();
     }
 
-    ++output_check_;
-    if (output_check_ == 0) output_check_ = 1;
-    ::frc971::output_check_queue.MakeWithBuilder()
-        .pwm_value(output_check_).Send();
-    SetPWMOutput(10, output_check_);
+    {
+      auto message = ::frc971::output_check_queue.MakeMessage();
+      ++output_check_;
+      if (output_check_ == 0) output_check_ = 1;
+      SetRawPWMOutput(10, output_check_);
+      message->sent_value = output_check_;
+      LOG_STRUCT(DEBUG, "sending", *message);
+      message.Send();
+    }
   }
 
   SimpleLogInterval drivetrain_old_ =

@@ -89,6 +89,10 @@ void MotorOutput::SetPWMOutput(uint8_t channel, double value,
   values_.pwm_outputs[channel - 1] = bounds.Map(value);
 }
 
+void MotorOutput::SetRawPWMOutput(uint8_t channel, uint8_t value) {
+  values_.pwm_outputs[channel - 1] = value;
+}
+
 void MotorOutput::DisablePWMOutput(uint8_t channel) {
   values_.pwm_outputs[channel - 1] = 0;
 }

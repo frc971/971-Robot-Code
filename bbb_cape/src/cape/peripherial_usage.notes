@@ -57,4 +57,4 @@ crc
 [robots]
 robot_comp
   TIM11
-  TIM11_IRQ:3 (aka TIM1_TRG_COM)
+  TIM11_IRQ:1 (aka TIM1_TRG_COM)

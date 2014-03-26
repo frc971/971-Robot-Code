@@ -71,7 +71,8 @@ double battery_translate(uint16_t in_high, uint16_t in_low) {
 }
 
 double sonar_translate(uint32_t in) {
-  return static_cast<double>(in) / 1000.0 * 2.0;
+  return static_cast<double>(in) * 10.0 /*us/tick*/ / 147.0 /*in/us*/ *
+         0.0254 /*m/in*/;
 }
 
 double hall_translate(const constants::ShifterHallEffect &k, uint16_t in_low,

@@ -51,11 +51,13 @@ class MotorOutput {
   void SetSolenoid(uint8_t channel, bool set);
   void SetPWMOutput(uint8_t channel, double value,
                     const MotorControllerBounds &bounds);
+  void SetRawPWMOutput(uint8_t cahnnel, uint8_t value);
   void DisablePWMOutput(uint8_t channel);
   void SetDigitalOutput(uint8_t channel, bool value);
 
   // The data that's going to get sent over.
-  // Gets reset (everything set so that it won't do anything) each time through.
+  // Gets reset (everything set so that it won't do anything) each time through
+  // except for solenoids.
   NetworkRobotMotors values_;
 
  private:

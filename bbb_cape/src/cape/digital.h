@@ -8,7 +8,7 @@ void digital_init(void);
 // For all of the digital functions, a high voltage level on the input reads as
 // 1 (and a low to high transition is a positive edge).
 // Encoder inputs 0-7 A and B are mapped to "digital inputs" 12-27 (12 is 0A,
-13 is B, 14 is 1A, etc).
+// 13 is B, 14 is 1A, etc).
 
 static inline int digital_read(int num) {
   switch (num) {

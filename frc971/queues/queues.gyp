@@ -22,18 +22,13 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
-      'target_name': 'frc971_queues_so',
-      'type': 'loadable_module',
-      'sources': ['<@(queue_files)'],
+      'target_name': 'output_check',
+      'type': 'static_library',
+      'sources': [
+        'output_check.q',
+      ],
       'variables': {
         'header_path': 'frc971/queues',
-      },
-      'dependencies': [
-      ],
-      'direct_dependent_settings': {
-        'variables': {
-          'jni_libs': ['frc971_queues_so'],
-        },
       },
       'includes': ['../../aos/build/queues.gypi'],
     },

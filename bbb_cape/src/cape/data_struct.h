@@ -82,8 +82,11 @@ struct DATA_STRUCT_NAME {
       int32_t left_drive;
       int32_t right_drive;
 
-      // The length of the pulse from the ultrasonic sensor in 100kHZ ticks.
+      // The length of the pulse from the ultrasonic sensor in 100KHz ticks.
       uint32_t ultrasonic_pulse_length;
+
+      // The length of the pulse from the sidecar PWM output in 10MHz ticks.
+      uint32_t output_check_pulse_length;
 
       int32_t shooter_position, pusher_distal_posedge_position,
           pusher_proximal_posedge_position;
