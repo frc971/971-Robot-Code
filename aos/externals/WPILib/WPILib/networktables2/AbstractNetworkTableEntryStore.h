@@ -36,6 +36,7 @@ public:
 class AbstractNetworkTableEntryStore : public IncomingEntryReceiver{
 protected:
 	std::map<EntryId,NetworkTableEntry*> idEntries;
+	NTReentrantSemaphore block_namedEntries;
 	std::map<std::string,NetworkTableEntry*> namedEntries;
 	TableListenerManager& listenerManager;
 
