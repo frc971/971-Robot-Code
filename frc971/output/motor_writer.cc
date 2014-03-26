@@ -93,6 +93,12 @@ class MotorWriter : public ::aos::MotorOutput {
       }
       claw_old_.Print();
     }
+
+    ++output_check_;
+    if (output_check_ == 0) output_check_ = 1;
+    ::frc971::output_check_queue.MakeWithBuilder()
+        .pwm_value(output_check_).Send();
+    SetPWMOutput(10, output_check_);
   }
 
   SimpleLogInterval drivetrain_old_ =
@@ -101,6 +107,8 @@ class MotorWriter : public ::aos::MotorOutput {
       SimpleLogInterval(kOldLogInterval, WARNING, "shooter too old");
   SimpleLogInterval claw_old_ =
       SimpleLogInterval(kOldLogInterval, WARNING, "claw too old");
+
+  uint8_t output_check_ = 0;
 };
 
 constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
