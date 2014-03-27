@@ -231,6 +231,7 @@ class ClawMotorSimulation {
               v.claw.claw_max_separation);
     EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw.claw_min_separation);
+    ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
   }
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
@@ -283,6 +284,7 @@ class ClawTest : public ::testing::Test {
         .reader_pid(254)
         .cape_resets(5)
         .Send();
+    ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
   }
 
   void SendDSPacket(bool enabled) {
@@ -309,8 +311,22 @@ class ClawTest : public ::testing::Test {
   virtual ~ClawTest() {
     ::aos::robot_state.Clear();
     ::bbb::sensor_generation.Clear();
+    ::aos::time::Time::DisableMockTime();
   }
 };
+
+TEST_F(ClawTest, HandlesNAN) {
+  claw_queue_group.goal.MakeWithBuilder()
+      .bottom_angle(::std::nan(""))
+      .separation_angle(::std::nan(""))
+      .Send();
+  for (int i = 0; i < 500; ++i) {
+    claw_motor_plant_.SendPositionMessage();
+    claw_motor_.Iterate();
+    claw_motor_plant_.Simulate();
+    SendDSPacket(true);
+  }
+}
 
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ClawTest, ZerosCorrectly) {

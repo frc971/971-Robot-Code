@@ -39,6 +39,7 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
     kString,
     kStructType,
     kStruct,
+    kMatrix,
   };
 
   // Gets futex_set once this one has been written
@@ -118,6 +119,9 @@ class LogFileAccessor {
 
   void MapNextPage();
   void Unmap(void *location);
+  // Tries reading from the current page to see if it fails because the file
+  // isn't big enough.
+  void CheckCurrentPageReadable();
 
   // Advances position to the next (aligned) location.
   void AlignPosition() {

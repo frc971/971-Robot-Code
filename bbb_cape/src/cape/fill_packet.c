@@ -40,6 +40,7 @@ static inline void do_fill_packet(struct DataStruct *packet) {
   packet->uninitialized_gyro = !gyro_output.initialized;
   packet->zeroing_gyro = !gyro_output.zeroed;
   packet->bad_gyro = gyro_output.gyro_bad;
+  packet->analog_errors = analog_get_errors();
 
   robot_fill_packet(packet);
   //counter_update_u64_u16(&timestamp, TIMESTAMP_TIM->CNT);
@@ -85,6 +86,8 @@ void fill_packet_start(void) {
 
   led_set(LED_ERR, 0);
   gyro_init();
+
+  robot_init();
 
   uart_common_configure(750000);
   uart_dma_configure(DATA_STRUCT_SEND_SIZE, buffer1, buffer2);

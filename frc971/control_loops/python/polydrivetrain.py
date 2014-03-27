@@ -396,10 +396,10 @@ def main(argv):
     print "Expected .h file name and .cc file name"
   else:
     dog_loop_writer = control_loop.ControlLoopWriter(
-        "VDogDrivetrain", [vdrivetrain.drivetrain_low_low,
-                           vdrivetrain.drivetrain_low_high,
-                           vdrivetrain.drivetrain_high_low,
-                           vdrivetrain.drivetrain_high_high])
+        "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
+                       vdrivetrain.drivetrain_low_high,
+                       vdrivetrain.drivetrain_high_low,
+                       vdrivetrain.drivetrain_high_high])
 
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])

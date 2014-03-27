@@ -110,6 +110,9 @@ bool PacketFinder::ProcessPacket() {
   uint32_t unstuffed = cows_unstuff(
       reinterpret_cast<uint32_t *>(buf_), packet_size_,
       reinterpret_cast<uint32_t *>(unstuffed_data_), packet_size_ - 4);
+  invalid_packet_.Print();
+  bad_checksum_.Print();
+
   if (unstuffed == 0) {
     if (kDebugLogs) LOG(INFO, "invalid\n");
     LOG_INTERVAL(invalid_packet_);

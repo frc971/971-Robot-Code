@@ -42,11 +42,12 @@ namespace logging {
 // The struct that the code uses for making logging calls.
 struct LogMessage {
   enum class Type : uint8_t {
-    kString, kStruct,
+    kString, kStruct, kMatrix
   };
 
   int32_t seconds, nseconds;
-  // message_length is the length of everything in message for all types.
+  // message_length is just the length of the actual data (which member depends
+  // on the type).
   size_t message_length, name_length;
   pid_t source;
   static_assert(sizeof(source) == 4, "that's how they get printed");
@@ -63,6 +64,15 @@ struct LogMessage {
       // The message string and then the serialized structure.
       char serialized[LOG_MESSAGE_LEN - sizeof(type) - sizeof(string_length)];
     } structure;
+    struct {
+      // The type ID of the element type.
+      uint32_t type;
+      int rows, cols;
+      size_t string_length;
+      // The message string and then the serialized matrix.
+      char
+          data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(cols)];
+    } matrix;
   };
 };
 static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
@@ -102,9 +112,12 @@ void VUnCork(int line, log_level level, const char *file,
 void LogNext(log_level level, const char *format, ...)
   __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
 
-// Will take a structure and log it.
+// Takes a structure and log it.
 template <class T>
 void DoLogStruct(log_level, const ::std::string &, const T &);
+// Takes a matrix and logs it.
+template <class T>
+void DoLogMatrix(log_level, const ::std::string &, const T &);
 
 // Represents a system that can actually take log messages and do something
 // useful with them.
@@ -144,6 +157,12 @@ class LogImplementation {
   virtual void LogStruct(log_level level, const ::std::string &message,
                          size_t size, const MessageType *type,
                          const ::std::function<size_t(char *)> &serialize);
+  // Similiar to LogStruct, except for matrixes.
+  // type_id is the type of the elements of the matrix.
+  // data points to rows*cols*type_id.Size() bytes of data in row-major order.
+  virtual void LogMatrix(log_level level, const ::std::string &message,
+                         uint32_t type_id, int rows, int cols,
+                         const void *data);
 
   // These functions call similar methods on the "current" LogImplementation or
   // Die if they can't find one.
@@ -154,12 +173,18 @@ class LogImplementation {
                           size_t size, const MessageType *type,
                           const ::std::function<size_t(char *)> &serialize,
                           int levels);
+  // This one is implemented in matrix_logging.cc.
+  static void DoLogMatrix(log_level level, const ::std::string &message,
+                          uint32_t type_id, int rows, int cols,
+                          const void *data, int levels);
 
   // Friends so that they can access the static Do* functions.
   friend void VLog(log_level, const char *, va_list);
   friend void LogNext(log_level, const char *, ...);
   template <class T>
   friend void DoLogStruct(log_level, const ::std::string &, const T &);
+  template <class T>
+  friend void DoLogMatrix(log_level, const ::std::string &, const T &);
 
   LogImplementation *next_;
 };
@@ -262,10 +287,25 @@ void FillInMessageStructure(log_level level,
                             const ::std::function<size_t(char *)> &serialize,
                             LogMessage *message);
 
+// Fills in all the parts of the message according to the given inputs (with
+// type kMatrix).
+void FillInMessageMatrix(log_level level,
+                         const ::std::string &message_string, uint32_t type_id,
+                         int rows, int cols, const void *data,
+                         LogMessage *message);
+
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.
 void FillInMessage(log_level level, const char *format, va_list ap,
                    LogMessage *message);
+
+static inline void FillInMessageVarargs(log_level level, LogMessage *message,
+                                        const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  FillInMessage(level, format, ap, message);
+  va_end(ap);
+}
 
 // Prints message to output.
 void PrintMessage(FILE *output, const LogMessage &message);

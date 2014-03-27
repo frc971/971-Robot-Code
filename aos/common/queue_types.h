@@ -9,6 +9,7 @@
 #include <string>
 
 #include "aos/common/macros.h"
+#include "aos/common/byteorder.h"
 
 namespace aos {
 
@@ -52,19 +53,27 @@ struct MessageType {
     return (type_id & 0x2000) != 0;
   }
 
+  static unsigned int Sizeof(uint32_t type_id) {
+    if (IsPrimitive(type_id)) {
+      return (type_id & 0xFFFF) - 0x2000;
+    } else {
+      return type_id & 0xFFFF;
+    }
+  }
+
   // How many (serialized) bytes the superclass takes up.
-  size_t super_size;
+  uint16_t super_size;
   // The type ID for this.
   uint32_t id;
   ::std::string name;
 
-  int number_fields;
+  uint16_t number_fields;
   const Field **fields;
 
  private:
   // Internal constructor for Deserialize to use.
-  MessageType(size_t super_size, uint32_t id, ::std::string &&name,
-              int number_fields, Field **fields)
+  MessageType(uint16_t super_size, uint32_t id, ::std::string &&name,
+              uint16_t number_fields, Field **fields)
       : super_size(super_size),
         id(id),
         name(name),
@@ -101,6 +110,14 @@ bool PrintField(char *output, size_t *output_bytes, const void *input,
 bool PrintMessage(char *output, size_t *output_bytes, const void *input,
                   size_t *input_bytes, const MessageType &type)
     __attribute__((warn_unused_result));
+// Calls PrintField to print out a matrix of values.
+bool PrintMatrix(char *output, size_t *output_bytes, const void *input,
+                 uint32_t type, int rows, int cols);
+
+// "Serializes" a matrix (basically just converts to network byte order). The
+// result can be passed to PrintMatrix.
+void SerializeMatrix(int type_id, void *output_void, const void *input_void,
+                     int rows, int cols);
 
 // Implements a cache of types which generally works per-process but can (when
 // instructed) put a type in shared memory which other processes will

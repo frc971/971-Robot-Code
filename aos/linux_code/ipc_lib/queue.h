@@ -55,20 +55,22 @@ class RawQueue {
   // Constants for passing to options arguments.
   // The non-conflicting ones can be combined with bitwise-or.
 
-  // Causes the returned message to be left in the queue.
+  // Doesn't update the currently read index (the read messages in the queue or
+  // the index). This means the returned message (and any others skipped with
+  // kFromEnd) will be left in the queue.
   // For reading only.
   static const int kPeek = 0x0001;
   // Reads the last message in the queue instead of just the next one.
   // NOTE: This removes all of the messages until the last one from the queue
-  // (which means that nobody else will read them). However, PEEK means to not
-  // remove any from the queue, including the ones that are skipped.
+  // (which means that nobody else will read them).
   // For reading only.
   static const int kFromEnd = 0x0002;
   // Causes reads to return NULL and writes to fail instead of waiting.
   // For reading and writing.
   static const int kNonBlock = 0x0004;
   // Causes things to block.
-  // IMPORTANT: Has a value of 0 so that it is the default. This has to stay.
+  // IMPORTANT: Has a value of 0 so that it is the default. This has to stay
+  // this way.
   // For reading and writing.
   static const int kBlock = 0x0000;
   // Causes writes to overwrite the oldest message in the queue instead of
@@ -79,7 +81,7 @@ class RawQueue {
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
-  // Returns truen on success.
+  // Returns true on success.
   bool WriteMessage(void *msg, int options);
 
   // Reads a message out of the queue.
@@ -94,7 +96,7 @@ class RawQueue {
   // same message twice with the same index argument. However, it may not
   // return some messages that pass through the queue.
   // *index should start as 0. index does not have to be in shared memory, but
-  // it can be
+  // it can be.
   const void *ReadMessageIndex(int options, int *index);
 
   // Retrieves ("allocates") a message that can then be written to the queue.
@@ -110,6 +112,10 @@ class RawQueue {
   void FreeMessage(const void *msg) {
     if (msg != NULL) DecrementMessageReferenceCount(msg);
   }
+
+  // UNSAFE! Returns the number of free messages we have. Only safe to use when
+  // only 1 task is using this object (ie in tests).
+  int FreeMessages() const;
 
  private:
   struct MessageHeader;
@@ -139,28 +145,28 @@ class RawQueue {
   int messages_;  // that have passed through
   void **data_;  // array of messages (with headers)
 
-  Mutex pool_lock_;
   size_t msg_length_;  // sizeof(each message) including the header
-  int mem_length_;  // the max number of messages that will ever be allocated
-  int messages_used_;
-  int pool_length_;  // the number of allocated messages
-  MessageHeader **pool_;  // array of pointers to messages
+  // A pointer to the first in the linked list of free messages.
+  MessageHeader *free_messages_;
 
   // Actually frees the given message.
   void DoFreeMessage(const void *msg);
   // Calls DoFreeMessage if appropriate.
   void DecrementMessageReferenceCount(const void *msg);
+  // Only does the actual incrementing of the reference count.
+  void IncrementMessageReferenceCount(const void *msg) const;
 
-  // Should be called with data_lock_ locked.
+  // Must be called with data_lock_ locked.
   // *read_data will be initialized.
   // Returns with a readable message in data_ or false.
   bool ReadCommonStart(int options, int *index, ReadData *read_data);
   // Deals with setting/unsetting readable_ and writable_.
-  // Should be called after data_lock_ has been unlocked.
+  // Must be called after data_lock_ has been unlocked.
   // read_data should be the same thing that was passed in to ReadCommonStart.
   void ReadCommonEnd(ReadData *read_data);
   // Handles reading with kPeek.
-  void *ReadPeek(int options, int start);
+  // start can be -1 if options has kFromEnd set.
+  void *ReadPeek(int options, int start) const;
 
   // Gets called by Fetch when necessary (with placement new).
   RawQueue(const char *name, size_t length, int hash, int queue_length);

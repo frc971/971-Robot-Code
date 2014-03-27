@@ -13,7 +13,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/other_sensors.q.h"
 
 
 using ::aos::time::Time;
@@ -50,7 +50,7 @@ class DrivetrainSimulation {
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(
-            new StateFeedbackPlant<4, 2, 2>(MakeDogDrivetrainPlant())),
+            new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
         my_drivetrain_loop_(".frc971.control_loops.drivetrain",
                        0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
                        ".frc971.control_loops.drivetrain.position",
@@ -134,7 +134,7 @@ class DrivetrainTest : public ::testing::Test {
         .reader_pid(254)
         .cape_resets(5)
         .Send();
-    ::frc971::sensors::gyro.Clear();
+    ::frc971::sensors::gyro_reading.Clear();
     SendDSPacket(true);
   }
 
@@ -158,7 +158,7 @@ class DrivetrainTest : public ::testing::Test {
 
   virtual ~DrivetrainTest() {
     ::aos::robot_state.Clear();
-    ::frc971::sensors::gyro.Clear();
+    ::frc971::sensors::gyro_reading.Clear();
     ::bbb::sensor_generation.Clear();
   }
 };

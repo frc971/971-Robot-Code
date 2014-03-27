@@ -1,5 +1,5 @@
-#ifndef BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
-#define BBB_CAPE_SRC_BBB_CAPE_CONTROL_H_
+#ifndef BBB_CAPE_SRC_BBB_GPIOS_H_
+#define BBB_CAPE_SRC_BBB_GPIOS_H_
 
 #include <stdio.h>
 
@@ -31,4 +31,4 @@ class GpioPin {
 
 }  // namespace bbb
 
-#endif
+#endif  // BBB_CAPE_SRC_BBB_GPIOS_H_

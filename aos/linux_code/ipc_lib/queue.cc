@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include <memory>
+#include <algorithm>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
@@ -21,6 +22,7 @@ const bool kReadDebug = false;
 const bool kWriteDebug = false;
 const bool kRefDebug = false;
 const bool kFetchDebug = false;
+const bool kReadIndexDebug = false;
 
 // The number of extra messages the pool associated with each queue will be able
 // to hold (for readers who are slow about freeing them or who leak one when
@@ -35,9 +37,14 @@ const int RawQueue::kNonBlock;
 const int RawQueue::kBlock;
 const int RawQueue::kOverride;
 
+// This is what gets stuck in before each queue message in memory. It is always
+// allocated aligned to 8 bytes and its size has to maintain that alignment for
+// the message that follows immediately.
 struct RawQueue::MessageHeader {
+  // This gets incremented and decremented with atomic instructions without any
+  // locks held.
   int ref_count;
-  int index;  // in pool_
+  MessageHeader *next;
   // Gets the message header immediately preceding msg.
   static MessageHeader *Get(const void *msg) {
     return reinterpret_cast<MessageHeader *>(__builtin_assume_aligned(
@@ -50,31 +57,52 @@ struct RawQueue::MessageHeader {
     memcpy(other, this, sizeof(*other));
     memcpy(this, &temp, sizeof(*this));
   }
+#if __SIZEOF_POINTER__ == 8
+  char padding[16 - sizeof(next) - sizeof(ref_count)];
+#elif __SIZEOF_POINTER__ == 4
+  // No padding needed to get 8 byte total size.
+#else
+#error Unknown pointer size.
+#endif
 };
-static_assert(shm_ok<RawQueue::MessageHeader>::value,
-              "the whole point is to stick it in shared memory");
 
 struct RawQueue::ReadData {
   bool writable_start;
 };
 
-// TODO(brians) maybe do this with atomic integer instructions so it doesn't
-//   have to lock/unlock pool_lock_
 void RawQueue::DecrementMessageReferenceCount(const void *msg) {
-  MutexLocker locker(&pool_lock_);
   MessageHeader *header = MessageHeader::Get(msg);
-  --header->ref_count;
-  assert(header->ref_count >= 0);
+  __atomic_sub_fetch(&header->ref_count, 1, __ATOMIC_RELAXED);
   if (kRefDebug) {
-    printf("ref_dec_count: %p count=%d\n", msg, header->ref_count);
+    printf("%p ref dec count: %p count=%d\n", this, msg, header->ref_count);
   }
+
+  // The only way it should ever be 0 is if we were the last one to decrement,
+  // in which case nobody else should have it around to re-increment it or
+  // anything in the middle, so this is safe to do not atomically with the
+  // decrement.
   if (header->ref_count == 0) {
     DoFreeMessage(msg);
+  } else {
+    assert(header->ref_count > 0);
+  }
+}
+
+void RawQueue::IncrementMessageReferenceCount(const void *msg) const {
+  MessageHeader *const header = MessageHeader::Get(msg);
+  __atomic_add_fetch(&header->ref_count, 1, __ATOMIC_RELAXED);
+  if (kRefDebug) {
+    printf("%p ref inc count: %p\n", this, msg);
   }
 }
 
 RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
     : readable_(&data_lock_), writable_(&data_lock_) {
+  static_assert(shm_ok<RawQueue::MessageHeader>::value,
+                "the whole point is to stick it in shared memory");
+  static_assert((sizeof(RawQueue::MessageHeader) % 8) == 0,
+                "need to revalidate size/alignent assumptions");
+
   const size_t name_size = strlen(name) + 1;
   char *temp = static_cast<char *>(shm_malloc(name_size));
   memcpy(temp, name, name_size);
@@ -100,12 +128,16 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
   data_end_ = 0;
   messages_ = 0;
 
-  mem_length_ = queue_length + kExtraMessages;
-  pool_length_ = 0;
-  messages_used_ = 0;
   msg_length_ = length + sizeof(MessageHeader);
-  pool_ = static_cast<MessageHeader **>(
-      shm_malloc(sizeof(MessageHeader *) * mem_length_));
+
+  MessageHeader *previous = nullptr;
+  for (int i = 0; i < queue_length + kExtraMessages; ++i) {
+    MessageHeader *const message =
+        static_cast<MessageHeader *>(shm_malloc(msg_length_));
+    free_messages_ = message;
+    message->next = previous;
+    previous = message;
+  }
 
   if (kFetchDebug) {
     printf("made queue %s\n", name);
@@ -168,17 +200,9 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
 
 void RawQueue::DoFreeMessage(const void *msg) {
   MessageHeader *header = MessageHeader::Get(msg);
-  if (pool_[header->index] != header) {  // if something's messed up
-    fprintf(stderr, "queue: something is very very wrong with queue %p."
-            " pool_(=%p)[header->index(=%d)] != header(=%p)\n",
-            this, pool_, header->index, header);
-    printf("queue: see stderr\n");
-    abort();
-  }
   if (kRefDebug) {
-    printf("ref free: %p\n", msg);
+    printf("%p ref free->%p: %p\n", this, recycle_, msg);
   }
-  --messages_used_;
 
   if (recycle_ != NULL) {
     void *const new_msg = recycle_->GetMessage();
@@ -186,21 +210,7 @@ void RawQueue::DoFreeMessage(const void *msg) {
       fprintf(stderr, "queue: couldn't get a message"
               " for recycle queue %p\n", recycle_);
     } else {
-      // Take a message from recycle_ and switch its
-      // header with the one being freed, which effectively
-      // switches which queue each message belongs to.
-      MessageHeader *const new_header = MessageHeader::Get(new_msg);
-      // Also switch the messages between the pools.
-      pool_[header->index] = new_header;
-      {
-        MutexLocker locker(&recycle_->pool_lock_);
-        recycle_->pool_[new_header->index] = header;
-        // Swap the information in both headers.
-        header->Swap(new_header);
-        // Don't unlock the other pool until all of its messages are valid.
-      }
-      // use the header for new_msg which is now for this pool
-      header = new_header;
+      IncrementMessageReferenceCount(msg);
       if (!recycle_->WriteMessage(const_cast<void *>(msg), kOverride)) {
         fprintf(stderr, "queue: %p->WriteMessage(%p, kOverride) failed."
                 " aborting\n", recycle_, msg);
@@ -208,23 +218,19 @@ void RawQueue::DoFreeMessage(const void *msg) {
         abort();
       }
       msg = new_msg;
+      header = MessageHeader::Get(new_msg);
     }
   }
 
-  // Where the one we're freeing was.
-  int index = header->index;
-  header->index = -1;
-  if (index != messages_used_) {  // if we're not freeing the one on the end
-    // Put the last one where the one we're freeing was.
-    header = pool_[index] = pool_[messages_used_];
-    // Put the one we're freeing at the end.
-    pool_[messages_used_] = MessageHeader::Get(msg);
-    // Update the former last one's index.
-    header->index = index;
+  header->next = __atomic_load_n(&free_messages_, __ATOMIC_RELAXED);
+  while (
+      !__atomic_compare_exchange_n(&free_messages_, &header->next, header,
+                                   true, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
   }
 }
 
 bool RawQueue::WriteMessage(void *msg, int options) {
+  // TODO(brians): Test this function.
   if (kWriteDebug) {
     printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
   }
@@ -250,6 +256,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
         if (kWriteDebug) {
           printf("queue: not blocking on %p. returning false\n", this);
         }
+        DecrementMessageReferenceCount(msg);
         return false;
       } else if (options & kOverride) {
         if (kWriteDebug) {
@@ -319,11 +326,12 @@ bool RawQueue::ReadCommonStart(int options, int *index, ReadData *read_data) {
     }
   }
   if (kReadDebug) {
-    printf("queue: %p->read start=%d end=%d\n", this, data_start_, data_end_);
+    printf("queue: %p->read(%p) start=%d end=%d\n", this, index, data_start_,
+           data_end_);
   }
   return true;
 }
-void *RawQueue::ReadPeek(int options, int start) {
+void *RawQueue::ReadPeek(int options, int start) const {
   void *ret;
   if (options & kFromEnd) {
     int pos = data_end_ - 1;
@@ -335,19 +343,17 @@ void *RawQueue::ReadPeek(int options, int start) {
     }
     ret = data_[pos];
   } else {
+    assert(start != -1);
     if (kReadDebug) {
       printf("queue: %p reading from line %d: %d\n", this, __LINE__, start);
     }
     ret = data_[start];
   }
-  MessageHeader *const header = MessageHeader::Get(ret);
-  ++header->ref_count;
-  if (kRefDebug) {
-    printf("ref inc count: %p\n", ret);
-  }
+  IncrementMessageReferenceCount(ret);
   return ret;
 }
 const void *RawQueue::ReadMessage(int options) {
+  // TODO(brians): Test this function.
   if (kReadDebug) {
     printf("queue: %p->ReadMessage(%x)\n", this, options);
   }
@@ -390,7 +396,6 @@ const void *RawQueue::ReadMessage(int options) {
         printf("queue: %p reading from d2: %d\n", this, data_start_);
       }
       msg = data_[data_start_];
-      // TODO(brians): Doesn't this need to increment the ref count?
       data_start_ = (data_start_ + 1) % data_length_;
     }
   }
@@ -419,20 +424,46 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
 
   // TODO(parker): Handle integer wrap on the index.
 
-  // How many unread messages we have.
-  const int offset = messages_ - *index;
   // Where we're going to start reading.
-  int my_start = data_end_ - offset;
-  if (my_start < 0) {  // If we want to read off the end of the buffer.
-    // Unwrap it.
-    my_start += data_length_;
+  int my_start;
+
+  if (options & kFromEnd) {
+    my_start = -1;
+  } else {
+    const int unread_messages = messages_ - *index;
+    assert(unread_messages > 0);
+    int current_messages = data_end_ - data_start_;
+    if (current_messages < 0) current_messages += data_length_;
+    if (kReadIndexDebug) {
+      printf("queue: %p start=%d end=%d current=%d\n",
+             this, data_start_, data_end_, current_messages);
+    }
+    assert(current_messages > 0);
+    // If we're behind the available messages.
+    if (unread_messages > current_messages) {
+      // Catch index up to the last available message.
+      *index = messages_ - current_messages;
+      // And that's the one we're going to read.
+      my_start = data_start_;
+      if (kReadIndexDebug) {
+        printf("queue: %p jumping ahead to message %d (have %d) (at %d)\n",
+               this, *index, messages_, data_start_);
+      }
+    } else {
+      // Just start reading at the first available message that we haven't yet
+      // read.
+      my_start = data_end_ - unread_messages;
+      if (kReadIndexDebug) {
+        printf("queue: %p original read from %d\n", this, my_start);
+      }
+      if (data_start_ < data_end_) {
+        assert(my_start >= data_start_);
+      } else {
+        if (my_start < 0) my_start += data_length_;
+      }
+    }
   }
-  if (offset >= data_length_) {  // If we're behind the available messages.
-    // Catch index up to the last available message.
-    *index += data_start_ - my_start;
-    // And that's the one we're going to read.
-    my_start = data_start_;
-  }
+
   if (options & kPeek) {
     msg = ReadPeek(options, my_start);
   } else {
@@ -441,6 +472,9 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
         printf("queue: %p start of c1\n", this);
       }
       int pos = data_end_ - 1;
+      if (kReadIndexDebug) {
+        printf("queue: %p end pos start %d\n", this, pos);
+      }
       if (pos < 0) {  // If it wrapped.
         pos = data_length_ - 1;  // Unwrap it.
       }
@@ -453,40 +487,53 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       if (kReadDebug) {
         printf("queue: %p reading from d1: %d\n", this, my_start);
       }
+      // This assert checks that we're either within both endpoints (duh) or
+      // not between them (if the queue is wrapped around).
+      assert((my_start >= data_start_ && my_start < data_end_) ||
+             ((my_start >= data_start_) == (my_start > data_end_)));
+      // More sanity checking.
+      assert((my_start >= 0) && (my_start < data_length_));
       msg = data_[my_start];
       ++(*index);
     }
-    MessageHeader *const header = MessageHeader::Get(msg);
-    ++header->ref_count;
-    if (kRefDebug) {
-      printf("ref_inc_count: %p\n", msg);
-    }
+    IncrementMessageReferenceCount(msg);
   }
   ReadCommonEnd(&read_data);
   return msg;
 }
 
 void *RawQueue::GetMessage() {
-  MutexLocker locker(&pool_lock_);
-  MessageHeader *header;
-  if (pool_length_ - messages_used_ > 0) {
-    header = pool_[messages_used_];
-  } else {
-    if (pool_length_ >= mem_length_) {
+  // TODO(brians): Test this function.
+
+  MessageHeader *header = __atomic_load_n(&free_messages_, __ATOMIC_RELAXED);
+  do {
+    if (__builtin_expect(header == nullptr, 0)) {
       LOG(FATAL, "overused pool of queue %p\n", this);
     }
-    header = pool_[pool_length_] =
-        static_cast<MessageHeader *>(shm_malloc(msg_length_));
-    ++pool_length_;
-  }
-  void *msg = reinterpret_cast<uint8_t *>(header) + sizeof(MessageHeader);
+  } while (
+      !__atomic_compare_exchange_n(&free_messages_, &header, header->next, true,
+                                   __ATOMIC_ACQ_REL, __ATOMIC_RELAXED));
+  void *msg = reinterpret_cast<uint8_t *>(header + 1);
+  // It might be uninitialized, 0 from a previous use, or 1 from previously
+  // getting recycled.
   header->ref_count = 1;
+  static_assert(
+      __atomic_always_lock_free(sizeof(header->ref_count), &header->ref_count),
+      "we access this using not specifically atomic loads and stores");
   if (kRefDebug) {
     printf("%p ref alloc: %p\n", this, msg);
   }
-  header->index = messages_used_;
-  ++messages_used_;
   return msg;
+}
+
+int RawQueue::FreeMessages() const {
+  int r = 0;
+  MessageHeader *header = free_messages_;
+  while (header != nullptr) {
+    ++r;
+    header = header->next;
+  }
+  return r;
 }
 
 }  // namespace aos

@@ -22,9 +22,7 @@
       'type': 'static_library',
       'sources': [
         'polydrivetrain_dog_motor_plant.cc',
-        'polydrivetrain_clutch_motor_plant.cc',
         'drivetrain_dog_motor_plant.cc',
-        'drivetrain_clutch_motor_plant.cc',
       ],
       'dependencies': [
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
@@ -50,6 +48,7 @@
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/util/util.gyp:log_interval',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/logging/logging.gyp:matrix_logging',
       ],
       'export_dependent_settings': [
         '<(DEPTH)/aos/build/externals.gyp:libcdd',

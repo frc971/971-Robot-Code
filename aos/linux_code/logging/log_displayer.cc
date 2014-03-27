@@ -227,7 +227,39 @@ int main(int argc, char **argv) {
         log_message.type = ::aos::logging::LogMessage::Type::kStruct;
         break;
       }
-      case LogFileMessageHeader::MessageType::kString:
+      case LogFileMessageHeader::MessageType::kMatrix: {
+        const char *position =
+            reinterpret_cast<const char *>(msg + 1) + msg->name_size;
+        memcpy(&log_message.matrix.type, position,
+               sizeof(log_message.matrix.type));
+        position += sizeof(log_message.matrix.type);
+
+        uint32_t length;
+        memcpy(&length, position, sizeof(length));
+        log_message.matrix.string_length = length;
+        position += sizeof(length);
+
+        uint16_t rows;
+        memcpy(&rows, position, sizeof(rows));
+        log_message.matrix.rows = rows;
+        position += sizeof(rows);
+        uint16_t cols;
+        memcpy(&cols, position, sizeof(cols));
+        log_message.matrix.cols = cols;
+        position += sizeof(cols);
+
+        log_message.message_length -=
+            sizeof(log_message.matrix.type) + sizeof(uint32_t) +
+            sizeof(uint16_t) + sizeof(uint16_t) + length;
+        CHECK_EQ(
+            log_message.message_length,
+            ::aos::MessageType::Sizeof(log_message.matrix.type) * rows * cols);
+        memcpy(log_message.matrix.data, position,
+               log_message.message_length + length);
+
+        log_message.type = ::aos::logging::LogMessage::Type::kMatrix;
+        break;
+      } case LogFileMessageHeader::MessageType::kString:
         memcpy(
             log_message.message,
             reinterpret_cast<const char *>(msg) + sizeof(*msg) + msg->name_size,

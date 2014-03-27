@@ -6,6 +6,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
+#include <setjmp.h>
 
 namespace aos {
 namespace logging {
@@ -110,12 +112,21 @@ void LogFileAccessor::MapNextPage() {
            MAP_SHARED, fd_, offset_));
   if (current_ == MAP_FAILED) {
     LOG(FATAL,
-        "mmap(NULL, %zd, PROT_READ | PROT_WRITE, MAP_SHARED, %d, %jd)"
-        " failed with %d: %s. aborting\n",
+        "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
+        " failed with %d: %s\n",
         kPageSize, fd_, static_cast<intmax_t>(offset_), errno,
         strerror(errno));
   }
+  if (madvise(current_, kPageSize, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) {
+    LOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED)"
+                 " failed with %d: %s\n",
+        current_, kPageSize, errno, strerror(errno));
+  }
   offset_ += kPageSize;
+
+  if (!writable_) {
+    CheckCurrentPageReadable();
+  }
 }
 
 void LogFileAccessor::Unmap(void *location) {
@@ -124,6 +135,59 @@ void LogFileAccessor::Unmap(void *location) {
         kPageSize, errno, strerror(errno));
   }
   is_last_page_ = 0;
+}
+
+// This mess is because the only not completely hackish way to do this is to set
+// up a handler for SIGBUS/SIGSEGV that siglongjmps out to avoid either the
+// instruction being repeated infinitely (and more signals being delivered) or
+// (with SA_RESETHAND) the signal killing the process.
+namespace {
+
+void *volatile fault_address;
+sigjmp_buf jump_context;
+
+void CheckCurrentPageReadableHandler(int /*signal*/, siginfo_t *info, void *) {
+  fault_address = info->si_addr;
+
+  siglongjmp(jump_context, 1);
+}
+
+}  // namespace
+void LogFileAccessor::CheckCurrentPageReadable() {
+  if (sigsetjmp(jump_context, 1) == 0) {
+    struct sigaction action;
+    action.sa_sigaction = CheckCurrentPageReadableHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESETHAND | SA_SIGINFO;
+    struct sigaction previous_bus, previous_segv;
+    if (sigaction(SIGBUS, &action, &previous_bus) == -1) {
+      LOG(FATAL, "sigaction(SIGBUS(=%d), %p, %p) failed with %d: %s\n",
+          SIGBUS, &action, &previous_bus, errno, strerror(errno));
+    }
+    if (sigaction(SIGSEGV, &action, &previous_segv) == -1) {
+      LOG(FATAL, "sigaction(SIGSEGV(=%d), %p, %p) failed with %d: %s\n",
+          SIGSEGV, &action, &previous_segv, errno, strerror(errno));
+    }
+
+    char __attribute__((unused)) c = current_[0];
+
+    if (sigaction(SIGBUS, &previous_bus, NULL) == -1) {
+      LOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed with %d: %s\n",
+          SIGBUS, &previous_bus, errno, strerror(errno));
+    }
+    if (sigaction(SIGSEGV, &previous_segv, NULL) == -1) {
+      LOG(FATAL, "sigaction(SIGSEGV(=%d), %p, NULL) failed with %d: %s\n",
+          SIGSEGV, &previous_segv, errno, strerror(errno));
+    }
+  } else {
+    if (fault_address == current_) {
+      LOG(FATAL, "could not read 1 byte at offset 0x%jx into log file\n",
+          static_cast<uintmax_t>(offset_));
+    } else {
+      LOG(FATAL, "faulted at %p, not %p like we were (maybe) supposed to\n",
+          fault_address, current_);
+    }
+  }
 }
 
 }  // namespace linux_code

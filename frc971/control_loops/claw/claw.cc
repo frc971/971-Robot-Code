@@ -4,6 +4,7 @@
 
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
@@ -34,7 +35,8 @@
 // correct side of the zero and go zero.
 
 // Valid region plan.
-// Difference between the arms has a range, and the values of each arm has a range.
+// Difference between the arms has a range, and the values of each arm has a
+// range.
 // If a claw runs up against a static limit, don't let the goal change outside
 // the limit.
 // If a claw runs up against a movable limit, move both claws outwards to get
@@ -170,9 +172,9 @@ void ZeroedStateFeedbackLoop::SetPositionValues(const HalfClawPosition &claw) {
 void ZeroedStateFeedbackLoop::Reset(const HalfClawPosition &claw) {
   set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
 
-  front_.Reset();
-  calibration_.Reset();
-  back_.Reset();
+  front_.Reset(claw.front);
+  calibration_.Reset(claw.calibration);
+  back_.Reset(claw.back);
   // close up the min and max edge positions as they are no longer valid and
   // will be expanded in future iterations
   min_hall_effect_on_angle_ = claw.position;
@@ -211,7 +213,8 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
 }
 
 ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
-    : aos::control_loops::ControlLoop<control_loops::ClawGroup>(my_claw),
+    : aos::control_loops::ControlLoop<control_loops::ClawGroup, true, true,
+                                      false>(my_claw),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -226,17 +229,54 @@ ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
 
 const int ZeroedStateFeedbackLoop::kZeroingMaxVoltage;
 
+bool ZeroedStateFeedbackLoop::SawFilteredPosedge(
+    const HallEffectTracker &this_sensor, const HallEffectTracker &sensorA,
+    const HallEffectTracker &sensorB) {
+  if (posedge_filter_ == nullptr && this_sensor.posedge_count_changed() &&
+      !sensorA.posedge_count_changed() && !sensorB.posedge_count_changed() &&
+      this_sensor.value() && !this_sensor.last_value()) {
+    posedge_filter_ = &this_sensor;
+  } else if (posedge_filter_ == &this_sensor &&
+             !this_sensor.posedge_count_changed() &&
+             !sensorA.posedge_count_changed() &&
+             !sensorB.posedge_count_changed() && this_sensor.value()) {
+    posedge_filter_ = nullptr;
+    return true;
+  } else if (posedge_filter_ == &this_sensor) {
+    posedge_filter_ = nullptr;
+  }
+  return false;
+}
+
+bool ZeroedStateFeedbackLoop::SawFilteredNegedge(
+    const HallEffectTracker &this_sensor, const HallEffectTracker &sensorA,
+    const HallEffectTracker &sensorB) {
+  if (negedge_filter_ == nullptr && this_sensor.negedge_count_changed() &&
+      !sensorA.negedge_count_changed() && !sensorB.negedge_count_changed() &&
+      !this_sensor.value() && this_sensor.last_value()) {
+    negedge_filter_ = &this_sensor;
+  } else if (negedge_filter_ == &this_sensor &&
+             !this_sensor.negedge_count_changed() &&
+             !sensorA.negedge_count_changed() &&
+             !sensorB.negedge_count_changed() && !this_sensor.value()) {
+    negedge_filter_ = nullptr;
+    return true;
+  } else if (negedge_filter_ == &this_sensor) {
+    negedge_filter_ = nullptr;
+  }
+  return false;
+}
+
 bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     const constants::Values::Claws::AnglePair &angles, double *edge_encoder,
-    double *edge_angle, const HallEffectTracker &sensor,
+    double *edge_angle, const HallEffectTracker &this_sensor,
+    const HallEffectTracker &sensorA, const HallEffectTracker &sensorB,
     const char *hall_effect_name) {
   bool found_edge = false;
 
-  if (sensor.posedge_count_changed()) {
+  if (SawFilteredPosedge(this_sensor, sensorA, sensorB)) {
     if (min_hall_effect_off_angle_ == max_hall_effect_off_angle_) {
-      // we oddly got two of the same edge.
-      *edge_angle = last_edge_value_;
-      found_edge = true;
+      LOG(WARNING, "%s: Uncertain which side, rejecting posedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_off_angle_ + max_hall_effect_off_angle_) / 2.0;
@@ -251,14 +291,14 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
             name_, hall_effect_name, *edge_angle, posedge_value_,
             average_last_encoder);
       }
-    }
-    *edge_encoder = posedge_value_;
-    found_edge = true;
-  }
-  if (sensor.negedge_count_changed()) {
-    if (min_hall_effect_on_angle_ == max_hall_effect_on_angle_) {
-      *edge_angle = last_edge_value_;
+      *edge_encoder = posedge_value_;
       found_edge = true;
+    }
+  }
+
+  if (SawFilteredNegedge(this_sensor, sensorA, sensorB)) {
+    if (min_hall_effect_on_angle_ == max_hall_effect_on_angle_) {
+      LOG(WARNING, "%s: Uncertain which side, rejecting negedge\n", name_);
     } else {
       const double average_last_encoder =
           (min_hall_effect_on_angle_ + max_hall_effect_on_angle_) / 2.0;
@@ -274,12 +314,8 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
             average_last_encoder);
       }
       *edge_encoder = negedge_value_;
+      found_edge = true;
     }
-    found_edge = true;
-  }
-
-  if (found_edge) {
-    last_edge_value_ = *edge_angle;
   }
 
   return found_edge;
@@ -288,23 +324,16 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
 bool ZeroedStateFeedbackLoop::GetPositionOfEdge(
     const constants::Values::Claws::Claw &claw_values, double *edge_encoder,
     double *edge_angle) {
-  // TODO(austin): Validate that the hall effect edge makes sense.
-  // We must now be on the side of the edge that we expect to be, and the
-  // encoder must have been on either side of the edge before and after.
-
-  // TODO(austin): Compute the last off range min and max and compare the edge
-  // value to the middle of the range.  This will be quite a bit more reliable.
-
-  if (DoGetPositionOfEdge(claw_values.front, edge_encoder, edge_angle,
-                          front_, "front")) {
+  if (DoGetPositionOfEdge(claw_values.front, edge_encoder, edge_angle, front_,
+                          calibration_, back_, "front")) {
     return true;
   }
   if (DoGetPositionOfEdge(claw_values.calibration, edge_encoder, edge_angle,
-                          calibration_, "calibration")) {
+                          calibration_, front_, back_, "calibration")) {
     return true;
   }
-  if (DoGetPositionOfEdge(claw_values.back, edge_encoder, edge_angle,
-                          back_, "back")) {
+  if (DoGetPositionOfEdge(claw_values.back, edge_encoder, edge_angle, back_,
+                          calibration_, front_, "back")) {
     return true;
   }
   return false;
@@ -358,14 +387,12 @@ void LimitClawGoal(double *bottom_goal, double *top_goal,
 
   const double separation = *top_goal - *bottom_goal;
   if (separation > values.claw.claw_max_separation) {
-    LOG(DEBUG, "Greater than\n");
     const double dsep = (separation - values.claw.claw_max_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
     LOG(DEBUG, "Goals now bottom: %f, top: %f\n", *bottom_goal, *top_goal);
   }
   if (separation < values.claw.claw_min_separation) {
-    LOG(DEBUG, "Less than\n");
     const double dsep = (separation - values.claw.claw_min_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
@@ -396,7 +423,8 @@ bool ClawMotor::is_ready() const {
   return (
       (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
-      (::aos::robot_state->autonomous &&
+      (((::aos::robot_state.get() == NULL) ? true
+                                           : ::aos::robot_state->autonomous) &&
        ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
          top_claw_.zeroing_state() ==
              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
@@ -411,7 +439,7 @@ bool ClawMotor::is_zeroing() const { return !is_ready(); }
 void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                              const control_loops::ClawGroup::Position *position,
                              control_loops::ClawGroup::Output *output,
-                             ::aos::control_loops::Status *status) {
+                             control_loops::ClawGroup::Status *status) {
   constexpr double dt = 0.01;
 
   // Disable the motors now so that all early returns will return with the
@@ -420,15 +448,20 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     output->top_claw_voltage = 0;
     output->bottom_claw_voltage = 0;
     output->intake_voltage = 0;
+    output->tusk_voltage = 0;
+  }
+
+  if (goal) {
+    if (::std::isnan(goal->bottom_angle) ||
+        ::std::isnan(goal->separation_angle) || ::std::isnan(goal->intake) ||
+        ::std::isnan(goal->centering)) {
+      return;
+    }
   }
 
   if (reset()) {
     top_claw_.Reset(position->top);
     bottom_claw_.Reset(position->bottom);
-  }
-
-  if (::aos::robot_state.get() == nullptr) {
-    return;
   }
 
   const frc971::constants::Values &values = constants::GetValues();
@@ -454,25 +487,33 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       initial_separation_ =
           top_claw_.absolute_position() - bottom_claw_.absolute_position();
     }
-    LOG(DEBUG, "Claw position is (top: %f bottom: %f\n",
-        top_claw_.absolute_position(), bottom_claw_.absolute_position());
+    LOG_STRUCT(DEBUG, "absolute position",
+               ClawPositionToLog(top_claw_.absolute_position(),
+                                 bottom_claw_.absolute_position()));
   }
 
-  const bool autonomous = ::aos::robot_state->autonomous;
-  const bool enabled = ::aos::robot_state->enabled;
+  bool autonomous, enabled;
+  if (::aos::robot_state.get() == nullptr) {
+    autonomous = true;
+    enabled = false;
+  } else {
+    autonomous = ::aos::robot_state->autonomous;
+    enabled = ::aos::robot_state->enabled;
+  }
 
   double bottom_claw_velocity_ = 0.0;
   double top_claw_velocity_ = 0.0;
 
-  if ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
-       bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
-      (autonomous &&
-       ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
-         top_claw_.zeroing_state() ==
-             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
-        (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
-         bottom_claw_.zeroing_state() ==
-             ZeroedStateFeedbackLoop::DISABLED_CALIBRATION)))) {
+  if (goal != NULL &&
+      ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED &&
+        bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED) ||
+       (autonomous &&
+        ((top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+          top_claw_.zeroing_state() ==
+              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+         (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+          bottom_claw_.zeroing_state() ==
+              ZeroedStateFeedbackLoop::DISABLED_CALIBRATION))))) {
     // Ready to use the claw.
     // Limit the goals here.
     bottom_claw_goal_ = goal->bottom_angle;
@@ -483,9 +524,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
     mode_ = READY;
   } else if (top_claw_.zeroing_state() !=
-                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
+             ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
              bottom_claw_.zeroing_state() !=
-                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+             ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
     // Time to fine tune the zero.
     // Limit the goals here.
     if (!enabled) {
@@ -527,23 +568,22 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           mode_ = PREP_FINE_TUNE_BOTTOM;
         }
 
-        if (bottom_claw_.calibration().value()) {
-          if (bottom_claw_.calibration().posedge_count_changed() &&
-              position) {
-            // do calibration
-            bottom_claw_.SetCalibration(
-                position->bottom.posedge_value,
-                values.claw.lower_claw.calibration.lower_angle);
-            bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
-            // calibrated so we are done fine tuning bottom
-            doing_calibration_fine_tune_ = false;
-            LOG(DEBUG, "Calibrated the bottom correctly!\n");
-          } else {
-            doing_calibration_fine_tune_ = false;
-            bottom_claw_goal_ = values.claw.start_fine_tune_pos;
-            top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-            mode_ = PREP_FINE_TUNE_BOTTOM;
-          }
+        if (position && bottom_claw_.SawFilteredPosedge(
+                            bottom_claw_.calibration(), bottom_claw_.front(),
+                            bottom_claw_.back())) {
+          // do calibration
+          bottom_claw_.SetCalibration(
+              position->bottom.posedge_value,
+              values.claw.lower_claw.calibration.lower_angle);
+          bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+          // calibrated so we are done fine tuning bottom
+          doing_calibration_fine_tune_ = false;
+          LOG(DEBUG, "Calibrated the bottom correctly!\n");
+        } else if (bottom_claw_.calibration().last_value()) {
+          doing_calibration_fine_tune_ = false;
+          bottom_claw_goal_ = values.claw.start_fine_tune_pos;
+          top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
+          mode_ = PREP_FINE_TUNE_BOTTOM;
         } else {
           LOG(DEBUG, "Fine tuning\n");
         }
@@ -583,23 +623,23 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           LOG(DEBUG, "Found a limit, starting over.\n");
           mode_ = PREP_FINE_TUNE_TOP;
         }
-        if (top_claw_.calibration().value()) {
-          if (top_claw_.calibration().posedge_count_changed() &&
-              position) {
-            // do calibration
-            top_claw_.SetCalibration(
-                position->top.posedge_value,
-                values.claw.upper_claw.calibration.lower_angle);
-            top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
-            // calibrated so we are done fine tuning top
-            doing_calibration_fine_tune_ = false;
-            LOG(DEBUG, "Calibrated the top correctly!\n");
-          } else {
-            doing_calibration_fine_tune_ = false;
-            top_claw_goal_ = values.claw.start_fine_tune_pos;
-            top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-            mode_ = PREP_FINE_TUNE_TOP;
-          }
+
+        if (position &&
+            top_claw_.SawFilteredPosedge(top_claw_.calibration(),
+                                         top_claw_.front(), top_claw_.back())) {
+          // do calibration
+          top_claw_.SetCalibration(
+              position->top.posedge_value,
+              values.claw.upper_claw.calibration.lower_angle);
+          top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
+          // calibrated so we are done fine tuning top
+          doing_calibration_fine_tune_ = false;
+          LOG(DEBUG, "Calibrated the top correctly!\n");
+        } else if (top_claw_.calibration().last_value()) {
+          doing_calibration_fine_tune_ = false;
+          top_claw_goal_ = values.claw.start_fine_tune_pos;
+          top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
+          mode_ = PREP_FINE_TUNE_TOP;
         }
       }
       // now set the bottom claw to track
@@ -609,8 +649,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     doing_calibration_fine_tune_ = false;
     if (!was_enabled_ && enabled) {
       if (position) {
-        top_claw_goal_ = position->top.position;
-        bottom_claw_goal_ = position->bottom.position;
+        top_claw_goal_ = position->top.position + top_claw_.offset();
+        bottom_claw_goal_ = position->bottom.position + bottom_claw_.offset();
         initial_separation_ =
             position->top.position - position->bottom.position;
       } else {
@@ -644,18 +684,26 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       }
     }
 
-    if (enabled) {
-      top_claw_.SetCalibrationOnEdge(
-          values.claw.upper_claw, ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
-      bottom_claw_.SetCalibrationOnEdge(
-          values.claw.lower_claw, ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
-    } else {
-      // TODO(austin): Only calibrate on the predetermined edge.
-      // We might be able to just ignore this since the backlash is soooo low.  :)
-      top_claw_.SetCalibrationOnEdge(
-          values.claw.upper_claw, ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
-      bottom_claw_.SetCalibrationOnEdge(
-          values.claw.lower_claw, ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
+    if (position) {
+      if (enabled) {
+        top_claw_.SetCalibrationOnEdge(
+            values.claw.upper_claw,
+            ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+        bottom_claw_.SetCalibrationOnEdge(
+            values.claw.lower_claw,
+            ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+      } else {
+        // TODO(austin): Only calibrate on the predetermined edge.
+        // We might be able to just ignore this since the backlash is soooo
+        // low.
+        // :)
+        top_claw_.SetCalibrationOnEdge(
+            values.claw.upper_claw,
+            ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
+        bottom_claw_.SetCalibrationOnEdge(
+            values.claw.lower_claw,
+            ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
+      }
     }
     mode_ = UNKNOWN_LOCATION;
   }
@@ -672,8 +720,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     if (position != nullptr) {
       separation = position->top.position - position->bottom.position;
     }
-    LOG(DEBUG, "Goal is %f (bottom) %f, separation is %f\n", claw_.R(0, 0),
-        claw_.R(1, 0), separation);
+    LOG_STRUCT(DEBUG, "actual goal",
+               ClawGoalToLog(claw_.R(0, 0), claw_.R(1, 0), separation));
 
     // Only cap power when one of the halves of the claw is moving slowly and
     // could wind up.
@@ -709,8 +757,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
         U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
-        LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
-        LOG(DEBUG, "Uncapped is %f, max is %f, difference is %f\n",
+        LOG(DEBUG, "Moving the goal by %f to prevent windup."
+            " Uncapped is %f, max is %f, difference is %f\n",
+            dx,
             claw_.uncapped_average_voltage(), values.claw.max_zeroing_voltage,
             (claw_.uncapped_average_voltage() -
              values.claw.max_zeroing_voltage));
@@ -735,8 +784,19 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   }
 
   if (output) {
+    if (goal) {
+      //setup the intake
+      output->intake_voltage =
+          (goal->intake > 12.0) ? 12 : (goal->intake < -12.0) ? -12.0
+                                                              : goal->intake;
+      output->tusk_voltage = goal->centering;
+      output->tusk_voltage =
+          (goal->centering > 12.0) ? 12 : (goal->centering < -12.0)
+              ? -12.0
+              : goal->centering;
+    }
     output->top_claw_voltage = claw_.U(1, 0);
-    output->bottom_claw_voltage =  claw_.U(0, 0);
+    output->bottom_claw_voltage = claw_.U(0, 0);
 
     if (output->top_claw_voltage > kMaxVoltage) {
       output->top_claw_voltage = kMaxVoltage;
@@ -750,10 +810,41 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       output->bottom_claw_voltage = -kMaxVoltage;
     }
   }
-  status->done = false;
 
-  was_enabled_ = ::aos::robot_state->enabled;
+  status->bottom = bottom_absolute_position();
+  status->separation = top_absolute_position() - bottom_absolute_position();
+  status->bottom_velocity = claw_.X_hat(2, 0);
+  status->separation_velocity = claw_.X_hat(3, 0);
+
+  if (goal) {
+    bool bottom_done =
+        ::std::abs(bottom_absolute_position() - goal->bottom_angle) < 0.020;
+    bool bottom_velocity_done = ::std::abs(status->bottom_velocity) < 0.2;
+    bool separation_done =
+        ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                   goal->separation_angle) < 0.020;
+    bool separation_done_with_ball =
+        ::std::abs((top_absolute_position() - bottom_absolute_position()) -
+                   goal->separation_angle) < 0.06;
+    status->done = is_ready() && separation_done && bottom_done && bottom_velocity_done;
+    status->done_with_ball =
+        is_ready() && separation_done_with_ball && bottom_done && bottom_velocity_done;
+  } else {
+    status->done = status->done_with_ball = false;
+  }
+
+  status->zeroed = is_ready();
+  status->zeroed_for_auto =
+      (top_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+       top_claw_.zeroing_state() ==
+           ZeroedStateFeedbackLoop::DISABLED_CALIBRATION) &&
+      (bottom_claw_.zeroing_state() == ZeroedStateFeedbackLoop::CALIBRATED ||
+       bottom_claw_.zeroing_state() ==
+           ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
+
+  was_enabled_ = enabled;
 }
 
 }  // namespace control_loops
 }  // namespace frc971
+

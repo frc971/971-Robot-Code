@@ -7,11 +7,11 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<4, 2, 2> MakeDogDrivetrainPlantCoefficients() {
+StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainPlantCoefficients() {
   Eigen::Matrix<double, 4, 4> A;
-  A << 1.0, 0.00923787174605, 0.0, 0.000131162317098, 0.0, 0.851672729447, 0.0, 0.0248457251406, 0.0, 0.000131162317098, 1.0, 0.00923787174605, 0.0, 0.0248457251406, 0.0, 0.851672729447;
+  A << 1.0, 0.00860955515291, 0.0, 0.000228184998733, 0.0, 0.735841675858, 0.0, 0.0410810558113, 0.0, 0.000228184998733, 1.0, 0.00860955515291, 0.0, 0.0410810558113, 0.0, 0.735841675858;
   Eigen::Matrix<double, 4, 2> B;
-  B << 0.000126364935405, -2.17474127771e-05, 0.0245934537462, -0.00411955394149, -2.17474127771e-05, 0.000126364935405, -0.00411955394149, 0.0245934537462;
+  B << 0.000272244648044, -4.46778919705e-05, 0.0517213538779, -0.00804353916233, -4.46778919705e-05, 0.000272244648044, -0.00804353916233, 0.0517213538779;
   Eigen::Matrix<double, 2, 4> C;
   C << 1, 0, 0, 0, 0, 0, 1, 0;
   Eigen::Matrix<double, 2, 2> D;
@@ -23,23 +23,23 @@ StateFeedbackPlantCoefficients<4, 2, 2> MakeDogDrivetrainPlantCoefficients() {
   return StateFeedbackPlantCoefficients<4, 2, 2>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackController<4, 2, 2> MakeDogDrivetrainController() {
+StateFeedbackController<4, 2, 2> MakeDrivetrainController() {
   Eigen::Matrix<double, 4, 2> L;
-  L << 1.69167272945, 0.0248457251406, 64.4706646869, 3.2355304474, 0.0248457251406, 1.69167272945, 3.2355304474, 64.4706646869;
+  L << 1.57584167586, 0.0410810558113, 50.0130674801, 4.93325200717, 0.0410810558113, 1.57584167586, 4.93325200717, 50.0130674801;
   Eigen::Matrix<double, 2, 4> K;
-  K << 248.918529922, 14.4460993245, 41.6953764051, 3.43594323497, 41.6953764051, 3.43594323497, 248.918529922, 14.4460993245;
-  return StateFeedbackController<4, 2, 2>(L, K, MakeDogDrivetrainPlantCoefficients());
+  K << 128.210620632, 6.93828382074, 5.11036686771, 0.729493080206, 5.1103668677, 0.729493080206, 128.210620632, 6.93828382074;
+  return StateFeedbackController<4, 2, 2>(L, K, MakeDrivetrainPlantCoefficients());
 }
 
-StateFeedbackPlant<4, 2, 2> MakeDogDrivetrainPlant() {
+StateFeedbackPlant<4, 2, 2> MakeDrivetrainPlant() {
   ::std::vector<StateFeedbackPlantCoefficients<4, 2, 2> *> plants(1);
-  plants[0] = new StateFeedbackPlantCoefficients<4, 2, 2>(MakeDogDrivetrainPlantCoefficients());
+  plants[0] = new StateFeedbackPlantCoefficients<4, 2, 2>(MakeDrivetrainPlantCoefficients());
   return StateFeedbackPlant<4, 2, 2>(plants);
 }
 
-StateFeedbackLoop<4, 2, 2> MakeDogDrivetrainLoop() {
+StateFeedbackLoop<4, 2, 2> MakeDrivetrainLoop() {
   ::std::vector<StateFeedbackController<4, 2, 2> *> controllers(1);
-  controllers[0] = new StateFeedbackController<4, 2, 2>(MakeDogDrivetrainController());
+  controllers[0] = new StateFeedbackController<4, 2, 2>(MakeDrivetrainController());
   return StateFeedbackLoop<4, 2, 2>(controllers);
 }
 

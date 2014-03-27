@@ -177,16 +177,14 @@ void Queue<T>::Clear() {
     queue_ = NULL;
     queue_msg_.set_queue(NULL);
   }
+  index_ = 0;
 }
 
 template <class T>
 bool Queue<T>::FetchNext() {
   Init();
-  // TODO(aschuh): Use RawQueue::ReadMessageIndex so that multiple readers
-  // reading don't randomly get only part of the messages.
-  // Document here the tradoffs that are part of each method.
   const T *msg = static_cast<const T *>(
-      queue_->ReadMessage(RawQueue::kNonBlock));
+      queue_->ReadMessageIndex(RawQueue::kNonBlock, &index_));
   // Only update the internal pointer if we got a new message.
   if (msg != NULL) {
     queue_msg_.reset(msg);
@@ -197,7 +195,7 @@ bool Queue<T>::FetchNext() {
 template <class T>
 bool Queue<T>::FetchNextBlocking() {
   Init();
-  const T *msg = static_cast<const T *>(queue_->ReadMessage(RawQueue::kBlock));
+  const T *msg = static_cast<const T *>(queue_->ReadMessageIndex(RawQueue::kBlock, &index_));
   queue_msg_.reset(msg);
   assert (msg != NULL);
   return true;
@@ -206,8 +204,8 @@ bool Queue<T>::FetchNextBlocking() {
 template <class T>
 bool Queue<T>::FetchLatest() {
   Init();
-  const T *msg = static_cast<const T *>(queue_->ReadMessage(
-          RawQueue::kFromEnd | RawQueue::kNonBlock | RawQueue::kPeek));
+  const T *msg = static_cast<const T *>(queue_->ReadMessageIndex(
+          RawQueue::kFromEnd | RawQueue::kNonBlock, &index_));
   // Only update the internal pointer if we got a new message.
   if (msg != NULL && msg != queue_msg_.get()) {
     queue_msg_.reset(msg);

@@ -76,11 +76,11 @@ else
   fi
   ${NINJA} -C ${OUTDIR} ${NINJA_ACTION} "$@"
   if [[ ${ACTION} == deploy ]]; then
-    [[ ${PLATFORM} == linux ]] && \
+    [[ ${PLATFORM} == linux ]] && ( \
       rsync --progress -c -r \
         ${OUTDIR}/outputs/* \
         driver@`${AOS}/build/get_ip prime`:/home/driver/robot_code/bin
-	  ssh driver@`${AOS}/build/get_ip prime` "sync; sync; sync"
+	ssh driver@`${AOS}/build/get_ip prime` "sync; sync; sync" )
     [ ${PLATFORM} == crio ] && \
       ncftpput `${AOS}/build/get_ip robot` / \
       ${OUTDIR}/lib/FRC_UserProgram.out

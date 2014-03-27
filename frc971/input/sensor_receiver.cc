@@ -9,7 +9,7 @@
 #include "bbb/sensor_reader.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/queues/gyro_angle.q.h"
+#include "frc971/queues/other_sensors.q.h"
 #include "frc971/constants.h"
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
@@ -20,7 +20,8 @@
 #endif
 
 using ::frc971::control_loops::drivetrain;
-using ::frc971::sensors::gyro;
+using ::frc971::sensors::other_sensors;
+using ::frc971::sensors::gyro_reading;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
@@ -47,29 +48,47 @@ double drivetrain_translate(int32_t in) {
 }
 
 // Translates values from the ADC into voltage.
-// TODO(brian): Fix this.
+// TODO(brian): Tune this to the actual hardware.
 double adc_translate(uint16_t in) {
   static const double kVcc = 5;
   static const double kR1 = 5, kR2 = 6.65;
   static const uint16_t kMaximumValue = 0x3FF;
-  return (kVcc *
-              (static_cast<double>(in) / static_cast<double>(kMaximumValue)) -
-          kVcc * kR1) /
-         kR2;
+  const double raw =
+      (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
+  return (raw * (kR1 + kR2) - (kVcc / 2) * kR2) / kR1;
 }
 
 double gyro_translate(int64_t in) {
   return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
-double battery_translate(uint16_t in) {
-  static const double kDividerBig = 98.9, kDividerSmall = 17.8;
-  return adc_translate(in) * kDividerBig / kDividerSmall;
+double battery_translate(uint16_t in_high, uint16_t in_low) {
+  const double high = adc_translate(in_high), low = adc_translate(in_low);
+  static const double kDividerBig = 5.55, kDividerSmall = 2.66;
+  static const double kSensorVcc = 5.0;
+  return (high - low) * (kDividerBig + kDividerSmall) / kDividerSmall +
+         kDividerBig / kDividerSmall * kSensorVcc;
 }
 
-double hall_translate(const constants::ShifterHallEffect &k, uint16_t in) {
-  const double voltage = adc_translate(in);
-  return (voltage - k.low) / (k.high - k.low);
+double sonar_translate(uint32_t in) {
+  return static_cast<double>(in) / 1000.0 * 2.0;
+}
+
+double hall_translate(const constants::ShifterHallEffect &k, uint16_t in_low,
+                      uint16_t in_high) {
+  const double low_ratio =
+      0.5 * (in_low - static_cast<double>(k.low_gear_low)) /
+      static_cast<double>(k.low_gear_middle - k.low_gear_low);
+  const double high_ratio =
+      0.5 + 0.5 * (in_high - static_cast<double>(k.high_gear_middle)) /
+      static_cast<double>(k.high_gear_high - k.high_gear_middle);
+
+  // Return low when we are below 1/2, and high when we are above 1/2.
+  if (low_ratio + high_ratio < 1.0) {
+    return low_ratio;
+  } else {
+    return high_ratio;
+  }
 }
 
 double claw_translate(int32_t in) {
@@ -77,7 +96,8 @@ double claw_translate(int32_t in) {
       / (256.0 /*cpr*/ * 4.0 /*quad*/)
       / (18.0 / 48.0 /*encoder gears*/)
       / (12.0 / 60.0 /*chain reduction*/)
-      * (M_PI / 180.0);
+      * (M_PI / 180.0)
+      * 2.0 /*TODO(austin): Debug this, encoders read too little*/;
 }
 
 double shooter_translate(int32_t in) {
@@ -119,9 +139,12 @@ void PacketReceived(const ::bbb::DataStruct *data,
                     State *state) {
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp.sec(), cape_timestamp.nsec(),
-      data->main.ultrasonic_pulse_length);
+      sizeof(*data), sonar_translate(data->main.ultrasonic_pulse_length),
+      data->main.low_left_drive_hall, data->main.high_left_drive_hall,
+      data->main.low_right_drive_hall, data->main.high_right_drive_hall);
   LOG_STRUCT(DEBUG, "cape reading", reading_to_log);
   bool bad_gyro;
+  // TODO(brians): Switch to LogInterval for these things.
   if (data->uninitialized_gyro) {
     LOG(DEBUG, "uninitialized gyro\n");
     bad_gyro = true;
@@ -131,7 +154,6 @@ void PacketReceived(const ::bbb::DataStruct *data,
   } else if (data->bad_gyro) {
     LOG(ERROR, "bad gyro\n");
     bad_gyro = true;
-    gyro.MakeWithBuilder().angle(0).Send();
   } else if (data->old_gyro_reading) {
     LOG(WARNING, "old/bad gyro reading\n");
     bad_gyro = true;
@@ -140,19 +162,30 @@ void PacketReceived(const ::bbb::DataStruct *data,
   }
 
   if (!bad_gyro) {
-    gyro.MakeWithBuilder()
+    gyro_reading.MakeWithBuilder()
         .angle(gyro_translate(data->gyro_angle))
         .Send();
   }
+
+  if (data->analog_errors != 0) {
+    LOG(WARNING, "%" PRIu8 " analog errors\n", data->analog_errors);
+  }
+
+  other_sensors.MakeWithBuilder()
+      .sonar_distance(sonar_translate(data->main.ultrasonic_pulse_length))
+      .Send();
 
   drivetrain.position.MakeWithBuilder()
       .right_encoder(drivetrain_translate(data->main.right_drive))
       .left_encoder(-drivetrain_translate(data->main.left_drive))
       .left_shifter_position(hall_translate(constants::GetValues().left_drive,
-                                            data->main.left_drive_hall))
-      .right_shifter_position(hall_translate(
-              constants::GetValues().right_drive, data->main.right_drive_hall))
-      .battery_voltage(battery_translate(data->main.battery_voltage))
+                                            data->main.low_left_drive_hall,
+                                            data->main.high_left_drive_hall))
+      .right_shifter_position(hall_translate(constants::GetValues().right_drive,
+                                             data->main.low_right_drive_hall,
+                                             data->main.high_right_drive_hall))
+      .battery_voltage(battery_translate(data->main.battery_voltage_high,
+                                         data->main.battery_voltage_low))
       .Send();
 
   {

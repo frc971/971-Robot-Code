@@ -187,7 +187,7 @@ class Target::MessageDec < Target::StructBase
 		type_class.set_parent("public ::aos::Message")
 		ts = self.simpleStr()
 		self.msg_hash = "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
-		type_class.add_member("enum {kQueueLength = 1234, kHash = #{self.msg_hash}}")
+		type_class.add_member("enum {kQueueLength = 200, kHash = #{self.msg_hash}}")
 		@members.each do |elem|
 			type_class.add_member(elem.create_usage(cpp_tree))
 		end
@@ -284,9 +284,9 @@ class Target::MessageElement < Target::Node
 		f_call.args.dont_wrap = true
 	end
 	def getTypeID()
-		Digest::SHA1.hexdigest(@type)[0..7].to_i(16) |
+		'0x' + ((Digest::SHA1.hexdigest(@type)[0..3].to_i(16) << 16) |
                 0x2000 | # marks it as primitive
-                size
+                size).to_s(16)
 	end
 	def simpleStr()
 		"#{@type} #{@name}"

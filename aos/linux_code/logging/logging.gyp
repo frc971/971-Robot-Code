@@ -11,6 +11,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
+        '<(AOS)/common/common.gyp:die',
         'binary_log_file',
         '<(AOS)/common/common.gyp:queue_types',
       ],

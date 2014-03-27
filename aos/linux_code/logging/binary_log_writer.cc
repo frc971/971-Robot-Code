@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #include <map>
 #include <unordered_set>
@@ -17,6 +18,7 @@
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/configuration.h"
 #include "aos/common/queue_types.h"
+#include "aos/common/die.h"
 
 namespace aos {
 namespace logging {
@@ -58,6 +60,47 @@ void CheckTypeWritten(uint32_t type_id, LogFileAccessor &writer) {
   written_type_ids.insert(type_id);
 }
 
+void AllocateLogName(char **filename, const char *directory) {
+  int fileindex = 0;
+  DIR *d;
+  if ((d = opendir(directory))) {
+    int index = 0;
+    struct dirent *dir;
+    while ((dir = readdir(d)) != NULL) {
+      if (sscanf(dir->d_name, "aos_log-%d", &index) == 1) {
+        if (index >= fileindex) {
+          fileindex = index + 1;
+        }
+      }
+    }
+    closedir(d);
+  } else {
+    aos::Die("could not open directory %s because of %d (%s).\n", directory,
+             errno, strerror(errno));
+  }
+
+  char previous[512];
+  ::std::string path = ::std::string(directory) + "/aos_log-current";
+  ssize_t len = ::readlink(path.c_str(), previous, sizeof(previous));
+  if (len != -1) {
+    previous[len] = '\0';
+  } else {
+    previous[0] = '\0';
+    LOG(INFO, "Could not find aos_log-current\n");
+    printf("Could not find aos_log-current\n");
+  }
+  if (asprintf(filename, "%s/aos_log-%03d", directory, fileindex) == -1) {
+    aos::Die("couldn't create final name because of %d (%s)\n",
+             errno, strerror(errno));
+  }
+  LOG(INFO, "Created log file (aos_log-%d) in directory (%s). Previous file "
+            "was (%s).\n",
+      fileindex, directory, previous);
+  printf("Created log file (aos_log-%d) in directory (%s). Previous file was "
+         "(%s).\n",
+         fileindex, directory, previous);
+}
+
 int BinaryLogReaderMain() {
   InitNRT();
 
@@ -67,15 +110,8 @@ int BinaryLogReaderMain() {
   }
   LOG(INFO, "logging to folder '%s'\n", folder);
 
-  const time_t t = time(NULL);
   char *tmp;
-  if (asprintf(&tmp, "%s/aos_log-%jd", folder, static_cast<uintmax_t>(t)) ==
-      -1) {
-    fprintf(stderr,
-            "BinaryLogReader: couldn't create final name because of %d (%s)."
-            " exiting\n", errno, strerror(errno));
-    return EXIT_FAILURE;
-  }
+  AllocateLogName(&tmp, folder);
   char *tmp2;
   if (asprintf(&tmp2, "%s/aos_log-current", folder) == -1) {
     fprintf(stderr,
@@ -118,14 +154,19 @@ int BinaryLogReaderMain() {
     const LogMessage *const msg = ReadNext();
     if (msg == NULL) continue;
 
-    size_t output_length =
+    const size_t raw_output_length =
         sizeof(LogFileMessageHeader) + msg->name_length + msg->message_length;
+    size_t output_length = raw_output_length;
     if (msg->type == LogMessage::Type::kStruct) {
       output_length += sizeof(msg->structure.type_id) + sizeof(uint32_t) +
                        msg->structure.string_length;
       CheckTypeWritten(msg->structure.type_id, writer);
+    } else if (msg->type == LogMessage::Type::kMatrix) {
+      output_length +=
+          sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
+          sizeof(uint16_t) + msg->matrix.string_length;
     }
-    LogFileMessageHeader *const output = writer.GetWritePosition(output_length);;
+    LogFileMessageHeader *const output = writer.GetWritePosition(output_length);
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
     output->name_size = msg->name_length;
     output->message_size = msg->message_length;
@@ -142,10 +183,11 @@ int BinaryLogReaderMain() {
                msg->message_length);
         output->type = LogFileMessageHeader::MessageType::kString;
         break;
-      case LogMessage::Type::kStruct:
+      case LogMessage::Type::kStruct: {
         char *position = output_strings + msg->name_length;
 
-        memcpy(position, &msg->structure.type_id, sizeof(msg->structure.type_id));
+        memcpy(position, &msg->structure.type_id,
+               sizeof(msg->structure.type_id));
         position += sizeof(msg->structure.type_id);
         output->message_size += sizeof(msg->structure.type_id);
 
@@ -161,7 +203,39 @@ int BinaryLogReaderMain() {
                msg->message_length);
 
         output->type = LogFileMessageHeader::MessageType::kStruct;
-        break;
+      } break;
+      case LogMessage::Type::kMatrix: {
+        char *position = output_strings + msg->name_length;
+
+        memcpy(position, &msg->matrix.type, sizeof(msg->matrix.type));
+        position += sizeof(msg->matrix.type);
+        output->message_size += sizeof(msg->matrix.type);
+
+        uint32_t length = msg->matrix.string_length;
+        memcpy(position, &length, sizeof(length));
+        position += sizeof(length);
+        output->message_size += sizeof(length);
+
+        uint16_t rows = msg->matrix.rows, cols = msg->matrix.cols;
+        memcpy(position, &rows, sizeof(rows));
+        position += sizeof(rows);
+        memcpy(position, &cols, sizeof(cols));
+        position += sizeof(cols);
+        output->message_size += sizeof(rows) + sizeof(cols);
+        CHECK_EQ(msg->message_length,
+                 MessageType::Sizeof(msg->matrix.type) * rows * cols);
+
+        memcpy(position, msg->matrix.data, msg->message_length + length);
+        output->message_size += length;
+
+        output->type = LogFileMessageHeader::MessageType::kMatrix;
+      } break;
+    }
+
+    if (output->message_size - msg->message_length !=
+        output_length - raw_output_length) {
+      LOG(FATAL, "%zu != %zu\n", output->message_size - msg->message_length,
+          output_length - raw_output_length);
     }
 
     futex_set(&output->marker);

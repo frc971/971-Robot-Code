@@ -38,6 +38,8 @@ struct DATA_STRUCT_NAME {
       // contents of flash for the main code (aka what's in the .hex file).
       uint32_t flash_checksum;
 
+      uint8_t analog_errors;
+
       struct {
         // If the current gyro_angle has been not updated because of a bad
         // reading from the sensor.
@@ -86,10 +88,12 @@ struct DATA_STRUCT_NAME {
       int32_t shooter_position, pusher_distal_posedge_position,
           pusher_proximal_posedge_position;
 
-      uint16_t left_drive_hall;
-      uint16_t right_drive_hall;
+      uint16_t low_left_drive_hall;
+      uint16_t high_left_drive_hall;
+      uint16_t low_right_drive_hall;
+      uint16_t high_right_drive_hall;
 
-      uint16_t battery_voltage;
+      uint16_t battery_voltage_high, battery_voltage_low;
 
       HallEffectEdges pusher_distal, pusher_proximal;
 

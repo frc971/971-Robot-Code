@@ -1,6 +1,19 @@
 {
   'targets': [
     {
+      'target_name': 'led_setter',
+      'type': 'executable',
+      'sources': [
+        'led_setter.cc',
+      ],
+      'dependencies': [
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:led',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+    },
+    {
       'target_name': 'CameraServer',
       'type': 'executable',
       'sources': [
@@ -24,7 +37,7 @@
     },
     {
       'target_name': 'motor_writer',
-      'type': '<(aos_target)',
+      'type': 'executable',
       'sources': [
         'motor_writer.cc'
       ],

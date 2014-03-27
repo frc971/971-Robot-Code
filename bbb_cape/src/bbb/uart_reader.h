@@ -23,8 +23,6 @@ class UartReader : public ByteReaderWriterInterface {
 
  private:
   const int fd_;
-  // Gets initialized to only contain fd_.
-  fd_set fd_set_;
 
   DISALLOW_COPY_AND_ASSIGN(UartReader);
 };

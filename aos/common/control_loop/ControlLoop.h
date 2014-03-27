@@ -51,7 +51,8 @@ time::Time NextLoopTime(time::Time start = time::Time::Now());
 // If has_position is false, the control loop will always use NULL as the
 // position and not check the queue.  This is used for "loops" that control
 // motors open loop.
-template <class T, bool has_position = true, bool fail_no_position = true>
+template <class T, bool has_position = true, bool fail_no_position = true,
+         bool fail_no_goal = true>
 class ControlLoop : public SerializableControlLoop {
  public:
   // Maximum age of position packets before the loop will be disabled due to
@@ -79,9 +80,12 @@ class ControlLoop : public SerializableControlLoop {
     decltype(*(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type
       OutputType;
 
-  // Constructs and sends a message on the output queue which will stop all the
-  // motors.  Calls Zero to clear all the state.
-  void ZeroOutputs();
+  // Constructs and sends a message on the output queue which sets everything to
+  // a safe state (generally motors off). For some subclasses, this will be a
+  // bit different (ie pistons).
+  // The implementation here creates a new Output message, calls Zero() on it,
+  // and then sends it.
+  virtual void ZeroOutputs();
 
   // Returns true if the device reading the sensors reset and potentially lost
   // track of encoder counts.  Calling this read method clears the flag.  After
@@ -138,6 +142,9 @@ class ControlLoop : public SerializableControlLoop {
                             const PositionType *position,
                             OutputType *output,
                             StatusType *status) = 0;
+
+  T *queue_group() { return control_loop_; }
+  const T *queue_group() const { return control_loop_; }
 
  private:
   // Pointer to the queue group

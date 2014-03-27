@@ -8,10 +8,11 @@
       ],
       'dependencies': [
         '<(AOS)/common/input/input.gyp:driver_station_data',
-        '<(AOS)/common/messages/messages.gyp:aos_queues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/common/network/network.gyp:socket',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/input/input.gyp:driver_station_data',

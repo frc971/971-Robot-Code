@@ -4,6 +4,12 @@ message RobotState {
 	bool enabled;
 	bool autonomous;
 	uint16_t team_id;
+	// If this is true, then this message isn't actually from the control
+	// system and so should not be trusted as evidence that the button inputs
+	// etc are actually real and should be acted on.
+	// However, most things should ignore this so that sending fake messages is
+	// useful for testing.
+	bool fake;
 };
 
 // The robot_state Queue is checked by all control loops to make sure that the

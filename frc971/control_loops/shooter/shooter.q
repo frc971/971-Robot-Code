@@ -41,10 +41,14 @@ queue_group ShooterGroup {
     // Whether it's ready to shoot right now.
     bool ready;
     // Whether the plunger is in and out of the way of grabbing a ball.
+    // TODO(ben): Populate these!
     bool cocked;
     // How many times we've shot.
     int32_t shots;
     bool done;
+    // What we think the current position of the hard stop on the shooter is, in
+    // shot power (Joules).
+    double hard_stop_power;
   };
 
   queue Goal goal;
@@ -54,3 +58,43 @@ queue_group ShooterGroup {
 };
 
 queue_group ShooterGroup shooter_queue_group;
+
+struct ShooterStateToLog {
+	double absolute_position;
+	double absolute_velocity;
+	uint32_t state;
+	bool latch_sensor;
+	bool proximal;
+	bool distal;
+	bool plunger;
+	bool brake;
+	bool latch_piston;
+};
+
+struct ShooterVoltageToLog {
+	double X_hat;
+	double applied;
+};
+
+struct ShooterMovingGoal {
+	double dx;
+};
+
+struct ShooterChangeCalibration {
+	double encoder;
+	double real_position;
+	double old_position;
+	double new_position;
+	double old_offset;
+	double new_offset;
+};
+
+struct ShooterStatusToLog {
+	double goal;
+	double position;
+};
+
+struct PowerAdjustment {
+	double requested_power;
+	double actual_power;
+};

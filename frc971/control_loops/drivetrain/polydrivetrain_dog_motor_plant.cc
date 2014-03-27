@@ -7,11 +7,11 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowLowPlantCoefficients() {
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowLowPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.851672729447, 0.0248457251406, 0.0248457251406, 0.851672729447;
+  A << 0.735841675858, 0.0410810558113, 0.0410810558113, 0.735841675858;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0245934537462, -0.00411955394149, -0.00411955394149, 0.0245934537462;
+  B << 0.0517213538779, -0.00804353916233, -0.00804353916233, 0.0517213538779;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -23,11 +23,11 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowLowPlantCoef
   return StateFeedbackPlantCoefficients<2, 2, 2>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowHighPlantCoefficients() {
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowHighPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.851389310398, 0.00553670185935, 0.0264939835067, 0.967000817219;
+  A << 0.735048848179, 0.0131811893199, 0.045929121897, 0.915703853642;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0246404461385, -0.00200815724925, -0.00439284398274, 0.0119687766843;
+  B << 0.0518765869984, -0.00481755802263, -0.00899277497558, 0.0308091755839;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -39,11 +39,11 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainLowHighPlantCoe
   return StateFeedbackPlantCoefficients<2, 2, 2>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighLowPlantCoefficients() {
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighLowPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.967000817219, 0.0264939835067, 0.00553670185935, 0.851389310398;
+  A << 0.915703853642, 0.045929121897, 0.0131811893199, 0.735048848179;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0119687766843, -0.00439284398274, -0.00200815724925, 0.0246404461385;
+  B << 0.0308091755839, -0.00899277497558, -0.00481755802263, 0.0518765869984;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -55,11 +55,11 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighLowPlantCoe
   return StateFeedbackPlantCoefficients<2, 2, 2>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighHighPlantCoefficients() {
+StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighHighPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.966936300149, 0.00589655754287, 0.00589655754287, 0.966936300149;
+  A << 0.915439806567, 0.0146814193986, 0.0146814193986, 0.915439806567;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0119921769728, -0.00213867661221, -0.00213867661221, 0.0119921769728;
+  B << 0.0309056814511, -0.00536587314624, -0.00536587314624, 0.0309056814511;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -71,53 +71,53 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeDogVelocityDrivetrainHighHighPlantCo
   return StateFeedbackPlantCoefficients<2, 2, 2>(A, B, C, D, U_max, U_min);
 }
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainLowLowController() {
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowLowController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.831672729447, 0.0248457251406, 0.0248457251406, 0.831672729447;
+  L << 0.715841675858, 0.0410810558113, 0.0410810558113, 0.715841675858;
   Eigen::Matrix<double, 2, 2> K;
-  K << 10.7028500331, 2.80305051463, 2.80305051463, 10.7028500331;
-  return StateFeedbackController<2, 2, 2>(L, K, MakeDogVelocityDrivetrainLowLowPlantCoefficients());
+  K << 2.81809403994, 1.23253744933, 1.23253744933, 2.81809403994;
+  return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainLowLowPlantCoefficients());
 }
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainLowHighController() {
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowHighController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.831852326508, 0.0264837489415, 0.0264837489415, 0.946537801108;
+  L << 0.715885457343, 0.0459077351335, 0.0459077351335, 0.894867244478;
   Eigen::Matrix<double, 2, 2> K;
-  K << 10.7028511964, 2.80768406175, 6.14180888507, 31.6936764099;
-  return StateFeedbackController<2, 2, 2>(L, K, MakeDogVelocityDrivetrainLowHighPlantCoefficients());
+  K << 2.81810038978, 1.23928174475, 2.31332592354, 10.6088017388;
+  return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainLowHighPlantCoefficients());
 }
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainHighLowController() {
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighLowController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.951097545753, 0.0063707209266, 0.0063707209266, 0.827292581863;
+  L << 0.902328849033, 0.014581304798, 0.014581304798, 0.708423852788;
   Eigen::Matrix<double, 2, 2> K;
-  K << 31.6936764099, 6.14180888507, 2.80768406175, 10.7028511964;
-  return StateFeedbackController<2, 2, 2>(L, K, MakeDogVelocityDrivetrainHighLowPlantCoefficients());
+  K << 10.6088017388, 2.31332592354, 1.23928174475, 2.81810038978;
+  return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainHighLowPlantCoefficients());
 }
 
-StateFeedbackController<2, 2, 2> MakeDogVelocityDrivetrainHighHighController() {
+StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighHighController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.946936300149, 0.00589655754287, 0.00589655754287, 0.946936300149;
+  L << 0.895439806567, 0.0146814193986, 0.0146814193986, 0.895439806567;
   Eigen::Matrix<double, 2, 2> K;
-  K << 31.6936764663, 6.14392885659, 6.14392885659, 31.6936764663;
-  return StateFeedbackController<2, 2, 2>(L, K, MakeDogVelocityDrivetrainHighHighPlantCoefficients());
+  K << 10.6088022944, 2.31694961514, 2.31694961514, 10.6088022944;
+  return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainHighHighPlantCoefficients());
 }
 
-StateFeedbackPlant<2, 2, 2> MakeVDogDrivetrainPlant() {
+StateFeedbackPlant<2, 2, 2> MakeVelocityDrivetrainPlant() {
   ::std::vector<StateFeedbackPlantCoefficients<2, 2, 2> *> plants(4);
-  plants[0] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeDogVelocityDrivetrainLowLowPlantCoefficients());
-  plants[1] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeDogVelocityDrivetrainLowHighPlantCoefficients());
-  plants[2] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeDogVelocityDrivetrainHighLowPlantCoefficients());
-  plants[3] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeDogVelocityDrivetrainHighHighPlantCoefficients());
+  plants[0] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeVelocityDrivetrainLowLowPlantCoefficients());
+  plants[1] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeVelocityDrivetrainLowHighPlantCoefficients());
+  plants[2] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeVelocityDrivetrainHighLowPlantCoefficients());
+  plants[3] = new StateFeedbackPlantCoefficients<2, 2, 2>(MakeVelocityDrivetrainHighHighPlantCoefficients());
   return StateFeedbackPlant<2, 2, 2>(plants);
 }
 
-StateFeedbackLoop<2, 2, 2> MakeVDogDrivetrainLoop() {
+StateFeedbackLoop<2, 2, 2> MakeVelocityDrivetrainLoop() {
   ::std::vector<StateFeedbackController<2, 2, 2> *> controllers(4);
-  controllers[0] = new StateFeedbackController<2, 2, 2>(MakeDogVelocityDrivetrainLowLowController());
-  controllers[1] = new StateFeedbackController<2, 2, 2>(MakeDogVelocityDrivetrainLowHighController());
-  controllers[2] = new StateFeedbackController<2, 2, 2>(MakeDogVelocityDrivetrainHighLowController());
-  controllers[3] = new StateFeedbackController<2, 2, 2>(MakeDogVelocityDrivetrainHighHighController());
+  controllers[0] = new StateFeedbackController<2, 2, 2>(MakeVelocityDrivetrainLowLowController());
+  controllers[1] = new StateFeedbackController<2, 2, 2>(MakeVelocityDrivetrainLowHighController());
+  controllers[2] = new StateFeedbackController<2, 2, 2>(MakeVelocityDrivetrainHighLowController());
+  controllers[3] = new StateFeedbackController<2, 2, 2>(MakeVelocityDrivetrainHighHighController());
   return StateFeedbackLoop<2, 2, 2>(controllers);
 }
 

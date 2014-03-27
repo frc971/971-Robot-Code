@@ -30,6 +30,9 @@ class SprungShooter(control_loop.ControlLoop):
     self.Kt = self.stall_torque / self.stall_current
     # Spring constant for the springs, N/m
     self.Ks = 2800.0
+    # Maximum extension distance (Distance from the 0 force point on the
+    # spring to the latch position.)
+    self.max_extension = 0.32385
     # Gear ratio multiplied by radius of final sprocket.
     self.G = 10.0 / 40.0 * 20.0 / 54.0 * 24.0 / 54.0 * 20.0 / 84.0 * 16.0 * (3.0 / 8.0) / (2.0 * numpy.pi) * 0.0254
 
@@ -235,7 +238,13 @@ def main(argv):
 
     sprung_shooter = SprungShooterDeltaU()
     shooter = ShooterDeltaU()
-    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter, shooter])
+    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter,
+                                                             shooter])
+
+    loop_writer.AddConstant(control_loop.Constant("kMaxExtension", "%f",
+                                                  sprung_shooter.max_extension))
+    loop_writer.AddConstant(control_loop.Constant("kSpringConstant", "%f",
+                                                  sprung_shooter.Ks))
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:

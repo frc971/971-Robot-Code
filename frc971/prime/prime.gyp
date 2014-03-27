@@ -13,6 +13,10 @@
         '../control_loops/shooter/shooter.gyp:shooter',
         '../control_loops/shooter/shooter.gyp:shooter_lib_test',
         '../autonomous/autonomous.gyp:auto',
+        '../actions/actions.gyp:shoot_action',
+        '../actions/actions.gyp:selfcatch_action',
+        '../actions/actions.gyp:catch_action',
+        '../actions/actions.gyp:drivetrain_action',
         '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
@@ -21,12 +25,13 @@
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
         '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
+        '../output/output.gyp:led_setter',
       ],
       'copies': [
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'scripts/start_list.txt',
+            'start_list.txt',
           ],
         },
       ],

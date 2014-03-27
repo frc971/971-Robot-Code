@@ -23,6 +23,7 @@ class Claw(control_loop.ControlLoop):
     # measured from CAD
     self.J_top = 0.3
     self.J_bottom = 0.9
+
     # Resistance of the motor
     self.R = 12.0 / self.stall_current
     # Motor velocity constant
@@ -144,8 +145,8 @@ class Claw(control_loop.ControlLoop):
     print "eigenvalues"
     print numpy.linalg.eig(F)[0]
 
-    self.rpl = .05
-    self.ipl = 0.008
+    self.rpl = .02
+    self.ipl = 0.004
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl,

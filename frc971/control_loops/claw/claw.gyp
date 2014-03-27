@@ -31,6 +31,7 @@
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(DEPTH)/aos/build/externals.gyp:libcdd',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:coerce_goal',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
         'claw_loop',

@@ -12,6 +12,7 @@ using ::aos::time::Time;
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init();
 
+  LOG(INFO, "Auto main started\n");
   ::frc971::autonomous::autonomous.FetchLatest();
   while (!::frc971::autonomous::autonomous.get()) {
     ::frc971::autonomous::autonomous.FetchNextBlocking();
@@ -24,9 +25,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
       LOG(INFO, "Got another auto packet\n");
     }
     LOG(INFO, "Starting auto mode\n");
+    ::aos::time::Time start_time = ::aos::time::Time::Now();
     ::frc971::autonomous::HandleAuto();
 
-    LOG(INFO, "Auto mode exited, waiting for it to finish.\n");
+    
+    ::aos::time::Time elapsed_time = ::aos::time::Time::Now() - start_time;
+    LOG(INFO, "Auto mode exited in %f, waiting for it to finish.\n",
+        elapsed_time.ToSeconds());
     while (::frc971::autonomous::autonomous->run_auto) {
       ::frc971::autonomous::autonomous.FetchNextBlocking();
       LOG(INFO, "Got another auto packet\n");

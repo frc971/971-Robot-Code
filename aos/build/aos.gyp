@@ -40,6 +40,7 @@
           ],
           'dependencies': [
             '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
+            '<(AOS)/common/common.gyp:time',
           ],
           'export_dependent_settings': [
             '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',

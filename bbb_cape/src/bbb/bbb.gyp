@@ -11,6 +11,16 @@
   },
   'targets': [
     {
+      'target_name': 'led',
+      'type': 'static_library',
+      'sources': [
+        'led.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'crc',
       'type': 'static_library',
       'sources': [

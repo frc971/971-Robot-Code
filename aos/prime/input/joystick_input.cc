@@ -6,43 +6,52 @@
 
 #include "aos/common/network_port.h"
 #include "aos/common/network/ReceiveSocket.h"
-#include "aos/common/messages/RobotState.q.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
 
 namespace aos {
 namespace input {
 
 void JoystickInput::Run() {
   ReceiveSocket sock(NetworkPort::kDS);
+  // If true, this code won't try to read anything from the network and instead
+  // feed all 0s to the joystick code.
+  // The RobotState messages will be marked as fake so anything that outputs
+  // values won't while this is enabled.
+  static const bool kFakeJoysticks = false;
 
   NetworkRobotJoysticks joysticks;
   char buffer[sizeof(joysticks) + ::buffers::kOverhead];
   driver_station::Data data;
 
   while (true) {
-    int received = sock.Receive(buffer, sizeof(buffer));
-    if (received == -1) {
-      LOG(WARNING, "socket receive failed with %d: %s\n",
-          errno, strerror(errno));
-      continue;
+    if (kFakeJoysticks) {
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.02));
+      memset(&joysticks, 0, sizeof(joysticks));
+    } else {
+      int received = sock.Receive(buffer, sizeof(buffer));
+      if (received == -1) {
+        LOG(WARNING, "socket receive failed with %d: %s\n",
+            errno, strerror(errno));
+        continue;
+      }
+
+      if (!joysticks.DeserializeFrom(buffer, received)) {
+        LOG(WARNING, "deserializing data from %d bytes failed\n", received);
+        continue;
+      }
     }
 
-    if (!joysticks.DeserializeFrom(buffer, received)) {
-      LOG(WARNING, "deserializing data from %d bytes failed\n", received);
-      continue;
-    }
+    auto new_state = robot_state.MakeMessage();
+    new_state->enabled = joysticks.control.enabled();
+    new_state->autonomous = joysticks.control.autonomous();
+    new_state->team_id = joysticks.team_number;
+    new_state->fake = kFakeJoysticks;
+    LOG_STRUCT(DEBUG, "sending", *new_state);
 
-    if (!robot_state.MakeWithBuilder()
-        .enabled(joysticks.control.enabled())
-        .autonomous(joysticks.control.autonomous())
-        .team_id(joysticks.team_number)
-        .Send()) {
-			LOG(WARNING, "sending robot_state failed\n");
-		} else {
-      LOG(DEBUG, "sent robot_state{%s, %s, %hu}\n",
-          joysticks.control.enabled() ? "enabled" : "disabled",
-          joysticks.control.autonomous() ? "auto" : "not auto",
-          joysticks.team_number);
+    if (!new_state.Send()) {
+      LOG(WARNING, "sending robot_state failed\n");
     }
 
     data.Update(joysticks);

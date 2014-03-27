@@ -214,8 +214,6 @@ class Queue {
   // Fetches the next message from the queue.
   // Returns true if there was a new message available and we successfully
   // fetched it.  This removes the message from the queue for all readers.
-  // TODO(aschuh): Fix this to use a different way of fetching messages so other
-  // readers can also FetchNext.
   bool FetchNext();
   bool FetchNextBlocking();
 
@@ -287,6 +285,7 @@ class Queue {
   T *MakeRawMessage();
   // Pointer to the queue that this object fetches from.
   RawQueue *queue_;
+  int index_ = 0;
 #endif
   // Scoped pointer holding the latest message or NULL.
   ScopedMessagePtr<const T> queue_msg_;

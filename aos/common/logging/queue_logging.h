@@ -7,10 +7,13 @@
 #include <string>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/die.h"
 
 namespace aos {
 namespace logging {
 
+// Logs the contents of a structure (or Queue message) and a constant string.
+// structure must be an instance of one of the generated queue types.
 #define LOG_STRUCT(level, message, structure)                          \
   do {                                                                 \
     static const ::std::string kAosLoggingMessage(                     \
@@ -18,9 +21,7 @@ namespace logging {
     ::aos::logging::DoLogStruct(level, kAosLoggingMessage, structure); \
     /* so that GCC knows that it won't return */                       \
     if (level == FATAL) {                                              \
-      fprintf(stderr, "DoLogStruct(FATAL) fell through!!!!!\n");       \
-      printf("see stderr\n");                                          \
-      abort();                                                         \
+      ::aos::Die("DoLogStruct(FATAL) fell through!!!!!\n");            \
     }                                                                  \
   } while (false)
 
