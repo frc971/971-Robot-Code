@@ -17,8 +17,9 @@ class UartReader : public ByteReaderWriterInterface {
   explicit UartReader(int32_t baud_rate);
   virtual ~UartReader();
 
-  virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
-                            const ::aos::time::Time &timeout_time) override;
+  virtual ssize_t ReadBytes(
+      uint8_t *dest, size_t max_bytes,
+      const ::aos::time::Time &timeout_time = ::aos::time::Time(0, 0)) override;
   virtual bool WriteBytes(uint8_t *bytes, size_t number_bytes) override;
 
  private:

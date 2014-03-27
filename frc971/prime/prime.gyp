@@ -27,11 +27,30 @@
         '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
         '../output/output.gyp:led_setter',
       ],
+      'variables': {
+        'cape_src': '<(DEPTH)/bbb_cape/src/cape',
+        'cape_hex': '<(cape_src)/.obj/main_comp.hex',
+      },
+      'actions': [
+        {
+          'action_name': 'make_cape',
+          'inputs': [
+            '<!@(find <(cape_src) -name ".*" -prune -o -type f -print)',
+            '<(cape_src)/Makefile',
+          ],
+          'outputs': [
+            '<(cape_hex)',
+          ],
+          'action': ['make', '-C', '<(cape_src)'],
+          'message': 'Building cape code',
+        },
+      ],
       'copies': [
         {
           'destination': '<(rsync_dir)',
           'files': [
             'start_list.txt',
+            '<(cape_hex)',
           ],
         },
       ],

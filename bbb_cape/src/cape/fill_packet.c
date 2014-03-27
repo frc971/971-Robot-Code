@@ -80,9 +80,14 @@ void fill_packet_start(void) {
   encoder_init();
   digital_init();
 
-  flash_checksum =
-      crc_calculate((void *)MAIN_FLASH_START,
-                    (size_t)(MAIN_FLASH_END - MAIN_FLASH_START) / 4);
+  {
+    extern uint32_t __flash_end, __data_start__, __data_end__;
+    const uint32_t main_flash_end = (uint32_t) & __flash_end + (uint32_t) &
+                                    __data_end__ - (uint32_t) & __data_start__;
+    flash_checksum =
+        crc_calculate((void *)MAIN_FLASH_START,
+                      (size_t)(main_flash_end - MAIN_FLASH_START) / 4);
+  }
 
   led_set(LED_ERR, 0);
   gyro_init();

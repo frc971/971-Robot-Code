@@ -15,8 +15,9 @@ class HexByteReader : public ByteReaderInterface {
   explicit HexByteReader(const ::std::string &filename);
   virtual ~HexByteReader() {}
 
-  virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
-                            const ::aos::time::Time &timeout) override;
+  virtual ssize_t ReadBytes(
+      uint8_t *dest, size_t max_bytes,
+      const ::aos::time::Time &timeout = ::aos::time::Time(0, 0)) override;
 
   // Returns the total number of bytes that we will eventually read out.
   unsigned int GetSize();

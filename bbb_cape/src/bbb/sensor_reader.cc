@@ -16,12 +16,20 @@ namespace {
 
 uint32_t ReadChecksum(const ::std::string &filename) {
   HexByteReader reader(filename);
-  uint32_t r = ::cape::CalculateChecksum(&reader);
-  /*static const uint8_t fill[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-  for (size_t i = reader.GetSize(); i < 0x100000 - 0x4000; i += 4) {
-    r = ::cape::CalculateChecksum(fill, 4, r);
-  }*/
-  return r;
+  {
+    static const size_t kSkipBytes = 0x4000;
+    size_t i = 0;
+    uint8_t buffer[1024];
+    while (i < kSkipBytes) {
+      ssize_t read =
+          reader.ReadBytes(buffer, ::std::min<size_t>(sizeof(buffer), kSkipBytes - i));
+      if (read < 0) {
+        LOG(FATAL, "error skipping bytes before actual data\n");
+      }
+      i += read;
+    }
+  }
+  return ::cape::CalculateChecksum(&reader);
 }
 
 }  // namespace
@@ -53,9 +61,11 @@ const DataStruct *SensorReader::ReadPacket() {
     if (packet_finder_.ReadPacket(next_timeout)) {
       last_received_time_ = ::aos::time::Time::Now();
       const DataStruct *data = packet_finder_.get_packet<DataStruct>();
-      if (data->flash_checksum != expected_checksum_ && false) {
-        LOG(WARNING, "Cape code checksum is %" PRIu32 ". Expected %" PRIu32
-                     ". Reflashing.\n",
+      if (data->flash_checksum != expected_checksum_) {
+        // TODO(brians): Fix the custom bootloader stuff and then change this to
+        // WARNING.
+        LOG(FATAL, "Cape code checksum is 0x%" PRIx32 ". Expected 0x%" PRIx32
+                   ". Reflashing.\n",
             data->flash_checksum, expected_checksum_);
         manager_.DownloadHex(hex_filename_);
         ResetHappened();
