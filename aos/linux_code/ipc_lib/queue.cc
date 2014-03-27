@@ -23,7 +23,7 @@ static_assert(shm_ok<RawQueue>::value,
               "RawQueue instances go into shared memory");
 
 const bool kReadDebug = false;
-const bool kWriteDebug = true;
+const bool kWriteDebug = false;
 const bool kRefDebug = false;
 const bool kFetchDebug = false;
 const bool kReadIndexDebug = false;
