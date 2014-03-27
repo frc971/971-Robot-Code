@@ -21,7 +21,7 @@ class Claw(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
     # measured from CAD
-    self.J_top = 0.3
+    self.J_top = 0.5
     self.J_bottom = 0.9
 
     # Resistance of the motor
@@ -97,7 +97,7 @@ class Claw(control_loop.ControlLoop):
         self.A_diff_cont, self.B_diff_cont, self.dt)
 
     self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [.65, .45])
-    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.40, .28])
+    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.60, .28])
 
     print "K_diff", self.K_diff
     print "K_bottom", self.K_bottom
@@ -418,7 +418,7 @@ def ClipDeltaU(claw, U):
 
   return numpy.matrix([[new_bottom_u - old_bottom_u], [new_top_u]])
 
-def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=True, iterations=200):
+def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False, iterations=200):
   """Runs the claw plant on a given claw (claw) with an initial condition (initial_X) and goal (goal).
 
     The tests themselves are not terribly sophisticated; I just test for 
