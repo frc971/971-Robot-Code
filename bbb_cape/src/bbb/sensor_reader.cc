@@ -57,6 +57,7 @@ const DataStruct *SensorReader::ReadPacket() {
       LOG(WARNING, "Too long since good packet received. Resetting.\n");
       manager_.Reset();
       ResetHappened();
+      continue;
     }
     if (packet_finder_.ReadPacket(next_timeout)) {
       last_received_time_ = ::aos::time::Time::Now();
@@ -75,6 +76,7 @@ const DataStruct *SensorReader::ReadPacket() {
         LOG(WARNING, "cape timestamp decreased: %" PRIu64 " to %" PRIu64 "\n",
             last_cape_timestamp_, data->timestamp);
         ResetHappened();
+        continue;
       }
       last_cape_timestamp_ = data->timestamp;
       return data;
