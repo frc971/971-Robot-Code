@@ -19,7 +19,7 @@ void JoystickInput::Run() {
   // feed all 0s to the joystick code.
   // The RobotState messages will be marked as fake so anything that outputs
   // values won't while this is enabled.
-  static const bool kFakeJoysticks = true;
+  static const bool kFakeJoysticks = false;
 
   NetworkRobotJoysticks joysticks;
   char buffer[sizeof(joysticks) + ::buffers::kOverhead];
