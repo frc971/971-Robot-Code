@@ -97,7 +97,7 @@ void robot_init(void) {
   RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
   TIM11->CCMR1 = TIM_CCMR1_CC1S_0 /* input pin 1 -> timer input 1 */;
   TIM11->PSC = 1200 - 1;  // 100KHz timer
-  timer_setup(TIM11, TIM1_TRG_COM_TIM11_IRQn, 1);
+  //timer_setup(TIM11, TIM1_TRG_COM_TIM11_IRQn, 1);
 }
 
 void robot_fill_packet(struct DataStruct *packet) {

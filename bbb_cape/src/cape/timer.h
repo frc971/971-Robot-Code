@@ -5,7 +5,7 @@
 
 // inverted is 1 for timing low periods, 0 for high ones.
 #define timer_declare(timer, irq, input, inverted, name)                   \
-  static volatile uint32_t name##_length;                                  \
+  static volatile uint32_t name##_length = 0;                              \
   void irq(void) {                                                         \
     timer->SR = ~TIM_SR_CC##input##IF;                                     \
     const uint32_t ccer = timer->CCER;                                     \
