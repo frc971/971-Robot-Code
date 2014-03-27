@@ -1,7 +1,5 @@
 #include "frc971/control_loops/claw/claw.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 
 #include "aos/common/control_loop/control_loops.q.h"
@@ -53,33 +51,71 @@ static const double kMaxVoltage = 12.0;
 ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
     : StateFeedbackLoop<4, 2, 2>(loop),
       uncapped_average_voltage_(0.0),
-      is_zeroing_(true) {}
+      is_zeroing_(true),
+      U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,
+               -1, 0,
+               0, 1,
+               0, -1).finished(),
+              (Eigen::Matrix<double, 4, 1>() << kMaxVoltage, kMaxVoltage,
+               kMaxVoltage, kMaxVoltage).finished()) {
+  ::aos::controls::HPolytope<0>::Init();
+}
 
+// Caps the voltage prioritizing reducing velocity error over reducing
+// positional error.
+// Uses the polytope libararies which we used to just use for the drivetrain.
+// Uses a region representing the maximum voltage and then transforms it such
+// that the points represent different amounts of positional error and
+// constrains the region such that, if at all possible, it will maintain its
+// current efforts to reduce velocity error.
 void ClawLimitedLoop::CapU() {
-  uncapped_average_voltage_ = U(0, 0) + U(1, 0) / 2.0;
-  if (is_zeroing_) {
-    LOG(DEBUG, "zeroing\n");
-    const frc971::constants::Values &values = constants::GetValues();
-    if (uncapped_average_voltage_ > values.claw.max_zeroing_voltage) {
-      const double difference =
-          uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
-      U(0, 0) -= difference;
-    } else if (uncapped_average_voltage_ < -values.claw.max_zeroing_voltage) {
-      const double difference =
-          -uncapped_average_voltage_ - values.claw.max_zeroing_voltage;
-      U(0, 0) += difference;
-    }
+  Eigen::Matrix<double, 4, 1> error = R - X_hat;
+
+  double u_top = U(1, 0);
+  double u_bottom = U(0, 0);
+
+  uncapped_average_voltage_ = (u_top + u_bottom) / 2;
+
+  double max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
+
+  if (::std::abs(u_bottom) > max_voltage or ::std::abs(u_top) > max_voltage) {
+    // H * U <= k
+    // U = UPos + UVel
+    // H * (UPos + UVel) <= k
+    // H * UPos <= k - H * UVel
+
+    // Now, we can do a coordinate transformation and say the following.
+
+    // UPos = position_K * position_error
+    // (H * position_K) * position_error <= k - H * UVel
+
+    Eigen::Matrix<double, 2, 2> position_K;
+    position_K << K(0, 0), K(0, 1),
+                  K(1, 0), K(1, 1);
+    Eigen::Matrix<double, 2, 2> velocity_K;
+    velocity_K << K(0, 2), K(0, 3),
+                  K(1, 2), K(1, 3);
+
+    Eigen::Matrix<double, 2, 1> position_error;
+    position_error << error(0, 0), error(1, 0);
+    Eigen::Matrix<double, 2, 1> velocity_error;
+    velocity_error << error(2, 0), error(3, 0);
+
+    Eigen::Matrix<double, 4, 1> pos_poly_k =
+        U_Poly_.k() - U_Poly_.H() * velocity_K * velocity_error;
+    Eigen::Matrix<double, 4, 2> pos_poly_H = U_Poly_.H() * position_K;
+    ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+
+
+    Eigen::Matrix<double, 2, 1> adjusted_pos_error = CoerceGoal(
+        pos_poly, (Eigen::Matrix<double, 1, 2>() << position_error(1, 0),
+                   -position_error(0, 0)).finished(),
+        0.0, position_error);
+
+    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+    U = velocity_K * velocity_error + position_K * adjusted_pos_error;
   }
 
-  double max_value =
-      ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0) + U(0, 0)));
-
-  const double k_max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
-  if (max_value > k_max_voltage) {
-    U = U * k_max_voltage / max_value;
-    LOG(DEBUG, "Capping U is now %f %f (max is %f)\n",
-        U(0, 0), U(1, 0), max_value);
-  }
 }
 
 ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
@@ -705,11 +741,21 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_BOTTOM:
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
+      Eigen::Matrix<double, 2, 1> U = claw_.K() * (claw_.R - claw_.X_hat);
+      LOG(DEBUG, "Uncapped voltages: Top: %f, Bottom: %f\n", U(1, 0), U(0, 0));
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
-        double dx = (claw_.uncapped_average_voltage() -
-                     values.claw.max_zeroing_voltage) / claw_.K(0, 0);
+        double dx_bot = (U(0, 0) -
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx_top = (U(1, 0) -
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx = ::std::max(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
+        Eigen::Matrix<double, 4, 1> R;
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
+        U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup."
             " Uncapped is %f, max is %f, difference is %f\n",
@@ -719,10 +765,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
              values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
-        double dx = (claw_.uncapped_average_voltage() +
-                     values.claw.max_zeroing_voltage) / claw_.K(0, 0);
+        double dx_bot = (U(0, 0) +
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx_top = (U(1, 0) +
+                     values.claw.max_zeroing_voltage) /
+                    claw_.K(0, 0);
+        double dx = ::std::min(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
+        Eigen::Matrix<double, 4, 1> R;
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
+        U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }
@@ -741,7 +795,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
               ? -12.0
               : goal->centering;
     }
-    output->top_claw_voltage = claw_.U(1, 0) + claw_.U(0, 0);
+    output->top_claw_voltage = claw_.U(1, 0);
     output->bottom_claw_voltage = claw_.U(0, 0);
 
     if (output->top_claw_voltage > kMaxVoltage) {

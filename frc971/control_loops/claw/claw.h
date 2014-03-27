@@ -4,8 +4,10 @@
 #include <memory>
 
 #include "aos/common/control_loop/ControlLoop.h"
+#include "aos/controls/polytope.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
 #include "frc971/control_loops/hall_effect_tracker.h"
@@ -36,6 +38,8 @@ class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
  private:
   double uncapped_average_voltage_;
   bool is_zeroing_;
+
+  const ::aos::controls::HPolytope<2> U_Poly_;
 };
 
 class ClawMotor;

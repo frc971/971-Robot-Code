@@ -29,12 +29,16 @@
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:coerce_goal',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
         'claw_loop',
         '<(AOS)/common/common.gyp:controls',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:coerce_goal',
       ],
     },
     {

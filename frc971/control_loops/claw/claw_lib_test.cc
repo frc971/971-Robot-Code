@@ -82,9 +82,14 @@ class ClawMotorSimulation {
     return GetAbsolutePosition(type) - initial_position_[type];
   }
 
-  // Makes sure pos is inside range (inclusive)
+  // Makes sure pos is inside range (exclusive)
   bool CheckRange(double pos, const constants::Values::Claws::AnglePair &pair) {
-    return (pos >= pair.lower_angle && pos <= pair.upper_angle);
+    // Note: If the >= and <= signs are used, then the there exists a case
+    // where the wrist starts precisely on the edge and because initial
+    // position and the *edge_value_ are the same, then the comparison
+    // in ZeroedStateFeedbackLoop::DoGetPositionOfEdge will return that
+    // the lower, rather than upper, edge of the hall effect was passed.
+    return (pos > pair.lower_angle && pos < pair.upper_angle);
   }
 
   void SetHallEffect(double pos,
@@ -212,8 +217,7 @@ class ClawMotorSimulation {
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
 
     claw_plant_->U << claw_queue_group.output->bottom_claw_voltage,
-        claw_queue_group.output->top_claw_voltage -
-            claw_queue_group.output->bottom_claw_voltage;
+        claw_queue_group.output->top_claw_voltage;
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
@@ -470,7 +474,6 @@ INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
                                           ::std::make_pair(1.1, 1.0),
                                           ::std::make_pair(1.15, 1.05),
                                           ::std::make_pair(1.05, 0.95),
-                                          ::std::make_pair(1.1, 1.0),
                                           ::std::make_pair(1.2, 1.1),
                                           ::std::make_pair(1.3, 1.2),
                                           ::std::make_pair(1.4, 1.3),
@@ -478,7 +481,8 @@ INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
                                           ::std::make_pair(1.6, 1.5),
                                           ::std::make_pair(1.7, 1.6),
                                           ::std::make_pair(1.8, 1.7),
-                                          ::std::make_pair(2.015, 2.01)));
+                                          ::std::make_pair(2.015, 2.01)
+));
 
 /*
 // Tests that loosing the encoder for a second triggers a re-zero.
@@ -559,18 +563,15 @@ class WindupClawTest : public ClawTest {
  protected:
   void TestWindup(ClawMotor::CalibrationMode mode, int start_time, double offset) {
     int capped_count = 0;
-    double saved_zeroing_position[2] = {0, 0};
     const frc971::constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
-    for (int i = 0; i < 600; ++i) {
+    for (int i = 0; i < 700; ++i) {
       claw_motor_plant_.SendPositionMessage();
       if (i >= start_time && mode == claw_motor_.mode() && !kicked) {
         EXPECT_EQ(mode, claw_motor_.mode());
         // Move the zeroing position far away and verify that it gets moved
         // back.
-        saved_zeroing_position[TOP_CLAW] = claw_motor_.top_claw_goal_;
-        saved_zeroing_position[BOTTOM_CLAW] = claw_motor_.bottom_claw_goal_;
         claw_motor_.top_claw_goal_ += offset;
         claw_motor_.bottom_claw_goal_ += offset;
         kicked = true;
@@ -579,10 +580,19 @@ class WindupClawTest : public ClawTest {
           measured = true;
           EXPECT_EQ(mode, claw_motor_.mode());
 
-          EXPECT_NEAR(saved_zeroing_position[TOP_CLAW],
-                      claw_motor_.top_claw_goal_, 0.1);
-          EXPECT_NEAR(saved_zeroing_position[BOTTOM_CLAW],
-                      claw_motor_.bottom_claw_goal_, 0.1);
+          Eigen::Matrix<double, 4, 1> R;
+          R << claw_motor_.bottom_claw_goal_,
+              claw_motor_.top_claw_goal_ - claw_motor_.bottom_claw_goal_, 0.0,
+              0.0;
+          Eigen::Matrix<double, 2, 1> uncapped_voltage =
+              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat);
+          // Use a factor of 1.8 because so long as it isn't actually running
+          // away, the CapU function will deal with getting the actual output
+          // down.
+          EXPECT_LT(::std::abs(uncapped_voltage(0, 0)),
+                    values.claw.max_zeroing_voltage * 1.8);
+          EXPECT_LT(::std::abs(uncapped_voltage(1, 0)),
+                    values.claw.max_zeroing_voltage * 1.8);
         }
       }
       if (claw_motor_.mode() == mode) {

@@ -25,6 +25,21 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'coerce_goal',
+      'type': 'static_library',
+      'sources': [
+        'coerce_goal.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):eigen',
+        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):eigen',
+        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+      ],
+    },
+    {
       'target_name': 'state_feedback_loop',
       'type': 'static_library',
       'sources': [
