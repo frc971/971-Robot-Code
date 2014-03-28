@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <set>
 
 #include <event2/event.h>
 
@@ -108,13 +109,14 @@ class FileWatch {
   // anything besides possibly running its callback or something.
   void RemoveWatch() {
     assert(watch_ != -1);
+    assert(watch_to_remove_ == -1);
 
     if (inotify_rm_watch(notify_fd, watch_) == -1) {
       LOG(WARNING, "inotify_rm_watch(%d, %d) failed with %d: %s\n",
           notify_fd, watch_, errno, strerror(errno));
     }
-
-    RemoveWatchFromMap();
+    watch_to_remove_ = watch_;
+    watch_ = -1;
   }
 
  private:
@@ -130,14 +132,23 @@ class FileWatch {
   }
 
   void RemoveWatchFromMap() {
-    if (watchers[watch_] != this) {
+    int watch = watch_to_remove_;
+    if (watch == -1) {
+      assert(watch_ != -1);
+      watch = watch_;
+    }
+    if (watchers[watch] != this) {
       LOG(WARNING, "watcher for %s (%p) didn't find itself in the map\n",
           filename_.c_str(), this);
     } else {
-      watchers.erase(watch_);
+      watchers.erase(watch);
     }
-    LOG(DEBUG, "removed watch ID %d\n", watch_);
-    watch_ = -1;
+    LOG(DEBUG, "removed watch ID %d\n", watch);
+    if (watch_to_remove_ == -1) {
+      watch_ = -1;
+    } else {
+      watch_to_remove_ = -1;
+    }
   }
 
   void CreateWatch() {
@@ -188,12 +199,12 @@ class FileWatch {
         LOG(WARNING, "couldn't find whose watch ID %d is\n", notifyevt->wd);
       } else {
         LOG(DEBUG, "mask=%" PRIu32 "\n", notifyevt->mask);
-        // If it was something that means the file got deleted.
-        if (notifyevt->mask & (IN_MOVE_SELF | IN_DELETE_SELF | IN_IGNORED)) {
+        // If the watch was removed.
+        if (notifyevt->mask & IN_IGNORED) {
           watchers[notifyevt->wd]->WatchDeleted();
         } else {
-          watchers[notifyevt->wd]->FileNotified((notifyevt->len > 0) ?
-                                                notifyevt->name : NULL);
+          watchers[notifyevt->wd]
+              ->FileNotified((notifyevt->len > 0) ? notifyevt->name : NULL);
         }
       }
 
@@ -240,6 +251,9 @@ class FileWatch {
 
   // The watch descriptor or -1 if we don't have one any more.
   int watch_;
+  // The watch that we still have to take out of the map once we get the
+  // IN_IGNORED or -1.
+  int watch_to_remove_ = -1;
 
   // Map from watch IDs to instances of this class.
   // <https://patchwork.kernel.org/patch/73192/> ("inotify: do not reuse watch
@@ -323,17 +337,28 @@ std::string RunCommand(std::string command) {
 void Timeout(time::Time time, void (*callback)(int, short, void *), void *arg) {
   EventUniquePtr timeout(evtimer_new(libevent_base.get(), callback, arg));
   struct timeval time_timeval = time.ToTimeval();
-  evtimer_add(timeout.release(), &time_timeval);
+  if (evtimer_add(timeout.release(), &time_timeval) != 0) {
+    LOG(FATAL, "evtimer_add(%p, %p) failed\n",
+        timeout.release(), &time_timeval);
+  }
 }
+
+class Child;
+// This is where all of the Child instances except core live.
+std::vector<unique_ptr<Child>> children;
+// A global place to hold on to which child is core.
+unique_ptr<Child> core;
 
 // Represents a child process. It will take care of restarting itself etc.
 class Child {
  public:
   // command is the (space-separated) command to run and its arguments.
   Child(const std::string &command) : pid_(-1),
-        restart_timeout_(
-            evtimer_new(libevent_base.get(), StaticDoRestart, this)),
         stat_at_start_valid_(false) {
+    if (!restart_timeout) {
+      restart_timeout = EventUniquePtr(
+          evtimer_new(libevent_base.get(), StaticDoRestart, nullptr));
+    }
     const char *start, *end;
     start = command.c_str();
     while (true) {
@@ -385,7 +410,7 @@ class Child {
   };
 
   // How long to wait for a child to die nicely.
-  static constexpr time::Time kProcessDieTime = time::Time::InSeconds(0.75);
+  static constexpr time::Time kProcessDieTime = time::Time::InSeconds(2);
 
   // How long to wait after the file is modified to restart it.
   // This is important because some programs like modifying the binaries by
@@ -407,18 +432,28 @@ class Child {
     LOG(DEBUG, "file for %s modified\n", name());
     struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
     // This will reset the timeout again if it hasn't run yet.
-    if (evtimer_add(restart_timeout_.get(), &restart_time_timeval) != 0) {
+    if (evtimer_add(restart_timeout.get(), &restart_time_timeval) != 0) {
       LOG(FATAL, "evtimer_add(%p, %p) failed\n",
-          restart_timeout_.get(), &restart_time_timeval);
+          restart_timeout.get(), &restart_time_timeval);
     }
+    waiting_to_restart.insert(this);
   }
 
-  static void StaticDoRestart(int, short, void *self) {
-    static_cast<Child *>(self)->DoRestart();
+  static void StaticDoRestart(int, short, void *) {
+    LOG(DEBUG, "restarting everything that needs it\n");
+    if (waiting_to_restart.find(core.get()) != waiting_to_restart.end()) {
+      core->DoRestart();
+      waiting_to_restart.erase(core.get());
+    }
+    for (auto c : waiting_to_restart) {
+      c->DoRestart();
+    }
+    waiting_to_restart.clear();
   }
 
   // Called after somebody else has finished modifying the file.
   void DoRestart() {
+    fprintf(stderr, "DoRestart(%s)\n", binary_.c_str());
     if (stat_at_start_valid_) {
       struct stat current_stat;
       if (stat(original_binary_.c_str(), &current_stat) == -1) {
@@ -432,6 +467,10 @@ class Child {
       }
     }
 
+    if (this == core.get()) {
+      fprintf(stderr, "Restarting core -> exiting now.\n");
+      exit(0);
+    }
     if (pid_ != -1) {
       LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
       if (kill(pid_, SIGTERM) == -1) {
@@ -536,13 +575,16 @@ class Child {
   // Watches original_binary_.
   unique_ptr<FileWatch> watcher_;
 
-  // An event that restarts after kRestartWaitTime.
-  EventUniquePtr restart_timeout_;
-
   // Captured from the original file when we most recently started a new child
   // process. Used to see if it actually changes or not.
   struct stat stat_at_start_;
   bool stat_at_start_valid_;
+
+  // An event that restarts after kRestartWaitTime.
+  static EventUniquePtr restart_timeout;
+
+  // The set of children waiting to be restarted once all modifications stop.
+  static ::std::set<Child *> waiting_to_restart;
 
   DISALLOW_COPY_AND_ASSIGN(Child);
 };
@@ -552,10 +594,8 @@ constexpr time::Time Child::kRestartWaitTime;
 constexpr time::Time Child::kMaxRestartsTime;
 constexpr time::Time Child::kResumeWait;
 
-// This is where all of the Child instances except core live.
-std::vector<unique_ptr<Child>> children;
-// A global place to hold on to which child is core.
-unique_ptr<Child> core;
+EventUniquePtr Child::restart_timeout;
+::std::set<Child *> Child::waiting_to_restart;
 
 // Kills off the entire process group (including ourself).
 void KillChildren(bool try_nice) {
