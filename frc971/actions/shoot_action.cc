@@ -15,7 +15,6 @@ namespace actions {
 constexpr double ShootAction::kOffsetRadians;
 constexpr double ShootAction::kClawShootingSeparation;
 constexpr double ShootAction::kClawShootingSeparationGoal;
-constexpr ::aos::time::Time ShootAction::kTimeout;
 
 ShootAction::ShootAction(actions::ShootActionQueueGroup* s)
     : actions::ActionBase<actions::ShootActionQueueGroup>(s) {}
@@ -49,10 +48,9 @@ void ShootAction::RunAction() {
 
 void ShootAction::InnerRunAction() {
   LOG(INFO, "Shooting at the current angle and power.\n");
-  const ::aos::time::Time end_time = ::aos::time::Time::Now() + kTimeout;
 
   // wait for claw to be ready
-  if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this), end_time)) {
+  if (WaitUntil(::std::bind(&ShootAction::DoneSetupShot, this))) {
     return;
   }
 
@@ -87,7 +85,7 @@ void ShootAction::InnerRunAction() {
   }
 
   // wait for record of shot having been fired
-  if (WaitUntil(::std::bind(&ShootAction::DoneShot, this), end_time)) return;
+  if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
 
   // Turn the intake off.
   control_loops::claw_queue_group.goal.FetchLatest();

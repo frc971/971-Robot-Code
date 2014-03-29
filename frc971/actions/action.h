@@ -73,7 +73,8 @@ template <class T> class ActionBase {
         abort_ = false;
         return true;
       }
-      if (::aos::time::Time::Now() >= end_time) {
+      if (end_time != ::aos::time::Time(0, 0) &&
+          ::aos::time::Time::Now() >= end_time) {
         LOG(INFO, "WaitUntil timed out\n");
         return true;
       }

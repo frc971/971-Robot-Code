@@ -80,6 +80,9 @@ class TypedAction : public Action {
       if (has_started_) {
         queue_group_->status.FetchNextBlocking();
       } else {
+        if (queue_group_->status->running) {
+          has_started_ = true;
+        }
         queue_group_->status.FetchNextBlocking();
         if (queue_group_->status->running) {
           // Wait until it reports that it is running to start.
