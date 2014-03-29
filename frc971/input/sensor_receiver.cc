@@ -48,14 +48,21 @@ double drivetrain_translate(int32_t in) {
 }
 
 // Translates values from the ADC into voltage.
-// TODO(brian): Tune this to the actual hardware.
 double adc_translate(uint16_t in) {
-  static const double kVcc = 5;
-  static const double kR1 = 5, kR2 = 6.65;
   static const uint16_t kMaximumValue = 0x3FF;
-  const double raw =
-      (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
-  return (raw * (kR1 + kR2) - (kVcc / 2) * kR2) / kR1;
+  if (false) {
+    // This is the simple theoretical match.
+    static const double kVcc = 5;
+    static const double kR1 = 5, kR2 = 6.65;
+    const double raw =
+        (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
+    return (raw * (kR1 + kR2) - (kVcc / 2) * kR2) / kR1;
+  } else {
+    // This is from a linear regression calculated with some actual data points.
+    static const double kM = 0.012133, kB = -3.6813;
+    return static_cast<double>(in) / static_cast<double>(kMaximumValue) * kM +
+           kB;
+  }
 }
 
 double gyro_translate(int64_t in) {
