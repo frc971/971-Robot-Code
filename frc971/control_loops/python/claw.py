@@ -261,38 +261,6 @@ class ClawDeltaU(Claw):
 
     self.InitializeState()
 
-
-def FullSeparationPriority(claw, U):
-  bottom_u = U[0, 0]
-  top_u = U[1, 0]
-
-  if bottom_u > claw.U_max[0, 0]:
-    top_u -= bottom_u - claw.U_max[0, 0]
-    if top_u < claw.U_min[1, 0]:
-      top_u = claw.U_min[1, 0]
-
-    bottom_u = claw.U_max[0, 0]
-  if top_u > claw.U_max[1, 0]:
-    bottom_u -= top_u - claw.U_max[1, 0]
-    if bottom_u < claw.U_min[0, 0]:
-      bottom_u = claw.U_min[0, 0]
-
-    top_u = claw.U_max[1, 0]
-  if top_u < claw.U_min[1, 0]:
-    bottom_u -= top_u - claw.U_min[1, 0]
-    if bottom_u > claw.U_max[0, 0]:
-      bottom_u = claw.U_max[0, 0]
-
-    top_u = claw.U_min[1, 0]
-  if bottom_u < claw.U_min[0, 0]:
-    top_u -= bottom_u - claw.U_min[0, 0]
-    if top_u > claw.U_max[1, 0]:
-      top_u = claw.U_max[1, 0]
-
-    bottom_u = claw.U_min[0, 0]
-
-  return numpy.matrix([[bottom_u], [top_u]])
-
 def ScaleU(claw, U, K, error):
   """Clips U as necessary.
 
@@ -390,73 +358,6 @@ def ScaleU(claw, U, K, error):
     #bottom_u *= scalar
 
   return numpy.matrix([[bottom_u], [top_u]])
-
-def AverageUFix(claw, U, preserve_v3=False):
-  """Clips U as necessary.
-
-    Args:
-      claw: claw object containing moments of inertia and U limits.
-      U: Input matrix to clip as necessary.
-      preserve_v3: There are two ways to attempt to clip the voltages:
-        -If you preserve the imaginary v3, then it will attempt to
-          preserve the effect on the separation of the two claws.
-          If it is not able to do this, then it calls itself with preserve_v3
-          set to False.
-        -If you preserve the ratio of the voltage of the bottom and the top,
-          then it will attempt to preserve the ratio of those two. This is
-          equivalent to preserving the ratio of v3 and the bottom voltage.
-  """
-  bottom_u = U[0, 0]
-  top_u = U[1, 0]
-  seperation_u = top_u - bottom_u * claw.J_top / claw.J_bottom
-
-  bottom_bad = bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0]
-  top_bad = top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]
-
-  scalar = claw.U_max[0, 0] / max(numpy.abs(top_u), numpy.abs(bottom_u))
-  if bottom_bad and preserve_v3:
-    bottom_u *= scalar
-    top_u = seperation_u + bottom_u * claw.J_top / claw.J_bottom
-    if abs(top_u) > claw.U_max[0, 0]:
-      return AverageUFix(claw, U, preserve_v3=False)
-  elif top_bad and preserve_v3:
-    top_u *= scalar
-    bottom_u = (top_u - seperation_u) * claw.J_bottom / claw.J_top
-    if abs(bottom_u) > claw.U_max[0, 0]:
-      return AverageUFix(claw, U, preserve_v3=False)
-  elif (bottom_bad or top_bad) and not preserve_v3:
-    top_u *= scalar
-    bottom_u *= scalar
-    print "Scaling"
-
-  return numpy.matrix([[bottom_u], [top_u]])
-
-def ClipDeltaU(claw, U):
-  delta_u = U[0, 0]
-  top_u = U[1, 0]
-  old_bottom_u = claw.X[4, 0]
-
-  # TODO(austin): Preserve the difference between the top and bottom power.
-  new_unclipped_bottom_u = old_bottom_u + delta_u
-
-  #print "Bottom is", new_unclipped_bottom_u, "Top is", top_u
-  if new_unclipped_bottom_u > claw.U_max[0, 0]:
-    top_u -= new_unclipped_bottom_u - claw.U_max[0, 0]
-    new_unclipped_bottom_u = claw.U_max[0, 0]
-  if top_u > claw.U_max[1, 0]:
-    new_unclipped_bottom_u -= top_u - claw.U_max[1, 0]
-    top_u = claw.U_max[1, 0]
-  if top_u < claw.U_min[1, 0]:
-    new_unclipped_bottom_u -= top_u - claw.U_min[1, 0]
-    top_u = claw.U_min[1, 0]
-  if new_unclipped_bottom_u < claw.U_min[0, 0]:
-    top_u -= new_unclipped_bottom_u - claw.U_min[0, 0]
-    new_unclipped_bottom_u = claw.U_min[0, 0]
-
-  new_bottom_u = numpy.clip(new_unclipped_bottom_u, claw.U_min[0, 0], claw.U_max[0, 0])
-  new_top_u = numpy.clip(top_u, claw.U_min[1, 0], claw.U_max[1, 0])
-
-  return numpy.matrix([[new_bottom_u - old_bottom_u], [new_top_u]])
 
 def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False, iterations=200):
   """Runs the claw plant on a given claw (claw) with an initial condition (initial_X) and goal (goal).

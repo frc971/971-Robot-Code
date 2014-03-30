@@ -5,6 +5,7 @@
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
 import ctypes
+import sys
 
 # Wrapper around PyFile_AsFile so that we can print out the error messages.
 # Set the arg type and return types of the function call.
