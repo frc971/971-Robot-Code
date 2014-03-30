@@ -188,6 +188,26 @@ void ClawLimitedLoop::CapU() {
     LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
     U = velocity_K * velocity_error + position_K * adjusted_pos_error;
     LOG_MATRIX(DEBUG, "U is now", U);
+
+    {
+      const auto values = constants::GetValues().claw;
+      if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit &&
+          U(1, 0) > 0) {
+        LOG(WARNING, "upper claw too high and moving up\n");
+        U(1, 0) = 0;
+      } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
+                 U(1, 0) < 0) {
+        LOG(WARNING, "upper claw too low and moving down\n");
+        U(1, 0) = 0;
+      }
+      if (X_hat(0, 0) > values.lower_claw.upper_limit && U(0, 0) > 0) {
+        LOG(WARNING, "lower claw too high and moving up\n");
+        U(0, 0) = 0;
+      } else if (X_hat(0, 0) < values.lower_claw.lower_limit && U(0, 0) < 0) {
+        LOG(WARNING, "lower claw too low and moving down\n");
+        U(0, 0) = 0;
+      }
+    }
   }
 }
 
@@ -814,7 +834,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_BOTTOM:
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
-      LOG(DEBUG, "Uncapped voltages: Top: %f, Bottom: %f\n", claw_.U_uncapped(1, 0), claw_.U_uncapped(0, 0));
+      LOG_MATRIX(DEBUG, "U_uncapped", claw_.U_uncapped);
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
         double dx_bot = (claw_.U_uncapped(0, 0) -
                      values.claw.max_zeroing_voltage) /
