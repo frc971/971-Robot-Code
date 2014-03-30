@@ -15,6 +15,10 @@ TARGET=driver@$(${GET_IP} prime)
 SUMS=$(cd ${FROM_DIR} && ${SUM} *)
 
 TO_DOWNLOAD=$(ssh ${TARGET} "rm -rf ${TMPDIR} && mkdir ${TMPDIR} && cd ${TO_DIR} && echo '${SUMS}' | ${SUM} --check --quiet |& grep -F FAILED | sed 's/^\\(.*\\): FAILED"'$'"/\\1/g'")
+if [[ $? != 0 ]]; then
+	echo 'Connecting to target failed.'
+	exit 1
+fi
 
 if [[ -z "${TO_DOWNLOAD}" ]]; then
 	echo "Nothing to download"
@@ -25,4 +29,9 @@ fi
 # bottleneck with a BBB. Maybe it's because ethernet on the BBB uses so much
 # CPU?
 ( cd ${FROM_DIR} && scp -o "Compression yes" ${TO_DOWNLOAD} ${TARGET}:${TMPDIR} )
+if [[ $? != 0 ]]; then
+	echo 'Copying files into /tmp on target failed.'
+	exit 1
+fi
 ssh ${TARGET} "mv ${TMPDIR}/* ${TO_DIR} && echo 'Done moving new executables into place' && ionice -c 3 bash -c 'sync && sync && sync'"
+exit $?
