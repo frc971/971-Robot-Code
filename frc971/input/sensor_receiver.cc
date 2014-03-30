@@ -47,12 +47,13 @@ double drivetrain_translate(int32_t in) {
       * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
+static const double kVcc = 5.15;
+
 // Translates values from the ADC into voltage.
 double adc_translate(uint16_t in) {
-  static const uint16_t kMaximumValue = 0x3FF;
   if (false) {
-    // This is the simple theoretical match.
-    static const double kVcc = 5;
+    // This is the simple theoretical math.
+    static const uint16_t kMaximumValue = 0x3FF;
     static const double kR1 = 5, kR2 = 6.65;
     const double raw =
         (kVcc * static_cast<double>(in) / static_cast<double>(kMaximumValue));
@@ -60,21 +61,19 @@ double adc_translate(uint16_t in) {
   } else {
     // This is from a linear regression calculated with some actual data points.
     static const double kM = 0.012133, kB = -3.6813;
-    return static_cast<double>(in) / static_cast<double>(kMaximumValue) * kM +
-           kB;
+    return static_cast<double>(in) * kM + kB;
   }
-}
-
-double gyro_translate(int64_t in) {
-  return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
 double battery_translate(uint16_t in_high, uint16_t in_low) {
   const double high = adc_translate(in_high), low = adc_translate(in_low);
   static const double kDividerBig = 5.55, kDividerSmall = 2.66;
-  static const double kSensorVcc = 5.0;
   return (high - low) * (kDividerBig + kDividerSmall) / kDividerSmall +
-         kDividerBig / kDividerSmall * kSensorVcc;
+      kDividerBig / kDividerSmall * kVcc;
+}
+
+double gyro_translate(int64_t in) {
+  return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
 double sonar_translate(uint32_t in) {
