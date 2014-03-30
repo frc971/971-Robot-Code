@@ -92,7 +92,7 @@ const ShotGoal kLongShotGoal = {
     {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
 // 3/4" plunger {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
-    {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
+    {0.90, kShootSeparation}, 140, 0.09, kIntakePower};
 // 3/4 " plunger {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
 
 // 78" between near edge of colored line and rear edge of bumper
@@ -104,9 +104,9 @@ const ShotGoal kFlippedMediumShotGoal = {
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
 const ShotGoal kShortShotGoal = {
-    {-0.670, kShootSeparation}, 71.0, 0.4, kIntakePower};
+    {-0.670, kShootSeparation}, 72.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.57, kShootSeparation}, 80.0, 0.4, kIntakePower};
+    {0.57, kShootSeparation}, 82.0, 0.4, kIntakePower};
 
 const ShotGoal kTrussShotGoal = {
     {-0.05, kShootSeparation}, 73.0, 0, kIntakePower};
@@ -392,6 +392,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kFire)) {
       action_queue_.QueueAction(actions::MakeShootAction());
+    } else if (data.NegEdge(kFire)) {
+      action_queue_.CancelCurrentAction();
     }
 
     action_queue_.Tick();
