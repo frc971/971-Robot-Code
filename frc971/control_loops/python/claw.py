@@ -480,6 +480,8 @@ def main(argv):
   else:
     claw = Claw("Claw")
     loop_writer = control_loop.ControlLoopWriter("Claw", [claw])
+    loop_writer.AddConstant(control_loop.Constant("kClawMomentOfInertiaRatio",
+      "%f", claw.J_top / claw.J_bottom))
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:

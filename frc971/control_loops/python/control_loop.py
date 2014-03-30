@@ -114,10 +114,6 @@ class ControlLoopWriter(object):
       fd.write('%s Make%sLoop();\n\n' %
                (self._LoopType(), self._gain_schedule_name))
 
-      fd.write('const double k%sMomentOfInertiaRatio = %f;\n\n' %
-               (self._gain_schedule_name,
-                self._loops[0].J_top / self._loops[0].J_bottom))
-
       fd.write(self._namespace_end)
       fd.write('\n\n')
       fd.write("#endif  // %s\n" % header_guard)
