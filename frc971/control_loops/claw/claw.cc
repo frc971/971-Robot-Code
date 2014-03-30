@@ -131,8 +131,24 @@ void ClawLimitedLoop::CapU() {
     Eigen::Matrix<double, 2, 1> adjusted_pos_error;
     {
       const auto &P = position_error;
-      Eigen::Matrix<double, 1, 2> L45;
-      L45 << sign(P(1, 0)) * ::std::sqrt(3), -sign(P(0, 0));
+
+      // This line was at 45 degrees but is now at some angle steeper than the
+      // straight one between the points.
+      Eigen::Matrix<double, 1, 2> angle_45;
+      // If the top claw is above its soft upper limit, make the line actually
+      // 45 degrees to avoid smashing it into the limit in an attempt to fix the
+      // separation error faster than the bottom position one.
+      if (X_hat(0, 0) + X_hat(1, 0) >
+          constants::GetValues().claw.upper_claw.upper_limit) {
+        angle_45 << 1, 1;
+      } else {
+        // Fixing separation error half as fast as positional error works well
+        // because it means they both close evenly.
+        angle_45 << ::std::sqrt(3), 1;
+      }
+      Eigen::Matrix<double, 1, 2> L45_quadrant;
+      L45_quadrant << sign(P(1, 0)), -sign(P(0, 0));
+      const auto L45 = L45_quadrant.cwiseProduct(angle_45);
       const double w45 = 0;
 
       Eigen::Matrix<double, 1, 2> LH;

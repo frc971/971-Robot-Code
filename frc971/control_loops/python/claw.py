@@ -156,6 +156,11 @@ class Claw(control_loop.ControlLoop):
     self.U_max = numpy.matrix([[12.0], [12.0]])
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
 
+    # For the tests that check the limits, these are (upper, lower) for both
+    # claws.
+    self.hard_pos_limits = None
+    self.pos_limits = None
+
     # Compute the steady state velocities for a given applied voltage.
     # The top and bottom of the claw should spin at the same rate if the
     # physics is right.
@@ -174,16 +179,6 @@ class Claw(control_loop.ControlLoop):
     X_ss[1, 0] = A[1, 2] * X_ss[2, 0] + A[1, 3] * X_ss[3, 0] + B[1, 0] * U[0, 0] + B[1, 1] * U[1, 0]
 
     print "X_ss", X_ss
-
-    self.U_poly = polytope.HPolytope(
-        numpy.matrix([[1, 0],
-                      [-1, 0],
-                      [0, 1],
-                      [0, -1]]),
-        numpy.matrix([[12],
-                      [12],
-                      [12],
-                      [12]]))
 
     self.InitializeState()
 
@@ -271,14 +266,24 @@ def ScaleU(claw, U, K, error):
 
   bottom_u = U[0, 0]
   top_u = U[1, 0]
+  position_error = error[0:2, 0]
+  velocity_error = error[2:, 0]
+
+  U_poly = polytope.HPolytope(
+      numpy.matrix([[1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1]]),
+      numpy.matrix([[12],
+                    [12],
+                    [12],
+                    [12]]))
 
   if (bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0] or
       top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]):
 
     position_K = K[:, 0:2]
     velocity_K = K[:, 2:]
-    position_error = error[0:2, 0]
-    velocity_error = error[2:, 0]
 
     # H * U <= k
     # U = UPos + UVel
@@ -295,20 +300,17 @@ def ScaleU(claw, U, K, error):
     # have a region.  If we have a region, then pick the largest t and go for it.
     # If we don't have a region, we need to pick a good comprimise.
 
-    # First prototype! -> Only cap the position power, leave the velocity power active.
-
-    #u_velocity = velocity_K * velocity_error
-    #u_position = position_K * position_error
-    #scalar = min(1.0, claw.U_max[0, 0] / max(numpy.abs(u_position[0, 0]), numpy.abs(u_position[1, 0])))
-    #return u_velocity + scalar * u_position
-
     pos_poly = polytope.HPolytope(
-        claw.U_poly.H * position_K,
-        claw.U_poly.k - claw.U_poly.H * velocity_K * velocity_error)
+        U_poly.H * position_K,
+        U_poly.k - U_poly.H * velocity_K * velocity_error)
+
+    # The actual angle for the line we call 45.
+    angle_45 = numpy.matrix([[numpy.sqrt(3), 1]])
+    if claw.pos_limits and claw.hard_pos_limits and claw.X[0, 0] + claw.X[1, 0] > claw.pos_limits[1]:
+      angle_45 = numpy.matrix([[1, 1]])
 
     P = position_error
-    #K = numpy.matrix([[position_error[1, 0], -position_error[0, 0]]])
-    L45 = numpy.matrix([[numpy.sign(P[1, 0]) * numpy.sqrt(3), -numpy.sign(P[0, 0])]])
+    L45 = numpy.multiply(numpy.matrix([[numpy.sign(P[1, 0]), -numpy.sign(P[0, 0])]]), angle_45)
     if L45[0, 1] == 0:
       L45[0, 1] = 1
     if L45[0, 0] == 0:
@@ -321,19 +323,14 @@ def ScaleU(claw, U, K, error):
       LH = numpy.matrix([[1, 0]])
     wh = LH * P
     standard = numpy.concatenate((L45, LH))
-    #print "Standard", standard
     W = numpy.concatenate((w45, wh))
-    #print "W is", W
     intersection = numpy.linalg.inv(standard) * W
-    print "intersection point %s" % intersection
-    print "Intersection power is ", velocity_K * velocity_error + position_K * intersection
     adjusted_pos_error_h, is_inside_h = polydrivetrain.DoCoerceGoal(pos_poly,
         LH, wh, position_error)
     adjusted_pos_error_45, is_inside_45 = polydrivetrain.DoCoerceGoal(pos_poly,
         L45, w45, intersection)
     if pos_poly.IsInside(intersection):
       adjusted_pos_error = adjusted_pos_error_h
-      print "horizontal"
     else:
       if is_inside_h:
         if numpy.linalg.norm(adjusted_pos_error_h) > numpy.linalg.norm(adjusted_pos_error_45):
@@ -342,12 +339,9 @@ def ScaleU(claw, U, K, error):
           adjusted_pos_error = adjusted_pos_error_45
       else:
         adjusted_pos_error = adjusted_pos_error_45
-      print "45"
-      print velocity_K * velocity_error + position_K * adjusted_pos_error
-      print "45"
-    print adjusted_pos_error
+    #print adjusted_pos_error
 
-    print "Actual power is ", velocity_K * velocity_error + position_K * adjusted_pos_error
+    #print "Actual power is ", velocity_K * velocity_error + position_K * adjusted_pos_error
     return velocity_K * velocity_error + position_K * adjusted_pos_error
 
     #U = Kpos * poserror + Kvel * velerror
@@ -403,6 +397,16 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False,
       print "Claw separation was", claw.X[1, 0]
       print "Should have been between", lower_bound, "and", upper_bound
 
+    if claw.hard_pos_limits and \
+      (claw.X[0, 0] > claw.hard_pos_limits[1] or
+          claw.X[0, 0] < claw.hard_pos_limits[0] or
+          claw.X[0, 0] + claw.X[1, 0] > claw.hard_pos_limits[1] or
+          claw.X[0, 0] + claw.X[1, 0] < claw.hard_pos_limits[0]):
+      tests_passed = False
+      print "Claws at %f and %f" % (claw.X[0, 0], claw.X[0, 0] + claw.X[1, 0])
+      print "Both should be in %s, definitely %s" % \
+          (claw.pos_limits, claw.hard_pos_limits)
+
     t.append(i * claw.dt)
     x_bottom.append(claw.X[0, 0] * 10.0)
     x_top.append((claw.X[1, 0] + claw.X[0, 0]) * 10.0)
@@ -454,9 +458,21 @@ def main(argv):
   R = numpy.matrix([[-0.5], [1.0], [0.0], [0.0]])
   run_test(claw, initial_X, R)
 
+  # Test opening with the top claw at the limit.
   initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[-0.05], [2.0], [0.0], [0.0]])
-  run_test(claw, initial_X, R, show_graph=True)
+  R = numpy.matrix([[-1.5], [1.5], [0.0], [0.0]])
+  claw.hard_pos_limits = (-1.6, 0.1)
+  claw.pos_limits = (-1.5, 0.0)
+  run_test(claw, initial_X, R)
+  claw.pos_limits = None
+
+  # Test opening with the bottom claw at the limit.
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[0], [1.5], [0.0], [0.0]])
+  claw.hard_pos_limits = (-0.1, 1.6)
+  claw.pos_limits = (0.0, 1.6)
+  run_test(claw, initial_X, R)
+  claw.pos_limits = None
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
