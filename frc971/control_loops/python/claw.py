@@ -340,7 +340,7 @@ def ScaleU(claw, U, K, error):
 
     P = position_error
     #K = numpy.matrix([[position_error[1, 0], -position_error[0, 0]]])
-    L45 = numpy.matrix([[numpy.sign(P[1, 0]), -numpy.sign(P[0, 0])]])
+    L45 = numpy.matrix([[numpy.sign(P[1, 0]) * numpy.sqrt(3), -numpy.sign(P[0, 0])]])
     if L45[0, 1] == 0:
       L45[0, 1] = 1
     if L45[0, 0] == 0:
@@ -547,6 +547,15 @@ def main(argv):
   initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
   R = numpy.matrix([[2.0], [0.05], [0.0], [0.0]])
   run_test(claw, initial_X, R)
+
+  # Test a small separation error and a large position one.
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[-0.5], [1.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R)
+
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[-0.05], [2.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R, show_graph=True)
 
   # Write the generated constants out to a file.
   if len(argv) != 3:

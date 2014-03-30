@@ -132,7 +132,7 @@ void ClawLimitedLoop::CapU() {
     {
       const auto &P = position_error;
       Eigen::Matrix<double, 1, 2> L45;
-      L45 << sign(P(1, 0)), -sign(P(0, 0));
+      L45 << sign(P(1, 0)) * ::std::sqrt(3), -sign(P(0, 0));
       const double w45 = 0;
 
       Eigen::Matrix<double, 1, 2> LH;
