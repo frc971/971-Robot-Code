@@ -42,10 +42,10 @@ class HPolytope {
   int num_constraints() const { return k_.rows(); }
 
   // Returns true if the point is inside the polytope.
-  bool IsInside(Eigen::Matrix<double, number_of_dimensions, 1> point);
+  bool IsInside(Eigen::Matrix<double, number_of_dimensions, 1> point) const;
 
   // Returns the list of vertices inside the polytope.
-  Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices();
+  Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices() const;
 
  private:
   Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> H_;
@@ -54,7 +54,7 @@ class HPolytope {
 
 template <int number_of_dimensions>
 bool HPolytope<number_of_dimensions>::IsInside(
-    Eigen::Matrix<double, number_of_dimensions, 1> point) {
+    Eigen::Matrix<double, number_of_dimensions, 1> point) const {
   auto ev = H_ * point;
   for (int i = 0; i < num_constraints(); ++i) {
     if (ev(i, 0) > k_(i, 0)) {
@@ -66,7 +66,7 @@ bool HPolytope<number_of_dimensions>::IsInside(
 
 template <int number_of_dimensions>
 Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
-    HPolytope<number_of_dimensions>::Vertices() {
+    HPolytope<number_of_dimensions>::Vertices() const {
   dd_MatrixPtr matrix = dd_CreateMatrix(num_constraints(), ndim() + 1);
 
   // Copy the data over. TODO(aschuh): Is there a better way?  I hate copying...

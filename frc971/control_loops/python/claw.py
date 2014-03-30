@@ -20,9 +20,8 @@ class Claw(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 2.7
     # Moment of inertia of the claw in kg m^2
-    # measured from CAD
-    self.J_top = 0.5
-    self.J_bottom = 0.9
+    self.J_top = 2.8
+    self.J_bottom = 3.0
 
     # Resistance of the motor
     self.R = 12.0 / self.stall_current
@@ -96,8 +95,8 @@ class Claw(control_loop.ControlLoop):
     self.A_diff, self.B_diff = controls.c2d(
         self.A_diff_cont, self.B_diff_cont, self.dt)
 
-    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [.65, .45])
-    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.60, .28])
+    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [.75 + 0.1j, .75 - 0.1j])
+    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.75 + 0.1j, .75 - 0.1j])
 
     print "K_diff", self.K_diff
     print "K_bottom", self.K_bottom
@@ -145,8 +144,8 @@ class Claw(control_loop.ControlLoop):
     print "eigenvalues"
     print numpy.linalg.eig(F)[0]
 
-    self.rpl = .02
-    self.ipl = 0.004
+    self.rpl = .05
+    self.ipl = 0.010
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl,
@@ -301,6 +300,7 @@ def ScaleU(claw, U, K, error):
       claw: claw object containing moments of inertia and U limits.
       U: Input matrix to clip as necessary.
   """
+
   bottom_u = U[0, 0]
   top_u = U[1, 0]
 
@@ -338,8 +338,48 @@ def ScaleU(claw, U, K, error):
         claw.U_poly.H * position_K,
         claw.U_poly.k - claw.U_poly.H * velocity_K * velocity_error)
 
-    adjusted_pos_error = polydrivetrain.CoerceGoal(pos_poly, numpy.matrix([[position_error[1, 0], -position_error[0, 0]]]), 0.0, position_error)
+    P = position_error
+    #K = numpy.matrix([[position_error[1, 0], -position_error[0, 0]]])
+    L45 = numpy.matrix([[numpy.sign(P[1, 0]), -numpy.sign(P[0, 0])]])
+    if L45[0, 1] == 0:
+      L45[0, 1] = 1
+    if L45[0, 0] == 0:
+      L45[0, 0] = 1
+    w45 = numpy.matrix([[0]])
 
+    if numpy.abs(P[0, 0]) > numpy.abs(P[1, 0]):
+      LH = numpy.matrix([[0, 1]])
+    else:
+      LH = numpy.matrix([[1, 0]])
+    wh = LH * P
+    standard = numpy.concatenate((L45, LH))
+    #print "Standard", standard
+    W = numpy.concatenate((w45, wh))
+    #print "W is", W
+    intersection = numpy.linalg.inv(standard) * W
+    print "intersection point %s" % intersection
+    print "Intersection power is ", velocity_K * velocity_error + position_K * intersection
+    adjusted_pos_error_h, is_inside_h = polydrivetrain.DoCoerceGoal(pos_poly,
+        LH, wh, position_error)
+    adjusted_pos_error_45, is_inside_45 = polydrivetrain.DoCoerceGoal(pos_poly,
+        L45, w45, intersection)
+    if pos_poly.IsInside(intersection):
+      adjusted_pos_error = adjusted_pos_error_h
+      print "horizontal"
+    else:
+      if is_inside_h:
+        if numpy.linalg.norm(adjusted_pos_error_h) > numpy.linalg.norm(adjusted_pos_error_45):
+          adjusted_pos_error = adjusted_pos_error_h
+        else:
+          adjusted_pos_error = adjusted_pos_error_45
+      else:
+        adjusted_pos_error = adjusted_pos_error_45
+      print "45"
+      print velocity_K * velocity_error + position_K * adjusted_pos_error
+      print "45"
+    print adjusted_pos_error
+
+    print "Actual power is ", velocity_K * velocity_error + position_K * adjusted_pos_error
     return velocity_K * velocity_error + position_K * adjusted_pos_error
 
     #U = Kpos * poserror + Kvel * velerror
@@ -423,7 +463,7 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False,
 
     The tests themselves are not terribly sophisticated; I just test for 
     whether the goal has been reached and whether the separation goes
-    outside of the initial and goal values by more then max_separation_error.
+    outside of the initial and goal values by more than max_separation_error.
     Prints out something for a failure of either condition and returns
     False if tests fail.
     Args:
@@ -498,9 +538,14 @@ def main(argv):
   R = numpy.matrix([[0.0], [1.0], [0.0], [0.0]])
   run_test(claw, initial_X, R)
 
-  # Test changing both separation and position at once..
+  # Test changing both separation and position at once.
   initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
   R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
+  run_test(claw, initial_X, R)
+
+  # Test a small separation error and a large position one.
+  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+  R = numpy.matrix([[2.0], [0.05], [0.0], [0.0]])
   run_test(claw, initial_X, R)
 
   # Write the generated constants out to a file.

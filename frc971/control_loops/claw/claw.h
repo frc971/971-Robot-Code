@@ -39,7 +39,7 @@ class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
   double uncapped_average_voltage_;
   bool is_zeroing_;
 
-  const ::aos::controls::HPolytope<2> U_Poly_;
+  const ::aos::controls::HPolytope<2> U_Poly_, U_Poly_zeroing_;
 };
 
 class ClawMotor;

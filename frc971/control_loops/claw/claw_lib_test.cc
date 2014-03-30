@@ -304,7 +304,7 @@ class ClawTest : public ::testing::Test {
         claw_motor_plant_.GetAbsolutePosition(TOP_CLAW) - bottom;
     EXPECT_NEAR(claw_queue_group.goal->bottom_angle, bottom, 1e-4);
     EXPECT_NEAR(claw_queue_group.goal->separation_angle, separation, 1e-4);
-    EXPECT_TRUE(min_separation_ <= separation);
+    EXPECT_LE(min_separation_, separation);
   }
 
 

@@ -5,6 +5,7 @@
 #include "aos/common/control_loop/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/logging/matrix_logging.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
@@ -44,6 +45,17 @@
 
 namespace frc971 {
 namespace control_loops {
+namespace {
+
+template <typename T> int sign(T val) {
+  if (val > T(0)) {
+    return 1;
+  } else {
+    return -1;
+  }
+}
+
+}  // namespace
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
@@ -57,7 +69,14 @@ ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
                0, 1,
                0, -1).finished(),
               (Eigen::Matrix<double, 4, 1>() << kMaxVoltage, kMaxVoltage,
-               kMaxVoltage, kMaxVoltage).finished()) {
+               kMaxVoltage, kMaxVoltage).finished()),
+      U_Poly_zeroing_((Eigen::Matrix<double, 4, 2>() << 1, 0,
+               -1, 0,
+               0, 1,
+               0, -1).finished(),
+              (Eigen::Matrix<double, 4, 1>() <<
+               kZeroingVoltage, kZeroingVoltage,
+               kZeroingVoltage, kZeroingVoltage).finished()) {
   ::aos::controls::HPolytope<0>::Init();
 }
 
@@ -79,6 +98,7 @@ void ClawLimitedLoop::CapU() {
   double max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
 
   if (::std::abs(u_bottom) > max_voltage or ::std::abs(u_top) > max_voltage) {
+    LOG_MATRIX(DEBUG, "U at start", U);
     // H * U <= k
     // U = UPos + UVel
     // H * (UPos + UVel) <= k
@@ -100,22 +120,59 @@ void ClawLimitedLoop::CapU() {
     position_error << error(0, 0), error(1, 0);
     Eigen::Matrix<double, 2, 1> velocity_error;
     velocity_error << error(2, 0), error(3, 0);
+    LOG_MATRIX(DEBUG, "error", error);
 
-    Eigen::Matrix<double, 4, 1> pos_poly_k =
-        U_Poly_.k() - U_Poly_.H() * velocity_K * velocity_error;
-    Eigen::Matrix<double, 4, 2> pos_poly_H = U_Poly_.H() * position_K;
-    ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+    const auto &poly = is_zeroing_ ? U_Poly_zeroing_ : U_Poly_;
+    const Eigen::Matrix<double, 4, 2> pos_poly_H = poly.H() * position_K;
+    const Eigen::Matrix<double, 4, 1> pos_poly_k =
+        poly.k() - poly.H() * velocity_K * velocity_error;
+    const ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
 
+    Eigen::Matrix<double, 2, 1> adjusted_pos_error;
+    {
+      const auto &P = position_error;
+      Eigen::Matrix<double, 1, 2> L45;
+      L45 << sign(P(1, 0)), -sign(P(0, 0));
+      const double w45 = 0;
 
-    Eigen::Matrix<double, 2, 1> adjusted_pos_error = CoerceGoal(
-        pos_poly, (Eigen::Matrix<double, 1, 2>() << position_error(1, 0),
-                   -position_error(0, 0)).finished(),
-        0.0, position_error);
+      Eigen::Matrix<double, 1, 2> LH;
+      if (::std::abs(P(0, 0)) > ::std::abs(P(1, 0))) {
+        LH << 0, 1;
+      } else {
+        LH << 1, 0;
+      }
+      const double wh = LH.dot(P);
 
-    LOG(DEBUG, "Capping U is now %f %f\n", U(0, 0), U(1, 0));
+      Eigen::Matrix<double, 2, 2> standard;
+      standard << L45, LH;
+      Eigen::Matrix<double, 2, 1> W;
+      W << w45, wh;
+      const Eigen::Matrix<double, 2, 1> intersection = standard.inverse() * W;
+
+      bool is_inside_h;
+      const auto adjusted_pos_error_h =
+          DoCoerceGoal(pos_poly, LH, wh, position_error, &is_inside_h);
+      const auto adjusted_pos_error_45 =
+          DoCoerceGoal(pos_poly, L45, w45, intersection, nullptr);
+      if (pos_poly.IsInside(intersection)) {
+        adjusted_pos_error = adjusted_pos_error_h;
+      } else {
+        if (is_inside_h) {
+          if (adjusted_pos_error_h.norm() > adjusted_pos_error_45.norm()) {
+            adjusted_pos_error = adjusted_pos_error_h;
+          } else {
+            adjusted_pos_error = adjusted_pos_error_45;
+          }
+        } else {
+          adjusted_pos_error = adjusted_pos_error_45;
+        }
+      }
+    }
+
+    LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
     U = velocity_K * velocity_error + position_K * adjusted_pos_error;
+    LOG_MATRIX(DEBUG, "U is now", U);
   }
-
 }
 
 ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
@@ -741,13 +798,12 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_BOTTOM:
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
-      Eigen::Matrix<double, 2, 1> U = claw_.K() * (claw_.R - claw_.X_hat);
-      LOG(DEBUG, "Uncapped voltages: Top: %f, Bottom: %f\n", U(1, 0), U(0, 0));
+      LOG(DEBUG, "Uncapped voltages: Top: %f, Bottom: %f\n", claw_.U_uncapped(1, 0), claw_.U_uncapped(0, 0));
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
-        double dx_bot = (U(0, 0) -
+        double dx_bot = (claw_.U_uncapped(0, 0) -
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
-        double dx_top = (U(1, 0) -
+        double dx_top = (claw_.U_uncapped(1, 0) -
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
         double dx = ::std::max(dx_top, dx_bot);
@@ -755,7 +811,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
         R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
-        U = claw_.K() * (R - claw_.X_hat);
+        claw_.U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup."
             " Uncapped is %f, max is %f, difference is %f\n",
@@ -765,10 +821,10 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
              values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
-        double dx_bot = (U(0, 0) +
+        double dx_bot = (claw_.U_uncapped(0, 0) +
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
-        double dx_top = (U(1, 0) +
+        double dx_top = (claw_.U_uncapped(1, 0) +
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
         double dx = ::std::min(dx_top, dx_bot);
@@ -776,7 +832,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
         R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0), claw_.R(3, 0);
-        U = claw_.K() * (R - claw_.X_hat);
+        claw_.U = claw_.K() * (R - claw_.X_hat);
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }

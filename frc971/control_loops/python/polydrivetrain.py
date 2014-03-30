@@ -28,9 +28,11 @@ def CoerceGoal(region, K, w, R):
   Returns:
     numpy.matrix (2 x 1), the point.
   """
+  return DoCoerceGoal(region, K, w, R)[0]
 
+def DoCoerceGoal(region, K, w, R):
   if region.IsInside(R):
-    return R
+    return (R, True)
 
   perpendicular_vector = K.T / numpy.linalg.norm(K)
   parallel_vector = numpy.matrix([[perpendicular_vector[1, 0]],
@@ -79,7 +81,7 @@ def CoerceGoal(region, K, w, R):
         min_distance = length
         closest_point = point
 
-    return closest_point
+    return (closest_point, True)
   else:
     # Find the vertex of the space that is closest to the line.
     region_vertices = region.Vertices()
@@ -92,7 +94,7 @@ def CoerceGoal(region, K, w, R):
         min_distance = length
         closest_point = point
 
-    return closest_point
+    return (closest_point, False)
 
 
 class VelocityDrivetrainModel(control_loop.ControlLoop):

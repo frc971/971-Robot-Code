@@ -14,7 +14,7 @@ StateFeedbackPlant<4, 2, 2> MakeClawPlant();
 
 StateFeedbackLoop<4, 2, 2> MakeClawLoop();
 
-const double kClawMomentOfInertiaRatio = 0.555556;
+const double kClawMomentOfInertiaRatio = 0.933333;
 
 }  // namespace control_loops
 }  // namespace frc971

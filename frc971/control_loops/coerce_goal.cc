@@ -7,11 +7,13 @@
 namespace frc971 {
 namespace control_loops {
 
-Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
-                                       const Eigen::Matrix<double, 1, 2> &K,
-                                       double w,
-                                       const Eigen::Matrix<double, 2, 1> &R) {
+Eigen::Matrix<double, 2, 1> DoCoerceGoal(const aos::controls::HPolytope<2> &region,
+                                         const Eigen::Matrix<double, 1, 2> &K,
+                                         double w,
+                                         const Eigen::Matrix<double, 2, 1> &R,
+                                         bool *is_inside) {
   if (region.IsInside(R)) {
+    if (is_inside) *is_inside = true;
     return R;
   }
   Eigen::Matrix<double, 2, 1> parallel_vector;
@@ -36,6 +38,7 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
         min_distance_sqr = length;
       }
     }
+    if (is_inside) *is_inside = true;
     return closest_point;
   } else {
     Eigen::Matrix<double, 2, Eigen::Dynamic> region_vertices =
@@ -50,6 +53,7 @@ Eigen::Matrix<double, 2, 1> CoerceGoal(aos::controls::HPolytope<2> &region,
         min_distance = length;
       }
     }
+    if (is_inside) *is_inside = false;
     return (Eigen::Matrix<double, 2, 1>() << region_vertices(0, closest_i),
             region_vertices(1, closest_i)).finished();
   }
