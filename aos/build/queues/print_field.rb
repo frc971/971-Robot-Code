@@ -75,7 +75,7 @@ end.flatten.join('')}
         if (*output_bytes < 1) return false;
         *input_bytes -= 1;
         bool value = static_cast<const char *>(input)[0];
-        *output_bytes += 1;
+        *output_bytes -= 1;
         *output = value ? 'T' : 'f';
         return true;
       }

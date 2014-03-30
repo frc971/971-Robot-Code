@@ -13,13 +13,13 @@ inline bool PrintInteger(char *buf, T val, size_t *output) {
 
   size_t len = 0;
   if (is_signed && val <= 0) {
-    while (*output > len && (val != 0 || len == 0)) {
+    while (*output >= len && (val != 0 || len == 0)) {
       buf[len++] = '0' - (val % 10);
       val /= 10;
     }
     buf[len++] = '-';
   } else {
-    while (*output > len && (val != 0 || len == 0)) {
+    while (*output >= len && (val != 0 || len == 0)) {
       buf[len++] = '0' + (val % 10);
       val /= 10;
     }

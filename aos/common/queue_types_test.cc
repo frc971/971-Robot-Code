@@ -52,6 +52,9 @@ class QueueTypesTest : public ::testing::Test {
   }
 };
 
+// TODO(brians): Do a better job testing PrintField with the types that have
+// specialized implementations.
+
 TEST_F(QueueTypesTest, Serialization) {
   char buffer[512];
   ssize_t size;
@@ -93,12 +96,12 @@ TEST_F(PrintFieldTest, Basic) {
   ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
                          Structure::GetType()->fields[1]->type));
   EXPECT_EQ(0u, input_bytes);
-  EXPECT_EQ(sizeof(output) - 4, output_bytes);
-  EXPECT_EQ(::std::string("971\0", 4),
+  EXPECT_EQ(sizeof(output) - 3, output_bytes);
+  EXPECT_EQ(::std::string("971"),
             ::std::string(output, sizeof(output) - output_bytes));
 }
 
-// Tests PrintField with trailing input bytes and no extra output bytes.
+// Tests PrintField with trailing input bytes and only 1 extra output byte.
 TEST_F(PrintFieldTest, OtherSizes) {
   static const float kData = 16.78;
   static const ::std::string kString("16.780001");
@@ -110,7 +113,7 @@ TEST_F(PrintFieldTest, OtherSizes) {
   ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
                          Structure::GetType()->fields[2]->type));
   EXPECT_EQ(kExtraInputBytes, input_bytes);
-  EXPECT_EQ(0u, output_bytes);
+  EXPECT_EQ(1u, output_bytes);
   EXPECT_EQ(kString, ::std::string(output));
 }
 
@@ -126,7 +129,7 @@ TEST_F(PrintFieldTest, OutputTooSmall) {
   static const uint16_t kData = 12345;
   input_bytes = sizeof(input);
   to_network(&kData, input);
-  output_bytes = 5;
+  output_bytes = 4;
   EXPECT_FALSE(PrintField(output, &output_bytes, input, &input_bytes,
                           Structure::GetType()->fields[1]->type));
 }
