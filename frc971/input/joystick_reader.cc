@@ -28,6 +28,8 @@ using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
 
+#define ENABLE_HUMAN 0
+
 namespace frc971 {
 namespace input {
 namespace joysticks {
@@ -55,6 +57,9 @@ const JoystickAxis kFlipRobot(3, 3);
 const ButtonLocation kLongShot(3, 7);
 const ButtonLocation kMediumShot(3, 6);
 const ButtonLocation kShortShot(3, 2);
+#if ENABLE_HUMAN
+// Currently human player shot.
+#endif
 const ButtonLocation kTrussShot(3, 1);
 
 const JoystickAxis kAdjustClawGoal(3, 2);
@@ -79,8 +84,8 @@ const double kGrabSeparation = 0;
 const double kShootSeparation = 0.11 + kGrabSeparation;
 
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
-const ClawGoal kIntakeGoal = {-2.273474, kGrabSeparation};
-const ClawGoal kIntakeOpenGoal = {-2.0, 1.2};
+const ClawGoal kIntakeGoal = {-2.24, kGrabSeparation};
+const ClawGoal kIntakeOpenGoal = {-2.0, 1.1};
 
 // TODO(austin): Tune these by hand...
 const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
@@ -89,10 +94,10 @@ const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
 // 34" between near edge of colored line and rear edge of bumper
 const ShotGoal kLongShotGoal = {
-    {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
+    {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 // 3/4" plunger {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
-    {0.90, kShootSeparation}, 140, 0.09, kIntakePower};
+    {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
 // 3/4 " plunger {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
 
 // 78" between near edge of colored line and rear edge of bumper
@@ -100,16 +105,21 @@ const ShotGoal kMediumShotGoal = {
     {-0.95, kShootSeparation}, 105, 0.2, kIntakePower};
 // 3/4" plunger {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
-    {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
+    {0.905, kShootSeparation}, 120, 0.2, kIntakePower};
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
 const ShotGoal kShortShotGoal = {
-    {-0.670, kShootSeparation}, 72.0, 0.4, kIntakePower};
+    {-0.670, kShootSeparation}, 77.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.57, kShootSeparation}, 82.0, 0.4, kIntakePower};
+    {0.67, kShootSeparation}, 115.0, 0.4, kIntakePower};
 
+#if ENABLE_HUMAN
+const ShotGoal kHumanShotGoal = {
+    {-0.90, kShootSeparation}, 140, 0.04, kIntakePower};
+#else
 const ShotGoal kTrussShotGoal = {
     {-0.05, kShootSeparation}, 73.0, 0, kIntakePower};
+#endif
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -348,7 +358,11 @@ class Reader : public ::aos::input::JoystickInput {
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
+#if ENABLE_HUMAN
+        SetGoal(kHumanShotGoal);
+#else
         SetGoal(kTrussShotGoal);
+#endif
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
@@ -378,7 +392,11 @@ class Reader : public ::aos::input::JoystickInput {
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
+#if ENABLE_HUMAN
+        SetGoal(kHumanShotGoal);
+#else
         SetGoal(kTrussShotGoal);
+#endif
       }
     }
 
