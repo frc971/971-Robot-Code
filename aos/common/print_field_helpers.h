@@ -10,30 +10,30 @@ namespace aos {
 template<typename T>
 inline bool PrintInteger(char *buf, T val, size_t *output) {
   static const bool is_signed = ::std::is_signed<T>::value;
+  const bool is_negative =
+      is_signed ? (val & (static_cast<T>(1) << (sizeof(T) * 8 - 1))) : false;
 
   size_t len = 0;
-  if (is_signed && val <= 0) {
-    while (*output >= len && (val != 0 || len == 0)) {
+  if (is_negative) {
+    do {
+      if (len == *output) return false;
       buf[len++] = '0' - (val % 10);
       val /= 10;
-    }
+    } while (val != 0);
+    if (len == *output) return false;
     buf[len++] = '-';
   } else {
-    while (*output >= len && (val != 0 || len == 0)) {
+    do {
+      if (len == *output) return false;
       buf[len++] = '0' + (val % 10);
       val /= 10;
-    }
+    } while (val != 0);
   }
-  // If we have enough space.
-  if (*output >= len) {
-    for (size_t i = 0; i < (len >> 1); i++) {
-      std::swap(buf[len - 1 - i], buf[i]);
-    }
-    *output -= len;
-    return true;
-  } else {
-    return false;
+  for (size_t i = 0; i < (len >> 1); i++) {
+    std::swap(buf[len - 1 - i], buf[i]);
   }
+  *output -= len;
+  return true;
 }
 
 }  // namespace aos

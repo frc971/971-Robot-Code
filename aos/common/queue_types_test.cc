@@ -1,6 +1,8 @@
 #include "aos/common/queue_types.h"
 
 #include <memory>
+#include <limits>
+#include <string>
 
 #include "gtest/gtest.h"
 
@@ -52,9 +54,6 @@ class QueueTypesTest : public ::testing::Test {
   }
 };
 
-// TODO(brians): Do a better job testing PrintField with the types that have
-// specialized implementations.
-
 TEST_F(QueueTypesTest, Serialization) {
   char buffer[512];
   ssize_t size;
@@ -81,24 +80,76 @@ TEST_F(QueueTypesTest, Serialization) {
   EXPECT_TRUE(Equal(kTestType1, *deserialized));
 }
 
-class PrintFieldTest : public ::testing::Test {
+class PrintMessageTest : public ::testing::Test {
  public:
   char input[128], output[128];
   size_t input_bytes, output_bytes;
 };
-typedef PrintFieldTest PrintMessageTest;
+
+class PrintFieldTest : public PrintMessageTest {
+ public:
+  template <typename T>
+  void TestInteger(T value, ::std::string result) {
+    input_bytes = sizeof(value);
+    to_network(&value, input);
+    output_bytes = sizeof(output);
+    ASSERT_TRUE(
+        PrintField(output, &output_bytes, input, &input_bytes, TypeID<T>::id));
+    EXPECT_EQ(0u, input_bytes);
+    EXPECT_EQ(sizeof(output) - result.size(), output_bytes);
+    EXPECT_EQ(result, ::std::string(output, sizeof(output) - output_bytes));
+  }
+
+  template <typename T>
+  void TestAllIntegers(T multiple) {
+    for (T i = ::std::numeric_limits<T>::min();
+         i < ::std::numeric_limits<T>::max() - multiple; i += multiple) {
+      TestInteger<T>(i, ::std::to_string(i));
+    }
+  }
+};
 
 TEST_F(PrintFieldTest, Basic) {
-  static const uint16_t kData = 971;
-  input_bytes = sizeof(kData);
-  to_network(&kData, input);
+  TestInteger<uint16_t>(971, "971");
+  TestInteger<uint8_t>(8, "8");
+  TestInteger<uint8_t>(254, "254");
+  TestInteger<uint8_t>(0, "0");
+  TestInteger<int8_t>(254, "-2");
+  TestInteger<int8_t>(67, "67");
+  TestInteger<int8_t>(0, "0");
+
+  input_bytes = 1;
+  input[0] = 1;
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
-                         Structure::GetType()->fields[1]->type));
+                         queue_primitive_types::bool_p));
   EXPECT_EQ(0u, input_bytes);
-  EXPECT_EQ(sizeof(output) - 3, output_bytes);
-  EXPECT_EQ(::std::string("971"),
+  EXPECT_EQ(sizeof(output) - 1, output_bytes);
+  EXPECT_EQ(::std::string("T"),
             ::std::string(output, sizeof(output) - output_bytes));
+
+  input_bytes = 1;
+  input[0] = 0;
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
+                         queue_primitive_types::bool_p));
+  EXPECT_EQ(0u, input_bytes);
+  EXPECT_EQ(sizeof(output) - 1, output_bytes);
+  EXPECT_EQ(::std::string("f"),
+            ::std::string(output, sizeof(output) - output_bytes));
+}
+
+// Runs through lots of integers and makes sure PrintField gives the same result
+// as ::std::to_string.
+TEST_F(PrintFieldTest, Integers) {
+  TestAllIntegers<uint8_t>(1);
+  TestAllIntegers<int8_t>(1);
+  TestAllIntegers<uint16_t>(1);
+  TestAllIntegers<int16_t>(3);
+  TestAllIntegers<uint32_t>(43129);
+  TestAllIntegers<int32_t>(654321);
+  TestAllIntegers<uint64_t>(123456789101112);
+  TestAllIntegers<int64_t>(91011121249856532);
 }
 
 // Tests PrintField with trailing input bytes and only 1 extra output byte.
