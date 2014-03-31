@@ -283,13 +283,16 @@ class Reader : public ::aos::input::JoystickInput {
   void SetGoal(ClawGoal goal) {
     goal_angle_ = goal.angle;
     separation_angle_ = goal.separation;
+    moving_for_shot_ = false;
     velocity_compensation_ = 0.0;
     intake_power_ = 0.0;
   }
 
   void SetGoal(ShotGoal goal) {
     goal_angle_ = goal.claw.angle;
-    separation_angle_ = goal.claw.separation;
+    shot_separation_angle_ = goal.claw.separation;
+    separation_angle_ = kGrabSeparation;
+    moving_for_shot_ = true;
     shot_power_ = goal.shot_power;
     velocity_compensation_ = goal.velocity_compensation;
     intake_power_ = goal.intake_power;
@@ -304,6 +307,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
       separation_angle_ = kGrabSeparation;
+      moving_for_shot_ = false;
     }
 
     static const double kAdjustClawGoalDeadband = 0.08;
@@ -442,6 +446,18 @@ class Reader : public ::aos::input::JoystickInput {
       } else {
         LOG_INTERVAL(no_drivetrain_status_);
       }
+
+      if (moving_for_shot_) {
+        auto &claw_status = control_loops::claw_queue_group.status;
+        claw_status.FetchLatest();
+        if (claw_status.get()) {
+          if (::std::abs(claw_status->bottom - goal_angle) < 0.4) {
+            moving_for_shot_ = false;
+            separation_angle_ = shot_separation_angle_;
+          }
+        }
+      }
+
       double separation_angle = separation_angle_;
 
       if (data.IsPressed(kCatch)) {
@@ -487,10 +503,11 @@ class Reader : public ::aos::input::JoystickInput {
   bool is_high_gear_;
   double shot_power_;
   double goal_angle_;
-  double separation_angle_;
+  double separation_angle_, shot_separation_angle_;
   double velocity_compensation_;
   double intake_power_;
   bool was_running_;
+  bool moving_for_shot_ = false;
   
   ActionQueue action_queue_;
 
