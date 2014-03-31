@@ -422,8 +422,10 @@ void ShooterMotor::RunIteration(
       // anything and is safe.  Otherwise this gives us a bit more room to free
       // up the latch.
       shooter_.SetGoalPosition(values.shooter.lower_limit, 0.0);
-      LOG(DEBUG, "Waiting on latch: plunger %d, latch: %d\n",
-          position->plunger, position->latch);
+      if (position) {
+        LOG(DEBUG, "Waiting on latch: plunger %d, latch: %d\n",
+            position->plunger, position->latch);
+      }
 
       latch_piston_ = true;
       brake_piston_ = false;
