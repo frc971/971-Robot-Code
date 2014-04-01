@@ -73,6 +73,9 @@ const DataStruct *SensorReader::ReadPacket() {
         continue;
       }
       if (data->timestamp < last_cape_timestamp_) {
+        // TODO(brians): A common failure mode of the cape is to send the same 2
+        // packets (from the ring buffer) out repeatedly. Detect that and reset
+        // it.
         LOG(WARNING, "cape timestamp decreased: %" PRIu64 " to %" PRIu64 "\n",
             last_cape_timestamp_, data->timestamp);
         ResetHappened();

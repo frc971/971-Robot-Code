@@ -90,14 +90,14 @@ CLAW(10, 11, 9, bottom_claw, 7);
 SHOOTER(7, 5, 4, 8, 0)
 
 // TIM11.1 on PB9, aka digital input 6.
-timer_declare(TIM11, TIM1_TR_GCOM_TIM11_IRQHandler, 1, 1, ultrasonic)
+timer_declare(TIM11, TIM1_TRG_COM_TIM11_IRQHandler, 1, 1, ultrasonic)
 
 void robot_init(void) {
   gpio_setup_alt(GPIOB, 9, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
   TIM11->CCMR1 = TIM_CCMR1_CC1S_0 /* input pin 1 -> timer input 1 */;
   TIM11->PSC = 1200 - 1;  // 100KHz timer
-  //timer_setup(TIM11, TIM1_TRG_COM_TIM11_IRQn, 1);
+  timer_setup(TIM11, TIM1_TRG_COM_TIM11_IRQn, 1);
 }
 
 void robot_fill_packet(struct DataStruct *packet) {
