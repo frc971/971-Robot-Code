@@ -86,6 +86,7 @@ struct DATA_STRUCT_NAME {
       uint32_t ultrasonic_pulse_length;
 
       // The length of the pulse from the sidecar PWM output in 10MHz ticks.
+      // Goes to non-0 exactly once for each pulse received.
       uint32_t output_check_pulse_length;
 
       int32_t shooter_position, pusher_distal_posedge_position,

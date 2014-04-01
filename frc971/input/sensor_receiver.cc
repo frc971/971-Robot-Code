@@ -14,6 +14,7 @@
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/queues/output_check.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -176,6 +177,19 @@ void PacketReceived(const ::bbb::DataStruct *data,
 
   if (data->analog_errors != 0) {
     LOG(WARNING, "%" PRIu8 " analog errors\n", data->analog_errors);
+  }
+
+  if (data->main.output_check_pulse_length != 0) {
+    auto message = ::frc971::output_check_received.MakeMessage();
+    message->pulse_length =
+        static_cast<double>(data->main.output_check_pulse_length) / 100.0;
+    if (message->pulse_length > 2.7) {
+      LOG(WARNING, "insane PWM pulse length %fms\n", message->pulse_length);
+    } else {
+      message->pwm_value = (message->pulse_length - 0.5) / 2.0 * 255.0 + 0.5;
+      LOG_STRUCT(DEBUG, "received", *message);
+      message.Send();
+    }
   }
 
   other_sensors.MakeWithBuilder()

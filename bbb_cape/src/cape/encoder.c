@@ -76,6 +76,8 @@ void EXTI3_IRQHandler(void) {
 	encoder3_value = new_value;
 }
 
+#if 0
+TODO(brians): Figure out a good way to let robot_comp override this.
 // 4.A
 void TIM1_CC_IRQHandler(void) {
   uint32_t a_inputs = GPIOA->IDR, b_inputs = GPIOB->IDR;
@@ -89,6 +91,7 @@ void TIM1_CC_IRQHandler(void) {
   }
 	encoder4_value = new_value;
 }
+#endif
 
 // 4.B
 void TIM3_IRQHandler(void) {

@@ -43,6 +43,7 @@
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
+        '<(DEPTH)/frc971/queues/queues.gyp:output_check',
       ],
     },
   ],

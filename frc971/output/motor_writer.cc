@@ -95,11 +95,13 @@ class MotorWriter : public ::aos::MotorOutput {
     }
 
     {
-      auto message = ::frc971::output_check_queue.MakeMessage();
+      auto message = ::frc971::output_check_sent.MakeMessage();
       ++output_check_;
       if (output_check_ == 0) output_check_ = 1;
       SetRawPWMOutput(10, output_check_);
-      message->sent_value = output_check_;
+      message->pwm_value = output_check_;
+      message->pulse_length =
+          static_cast<double>(message->pwm_value) / 255.0 * 2.0 + 0.5;
       LOG_STRUCT(DEBUG, "sending", *message);
       message.Send();
     }

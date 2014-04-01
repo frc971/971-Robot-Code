@@ -92,12 +92,21 @@ SHOOTER(7, 5, 4, 8, 0)
 // TIM11.1 on PB9, aka digital input 6.
 timer_declare(TIM11, TIM1_TRG_COM_TIM11_IRQHandler, 1, 1, ultrasonic)
 
+// TIM1.1 on PA8, aka encoder input 4A.
+timer_declare(TIM1, TIM1_CC_IRQHandler, 1, 1, output_check)
+
 void robot_init(void) {
   gpio_setup_alt(GPIOB, 9, 3);
   RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
   TIM11->CCMR1 = TIM_CCMR1_CC1S_0 /* input pin 1 -> timer input 1 */;
   TIM11->PSC = 1200 - 1;  // 100KHz timer
   timer_setup(TIM11, TIM1_TRG_COM_TIM11_IRQn, 1);
+
+  gpio_setup_alt(GPIOA, 8, 1);
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+  TIM1->CCMR1 = TIM_CCMR1_CC1S_0 /* input pin 1 -> timer input 1 */;
+  TIM1->PSC = 12 - 1;  // 10MHz timer
+  timer_setup(TIM1, TIM1_CC_IRQn, 1);
 }
 
 void robot_fill_packet(struct DataStruct *packet) {
@@ -112,6 +121,14 @@ void robot_fill_packet(struct DataStruct *packet) {
   packet->main.battery_voltage_low = analog_get(3);
 
   packet->main.ultrasonic_pulse_length = ultrasonic_length;
+
+  {
+    NVIC_DisableIRQ(TIM1_CC_IRQn);
+    const uint32_t temp_output_check_length = output_check_length;
+    output_check_length = 0;
+    NVIC_EnableIRQ(TIM1_CC_IRQn);
+    packet->main.output_check_pulse_length = temp_output_check_length;
+  }
 
   fill_top_claw_values(packet);
   fill_bottom_claw_values(packet);
