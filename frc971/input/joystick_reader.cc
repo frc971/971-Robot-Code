@@ -28,8 +28,6 @@ using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
 
-#define ENABLE_HUMAN 0
-
 namespace frc971 {
 namespace input {
 namespace joysticks {
@@ -43,8 +41,8 @@ const ButtonLocation kQuickTurn(1, 5);
 const ButtonLocation kCatch(3, 10);
 
 const ButtonLocation kFire(3, 9);
-const ButtonLocation kUnload(2, 11);
-const ButtonLocation kReload(2, 6);
+const ButtonLocation kUnload(1, 4);
+const ButtonLocation kReload(1, 2);
 
 const ButtonLocation kRollersOut(3, 8);
 const ButtonLocation kRollersIn(3, 3);
@@ -52,15 +50,17 @@ const ButtonLocation kRollersIn(3, 3);
 const ButtonLocation kTuck(3, 4);
 const ButtonLocation kIntakePosition(3, 5);
 const ButtonLocation kIntakeOpenPosition(3, 11);
+const ButtonLocation kVerticalTuck(2, 6);
 const JoystickAxis kFlipRobot(3, 3);
 
 const ButtonLocation kLongShot(3, 7);
 const ButtonLocation kMediumShot(3, 6);
 const ButtonLocation kShortShot(3, 2);
-#if ENABLE_HUMAN
-// Currently human player shot.
-#endif
-const ButtonLocation kTrussShot(3, 1);
+const ButtonLocation kTrussShot(2, 11);
+const ButtonLocation kHumanPlayerShot(3, 1);
+
+const ButtonLocation kUserLeft(2, 7);
+const ButtonLocation kUserRight(2, 10);
 
 const JoystickAxis kAdjustClawGoal(3, 2);
 const JoystickAxis kAdjustClawSeparation(3, 1);
@@ -84,6 +84,7 @@ const double kGrabSeparation = 0;
 const double kShootSeparation = 0.11 + kGrabSeparation;
 
 const ClawGoal kTuckGoal = {-2.273474, -0.749484};
+const ClawGoal kVerticalTuckGoal = {0, kGrabSeparation};
 const ClawGoal kIntakeGoal = {-2.24, kGrabSeparation};
 const ClawGoal kIntakeOpenGoal = {-2.0, 1.1};
 
@@ -113,13 +114,10 @@ const ShotGoal kShortShotGoal = {
 const ShotGoal kFlippedShortShotGoal = {
     {0.67, kShootSeparation}, 115.0, 0.4, kIntakePower};
 
-#if ENABLE_HUMAN
 const ShotGoal kHumanShotGoal = {
     {-0.90, kShootSeparation}, 140, 0.04, kIntakePower};
-#else
 const ShotGoal kTrussShotGoal = {
     {-0.05, kShootSeparation}, 73.0, 0, kIntakePower};
-#endif
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -331,7 +329,7 @@ class Reader : public ::aos::input::JoystickInput {
           -0.035;
     }
 
-    if (data.GetAxis(kFlipRobot) > 0.5) {
+    if (data.GetAxis(kFlipRobot) > 0.9) {
       claw_goal_adjust += claw_separation_adjust;
       claw_goal_adjust *= -1;
 
@@ -343,6 +341,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedIntakeGoal);
+      } else if (data.IsPressed(kVerticalTuck)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
@@ -359,14 +361,14 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedShortShotGoal);
+      } else if (data.PosEdge(kHumanPlayerShot)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kHumanShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-#if ENABLE_HUMAN
-        SetGoal(kHumanShotGoal);
-#else
         SetGoal(kTrussShotGoal);
-#endif
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
@@ -377,6 +379,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kIntakeGoal);
+      } else if (data.IsPressed(kVerticalTuck)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kVerticalTuckGoal);
       } else if (data.IsPressed(kTuck)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
@@ -393,14 +399,14 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kShortShotGoal);
+      } else if (data.PosEdge(kHumanPlayerShot)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kHumanShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-#if ENABLE_HUMAN
-        SetGoal(kHumanShotGoal);
-#else
         SetGoal(kTrussShotGoal);
-#endif
       }
     }
 
@@ -451,7 +457,7 @@ class Reader : public ::aos::input::JoystickInput {
         auto &claw_status = control_loops::claw_queue_group.status;
         claw_status.FetchLatest();
         if (claw_status.get()) {
-          if (::std::abs(claw_status->bottom - goal_angle) < 0.4) {
+          if (::std::abs(claw_status->bottom - goal_angle) < 0.2) {
             moving_for_shot_ = false;
             separation_angle_ = shot_separation_angle_;
           }
