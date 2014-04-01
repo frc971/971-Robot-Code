@@ -14,7 +14,7 @@ TARGET=driver@$(${GET_IP} prime)
 
 SUMS=$(cd ${FROM_DIR} && ${SUM} *)
 
-TO_DOWNLOAD=$(ssh ${TARGET} "rm -rf ${TMPDIR} && mkdir ${TMPDIR} && cd ${TO_DIR} && echo '${SUMS}' | ${SUM} --check --quiet |& grep -F FAILED | sed 's/^\\(.*\\): FAILED"'$'"/\\1/g'")
+TO_DOWNLOAD=$(ssh ${TARGET} "rm -rf ${TMPDIR} && mkdir ${TMPDIR} && cd ${TO_DIR} && echo '${SUMS}' | ${SUM} --check --quiet |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'")
 if [[ $? != 0 ]]; then
 	echo 'Connecting to target failed.'
 	exit 1
