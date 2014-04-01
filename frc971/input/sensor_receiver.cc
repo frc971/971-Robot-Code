@@ -181,8 +181,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
 
   if (data->main.output_check_pulse_length != 0) {
     auto message = ::frc971::output_check_received.MakeMessage();
+    // TODO(brians): Fix this math to match what the cRIO actually does.
+    // It's close but not quite right.
     message->pulse_length =
-        static_cast<double>(data->main.output_check_pulse_length) / 100.0;
+        static_cast<double>(data->main.output_check_pulse_length) / 10000.0;
     if (message->pulse_length > 2.7) {
       LOG(WARNING, "insane PWM pulse length %fms\n", message->pulse_length);
     } else {
