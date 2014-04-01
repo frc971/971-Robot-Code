@@ -397,8 +397,6 @@ void ShooterMotor::RunIteration(
             LOG(ERROR, "Estopping because took too long to load.\n");
           }
         }
-      } else if (goal->unload_requested) {
-        Unload();
       }
       brake_piston_ = false;
       break;
