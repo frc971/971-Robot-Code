@@ -6,6 +6,7 @@
 #include "aos/common/control_loop/ControlLoop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "aos/common/time.h"
+#include "aos/common/util/log_interval.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/shooter/shooter_motor_plant.h"
@@ -206,6 +207,10 @@ class ShooterMotor
   int proximal_posedge_validation_cycles_left_;
   bool last_distal_current_;
   bool last_proximal_current_;
+
+  ::aos::util::SimpleLogInterval motors_off_log_ =
+      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.05),
+                                     WARNING, "motors disabled");
 
   DISALLOW_COPY_AND_ASSIGN(ShooterMotor);
 };

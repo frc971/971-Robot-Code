@@ -31,6 +31,8 @@
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/util/util.gyp:log_interval',
+        '<(DEPTH)/frc971/queues/queues.gyp:output_check',
       ],
       'export_dependent_settings': [
         'shooter_loop',
