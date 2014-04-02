@@ -1,4 +1,0 @@
-#include <utility>
-#ifdef __VXWORKS__
-#include "aos/crio/libstdc++/move.h"
-#endif

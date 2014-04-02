@@ -1,7 +1,7 @@
 #include "aos/common/queue.h"
 
 #include "aos/common/byteorder.h"
-#include "aos/common/inttypes.h"
+#include <inttypes.h>
 
 namespace aos {
 

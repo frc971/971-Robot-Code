@@ -1,5 +1,0 @@
-#ifdef __VXWORKS__
-#include "aos/crio/libstdc++/type_traits"
-#else
-#include <type_traits>
-#endif

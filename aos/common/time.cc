@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/inttypes.h"
+#include <inttypes.h>
 #include "aos/common/mutex.h"
 
 namespace aos {

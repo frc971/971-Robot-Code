@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 #include "aos/common/time.h"
-#include "aos/common/inttypes.h"
+#include <inttypes.h>
 #include "aos/common/once.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/logging/logging_printf_formats.h"
