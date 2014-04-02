@@ -1,6 +1,13 @@
 {
   'targets': [
     {
+      'target_name': 'inet_addr',
+      'type': 'static_library',
+      'sources': [
+        'inet_addr.cc',
+      ],
+    },
+    {
       'target_name': 'log_interval',
       'type': 'static_library',
       'sources': [

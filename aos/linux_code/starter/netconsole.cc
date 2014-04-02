@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "aos/common/logging/logging_impl.h"
-#include "aos/common/util.h"
+#include "aos/common/util/inet_addr.h"
 #include "aos/linux_code/configuration.h"
 
 namespace aos {

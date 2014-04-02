@@ -1,4 +1,4 @@
-#include "aos/common/util.h"
+#include "aos/common/util/inet_addr.h"
 
 #include <stdlib.h>
 #ifndef __VXWORKS__

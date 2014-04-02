@@ -9,7 +9,7 @@
       'dependencies': [
         '<(EXTERNALS):WPILib',
         '<(AOS)/crio/crio.gyp:ip',
-        '<(AOS)/common/common.gyp:util',
+        '<(AOS)/common/util/util.gyp:inet_addr',
       ],
     },
     {

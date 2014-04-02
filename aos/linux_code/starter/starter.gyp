@@ -9,7 +9,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
-        '<(AOS)/common/common.gyp:util',
+        '<(AOS)/common/util/util.gyp:inet_addr',
       ],
     },
     {

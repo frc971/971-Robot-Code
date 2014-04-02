@@ -5,7 +5,7 @@
 
 #include "aos/linux_code/configuration.h"
 #include "aos/common/network_port.h"
-#include "aos/common/util.h"
+#include "aos/common/util/inet_addr.h"
 
 namespace aos {
 

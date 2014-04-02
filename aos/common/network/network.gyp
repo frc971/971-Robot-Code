@@ -13,35 +13,6 @@
       ],
     },
     {
-      'target_name': 'socket_so',
-      'type': 'shared_library',
-      'variables': {'no_rsync': 1},
-      'sources': [
-        'ReceiveSocket.cpp',
-        'SendSocket.cpp',
-        'Socket.cpp',
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:logging',
-      ],
-      'export_dependent_settings': [
-      ],
-      'conditions': [
-        ['OS=="crio"', {
-          'dependencies': [
-            '<(EXTERNALS):WPILib',
-          ]}
-        ],
-      ],
-      'direct_dependent_settings': {
-        'variables': {
-          'jni_libs': [
-            'socket_so',
-          ],
-        },
-      },
-    },
-    {
       'target_name': 'socket',
       'type': 'static_library',
       'sources': [
@@ -52,7 +23,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/common.gyp:util',
+        '<(AOS)/common/util/util.gyp:inet_addr',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
       'export_dependent_settings': [

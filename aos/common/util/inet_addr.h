@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_UTIL_H_
-#define AOS_COMMON_UTIL_H_
+#ifndef AOS_COMMON_UTIL_INET_ADDR_H_
+#define AOS_COMMON_UTIL_INET_ADDR_H_
 
 #ifdef __VXWORKS__
 #include <inetLib.h>
@@ -26,4 +26,4 @@ void SetLastSegment(in_addr *address, ::aos::NetworkAddress last_segment);
 }  // namespace util
 }  // namespace aos
 
-#endif  // AOS_COMMON_UTIL_H_
+#endif  // AOS_COMMON_UTIL_INET_ADDR_H_

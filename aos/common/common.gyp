@@ -380,12 +380,5 @@
         'die',
       ],
     },
-    {
-      'target_name': 'util',
-      'type': 'static_library',
-      'sources': [
-        'util.cc',
-      ],
-    },
   ],
 }
