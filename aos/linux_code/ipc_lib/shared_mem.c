@@ -51,18 +51,20 @@ int aos_core_create_shared_mem(enum aos_core_create to_create) {
   }
 
   int shm;
-before:
   if (to_create == create) {
-    printf("shared_mem: creating %s\n", global_core->shm_name);
-    shm = shm_open(global_core->shm_name, O_RDWR | O_CREAT | O_EXCL, 0666);
-    global_core->owner = 1;
-    if (shm == -1 && errno == EEXIST) {
-      printf("shared_mem: going to shm_unlink(%s)\n", global_core->shm_name);
-      if (shm_unlink(global_core->shm_name) == -1) {
-        fprintf(stderr, "shared_mem: shm_unlink(%s) failed with of %d: %s\n",
-                global_core->shm_name, errno, strerror(errno));
+    while (1) {
+      printf("shared_mem: creating %s\n", global_core->shm_name);
+      shm = shm_open(global_core->shm_name, O_RDWR | O_CREAT | O_EXCL, 0666);
+      global_core->owner = 1;
+      if (shm == -1 && errno == EEXIST) {
+        printf("shared_mem: going to shm_unlink(%s)\n", global_core->shm_name);
+        if (shm_unlink(global_core->shm_name) == -1) {
+          fprintf(stderr, "shared_mem: shm_unlink(%s) failed with of %d: %s\n",
+                  global_core->shm_name, errno, strerror(errno));
+          break;
+        }
       } else {
-        goto before;
+        break;
       }
     }
   } else {
@@ -118,8 +120,6 @@ int aos_core_use_address_as_shared_mem(void *address, size_t size) {
   if (global_core->owner) {
     global_core->mem_struct->msg_alloc = (uint8_t *)address + global_core->size;
     init_shared_mem_core(global_core->mem_struct);
-  }
-  if (global_core->owner) {
     futex_set(&global_core->mem_struct->creation_condition);
   } else {
     if (futex_wait(&global_core->mem_struct->creation_condition) != 0) {
