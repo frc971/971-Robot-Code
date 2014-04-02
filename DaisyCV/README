@@ -1,9 +1,0 @@
-How to get this code compiling:
-
-1) Open up eclipse. Import the DasiyCV folder as a new project.
-
-2) Go into the project settings and set the build path to use the correct javacv-*your system*.jar file. (all jars are located in DaisyCV/external_jars)
-
-3) Install opencv
-
-NOTE: WPIJavaCV looks for OpenCV 2.2. A word of warning: OpenCV 2.2 is hard to source compile because it tries to use methods of the ffmpeg libraries that are now deprecated/deleted. I strongly urge you to go ahead and build 2.4, and make symlinks for opencv_core.so.2.2 and opencv_imgproc.so.2.2 that poing to the 2.4 versions in your /usr/lib directory. The java will code will run fine with this version.

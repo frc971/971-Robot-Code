@@ -1,8 +1,0 @@
-To build, run 
-
-make -C /lib/modules/`uname -r | tr -d '\n'`/build M=`pwd` modules
-
-Where 2.6.38... is what you get when you run uname -r
-
-To use from a dialout user (not root)
-cp 90-aschuh.rules /etc/udev/rules.d/
