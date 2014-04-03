@@ -1,15 +1,16 @@
-#include "aos/common/network/SendSocket.h"
+#include "aos/common/network/send_socket.h"
 
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <math.h>
+#include <sys/socket.h>
 
-#include "aos/common/network/SocketLibraries.h"
 #include "aos/common/logging/logging.h"
 
 namespace aos {
+namespace network {
 
 int SendSocket::Connect(NetworkPort port, const char *robot_ip, int type) {
   Reset();
@@ -18,14 +19,15 @@ int SendSocket::Connect(NetworkPort port, const char *robot_ip, int type) {
     return ret;
   }
 
-  if (connect(socket_, &addr_.addr,
-              sizeof(addr_)) < 0) {
+  if (connect(socket_, &addr_.addr, sizeof(addr_)) < 0) {
     LOG(ERROR, "couldn't connect to ip '%s' because of %d: %s\n", robot_ip,
         errno, strerror(errno));
     last_ret_ = 1;
   }
 
+  // TODO(brians): Is this a bug?
   return last_ret_ = 0;
 }
 
+}  // namespace network
 }  // namespace aos

@@ -1,13 +1,14 @@
-#ifndef AOS_NETWORK_SEND_SOCKET_H_
-#define AOS_NETWORK_SEND_SOCKET_H_
+#ifndef AOS_COMMON_NETWORK_SEND_SOCKET_H_
+#define AOS_COMMON_NETWORK_SEND_SOCKET_H_
 
-#include "Socket.h"
+#include "aos/common/network/socket.h"
 
 #include "aos/linux_code/configuration.h"
 #include "aos/common/network_port.h"
 #include "aos/common/util/inet_addr.h"
 
 namespace aos {
+namespace network {
 
 class SendSocket : public Socket {
  public:
@@ -22,7 +23,7 @@ class SendSocket : public Socket {
   int Connect(NetworkPort port, const char *robot_ip, int type = SOCK_DGRAM);
 };
 
-} // namespace aos
+}  // namespace network
+}  // namespace aos
 
-#endif
-
+#endif  // AOS_COMMON_NETWORK_SEND_SOCKET_H_

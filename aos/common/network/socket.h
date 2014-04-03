@@ -13,6 +13,7 @@
 #include "aos/common/network_port.h"
 
 namespace aos {
+namespace network {
 
 class Socket {
  public:
@@ -26,10 +27,6 @@ class Socket {
   // valid return value for all overloads.
   // No timeout.
   int Receive(void *buf, int length);
-  // DEPRECATED(brians): use the time::Time overload instead
-  int Receive(void *buf, int length, long usec_timeout) {
-    return Receive(buf, length, time::Time::InUS(usec_timeout));
-  }
   // timeout is relative
   int Receive(void *buf, int length, time::Time timeout);
 
@@ -50,6 +47,7 @@ class Socket {
   int last_ret_;
 };
 
+}  // namespace network
 }  // namespace aos
 
 #endif  // AOS_COMMON_NETWORK_SOCKET_H_

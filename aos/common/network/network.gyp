@@ -16,9 +16,9 @@
       'target_name': 'socket',
       'type': 'static_library',
       'sources': [
-        'ReceiveSocket.cpp',
-        'SendSocket.cpp',
-        'Socket.cpp',
+        'receive_socket.cc',
+        'send_socket.cc',
+        'socket.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',

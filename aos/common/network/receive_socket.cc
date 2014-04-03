@@ -1,14 +1,16 @@
-#include "ReceiveSocket.h"
+#include "aos/common/network/receive_socket.h"
+
 #include <string.h>
 #include <math.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/socket.h>
 
-#include "aos/common/network/SocketLibraries.h"
 #include "aos/common/logging/logging.h"
 
 namespace aos {
+namespace network {
 
 static const char *localhost = "0.0.0.0";
 
@@ -28,5 +30,5 @@ int ReceiveSocket::Connect(NetworkPort port) {
   return last_ret_ = 0;
 }
 
-} // namespace aos
-
+}  // namespace network
+}  // namespace aos

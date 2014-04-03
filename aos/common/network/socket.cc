@@ -1,12 +1,13 @@
-#include "aos/common/network/Socket.h"
+#include "aos/common/network/socket.h"
 
 #include <string.h>
 #include <errno.h>
+#include <sys/socket.h>
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/network/SocketLibraries.h"
 
 namespace aos {
+namespace network {
 
 int Socket::Connect(NetworkPort port, const char *address, int type) {
   last_ret_ = 0;
@@ -24,7 +25,7 @@ int Socket::Connect(NetworkPort port, const char *address, int type) {
 #else
   const int failure_return = -1;
 #endif
-  if (inet_aton(lame_unconst(address), &addr_.in.sin_addr) == failure_return) {
+  if (inet_aton(address, &addr_.in.sin_addr) == failure_return) {
     LOG(ERROR, "Invalid IP address '%s' because of %d: %s\n", address,
         errno, strerror(errno));
     return last_ret_ = -1;
@@ -74,9 +75,10 @@ int Socket::Receive(void *buf, int length, time::Time timeout) {
 
 int Socket::Send(const void *buf, int length) {
   const int ret = write(socket_,
-                        lame_unconst(static_cast<const char *>(buf)), length);
+                        static_cast<const char *>(buf), length);
   last_ret_ = (ret == -1) ? -1 : 0;
   return ret;
 }
 
+}  // namespace network
 }  // namespace aos
