@@ -180,6 +180,6 @@ class ControlLoop : public SerializableControlLoop {
 }  // namespace control_loops
 }  // namespace aos
 
-#include "aos/common/control_loop/ControlLoop-tmpl.h"  // IWYU pragma: export
+#include "aos/common/control_loop/control_loop-tmpl.h"  // IWYU pragma: export
 
 #endif

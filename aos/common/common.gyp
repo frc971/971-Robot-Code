@@ -170,7 +170,7 @@
       'target_name': 'controls',
       'type': 'static_library',
       'sources': [
-        'control_loop/ControlLoop.cc',
+        'control_loop/control_loop.cc',
       ],
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:robot_state',

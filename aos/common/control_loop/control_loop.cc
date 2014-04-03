@@ -1,4 +1,4 @@
-#include "aos/common/control_loop/ControlLoop.h"
+#include "aos/common/control_loop/control_loop.h"
 
 namespace aos {
 namespace control_loops {
