@@ -40,6 +40,9 @@ const ShifterHallEffect kPracticeLeftDriveShifter{540, 620, 640, 550, 0.2, 0.7};
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
 
+// Smaller (more negative) = opening.
+const double kCompTopClawOffset = -0.120;
+
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
@@ -84,7 +87,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
-          true,
+          false,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits
@@ -102,10 +105,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            1.822142,
            -0.849484,
            1.42309,
-           {-3.328397, 2.091668, -3.166136, 1.95,
-             {-3.4, -3.092051, -3.4, -3.093414},
-             {-0.249073, -0.035452, -0.251800, -0.033179},
-             {1.889410, 2.2, 1.883956, 2.2}},
+           // 0.0371
+           {-3.3284, 2.0917, -3.1661, 1.95,
+             {-3.4, -2.9368 + kCompTopClawOffset, -3.4, -2.9876 + kCompTopClawOffset},
+             {-0.1433 + kCompTopClawOffset, 0.0670 + kCompTopClawOffset, -0.1460 + kCompTopClawOffset, 0.0648 + kCompTopClawOffset},
+             {1.9952 + kCompTopClawOffset, 2.2, 1.9898 + kCompTopClawOffset, 2.2}},
            {-2.453460, 3.082960, -2.453460, 3.082960,
              {-2.6, -2.185752, -2.6, -2.184843},
              {-0.280434, -0.049087, -0.277707, -0.047724},

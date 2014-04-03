@@ -95,10 +95,10 @@ const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
 // 34" between near edge of colored line and rear edge of bumper
 const ShotGoal kLongShotGoal = {
-    {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
+    {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
 // 3/4" plunger {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
-    {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
+    {0.94, kShootSeparation}, 140, 0.09, kIntakePower};
 // 3/4 " plunger {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
 
 // 78" between near edge of colored line and rear edge of bumper
