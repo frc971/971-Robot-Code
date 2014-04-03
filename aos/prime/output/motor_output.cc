@@ -37,6 +37,10 @@ uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
 
 MotorOutput::MotorOutput()
   : socket_(NetworkPort::kMotors, ::aos::NetworkAddress::kCRIO) {
+  if (socket_.LastStatus() != 0) {
+    LOG(FATAL, "opening output socket failed (returned %d)\n",
+        socket_.LastStatus());
+  }
   values_.solenoid_values = 0;
 }
 
