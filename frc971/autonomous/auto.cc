@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "aos/common/control_loop/Timing.h"
+#include "aos/common/util/phased_loop.h"
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"

@@ -167,36 +167,6 @@
       'includes': ['../build/queues.gypi'],
     },
     {
-      'target_name': 'timing_so',
-      'type': 'shared_library',
-      'sources': [
-        'control_loop/Timing.cpp'
-      ],
-      'variables': {'no_rsync': 1},
-      'dependencies': [
-      ],
-      'direct_dependent_settings': {
-        'variables': {
-          'jni_libs': [
-            'timing_so',
-          ],
-        },
-      },
-      'export_dependent_settings': [
-      ],
-    },
-    {
-      'target_name': 'timing',
-      'type': 'static_library',
-      'sources': [
-        'control_loop/Timing.cpp'
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:logging',
-        'time',
-      ],
-    },
-    {
       'target_name': 'controls',
       'type': 'static_library',
       'sources': [
@@ -205,7 +175,7 @@
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
-        'timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         'time',
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
@@ -215,7 +185,7 @@
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
-        'timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         'time',
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',

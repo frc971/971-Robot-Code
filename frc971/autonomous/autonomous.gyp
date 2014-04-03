@@ -29,7 +29,7 @@
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/common.gyp:timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/frc971/actions/actions.gyp:action_client',

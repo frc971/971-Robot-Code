@@ -3,7 +3,6 @@
 
 #include <cstring>
 
-#include "aos/common/control_loop/Timing.h"
 #include "aos/common/type_traits.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"

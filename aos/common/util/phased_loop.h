@@ -1,5 +1,5 @@
-#ifndef __AOS_TIMEOUT_H_
-#define __AOS_TIMEOUT_H_
+#ifndef AOS_COMMON_UTIL_PHASED_LOOP_H_
+#define AOS_COMMON_UTIL_PHASED_LOOP_H_
 
 #include <time.h>
 #include <string>
@@ -16,4 +16,4 @@ inline void PhasedLoop10MS(int offset) { PhasedLoopXMS(10, offset); }
 }  // namespace time
 }  // namespace aos
 
-#endif
+#endif  // AOS_COMMON_UTIL_PHASED_LOOP_H_

@@ -8,7 +8,7 @@
       ],
       'dependencies': [
         '<(AOS)/common/network/network.gyp:socket',
-        '<(AOS)/common/common.gyp:timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/messages/messages.gyp:robot_state',

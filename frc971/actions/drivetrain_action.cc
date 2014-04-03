@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 
-#include "aos/common/control_loop/Timing.h"
+#include "aos/common/util/phased_loop.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/trapezoid_profile.h"
 

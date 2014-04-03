@@ -1,4 +1,4 @@
-#include "aos/common/control_loop/Timing.h"
+#include "aos/common/util/phased_loop.h"
 
 #include <string.h>
 
