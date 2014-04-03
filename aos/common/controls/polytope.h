@@ -1,5 +1,5 @@
-#ifndef _AOS_CONTROLS_POLYTOPE_H_
-#define _AOS_CONTROLS_POLYTOPE_H_
+#ifndef AOS_COMMON_CONTROLS_POLYTOPE_H_
+#define AOS_COMMON_CONTROLS_POLYTOPE_H_
 
 #include "Eigen/Dense"
 #include "libcdd-094g-prefix/include/setoper.h"
@@ -123,4 +123,4 @@ Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
 }  // namespace controls
 }  // namespace aos
 
-#endif  // _AOS_CONTROLS_POLYTOPE_H_
+#endif  // AOS_COMMON_CONTROLS_POLYTOPE_H_

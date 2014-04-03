@@ -1,6 +1,6 @@
 package frc971.control_loops;
 
-import "aos/common/control_loop/control_loops.q";
+import "aos/common/controls/control_loops.q";
 
 struct GearLogging {
   int8_t controller_index;

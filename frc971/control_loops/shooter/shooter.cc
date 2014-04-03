@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-#include "aos/common/control_loop/control_loops.q.h"
+#include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 

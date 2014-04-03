@@ -157,9 +157,9 @@
     {
       'target_name': 'control_loop_queues',
       'type': 'static_library',
-      'sources': [ '<(AOS)/common/control_loop/control_loops.q' ],
+      'sources': [ '<(AOS)/common/controls/control_loops.q' ],
       'variables': {
-        'header_path': 'aos/common/control_loop',
+        'header_path': 'aos/common/controls',
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:queues',
@@ -170,7 +170,7 @@
       'target_name': 'controls',
       'type': 'static_library',
       'sources': [
-        'control_loop/control_loop.cc',
+        'controls/control_loop.cc',
       ],
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:robot_state',

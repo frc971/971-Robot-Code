@@ -8,7 +8,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
-#include "aos/controls/polytope.h"
+#include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/matrix_logging.h"
