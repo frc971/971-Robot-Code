@@ -110,7 +110,7 @@ const ShotGoal kFlippedMediumShotGoal = {
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
 const ShotGoal kShortShotGoal = {
-    {-0.670, kShootSeparation}, 77.0, 0.4, kIntakePower};
+    {-0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
     {0.67, kShootSeparation}, 115.0, 0.4, kIntakePower};
 
