@@ -29,6 +29,10 @@ class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
   virtual void CapU();
 
   void set_is_zeroing(bool is_zeroing) { is_zeroing_ = is_zeroing; }
+  void set_positions_known(bool top_known, bool bottom_known) {
+    top_known_ = top_known;
+    bottom_known_ = bottom_known;
+  }
 
   void ChangeTopOffset(double doffset);
   void ChangeBottomOffset(double doffset);
@@ -38,6 +42,8 @@ class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
  private:
   double uncapped_average_voltage_;
   bool is_zeroing_;
+
+  bool top_known_ = false, bottom_known_ = false;
 
   const ::aos::controls::HPolytope<2> U_Poly_, U_Poly_zeroing_;
 };

@@ -191,21 +191,25 @@ void ClawLimitedLoop::CapU() {
 
     {
       const auto values = constants::GetValues().claw;
-      if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit &&
-          U(1, 0) > 0) {
-        LOG(WARNING, "upper claw too high and moving up\n");
-        U(1, 0) = 0;
-      } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
-                 U(1, 0) < 0) {
-        LOG(WARNING, "upper claw too low and moving down\n");
-        U(1, 0) = 0;
+      if (top_known_) {
+        if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit &&
+            U(1, 0) > 0) {
+          LOG(WARNING, "upper claw too high and moving up\n");
+          U(1, 0) = 0;
+        } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
+                   U(1, 0) < 0) {
+          LOG(WARNING, "upper claw too low and moving down\n");
+          U(1, 0) = 0;
+        }
       }
-      if (X_hat(0, 0) > values.lower_claw.upper_limit && U(0, 0) > 0) {
-        LOG(WARNING, "lower claw too high and moving up\n");
-        U(0, 0) = 0;
-      } else if (X_hat(0, 0) < values.lower_claw.lower_limit && U(0, 0) < 0) {
-        LOG(WARNING, "lower claw too low and moving down\n");
-        U(0, 0) = 0;
+      if (bottom_known_) {
+        if (X_hat(0, 0) > values.lower_claw.upper_limit && U(0, 0) > 0) {
+          LOG(WARNING, "lower claw too high and moving up\n");
+          U(0, 0) = 0;
+        } else if (X_hat(0, 0) < values.lower_claw.lower_limit && U(0, 0) < 0) {
+          LOG(WARNING, "lower claw too low and moving down\n");
+          U(0, 0) = 0;
+        }
       }
     }
   }
@@ -806,6 +810,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     LimitClawGoal(&bottom_claw_goal_, &top_claw_goal_, values);
   }
 
+  claw_.set_positions_known(top_claw_.zeroing_state() != ZeroedStateFeedbackLoop::UNKNOWN_POSITION, bottom_claw_.zeroing_state() != ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
     claw_.R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
         bottom_claw_velocity_, top_claw_velocity_ - bottom_claw_velocity_;
