@@ -110,7 +110,6 @@ void Write(LogMessage *msg) {
         dropped_messages, dropped_start_seconds, dropped_start_nseconds);
     if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
       dropped_messages = 0;
-      internal::PrintMessage(stderr, *dropped_message);
     } else {
       // Don't even bother trying to write this message because it's not likely
       // to work and it would be confusing to have one log in the middle of a
