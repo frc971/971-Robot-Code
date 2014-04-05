@@ -98,7 +98,7 @@ const ShotGoal kLongShotGoal = {
     {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
 // 3/4" plunger {-1.04, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
-    {0.94, kShootSeparation}, 140, 0.09, kIntakePower};
+    {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
 // 3/4 " plunger {0.97, kShootSeparation}, 140, 0.08, kIntakePower};
 
 // 78" between near edge of colored line and rear edge of bumper
@@ -110,14 +110,17 @@ const ShotGoal kFlippedMediumShotGoal = {
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
 const ShotGoal kShortShotGoal = {
-    {-0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
-const ShotGoal kFlippedShortShotGoal = {
     {0.67, kShootSeparation}, 115.0, 0.4, kIntakePower};
+const ShotGoal kFlippedShortShotGoal = kShortShotGoal;
 
 const ShotGoal kHumanShotGoal = {
     {-0.90, kShootSeparation}, 140, 0.04, kIntakePower};
+const ShotGoal kFlippedHumanShotGoal = {
+    {0.90, kShootSeparation}, 140, 0, kIntakePower};
 const ShotGoal kTrussShotGoal = {
-    {-0.05, kShootSeparation}, 73.0, 0, kIntakePower};
+    {-0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
+const ShotGoal kFlippedTrussShotGoal = {
+    {0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -364,11 +367,11 @@ class Reader : public ::aos::input::JoystickInput {
       } else if (data.PosEdge(kHumanPlayerShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-        SetGoal(kHumanShotGoal);
+        SetGoal(kFlippedHumanShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-        SetGoal(kTrussShotGoal);
+        SetGoal(kFlippedTrussShotGoal);
       }
     } else {
       if (data.IsPressed(kIntakeOpenPosition)) {
