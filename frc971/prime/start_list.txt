@@ -9,3 +9,4 @@ shooter
 shoot_action
 drivetrain_action
 catch_action
+hot_goal_reader

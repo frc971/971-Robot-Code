@@ -22,6 +22,17 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'hot_goal',
+      'type': 'static_library',
+      'sources': [
+        'hot_goal.q',
+      ],
+      'variables': {
+        'header_path': 'frc971/queues',
+      },
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
       'target_name': 'output_check',
       'type': 'static_library',
       'sources': [

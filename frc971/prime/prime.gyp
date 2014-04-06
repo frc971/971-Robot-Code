@@ -18,6 +18,7 @@
         '../actions/actions.gyp:catch_action',
         '../actions/actions.gyp:drivetrain_action',
         '../input/input.gyp:joystick_reader',
+        '../input/input.gyp:hot_goal_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',

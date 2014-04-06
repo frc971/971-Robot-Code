@@ -7,6 +7,7 @@
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network/team_number.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
@@ -16,6 +17,7 @@
 #include "frc971/actions/action_client.h"
 #include "frc971/actions/shoot_action.h"
 #include "frc971/actions/drivetrain_action.h"
+#include "frc971/queues/hot_goal.q.h"
 
 using ::aos::time::Time;
 
@@ -217,9 +219,20 @@ void WaitUntilClawDone() {
 }
 
 void HandleAuto() {
+  const ::aos::time::Time start_time = ::aos::time::Time::Now();
+  ::frc971::HotGoal start_counts;
+  hot_goal.FetchLatest();
+  bool hot_goal_wait = true;
+  if (!hot_goal.get()) {
+    LOG(WARNING, "no hot goal message. not waiting\n");
+    hot_goal_wait = false;
+  } else {
+    memcpy(&start_counts, hot_goal.get(), sizeof(start_counts));
+    LOG_STRUCT(INFO, "counts at start", start_counts);
+  }
+
   // The front of the robot is 1.854 meters from the wall
   const double kShootDistance = 3.15;
-  const double kPickupDistance = 0.5;
   LOG(INFO, "Handling auto mode\n");
   ResetDrivetrain();
 
@@ -246,42 +259,23 @@ void HandleAuto() {
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
-  LOG(INFO, "Shooting\n");
+  LOG(INFO, "Shooting (after we have a hot goal)\n");
+
+  time::SleepFor(time::Time::InSeconds(0.1));
+
+  while (hot_goal_wait && (::aos::time::Time::Now() - start_time) <
+                              ::aos::time::Time::InSeconds(7)) {
+    hot_goal.FetchNextBlocking();
+    if ((hot_goal->right_count - start_counts.right_count) > 10) {
+      LOG(INFO, "hot goal time!!!\n");
+      hot_goal_wait = false;
+    }
+  }
+  LOG(INFO, "done waiting for hot goal\n");
 
   // Shoot.
   Shoot();
-  time::SleepFor(time::Time::InSeconds(0.1));
 
-  {
-    if (ShouldExitAuto()) return;
-    // Intake the new ball.
-    LOG(INFO, "Claw ready for intake\n");
-    PositionClawBackIntake();
-    auto drivetrain_action = SetDriveGoal(kShootDistance + kPickupDistance);
-    LOG(INFO, "Waiting until drivetrain is finished\n");
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
-    if (ShouldExitAuto()) return;
-    LOG(INFO, "Wait for the claw.\n");
-    WaitUntilClawDone();
-    if (ShouldExitAuto()) return;
-  }
-
-  // Drive back.
-  {
-    LOG(INFO, "Driving back\n");
-    auto drivetrain_action = SetDriveGoal(-(kShootDistance + kPickupDistance));
-    time::SleepFor(time::Time::InSeconds(0.7));
-    if (ShouldExitAuto()) return;
-    PositionClawForShot();
-    LOG(INFO, "Waiting until drivetrain is finished\n");
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
-    WaitUntilClawDone();
-    if (ShouldExitAuto()) return;
-  }
-
-  LOG(INFO, "Shooting\n");
-  // Shoot
-  Shoot();
   if (ShouldExitAuto()) return;
 
   // Get ready to zero when we come back up.
