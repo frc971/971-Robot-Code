@@ -118,9 +118,12 @@ const ShotGoal kHumanShotGoal = {
 const ShotGoal kFlippedHumanShotGoal = {
     {0.90, kShootSeparation}, 140, 0, kIntakePower};
 const ShotGoal kTrussShotGoal = {
-    {-0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
+    {-0.68, kShootSeparation}, 83.0, 0.4, kIntakePower};
 const ShotGoal kFlippedTrussShotGoal = {
-    {0.68, kShootSeparation}, 77.0, 0.4, kIntakePower};
+    {0.68, kShootSeparation}, 92.0, 0.4, kIntakePower};
+
+const ClawGoal k254PassGoal = {-1.95, kGrabSeparation};
+const ClawGoal kFlipped254PassGoal = {1.96, kGrabSeparation};
 
 // Makes a new ShootAction action.
 ::std::unique_ptr<TypedAction< ::frc971::actions::CatchActionGroup>>
@@ -368,6 +371,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedHumanShotGoal);
+      } else if (data.PosEdge(kUserLeft)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kFlipped254PassGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
@@ -406,6 +413,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kHumanShotGoal);
+      } else if (data.PosEdge(kUserLeft)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(k254PassGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
