@@ -1,7 +1,7 @@
 #ifndef AOS_COMMON_NETWORK_PORT_H_
 #define AOS_COMMON_NETWORK_PORT_H_
 
-#include "aos/aos_stdint.h"
+#include <stdint.h>
 
 namespace aos {
 

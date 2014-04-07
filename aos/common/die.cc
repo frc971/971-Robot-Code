@@ -7,10 +7,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <stdint.h>
 
 #include <string>
-
-#include "aos/aos_stdint.h"
 
 namespace aos {
 

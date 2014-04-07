@@ -1,6 +1,6 @@
 package frc971.control_loops;
 
-import "aos/common/control_loop/control_loops.q";
+import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
 struct HalfClawPosition {

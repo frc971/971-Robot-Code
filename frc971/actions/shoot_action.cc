@@ -1,6 +1,5 @@
 #include <functional>
 
-#include "aos/common/control_loop/Timing.h"
 #include "aos/common/logging/logging.h"
 
 #include "frc971/actions/shoot_action.h"

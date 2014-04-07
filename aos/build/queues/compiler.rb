@@ -85,7 +85,7 @@ def build(filename,globals_template)
 	cc_file_path = $cpp_base + "/" + rel_path + ".cc"
 	cpp_tree.add_cc_include((rel_path + ".h").inspect)
 	cpp_tree.add_cc_include("aos/common/byteorder.h".inspect)
-	cpp_tree.add_cc_include("aos/common/inttypes.h".inspect)
+	cpp_tree.add_cc_include("<inttypes.h>")
 	cpp_tree.add_cc_include("aos/common/queue_types.h".inspect)
   cpp_tree.add_cc_include("aos/common/once.h".inspect)
   cpp_tree.add_cc_include("aos/common/logging/logging_printf_formats.h".inspect)

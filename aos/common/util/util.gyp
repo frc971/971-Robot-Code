@@ -1,6 +1,24 @@
 {
   'targets': [
     {
+      'target_name': 'inet_addr',
+      'type': 'static_library',
+      'sources': [
+        'inet_addr.cc',
+      ],
+    },
+    {
+      'target_name': 'phased_loop',
+      'type': 'static_library',
+      'sources': [
+        'phased_loop.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
       'target_name': 'log_interval',
       'type': 'static_library',
       'sources': [

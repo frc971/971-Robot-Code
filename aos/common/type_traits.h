@@ -1,7 +1,7 @@
 #ifndef AOS_COMMON_TYPE_TRAITS_
 #define AOS_COMMON_TYPE_TRAITS_
 
-#include "aos/common/libstdc++/type_traits"
+#include <type_traits>
 
 namespace aos {
 

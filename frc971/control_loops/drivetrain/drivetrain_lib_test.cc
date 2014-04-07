@@ -6,7 +6,7 @@
 #include "aos/common/network/team_number.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
-#include "aos/controls/polytope.h"
+#include "aos/common/controls/polytope.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"

@@ -3,17 +3,12 @@
 
 #include <stdint.h>
 #include <time.h>
-
-#ifndef __VXWORKS__
-#include <type_traits>
 #include <sys/time.h>
-#else
-#include <sysLib.h>
-#include <sys/times.h>
-#endif
+#include <stdint.h>
+
+#include <type_traits>
 #include <ostream>
 
-#include "aos/aos_stdint.h"
 #include "aos/common/type_traits.h"
 
 namespace aos {

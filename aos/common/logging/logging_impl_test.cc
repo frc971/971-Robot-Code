@@ -5,7 +5,7 @@
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
 #include "aos/common/die.h"
-#include "aos/common/inttypes.h"
+#include <inttypes.h>
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;

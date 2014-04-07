@@ -5,7 +5,7 @@
 #include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
 
 #include "aos/common/network_port.h"
-#include "aos/common/network/ReceiveSocket.h"
+#include "aos/common/network/receive_socket.h"
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
@@ -14,7 +14,7 @@ namespace aos {
 namespace input {
 
 void JoystickInput::Run() {
-  ReceiveSocket sock(NetworkPort::kDS);
+  network::ReceiveSocket sock(NetworkPort::kDS);
   // If true, this code won't try to read anything from the network and instead
   // feed all 0s to the joystick code.
   // The RobotState messages will be marked as fake so anything that outputs

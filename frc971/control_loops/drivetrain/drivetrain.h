@@ -3,9 +3,9 @@
 
 #include "Eigen/Dense"
 
-#include "aos/controls/polytope.h"
-#include "aos/common/control_loop/ControlLoop.h"
-#include "aos/controls/polytope.h"
+#include "aos/common/controls/polytope.h"
+#include "aos/common/controls/control_loop.h"
+#include "aos/common/controls/polytope.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "aos/common/util/log_interval.h"
 

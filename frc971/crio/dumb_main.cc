@@ -3,7 +3,7 @@
 
 #include "aos/common/network_port.h"
 #include "aos/crio/ip.h"
-#include "aos/common/util.h"
+#include "aos/common/util/inet_addr.h"
 
 using ::aos::util::MakeIPAddress;
 using ::aos::util::GetOwnIPAddress;

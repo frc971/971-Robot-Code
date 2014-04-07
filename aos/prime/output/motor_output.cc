@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "aos/common/control_loop/Timing.h"
+#include "aos/common/util/phased_loop.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network_port.h"
 #include "aos/common/messages/robot_state.q.h"
@@ -37,6 +37,10 @@ uint8_t MotorOutput::MotorControllerBounds::Map(double value) const {
 
 MotorOutput::MotorOutput()
   : socket_(NetworkPort::kMotors, ::aos::NetworkAddress::kCRIO) {
+  if (socket_.LastStatus() != 0) {
+    LOG(FATAL, "opening output socket failed (returned %d)\n",
+        socket_.LastStatus());
+  }
   values_.solenoid_values = 0;
 }
 

@@ -157,9 +157,9 @@
     {
       'target_name': 'control_loop_queues',
       'type': 'static_library',
-      'sources': [ '<(AOS)/common/control_loop/control_loops.q' ],
+      'sources': [ '<(AOS)/common/controls/control_loops.q' ],
       'variables': {
-        'header_path': 'aos/common/control_loop',
+        'header_path': 'aos/common/controls',
       },
       'dependencies': [
         '<(AOS)/common/common.gyp:queues',
@@ -167,45 +167,15 @@
       'includes': ['../build/queues.gypi'],
     },
     {
-      'target_name': 'timing_so',
-      'type': 'shared_library',
-      'sources': [
-        'control_loop/Timing.cpp'
-      ],
-      'variables': {'no_rsync': 1},
-      'dependencies': [
-      ],
-      'direct_dependent_settings': {
-        'variables': {
-          'jni_libs': [
-            'timing_so',
-          ],
-        },
-      },
-      'export_dependent_settings': [
-      ],
-    },
-    {
-      'target_name': 'timing',
-      'type': 'static_library',
-      'sources': [
-        'control_loop/Timing.cpp'
-      ],
-      'dependencies': [
-        '<(AOS)/build/aos.gyp:logging',
-        'time',
-      ],
-    },
-    {
       'target_name': 'controls',
       'type': 'static_library',
       'sources': [
-        'control_loop/ControlLoop.cc',
+        'controls/control_loop.cc',
       ],
       'dependencies': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
-        'timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         'time',
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
@@ -215,7 +185,7 @@
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/build/aos.gyp:logging',
-        'timing',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         'time',
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
@@ -378,13 +348,6 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'die',
-      ],
-    },
-    {
-      'target_name': 'util',
-      'type': 'static_library',
-      'sources': [
-        'util.cc',
       ],
     },
   ],

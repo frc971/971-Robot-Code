@@ -2,8 +2,7 @@
 #define AOS_CRIO_IP_H_
 
 #include <inetLib.h>
-
-#include "aos/aos_stdint.h"
+#include <stdint.h>
 
 namespace aos {
 namespace util {

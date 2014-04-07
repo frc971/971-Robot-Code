@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <string>
 
-#include "aos/common/network/SendSocket.h"
+#include "aos/common/network/send_socket.h"
 #include "aos/common/byteorder.h"
 #include "aos/common/type_traits.h"
 #include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
@@ -64,7 +64,7 @@ class MotorOutput {
   // Subclasses need to actually fill out values_ here.
   virtual void RunIteration() = 0;
 
-  SendSocket socket_;
+  network::SendSocket socket_;
 };
 
 }  // namespace aos

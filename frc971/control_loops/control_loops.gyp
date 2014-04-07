@@ -32,11 +32,11 @@
       ],
       'dependencies': [
         '<(EXTERNALS):eigen',
-        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+        '<(AOS)/common/controls/controls.gyp:polytope',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):eigen',
-        '<(DEPTH)/aos/build/externals.gyp:libcdd',
+        '<(AOS)/common/controls/controls.gyp:polytope',
       ],
     },
     {
