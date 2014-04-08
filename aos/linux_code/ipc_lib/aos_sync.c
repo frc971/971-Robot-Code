@@ -43,18 +43,78 @@ static inline uint32_t xchg(mutex *pointer, uint32_t value) {
 // 0 = unset
 // 1 = set
 
-static inline int sys_futex(mutex *addr1, int op, int val1,
-    const struct timespec *timeout, void *addr2, int val3) {
-  return syscall(SYS_futex, addr1, op, val1, timeout, addr2, val3);
+// These sys_futex_* functions are wrappers around syscall(SYS_futex). They each
+// take a specific set of arguments for a given futex operation. They return the
+// result or a negated errno value. -1..-4095 mean errors and not successful
+// results, which is guaranteed by the kernel.
+// They each have optimized versions for ARM EABI (the syscall interface is
+// different for non-EABI ARM, so that is the right thing to test for) that
+// don't go through syscall(2) or errno.
+
+static inline int sys_futex_wait(mutex *addr1, int val1,
+                                 const struct timespec *timeout) {
+#ifdef __ARM_EABI__
+  register mutex *addr1_reg __asm__("r0") = addr1;
+  register int op_reg __asm__("r1") = FUTEX_WAIT;
+  register int val1_reg __asm__("r2") = val1;
+  register const struct timespec *timeout_reg __asm__("r3") = timeout;
+  register int syscall_number __asm__("r7") = SYS_futex;
+  register int result __asm__("r0");
+  __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
+                     "r"(timeout_reg), "r"(syscall_number)
+                   : "memory");
+  return result;
+#else
+  const int r = syscall(SYS_futex, addr1, FUTEX_WAIT, val1, timeout);
+  if (r == -1) return -errno;
+  return r;
+#endif
 }
-static inline int sys_futex_requeue(mutex *addr1, int op, int num_wake,
+
+static inline int sys_futex_wake(mutex *addr1, int val1) {
+#ifdef __ARM_EABI__
+  register mutex *addr1_reg __asm__("r0") = addr1;
+  register int op_reg __asm__("r1") = FUTEX_WAKE;
+  register int val1_reg __asm__("r2") = val1;
+  register int syscall_number __asm__("r7") = SYS_futex;
+  register int result __asm__("r0");
+  __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
+                     "r"(syscall_number)
+                   : "memory");
+  return result;
+#else
+  const int r = syscall(SYS_futex, addr1, FUTEX_WAKE, val1);
+  if (r == -1) return -errno;
+  return r;
+#endif
+}
+
+static inline int sys_futex_requeue(mutex *addr1, int num_wake,
     int num_requeue, mutex *m) {
-  return syscall(SYS_futex, addr1, op, num_wake, num_requeue, m);
-}
-static inline int sys_futex_op(mutex *addr1, int op, int num_waiters1,
-    int num_waiters2, mutex *addr2, int op_args_etc) {
-  return syscall(SYS_futex, addr1, op, num_waiters1,
-      num_waiters2, addr2, op_args_etc);
+#ifdef __ARM_EABI__
+  register mutex *addr1_reg __asm__("r0") = addr1;
+  register int op_reg __asm__("r1") = FUTEX_REQUEUE;
+  register int num_wake_reg __asm__("r2") = num_wake;
+  register int num_requeue_reg __asm__("r3") = num_requeue;
+  register mutex *m_reg __asm__("r4") = m;
+  register int syscall_number __asm__("r7") = SYS_futex;
+  register int result __asm__("r0");
+  __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(num_wake_reg),
+                     "r"(num_requeue_reg), "r"(m_reg), "r"(syscall_number)
+                   : "memory");
+  return result;
+#else
+  const int r =
+      syscall(SYS_futex, addr1, FUTEX_REQUEUE, num_wake, num_requeue, m);
+  if (r == -1) return -errno;
+  return r;
+#endif
 }
 
 static inline int mutex_get(mutex *m, uint8_t signals_fail, const
@@ -66,11 +126,12 @@ static inline int mutex_get(mutex *m, uint8_t signals_fail, const
   if (c == 1) c = xchg(m, 2);
   while (c) {
     /* Wait in the kernel */
-    if (sys_futex(m, FUTEX_WAIT, 2, timeout, NULL, 0) == -1) {
-      if (signals_fail && errno == EINTR) {
+    const int ret = sys_futex_wait(m, 2, timeout);
+    if (ret != 0) {
+      if (signals_fail && ret == -EINTR) {
         return 1;
       }
-      if (timeout != NULL && errno == ETIMEDOUT) {
+      if (timeout != NULL && ret == -ETIMEDOUT) {
         return 2;
       }
     }
@@ -99,15 +160,17 @@ void mutex_unlock(mutex *m) {
     case 1:
       //printf("mutex_unlock return(%p) => %d \n",m,*m);
       break;
-    case 2:
-      if (sys_futex(m, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
+    case 2: {
+      const int ret = sys_futex_wake(m, 1);
+      if (ret < 0) {
         fprintf(stderr, "sync: waking 1 from %p failed with %d: %s\n",
-            m, errno, strerror(errno));
+                m, -ret, strerror(-ret));
         printf("see stderr\n");
         abort();
       } else {
         break;
       }
+    }
     default:
       fprintf(stderr, "sync: got a garbage value from mutex %p. aborting\n",
           m);
@@ -126,10 +189,12 @@ int futex_wait(mutex *m) {
   if (*m) {
     return 0;
   }
-  if (sys_futex(m, FUTEX_WAIT, 0, NULL, NULL, 0) == -1) {
-    if (errno == EINTR) {
+  const int ret = sys_futex_wait(m, 0, NULL);
+  if (ret != 0) {
+    if (ret == -EINTR) {
       return 1;
-    } else if (errno != EWOULDBLOCK) {
+    } else if (ret != -EWOULDBLOCK) {
+      errno = -ret;
       return -1;
     }
   }
@@ -137,7 +202,13 @@ int futex_wait(mutex *m) {
 }
 int futex_set_value(mutex *m, mutex value) {
   xchg(m, value);
-  return sys_futex(m, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
+  const int r = sys_futex_wake(m, INT_MAX - 4096);
+  if (__builtin_expect((unsigned int)r > (unsigned int)-4096, 0)) {
+    errno = -r;
+    return -1;
+  } else {
+    return r;
+  }
 }
 int futex_set(mutex *m) {
   return futex_set_value(m, 1);
@@ -154,15 +225,16 @@ void condition_wait(mutex *c, mutex *m) {
   while (1) {
     // Wait in the kernel iff the value of it doesn't change (ie somebody else
     // does a wake) from before we unlocked the mutex.
-    if (sys_futex(c, FUTEX_WAIT, wait_start, NULL, NULL, 0) == -1) {
+    const int ret = sys_futex_wait(c, wait_start, NULL);
+    if (ret != 0) {
       // If it failed for some reason other than somebody else doing a wake
       // before we actually made it to sleep.
       if (__builtin_expect(*c == wait_start, 0)) {
         // Try again if it was because of a signal.
-        if (errno == EINTR) continue;
+        if (ret == -EINTR) continue;
         fprintf(stderr, "FUTEX_WAIT(%p, %"PRIu32", NULL, NULL, 0) failed"
                 " with %d: %s\n",
-                c, wait_start, errno, strerror(errno));
+                c, wait_start, -ret, strerror(-ret));
         printf("see stderr\n");
         abort();
       }
@@ -174,13 +246,14 @@ void condition_wait(mutex *c, mutex *m) {
     // the person waking us from the above wait (changed to be on the mutex
     // instead of the condition) will have just set it to 0.
     while (xchg(m, 2) != 0) {
-      if (sys_futex(m, FUTEX_WAIT, 2, NULL, NULL, 0) == -1) {
+      const int ret = sys_futex_wait(m, 2, NULL);
+      if (ret != 0) {
         // Try again if it was because of a signal or somebody else unlocked it
         // before we went to sleep.
-        if (errno == EINTR || errno == EWOULDBLOCK) continue;
+        if (ret == -EINTR || ret == -EWOULDBLOCK) continue;
         fprintf(stderr, "sync: FUTEX_WAIT(%p, 2, NULL, NULL, 0)"
                 " failed with %d: %s\n",
-                m, errno, strerror(errno));
+                m, -ret, strerror(-ret));
         printf("see stderr\n");
         abort();
       }
@@ -195,10 +268,11 @@ void condition_signal(mutex *c) {
   // instead.
   __sync_fetch_and_add(c, 1);
   // Wake at most 1 person who is waiting in the kernel.
-  if (sys_futex(c, FUTEX_WAKE, 1, NULL, NULL, 0) == -1) {
+  const int ret = sys_futex_wake(c, 1);
+  if (ret < 0) {
     fprintf(stderr, "sync: FUTEX_WAKE(%p, 1, NULL, NULL, 0)"
         " failed with %d: %s\n",
-        c, errno, strerror(errno));
+        c, -ret, strerror(-ret));
     printf("see stderr\n");
     abort();
   }
@@ -209,10 +283,11 @@ void condition_broadcast(mutex *c, mutex *m) {
   // Wake at most 1 waiter and requeue the rest.
   // Everybody else is going to have to wait for the 1st person to take the
   // mutex anyways.
-  if (sys_futex_requeue(c, FUTEX_REQUEUE, 1, INT_MAX, m) == -1) {
+  const int ret = sys_futex_requeue(c, 1, INT_MAX, m);
+  if (ret < 0) {
     fprintf(stderr, "sync: FUTEX_REQUEUE(%p, 1, INT_MAX, %p, 0)"
         " failed with %d: %s\n",
-        c, m, errno, strerror(errno));
+        c, m, -ret, strerror(-ret));
     printf("see stderr\n");
     abort();
   }
