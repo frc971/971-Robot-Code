@@ -141,16 +141,7 @@ int BinaryLogReaderMain() {
   }
   LogFileAccessor writer(fd, true);
 
-  struct timespec timespec;
-  time_t last_sec = 0;
   while (true) {
-    clock_gettime(CLOCK_MONOTONIC, &timespec);
-    if (last_sec != timespec.tv_sec) {
-      LOG(INFO, "msyncing output\n");
-      last_sec = timespec.tv_sec;
-      writer.Sync();
-    }
-
     const LogMessage *const msg = ReadNext();
     if (msg == NULL) continue;
 
@@ -186,14 +177,16 @@ int BinaryLogReaderMain() {
       case LogMessage::Type::kStruct: {
         char *position = output_strings + msg->name_length;
 
-        memcpy(position, &msg->structure.type_id, sizeof(msg->structure.type_id));
+        memcpy(position, &msg->structure.type_id,
+               sizeof(msg->structure.type_id));
         position += sizeof(msg->structure.type_id);
         output->message_size += sizeof(msg->structure.type_id);
 
         const uint32_t length = msg->structure.string_length;
         memcpy(position, &length, sizeof(length));
         position += sizeof(length);
-        memcpy(position, msg->structure.serialized, length + msg->message_length);
+        memcpy(position, msg->structure.serialized,
+               length + msg->message_length);
         position += length + msg->message_length;
         output->message_size += sizeof(length) + length;
 
