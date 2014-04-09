@@ -30,12 +30,26 @@ Time current_mock_time(0, 0);
 // TODO(aschuh): This doesn't include SleepFor and SleepUntil.
 // TODO(aschuh): Create a clock source object and change the default?
 //  That would let me create a MockTime clock source.
+
+Time NowImpl(clockid_t clock) {
+  timespec temp;
+  if (clock_gettime(clock, &temp) != 0) {
+    LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
+        static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
+  }
+  return Time(temp);
 }
 
+}  // namespace
+
 void Time::EnableMockTime(const Time &now) {
-  mock_time_enabled = true;
   MutexLocker time_mutex_locker(&time_mutex);
+  mock_time_enabled = true;
   current_mock_time = now;
+}
+
+void Time::UpdateMockTime() {
+  SetMockTime(NowImpl(kDefaultClock));
 }
 
 void Time::DisableMockTime() {
@@ -45,7 +59,7 @@ void Time::DisableMockTime() {
 
 void Time::SetMockTime(const Time &now) {
   MutexLocker time_mutex_locker(&time_mutex);
-  if (!mock_time_enabled) {
+  if (__builtin_expect(!mock_time_enabled, 0)) {
     LOG(FATAL, "Tried to set mock time and mock time is not enabled\n");
   }
   current_mock_time = now;
@@ -58,17 +72,13 @@ void Time::IncrementMockTime(const Time &amount) {
 }
 
 Time Time::Now(clockid_t clock) {
-  if (mock_time_enabled) {
+  {
     MutexLocker time_mutex_locker(&time_mutex);
-    return current_mock_time;
-  } else {
-    timespec temp;
-    if (clock_gettime(clock, &temp) != 0) {
-      LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
-          static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
+    if (mock_time_enabled) {
+      return current_mock_time;
     }
-    return Time(temp);
   }
+  return NowImpl(clock);
 }
 
 void Time::CheckImpl(int32_t nsec) {

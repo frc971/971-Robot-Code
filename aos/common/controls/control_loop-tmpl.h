@@ -146,8 +146,12 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
 
 template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
 void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Run() {
+  ::aos::time::Time::EnableMockTime();
   while (true) {
-    time::SleepUntil(NextLoopTime());
+    ::aos::time::Time::UpdateMockTime();
+    const ::aos::time::Time next_loop = NextLoopTime();
+    time::SleepUntil(next_loop);
+    ::aos::time::Time::SetMockTime(next_loop);
     Iterate();
   }
 }

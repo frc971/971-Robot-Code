@@ -45,8 +45,11 @@ MotorOutput::MotorOutput()
 }
 
 void MotorOutput::Run() {
+  ::aos::time::Time::EnableMockTime();
   while (true) {
+    ::aos::time::Time::UpdateMockTime();
     time::PhasedLoopXMS(5, 1000);
+    ::aos::time::Time::UpdateMockTime();
 
     values_.digital_module = -1;
     // 0 means output disabled.

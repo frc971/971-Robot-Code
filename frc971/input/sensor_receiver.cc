@@ -145,6 +145,8 @@ void CopyClawPosition(control_loops::HalfClawPosition *output,
 void PacketReceived(const ::bbb::DataStruct *data,
                     const ::aos::time::Time &cape_timestamp,
                     State *state) {
+  ::aos::time::TimeFreezer time_freezer;
+
   ::frc971::logging_structs::CapeReading reading_to_log(
       cape_timestamp, static_cast<uint16_t>(sizeof(*data)),
       sonar_translate(data->main.ultrasonic_pulse_length),

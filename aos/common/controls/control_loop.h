@@ -1,7 +1,7 @@
 #ifndef AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 #define AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 
-#include <cstring>
+#include <string.h>
 
 #include "aos/common/type_traits.h"
 #include "aos/common/queue.h"

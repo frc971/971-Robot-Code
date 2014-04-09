@@ -56,13 +56,13 @@ UartReader::~UartReader() {
 
 ssize_t UartReader::ReadBytes(uint8_t *dest, size_t max_bytes,
                               const ::aos::time::Time &timeout_time) {
+  fd_set fds;
+  FD_ZERO(&fds);
   do {
     ::aos::time::Time timeout = timeout_time - ::aos::time::Time::Now();
     if (timeout < ::aos::time::Time(0, 0)) return -2;
     struct timeval timeout_timeval = timeout.ToTimeval();
-		fd_set fds;
-		FD_ZERO(&fds);
-		FD_SET(fd_, &fds);
+    FD_SET(fd_, &fds);
     switch (select(fd_ + 1, &fds, NULL, NULL, &timeout_timeval)) {
       case 0:
         return -2;

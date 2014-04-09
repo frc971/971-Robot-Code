@@ -10,6 +10,7 @@
 #include <ostream>
 
 #include "aos/common/type_traits.h"
+#include "aos/common/macros.h"
 
 namespace aos {
 namespace time {
@@ -206,7 +207,9 @@ struct Time {
   // Enables returning the mock time value for Now instead of checking the
   // system clock.  This should only be used when testing things depending on
   // time, or many things may/will break.
-  static void EnableMockTime(const Time &now);
+  static void EnableMockTime(const Time &now = Now());
+  // Calls SetMockTime with the current actual time.
+  static void UpdateMockTime();
   // Sets now when time is being mocked.
   static void SetMockTime(const Time &now);
   // Convenience function to just increment the mock time by a certain amount in
@@ -238,6 +241,21 @@ struct Time {
 void SleepFor(const Time &time, clockid_t clock = Time::kDefaultClock);
 // Sleeps until clock is at the time represented by time.
 void SleepUntil(const Time &time, clockid_t clock = Time::kDefaultClock);
+
+// RAII class that freezes Time::Now() (to avoid making large numbers of
+// syscalls to find the real time).
+class TimeFreezer {
+ public:
+  TimeFreezer() {
+    Time::EnableMockTime();
+  }
+  ~TimeFreezer() {
+    Time::DisableMockTime();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(TimeFreezer);
+};
 
 }  // namespace time
 }  // namespace aos
