@@ -14,7 +14,7 @@
     }]],
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
-    'eigen_version': '3.1.3',
+    'eigen_version': '3.2.1',
     'gtest_version': '1.6.0-p1',
     'onejar_version': '0.97',
     'ctemplate_version': '129',

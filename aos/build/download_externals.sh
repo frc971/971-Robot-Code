@@ -44,7 +44,7 @@ GCCDIST=${EXTERNALS}/gccdist
 [ -d ${GCCDIST} ] || ( cd ${EXTERNALS} && unzip -q ${GCCDIST}.zip )
 
 # get eigen
-EIGEN_VERSION=3.1.3
+EIGEN_VERSION=3.2.1
 EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
