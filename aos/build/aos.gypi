@@ -74,7 +74,7 @@
     'variables': {
       # Set this to 1 to disable rsyncing the file to the target.
       'no_rsync%': 0,
-      # Set this to 1 if this file isn't a test that should get run by
+      # Set this to 1 if this file is a test that should not be run by
       # `build.sh tests`.
       'is_special_test%': 0,
     },
@@ -86,6 +86,7 @@
         }, {
           'cflags': [
             '-O3',
+            '-fomit-frame-pointer',
           ],
           'ldflags': [
             '-O3',
