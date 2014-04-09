@@ -30,7 +30,7 @@ constexpr ::aos::time::Time PacketFinder::kDebugLogInterval;
 PacketFinder::PacketFinder(ByteReaderInterface *reader, size_t packet_size)
     : reader_(reader),
       packet_size_(packet_size),
-      buf_(new AlignedChar[packet_size_]),
+      buf_(new AlignedChar[packet_size_ + kZeros]),
       unstuffed_data_(new AlignedChar[packet_size_ - 4]) {
   CHECK((packet_size_ % 4) == 0);
 }
@@ -45,14 +45,15 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
   int zeros_found = 0;
   while (true) {
     size_t already_read = ::std::max(0, packet_bytes_);
+    size_t to_read = packet_size_ - already_read;
+    if (packet_bytes_ == -1) to_read += kZeros;
     ssize_t new_bytes =
         reader_->ReadBytes((uint8_t *)(buf_ + already_read),
-                           packet_size_ - already_read, timeout_time);
+                           to_read, timeout_time);
     if (new_bytes < 0) {
       if (new_bytes == -1) {
         LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-            buf_ + already_read, packet_size_ - already_read, errno,
-            strerror(errno));
+            buf_ + already_read, to_read, errno, strerror(errno));
       } else if (new_bytes == -2) {
         LOG(INFO, "timed out\n");
       } else {
@@ -86,7 +87,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
            ++to_check) {
         if (buf_[to_check] == 0) {
           ++zeros_found;
-          if (zeros_found == 4) {
+          if (zeros_found == kZeros) {
             packet_bytes_ = 0;
             zeros_found = 0;
             new_bytes -= to_check + 1;
@@ -101,6 +102,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
     }
     if (packet_bytes_ != -1) {  // if we decided that these are good bytes
       packet_bytes_ += new_bytes;
+      CHECK_LE(packet_bytes_, static_cast<ssize_t>(packet_size_));
       if (packet_bytes_ == static_cast<ssize_t>(packet_size_)) return true;
     }
   }
@@ -149,7 +151,7 @@ bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
     for (size_t i = 0; i < packet_size_; ++i) {
       if (buf_[i] == 0) {
         ++zeros;
-        if (zeros == 4) {
+        if (zeros == kZeros) {
           if (kDebugLogs) LOG(INFO, "start at %zd\n", i);
           packet_bytes_ = packet_size_ - (i + 1);
           memmove(buf_, buf_ + i + 1, packet_bytes_);

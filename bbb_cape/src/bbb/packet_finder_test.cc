@@ -24,10 +24,10 @@ class TestByteReader : public ByteReaderInterface {
                             const ::aos::time::Time &/*timeout_time*/)
       override {
     size_t to_transfer = ::std::min(max_bytes, bytes_left_);
+    if (to_transfer == 0) return -2;
     memcpy(dest, static_cast<const uint8_t *>(data_) + data_size_ - bytes_left_,
            to_transfer);
     bytes_left_ -= to_transfer;
-    if (to_transfer == 0) return -2;
     return to_transfer;
   }
 
@@ -60,7 +60,12 @@ class PacketFinderTest : public ::testing::Test {
       EXPECT_EQ(!expect_failure,
                 packet_finder.ReadPacket(::aos::time::Time(0, 0)));
       if (expect_failure && i + 1 != *failure && i + 1 != packets) {
-        while (!packet_finder.ReadPacket(::aos::time::Time(0, 0))) {}
+        int failures = 0;
+        while (!packet_finder.ReadPacket(::aos::time::Time(0, 0))) {
+          ++failures;
+          SCOPED_TRACE("failure " + ::std::to_string(failures));
+          ASSERT_LT(failures, 500);
+        }
         i += 1;
       }
     }

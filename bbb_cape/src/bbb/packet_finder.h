@@ -41,6 +41,8 @@ class PacketFinder {
   // We have 64-bit ints in some of our data.
   typedef char __attribute__((aligned(8))) AlignedChar;
 
+  static const int kZeros = 4;
+
   // Reads bytes until there are 4 zeros and then fills up buf_.
   // Returns true if it finds one or false if it gets an I/O error first or the
   // packet is invalid in some way.
