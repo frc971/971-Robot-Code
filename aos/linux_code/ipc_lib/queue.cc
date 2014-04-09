@@ -215,6 +215,8 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
     }
   }
 
+  readable_waiting_ = false;
+
   if (kFetchDebug) {
     printf("made queue %s\n", name);
   }
@@ -315,10 +317,15 @@ bool RawQueue::WriteMessage(void *msg, int options) {
     ++messages_;
     data_end_ = new_end;
 
-    if (kWriteDebug) {
-      printf("queue: broadcasting to readable_ of %p\n", this);
+    if (readable_waiting_) {
+      if (kWriteDebug) {
+        printf("queue: broadcasting to readable_ of %p\n", this);
+      }
+      readable_waiting_ = false;
+      readable_.Broadcast();
+    } else if (kWriteDebug) {
+      printf("queue: skipping broadcast to readable_ of %p\n", this);
     }
-    readable_.Broadcast();
 
     // If we got a signal on writable_ here and it's still writable, then we
     // need to signal the next person in line (if any).
@@ -357,6 +364,7 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       if (kReadDebug) {
         printf("queue: going to wait for readable_ of %p\n", this);
       }
+      readable_waiting_ = true;
       // Wait for a message to become readable.
       readable_.Wait();
       if (kReadDebug) {

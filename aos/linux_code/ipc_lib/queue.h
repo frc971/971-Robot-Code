@@ -160,6 +160,11 @@ class RawQueue {
   // reader if we transition it.
   bool writable_start_;
 
+  // True iff somebody is currently Wait()ing on readable_.
+  // Set to true by each reader before calling Wait() and set back to false
+  // before the Broadcast().
+  bool readable_waiting_;
+
   // Actually frees the given message.
   void DoFreeMessage(const void *msg);
   // Calls DoFreeMessage if appropriate.
