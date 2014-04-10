@@ -115,7 +115,7 @@ const Time kShotEndTimeout = Time::InSeconds(0.2);
 const Time kPrepareFireEndTime = Time::InMS(40);
 
 class ShooterMotor
-    : public aos::control_loops::ControlLoop<control_loops::ShooterGroup> {
+    : public aos::controls::ControlLoop<control_loops::ShooterGroup> {
  public:
   explicit ShooterMotor(control_loops::ShooterGroup *my_shooter =
                             &control_loops::shooter_queue_group);

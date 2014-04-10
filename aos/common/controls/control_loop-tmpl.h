@@ -4,12 +4,11 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/util/phased_loop.h"
-
-#include "bbb/sensor_generation.q.h"
-#include "frc971/queues/output_check.q.h"
+#include "aos/common/controls/sensor_generation.q.h"
+#include "aos/common/controls/output_check.q.h"
 
 namespace aos {
-namespace control_loops {
+namespace controls {
 
 // TODO(aschuh): Tests.
 
@@ -51,20 +50,20 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
     }
   }
 
-  ::bbb::sensor_generation.FetchLatest();
-  if (::bbb::sensor_generation.get() == nullptr) {
+  sensor_generation.FetchLatest();
+  if (sensor_generation.get() == nullptr) {
     LOG_INTERVAL(no_sensor_generation_);
     ZeroOutputs();
     return;
   }
   if (!has_sensor_reset_counters_ ||
-      ::bbb::sensor_generation->reader_pid != reader_pid_ ||
-      ::bbb::sensor_generation->cape_resets != cape_resets_) {
+      sensor_generation->reader_pid != reader_pid_ ||
+      sensor_generation->cape_resets != cape_resets_) {
     LOG_STRUCT(INFO, "new sensor_generation message",
-               *::bbb::sensor_generation.get());
+               *sensor_generation.get());
 
-    reader_pid_ = ::bbb::sensor_generation->reader_pid;
-    cape_resets_ = ::bbb::sensor_generation->cape_resets;
+    reader_pid_ = sensor_generation->reader_pid;
+    cape_resets_ = sensor_generation->cape_resets;
     has_sensor_reset_counters_ = true;
     reset_ = true;
   }
@@ -121,13 +120,14 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
     }
   }
 
-  ::frc971::output_check_received.FetchLatest();
+  ::aos::controls::output_check_received.FetchLatest();
   // True if we're enabled but the motors aren't working.
   // The 100ms is the result of disabling the robot while it's putting out a lot
   // of power and looking at the time delay between the last PWM pulse and the
   // battery voltage coming back up.
-  const bool motors_off = !::frc971::output_check_received.get() ||
-                          !::frc971::output_check_received.IsNewerThanMS(100);
+  const bool motors_off =
+      !::aos::controls::output_check_received.get() ||
+      !::aos::controls::output_check_received.IsNewerThanMS(100);
   motors_off_log_.Print();
   if (motors_off) {
     if (!::aos::robot_state.get() || ::aos::robot_state->enabled) {
@@ -172,5 +172,5 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Run() {
   }
 }
 
-}  // namespace control_loops
+}  // namespace controls
 }  // namespace aos

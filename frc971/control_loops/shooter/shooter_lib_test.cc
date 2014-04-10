@@ -315,8 +315,8 @@ class ShooterTest : public ::testing::Test {
     // test.
     ::aos::robot_state.Clear();
     SendDSPacket(true);
-    ::bbb::sensor_generation.Clear();
-    ::bbb::sensor_generation.MakeWithBuilder()
+    ::aos::controls::sensor_generation.Clear();
+    ::aos::controls::sensor_generation.MakeWithBuilder()
         .reader_pid(254)
         .cape_resets(5)
         .Send();
@@ -341,7 +341,7 @@ class ShooterTest : public ::testing::Test {
 
   virtual ~ShooterTest() {
     ::aos::robot_state.Clear();
-    ::bbb::sensor_generation.Clear();
+    ::aos::controls::sensor_generation.Clear();
     ::aos::time::Time::DisableMockTime();
   }
 };

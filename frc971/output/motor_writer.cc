@@ -8,11 +8,11 @@
 #include "aos/common/util/log_interval.h"
 #include "aos/common/time.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/controls/output_check.q.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
-#include "frc971/queues/output_check.q.h"
 
 using ::aos::util::SimpleLogInterval;
 
@@ -95,7 +95,7 @@ class MotorWriter : public ::aos::MotorOutput {
     }
 
     {
-      auto message = ::frc971::output_check_sent.MakeMessage();
+      auto message = ::aos::controls::output_check_sent.MakeMessage();
       ++output_check_;
       if (output_check_ == 0) output_check_ = 1;
       SetRawPWMOutput(10, output_check_);

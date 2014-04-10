@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 #include "aos/linux_code/configuration.h"
+#include "aos/common/controls/sensor_generation.q.h"
 
-#include "bbb/sensor_generation.q.h"
 #include "bbb/crc.h"
 #include "bbb/hex_byte_reader.h"
 
@@ -21,8 +21,8 @@ uint32_t ReadChecksum(const ::std::string &filename) {
     size_t i = 0;
     uint8_t buffer[1024];
     while (i < kSkipBytes) {
-      ssize_t read =
-          reader.ReadBytes(buffer, ::std::min<size_t>(sizeof(buffer), kSkipBytes - i));
+      ssize_t read = reader.ReadBytes(
+          buffer, ::std::min<size_t>(sizeof(buffer), kSkipBytes - i));
       if (read < 0) {
         LOG(FATAL, "error skipping bytes before actual data\n");
       }
@@ -40,8 +40,9 @@ SensorReader::SensorReader(const ::std::string &cape_code)
       manager_(),
       packet_finder_(manager_.uart(), DATA_STRUCT_SEND_SIZE - 4),
       expected_checksum_(ReadChecksum(hex_filename_)) {
-  static_assert(sizeof(SensorGeneration::reader_pid) >= sizeof(pid_t),
-                "pid_t is really big?");
+  static_assert(
+      sizeof(::aos::controls::SensorGeneration::reader_pid) >= sizeof(pid_t),
+      "pid_t is really big?");
   ResetHappened();
 }
 
@@ -93,7 +94,7 @@ const DataStruct *SensorReader::ReadPacket() {
 }
 
 void SensorReader::ResetHappened() {
-  sensor_generation.MakeWithBuilder().reader_pid(getpid())
+  ::aos::controls::sensor_generation.MakeWithBuilder().reader_pid(getpid())
       .cape_resets(cape_resets_++).Send();
   last_received_time_ = ::aos::time::Time::Now();
   last_cape_timestamp_ = 0;

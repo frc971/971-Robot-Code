@@ -180,8 +180,8 @@
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/util/util.gyp:log_interval',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_generation',
-        '<(DEPTH)/frc971/queues/queues.gyp:output_check',
+        '<(AOS)/common/controls/controls.gyp:sensor_generation',
+        '<(AOS)/common/controls/controls.gyp:output_check',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
@@ -191,8 +191,8 @@
         'control_loop_queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/util/util.gyp:log_interval',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:sensor_generation',
-        '<(DEPTH)/frc971/queues/queues.gyp:output_check',
+        '<(AOS)/common/controls/controls.gyp:sensor_generation',
+        '<(AOS)/common/controls/controls.gyp:output_check',
       ],
     },
     {

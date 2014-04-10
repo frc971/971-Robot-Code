@@ -184,7 +184,7 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
       const constants::Values::Claws::Claw &claw_values);
 };
 
-class ClawMotor : public aos::control_loops::ControlLoop<
+class ClawMotor : public aos::controls::ControlLoop<
     control_loops::ClawGroup, true, true, false> {
  public:
   explicit ClawMotor(control_loops::ClawGroup *my_claw =

@@ -100,17 +100,6 @@
       ],
     },
     {
-      'target_name': 'sensor_generation',
-      'type': 'static_library',
-      'sources': [
-        'sensor_generation.q',
-      ],
-      'variables': {
-        'header_path': 'bbb',
-      },
-      'includes': ['../../../aos/build/queues.gypi'],
-    },
-    {
       'target_name': 'packet_finder',
       'type': 'static_library',
       'sources': [
@@ -183,7 +172,7 @@
         '<(AOS)/common/common.gyp:time',
         'hex_byte_reader',
         'crc',
-        'sensor_generation',
+        '<(AOS)/common/controls/controls.gyp:sensor_generation',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
         '<(AOS)/common/util/util.gyp:log_interval',
       ],

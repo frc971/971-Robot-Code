@@ -104,7 +104,7 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
 }
 
 ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
-    : aos::control_loops::ControlLoop<control_loops::ShooterGroup>(my_shooter),
+    : aos::controls::ControlLoop<control_loops::ShooterGroup>(my_shooter),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       loading_problem_end_time_(0, 0),
@@ -320,7 +320,7 @@ void ShooterMotor::RunIteration(
         latch_piston_ = true;
       }
       if (output == nullptr) {
-        load_timeout_ += ::aos::control_loops::kLoopFrequency;
+        load_timeout_ += ::aos::controls::kLoopFrequency;
       }
       // Go to 0, which should be the latch position, or trigger a hall effect
       // on the way.  If we don't see edges where we are supposed to, the

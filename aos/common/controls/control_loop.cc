@@ -1,7 +1,7 @@
 #include "aos/common/controls/control_loop.h"
 
 namespace aos {
-namespace control_loops {
+namespace controls {
 
 time::Time NextLoopTime(time::Time start) {
   return (start / static_cast<int32_t>(kLoopFrequency.ToNSec())) *
@@ -9,5 +9,5 @@ time::Time NextLoopTime(time::Time start) {
       kLoopFrequency;
 }
 
-}  // namespace control_loops
+}  // namespace controls
 }  // namespace aos

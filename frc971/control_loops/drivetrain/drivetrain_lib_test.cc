@@ -129,8 +129,8 @@ class DrivetrainTest : public ::testing::Test {
     // Flush the robot state queue so we can use clean shared memory for this
     // test, also for the gyro.
     ::aos::robot_state.Clear();
-    ::bbb::sensor_generation.Clear();
-    ::bbb::sensor_generation.MakeWithBuilder()
+    ::aos::controls::sensor_generation.Clear();
+    ::aos::controls::sensor_generation.MakeWithBuilder()
         .reader_pid(254)
         .cape_resets(5)
         .Send();
@@ -159,7 +159,7 @@ class DrivetrainTest : public ::testing::Test {
   virtual ~DrivetrainTest() {
     ::aos::robot_state.Clear();
     ::frc971::sensors::gyro_reading.Clear();
-    ::bbb::sensor_generation.Clear();
+    ::aos::controls::sensor_generation.Clear();
   }
 };
 

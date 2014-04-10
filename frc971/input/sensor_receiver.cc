@@ -5,6 +5,7 @@
 #include "aos/common/util/wrapping_counter.h"
 #include "aos/common/time.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/controls/output_check.q.h"
 
 #include "bbb/sensor_reader.h"
 
@@ -14,7 +15,6 @@
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
-#include "frc971/queues/output_check.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -182,7 +182,7 @@ void PacketReceived(const ::bbb::DataStruct *data,
   }
 
   if (data->main.output_check_pulse_length != 0) {
-    auto message = ::frc971::output_check_received.MakeMessage();
+    auto message = ::aos::controls::output_check_received.MakeMessage();
     // TODO(brians): Fix this math to match what the cRIO actually does.
     // It's close but not quite right.
     message->pulse_length =

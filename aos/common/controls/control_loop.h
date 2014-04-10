@@ -9,7 +9,7 @@
 #include "aos/common/util/log_interval.h"
 
 namespace aos {
-namespace control_loops {
+namespace controls {
 
 // Interface to describe runnable jobs.
 class Runnable {
@@ -179,7 +179,7 @@ class ControlLoop : public SerializableControlLoop {
       SimpleLogInterval(kStaleLogInterval, WARNING, "motors disabled");
 };
 
-}  // namespace control_loops
+}  // namespace controls
 }  // namespace aos
 
 #include "aos/common/controls/control_loop-tmpl.h"  // IWYU pragma: export

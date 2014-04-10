@@ -342,7 +342,7 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
 }
 
 ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
-    : aos::control_loops::ControlLoop<control_loops::ClawGroup, true, true,
+    : aos::controls::ControlLoop<control_loops::ClawGroup, true, true,
                                       false>(my_claw),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
