@@ -4,7 +4,7 @@
       'target_name': 'init',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/linux_code/init.cc',
+        'init.cc',
       ],
       'dependencies': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
