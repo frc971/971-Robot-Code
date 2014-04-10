@@ -535,4 +535,12 @@ int RawQueue::FreeMessages() const {
   return r;
 }
 
+bool RawQueue::IsDebug() {
+#if QUEUE_DEBUG
+  return true;
+#else
+  return false;
+#endif
+}
+
 }  // namespace aos

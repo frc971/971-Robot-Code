@@ -315,6 +315,10 @@ std::map<RawQueueTest::ChildID, RawQueueTest::ForkedProcess *>
 constexpr time::Time RawQueueTest::kHangTime;
 constexpr time::Time RawQueueTest::kForkSleep;
 
+TEST_F(RawQueueTest, Basic) {
+  EXPECT_TRUE(RawQueue::IsDebug());
+}
+
 TEST_F(RawQueueTest, Reading) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
   MessageArgs args{queue, 0, -1};
