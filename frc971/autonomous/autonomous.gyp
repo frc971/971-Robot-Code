@@ -23,7 +23,7 @@
       ],
       'dependencies': [
         'auto_queue',
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
@@ -37,7 +37,7 @@
         '<(DEPTH)/frc971/actions/actions.gyp:drivetrain_action_lib',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
     },
     {

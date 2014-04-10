@@ -155,47 +155,6 @@
       ],
     },
     {
-      'target_name': 'control_loop_queues',
-      'type': 'static_library',
-      'sources': [ '<(AOS)/common/controls/control_loops.q' ],
-      'variables': {
-        'header_path': 'aos/common/controls',
-      },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
-      'includes': ['../build/queues.gypi'],
-    },
-    {
-      'target_name': 'controls',
-      'type': 'static_library',
-      'sources': [
-        'controls/control_loop.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/common/messages/messages.gyp:robot_state',
-        '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/util/util.gyp:phased_loop',
-        'time',
-        'control_loop_queues',
-        '<(AOS)/common/logging/logging.gyp:queue_logging',
-        '<(AOS)/common/util/util.gyp:log_interval',
-        '<(AOS)/common/controls/controls.gyp:sensor_generation',
-        '<(AOS)/common/controls/controls.gyp:output_check',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/common/messages/messages.gyp:robot_state',
-        '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/util/util.gyp:phased_loop',
-        'time',
-        'control_loop_queues',
-        '<(AOS)/common/logging/logging.gyp:queue_logging',
-        '<(AOS)/common/util/util.gyp:log_interval',
-        '<(AOS)/common/controls/controls.gyp:sensor_generation',
-        '<(AOS)/common/controls/controls.gyp:output_check',
-      ],
-    },
-    {
       'target_name': 'queue_test',
       'type': 'executable',
       'sources': [

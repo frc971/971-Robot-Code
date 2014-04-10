@@ -8,11 +8,11 @@
         'header_path': 'frc971/control_loops/claw',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:control_loop_queues',
+        '<(AOS)/common/controls/controls.gyp:control_loop_queues',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:control_loop_queues',
+        '<(AOS)/common/controls/controls.gyp:control_loop_queues',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
       'includes': ['../../../aos/build/queues.gypi'],
@@ -26,7 +26,7 @@
       ],
       'dependencies': [
         'claw_loop',
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/controls/controls.gyp:polytope',
@@ -36,7 +36,7 @@
       ],
       'export_dependent_settings': [
         'claw_loop',
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/controls/controls.gyp:polytope',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:coerce_goal',
@@ -65,7 +65,7 @@
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
         'claw_loop',
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
       ],
     },

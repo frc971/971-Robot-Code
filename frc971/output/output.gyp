@@ -46,7 +46,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
-        '<(AOS)/common/common.gyp:controls',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:queues',
         '<(AOS)/common/util/util.gyp:log_interval',
         '<(AOS)/common/common.gyp:time',
