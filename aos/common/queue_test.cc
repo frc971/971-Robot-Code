@@ -34,7 +34,7 @@ class MyThread : public util::Thread {
   MyThread() : threaded_test_queue(".aos.common.testing.test_queue") {}
 
   virtual void Run() {
-    ASSERT_TRUE(threaded_test_queue.FetchNextBlocking());
+    threaded_test_queue.FetchNextBlocking();
     EXPECT_TRUE(threaded_test_queue->test_bool);
     EXPECT_EQ(0x971, threaded_test_queue->test_int);
   }

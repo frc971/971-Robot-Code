@@ -10,6 +10,31 @@
 
 namespace frc971 {
 namespace actions {
+namespace {
+
+bool IntakeOff() {
+  control_loops::claw_queue_group.goal.FetchLatest();
+  if (!control_loops::claw_queue_group.goal.get()) {
+    LOG(WARNING, "no claw goal\n");
+    // If it doesn't have a goal, then the intake isn't on so we don't have to
+    // turn it off.
+    return true;
+  } else {
+    if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+        .bottom_angle(control_loops::claw_queue_group.goal->bottom_angle)
+        .separation_angle(
+            control_loops::claw_queue_group.goal->separation_angle)
+        .intake(0.0)
+        .centering(0.0)
+        .Send()) {
+      LOG(WARNING, "sending claw goal failed\n");
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace
 
 constexpr double ShootAction::kOffsetRadians;
 constexpr double ShootAction::kClawShootingSeparation;
@@ -53,19 +78,7 @@ void ShootAction::InnerRunAction() {
     return;
   }
 
-  // Turn the intake off.
-  control_loops::claw_queue_group.goal.FetchLatest();
-
-  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(control_loops::claw_queue_group.goal->bottom_angle)
-           .separation_angle(
-                control_loops::claw_queue_group.goal->separation_angle)
-           .intake(0.0)
-           .centering(0.0)
-           .Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
-    return;
-  }
+  if (!IntakeOff()) return;
 
   // Make sure that we have the latest shooter status.
   control_loops::shooter_queue_group.status.FetchLatest();
@@ -86,19 +99,7 @@ void ShootAction::InnerRunAction() {
   // wait for record of shot having been fired
   if (WaitUntil(::std::bind(&ShootAction::DoneShot, this))) return;
 
-  // Turn the intake off.
-  control_loops::claw_queue_group.goal.FetchLatest();
-
-  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
-           .bottom_angle(control_loops::claw_queue_group.goal->bottom_angle)
-           .separation_angle(
-                control_loops::claw_queue_group.goal->separation_angle)
-           .intake(0.0)
-           .centering(0.0)
-           .Send()) {
-    LOG(WARNING, "sending claw goal failed\n");
-    return;
-  }
+  if (!IntakeOff()) return;
 }
 
 bool ClawIsReady() {
@@ -146,12 +147,8 @@ bool ShooterIsReady() {
 }
 
 bool ShootAction::DoneSetupShot() {
-  if (!control_loops::shooter_queue_group.status.FetchLatest()) {
-    control_loops::shooter_queue_group.status.FetchNextBlocking();
-  }
-  if (!control_loops::claw_queue_group.status.FetchLatest()) {
-    control_loops::claw_queue_group.status.FetchNextBlocking();
-  }
+  control_loops::shooter_queue_group.status.FetchAnother();
+  control_loops::claw_queue_group.status.FetchAnother();
   // Make sure that both the shooter and claw have reached the necessary
   // states.
   if (ShooterIsReady() && ClawIsReady()) {
@@ -163,9 +160,7 @@ bool ShootAction::DoneSetupShot() {
 }
 
 bool ShootAction::DonePreShotOpen() {
-  if (!control_loops::claw_queue_group.status.FetchLatest()) {
-    control_loops::claw_queue_group.status.FetchNextBlocking();
-  }
+  control_loops::claw_queue_group.status.FetchAnother();
   if (control_loops::claw_queue_group.status->separation >
       kClawShootingSeparation) {
     LOG(INFO, "Opened up enough to shoot.\n");
@@ -175,9 +170,7 @@ bool ShootAction::DonePreShotOpen() {
 }
 
 bool ShootAction::DoneShot() {
-  if (!control_loops::shooter_queue_group.status.FetchLatest()) {
-    control_loops::shooter_queue_group.status.FetchNextBlocking();
-  }
+  control_loops::shooter_queue_group.status.FetchAnother();
   if (control_loops::shooter_queue_group.status->shots > previous_shots_) {
     LOG(INFO, "Shot succeeded!\n");
     return true;

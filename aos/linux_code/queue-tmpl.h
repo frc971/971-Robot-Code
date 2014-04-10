@@ -193,12 +193,12 @@ bool Queue<T>::FetchNext() {
 }
 
 template <class T>
-bool Queue<T>::FetchNextBlocking() {
+void Queue<T>::FetchNextBlocking() {
   Init();
-  const T *msg = static_cast<const T *>(queue_->ReadMessageIndex(RawQueue::kBlock, &index_));
+  const T *msg = static_cast<const T *>(
+      queue_->ReadMessageIndex(RawQueue::kBlock, &index_));
   queue_msg_.reset(msg);
   assert (msg != NULL);
-  return true;
 }
 
 template <class T>
@@ -215,6 +215,11 @@ bool Queue<T>::FetchLatest() {
   // is ok to call on NULL).
   queue_->FreeMessage(msg);
   return false;
+}
+
+template <class T>
+void Queue<T>::FetchAnother() {
+  if (!FetchLatest()) FetchNextBlocking();
 }
 
 template <class T>

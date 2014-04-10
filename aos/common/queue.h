@@ -213,14 +213,18 @@ class Queue {
 
   // Fetches the next message from the queue.
   // Returns true if there was a new message available and we successfully
-  // fetched it.  This removes the message from the queue for all readers.
+  // fetched it.
   bool FetchNext();
-  bool FetchNextBlocking();
+  void FetchNextBlocking();
 
   // Fetches the last message from the queue.
   // Returns true if there was a new message available and we successfully
   // fetched it.
   bool FetchLatest();
+
+  // Fetches another message from the queue. Blocks until there is one if the
+  // latest was already Fetched.
+  void FetchAnother();
 
   // Returns the age of the message.
   const time::Time Age() { return time::Time::Now() - queue_msg_->sent_time; }

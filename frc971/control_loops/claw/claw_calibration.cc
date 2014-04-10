@@ -148,7 +148,7 @@ class ClawSensors {
 };
 
 int Main() {
-  while (!control_loops::claw_queue_group.position.FetchNextBlocking());
+  control_loops::claw_queue_group.position.FetchNextBlocking();
 
   const double top_start_position =
       control_loops::claw_queue_group.position->top.position;
@@ -216,87 +216,86 @@ int Main() {
       *control_loops::claw_queue_group.position;
 
   while (true) {
-    if (control_loops::claw_queue_group.position.FetchNextBlocking()) {
-      bool print = false;
-      if (top.GetPositionOfEdge(control_loops::claw_queue_group.position->top,
-                                &limits.upper_claw)) {
-        print = true;
-        printf("Got an edge on the upper claw\n");
-      }
-      if (bottom.GetPositionOfEdge(
-              control_loops::claw_queue_group.position->bottom,
-              &limits.lower_claw)) {
-        print = true;
-        printf("Got an edge on the lower claw\n");
-      }
-      const double top_position =
-          control_loops::claw_queue_group.position->top.position -
-          top_start_position;
-      const double bottom_position =
-          control_loops::claw_queue_group.position->bottom.position -
-          bottom_start_position;
-      const double separation = top_position - bottom_position;
-      if (separation > limits.claw_max_separation) {
-        limits.soft_max_separation = limits.claw_max_separation = separation;
-        print = true;
-      }
-      if (separation < limits.claw_min_separation) {
-        limits.soft_min_separation = limits.claw_min_separation = separation;
-        print = true;
-      }
-
-      if (print) {
-        printf("{%f,\n", limits.claw_zeroing_off_speed);
-        printf("%f,\n", limits.claw_zeroing_speed);
-        printf("%f,\n", limits.claw_zeroing_separation);
-        printf("%f,\n", limits.claw_min_separation);
-        printf("%f,\n", limits.claw_max_separation);
-        printf("%f,\n", limits.soft_min_separation);
-        printf("%f,\n", limits.soft_max_separation);
-        printf(
-            "{%f, %f, %f, %f, {%f, %f, %f, %f}, {%f, %f, %f, %f}, {%f, %f, %f, "
-            "%f}},\n",
-            limits.upper_claw.lower_hard_limit,
-            limits.upper_claw.upper_hard_limit, limits.upper_claw.lower_limit,
-            limits.upper_claw.upper_limit, limits.upper_claw.front.lower_angle,
-            limits.upper_claw.front.upper_angle,
-            limits.upper_claw.front.lower_decreasing_angle,
-            limits.upper_claw.front.upper_decreasing_angle,
-            limits.upper_claw.calibration.lower_angle,
-            limits.upper_claw.calibration.upper_angle,
-            limits.upper_claw.calibration.lower_decreasing_angle,
-            limits.upper_claw.calibration.upper_decreasing_angle,
-            limits.upper_claw.back.lower_angle,
-            limits.upper_claw.back.upper_angle,
-            limits.upper_claw.back.lower_decreasing_angle,
-            limits.upper_claw.back.upper_decreasing_angle);
-
-        printf(
-            "{%f, %f, %f, %f, {%f, %f, %f, %f}, {%f, %f, %f, %f}, {%f, %f, %f, "
-            "%f}},\n",
-            limits.lower_claw.lower_hard_limit,
-            limits.lower_claw.upper_hard_limit, limits.lower_claw.lower_limit,
-            limits.lower_claw.upper_limit, limits.lower_claw.front.lower_angle,
-            limits.lower_claw.front.upper_angle,
-            limits.lower_claw.front.lower_decreasing_angle,
-            limits.lower_claw.front.upper_decreasing_angle,
-            limits.lower_claw.calibration.lower_angle,
-            limits.lower_claw.calibration.upper_angle,
-            limits.lower_claw.calibration.lower_decreasing_angle,
-            limits.lower_claw.calibration.upper_decreasing_angle,
-            limits.lower_claw.back.lower_angle,
-            limits.lower_claw.back.upper_angle,
-            limits.lower_claw.back.lower_decreasing_angle,
-            limits.lower_claw.back.upper_decreasing_angle);
-        printf("%f,  // claw_unimportant_epsilon\n",
-               limits.claw_unimportant_epsilon);
-        printf("%f,   // start_fine_tune_pos\n", limits.start_fine_tune_pos);
-        printf("%f,\n", limits.max_zeroing_voltage);
-        printf("}\n");
-      }
-
-      last_position = *control_loops::claw_queue_group.position;
+    control_loops::claw_queue_group.position.FetchNextBlocking();
+    bool print = false;
+    if (top.GetPositionOfEdge(control_loops::claw_queue_group.position->top,
+                              &limits.upper_claw)) {
+      print = true;
+      printf("Got an edge on the upper claw\n");
     }
+    if (bottom.GetPositionOfEdge(
+            control_loops::claw_queue_group.position->bottom,
+            &limits.lower_claw)) {
+      print = true;
+      printf("Got an edge on the lower claw\n");
+    }
+    const double top_position =
+        control_loops::claw_queue_group.position->top.position -
+        top_start_position;
+    const double bottom_position =
+        control_loops::claw_queue_group.position->bottom.position -
+        bottom_start_position;
+    const double separation = top_position - bottom_position;
+    if (separation > limits.claw_max_separation) {
+      limits.soft_max_separation = limits.claw_max_separation = separation;
+      print = true;
+    }
+    if (separation < limits.claw_min_separation) {
+      limits.soft_min_separation = limits.claw_min_separation = separation;
+      print = true;
+    }
+
+    if (print) {
+      printf("{%f,\n", limits.claw_zeroing_off_speed);
+      printf("%f,\n", limits.claw_zeroing_speed);
+      printf("%f,\n", limits.claw_zeroing_separation);
+      printf("%f,\n", limits.claw_min_separation);
+      printf("%f,\n", limits.claw_max_separation);
+      printf("%f,\n", limits.soft_min_separation);
+      printf("%f,\n", limits.soft_max_separation);
+      printf(
+          "{%f, %f, %f, %f, {%f, %f, %f, %f}, {%f, %f, %f, %f}, {%f, %f, %f, "
+          "%f}},\n",
+          limits.upper_claw.lower_hard_limit,
+          limits.upper_claw.upper_hard_limit, limits.upper_claw.lower_limit,
+          limits.upper_claw.upper_limit, limits.upper_claw.front.lower_angle,
+          limits.upper_claw.front.upper_angle,
+          limits.upper_claw.front.lower_decreasing_angle,
+          limits.upper_claw.front.upper_decreasing_angle,
+          limits.upper_claw.calibration.lower_angle,
+          limits.upper_claw.calibration.upper_angle,
+          limits.upper_claw.calibration.lower_decreasing_angle,
+          limits.upper_claw.calibration.upper_decreasing_angle,
+          limits.upper_claw.back.lower_angle,
+          limits.upper_claw.back.upper_angle,
+          limits.upper_claw.back.lower_decreasing_angle,
+          limits.upper_claw.back.upper_decreasing_angle);
+
+      printf(
+          "{%f, %f, %f, %f, {%f, %f, %f, %f}, {%f, %f, %f, %f}, {%f, %f, %f, "
+          "%f}},\n",
+          limits.lower_claw.lower_hard_limit,
+          limits.lower_claw.upper_hard_limit, limits.lower_claw.lower_limit,
+          limits.lower_claw.upper_limit, limits.lower_claw.front.lower_angle,
+          limits.lower_claw.front.upper_angle,
+          limits.lower_claw.front.lower_decreasing_angle,
+          limits.lower_claw.front.upper_decreasing_angle,
+          limits.lower_claw.calibration.lower_angle,
+          limits.lower_claw.calibration.upper_angle,
+          limits.lower_claw.calibration.lower_decreasing_angle,
+          limits.lower_claw.calibration.upper_decreasing_angle,
+          limits.lower_claw.back.lower_angle,
+          limits.lower_claw.back.upper_angle,
+          limits.lower_claw.back.lower_decreasing_angle,
+          limits.lower_claw.back.upper_decreasing_angle);
+      printf("%f,  // claw_unimportant_epsilon\n",
+             limits.claw_unimportant_epsilon);
+      printf("%f,   // start_fine_tune_pos\n", limits.start_fine_tune_pos);
+      printf("%f,\n", limits.max_zeroing_voltage);
+      printf("}\n");
+    }
+
+    last_position = *control_loops::claw_queue_group.position;
   }
   return 0;
 }

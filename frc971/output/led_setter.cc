@@ -13,7 +13,7 @@ int main() {
   ::bbb::LED claw_zeroed(3);
 
   while (true) {
-    CHECK(claw_queue_group.status.FetchNextBlocking());
+    claw_queue_group.status.FetchNextBlocking();
     claw_zeroed.Set(claw_queue_group.status->zeroed_for_auto);
   }
 }
