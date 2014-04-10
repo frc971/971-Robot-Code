@@ -26,43 +26,44 @@ namespace frc971 {
 namespace control_loops {
 
 // Width of the robot.
-const double width = 22.0 / 100.0 * 2.54;
+const double width = 25.0 / 100.0 * 2.54;
 
 class DrivetrainMotorsSS {
  public:
   DrivetrainMotorsSS()
       : loop_(new StateFeedbackLoop<4, 2, 2>(
-            constants::GetValues().make_drivetrain_loop())) {
-    _offset = 0;
-    _integral_offset = 0;
-    _left_goal = 0.0;
-    _right_goal = 0.0;
-    _raw_left = 0.0;
-    _raw_right = 0.0;
-    _control_loop_driving = false;
+            constants::GetValues().make_drivetrain_loop())),
+        filtered_offset_(0.0),
+        gyro_(0.0),
+        left_goal_(0.0),
+        right_goal_(0.0),
+        raw_left_(0.0),
+        raw_right_(0.0),
+        control_loop_driving_(false) {
+    // High gear on both.
+    loop_->set_controller_index(3);
   }
-  void SetGoal(double left, double left_velocity, double right, double right_velocity) {
-    _left_goal = left;
-    _right_goal = right;
+
+  void SetGoal(double left, double left_velocity, double right,
+               double right_velocity) {
+    left_goal_ = left;
+    right_goal_ = right;
     loop_->R << left, left_velocity, right, right_velocity;
   }
   void SetRawPosition(double left, double right) {
-    _raw_right = right;
-    _raw_left = left;
+    raw_right_ = right;
+    raw_left_ = left;
     Eigen::Matrix<double, 2, 1> Y;
-    Y << left, right;
+    Y << left + filtered_offset_, right - filtered_offset_;
     loop_->Correct(Y);
   }
   void SetPosition(
       double left, double right, double gyro, bool control_loop_driving) {
     // Decay the offset quickly because this gyro is great.
-    _offset = (0.25) * (right - left - gyro * width) / 2.0 + 0.75 * _offset;
-    //const double angle_error = (_right_goal - _left_goal) / width - (_raw_right - _offset - _raw_left - _offset) / width;
-    // TODO(aschuh): Add in the gyro.
-    _integral_offset = 0.0;
-    _offset = 0.0;
-    _gyro = gyro;
-    _control_loop_driving = control_loop_driving;
+    const double offset = (right - left - gyro * width) / 2.0;
+    filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
+    gyro_ = gyro;
+    control_loop_driving_ = control_loop_driving;
     SetRawPosition(left, right);
   }
 
@@ -71,7 +72,7 @@ class DrivetrainMotorsSS {
   }
 
   void Update(bool stop_motors) {
-    if (_control_loop_driving) {
+    if (control_loop_driving_) {
       loop_->Update(stop_motors);
     } else {
       if (stop_motors) {
@@ -102,20 +103,21 @@ class DrivetrainMotorsSS {
     if (output) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
+      output->left_high = true;
+      output->right_high = true;
     }
   }
 
  private:
   ::std::unique_ptr<StateFeedbackLoop<4, 2, 2>> loop_;
 
-  double _integral_offset;
-  double _offset;
-  double _gyro;
-  double _left_goal;
-  double _right_goal;
-  double _raw_left;
-  double _raw_right;
-  bool _control_loop_driving;
+  double filtered_offset_;
+  double gyro_;
+  double left_goal_;
+  double right_goal_;
+  double raw_left_;
+  double raw_right_;
+  bool control_loop_driving_;
 };
 
 class PolyDrivetrain {

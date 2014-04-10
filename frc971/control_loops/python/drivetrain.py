@@ -51,8 +51,8 @@ class CIM(control_loop.ControlLoop):
 
 
 class Drivetrain(control_loop.ControlLoop):
-  def __init__(self, left_low=True, right_low=True):
-    super(Drivetrain, self).__init__("Drivetrain")
+  def __init__(self, name="Drivetrain", left_low=True, right_low=True):
+    super(Drivetrain, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = 2.42
     # Stall Current in Amps
@@ -143,8 +143,8 @@ class Drivetrain(control_loop.ControlLoop):
     print self.K
     print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
-    self.hlp = 0.07
-    self.llp = 0.09
+    self.hlp = 0.12
+    self.llp = 0.15
     self.PlaceObserverPoles([self.hlp, self.hlp, self.llp, self.llp])
 
     self.U_max = numpy.matrix([[12.0], [12.0]])
@@ -218,12 +218,17 @@ def main(argv):
 
   # Write the generated constants out to a file.
   print "Output one"
-  drivetrain = Drivetrain()
+  drivetrain_low_low = Drivetrain(name="DrivetrainLowLow", left_low=True, right_low=True)
+  drivetrain_low_high = Drivetrain(name="DrivetrainLowHigh", left_low=True, right_low=False)
+  drivetrain_high_low = Drivetrain(name="DrivetrainHighLow", left_low=False, right_low=True)
+  drivetrain_high_high = Drivetrain(name="DrivetrainHighHigh", left_low=False, right_low=False)
 
   if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
-    dog_loop_writer = control_loop.ControlLoopWriter("Drivetrain", [drivetrain])
+    dog_loop_writer = control_loop.ControlLoopWriter(
+        "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
+                       drivetrain_high_low, drivetrain_high_high])
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
     else:

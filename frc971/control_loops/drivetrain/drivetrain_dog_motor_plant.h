@@ -6,9 +6,21 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainPlantCoefficients();
+StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainLowLowPlantCoefficients();
 
-StateFeedbackController<4, 2, 2> MakeDrivetrainController();
+StateFeedbackController<4, 2, 2> MakeDrivetrainLowLowController();
+
+StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainLowHighPlantCoefficients();
+
+StateFeedbackController<4, 2, 2> MakeDrivetrainLowHighController();
+
+StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainHighLowPlantCoefficients();
+
+StateFeedbackController<4, 2, 2> MakeDrivetrainHighLowController();
+
+StateFeedbackPlantCoefficients<4, 2, 2> MakeDrivetrainHighHighPlantCoefficients();
+
+StateFeedbackController<4, 2, 2> MakeDrivetrainHighHighController();
 
 StateFeedbackPlant<4, 2, 2> MakeDrivetrainPlant();
 
