@@ -164,6 +164,9 @@ class TopZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 
   bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
                             JointZeroingState zeroing_state);
+  double ComputeCalibrationChange(double edge_encoder, double edge_angle);
+  void HandleCalibrationError(
+      const constants::Values::Claws::Claw &claw_values);
 };
 
 class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
@@ -176,6 +179,9 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 
   bool SetCalibrationOnEdge(const constants::Values::Claws::Claw &claw_values,
                             JointZeroingState zeroing_state);
+  double ComputeCalibrationChange(double edge_encoder, double edge_angle);
+  void HandleCalibrationError(
+      const constants::Values::Claws::Claw &claw_values);
 };
 
 class ClawMotor : public aos::control_loops::ControlLoop<

@@ -59,6 +59,7 @@ template <typename T> int sign(T val) {
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
+const double kRezeroThreshold = 0.03;
 
 ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
     : StateFeedbackLoop<4, 2, 2>(loop),
@@ -295,6 +296,37 @@ bool TopZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   return false;
 }
 
+void TopZeroedStateFeedbackLoop::HandleCalibrationError(
+    const constants::Values::Claws::Claw &claw_values) {
+  double edge_encoder;
+  double edge_angle;
+  if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
+    const double calibration_error =
+        ComputeCalibrationChange(edge_encoder, edge_angle);
+    LOG(INFO, "Top calibration error is %f\n", calibration_error);
+    if (::std::abs(calibration_error) > kRezeroThreshold) {
+      SetCalibration(edge_encoder, edge_angle);
+      set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+    }
+  }
+}
+
+
+void BottomZeroedStateFeedbackLoop::HandleCalibrationError(
+    const constants::Values::Claws::Claw &claw_values) {
+  double edge_encoder;
+  double edge_angle;
+  if (GetPositionOfEdge(claw_values, &edge_encoder, &edge_angle)) {
+    const double calibration_error =
+        ComputeCalibrationChange(edge_encoder, edge_angle);
+    LOG(INFO, "Bottom calibration error is %f\n", calibration_error);
+    if (::std::abs(calibration_error) > kRezeroThreshold) {
+      SetCalibration(edge_encoder, edge_angle);
+      set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+    }
+  }
+}
+
 bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
     const constants::Values::Claws::Claw &claw_values,
     JointZeroingState zeroing_state) {
@@ -444,12 +476,26 @@ void TopZeroedStateFeedbackLoop::SetCalibration(double edge_encoder,
   motor_->ChangeTopOffset(doffset);
 }
 
+double TopZeroedStateFeedbackLoop::ComputeCalibrationChange(double edge_encoder,
+                                                            double edge_angle) {
+  const double offset = edge_angle - edge_encoder;
+  const double doffset = offset - offset_;
+  return doffset;
+}
+
 void BottomZeroedStateFeedbackLoop::SetCalibration(double edge_encoder,
                                                    double edge_angle) {
   double old_offset = offset_;
   offset_ = edge_angle - edge_encoder;
   const double doffset = offset_ - old_offset;
   motor_->ChangeBottomOffset(doffset);
+}
+
+double BottomZeroedStateFeedbackLoop::ComputeCalibrationChange(
+    double edge_encoder, double edge_angle) {
+  const double offset = edge_angle - edge_encoder;
+  const double doffset = offset - offset_;
+  return doffset;
 }
 
 void ClawMotor::ChangeTopOffset(double doffset) {
@@ -618,8 +664,10 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     has_bottom_claw_goal_ = true;
     has_top_claw_goal_ = true;
     doing_calibration_fine_tune_ = false;
-
     mode_ = READY;
+
+    bottom_claw_.HandleCalibrationError(values.claw.lower_claw);
+    top_claw_.HandleCalibrationError(values.claw.upper_claw);
   } else if (top_claw_.zeroing_state() !=
              ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
              bottom_claw_.zeroing_state() !=
