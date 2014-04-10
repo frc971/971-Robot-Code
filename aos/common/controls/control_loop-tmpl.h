@@ -6,6 +6,7 @@
 #include "aos/common/util/phased_loop.h"
 
 #include "bbb/sensor_generation.q.h"
+#include "frc971/queues/output_check.q.h"
 
 namespace aos {
 namespace control_loops {
@@ -118,6 +119,21 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
     } else {
       LOG_INTERVAL(no_driver_station_);
     }
+  }
+
+  ::frc971::output_check_received.FetchLatest();
+  // True if we're enabled but the motors aren't working.
+  // The 100ms is the result of disabling the robot while it's putting out a lot
+  // of power and looking at the time delay between the last PWM pulse and the
+  // battery voltage coming back up.
+  const bool motors_off = !::frc971::output_check_received.get() ||
+                          !::frc971::output_check_received.IsNewerThanMS(100);
+  motors_off_log_.Print();
+  if (motors_off) {
+    if (!::aos::robot_state.get() || ::aos::robot_state->enabled) {
+      LOG_INTERVAL(motors_off_log_);
+    }
+    outputs_enabled = false;
   }
 
   // Run the iteration.

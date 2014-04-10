@@ -175,6 +175,8 @@ class ControlLoop : public SerializableControlLoop {
   SimpleLogInterval no_sensor_generation_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "no sensor_generation message");
+  SimpleLogInterval motors_off_log_ =
+      SimpleLogInterval(kStaleLogInterval, WARNING, "motors disabled");
 };
 
 }  // namespace control_loops

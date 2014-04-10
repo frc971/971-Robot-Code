@@ -10,7 +10,6 @@
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/shooter/shooter_motor_plant.h"
-#include "frc971/queues/output_check.q.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -195,17 +194,6 @@ void ShooterMotor::RunIteration(
 
   const bool disabled =
       !::aos::robot_state.get() || !::aos::robot_state->enabled;
-  output_check_received.FetchLatest();
-  // True if we're enabled but the motors aren't working.
-  // TODO(brians): Make this more general.
-  // The 100ms is the result of disabling the robot while it's putting out a lot
-  // of power and looking at the time delay between the last PWM pulse and the
-  // battery voltage coming back up.
-  const bool motors_off =
-      !disabled && (!output_check_received.get() ||
-                    !output_check_received.IsNewerThanMS(100));
-  motors_off_log_.Print();
-  if (motors_off) LOG_INTERVAL(motors_off_log_);
 
   // If true, move the goal if we saturate.
   bool cap_goal = false;
@@ -331,7 +319,7 @@ void ShooterMotor::RunIteration(
         // useful sensor data.
         latch_piston_ = true;
       }
-      if (motors_off) {
+      if (output == nullptr) {
         load_timeout_ += ::aos::control_loops::kLoopFrequency;
       }
       // Go to 0, which should be the latch position, or trigger a hall effect
@@ -643,7 +631,7 @@ void ShooterMotor::RunIteration(
     }
     // We don't really want to output anything if we went through everything
     // assuming the motors weren't working.
-    if (output && !motors_off) output->voltage = shooter_.voltage();
+    if (output) output->voltage = shooter_.voltage();
   } else {
     shooter_.Update(true);
     shooter_.ZeroPower();
