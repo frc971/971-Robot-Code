@@ -687,8 +687,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         if (::std::abs(bottom_absolute_position() -
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
-          // TODO(brians): I think we should check if we're on the magnet here
-          // and completely invalidate our position if so.
           doing_calibration_fine_tune_ = true;
           bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           top_claw_velocity_ = bottom_claw_velocity_ =
@@ -730,11 +728,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           LOG(DEBUG, "Calibrated the bottom correctly!\n");
         } else if (bottom_claw_.calibration().last_value()) {
           LOG(DEBUG, "Aborting bottom fine tune because sensor triggered\n");
-          // TODO(brians): This condition for aborting doesn't make much sense.
           doing_calibration_fine_tune_ = false;
-          bottom_claw_goal_ = values.claw.start_fine_tune_pos;
-          top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-          mode_ = PREP_FINE_TUNE_BOTTOM;
+          bottom_claw_.set_zeroing_state(
+              ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
         } else {
           LOG(DEBUG, "Fine tuning\n");
         }
@@ -748,8 +744,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         if (::std::abs(top_absolute_position() -
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
-          // TODO(brians): I think we should check if we're on the magnet here
-          // and completely invalidate our position if so.
           doing_calibration_fine_tune_ = true;
           top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           top_claw_velocity_ = bottom_claw_velocity_ =
@@ -790,11 +784,9 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           LOG(DEBUG, "Calibrated the top correctly!\n");
         } else if (top_claw_.calibration().last_value()) {
           LOG(DEBUG, "Aborting top fine tune because sensor triggered\n");
-          // TODO(brians): This condition for aborting doesn't make much sense.
           doing_calibration_fine_tune_ = false;
-          top_claw_goal_ = values.claw.start_fine_tune_pos;
-          top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
-          mode_ = PREP_FINE_TUNE_TOP;
+          top_claw_.set_zeroing_state(
+              ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
         }
       }
       // now set the bottom claw to track
