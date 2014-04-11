@@ -183,7 +183,7 @@ class ActionQueue {
 
   // Returns true if any action is running or could be running.
   // For a one cycle faster response, call Tick before running this.
-  bool Running() { return (bool)current_action_; }
+  bool Running() { return static_cast<bool>(current_action_); }
 
  private:
   ::std::unique_ptr<Action> current_action_;

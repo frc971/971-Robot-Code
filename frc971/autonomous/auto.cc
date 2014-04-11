@@ -177,7 +177,8 @@ SetDriveGoal(double distance, double maximum_velocity = 1.7) {
 void InitializeEncoders() {
   control_loops::drivetrain.position.FetchLatest();
   while (!control_loops::drivetrain.position.get()) {
-    LOG(WARNING, "No previous drivetrain position packet, trying to fetch again\n");
+    LOG(WARNING,
+        "No previous drivetrain position packet, trying to fetch again\n");
     control_loops::drivetrain.position.FetchNextBlocking();
   }
   left_initial_position =

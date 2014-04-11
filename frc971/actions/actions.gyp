@@ -16,6 +16,15 @@
       ],
     },
     {
+      'target_name': 'action_queue',
+      'type': 'static_library',
+      'sources': ['action.q'],
+      'variables': {
+        'header_path': 'frc971/actions',
+      },
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
       'target_name': 'shoot_action_queue',
       'type': 'static_library',
       'sources': ['shoot_action.q'],
@@ -23,10 +32,10 @@
         'header_path': 'frc971/actions',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -38,14 +47,14 @@
         'header_path': 'frc971/actions',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
-	  {
+    {
       'target_name': 'selfcatch_action_queue',
       'type': 'static_library',
       'sources': ['selfcatch_action.q'],
@@ -53,10 +62,10 @@
         'header_path': 'frc971/actions',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -68,10 +77,10 @@
         'header_path': 'frc971/actions',
       },
       'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:queues',
+        'action_queue',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -184,7 +193,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         'shoot_action_queue',
         'shoot_action_lib',
-		    'action',
+        'action',
       ],
     },
     {
@@ -210,7 +219,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         'selfcatch_action_queue',
         'selfcatch_action_lib',
-		    'action',
+        'action',
       ],
     },
     {
@@ -223,7 +232,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         'catch_action_queue',
         'catch_action_lib',
-		    'action',
+        'action',
       ],
     },
   ],

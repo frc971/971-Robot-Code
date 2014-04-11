@@ -1,18 +1,12 @@
 package frc971.actions;
 
+import "frc971/actions/action.q";
+
 queue_group ShootActionQueueGroup {
-  message Status {
-    bool running;
-  };
+  implements frc971.actions.ActionQueueGroup;
 
-  message Goal {
-    // If true, run this action.  If false, cancel the action if it is
-    // currently running.
-    bool run;
-  };
-
-  queue Goal goal;
-  queue Status status;
+  queue frc971.actions.Goal goal;
+  queue frc971.actions.Status status;
 };
 
 queue_group ShootActionQueueGroup shoot_action;

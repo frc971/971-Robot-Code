@@ -2,6 +2,7 @@
 #define FRC971_ACTIONS_ACTION_H_
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <functional>
 
@@ -28,7 +29,7 @@ template <class T> class ActionBase {
       action_q_->goal.FetchNextBlocking();
     }
 
-    if (!action_q_->status.MakeWithBuilder().running(false).Send()) {
+    if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
       LOG(ERROR, "Failed to send the status.\n");
     }
     while (true) {
@@ -36,22 +37,30 @@ template <class T> class ActionBase {
         LOG(INFO, "Waiting for an action request.\n");
         action_q_->goal.FetchNextBlocking();
         if (!action_q_->goal->run) {
-          if (!action_q_->status.MakeWithBuilder().running(false).Send()) {
+          if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
             LOG(ERROR, "Failed to send the status.\n");
           }
         }
       }
-      LOG(INFO, "Starting action\n");
-      if (!action_q_->status.MakeWithBuilder().running(true).Send()) {
+
+      const uint32_t running_id = action_q_->goal->run;
+      LOG(INFO, "Starting action %" PRIx32 "\n", running_id);
+      if (!action_q_->status.MakeWithBuilder().running(running_id).Send()) {
         LOG(ERROR, "Failed to send the status.\n");
       }
       RunAction();
-      LOG(INFO, "Done with action\n");
-      if (!action_q_->status.MakeWithBuilder().running(false).Send()) {
-        LOG(ERROR, "Failed to send the status.\n");
+      LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
+
+      // If we have a new one to run, we shouldn't say we're stopped in between.
+      if (action_q_->goal->run == 0) {
+        if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
+          LOG(ERROR, "Failed to send the status.\n");
+        }
       }
-      while (action_q_->goal->run) {
-        LOG(INFO, "Waiting for the action to be stopped.\n");
+
+      while (action_q_->goal->run == running_id) {
+        LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
+            running_id);
         action_q_->goal.FetchNextBlocking();
       }
     }

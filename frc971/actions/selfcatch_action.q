@@ -1,19 +1,17 @@
 package frc971.actions;
 
+import "frc971/actions/action.q";
+
 queue_group SelfCatchActionGroup {
-  message Status {
-    bool running;
-  };
+  implements frc971.actions.ActionQueueGroup;
 
   message Goal {
-    // If true, run this action.  If false, cancel the action if it is
-    // currently running.
-    bool run;
+    uint32_t run;
     double shot_angle;
   };
 
   queue Goal goal;
-  queue Status status;
+  queue frc971.actions.Status status;
 };
 
 queue_group SelfCatchActionGroup selfcatch_action;
