@@ -149,7 +149,7 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
         return false;
       }
       // Ignore the trailing '\0' that the subcall put on.
-      output -= 1;
+      *output_bytes += 1;
     }
 
     // Update the input and output pointers.

@@ -146,7 +146,8 @@ int main(int argc, char **argv) {
 
   int fd = open(filename, O_RDONLY);
   if (fd == -1) {
-    fprintf(stderr, "error: couldn't open file '%s' for reading because of %s\n",
+    fprintf(stderr,
+            "error: couldn't open file '%s' for reading because of %s\n",
             filename, strerror(errno));
     exit(EXIT_FAILURE);
   }
