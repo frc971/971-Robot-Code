@@ -8,6 +8,7 @@
 namespace frc971 {
 
 // TODO(brians): Have a Reset() for when the cape resets.
+// TODO(aschuh): Can we filter for 2 cycles instead of just 1?
 class HallEffectTracker {
  public:
   int32_t get_posedges() const { return posedges_.count(); }

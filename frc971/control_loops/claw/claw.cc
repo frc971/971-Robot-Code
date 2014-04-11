@@ -305,6 +305,7 @@ void TopZeroedStateFeedbackLoop::HandleCalibrationError(
         ComputeCalibrationChange(edge_encoder, edge_angle);
     LOG(INFO, "Top calibration error is %f\n", calibration_error);
     if (::std::abs(calibration_error) > kRezeroThreshold) {
+      LOG(WARNING, "rezeroing top\n");
       SetCalibration(edge_encoder, edge_angle);
       set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
     }
@@ -321,6 +322,7 @@ void BottomZeroedStateFeedbackLoop::HandleCalibrationError(
         ComputeCalibrationChange(edge_encoder, edge_angle);
     LOG(INFO, "Bottom calibration error is %f\n", calibration_error);
     if (::std::abs(calibration_error) > kRezeroThreshold) {
+      LOG(WARNING, "rezeroing bottom\n");
       SetCalibration(edge_encoder, edge_angle);
       set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
     }
@@ -685,6 +687,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         if (::std::abs(bottom_absolute_position() -
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
+          // TODO(brians): I think we should check if we're on the magnet here
+          // and completely invalidate our position if so.
           doing_calibration_fine_tune_ = true;
           bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           top_claw_velocity_ = bottom_claw_velocity_ =
@@ -725,6 +729,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = false;
           LOG(DEBUG, "Calibrated the bottom correctly!\n");
         } else if (bottom_claw_.calibration().last_value()) {
+          LOG(DEBUG, "Aborting bottom fine tune because sensor triggered\n");
+          // TODO(brians): This condition for aborting doesn't make much sense.
           doing_calibration_fine_tune_ = false;
           bottom_claw_goal_ = values.claw.start_fine_tune_pos;
           top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
@@ -742,6 +748,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         if (::std::abs(top_absolute_position() -
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
+          // TODO(brians): I think we should check if we're on the magnet here
+          // and completely invalidate our position if so.
           doing_calibration_fine_tune_ = true;
           top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
           top_claw_velocity_ = bottom_claw_velocity_ =
@@ -781,6 +789,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
           doing_calibration_fine_tune_ = false;
           LOG(DEBUG, "Calibrated the top correctly!\n");
         } else if (top_claw_.calibration().last_value()) {
+          LOG(DEBUG, "Aborting top fine tune because sensor triggered\n");
+          // TODO(brians): This condition for aborting doesn't make much sense.
           doing_calibration_fine_tune_ = false;
           top_claw_goal_ = values.claw.start_fine_tune_pos;
           top_claw_velocity_ = bottom_claw_velocity_ = 0.0;
