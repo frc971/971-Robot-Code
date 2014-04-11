@@ -13,12 +13,6 @@
       'variables': {
         'header_path': 'frc971/queues',
       },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
       'includes': ['../../aos/build/queues.gypi'],
     },
   ],

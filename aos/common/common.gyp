@@ -9,9 +9,6 @@
       'variables': {
         'header_path': 'aos/common',
       },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
       'includes': ['../build/queues.gypi'],
     },
     {

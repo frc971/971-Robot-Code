@@ -44,9 +44,6 @@
       'variables': {
         'header_path': 'aos/common/controls',
       },
-      'dependencies': [
-        '<(AOS)/common/common.gyp:queues',
-      ],
       'includes': ['../../../aos/build/queues.gypi'],
     },
     {
@@ -65,6 +62,7 @@
         '<(AOS)/common/util/util.gyp:log_interval',
         'sensor_generation',
         'output_check',
+        '<(AOS)/common/common.gyp:queues',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/messages/messages.gyp:robot_state',
@@ -76,6 +74,7 @@
         '<(AOS)/common/util/util.gyp:log_interval',
         'sensor_generation',
         'output_check',
+        '<(AOS)/common/common.gyp:queues',
       ],
     },
   ],

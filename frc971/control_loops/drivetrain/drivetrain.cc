@@ -7,7 +7,6 @@
 #include "Eigen/Dense"
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/queue.h"
 #include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
 #include "aos/common/logging/queue_logging.h"
