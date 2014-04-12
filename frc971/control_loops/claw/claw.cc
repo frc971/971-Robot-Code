@@ -531,14 +531,14 @@ void LimitClawGoal(double *bottom_goal, double *top_goal,
   // first update position based on angle limit
 
   const double separation = *top_goal - *bottom_goal;
-  if (separation > values.claw.claw_max_separation) {
-    const double dsep = (separation - values.claw.claw_max_separation) / 2.0;
+  if (separation > values.claw.soft_max_separation) {
+    const double dsep = (separation - values.claw.soft_max_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
     LOG(DEBUG, "Goals now bottom: %f, top: %f\n", *bottom_goal, *top_goal);
   }
-  if (separation < values.claw.claw_min_separation) {
-    const double dsep = (separation - values.claw.claw_min_separation) / 2.0;
+  if (separation < values.claw.soft_min_separation) {
+    const double dsep = (separation - values.claw.soft_min_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
     LOG(DEBUG, "Goals now bottom: %f, top: %f\n", *bottom_goal, *top_goal);
