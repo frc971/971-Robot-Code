@@ -10,6 +10,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/linux_code/linux_code.gyp:configuration',
         '<(AOS)/common/util/util.gyp:inet_addr',
+        '<(AOS)/linux_code/linux_code.gyp:init',
       ],
     },
     {

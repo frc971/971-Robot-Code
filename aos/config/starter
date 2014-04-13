@@ -69,7 +69,6 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	killall starter_loop.sh
 	start-stop-daemon --stop --quiet --retry=INT/10/KILL/5 --pidfile $PIDFILE
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
