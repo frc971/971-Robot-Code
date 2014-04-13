@@ -43,9 +43,7 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
 void InitStart() {
   // Allow locking as much as we want into RAM.
   SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
-
-  // Do create core files of unlimited size.
-  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, true);
+  WriteCoreDumps();
 }
 
 int LockAllMemory() {
@@ -110,6 +108,11 @@ void Cleanup() {
     Die("%s-init: freeing shared mem failed\n",
         program_invocation_short_name);
   }
+}
+
+void WriteCoreDumps() {
+  // Do create core files of unlimited size.
+  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, true);
 }
 
 }  // namespace aos

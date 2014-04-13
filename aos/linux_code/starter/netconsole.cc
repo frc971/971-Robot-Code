@@ -12,6 +12,8 @@
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/util/inet_addr.h"
 #include "aos/linux_code/configuration.h"
+#include "aos/common/network_port.h"
+#include "aos/linux_code/init.h"
 
 namespace aos {
 namespace {
@@ -21,6 +23,7 @@ struct FDsToCopy {
   const int output;
 
   const struct sockaddr_in *const interface_address;
+  const struct sockaddr_in *const source_address;
 };
 
 void *FDCopyThread(void *to_copy_in) {
@@ -34,7 +37,8 @@ void *FDCopyThread(void *to_copy_in) {
     if (position != sizeof(buffer)) {
       ssize_t read_bytes;
       bool good_data = true;
-      if (to_copy->interface_address != NULL) {
+      if (to_copy->interface_address != nullptr ||
+          to_copy->source_address != nullptr) {
         char control_buffer[0x100];
         struct msghdr header;
         memset(static_cast<void *>(&header), 0, sizeof(header));
@@ -42,27 +46,48 @@ void *FDCopyThread(void *to_copy_in) {
         header.msg_controllen = sizeof(control_buffer);
         struct iovec iovecs[1];
         iovecs[0].iov_base = buffer + position;
-        iovecs[0].iov_len = position - sizeof(buffer);
+        iovecs[0].iov_len = sizeof(buffer) - position;
         header.msg_iov = iovecs;
         header.msg_iovlen = sizeof(iovecs) / sizeof(iovecs[0]);
+        struct sockaddr_in sender_address;
+        header.msg_name = &sender_address;
+        header.msg_namelen = sizeof(sender_address);
+
         read_bytes = recvmsg(to_copy->input, &header, 0);
         if (read_bytes != -1) {
-          for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&header);
-               cmsg != NULL;
-               cmsg = CMSG_NXTHDR(&header, cmsg)) {
-            if (cmsg->cmsg_level == IPPROTO_IP &&
-                cmsg->cmsg_type == IP_PKTINFO) {
-              unsigned char *data = CMSG_DATA(cmsg);
-              struct in_pktinfo *pktinfo;
-              memcpy(&pktinfo, &data, sizeof(void *));
-              good_data = pktinfo->ipi_spec_dst.s_addr ==
-                  to_copy->interface_address->sin_addr.s_addr;
+          if (to_copy->interface_address != nullptr) {
+            for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&header);
+                 cmsg != NULL;
+                 cmsg = CMSG_NXTHDR(&header, cmsg)) {
+              if (cmsg->cmsg_level == IPPROTO_IP &&
+                  cmsg->cmsg_type == IP_PKTINFO) {
+                unsigned char *data = CMSG_DATA(cmsg);
+                struct in_pktinfo *pktinfo;
+                memcpy(&pktinfo, &data, sizeof(void *));
+                if (pktinfo->ipi_spec_dst.s_addr !=
+                    to_copy->interface_address->sin_addr.s_addr) {
+                  good_data = false;
+                }
+              }
+            }
+          }
+          if (to_copy->source_address != nullptr) {
+            assert(header.msg_namelen >= sizeof(struct sockaddr_in));
+            if (to_copy->source_address->sin_port != htons(0)) {
+              if (sender_address.sin_port !=
+                  to_copy->source_address->sin_port) {
+                good_data = false;
+              }
+            }
+            if (sender_address.sin_addr.s_addr !=
+                to_copy->source_address->sin_addr.s_addr) {
+              good_data = false;
             }
           }
         }
       } else {
         read_bytes = read(to_copy->input,
-                          buffer + position, position - sizeof(buffer));
+                          buffer + position, sizeof(buffer) - position);
       }
       if (read_bytes == -1) {
         if (errno != EINTR) {
@@ -101,6 +126,7 @@ void *FDCopyThread(void *to_copy_in) {
 }
 
 int NetconsoleMain(int argc, char **argv) {
+  WriteCoreDumps();
   logging::Init();
 
   int input, output;
@@ -148,10 +174,18 @@ int NetconsoleMain(int argc, char **argv) {
   union {
     struct sockaddr_in in;
     struct sockaddr addr;
-  } address;
+  } address, crio_address;
+
   address.in.sin_family = AF_INET;
   address.in.sin_port = htons(6666);
   address.in.sin_addr.s_addr = INADDR_ANY;
+
+  crio_address.in.sin_family = AF_INET;
+  crio_address.in.sin_port = htons(0);
+  crio_address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
+  ::aos::util::SetLastSegment(&crio_address.in.sin_addr,
+                              ::aos::NetworkAddress::kCRIO);
+
   if (bind(from_crio, &address.addr, sizeof(address)) == -1) {
     LOG(FATAL, "bind(%d, %p, %zu) failed with %d: %s\n",
         from_crio, &address.addr, sizeof(address), errno, strerror(errno));
@@ -179,7 +213,7 @@ int NetconsoleMain(int argc, char **argv) {
       LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
           to_crio, &address.addr, sizeof(address), errno, strerror(errno));
     }
-    FDsToCopy input_fds{input, to_crio, NULL};
+    FDsToCopy input_fds{input, to_crio, nullptr, nullptr};
     if (pthread_create(&input_thread, NULL, FDCopyThread, &input_fds) == -1) {
       LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
           &input_thread, FDCopyThread, &input_fds, errno, strerror(errno));
@@ -187,7 +221,7 @@ int NetconsoleMain(int argc, char **argv) {
   }
 
   address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
-  FDsToCopy output_fds{from_crio, output, &address.in};
+  FDsToCopy output_fds{from_crio, output, &address.in, &crio_address.in};
   if (pthread_create(&output_thread, NULL, FDCopyThread, &output_fds) == -1) {
     LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
         &output_thread, FDCopyThread, &output_fds, errno, strerror(errno));

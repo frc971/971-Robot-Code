@@ -16,6 +16,10 @@ void InitCreate();
 // exit gracefully).
 void Cleanup();
 
+// Sets up this process to write core dump files.
+// This is called by Init*.
+void WriteCoreDumps();
+
 }  // namespace aos
 
 #endif  // AOS_LINUX_CODE_INIT_H_
