@@ -52,6 +52,8 @@ queue_group Drivetrain {
   message Status {
     bool is_done;
     double robot_speed;
+    double filtered_left_position;
+    double filtered_right_position;
   };
 
   queue Goal goal;

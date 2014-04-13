@@ -6,9 +6,7 @@ queue_group DrivetrainActionQueueGroup {
   implements frc971.actions.ActionQueueGroup;
 
   message Goal {
-    // If true, run this action.  If false, cancel the action if it is
-    // currently running.
-    bool run;
+    uint32_t run;
     double left_initial_position;
     double right_initial_position;
     double y_offset;

@@ -175,16 +175,16 @@ SetDriveGoal(double distance, double maximum_velocity = 1.7) {
 }
 
 void InitializeEncoders() {
-  control_loops::drivetrain.position.FetchLatest();
-  while (!control_loops::drivetrain.position.get()) {
+  control_loops::drivetrain.status.FetchLatest();
+  while (!control_loops::drivetrain.status.get()) {
     LOG(WARNING,
         "No previous drivetrain position packet, trying to fetch again\n");
-    control_loops::drivetrain.position.FetchNextBlocking();
+    control_loops::drivetrain.status.FetchNextBlocking();
   }
   left_initial_position =
-    control_loops::drivetrain.position->left_encoder;
+    control_loops::drivetrain.status->filtered_left_position;
   right_initial_position =
-    control_loops::drivetrain.position->right_encoder;
+    control_loops::drivetrain.status->filtered_right_position;
 
 }
 
@@ -221,6 +221,7 @@ void HandleAuto() {
   // The front of the robot is 1.854 meters from the wall
   const double kShootDistance = 3.15;
   const double kPickupDistance = 0.5;
+  ::aos::time::Time start_time = ::aos::time::Time::Now();
   LOG(INFO, "Handling auto mode\n");
   ResetDrivetrain();
 
@@ -228,14 +229,16 @@ void HandleAuto() {
   InitializeEncoders();
 
   // Turn the claw on, keep it straight up until the ball has been grabbed.
-  LOG(INFO, "Claw going up\n");
+  LOG(INFO, "Claw going up at %f\n",
+      (::aos::time::Time::Now() - start_time).ToSeconds());
   PositionClawVertically(12.0, 4.0);
   SetShotPower(115.0);
 
   // Wait for the ball to enter the claw.
   time::SleepFor(time::Time::InSeconds(0.25));
   if (ShouldExitAuto()) return;
-  LOG(INFO, "Readying claw for shot\n");
+  LOG(INFO, "Readying claw for shot at %f\n",
+      (::aos::time::Time::Now() - start_time).ToSeconds());
 
   {
     if (ShouldExitAuto()) return;
@@ -247,31 +250,35 @@ void HandleAuto() {
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
-  LOG(INFO, "Shooting\n");
+  LOG(INFO, "Shooting at %f\n",
+      (::aos::time::Time::Now() - start_time).ToSeconds());
 
   // Shoot.
   Shoot();
-  time::SleepFor(time::Time::InSeconds(0.1));
+  time::SleepFor(time::Time::InSeconds(0.05));
 
   {
     if (ShouldExitAuto()) return;
     // Intake the new ball.
-    LOG(INFO, "Claw ready for intake\n");
+    LOG(INFO, "Claw ready for intake at %f\n",
+        (::aos::time::Time::Now() - start_time).ToSeconds());
     PositionClawBackIntake();
     auto drivetrain_action = SetDriveGoal(kShootDistance + kPickupDistance);
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
-    LOG(INFO, "Wait for the claw.\n");
+    LOG(INFO, "Wait for the claw at %f\n",
+        (::aos::time::Time::Now() - start_time).ToSeconds());
     WaitUntilClawDone();
     if (ShouldExitAuto()) return;
   }
 
   // Drive back.
   {
-    LOG(INFO, "Driving back\n");
+    LOG(INFO, "Driving back at %f\n",
+        (::aos::time::Time::Now() - start_time).ToSeconds());
     auto drivetrain_action = SetDriveGoal(-(kShootDistance + kPickupDistance));
-    time::SleepFor(time::Time::InSeconds(0.7));
+    time::SleepFor(time::Time::InSeconds(0.3));
     if (ShouldExitAuto()) return;
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
@@ -280,12 +287,14 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   }
 
-  LOG(INFO, "Shooting\n");
+  LOG(INFO, "Shooting at %f\n",
+      (::aos::time::Time::Now() - start_time).ToSeconds());
   // Shoot
   Shoot();
   if (ShouldExitAuto()) return;
 
   // Get ready to zero when we come back up.
+  time::SleepFor(time::Time::InSeconds(0.05));
   PositionClawVertically(0.0, 0.0);
 }
 

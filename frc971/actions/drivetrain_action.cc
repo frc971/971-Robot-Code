@@ -50,6 +50,34 @@ void DrivetrainAction::RunAction() {
         .right_velocity_goal(profile_goal_state(1, 0))
         .Send();
   }
+  control_loops::drivetrain.status.FetchLatest();
+  while (!control_loops::drivetrain.status.get()) {
+    LOG(WARNING,
+        "No previous drivetrain status packet, trying to fetch again\n");
+    control_loops::drivetrain.status.FetchNextBlocking();
+    if (ShouldCancel()) return;
+  }
+  while (true) {
+    if (ShouldCancel()) return;
+    const double kPositionThreshold = 0.05;
+
+    const double left_error = ::std::abs(
+        control_loops::drivetrain.status->filtered_left_position -
+        (profile_goal_state(0, 0) + action_q_->goal->left_initial_position));
+    const double right_error = ::std::abs(
+        control_loops::drivetrain.status->filtered_right_position -
+        (profile_goal_state(0, 0) + action_q_->goal->right_initial_position));
+    const double velocity_error =
+        ::std::abs(control_loops::drivetrain.status->robot_speed);
+    if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
+        velocity_error < 0.2) {
+      break;
+    } else {
+      LOG(DEBUG, "Drivetrain error is %f, %f, %f\n", left_error, right_error,
+          velocity_error);
+    }
+    control_loops::drivetrain.status.FetchNextBlocking();
+  }
   LOG(INFO, "Done moving\n");
 }
 

@@ -614,6 +614,8 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     }
     status->is_done = done;
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
+    status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
+    status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();
   }
 }
 
