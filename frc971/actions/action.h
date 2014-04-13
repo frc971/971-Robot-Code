@@ -24,28 +24,20 @@ template <class T> class ActionBase {
   // runs action while enabled
   void Run() {
     LOG(DEBUG, "Waiting for input to start\n");
+
     action_q_->goal.FetchLatest();
-    uint32_t initial_running_id = 0;
-    bool has_initial_running_id = false;
     if (action_q_->goal.get()) {
-      has_initial_running_id = true;
-      initial_running_id = action_q_->goal->run;
-    }
-    while (true) {
-      if (action_q_->goal.get()) {
-        LOG(INFO, "Run is %d\n", action_q_->goal->run);
-        if (!action_q_->goal->run) {
-          break;
-        }
-        LOG(INFO, "Got a run of %d\n", action_q_->goal->run);
-        if (!has_initial_running_id) {
-          break;
-        } else if (initial_running_id != action_q_->goal->run) {
-          break;
+      const uint32_t initially_running = action_q_->goal->run;
+      if (initially_running != 0) {
+        while (action_q_->goal->run == initially_running) {
+          LOG(INFO, "run is still %" PRIx32 "\n", initially_running);
         }
       }
+    } else {
       action_q_->goal.FetchNextBlocking();
     }
+
+    LOG(DEBUG, "actually starting\n");
 
     if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
       LOG(ERROR, "Failed to send the status.\n");
@@ -70,13 +62,13 @@ template <class T> class ActionBase {
       LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
 
       // If we have a new one to run, we shouldn't say we're stopped in between.
-      if (action_q_->goal->run != 0 && action_q_->goal->run != running_id) {
-        LOG(INFO, "skipping sending stopped status for %" PRIx32 "\n",
-            running_id);
-      } else {
+      if (action_q_->goal->run == 0 || action_q_->goal->run == running_id) {
         if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
           LOG(ERROR, "Failed to send the status.\n");
         }
+      } else {
+        LOG(INFO, "skipping sending stopped status for %" PRIx32 "\n",
+            running_id);
       }
 
       while (action_q_->goal->run == running_id) {

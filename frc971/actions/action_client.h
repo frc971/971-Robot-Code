@@ -69,9 +69,14 @@ class TypedAction : public Action {
         LOG(INFO, "action %" PRIx32 " was interrupted -> not cancelling\n",
             run_value_);
       } else {
-        LOG(INFO, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
-            queue_group_->goal.name());
-        queue_group_->goal.MakeWithBuilder().run(0).Send();
+        if (sent_cancel_) {
+          LOG(INFO, "action %" PRIx32 " already cancelled\n", run_value_);
+        } else {
+          LOG(INFO, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
+              queue_group_->goal.name());
+          queue_group_->goal.MakeWithBuilder().run(0).Send();
+          sent_cancel_ = true;
+        }
       }
     }
   }
@@ -169,6 +174,8 @@ class TypedAction : public Action {
   bool has_started_ = false;
   // Track if we have sent an initial start message.
   bool sent_started_ = false;
+
+  bool sent_cancel_ = false;
 
   // Gets set to true if we ever see somebody else's value in running.
   bool interrupted_ = false;
