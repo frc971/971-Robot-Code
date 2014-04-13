@@ -103,9 +103,7 @@ void ShootAction::InnerRunAction() {
 }
 
 bool ClawIsReady() {
-  if (!control_loops::claw_queue_group.goal.FetchLatest()) {
-    control_loops::claw_queue_group.goal.FetchLatest();
-  }
+  control_loops::claw_queue_group.goal.FetchLatest();
 
   bool ans =
       control_loops::claw_queue_group.status->zeroed &&
@@ -117,9 +115,8 @@ bool ClawIsReady() {
                   control_loops::claw_queue_group.goal->separation_angle) <
        0.4);
   if (!ans) {
-    LOG(INFO,
-        "Claw is ready %d zeroed %d bottom_velocity %f bottom %f sep %f\n", ans,
-        control_loops::claw_queue_group.status->zeroed,
+    LOG(INFO, "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
+        ans ? "" : "not ", control_loops::claw_queue_group.status->zeroed,
         ::std::abs(control_loops::claw_queue_group.status->bottom_velocity),
         ::std::abs(control_loops::claw_queue_group.status->bottom -
                    control_loops::claw_queue_group.goal->bottom_angle),
@@ -131,7 +128,7 @@ bool ClawIsReady() {
 
 bool ShooterIsReady() {
   control_loops::shooter_queue_group.goal.FetchLatest();
-  control_loops::shooter_queue_group.status.FetchLatest();
+
   if (control_loops::shooter_queue_group.status->ready) {
     LOG(INFO, "Power error is %f - %f -> %f, ready %d\n",
         control_loops::shooter_queue_group.status->hard_stop_power,
