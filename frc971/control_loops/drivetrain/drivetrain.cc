@@ -193,8 +193,8 @@ class DrivetrainMotorsSS {
     if (output) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
-      output->left_high = true;
-      output->right_high = true;
+      output->left_high = false;
+      output->right_high = false;
     }
   }
 
