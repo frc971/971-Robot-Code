@@ -160,17 +160,20 @@ void Shoot() {
 }
 
 ::std::unique_ptr<TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>
-SetDriveGoal(double distance, double maximum_velocity = 1.7) {
+SetDriveGoal(double distance, double maximum_velocity = 1.7, double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
   auto drivetrain_action = actions::MakeDrivetrainAction();
   drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
   drivetrain_action->GetGoal()->right_initial_position = right_initial_position;
   drivetrain_action->GetGoal()->y_offset = distance;
+  drivetrain_action->GetGoal()->theta_offset = theta;
   drivetrain_action->GetGoal()->maximum_velocity = maximum_velocity;
   drivetrain_action->Start();
-  // Uncomment to make relative again.
-  left_initial_position += distance;
-  right_initial_position += distance;
+  left_initial_position +=
+      distance - theta * constants::GetValues().turn_width / 2.0;
+  right_initial_position +=
+      distance + theta * constants::GetValues().turn_width / 2. -
+      theta * constants::GetValues().turn_width / 2.00;
   return ::std::move(drivetrain_action);
 }
 
@@ -219,8 +222,9 @@ void WaitUntilClawDone() {
 
 void HandleAuto() {
   // The front of the robot is 1.854 meters from the wall
-  const double kShootDistance = 3.15;
-  const double kPickupDistance = 0.5;
+  static const double kShootDistance = 3.15;
+  static const double kPickupDistance = 0.5;
+  static const double kTurnAngle = 0.3;
   ::aos::time::Time start_time = ::aos::time::Time::Now();
   LOG(INFO, "Handling auto mode\n");
   ResetDrivetrain();
@@ -250,12 +254,26 @@ void HandleAuto() {
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
-  LOG(INFO, "Shooting at %f\n",
-      (::aos::time::Time::Now() - start_time).ToSeconds());
+
+  {
+    if (ShouldExitAuto()) return;
+    auto drivetrain_action = SetDriveGoal(0, 0, kTurnAngle);
+    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    if (ShouldExitAuto()) return;
+  }
 
   // Shoot.
+  LOG(INFO, "Shooting at %f\n",
+      (::aos::time::Time::Now() - start_time).ToSeconds());
   Shoot();
   time::SleepFor(time::Time::InSeconds(0.05));
+
+  {
+    if (ShouldExitAuto()) return;
+    auto drivetrain_action = SetDriveGoal(0, 0, -kTurnAngle);
+    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    if (ShouldExitAuto()) return;
+  }
 
   {
     if (ShouldExitAuto()) return;
@@ -284,6 +302,13 @@ void HandleAuto() {
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     WaitUntilClawDone();
+    if (ShouldExitAuto()) return;
+  }
+
+  {
+    if (ShouldExitAuto()) return;
+    auto drivetrain_action = SetDriveGoal(0, 0, -kTurnAngle);
+    WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
 

@@ -24,13 +24,104 @@ using frc971::sensors::gyro_reading;
 namespace frc971 {
 namespace control_loops {
 
-// Width of the robot.
-const double width = 25.0 / 100.0 * 2.54;
-
 class DrivetrainMotorsSS {
  public:
+  class LimitedDrivetrainLoop : public StateFeedbackLoop<4, 2, 2> {
+   public:
+    LimitedDrivetrainLoop(const StateFeedbackLoop<4, 2, 2> &loop)
+        : StateFeedbackLoop<4, 2, 2>(loop),
+        U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,
+                 -1, 0,
+                 0, 1,
+                 0, -1).finished(),
+                (Eigen::Matrix<double, 4, 1>() << 12.0, 12.0,
+                 12.0, 12.0).finished()) {
+      ::aos::controls::HPolytope<0>::Init();
+      T << 1, -1, 1, 1;
+      T_inverse = T.inverse();
+    }
+
+   private:
+    virtual void CapU() {
+      const Eigen::Matrix<double, 4, 1> error = R - X_hat;
+
+      if (U(0, 0) > 12.0 || U(1, 0) > 12.0) {
+        LOG_MATRIX(DEBUG, "U at start", U);
+
+        Eigen::Matrix<double, 2, 2> position_K;
+        position_K << K(0, 0), K(0, 2),
+                   K(1, 0), K(1, 2);
+        Eigen::Matrix<double, 2, 2> velocity_K;
+        velocity_K << K(0, 1), K(0, 3),
+                   K(1, 1), K(1, 3);
+
+        Eigen::Matrix<double, 2, 1> position_error;
+        position_error << error(0, 0), error(2, 0);
+        const auto drive_error = T_inverse * position_error;
+        Eigen::Matrix<double, 2, 1> velocity_error;
+        velocity_error << error(1, 0), error(3, 0);
+        LOG_MATRIX(DEBUG, "error", error);
+
+        const auto &poly = U_Poly_;
+        const Eigen::Matrix<double, 4, 2> pos_poly_H = poly.H() * position_K * T;
+        const Eigen::Matrix<double, 4, 1> pos_poly_k =
+            poly.k() - poly.H() * velocity_K * velocity_error;
+        const ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+
+        Eigen::Matrix<double, 2, 1> adjusted_pos_error;
+        {
+          const auto &P = drive_error;
+
+          Eigen::Matrix<double, 1, 2> L45;
+          L45 << ::aos::sign(P(1, 0)), -::aos::sign(P(0, 0));
+          const double w45 = 0;
+
+          Eigen::Matrix<double, 1, 2> LH;
+          if (::std::abs(P(0, 0)) > ::std::abs(P(1, 0))) {
+            LH << 0, 1;
+          } else {
+            LH << 1, 0;
+          }
+          const double wh = LH.dot(P);
+
+          Eigen::Matrix<double, 2, 2> standard;
+          standard << L45, LH;
+          Eigen::Matrix<double, 2, 1> W;
+          W << w45, wh;
+          const Eigen::Matrix<double, 2, 1> intersection = standard.inverse() * W;
+
+          bool is_inside_h;
+          const auto adjusted_pos_error_h =
+              DoCoerceGoal(pos_poly, LH, wh, drive_error, &is_inside_h);
+          const auto adjusted_pos_error_45 =
+              DoCoerceGoal(pos_poly, L45, w45, intersection, nullptr);
+          if (pos_poly.IsInside(intersection)) {
+            adjusted_pos_error = adjusted_pos_error_h;
+          } else {
+            if (is_inside_h) {
+              if (adjusted_pos_error_h.norm() > adjusted_pos_error_45.norm()) {
+                adjusted_pos_error = adjusted_pos_error_h;
+              } else {
+                adjusted_pos_error = adjusted_pos_error_45;
+              }
+            } else {
+              adjusted_pos_error = adjusted_pos_error_45;
+            }
+          }
+        }
+
+        LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
+        U = velocity_K * velocity_error + position_K * T * adjusted_pos_error;
+        LOG_MATRIX(DEBUG, "U is now", U);
+      }
+    }
+
+    const ::aos::controls::HPolytope<2> U_Poly_;
+    Eigen::Matrix<double, 2, 2> T, T_inverse;
+  };
+
   DrivetrainMotorsSS()
-      : loop_(new StateFeedbackLoop<4, 2, 2>(
+      : loop_(new LimitedDrivetrainLoop(
             constants::GetValues().make_drivetrain_loop())),
         filtered_offset_(0.0),
         gyro_(0.0),
@@ -59,7 +150,8 @@ class DrivetrainMotorsSS {
   void SetPosition(
       double left, double right, double gyro, bool control_loop_driving) {
     // Decay the offset quickly because this gyro is great.
-    const double offset = (right - left - gyro * width) / 2.0;
+    const double offset =
+        (right - left - gyro * constants::GetValues().turn_width) / 2.0;
     filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
     gyro_ = gyro;
     control_loop_driving_ = control_loop_driving;
@@ -90,7 +182,6 @@ class DrivetrainMotorsSS {
   }
   
   double GetEstimatedLeftEncoder() {
-    // lets just call the average of left and right velocities close enough
     return loop_->X_hat(0, 0);
   }
   
@@ -108,7 +199,7 @@ class DrivetrainMotorsSS {
   }
 
  private:
-  ::std::unique_ptr<StateFeedbackLoop<4, 2, 2>> loop_;
+  ::std::unique_ptr<LimitedDrivetrainLoop> loop_;
 
   double filtered_offset_;
   double gyro_;

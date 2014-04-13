@@ -44,6 +44,8 @@ struct Values {
 
   bool clutch_transmission;
 
+  double turn_width;
+
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 

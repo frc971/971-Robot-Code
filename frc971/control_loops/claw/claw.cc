@@ -6,6 +6,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/matrix_logging.h"
+#include "aos/common/commonmath.h"
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
@@ -45,17 +46,6 @@
 
 namespace frc971 {
 namespace control_loops {
-namespace {
-
-template <typename T> int sign(T val) {
-  if (val > T(0)) {
-    return 1;
-  } else {
-    return -1;
-  }
-}
-
-}  // namespace
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
@@ -89,7 +79,7 @@ ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
 // constrains the region such that, if at all possible, it will maintain its
 // current efforts to reduce velocity error.
 void ClawLimitedLoop::CapU() {
-  Eigen::Matrix<double, 4, 1> error = R - X_hat;
+  const Eigen::Matrix<double, 4, 1> error = R - X_hat;
 
   double u_top = U(1, 0);
   double u_bottom = U(0, 0);
@@ -98,7 +88,7 @@ void ClawLimitedLoop::CapU() {
 
   double max_voltage = is_zeroing_ ? kZeroingVoltage : kMaxVoltage;
 
-  if (::std::abs(u_bottom) > max_voltage or ::std::abs(u_top) > max_voltage) {
+  if (::std::abs(u_bottom) > max_voltage || ::std::abs(u_top) > max_voltage) {
     LOG_MATRIX(DEBUG, "U at start", U);
     // H * U <= k
     // U = UPos + UVel
@@ -148,7 +138,7 @@ void ClawLimitedLoop::CapU() {
         angle_45 << ::std::sqrt(3), 1;
       }
       Eigen::Matrix<double, 1, 2> L45_quadrant;
-      L45_quadrant << sign(P(1, 0)), -sign(P(0, 0));
+      L45_quadrant << ::aos::sign(P(1, 0)), -::aos::sign(P(0, 0));
       const auto L45 = L45_quadrant.cwiseProduct(angle_45);
       const double w45 = 0;
 

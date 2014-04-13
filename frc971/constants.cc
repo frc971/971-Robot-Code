@@ -37,6 +37,8 @@ const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
 const ShifterHallEffect kPracticeRightDriveShifter{550, 640, 635, 550, 0.2, 0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{540, 620, 640, 550, 0.2, 0.7};
 
+const double kRobotWidth = 25.0 / 100.0 * 2.54;
+
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
 
@@ -53,6 +55,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
+          0.5,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits
@@ -88,6 +91,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
+          kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits
@@ -132,6 +136,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kPracticeLeftDriveShifter,
           kPracticeRightDriveShifter,
           false,
+          kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits

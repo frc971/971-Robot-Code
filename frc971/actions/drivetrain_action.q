@@ -10,6 +10,7 @@ queue_group DrivetrainActionQueueGroup {
     double left_initial_position;
     double right_initial_position;
     double y_offset;
+    double theta_offset;
     double maximum_velocity;
   };
 
