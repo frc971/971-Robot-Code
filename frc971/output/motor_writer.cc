@@ -44,8 +44,8 @@ class MotorWriter : public ::aos::MotorOutput {
         LOG_STRUCT(DEBUG, "will output", *drivetrain);
         SetPWMOutput(3, drivetrain->right_voltage / 12.0, kTalonBounds);
         SetPWMOutput(6, -drivetrain->left_voltage / 12.0, kTalonBounds);
-        SetSolenoid(7, drivetrain->left_high);
-        SetSolenoid(8, drivetrain->right_high);
+        SetSolenoid(7, !drivetrain->left_high);
+        SetSolenoid(8, !drivetrain->right_high);
       } else {
         DisablePWMOutput(3);
         DisablePWMOutput(8);

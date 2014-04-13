@@ -194,7 +194,7 @@ class ActionQueue {
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
-      : is_high_gear_(false),
+      : is_high_gear_(true),
         shot_power_(80.0),
         goal_angle_(0.0),
         separation_angle_(kGrabSeparation),
