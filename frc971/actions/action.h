@@ -52,10 +52,13 @@ template <class T> class ActionBase {
       LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
 
       // If we have a new one to run, we shouldn't say we're stopped in between.
-      if (action_q_->goal->run == 0) {
+      if (action_q_->goal->run != 0 && action_q_->goal->run != running_id) {
         if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
           LOG(ERROR, "Failed to send the status.\n");
         }
+      } else {
+        LOG(INFO, "skipping sending stopped status for %" PRIx32 "\n",
+            running_id);
       }
 
       while (action_q_->goal->run == running_id) {
@@ -63,6 +66,7 @@ template <class T> class ActionBase {
             running_id);
         action_q_->goal.FetchNextBlocking();
       }
+      LOG(DEBUG, "action %" PRIx32 " was stopped\n", running_id);
     }
   }
 
