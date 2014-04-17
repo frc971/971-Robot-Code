@@ -223,6 +223,74 @@ void WaitUntilClawDone() {
   }
 }
 
+class HotGoalDecoder {
+ public:
+  HotGoalDecoder() {
+    ResetCounts();
+  }
+
+  void ResetCounts() {
+    hot_goal.FetchLatest();
+    if (hot_goal.get()) {
+      memcpy(&start_counts_, hot_goal.get(), sizeof(start_counts_));
+      LOG_STRUCT(INFO, "counts reset to", start_counts_);
+      start_counts_valid_ = true;
+    } else {
+      LOG(WARNING, "no hot goal message. ignoring\n");
+      start_counts_valid_ = false;
+    }
+  }
+
+  void Update() {
+    hot_goal.FetchLatest();
+    LOG_STRUCT(INFO, "new counts", *hot_goal);
+  }
+
+  bool is_left() const {
+    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    const uint64_t left_difference =
+        hot_goal->left_count - start_counts_.left_count;
+    const uint64_t right_difference =
+        hot_goal->right_count - start_counts_.right_count;
+    if (left_difference > kThreshold) {
+      if (right_difference > kThreshold) {
+        return left_difference > right_difference;
+      } else {
+        // We've seen enough left but not enough right, so go with it.
+        return true;
+      }
+    } else {
+      // We haven't seen enough left, so it's not left.
+      return false;
+    }
+  }
+
+  bool is_right() const {
+    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    const uint64_t left_difference =
+        hot_goal->left_count - start_counts_.left_count;
+    const uint64_t right_difference =
+        hot_goal->right_count - start_counts_.right_count;
+    if (right_difference > kThreshold) {
+      if (left_difference > kThreshold) {
+        return right_difference > left_difference;
+      } else {
+        // We've seen enough right but not enough left, so go with it.
+        return true;
+      }
+    } else {
+      // We haven't seen enough right, so it's not right.
+      return false;
+    }
+  }
+
+ private:
+  static const uint64_t kThreshold = 10;
+
+  ::frc971::HotGoal start_counts_;
+  bool start_counts_valid_;
+};
+
 void HandleAuto() {
   enum class AutoVersion : uint8_t {
     kStraight,
@@ -249,17 +317,9 @@ void HandleAuto() {
   }
   LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
 
-  ::frc971::HotGoal start_counts;
-  hot_goal.FetchLatest();
-  bool start_counts_valid = true;
-  if (!hot_goal.get()) {
-    LOG(WARNING, "no hot goal message. will ignore\n");
-    start_counts_valid = false;
-  } else {
-    memcpy(&start_counts, hot_goal.get(), sizeof(start_counts));
-    LOG_STRUCT(INFO, "counts at start", start_counts);
-  }
-  (void)start_counts_valid;
+  HotGoalDecoder hot_goal_decoder;
+  // True for left, false for right.
+  bool first_shot_left, second_shot_left_default, second_shot_left;
 
   ResetDrivetrain();
 
@@ -289,9 +349,24 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   }
 
-  {
+  hot_goal_decoder.Update();
+  if (hot_goal_decoder.is_left()) {
+    LOG(INFO, "first shot left\n");
+    first_shot_left = true;
+    second_shot_left_default = false;
+  } else if (hot_goal_decoder.is_right()) {
+    LOG(INFO, "first shot right\n");
+    first_shot_left = false;
+    second_shot_left_default = true;
+  } else {
+    LOG(INFO, "first shot defaulting left\n");
+    first_shot_left = true;
+    second_shot_left_default = true;
+  }
+  if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action = SetDriveGoal(0, 0, kTurnAngle);
+    auto drivetrain_action =
+        SetDriveGoal(2, 2, first_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
@@ -302,12 +377,15 @@ void HandleAuto() {
   Shoot();
   time::SleepFor(time::Time::InSeconds(0.05));
 
-  {
+  if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action = SetDriveGoal(0, 0, -kTurnAngle);
+    auto drivetrain_action =
+        SetDriveGoal(2, 2, first_shot_left ? -kTurnAngle : kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
+
+  hot_goal_decoder.ResetCounts();
 
   {
     if (ShouldExitAuto()) return;
@@ -341,9 +419,22 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   }
 
-  {
+  hot_goal_decoder.Update();
+  if (hot_goal_decoder.is_left()) {
+    LOG(INFO, "second shot left\n");
+    second_shot_left = true;
+  } else if (hot_goal_decoder.is_right()) {
+    LOG(INFO, "second shot right\n");
+    second_shot_left = false;
+  } else {
+    LOG(INFO, "second shot defaulting %s\n",
+        second_shot_left_default ? "left" : "right");
+    second_shot_left = second_shot_left_default;
+  }
+  if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action = SetDriveGoal(0, 0, -kTurnAngle);
+    auto drivetrain_action =
+        SetDriveGoal(2, 2, second_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }

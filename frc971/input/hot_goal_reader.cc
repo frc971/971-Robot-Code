@@ -73,7 +73,7 @@ int main() {
                 sizeof(data));
             break;
           }
-          static uint32_t left_count = 0, right_count = 0;
+          static uint64_t left_count = 0, right_count = 0;
           if (data & 0x01) ++right_count;
           if (data & 0x02) ++left_count;
           auto message = ::frc971::hot_goal.MakeMessage();
