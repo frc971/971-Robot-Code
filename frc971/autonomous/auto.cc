@@ -7,6 +7,7 @@
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/network/team_number.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
@@ -16,6 +17,7 @@
 #include "frc971/actions/action_client.h"
 #include "frc971/actions/shoot_action.h"
 #include "frc971/actions/drivetrain_action.h"
+#include "frc971/queues/hot_goal.q.h"
 
 using ::aos::time::Time;
 
@@ -227,6 +229,19 @@ void HandleAuto() {
   static const double kTurnAngle = 0.3;
   ::aos::time::Time start_time = ::aos::time::Time::Now();
   LOG(INFO, "Handling auto mode\n");
+
+  ::frc971::HotGoal start_counts;
+  hot_goal.FetchLatest();
+  bool start_counts_valid = true;
+  if (!hot_goal.get()) {
+    LOG(WARNING, "no hot goal message. will ignore\n");
+    start_counts_valid = false;
+  } else {
+    memcpy(&start_counts, hot_goal.get(), sizeof(start_counts));
+    LOG_STRUCT(INFO, "counts at start", start_counts);
+  }
+	(void)start_counts_valid;
+
   ResetDrivetrain();
 
   if (ShouldExitAuto()) return;

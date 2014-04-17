@@ -29,6 +29,8 @@
         '<(DEPTH)/frc971/actions/actions.gyp:action_client',
         '<(DEPTH)/frc971/actions/actions.gyp:shoot_action_lib',
         '<(DEPTH)/frc971/actions/actions.gyp:drivetrain_action_lib',
+        '<(DEPTH)/frc971/queues/queues.gyp:hot_goal',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/controls/controls.gyp:control_loop',

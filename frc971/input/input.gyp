@@ -1,6 +1,20 @@
 {
   'targets': [
     {
+      'target_name': 'hot_goal_reader',
+      'type': 'executable',
+      'sources': [
+        'hot_goal_reader.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(DEPTH)/frc971/queues/queues.gyp:hot_goal',
+      ],
+    },
+    {
       'target_name': 'joystick_reader',
       'type': 'executable',
       'sources': [
