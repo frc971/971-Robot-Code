@@ -12,3 +12,8 @@ message GyroReading {
 	double angle;
 };
 queue GyroReading gyro_reading;
+
+message AutoMode {
+	double voltage;
+};
+queue AutoMode auto_mode;

@@ -120,6 +120,8 @@ void robot_fill_packet(struct DataStruct *packet) {
   packet->main.battery_voltage_high = analog_get(5);
   packet->main.battery_voltage_low = analog_get(3);
 
+  packet->main.auto_mode_selector = analog_get(4);
+
   packet->main.ultrasonic_pulse_length = ultrasonic_length;
 
   {

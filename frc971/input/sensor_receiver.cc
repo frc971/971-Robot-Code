@@ -200,6 +200,10 @@ void PacketReceived(const ::bbb::DataStruct *data,
       .sonar_distance(sonar_translate(data->main.ultrasonic_pulse_length))
       .Send();
 
+  ::frc971::sensors::auto_mode.MakeWithBuilder()
+      .voltage(adc_translate(data->main.auto_mode_selector))
+      .Send();
+
   drivetrain.position.MakeWithBuilder()
       .right_encoder(drivetrain_translate(data->main.right_drive))
       .left_encoder(-drivetrain_translate(data->main.left_drive))

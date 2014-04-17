@@ -99,6 +99,8 @@ struct DATA_STRUCT_NAME {
 
       uint16_t battery_voltage_high, battery_voltage_low;
 
+      uint16_t auto_mode_selector;
+
       HallEffectEdges pusher_distal, pusher_proximal;
 
       struct {

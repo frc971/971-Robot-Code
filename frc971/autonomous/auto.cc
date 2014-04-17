@@ -17,6 +17,7 @@
 #include "frc971/actions/action_client.h"
 #include "frc971/actions/shoot_action.h"
 #include "frc971/actions/drivetrain_action.h"
+#include "frc971/queues/other_sensors.q.h"
 #include "frc971/queues/hot_goal.q.h"
 
 using ::aos::time::Time;
@@ -223,12 +224,30 @@ void WaitUntilClawDone() {
 }
 
 void HandleAuto() {
+  enum class AutoVersion : uint8_t {
+    kStraight,
+    kDoubleHot,
+  };
+
   // The front of the robot is 1.854 meters from the wall
   static const double kShootDistance = 3.15;
   static const double kPickupDistance = 0.5;
   static const double kTurnAngle = 0.3;
+
   ::aos::time::Time start_time = ::aos::time::Time::Now();
   LOG(INFO, "Handling auto mode\n");
+
+  AutoVersion auto_version;
+  ::frc971::sensors::auto_mode.FetchLatest();
+  if (!::frc971::sensors::auto_mode.get()) {
+    LOG(WARNING, "not sure which auto mode to use\n");
+    auto_version = AutoVersion::kStraight;
+  } else {
+    auto_version =
+        (::frc971::sensors::auto_mode->voltage > 2.5) ? AutoVersion::kDoubleHot
+                                                      : AutoVersion::kStraight;
+  }
+  LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
 
   ::frc971::HotGoal start_counts;
   hot_goal.FetchLatest();
@@ -240,7 +259,7 @@ void HandleAuto() {
     memcpy(&start_counts, hot_goal.get(), sizeof(start_counts));
     LOG_STRUCT(INFO, "counts at start", start_counts);
   }
-	(void)start_counts_valid;
+  (void)start_counts_valid;
 
   ResetDrivetrain();
 
