@@ -41,11 +41,16 @@ class DrivetrainMotorsSS {
       T_inverse = T.inverse();
     }
 
+    bool output_was_capped() const {
+      return output_was_capped_;
+    }
+
    private:
     virtual void CapU() {
       const Eigen::Matrix<double, 4, 1> error = R - X_hat;
 
-      if (U(0, 0) > 12.0 || U(1, 0) > 12.0) {
+      if (::std::abs(U(0, 0)) > 12.0 || ::std::abs(U(1, 0)) > 12.0) {
+        output_was_capped_ = true;
         LOG_MATRIX(DEBUG, "U at start", U);
 
         Eigen::Matrix<double, 2, 2> position_K;
@@ -113,11 +118,14 @@ class DrivetrainMotorsSS {
         LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
         U = velocity_K * velocity_error + position_K * T * adjusted_pos_error;
         LOG_MATRIX(DEBUG, "U is now", U);
+      } else {
+        output_was_capped_ = false;
       }
     }
 
     const ::aos::controls::HPolytope<2> U_Poly_;
     Eigen::Matrix<double, 2, 2> T, T_inverse;
+    bool output_was_capped_;
   };
 
   DrivetrainMotorsSS()
@@ -130,8 +138,8 @@ class DrivetrainMotorsSS {
         raw_left_(0.0),
         raw_right_(0.0),
         control_loop_driving_(false) {
-    // High gear on both.
-    loop_->set_controller_index(3);
+    // Low gear on both.
+    loop_->set_controller_index(0);
   }
 
   void SetGoal(double left, double left_velocity, double right,
@@ -176,20 +184,24 @@ class DrivetrainMotorsSS {
     LOG_MATRIX(DEBUG, "E", E);
   }
 
-  double GetEstimatedRobotSpeed() {
+  double GetEstimatedRobotSpeed() const {
     // lets just call the average of left and right velocities close enough
     return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
   }
   
-  double GetEstimatedLeftEncoder() {
+  double GetEstimatedLeftEncoder() const {
     return loop_->X_hat(0, 0);
   }
   
-  double GetEstimatedRightEncoder() {
+  double GetEstimatedRightEncoder() const {
     return loop_->X_hat(2, 0);
   }
 
-  void SendMotors(Drivetrain::Output *output) {
+  bool OutputWasCapped() const {
+    return loop_->output_was_capped();
+  }
+
+  void SendMotors(Drivetrain::Output *output) const {
     if (output) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
@@ -197,6 +209,8 @@ class DrivetrainMotorsSS {
       output->right_high = false;
     }
   }
+
+  const LimitedDrivetrainLoop &loop() const { return *loop_; }
 
  private:
   ::std::unique_ptr<LimitedDrivetrainLoop> loop_;
@@ -707,6 +721,9 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
     status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
     status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();
+    status->output_was_capped = dt_closedloop.OutputWasCapped();
+    status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0, 0);
+    status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1, 0);
   }
 }
 

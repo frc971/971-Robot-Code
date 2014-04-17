@@ -24,6 +24,15 @@ class TrapezoidProfile {
   const Eigen::Matrix<double, 2, 1> &Update(double goal_position,
                                             double goal_velocity);
 
+  // Useful for preventing windup etc.
+  void MoveGoal(double dx) {
+    output_(0, 0) += dx;
+  }
+
+  void SetGoal(double x) {
+    output_(0, 0) = x;
+  }
+
   void set_maximum_acceleration(double maximum_acceleration) {
     maximum_acceleration_ = maximum_acceleration;
   }

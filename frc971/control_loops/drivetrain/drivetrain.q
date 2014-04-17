@@ -23,15 +23,15 @@ queue_group Drivetrain {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-    float steering;
-    float throttle;
+    double steering;
+    double throttle;
     bool highgear;
     bool quickturn;
     bool control_loop_driving;
-    float left_goal;
-    float left_velocity_goal;
-    float right_goal;
-    float right_velocity_goal;
+    double left_goal;
+    double left_velocity_goal;
+    double right_goal;
+    double right_velocity_goal;
   };
 
   message Position {
@@ -43,17 +43,22 @@ queue_group Drivetrain {
   };
 
   message Output {
-    float left_voltage;
-    float right_voltage;
+    double left_voltage;
+    double right_voltage;
     bool left_high;
     bool right_high;
   };
 
   message Status {
-    bool is_done;
     double robot_speed;
     double filtered_left_position;
     double filtered_right_position;
+
+    double uncapped_left_voltage;
+    double uncapped_right_voltage;
+    bool output_was_capped;
+
+    bool is_done;
   };
 
   queue Goal goal;

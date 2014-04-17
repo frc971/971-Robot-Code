@@ -247,7 +247,7 @@ void HandleAuto() {
   {
     if (ShouldExitAuto()) return;
     // Drive to the goal.
-    auto drivetrain_action = SetDriveGoal(-kShootDistance);
+    auto drivetrain_action = SetDriveGoal(-kShootDistance, 2.5);
     time::SleepFor(time::Time::InSeconds(0.75));
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
@@ -281,7 +281,8 @@ void HandleAuto() {
     LOG(INFO, "Claw ready for intake at %f\n",
         (::aos::time::Time::Now() - start_time).ToSeconds());
     PositionClawBackIntake();
-    auto drivetrain_action = SetDriveGoal(kShootDistance + kPickupDistance);
+    auto drivetrain_action =
+        SetDriveGoal(kShootDistance + kPickupDistance, 2.5);
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
@@ -295,7 +296,8 @@ void HandleAuto() {
   {
     LOG(INFO, "Driving back at %f\n",
         (::aos::time::Time::Now() - start_time).ToSeconds());
-    auto drivetrain_action = SetDriveGoal(-(kShootDistance + kPickupDistance));
+    auto drivetrain_action =
+        SetDriveGoal(-(kShootDistance + kPickupDistance), 2.5);
     time::SleepFor(time::Time::InSeconds(0.3));
     if (ShouldExitAuto()) return;
     PositionClawForShot();
