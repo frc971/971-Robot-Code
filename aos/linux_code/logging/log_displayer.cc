@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
             filename, strerror(errno));
     exit(EXIT_FAILURE);
   }
-  ::aos::logging::linux_code::LogFileAccessor accessor(fd, false);
+  ::aos::logging::linux_code::LogFileReader reader(fd);
 
   if (skip_to_end) {
     fputs("skipping old logs...\n", stderr);
@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
 
   const LogFileMessageHeader *msg;
   do {
-    msg = accessor.ReadNextMessage(follow);
+    msg = reader.ReadNextMessage(follow);
     if (msg == NULL) {
       fputs("reached end of file\n", stderr);
       return 0;
@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
     }
 
     if (skip_to_end) {
-      if (accessor.IsLastPage()) {
+      if (reader.IsLastPage()) {
         fputs("done skipping old logs\n", stderr);
         skip_to_end = false;
       } else {

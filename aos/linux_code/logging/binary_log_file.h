@@ -86,17 +86,12 @@ class LogFileAccessor {
  public:
   LogFileAccessor(int fd, bool writable);
 
-  // message_size should be the total number of bytes needed for the message.
-  LogFileMessageHeader *GetWritePosition(size_t message_size);
-  // May return NULL iff wait is false.
-  const LogFileMessageHeader *ReadNextMessage(bool wait);
-
   // Asynchronously syncs all open mappings.
   void Sync() const;
 
   bool IsLastPage();
 
- private:
+ protected:
   // The size of the chunks that get mmaped/munmapped together. Large enough so
   // that not too much space is wasted and it's hopefully bigger than and a
   // multiple of the system page size but small enough so that really large
@@ -106,6 +101,24 @@ class LogFileAccessor {
   static const size_t kAlignment = MESSAGE_ALIGNMENT;
 #undef MESSAGE_ALIGNMENT
 
+  char *current() const { return current_; }
+  size_t position() const { return position_; }
+  off_t offset() const { return offset_; }
+
+  void IncrementPosition(size_t size) {
+    position_ += size;
+    AlignPosition();
+  }
+
+  void MapNextPage();
+  void Unmap(void *location);
+
+  // Advances position to the next (aligned) location.
+  void AlignPosition() {
+    position_ += kAlignment - (position_ % kAlignment);
+  }
+
+ private:
   const int fd_;
   const bool writable_;
 
@@ -116,17 +129,27 @@ class LogFileAccessor {
 
   // 0 = unknown, 1 = no, 2 = yes
   int is_last_page_ = 0;
+};
 
-  void MapNextPage();
-  void Unmap(void *location);
+class LogFileReader : public LogFileAccessor {
+ public:
+  LogFileReader(int fd) : LogFileAccessor(fd, false) {}
+
+  // May return NULL iff wait is false.
+  const LogFileMessageHeader *ReadNextMessage(bool wait);
+
+ private:
   // Tries reading from the current page to see if it fails because the file
   // isn't big enough.
   void CheckCurrentPageReadable();
+};
 
-  // Advances position to the next (aligned) location.
-  void AlignPosition() {
-    position_ += kAlignment - (position_ % kAlignment);
-  }
+class LogFileWriter : public LogFileAccessor {
+ public:
+  LogFileWriter(int fd) : LogFileAccessor(fd, true) {}
+
+  // message_size should be the total number of bytes needed for the message.
+  LogFileMessageHeader *GetWritePosition(size_t message_size);
 };
 
 }  // namespace linux_code

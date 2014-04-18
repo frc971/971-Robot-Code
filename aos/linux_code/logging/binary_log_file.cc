@@ -32,53 +32,6 @@ LogFileAccessor::LogFileAccessor(int fd, bool writable)
   MapNextPage();
 }
 
-LogFileMessageHeader *LogFileAccessor::GetWritePosition(size_t message_size) {
-  if (position_ + message_size + (kAlignment - (message_size % kAlignment)) +
-      sizeof(mutex) > kPageSize) {
-    char *const temp = current_;
-    MapNextPage();
-    if (futex_set_value(static_cast<mutex *>(static_cast<void *>(
-                    &temp[position_])), 2) == -1) {
-      LOG(WARNING,
-          "futex_set_value(%p, 2) failed with %d: %s. readers will hang\n",
-          &temp[position_], errno, strerror(errno));
-    }
-    Unmap(temp);
-    position_ = 0;
-  }
-  LogFileMessageHeader *const r = static_cast<LogFileMessageHeader *>(
-      static_cast<void *>(&current_[position_]));
-  position_ += message_size;
-  AlignPosition();
-  return r;
-}
-
-const LogFileMessageHeader *LogFileAccessor::ReadNextMessage(bool wait) {
-  LogFileMessageHeader *r;
-  do {
-    r = static_cast<LogFileMessageHeader *>(
-        static_cast<void *>(&current_[position_]));
-    if (wait) {
-      if (futex_wait(&r->marker) != 0) continue;
-    }
-    if (r->marker == 2) {
-      Unmap(current_);
-      MapNextPage();
-      position_ = 0;
-      r = static_cast<LogFileMessageHeader *>(static_cast<void *>(current_));
-    }
-  } while (wait && r->marker == 0);
-  if (r->marker == 0) {
-    return NULL;
-  }
-  position_ += sizeof(LogFileMessageHeader) + r->name_size + r->message_size;
-  AlignPosition();
-  if (position_ >= kPageSize) {
-    LOG(FATAL, "corrupt log file running over page size\n");
-  }
-  return r;
-}
-
 void LogFileAccessor::Sync() const {
   msync(current_, kPageSize, MS_ASYNC | MS_INVALIDATE);
 }
@@ -101,10 +54,8 @@ bool LogFileAccessor::IsLastPage() {
 void LogFileAccessor::MapNextPage() {
   if (writable_) {
     if (ftruncate(fd_, offset_ + kPageSize) == -1) {
-      fprintf(stderr, "ftruncate(%d, %zd) failed with %d: %s. aborting\n",
-              fd_, kPageSize, errno, strerror(errno));
-      printf("see stderr\n");
-      abort();
+      LOG(FATAL, "ftruncate(%d, %zd) failed with %d: %s. aborting\n", fd_,
+          kPageSize, errno, strerror(errno));
     }
   }
   current_ = static_cast<char *>(
@@ -123,10 +74,6 @@ void LogFileAccessor::MapNextPage() {
         current_, kPageSize, errno, strerror(errno));
   }
   offset_ += kPageSize;
-
-  if (!writable_) {
-    CheckCurrentPageReadable();
-  }
 }
 
 void LogFileAccessor::Unmap(void *location) {
@@ -135,6 +82,35 @@ void LogFileAccessor::Unmap(void *location) {
         kPageSize, errno, strerror(errno));
   }
   is_last_page_ = 0;
+  position_ = 0;
+}
+
+const LogFileMessageHeader *LogFileReader::ReadNextMessage(bool wait) {
+  LogFileMessageHeader *r;
+  do {
+    r = static_cast<LogFileMessageHeader *>(
+        static_cast<void *>(&current()[position()]));
+    if (wait) {
+      if (futex_wait(&r->marker) != 0) continue;
+    }
+    if (r->marker == 2) {
+      Unmap(current());
+      MapNextPage();
+      CheckCurrentPageReadable();
+      r = static_cast<LogFileMessageHeader *>(static_cast<void *>(current()));
+    }
+  } while (wait && r->marker == 0);
+  if (r->marker == 0) {
+    return NULL;
+  }
+  IncrementPosition(sizeof(LogFileMessageHeader) + r->name_size +
+                    r->message_size);
+  if (position() >= kPageSize) {
+    // It's a lot better to blow up here rather than getting SIGBUS errors the
+    // next time we try to read...
+    LOG(FATAL, "corrupt log file running over page size\n");
+  }
+  return r;
 }
 
 // This mess is because the only not completely hackish way to do this is to set
@@ -153,7 +129,7 @@ void CheckCurrentPageReadableHandler(int /*signal*/, siginfo_t *info, void *) {
 }
 
 }  // namespace
-void LogFileAccessor::CheckCurrentPageReadable() {
+void LogFileReader::CheckCurrentPageReadable() {
   if (sigsetjmp(jump_context, 1) == 0) {
     struct sigaction action;
     action.sa_sigaction = CheckCurrentPageReadableHandler;
@@ -169,7 +145,7 @@ void LogFileAccessor::CheckCurrentPageReadable() {
           SIGSEGV, &action, &previous_segv, errno, strerror(errno));
     }
 
-    char __attribute__((unused)) c = current_[0];
+    char __attribute__((unused)) c = current()[0];
 
     if (sigaction(SIGBUS, &previous_bus, NULL) == -1) {
       LOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed with %d: %s\n",
@@ -180,14 +156,33 @@ void LogFileAccessor::CheckCurrentPageReadable() {
           SIGSEGV, &previous_segv, errno, strerror(errno));
     }
   } else {
-    if (fault_address == current_) {
+    if (fault_address == current()) {
       LOG(FATAL, "could not read 1 byte at offset 0x%jx into log file\n",
-          static_cast<uintmax_t>(offset_));
+          static_cast<uintmax_t>(offset()));
     } else {
       LOG(FATAL, "faulted at %p, not %p like we were (maybe) supposed to\n",
-          fault_address, current_);
+          fault_address, current());
     }
   }
+}
+
+LogFileMessageHeader *LogFileWriter::GetWritePosition(size_t message_size) {
+  if (position() + message_size + (kAlignment - (message_size % kAlignment)) +
+      sizeof(mutex) > kPageSize) {
+    char *const temp = current();
+    MapNextPage();
+    if (futex_set_value(static_cast<mutex *>(static_cast<void *>(
+                    &temp[position()])), 2) == -1) {
+      LOG(WARNING,
+          "futex_set_value(%p, 2) failed with %d: %s. readers will hang\n",
+          &temp[position()], errno, strerror(errno));
+    }
+    Unmap(temp);
+  }
+  LogFileMessageHeader *const r = static_cast<LogFileMessageHeader *>(
+      static_cast<void *>(&current()[position()]));
+  IncrementPosition(message_size);
+  return r;
 }
 
 }  // namespace linux_code

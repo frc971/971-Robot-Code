@@ -25,7 +25,7 @@ namespace logging {
 namespace linux_code {
 namespace {
 
-void CheckTypeWritten(uint32_t type_id, LogFileAccessor &writer) {
+void CheckTypeWritten(uint32_t type_id, LogFileWriter &writer) {
   static ::std::unordered_set<uint32_t> written_type_ids;
   if (written_type_ids.count(type_id) > 0) return;
   if (MessageType::IsPrimitive(type_id)) return;
@@ -139,7 +139,7 @@ int BinaryLogReaderMain() {
             " exiting\n", tmp, errno, strerror(errno));
     return EXIT_FAILURE;
   }
-  LogFileAccessor writer(fd, true);
+  LogFileWriter writer(fd);
 
   while (true) {
     const LogMessage *const msg = ReadNext();
@@ -156,6 +156,7 @@ int BinaryLogReaderMain() {
       output_length +=
           sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
           sizeof(uint16_t) + msg->matrix.string_length;
+      CHECK(MessageType::IsPrimitive(msg->matrix.type));
     }
     LogFileMessageHeader *const output = writer.GetWritePosition(output_length);
     char *output_strings = reinterpret_cast<char *>(output) + sizeof(*output);
