@@ -64,7 +64,8 @@ int main() {
       FD_SET(connection, &fds);
       struct timeval timeout_timeval =
           ::aos::time::Time::InSeconds(1).ToTimeval();
-      switch (select(connection + 1, &fds, nullptr, nullptr, &timeout_timeval)) {
+      switch (
+          select(connection + 1, &fds, nullptr, nullptr, &timeout_timeval)) {
         case 1: {
           uint8_t data;
           ssize_t read_bytes = read(connection, &data, sizeof(data));

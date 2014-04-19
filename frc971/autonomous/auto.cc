@@ -243,7 +243,7 @@ class HotGoalDecoder {
 
   void Update() {
     hot_goal.FetchLatest();
-    LOG_STRUCT(INFO, "new counts", *hot_goal);
+    if (hot_goal.get()) LOG_STRUCT(INFO, "new counts", *hot_goal);
   }
 
   bool is_left() const {
@@ -366,7 +366,7 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(2, 2, first_shot_left ? kTurnAngle : -kTurnAngle);
+        SetDriveGoal(0, 2, first_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
@@ -380,7 +380,7 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(2, 2, first_shot_left ? -kTurnAngle : kTurnAngle);
+        SetDriveGoal(0, 2, first_shot_left ? -kTurnAngle : kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }
@@ -434,7 +434,7 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(2, 2, second_shot_left ? kTurnAngle : -kTurnAngle);
+        SetDriveGoal(0, 2, second_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   }

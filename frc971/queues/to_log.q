@@ -4,6 +4,7 @@ struct CapeReading {
   Time time;
   uint16_t struct_size;
   double sonar;
+  double auto_choice;
 
   uint16_t left_low;
   uint16_t left_high;
