@@ -297,7 +297,7 @@ void TopZeroedStateFeedbackLoop::HandleCalibrationError(
     if (::std::abs(calibration_error) > kRezeroThreshold) {
       LOG(WARNING, "rezeroing top\n");
       SetCalibration(edge_encoder, edge_angle);
-      set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+      set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     }
   }
 }
@@ -314,7 +314,7 @@ void BottomZeroedStateFeedbackLoop::HandleCalibrationError(
     if (::std::abs(calibration_error) > kRezeroThreshold) {
       LOG(WARNING, "rezeroing bottom\n");
       SetCalibration(edge_encoder, edge_angle);
-      set_zeroing_state(ZeroedStateFeedbackLoop::APPROXIMATE_CALIBRATION);
+      set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
     }
   }
 }
