@@ -57,6 +57,10 @@ void ResetDrivetrain() {
       .highgear(false)
       .steering(0.0)
       .throttle(0.0)
+      .left_goal(left_initial_position)
+      .left_velocity_goal(0)
+      .right_goal(right_initial_position)
+      .right_velocity_goal(0)
       .Send();
 }
 
@@ -232,7 +236,7 @@ class HotGoalDecoder {
   void ResetCounts() {
     hot_goal.FetchLatest();
     if (hot_goal.get()) {
-      memcpy(&start_counts_, hot_goal.get(), sizeof(start_counts_));
+      start_counts_ = *hot_goal;
       LOG_STRUCT(INFO, "counts reset to", start_counts_);
       start_counts_valid_ = true;
     } else {
@@ -241,9 +245,23 @@ class HotGoalDecoder {
     }
   }
 
-  void Update() {
-    hot_goal.FetchLatest();
+  void Update(bool block = false) {
+    if (block) {
+      hot_goal.FetchAnother();
+    } else {
+      hot_goal.FetchLatest();
+    }
     if (hot_goal.get()) LOG_STRUCT(INFO, "new counts", *hot_goal);
+  }
+
+  bool left_triggered() const {
+    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    return (hot_goal->left_count - start_counts_.left_count) > kThreshold;
+  }
+
+  bool right_triggered() const {
+    if (!start_counts_valid_ || !hot_goal.get()) return false;
+    return (hot_goal->right_count - start_counts_.right_count) > kThreshold;
   }
 
   bool is_left() const {
@@ -254,6 +272,7 @@ class HotGoalDecoder {
         hot_goal->right_count - start_counts_.right_count;
     if (left_difference > kThreshold) {
       if (right_difference > kThreshold) {
+        // We've seen a lot of both, so pick the one we've seen the most of.
         return left_difference > right_difference;
       } else {
         // We've seen enough left but not enough right, so go with it.
@@ -273,6 +292,7 @@ class HotGoalDecoder {
         hot_goal->right_count - start_counts_.right_count;
     if (right_difference > kThreshold) {
       if (left_difference > kThreshold) {
+        // We've seen a lot of both, so pick the one we've seen the most of.
         return right_difference > left_difference;
       } else {
         // We've seen enough right but not enough left, so go with it.
@@ -285,7 +305,7 @@ class HotGoalDecoder {
   }
 
  private:
-  static const uint64_t kThreshold = 10;
+  static const uint64_t kThreshold = 5;
 
   ::frc971::HotGoal start_counts_;
   bool start_counts_valid_;
@@ -295,6 +315,7 @@ void HandleAuto() {
   enum class AutoVersion : uint8_t {
     kStraight,
     kDoubleHot,
+    kSingleHot,
   };
 
   // The front of the robot is 1.854 meters from the wall
@@ -311,9 +332,17 @@ void HandleAuto() {
     LOG(WARNING, "not sure which auto mode to use\n");
     auto_version = AutoVersion::kStraight;
   } else {
-    auto_version =
-        (::frc971::sensors::auto_mode->voltage > 2.5) ? AutoVersion::kDoubleHot
-                                                      : AutoVersion::kStraight;
+    static const double kSelectorMin = 0.2, kSelectorMax = 4.4;
+
+    const double kSelectorStep = (kSelectorMax - kSelectorMin) / 3.0;
+    if (::frc971::sensors::auto_mode->voltage < kSelectorStep + kSelectorMin) {
+      auto_version = AutoVersion::kSingleHot;
+    } else if (::frc971::sensors::auto_mode->voltage <
+               2 * kSelectorStep + kSelectorMin) {
+      auto_version = AutoVersion::kStraight;
+    } else {
+      auto_version = AutoVersion::kDoubleHot;
+    }
   }
   LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
 
@@ -369,6 +398,13 @@ void HandleAuto() {
         SetDriveGoal(0, 2, first_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
+  } else if (auto_version == AutoVersion::kSingleHot) {
+    do {
+      hot_goal_decoder.Update(true);
+      if (ShouldExitAuto()) return;
+    } while (!hot_goal_decoder.left_triggered() &&
+             (::aos::time::Time::Now() - start_time) <
+                 ::aos::time::Time::InSeconds(9));
   }
 
   // Shoot.
@@ -383,9 +419,12 @@ void HandleAuto() {
         SetDriveGoal(0, 2, first_shot_left ? -kTurnAngle : kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
+  } else if (auto_version == AutoVersion::kSingleHot) {
+    LOG(INFO, "auto done at %f\n",
+        (::aos::time::Time::Now() - start_time).ToSeconds());
+    PositionClawVertically(0.0, 0.0);
+    return;
   }
-
-  hot_goal_decoder.ResetCounts();
 
   {
     if (ShouldExitAuto()) return;
@@ -411,6 +450,7 @@ void HandleAuto() {
     auto drivetrain_action =
         SetDriveGoal(-(kShootDistance + kPickupDistance), 2.5);
     time::SleepFor(time::Time::InSeconds(0.3));
+    hot_goal_decoder.ResetCounts();
     if (ShouldExitAuto()) return;
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");

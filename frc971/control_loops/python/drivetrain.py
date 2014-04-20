@@ -143,8 +143,8 @@ class Drivetrain(control_loop.ControlLoop):
     print self.K
     print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
-    self.hlp = 0.12
-    self.llp = 0.15
+    self.hlp = 0.3
+    self.llp = 0.4
     self.PlaceObserverPoles([self.hlp, self.hlp, self.llp, self.llp])
 
     self.U_max = numpy.matrix([[12.0], [12.0]])

@@ -43,11 +43,6 @@ void DrivetrainAction::RunAction() {
   while (true) {
     // wait until next 10ms tick
     ::aos::time::PhasedLoop10MS(5000);
-    const auto drive_profile_goal_state =
-        profile.Update(yoffset, goal_velocity);
-    const auto turn_profile_goal_state = turn_profile.Update(turn_offset, 0.0);
-    left_goal_state = drive_profile_goal_state - turn_profile_goal_state;
-    right_goal_state = drive_profile_goal_state + turn_profile_goal_state;
 
     control_loops::drivetrain.status.FetchLatest();
     if (control_loops::drivetrain.status.get()) {
@@ -55,13 +50,14 @@ void DrivetrainAction::RunAction() {
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) >
           24) {
+        LOG(DEBUG, "spinning in place\n");
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
         profile.SetGoal(
             (status.filtered_left_position + status.filtered_right_position) /
             2.0);
       } else {
-        static const double divisor = K(0, 1) + K(0, 3);
+        static const double divisor = K(0, 0) + K(0, 2);
         double dx_left, dx_right;
         if (status.uncapped_left_voltage > 12.0) {
           dx_left = (status.uncapped_left_voltage - 12.0) / divisor;
@@ -98,6 +94,12 @@ void DrivetrainAction::RunAction() {
       // If we ever get here, that's bad and we should just give up
       LOG(FATAL, "no drivetrain status!\n");
     }
+
+    const auto drive_profile_goal_state =
+        profile.Update(yoffset, goal_velocity);
+    const auto turn_profile_goal_state = turn_profile.Update(turn_offset, 0.0);
+    left_goal_state = drive_profile_goal_state - turn_profile_goal_state;
+    right_goal_state = drive_profile_goal_state + turn_profile_goal_state;
 
     if (::std::abs(drive_profile_goal_state(0, 0) - yoffset) < epsilon &&
         ::std::abs(turn_profile_goal_state(0, 0) - turn_offset) < epsilon) {

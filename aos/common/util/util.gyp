@@ -55,6 +55,7 @@
       'dependencies': [
         '<(EXTERNALS):eigen',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):eigen',

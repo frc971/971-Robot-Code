@@ -31,6 +31,7 @@ template <class T> class ActionBase {
       if (initially_running != 0) {
         while (action_q_->goal->run == initially_running) {
           LOG(INFO, "run is still %" PRIx32 "\n", initially_running);
+          action_q_->goal.FetchNextBlocking();
         }
       }
     } else {

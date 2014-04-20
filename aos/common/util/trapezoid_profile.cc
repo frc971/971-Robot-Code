@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+#include "aos/common/logging/logging.h"
+
 using ::Eigen::Matrix;
 
 namespace aos {

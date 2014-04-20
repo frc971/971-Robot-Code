@@ -15,6 +15,17 @@
 int main() {
   ::aos::InitNRT();
 
+  uint64_t left_count, right_count;
+  ::frc971::hot_goal.FetchLatest();
+  if (::frc971::hot_goal.get()) {
+    LOG_STRUCT(DEBUG, "starting with", *::frc971::hot_goal);
+    left_count = ::frc971::hot_goal->left_count;
+    right_count = ::frc971::hot_goal->left_count;
+  } else {
+    LOG(DEBUG, "no starting message\n");
+    left_count = right_count = 0;
+  }
+
   int my_socket = -1;
   while (true) {
     if (my_socket == -1) {
@@ -58,8 +69,8 @@ int main() {
     }
     LOG(INFO, "accepted (is %d)\n", connection);
 
-    fd_set fds;
     while (connection != -1) {
+      fd_set fds;
       FD_ZERO(&fds);
       FD_SET(connection, &fds);
       struct timeval timeout_timeval =
@@ -74,7 +85,6 @@ int main() {
                 sizeof(data));
             break;
           }
-          static uint64_t left_count = 0, right_count = 0;
           if (data & 0x01) ++right_count;
           if (data & 0x02) ++left_count;
           auto message = ::frc971::hot_goal.MakeMessage();
