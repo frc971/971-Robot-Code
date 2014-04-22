@@ -11,7 +11,6 @@
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.2.1',
     'gtest_version': '1.6.0-p1',
-    'onejar_version': '0.97',
     'ctemplate_version': '129',
     'gflags_version': '2.0',
     'compiler_rt_version': 'RELEASE_32_final',
@@ -66,15 +65,6 @@
         'defines': [
           'register=',
         ],
-      },
-    },
-    {
-      'target_name': 'onejar',
-      'type': 'none',
-      'direct_dependent_settings': {
-        'variables': {
-          'onejar_jar': '<(externals_abs)/one-jar-boot-<(onejar_version).jar',
-        },
       },
     },
     {

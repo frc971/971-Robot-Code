@@ -49,11 +49,6 @@ EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
 
-# get the simple one-jar template jar
-ONEJAR_VERSION=0.97
-ONEJAR_JAR=${EXTERNALS}/one-jar-boot-${ONEJAR_VERSION}.jar
-[ -f ${ONEJAR_JAR} ] || wget http://sourceforge.net/projects/one-jar/files/one-jar/one-jar-${ONEJAR_VERSION}/one-jar-boot-${ONEJAR_VERSION}.jar/download -O ${ONEJAR_JAR}
-
 # get and build libjpeg
 LIBJPEG_VERSION=8d
 LIBJPEG_DIR=${COMPILED}/jpeg-${LIBJPEG_VERSION}
