@@ -31,7 +31,7 @@ class PacketFinder {
   // pointed to is undefined.
   template <typename T>
   const T *get_packet() {
-    static_assert(alignof(T) <= alignof(*unstuffed_data_),
+    static_assert(alignof(T) <= alignof(AlignedChar),
                   "We need to align our data better.");
     CHECK(sizeof(T) <= packet_size_ - 8);
     return reinterpret_cast<const T *>(unstuffed_data_);

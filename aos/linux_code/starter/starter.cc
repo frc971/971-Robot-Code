@@ -211,7 +211,7 @@ class FileWatch {
       notifyevt = reinterpret_cast<inotify_event *>(
           __builtin_assume_aligned(reinterpret_cast<char *>(notifyevt) +
                                        sizeof(*notifyevt) + notifyevt->len,
-                                   alignof(notifyevt)));
+                                   alignof(inotify_event)));
     }
   }
 
