@@ -30,7 +30,11 @@
 // probably safer.
 #define GOOD_PRINTF_FORMAT_TYPE printf
 #else
+#ifdef __clang__
+#define GOOD_PRINTF_FORMAT_TYPE __printf__
+#else
 #define GOOD_PRINTF_FORMAT_TYPE gnu_printf
+#endif
 #endif
 
 #endif  // _AOS_COMMON_MACROS_H_
