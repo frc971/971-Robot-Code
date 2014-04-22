@@ -5,13 +5,8 @@
     # TODO(brians): Would we not have to do this hackery if we named it externals_path etc?
     'externals': '<(AOS)/../output/downloaded',
     'externals_abs': '<!(readlink -f ../../output/downloaded)',
-    'conditions': [['PLATFORM=="linux-amd64"', {
-          'compiled': '<(externals)/../compiled-amd64',
-          'compiled_abs': '<(externals_abs)/../compiled-amd64',
-    }, {
-          'compiled': '<(externals)/../compiled-arm',
-          'compiled_abs': '<(externals_abs)/../compiled-arm',
-    }]],
+    'compiled': '<(externals)/../compiled-<(aos_architecture)',
+    'compiled_abs': '<(externals_abs)/../compiled-<(aos_architecture)',
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.2.1',
@@ -60,9 +55,16 @@
       'include_dirs': [
         '<(AOS)/externals/WPILib',
       ],
+      'defines': [
+        # Clang doesn't like having register in the hton* macros.
+        'register=',
+      ],
       'direct_dependent_settings': {
         'include_dirs': [
           '<(AOS)/externals/WPILib',
+        ],
+        'defines': [
+          'register=',
         ],
       },
     },

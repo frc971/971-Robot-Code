@@ -17,7 +17,7 @@ shift || true # We might not have a 5th argument if ACTION is empty.
 
 export WIND_BASE=${WIND_BASE:-"/usr/local/powerpc-wrs-vxworks/wind_base"}
 
-[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "linux" -o "${PLATFORM}" == "linux-amd64" ] || ( echo Platform "(${PLATFORM})" must be '"crio", "linux", or "linux-amd64"'. ; exit 1 )
+#[ "${PLATFORM}" == "crio" -o "${PLATFORM}" == "linux" -o "${PLATFORM}" == "linux-amd64" ] || ( echo Platform "(${PLATFORM})" must be '"crio", "linux", or "linux-amd64"'. ; exit 1 )
 [ "${DEBUG}" == "yes" -o "${DEBUG}" == "no" ] || ( echo Debug "(${DEBUG})" must be '"yes" or "no"'. ; exit 1 )
 
 AOS=`dirname $0`/..

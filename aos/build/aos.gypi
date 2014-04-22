@@ -15,6 +15,29 @@
     'so_dir': '<(PRODUCT_DIR)/lib',
 # the directory that executables that depend on <(EXTERNALS):gtest get put into
     'test_dir': '<(PRODUCT_DIR)/tests',
+    'variables': {
+      'conditions': [
+        ['PLATFORM=="linux"', {
+            'compiler': 'gcc',
+            'aos_architecture': 'arm',
+          },
+        ], ['PLATFORM=="linux-amd64-clang"', {
+            'compiler': 'clang',
+            'aos_architecture': 'amd64',
+          },
+        ], ['PLATFORM=="linux-clang"', {
+            'compiler': 'gcc',
+            'aos_architecture': 'arm',
+          },
+        ], ['PLATFORM=="linux-amd64"', {
+            'compiler': 'gcc',
+            'aos_architecture': 'amd64',
+          },
+        ],
+      ],
+    },
+    'aos_architecture%': '<(aos_architecture)',
+    'compiler%': '<(compiler)',
   },
   'conditions': [
     ['OS=="crio"', {
@@ -22,17 +45,24 @@
           ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
-      }, {
-        'conditions': [
-          ['PLATFORM!="linux-amd64"', {
-              'make_global_settings': [
-                ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
-                ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
-              ],
-            },
-          ],
-        ],
       }
+    ], ['PLATFORM=="linux"', {
+        'make_global_settings': [
+          ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
+          ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
+        ],
+      },
+    ], ['PLATFORM=="linux-clang"', {
+        # TODO(brians): Make this one actually work.
+      },
+    ], ['PLATFORM=="linux-amd64-clang"', {
+        'make_global_settings': [
+          ['CC', '<!(which clang)'],
+          ['CXX', '<!(which clang++)'],
+        ],
+      },
+    ], ['PLATFORM=="linux-amd64"', {
+      },
     ],
   ],
   'target_defaults': {
@@ -177,14 +207,7 @@
           ],
           'cflags': [
             '-pthread',
-
-            '-Wunused-local-typedefs',
-
-            # Give macro stack traces when they blow up.
-            # TODO(brians): Re-enable this once they fix the bug where it
-            # sometimes doesn't show you the top-most (aka most useful)
-            # line of code.
-            #'-ftrack-macro-expansion',
+            '-fno-exceptions',
           ],
           'cflags_cc': [
             '-std=gnu++11',
@@ -195,6 +218,25 @@
           'libraries': [
             '-lm',
             '-lrt',
+          ],
+          'conditions': [
+            ['compiler=="gcc"', {
+                'cflags': [
+                  '-Wunused-local-typedefs',
+                ],
+              },
+            ], ['compiler=="clang"', {
+                'cflags': [
+                  '-fcolor-diagnostics',
+                ],
+                'defines': [
+                  # To work around <http://llvm.org/bugs/show_bug.cgi?id=13530>.
+                  '__float128=void',
+                  # This tells clang's optimizer the same thing.
+                  '__builtin_assume_aligned(p, a)=(((uintptr_t(p) % (a)) == 0) ? (p) : (__builtin_unreachable(), (p)))',
+                ],
+              },
+            ],
           ],
         }
       ]
