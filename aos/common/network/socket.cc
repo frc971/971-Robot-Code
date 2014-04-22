@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/byteorder.h"
 
 namespace aos {
 namespace network {
@@ -19,7 +20,7 @@ int Socket::Connect(NetworkPort port, const char *address, int type) {
 
   memset(&addr_, 0, sizeof(addr_));
   addr_.in.sin_family = AF_INET;
-  addr_.in.sin_port = htons(static_cast<uint16_t>(port));
+  addr_.in.sin_port = hton<uint16_t>(static_cast<uint16_t>(port));
 #ifndef __VXWORKS__
   const int failure_return = 0;
 #else

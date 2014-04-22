@@ -5,6 +5,8 @@
 #include <string.h>
 #endif
 
+#include "aos/common/byteorder.h"
+
 namespace aos {
 namespace util {
 
@@ -23,8 +25,8 @@ const char *MakeIPAddress(const in_addr &base_address,
 }
 
 void SetLastSegment(in_addr *address, ::aos::NetworkAddress last_segment) {
-  address->s_addr &= ~(htonl(0xFF));
-  address->s_addr |= htonl(static_cast<uint8_t>(last_segment));
+  address->s_addr &= ~(hton<uint32_t>(0xFF));
+  address->s_addr |= hton<uint32_t>(static_cast<uint8_t>(last_segment));
 }
 
 }  // namespace util

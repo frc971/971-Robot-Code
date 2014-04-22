@@ -14,6 +14,7 @@
 #include "aos/linux_code/configuration.h"
 #include "aos/common/network_port.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/byteorder.h"
 
 namespace aos {
 namespace {
@@ -73,7 +74,7 @@ void *FDCopyThread(void *to_copy_in) {
           }
           if (to_copy->source_address != nullptr) {
             assert(header.msg_namelen >= sizeof(struct sockaddr_in));
-            if (to_copy->source_address->sin_port != htons(0)) {
+            if (to_copy->source_address->sin_port != hton<uint16_t>(0)) {
               if (sender_address.sin_port !=
                   to_copy->source_address->sin_port) {
                 good_data = false;
@@ -177,11 +178,11 @@ int NetconsoleMain(int argc, char **argv) {
   } address, crio_address;
 
   address.in.sin_family = AF_INET;
-  address.in.sin_port = htons(6666);
+  address.in.sin_port = hton<uint16_t>(6666);
   address.in.sin_addr.s_addr = INADDR_ANY;
 
   crio_address.in.sin_family = AF_INET;
-  crio_address.in.sin_port = htons(0);
+  crio_address.in.sin_port = hton<uint16_t>(0);
   crio_address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
   ::aos::util::SetLastSegment(&crio_address.in.sin_addr,
                               ::aos::NetworkAddress::kCRIO);
@@ -208,7 +209,7 @@ int NetconsoleMain(int argc, char **argv) {
       LOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed with %d: %s\n",
           on, to_crio, errno, strerror(errno));
     }
-    address.in.sin_port = htons(6668);
+    address.in.sin_port = hton<uint16_t>(6668);
     if (connect(to_crio, &address.addr, sizeof(address)) == -1) {
       LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
           to_crio, &address.addr, sizeof(address), errno, strerror(errno));

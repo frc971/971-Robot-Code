@@ -6,10 +6,10 @@
 #include <algorithm>
 #include <string>
 
+#include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
 #include "aos/common/network/send_socket.h"
 #include "aos/common/byteorder.h"
 #include "aos/common/type_traits.h"
-#include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
 
 namespace aos {
 

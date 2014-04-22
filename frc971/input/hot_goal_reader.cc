@@ -9,6 +9,7 @@
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/logging.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/byteorder.h"
 
 #include "frc971/queues/hot_goal.q.h"
 
@@ -39,7 +40,7 @@ int main() {
         sockaddr_in address, *sockaddr_pointer;
         memset(&address, 0, sizeof(address));
         address.sin_family = AF_INET;
-        address.sin_port = htons(1180);
+        address.sin_port = ::aos::hton<uint16_t>(1180);
         sockaddr *address_pointer;
         sockaddr_pointer = &address;
         memcpy(&address_pointer, &sockaddr_pointer, sizeof(void *));
