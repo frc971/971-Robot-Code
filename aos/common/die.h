@@ -3,6 +3,8 @@
 
 #include <stdarg.h>
 
+#include "aos/common/macros.h"
+
 namespace aos {
 
 // Terminates the task/process and logs a message (without using the logging
@@ -10,10 +12,10 @@ namespace aos {
 // (code that can should LOG(FATAL), which calls this).
 void Die(const char *format, ...)
     __attribute__((noreturn))
-    __attribute__((format(gnu_printf, 1, 2)));
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 1, 2)));
 void VDie(const char *format, va_list args)
     __attribute__((noreturn))
-    __attribute__((format(gnu_printf, 1, 0)));
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 1, 0)));
 
 // Turns on (or off) "test mode", where (V)Die doesn't write out files and
 // doesn't print to stdout.

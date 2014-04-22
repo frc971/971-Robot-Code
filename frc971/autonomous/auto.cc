@@ -344,7 +344,7 @@ void HandleAuto() {
       auto_version = AutoVersion::kDoubleHot;
     }
   }
-  LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
+  LOG(INFO, "running auto %" PRIu8 "\n", static_cast<uint8_t>(auto_version));
 
   HotGoalDecoder hot_goal_decoder;
   // True for left, false for right.

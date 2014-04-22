@@ -25,4 +25,12 @@
 #define STRINGIFY(x) TO_STRING(x)
 #define TO_STRING(x) #x
 
+#ifdef __VXWORKS__
+// We're using ancient glibc, so sticking to just what the syscall can handle is
+// probably safer.
+#define GOOD_PRINTF_FORMAT_TYPE printf
+#else
+#define GOOD_PRINTF_FORMAT_TYPE gnu_printf
+#endif
+
 #endif  // _AOS_COMMON_MACROS_H_

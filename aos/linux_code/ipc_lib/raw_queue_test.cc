@@ -47,7 +47,8 @@ class RawQueueTest : public ::testing::Test {
       case ResultType::NotCalled:
         return "NotCalled";
       default:
-        return std::string("unknown(" + static_cast<uint8_t>(result)) + ")";
+        return std::string("unknown(") +
+               ::std::to_string(static_cast<uint8_t>(result)) + ")";
     }
   }
   static_assert(aos::shm_ok<ResultType>::value,

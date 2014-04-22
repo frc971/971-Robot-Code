@@ -49,6 +49,7 @@ class TestLogImplementation : public logging::LogImplementation {
     return new TestLogImplementation();
   }
 
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     LogMessage message;
 

@@ -25,6 +25,7 @@ class RootLogImplementation : public LogImplementation {
     LOG(FATAL, "can't have a next logger from here\n");
   }
 
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     LogMessage message;
     internal::FillInMessage(level, format, ap, &message);

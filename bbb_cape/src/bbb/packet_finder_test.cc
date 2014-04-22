@@ -43,10 +43,9 @@ class PacketFinderTest : public ::testing::Test {
     ::aos::common::testing::EnableTestLogging();
   }
 
-  template <typename Data, size_t N = 0>
+  template <typename Data, size_t N>
   void ReceivePackets(const Data &data, int packets,
-                      ::std::array<int, N> expected_failures =
-                          ::std::array<int, 0>()) {
+                      ::std::array<int, N> expected_failures) {
     TestByteReader reader(data);
     PacketFinder packet_finder(&reader, 144);
     auto failure = expected_failures.begin();
@@ -70,6 +69,10 @@ class PacketFinderTest : public ::testing::Test {
       }
     }
     EXPECT_FALSE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
+  }
+  template <typename Data>
+  void ReceivePackets(const Data &data, int packets) {
+    ReceivePackets(data, packets, ::std::array<int, 0>());
   }
 };
 

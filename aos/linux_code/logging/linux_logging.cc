@@ -37,6 +37,7 @@ LogMessage *GetMessageOrDie() {
 }
 
 class LinuxQueueLogImplementation : public LogImplementation {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) override {
     LogMessage *message = GetMessageOrDie();
     internal::FillInMessage(level, format, ap, message);

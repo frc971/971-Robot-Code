@@ -33,27 +33,20 @@ DECL_LEVELS;
 // Not static const size_t for C code.
 #define LOG_MESSAGE_LEN 400
 
-#ifdef __VXWORKS__
-// We're using ancient glibc, so sticking to just what the syscall can handle is
-// probably safer.
-#define LOG_PRINTF_FORMAT_TYPE printf
-#else
-#define LOG_PRINTF_FORMAT_TYPE gnu_printf
-#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
 // Actually implements the basic logging call.
 // Does not check that level is valid.
 void log_do(log_level level, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
 
 void log_cork(int line, const char *function, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 3, 4)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)));
 // Implements the uncork logging call.
 void log_uncork(int line, const char *function, log_level level,
                 const char *file, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 5, 6)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 6)));
 #ifdef __cplusplus
 }
 #endif

@@ -55,7 +55,6 @@ class TrapezoidProfile {
   double constant_time_;
   double deceleration_time_;
   double deceleration_;
-  double current_velocity_;
 
   double maximum_acceleration_;
   double maximum_velocity_;

@@ -256,7 +256,7 @@ struct NetworkRobotJoysticks {
     }
 
     // So that it can access bits directly for Serialize/Deserialize.
-    friend class NetworkRobotJoysticks;
+    friend struct NetworkRobotJoysticks;
 
     uint8_t bits;
   } control;

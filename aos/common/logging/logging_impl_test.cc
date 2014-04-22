@@ -16,6 +16,7 @@ namespace logging {
 namespace testing {
 
 class TestLogImplementation : public LogImplementation {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     internal::FillInMessage(level, format, ap, &message_);
 

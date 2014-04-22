@@ -15,10 +15,11 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
 #include "aos/common/mutex.h"
+#include "aos/common/macros.h"
 
 namespace aos {
 
-class MessageType;
+struct MessageType;
 
 }  // namespace aos
 
@@ -101,16 +102,19 @@ static inline log_level str_log(const char *str) {
 
 // Takes a message and logs it. It will set everything up and then call DoLog
 // for the current LogImplementation.
-void VLog(log_level level, const char *format, va_list ap);
+void VLog(log_level level, const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
 // Adds to the saved up message.
-void VCork(int line, const char *format, va_list ap);
+void VCork(int line, const char *function, const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
 // Actually logs the saved up message.
-void VUnCork(int line, log_level level, const char *file,
-             const char *format, va_list ap);
+void VUnCork(int line, const char *function, log_level level, const char *file,
+             const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 0)));
 
 // Will call VLog with the given arguments for the next logger in the chain.
 void LogNext(log_level level, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
 
 // Takes a structure and log it.
 template <class T>
@@ -140,7 +144,9 @@ class LogImplementation {
  private:
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) = 0;
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)))
   void DoLogVariadic(log_level level, const char *format, ...) {
     va_list ap;
     va_start(ap, format);
@@ -167,7 +173,8 @@ class LogImplementation {
   // These functions call similar methods on the "current" LogImplementation or
   // Die if they can't find one.
   // levels is how many LogImplementations to not use off the stack.
-  static void DoVLog(log_level, const char *format, va_list ap, int levels);
+  static void DoVLog(log_level, const char *format, va_list ap, int levels)
+      __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
   // This one is implemented in queue_logging.cc.
   static void DoLogStruct(log_level level, const ::std::string &message,
                           size_t size, const MessageType *type,
@@ -195,6 +202,7 @@ class StreamLogImplementation : public LogImplementation {
   StreamLogImplementation(FILE *stream);
 
  private:
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap);
 
   FILE *const stream_;
@@ -297,8 +305,10 @@ void FillInMessageMatrix(log_level level,
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.
 void FillInMessage(log_level level, const char *format, va_list ap,
-                   LogMessage *message);
+                   LogMessage *message)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
 
+__attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)))
 static inline void FillInMessageVarargs(log_level level, LogMessage *message,
                                         const char *format, ...) {
   va_list ap;
@@ -313,7 +323,8 @@ void PrintMessage(FILE *output, const LogMessage &message);
 // Prints format (with ap) into output and correctly deals with the result
 // being too long etc.
 size_t ExecuteFormat(char *output, size_t output_size, const char *format,
-                     va_list ap);
+                     va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
 
 // Runs the given function with the current LogImplementation (handles switching
 // it out while running function etc).

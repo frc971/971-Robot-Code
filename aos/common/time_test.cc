@@ -11,7 +11,7 @@ namespace testing {
 TEST(TimeTest, timespecConversions) {
   timespec start{1234, 5678};  // NOLINT
   Time time(start);
-  EXPECT_EQ(start.tv_sec, static_cast<signed time_t>(time.sec()));
+  EXPECT_EQ(start.tv_sec, static_cast<time_t>(time.sec()));
   EXPECT_EQ(start.tv_nsec, time.nsec());
   timespec end = time.ToTimespec();
   EXPECT_EQ(start.tv_sec, end.tv_sec);

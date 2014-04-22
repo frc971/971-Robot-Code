@@ -18,7 +18,7 @@
 
 namespace aos {
 
-class MessageType;
+struct MessageType;
 
 // This class is a base class for all messages sent over queues.
 // All of the methods are overloaded in (generated) subclasses to do the same
