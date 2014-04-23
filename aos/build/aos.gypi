@@ -15,29 +15,6 @@
     'so_dir': '<(PRODUCT_DIR)/lib',
 # the directory that executables that depend on <(EXTERNALS):gtest get put into
     'test_dir': '<(PRODUCT_DIR)/tests',
-    'variables': {
-      'conditions': [
-        ['PLATFORM=="linux"', {
-            'compiler': 'gcc',
-            'aos_architecture': 'arm',
-          },
-        ], ['PLATFORM=="linux-amd64-clang"', {
-            'compiler': 'clang',
-            'aos_architecture': 'amd64',
-          },
-        ], ['PLATFORM=="linux-clang"', {
-            'compiler': 'gcc',
-            'aos_architecture': 'arm',
-          },
-        ], ['PLATFORM=="linux-amd64"', {
-            'compiler': 'gcc',
-            'aos_architecture': 'amd64',
-          },
-        ],
-      ],
-    },
-    'aos_architecture%': '<(aos_architecture)',
-    'compiler%': '<(compiler)',
   },
   'conditions': [
     ['OS=="crio"', {
@@ -46,13 +23,13 @@
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
       }
-    ], ['PLATFORM=="linux"', {
+    ], ['PLATFORM=="linux-arm-gcc"', {
         'make_global_settings': [
           ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
           ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
         ],
       },
-    ], ['PLATFORM=="linux-clang"', {
+    ], ['PLATFORM=="linux-arm-clang"', {
         # TODO(brians): Make this one actually work.
       },
     ], ['PLATFORM=="linux-amd64-clang"', {
@@ -61,7 +38,7 @@
           ['CXX', '<!(which clang++)'],
         ],
       },
-    ], ['PLATFORM=="linux-amd64"', {
+    ], ['PLATFORM=="linux-amd64-gcc"', {
       },
     ],
   ],
@@ -220,12 +197,12 @@
             '-lrt',
           ],
           'conditions': [
-            ['compiler=="gcc"', {
+            ['COMPILER=="gcc"', {
                 'cflags': [
                   '-Wunused-local-typedefs',
                 ],
               },
-            ], ['compiler=="clang"', {
+            ], ['COMPILER=="clang"', {
                 'cflags': [
                   '-fcolor-diagnostics',
                 ],

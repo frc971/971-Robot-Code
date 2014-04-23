@@ -19,12 +19,19 @@ if [ "$1" == "arm" ]; then
   # Some of them need to set LDFLAGS separately to work around stupid configure
   # scripts, so we can't just set that here.
   CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
-else
+  IS_CRIO=0
+elif [ "$1" == "amd64" ]; then
   COMPILED=${EXTERNALS}/../compiled-amd64
 
   export CFLAGS="-march=atom -mfpmath=sse"
   export CXXFLAGS="-march=atom -mfpmath=sse"
   CONFIGURE_FLAGS="CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\""
+  IS_CRIO=0
+elif [ "$1" == "crio" ]; then
+  IS_CRIO=1
+else
+  echo "Unknown platform $1 to download externals for." 1>&2
+  exit 1
 fi
 
 TMPDIR=/tmp/$$-aos-tmpdir
@@ -49,6 +56,22 @@ EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
 
+# get the LLVM Compiler-RT source
+COMPILER_RT_TAG=RELEASE_32/final
+COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
+COMPILER_RT_DIR=${EXTERNALS}/compiler-rt-${COMPILER_RT_VERSION}
+COMPILER_RT_URL=http://llvm.org/svn/llvm-project/compiler-rt/tags/${COMPILER_RT_TAG}
+[ -d ${COMPILER_RT_DIR} ] || svn checkout ${COMPILER_RT_URL} ${COMPILER_RT_DIR}
+
+# get gtest
+GTEST_VERSION=1.6.0
+GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p1
+GTEST_ZIP=${EXTERNALS}/gtest-${GTEST_VERSION}.zip
+[ -f ${GTEST_ZIP} ] || wget http://googletest.googlecode.com/files/gtest-${GTEST_VERSION}.zip -O ${GTEST_ZIP}
+[ -d ${GTEST_DIR} ] || ( unzip ${GTEST_ZIP} -d ${TMPDIR} && mv ${TMPDIR}/gtest-${GTEST_VERSION} ${GTEST_DIR} && cd ${GTEST_DIR} && patch -p1 < ${AOS}/externals/gtest.patch )
+
+[[ ${IS_CRIO} -eq 1 ]] && exit 0
+
 # get and build libjpeg
 LIBJPEG_VERSION=8d
 LIBJPEG_DIR=${COMPILED}/jpeg-${LIBJPEG_VERSION}
@@ -62,13 +85,6 @@ LIBJPEG_TAR=${EXTERNALS}/jpegsrc.v${LIBJPEG_VERSION}.tar.gz
 	"cd ${LIBJPEG_DIR} && ./configure --disable-shared \
 	${CONFIGURE_FLAGS} --prefix=`readlink -f ${LIBJPEG_PREFIX}` \
 	&& make && make install"
-
-# get gtest
-GTEST_VERSION=1.6.0
-GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p1
-GTEST_ZIP=${EXTERNALS}/gtest-${GTEST_VERSION}.zip
-[ -f ${GTEST_ZIP} ] || wget http://googletest.googlecode.com/files/gtest-${GTEST_VERSION}.zip -O ${GTEST_ZIP}
-[ -d ${GTEST_DIR} ] || ( unzip ${GTEST_ZIP} -d ${TMPDIR} && mv ${TMPDIR}/gtest-${GTEST_VERSION} ${GTEST_DIR} && cd ${GTEST_DIR} && patch -p1 < ${AOS}/externals/gtest.patch )
 
 # get and build ctemplate
 # This is the next revision after the 2.2 release and it only adds spaces to
@@ -108,13 +124,6 @@ GFLAGS_URL=https://gflags.googlecode.com/files/gflags-${GFLAGS_VERSION}.tar.gz
 [ -f ${GFLAGS_LIB} ] || bash -c "cd ${GFLAGS_DIR} && ./configure \
   ${CONFIGURE_FLAGS} --prefix=`readlink -f ${GFLAGS_PREFIX}` \
   && make && make install"
-
-# get the LLVM Compiler-RT source
-COMPILER_RT_TAG=RELEASE_32/final
-COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
-COMPILER_RT_DIR=${EXTERNALS}/compiler-rt-${COMPILER_RT_VERSION}
-COMPILER_RT_URL=http://llvm.org/svn/llvm-project/compiler-rt/tags/${COMPILER_RT_TAG}
-[ -d ${COMPILER_RT_DIR} ] || svn checkout ${COMPILER_RT_URL} ${COMPILER_RT_DIR}
 
 # get and build libevent
 LIBEVENT_VERSION=2.0.21

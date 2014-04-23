@@ -59,7 +59,6 @@ void log_uncork(int line, const char *function, log_level level,
 //#define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #define LOG_CURRENT_FUNCTION __func__
 
-#undef LOG_SOURCENAME
 #define LOG_SOURCENAME __FILE__
 
 // The basic logging call.

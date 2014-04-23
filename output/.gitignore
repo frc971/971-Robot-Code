@@ -1,6 +1,9 @@
 /prime/
 /crio/
-/prime-amd64/
 /flasher/
 /compiled-*/
 /ip_base.txt
+/amd64-clang/
+/arm-clang/
+/amd64-gcc/
+/arm-gcc/

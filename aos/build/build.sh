@@ -29,11 +29,6 @@ ${AOS}/build/download_externals.sh arm
 ${AOS}/build/download_externals.sh amd64
 . $(dirname $0)/tools_config
 
-# The exciting quoting is so that it ends up with -DWHATEVER='"'`a command`'"'.
-# The '"' at either end is so that it creates a string constant when expanded
-#   in the C/C++ code.
-COMMONFLAGS='-DLOG_SOURCENAME='"'\"'"'`basename $in`'"'\"' "
-
 if [[ "${ACTION}" != "clean" && ( ! -d ${OUTDIR} || -n \
   			"`find ${AOS}/.. -newer ${BUILD_NINJA} \( -name '*.gyp' -or -name '*.gypi' \)`" ) ]]; then
   echo 'Running gyp...' 1>&2
@@ -55,11 +50,6 @@ END
       -DOS=$(echo ${PLATFORM} | sed 's/-.*//g') -DPLATFORM=${PLATFORM} \
       -DWIND_BASE=${WIND_BASE} -DDEBUG=${DEBUG} \
       ${GYP_MAIN}
-  # Have to substitute "command = $compiler" so that it doesn't try to
-  #   substitute them in the linker commands, where it doesn't work.
-  sed -i "s:command = \$cc:\\0 ${COMMONFLAGS}:g ; \
-    s:command = \$cxx:\\0 ${COMMONFLAGS}:g" \
-    ${BUILD_NINJA}
   if [ ${PLATFORM} == crio ]; then
     sed -i 's/nm -gD/nm/g' ${BUILD_NINJA}
   fi
