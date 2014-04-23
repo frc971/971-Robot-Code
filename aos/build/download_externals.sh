@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#set -x
 set -e
 
 AOS=$(readlink -f $(dirname $0)/..)
@@ -36,7 +37,7 @@ fi
 
 TMPDIR=/tmp/$$-aos-tmpdir
 mkdir -p ${EXTERNALS}
-mkdir -p ${COMPILED}
+[[ -n "${COMPILED}" ]] && mkdir -p ${COMPILED}
 
 # get and build ninja
 [ -d ${NINJA_DIR} ] || git clone --branch ${NINJA_RELEASE} https://github.com/martine/ninja.git ${NINJA_DIR}

@@ -7,3 +7,9 @@
 /arm-clang/
 /amd64-gcc/
 /arm-gcc/
+/crio/
+/amd64-clang-debug/
+/arm-clang-debug/
+/amd64-gcc-debug/
+/arm-gcc-debug/
+/crio-debug/

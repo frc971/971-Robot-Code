@@ -17,7 +17,7 @@
     'test_dir': '<(PRODUCT_DIR)/tests',
   },
   'conditions': [
-    ['OS=="crio"', {
+    ['PLATFORM=="crio"', {
         'make_global_settings': [
           ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
@@ -82,7 +82,7 @@
       # Set this to 1 to disable rsyncing the file to the target.
       'no_rsync%': 0,
       # Set this to 1 if this file is a test that should not be run by
-      # `build.sh tests`.
+      # `build.py tests`.
       'is_special_test%': 0,
     },
     'conditions': [
@@ -92,37 +92,35 @@
           ],
         }, {
           'cflags': [
+            # TODO(brians): -O4 for clang to enable LTO?
             '-O3',
             '-fomit-frame-pointer',
           ],
           'ldflags': [
             '-O3',
           ],
-          'conditions': [['OS=="crio"', {
+          'conditions': [['PLATFORM=="crio"', {
               'cflags': [
                 '-fstrength-reduce',
                 '-fno-builtin',
                 '-fno-strict-aliasing',
               ],
             }],
-            ['PLATFORM=="linux"', {
+            ['ARCHITECTURE=="arm"', {
               'cflags': [
                 '-mcpu=cortex-a8',
                 '-mfpu=neon',
               ],
             }],
-            ['PLATFORM=="linux-amd64"', {
+            ['ARCHITECTURE=="amd64"', {
               'cflags': [
-                '-march=atom',
-                '-mfpmath=sse',
-
                 '-fstack-protector-all',
               ],
             }],
           ]
         }
       ],
-      ['OS=="crio"', {
+      ['PLATFORM=="crio"', {
           'target_conditions': [
             ['_type=="shared_library"', {
                 'ldflags': [

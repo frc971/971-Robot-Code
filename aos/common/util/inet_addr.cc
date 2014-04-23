@@ -3,9 +3,17 @@
 #include <stdlib.h>
 #ifndef __VXWORKS__
 #include <string.h>
-#endif
 
 #include "aos/common/byteorder.h"
+#else
+
+template<typename T>
+T hton(T);
+
+template<uint32_t>
+uint32_t hton(uint32_t v) { return v; }
+
+#endif
 
 namespace aos {
 namespace util {

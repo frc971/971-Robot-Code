@@ -131,7 +131,7 @@
       'export_dependent_settings': [
         'gtest_prod',
       ],
-      'conditions': [['OS=="crio"', {
+      'conditions': [['PLATFORM=="crio"', {
             'defines': [
               'GTEST_HAS_TR1_TUPLE=0',
               'GTEST_HAS_STREAM_REDIRECTION=0',

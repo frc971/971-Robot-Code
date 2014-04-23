@@ -117,7 +117,7 @@
         'queue.cc',
       ],
       'conditions': [
-        ['OS=="crio"', {
+        ['PLATFORM=="crio"', {
           'dependencies': [
             '<(EXTERNALS):WPILib',
           ],
@@ -247,7 +247,7 @@
       'target_name': 'mutex',
       'type': 'static_library',
       'conditions': [
-        ['OS=="crio"', {
+        ['PLATFORM=="crio"', {
           'sources': [
             '<(AOS)/crio/shared_libs/mutex.cpp',
           ],

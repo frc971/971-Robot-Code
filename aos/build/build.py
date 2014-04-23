@@ -15,10 +15,39 @@ class Processor(object):
     def __init__(self, message):
       self.message = message
 
+  class Platform(object):
+    def outdir(self):
+      return os.path.join(
+          Processor.aos_path(), '..', 'output', self.outname())
+    def build_ninja(self):
+      return os.path.join(self.outdir(), 'build.ninja')
+
   def aos_path():
     return os.path.join(os.path.dirname(__file__), '..')
 
 class CRIOProcessor(Processor):
+  class Platform(Processor.Platform):
+    def __init__(self, debug):
+      super(CRIOProcessor.Platform, self).__init__()
+
+      self.debug = debug
+
+    def __repr__(self):
+      return 'CRIOProcessor.Platform(debug=%s)' % self.debug
+    def __str__(self):
+      return 'crio%s' % ('-debug' if self.debug else '')
+
+    def outname(self):
+      return 'crio-debug' if self.debug else 'crio'
+    def os(self):
+      return 'vxworks'
+    def gyp_platform(self):
+      return 'crio'
+    def architecture(self):
+      return 'ppc'
+    def compiler(self):
+      return 'gcc'
+
   def __init__(self):
     super(CRIOProcessor, self).__init__()
 
@@ -28,17 +57,25 @@ class CRIOProcessor(Processor):
       self.wind_base = '/usr/local/powerpc-wrs-vxworks/wind_base'
 
   def parse_platforms(self, string):
-    if string is not None and string != 'crio':
-      raise Processor.UnknownPlatform('Unknown cRIO platform "%s"!' % string, file=sys.stderr)
-    return CRIOPlatform()
+    if string is None or string == 'crio':
+      return (CRIOProcessor.Platform(False),)
+    elif string == 'crio-debug':
+      return (CRIOProcessor.Platform(True),)
+    else:
+      raise Processor.UnknownPlatform('Unknown cRIO platform "%s".' % string)
 
   def build_env(self):
     return {'WIND_BASE': self.wind_base}
+  def extra_gyp_flags(self):
+    return ('-DWIND_BASE=%s' % self.wind_base,)
+
   def is_crio(self): return True
 
 class PrimeProcessor(Processor):
-  class Platform(object):
+  class Platform(Processor.Platform):
     def __init__(self, architecture, compiler, debug):
+      super(PrimeProcessor.Platform, self).__init__()
+
       self.architecture = architecture
       self.compiler = compiler
       self.debug = debug
@@ -55,13 +92,8 @@ class PrimeProcessor(Processor):
     def gyp_platform(self):
       return '%s-%s-%s' % (self.os(), self.architecture, self.compiler)
 
-    def outdir(self):
-      return os.path.join(
-          Processor.aos_path(), '..', 'output', self.outname())
     def outname(self):
       return str(self)
-    def build_ninja(self):
-      return os.path.join(self.outdir(), 'build.ninja')
 
   ARCHITECTURES = ['arm', 'amd64']
   COMPILERS = ['clang', 'gcc']
@@ -80,6 +112,8 @@ class PrimeProcessor(Processor):
 
   def build_env(self):
     return {}
+  def extra_gyp_flags(self):
+    return ()
   def is_crio(self): return False
 
   def parse_platforms(self, string):
@@ -279,8 +313,8 @@ def main():
              '-DPLATFORM=%s' % platform.gyp_platform(),
              '-DARCHITECTURE=%s' % platform.architecture,
              '-DCOMPILER=%s' % platform.compiler,
-             '-DDEBUG=%s' % ('yes' if platform.debug else 'no'),
-             args.main_gyp),
+             '-DDEBUG=%s' % ('yes' if platform.debug else 'no')) +
+            processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""
 {
@@ -293,15 +327,24 @@ def main():
         if gyp.returncode:
           print("Running gyp failed!", file=sys.stderr)
           exit(1)
+        if processor.is_crio():
+          subprocess.check_call(
+              ('sed', '-i',
+               's/nm -gD/nm/g', platform.build_ninja()),
+              stdin=open('/dev/null', 'r'))
         print('Done running gyp.', file=sys.stderr)
       else:
         print("Not running gyp.", file=sys.stderr)
 
       try:
+        build_env = dict(processor.build_env())
+        build_env['TERM'] = os.environ['TERM']
+        build_env['PATH'] = os.environ['PATH']
         subprocess.check_call(
             (tools_config['NINJA'],
              '-C', platform.outdir()) + tuple(targets),
-            stdin=open('/dev/null', 'r'))
+            stdin=open('/dev/null', 'r'),
+            env=build_env)
       except subprocess.CalledProcessError as e:
         if unknown_platform_error is not None:
           print(unknown_platform_error, file=sys.stderr)
