@@ -400,7 +400,9 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
     do {
-      hot_goal_decoder.Update(true);
+      // TODO(brians): Wait for next message with timeout or something.
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.003));
+      hot_goal_decoder.Update(false);
       if (ShouldExitAuto()) return;
     } while (!hot_goal_decoder.left_triggered() &&
              (::aos::time::Time::Now() - start_time) <
