@@ -160,6 +160,7 @@ class DrivetrainMotorsSS {
     // Decay the offset quickly because this gyro is great.
     const double offset =
         (right - left - gyro * constants::GetValues().turn_width) / 2.0;
+    // TODO(brians): filtered_offset_ = offset first time around.
     filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
     gyro_ = gyro;
     control_loop_driving_ = control_loop_driving;
@@ -706,7 +707,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     dt_closedloop.Update(output == NULL);
   }
   
-  // set the output status of the controll loop state
+  // set the output status of the control loop state
   if (status) {
     bool done = false;
     if (goal) {

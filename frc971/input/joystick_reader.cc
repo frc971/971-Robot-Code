@@ -215,6 +215,26 @@ class Reader : public ::aos::input::JoystickInput {
         ::frc971::autonomous::autonomous.MakeWithBuilder()
             .run_auto(false)
             .Send();
+      } else if (!data.GetControlBit(ControlBit::kEnabled)) {
+        {
+          auto goal = drivetrain.goal.MakeMessage();
+          goal->Zero();
+          goal->control_loop_driving = false;
+          goal->left_goal = goal->right_goal = 0;
+          goal->left_velocity_goal = goal->right_velocity_goal = 0;
+          if (!goal.Send()) {
+            LOG(WARNING, "sending 0 drivetrain goal failed\n");
+          }
+        }
+        {
+          // TODO(brians): Make sure this doesn't make it unbrake and not move
+          // or something weird.
+          auto goal = control_loops::shooter_queue_group.goal.MakeMessage();
+          goal->Zero();
+          if (!goal.Send()) {
+            LOG(WARNING, "sending 0 shooter goal failed\n");
+          }
+        }
       }
     } else {
       HandleTeleop(data);
@@ -274,6 +294,8 @@ class Reader : public ::aos::input::JoystickInput {
              .control_loop_driving(is_control_loop_driving)
              .left_goal(left_goal)
              .right_goal(right_goal)
+             .left_velocity_goal(0)
+             .right_velocity_goal(0)
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
