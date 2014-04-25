@@ -78,8 +78,7 @@ struct ShotGoal {
 };
 
 const double kIntakePower = 4.0;
-// TODO(brians): This wants to be -0.04 on the comp bot. Make them both the
-// same.
+// In case we have to quickly adjust it.
 const double kGrabSeparation = 0;
 const double kShootSeparation = 0.11 + kGrabSeparation;
 
@@ -93,26 +92,30 @@ const ClawGoal kFlippedTuckGoal = {2.733474, -0.75};
 const ClawGoal kFlippedIntakeGoal = {2.0, kGrabSeparation};
 const ClawGoal kFlippedIntakeOpenGoal = {0.95, 1.0};
 
-// 8" between near edge of colored line and rear edge of bumper
+// 34" between near edge of colored line and rear edge of bumper.
+// Only works running?
 const ShotGoal kLongShotGoal = {
     {-1.08, kShootSeparation}, 145, 0.04, kIntakePower};
-// 34" {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
+// old 34" {-1.06, kShootSeparation}, 140, 0.04, kIntakePower};
 const ShotGoal kFlippedLongShotGoal = {
     {0.96, kShootSeparation}, 145, 0.09, kIntakePower};
-// 34" {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
+// old 34" {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
 
-// 78" between near edge of colored line and rear edge of bumper
+// 78" between near edge of colored line and rear edge of bumper.
+// TODO(brians): kCloseShot
 const ShotGoal kMediumShotGoal = {
     {-0.95, kShootSeparation}, 105, 0.2, kIntakePower};
 // 3/4" plunger {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
-    {0.905, kShootSeparation}, 120, 0.2, kIntakePower};
+    {0.865, kShootSeparation}, 120, 0.2, kIntakePower};
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
+// Shot from the fender.
+// TODO(brians): kFenderShot
 const ShotGoal kShortShotGoal = {
     {-0.68, kShootSeparation}, 115.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.67, kShootSeparation}, 115.0, 0.4, kIntakePower};
+    {0.63, kShootSeparation}, 115.0, 0.4, kIntakePower};
 
 const ShotGoal kHumanShotGoal = {
     {-0.90, kShootSeparation}, 140, 0.04, kIntakePower};
