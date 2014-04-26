@@ -125,6 +125,19 @@ void PositionClawBackIntake() {
   }
 }
 
+void PositionClawUpClosed() {
+  // Move the claw to where we're going to shoot from but keep it closed until
+  // it gets there.
+  if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
+           .bottom_angle(0.86)
+           .separation_angle(0.0)
+           .intake(4.0)
+           .centering(1.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+  }
+}
+
 void PositionClawForShot() {
   // Turn the claw on, keep it straight up until the ball has been grabbed.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
@@ -454,9 +467,13 @@ void HandleAuto() {
     time::SleepFor(time::Time::InSeconds(0.3));
     hot_goal_decoder.ResetCounts();
     if (ShouldExitAuto()) return;
+    PositionClawUpClosed();
+    WaitUntilClawDone();
+    if (ShouldExitAuto()) return;
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
+    if (ShouldExitAuto()) return;
     WaitUntilClawDone();
     if (ShouldExitAuto()) return;
   }
