@@ -139,7 +139,6 @@ void PositionClawUpClosed() {
 }
 
 void PositionClawForShot() {
-  // Turn the claw on, keep it straight up until the ball has been grabbed.
   if (!control_loops::claw_queue_group.goal.MakeWithBuilder()
            .bottom_angle(0.86)
            .separation_angle(0.10)
