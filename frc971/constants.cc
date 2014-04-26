@@ -111,7 +111,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            1.42309,
            // 0.0371
            {-3.3284, 2.0917, -3.1661, 1.95,
-             {-3.4, -2.9368 + kCompTopClawOffset, -3.4, -2.9876 + kCompTopClawOffset},
+             {-3.4, -3.02 + kCompTopClawOffset, -3.4, -2.9876 + kCompTopClawOffset},
              {-0.1433 + kCompTopClawOffset, 0.0670 + kCompTopClawOffset, -0.1460 + kCompTopClawOffset, 0.0648 + kCompTopClawOffset},
              {1.9952 + kCompTopClawOffset, 2.2, 1.9898 + kCompTopClawOffset, 2.2}},
            {-2.453460, 3.082960, -2.453460, 3.082960,
