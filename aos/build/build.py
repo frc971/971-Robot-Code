@@ -10,6 +10,24 @@ import string
 import shutil
 import errno
 
+def aos_path():
+  return os.path.join(os.path.dirname(__file__), '..')
+
+def get_ip(device):
+  FILENAME = os.path.normpath(os.path.join(aos_path(), '..', 'output', 'ip_base.txt'))
+  if not os.access(FILENAME, os.R_OK):
+    os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
+    with open(FILENAME, 'w') as f:
+      f.write('10.9.71')
+  with open(FILENAME, 'r') as f:
+    base = f.readline()
+  if device == 'prime':
+    return base + '.179'
+  elif device == 'robot':
+    return base + '.2'
+  else:
+    raise Exception('Unknown device %s to get an IP address for.' % device)
+
 class Processor(object):
   class UnknownPlatform(Exception):
     def __init__(self, message):
@@ -18,12 +36,13 @@ class Processor(object):
   class Platform(object):
     def outdir(self):
       return os.path.join(
-          Processor.aos_path(), '..', 'output', self.outname())
+          aos_path(), '..', 'output', self.outname())
     def build_ninja(self):
       return os.path.join(self.outdir(), 'build.ninja')
 
-  def aos_path():
-    return os.path.join(os.path.dirname(__file__), '..')
+    def do_deploy(self, dry_run, command):
+      real_command = (('echo',) + command) if dry_run else command
+      subprocess.check_call(real_command, stdin=open(os.devnull, 'r'))
 
 class CRIOProcessor(Processor):
   class Platform(Processor.Platform):
@@ -47,6 +66,11 @@ class CRIOProcessor(Processor):
       return 'ppc'
     def compiler(self):
       return 'gcc'
+
+    def deploy(self, dry_run):
+      self.do_deploy(dry_run,
+                     ('ncftpput', get_ip('robot'), '/',
+                      os.path.join(self.outdir(), 'lib', 'FRC_UserProgram.out')))
 
   def __init__(self):
     super(CRIOProcessor, self).__init__()
@@ -95,10 +119,43 @@ class PrimeProcessor(Processor):
     def outname(self):
       return str(self)
 
+    def deploy(self, dry_run):
+      """Downloads code to the prime in a way that avoids clashing too badly with starter
+      """
+      SUM = 'md5sum'
+      TARGET_DIR = '/home/driver/robot_code/bin'
+      TEMP_DIR = '/tmp/aos_downloader'
+      TARGET = 'driver@' + get_ip('prime')
+
+      from_dir = os.path.join(self.outdir(), 'outputs')
+      sums = subprocess.check_output((SUM,) + tuple(os.listdir(from_dir)),
+                                     stdin=open(os.devnull, 'r'),
+                                     cwd=from_dir)
+      to_download = subprocess.check_output(
+          ('ssh', TARGET,
+           """rm -rf {TMPDIR} && mkdir {TMPDIR} && cd {TO_DIR}
+             && echo '{SUMS}' | {SUM} --check --quiet
+             |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'""".format(
+               TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums, SUM=SUM)))
+      if not to_download:
+        print("Nothing to download", file=sys.stderr)
+        return
+      self.do_deploy(
+          dry_run,
+          ('scp', '-o', 'Compression yes') + to_download
+          + (('%s:%s' % (TARGET, TEMP_DIR)),))
+      if not dry_run:
+        subprocess.check_call(
+            ('ssh', TARGET,
+             """mv {TMPDIR}/* {TO_DIR}
+             && echo 'Done moving new executables into place'
+             && ionice -c 3 bash -c 'sync && sync && sync'""".format(
+                 TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
+
   ARCHITECTURES = ['arm', 'amd64']
   COMPILERS = ['clang', 'gcc']
 
-  def __init__(self):
+  def __init__(self, is_test, is_deploy):
     super(Processor, self).__init__()
 
     platforms = []
@@ -108,7 +165,13 @@ class PrimeProcessor(Processor):
           platforms.append(
               PrimeProcessor.Platform(architecture, compiler, debug))
     self.platforms = frozenset(platforms)
-    self.default_platforms = self.select_platforms(debug=False)
+    if is_test:
+      self.default_platforms = self.select_platforms(architecture='amd64', debug=True)
+    elif is_deploy:
+      # TODO(brians): Switch to deploying the code built with clang.
+      self.default_platforms = self.select_platforms(architecture='arm', compiler='gcc', debug=False)
+    else:
+      self.default_platforms = self.select_platforms(debug=False)
 
   def build_env(self):
     return {}
@@ -221,7 +284,8 @@ def main():
   if args.processor == 'crio':
     processor = CRIOProcessor()
   elif args.processor == 'prime':
-    processor = PrimeProcessor()
+    processor = PrimeProcessor(args.action_name == 'tests',
+                               args.action_name == 'deploy')
   else:
     parser.exit(status=1, message='Unknown processor "%s".' % args.processor)
 
@@ -242,9 +306,9 @@ def main():
 
   def download_externals(argument):
     subprocess.check_call(
-        (os.path.join(Processor.aos_path(), 'build', 'download_externals.sh'),
+        (os.path.join(aos_path(), 'build', 'download_externals.sh'),
          argument),
-        stdin=open('/dev/null', 'r'))
+        stdin=open(os.devnull, 'r'))
 
   if processor.is_crio():
     download_externals('crio')
@@ -255,8 +319,8 @@ def main():
 
   class ToolsConfig(object):
     def __init__(self):
-      self.variables = {'AOS': Processor.aos_path()}
-      with open(os.path.join(Processor.aos_path(), 'build', 'tools_config'), 'r') as f:
+      self.variables = {'AOS': aos_path()}
+      with open(os.path.join(aos_path(), 'build', 'tools_config'), 'r') as f:
         for line in f:
           if line[0] == '#':
             pass
@@ -288,7 +352,7 @@ def main():
       else:
         raise e
     pattern = re.compile('.*\.gyp[i]$')
-    for dirname, _, files in os.walk(os.path.join(Processor.aos_path(), '..')):
+    for dirname, _, files in os.walk(os.path.join(aos_path(), '..')):
       for f in [f for f in files if pattern.match(f)]:
         if (os.stat(os.path.join(dirname, f)).st_mtime > build_mtime):
           return True
@@ -304,10 +368,10 @@ def main():
         gyp = subprocess.Popen(
             (tools_config['GYP'],
              '--check',
-             '--depth=%s' % os.path.join(Processor.aos_path(), '..'),
+             '--depth=%s' % os.path.join(aos_path(), '..'),
              '--no-circular-check',
              '-f', 'ninja',
-             '-I%s' % os.path.join(Processor.aos_path(), 'build', 'aos.gypi'),
+             '-I%s' % os.path.join(aos_path(), 'build', 'aos.gypi'),
              '-I/dev/stdin', '-Goutput_dir=output',
              '-DOS=%s' % platform.os(),
              '-DPLATFORM=%s' % platform.gyp_platform(),
@@ -331,7 +395,7 @@ def main():
           subprocess.check_call(
               ('sed', '-i',
                's/nm -gD/nm/g', platform.build_ninja()),
-              stdin=open('/dev/null', 'r'))
+              stdin=open(os.devnull, 'r'))
         print('Done running gyp.', file=sys.stderr)
       else:
         print("Not running gyp.", file=sys.stderr)
@@ -343,14 +407,17 @@ def main():
         subprocess.check_call(
             (tools_config['NINJA'],
              '-C', platform.outdir()) + tuple(targets),
-            stdin=open('/dev/null', 'r'),
+            stdin=open(os.devnull, 'r'),
             env=build_env)
       except subprocess.CalledProcessError as e:
         if unknown_platform_error is not None:
           print(unknown_platform_error, file=sys.stderr)
         raise e
 
-    # TODO(brians): deploy and tests
+    if args.action_name == 'deploy':
+      platform.deploy(args.dry_run)
+
+    # TODO(brians): tests
     print('Done building %s...' % platform, file=sys.stderr)
 
 if __name__ == '__main__':
