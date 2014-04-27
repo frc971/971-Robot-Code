@@ -191,7 +191,10 @@ class PrimeProcessor(Processor):
       elif part[0] == '=':
         r = self.select_platforms_string(part[1:])
       else:
-        r = r - (self.platforms - self.select_platforms_string(part))
+        selected = self.select_platforms_string(part)
+        r = r - (self.platforms - selected)
+        if not r:
+          r = selected
     return r
 
   def select_platforms(self, architecture=None, compiler=None, debug=None):
