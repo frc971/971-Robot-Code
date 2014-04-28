@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <sched.h>
 #include <sys/resource.h>
-#include <asm-generic/resource.h>  // for RLIMIT_RTTIME
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
