@@ -86,6 +86,11 @@ struct RawQueue::MessageHeader {
   // Padding to make the total size 8 bytes if we have 4-byte pointers or bump
   // it to 16 if a pointer is 8 bytes by itself.
 #if __SIZEOF_POINTER__ == 8
+#ifdef __clang__
+  // Clang is smart enough to realize this is unused, but GCC doesn't like the
+  // attribute here...
+  __attribute__((unused))
+#endif
   char padding[4];
 #elif __SIZEOF_POINTER__ == 4
   // No padding needed to get 8 byte total size.
