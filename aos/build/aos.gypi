@@ -145,6 +145,17 @@
           ]
         }
       ],
+      ['PLATFORM=="linux-arm-gcc" and DEBUG=="yes"', {
+          'cflags': [
+              # GCC doesn't like letting us use r7 (which is also the frame
+              # pointer) to pass the syscall number to the kernel even when
+              # it's marked as clobbered.
+              # See <https://bugzilla.mozilla.org/show_bug.cgi?id=633436> for
+              # some more discussion.
+            '-fomit-frame-pointer',
+          ],
+        }
+      ],
       ['PLATFORM=="crio"', {
           'target_conditions': [
             ['_type=="shared_library"', {
