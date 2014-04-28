@@ -30,7 +30,32 @@
         ],
       },
     ], ['PLATFORM=="linux-arm-clang"', {
-        # TODO(brians): Make this one actually work.
+        'variables': {
+          'arm-clang-symlinks': '<!(realpath -s <(AOS)/build/arm-clang-symlinks)',
+          'arm-clang-sysroot': '<(arm-clang-symlinks)/sysroot',
+          'platflags': [
+            '-target', 'armv7a-linux-gnueabihf',
+            '-mfloat-abi=hard',
+            '-ccc-gcc-name', 'arm-linux-gnueabihf-gcc',
+            '--sysroot=<(arm-clang-sysroot)',
+
+            #-mhwdiv=arm,thumb
+          ],
+        },
+        'make_global_settings': [
+          ['CC', '<(arm-clang-symlinks)/bin/clang'],
+          ['CXX', '<(arm-clang-symlinks)/bin/clang++'],
+        ],
+        'target_defaults': {
+          'cflags': [
+            '-I<!(realpath -s <(arm-clang-sysroot)/usr/include/c++/4.7.2/)',
+            '-I<!(realpath -s <(arm-clang-sysroot)/usr/include/c++/4.7.2/arm-linux-gnueabihf/)',
+            '<@(platflags)',
+          ],
+          'ldflags': [
+            '<@(platflags)',
+          ],
+        },
       },
     ], ['PLATFORM=="linux-amd64-clang"', {
         'make_global_settings': [

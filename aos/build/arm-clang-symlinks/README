@@ -1,0 +1,6 @@
+This directory has symlinks to various other files to help clang figure out how
+to cross compile for arm with Debian's toolchain setup.
+
+sysroot/ has symlinks to dpkg-cross and multilib directories so it can be used
+  as a sysroot when compiling.
+bin/ has symlinks to the various tools so clang can find the native toolchain.
