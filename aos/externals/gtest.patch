@@ -2,6 +2,15 @@ diff --git src/gtest-port.cc b/src/gtest-port.cc
 index b860d48..acb459b 100644
 --- a/src/gtest-port.cc
 +++ b/src/gtest-port.cc
+@@ -35,6 +35,8 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <sys/types.h>
++#include <dirent.h>
+ 
+ #if GTEST_OS_WINDOWS_MOBILE
+ # include <windows.h>  // For TerminateProcess()
 @@ -98,6 +98,21 @@ size_t GetThreadCount() {
    }
  }
@@ -44,7 +53,7 @@ index 8b2e413..faad3a4 100644
 +  rlimit core_rlimit;
 +  core_rlimit.rlim_cur = 0;
 +  core_rlimit.rlim_max = 0;
-+  GTEST_DEATH_TEST_CHECK_SYSCALL_(setrlimit(RLIMIT_CORE, &core_limit));
++  GTEST_DEATH_TEST_CHECK_SYSCALL_(setrlimit(RLIMIT_CORE, &core_rlimit));
 +
    ExecDeathTestArgs* const args = static_cast<ExecDeathTestArgs*>(child_arg);
    GTEST_DEATH_TEST_CHECK_SYSCALL_(close(args->close_fd));

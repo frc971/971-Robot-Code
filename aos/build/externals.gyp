@@ -10,7 +10,7 @@
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.2.1',
-    'gtest_version': '1.6.0-p1',
+    'gtest_version': '1.6.0-p2',
     'ctemplate_version': '129',
     'gflags_version': '2.0',
     'compiler_rt_version': 'RELEASE_32_final',
@@ -123,7 +123,11 @@
       'target_name': 'gtest',
       'type': 'static_library',
       'sources': [
-        '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest-all.cc',
+        '<(externals)/gtest-<(gtest_version)/src/gtest-all.cc',
+            '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
+      ],
+      'include_dirs': [
+        '<(externals)/gtest-<(gtest_version)',
       ],
       'dependencies': [
         'gtest_prod',
@@ -131,24 +135,6 @@
       'export_dependent_settings': [
         'gtest_prod',
       ],
-      'conditions': [['PLATFORM=="crio"', {
-            'defines': [
-              'GTEST_HAS_TR1_TUPLE=0',
-              'GTEST_HAS_STREAM_REDIRECTION=0',
-              'GTEST_HAS_POSIX_RE=0', # it only has a broken header...
-            ],
-            'direct_dependent_settings': {
-              'defines': [
-                'GTEST_HAS_TR1_TUPLE=0',
-                'GTEST_HAS_STREAM_REDIRECTION=0',
-                'GTEST_HAS_POSIX_RE=0',
-              ],
-            },
-        }, {
-          'sources': [
-            '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
-          ],
-        }]],
       'cflags!': ['-Werror'],
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/gtest-<(gtest_version)/include'],
