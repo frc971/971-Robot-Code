@@ -4,7 +4,6 @@
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
-#include "aos/common/die.h"
 #include <inttypes.h>
 
 using ::testing::AssertionResult;
@@ -54,13 +53,16 @@ class LoggingTest : public ::testing::Test {
     }
     internal::Context *context = internal::Context::Get();
     if (log_implementation->message().source != context->source) {
-      Die("got a message from %" PRIu32 ", but we're %" PRIu32 "\n",
+      LOG(FATAL, "got a message from %" PRIu32 ", but we're %" PRIu32 "\n",
           static_cast<uint32_t>(log_implementation->message().source),
           static_cast<uint32_t>(context->source));
     }
-    if (strcmp(log_implementation->message().name,
-               context->name.c_str()) != 0) {
-      Die("got a message from %s, but we're %s\n",
+    if (log_implementation->message().name_length != context->name.size() ||
+        memcmp(log_implementation->message().name, context->name.c_str(),
+               context->name.size()) !=
+            0) {
+      LOG(FATAL, "got a message from %.*s, but we're %s\n",
+          static_cast<int>(log_implementation->message().name_length),
           log_implementation->message().name, context->name.c_str());
     }
     if (strstr(log_implementation->message().message, message.c_str())
