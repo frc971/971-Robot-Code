@@ -36,7 +36,6 @@
           'platflags': [
             '-target', 'armv7a-linux-gnueabihf',
             '-mfloat-abi=hard',
-            '-ccc-gcc-name', 'arm-linux-gnueabihf-gcc',
             '--sysroot=<(arm-clang-sysroot)',
 
             #-mhwdiv=arm,thumb
@@ -48,9 +47,11 @@
         ],
         'target_defaults': {
           'cflags': [
-            '-I<!(realpath -s <(arm-clang-sysroot)/usr/include/c++/4.7.2/)',
-            '-I<!(realpath -s <(arm-clang-sysroot)/usr/include/c++/4.7.2/arm-linux-gnueabihf/)',
             '<@(platflags)',
+          ],
+          'cflags_cc': [
+            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2',
+            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2/arm-linux-gnueabihf',
           ],
           'ldflags': [
             '<@(platflags)',
