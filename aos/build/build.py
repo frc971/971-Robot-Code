@@ -28,6 +28,9 @@ def get_ip(device):
   else:
     raise Exception('Unknown device %s to get an IP address for.' % device)
 
+def user_output(message):
+  print('build.py: ' + message, file=sys.stderr)
+
 class Processor(object):
   class UnknownPlatform(Exception):
     def __init__(self, message):
@@ -140,7 +143,7 @@ class PrimeProcessor(Processor):
              |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'""".format(
                TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums, SUM=SUM)))
       if not to_download:
-        print("Nothing to download", file=sys.stderr)
+        user_output("Nothing to download")
         return
       self.do_deploy(
           dry_run,
@@ -312,7 +315,7 @@ def main():
     targets.append(args.platforms)
     platforms = processor.parse_platforms(None)
   if not platforms:
-    print("No platforms selected!", file=sys.stderr)
+    user_output("No platforms selected!")
     exit(1)
 
   def download_externals(argument):
@@ -370,12 +373,12 @@ def main():
     return False
 
   for platform in platforms:
-    print('Building %s...' % platform, file=sys.stderr)
+    user_output('Building %s...' % platform)
     if args.action_name == 'clean':
       shutil.rmtree(platform.outdir(), onerror=handle_clean_error)
     else:
       if need_to_run_gyp(platform):
-        print('Running gyp...', file=sys.stderr)
+        user_output('Running gyp...')
         gyp = subprocess.Popen(
             (tools_config['GYP'],
              '--check',
@@ -400,16 +403,16 @@ def main():
   }
 }""" % platform.outname()).encode())
         if gyp.returncode:
-          print("Running gyp failed!", file=sys.stderr)
+          user_output("Running gyp failed!")
           exit(1)
         if processor.is_crio():
           subprocess.check_call(
               ('sed', '-i',
                's/nm -gD/nm/g', platform.build_ninja()),
               stdin=open(os.devnull, 'r'))
-        print('Done running gyp.', file=sys.stderr)
+        user_output('Done running gyp.')
       else:
-        print("Not running gyp.", file=sys.stderr)
+        user_output("Not running gyp.")
 
       try:
         build_env = dict(processor.build_env())
@@ -422,7 +425,7 @@ def main():
             env=build_env)
       except subprocess.CalledProcessError as e:
         if unknown_platform_error is not None:
-          print(unknown_platform_error, file=sys.stderr)
+          user_output(unknown_platform_error)
         raise e
 
     if args.action_name == 'deploy':
@@ -430,11 +433,11 @@ def main():
     elif args.action_name == 'tests':
       dirname = os.path.join(platform.outdir(), 'tests')
       for f in targets or os.listdir(dirname):
-        print('Running test %s...' % f, file=sys.stderr)
+        user_output('Running test %s...' % f)
         subprocess.check_call(os.path.join(dirname, f))
-        print('Test %s succeeded' % f, file=sys.stderr)
+        user_output('Test %s succeeded' % f)
 
-    print('Done building %s...' % platform, file=sys.stderr)
+    user_output('Done building %s' % platform)
 
 if __name__ == '__main__':
   main()
