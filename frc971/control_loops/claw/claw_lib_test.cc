@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "aos/common/network/team_number.h"
-#include "aos/common/queue.h"
 #include "aos/common/controls/control_loop_test.h"
 
 #include "frc971/control_loops/claw/claw.q.h"

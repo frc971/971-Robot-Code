@@ -136,8 +136,7 @@ class DrivetrainMotorsSS {
         left_goal_(0.0),
         right_goal_(0.0),
         raw_left_(0.0),
-        raw_right_(0.0),
-        control_loop_driving_(false) {
+        raw_right_(0.0) {
     // Low gear on both.
     loop_->set_controller_index(0);
   }
@@ -155,14 +154,12 @@ class DrivetrainMotorsSS {
     Y << left + filtered_offset_, right - filtered_offset_;
     loop_->Correct(Y);
   }
-  void SetPosition(
-      double left, double right, double gyro, bool control_loop_driving) {
+  void SetPosition(double left, double right, double gyro) {
     // Decay the offset quickly because this gyro is great.
     const double offset =
         (right - left - gyro * constants::GetValues().turn_width) / 2.0;
     filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
     gyro_ = gyro;
-    control_loop_driving_ = control_loop_driving;
     SetRawPosition(left, right);
   }
 
@@ -170,8 +167,8 @@ class DrivetrainMotorsSS {
     loop_->U << left_voltage, right_voltage;
   }
 
-  void Update(bool stop_motors) {
-    if (control_loop_driving_) {
+  void Update(bool stop_motors, bool enable_control_loop) {
+    if (enable_control_loop) {
       loop_->Update(stop_motors);
     } else {
       if (stop_motors) {
@@ -221,7 +218,6 @@ class DrivetrainMotorsSS {
   double right_goal_;
   double raw_left_;
   double raw_right_;
-  bool control_loop_driving_;
 };
 
 class PolyDrivetrain {
@@ -685,7 +681,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     if (gyro_reading.FetchLatest()) {
       LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
       dt_closedloop.SetPosition(left_encoder, right_encoder,
-                                gyro_reading->angle, control_loop_driving);
+                                gyro_reading->angle);
     } else {
       dt_closedloop.SetRawPosition(left_encoder, right_encoder);
     }
@@ -695,7 +691,7 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   dt_openloop.Update();
 
   if (control_loop_driving) {
-    dt_closedloop.Update(output == NULL);
+    dt_closedloop.Update(output == NULL, true);
     dt_closedloop.SendMotors(output);
   } else {
     dt_openloop.SendMotors(output);
@@ -703,10 +699,10 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
       dt_closedloop.SetExternalMotors(output->left_voltage,
                                       output->right_voltage);
     }
-    dt_closedloop.Update(output == NULL);
+    dt_closedloop.Update(output == NULL, false);
   }
   
-  // set the output status of the controll loop state
+  // set the output status of the control loop state
   if (status) {
     bool done = false;
     if (goal) {
