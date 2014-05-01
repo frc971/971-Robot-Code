@@ -318,6 +318,8 @@ TEST_F(ClawTest, LimitClawGoal) {
   frc971::constants::Values values;
   values.claw.claw_min_separation = -2.0;
   values.claw.claw_max_separation = 1.0;
+  values.claw.soft_min_separation = -2.0;
+  values.claw.soft_max_separation = 1.0;
   values.claw.upper_claw.lower_limit = -5.0;
   values.claw.upper_claw.upper_limit = 7.5;
   values.claw.lower_claw.lower_limit = -5.5;

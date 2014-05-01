@@ -80,9 +80,3 @@ struct ClawPositionToLog {
 	double top;
 	double bottom;
 };
-
-struct ClawGoalToLog {
-	double bottom_pos;
-	double bottom_vel;
-	double separation;
-};

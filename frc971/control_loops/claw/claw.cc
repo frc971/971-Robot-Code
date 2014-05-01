@@ -519,38 +519,47 @@ void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
 void LimitClawGoal(double *bottom_goal, double *top_goal,
                    const frc971::constants::Values &values) {
   // first update position based on angle limit
-
   const double separation = *top_goal - *bottom_goal;
   if (separation > values.claw.soft_max_separation) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     const double dsep = (separation - values.claw.soft_max_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
-    LOG(DEBUG, "Goals now bottom: %f, top: %f\n", *bottom_goal, *top_goal);
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (separation < values.claw.soft_min_separation) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     const double dsep = (separation - values.claw.soft_min_separation) / 2.0;
     *bottom_goal += dsep;
     *top_goal -= dsep;
-    LOG(DEBUG, "Goals now bottom: %f, top: %f\n", *bottom_goal, *top_goal);
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 
   // now move both goals in unison
   if (*bottom_goal < values.claw.lower_claw.lower_limit) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *top_goal += values.claw.lower_claw.lower_limit - *bottom_goal;
     *bottom_goal = values.claw.lower_claw.lower_limit;
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (*bottom_goal > values.claw.lower_claw.upper_limit) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *top_goal -= *bottom_goal - values.claw.lower_claw.upper_limit;
     *bottom_goal = values.claw.lower_claw.upper_limit;
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 
   if (*top_goal < values.claw.upper_claw.lower_limit) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *bottom_goal += values.claw.upper_claw.lower_limit - *top_goal;
     *top_goal = values.claw.upper_claw.lower_limit;
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
   if (*top_goal > values.claw.upper_claw.upper_limit) {
+    LOG_STRUCT(DEBUG, "before", ClawPositionToLog(*top_goal, *bottom_goal));
     *bottom_goal -= *top_goal - values.claw.upper_claw.upper_limit;
     *top_goal = values.claw.upper_claw.upper_limit;
+    LOG_STRUCT(DEBUG, "after", ClawPositionToLog(*top_goal, *bottom_goal));
   }
 }
 
@@ -854,12 +863,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
     claw_.R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
         bottom_claw_velocity_, top_claw_velocity_ - bottom_claw_velocity_;
-    double separation = -971;
-    if (position != nullptr) {
-      separation = position->top.position - position->bottom.position;
-    }
-    LOG_STRUCT(DEBUG, "actual goal",
-               ClawGoalToLog(claw_.R(0, 0), claw_.R(1, 0), separation));
+    LOG_MATRIX(DEBUG, "actual goal", claw_.R);
 
     // Only cap power when one of the halves of the claw is moving slowly and
     // could wind up.
@@ -879,7 +883,6 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_BOTTOM:
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
-      LOG_MATRIX(DEBUG, "U_uncapped", claw_.U_uncapped);
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
         double dx_bot = (claw_.U_uncapped(0, 0) -
                      values.claw.max_zeroing_voltage) /
