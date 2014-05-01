@@ -67,6 +67,7 @@ class CRIOProcessor(Processor):
     def compiler(self):
       return 'gcc'
 
+    # TODO(brians): test this
     def deploy(self, dry_run):
       self.do_deploy(dry_run,
                      ('ncftpput', get_ip('robot'), '/',
@@ -119,6 +120,7 @@ class PrimeProcessor(Processor):
     def outname(self):
       return str(self)
 
+    # TODO(brians): test this
     def deploy(self, dry_run):
       """Downloads code to the prime in a way that avoids clashing too badly with starter
       """
@@ -273,6 +275,12 @@ def main():
       help="don't actually download anything",
       action='store_true')
 
+    tests_parser = subparsers.add_parser(
+        'tests',
+        help='run tests')
+    AddCommonArgs(tests_parser)
+    AddBuildArgs(tests_parser)
+
     return parser.parse_args(args)
 
   try:
@@ -354,7 +362,7 @@ def main():
         return True
       else:
         raise e
-    pattern = re.compile('.*\.gyp[i]$')
+    pattern = re.compile('.*\.gypi?$')
     for dirname, _, files in os.walk(os.path.join(aos_path(), '..')):
       for f in [f for f in files if pattern.match(f)]:
         if (os.stat(os.path.join(dirname, f)).st_mtime > build_mtime):
@@ -419,8 +427,13 @@ def main():
 
     if args.action_name == 'deploy':
       platform.deploy(args.dry_run)
+    elif args.action_name == 'tests':
+      dirname = os.path.join(platform.outdir(), 'tests')
+      for f in targets or os.listdir(dirname):
+        print('Running test %s...' % f, file=sys.stderr)
+        subprocess.check_call(os.path.join(dirname, f))
+        print('Test %s succeeded' % f, file=sys.stderr)
 
-    # TODO(brians): tests
     print('Done building %s...' % platform, file=sys.stderr)
 
 if __name__ == '__main__':
