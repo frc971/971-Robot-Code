@@ -1,6 +1,25 @@
 {
   'targets': [
     {
+      'target_name': 'control_loop_test',
+      'type': 'static_library',
+      'sources': [
+        'control_loop_test.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
+        'sensor_generation',
+        'output_check',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:queue_testutils',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:queue_testutils',
+      ],
+    },
+    {
       'target_name': 'polytope',
       'type': 'static_library',
       'sources': [

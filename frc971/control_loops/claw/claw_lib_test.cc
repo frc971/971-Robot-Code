@@ -4,7 +4,8 @@
 
 #include "aos/common/network/team_number.h"
 #include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/common/controls/control_loop_test.h"
+
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw.h"
 #include "frc971/constants.h"
@@ -12,8 +13,6 @@
 
 #include "gtest/gtest.h"
 
-
-using ::aos::time::Time;
 
 namespace frc971 {
 namespace control_loops {
@@ -231,7 +230,6 @@ class ClawMotorSimulation {
               v.claw.claw_max_separation);
     EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw.claw_min_separation);
-    ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
   }
   // The whole claw.
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> claw_plant_;
@@ -249,10 +247,8 @@ class ClawMotorSimulation {
 };
 
 
-class ClawTest : public ::testing::Test {
+class ClawTest : public ::aos::testing::ControlLoopTest {
  protected:
-  ::aos::common::testing::GlobalCoreInstance my_core;
-
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
@@ -275,25 +271,6 @@ class ClawTest : public ::testing::Test {
         claw_motor_(&claw_queue_group),
         claw_motor_plant_(0.4, 0.2),
         min_separation_(constants::GetValues().claw.claw_min_separation) {
-    // Flush the robot state queue so we can use clean shared memory for this
-    // test.
-    ::aos::robot_state.Clear();
-    SendDSPacket(true);
-    ::aos::controls::sensor_generation.Clear();
-    ::aos::controls::sensor_generation.MakeWithBuilder()
-        .reader_pid(254)
-        .cape_resets(5)
-        .Send();
-    ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
-  }
-
-  void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder()
-        .enabled(enabled)
-        .autonomous(false)
-        .team_id(971)
-        .Send();
-    ::aos::robot_state.FetchLatest();
   }
 
   void VerifyNearGoal() {
@@ -306,13 +283,6 @@ class ClawTest : public ::testing::Test {
     EXPECT_NEAR(claw_queue_group.goal->separation_angle, separation, 1e-4);
     EXPECT_LE(min_separation_, separation);
   }
-
-
-  virtual ~ClawTest() {
-    ::aos::robot_state.Clear();
-    ::aos::controls::sensor_generation.Clear();
-    ::aos::time::Time::DisableMockTime();
-  }
 };
 
 TEST_F(ClawTest, HandlesNAN) {
@@ -324,7 +294,7 @@ TEST_F(ClawTest, HandlesNAN) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
 }
 
@@ -338,7 +308,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }
@@ -435,7 +405,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
 
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }
@@ -455,7 +425,7 @@ TEST_P(ZeroingClawTest, HandleMissingPosition) {
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
 
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }
@@ -516,7 +486,7 @@ TEST_F(ClawTest, RezeroWithMissingPos) {
 
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }
@@ -532,7 +502,7 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
     claw_motor_plant_.SendPositionMessage();
     // After 0.5 seconds, disable the robot.
     if (i > 50 && i < 200) {
-      SendDSPacket(false);
+      SimulateTimestep(false);
       if (i > 100) {
         // Give the loop a couple cycled to get the message and then verify that
         // it is in the correct state.
@@ -543,7 +513,7 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
         EXPECT_EQ(0, claw_queue_group.output->bottom_claw_voltage);
       }
     } else {
-      SendDSPacket(true);
+      SimulateTimestep(true);
     }
     if (i == 202) {
       // Verify that we are zeroing after the bot gets enabled again.
@@ -610,7 +580,7 @@ class WindupClawTest : public ClawTest {
 
       claw_motor_.Iterate();
       claw_motor_plant_.Simulate();
-      SendDSPacket(true);
+      SimulateTimestep(true);
     }
     EXPECT_TRUE(kicked);
     EXPECT_TRUE(measured);
