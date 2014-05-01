@@ -4,8 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "aos/common/network/team_number.h"
-#include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/shooter/shooter.h"
 #include "frc971/control_loops/shooter/unaugmented_shooter_motor_plant.h"
@@ -284,11 +283,9 @@ class ShooterSimulation {
   double last_plant_position_;
 };
 
-class ShooterTest : public ::testing::Test {
+class ShooterTest : public ::aos::testing::ControlLoopTest {
 
  protected:
-  ::aos::common::testing::GlobalCoreInstance my_core;
-
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
@@ -311,25 +308,6 @@ class ShooterTest : public ::testing::Test {
             ".frc971.control_loops.shooter_queue_group.status"),
         shooter_motor_(&shooter_queue_group_),
         shooter_motor_plant_(0.2) {
-    // Flush the robot state queue so we can use clean shared memory for this
-    // test.
-    ::aos::robot_state.Clear();
-    SendDSPacket(true);
-    ::aos::controls::sensor_generation.Clear();
-    ::aos::controls::sensor_generation.MakeWithBuilder()
-        .reader_pid(254)
-        .cape_resets(5)
-        .Send();
-    ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
-  }
-
-  void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder()
-        .enabled(enabled)
-        .autonomous(false)
-        .team_id(971)
-        .Send();
-    ::aos::robot_state.FetchLatest();
   }
 
   void VerifyNearGoal() {
@@ -337,12 +315,6 @@ class ShooterTest : public ::testing::Test {
     shooter_queue_group_.position.FetchLatest();
     double pos = shooter_motor_plant_.GetAbsolutePosition();
     EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 1e-4);
-  }
-
-  virtual ~ShooterTest() {
-    ::aos::robot_state.Clear();
-    ::aos::controls::sensor_generation.Clear();
-    ::aos::time::Time::DisableMockTime();
   }
 };
 
@@ -384,7 +356,7 @@ TEST_F(ShooterTest, GoesToValue) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
@@ -401,7 +373,7 @@ TEST_F(ShooterTest, Fire) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder()
@@ -414,7 +386,7 @@ TEST_F(ShooterTest, Fire) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
         shooter_queue_group_.goal.MakeWithBuilder()
@@ -441,7 +413,7 @@ TEST_F(ShooterTest, FireLong) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().shot_requested(true).Send();
@@ -451,7 +423,7 @@ TEST_F(ShooterTest, FireLong) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
         shooter_queue_group_.goal.MakeWithBuilder()
@@ -476,7 +448,7 @@ TEST_F(ShooterTest, LoadTooFar) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
     EXPECT_LT(
         shooter_motor_plant_.GetAbsolutePosition(),
         constants::GetValuesForTeam(971).shooter.upper_limit);
@@ -491,7 +463,7 @@ TEST_F(ShooterTest, MoveGoal) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(14.0).Send();
@@ -500,7 +472,7 @@ TEST_F(ShooterTest, MoveGoal) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
@@ -518,7 +490,7 @@ TEST_F(ShooterTest, Unload) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
@@ -529,7 +501,7 @@ TEST_F(ShooterTest, Unload) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
 
   EXPECT_NEAR(constants::GetValues().shooter.upper_limit,
@@ -544,7 +516,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
@@ -567,7 +539,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
       ++capped_goal_count;
     }
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
 
   EXPECT_NEAR(constants::GetValues().shooter.upper_limit,
@@ -584,7 +556,7 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
@@ -607,7 +579,7 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
       ++capped_goal_count;
     }
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
 
   EXPECT_NEAR(constants::GetValues().shooter.upper_limit,
@@ -629,7 +601,7 @@ TEST_F(ShooterTest, StartsOnDistal) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
@@ -649,7 +621,7 @@ TEST_F(ShooterTest, StartsOnProximal) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
@@ -679,7 +651,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
     initialized = true;
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
