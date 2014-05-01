@@ -196,14 +196,30 @@ class LogImplementation {
   LogImplementation *next_;
 };
 
+// Implements all of the DoLog* methods in terms of a (pure virtual in this
+// class) HandleMessage method that takes a pointer to the message.
+class HandleMessageLogImplementation : public LogImplementation {
+ public:
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
+  virtual void DoLog(log_level level, const char *format, va_list ap) override;
+  virtual void LogStruct(log_level level, const ::std::string &message_string,
+                         size_t size, const MessageType *type,
+                         const ::std::function<size_t(char *)> &serialize)
+      override;
+  virtual void LogMatrix(log_level level, const ::std::string &message_string,
+                         uint32_t type_id, int rows, int cols, const void *data)
+      override;
+
+  virtual void HandleMessage(const LogMessage &message) = 0;
+};
+
 // A log implementation that dumps all messages to a C stdio stream.
-class StreamLogImplementation : public LogImplementation {
+class StreamLogImplementation : public HandleMessageLogImplementation {
  public:
   StreamLogImplementation(FILE *stream);
 
  private:
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap);
+  virtual void HandleMessage(const LogMessage &message) override;
 
   FILE *const stream_;
 };

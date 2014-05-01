@@ -19,7 +19,7 @@ namespace common {
 namespace testing {
 namespace {
 
-class TestLogImplementation : public logging::LogImplementation {
+class TestLogImplementation : public logging::HandleMessageLogImplementation {
  public:
   const ::std::vector<LogMessage> &messages() { return messages_; }
 
@@ -49,13 +49,8 @@ class TestLogImplementation : public logging::LogImplementation {
     return new TestLogImplementation();
   }
 
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) {
-    LogMessage message;
-
-    logging::internal::FillInMessage(level, format, ap, &message);
-
-    if (!logging::log_gt_important(WARNING, level)) {
+  virtual void HandleMessage(const LogMessage &message) override {
+    if (!logging::log_gt_important(WARNING, message.level)) {
       logging::internal::PrintMessage(stdout, message);
     }
 
