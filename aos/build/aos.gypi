@@ -118,7 +118,7 @@
           ],
         }, {
           'cflags': [
-            # TODO(brians): -O4 for clang to enable LTO?
+            # TODO(brians): add -flto
             '-O3',
             '-fomit-frame-pointer',
           ],

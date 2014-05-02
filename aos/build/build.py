@@ -47,6 +47,20 @@ class Processor(object):
       real_command = (('echo',) + command) if dry_run else command
       subprocess.check_call(real_command, stdin=open(os.devnull, 'r'))
 
+  # TODO(brians): Verify that this (and its callers) catch everything from a
+  # fresh install.
+  def do_check_installed(self, other_packages):
+    all_packages = () + other_packages
+    try:
+      result = subprocess.check_output(
+          ('dpkg-query', '--show') + all_packages,
+          stdin=open(os.devnull, 'r'),
+          stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+      user_output('Some packages not installed:\n'
+                  + e.output.decode('utf-8').rstrip())
+      exit(1)
+
 class CRIOProcessor(Processor):
   class Platform(Processor.Platform):
     def __init__(self, debug):
@@ -98,6 +112,11 @@ class CRIOProcessor(Processor):
     return ('-DWIND_BASE=%s' % self.wind_base,)
 
   def is_crio(self): return True
+
+  def check_installed(self):
+    # TODO(brians): Add powerpc-wrs-vxworks (a new enough version too).
+    self.do_check_installed(
+        ('ncftp',))
 
 class PrimeProcessor(Processor):
   class Platform(Processor.Platform):
@@ -171,10 +190,13 @@ class PrimeProcessor(Processor):
               PrimeProcessor.Platform(architecture, compiler, debug))
     self.platforms = frozenset(platforms)
     if is_test:
-      self.default_platforms = self.select_platforms(architecture='amd64', debug=True)
+      self.default_platforms = self.select_platforms(architecture='amd64',
+                                                     debug=True)
     elif is_deploy:
       # TODO(brians): Switch to deploying the code built with clang.
-      self.default_platforms = self.select_platforms(architecture='arm', compiler='gcc', debug=False)
+      self.default_platforms = self.select_platforms(architecture='arm',
+                                                     compiler='gcc',
+                                                     debug=False)
     else:
       self.default_platforms = self.select_platforms(debug=False)
 
@@ -229,6 +251,11 @@ class PrimeProcessor(Processor):
         architecture=architecture,
         compiler=compiler,
         debug=debug)
+
+  def check_installed(self):
+    self.do_check_installed(
+        ('clang-3.5', 'gcc-4.7-arm-linux-gnueabihf',
+         'g++-4.7-arm-linux-gnueabihf', 'openssh-client'))
 
 def main():
   class TryParsingAgain(Exception):
@@ -302,6 +329,7 @@ def main():
                                args.action_name == 'deploy')
   else:
     parser.exit(status=1, message='Unknown processor "%s".' % args.processor)
+  processor.check_installed()
 
   if 'target' in args:
     targets = args.target[:]
@@ -357,7 +385,7 @@ def main():
         return
     raise excinfo[1]
 
-  def need_to_run_gyp(platform):
+  def need_to_run_gyp_old(platform):
     try:
       build_mtime = os.stat(platform.build_ninja()).st_mtime
     except OSError as e:
@@ -372,8 +400,19 @@ def main():
           return True
     return False
 
+  def need_to_run_gyp(platform):
+    dirs = os.listdir(os.path.join(aos_path(), '..'))
+    # Looking through output tends to take a long time.
+    dirs.remove('output')
+    return subprocess.call(
+        ('find',) + tuple(os.path.join(aos_path(), '..', d) for d in dirs)
+         + ('-newer', platform.build_ninja(),
+         '(', '-name', '*.gyp', '-or', '-name', '*.gypi', ')'),
+        stdin=open(os.devnull, 'r'), stdout=open(os.devnull, 'w')) != 0
+
+  num = 1
   for platform in platforms:
-    user_output('Building %s...' % platform)
+    user_output('Building %s (%d/%d)...' % (platform, num, len(platforms)))
     if args.action_name == 'clean':
       shutil.rmtree(platform.outdir(), onerror=handle_clean_error)
     else:
@@ -437,7 +476,8 @@ def main():
         subprocess.check_call(os.path.join(dirname, f))
         user_output('Test %s succeeded' % f)
 
-    user_output('Done building %s' % platform)
+    user_output('Done building %s (%d/%d)' % (platform, num, len(platforms)))
+    num += 1
 
 if __name__ == '__main__':
   main()
