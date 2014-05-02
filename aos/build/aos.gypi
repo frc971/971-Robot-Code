@@ -60,8 +60,8 @@
       },
     ], ['PLATFORM=="linux-amd64-clang"', {
         'make_global_settings': [
-          ['CC', '<!(which clang)'],
-          ['CXX', '<!(which clang++)'],
+          ['CC', '/opt/clang-3.5/bin/clang'],
+          ['CXX', '/opt/clang-3.5/bin/clang++'],
         ],
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
