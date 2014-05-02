@@ -1,4 +1,4 @@
-#if !QUEUE_DEBUG
+#if !AOS_DEBUG
 #define NDEBUG
 #endif
 
@@ -564,7 +564,7 @@ int RawQueue::FreeMessages() const {
 }
 
 bool RawQueue::IsDebug() {
-#if QUEUE_DEBUG
+#if AOS_DEBUG
   return true;
 #else
   return false;

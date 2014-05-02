@@ -46,26 +46,6 @@
         'core_lib',
         '<(AOS)/build/aos.gyp:logging_interface',
       ],
-      'defines': [
-        'QUEUE_DEBUG=0',
-      ],
-    },
-    # A version of the queue code compiled with assertions enabled etc.
-    {
-      'target_name': 'queue_debug',
-      'type': 'static_library',
-      'sources': [
-        'queue.cc',
-      ],
-      'dependencies': [
-        'queue',
-      ],
-      'export_dependent_settings': [
-        'queue',
-      ],
-      'defines': [
-        'QUEUE_DEBUG=1',
-      ],
     },
     {
       'target_name': 'raw_queue_test',
@@ -75,7 +55,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'queue_debug',
+        'queue',
         '<(AOS)/build/aos.gyp:logging',
         'core_lib',
         '<(AOS)/common/common.gyp:queue_testutils',

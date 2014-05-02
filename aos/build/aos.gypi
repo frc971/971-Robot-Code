@@ -113,10 +113,16 @@
     },
     'conditions': [
       ['DEBUG=="yes"', {
+          'defines': [
+            'AOS_DEBUG=1',
+          ],
           'cflags': [
             '-O0',
           ],
         }, {
+          'defines': [
+            'AOS_DEBUG=0',
+          ],
           'cflags': [
             # TODO(brians): add -flto
             '-O3',

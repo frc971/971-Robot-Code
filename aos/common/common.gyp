@@ -163,8 +163,6 @@
         'test_queue',
         '<(AOS)/common/util/util.gyp:thread',
         'die',
-        # We want to run it with the assertions etc to try and catch bugs there.
-        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue_debug',
       ],
     },
     {
