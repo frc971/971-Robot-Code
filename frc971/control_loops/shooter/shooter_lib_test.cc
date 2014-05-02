@@ -259,7 +259,7 @@ class ShooterSimulation {
   }
 
   // pointer to plant
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
+  const ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> shooter_plant_;
 
   // true latch closed
   bool latch_piston_state_;

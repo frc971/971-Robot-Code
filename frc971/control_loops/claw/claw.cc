@@ -51,8 +51,8 @@ static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
 const double kRezeroThreshold = 0.03;
 
-ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop)
-    : StateFeedbackLoop<4, 2, 2>(loop),
+ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> &&loop)
+    : StateFeedbackLoop<4, 2, 2>(::std::move(loop)),
       uncapped_average_voltage_(0.0),
       is_zeroing_(true),
       U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,

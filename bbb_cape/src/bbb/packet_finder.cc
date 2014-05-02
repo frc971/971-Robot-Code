@@ -36,8 +36,8 @@ PacketFinder::PacketFinder(ByteReaderInterface *reader, size_t packet_size)
 }
 
 PacketFinder::~PacketFinder() {
-  delete buf_;
-  delete unstuffed_data_;
+  delete[] buf_;
+  delete[] unstuffed_data_;
 }
 
 bool PacketFinder::FindPacket(const ::Time &timeout_time) {

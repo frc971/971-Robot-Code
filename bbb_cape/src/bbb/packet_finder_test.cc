@@ -58,7 +58,9 @@ class PacketFinderTest : public ::testing::Test {
       }
       EXPECT_EQ(!expect_failure,
                 packet_finder.ReadPacket(::aos::time::Time(0, 0)));
-      if (expect_failure && i + 1 != *failure && i + 1 != packets) {
+      if (expect_failure &&
+          (failure == expected_failures.end() || i + 1 != *failure) &&
+          i + 1 != packets) {
         int failures = 0;
         while (!packet_finder.ReadPacket(::aos::time::Time(0, 0))) {
           ++failures;

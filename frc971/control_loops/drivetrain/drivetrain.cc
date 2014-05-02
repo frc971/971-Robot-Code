@@ -28,8 +28,8 @@ class DrivetrainMotorsSS {
  public:
   class LimitedDrivetrainLoop : public StateFeedbackLoop<4, 2, 2> {
    public:
-    LimitedDrivetrainLoop(const StateFeedbackLoop<4, 2, 2> &loop)
-        : StateFeedbackLoop<4, 2, 2>(loop),
+    LimitedDrivetrainLoop(StateFeedbackLoop<4, 2, 2> &&loop)
+        : StateFeedbackLoop<4, 2, 2>(::std::move(loop)),
         U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,
                  -1, 0,
                  0, 1,
