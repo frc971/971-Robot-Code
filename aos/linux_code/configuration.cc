@@ -17,9 +17,6 @@ namespace aos {
 namespace configuration {
 namespace {
 
-// Including the terminating '\0'.
-const size_t kMaxAddrLength = 18;
-
 // TODO(brians): This shouldn't be necesary for running tests.  Provide a way to
 // set the IP address when running tests from the test.
 const char *const kLinuxNetInterface = "eth0";
