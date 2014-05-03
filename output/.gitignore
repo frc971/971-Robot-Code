@@ -7,7 +7,7 @@
 /crio/
 /crio-debug/
 
-/arm-gcc-*/
-/arm-clang-*/
-/amd64-gcc-*/
-/amd64-clang-*/
+/arm-[^-]*-[^-]*/
+/arm-[^-]*-debug-[^-]*/
+/amd64-[^-]*-[^-]*/
+/amd64-[^-]*-debug-[^-]*/

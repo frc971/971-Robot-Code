@@ -66,6 +66,12 @@
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
       },
+    ], ['PLATFORM=="linux-amd64-gcc_4.8"', {
+        'make_global_settings': [
+          ['CC', '/opt/clang-3.5/bin/gcc'],
+          ['CXX', '/opt/clang-3.5/bin/g++'],
+        ],
+      },
     ], ['SANITIZER!="none"', {
         'target_defaults': {
           'cflags': [
@@ -82,11 +88,16 @@
     ], ['SANITIZER_FPIC!=""', {
         'target_defaults': {
           'cflags': [
-            '-fPIC',
+            '-fPIE',
           ],
           'ldflags': [
-            '-fPIC',
+            '-fPIE',
           ],
+          'link_settings': {
+            'ldflags': [
+              '-pie',
+            ],
+          },
         },
       },
     ], ['SANITIZER=="memory"', {
@@ -185,7 +196,7 @@
           ]
         }
       ],
-      ['PLATFORM=="linux-arm-gcc" and DEBUG=="yes"', {
+      ['OS=="linux" and ARCHITECTURE=="arm" and COMPILER=="gcc" and DEBUG=="yes"', {
           'cflags': [
               # GCC doesn't like letting us use r7 (which is also the frame
               # pointer) to pass the syscall number to the kernel even when

@@ -182,7 +182,7 @@ class PrimeProcessor(Processor):
 
     def build_env(self):
       r = {}
-      if self.compiler == 'clang':
+      if self.compiler == 'clang' or self.compiler == 'gcc_4.8':
         r['LD_LIBRARY_PATH'] = '/opt/clang-3.5/lib64'
       if self.sanitizer == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
@@ -191,12 +191,23 @@ class PrimeProcessor(Processor):
         r['MSAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
       return r
 
-  ARCHITECTURES = ['arm', 'amd64']
-  COMPILERS = ['clang', 'gcc']
-  # TODO(brians): memory doesn't really work because we don't have everything
-  # instrumented. Print out a warning or something.
-  SANITIZERS = ['address', 'undefined', 'integer', 'memory', 'thread', 'none']
-  PIC_SANITIZERS = ['memory', 'thread']
+  ARCHITECTURES = ('arm', 'amd64')
+  COMPILERS = ('clang', 'gcc', 'gcc_4.8')
+  SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
+  SANITIZER_TEST_WARNINGS = {
+      'memory': (True,
+"""We don't have all of the libraries instrumented which leads to lots of false
+errors with msan (especially stdlibc++).
+TODO(brians): Figure out a way to deal with it."""),
+      'undefined': (False,
+"""There are several warnings in other people's code that ubsan catches.
+The following have been verified non-interesting:
+    include/c++/4.8.2/array:*: runtime error: reference binding to null pointer of type 'int'
+      This happens with ::std::array<T, 0> and it doesn't seem to cause any issues.
+    output/downloaded/eigen-3.2.1/Eigen/src/Core/util/Memory.h:782:*: runtime error: load of misaligned address 0x* for type 'const int', which requires 4 byte alignment
+      That's in the CPUID detection code which only runs on x86."""),
+  }
+  PIC_SANITIZERS = ('memory', 'thread')
 
   def __init__(self, is_test, is_deploy):
     super(Processor, self).__init__()
@@ -205,16 +216,28 @@ class PrimeProcessor(Processor):
     for architecture in PrimeProcessor.ARCHITECTURES:
       for compiler in PrimeProcessor.COMPILERS:
         for debug in [True, False]:
+          if architecture == 'arm' and compiler == 'gcc_4.8':
+            # We don't have a compiler to use here.
+            continue
           platforms.append(
               PrimeProcessor.Platform(architecture, compiler, debug, 'none'))
     for sanitizer in PrimeProcessor.SANITIZERS:
-      if sanitizer != 'none':
-        platforms.append(
-            PrimeProcessor.Platform('amd64', 'clang', True, sanitizer))
+      for compiler in ('gcc_4.8', 'clang'):
+        if compiler == 'gcc_4.8' and (sanitizer == 'undefined' or
+                                      sanitizer == 'integer' or
+                                      sanitizer == 'memory'):
+          # GCC 4.8 doesn't support these sanitizers.
+          continue
+        # We already added sanitizer == 'none' above.
+        if sanitizer != 'none':
+          platforms.append(
+              PrimeProcessor.Platform('amd64', compiler, True, sanitizer))
     self.platforms = frozenset(platforms)
     if is_test:
       self.default_platforms = self.select_platforms(architecture='amd64',
                                                      debug=True)
+      for sanitizer in PrimeProcessor.SANITIZER_TEST_WARNINGS:
+        self.default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
       # TODO(brians): Switch to deploying the code built with clang.
       self.default_platforms = self.select_platforms(architecture='arm',
@@ -437,6 +460,23 @@ def main():
     build_env['PATH'] = os.environ['PATH']
     return build_env
 
+  to_build = []
+  for platform in platforms:
+    to_build.append(str(platform))
+  if len(to_build) > 1:
+    to_build[-1] = 'and ' + to_build[-1]
+  user_output('Building %s...' % ', '.join(to_build))
+
+  if args.action_name == 'tests':
+    for sanitizer, warning in PrimeProcessor.SANITIZER_TEST_WARNINGS.items():
+      warned_about = platforms & processor.select_platforms(sanitizer=sanitizer)
+      if warned_about:
+        user_output(warning[1])
+        if warning[0]:
+          # TODO(brians): Add a --force flag or something?
+          user_output('Refusing to run tests for sanitizer %s.' % sanitizer)
+          exit(1)
+
   num = 1
   for platform in platforms:
     user_output('Building %s (%d/%d)...' % (platform, num, len(platforms)))
@@ -456,7 +496,8 @@ def main():
              '-DOS=%s' % platform.os(),
              '-DPLATFORM=%s' % platform.gyp_platform(),
              '-DARCHITECTURE=%s' % platform.architecture,
-             '-DCOMPILER=%s' % platform.compiler,
+             '-DCOMPILER=%s' % platform.compiler.split('_')[0],
+             '-DFULL_COMPILER=%s' % platform.compiler,
              '-DDEBUG=%s' % ('yes' if platform.debug else 'no'),
              '-DSANITIZER=%s' % platform.sanitizer,
              '-DSANITIZER_FPIC=%s' % ('-fPIC'
@@ -480,9 +521,9 @@ def main():
               ('sed', '-i',
                's/nm -gD/nm/g', platform.build_ninja()),
               stdin=open(os.devnull, 'r'))
-        user_output('Done running gyp.')
+        user_output('Done running gyp')
       else:
-        user_output("Not running gyp.")
+        user_output("Not running gyp")
 
       try:
         subprocess.check_call(
