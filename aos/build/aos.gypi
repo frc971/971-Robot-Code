@@ -63,6 +63,25 @@
           ['CC', '/opt/clang-3.5/bin/clang'],
           ['CXX', '/opt/clang-3.5/bin/clang++'],
         ],
+        'target_defaults': {
+          'cflags': [
+            # TODO(brians): Always build with this in debug mode?
+            #'-fsanitize=address',
+
+            # TODO(brians): Figure out how to blacklist some bits of other
+            # people's code (ie stdlibc++...) and then have it abort on failure.
+            #'-fsanitize=undefined,integer',
+
+            # TODO(brians): Try and figure out how to get these 2 to work (it
+            # looks like they force using shared libraries which means building
+            # everything with -fPIC).
+            #'-fsanitize=memory',
+            #'-fsanitize=thread',
+          ],
+          'ldflags': [
+            #'-fsanitize=thread',
+          ],
+        },
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
       },

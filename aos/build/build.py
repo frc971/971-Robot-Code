@@ -63,10 +63,11 @@ class Processor(object):
 
 class CRIOProcessor(Processor):
   class Platform(Processor.Platform):
-    def __init__(self, debug):
+    def __init__(self, debug, wind_base):
       super(CRIOProcessor.Platform, self).__init__()
 
       self.debug = debug
+      self.wind_base = wind_base
 
     def __repr__(self):
       return 'CRIOProcessor.Platform(debug=%s)' % self.debug
@@ -90,6 +91,9 @@ class CRIOProcessor(Processor):
                      ('ncftpput', get_ip('robot'), '/',
                       os.path.join(self.outdir(), 'lib', 'FRC_UserProgram.out')))
 
+    def build_env(self):
+      return {'WIND_BASE': self.wind_base}
+
   def __init__(self):
     super(CRIOProcessor, self).__init__()
 
@@ -100,14 +104,12 @@ class CRIOProcessor(Processor):
 
   def parse_platforms(self, string):
     if string is None or string == 'crio':
-      return (CRIOProcessor.Platform(False),)
-    elif string == 'crio-debug':
-      return (CRIOProcessor.Platform(True),)
+      return (CRIOProcessor.Platform(False, self.wind_base),)
+    elif string == 'crio-debug' or string == 'debug':
+      return (CRIOProcessor.Platform(True, self.wind_base),)
     else:
       raise Processor.UnknownPlatform('Unknown cRIO platform "%s".' % string)
 
-  def build_env(self):
-    return {'WIND_BASE': self.wind_base}
   def extra_gyp_flags(self):
     return ('-DWIND_BASE=%s' % self.wind_base,)
 
@@ -176,6 +178,14 @@ class PrimeProcessor(Processor):
              && ionice -c 3 bash -c 'sync && sync && sync'""".format(
                  TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
+    def build_env(self):
+      r = {}
+      if self.compiler == 'clang':
+        r['LD_LIBRARY_PATH'] = '/opt/clang-3.5/lib64'
+        r['ASAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
+        r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
+      return r
+
   ARCHITECTURES = ['arm', 'amd64']
   COMPILERS = ['clang', 'gcc']
 
@@ -200,8 +210,6 @@ class PrimeProcessor(Processor):
     else:
       self.default_platforms = self.select_platforms(debug=False)
 
-  def build_env(self):
-    return {}
   def extra_gyp_flags(self):
     return ()
   def is_crio(self): return False
@@ -385,30 +393,22 @@ def main():
         return
     raise excinfo[1]
 
-  def need_to_run_gyp_old(platform):
-    try:
-      build_mtime = os.stat(platform.build_ninja()).st_mtime
-    except OSError as e:
-      if e.errno == errno.ENOENT:
-        return True
-      else:
-        raise e
-    pattern = re.compile('.*\.gypi?$')
-    for dirname, _, files in os.walk(os.path.join(aos_path(), '..')):
-      for f in [f for f in files if pattern.match(f)]:
-        if (os.stat(os.path.join(dirname, f)).st_mtime > build_mtime):
-          return True
-    return False
-
   def need_to_run_gyp(platform):
     dirs = os.listdir(os.path.join(aos_path(), '..'))
-    # Looking through output tends to take a long time.
+    # Looking through these folders takes a long time and isn't useful.
     dirs.remove('output')
-    return subprocess.call(
+    dirs.remove('.git')
+    return not not subprocess.check_output(
         ('find',) + tuple(os.path.join(aos_path(), '..', d) for d in dirs)
          + ('-newer', platform.build_ninja(),
          '(', '-name', '*.gyp', '-or', '-name', '*.gypi', ')'),
-        stdin=open(os.devnull, 'r'), stdout=open(os.devnull, 'w')) != 0
+        stdin=open(os.devnull, 'r'))
+
+  def env(platform):
+    build_env = dict(platform.build_env())
+    build_env['TERM'] = os.environ['TERM']
+    build_env['PATH'] = os.environ['PATH']
+    return build_env
 
   num = 1
   for platform in platforms:
@@ -454,14 +454,11 @@ def main():
         user_output("Not running gyp.")
 
       try:
-        build_env = dict(processor.build_env())
-        build_env['TERM'] = os.environ['TERM']
-        build_env['PATH'] = os.environ['PATH']
         subprocess.check_call(
             (tools_config['NINJA'],
              '-C', platform.outdir()) + tuple(targets),
             stdin=open(os.devnull, 'r'),
-            env=build_env)
+            env=env(platform))
       except subprocess.CalledProcessError as e:
         if unknown_platform_error is not None:
           user_output(unknown_platform_error)
@@ -473,7 +470,9 @@ def main():
       dirname = os.path.join(platform.outdir(), 'tests')
       for f in targets or os.listdir(dirname):
         user_output('Running test %s...' % f)
-        subprocess.check_call(os.path.join(dirname, f))
+        subprocess.check_call(
+            os.path.join(dirname, f),
+            env=env(platform))
         user_output('Test %s succeeded' % f)
 
     user_output('Done building %s (%d/%d)' % (platform, num, len(platforms)))
