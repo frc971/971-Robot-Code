@@ -85,7 +85,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
     if (packet_bytes_ == -1) {
       for (size_t to_check = already_read; to_check < already_read + new_bytes;
            ++to_check) {
-        if (buf_[to_check] == 0) {
+        if (buf(to_check) == 0) {
           ++zeros_found;
           if (zeros_found == kZeros) {
             packet_bytes_ = 0;
@@ -149,7 +149,7 @@ bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
     packet_bytes_ = -1;
     int zeros = 0;
     for (size_t i = 0; i < packet_size_; ++i) {
-      if (buf_[i] == 0) {
+      if (buf(i) == 0) {
         ++zeros;
         if (zeros == kZeros) {
           if (kDebugLogs) LOG(INFO, "start at %zd\n", i);

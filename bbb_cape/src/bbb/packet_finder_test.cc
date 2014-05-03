@@ -1,5 +1,7 @@
 #include "bbb/packet_finder.h"
 
+#include <malloc.h>
+
 #include <array>
 #include <algorithm>
 
@@ -15,10 +17,17 @@ namespace testing {
 
 class TestByteReader : public ByteReaderInterface {
  public:
-  // Holds a reference to data's element array.
   template <size_t bytes>
   TestByteReader(const ::std::array<uint8_t, bytes> &data)
-      : data_(&data.at(0)), data_size_(data.size()), bytes_left_(data.size()) {}
+      : data_(memalign(8, data.size())),
+        data_size_(data.size()),
+        bytes_left_(data.size()) {
+    memcpy(data_, &data.at(0), data.size());
+  }
+
+  ~TestByteReader() {
+    free(data_);
+  }
 
   virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
                             const ::aos::time::Time &/*timeout_time*/)
@@ -32,7 +41,7 @@ class TestByteReader : public ByteReaderInterface {
   }
 
  private:
-  const void *const data_;
+  void *const data_;
   const size_t data_size_;
   size_t bytes_left_;
 };

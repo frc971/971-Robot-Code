@@ -54,6 +54,14 @@ class PacketFinder {
   // data.
   bool ProcessPacket();
 
+  // Avoids issues with accessing elements of buf_ that are technically not
+  // aligned correctly.
+  uint8_t buf(size_t index) const {
+    uint8_t r;
+    memcpy(&r, &buf_[index], 1);
+    return r;
+  }
+
   ByteReaderInterface *const reader_;
   const size_t packet_size_;
 

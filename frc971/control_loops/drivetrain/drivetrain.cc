@@ -125,7 +125,7 @@ class DrivetrainMotorsSS {
 
     const ::aos::controls::HPolytope<2> U_Poly_;
     Eigen::Matrix<double, 2, 2> T, T_inverse;
-    bool output_was_capped_;
+    bool output_was_capped_ = false;;
   };
 
   DrivetrainMotorsSS()

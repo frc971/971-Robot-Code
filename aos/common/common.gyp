@@ -108,6 +108,7 @@
         'queue_types',
         '<(EXTERNALS):gtest',
         'test_queue',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -275,6 +276,7 @@
         '<(EXTERNALS):gtest',
         'mutex',
         'die',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
