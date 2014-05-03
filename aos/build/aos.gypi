@@ -15,6 +15,8 @@
     'so_dir': '<(PRODUCT_DIR)/lib',
 # the directory that executables that depend on <(EXTERNALS):gtest get put into
     'test_dir': '<(PRODUCT_DIR)/tests',
+
+    'ccache': '<!(which ccache) ',
   },
   'conditions': [
     ['PLATFORM=="crio"', {
@@ -25,8 +27,8 @@
       }
     ], ['PLATFORM=="linux-arm-gcc"', {
         'make_global_settings': [
-          ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
-          ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
+          ['CC', '<(ccache)<!(which arm-linux-gnueabihf-gcc-4.7)'],
+          ['CXX', '<(ccache)<!(which arm-linux-gnueabihf-g++-4.7)'],
         ],
       },
     ], ['PLATFORM=="linux-arm-clang"', {
@@ -42,8 +44,8 @@
           ],
         },
         'make_global_settings': [
-          ['CC', '<(arm-clang-symlinks)/bin/clang'],
-          ['CXX', '<(arm-clang-symlinks)/bin/clang++'],
+          ['CC', '<(ccache)<(arm-clang-symlinks)/bin/clang'],
+          ['CXX', '<(ccache)<(arm-clang-symlinks)/bin/clang++'],
         ],
         'target_defaults': {
           'cflags': [
@@ -60,16 +62,20 @@
       },
     ], ['PLATFORM=="linux-amd64-clang"', {
         'make_global_settings': [
-          ['CC', '/opt/clang-3.5/bin/clang'],
-          ['CXX', '/opt/clang-3.5/bin/clang++'],
+          ['CC', '<(ccache)/opt/clang-3.5/bin/clang'],
+          ['CXX', '<(ccache)/opt/clang-3.5/bin/clang++'],
         ],
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)<!(which gcc)'],
+          ['CXX', '<(ccache)<!(which g++)'],
+        ],
       },
     ], ['PLATFORM=="linux-amd64-gcc_4.8"', {
         'make_global_settings': [
-          ['CC', '/opt/clang-3.5/bin/gcc'],
-          ['CXX', '/opt/clang-3.5/bin/g++'],
+          ['CC', '<(ccache)/opt/clang-3.5/bin/gcc'],
+          ['CXX', '<(ccache)/opt/clang-3.5/bin/g++'],
         ],
       },
     ], ['SANITIZER!="none"', {

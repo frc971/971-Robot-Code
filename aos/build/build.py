@@ -189,6 +189,25 @@ class PrimeProcessor(Processor):
         r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
       elif self.sanitizer == 'memory':
         r['MSAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
+
+      r['CCACHE_COMPRESS'] = 'yes'
+      r['CCACHE_DIR'] = \
+          os.path.abspath(os.path.join(aos_path(), '..', 'output', 'ccache_dir'))
+      r['CCACHE_HASHDIR'] = 'yes'
+      if self.compiler == 'clang':
+        # clang doesn't like being run directly on the preprocessed files.
+        r['CCACHE_CPP2'] = 'yes'
+      # Without this, ccache slows down because of the generated header files.
+      # The race condition that this opens up isn't a problem because the build
+      # system finishes modifying header files before compiling anything that
+      # uses them.
+      r['CCACHE_SLOPPINESS'] = 'include_file_mtime'
+      r['CCACHE_COMPILERCHECK'] = 'content'
+
+      if self.architecture == 'amd64':
+        r['PATH'] = os.path.join(aos_path(), 'build', 'bin-ld.gold') + \
+            ':' + os.environ['PATH']
+
       return r
 
   ARCHITECTURES = ('arm', 'amd64')
@@ -456,8 +475,10 @@ def main():
 
   def env(platform):
     build_env = dict(platform.build_env())
-    build_env['TERM'] = os.environ['TERM']
-    build_env['PATH'] = os.environ['PATH']
+    if not 'TERM' in build_env:
+      build_env['TERM'] = os.environ['TERM']
+    if not 'PATH' in build_env:
+      build_env['PATH'] = os.environ['PATH']
     return build_env
 
   to_build = []

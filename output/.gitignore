@@ -3,6 +3,7 @@
 /flasher/
 /compiled-*/
 /ip_base.txt
+/ccache_dir/
 
 /crio/
 /crio-debug/
