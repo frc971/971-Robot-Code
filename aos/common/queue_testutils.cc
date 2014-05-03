@@ -50,7 +50,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   }
 
   virtual void HandleMessage(const LogMessage &message) override {
-    if (!logging::log_gt_important(WARNING, message.level)) {
+    if (message.level == FATAL) {
       logging::internal::PrintMessage(stdout, message);
     }
 

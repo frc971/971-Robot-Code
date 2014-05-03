@@ -79,9 +79,9 @@ class PacketFinder {
   static constexpr ::aos::time::Time kDebugLogInterval =
       ::aos::time::Time::InSeconds(0.3);
   SimpleLogInterval invalid_packet_ =
-      SimpleLogInterval(kDebugLogInterval, INFO, "invalid packet");
+      SimpleLogInterval(kDebugLogInterval, WARNING, "invalid packet");
   SimpleLogInterval bad_checksum_ =
-      SimpleLogInterval(kDebugLogInterval, INFO, "bad checksum");
+      SimpleLogInterval(kDebugLogInterval, WARNING, "bad checksum");
 
   DISALLOW_COPY_AND_ASSIGN(PacketFinder);
 };

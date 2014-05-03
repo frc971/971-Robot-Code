@@ -122,11 +122,6 @@ class RawQueue {
   // only 1 task is using this object (ie in tests).
   int FreeMessages() const;
 
-  // Returns whether this is using the queue code compiled for debugging (used
-  // by the tests etc) or not (used by everything else because it uses
-  // noticeably less CPU).
-  static bool IsDebug();
-
  private:
   struct MessageHeader;
 

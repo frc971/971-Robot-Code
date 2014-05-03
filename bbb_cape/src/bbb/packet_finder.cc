@@ -55,7 +55,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
         LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
             buf_ + already_read, to_read, errno, strerror(errno));
       } else if (new_bytes == -2) {
-        LOG(INFO, "timed out\n");
+        LOG(WARNING, "timed out\n");
       } else {
         LOG(WARNING, "bad ByteReader %p returned %zd\n", reader_, new_bytes);
       }
@@ -76,7 +76,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
               WEXITSTATUS(chrt_result));
         }
       } else {
-        LOG(INFO, "not root, so not increasing priority of the IRQ\n");
+        LOG(WARNING, "not root, so not increasing priority of the IRQ\n");
       }
 
       irq_priority_increased_ = true;
@@ -116,7 +116,7 @@ bool PacketFinder::ProcessPacket() {
   bad_checksum_.Print();
 
   if (unstuffed == 0) {
-    if (kDebugLogs) LOG(INFO, "invalid\n");
+    if (kDebugLogs) LOG(WARNING, "invalid\n");
     LOG_INTERVAL(invalid_packet_);
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
@@ -132,7 +132,7 @@ bool PacketFinder::ProcessPacket() {
       reinterpret_cast<uint8_t *>(unstuffed_data_), packet_size_ - 8);
   if (sent_checksum != calculated_checksum) {
     if (kDebugLogs) {
-      LOG(INFO, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
+      LOG(WARNING, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
           calculated_checksum);
     }
     LOG_INTERVAL(bad_checksum_);
