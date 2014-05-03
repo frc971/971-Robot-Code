@@ -63,27 +63,41 @@
           ['CC', '/opt/clang-3.5/bin/clang'],
           ['CXX', '/opt/clang-3.5/bin/clang++'],
         ],
+      },
+    ], ['PLATFORM=="linux-amd64-gcc"', {
+      },
+    ], ['SANITIZER!="none"', {
         'target_defaults': {
           'cflags': [
-            # TODO(brians): Always build with this in debug mode?
-            #'-fsanitize=address',
-
+            '-fsanitize=<(SANITIZER)',
             # TODO(brians): Figure out how to blacklist some bits of other
             # people's code (ie stdlibc++...) and then have it abort on failure.
             #'-fsanitize=undefined,integer',
-
-            # TODO(brians): Try and figure out how to get these 2 to work (it
-            # looks like they force using shared libraries which means building
-            # everything with -fPIC).
-            #'-fsanitize=memory',
-            #'-fsanitize=thread',
           ],
           'ldflags': [
-            #'-fsanitize=thread',
+            '-fsanitize=<(SANITIZER)',
           ],
         },
       },
-    ], ['PLATFORM=="linux-amd64-gcc"', {
+    ], ['SANITIZER_FPIC!=""', {
+        'target_defaults': {
+          'cflags': [
+            '-fPIC',
+          ],
+          'ldflags': [
+            '-fPIC',
+          ],
+        },
+      },
+    ], ['SANITIZER=="memory"', {
+        'target_defaults': {
+          'cflags': [
+            '-fsanitize-memory-track-origins',
+          ],
+          'ldflags': [
+            '-fsanitize-memory-track-origins',
+          ],
+        },
       },
     ],
   ],
@@ -260,6 +274,9 @@
             ['COMPILER=="gcc"', {
                 'cflags': [
                   '-Wunused-local-typedefs',
+                ],
+                'defines': [
+                  '__has_feature(n)=0'
                 ],
               },
             ], ['COMPILER=="clang"', {

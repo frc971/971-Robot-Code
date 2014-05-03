@@ -122,19 +122,21 @@ class CRIOProcessor(Processor):
 
 class PrimeProcessor(Processor):
   class Platform(Processor.Platform):
-    def __init__(self, architecture, compiler, debug):
+    def __init__(self, architecture, compiler, debug, sanitizer):
       super(PrimeProcessor.Platform, self).__init__()
 
       self.architecture = architecture
       self.compiler = compiler
       self.debug = debug
+      self.sanitizer = sanitizer
 
     def __repr__(self):
-      return 'PrimeProcessor.Platform(architecture=%s, compiler=%s, debug=%s)' \
-          % (self.architecture, self.compiler, self.debug)
+      return 'PrimeProcessor.Platform(architecture=%s, compiler=%s, debug=%s' \
+          ', sanitizer=%s)' \
+          % (self.architecture, self.compiler, self.debug, self.sanitizer)
     def __str__(self):
-      return '%s-%s%s' % (self.architecture, self.compiler,
-                          '-debug' if self.debug else '')
+      return '%s-%s%s-%s' % (self.architecture, self.compiler,
+                          '-debug' if self.debug else '', self.sanitizer)
 
     def os(self):
       return 'linux'
@@ -182,12 +184,19 @@ class PrimeProcessor(Processor):
       r = {}
       if self.compiler == 'clang':
         r['LD_LIBRARY_PATH'] = '/opt/clang-3.5/lib64'
+      if self.sanitizer == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
         r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
+      elif self.sanitizer == 'memory':
+        r['MSAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
       return r
 
   ARCHITECTURES = ['arm', 'amd64']
   COMPILERS = ['clang', 'gcc']
+  # TODO(brians): memory doesn't really work because we don't have everything
+  # instrumented. Print out a warning or something.
+  SANITIZERS = ['address', 'undefined', 'integer', 'memory', 'thread', 'none']
+  PIC_SANITIZERS = ['memory', 'thread']
 
   def __init__(self, is_test, is_deploy):
     super(Processor, self).__init__()
@@ -197,7 +206,11 @@ class PrimeProcessor(Processor):
       for compiler in PrimeProcessor.COMPILERS:
         for debug in [True, False]:
           platforms.append(
-              PrimeProcessor.Platform(architecture, compiler, debug))
+              PrimeProcessor.Platform(architecture, compiler, debug, 'none'))
+    for sanitizer in PrimeProcessor.SANITIZERS:
+      if sanitizer != 'none':
+        platforms.append(
+            PrimeProcessor.Platform('amd64', 'clang', True, sanitizer))
     self.platforms = frozenset(platforms)
     if is_test:
       self.default_platforms = self.select_platforms(architecture='amd64',
@@ -232,18 +245,19 @@ class PrimeProcessor(Processor):
           r = selected
     return r
 
-  def select_platforms(self, architecture=None, compiler=None, debug=None):
+  def select_platforms(self, architecture=None, compiler=None, debug=None, sanitizer=None):
     r = []
     for platform in self.platforms:
       if architecture is None or platform.architecture == architecture:
         if compiler is None or platform.compiler == compiler:
           if debug is None or platform.debug == debug:
-            r.append(platform)
+            if sanitizer is None or platform.sanitizer == sanitizer:
+              r.append(platform)
     return set(r)
 
   def select_platforms_string(self, string):
     r = []
-    architecture, compiler, debug = None, None, None
+    architecture, compiler, debug, sanitizer = None, None, None, None
     for part in string.split('-'):
       if part in PrimeProcessor.ARCHITECTURES:
         architecture = part
@@ -253,12 +267,15 @@ class PrimeProcessor(Processor):
         debug = True
       elif part in ['release', 'nodebug', 'ndb']:
         debug = False
+      elif part in PrimeProcessor.SANITIZERS:
+        sanitizer = part
       else:
         raise Processor.UnknownPlatform('Unknown platform string component "%s".' % part)
     return self.select_platforms(
         architecture=architecture,
         compiler=compiler,
-        debug=debug)
+        debug=debug,
+        sanitizer=sanitizer)
 
   def check_installed(self):
     self.do_check_installed(
@@ -363,9 +380,17 @@ def main():
   if processor.is_crio():
     download_externals('crio')
   else:
+    to_download = set()
     for architecture in PrimeProcessor.ARCHITECTURES:
-      if platforms & processor.select_platforms(architecture=architecture):
-        download_externals(architecture)
+      for sanitizer in PrimeProcessor.PIC_SANITIZERS:
+        if platforms & processor.select_platforms(architecture=architecture,
+                                                  sanitizer=sanitizer):
+          to_download.add(architecture + '-fPIC')
+        if platforms & processor.select_platforms(architecture=architecture,
+                                                  sanitizer='none'):
+          to_download.add(architecture)
+    for download_target in to_download:
+      download_externals(download_target)
 
   class ToolsConfig(object):
     def __init__(self):
@@ -394,6 +419,8 @@ def main():
     raise excinfo[1]
 
   def need_to_run_gyp(platform):
+    if not os.path.exists(platform.build_ninja()):
+      return True
     dirs = os.listdir(os.path.join(aos_path(), '..'))
     # Looking through these folders takes a long time and isn't useful.
     dirs.remove('output')
@@ -430,7 +457,11 @@ def main():
              '-DPLATFORM=%s' % platform.gyp_platform(),
              '-DARCHITECTURE=%s' % platform.architecture,
              '-DCOMPILER=%s' % platform.compiler,
-             '-DDEBUG=%s' % ('yes' if platform.debug else 'no')) +
+             '-DDEBUG=%s' % ('yes' if platform.debug else 'no'),
+             '-DSANITIZER=%s' % platform.sanitizer,
+             '-DSANITIZER_FPIC=%s' % ('-fPIC'
+                 if platform.sanitizer in PrimeProcessor.PIC_SANITIZERS
+                 else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""
