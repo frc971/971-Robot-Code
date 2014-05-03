@@ -24,12 +24,12 @@ if [ "$1" == "arm" ]; then
 elif [ "$1" == "amd64" ]; then
   COMPILED=${EXTERNALS}/../compiled-amd64
   IS_CRIO=0
-elif [ "$1" == "amd64-fPIC" ]; then
-  COMPILED=${EXTERNALS}/../compiled-amd64-fPIC
+elif [ "$1" == "amd64-fPIE" ]; then
+  COMPILED=${EXTERNALS}/../compiled-amd64-fPIE
 
-  export CFLAGS="-fPIC"
-  export CXXFLAGS="-fPIC"
-  export LDFLAGS="-fPIC"
+  export CFLAGS="-fPIE"
+  export CXXFLAGS="-fPIE"
+  export LDFLAGS="-fPIE"
   CONFIGURE_FLAGS="CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" LDFLAGS=\"${LDFLAGS}\""
   IS_CRIO=0
 elif [ "$1" == "crio" ]; then

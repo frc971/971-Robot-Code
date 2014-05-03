@@ -85,7 +85,7 @@
           ],
         },
       },
-    ], ['SANITIZER_FPIC!=""', {
+    ], ['SANITIZER_FPIE!=""', {
         'target_defaults': {
           'cflags': [
             '-fPIE',

@@ -5,8 +5,8 @@
     # TODO(brians): Would we not have to do this hackery if we named it externals_path etc?
     'externals': '<(AOS)/../output/downloaded',
     'externals_abs': '<!(readlink -f ../../output/downloaded)',
-    'compiled': '<(externals)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIC)',
-    'compiled_abs': '<(externals_abs)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIC)',
+    'compiled': '<(externals)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIE)',
+    'compiled_abs': '<(externals_abs)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIE)',
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.2.1',

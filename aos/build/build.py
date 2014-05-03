@@ -207,7 +207,7 @@ The following have been verified non-interesting:
     output/downloaded/eigen-3.2.1/Eigen/src/Core/util/Memory.h:782:*: runtime error: load of misaligned address 0x* for type 'const int', which requires 4 byte alignment
       That's in the CPUID detection code which only runs on x86."""),
   }
-  PIC_SANITIZERS = ('memory', 'thread')
+  PIE_SANITIZERS = ('memory', 'thread')
 
   def __init__(self, is_test, is_deploy):
     super(Processor, self).__init__()
@@ -405,10 +405,10 @@ def main():
   else:
     to_download = set()
     for architecture in PrimeProcessor.ARCHITECTURES:
-      for sanitizer in PrimeProcessor.PIC_SANITIZERS:
+      for sanitizer in PrimeProcessor.PIE_SANITIZERS:
         if platforms & processor.select_platforms(architecture=architecture,
                                                   sanitizer=sanitizer):
-          to_download.add(architecture + '-fPIC')
+          to_download.add(architecture + '-fPIE')
         if platforms & processor.select_platforms(architecture=architecture,
                                                   sanitizer='none'):
           to_download.add(architecture)
@@ -500,8 +500,8 @@ def main():
              '-DFULL_COMPILER=%s' % platform.compiler,
              '-DDEBUG=%s' % ('yes' if platform.debug else 'no'),
              '-DSANITIZER=%s' % platform.sanitizer,
-             '-DSANITIZER_FPIC=%s' % ('-fPIC'
-                 if platform.sanitizer in PrimeProcessor.PIC_SANITIZERS
+             '-DSANITIZER_FPIE=%s' % ('-fPIE'
+                 if platform.sanitizer in PrimeProcessor.PIE_SANITIZERS
                  else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
