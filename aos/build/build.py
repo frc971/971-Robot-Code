@@ -13,6 +13,25 @@ import queue
 import threading
 
 class TestThread(threading.Thread):
+  """Runs 1 test and keeps track of its current state.
+
+  A TestThread is either waiting to start the test, actually running it, done,
+  running it, or stopped. The first 3 always happen in that order and can
+  change to stopped at any time.
+
+  It will finish (ie join() will return) once the process has exited, at which
+  point accessing process to see the status is OK.
+
+  Attributes:
+    executable: The file path of the executable to run.
+    env: The environment variables to set.
+    done_queue: A queue.Queue to place self on once done running the test.
+    start_semaphore: A threading.Semaphore to wait on before starting.
+    process_lock: A lock around process.
+    process: The currently executing test process or None. Synchronized by
+        process_lock.
+    stopped: True if we're stopped.
+  """
   def __init__(self, executable, env, done_queue, start_semaphore):
     super(TestThread, self).__init__(
         name=os.path.split(executable)[1])
@@ -47,21 +66,34 @@ class TestThread(threading.Thread):
           self.done_queue.put(self)
 
   def terminate_process(self):
+    """Asks any currently running process to stop.
+
+    Also changes this object to the stopped state.
+    """
     with self.process_lock:
       self.stopped = True
       if not self.process: return
       self.process.terminate()
   def kill_process(self):
+    """Forcibly terminates any running process.
+
+    Also changes this object to the stopped state.
+    """
     with self.process_lock:
       self.stopped = True
       if not self.process: return
       self.process.kill()
 
 def aos_path():
+  """Returns:
+    A relative path to the aos directory.
+  """
   return os.path.join(os.path.dirname(__file__), '..')
 
 def get_ip(device):
-  FILENAME = os.path.normpath(os.path.join(aos_path(), '..', 'output', 'ip_base.txt'))
+  """Retrieves the IP address for a given device."""
+  FILENAME = os.path.normpath(os.path.join(aos_path(), '..',
+                              'output', 'ip_base.txt'))
   if not os.access(FILENAME, os.R_OK):
     os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
     with open(FILENAME, 'w') as f:
@@ -76,32 +108,152 @@ def get_ip(device):
     raise Exception('Unknown device %s to get an IP address for.' % device)
 
 def user_output(message):
+  """Prints message to the user."""
   print('build.py: ' + message, file=sys.stderr)
 
+"""A lock to avoid making a mess intermingling test-related messages."""
 test_output_lock = threading.RLock()
 def test_output(message):
+  """Prints message to the user. Intended for messages related to tests."""
   with test_output_lock:
-    print('build.py: ' + message, file=sys.stdout)
+    print('tests: ' + message, file=sys.stdout)
+
+def call_download_externals(argument):
+  """Calls download_externals.sh for a given set of externals.
+
+  Args:
+    argument: The argument to pass to the shell script to tell it what to
+        download.
+  """
+  subprocess.check_call(
+      (os.path.join(aos_path(), 'build', 'download_externals.sh'),
+       argument),
+      stdin=open(os.devnull, 'r'))
 
 class Processor(object):
+  """Represents a processor architecture we can build for."""
+
   class UnknownPlatform(Exception):
     def __init__(self, message):
       self.message = message
 
   class Platform(object):
+    """Represents a single way to build the code."""
+
     def outdir(self):
+      """Returns:
+        The path of the directory build outputs get put in to.
+      """
       return os.path.join(
           aos_path(), '..', 'output', self.outname())
     def build_ninja(self):
+      """Returns:
+        The path of the build.ninja file.
+      """
       return os.path.join(self.outdir(), 'build.ninja')
 
     def do_deploy(self, dry_run, command):
+      """Helper for subclasses to implement deploy.
+
+      Args:
+        dry_run: If True, prints the command instead of actually running it.
+        command: A tuple of command-line arguments.
+      """
       real_command = (('echo',) + command) if dry_run else command
       subprocess.check_call(real_command, stdin=open(os.devnull, 'r'))
+
+    def deploy(self, dry_run):
+      """Downloads the compiled code to the target computer."""
+      raise NotImplementedError('deploy should be overriden')
+    def outname(self):
+      """Returns:
+        The name of the directory the code will be compiled to.
+      """
+      raise NotImplementedError('outname should be overriden')
+    def os(self):
+      """Returns:
+        The name of the operating system this platform is for.
+
+        This will be used as the value of the OS gyp variable.
+      """
+      raise NotImplementedError('os should be overriden')
+    def gyp_platform(self):
+      """Returns:
+        The platform name the .gyp files know.
+
+        This will be used as the value of the PLATFORM gyp variable.
+      """
+      raise NotImplementedError('gyp_platform should be overriden')
+    def architecture(self):
+      """Returns:
+        The processor architecture for this platform.
+
+        This will be used as the value of the ARCHITECTURE gyp variable.
+      """
+      raise NotImplementedError('architecture should be overriden')
+    def compiler(self):
+      """Returns:
+        The compiler used for this platform.
+
+        Everything before the first _ will be used as the value of the
+        COMPILER gyp variable and the whole thing will be used as the value
+        of the FULL_COMPILER gyp variable.
+      """
+      raise NotImplementedError('compiler should be overriden')
+    def debug(self):
+      """Returns:
+        Whether or not this platform compiles with debugging information.
+
+        The DEBUG gyp variable will be set to "yes" or "no" based on this.
+      """
+      raise NotImplementedError('debug should be overriden')
+    def build_env(self):
+      """Returns:
+        A map of environment variables to set while building this platform.
+      """
+      raise NotImplementedError('build_env should be overriden')
+
+  def check_installed(self):
+    """Makes sure that all packages necessary to build are installed."""
+    raise NotImplementedError('check_installed should be overriden')
+  def parse_platforms(self, string):
+    """Args:
+      string: A user-supplied string saying which platforms to select.
+
+    Returns:
+      A tuple of Platform objects.
+
+    Raises:
+      Processor.UnknownPlatform: Parsing string didn't work out.
+    """
+    raise NotImplementedError('parse_platforms should be overriden')
+  def extra_gyp_flags(self):
+    """Returns:
+      A tuple of extra flags to pass to gyp (if any).
+    """
+    return ()
+  def modify_ninja_file(self, ninja_file):
+    """Modifies a freshly generated ninja file as necessary.
+
+    Args:
+      ninja_file: Path to the file to modify.
+    """
+    pass
+  def download_externals(self, platforms):
+    """Calls download_externals as appropriate to build platforms.
+
+    Args:
+      platforms: A list of platforms to download external libraries for.
+    """
+    raise NotImplementedError('download_externals should be overriden')
 
   # TODO(brians): Verify that this (and its callers) catch everything from a
   # fresh install.
   def do_check_installed(self, other_packages):
+    """Helper for subclasses to implement check_installed.
+
+    Args:
+      other_packages: A tuple of platform-specific packages to check for."""
     all_packages = () + other_packages
     try:
       result = subprocess.check_output(
@@ -114,12 +266,14 @@ class Processor(object):
       exit(1)
 
 class CRIOProcessor(Processor):
+  """A Processor subclass for building cRIO code."""
+
   class Platform(Processor.Platform):
     def __init__(self, debug, wind_base):
       super(CRIOProcessor.Platform, self).__init__()
 
-      self.debug = debug
-      self.wind_base = wind_base
+      self.__debug = debug
+      self.__wind_base = wind_base
 
     def __repr__(self):
       return 'CRIOProcessor.Platform(debug=%s)' % self.debug
@@ -136,6 +290,10 @@ class CRIOProcessor(Processor):
       return 'ppc'
     def compiler(self):
       return 'gcc'
+    def debug(self):
+      return self.__debug
+    def wind_base(self):
+      return self.__wind_base
 
     # TODO(brians): test this
     def deploy(self, dry_run):
@@ -144,28 +302,38 @@ class CRIOProcessor(Processor):
                       os.path.join(self.outdir(), 'lib', 'FRC_UserProgram.out')))
 
     def build_env(self):
-      return {'WIND_BASE': self.wind_base}
+      return {'WIND_BASE': self.wind_base()}
 
   def __init__(self):
     super(CRIOProcessor, self).__init__()
 
     if 'WIND_BASE' in os.environ:
-      self.wind_base = os.environ['WIND_BASE']
+      self.__wind_base = os.environ['WIND_BASE']
     else:
-      self.wind_base = '/usr/local/powerpc-wrs-vxworks/wind_base'
+      self.__wind_base = '/usr/local/powerpc-wrs-vxworks/wind_base'
 
   def parse_platforms(self, string):
     if string is None or string == 'crio':
-      return (CRIOProcessor.Platform(False, self.wind_base),)
+      return (CRIOProcessor.Platform(False, self.wind_base()),)
     elif string == 'crio-debug' or string == 'debug':
-      return (CRIOProcessor.Platform(True, self.wind_base),)
+      return (CRIOProcessor.Platform(True, self.wind_base()),)
     else:
       raise Processor.UnknownPlatform('Unknown cRIO platform "%s".' % string)
 
-  def extra_gyp_flags(self):
-    return ('-DWIND_BASE=%s' % self.wind_base,)
+  def wind_base(self):
+    return self.__wind_base
 
-  def is_crio(self): return True
+  def extra_gyp_flags(self):
+    return ('-DWIND_BASE=%s' % self.wind_base(),)
+
+  def modify_ninja_file(self, ninja_file):
+    subprocess.check_call(
+        ('sed', '-i',
+         's/nm -gD/nm/g', ninja_file),
+        stdin=open(os.devnull, 'r'))
+
+  def download_externals(self, _):
+    call_download_externals('crio')
 
   def check_installed(self):
     # TODO(brians): Add powerpc-wrs-vxworks (a new enough version too).
@@ -173,35 +341,46 @@ class CRIOProcessor(Processor):
         ('ncftp',))
 
 class PrimeProcessor(Processor):
+  """A Processor subclass for building prime code."""
+
   class Platform(Processor.Platform):
     def __init__(self, architecture, compiler, debug, sanitizer):
       super(PrimeProcessor.Platform, self).__init__()
 
-      self.architecture = architecture
-      self.compiler = compiler
-      self.debug = debug
-      self.sanitizer = sanitizer
+      self.__architecture = architecture
+      self.__compiler = compiler
+      self.__debug = debug
+      self.__sanitizer = sanitizer
 
     def __repr__(self):
       return 'PrimeProcessor.Platform(architecture=%s, compiler=%s, debug=%s' \
           ', sanitizer=%s)' \
-          % (self.architecture, self.compiler, self.debug, self.sanitizer)
+          % (self.architecture(), self.compiler(), self.debug(),
+             self.sanitizer())
     def __str__(self):
-      return '%s-%s%s-%s' % (self.architecture, self.compiler,
-                          '-debug' if self.debug else '', self.sanitizer)
+      return '%s-%s%s-%s' % (self.architecture(), self.compiler(),
+                          '-debug' if self.debug() else '', self.sanitizer())
 
     def os(self):
       return 'linux'
     def gyp_platform(self):
-      return '%s-%s-%s' % (self.os(), self.architecture, self.compiler)
+      return '%s-%s-%s' % (self.os(), self.architecture(), self.compiler())
+    def architecture(self):
+      return self.__architecture
+    def compiler(self):
+      return self.__compiler
+    def sanitizer(self):
+      return self.__sanitizer
+    def debug(self):
+      return self.__debug
 
     def outname(self):
       return str(self)
 
     # TODO(brians): test this
     def deploy(self, dry_run):
-      """Downloads code to the prime in a way that avoids clashing too badly with starter
-      """
+      # Downloads code to the prime in a way that avoids clashing too badly with
+      # starter (like the naive download everything one at a time).
       SUM = 'md5sum'
       TARGET_DIR = '/home/driver/robot_code/bin'
       TEMP_DIR = '/tmp/aos_downloader'
@@ -233,22 +412,24 @@ class PrimeProcessor(Processor):
                  TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
     def build_env(self):
+      OTHER_SYSROOT = '/opt/clang-3.5/'
+      SYMBOLIZER_PATH = OTHER_SYSROOT + 'bin/llvm-symbolizer'
       r = {}
-      if self.compiler == 'clang' or self.compiler == 'gcc_4.8':
-        r['LD_LIBRARY_PATH'] = '/opt/clang-3.5/lib64'
-      if self.sanitizer == 'address':
-        r['ASAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
+      if self.compiler() == 'clang' or self.compiler() == 'gcc_4.8':
+        r['LD_LIBRARY_PATH'] = OTHER_SYSROOT + 'lib64'
+      if self.sanitizer() == 'address':
+        r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
         r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
-      elif self.sanitizer == 'memory':
-        r['MSAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
-      elif self.sanitizer == 'thread':
-        r['TSAN_OPTIONS'] = 'external_symbolizer_path=/opt/clang-3.5/bin/llvm-symbolizer'
+      elif self.sanitizer() == 'memory':
+        r['MSAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
+      elif self.sanitizer() == 'thread':
+        r['TSAN_OPTIONS'] = 'external_symbolizer_path=' + SYMBOLIZER_PATH
 
       r['CCACHE_COMPRESS'] = 'yes'
       r['CCACHE_DIR'] = \
           os.path.abspath(os.path.join(aos_path(), '..', 'output', 'ccache_dir'))
       r['CCACHE_HASHDIR'] = 'yes'
-      if self.compiler == 'clang':
+      if self.compiler() == 'clang':
         # clang doesn't like being run directly on the preprocessed files.
         r['CCACHE_CPP2'] = 'yes'
       # Without this, ccache slows down because of the generated header files.
@@ -257,7 +438,7 @@ class PrimeProcessor(Processor):
       # uses them.
       r['CCACHE_SLOPPINESS'] = 'include_file_mtime'
 
-      if self.architecture == 'amd64':
+      if self.architecture() == 'amd64':
         r['PATH'] = os.path.join(aos_path(), 'build', 'bin-ld.gold') + \
             ':' + os.environ['PATH']
 
@@ -300,33 +481,50 @@ class PrimeProcessor(Processor):
                                       sanitizer == 'memory'):
           # GCC 4.8 doesn't support these sanitizers.
           continue
-        # We already added sanitizer == 'none' above.
-        if sanitizer != 'none':
-          platforms.append(
-              PrimeProcessor.Platform('amd64', compiler, True, sanitizer))
-    self.platforms = frozenset(platforms)
+        if sanitizer == 'none':
+          # We already added sanitizer == 'none' above.
+          continue
+        platforms.append(
+            PrimeProcessor.Platform('amd64', compiler, True, sanitizer))
+    self.__platforms = frozenset(platforms)
+
     if is_test:
-      self.default_platforms = self.select_platforms(architecture='amd64',
-                                                     debug=True)
+      default_platforms = self.select_platforms(architecture='amd64',
+                                                debug=True)
       for sanitizer, warning in PrimeProcessor.SANITIZER_TEST_WARNINGS.items():
         if warning[0]:
-          self.default_platforms -= self.select_platforms(sanitizer=sanitizer)
+          default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
       # TODO(brians): Switch to deploying the code built with clang.
-      self.default_platforms = self.select_platforms(architecture='arm',
-                                                     compiler='gcc',
-                                                     debug=False)
+      default_platforms = self.select_platforms(architecture='arm',
+                                                compiler='gcc',
+                                                debug=False)
     else:
-      self.default_platforms = self.select_platforms(debug=False)
+      default_platforms = self.select_platforms(debug=False)
+    self.__default_platforms = frozenset(default_platforms)
 
-  def extra_gyp_flags(self):
-    return ()
-  def is_crio(self): return False
+  def platforms(self):
+    return self.__platforms
+  def default_platforms(self):
+    return self.__default_platforms
+
+  def download_externals(self, platforms):
+    to_download = set()
+    for architecture in PrimeProcessor.ARCHITECTURES:
+      for sanitizer in PrimeProcessor.PIE_SANITIZERS:
+        if platforms & self.select_platforms(architecture=architecture,
+                                             sanitizer=sanitizer):
+          to_download.add(architecture + '-fPIE')
+        if platforms & self.select_platforms(architecture=architecture,
+                                             sanitizer='none'):
+          to_download.add(architecture)
+    for download_target in to_download:
+      call_download_externals(download_target)
 
   def parse_platforms(self, string):
     if string is None:
-      return self.default_platforms
-    r = self.default_platforms
+      return self.default_platforms()
+    r = self.default_platforms()
     for part in string.split(','):
       if part[0] == '+':
         r = r | self.select_platforms_string(part[1:])
@@ -336,18 +534,18 @@ class PrimeProcessor(Processor):
         r = self.select_platforms_string(part[1:])
       else:
         selected = self.select_platforms_string(part)
-        r = r - (self.platforms - selected)
+        r = r - (self.platforms() - selected)
         if not r:
           r = selected
     return r
 
   def select_platforms(self, architecture=None, compiler=None, debug=None, sanitizer=None):
     r = []
-    for platform in self.platforms:
-      if architecture is None or platform.architecture == architecture:
-        if compiler is None or platform.compiler == compiler:
-          if debug is None or platform.debug == debug:
-            if sanitizer is None or platform.sanitizer == sanitizer:
+    for platform in self.platforms():
+      if architecture is None or platform.architecture() == architecture:
+        if compiler is None or platform.compiler() == compiler:
+          if debug is None or platform.debug() == debug:
+            if sanitizer is None or platform.sanitizer() == sanitizer:
               r.append(platform)
     return set(r)
 
@@ -389,8 +587,8 @@ def main():
     def error(self, message):
       raise TryParsingAgain
 
-  def SetUpParser(parser, args):
-    def AddBuildArgs(parser):
+  def set_up_parser(parser, args):
+    def add_build_args(parser):
       parser.add_argument(
           'target',
           help='target to build',
@@ -399,7 +597,7 @@ def main():
           '--jobs', '-j',
           help='number of things to do at once',
           type=int)
-    def AddCommonArgs(parser):
+    def add_common_args(parser):
       parser.add_argument(
           'platforms',
           help='platform(s) to act on',
@@ -412,19 +610,19 @@ def main():
     build_parser = subparsers.add_parser(
         'build',
         help='build the code (default)')
-    AddCommonArgs(build_parser)
-    AddBuildArgs(build_parser)
+    add_common_args(build_parser)
+    add_build_args(build_parser)
 
     clean_parser = subparsers.add_parser(
         'clean',
         help='remove all output directories')
-    AddCommonArgs(clean_parser)
+    add_common_args(clean_parser)
 
     deploy_parser = subparsers.add_parser(
         'deploy',
         help='build and download the code')
-    AddCommonArgs(deploy_parser)
-    AddBuildArgs(deploy_parser)
+    add_common_args(deploy_parser)
+    add_build_args(deploy_parser)
     deploy_parser.add_argument(
       '-n', '--dry-run',
       help="don't actually download anything",
@@ -433,19 +631,19 @@ def main():
     tests_parser = subparsers.add_parser(
         'tests',
         help='run tests')
-    AddCommonArgs(tests_parser)
-    AddBuildArgs(tests_parser)
+    add_common_args(tests_parser)
+    add_build_args(tests_parser)
 
     return parser.parse_args(args)
 
   try:
     parser = TryAgainArgumentParser()
-    args = SetUpParser(parser, sys.argv[1:])
+    args = set_up_parser(parser, sys.argv[1:])
   except TryParsingAgain:
     parser = argparse.ArgumentParser()
     REQUIRED_ARGS_END = 5
-    args = SetUpParser(parser, sys.argv[1:REQUIRED_ARGS_END] + ['build'] +
-                               sys.argv[(REQUIRED_ARGS_END):])
+    args = set_up_parser(parser, sys.argv[1:REQUIRED_ARGS_END] + ['build'] +
+                         sys.argv[(REQUIRED_ARGS_END):])
 
   if args.processor == 'crio':
     processor = CRIOProcessor()
@@ -471,26 +669,7 @@ def main():
     user_output("No platforms selected!")
     exit(1)
 
-  def download_externals(argument):
-    subprocess.check_call(
-        (os.path.join(aos_path(), 'build', 'download_externals.sh'),
-         argument),
-        stdin=open(os.devnull, 'r'))
-
-  if processor.is_crio():
-    download_externals('crio')
-  else:
-    to_download = set()
-    for architecture in PrimeProcessor.ARCHITECTURES:
-      for sanitizer in PrimeProcessor.PIE_SANITIZERS:
-        if platforms & processor.select_platforms(architecture=architecture,
-                                                  sanitizer=sanitizer):
-          to_download.add(architecture + '-fPIE')
-        if platforms & processor.select_platforms(architecture=architecture,
-                                                  sanitizer='none'):
-          to_download.add(architecture)
-    for download_target in to_download:
-      download_externals(download_target)
+  processor.download_externals(platforms)
 
   class ToolsConfig(object):
     def __init__(self):
@@ -519,7 +698,18 @@ def main():
     raise excinfo[1]
 
   def need_to_run_gyp(platform):
+    """Determines if we need to run gyp again or not.
+
+    The generated build files are supposed to re-run gyp again themselves, but
+    that doesn't work (or at least it used to not) and we sometimes want to
+    modify the results anyways.
+
+    Args:
+      platform: The platform to check for.
+    """
     if not os.path.exists(platform.build_ninja()):
+      return True
+    if os.path.getmtime(__file__) > os.path.getmtime(platform.build_ninja()):
       return True
     dirs = os.listdir(os.path.join(aos_path(), '..'))
     # Looking through these folders takes a long time and isn't useful.
@@ -532,6 +722,11 @@ def main():
         stdin=open(os.devnull, 'r'))
 
   def env(platform):
+    """Makes sure we pass through important environmental variables.
+
+    Returns:
+      An environment suitable for passing to subprocess.Popen and friends.
+    """
     build_env = dict(platform.build_env())
     if not 'TERM' in build_env:
       build_env['TERM'] = os.environ['TERM']
@@ -552,7 +747,7 @@ def main():
       if warned_about:
         user_output(warning[1])
         if warning[0]:
-          # TODO(brians): Add a --force flag or something?
+          # TODO(brians): Add a --force flag or something to override this?
           user_output('Refusing to run tests for sanitizer %s.' % sanitizer)
           exit(1)
 
@@ -574,13 +769,13 @@ def main():
              '-I/dev/stdin', '-Goutput_dir=output',
              '-DOS=%s' % platform.os(),
              '-DPLATFORM=%s' % platform.gyp_platform(),
-             '-DARCHITECTURE=%s' % platform.architecture,
-             '-DCOMPILER=%s' % platform.compiler.split('_')[0],
-             '-DFULL_COMPILER=%s' % platform.compiler,
-             '-DDEBUG=%s' % ('yes' if platform.debug else 'no'),
-             '-DSANITIZER=%s' % platform.sanitizer,
+             '-DARCHITECTURE=%s' % platform.architecture(),
+             '-DCOMPILER=%s' % platform.compiler().split('_')[0],
+             '-DFULL_COMPILER=%s' % platform.compiler(),
+             '-DDEBUG=%s' % ('yes' if platform.debug() else 'no'),
+             '-DSANITIZER=%s' % platform.sanitizer(),
              '-DSANITIZER_FPIE=%s' % ('-fPIE'
-                 if platform.sanitizer in PrimeProcessor.PIE_SANITIZERS
+                 if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
                  else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
@@ -595,11 +790,7 @@ def main():
         if gyp.returncode:
           user_output("Running gyp failed!")
           exit(1)
-        if processor.is_crio():
-          subprocess.check_call(
-              ('sed', '-i',
-               's/nm -gD/nm/g', platform.build_ninja()),
-              stdin=open(os.devnull, 'r'))
+        processor.modify_ninja_file(platform.build_ninja())
         user_output('Done running gyp')
       else:
         user_output("Not running gyp")
@@ -651,7 +842,7 @@ def main():
                 # Remove color escape codes.
                 line = re.sub(r'\x1B\[[0-9;]*[a-zA-Z]', '', line)
               sys.stdout.write(line)
-            if done.returncode == 0:
+            if not done.returncode:
               test_output('Test %s succeeded' % done.name)
             else:
               test_output('Test %s failed' % done.name)

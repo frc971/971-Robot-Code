@@ -5,17 +5,14 @@
 # A directory with everything in it ignored from source control.
     'TMPDIR': '<(DEPTH)/aos/build/temp',
     'aos_abs': '<!(readlink -f <(DEPTH)/aos)', # for use in non-path contexts
-# the .gyp file that has targets for the various external libraries
+# The .gyp file that has targets for the various external libraries.
     'EXTERNALS': '<(AOS)/build/externals.gyp',
-# the directory that gets rsynced to the target
+# The directory that gets rsynced to the target.
     'rsync_dir': '<(PRODUCT_DIR)/outputs',
-# The directory that loadable_module and shared_library targets get put into
-# There's a target_conditions that puts loadable_modules here and
-#   shared_librarys automatically get put here.
-    'so_dir': '<(PRODUCT_DIR)/lib',
-# the directory that executables that depend on <(EXTERNALS):gtest get put into
+# The directory that executables that depend on <(EXTERNALS):gtest get put into.
     'test_dir': '<(PRODUCT_DIR)/tests',
 
+# Stuck into a variable (with a space on the end) to make disabling it easy.
     'ccache': '<!(which ccache) ',
   },
   'conditions': [
@@ -35,11 +32,13 @@
         'variables': {
           'arm-clang-symlinks': '<!(realpath -s <(AOS)/build/arm-clang-symlinks)',
           'arm-clang-sysroot': '<(arm-clang-symlinks)/sysroot',
+# Flags that should be passed to all compile/link/etc commands.
           'platflags': [
             '-target', 'armv7a-linux-gnueabihf',
             '-mfloat-abi=hard',
             '--sysroot=<(arm-clang-sysroot)',
 
+            # TODO(brians): See if it will run with this enabled.
             #-mhwdiv=arm,thumb
           ],
         },
@@ -121,9 +120,9 @@
   'target_defaults': {
     'defines': [
       '__STDC_FORMAT_MACROS',
-      '_FORTIFY_SOURCE=2',
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
+      '_FORTIFY_SOURCE=2',
     ],
     'ldflags': [
       '-pipe',
@@ -167,20 +166,20 @@
             'AOS_DEBUG=1',
           ],
           'conditions': [['SANITIZER=="none"', {
-            'cflags': [
-              '-O0',
-            ],
-          }, {
-            'cflags': [
-              '-O1',
-            ],
-          }]],
-        }, {
+              'cflags': [
+                '-O0',
+              ],
+            }, {
+              'cflags': [
+                '-O1',
+              ],
+            }
+          ]],
+        }, { # 'DEBUG=="no"'
           'defines': [
             'AOS_DEBUG=0',
           ],
           'cflags': [
-            # TODO(brians): add -flto
             '-O3',
             '-fomit-frame-pointer',
           ],
@@ -188,6 +187,7 @@
             '-O3',
           ],
           'conditions': [['PLATFORM=="crio"', {
+# Copied from stuff that I think started with the supplied Makefiles.
               'cflags': [
                 '-fstrength-reduce',
                 '-fno-builtin',
@@ -257,23 +257,15 @@
             'TOOL=gnu',
             '_WRS_KERNEL',
             '__PPC__',
-# This tells eigen to not do anything with alignment at all. See
-# <http://eigen.tuxfamily.org/dox/TopicPreprocessorDirectives.html> for
-# details. It really doesn't like to work without this.
-            'EIGEN_DONT_ALIGN',
-# prevent the vxworks system headers from being dumb and #defining min and max
+# Prevent the vxworks system headers from being dumb and #defining min and max.
             'NOMINMAX',
           ],
-        }, {
+        }, { # 'PLATFORM!="crio"'
           'target_conditions': [
-# default to putting outputs into rsync_dir
+# Default to putting outputs into rsync_dir.
             ['no_rsync==0 and _type!="static_library"', {
                 'product_dir': '<(rsync_dir)',
               },
-            ],
-            ['_type=="loadable_module"', {
-                'product_dir': '<(so_dir)',
-              }
             ],
           ],
           'ldflags': [
@@ -281,7 +273,6 @@
           ],
           'cflags': [
             '-pthread',
-            '-fno-exceptions',
           ],
           'cflags_cc': [
             '-std=gnu++11',
@@ -305,10 +296,9 @@
             ], ['COMPILER=="clang"', {
                 'cflags': [
                   '-fcolor-diagnostics',
+                  '-fmessage-length=80',
                 ],
                 'defines': [
-                  # To work around <http://llvm.org/bugs/show_bug.cgi?id=13530>.
-                  '__float128=void',
                   # This tells clang's optimizer the same thing.
                   '__builtin_assume_aligned(p, a)=(((uintptr_t(p) % (a)) == 0) ? (p) : (__builtin_unreachable(), (p)))',
                 ],
