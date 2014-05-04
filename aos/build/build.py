@@ -189,6 +189,8 @@ class PrimeProcessor(Processor):
         r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
       elif self.sanitizer == 'memory':
         r['MSAN_SYMBOLIZER_PATH'] = '/opt/clang-3.5/bin/llvm-symbolizer'
+      elif self.sanitizer == 'thread':
+        r['TSAN_OPTIONS'] = 'external_symbolizer_path=/opt/clang-3.5/bin/llvm-symbolizer'
 
       r['CCACHE_COMPRESS'] = 'yes'
       r['CCACHE_DIR'] = \
@@ -202,7 +204,6 @@ class PrimeProcessor(Processor):
       # system finishes modifying header files before compiling anything that
       # uses them.
       r['CCACHE_SLOPPINESS'] = 'include_file_mtime'
-      r['CCACHE_COMPILERCHECK'] = 'content'
 
       if self.architecture == 'amd64':
         r['PATH'] = os.path.join(aos_path(), 'build', 'bin-ld.gold') + \

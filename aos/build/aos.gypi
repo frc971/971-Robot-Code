@@ -166,9 +166,15 @@
           'defines': [
             'AOS_DEBUG=1',
           ],
-          'cflags': [
-            '-O0',
-          ],
+          'conditions': [['SANITIZER=="none"', {
+            'cflags': [
+              '-O0',
+            ],
+          }, {
+            'cflags': [
+              '-O1',
+            ],
+          }]],
         }, {
           'defines': [
             'AOS_DEBUG=0',
