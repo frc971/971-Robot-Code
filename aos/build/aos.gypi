@@ -67,8 +67,8 @@
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
         'make_global_settings': [
-          ['CC', '<(ccache)<!(which gcc)'],
-          ['CXX', '<(ccache)<!(which g++)'],
+          ['CC', '<(ccache)<!(which gcc-4.7)'],
+          ['CXX', '<(ccache)<!(which g++-4.7)'],
         ],
       },
     ], ['PLATFORM=="linux-amd64-gcc_4.8"', {

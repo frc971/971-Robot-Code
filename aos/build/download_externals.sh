@@ -6,6 +6,10 @@ set -e
 AOS=$(readlink -f $(dirname $0)/..)
 . $(dirname $0)/tools_config
 
+# A separate variable for stuff that should be in LDFLAGS for everything because
+# the value from CONFIGURE_FLAGS has to get overriden in some places.
+ALL_LDFLAGS=""
+
 if [ "$1" == "arm" ]; then
   COMPILED=${EXTERNALS}/../compiled-arm
 
@@ -29,7 +33,8 @@ elif [ "$1" == "amd64-fPIE" ]; then
 
   export CFLAGS="-fPIE"
   export CXXFLAGS="-fPIE"
-  export LDFLAGS="-fPIE"
+  ALL_LDFLAGS="-fPIE"
+  export LDFLAGS=${ALL_LDFLAGS}
   CONFIGURE_FLAGS="CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" LDFLAGS=\"${LDFLAGS}\""
   IS_CRIO=0
 elif [ "$1" == "crio" ]; then
@@ -170,9 +175,10 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
         wget ${LIBCDD_URL} -O ${LIBCDD_TAR}
 [ -d ${LIBCDD_DIR} ] || ( mkdir ${LIBCDD_DIR} && tar \
         --strip-components=1 -C ${LIBCDD_DIR} -xf ${LIBCDD_TAR} )
-[ -f ${LIBCDD_LIB} ] || LDFLAGS=-L${GMP_PREFIX}/lib \
+[ -f ${LIBCDD_LIB} ] || \
 	bash -c "cd ${LIBCDD_DIR} && ./configure \
 	--disable-shared ${CONFIGURE_FLAGS} \
+	LDFLAGS=\"${ALL_LDFLAGS} -L${GMP_PREFIX}/lib\"\
 	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
 	&& make gmpdir=${GMP_PREFIX} && make install"
 

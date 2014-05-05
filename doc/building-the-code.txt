@@ -6,41 +6,14 @@ Most of these instructions assume 64 bit Debian Squeeze.
 [Install Packages]
 First, you have to download and follow the directions in
   <http://robotics.mvla.net/files/frc971/packages/frc971.list>.
-You also have to follow the directions at
-  <http://backports-master.debian.org/Instructions/>.
-Then, run `apt-get install subversion git g++-multilib gcc-multilib ruby patch \
-    make openjdk-6-jdk lib32event-dev python unzip bzip2 default-jdk`
-  and `apt-get install -t squeeze-backports swig` (package lists correct for
-  amd64 Squeeze; you might be able to get it to build on other
-  versions/platforms/distributions (Ubuntu, Mint, ...) if you can find the
-  right packages.
+Then, run `apt-get install python3`.
+The build script will tell you what other packages to install when you run it.
+  It's pretty smart about not checking for things it doesn't need, so you might
+  want to build 'deploy all' to see everything it wants.
   You will have to accept the
-    "WARNING: The following packages cannot be authenticated!" warning for the
-    "libevent-2.0-5 lib32event-2.0-5 libevent-core-2.0-5 lib32event-core-2.0-5 \
-      libevent-extra-2.0-5 libevent-pthreads-2.0-5 libevent-openssl-2.0-5 \
-      libevent-dev lib32event-extra-2.0-5 lib32event-pthreads-2.0-5 \
-      lib32event-openssl-2.0-5 lib32event-dev" packages.
-
-(On 64-bit Ubuntu Precise Pangolin:
-`apt-get install subversion git g++-multilib gcc-multilib ruby patch \
-    make openjdk-6-jdk default-jdk libevent-dev:i386 libevent-2.0-5:i386`)
-
-Also run `apt-get install powerpc-wrs-vxworks tcl` if you want to be able to
-  build the cRIO code too.
-  NOTE: This is in *addition* to the above commands.
-  You will have to accept the
-    "WARNING: The following packages cannot be authenticated!" warning for the
-    "powerpc-wrs-vxworks" package.
-If you want to actually download code to a robot (it will only work on amd64
-  Squeeze), then 
-  (1) do `apt-get install ncftp rsync socat`.
-      socat is used for the netconsole.sh tool that is used to talk to the cRIO.
-  (2) Set the IP address of the downloading machine to be on the same subnet.
-      ifconfig eth0 10.9.71.22
-      This will need to be redone when the computer Ethernet connection is
-      reset.  For example, it is reset by disconnecting and reconnecting 
-      the Ethernet cable or power cycling the robot.  Check it with
-      ifconfig eth0
+    "WARNING: The following packages cannot be authenticated!" warning for
+    various packages downloaded from our package repository.
+  This works for amd64 Wheezy, no guarantees or support for anything else.
 
 [Running Locally]
 If you want to be able to run the realtime code on your development machine
@@ -48,13 +21,21 @@ If you want to be able to run the realtime code on your development machine
   variable), follow the directions in /src/aos/config/aos.conf.
 
 [Compiling and Downloading]
-Run `./build.sh` from src/frc971/atom_code/ and src/frc971/crio/.
-Use `./build.sh deploy` to download to a robot.
+Run src/frc971/{atom_code,crio}/build.sh.
+  Give it clean, tests, or deploy as a first argument to do something other
+    than just build.
+  Each action (build (the default), clean, tests, or deploy) has a different
+    default set of versions of the code it builds. You can change those by
+    passing another argument. Some popular ones are 'all' (build everything),
+        'clang-amd64-none' (the most basic one for local testing), and
+        'gcc-arm-nodebug' (the one that gets downloaded). See its --help for
+        more details.
 
 [Communicating with the cRIO]
-Use netconsole.sh to communicate directly with the cRIO.  
-frc971/2013/trunk/src/aos/crio/bin/netconsole.sh 
+Use netconsole (in the amd64 outputs directories) to communicate directly with
+  the cRIO.
 Use "reboot" from within netconsole.sh will reboot the cRIO.  ^C will
-stop it the netconsole.sh command.  "version" will tell you the the
-VxWorks and WIND versions and "help" will give you a list of VxWorks
-commands that you can use.
+  stop the netconsole program.  "version" will tell you the the
+  VxWorks and WIND versions and "help" will give you a list of VxWorks
+  commands that you can use.
+Make sure your computer is on the right subnet first.

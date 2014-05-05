@@ -213,8 +213,8 @@ class Processor(object):
       """
       raise NotImplementedError('build_env should be overriden')
 
-  def check_installed(self):
-    """Makes sure that all packages necessary to build are installed."""
+  def check_installed(self, platforms, is_deploy):
+    """Makes sure that everything necessary to build platforms are installed."""
     raise NotImplementedError('check_installed should be overriden')
   def parse_platforms(self, string):
     """Args:
@@ -254,15 +254,29 @@ class Processor(object):
 
     Args:
       other_packages: A tuple of platform-specific packages to check for."""
-    all_packages = () + other_packages
+    all_packages = other_packages
+    # Necessary to build stuff.
+    all_packages += ('ccache', 'make')
+    # Necessary to download stuff to build.
+    all_packages += ('wget', 'git', 'subversion', 'patch', 'unzip', 'bzip2')
+    # Necessary to build externals stuff.
+    all_packages += ('python', 'gcc', 'g++')
     try:
       result = subprocess.check_output(
           ('dpkg-query', '--show') + all_packages,
           stdin=open(os.devnull, 'r'),
           stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-      user_output('Some packages not installed:\n'
-                  + e.output.decode('utf-8').rstrip())
+      output = e.output.decode('utf-8').rstrip()
+      not_found = []
+      for line in output.splitlines(True):
+        match = re.match(r'dpkg-query: no packages found matching (.*)',
+                         line)
+        if match:
+          not_found.append(match.group(1))
+      user_output('Some packages not installed: %s.' % ', '.join(not_found))
+      user_output('Try something like `sudo apt-get install %s`.' %
+          ' '.join(not_found))
       exit(1)
 
 class CRIOProcessor(Processor):
@@ -276,12 +290,12 @@ class CRIOProcessor(Processor):
       self.__wind_base = wind_base
 
     def __repr__(self):
-      return 'CRIOProcessor.Platform(debug=%s)' % self.debug
+      return 'CRIOProcessor.Platform(debug=%s)' % self.debug()
     def __str__(self):
-      return 'crio%s' % ('-debug' if self.debug else '')
+      return 'crio%s' % ('-debug' if self.debug() else '')
 
     def outname(self):
-      return 'crio-debug' if self.debug else 'crio'
+      return 'crio-debug' if self.debug() else 'crio'
     def os(self):
       return 'vxworks'
     def gyp_platform(self):
@@ -290,6 +304,8 @@ class CRIOProcessor(Processor):
       return 'ppc'
     def compiler(self):
       return 'gcc'
+    def sanitizer(self):
+      return 'none'
     def debug(self):
       return self.__debug
     def wind_base(self):
@@ -335,10 +351,11 @@ class CRIOProcessor(Processor):
   def download_externals(self, _):
     call_download_externals('crio')
 
-  def check_installed(self):
-    # TODO(brians): Add powerpc-wrs-vxworks (a new enough version too).
-    self.do_check_installed(
-        ('ncftp',))
+  def check_installed(self, platforms, is_deploy):
+    packages = ('powerpc-wrs-vxworks', 'tcl')
+    if is_deploy:
+      packages += ('ncftp',)
+    self.do_check_installed(packages)
 
 class PrimeProcessor(Processor):
   """A Processor subclass for building prime code."""
@@ -524,6 +541,8 @@ class PrimeProcessor(Processor):
   def parse_platforms(self, string):
     if string is None:
       return self.default_platforms()
+    elif string == 'all':
+      return self.platforms()
     r = self.default_platforms()
     for part in string.split(','):
       if part[0] == '+':
@@ -571,10 +590,25 @@ class PrimeProcessor(Processor):
         debug=debug,
         sanitizer=sanitizer)
 
-  def check_installed(self):
-    self.do_check_installed(
-        ('clang-3.5', 'gcc-4.7-arm-linux-gnueabihf',
-         'g++-4.7-arm-linux-gnueabihf', 'openssh-client'))
+  def check_installed(self, platforms, is_deploy):
+    packages = set(('lzip', 'm4', 'realpath'))
+    packages.add('ruby')
+    # clang-format from here gets used for all versions.
+    packages.add('clang-3.5')
+    packages.add('arm-eabi-gcc')
+    for platform in platforms:
+      if platform.architecture() == 'arm':
+        packages.add('gcc-4.7-arm-linux-gnueabihf')
+        packages.add('g++-4.7-arm-linux-gnueabihf')
+      if platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8':
+        packages.add('clang-3.5')
+      if is_deploy:
+        packages.add('openssh-client')
+      if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
+        packages.add('gcc-4.7')
+        packages.add('g++-4.7')
+
+    self.do_check_installed(tuple(packages))
 
 def main():
   class TryParsingAgain(Exception):
@@ -652,7 +686,6 @@ def main():
                                args.action_name == 'deploy')
   else:
     parser.exit(status=1, message='Unknown processor "%s".' % args.processor)
-  processor.check_installed()
 
   if 'target' in args:
     targets = args.target[:]
@@ -669,6 +702,7 @@ def main():
     user_output("No platforms selected!")
     exit(1)
 
+  processor.check_installed(platforms, args.action_name == 'deploy')
   processor.download_externals(platforms)
 
   class ToolsConfig(object):
@@ -713,8 +747,8 @@ def main():
       return True
     dirs = os.listdir(os.path.join(aos_path(), '..'))
     # Looking through these folders takes a long time and isn't useful.
-    dirs.remove('output')
-    dirs.remove('.git')
+    if dirs.count('output'): dirs.remove('output')
+    if dirs.count('.git'): dirs.remove('.git')
     return not not subprocess.check_output(
         ('find',) + tuple(os.path.join(aos_path(), '..', d) for d in dirs)
          + ('-newer', platform.build_ninja(),
