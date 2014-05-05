@@ -44,10 +44,13 @@ class TestThread(threading.Thread):
     self.process_lock = threading.Lock()
     self.process = None
     self.stopped = False
+    self.returncode = None
+    self.output = None
 
   def run(self):
     with self.start_semaphore:
-      if self.stopped: return
+      if self.stopped:
+        return
       test_output('Starting test %s...' % self.name)
       self.output, subprocess_output = os.pipe()
       with self.process_lock:
@@ -72,7 +75,8 @@ class TestThread(threading.Thread):
     """
     with self.process_lock:
       self.stopped = True
-      if not self.process: return
+      if not self.process:
+        return
       self.process.terminate()
   def kill_process(self):
     """Forcibly terminates any running process.
@@ -81,7 +85,8 @@ class TestThread(threading.Thread):
     """
     with self.process_lock:
       self.stopped = True
-      if not self.process: return
+      if not self.process:
+        return
       self.process.kill()
 
 def aos_path():
@@ -93,7 +98,7 @@ def aos_path():
 def get_ip(device):
   """Retrieves the IP address for a given device."""
   FILENAME = os.path.normpath(os.path.join(aos_path(), '..',
-                              'output', 'ip_base.txt'))
+                                           'output', 'ip_base.txt'))
   if not os.access(FILENAME, os.R_OK):
     os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
     with open(FILENAME, 'w') as f:
@@ -111,7 +116,7 @@ def user_output(message):
   """Prints message to the user."""
   print('build.py: ' + message, file=sys.stderr)
 
-"""A lock to avoid making a mess intermingling test-related messages."""
+# A lock to avoid making a mess intermingling test-related messages.
 test_output_lock = threading.RLock()
 def test_output(message):
   """Prints message to the user. Intended for messages related to tests."""
@@ -135,6 +140,7 @@ class Processor(object):
 
   class UnknownPlatform(Exception):
     def __init__(self, message):
+      super(Processor.UnknownPlatform, self).__init__()
       self.message = message
 
   class Platform(object):
@@ -200,6 +206,15 @@ class Processor(object):
         of the FULL_COMPILER gyp variable.
       """
       raise NotImplementedError('compiler should be overriden')
+    def sanitizer(self):
+      """Returns:
+        The sanitizer used on this platform.
+
+        This will be used as the value of the SANITIZER gyp variable.
+
+        "none" if there isn't one.
+      """
+      raise NotImplementedError('sanitizer should be overriden')
     def debug(self):
       """Returns:
         Whether or not this platform compiles with debugging information.
@@ -216,7 +231,7 @@ class Processor(object):
   def check_installed(self, platforms, is_deploy):
     """Makes sure that everything necessary to build platforms are installed."""
     raise NotImplementedError('check_installed should be overriden')
-  def parse_platforms(self, string):
+  def parse_platforms(self, platforms_string):
     """Args:
       string: A user-supplied string saying which platforms to select.
 
@@ -247,8 +262,6 @@ class Processor(object):
     """
     raise NotImplementedError('download_externals should be overriden')
 
-  # TODO(brians): Verify that this (and its callers) catch everything from a
-  # fresh install.
   def do_check_installed(self, other_packages):
     """Helper for subclasses to implement check_installed.
 
@@ -262,6 +275,7 @@ class Processor(object):
     # Necessary to build externals stuff.
     all_packages += ('python', 'gcc', 'g++')
     try:
+      # TODO(brians): Check versions too.
       result = subprocess.check_output(
           ('dpkg-query', '--show') + all_packages,
           stdin=open(os.devnull, 'r'),
@@ -276,7 +290,7 @@ class Processor(object):
           not_found.append(match.group(1))
       user_output('Some packages not installed: %s.' % ', '.join(not_found))
       user_output('Try something like `sudo apt-get install %s`.' %
-          ' '.join(not_found))
+                  ' '.join(not_found))
       exit(1)
 
 class CRIOProcessor(Processor):
@@ -315,7 +329,8 @@ class CRIOProcessor(Processor):
     def deploy(self, dry_run):
       self.do_deploy(dry_run,
                      ('ncftpput', get_ip('robot'), '/',
-                      os.path.join(self.outdir(), 'lib', 'FRC_UserProgram.out')))
+                      os.path.join(self.outdir(), 'lib',
+                                   'FRC_UserProgram.out')))
 
     def build_env(self):
       return {'WIND_BASE': self.wind_base()}
@@ -328,13 +343,14 @@ class CRIOProcessor(Processor):
     else:
       self.__wind_base = '/usr/local/powerpc-wrs-vxworks/wind_base'
 
-  def parse_platforms(self, string):
-    if string is None or string == 'crio':
+  def parse_platforms(self, platforms_string):
+    if platforms_string is None or platforms_string == 'crio':
       return (CRIOProcessor.Platform(False, self.wind_base()),)
     elif string == 'crio-debug' or string == 'debug':
       return (CRIOProcessor.Platform(True, self.wind_base()),)
     else:
-      raise Processor.UnknownPlatform('Unknown cRIO platform "%s".' % string)
+      raise Processor.UnknownPlatform(
+          'Unknown cRIO platform "%s".' % platforms_string)
 
   def wind_base(self):
     return self.__wind_base
@@ -376,7 +392,7 @@ class PrimeProcessor(Processor):
              self.sanitizer())
     def __str__(self):
       return '%s-%s%s-%s' % (self.architecture(), self.compiler(),
-                          '-debug' if self.debug() else '', self.sanitizer())
+                             '-debug' if self.debug() else '', self.sanitizer())
 
     def os(self):
       return 'linux'
@@ -411,8 +427,8 @@ class PrimeProcessor(Processor):
           ('ssh', TARGET,
            """rm -rf {TMPDIR} && mkdir {TMPDIR} && cd {TO_DIR}
              && echo '{SUMS}' | {SUM} --check --quiet
-             |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'""".format(
-               TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums, SUM=SUM)))
+             |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'""".
+           format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums, SUM=SUM)))
       if not to_download:
         user_output("Nothing to download")
         return
@@ -436,15 +452,16 @@ class PrimeProcessor(Processor):
         r['LD_LIBRARY_PATH'] = OTHER_SYSROOT + 'lib64'
       if self.sanitizer() == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
-        r['ASAN_OPTIONS'] = 'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
+        r['ASAN_OPTIONS'] = \
+            'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
       elif self.sanitizer() == 'memory':
         r['MSAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
       elif self.sanitizer() == 'thread':
         r['TSAN_OPTIONS'] = 'external_symbolizer_path=' + SYMBOLIZER_PATH
 
       r['CCACHE_COMPRESS'] = 'yes'
-      r['CCACHE_DIR'] = \
-          os.path.abspath(os.path.join(aos_path(), '..', 'output', 'ccache_dir'))
+      r['CCACHE_DIR'] = os.path.abspath(os.path.join(aos_path(), '..', 'output',
+                                                     'ccache_dir'))
       r['CCACHE_HASHDIR'] = 'yes'
       if self.compiler() == 'clang':
         # clang doesn't like being run directly on the preprocessed files.
@@ -472,15 +489,19 @@ class PrimeProcessor(Processor):
       'undefined': (False,
 """There are several warnings in other people's code that ubsan catches.
   The following have been verified non-interesting:
-    include/c++/4.8.2/array:*: runtime error: reference binding to null pointer of type 'int'
-      This happens with ::std::array<T, 0> and it doesn't seem to cause any issues.
-    output/downloaded/eigen-3.2.1/Eigen/src/Core/util/Memory.h:782:*: runtime error: load of misaligned address 0x* for type 'const int', which requires 4 byte alignment
+    include/c++/4.8.2/array:*: runtime error: reference binding to null pointer
+        of type 'int'
+      This happens with ::std::array<T, 0> and it doesn't seem to cause any
+        issues.
+    output/downloaded/eigen-3.2.1/Eigen/src/Core/util/Memory.h:782:*: runtime
+        error: load of misaligned address 0x* for type 'const int', which
+        requires 4 byte alignment
       That's in the CPUID detection code which only runs on x86."""),
   }
   PIE_SANITIZERS = ('memory', 'thread')
 
   def __init__(self, is_test, is_deploy):
-    super(Processor, self).__init__()
+    super(PrimeProcessor, self).__init__()
 
     platforms = []
     for architecture in PrimeProcessor.ARCHITECTURES:
@@ -538,13 +559,13 @@ class PrimeProcessor(Processor):
     for download_target in to_download:
       call_download_externals(download_target)
 
-  def parse_platforms(self, string):
-    if string is None:
+  def parse_platforms(self, platform_string):
+    if platform_string is None:
       return self.default_platforms()
-    elif string == 'all':
+    elif platform_string == 'all':
       return self.platforms()
     r = self.default_platforms()
-    for part in string.split(','):
+    for part in platform_string.split(','):
       if part[0] == '+':
         r = r | self.select_platforms_string(part[1:])
       elif part[0] == '-':
@@ -558,7 +579,8 @@ class PrimeProcessor(Processor):
           r = selected
     return r
 
-  def select_platforms(self, architecture=None, compiler=None, debug=None, sanitizer=None):
+  def select_platforms(self, architecture=None, compiler=None, debug=None,
+                       sanitizer=None):
     r = []
     for platform in self.platforms():
       if architecture is None or platform.architecture() == architecture:
@@ -568,10 +590,9 @@ class PrimeProcessor(Processor):
               r.append(platform)
     return set(r)
 
-  def select_platforms_string(self, string):
-    r = []
+  def select_platforms_string(self, platforms_string):
     architecture, compiler, debug, sanitizer = None, None, None, None
-    for part in string.split('-'):
+    for part in platforms_string.split('-'):
       if part in PrimeProcessor.ARCHITECTURES:
         architecture = part
       elif part in PrimeProcessor.COMPILERS:
@@ -583,7 +604,8 @@ class PrimeProcessor(Processor):
       elif part in PrimeProcessor.SANITIZERS:
         sanitizer = part
       else:
-        raise Processor.UnknownPlatform('Unknown platform string component "%s".' % part)
+        raise Processor.UnknownPlatform(
+            'Unknown platform string component "%s".' % part)
     return self.select_platforms(
         architecture=architecture,
         compiler=compiler,
@@ -658,9 +680,9 @@ def main():
     add_common_args(deploy_parser)
     add_build_args(deploy_parser)
     deploy_parser.add_argument(
-      '-n', '--dry-run',
-      help="don't actually download anything",
-      action='store_true')
+        '-n', '--dry-run',
+        help="don't actually download anything",
+        action='store_true')
 
     tests_parser = subparsers.add_parser(
         'tests',
@@ -725,6 +747,7 @@ def main():
   tools_config = ToolsConfig()
 
   def handle_clean_error(function, path, excinfo):
+    _, _ = function, path
     if issubclass(OSError, excinfo[0]):
       if excinfo[1].errno == errno.ENOENT:
         # Who cares if the file we're deleting isn't there?
@@ -747,12 +770,14 @@ def main():
       return True
     dirs = os.listdir(os.path.join(aos_path(), '..'))
     # Looking through these folders takes a long time and isn't useful.
-    if dirs.count('output'): dirs.remove('output')
-    if dirs.count('.git'): dirs.remove('.git')
+    if dirs.count('output'):
+      dirs.remove('output')
+    if dirs.count('.git'):
+      dirs.remove('.git')
     return not not subprocess.check_output(
         ('find',) + tuple(os.path.join(aos_path(), '..', d) for d in dirs)
-         + ('-newer', platform.build_ninja(),
-         '(', '-name', '*.gyp', '-or', '-name', '*.gypi', ')'),
+        + ('-newer', platform.build_ninja(),
+           '(', '-name', '*.gyp', '-or', '-name', '*.gypi', ')'),
         stdin=open(os.devnull, 'r'))
 
   def env(platform):
@@ -808,9 +833,9 @@ def main():
              '-DFULL_COMPILER=%s' % platform.compiler(),
              '-DDEBUG=%s' % ('yes' if platform.debug() else 'no'),
              '-DSANITIZER=%s' % platform.sanitizer(),
-             '-DSANITIZER_FPIE=%s' % ('-fPIE'
-                 if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
-                 else '')) +
+             '-DSANITIZER_FPIE=%s' %
+             ('-fPIE' if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
+              else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""
@@ -835,8 +860,8 @@ def main():
         if args.jobs:
           call += ('-j', str(args.jobs))
         subprocess.check_call(call,
-            stdin=open(os.devnull, 'r'),
-            env=env(platform))
+                              stdin=open(os.devnull, 'r'),
+                              env=env(platform))
       except subprocess.CalledProcessError as e:
         if unknown_platform_error is not None:
           user_output(unknown_platform_error)
@@ -891,8 +916,9 @@ def main():
           for thread in running:
             thread.join(5)
             if not thread.is_alive():
-              to_remove.append(thread);
-          for thread in to_remove: running.remove(thread)
+              to_remove.append(thread)
+          for thread in to_remove:
+            running.remove(thread)
           for thread in running:
             test_output(
                 'Test %s did not terminate. Killing it.' % thread.name)
