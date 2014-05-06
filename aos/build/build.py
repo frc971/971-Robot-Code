@@ -562,11 +562,11 @@ class PrimeProcessor(Processor):
   def parse_platforms(self, platform_string):
     if platform_string is None:
       return self.default_platforms()
-    elif platform_string == 'all':
-      return self.platforms()
     r = self.default_platforms()
     for part in platform_string.split(','):
-      if part[0] == '+':
+      if part == 'all':
+        r = self.platforms()
+      elif part[0] == '+':
         r = r | self.select_platforms_string(part[1:])
       elif part[0] == '-':
         r = r - self.select_platforms_string(part[1:])
@@ -624,6 +624,8 @@ class PrimeProcessor(Processor):
         packages.add('g++-4.7-arm-linux-gnueabihf')
       if platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8':
         packages.add('clang-3.5')
+      if platform.compiler() == 'gcc_4.8':
+        packages.add('libcloog-isl3:amd64')
       if is_deploy:
         packages.add('openssh-client')
       if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
