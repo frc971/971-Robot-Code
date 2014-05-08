@@ -10,8 +10,6 @@
         'no_rsync': 1,
       },
       'dependencies': [
-        #'../linux_code/camera/camera.gyp:CameraHTTPStreamer',
-        #'../linux_code/camera/camera.gyp:CameraReader',
         '../linux_code/linux_code.gyp:core',
         '../linux_code/logging/logging.gyp:binary_log_writer',
         '../linux_code/logging/logging.gyp:log_streamer',
