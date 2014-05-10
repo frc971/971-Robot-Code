@@ -225,6 +225,12 @@
       'sources': [
         'die.cc',
       ],
+      'dependencies': [
+        '<(AOS)/common/util/util.gyp:aos_strerror',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/util/util.gyp:aos_strerror',
+      ],
     },
     {
       'target_name': 'condition',
@@ -277,6 +283,7 @@
         'mutex',
         'die',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
       ],
     },
     {

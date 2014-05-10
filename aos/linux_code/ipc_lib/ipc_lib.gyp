@@ -6,6 +6,9 @@
       'sources': [
         'aos_sync.c',
       ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
     },
     {
       'target_name': 'core_lib',
@@ -29,6 +32,7 @@
       ],
       'dependencies': [
         'aos_sync',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
       'export_dependent_settings': [
         'aos_sync',

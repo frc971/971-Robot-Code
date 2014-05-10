@@ -32,8 +32,7 @@ void JoystickInput::Run() {
     } else {
       int received = sock.Receive(buffer, sizeof(buffer));
       if (received == -1) {
-        LOG(WARNING, "socket receive failed with %d: %s\n",
-            errno, strerror(errno));
+        PLOG(WARNING, "socket receive failed")
         continue;
       }
 

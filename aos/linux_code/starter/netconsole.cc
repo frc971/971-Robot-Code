@@ -92,9 +92,8 @@ void *FDCopyThread(void *to_copy_in) {
       }
       if (read_bytes == -1) {
         if (errno != EINTR) {
-          LOG(FATAL, "read(%d, %p, %zd) failed with %d: %s\n",
-              to_copy->input, buffer + position, position - sizeof(buffer),
-              errno, strerror(errno));
+          PLOG(FATAL, "read(%d, %p, %zd) failed",
+               to_copy->input, buffer + position, position - sizeof(buffer));
         }
       } else if (read_bytes == 0 && to_copy->interface_address == NULL) {
         // read(2) says that this means EOF
@@ -111,8 +110,8 @@ void *FDCopyThread(void *to_copy_in) {
       ssize_t sent_bytes = write(to_copy->output, buffer, position);
       if (sent_bytes == -1) {
         if (errno != EINTR) {
-          LOG(FATAL, "write(%d, %p, %zd) failed with %d: %s\n",
-              to_copy->output, buffer, position, errno, strerror(errno));
+          PLOG(FATAL, "write(%d, %p, %zd) failed",
+               to_copy->output, buffer, position);
         }
       } else if (sent_bytes != 0) {
         if (sent_bytes == position) {
@@ -129,6 +128,7 @@ void *FDCopyThread(void *to_copy_in) {
 int NetconsoleMain(int argc, char **argv) {
   WriteCoreDumps();
   logging::Init();
+  logging::AddImplementation(new logging::StreamLogImplementation(stdout));
 
   int input, output;
   if (argc > 1) {
@@ -136,12 +136,9 @@ int NetconsoleMain(int argc, char **argv) {
     if (output == -1) {
       if (errno == EACCES || errno == ELOOP || errno == ENOSPC ||
           errno == ENOTDIR || errno == EROFS || errno == ETXTBSY) {
-        fprintf(stderr, "Opening output file '%s' failed because of %s.\n",
-                argv[1], strerror(errno));
-        exit(EXIT_FAILURE);
+        PLOG(FATAL, "opening output file '%s' failed", argv[1]);
       }
-      LOG(FATAL, "open('%s', stuff, 0644) failed with %d: %s\n", argv[1],
-          errno, strerror(errno));
+      PLOG(FATAL, "open('%s', stuff, 0644) failed", argv[1]);
     }
     fprintf(stderr, "Writing output to '%s'.\n", argv[1]);
     input = -1;
@@ -157,20 +154,16 @@ int NetconsoleMain(int argc, char **argv) {
 
   int from_crio = socket(AF_INET, SOCK_DGRAM, 0);
   if (from_crio == -1) {
-    LOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed with %d: %s\n",
-        errno, strerror(errno));
+    PLOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed");
   }
   if (setsockopt(from_crio, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
-    LOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed with %d: %s\n",
-        on, from_crio, errno, strerror(errno));
+    PLOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed", on, from_crio);
   }
   if (setsockopt(from_crio, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) == -1) {
-    LOG(FATAL, "SOL_SOCKET::SO_BROADCAST=%d(%d) failed with %d: %s\n",
-        on, from_crio, errno, strerror(errno));
+    PLOG(FATAL, "SOL_SOCKET::SO_BROADCAST=%d(%d) failed", on, from_crio);
   }
   if (setsockopt(from_crio, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on)) == -1) {
-    LOG(FATAL, "IPROTO_IP::IP_PKTINFO=%d(%d) failed with %d: %s\n",
-        on, from_crio, errno, strerror(errno));
+    PLOG(FATAL, "IPROTO_IP::IP_PKTINFO=%d(%d) failed", on, from_crio);
   }
   union {
     struct sockaddr_in in;
@@ -188,8 +181,8 @@ int NetconsoleMain(int argc, char **argv) {
                               ::aos::NetworkAddress::kCRIO);
 
   if (bind(from_crio, &address.addr, sizeof(address)) == -1) {
-    LOG(FATAL, "bind(%d, %p, %zu) failed with %d: %s\n",
-        from_crio, &address.addr, sizeof(address), errno, strerror(errno));
+    PLOG(FATAL, "bind(%d, %p, %zu) failed",
+         from_crio, &address.addr, sizeof(address));
   }
 
   pthread_t input_thread, output_thread;
@@ -202,36 +195,33 @@ int NetconsoleMain(int argc, char **argv) {
   if (input != -1) {
     int to_crio = socket(AF_INET, SOCK_DGRAM, 0);
     if (to_crio == -1) {
-      LOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed with %d: %s\n",
-          errno, strerror(errno));
+      PLOG(FATAL, "socket(AF_INET, SOCK_DGRAM, 0) failed");
     }
     if (setsockopt(to_crio, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
-      LOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed with %d: %s\n",
-          on, to_crio, errno, strerror(errno));
+      PLOG(FATAL, "SOL_SOCKET::SO_REUSEADDR=%d(%d) failed", on, to_crio);
     }
     address.in.sin_port = hton<uint16_t>(6668);
     if (connect(to_crio, &address.addr, sizeof(address)) == -1) {
-      LOG(FATAL, "connect(%d, %p, %zu) failed with %d: %s\n",
-          to_crio, &address.addr, sizeof(address), errno, strerror(errno));
+      PLOG(FATAL, "connect(%d, %p, %zu) failed",
+           to_crio, &address.addr, sizeof(address));
     }
     FDsToCopy input_fds{input, to_crio, nullptr, nullptr};
     if (pthread_create(&input_thread, NULL, FDCopyThread, &input_fds) == -1) {
-      LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
-          &input_thread, FDCopyThread, &input_fds, errno, strerror(errno));
+      PLOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed",
+           &input_thread, FDCopyThread, &input_fds);
     }
   }
 
   address.in.sin_addr = ::aos::configuration::GetOwnIPAddress();
   FDsToCopy output_fds{from_crio, output, &address.in, &crio_address.in};
   if (pthread_create(&output_thread, NULL, FDCopyThread, &output_fds) == -1) {
-    LOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed with %d: %s\n",
-        &output_thread, FDCopyThread, &output_fds, errno, strerror(errno));
+    PLOG(FATAL, "pthread_create(%p, NULL, %p, %p) failed",
+         &output_thread, FDCopyThread, &output_fds);
   }
 
   // input_thread will finish when stdin gets an EOF
   if (pthread_join((input == -1) ? output_thread : input_thread, NULL) == -1) {
-    LOG(FATAL, "pthread_join(a_thread, NULL) failed with %d: %s\n",
-        errno, strerror(errno));
+    PLOG(FATAL, "pthread_join(a_thread, NULL) failed");
   }
   exit(EXIT_SUCCESS);
 }

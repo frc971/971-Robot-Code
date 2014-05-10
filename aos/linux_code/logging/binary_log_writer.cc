@@ -75,8 +75,7 @@ void AllocateLogName(char **filename, const char *directory) {
     }
     closedir(d);
   } else {
-    aos::Die("could not open directory %s because of %d (%s).\n", directory,
-             errno, strerror(errno));
+    PDie("could not open directory %s", directory);
   }
 
   char previous[512];
@@ -90,8 +89,7 @@ void AllocateLogName(char **filename, const char *directory) {
     printf("Could not find aos_log-current\n");
   }
   if (asprintf(filename, "%s/aos_log-%03d", directory, fileindex) == -1) {
-    aos::Die("couldn't create final name because of %d (%s)\n",
-             errno, strerror(errno));
+    PDie("couldn't create final name");
   }
   LOG(INFO, "Created log file (aos_log-%d) in directory (%s). Previous file "
             "was (%s).\n",
@@ -114,19 +112,13 @@ int BinaryLogReaderMain() {
   AllocateLogName(&tmp, folder);
   char *tmp2;
   if (asprintf(&tmp2, "%s/aos_log-current", folder) == -1) {
-    fprintf(stderr,
-            "BinaryLogReader: couldn't create symlink name because of %d (%s)."
-            " not creating current symlink\n", errno, strerror(errno));
+    PLOG(WARNING, "couldn't create current symlink name");
   } else {
     if (unlink(tmp2) == -1 && (errno != EROFS && errno != ENOENT)) {
-      fprintf(stderr,
-              "BinaryLogReader: warning: unlink('%s') failed"
-              " because of %d (%s)\n",
-              tmp2, errno, strerror(errno));
+      LOG(WARNING, "unlink('%s') failed", tmp2);
     }
     if (symlink(tmp, tmp2) == -1) {
-      fprintf(stderr, "BinaryLogReader: warning: symlink('%s', '%s') failed"
-              " because of %d (%s)\n", tmp, tmp2, errno, strerror(errno));
+      PLOG(WARNING, "symlink('%s', '%s') failed", tmp, tmp2);
     }
     free(tmp2);
   }
@@ -134,10 +126,7 @@ int BinaryLogReaderMain() {
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   free(tmp);
   if (fd == -1) {
-    fprintf(stderr,
-            "BinaryLogReader: couldn't open file '%s' because of %d (%s)."
-            " exiting\n", tmp, errno, strerror(errno));
-    return EXIT_FAILURE;
+    PLOG(FATAL, "opening file '%s' failed", tmp);
   }
   LogFileWriter writer(fd);
 

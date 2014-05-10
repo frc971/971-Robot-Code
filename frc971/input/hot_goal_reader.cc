@@ -32,8 +32,7 @@ int main() {
     if (my_socket == -1) {
       my_socket = socket(AF_INET, SOCK_STREAM, 0);
       if (my_socket == -1) {
-        LOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed with %d: %s\n",
-            errno, strerror(errno));
+        PLOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed");
         continue;
       } else {
         LOG(INFO, "opened socket (is %d)\n", my_socket);
@@ -45,16 +44,15 @@ int main() {
         sockaddr_pointer = &address;
         memcpy(&address_pointer, &sockaddr_pointer, sizeof(void *));
         if (bind(my_socket, address_pointer, sizeof(address)) == -1) {
-          LOG(WARNING, "bind(%d, %p, %zu) failed with %d: %s\n",
-              my_socket, &address, sizeof(address), errno, strerror(errno));
+          PLOG(WARNING, "bind(%d, %p, %zu) failed",
+               my_socket, &address, sizeof(address));
           close(my_socket);
           my_socket = -1;
           continue;
         }
 
         if (listen(my_socket, 1) == -1) {
-          LOG(WARNING, "listen(%d, 1) failed with %d: %s\n",
-              my_socket, errno, strerror(errno));
+          PLOG(WARNING, "listen(%d, 1) failed", my_socket);
           close(my_socket);
           my_socket = -1;
           continue;
@@ -64,8 +62,7 @@ int main() {
 
     int connection = accept4(my_socket, nullptr, nullptr, SOCK_NONBLOCK);
     if (connection == -1) {
-      LOG(WARNING, "accept(%d, nullptr, nullptr) failed with %d: %s\n",
-          my_socket, errno, strerror(errno));
+      PLOG(WARNING, "accept(%d, nullptr, nullptr) failed", my_socket);
       continue;
     }
     LOG(INFO, "accepted (is %d)\n", connection);
@@ -100,9 +97,9 @@ int main() {
           connection = -1;
           break;
         default:
-          LOG(FATAL,
-              "select(%d, %p, nullptr, nullptr, %p) failed with %d: %s\n",
-              connection + 1, &fds, &timeout_timeval, errno, strerror(errno));
+          PLOG(FATAL,
+               "select(%d, %p, nullptr, nullptr, %p) failed",
+               connection + 1, &fds, &timeout_timeval);
       }
     }
   }

@@ -1,7 +1,6 @@
 #include "aos/common/mutex.h"
 
 #include <inttypes.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,8 +19,7 @@ Mutex::Mutex() : impl_(0) {
 
 void Mutex::Lock() {
   if (mutex_grab(&impl_) != 0) {
-    LOG(FATAL, "mutex_grab(%p(=%" PRIu32 ")) failed because of %d: %s\n",
-        &impl_, impl_, errno, strerror(errno));
+    PLOG(FATAL, "mutex_grab(%p(=%" PRIu32 ")) failed", &impl_, impl_);
   }
 }
 

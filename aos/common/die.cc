@@ -38,8 +38,8 @@ const std::string GetFilename() {
     return r;
   } else {
     fprintf(stderr, "aos fatal: asprintf(%p, \"thingie with %%jd\", %jd)"
-            " failed with %d (%s)\n", &filename,
-            static_cast<intmax_t>(getpid()), errno, strerror(errno));
+            " failed with %d\n", &filename,
+            static_cast<intmax_t>(getpid()), errno);
     return std::string();
   }
 #endif
@@ -68,8 +68,8 @@ void VDie(const char *format, va_list args_in) {
         vfprintf(error_file, format, args2);
         fclose(error_file);
       } else {
-        fprintf(stderr, "aos fatal: fopen('%s', \"w\") failed with %d (%s)\n",
-                filename.c_str(), errno, strerror(errno));
+        fprintf(stderr, "aos fatal: fopen('%s', \"w\") failed with %d\n",
+                filename.c_str(), errno);
       }
     }
   }

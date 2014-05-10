@@ -7,8 +7,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 #include "aos/common/macros.h"
+#include "aos/common/util/aos_strerror.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +39,7 @@ DECL_LEVELS;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 // Actually implements the basic logging call.
 // Does not check that level is valid.
 void log_do(log_level level, const char *format, ...)
@@ -47,6 +51,7 @@ void log_cork(int line, const char *function, const char *format, ...)
 void log_uncork(int line, const char *function, log_level level,
                 const char *file, const char *format, ...)
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 6)));
+
 #ifdef __cplusplus
 }
 #endif
@@ -73,6 +78,17 @@ void log_uncork(int line, const char *function, log_level level,
       abort();                                                             \
     }                                                                      \
   } while (0)
+
+// Same as LOG except appends " due to %d(%s)\n" (formatted with errno and
+// aos_strerror(errno)) to the message.
+#define PLOG(level, format, args...) PELOG(level, errno, format, ##args)
+
+// Like PLOG except allows specifying an error other than errno.
+#define PELOG(level, error_in, format, args...)                                \
+  do {                                                                         \
+    const int error = error_in;                                                \
+    LOG(level, format " due to %d(%s)\n", ##args, error, aos_strerror(error)); \
+  } while (0);
 
 // Allows format to not be a string constant.
 #define LOG_DYNAMIC(level, format, args...)                             \

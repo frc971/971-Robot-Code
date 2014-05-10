@@ -25,6 +25,10 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/util/util.gyp:aos_strerror',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/util/util.gyp:aos_strerror',
       ],
     },
     {
@@ -52,6 +56,9 @@
         '<(AOS)/common/common.gyp:once',
         'logging_interface',
         '<(AOS)/common/common.gyp:queue_types',
+      ],
+      'export_dependent_settings': [
+        'logging_interface',
       ],
     },
   ],

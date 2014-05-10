@@ -20,8 +20,7 @@ namespace {
 
   char thread_name_array[kThreadNameLength + 1];
   if (prctl(PR_GET_NAME, thread_name_array) != 0) {
-    Die("prctl(PR_GET_NAME, %p) failed with %d: %s\n",
-        thread_name_array, errno, strerror(errno));
+    PDie("prctl(PR_GET_NAME, %p) failed", thread_name_array);
   }
   thread_name_array[sizeof(thread_name_array) - 1] = '\0';
   ::std::string thread_name(thread_name_array);

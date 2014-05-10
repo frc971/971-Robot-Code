@@ -30,8 +30,8 @@ size_t ExecuteFormat(char *output, size_t output_size, const char *format,
   const int ret = vsnprintf(output, size, format, ap);
   typedef ::std::common_type<typeof(ret), typeof(size)>::type RetType;
   if (ret < 0) {
-    LOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed with %d (%s)\n",
-        output, size, format, errno, strerror(errno));
+    PLOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed",
+         output, size, format);
   } else if (static_cast<RetType>(ret) >= static_cast<RetType>(size)) {
     // Overwrite the '\0' at the end of the existing data and
     // copy in the one on the end of continued.

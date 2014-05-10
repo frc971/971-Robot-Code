@@ -89,8 +89,7 @@ class RawQueueTest : public ::testing::Test {
         if (errno == ESRCH) {
           printf("process %jd was already dead\n", static_cast<intmax_t>(pid_));
         } else {
-          fprintf(stderr, "kill(SIGKILL, %jd) failed with %d: %s\n",
-                  static_cast<intmax_t>(pid_), errno, strerror(errno));
+          PLOG(FATAL, "kill(SIGKILL, %jd) failed", static_cast<intmax_t>(pid_));
         }
         return;
       }
@@ -174,7 +173,7 @@ class RawQueueTest : public ::testing::Test {
         mutex_unlock(lock);
         exit(EXIT_SUCCESS);
       case -1:  // parent failure
-        LOG(ERROR, "fork() failed with %d: %s\n", errno, strerror(errno));
+        PLOG(ERROR, "fork() failed");
         return std::unique_ptr<ForkedProcess>();
       default:  // parent
         return std::unique_ptr<ForkedProcess>(new ForkedProcess(pid, lock));

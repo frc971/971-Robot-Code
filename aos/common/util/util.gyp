@@ -1,6 +1,26 @@
 {
   'targets': [
     {
+      'target_name': 'death_test_log_implementation',
+      'type': 'static_library',
+      'sources': [
+        #'death_test_log_implementation',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
+      'target_name': 'aos_strerror',
+      'type': 'static_library',
+      'sources': [
+        'aos_strerror.cc',
+      ],
+    },
+    {
       'target_name': 'inet_addr',
       'type': 'static_library',
       'sources': [

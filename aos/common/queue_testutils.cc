@@ -128,7 +128,7 @@ GlobalCoreInstance::GlobalCoreInstance() {
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   assert(memory != MAP_FAILED);
 
-  assert(aos_core_use_address_as_shared_mem(memory, kCoreSize) == 0);
+  aos_core_use_address_as_shared_mem(memory, kCoreSize);
 
   EnableTestLogging();
 }

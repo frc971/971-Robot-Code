@@ -112,8 +112,7 @@ class FileWatch {
     assert(watch_to_remove_ == -1);
 
     if (inotify_rm_watch(notify_fd, watch_) == -1) {
-      LOG(WARNING, "inotify_rm_watch(%d, %d) failed with %d: %s\n",
-          notify_fd, watch_, errno, strerror(errno));
+      PLOG(WARNING, "inotify_rm_watch(%d, %d) failed", notify_fd, watch_);
     }
     watch_to_remove_ = watch_;
     watch_ = -1;
@@ -159,10 +158,9 @@ class FileWatch {
                                                      IN_DELETE_SELF |
                                                      IN_MOVE_SELF));
     if (watch_ == -1) {
-      LOG(FATAL, "inotify_add_watch(%d, %s,"
-          " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed with %d: %s\n",
-          notify_fd, filename_.c_str(), create_ ? "true" : "false",
-          errno, strerror(errno));
+      PLOG(FATAL, "inotify_add_watch(%d, %s,"
+                  " %s ? IN_CREATE : (IN_ATTRIB | IN_MODIFY)) failed",
+           notify_fd, filename_.c_str(), create_ ? "true" : "false");
     }
     watchers[watch_] = this;
     LOG(DEBUG, "watch for %s is %d\n", filename_.c_str(), watch_);
@@ -174,8 +172,7 @@ class FileWatch {
     unsigned int to_read;
     // Use FIONREAD to figure out how many bytes there are to read.
     if (ioctl(notify_fd, FIONREAD, &to_read) < 0) {
-      LOG(FATAL, "FIONREAD(%d, %p) failed with %d: %s\n",
-          notify_fd, &to_read, errno, strerror(errno));
+      PLOG(FATAL, "FIONREAD(%d, %p) failed", notify_fd, &to_read);
     }
     inotify_event *notifyevt = static_cast<inotify_event *>(malloc(to_read));
     const char *end = reinterpret_cast<char *>(notifyevt) + to_read;
@@ -183,8 +180,7 @@ class FileWatch {
 
     ssize_t ret = read(notify_fd, notifyevt, to_read);
     if (ret < 0) {
-      LOG(FATAL, "read(%d, %p, %u) failed with %d: %s\n",
-          notify_fd, notifyevt, to_read, errno, strerror(errno));
+      PLOG(FATAL, "read(%d, %p, %u) failed", notify_fd, notifyevt, to_read);
     }
     if (static_cast<size_t>(ret) != to_read) {
       LOG(ERROR, "read(%d, %p, %u) returned %zd instead of %u\n",
@@ -277,8 +273,7 @@ std::string RunCommand(std::string command) {
   errno = 0;
   FILE *pipe = popen(command.c_str(), "r");
   if (pipe == NULL) {
-    LOG(FATAL, "popen(\"%s\", \"r\") failed with %d: %s\n",
-        command.c_str(), errno, strerror(errno));
+    PLOG(FATAL, "popen(\"%s\", \"r\") failed", command.c_str());
   }
 
   // result_size is how many bytes result is currently allocated to.
@@ -290,8 +285,7 @@ std::string RunCommand(std::string command) {
       result_size *= 2;
       void *new_result = realloc(result.get(), result_size);
       if (new_result == NULL) {
-        LOG(FATAL, "realloc(%p, %zd) failed because of %d: %s\n",
-            result.get(), result_size, errno, strerror(errno));
+        PLOG(FATAL, "realloc(%p, %zd) failed", result.get(), result_size);
       } else {
         result.release();
         result = unique_c_ptr<char>(static_cast<char *>(new_result));
@@ -303,8 +297,8 @@ std::string RunCommand(std::string command) {
     // because of an error.
     if (ret < result_size - read) {
       if (ferror(pipe)) {
-        LOG(FATAL, "couldn't finish reading output of \"%s\"\n",
-            command.c_str());
+        PLOG(FATAL, "couldn't finish reading output of \"%s\"\n",
+             command.c_str());
       }
     }
     read += ret;
@@ -322,8 +316,7 @@ std::string RunCommand(std::string command) {
 
   int child_status = pclose(pipe);
   if (child_status == -1) {
-    LOG(FATAL, "pclose(%p) failed with %d: %s\n", pipe,
-        errno, strerror(errno));
+    PLOG(FATAL, "pclose(%p) failed", pipe);
   }
 
   if (child_status != 0) {
@@ -457,8 +450,8 @@ class Child {
     if (stat_at_start_valid_) {
       struct stat current_stat;
       if (stat(original_binary_.c_str(), &current_stat) == -1) {
-        LOG(FATAL, "stat(%s, %p) failed with %d: %s\n",
-            original_binary_.c_str(), &current_stat, errno, strerror(errno));
+        PLOG(FATAL, "stat(%s, %p) failed",
+             original_binary_.c_str(), &current_stat);
       }
       if (current_stat.st_mtime == stat_at_start_.st_mtime) {
         LOG(DEBUG, "ignoring trigger for %s because mtime didn't change\n",
@@ -474,8 +467,7 @@ class Child {
     if (pid_ != -1) {
       LOG(DEBUG, "sending SIGTERM to child %d to restart it\n", pid_);
       if (kill(pid_, SIGTERM) == -1) {
-        LOG(WARNING, "kill(%d, SIGTERM) failed with %d: %s\n",
-            pid_, errno, strerror(errno));
+        PLOG(WARNING, "kill(%d, SIGTERM) failed", pid_);
       }
       CheckDiedStatus *status = new CheckDiedStatus();
       status->self = this;
@@ -497,8 +489,7 @@ class Child {
     if (pid_ == old_pid) {
       LOG(WARNING, "child %d refused to die\n", old_pid);
       if (kill(old_pid, SIGKILL) == -1) {
-        LOG(WARNING, "kill(%d, SIGKILL) failed with %d: %s\n",
-            old_pid, errno, strerror(errno));
+        PLOG(WARNING, "kill(%d, SIGKILL) failed", old_pid);
       }
     }
   }
@@ -513,8 +504,7 @@ class Child {
       LOG(WARNING, "calling Start() but already have child %d running\n",
           pid_);
       if (kill(pid_, SIGKILL) == -1) {
-        LOG(WARNING, "kill(%d, SIGKILL) failed with %d: %s\n",
-            pid_, errno, strerror(errno));
+        PLOG(WARNING, "kill(%d, SIGKILL) failed", pid_);
         return;
       }
       pid_ = -1;
@@ -523,17 +513,16 @@ class Child {
     // Remove the name that we run from (ie from a previous execution) and then
     // hard link the real filename to it.
     if (unlink(binary_.c_str()) != 0 && errno != ENOENT) {
-      LOG(FATAL, "removing %s failed because of %d: %s\n",
-          binary_.c_str(), errno, strerror(errno));
+      PLOG(FATAL, "removing %s failed", binary_.c_str());
     }
     if (link(original_binary_.c_str(), binary_.c_str()) != 0) {
-      LOG(FATAL, "link('%s', '%s') failed because of %d: %s\n",
-          original_binary_.c_str(), binary_.c_str(), errno, strerror(errno));
+      PLOG(FATAL, "link('%s', '%s') failed",
+           original_binary_.c_str(), binary_.c_str());
     }
 
     if (stat(original_binary_.c_str(), &stat_at_start_) == -1) {
-      LOG(FATAL, "stat(%s, %p) failed with %d: %s\n",
-          original_binary_.c_str(), &stat_at_start_, errno, strerror(errno));
+      PLOG(FATAL, "stat(%s, %p) failed",
+           original_binary_.c_str(), &stat_at_start_);
     }
     stat_at_start_valid_ = true;
 
@@ -547,13 +536,11 @@ class Child {
       // The const_cast is safe because no code that might care if it gets
       // modified can run afterwards.
       execv(binary_.c_str(), const_cast<char **>(argv));
-      LOG(FATAL, "execv(%s, %p) failed with %d: %s\n",
-          binary_.c_str(), argv, errno, strerror(errno));
+      PLOG(FATAL, "execv(%s, %p) failed", binary_.c_str(), argv);
       _exit(EXIT_FAILURE);
     }
     if (pid_ == -1) {
-      LOG(FATAL, "forking to run \"%s\" failed with %d: %s\n",
-          binary_.c_str(), errno, strerror(errno));
+      PLOG(FATAL, "forking to run \"%s\" failed", binary_.c_str());
     }
     LOG(DEBUG, "started \"%s\" successfully\n", binary_.c_str());
   }
@@ -657,7 +644,7 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
     siginfo_t infop;
     infop.si_pid = 0;
     if (waitid(P_ALL, 0, &infop, WEXITED | WSTOPPED | WNOHANG) != 0) {
-      LOG(WARNING, "waitid failed with %d: %s", errno, strerror(errno));
+      PLOG(WARNING, "waitid failed");
       continue;
     }
     // If there are no more child process deaths to process.
@@ -720,7 +707,7 @@ void Main() {
   // bring up shm is ok
 
   if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
-    LOG(FATAL, "setpgid(0, 0) failed with %d: %s\n", errno, strerror(errno));
+    PLOG(FATAL, "setpgid(0, 0) failed");
   }
 
   // Make sure that we kill all children when we exit.
@@ -745,7 +732,7 @@ void Main() {
   core_touch_file += std::to_string(static_cast<intmax_t>(getpid()));
   core_touch_file += ".core_touch_file";
   if (system(("touch '" + core_touch_file + "'").c_str()) != 0) {
-    LOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
+    PLOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
   }
   FileWatch core_touch_file_watch(core_touch_file, Run, NULL);
   core = unique_ptr<Child>(
@@ -753,12 +740,11 @@ void Main() {
 
   FILE *pid_file = fopen("/tmp/starter.pid", "w");
   if (pid_file == NULL) {
-    LOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed with %d: %s\n",
-        errno, strerror(errno));
+    PLOG(FATAL, "fopen(\"/tmp/starter.pid\", \"w\") failed");
   } else {
     if (fprintf(pid_file, "%d", core->pid()) == -1) {
-      LOG(WARNING, "fprintf(%p, \"%%d\", %d) failed with %d: %s\n",
-          pid_file, core->pid(), errno, strerror(errno));
+      PLOG(WARNING, "fprintf(%p, \"%%d\", %d) failed",
+           pid_file, core->pid());
     }
     fclose(pid_file);
   }

@@ -1,9 +1,5 @@
 #include "aos/common/time.h"
 
-#ifdef __VXWORKS__
-#include <taskLib.h>
-#endif
-#include <errno.h>
 #include <string.h>
 
 #include "aos/common/logging/logging.h"
@@ -34,8 +30,8 @@ Time current_mock_time(0, 0);
 Time NowImpl(clockid_t clock) {
   timespec temp;
   if (clock_gettime(clock, &temp) != 0) {
-    LOG(FATAL, "clock_gettime(%jd, %p) failed with %d: %s\n",
-        static_cast<uintmax_t>(clock), &temp, errno, strerror(errno));
+    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
+         static_cast<uintmax_t>(clock), &temp);
   }
   return Time(temp);
 }
@@ -192,53 +188,30 @@ std::ostream &operator<<(std::ostream &os, const Time& time) {
 }
 
 void SleepFor(const Time &time, clockid_t clock) {
-#ifdef __VXWORKS__
-  SleepUntil(Time::Now(clock) + time, clock);
-#else
   timespec converted(time.ToTimespec()), remaining;
   int failure = EINTR;
   do {
     // This checks whether the last time through the loop actually failed or got
     // interrupted.
     if (failure != EINTR) {
-      LOG(FATAL, "clock_nanosleep(%jd, 0, %p, %p) returned %d: %s\n",
-          static_cast<intmax_t>(clock), &converted, &remaining,
-          failure, strerror(failure));
+      PELOG(FATAL, failure, "clock_nanosleep(%jd, 0, %p, %p) failed",
+            static_cast<intmax_t>(clock), &converted, &remaining);
     }
     failure = clock_nanosleep(clock, 0, &converted, &remaining);
     memcpy(&converted, &remaining, sizeof(converted));
   } while (failure != 0);
-#endif
 }
 
 void SleepUntil(const Time &time, clockid_t clock) {
-#ifdef __VXWORKS__
-  if (clock != CLOCK_REALTIME) {
-    LOG(FATAL, "vxworks only supports CLOCK_REALTIME\n");
-  }
-  // Vxworks nanosleep is definitely broken (fails horribly at doing remaining
-  // right), and I don't really want to know how else it's broken, so I'm using
-  // taskDelay instead because that's simpler.
-  // The +1 is because sleep functions are supposed to sleep for at least the
-  // requested amount, so we have to round up to the next clock tick.
-  while (taskDelay((time - Time::Now(clock)).ToTicks() + 1) != 0) {
-    if (errno != EINTR) {
-      LOG(FATAL, "taskDelay(some ticks) failed with %d: %s\n",
-          errno, strerror(errno));
-    }
-  }
-#else
   timespec converted(time.ToTimespec());
   int failure;
   while ((failure = clock_nanosleep(clock, TIMER_ABSTIME,
                                     &converted, NULL)) != 0) {
     if (failure != EINTR) {
-      LOG(FATAL, "clock_nanosleep(%jd, TIMER_ABSTIME, %p, NULL)"
-          " returned %d: %s\n", static_cast<intmax_t>(clock), &converted,
-          failure, strerror(failure));
+      PELOG(FATAL, failure, "clock_nanosleep(%jd, TIMER_ABSTIME, %p, NULL)"
+            " failed", static_cast<intmax_t>(clock), &converted);
     }
   }
-#endif
 }
 
 }  // namespace time

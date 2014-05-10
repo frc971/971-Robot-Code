@@ -6,7 +6,6 @@
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/logging/queue_logging.h"
 
 #include "frc971/autonomous/auto.q.h"

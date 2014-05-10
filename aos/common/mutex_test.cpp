@@ -11,6 +11,7 @@
 
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
+#include "aos/common/util/death_test_log_implementation.h"
 
 namespace aos {
 namespace testing {
@@ -49,12 +50,22 @@ TEST_F(MutexTest, Unlock) {
 TEST_F(MutexDeathTest, RepeatUnlock) {
   test_mutex.Lock();
   test_mutex.Unlock();
-  EXPECT_DEATH(test_mutex.Unlock(), ".*multiple unlock.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        test_mutex.Unlock();
+      },
+      ".*multiple unlock.*");
 }
 
 // Sees what happens if you unlock without ever locking (or unlocking) it.
 TEST_F(MutexDeathTest, NeverLock) {
-  EXPECT_DEATH(test_mutex.Unlock(), ".*multiple unlock.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        test_mutex.Unlock();
+      },
+      ".*multiple unlock.*");
 }
 #endif
 

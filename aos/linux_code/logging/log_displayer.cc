@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <errno.h>
 
 #include <algorithm>
 
@@ -146,10 +145,7 @@ int main(int argc, char **argv) {
 
   int fd = open(filename, O_RDONLY);
   if (fd == -1) {
-    fprintf(stderr,
-            "error: couldn't open file '%s' for reading because of %s\n",
-            filename, strerror(errno));
-    exit(EXIT_FAILURE);
+    PLOG(FATAL, "couldn't open file '%s' for reading", filename);
   }
   ::aos::logging::linux_code::LogFileReader reader(fd);
 

@@ -1,6 +1,5 @@
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 
-#include <stdio.h>
 #include <linux/futex.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -9,6 +8,8 @@
 #include <limits.h>
 #include <string.h>
 #include <inttypes.h>
+
+#include "aos/common/logging/logging.h"
 
 // TODO(brians): Inline these in the new PI version.
 #define cmpxchg(ptr, o, n) __sync_val_compare_and_swap(ptr, o, n)
@@ -151,31 +152,21 @@ int mutex_grab(mutex *m) {
 
 void mutex_unlock(mutex *m) {
   /* Unlock, and if not contended then exit. */
-  //printf("mutex_unlock(%p) => %d \n",m,*m);
   switch (xchg(m, 0)) {
     case 0:
-      fprintf(stderr, "sync: multiple unlock of %p. aborting\n", m);
-      printf("see stderr\n");
-      abort();
+      LOG(FATAL, "multiple unlock of %p\n", m);
     case 1:
-      //printf("mutex_unlock return(%p) => %d \n",m,*m);
       break;
     case 2: {
       const int ret = sys_futex_wake(m, 1);
       if (ret < 0) {
-        fprintf(stderr, "sync: waking 1 from %p failed with %d: %s\n",
-                m, -ret, strerror(-ret));
-        printf("see stderr\n");
-        abort();
+        PELOG(FATAL, -ret, "waking 1 from %p failed", m);
       } else {
         break;
       }
     }
     default:
-      fprintf(stderr, "sync: got a garbage value from mutex %p. aborting\n",
-          m);
-      printf("see stderr\n");
-      abort();
+      LOG(FATAL, "got a garbage value from mutex %p\n", m);
   }
 }
 int mutex_trylock(mutex *m) {
@@ -232,11 +223,8 @@ void condition_wait(mutex *c, mutex *m) {
       if (__builtin_expect(*c == wait_start, 0)) {
         // Try again if it was because of a signal.
         if (ret == -EINTR) continue;
-        fprintf(stderr, "FUTEX_WAIT(%p, %"PRIu32", NULL, NULL, 0) failed"
-                " with %d: %s\n",
-                c, wait_start, -ret, strerror(-ret));
-        printf("see stderr\n");
-        abort();
+        PELOG(FATAL, -ret, "FUTEX_WAIT(%p, %" PRIu32 ", NULL, NULL, 0) failed",
+              c, wait_start);
       }
     }
     // Relock the mutex now that we're done waiting.
@@ -251,11 +239,7 @@ void condition_wait(mutex *c, mutex *m) {
         // Try again if it was because of a signal or somebody else unlocked it
         // before we went to sleep.
         if (ret == -EINTR || ret == -EWOULDBLOCK) continue;
-        fprintf(stderr, "sync: FUTEX_WAIT(%p, 2, NULL, NULL, 0)"
-                " failed with %d: %s\n",
-                m, -ret, strerror(-ret));
-        printf("see stderr\n");
-        abort();
+        PELOG(FATAL, -ret, "FUTEX_WAIT(%p, 2, NULL, NULL, 0) failed", m);
       }
     }
     return;
@@ -270,11 +254,7 @@ void condition_signal(mutex *c) {
   // Wake at most 1 person who is waiting in the kernel.
   const int ret = sys_futex_wake(c, 1);
   if (ret < 0) {
-    fprintf(stderr, "sync: FUTEX_WAKE(%p, 1, NULL, NULL, 0)"
-        " failed with %d: %s\n",
-        c, -ret, strerror(-ret));
-    printf("see stderr\n");
-    abort();
+    PELOG(FATAL, -ret, "FUTEX_WAKE(%p, 1, NULL, NULL, 0) failed", c);
   }
 }
 
@@ -285,10 +265,6 @@ void condition_broadcast(mutex *c, mutex *m) {
   // mutex anyways.
   const int ret = sys_futex_requeue(c, 1, INT_MAX, m);
   if (ret < 0) {
-    fprintf(stderr, "sync: FUTEX_REQUEUE(%p, 1, INT_MAX, %p, 0)"
-        " failed with %d: %s\n",
-        c, m, -ret, strerror(-ret));
-    printf("see stderr\n");
-    abort();
+    PELOG(FATAL, -ret, "FUTEX_REQUEUE(%p, 1, INT_MAX, %p, 0) failed", c, m);
   }
 }

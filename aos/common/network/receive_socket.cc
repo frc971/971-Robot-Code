@@ -23,8 +23,7 @@ int ReceiveSocket::Connect(NetworkPort port) {
 
   if (bind(socket_, &addr_.addr,
            sizeof(addr_)) == -1) {
-    LOG(ERROR, "failed to bind to address '%s' because of %d: %s\n", localhost,
-        errno, strerror(errno));
+    PLOG(ERROR, "failed to bind to address '%s'", localhost);
     return last_ret_ = -1;
   }
   return last_ret_ = 0;
