@@ -47,11 +47,11 @@ class DrivetrainMotorsSS {
 
    private:
     virtual void CapU() {
-      const Eigen::Matrix<double, 4, 1> error = R - X_hat;
+      const Eigen::Matrix<double, 4, 1> error = R() - X_hat();
 
-      if (::std::abs(U(0, 0)) > 12.0 || ::std::abs(U(1, 0)) > 12.0) {
+      if (::std::abs(U(0)) > 12.0 || ::std::abs(U(1)) > 12.0) {
         output_was_capped_ = true;
-        LOG_MATRIX(DEBUG, "U at start", U);
+        LOG_MATRIX(DEBUG, "U at start", U());
 
         Eigen::Matrix<double, 2, 2> position_K;
         position_K << K(0, 0), K(0, 2),
@@ -68,7 +68,8 @@ class DrivetrainMotorsSS {
         LOG_MATRIX(DEBUG, "error", error);
 
         const auto &poly = U_Poly_;
-        const Eigen::Matrix<double, 4, 2> pos_poly_H = poly.H() * position_K * T;
+        const Eigen::Matrix<double, 4, 2> pos_poly_H =
+            poly.H() * position_K * T;
         const Eigen::Matrix<double, 4, 1> pos_poly_k =
             poly.k() - poly.H() * velocity_K * velocity_error;
         const ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
@@ -93,7 +94,8 @@ class DrivetrainMotorsSS {
           standard << L45, LH;
           Eigen::Matrix<double, 2, 1> W;
           W << w45, wh;
-          const Eigen::Matrix<double, 2, 1> intersection = standard.inverse() * W;
+          const Eigen::Matrix<double, 2, 1> intersection =
+              standard.inverse() * W;
 
           bool is_inside_h;
           const auto adjusted_pos_error_h =
@@ -116,8 +118,9 @@ class DrivetrainMotorsSS {
         }
 
         LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
-        U = velocity_K * velocity_error + position_K * T * adjusted_pos_error;
-        LOG_MATRIX(DEBUG, "U is now", U);
+        change_U() =
+            velocity_K * velocity_error + position_K * T * adjusted_pos_error;
+        LOG_MATRIX(DEBUG, "U is now", U());
       } else {
         output_was_capped_ = false;
       }
@@ -145,7 +148,7 @@ class DrivetrainMotorsSS {
                double right_velocity) {
     left_goal_ = left;
     right_goal_ = right;
-    loop_->R << left, left_velocity, right, right_velocity;
+    loop_->change_R() << left, left_velocity, right, right_velocity;
   }
   void SetRawPosition(double left, double right) {
     raw_right_ = right;
@@ -164,7 +167,7 @@ class DrivetrainMotorsSS {
   }
 
   void SetExternalMotors(double left_voltage, double right_voltage) {
-    loop_->U << left_voltage, right_voltage;
+    loop_->change_U() << left_voltage, right_voltage;
   }
 
   void Update(bool stop_motors, bool enable_control_loop) {
@@ -172,26 +175,26 @@ class DrivetrainMotorsSS {
       loop_->Update(stop_motors);
     } else {
       if (stop_motors) {
-        loop_->U.setZero();
-        loop_->U_uncapped.setZero();
+        loop_->change_U().setZero();
+        loop_->change_U_uncapped().setZero();
       }
       loop_->UpdateObserver();
     }
-    ::Eigen::Matrix<double, 4, 1> E = loop_->R - loop_->X_hat;
+    ::Eigen::Matrix<double, 4, 1> E = loop_->R() - loop_->X_hat();
     LOG_MATRIX(DEBUG, "E", E);
   }
 
   double GetEstimatedRobotSpeed() const {
     // lets just call the average of left and right velocities close enough
-    return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
+    return (loop_->X_hat(1) + loop_->X_hat(3)) / 2;
   }
   
   double GetEstimatedLeftEncoder() const {
-    return loop_->X_hat(0, 0);
+    return loop_->X_hat(0);
   }
   
   double GetEstimatedRightEncoder() const {
-    return loop_->X_hat(2, 0);
+    return loop_->X_hat(2);
   }
 
   bool OutputWasCapped() const {
@@ -200,8 +203,8 @@ class DrivetrainMotorsSS {
 
   void SendMotors(Drivetrain::Output *output) const {
     if (output) {
-      output->left_voltage = loop_->U(0, 0);
-      output->right_voltage = loop_->U(1, 0);
+      output->left_voltage = loop_->U(0);
+      output->right_voltage = loop_->U(1);
       output->left_high = false;
       output->right_high = false;
     }
@@ -455,9 +458,9 @@ class PolyDrivetrain {
 
     constexpr int kHighGearController = 3;
     const Eigen::Matrix<double, 2, 2> FF_high =
-        loop_->controller(kHighGearController).plant.B.inverse() *
+        loop_->controller(kHighGearController).plant.B().inverse() *
         (Eigen::Matrix<double, 2, 2>::Identity() -
-         loop_->controller(kHighGearController).plant.A);
+         loop_->controller(kHighGearController).plant.A());
 
     ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
     int min_FF_sum_index;
@@ -468,8 +471,7 @@ class PolyDrivetrain {
     const double adjusted_ff_voltage = ::aos::Clip(
         throttle * 12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
     return ((adjusted_ff_voltage +
-             ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) /
-                 2.0) /
+             ttrust_ * min_K_sum * (loop_->X_hat(0) + loop_->X_hat(1)) / 2.0) /
             (ttrust_ * min_K_sum + min_FF_sum));
   }
 
@@ -480,9 +482,9 @@ class PolyDrivetrain {
 
     constexpr int kHighGearController = 3;
     const Eigen::Matrix<double, 2, 2> FF_high =
-        loop_->controller(kHighGearController).plant.B.inverse() *
+        loop_->controller(kHighGearController).plant.B().inverse() *
         (Eigen::Matrix<double, 2, 2>::Identity() -
-         loop_->controller(kHighGearController).plant.A);
+         loop_->controller(kHighGearController).plant.A());
 
     ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
     int min_FF_sum_index;
@@ -562,7 +564,7 @@ class PolyDrivetrain {
 
       // Integrate velocity to get the position.
       // This position is used to get integral control.
-      loop_->R << left_velocity, right_velocity;
+      loop_->change_R() << left_velocity, right_velocity;
 
       if (!quickturn_) {
         // K * R = w
@@ -573,23 +575,25 @@ class PolyDrivetrain {
         // Construct a constraint on R by manipulating the constraint on U
         ::aos::controls::HPolytope<2> R_poly = ::aos::controls::HPolytope<2>(
             U_Poly_.H() * (loop_->K() + FF),
-            U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat);
+            U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat());
 
         // Limit R back inside the box.
-        loop_->R = CoerceGoal(R_poly, equality_k, equality_w, loop_->R);
+        loop_->change_R() =
+            CoerceGoal(R_poly, equality_k, equality_w, loop_->R());
       }
 
-      const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R;
+      const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R();
       const Eigen::Matrix<double, 2, 1> U_ideal =
-          loop_->K() * (loop_->R - loop_->X_hat) + FF_volts;
+          loop_->K() * (loop_->R() - loop_->X_hat()) + FF_volts;
 
       for (int i = 0; i < 2; i++) {
-        loop_->U[i] = ::aos::Clip(U_ideal[i], -12, 12);
+        loop_->change_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
       }
 
       // TODO(austin): Model this better.
       // TODO(austin): Feed back?
-      loop_->X_hat = loop_->A() * loop_->X_hat + loop_->B() * loop_->U;
+      loop_->change_X_hat() =
+          loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
     } else {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
@@ -600,20 +604,20 @@ class PolyDrivetrain {
       const double wiggle =
           (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
 
-      loop_->U(0, 0) = ::aos::Clip(
+      loop_->change_U(0) = ::aos::Clip(
           (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->U(1, 0) = ::aos::Clip(
+      loop_->change_U(1) = ::aos::Clip(
           (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->U *= 12.0 / position_.battery_voltage;
+      loop_->change_U() *= 12.0 / position_.battery_voltage;
     }
   }
 
   void SendMotors(Drivetrain::Output *output) {
     if (output != NULL) {
-      output->left_voltage = loop_->U(0, 0);
-      output->right_voltage = loop_->U(1, 0);
+      output->left_voltage = loop_->U(0);
+      output->right_voltage = loop_->U(1);
       output->left_high = left_gear_ == HIGH || left_gear_ == SHIFTING_UP;
       output->right_high = right_gear_ == HIGH || right_gear_ == SHIFTING_UP;
     }
@@ -718,8 +722,8 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
     status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();
     status->output_was_capped = dt_closedloop.OutputWasCapped();
-    status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0, 0);
-    status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1, 0);
+    status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0);
+    status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1);
   }
 }
 

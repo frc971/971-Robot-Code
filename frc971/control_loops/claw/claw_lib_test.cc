@@ -54,11 +54,11 @@ class ClawMotorSimulation {
                     double initial_bottom_position) {
     LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
         initial_bottom_position);
-    claw_plant_->X(0, 0) = initial_bottom_position;
-    claw_plant_->X(1, 0) = initial_top_position - initial_bottom_position;
-    claw_plant_->X(2, 0) = 0.0;
-    claw_plant_->X(3, 0) = 0.0;
-    claw_plant_->Y = claw_plant_->C() * claw_plant_->X;
+    claw_plant_->change_X(0) = initial_bottom_position;
+    claw_plant_->change_X(1) = initial_top_position - initial_bottom_position;
+    claw_plant_->change_X(2) = 0.0;
+    claw_plant_->change_X(3) = 0.0;
+    claw_plant_->change_Y() = claw_plant_->C() * claw_plant_->X();
 
     ReinitializePartial(TOP_CLAW, initial_top_position);
     ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
@@ -69,9 +69,9 @@ class ClawMotorSimulation {
   // Returns the absolute angle of the wrist.
   double GetAbsolutePosition(ClawType type) const {
     if (type == TOP_CLAW) {
-      return claw_plant_->Y(1, 0);
+      return claw_plant_->Y(1);
     } else {
-      return claw_plant_->Y(0, 0);
+      return claw_plant_->Y(0);
     }
   }
 
@@ -214,20 +214,20 @@ class ClawMotorSimulation {
     const frc971::constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
 
-    claw_plant_->U << claw_queue_group.output->bottom_claw_voltage,
+    claw_plant_->change_U() << claw_queue_group.output->bottom_claw_voltage,
         claw_queue_group.output->top_claw_voltage;
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
-    EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0, 0));
-    EXPECT_LE(v.claw.upper_claw.lower_hard_limit, claw_plant_->Y(0, 0));
+    EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0));
+    EXPECT_LE(v.claw.upper_claw.lower_hard_limit, claw_plant_->Y(0));
 
-    EXPECT_GE(v.claw.lower_claw.upper_hard_limit, claw_plant_->Y(1, 0));
-    EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
+    EXPECT_GE(v.claw.lower_claw.upper_hard_limit, claw_plant_->Y(1));
+    EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1));
 
-    EXPECT_LE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
+    EXPECT_LE(claw_plant_->Y(1) - claw_plant_->Y(0),
               v.claw.claw_max_separation);
-    EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
+    EXPECT_GE(claw_plant_->Y(1) - claw_plant_->Y(0),
               v.claw.claw_min_separation);
   }
   // The whole claw.
@@ -556,7 +556,7 @@ class WindupClawTest : public ClawTest {
               claw_motor_.top_claw_goal_ - claw_motor_.bottom_claw_goal_, 0.0,
               0.0;
           Eigen::Matrix<double, 2, 1> uncapped_voltage =
-              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat);
+              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat());
           // Use a factor of 1.8 because so long as it isn't actually running
           // away, the CapU function will deal with getting the actual output
           // down.

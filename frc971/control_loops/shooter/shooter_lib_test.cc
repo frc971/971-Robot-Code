@@ -55,9 +55,9 @@ class ShooterSimulation {
     LOG(INFO, "Reinitializing to {pos: %f}\n", initial_position);
     StateFeedbackPlant<2, 1, 1> *plant = shooter_plant_.get();
     initial_position_ = initial_position;
-    plant->X(0, 0) = initial_position_ - kPositionOffset;
-    plant->X(1, 0) = 0.0;
-    plant->Y = plant->C() * plant->X;
+    plant->change_X(0) = initial_position_ - kPositionOffset;
+    plant->change_X(1) = 0.0;
+    plant->change_Y() = plant->C() * plant->X();
     last_voltage_ = 0.0;
     last_plant_position_ = 0.0;
     SetPhysicalSensors(&last_position_message_);
@@ -65,7 +65,7 @@ class ShooterSimulation {
 
   // Returns the absolute angle of the wrist.
   double GetAbsolutePosition() const {
-    return shooter_plant_->Y(0, 0) + kPositionOffset;
+    return shooter_plant_->Y(0) + kPositionOffset;
   }
 
   // Returns the adjusted angle of the wrist.
@@ -122,10 +122,12 @@ class ShooterSimulation {
     if (sensor->current && !last_sensor.current) {
       ++sensor->posedge_count;
       if (last_position.position + initial_position_ < limits.lower_angle) {
-        LOG(DEBUG, "Posedge value on lower edge of sensor, count is now %d\n", sensor->posedge_count);
+        LOG(DEBUG, "Posedge value on lower edge of sensor, count is now %d\n",
+            sensor->posedge_count);
         sensor->posedge_value = limits.lower_angle - initial_position_;
       } else {
-        LOG(DEBUG, "Posedge value on upper edge of sensor, count is now %d\n", sensor->posedge_count);
+        LOG(DEBUG, "Posedge value on upper edge of sensor, count is now %d\n",
+            sensor->posedge_count);
         sensor->posedge_value = limits.upper_angle - initial_position_;
       }
     }
@@ -211,12 +213,12 @@ class ShooterSimulation {
     }
 
     if (brake_piston_state_) {
-      shooter_plant_->U << 0.0;
-      shooter_plant_->X(1, 0) = 0.0;
-      shooter_plant_->Y = shooter_plant_->C() * shooter_plant_->X +
-                          shooter_plant_->D() * shooter_plant_->U;
+      shooter_plant_->change_U() << 0.0;
+      shooter_plant_->change_X(1) = 0.0;
+      shooter_plant_->change_Y() = shooter_plant_->C() * shooter_plant_->X() +
+                                   shooter_plant_->D() * shooter_plant_->U();
     } else {
-      shooter_plant_->U << last_voltage_;
+      shooter_plant_->change_U() << last_voltage_;
       //shooter_plant_->U << shooter_queue_group_.output->voltage;
       shooter_plant_->Update();
     }
@@ -244,7 +246,7 @@ class ShooterSimulation {
         plunger_latched_ = false;
         // TODO(austin): The brake should be set for a number of cycles after
         // this as well.
-        shooter_plant_->X(0, 0) += 0.005;
+        shooter_plant_->change_X(0) += 0.005;
       }
       latch_delay_count_++;
     }
@@ -532,7 +534,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
       LOG(DEBUG, "State is UnloadMove\n");
       --kicked_delay;
       if (kicked_delay == 0) {
-        shooter_motor_.shooter_.R(0, 0) -= 100;
+        shooter_motor_.shooter_.change_R(0) -= 100;
       }
     }
     if (shooter_motor_.capped_goal() && kicked_delay < 0) {
@@ -572,7 +574,7 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
       LOG(DEBUG, "State is UnloadMove\n");
       --kicked_delay;
       if (kicked_delay == 0) {
-        shooter_motor_.shooter_.R(0, 0) += 0.1;
+        shooter_motor_.shooter_.change_R(0) += 0.1;
       }
     }
     if (shooter_motor_.capped_goal() && kicked_delay < 0) {

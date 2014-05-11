@@ -18,26 +18,26 @@ using ::aos::time::Time;
 
 void ZeroedStateFeedbackLoop::CapU() {
   const double old_voltage = voltage_;
-  voltage_ += U(0, 0);
+  voltage_ += U(0);
 
   uncapped_voltage_ = voltage_;
 
   // Make sure that reality and the observer can't get too far off.  There is a
-  // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
+  // delay by one cycle between the applied voltage and X_hat(2), so compare
   // against last cycle's voltage.
-  if (X_hat(2, 0) > last_voltage_ + 4.0) {
-    voltage_ -= X_hat(2, 0) - (last_voltage_ + 4.0);
+  if (X_hat(2) > last_voltage_ + 4.0) {
+    voltage_ -= X_hat(2) - (last_voltage_ + 4.0);
     LOG(DEBUG, "Capping due to runaway\n");
-  } else if (X_hat(2, 0) < last_voltage_ - 4.0) {
-    voltage_ += X_hat(2, 0) - (last_voltage_ - 4.0);
+  } else if (X_hat(2) < last_voltage_ - 4.0) {
+    voltage_ += X_hat(2) - (last_voltage_ - 4.0);
     LOG(DEBUG, "Capping due to runaway\n");
   }
 
   voltage_ = std::min(max_voltage_, voltage_);
   voltage_ = std::max(-max_voltage_, voltage_);
-  U(0, 0) = voltage_ - old_voltage;
+  change_U(0) = voltage_ - old_voltage;
 
-  LOG_STRUCT(DEBUG, "output", ShooterVoltageToLog(X_hat(2, 0), voltage_));
+  LOG_STRUCT(DEBUG, "output", ShooterVoltageToLog(X_hat(2), voltage_));
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
@@ -49,11 +49,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     if (controller_index() == 0) {
       dx = (uncapped_voltage() - max_voltage_) /
            (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
-      R(0, 0) -= dx;
-      R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+      change_R(0) -= dx;
+      change_R(2) -= -A(1, 0) / A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() - max_voltage_) / K(0, 0);
-      R(0, 0) -= dx;
+      change_R(0) -= dx;
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
@@ -62,11 +62,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     if (controller_index() == 0) {
       dx = (uncapped_voltage() + max_voltage_) /
            (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
-      R(0, 0) -= dx;
-      R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+      change_R(0) -= dx;
+      change_R(2) -= -A(1, 0) / A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() + max_voltage_) / K(0, 0);
-      R(0, 0) -= dx;
+      change_R(0) -= dx;
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
@@ -77,9 +77,9 @@ void ZeroedStateFeedbackLoop::CapGoal() {
 
 void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
   if (controller_index() == 0) {
-    R(2, 0) = (-A(1, 0) / A(1, 2) * R(0, 0) - A(1, 1) / A(1, 2) * R(1, 0));
+    change_R(2) = (-A(1, 0) / A(1, 2) * R(0) - A(1, 1) / A(1, 2) * R(1));
   } else {
-    R(2, 0) = -A(1, 1) / A(1, 2) * R(1, 0);
+    change_R(2) = -A(1, 1) / A(1, 2) * R(1);
   }
 }
 
@@ -89,13 +89,15 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   double previous_offset = offset_;
   offset_ = known_position - encoder_val;
   double doffset = offset_ - previous_offset;
-  X_hat(0, 0) += doffset;
+  change_X_hat(0) += doffset;
   // Offset our measurements because the offset is baked into them.
-  Y_(0, 0) += doffset;
+  // This is safe because if we got here, it means position != nullptr, which
+  // means we already set Y to something and it won't just get overwritten.
+  change_Y(0) += doffset;
   // Offset the goal so we don't move.
-  R(0, 0) += doffset;
+  change_R(0) += doffset;
   if (controller_index() == 0) {
-    R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
+    change_R(2) += -A(1, 0) / A(1, 2) * (doffset);
   }
   LOG_STRUCT(
       DEBUG, "sensor edge (fake?)",
