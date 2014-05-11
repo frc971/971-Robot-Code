@@ -1,6 +1,5 @@
 #include "bbb/packet_finder.h"
 
-#include <errno.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,8 +51,8 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
                            to_read, timeout_time);
     if (new_bytes < 0) {
       if (new_bytes == -1) {
-        LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-            buf_ + already_read, to_read, errno, strerror(errno));
+        PLOG(ERROR, "ReadBytes(%p, %zd) failed",
+             buf_ + already_read, to_read);
       } else if (new_bytes == -2) {
         LOG(WARNING, "timed out\n");
       } else {

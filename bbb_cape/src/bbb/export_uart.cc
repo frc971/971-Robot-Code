@@ -17,8 +17,7 @@ const char *device = "/dev/ttyO1";
 bool easy_access(const char *path) {
   if (access(path, R_OK | W_OK) == 0) return true;
   if (errno == EACCES || errno == ENOENT) return false;
-  LOG(FATAL, "access(%s, F_OK) failed with %d: %s\n", path, errno,
-      strerror(errno));
+  PLOG(FATAL, "access(%s, F_OK) failed", path);
 }
 
 }  // namespace
@@ -32,8 +31,7 @@ void ExportUart() {
                " | fgrep BB-UART1"
                " | cut -d : -f 1 | tr -d \" \")"
                " > /sys/devices/bone_capemgr.*/slots'") == -1) {
-      LOG(FATAL, "system([disable OMAP UART]) failed with %d: %s\n", errno,
-          strerror(errno));
+      PLOG(FATAL, "system([disable OMAP UART]) failed");
     }
     while (easy_access(device)) {
       LOG(DEBUG, "waiting for BB-UART1 to be unexported\n");
@@ -47,8 +45,7 @@ void ExportUart() {
   if (system("bash -c 'echo BB-UART1 > /sys/devices/bone_capemgr.*"
              "/slots'") ==
       -1) {
-    LOG(FATAL, "system([enable OMAP UART]) failed with %d: %s\n", errno,
-        strerror(errno));
+    PLOG(FATAL, "system([enable OMAP UART]) failed");
   }
   while (!easy_access(device)) {
     LOG(DEBUG, "waiting for BB-UART1 to be exported\n");

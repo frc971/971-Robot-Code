@@ -40,13 +40,11 @@ UartReader::UartReader(int32_t baud_rate)
     : fd_(open_device()) {
   
   if (fd_ < 0) {
-    LOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed with %d: %s\n",
-        UartDevice(), errno, strerror(errno));
+    PLOG(FATAL, "open(%s, O_RDWR | O_NOCTTY | O_NOBLOCK) failed", UartDevice());
   }
 
   if (aos_uart_reader_set_tty_options(fd_, baud_rate) != 0) {
-    LOG(FATAL, "aos_uart_reader_set_tty_options(%d) failed with %d: %s\n",
-        fd_, errno, strerror(errno));
+    PLOG(FATAL, "aos_uart_reader_set_tty_options(%d) failed", fd_);
   }
 }
 

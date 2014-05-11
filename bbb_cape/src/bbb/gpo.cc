@@ -1,7 +1,6 @@
 #include "bbb/gpo.h"
 
 #include <stdio.h>
-#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -15,12 +14,12 @@ Gpo::Gpo(int bank, int pin, bool initial_value)
 void Gpo::Set(bool high) {
   rewind(value_handle_);
   if (fputc(high ? '1' : '0', value_handle_) == EOF) {
-    LOG(FATAL, "fputc(%c, %p) for pin (%d,%d) failed with %d: %s\n",
-        high ? '1': '0', value_handle_, bank_, pin_, errno, strerror(errno));
+    PLOG(FATAL, "fputc(%c, %p) for pin (%d,%d) failed",
+         high ? '1': '0', value_handle_, bank_, pin_);
   }
   if (fflush(value_handle_) == EOF) {
-    LOG(FATAL, "fflush(%p) for pin (%d,%d) failed with %d: %s\n",
-        value_handle_, bank_, pin_, errno, strerror(errno));
+    PLOG(FATAL, "fflush(%p) for pin (%d,%d) failed",
+         value_handle_, bank_, pin_);
   }
 }
 

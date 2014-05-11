@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 
 #include "aos/common/logging/logging.h"
@@ -14,18 +13,14 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
   // Export the pin.
   FILE *export_handle = fopen("/sys/class/gpio/export", "w");
   if (export_handle == NULL) {
-    LOG(WARNING,
-        "Could not open file to export pin (%d,%d) because of %d: %s.\n",
-        bank_, pin_, errno, strerror(errno));
+    PLOG(WARNING, "Could not open file to export pin (%d,%d)", bank_, pin_);
   } else {
     if (fprintf(export_handle, "%d", kernel_pin_) < 0) {
-      LOG(WARNING, "Could not write to file %p to export pin (%d,%d) because "
-                   "of %d: %s.\n",
-          export_handle, bank_, pin_, errno, strerror(errno));
+      PLOG(WARNING, "Could not write to file %p to export pin (%d,%d)",
+           export_handle, bank_, pin_);
     }
     if (fclose(export_handle) == -1) {
-      LOG(WARNING, "fclose(%p) failed with %d: %s\n", export_handle, errno,
-          strerror(errno));
+      PLOG(WARNING, "fclose(%p) failed", export_handle);
     }
   }
 
@@ -35,18 +30,15 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
 
   FILE *direction_handle = fopen(direction_path, "w");
   if (direction_handle == NULL) {
-    LOG(FATAL, "fopen(%s, \"w\") failed with %d: %s\n",
-        direction_path, errno, strerror(errno));
+    PLOG(FATAL, "fopen(%s, \"w\") failed", direction_path);
   }
 
   if (fputs(input ? "in" : (initial_value ? "high" : "low"),
             direction_handle) < 0) {
-    LOG(FATAL, "setting direction for pin (%d,%d) failed with %d: %s\n",
-        bank_, pin_, errno, strerror(errno));
+    PLOG(FATAL, "setting direction for pin (%d,%d) failed", bank_, pin_);
   }
   if (fclose(direction_handle) == -1) {
-    LOG(WARNING, "fclose(%p) failed with %d: %s\n", direction_handle, errno,
-        strerror(errno));
+    PLOG(WARNING, "fclose(%p) failed", direction_handle);
   }
 
   char value_path[64];
@@ -54,8 +46,7 @@ GpioPin::GpioPin(int bank, int pin, bool input, bool initial_value)
            "/sys/class/gpio/gpio%d/value", kernel_pin_);
   value_handle_ = fopen(value_path, "w+");
   if (value_handle_ == NULL) {
-    LOG(FATAL, "fopen(%s, \"w+\") failed with %d: %s\n",
-        value_path, errno, strerror(errno));
+    PLOG(FATAL, "fopen(%s, \"w+\") failed", value_path);
   }
 }
 
@@ -63,18 +54,14 @@ GpioPin::~GpioPin() {
   // Unexport the pin.
   FILE *unexport_handle = fopen("/sys/class/gpio/unexport", "a");
   if (unexport_handle == NULL) {
-    LOG(WARNING,
-        "Could not open file to unexport pin (%d,%d) because of %d: %s.\n",
-        bank_, pin_, errno, strerror(errno));
+    PLOG(WARNING, "Could not open file to unexport pin (%d,%d)", bank_, pin_);
   } else {
     if (fprintf(unexport_handle, "%d", kernel_pin_) < 0) {
-      LOG(WARNING, "Could not write to file %p to unexport pin (%d,%d) because "
-                   "of %d: %s.\n",
-          unexport_handle, bank_, pin_, errno, strerror(errno));
+      PLOG(WARNING, "Could not write to file %p to unexport pin (%d,%d)",
+           unexport_handle, bank_, pin_);
     }
     if (fclose(unexport_handle) == -1) {
-      LOG(WARNING, "fclose(%p) failed with %d: %s\n", unexport_handle, errno,
-          strerror(errno));
+      PLOG(WARNING, "fclose(%p) failed", unexport_handle);
     }
   }
 }

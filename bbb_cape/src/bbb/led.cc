@@ -3,7 +3,6 @@
 #include "aos/common/logging/logging.h"
 
 #include <string.h>
-#include <errno.h>
 
 #define DIRECTORY "/sys/class/leds/beaglebone:green:usr%d/"
 
@@ -14,17 +13,14 @@ LED::LED(int number) : number_(number) {
   snprintf(trigger_path, sizeof(trigger_path), DIRECTORY "trigger", number_);
   FILE *trigger_handle = fopen(trigger_path, "w");
   if (trigger_handle == nullptr) {
-    LOG(FATAL, "couldn't open trigger file for LED %d because of %d: %s\n",
-        number_, errno, strerror(errno));
+    PLOG(FATAL, "couldn't open trigger file for LED %d", number_);
   }
   if (fputs("none", trigger_handle) < 0) {
-    LOG(FATAL,
-        "writing 'none' to file %p (trigger for LED %d) failed with %d: %s\n",
-        trigger_handle, number_, errno, strerror(errno));
+    PLOG(FATAL, "writing 'none' to file %p (trigger for LED %d) failed",
+         trigger_handle, number_);
   }
   if (fclose(trigger_handle) == -1) {
-    LOG(WARNING, "fclose(%p) failed with %d: %s\n",
-        trigger_handle, errno, strerror(errno));
+    PLOG(WARNING, "fclose(%p) failed", trigger_handle);
   }
 
   char brightness_path[64];
@@ -33,27 +29,25 @@ LED::LED(int number) : number_(number) {
 
   brightness_handle_ = fopen(brightness_path, "w");
   if (brightness_handle_ == nullptr) {
-    LOG(FATAL, "fopen('%s', 'w') failed with %d: %s\n",
-        brightness_path, errno, strerror(errno));
+    PLOG(FATAL, "fopen('%s', 'w') failed", brightness_path);
   }
 }
 
 LED::~LED() {
   if (fclose(brightness_handle_) == -1) {
-    LOG(WARNING, "fclose(%p) failed with %d: %s\n",
-        brightness_handle_, errno, strerror(errno));
+    PLOG(WARNING, "fclose(%p) failed", brightness_handle_);
   }
 }
 
 void LED::Set(bool on) {
   rewind(brightness_handle_);
   if (fputs(on ? "255" : "0", brightness_handle_) == EOF) {
-    LOG(FATAL, "fputs(255|0, %p) for LED %d failed with %d: %s\n",
-        brightness_handle_, number_, errno, strerror(errno));
+    PLOG(FATAL, "fputs(255|0, %p) for LED %d failed",
+         brightness_handle_, number_);
   }
   if (fflush(brightness_handle_) == EOF) {
-    LOG(FATAL, "fflush(%p) for LED %d failed with %d: %s\n",
-        brightness_handle_, number_, errno, strerror(errno));
+    PLOG(FATAL, "fflush(%p) for LED %d failed",
+         brightness_handle_, number_);
   }
 }
 
