@@ -69,25 +69,21 @@ class TestThread(threading.Thread):
           self.done_queue.put(self)
 
   def terminate_process(self):
-    """Asks any currently running process to stop.
-
-    Also changes this object to the stopped state.
-    """
+    """Asks any currently running process to stop."""
     with self.process_lock:
-      self.stopped = True
       if not self.process:
         return
       self.process.terminate()
   def kill_process(self):
-    """Forcibly terminates any running process.
-
-    Also changes this object to the stopped state.
-    """
+    """Forcibly terminates any running process."""
     with self.process_lock:
-      self.stopped = True
       if not self.process:
         return
       self.process.kill()
+  def stop(self):
+    """Changes self to the stopped state."""
+    with self.process_lock:
+      self.stopped = True
 
 def aos_path():
   """Returns:
@@ -912,6 +908,10 @@ def main():
       finally:
         if running:
           test_output('Killing other tests...')
+# Stop all of them before killing processes because otherwise stopping some of
+# them tends to let other ones that are waiting to start go.
+          for thread in running:
+            thread.stop()
           for thread in running:
             thread.terminate_process()
           to_remove = []
