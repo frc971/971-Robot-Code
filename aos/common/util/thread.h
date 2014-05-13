@@ -1,7 +1,10 @@
 #ifndef AOS_COMMON_UTIL_THREAD_H_
 #define AOS_COMMON_UTIL_THREAD_H_
 
+#include <functional>
+
 #include "aos/common/mutex.h"
+#include "aos/common/macros.h"
 
 namespace aos {
 namespace util {
@@ -19,6 +22,9 @@ class Thread {
 
   // Asks the code to stop and then waits until it has done so.
   void Join();
+
+  // Waits until the code has stopped. Does not ask it to do so.
+  void WaitUntilDone();
 
  protected:
   // Subclasses need to call this periodically if they are going to loop to
@@ -42,6 +48,21 @@ class Thread {
   bool joined_;
   bool should_terminate_;
   Mutex should_terminate_mutex_;
+
+  DISALLOW_COPY_AND_ASSIGN(Thread);
+};
+
+class FunctionThread : public Thread {
+ public:
+  FunctionThread(::std::function<void(FunctionThread *)> function)
+      : function_(function) {}
+
+ private:
+  virtual void Run() override {
+    function_(this);
+  }
+
+  const ::std::function<void(FunctionThread *)> function_;
 };
 
 }  // namespace util

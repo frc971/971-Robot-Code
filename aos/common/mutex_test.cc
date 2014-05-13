@@ -3,15 +3,14 @@
 #include <sched.h>
 #include <math.h>
 #include <pthread.h>
-#ifdef __VXWORKS__
-#include <taskLib.h>
-#endif
 
 #include "gtest/gtest.h"
 
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
 #include "aos/common/util/death_test_log_implementation.h"
+#include "aos/common/util/thread.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace testing {
@@ -45,7 +44,6 @@ TEST_F(MutexTest, Unlock) {
   EXPECT_TRUE(test_mutex.TryLock());
 }
 
-#ifndef __VXWORKS__
 // Sees what happens with multiple unlocks.
 TEST_F(MutexDeathTest, RepeatUnlock) {
   test_mutex.Lock();
@@ -67,7 +65,6 @@ TEST_F(MutexDeathTest, NeverLock) {
       },
       ".*multiple unlock.*");
 }
-#endif
 
 TEST_F(MutexTest, MutexLocker) {
   {
@@ -87,6 +84,67 @@ TEST_F(MutexTest, MutexUnlocker) {
     test_mutex.Unlock();
   }
   EXPECT_FALSE(test_mutex.TryLock());
+}
+
+namespace {
+
+class AdderThread : public ::aos::util::Thread {
+ public:
+  AdderThread(int *counter, Mutex *mutex, ::aos::time::Time sleep_before_time,
+              ::aos::time::Time sleep_after_time)
+      : counter_(counter),
+        mutex_(mutex),
+        sleep_before_time_(sleep_before_time),
+        sleep_after_time_(sleep_after_time) {}
+  virtual void Run() override {
+    ::aos::time::SleepFor(sleep_before_time_);
+    MutexLocker locker(mutex_);
+    ++(*counter_);
+    ::aos::time::SleepFor(sleep_after_time_);
+  }
+
+ private:
+  int *const counter_;
+  Mutex *const mutex_;
+  const ::aos::time::Time sleep_before_time_, sleep_after_time_;
+};
+
+}  // namespace
+
+// Verifies that ThreadSanitizer understands that a contended mutex establishes
+// a happens-before relationship.
+TEST_F(MutexTest, ThreadSanitizerContended) {
+  int counter = 0;
+  AdderThread threads[2]{
+      {&counter, &test_mutex, ::aos::time::Time::InSeconds(1),
+       ::aos::time::Time::InSeconds(0)},
+      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0),
+       ::aos::time::Time::InSeconds(0)}, };
+  for (auto &c : threads) {
+    c.Start();
+  }
+  for (auto &c : threads) {
+    c.WaitUntilDone();
+  }
+  EXPECT_EQ(2, counter);
+}
+
+// Verifies that ThreadSanitizer understands that an uncontended mutex
+// establishes a happens-before relationship.
+TEST_F(MutexTest, ThreadSanitizerUncontended) {
+  int counter = 0;
+  AdderThread threads[2]{
+      {&counter, &test_mutex, ::aos::time::Time::InSeconds(1),
+       ::aos::time::Time::InSeconds(0)},
+      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0),
+       ::aos::time::Time::InSeconds(0)}, };
+  for (auto &c : threads) {
+    c.Start();
+  }
+  for (auto &c : threads) {
+    c.WaitUntilDone();
+  }
+  EXPECT_EQ(2, counter);
 }
 
 }  // namespace testing

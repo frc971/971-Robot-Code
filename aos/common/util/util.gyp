@@ -20,6 +20,7 @@
         'run_command',
         '<(EXTERNALS):gtest',
         '<(AOS)/build/aos.gyp:logging',
+        'thread',
       ],
     },
     {

@@ -62,20 +62,10 @@ struct RawQueue::MessageHeader {
   }
 
   void ref_count_sub() {
-    // TODO(brians): Take the #ifdef out once clang can handle the
-    // __atomic_*_fetch variants which could be more efficient.
-#ifdef __clang__
-    __atomic_fetch_sub(&ref_count_, 1, __ATOMIC_RELAXED);
-#else
     __atomic_sub_fetch(&ref_count_, 1, __ATOMIC_RELAXED);
-#endif
   }
   void ref_count_add() {
-#ifdef __clang__
-    __atomic_fetch_add(&ref_count_, 1, __ATOMIC_RELAXED);
-#else
     __atomic_add_fetch(&ref_count_, 1, __ATOMIC_RELAXED);
-#endif
   }
 
  private:

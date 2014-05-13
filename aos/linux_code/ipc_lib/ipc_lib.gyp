@@ -65,6 +65,7 @@
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/util/util.gyp:thread',
       ],
     },
     {

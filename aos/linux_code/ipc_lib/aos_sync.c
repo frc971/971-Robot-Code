@@ -11,13 +11,10 @@
 
 #include "aos/common/logging/logging.h"
 
-// TODO(brians): Inline these in the new PI version.
+// TODO(brians): Inline this in the new PI version.
 #define cmpxchg(ptr, o, n) __sync_val_compare_and_swap(ptr, o, n)
-static inline uint32_t xchg(mutex *pointer, uint32_t value) {
-  uint32_t result;
-  __atomic_exchange(pointer, &value, &result, __ATOMIC_SEQ_CST);
-  return result;
-}
+
+#define ARM_EABI_INLINE_SYSCALL defined(__ARM_EABI__)
 
 // this code is based on something that appears to be based on
 //   <http://www.akkadia.org/drepper/futex.pdf>, which also has a lot of useful
@@ -32,6 +29,10 @@ static inline uint32_t xchg(mutex *pointer, uint32_t value) {
 //   (fairly recent compared to everything else...)
 // can't use PRIVATE futex operations because they use the pid (or something) as
 //   part of the hash
+//
+// ThreadSanitizer understands how these mutexes etc work. It appears to be able
+// to figure out the happens-before relationship from the __ATOMIC_SEQ_CST
+// atomic primitives.
 //
 // Remember that EAGAIN and EWOUDBLOCK are the same! (ie if you get EAGAIN from
 // FUTEX_WAIT, the docs call it EWOULDBLOCK...)
@@ -54,7 +55,7 @@ static inline uint32_t xchg(mutex *pointer, uint32_t value) {
 
 static inline int sys_futex_wait(mutex *addr1, int val1,
                                  const struct timespec *timeout) {
-#ifdef __ARM_EABI__
+#if ARM_EABI_INLINE_SYSCALL
   register mutex *addr1_reg __asm__("r0") = addr1;
   register int op_reg __asm__("r1") = FUTEX_WAIT;
   register int val1_reg __asm__("r2") = val1;
@@ -75,7 +76,7 @@ static inline int sys_futex_wait(mutex *addr1, int val1,
 }
 
 static inline int sys_futex_wake(mutex *addr1, int val1) {
-#ifdef __ARM_EABI__
+#if ARM_EABI_INLINE_SYSCALL
   register mutex *addr1_reg __asm__("r0") = addr1;
   register int op_reg __asm__("r1") = FUTEX_WAKE;
   register int val1_reg __asm__("r2") = val1;
@@ -96,7 +97,7 @@ static inline int sys_futex_wake(mutex *addr1, int val1) {
 
 static inline int sys_futex_requeue(mutex *addr1, int num_wake,
     int num_requeue, mutex *m) {
-#ifdef __ARM_EABI__
+#if ARM_EABI_INLINE_SYSCALL
   register mutex *addr1_reg __asm__("r0") = addr1;
   register int op_reg __asm__("r1") = FUTEX_REQUEUE;
   register int num_wake_reg __asm__("r2") = num_wake;
@@ -124,7 +125,7 @@ static inline int mutex_get(mutex *m, uint8_t signals_fail, const
   c = cmpxchg(m, 0, 1);
   if (!c) return 0;
   /* The lock is now contended */
-  if (c == 1) c = xchg(m, 2);
+  if (c == 1) c = __atomic_exchange_n(m, 2, __ATOMIC_SEQ_CST);
   while (c) {
     /* Wait in the kernel */
     const int ret = sys_futex_wait(m, 2, timeout);
@@ -136,7 +137,7 @@ static inline int mutex_get(mutex *m, uint8_t signals_fail, const
         return 2;
       }
     }
-    c = xchg(m, 2);
+    c = __atomic_exchange_n(m, 2, __ATOMIC_SEQ_CST);
   }
   return 0;
 }
@@ -152,7 +153,7 @@ int mutex_grab(mutex *m) {
 
 void mutex_unlock(mutex *m) {
   /* Unlock, and if not contended then exit. */
-  switch (xchg(m, 0)) {
+  switch (__atomic_exchange_n(m, 0, __ATOMIC_SEQ_CST)) {
     case 0:
       LOG(FATAL, "multiple unlock of %p\n", m);
     case 1:
@@ -192,7 +193,7 @@ int futex_wait(mutex *m) {
   return 0;
 }
 int futex_set_value(mutex *m, mutex value) {
-  xchg(m, value);
+  __atomic_store_n(m, value, __ATOMIC_SEQ_CST);
   const int r = sys_futex_wake(m, INT_MAX - 4096);
   if (__builtin_expect((unsigned int)r > (unsigned int)-4096, 0)) {
     errno = -r;
@@ -205,7 +206,7 @@ int futex_set(mutex *m) {
   return futex_set_value(m, 1);
 }
 int futex_unset(mutex *m) {
-  return !xchg(m, 0);
+  return !__atomic_exchange_n(m, 0, __ATOMIC_SEQ_CST);
 }
 
 void condition_wait(mutex *c, mutex *m) {
@@ -233,7 +234,7 @@ void condition_wait(mutex *c, mutex *m) {
     // If we got requeued above, this will just succeed the first time because
     // the person waking us from the above wait (changed to be on the mutex
     // instead of the condition) will have just set it to 0.
-    while (xchg(m, 2) != 0) {
+    while (__atomic_exchange_n(m, 2, __ATOMIC_SEQ_CST) != 0) {
       const int ret = sys_futex_wait(m, 2, NULL);
       if (ret != 0) {
         // Try again if it was because of a signal or somebody else unlocked it

@@ -276,7 +276,7 @@
       'target_name': 'mutex_test',
       'type': 'executable',
       'sources': [
-        'mutex_test.cpp',
+        'mutex_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
@@ -284,6 +284,8 @@
         'die',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:death_test_log_implementation',
+        '<(AOS)/common/util/util.gyp:thread',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

@@ -16,6 +16,7 @@
 #include "aos/common/time.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/die.h"
+#include "aos/common/util/thread.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -923,6 +924,29 @@ TEST_F(RawQueueTest, WriteOverride) {
   EXPECT_EQ(254, message2->data);
   queue->FreeMessage(message2);
   EXPECT_EQ(free_before + 2, queue->FreeMessages());
+}
+
+// Makes sure that ThreadSanitizer doesn't catch any issues freeing from
+// multiple threads at once.
+TEST_F(RawQueueTest, MultiThreadedFree) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
+  PushMessage(queue, 971);
+  int free_before = queue->FreeMessages();
+
+  const void *const message1 = queue->ReadMessage(RawQueue::kPeek);
+  const void *const message2 = queue->ReadMessage(RawQueue::kPeek);
+  EXPECT_EQ(free_before, queue->FreeMessages());
+  util::FunctionThread t1([message1, queue](util::Thread *) {
+    queue->FreeMessage(message1);
+  });
+  util::FunctionThread t2([message2, queue](util::Thread *) {
+    queue->FreeMessage(message2);
+  });
+  t1.Start();
+  t2.Start();
+  t1.WaitUntilDone();
+  t2.WaitUntilDone();
+  EXPECT_EQ(free_before, queue->FreeMessages());
 }
 
 }  // namespace testing

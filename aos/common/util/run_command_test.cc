@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+#include "aos/common/util/thread.h"
+
 namespace aos {
 namespace util {
 namespace testing {
@@ -32,6 +34,26 @@ TEST(RunCommandTest, KilledBySignal) {
   ASSERT_NE(-1, result);
   ASSERT_TRUE(WIFSIGNALED(result));
   EXPECT_EQ(SIGQUIT, WTERMSIG(result));
+}
+
+TEST(RunCommandTest, MultipleThreads) {
+  int result1, result2;
+  util::FunctionThread t1([&result1](util::Thread *) {
+    result1 = RunCommand("true");
+  });
+  util::FunctionThread t2([&result2](util::Thread *) {
+    result2 = RunCommand("true");
+  });
+  t1.Start();
+  t2.Start();
+  t1.WaitUntilDone();
+  t2.WaitUntilDone();
+  ASSERT_NE(-1, result1);
+  ASSERT_NE(-1, result2);
+  ASSERT_TRUE(WIFEXITED(result1));
+  ASSERT_TRUE(WIFEXITED(result2));
+  EXPECT_EQ(0, WEXITSTATUS(result1));
+  EXPECT_EQ(0, WEXITSTATUS(result2));
 }
 
 }  // namespace testing
