@@ -1,0 +1,18 @@
+This directory has replacements for some libc functions that we don't want to
+use because they're not thread-safe and/or they allocate memory.
+
+Some of them are implemented as C++ functions because it makes fixing the
+memory management issues that cause the standard versions to be not thread-safe
+possible and some of them are still callable from C when it makes sense.
+
+<http://pubs.opengroup.org/onlinepubs/9699919799/functions/V2_chap02.html#tag_15_09_01>
+has a list of the not-thread-safe POSIX functions. We've gotten rid of all of
+those except for the following:
+  getenv(3): <http://austingroupbugs.net/view.php?id=188> proposes changing
+    POSIX to require it to return a pointer into environ, making it thread-safe,
+    which glibc already does.
+  inet_ntoa(3): Glibc uses a thread-local buffer, which makes it thread-safe,
+    and uses of this function should go away soon.
+  readdir(3): Glibc already guarantees that only invocations on the same
+    directory stream aren't thread-safe, and there's talk of changing POSIX to
+    say the same thing.

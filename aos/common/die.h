@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 #include "aos/common/macros.h"
-#include "aos/common/util/aos_strerror.h"
+#include "aos/common/libc/aos_strerror.h"
 
 namespace aos {
 

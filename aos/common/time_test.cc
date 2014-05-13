@@ -34,19 +34,21 @@ TEST(TimeTest, NowAndSleepFor) {
   // longer than it should the second time, where it actually matters)
   SleepFor(Time(0, Time::kNSecInSec / 10));
   Time start = Time::Now();
-  SleepFor(Time(0, Time::kNSecInSec * 2 / 10));
-  EXPECT_TRUE(MACRO_DARG((Time::Now() - start)
-                         .IsWithin(Time(0, Time::kNSecInSec * 2 / 10),
-                                   Time::kNSecInSec / 1000)));
+  static constexpr Time kSleepTime = Time(0, Time::kNSecInSec * 2 / 10);
+  SleepFor(kSleepTime);
+  Time difference = Time::Now() - start;
+  EXPECT_GE(difference, kSleepTime);
+  EXPECT_LT(difference, kSleepTime + Time(0, Time::kNSecInSec / 100));
 }
 
 TEST(TimeTest, AbsoluteSleep) {
   Time start = Time::Now();
   SleepFor(Time(0, Time::kNSecInSec / 10));
-  SleepUntil((start + Time(0, Time::kNSecInSec * 2 / 10)));
-  EXPECT_TRUE(MACRO_DARG((Time::Now() - start)
-                         .IsWithin(Time(0, Time::kNSecInSec * 2 / 10),
-                                   Time::kNSecInSec / 1000)));
+  static constexpr Time kSleepTime = Time(0, Time::kNSecInSec * 2 / 10);
+  SleepUntil(start + kSleepTime);
+  Time difference = Time::Now() - start;
+  EXPECT_GE(difference, kSleepTime);
+  EXPECT_LT(difference, kSleepTime + Time(0, Time::kNSecInSec / 100));
 }
 
 TEST(TimeTest, Addition) {

@@ -9,6 +9,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
+#include "aos/common/libc/dirname.h"
 
 extern "C" {
 #include "stm32flash/parsers/parser.h"
@@ -51,9 +52,9 @@ int main(int argc, char **argv) {
 
   serial_baud_t baud_rate = SERIAL_BAUD_57600;
 
-  ::std::string filename =
-      ::std::string(dirname(strdup(argv[0]))) +
-      "/../../../bbb_cape/src/cape/.obj/" + target + ".hex";
+  ::std::string filename = ::aos::libc::Dirname(argv[0]) +
+                           "/../../../bbb_cape/src/cape/.obj/" + target +
+                           ".hex";
 
   int file = open(filename.c_str(), O_RDONLY);
   if (file == -1) {

@@ -15,6 +15,8 @@
 #include "aos/common/mutex.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/die.h"
+#include "aos/common/libc/dirname.h"
+#include "aos/common/libc/aos_strsignal.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
 // while and makes sure that they don't fail. It also captures the stdout and
@@ -175,7 +177,7 @@ void DoRun(Shared *shared) {
     } else if (WIFSIGNALED(status)) {
       MutexLocker sync(&shared->output_mutex);
       fprintf(stderr, "Test %s terminated by signal %d: %s.\n", (*test)[0],
-              WTERMSIG(status), strsignal(WTERMSIG(status)));
+              WTERMSIG(status), aos_strsignal(WTERMSIG(status)));
         fputs(output.c_str(), stderr);
     } else {
       assert(WIFSTOPPED(status));
@@ -210,12 +212,10 @@ int Main(int argc, char **argv) {
   Shared *shared = static_cast<Shared *>(shm_malloc(sizeof(Shared)));
   new (shared) Shared(time::Time::Now() + kTestTime);
 
-  char *temp = strdup(argv[0]);
   if (asprintf(const_cast<char **>(&shared->path),
-               "%s/../tests", dirname(temp)) == -1) {
+               "%s/../tests", ::aos::libc::Dirname(argv[0]).c_str()) == -1) {
     PDie("asprintf failed");
   }
-  free(temp);
 
   for (int i = 0; i < kTesters; ++i) {
     Run(shared);

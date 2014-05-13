@@ -1,3 +1,8 @@
+// This has to come before anybody drags in <stdlib.h> or else we end up with
+// the wrong version of WIFEXITED etc (for one thing, they don't const-qualify
+// their casts) (sometimes at least).
+#include <sys/wait.h>
+
 #include "bbb/packet_finder.h"
 
 #include <inttypes.h>
@@ -8,6 +13,7 @@
 #include <algorithm>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/util/run_command.h"
 
 #include "cape/cows.h"
 #include "bbb/crc.h"
@@ -65,14 +71,13 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
       // Iff we're root.
       if (getuid() == 0) {
         // TODO(brians): Do this cleanly.
-        int chrt_result =
-            system("chrt -o 0 bash -c 'chrt -r -p 55"
-                   " $(pgrep irq/89)'");
+        const int chrt_result = ::aos::util::RunCommand(
+            "chrt -o 0 bash -c 'chrt -r -p 55 $(pgrep irq/89)'");
         if (chrt_result == -1) {
-          LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+          LOG(FATAL, "RunCommand(chrt -r -p 55 the_irq) failed\n");
         } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
-          LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
-              WEXITSTATUS(chrt_result));
+          LOG(FATAL, "$(chrt -r -p 55 the_irq) failed; result = %x\n",
+              chrt_result);
         }
       } else {
         LOG(WARNING, "not root, so not increasing priority of the IRQ\n");

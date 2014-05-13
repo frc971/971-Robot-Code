@@ -3,9 +3,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
+#include "aos/common/util/run_command.h"
 
 namespace bbb {
 namespace {
@@ -27,11 +29,15 @@ const char *UartDevice() { return device; }
 void ExportUart() {
   if (easy_access(device)) {
     LOG(INFO, "unexporting BB-UART1\n");
-    if (system("bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
-               " | fgrep BB-UART1"
-               " | cut -d : -f 1 | tr -d \" \")"
-               " > /sys/devices/bone_capemgr.*/slots'") == -1) {
-      PLOG(FATAL, "system([disable OMAP UART]) failed");
+    const int result = ::aos::util::RunCommand(
+        "bash -c 'echo -$(cat /sys/devices/bone_capemgr.*/slots"
+        " | fgrep BB-UART1"
+        " | cut -d : -f 1 | tr -d \" \")"
+        " > /sys/devices/bone_capemgr.*/slots'");
+    if (result == -1) {
+      PLOG(FATAL, "RunCommand([disable OMAP UART]) failed");
+    } else if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
+      LOG(FATAL, "command to disable OMAP UART failed; result = %x\n", result);
     }
     while (easy_access(device)) {
       LOG(DEBUG, "waiting for BB-UART1 to be unexported\n");
@@ -42,10 +48,12 @@ void ExportUart() {
   LOG(INFO, "exporting BB-UART1\n");
   // 2 strings to work around a VIM bug where the indenter locks up when they're
   // combined as 1...
-  if (system("bash -c 'echo BB-UART1 > /sys/devices/bone_capemgr.*"
-             "/slots'") ==
-      -1) {
-    PLOG(FATAL, "system([enable OMAP UART]) failed");
+  const int result = ::aos::util::RunCommand(
+      "bash -c 'echo BB-UART1 > /sys/devices/bone_capemgr.*" "/slots'");
+  if (result == -1) {
+    PLOG(FATAL, "RunCommand([enable OMAP UART]) failed");
+  } else if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
+    LOG(FATAL, "command to enable OMAP UART failed; result = %x\n", result);
   }
   while (!easy_access(device)) {
     LOG(DEBUG, "waiting for BB-UART1 to be exported\n");

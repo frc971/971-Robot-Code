@@ -1,4 +1,4 @@
-#include "aos/common/util/aos_strerror.h"
+#include "aos/common/libc/aos_strerror.h"
 
 #include <assert.h>
 #include <sys/types.h>
@@ -33,7 +33,7 @@ char *aos_strerror_handle_result(int error, int ret, char *buffer) {
 
 }  // namespace
 
-char *aos_strerror(int error) {
+const char *aos_strerror(int error) {
   static AOS_THREAD_LOCAL char buffer[kBufferSize];
 
   // Call the overload for whichever version we're using.

@@ -80,6 +80,8 @@
         '<(AOS)/common/common.gyp:mutex',
         'core_lib',
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/libc/libc.gyp:dirname',
+        '<(AOS)/common/libc/libc.gyp:aos_strsignal',
       ],
       'variables': {
         'is_special_test': 1,

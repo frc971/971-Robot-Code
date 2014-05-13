@@ -1,6 +1,28 @@
 {
   'targets': [
     {
+      'target_name': 'run_command',
+      'type': 'static_library',
+      'sources': [
+        'run_command.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+    },
+    {
+      'target_name': 'run_command_test',
+      'type': 'executable',
+      'sources': [
+        'run_command_test.cc',
+      ],
+      'dependencies': [
+        'run_command',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'death_test_log_implementation',
       'type': 'static_library',
       'sources': [
@@ -11,13 +33,6 @@
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
-      ],
-    },
-    {
-      'target_name': 'aos_strerror',
-      'type': 'static_library',
-      'sources': [
-        'aos_strerror.cc',
       ],
     },
     {

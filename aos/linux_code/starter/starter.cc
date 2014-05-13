@@ -1,3 +1,8 @@
+// This has to come before anybody drags in <stdlib.h> or else we end up with
+// the wrong version of WIFEXITED etc (for one thing, they don't const-qualify
+// their casts) (sometimes at least).
+#include <sys/wait.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -10,7 +15,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/wait.h>
 #include <inttypes.h>
 
 #include <map>
@@ -32,6 +36,8 @@
 #include "aos/common/unique_malloc_ptr.h"
 #include "aos/common/time.h"
 #include "aos/common/once.h"
+#include "aos/common/libc/aos_strsignal.h"
+#include "aos/common/util/run_command.h"
 
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.
@@ -669,8 +675,7 @@ void SigCHLDReceived(int /*fd*/, short /*events*/, void *) {
           // want it to stop, so it stopping isn't a WARNING.
           LOG((status == SIGTERM) ? DEBUG : WARNING,
               "child %d (%s) was killed by signal %d (%s)\n",
-              pid, child->name(), status,
-              strsignal(status));
+              pid, child->name(), status, aos_strsignal(status));
           break;
         case CLD_STOPPED:
           LOG(WARNING, "child %d (%s) was stopped by signal %d "
@@ -731,8 +736,13 @@ void Main() {
   std::string core_touch_file = "/tmp/starter.";
   core_touch_file += std::to_string(static_cast<intmax_t>(getpid()));
   core_touch_file += ".core_touch_file";
-  if (system(("touch '" + core_touch_file + "'").c_str()) != 0) {
+  const int result =
+      ::aos::util::RunCommand(("touch '" + core_touch_file + "'").c_str());
+  if (result == -1) {
     PLOG(FATAL, "running `touch '%s'` failed\n", core_touch_file.c_str());
+  } else if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
+    LOG(FATAL, "`touch '%s'` gave result %x\n", core_touch_file.c_str(),
+        result);
   }
   FileWatch core_touch_file_watch(core_touch_file, Run, NULL);
   core = unique_ptr<Child>(

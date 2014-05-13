@@ -25,6 +25,8 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:once',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/libc/libc.gyp:aos_strsignal',
+        '<(AOS)/common/util/util.gyp:run_command',
       ],
       'copies': [
         {

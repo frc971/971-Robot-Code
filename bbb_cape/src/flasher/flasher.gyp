@@ -19,6 +19,7 @@
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:gpios',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:export_uart',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/libc/libc.gyp:dirname',
       ],
     },
   ],

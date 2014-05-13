@@ -226,10 +226,10 @@
         'die.cc',
       ],
       'dependencies': [
-        '<(AOS)/common/util/util.gyp:aos_strerror',
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/util/util.gyp:aos_strerror',
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
       ],
     },
     {
