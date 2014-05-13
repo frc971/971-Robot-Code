@@ -225,6 +225,14 @@ class Processor(object):
         A map of environment variables to set while building this platform.
       """
       raise NotImplementedError('build_env should be overriden')
+    def priority(self):
+      """Returns:
+        A relative priority for this platform relative to other ones.
+
+      Higher priority platforms will get built, tested, etc first. Generally,
+      platforms which give higher-quality compiler errors etc should come first.
+      """
+      return 0
 
   def check_installed(self, platforms, is_deploy):
     """Makes sure that everything necessary to build platforms are installed."""
@@ -407,6 +415,20 @@ class PrimeProcessor(Processor):
 
     def outname(self):
       return str(self)
+
+    def priority(self):
+      r = 0
+      if self.compiler() == 'gcc':
+        r -= 100
+      elif self.compiler() == 'clang':
+        r += 100
+      if self.sanitizer() != 'none':
+        r -= 50
+      elif self.debug():
+        r -= 10
+      if self.architecture() == 'amd64':
+        r += 5
+      return r
 
     # TODO(brians): test this
     def deploy(self, dry_run):
@@ -793,8 +815,11 @@ def main():
       build_env['PATH'] = os.environ['PATH']
     return build_env
 
+  sorted_platforms = sorted(platforms,
+                            key=lambda platform: -platform.priority())
+
   to_build = []
-  for platform in platforms:
+  for platform in sorted_platforms:
     to_build.append(str(platform))
   if len(to_build) > 1:
     to_build[-1] = 'and ' + to_build[-1]
@@ -811,7 +836,7 @@ def main():
           exit(1)
 
   num = 1
-  for platform in platforms:
+  for platform in sorted_platforms:
     user_output('Building %s (%d/%d)...' % (platform, num, len(platforms)))
     if args.action_name == 'clean':
       shutil.rmtree(platform.outdir(), onerror=handle_clean_error)
