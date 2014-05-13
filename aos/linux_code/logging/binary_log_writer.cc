@@ -62,21 +62,29 @@ void CheckTypeWritten(uint32_t type_id, LogFileWriter &writer) {
 
 void AllocateLogName(char **filename, const char *directory) {
   int fileindex = 0;
-  DIR *d;
-  if ((d = opendir(directory))) {
-    int index = 0;
-    struct dirent *dir;
-    while ((dir = readdir(d)) != NULL) {
+  DIR *const d = opendir(directory);
+  if (d == nullptr) {
+    PDie("could not open directory %s", directory);
+  }
+  int index = 0;
+  while (true) {
+    errno = 0;
+    struct dirent *const dir = readdir(d);
+    if (dir == nullptr) {
+      if (errno == 0) {
+        break;
+      } else {
+        PLOG(FATAL, "readdir(%p) failed", d);
+      }
+    } else {
       if (sscanf(dir->d_name, "aos_log-%d", &index) == 1) {
         if (index >= fileindex) {
           fileindex = index + 1;
         }
       }
     }
-    closedir(d);
-  } else {
-    PDie("could not open directory %s", directory);
   }
+  closedir(d);
 
   char previous[512];
   ::std::string path = ::std::string(directory) + "/aos_log-current";
