@@ -11,6 +11,7 @@ import shutil
 import errno
 import queue
 import threading
+import pty
 
 class TestThread(threading.Thread):
   """Runs 1 test and keeps track of its current state.
@@ -52,15 +53,16 @@ class TestThread(threading.Thread):
       if self.stopped:
         return
       test_output('Starting test %s...' % self.name)
-      self.output, subprocess_output = os.pipe()
-      with self.process_lock:
-        self.process = subprocess.Popen((self.executable,
-                                         '--gtest_color=yes'),
-                                        env=self.env,
-                                        stderr=subprocess.STDOUT,
-                                        stdout=subprocess_output,
-                                        stdin=open(os.devnull, 'r'))
-      os.close(subprocess_output)
+      self.output, subprocess_output = pty.openpty()
+      try:
+        with self.process_lock:
+          self.process = subprocess.Popen(self.executable,
+                                          env=self.env,
+                                          stderr=subprocess.STDOUT,
+                                          stdout=subprocess_output,
+                                          stdin=open(os.devnull, 'r'))
+      finally:
+        os.close(subprocess_output)
       self.process.wait()
       with self.process_lock:
         self.returncode = self.process.returncode
@@ -894,17 +896,24 @@ def main():
           running.remove(done)
           with test_output_lock:
             test_output('Output from test %s:' % done.name)
-            for line in os.fdopen(done.output):
-              if not sys.stdout.isatty():
-                # Remove color escape codes.
-                line = re.sub(r'\x1B\[[0-9;]*[a-zA-Z]', '', line)
-              sys.stdout.write(line)
-            if not done.returncode:
-              test_output('Test %s succeeded' % done.name)
-            else:
-              test_output('Test %s failed' % done.name)
-              user_output('Aborting because of test failure.')
-              exit(1)
+            with os.fdopen(done.output) as output_file:
+              try:
+                for line in output_file:
+                  if not sys.stdout.isatty():
+                    # Remove color escape codes.
+                    line = re.sub(r'\x1B\[[0-9;]*[a-zA-Z]', '', line)
+                  sys.stdout.write(line)
+              except IOError as e:
+# We want to just ignore EIOs from reading the master pty because that just
+# means we hit the end.
+                if e.errno != errno.EIO:
+                  raise e
+              if not done.returncode:
+                test_output('Test %s succeeded' % done.name)
+              else:
+                test_output('Test %s failed' % done.name)
+                user_output('Aborting because of test failure.')
+                exit(1)
       finally:
         if running:
           test_output('Killing other tests...')
