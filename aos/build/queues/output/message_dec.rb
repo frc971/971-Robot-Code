@@ -199,47 +199,27 @@ class Target::MessageDec < Target::StructBase
 		create_Print(type_class,cpp_tree)
 		create_GetType(type_class, cpp_tree)
 		create_DoGetType(type_class, cpp_tree)
-    create_DefaultConstructor(type_class, cpp_tree)
-    create_InOrderConstructor(type_class, cpp_tree)
+                create_DefaultConstructor(type_class, cpp_tree)
+                create_InOrderConstructor(type_class, cpp_tree)
 
 		b_namespace = cpp_tree.get(b_loc = self.class.builder_loc(@loc))
 
-		safetemplate = Types::TemplateClass.new(b_namespace,"SafeMessageBuilder")
-		ifdef_statement = Types::PreprocessorIf.new(b_namespace,"!defined(__VXWORKS__) && !defined(__TEST_VXWORKS__)")
-		ifdef_statement.add_member(safetemplate)
-		b_namespace.add(ifdef_statement)
 		template = b_namespace.add_template("MessageBuilder")
-		safetemplate.spec_args << t = @loc.to_cpp_id(@name)
 		template.spec_args << t = @loc.to_cpp_id(@name)
-		safemsg_ptr_t = "SafeScopedMessagePtr< #{t}>"
 		msg_ptr_t = "ScopedMessagePtr< #{t}>"
-		safemsg_bld_t = "SafeMessageBuilder< #{t}>"
 		msg_bld_t = "MessageBuilder< #{t}>"
-		safetemplate.add_member(:private,"#{safemsg_ptr_t} msg_ptr_")
 		template.add_member(:private,"#{msg_ptr_t} msg_ptr_")
 		template.add_member(:private,"#{msg_bld_t}(const #{msg_bld_t}&)")
 		template.add_member(:private,"void operator=(const #{msg_bld_t}&)")
-		safetemplate.add_member(:private,"friend class ::aos::Queue< #{t}>")
 		template.add_member(:private,"friend class ::aos::Queue< #{t}>")
 
 		cons = CPP::Constructor.new(template)
-		unsafe_cons = CPP::Constructor.new(template)
-		cons_ifdef_statement = CPP::PreprocessorIf.new(cons, unsafe_cons)
-		cons_ifdef_statement.name = "!defined(__VXWORKS__) && !defined(__TEST_VXWORKS__)"
-		template.add_member(:private,cons_ifdef_statement)
+		template.add_member(:private,cons)
 		cons.args << "RawQueue *queue"
 		cons.args << "#{t} *msg"
-		unsafe_cons.args << "#{t} *msg"
 		cons.add_cons("msg_ptr_","queue","msg")
-		unsafe_cons.add_cons("msg_ptr_","msg")
-		cons = safetemplate.add_member(:private,CPP::Constructor.new(safetemplate))
-		cons.args << "RawQueue *queue"
-		cons.add_cons("msg_ptr_","queue")
-		safetemplate.public
 		template.public
-		DefineMembers(cpp_tree, safetemplate, safemsg_bld_t)
 		DefineMembers(cpp_tree, template, msg_bld_t)
-
 	end
 	def DefineMembers(cpp_tree, template, msg_bld_t) 
 		send = template.def_func("bool","Send")

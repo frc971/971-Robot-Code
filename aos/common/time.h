@@ -205,8 +205,7 @@ struct Time {
   }
 
   // Enables returning the mock time value for Now instead of checking the
-  // system clock.  This should only be used when testing things depending on
-  // time, or many things may/will break.
+  // system clock.
   static void EnableMockTime(const Time &now = Now());
   // Calls SetMockTime with the current actual time.
   static void UpdateMockTime();

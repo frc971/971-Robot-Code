@@ -42,7 +42,7 @@ AOS_THREAD_LOCAL Context *my_context(NULL);
 }  // namespace
 
 Context *Context::Get() {
-  if (my_context == NULL) {
+  if (__builtin_expect(my_context == NULL, 0)) {
     my_context = new Context();
     my_context->name = GetMyName();
     if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {

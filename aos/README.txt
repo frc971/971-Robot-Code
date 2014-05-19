@@ -29,6 +29,7 @@ Some functions need to be in separate translation units in order for them to be 
 	type of implementation, objects referred to by interrupt service routines activated by the signal function
 	would require explicit specification of volatile storage, as well as other implementation-defined
 	restrictions.
-Everything that has to do different things when compiled for the crio or linux uses #ifdef __VXWORKS__ etc.
-The crio "queue" implementation uses 1 global instance and no synchronization, so it should only be used in code that gets called by the crio-side control loop infrastructure.
+
 The C++ namespace aos is used for all of the aos code. The crio and linux_code namespaces are for APIs that only make sense on one platform or the other.
+
+Almost everything in aos/ is thread-safe. Files with a main() might not be, and some pieces of code explicitly say at their declaration that they aren't. Also, code which shares non-const pointers (including this) is not generally thread-safe. Other than those exceptions, everything is assumed to be thread-safe so the comments don't say so explicitly.

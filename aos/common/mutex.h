@@ -30,7 +30,7 @@ class Mutex {
   // Locks the mutex. If it fails, it calls LOG(FATAL).
   void Lock();
   // Unlocks the mutex. Fails like Lock.
-  // Multiple unlocking might be considered failure.
+  // Multiple unlocking is undefined.
   void Unlock();
   // Locks the mutex unless it is already locked.
   // Returns whether it succeeded or not.
@@ -55,7 +55,6 @@ class Mutex {
 // A class that locks a Mutex when constructed and unlocks it when destructed.
 // Designed to be used as a local variable so that
 // the mutex will be unlocked when the scope is exited.
-// Should it fail for some reason, it dies with LOG(FATAL).
 class MutexLocker {
  public:
   explicit MutexLocker(Mutex *mutex) : mutex_(mutex) {

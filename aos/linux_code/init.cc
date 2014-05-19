@@ -44,7 +44,7 @@ void InitStart() {
   WriteCoreDumps();
 }
 
-int LockAllMemory() {
+void LockAllMemory() {
   InitStart();
   if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
     PDie("%s-init: mlockall failed", program_invocation_short_name);
@@ -55,8 +55,6 @@ int LockAllMemory() {
   uint8_t data[4096 * 8];
   // Not 0 because linux might optimize that to a 0-filled page.
   memset(data, 1, sizeof(data));
-
-  return 0;
 }
 
 // Do the initialization code that is necessary for both realtime and
@@ -76,11 +74,14 @@ void InitCreate() { DoInitNRT(aos_core_create::create); }
 void Init(int relative_priority) {
   if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
     LockAllMemory();
+
     // Only let rt processes run for 3 seconds straight.
     SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
+
     // Allow rt processes up to priority 40.
     SetSoftRLimit(RLIMIT_RTPRIO, 40, false);
-    // Set our process to priority 40.
+
+    // Set our process to the appropriate priority.
     struct sched_param param;
     param.sched_priority = 30 + relative_priority;
     if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {

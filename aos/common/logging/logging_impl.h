@@ -11,6 +11,7 @@
 
 #include <string>
 #include <functional>
+#include <atomic>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
@@ -30,7 +31,8 @@ struct MessageType;
 //
 // It is implemented in logging_impl.cc and logging_interface.cc. They are
 // separate so that code used by logging_impl.cc can link in
-// logging_interface.cc to use logging.
+// logging_interface.cc to use logging without creating a circular dependency.
+// However, any executables with such code still need logging_impl.cc linked in.
 
 namespace aos {
 namespace logging {
@@ -250,10 +252,13 @@ void Cleanup();
 // goes.
 namespace internal {
 
-extern LogImplementation *global_top_implementation;
+extern ::std::atomic<LogImplementation *> global_top_implementation;
 
 // An separate instance of this class is accessible from each task/thread.
 // NOTE: It will get deleted in the child of a fork.
+//
+// Get() and Delete() are implemented in the platform-specific interface.cc
+// file.
 struct Context {
   Context();
 
@@ -267,6 +272,8 @@ struct Context {
   // Deletes the Context object for this task/thread so that the next Get() is
   // called it will create a new one.
   // It is valid to call this when Get() has never been called.
+  // This also gets called after a fork(2) in the new process, where it should
+  // still work to clean up any state.
   static void Delete();
 
   // Which one to log to right now.

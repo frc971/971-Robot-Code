@@ -51,6 +51,10 @@ void MotorOutput::Run() {
     time::PhasedLoopXMS(5, 1000);
     ::aos::time::Time::UpdateMockTime();
 
+    no_robot_state_.Print();
+    fake_robot_state_.Print();
+    sending_failed_.Print();
+
     values_.digital_module = -1;
     // 0 means output disabled.
     memset(&values_.pwm_outputs, 0x00, sizeof(values_.pwm_outputs));
@@ -63,8 +67,12 @@ void MotorOutput::Run() {
     RunIteration();
 
     ::aos::robot_state.FetchLatest();
-    if (!::aos::robot_state.get() || ::aos::robot_state->fake) {
-      LOG(DEBUG, "fake robot state -> not outputting\n");
+    if (!::aos::robot_state.get()) {
+      LOG_INTERVAL(no_robot_state_);
+      continue;
+    }
+    if (::aos::robot_state->fake) {
+      LOG_INTERVAL(fake_robot_state_);
       continue;
     }
 
@@ -75,7 +83,7 @@ void MotorOutput::Run() {
       continue;
     }
     if (socket_.Send(buffer, size) != size) {
-      LOG(WARNING, "sending outputs failed\n");
+      LOG_INTERVAL(sending_failed_);
       continue;
     } else {
       LOG(DEBUG, "sent outputs\n");

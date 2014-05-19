@@ -38,7 +38,7 @@ void SetGlobalImplementation(LogImplementation *implementation) {
   Context *context = Context::Get();
 
   context->implementation = implementation;
-  global_top_implementation = implementation;
+  global_top_implementation.store(implementation);
 }
 
 void NewContext() {

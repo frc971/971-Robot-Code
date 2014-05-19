@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
@@ -39,6 +40,7 @@ struct aos_core *global_core = NULL;
 
 // TODO(brians): madvise(2) it to put this shm in core dumps.
 void aos_core_create_shared_mem(enum aos_core_create to_create) {
+  assert(global_core == NULL);
   static struct aos_core global_core_data;
   global_core = &global_core_data;
 

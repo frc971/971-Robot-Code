@@ -70,7 +70,8 @@ void JoystickInput::Run() {
           }
         }
       }
-
+    }
+    {
       using driver_station::ControlBit;
       if (data.PosEdge(ControlBit::kFmsAttached)) {
         LOG(INFO, "PosEdge(kFmsAttached)\n");

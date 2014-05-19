@@ -44,6 +44,7 @@ const in_addr *DoGetOwnIPAddress() {
   unique_c_ptr<ifaddrs, freeifaddrs> addrs_deleter(addrs);
 
   for (; addrs != nullptr; addrs = addrs->ifa_next) {
+    // ifa_addr tends to be nullptr on CAN interfaces.
     if (addrs->ifa_addr != nullptr && addrs->ifa_addr->sa_family == AF_INET) {
       if (strcmp(kLinuxNetInterface, addrs->ifa_name) == 0) {
         static const in_addr r =

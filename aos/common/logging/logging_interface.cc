@@ -15,10 +15,10 @@ namespace aos {
 namespace logging {
 namespace internal {
 
-LogImplementation *global_top_implementation(NULL);
+::std::atomic<LogImplementation *> global_top_implementation(NULL);
 
 Context::Context()
-    : implementation(global_top_implementation),
+    : implementation(global_top_implementation.load()),
       sequence(0) {
   cork_data.Reset();
 }

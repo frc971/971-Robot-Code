@@ -19,6 +19,10 @@ class HPolytope {
         k_(k) {
   }
 
+  // This is an initialization function shared across all instantiations of this
+  // template.
+  // This must be called at least once before calling any of the methods. It is
+  // not thread-safe.
   static void Init() {
     dd_set_global_constants();
   }

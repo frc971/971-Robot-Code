@@ -8,6 +8,7 @@
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&) = delete;      \
   void operator=(const TypeName&) = delete
+
 // A macro to wrap arguments to macros that contain commas.
 // Useful for DISALLOW_COPY_AND_ASSIGNing templated types with multiple template
 // arguments.

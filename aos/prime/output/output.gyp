@@ -12,10 +12,12 @@
         '<(EXTERNALS):WPILib-NetworkRobotValues',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/messages/messages.gyp:robot_state',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/network/network.gyp:socket',
         '<(EXTERNALS):WPILib-NetworkRobotValues',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
     },
     {

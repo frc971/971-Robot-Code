@@ -47,6 +47,7 @@ enum aos_core_create {
   reference
 };
 struct aos_core {
+  // Non-0 if we "own" shared_mem and should shm_unlink(3) it when we're done.
   int owner;
   void *shared_mem;
   // How large the chunk of shared memory is.

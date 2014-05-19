@@ -13,7 +13,7 @@
 // Initializes shared memory. This is the only file that will create the shared
 // memory file if it doesn't already exist (and set everything up).
 //
-// Will also create the file given as a first argument.
+// Will also touch the file given as a first argument.
 
 int main(int argc, char **argv) {
   aos::InitCreate();
