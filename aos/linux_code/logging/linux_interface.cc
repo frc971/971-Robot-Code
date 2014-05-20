@@ -37,12 +37,22 @@ namespace {
   return process_name + '.' + thread_name;
 }
 
-AOS_THREAD_LOCAL Context *my_context(NULL);
+AOS_THREAD_LOCAL Context *my_context(nullptr);
+
+// A temporary stash for Context objects that we're going to delete ASAP. The
+// reason for doing this instead of just deleting them is that tsan (at least)
+// doesn't like it when pthread_atfork handlers do complicated stuff and it's
+// not a great idea anyways.
+AOS_THREAD_LOCAL Context *old_context(nullptr);
 
 }  // namespace
 
 Context *Context::Get() {
-  if (__builtin_expect(my_context == NULL, 0)) {
+  if (__builtin_expect(my_context == nullptr, 0)) {
+    if (old_context != nullptr) {
+      delete old_context;
+      old_context = nullptr;
+    }
     my_context = new Context();
     my_context->name = GetMyName();
     if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
@@ -55,8 +65,13 @@ Context *Context::Get() {
 }
 
 void Context::Delete() {
-  delete my_context;
-  my_context = NULL;
+  if (my_context != nullptr) {
+    if (old_context != nullptr) {
+      delete old_context;
+    }
+    old_context = my_context;
+    my_context = nullptr;
+  }
 }
 
 }  // namespace internal
