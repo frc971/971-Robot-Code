@@ -23,22 +23,18 @@ Once<T>::Once(Function function)
 
 template<typename T>
 void Once<T>::Reset() {
-  done_ = false;
-  run_ = 0;
+  __atomic_store_n(&run_, false, __ATOMIC_SEQ_CST);
+  __atomic_store_n(&done_, false, __ATOMIC_SEQ_CST);
 }
 
 template<typename T>
 T *Once<T>::Get() {
-  if (__sync_lock_test_and_set(&run_, 1) == 0) {
+  if (__atomic_exchange_n(&run_, true, __ATOMIC_RELAXED) == false) {
     result_ = function_();
-    done_ = true;
+    __atomic_store_n(&done_, true, __ATOMIC_RELEASE);
   } else {
-    while (!done_) {
-#ifdef __VXWORKS__
-      taskDelay(1);
-#else
+    while (!__atomic_load_n(&done_, __ATOMIC_ACQUIRE)) {
       sched_yield();
-#endif
     }
   }
   return result_;
