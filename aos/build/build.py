@@ -506,17 +506,6 @@ class PrimeProcessor(Processor):
 """We don't have all of the libraries instrumented which leads to lots of false
   errors with msan (especially stdlibc++).
   TODO(brians): Figure out a way to deal with it."""),
-      'undefined': (False,
-"""There are several warnings in other people's code that ubsan catches.
-  The following have been verified non-interesting:
-    include/c++/4.8.2/array:*: runtime error: reference binding to null pointer
-        of type 'int'
-      This happens with ::std::array<T, 0> and it doesn't seem to cause any
-        issues.
-    output/downloaded/eigen-3.2.1/Eigen/src/Core/util/Memory.h:782:*: runtime
-        error: load of misaligned address 0x* for type 'const int', which
-        requires 4 byte alignment
-      That's in the CPUID detection code which only runs on x86."""),
   }
   PIE_SANITIZERS = ('memory', 'thread')
 

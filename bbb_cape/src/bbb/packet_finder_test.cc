@@ -81,9 +81,19 @@ class PacketFinderTest : public ::testing::Test {
     }
     EXPECT_FALSE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
   }
+
   template <typename Data>
   void ReceivePackets(const Data &data, int packets) {
-    ReceivePackets(data, packets, ::std::array<int, 0>());
+    // Not implemented as calling the overload with expected_failures because
+    // ubsan doesn't like stdlibc++'s std::array (at least for now) and this is
+    // really simple.
+    TestByteReader reader(data);
+    PacketFinder packet_finder(&reader, 144);
+    for (int i = 1; i < packets; ++i) {
+      SCOPED_TRACE("packet " + ::std::to_string(i));
+      EXPECT_TRUE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
+    }
+    EXPECT_FALSE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
   }
 };
 

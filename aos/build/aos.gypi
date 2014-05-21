@@ -14,6 +14,12 @@
 
 # Stuck into a variable (with a space on the end) to make disabling it easy.
     'ccache': '<!(which ccache) ',
+
+    'disable_sanitizers': [
+      # Bad alignment is just slow on x86 and traps on ARM, so we'll find
+      # it other ways, and some x86 code does it on purpose.
+      'alignment',
+    ],
   },
   'conditions': [
     ['PLATFORM=="crio"', {
@@ -81,12 +87,17 @@
         'target_defaults': {
           'cflags': [
             '-fsanitize=<(SANITIZER)',
-            # TODO(brians): Figure out how to blacklist some bits of other
-            # people's code (ie stdlibc++...) and then have it abort on failure.
-            #'-fsanitize=undefined,integer',
           ],
           'ldflags': [
             '-fsanitize=<(SANITIZER)',
+          ],
+        },
+      },
+    ], ['SANITIZER!="none" and COMPILER!="gcc"', {
+        'target_defaults': {
+          'cflags': [
+            '-fno-sanitize-recover',
+            '-fno-sanitize=<!(echo <(disable_sanitizers) | sed "s/ /,/g")',
           ],
         },
       },
