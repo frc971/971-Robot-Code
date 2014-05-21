@@ -12,6 +12,7 @@ import errno
 import queue
 import threading
 import pty
+import signal
 
 class TestThread(threading.Thread):
   """Runs 1 test and keeps track of its current state.
@@ -81,7 +82,14 @@ class TestThread(threading.Thread):
     with self.process_lock:
       if not self.process:
         return
-      self.process.kill()
+      try:
+        self.process.kill()
+      except OSError as e:
+        if e.errno == errno.ESRCH:
+          # We don't really care if it's already gone.
+          pass
+        else:
+          raise e
   def stop(self):
     """Changes self to the stopped state."""
     with self.process_lock:
@@ -643,6 +651,19 @@ class PrimeProcessor(Processor):
 
     self.do_check_installed(tuple(packages))
 
+def strsignal(num):
+  # It ends up with SIGIOT instead otherwise, which is weird.
+  if num == signal.SIGABRT:
+    return 'SIGABRT'
+  # SIGCLD is a weird way to spell it.
+  if num == signal.SIGCHLD:
+    return 'SIGCHLD'
+
+  SIGNALS_TO_NAMES = dict((getattr(signal, n), n)
+                          for n in dir(signal) if n.startswith('SIG')
+                          and '_' not in n)
+  return SIGNALS_TO_NAMES.get(num, 'Unknown signal %d' % num)
+
 def main():
   class TryParsingAgain(Exception):
     pass
@@ -925,8 +946,17 @@ def main():
               if not done.returncode:
                 test_output('Test %s succeeded' % done.name)
               else:
-                test_output('Test %s failed' % done.name)
-                user_output('Aborting because of test failure.')
+                if done.returncode < 0:
+                  sig = -done.returncode
+                  test_output('Test %s was killed by signal %d (%s)' % \
+                              (done.name, sig, strsignal(sig)))
+                elif done.returncode != 1:
+                  test_output('Test %s exited with %d' % \
+                              (done.name, done.returncode))
+                else:
+                  test_output('Test %s failed' % done.name)
+                user_output('Aborting because of test failure for %s.' % \
+                            platform)
                 exit(1)
       finally:
         if running:
