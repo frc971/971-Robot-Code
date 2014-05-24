@@ -371,7 +371,6 @@ inline void RawQueue::ReadCommonEnd() {
 }
 
 bool RawQueue::ReadCommonStart(int options, int *index) {
-  writable_start_ = is_writable();
   while (data_start_ == data_end_ || ((index != NULL) && messages_ <= *index)) {
     if (options & kNonBlock) {
       if (kReadDebug) {
@@ -390,9 +389,12 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       }
     }
   }
+  // We have to check down here because we might have unlocked the mutex while
+  // Wait()ing above so this value might have changed.
+  writable_start_ = is_writable();
   if (kReadDebug) {
-    printf("queue: %p->read(%p) start=%d end=%d\n", this, index, data_start_,
-           data_end_);
+    printf("queue: %p->read(%p) start=%d end=%d writable_start=%d\n",
+           this, index, data_start_, data_end_, writable_start_);
   }
   return true;
 }
