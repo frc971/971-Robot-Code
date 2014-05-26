@@ -50,6 +50,9 @@
         'core_lib',
         '<(AOS)/build/aos.gyp:logging_interface',
       ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
     },
     {
       'target_name': 'raw_queue_test',
@@ -66,6 +69,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:die',
         '<(AOS)/common/util/util.gyp:thread',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
       ],
     },
     {

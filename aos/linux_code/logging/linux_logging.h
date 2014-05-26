@@ -2,8 +2,12 @@
 #define AOS_LINUX_CODE_LOGGING_LOGGING_H_
 
 #include "aos/common/logging/logging_impl.h"
+#include "aos/common/util/options.h"
 
 namespace aos {
+
+class RawQueue;
+
 namespace logging {
 namespace linux_code {
 
@@ -16,8 +20,8 @@ void Register();
 // Fairly simple wrappers around the raw queue calls.
 
 // This one never returns NULL if flags contains BLOCK.
-const LogMessage *ReadNext(int flags);
-const LogMessage *ReadNext(int flags, int *index);
+const LogMessage *ReadNext(Options<RawQueue> flags);
+const LogMessage *ReadNext(Options<RawQueue> flags, int *index);
 const LogMessage *ReadNext();
 LogMessage *Get();
 void Free(const LogMessage *msg);

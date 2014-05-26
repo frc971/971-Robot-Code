@@ -52,6 +52,7 @@
         '<(AOS)/common/common.gyp:condition_test',
         '<(AOS)/common/common.gyp:once_test',
         '<(AOS)/common/logging/logging.gyp:logging_impl_test',
+        '<(AOS)/common/util/util.gyp:options_test',
       ],
     },
   ],

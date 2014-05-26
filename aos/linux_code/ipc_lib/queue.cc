@@ -12,7 +12,6 @@
 #include <memory>
 #include <algorithm>
 
-#include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 
@@ -35,11 +34,11 @@ const int kExtraMessages = 20;
 
 }  // namespace
 
-const int RawQueue::kPeek;
-const int RawQueue::kFromEnd;
-const int RawQueue::kNonBlock;
-const int RawQueue::kBlock;
-const int RawQueue::kOverride;
+constexpr Options<RawQueue>::Option RawQueue::kPeek;
+constexpr Options<RawQueue>::Option RawQueue::kFromEnd;
+constexpr Options<RawQueue>::Option RawQueue::kNonBlock;
+constexpr Options<RawQueue>::Option RawQueue::kBlock;
+constexpr Options<RawQueue>::Option RawQueue::kOverride;
 
 // This is what gets stuck in before each queue message in memory. It is always
 // allocated aligned to 8 bytes and its size has to maintain that alignment for
@@ -297,9 +296,9 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   return r;
 }
 
-bool RawQueue::WriteMessage(void *msg, int options) {
+bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
   if (kWriteDebug) {
-    printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
+    printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options.printable());
   }
   {
     MutexLocker locker(&data_lock_);
@@ -324,6 +323,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
         DecrementMessageReferenceCount(data_[data_start_]);
         data_start_ = index_add1(data_start_);
       } else {  // kBlock
+        assert(options & kBlock);
         if (kWriteDebug) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
@@ -370,7 +370,7 @@ inline void RawQueue::ReadCommonEnd() {
   }
 }
 
-bool RawQueue::ReadCommonStart(int options, int *index) {
+bool RawQueue::ReadCommonStart(Options<RawQueue> options, int *index) {
   while (data_start_ == data_end_ || ((index != NULL) && messages_ <= *index)) {
     if (options & kNonBlock) {
       if (kReadDebug) {
@@ -378,6 +378,7 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       }
       return false;
     } else {  // kBlock
+      assert(options & kBlock);
       if (kReadDebug) {
         printf("queue: going to wait for readable_ of %p\n", this);
       }
@@ -407,10 +408,10 @@ inline int RawQueue::LastMessageIndex() const {
   return pos;
 }
 
-const void *RawQueue::ReadMessage(int options) {
+const void *RawQueue::DoReadMessage(Options<RawQueue> options) {
   // TODO(brians): Test this function.
   if (kReadDebug) {
-    printf("queue: %p->ReadMessage(%x)\n", this, options);
+    printf("queue: %p->ReadMessage(%x)\n", this, options.printable());
   }
   void *msg = NULL;
 
@@ -468,10 +469,11 @@ const void *RawQueue::ReadMessage(int options) {
   return msg;
 }
 
-const void *RawQueue::ReadMessageIndex(int options, int *index) {
+const void *RawQueue::DoReadMessageIndex(Options<RawQueue> options,
+                                         int *index) {
   if (kReadDebug) {
     printf("queue: %p->ReadMessageIndex(%x, %p(*=%d))\n",
-           this, options, index, *index);
+           this, options.printable(), index, *index);
   }
   void *msg = NULL;
 
@@ -491,7 +493,10 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       printf("queue: %p reading from c1: %d\n", this, LastMessageIndex());
     }
     msg = data_[LastMessageIndex()];
-    if (!(options & kPeek)) *index = messages_;
+
+    // We'd skip this if we had kPeek, but kPeek | kFromEnd isn't valid for
+    // reading with an index.
+    *index = messages_;
   } else {
     // Where we're going to start reading.
     int my_start;

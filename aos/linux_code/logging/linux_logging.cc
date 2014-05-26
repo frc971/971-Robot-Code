@@ -77,7 +77,7 @@ void Register() {
   AddImplementation(new LinuxQueueLogImplementation());
 }
 
-const LogMessage *ReadNext(int flags, int *index) {
+const LogMessage *ReadNext(Options<RawQueue> flags, int *index) {
   return static_cast<const LogMessage *>(queue->ReadMessageIndex(flags, index));
 }
 
@@ -85,7 +85,7 @@ const LogMessage *ReadNext() {
   return ReadNext(RawQueue::kBlock);
 }
 
-const LogMessage *ReadNext(int flags) {
+const LogMessage *ReadNext(Options<RawQueue> flags) {
   const LogMessage *r = NULL;
   do {
     r = static_cast<const LogMessage *>(queue->ReadMessage(flags));

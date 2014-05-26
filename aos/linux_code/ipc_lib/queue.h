@@ -6,6 +6,8 @@
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 #include "aos/common/mutex.h"
 #include "aos/common/condition.h"
+#include "aos/common/util/options.h"
+#include "aos/common/logging/logging.h"
 
 // TODO(brians) add valgrind client requests to the queue and shared_mem_malloc
 // code to make checking for leaks work better
@@ -56,38 +58,45 @@ class RawQueue {
                       int recycle_hash, int recycle_queue_length,
                       RawQueue **recycle);
 
-  // Constants for passing to options arguments.
-  // The non-conflicting ones can be combined with bitwise-or.
-
   // Doesn't update the currently read index (the read messages in the queue or
   // the index). This means the returned message (and any others skipped with
   // kFromEnd) will be left in the queue.
   // For reading only.
-  static const int kPeek = 0x0001;
+  // Not valid for ReadMessageIndex combined with kFromEnd.
+  static constexpr Options<RawQueue>::Option kPeek{0x0001};
   // Reads the last message in the queue instead of just the next one.
   // NOTE: This removes all of the messages until the last one from the queue
   // (which means that nobody else will read them).
   // For reading only.
-  static const int kFromEnd = 0x0002;
+  // Not valid for ReadMessageIndex combined with kPeek.
+  static constexpr Options<RawQueue>::Option kFromEnd{0x0002};
   // Causes reads to return NULL and writes to fail instead of waiting.
   // For reading and writing.
-  static const int kNonBlock = 0x0004;
+  static constexpr Options<RawQueue>::Option kNonBlock{0x0004};
   // Causes things to block.
-  // IMPORTANT: Has a value of 0 so that it is the default. This has to stay
-  // this way.
   // For reading and writing.
-  static const int kBlock = 0x0000;
+  static constexpr Options<RawQueue>::Option kBlock{0x0008};
   // Causes writes to overwrite the oldest message in the queue instead of
   // blocking.
   // For writing only.
-  static const int kOverride = 0x0008;
+  static constexpr Options<RawQueue>::Option kOverride{0x0010};
 
   // Writes a message into the queue.
   // This function takes ownership of msg.
   // NOTE: msg must point to a valid message from this queue
   // Returns true on success. A return value of false means msg has already been
   // freed.
-  bool WriteMessage(void *msg, int options);
+  bool WriteMessage(void *msg, Options<RawQueue> options) {
+    static constexpr Options<RawQueue> kWriteFailureOptions =
+        kNonBlock | kBlock | kOverride;
+    if (!options.NoOthersSet(kWriteFailureOptions)) {
+      LOG(FATAL, "illegal write options in %x\n", options.printable());
+    }
+    if (!options.ExactlyOneSet(kWriteFailureOptions)) {
+      LOG(FATAL, "invalid write options %x\n", options.printable());
+    }
+    return DoWriteMessage(msg, options);
+  }
 
   // Reads a message out of the queue.
   // The return value will have at least the length of this queue's worth of
@@ -96,13 +105,26 @@ class RawQueue {
   // messsage. Do not cast the const away!
   // IMPORTANT: The return value (if not NULL) must eventually be passed to
   // FreeMessage.
-  const void *ReadMessage(int options);
+  const void *ReadMessage(Options<RawQueue> options) {
+    CheckReadOptions(options);
+    return DoReadMessage(options);
+  }
   // The same as ReadMessage, except it will never return the
   // same message twice (when used with the same index argument). However,
   // may not return some messages that pass through the queue.
   // *index should start as 0. index does not have to be in shared memory, but
   // it can be.
-  const void *ReadMessageIndex(int options, int *index);
+  // Calling with both kPeek and kFromEnd in options isn't valid because that
+  // would mean ignoring index, which would make this function the same as
+  // ReadMessage (which should be used instead).
+  const void *ReadMessageIndex(Options<RawQueue> options, int *index) {
+    CheckReadOptions(options);
+    static constexpr Options<RawQueue> kFromEndAndPeek = kFromEnd | kPeek;
+    if (options.AllSet(kFromEndAndPeek)) {
+      LOG(FATAL, "ReadMessageIndex(kFromEnd | kPeek) is not allowed\n");
+    }
+    return DoReadMessageIndex(options, index);
+  }
 
   // Retrieves ("allocates") a message that can then be written to the queue.
   // NOTE: the return value will be completely uninitialized
@@ -124,6 +146,22 @@ class RawQueue {
 
  private:
   struct MessageHeader;
+
+  // The public wrappers around these are inlined and do argument checking.
+  bool DoWriteMessage(void *msg, Options<RawQueue> options);
+  const void *DoReadMessage(Options<RawQueue> options);
+  const void *DoReadMessageIndex(Options<RawQueue> options, int *index);
+  void CheckReadOptions(Options<RawQueue> options) {
+    static constexpr Options<RawQueue> kValidOptions =
+        kPeek | kFromEnd | kNonBlock | kBlock;
+    if (!options.NoOthersSet(kValidOptions)) {
+      LOG(FATAL, "illegal read options in %x\n", options.printable());
+    }
+    static constexpr Options<RawQueue> kBlockChoices = kNonBlock | kBlock;
+    if (!options.ExactlyOneSet(kBlockChoices)) {
+      LOG(FATAL, "invalid read options %x\n", options.printable());
+    }
+  }
 
   // Adds 1 to the given index and handles wrapping correctly.
   int index_add1(int index);
@@ -175,7 +213,7 @@ class RawQueue {
   // Must be called with data_lock_ locked.
   // *read_data will be initialized.
   // Returns with a readable message in data_ or false.
-  bool ReadCommonStart(int options, int *index);
+  bool ReadCommonStart(Options<RawQueue> options, int *index);
   // Deals with setting/unsetting readable_ and writable_.
   // Must be called after data_lock_ has been unlocked.
   // read_data should be the same thing that was passed in to ReadCommonStart.

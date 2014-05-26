@@ -72,8 +72,10 @@ void Queue<T>::FetchNextBlocking() {
 template <class T>
 bool Queue<T>::FetchLatest() {
   Init();
-  const T *msg = static_cast<const T *>(queue_->ReadMessageIndex(
-          RawQueue::kFromEnd | RawQueue::kNonBlock, &index_));
+  static constexpr Options<RawQueue> kOptions =
+      RawQueue::kFromEnd | RawQueue::kNonBlock;
+  const T *msg =
+      static_cast<const T *>(queue_->ReadMessageIndex(kOptions, &index_));
   // Only update the internal pointer if we got a new message.
   if (msg != NULL && msg != queue_msg_.get()) {
     queue_msg_.reset(msg);

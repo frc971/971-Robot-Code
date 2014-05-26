@@ -17,6 +17,8 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/die.h"
 #include "aos/common/util/thread.h"
+#include "aos/common/util/options.h"
+#include "aos/common/util/death_test_log_implementation.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -266,7 +268,7 @@ class RawQueueTest : public ::testing::Test {
   };
   struct MessageArgs {
     RawQueue *const queue;
-    int flags;
+    Options<RawQueue> flags;
     int16_t data;  // -1 means NULL expected
   };
   static void WriteTestMessage(MessageArgs *args, char *failure) {
@@ -278,8 +280,8 @@ class RawQueueTest : public ::testing::Test {
     }
     msg->data = args->data;
     if (!args->queue->WriteMessage(msg, args->flags)) {
-      snprintf(failure, kFailureSize, "write_msg_free(%p, %p, %d) failed",
-               args->queue, msg, args->flags);
+      snprintf(failure, kFailureSize, "%p->WriteMessage(%p, %x) failed",
+               args->queue, msg, args->flags.printable());
     }
   }
   static void ReadTestMessage(MessageArgs *args, char *failure) {
@@ -310,47 +312,50 @@ class RawQueueTest : public ::testing::Test {
  private:
   GlobalCoreInstance my_core;
 };
+
 char *RawQueueTest::fatal_failure;
 std::map<RawQueueTest::ChildID, RawQueueTest::ForkedProcess *>
     RawQueueTest::children_;
 constexpr time::Time RawQueueTest::kHangTime;
 constexpr time::Time RawQueueTest::kForkSleep;
 
+typedef RawQueueTest RawQueueDeathTest;
+
 TEST_F(RawQueueTest, Reading) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
-  MessageArgs args{queue, 0, -1};
+  MessageArgs args{queue, RawQueue::kBlock, -1};
 
   args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = RawQueue::kNonBlock | RawQueue::kPeek;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   EXPECT_HANGS(ReadTestMessage, &args);
-  args.flags = RawQueue::kPeek;
+  args.flags = RawQueue::kPeek | RawQueue::kBlock;
   EXPECT_HANGS(ReadTestMessage, &args);
   args.data = 254;
   args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = RawQueue::kPeek;
+  args.flags = RawQueue::kPeek | RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = RawQueue::kPeek;
+  args.flags = RawQueue::kPeek | RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = RawQueue::kPeek | RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   args.data = -1;
   EXPECT_HANGS(ReadTestMessage, &args);
   args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   args.data = 971;
   EXPECT_RETURNS_FAILS(ReadTestMessage, &args);
 }
 TEST_F(RawQueueTest, Writing) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
-  MessageArgs args{queue, 0, 973};
+  MessageArgs args{queue, RawQueue::kBlock, 973};
 
   args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
@@ -360,28 +365,28 @@ TEST_F(RawQueueTest, Writing) {
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
   args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS_FAILS(WriteTestMessage, &args);
-  args.flags = RawQueue::kPeek;
+  args.flags = RawQueue::kPeek | RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.data = 971;
   args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
   args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = RawQueue::kNonBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   args.flags = RawQueue::kOverride;
   EXPECT_RETURNS(WriteTestMessage, &args);
-  args.flags = 0;
+  args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
 }
 
 TEST_F(RawQueueTest, MultiRead) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage), 1, 1);
-  MessageArgs args{queue, 0, 1323};
+  MessageArgs args{queue, RawQueue::kBlock, 1323};
 
   args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
@@ -402,16 +407,17 @@ TEST_F(RawQueueTest, ReadIndexAndNot) {
   // message to use for it).
   TestMessage *msg = static_cast<TestMessage *>(queue->GetMessage());
   ASSERT_NE(nullptr, msg);
-  ASSERT_TRUE(queue->WriteMessage(msg, 0));
-  const void *read_msg = queue->ReadMessage(0);
+  ASSERT_TRUE(queue->WriteMessage(msg, RawQueue::kBlock));
+  const void *read_msg = queue->ReadMessage(RawQueue::kBlock);
   EXPECT_NE(nullptr, read_msg);
   msg = static_cast<TestMessage *>(queue->GetMessage());
   queue->FreeMessage(read_msg);
   ASSERT_NE(nullptr, msg);
-  ASSERT_TRUE(queue->WriteMessage(msg, 0));
+  ASSERT_TRUE(queue->WriteMessage(msg, RawQueue::kBlock));
 
   int index = 0;
-  const void *second_read_msg = queue->ReadMessageIndex(0, &index);
+  const void *second_read_msg =
+      queue->ReadMessageIndex(RawQueue::kBlock, &index);
   EXPECT_NE(nullptr, second_read_msg);
   EXPECT_NE(read_msg, second_read_msg)
       << "We already took that message out of the queue.";
@@ -424,7 +430,8 @@ TEST_F(RawQueueTest, Recycle) {
   RawQueue *const queue = RawQueue::Fetch("Queue", sizeof(TestMessage),
                                           1, 2, 2, 2, &recycle_queue);
   ASSERT_NE(reinterpret_cast<RawQueue *>(23), recycle_queue);
-  MessageArgs args{queue, 0, 973}, recycle{recycle_queue, 0, 973};
+  MessageArgs args{queue, RawQueue::kBlock, 973},
+      recycle{recycle_queue, RawQueue::kBlock, 973};
 
   args.flags = RawQueue::kBlock;
   EXPECT_RETURNS(WriteTestMessage, &args);
@@ -450,7 +457,7 @@ TEST_F(RawQueueTest, Recycle) {
   EXPECT_HANGS(ReadTestMessage, &recycle);
 
   args.data = 254;
-  args.flags = RawQueue::kPeek;
+  args.flags = RawQueue::kPeek | RawQueue::kBlock;
   EXPECT_RETURNS(ReadTestMessage, &args);
   recycle.flags = RawQueue::kBlock;
   EXPECT_HANGS(ReadTestMessage, &recycle);
@@ -524,8 +531,8 @@ TEST_F(RawQueueTest, ReadIndexNotFull) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -561,8 +568,8 @@ TEST_F(RawQueueTest, ReadIndexNotBehind) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -594,8 +601,8 @@ TEST_F(RawQueueTest, ReadIndexLittleBehindNotFull) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -639,8 +646,8 @@ TEST_F(RawQueueTest, ReadIndexMoreBehind) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -674,8 +681,8 @@ TEST_F(RawQueueTest, ReadIndexMoreBehindNotFull) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -731,8 +738,8 @@ TEST_F(RawQueueTest, ReadIndexLotBehind) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -768,8 +775,8 @@ TEST_F(RawQueueTest, ReadIndexLotBehindNotFull) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -817,8 +824,8 @@ TEST_F(RawQueueTest, ReadIndexEvenMoreBehind) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -856,8 +863,8 @@ TEST_F(RawQueueTest, ReadIndexEvenMoreBehindNotFull) {
   queue->FreeMessage(peek_message);
 
   index = 0;
-  peek_message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
-      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd, &index));
+  peek_message = static_cast<const TestMessage *>(queue->ReadMessage(
+      RawQueue::kNonBlock | RawQueue::kPeek | RawQueue::kFromEnd));
   message = static_cast<const TestMessage *>(queue->ReadMessageIndex(
       RawQueue::kNonBlock | RawQueue::kFromEnd, &index));
   ASSERT_NE(nullptr, message);
@@ -933,8 +940,12 @@ TEST_F(RawQueueTest, MultiThreadedFree) {
   PushMessage(queue, 971);
   int free_before = queue->FreeMessages();
 
-  const void *const message1 = queue->ReadMessage(RawQueue::kPeek);
-  const void *const message2 = queue->ReadMessage(RawQueue::kPeek);
+  const void *const message1 =
+      queue->ReadMessage(RawQueue::kPeek | RawQueue::kNonBlock);
+  const void *const message2 =
+      queue->ReadMessage(RawQueue::kPeek | RawQueue::kNonBlock);
+  ASSERT_NE(nullptr, message1);
+  ASSERT_NE(nullptr, message2);
   EXPECT_EQ(free_before, queue->FreeMessages());
   util::FunctionThread t1([message1, queue](util::Thread *) {
     queue->FreeMessage(message1);
@@ -947,6 +958,62 @@ TEST_F(RawQueueTest, MultiThreadedFree) {
   t1.WaitUntilDone();
   t2.WaitUntilDone();
   EXPECT_EQ(free_before, queue->FreeMessages());
+}
+
+TEST_F(RawQueueDeathTest, OptionsValidation) {
+  RawQueue *const queue = RawQueue::Fetch("Queue", 1, 1, 1);
+
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->WriteMessage(nullptr, RawQueue::kPeek);
+      },
+      ".*illegal write option.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->WriteMessage(nullptr, RawQueue::kFromEnd);
+      },
+      ".*illegal write option.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->WriteMessage(nullptr, RawQueue::kPeek | RawQueue::kFromEnd);
+      },
+      ".*illegal write option.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->WriteMessage(nullptr, RawQueue::kNonBlock | RawQueue::kBlock);
+      },
+      ".*invalid write option.*");
+
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->ReadMessageIndex(
+            RawQueue::kBlock | RawQueue::kFromEnd | RawQueue::kPeek, nullptr);
+      },
+      ".*ReadMessageIndex.*is not allowed.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->ReadMessageIndex(RawQueue::kOverride, nullptr);
+      },
+      ".*illegal read option.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->ReadMessageIndex(RawQueue::kOverride | RawQueue::kBlock,
+                                nullptr);
+      },
+      ".*illegal read option.*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        queue->ReadMessage(RawQueue::kNonBlock | RawQueue::kBlock);
+      },
+      ".*invalid read option.*");
 }
 
 }  // namespace testing

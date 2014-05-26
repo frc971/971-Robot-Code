@@ -127,5 +127,15 @@
         '<(EXTERNALS):gtest',
       ],
     },
+    {
+      'target_name': 'options_test',
+      'type': 'executable',
+      'sources': [
+        'options_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+      ],
+    },
   ],
 }
