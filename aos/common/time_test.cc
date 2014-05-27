@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/macros.h"
+#include "aos/common/util/death_test_log_implementation.h"
 
 namespace aos {
 namespace time {
@@ -26,6 +27,21 @@ TEST(TimeTest, timevalConversions) {
   timeval end = time.ToTimeval();
   EXPECT_EQ(start.tv_sec, end.tv_sec);
   EXPECT_EQ(start.tv_usec, end.tv_usec);
+}
+
+TEST(TimeDeathTest, ConstructorChecking) {
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        Time(0, -1);
+      },
+      ".*0 <= nsec\\(-1\\) < 10+ .*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        Time(0, Time::kNSecInSec);
+      },
+      ".*0 <= nsec\\(10+\\) < 10+ .*");
 }
 
 // It's kind of hard not to test Now and SleepFor at the same time.
@@ -146,9 +162,10 @@ TEST(TimeTest, Modulus) {
             Time(-50, 0) % (-Time::kNSecInSec / 10 * 3));
   EXPECT_EQ(Time(0, Time::kNSecInSec / 10 * 2),
             Time(50, 0) % (-Time::kNSecInSec / 10 * 3));
+  EXPECT_EQ(Time(1, Time::kNSecInSec / 10),
+            Time(60, Time::kNSecInSec / 10) % (Time::kNSecInSec / 10 * 12));
 }
 
-// TODO(brians): Finish tests for negatives from here on.
 TEST(TimeTest, InSeconds) {
   EXPECT_EQ(MACRO_DARG(Time(2, Time::kNSecInSec / 100 * 55 - 1)),
             Time::InSeconds(2.55));

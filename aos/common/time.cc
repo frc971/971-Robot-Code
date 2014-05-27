@@ -142,8 +142,8 @@ double Time::operator/(const Time &rhs) const {
 }
 Time &Time::operator%=(int32_t rhs) {
   nsec_ = ToNSec() % rhs;
-  const int wraps = nsec_ / kNSecInSec;
-  sec_ = wraps;
+  const int wraps = nsec_ / ((rhs / kNSecInSec + 1) * kNSecInSec);
+  sec_ = wraps + rhs / kNSecInSec;
   nsec_ -= kNSecInSec * wraps;
   if (nsec_ < 0) {
     nsec_ += kNSecInSec;

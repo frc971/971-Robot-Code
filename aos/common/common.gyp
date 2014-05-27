@@ -217,6 +217,7 @@
         '<(EXTERNALS):gtest',
         'time',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
       ],
     },
     {

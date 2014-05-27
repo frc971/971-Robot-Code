@@ -28,7 +28,8 @@ namespace time {
 // not implemented because I can't think of any uses for them and there are
 // multiple ways to do it. Division of Times by Times is implemented as the
 // ratio of them. Multiplication, division, and modulus of Times by integers are
-// implemented as interpreting the argument as nanoseconds.
+// implemented as interpreting the argument as nanoseconds. Modulus takes the
+// sign from the first operand.
 struct Time {
 #ifdef SWIG
 // All of the uses of constexpr here can safely be simply removed.
