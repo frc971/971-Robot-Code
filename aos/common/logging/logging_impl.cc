@@ -1,6 +1,5 @@
 #include "aos/common/logging/logging_impl.h"
 
-#include <assert.h>
 #include <stdarg.h>
 
 #include "aos/common/time.h"

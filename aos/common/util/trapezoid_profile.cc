@@ -1,7 +1,5 @@
 #include "aos/common/util/trapezoid_profile.h"
 
-#include <assert.h>
-
 #include "aos/common/logging/logging.h"
 
 using ::Eigen::Matrix;
@@ -117,7 +115,7 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
         acceleration_;
   }
 
-  assert(top_velocity > -maximum_velocity_);
+  CHECK_GT(top_velocity, -maximum_velocity_);
 
   deceleration_time_ = (goal_velocity - top_velocity) /
       deceleration_;

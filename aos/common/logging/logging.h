@@ -131,7 +131,6 @@ namespace aos {
 // don't support streaming in extra text. Some of the implementation is borrowed
 // from there too.
 // They all LOG(FATAL) with a helpful message when the check fails.
-// TODO(brians): Replace assert with CHECK
 // Portions copyright (c) 1999, Google Inc.
 // All rights reserved.
 //
@@ -220,6 +219,18 @@ inline T* CheckNotNull(const char *value_name, T *t) {
 // Check that the input is non NULL.  This very useful in constructor
 // initializer lists.
 #define CHECK_NOTNULL(val) ::aos::CheckNotNull(STRINGIFY(val), val)
+
+inline int CheckSyscall(const char *syscall_string, int value) {
+  if (__builtin_expect(value == -1, false)) {
+    PLOG(FATAL, "%s failed", syscall_string);
+  }
+  return value;
+}
+
+// Check that syscall does not return -1. If it does, PLOG(FATAL)s. This is
+// useful for quickly checking syscalls where it's not very useful to print out
+// the values of any of the arguments.
+#define PCHECK(syscall) ::aos::CheckSyscall(STRINGIFY(syscall), syscall)
 
 }  // namespace aos
 

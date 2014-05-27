@@ -1,10 +1,11 @@
 #include <string>
 
+#include <inttypes.h>
+
 #include "gtest/gtest.h"
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
-#include <inttypes.h>
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -18,6 +19,11 @@ class TestLogImplementation : public LogImplementation {
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     internal::FillInMessage(level, format, ap, &message_);
+
+    if (level == FATAL) {
+      internal::PrintMessage(stderr, message_);
+      abort();
+    }
 
     used_ = true;
   }
@@ -82,8 +88,6 @@ class LoggingTest : public ::testing::Test {
       first = false;
 
       Init();
-      // We'll end up with several of them stacked up, but it really doesn't
-      // matter.
       AddImplementation(log_implementation = new TestLogImplementation());
     }
 
@@ -133,13 +137,20 @@ TEST_F(LoggingTest, Cork) {
   EXPECT_TRUE(WasLogged(WARNING, expected.str()));
 }
 
-#ifndef __VXWORKS__
 TEST_F(LoggingDeathTest, Fatal) {
   ASSERT_EXIT(LOG(FATAL, "this should crash it\n"),
               ::testing::KilledBySignal(SIGABRT),
               "this should crash it");
 }
-#endif
+
+TEST_F(LoggingDeathTest, PCHECK) {
+  EXPECT_DEATH(PCHECK(fprintf(stdin, "nope")),
+               ".*fprintf\\(stdin, \"nope\"\\).*failed.*");
+}
+
+TEST_F(LoggingTest, PCHECK) {
+  EXPECT_EQ(7, PCHECK(printf("abc123\n")));
+}
 
 TEST_F(LoggingTest, PrintfDirectives) {
   LOG(INFO, "test log %%1 %%d\n");

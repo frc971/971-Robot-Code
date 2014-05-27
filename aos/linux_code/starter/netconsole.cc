@@ -7,7 +7,6 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/stat.h>
-#include <assert.h>
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/util/inet_addr.h"
@@ -33,8 +32,8 @@ void *FDCopyThread(void *to_copy_in) {
   char buffer[32768];
   ssize_t position = 0;
   while (true) {
-    assert(position >= 0);
-    assert(position <= static_cast<ssize_t>(sizeof(buffer)));
+    CHECK_GE(position, 0);
+    CHECK_LE(position, static_cast<ssize_t>(sizeof(buffer)));
     if (position != sizeof(buffer)) {
       ssize_t read_bytes;
       bool good_data = true;
@@ -73,7 +72,7 @@ void *FDCopyThread(void *to_copy_in) {
             }
           }
           if (to_copy->source_address != nullptr) {
-            assert(header.msg_namelen >= sizeof(struct sockaddr_in));
+            CHECK_GE(header.msg_namelen, sizeof(struct sockaddr_in));
             if (to_copy->source_address->sin_port != hton<uint16_t>(0)) {
               if (sender_address.sin_port !=
                   to_copy->source_address->sin_port) {
@@ -104,8 +103,8 @@ void *FDCopyThread(void *to_copy_in) {
       }
     }
 
-    assert(position >= 0);
-    assert(position <= static_cast<ssize_t>(sizeof(buffer)));
+    CHECK_GE(position, 0);
+    CHECK_LE(position, static_cast<ssize_t>(sizeof(buffer)));
     if (position > 0) {
       ssize_t sent_bytes = write(to_copy->output, buffer, position);
       if (sent_bytes == -1) {

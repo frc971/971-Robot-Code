@@ -1,6 +1,5 @@
 #include "aos/common/logging/logging_impl.h"
 
-#include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -47,7 +46,6 @@ void RunWithCurrentImplementation(
   LogImplementation *const top_implementation = context->implementation;
   LogImplementation *new_implementation = top_implementation;
   LogImplementation *implementation = NULL;
-  assert(levels >= 1);
   for (int i = 0; i < levels; ++i) {
     implementation = new_implementation;
     if (new_implementation == NULL) {

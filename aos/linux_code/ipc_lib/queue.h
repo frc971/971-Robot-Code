@@ -1,8 +1,6 @@
 #ifndef AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
 #define AOS_LINUX_CODE_IPC_LIB_QUEUE_H_
 
-#include <assert.h>
-
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 #include "aos/common/mutex.h"
 #include "aos/common/condition.h"

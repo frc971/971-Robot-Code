@@ -10,7 +10,6 @@
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <assert.h>
 #include <signal.h>
 #include <stdint.h>
 #include <errno.h>
@@ -114,8 +113,8 @@ class FileWatch {
   // After calling this method, this object won't really be doing much of
   // anything besides possibly running its callback or something.
   void RemoveWatch() {
-    assert(watch_ != -1);
-    assert(watch_to_remove_ == -1);
+    CHECK_NE(watch_, -1);
+    CHECK_EQ(watch_to_remove_, -1);
 
     if (inotify_rm_watch(notify_fd, watch_) == -1) {
       PLOG(WARNING, "inotify_rm_watch(%d, %d) failed", notify_fd, watch_);
@@ -139,7 +138,7 @@ class FileWatch {
   void RemoveWatchFromMap() {
     int watch = watch_to_remove_;
     if (watch == -1) {
-      assert(watch_ != -1);
+      CHECK_NE(watch, -1);
       watch = watch_;
     }
     if (watchers[watch] != this) {
@@ -157,7 +156,7 @@ class FileWatch {
   }
 
   void CreateWatch() {
-    assert(watch_ == -1);
+    CHECK_EQ(watch_, -1);
     watch_ = inotify_add_watch(notify_fd, filename_.c_str(),
                                create_ ? IN_CREATE : (IN_ATTRIB |
                                                      IN_MODIFY |
@@ -227,7 +226,7 @@ class FileWatch {
 
   // INotifyReadable calls this method whenever the watch for our file triggers.
   void FileNotified(const char *filename) {
-    assert(watch_ != -1);
+    CHECK_NE(watch_, -1);
     LOG(DEBUG, "got a notification for %s\n", filename_.c_str());
 
     if (!check_filename_.empty()) {

@@ -87,6 +87,7 @@
         '<(AOS)/common/common.gyp:die',
         '<(AOS)/common/libc/libc.gyp:dirname',
         '<(AOS)/common/libc/libc.gyp:aos_strsignal',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'variables': {
         'is_special_test': 1,

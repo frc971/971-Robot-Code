@@ -26,7 +26,8 @@ char *aos_strerror_handle_result(int /*error*/, char *ret, char * /*buffer*/) {
 __attribute__((unused))
 char *aos_strerror_handle_result(int error, int ret, char *buffer) {
   if (ret != 0) {
-    assert(snprintf(buffer, kBufferSize, "Unknown error %d", error) > 0);
+    const int r = snprintf(buffer, kBufferSize, "Unknown error %d", error);
+    assert(r > 0);
   }
   return buffer;
 }

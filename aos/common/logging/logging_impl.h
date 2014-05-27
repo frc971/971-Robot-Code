@@ -351,6 +351,7 @@ size_t ExecuteFormat(char *output, size_t output_size, const char *format,
 
 // Runs the given function with the current LogImplementation (handles switching
 // it out while running function etc).
+// levels is how many LogImplementations to not use off the stack.
 void RunWithCurrentImplementation(
     int levels, ::std::function<void(LogImplementation *)> function);
 

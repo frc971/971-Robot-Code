@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <libgen.h>
-#include <assert.h>
 
 #include <string>
 
@@ -17,6 +16,7 @@
 #include "aos/common/die.h"
 #include "aos/common/libc/dirname.h"
 #include "aos/common/libc/aos_strsignal.h"
+#include "aos/common/logging/logging.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
 // while and makes sure that they don't fail. It also captures the stdout and
@@ -180,7 +180,7 @@ void DoRun(Shared *shared) {
               WTERMSIG(status), aos_strsignal(WTERMSIG(status)));
         fputs(output.c_str(), stderr);
     } else {
-      assert(WIFSTOPPED(status));
+      CHECK(WIFSTOPPED(status));
       Die("Test %s was stopped.\n", (*test)[0]);
     }
 
@@ -205,7 +205,10 @@ void Run(Shared *shared) {
 }
 
 int Main(int argc, char **argv) {
-  assert(argc >= 1);
+  if (argc < 1) {
+    fputs("need an argument\n", stderr);
+    return EXIT_FAILURE;
+  }
 
   ::aos::common::testing::GlobalCoreInstance global_core;
 

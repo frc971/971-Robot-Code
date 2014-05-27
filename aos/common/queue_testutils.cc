@@ -4,7 +4,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include "gtest/gtest.h"
 
@@ -126,7 +125,7 @@ GlobalCoreInstance::GlobalCoreInstance() {
   // "shared" memory.
   void *memory = mmap(NULL, kCoreSize, PROT_READ | PROT_WRITE,
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-  assert(memory != MAP_FAILED);
+  CHECK_NE(memory, MAP_FAILED);
 
   aos_core_use_address_as_shared_mem(memory, kCoreSize);
 
@@ -134,7 +133,7 @@ GlobalCoreInstance::GlobalCoreInstance() {
 }
 
 GlobalCoreInstance::~GlobalCoreInstance() {
-  assert(munmap(global_core->mem_struct, kCoreSize) == 0);
+  PCHECK(munmap(global_core->mem_struct, kCoreSize));
   global_core = NULL;
 }
 
@@ -143,7 +142,7 @@ void EnableTestLogging() {
 }
 
 void PreventExit() {
-  assert(atexit(TerminateExitHandler) == 0);
+  CHECK_EQ(atexit(TerminateExitHandler), 0);
 }
 
 }  // namespace testing

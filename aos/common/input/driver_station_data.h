@@ -4,8 +4,6 @@
 // This file defines several types to support nicely looking at the data
 // received from the driver's station.
 
-#include <assert.h>
-
 #include <memory>
 
 #include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"

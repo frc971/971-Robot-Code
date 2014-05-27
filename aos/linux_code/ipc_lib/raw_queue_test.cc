@@ -161,7 +161,7 @@ class RawQueueTest : public ::testing::Test {
   std::unique_ptr<ForkedProcess> ForkExecute(void (*function)(T*), T *arg) {
     mutex *lock = static_cast<mutex *>(shm_malloc_aligned(
             sizeof(*lock), sizeof(int)));
-    assert(mutex_lock(lock) == 0);
+    CHECK_EQ(mutex_lock(lock), 0);
     const pid_t pid = fork();
     switch (pid) {
       case 0:  // child
