@@ -76,7 +76,14 @@ class TestThread(threading.Thread):
     with self.process_lock:
       if not self.process:
         return
-      self.process.terminate()
+      try:
+        self.process.terminate()
+      except OSError as e:
+        if e.errno == errno.ESRCH:
+          # We don't really care if it's already gone.
+          pass
+        else:
+          raise e
   def kill_process(self):
     """Forcibly terminates any running process."""
     with self.process_lock:
@@ -964,6 +971,7 @@ def main():
 # Stop all of them before killing processes because otherwise stopping some of
 # them tends to let other ones that are waiting to start go.
           for thread in running:
+            test_output('\tKilling %s' % thread.name)
             thread.stop()
           for thread in running:
             thread.terminate_process()
