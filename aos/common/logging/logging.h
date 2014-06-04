@@ -79,15 +79,16 @@ void log_uncork(int line, const char *function, log_level level,
     }                                                                      \
   } while (0)
 
-// Same as LOG except appends " due to %d(%s)\n" (formatted with errno and
+// Same as LOG except appends " due to %d (%s)\n" (formatted with errno and
 // aos_strerror(errno)) to the message.
 #define PLOG(level, format, args...) PELOG(level, errno, format, ##args)
 
 // Like PLOG except allows specifying an error other than errno.
-#define PELOG(level, error_in, format, args...)                                \
-  do {                                                                         \
-    const int error = error_in;                                                \
-    LOG(level, format " due to %d(%s)\n", ##args, error, aos_strerror(error)); \
+#define PELOG(level, error_in, format, args...)           \
+  do {                                                    \
+    const int error = error_in;                           \
+    LOG(level, format " due to %d (%s)\n", ##args, error, \
+        aos_strerror(error));                             \
   } while (0);
 
 // Allows format to not be a string constant.
