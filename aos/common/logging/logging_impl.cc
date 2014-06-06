@@ -20,6 +20,10 @@ using internal::global_top_implementation;
 // apply here (mostly the parts about being able to use LOG) because this is the
 // root one.
 class RootLogImplementation : public LogImplementation {
+ public:
+  void have_other_implementation() { only_implementation_ = false; }
+
+ private:
   virtual void set_next(LogImplementation *) {
     LOG(FATAL, "can't have a next logger from here\n");
   }
@@ -29,9 +33,15 @@ class RootLogImplementation : public LogImplementation {
     LogMessage message;
     internal::FillInMessage(level, format, ap, &message);
     internal::PrintMessage(stderr, message);
-    fputs("root logger got used, see stderr for message\n", stdout);
+    if (!only_implementation_) {
+      fputs("root logger got used, see stderr for message\n", stdout);
+    }
   }
+
+  bool only_implementation_ = true;
 };
+
+RootLogImplementation *root_implementation = nullptr;
 
 void SetGlobalImplementation(LogImplementation *implementation) {
   Context *context = Context::Get();
@@ -45,7 +55,7 @@ void NewContext() {
 }
 
 void *DoInit() {
-  SetGlobalImplementation(new RootLogImplementation());
+  SetGlobalImplementation(root_implementation = new RootLogImplementation());
 
   if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
                      NewContext /*child*/) != 0) {
@@ -295,6 +305,7 @@ void AddImplementation(LogImplementation *implementation) {
     implementation->set_next(old);
   }
   SetGlobalImplementation(implementation);
+  root_implementation->have_other_implementation();
 }
 
 void Init() {

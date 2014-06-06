@@ -707,8 +707,6 @@ const char *child_list_file;
 void Run(void *watch);
 void Main() {
   logging::Init();
-  // TODO(brians): tell logging that using the root logger from here until we
-  // bring up shm is ok
 
   if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
     PLOG(FATAL, "setpgid(0, 0) failed");
