@@ -488,7 +488,8 @@ class PrimeProcessor(Processor):
       if self.sanitizer() == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
         r['ASAN_OPTIONS'] = \
-            'detect_leaks=1:check_initialization_order=1:strict_init_order=1'
+            'detect_leaks=1:check_initialization_order=1:strict_init_order=1' \
+            ':detect_stack_use_after_return=1:detect_odr_violation=2'
       elif self.sanitizer() == 'memory':
         r['MSAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
       elif self.sanitizer() == 'thread':
