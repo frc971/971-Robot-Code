@@ -33,7 +33,35 @@ class TestThread(threading.Thread):
     process: The currently executing test process or None. Synchronized by
         process_lock.
     stopped: True if we're stopped.
+    output: A queue of lines of output from the test.
   """
+
+  class OutputCopier(threading.Thread):
+    """Copies the output of a test from its output pty into a queue.
+
+    This is necessary because otherwise everything locks up if the test writes
+    too much output and fills up the pty's buffer.
+    """
+
+    def __init__(self, name, fd, queue):
+      super(TestThread.OutputCopier, self).__init__(
+          name=(name + '.OutputCopier'))
+
+      self.fd = fd
+      self.queue = queue
+
+    def run(self):
+      with os.fdopen(self.fd) as to_read:
+        try:
+          for line in to_read:
+            self.queue.put(line)
+        except IOError as e:
+# An EIO from the master side of the pty means we hit the end.
+          if e.errno == errno.EIO:
+            return
+          else:
+            raise e
+
   def __init__(self, executable, env, done_queue, start_semaphore):
     super(TestThread, self).__init__(
         name=os.path.split(executable)[1])
@@ -43,18 +71,23 @@ class TestThread(threading.Thread):
     self.done_queue = done_queue
     self.start_semaphore = start_semaphore
 
+    self.output = queue.Queue()
+
     self.process_lock = threading.Lock()
     self.process = None
     self.stopped = False
     self.returncode = None
-    self.output = None
+    self.output_copier = None
 
   def run(self):
     with self.start_semaphore:
       if self.stopped:
         return
       test_output('Starting test %s...' % self.name)
-      self.output, subprocess_output = pty.openpty()
+      output_to_read, subprocess_output = pty.openpty()
+      self.output_copier = TestThread.OutputCopier(self.name, output_to_read,
+                                                   self.output)
+      self.output_copier.start()
       try:
         with self.process_lock:
           self.process = subprocess.Popen(self.executable,
@@ -69,6 +102,7 @@ class TestThread(threading.Thread):
         self.returncode = self.process.returncode
         self.process = None
         if not self.stopped:
+          self.output_copier.join()
           self.done_queue.put(self)
 
   def terminate_process(self):
@@ -939,33 +973,30 @@ def main():
           running.remove(done)
           with test_output_lock:
             test_output('Output from test %s:' % done.name)
-            with os.fdopen(done.output) as output_file:
-              try:
-                for line in output_file:
-                  if not sys.stdout.isatty():
-                    # Remove color escape codes.
-                    line = re.sub(r'\x1B\[[0-9;]*[a-zA-Z]', '', line)
-                  sys.stdout.write(line)
-              except IOError as e:
-# We want to just ignore EIOs from reading the master pty because that just
-# means we hit the end.
-                if e.errno != errno.EIO:
-                  raise e
-              if not done.returncode:
-                test_output('Test %s succeeded' % done.name)
+            try:
+              while True:
+                line = done.output.get(False)
+                if not sys.stdout.isatty():
+                  # Remove color escape codes.
+                  line = re.sub(r'\x1B\[[0-9;]*[a-zA-Z]', '', line)
+                sys.stdout.write(line)
+            except queue.Empty:
+              pass
+            if not done.returncode:
+              test_output('Test %s succeeded' % done.name)
+            else:
+              if done.returncode < 0:
+                sig = -done.returncode
+                test_output('Test %s was killed by signal %d (%s)' % \
+                            (done.name, sig, strsignal(sig)))
+              elif done.returncode != 1:
+                test_output('Test %s exited with %d' % \
+                            (done.name, done.returncode))
               else:
-                if done.returncode < 0:
-                  sig = -done.returncode
-                  test_output('Test %s was killed by signal %d (%s)' % \
-                              (done.name, sig, strsignal(sig)))
-                elif done.returncode != 1:
-                  test_output('Test %s exited with %d' % \
-                              (done.name, done.returncode))
-                else:
-                  test_output('Test %s failed' % done.name)
-                user_output('Aborting because of test failure for %s.' % \
-                            platform)
-                exit(1)
+                test_output('Test %s failed' % done.name)
+              user_output('Aborting because of test failure for %s.' % \
+                          platform)
+              exit(1)
       finally:
         if running:
           test_output('Killing other tests...')
