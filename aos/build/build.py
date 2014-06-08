@@ -867,8 +867,8 @@ def main():
       build_env['PATH'] = os.environ['PATH']
     return build_env
 
-  sorted_platforms = sorted(platforms,
-                            key=lambda platform: -platform.priority())
+  sorted_platforms = sorted(
+      platforms, key=lambda platform: (-platform.priority(), str(platform)))
 
   to_build = []
   for platform in sorted_platforms:
