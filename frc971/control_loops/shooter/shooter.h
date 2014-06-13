@@ -74,20 +74,21 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double goal_position() const { return R(0, 0) + kPositionOffset; }
   double goal_velocity() const { return R(1, 0); }
   void InitializeState(double position) {
-    X_hat(0, 0) = position - kPositionOffset;
+    mutable_X_hat(0, 0) = position - kPositionOffset;
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
-    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position, desired_velocity);
+    LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position,
+        desired_velocity);
 
-    R << desired_position - kPositionOffset, desired_velocity,
+    mutable_R() << desired_position - kPositionOffset, desired_velocity,
         (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
          A(1, 1) / A(1, 2) * desired_velocity);
   }
 
   double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }
 
-  void set_max_voltage(const double max_voltage) { max_voltage_ = max_voltage; }
+  void set_max_voltage(double max_voltage) { max_voltage_ = max_voltage; }
   bool capped_goal() const { return capped_goal_; }
 
   void CapGoal();

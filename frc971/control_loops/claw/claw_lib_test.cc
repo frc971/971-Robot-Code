@@ -54,11 +54,11 @@ class ClawMotorSimulation {
                     double initial_bottom_position) {
     LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
         initial_bottom_position);
-    claw_plant_->X(0, 0) = initial_bottom_position;
-    claw_plant_->X(1, 0) = initial_top_position - initial_bottom_position;
-    claw_plant_->X(2, 0) = 0.0;
-    claw_plant_->X(3, 0) = 0.0;
-    claw_plant_->Y = claw_plant_->C() * claw_plant_->X;
+    claw_plant_->mutable_X(0, 0) = initial_bottom_position;
+    claw_plant_->mutable_X(1, 0) = initial_top_position - initial_bottom_position;
+    claw_plant_->mutable_X(2, 0) = 0.0;
+    claw_plant_->mutable_X(3, 0) = 0.0;
+    claw_plant_->mutable_Y() = claw_plant_->C() * claw_plant_->X();
 
     ReinitializePartial(TOP_CLAW, initial_top_position);
     ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
@@ -214,7 +214,7 @@ class ClawMotorSimulation {
     const frc971::constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
 
-    claw_plant_->U << claw_queue_group.output->bottom_claw_voltage,
+    claw_plant_->mutable_U() << claw_queue_group.output->bottom_claw_voltage,
         claw_queue_group.output->top_claw_voltage;
     claw_plant_->Update();
 
@@ -556,7 +556,7 @@ class WindupClawTest : public ClawTest {
               claw_motor_.top_claw_goal_ - claw_motor_.bottom_claw_goal_, 0.0,
               0.0;
           Eigen::Matrix<double, 2, 1> uncapped_voltage =
-              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat);
+              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat());
           // Use a factor of 1.8 because so long as it isn't actually running
           // away, the CapU function will deal with getting the actual output
           // down.
