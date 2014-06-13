@@ -1,6 +1,5 @@
 #include "aos/common/logging/logging_impl.h"
 
-#include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -15,10 +14,10 @@ namespace aos {
 namespace logging {
 namespace internal {
 
-LogImplementation *global_top_implementation(NULL);
+::std::atomic<LogImplementation *> global_top_implementation(NULL);
 
 Context::Context()
-    : implementation(global_top_implementation),
+    : implementation(global_top_implementation.load()),
       sequence(0) {
   cork_data.Reset();
 }
@@ -30,8 +29,8 @@ size_t ExecuteFormat(char *output, size_t output_size, const char *format,
   const int ret = vsnprintf(output, size, format, ap);
   typedef ::std::common_type<typeof(ret), typeof(size)>::type RetType;
   if (ret < 0) {
-    LOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed with %d (%s)\n",
-        output, size, format, errno, strerror(errno));
+    PLOG(FATAL, "vsnprintf(%p, %zd, %s, args) failed",
+         output, size, format);
   } else if (static_cast<RetType>(ret) >= static_cast<RetType>(size)) {
     // Overwrite the '\0' at the end of the existing data and
     // copy in the one on the end of continued.
@@ -47,7 +46,6 @@ void RunWithCurrentImplementation(
   LogImplementation *const top_implementation = context->implementation;
   LogImplementation *new_implementation = top_implementation;
   LogImplementation *implementation = NULL;
-  assert(levels >= 1);
   for (int i = 0; i < levels; ++i) {
     implementation = new_implementation;
     if (new_implementation == NULL) {

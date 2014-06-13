@@ -9,6 +9,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
+#include "aos/common/libc/dirname.h"
 
 extern "C" {
 #include "stm32flash/parsers/parser.h"
@@ -51,17 +52,16 @@ int main(int argc, char **argv) {
 
   serial_baud_t baud_rate = SERIAL_BAUD_57600;
 
-  ::std::string filename =
-      ::std::string(dirname(strdup(argv[0]))) +
-      "/../../../bbb_cape/src/cape/.obj/" + target + ".hex";
+  ::std::string filename = ::aos::libc::Dirname(argv[0]) +
+                           "/../../../bbb_cape/src/cape/.obj/" + target +
+                           ".hex";
 
   int file = open(filename.c_str(), O_RDONLY);
   if (file == -1) {
     filename = target;
     file = open(filename.c_str(), O_RDONLY);
     if (file == -1) {
-      LOG(FATAL, "open(%s, O_RDONLY) failed with %d: %s\n",
-          filename.c_str(), errno, strerror(errno));
+      PLOG(FATAL, "open(%s, O_RDONLY) failed", filename.c_str());
     } else {
       LOG(INFO, "using filename %s from the command line\n", filename.c_str());
     }
@@ -73,8 +73,7 @@ int main(int argc, char **argv) {
         2 /* record type */];
     ssize_t bytes = read(file, buffer, sizeof(buffer));
     if (close(file) == -1) {
-      LOG(FATAL, "close(%d) failed with %d: %s\n",
-          file, errno, strerror(errno));
+      PLOG(FATAL, "close(%d) failed", file);
     }
     if (bytes != sizeof(buffer)) {
       LOG(FATAL, "read %zd bytes from %s instead of %zu\n",
@@ -107,7 +106,7 @@ int main(int argc, char **argv) {
     LOG(FATAL, "%s parser failed to initialize.\n", parser->name);
   }
   if (parser->open(p_st, filename.c_str(), 0) != PARSER_ERR_OK) {
-    LOG(FATAL, "opening file %s failed\n", filename.c_str());
+    PLOG(FATAL, "opening file %s failed\n", filename.c_str());
   }
 
   ::bbb::ExportUart();
@@ -116,15 +115,13 @@ int main(int argc, char **argv) {
 
   serial_t *serial = serial_open(device);
   if (serial == NULL) {
-    LOG(FATAL, "failed to open serial port %s because of %d: %s\n",
-        device, errno, strerror(errno));
+    PLOG(FATAL, "failed to open serial port %s", device);
   }
   if (serial_setup(serial, baud_rate,
                    SERIAL_BITS_8,
                    SERIAL_PARITY_EVEN,
                    SERIAL_STOPBIT_1) != SERIAL_ERR_OK) {
-    LOG(FATAL, "setting up serial port %s failed because of %d: %s\n",
-        device, errno, strerror(errno));
+    PLOG(FATAL, "setting up serial port %s failed", device);
   }
   LOG(INFO, "serial configuration: %s\n", serial_get_setup_str(serial));
 

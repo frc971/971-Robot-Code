@@ -6,6 +6,9 @@
       'sources': [
         'aos_sync.c',
       ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
     },
     {
       'target_name': 'core_lib',
@@ -29,6 +32,7 @@
       ],
       'dependencies': [
         'aos_sync',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
       'export_dependent_settings': [
         'aos_sync',
@@ -46,25 +50,8 @@
         'core_lib',
         '<(AOS)/build/aos.gyp:logging_interface',
       ],
-      'defines': [
-        'QUEUE_DEBUG=0',
-      ],
-    },
-    # A version of the queue code compiled with assertions enabled etc.
-    {
-      'target_name': 'queue_debug',
-      'type': 'static_library',
-      'sources': [
-        'queue.cc',
-      ],
-      'dependencies': [
-        'queue',
-      ],
       'export_dependent_settings': [
-        'queue',
-      ],
-      'defines': [
-        'QUEUE_DEBUG=1',
+        '<(AOS)/build/aos.gyp:logging_interface',
       ],
     },
     {
@@ -75,12 +62,14 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'queue_debug',
+        'queue',
         '<(AOS)/build/aos.gyp:logging',
         'core_lib',
         '<(AOS)/common/common.gyp:queue_testutils',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/util/util.gyp:thread',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
       ],
     },
     {
@@ -96,6 +85,9 @@
         '<(AOS)/common/common.gyp:mutex',
         'core_lib',
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/libc/libc.gyp:dirname',
+        '<(AOS)/common/libc/libc.gyp:aos_strsignal',
+        '<(AOS)/build/aos.gyp:logging',
       ],
       'variables': {
         'is_special_test': 1,

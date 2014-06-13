@@ -1,7 +1,6 @@
 #include "bbb/hex_byte_reader.h"
 
 #include <string.h>
-#include <errno.h>
 
 #include "stm32flash/parsers/parser.h"
 #include "stm32flash/parsers/hex.h"
@@ -15,7 +14,7 @@ const parser_t kParser = PARSER_HEX;
 
 __attribute__((noreturn)) void DieParserError(parser_err_t perr) {
   if (perr == PARSER_ERR_SYSTEM) {
-    LOG(ERROR, "%d: %s\n", errno, strerror(errno));
+    PLOG(ERROR, "parser error");
   }
   LOG(FATAL, "%s error: %s\n", kParser.name, parser_errstr(perr));
 }

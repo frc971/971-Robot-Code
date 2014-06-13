@@ -2,4 +2,4 @@
 
 cd $(dirname $0)
 
-../../aos/build/build.sh crio crio.gyp no crio "$@"
+exec ../../aos/build/build.py $0 crio crio.gyp "$@"

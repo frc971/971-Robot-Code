@@ -1,7 +1,7 @@
 #include "aos/common/once.h"
 
-#include "stdlib.h"
-#include "limits.h"
+#include <stdlib.h>
+#include <limits.h>
 
 #include "gtest/gtest.h"
 
@@ -12,7 +12,7 @@ class OnceTest : public ::testing::Test {
  public:
   static int *Function() {
     ++times_run_;
-    value_ = rand() % INT_MAX;
+    value_ = 971 + times_run_;
     return &value_;
   }
 
@@ -94,7 +94,8 @@ namespace {
 
 int second_result = 0;
 int *SecondFunction() {
-  second_result = rand() % INT_MAX;
+  static int result = 254;
+  second_result = ++result;
   return &second_result;
 }
 

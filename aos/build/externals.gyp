@@ -2,21 +2,14 @@
 # download_externals.sh makes sure that all of them have been downloaded.
 {
   'variables': {
-    # TODO(brians): Would we not have to do this hackery if we named it externals_path etc?
     'externals': '<(AOS)/../output/downloaded',
     'externals_abs': '<!(readlink -f ../../output/downloaded)',
-    'conditions': [['PLATFORM=="linux-amd64"', {
-          'compiled': '<(externals)/../compiled-amd64',
-          'compiled_abs': '<(externals_abs)/../compiled-amd64',
-    }, {
-          'compiled': '<(externals)/../compiled-arm',
-          'compiled_abs': '<(externals_abs)/../compiled-arm',
-    }]],
+    'compiled': '<(externals)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIE)',
+    'compiled_abs': '<(externals_abs)/../compiled-<(ARCHITECTURE)<(SANITIZER_FPIE)',
 
 # These versions have to be kept in sync with the ones in download_externals.sh.
     'eigen_version': '3.2.1',
-    'gtest_version': '1.6.0-p1',
-    'onejar_version': '0.97',
+    'gtest_version': '1.6.0-p2',
     'ctemplate_version': '129',
     'gflags_version': '2.0',
     'compiler_rt_version': 'RELEASE_32_final',
@@ -60,19 +53,17 @@
       'include_dirs': [
         '<(AOS)/externals/WPILib',
       ],
+      'defines': [
+        # Clang doesn't like having register in the hton* macros.
+        'register=',
+      ],
       'direct_dependent_settings': {
         'include_dirs': [
           '<(AOS)/externals/WPILib',
         ],
-      },
-    },
-    {
-      'target_name': 'onejar',
-      'type': 'none',
-      'direct_dependent_settings': {
-        'variables': {
-          'onejar_jar': '<(externals_abs)/one-jar-boot-<(onejar_version).jar',
-        },
+        'defines': [
+          'register=',
+        ],
       },
     },
     {
@@ -131,7 +122,11 @@
       'target_name': 'gtest',
       'type': 'static_library',
       'sources': [
-        '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest-all.cc',
+        '<(externals)/gtest-<(gtest_version)/src/gtest-all.cc',
+            '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
+      ],
+      'include_dirs': [
+        '<(externals)/gtest-<(gtest_version)',
       ],
       'dependencies': [
         'gtest_prod',
@@ -139,24 +134,6 @@
       'export_dependent_settings': [
         'gtest_prod',
       ],
-      'conditions': [['OS=="crio"', {
-            'defines': [
-              'GTEST_HAS_TR1_TUPLE=0',
-              'GTEST_HAS_STREAM_REDIRECTION=0',
-              'GTEST_HAS_POSIX_RE=0', # it only has a broken header...
-            ],
-            'direct_dependent_settings': {
-              'defines': [
-                'GTEST_HAS_TR1_TUPLE=0',
-                'GTEST_HAS_STREAM_REDIRECTION=0',
-                'GTEST_HAS_POSIX_RE=0',
-              ],
-            },
-        }, {
-          'sources': [
-            '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
-          ],
-        }]],
       'cflags!': ['-Werror'],
       'direct_dependent_settings': {
         'include_dirs': ['<(externals)/gtest-<(gtest_version)/include'],

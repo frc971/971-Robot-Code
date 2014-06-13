@@ -31,6 +31,7 @@
       ],
       'dependencies': [
         'init',
+        '<(AOS)/common/util/util.gyp:run_command',
       ],
     },
   ],

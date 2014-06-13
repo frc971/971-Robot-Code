@@ -30,8 +30,7 @@ class ScopedFD {
   void Close() {
     if (fd_ != -1) {
       if (close(fd_) == -1) {
-        LOG(WARNING, "close(%d) failed with %d: %s\n", fd_,
-            errno, strerror(errno));
+        PLOG(WARNING, "close(%d) failed", fd_);
       }
     }
   }

@@ -50,12 +50,12 @@ class Once {
  private:
   // The function to run to calculate result_.
   Function function_;
-  // Whether or not it is running. Gets atomically swapped from 0 to 1 by the
-  // thread that actually runs function_.
-  volatile int run_;
+  // Whether or not it is running. Gets atomically swapped from false to true by
+  // the thread that actually runs function_.
+  bool run_;
   // Whether or not it is done. Gets set to true after the thread that is
   // running function_ finishes running it and storing the result in result_.
-  volatile bool done_;
+  bool done_;
   // What function_ returned when it was executed.
   T *result_;
 

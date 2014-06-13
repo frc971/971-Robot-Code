@@ -7,9 +7,9 @@
 {
   'targets': [
     # A target for things used by the logging implementation (except die) to
-    # depend on that allows linking successfully with logging calls  but has no
-    # way to get initialized and so is basically useless unless something else
-    # links in the rest of the logging stuff.
+    # depend on that allows linking successfully with logging calls. However,
+    # executables containing targets that depend on this still need a dependency
+    # on logging somewhere or else they won't link.
     {
       'target_name': 'logging_interface',
       'type': 'static_library',
@@ -25,6 +25,10 @@
       ],
       'dependencies': [
         '<(AOS)/common/common.gyp:die',
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
       ],
     },
     {
@@ -52,6 +56,9 @@
         '<(AOS)/common/common.gyp:once',
         'logging_interface',
         '<(AOS)/common/common.gyp:queue_types',
+      ],
+      'export_dependent_settings': [
+        'logging_interface',
       ],
     },
   ],

@@ -20,8 +20,7 @@ int SendSocket::Connect(NetworkPort port, const char *robot_ip, int type) {
   }
 
   if (connect(socket_, &addr_.addr, sizeof(addr_)) < 0) {
-    LOG(ERROR, "couldn't connect to ip '%s' because of %d: %s\n", robot_ip,
-        errno, strerror(errno));
+    PLOG(ERROR, "couldn't connect to ip '%s'", robot_ip);
     return last_ret_ = 1;
   }
 

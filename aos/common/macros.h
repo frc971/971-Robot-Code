@@ -8,6 +8,7 @@
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&) = delete;      \
   void operator=(const TypeName&) = delete
+
 // A macro to wrap arguments to macros that contain commas.
 // Useful for DISALLOW_COPY_AND_ASSIGNing templated types with multiple template
 // arguments.
@@ -24,5 +25,17 @@
 
 #define STRINGIFY(x) TO_STRING(x)
 #define TO_STRING(x) #x
+
+#ifdef __VXWORKS__
+// We're using ancient glibc, so sticking to just what the syscall can handle is
+// probably safer.
+#define GOOD_PRINTF_FORMAT_TYPE printf
+#else
+#ifdef __clang__
+#define GOOD_PRINTF_FORMAT_TYPE __printf__
+#else
+#define GOOD_PRINTF_FORMAT_TYPE gnu_printf
+#endif
+#endif
 
 #endif  // _AOS_COMMON_MACROS_H_

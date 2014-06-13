@@ -1,7 +1,6 @@
 #include "aos/linux_code/logging/binary_log_file.h"
 
 #include <stdio.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -43,8 +42,7 @@ bool LogFileAccessor::IsLastPage() {
 
   struct stat info;
   if (fstat(fd_, &info) == -1) {
-    LOG(FATAL, "fstat(%d, %p) failed with %d: %s\n", fd_, &info, errno,
-        strerror(errno));
+    PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
   }
   bool r = offset_ == static_cast<off_t>(info.st_size - kPageSize);
   is_last_page_ = r ? 2 : 1;
@@ -54,32 +52,27 @@ bool LogFileAccessor::IsLastPage() {
 void LogFileAccessor::MapNextPage() {
   if (writable_) {
     if (ftruncate(fd_, offset_ + kPageSize) == -1) {
-      LOG(FATAL, "ftruncate(%d, %zd) failed with %d: %s. aborting\n", fd_,
-          kPageSize, errno, strerror(errno));
+      PLOG(FATAL, "ftruncate(%d, %zd) failed", fd_, kPageSize);
     }
   }
   current_ = static_cast<char *>(
       mmap(NULL, kPageSize, PROT_READ | (writable_ ? PROT_WRITE : 0),
            MAP_SHARED, fd_, offset_));
   if (current_ == MAP_FAILED) {
-    LOG(FATAL,
-        "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
-        " failed with %d: %s\n",
-        kPageSize, fd_, static_cast<intmax_t>(offset_), errno,
-        strerror(errno));
+    PLOG(FATAL,
+         "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
+         " failed", kPageSize, fd_, static_cast<intmax_t>(offset_));
   }
   if (madvise(current_, kPageSize, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) {
-    LOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED)"
-                 " failed with %d: %s\n",
-        current_, kPageSize, errno, strerror(errno));
+    PLOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED) failed",
+         current_, kPageSize);
   }
   offset_ += kPageSize;
 }
 
 void LogFileAccessor::Unmap(void *location) {
   if (munmap(location, kPageSize) == -1) {
-    LOG(FATAL, "munmap(%p, %zd) failed with %d: %s. aborting\n", location,
-        kPageSize, errno, strerror(errno));
+    PLOG(FATAL, "munmap(%p, %zd) failed", location, kPageSize);
   }
   is_last_page_ = 0;
   position_ = 0;
@@ -137,23 +130,23 @@ void LogFileReader::CheckCurrentPageReadable() {
     action.sa_flags = SA_RESETHAND | SA_SIGINFO;
     struct sigaction previous_bus, previous_segv;
     if (sigaction(SIGBUS, &action, &previous_bus) == -1) {
-      LOG(FATAL, "sigaction(SIGBUS(=%d), %p, %p) failed with %d: %s\n",
-          SIGBUS, &action, &previous_bus, errno, strerror(errno));
+      PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, %p) failed",
+           SIGBUS, &action, &previous_bus);
     }
     if (sigaction(SIGSEGV, &action, &previous_segv) == -1) {
-      LOG(FATAL, "sigaction(SIGSEGV(=%d), %p, %p) failed with %d: %s\n",
-          SIGSEGV, &action, &previous_segv, errno, strerror(errno));
+      PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, %p) failed",
+           SIGSEGV, &action, &previous_segv);
     }
 
     char __attribute__((unused)) c = current()[0];
 
     if (sigaction(SIGBUS, &previous_bus, NULL) == -1) {
-      LOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed with %d: %s\n",
-          SIGBUS, &previous_bus, errno, strerror(errno));
+      PLOG(FATAL, "sigaction(SIGBUS(=%d), %p, NULL) failed",
+           SIGBUS, &previous_bus);
     }
     if (sigaction(SIGSEGV, &previous_segv, NULL) == -1) {
-      LOG(FATAL, "sigaction(SIGSEGV(=%d), %p, NULL) failed with %d: %s\n",
-          SIGSEGV, &previous_segv, errno, strerror(errno));
+      PLOG(FATAL, "sigaction(SIGSEGV(=%d), %p, NULL) failed",
+           SIGSEGV, &previous_segv);
     }
   } else {
     if (fault_address == current()) {
@@ -173,9 +166,8 @@ LogFileMessageHeader *LogFileWriter::GetWritePosition(size_t message_size) {
     MapNextPage();
     if (futex_set_value(static_cast<mutex *>(static_cast<void *>(
                     &temp[position()])), 2) == -1) {
-      LOG(WARNING,
-          "futex_set_value(%p, 2) failed with %d: %s. readers will hang\n",
-          &temp[position()], errno, strerror(errno));
+      PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
+           &temp[position()]);
     }
     Unmap(temp);
   }

@@ -1,7 +1,6 @@
 #include "bbb/crc.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <string.h>
 
 #include "aos/common/once.h"
@@ -60,8 +59,7 @@ uint32_t CalculateChecksum(::bbb::ByteReaderInterface *reader) {
                                      sizeof(buffer) - remainder_bytes);
     if (read == -2) return checksum;
     if (read == -1) {
-      LOG(FATAL, "reader %p failed to read with %d: %s\n",
-          reader, errno, strerror(errno));
+      PLOG(FATAL, "reader %p failed to read", reader);
     }
     size_t checksum_bytes = (read / 4) * 4;
     checksum = CalculateChecksum(buffer, checksum_bytes, checksum);

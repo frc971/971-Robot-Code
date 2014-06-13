@@ -5,42 +5,135 @@
 # A directory with everything in it ignored from source control.
     'TMPDIR': '<(DEPTH)/aos/build/temp',
     'aos_abs': '<!(readlink -f <(DEPTH)/aos)', # for use in non-path contexts
-# the .gyp file that has targets for the various external libraries
+# The .gyp file that has targets for the various external libraries.
     'EXTERNALS': '<(AOS)/build/externals.gyp',
-# the directory that gets rsynced to the target
+# The directory that gets rsynced to the target.
     'rsync_dir': '<(PRODUCT_DIR)/outputs',
-# The directory that loadable_module and shared_library targets get put into
-# There's a target_conditions that puts loadable_modules here and
-#   shared_librarys automatically get put here.
-    'so_dir': '<(PRODUCT_DIR)/lib',
-# the directory that executables that depend on <(EXTERNALS):gtest get put into
+# The directory that executables that depend on <(EXTERNALS):gtest get put into.
     'test_dir': '<(PRODUCT_DIR)/tests',
+
+# Stuck into a variable (with a space on the end) to make disabling it easy.
+    'ccache': '<!(which ccache) ',
+
+    'disable_sanitizers': [
+      # Bad alignment is just slow on x86 and traps on ARM, so we'll find
+      # it other ways, and some x86 code does it on purpose.
+      'alignment',
+    ],
   },
   'conditions': [
-    ['OS=="crio"', {
+    ['PLATFORM=="crio"', {
         'make_global_settings': [
           ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
-      }, {
-        'conditions': [
-          ['PLATFORM!="linux-amd64"', {
-              'make_global_settings': [
-                ['CC', '<!(which arm-linux-gnueabihf-gcc-4.7)'],
-                ['CXX', '<!(which arm-linux-gnueabihf-g++-4.7)'],
-              ],
-            },
-          ],
-        ],
       }
+    ], ['PLATFORM=="linux-arm-gcc"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)<!(which arm-linux-gnueabihf-gcc-4.7)'],
+          ['CXX', '<(ccache)<!(which arm-linux-gnueabihf-g++-4.7)'],
+        ],
+      },
+    ], ['PLATFORM=="linux-arm-clang"', {
+        'variables': {
+          'arm-clang-symlinks': '<!(realpath -s <(AOS)/build/arm-clang-symlinks)',
+          'arm-clang-sysroot': '<(arm-clang-symlinks)/sysroot',
+# Flags that should be passed to all compile/link/etc commands.
+          'platflags': [
+            '-target', 'armv7a-linux-gnueabihf',
+            '-mfloat-abi=hard',
+            '--sysroot=<(arm-clang-sysroot)',
+
+            # TODO(brians): See if it will run with this enabled.
+            #-mhwdiv=arm,thumb
+          ],
+        },
+        'make_global_settings': [
+          ['CC', '<(ccache)<(arm-clang-symlinks)/bin/clang'],
+          ['CXX', '<(ccache)<(arm-clang-symlinks)/bin/clang++'],
+        ],
+        'target_defaults': {
+          'cflags': [
+            '<@(platflags)',
+          ],
+          'cflags_cc': [
+            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2',
+            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2/arm-linux-gnueabihf',
+          ],
+          'ldflags': [
+            '<@(platflags)',
+          ],
+        },
+      },
+    ], ['PLATFORM=="linux-amd64-clang"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)/opt/clang-3.5/bin/clang'],
+          ['CXX', '<(ccache)/opt/clang-3.5/bin/clang++'],
+        ],
+      },
+    ], ['PLATFORM=="linux-amd64-gcc"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)<!(which gcc-4.7)'],
+          ['CXX', '<(ccache)<!(which g++-4.7)'],
+        ],
+      },
+    ], ['PLATFORM=="linux-amd64-gcc_4.8"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)/opt/clang-3.5/bin/gcc'],
+          ['CXX', '<(ccache)/opt/clang-3.5/bin/g++'],
+        ],
+      },
+    ], ['SANITIZER!="none"', {
+        'target_defaults': {
+          'cflags': [
+            '-fsanitize=<(SANITIZER)',
+          ],
+          'ldflags': [
+            '-fsanitize=<(SANITIZER)',
+          ],
+        },
+      },
+    ], ['SANITIZER!="none" and COMPILER!="gcc"', {
+        'target_defaults': {
+          'cflags': [
+            '-fno-sanitize-recover',
+            '-fno-sanitize=<!(echo <(disable_sanitizers) | sed "s/ /,/g")',
+          ],
+        },
+      },
+    ], ['SANITIZER_FPIE!=""', {
+        'target_defaults': {
+          'cflags': [
+            '-fPIE',
+          ],
+          'ldflags': [
+            '-fPIE',
+          ],
+          'link_settings': {
+            'ldflags': [
+              '-pie',
+            ],
+          },
+        },
+      },
+    ], ['SANITIZER=="memory"', {
+        'target_defaults': {
+          'cflags': [
+            '-fsanitize-memory-track-origins',
+          ],
+          'ldflags': [
+            '-fsanitize-memory-track-origins',
+          ],
+        },
+      },
     ],
   ],
   'target_defaults': {
     'defines': [
       '__STDC_FORMAT_MACROS',
-      '_FORTIFY_SOURCE=2',
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
+      '_FORTIFY_SOURCE=2',
     ],
     'ldflags': [
       '-pipe',
@@ -75,15 +168,28 @@
       # Set this to 1 to disable rsyncing the file to the target.
       'no_rsync%': 0,
       # Set this to 1 if this file is a test that should not be run by
-      # `build.sh tests`.
+      # `build.py tests`.
       'is_special_test%': 0,
     },
     'conditions': [
       ['DEBUG=="yes"', {
-          'cflags': [
-            '-O0',
+          'defines': [
+            'AOS_DEBUG=1',
           ],
-        }, {
+          'conditions': [['SANITIZER=="none"', {
+              'cflags': [
+                '-O0',
+              ],
+            }, {
+              'cflags': [
+                '-O1',
+              ],
+            }
+          ]],
+        }, { # 'DEBUG=="no"'
+          'defines': [
+            'AOS_DEBUG=0',
+          ],
           'cflags': [
             '-O3',
             '-fomit-frame-pointer',
@@ -91,31 +197,40 @@
           'ldflags': [
             '-O3',
           ],
-          'conditions': [['OS=="crio"', {
+          'conditions': [['PLATFORM=="crio"', {
+# Copied from stuff that I think started with the supplied Makefiles.
               'cflags': [
                 '-fstrength-reduce',
                 '-fno-builtin',
                 '-fno-strict-aliasing',
               ],
             }],
-            ['PLATFORM=="linux"', {
+            ['ARCHITECTURE=="arm"', {
               'cflags': [
                 '-mcpu=cortex-a8',
                 '-mfpu=neon',
               ],
             }],
-            ['PLATFORM=="linux-amd64"', {
+            ['ARCHITECTURE=="amd64"', {
               'cflags': [
-                '-march=atom',
-                '-mfpmath=sse',
-
                 '-fstack-protector-all',
               ],
             }],
           ]
         }
       ],
-      ['OS=="crio"', {
+      ['OS=="linux" and ARCHITECTURE=="arm" and COMPILER=="gcc" and DEBUG=="yes"', {
+          'cflags': [
+              # GCC doesn't like letting us use r7 (which is also the frame
+              # pointer) to pass the syscall number to the kernel even when
+              # it's marked as clobbered.
+              # See <https://bugzilla.mozilla.org/show_bug.cgi?id=633436> for
+              # some more discussion.
+            '-fomit-frame-pointer',
+          ],
+        }
+      ],
+      ['PLATFORM=="crio"', {
           'target_conditions': [
             ['_type=="shared_library"', {
                 'ldflags': [
@@ -153,23 +268,15 @@
             'TOOL=gnu',
             '_WRS_KERNEL',
             '__PPC__',
-# This tells eigen to not do anything with alignment at all. See
-# <http://eigen.tuxfamily.org/dox/TopicPreprocessorDirectives.html> for
-# details. It really doesn't like to work without this.
-            'EIGEN_DONT_ALIGN',
-# prevent the vxworks system headers from being dumb and #defining min and max
+# Prevent the vxworks system headers from being dumb and #defining min and max.
             'NOMINMAX',
           ],
-        }, {
+        }, { # 'PLATFORM!="crio"'
           'target_conditions': [
-# default to putting outputs into rsync_dir
+# Default to putting outputs into rsync_dir.
             ['no_rsync==0 and _type!="static_library"', {
                 'product_dir': '<(rsync_dir)',
               },
-            ],
-            ['_type=="loadable_module"', {
-                'product_dir': '<(so_dir)',
-              }
             ],
           ],
           'ldflags': [
@@ -177,14 +284,6 @@
           ],
           'cflags': [
             '-pthread',
-
-            '-Wunused-local-typedefs',
-
-            # Give macro stack traces when they blow up.
-            # TODO(brians): Re-enable this once they fix the bug where it
-            # sometimes doesn't show you the top-most (aka most useful)
-            # line of code.
-            #'-ftrack-macro-expansion',
           ],
           'cflags_cc': [
             '-std=gnu++11',
@@ -195,6 +294,27 @@
           'libraries': [
             '-lm',
             '-lrt',
+          ],
+          'conditions': [
+            ['COMPILER=="gcc"', {
+                'cflags': [
+                  '-Wunused-local-typedefs',
+                ],
+                'defines': [
+                  '__has_feature(n)=0'
+                ],
+              },
+            ], ['COMPILER=="clang"', {
+                'cflags': [
+                  '-fcolor-diagnostics',
+                  '-fmessage-length=80',
+                ],
+                'defines': [
+                  # This tells clang's optimizer the same thing.
+                  '__builtin_assume_aligned(p, a)=(((uintptr_t(p) % (a)) == 0) ? (p) : (__builtin_unreachable(), (p)))',
+                ],
+              },
+            ],
           ],
         }
       ]

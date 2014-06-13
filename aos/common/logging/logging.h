@@ -7,8 +7,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 #include "aos/common/macros.h"
+#include "aos/common/libc/aos_strerror.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,27 +36,22 @@ DECL_LEVELS;
 // Not static const size_t for C code.
 #define LOG_MESSAGE_LEN 400
 
-#ifdef __VXWORKS__
-// We're using ancient glibc, so sticking to just what the syscall can handle is
-// probably safer.
-#define LOG_PRINTF_FORMAT_TYPE printf
-#else
-#define LOG_PRINTF_FORMAT_TYPE gnu_printf
-#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 // Actually implements the basic logging call.
 // Does not check that level is valid.
 void log_do(log_level level, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 2, 3)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
 
 void log_cork(int line, const char *function, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 3, 4)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)));
 // Implements the uncork logging call.
 void log_uncork(int line, const char *function, log_level level,
                 const char *file, const char *format, ...)
-  __attribute__((format(LOG_PRINTF_FORMAT_TYPE, 5, 6)));
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 6)));
+
 #ifdef __cplusplus
 }
 #endif
@@ -66,7 +64,6 @@ void log_uncork(int line, const char *function, log_level level,
 //#define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #define LOG_CURRENT_FUNCTION __func__
 
-#undef LOG_SOURCENAME
 #define LOG_SOURCENAME __FILE__
 
 // The basic logging call.
@@ -81,6 +78,18 @@ void log_uncork(int line, const char *function, log_level level,
       abort();                                                             \
     }                                                                      \
   } while (0)
+
+// Same as LOG except appends " due to %d (%s)\n" (formatted with errno and
+// aos_strerror(errno)) to the message.
+#define PLOG(level, format, args...) PELOG(level, errno, format, ##args)
+
+// Like PLOG except allows specifying an error other than errno.
+#define PELOG(level, error_in, format, args...)           \
+  do {                                                    \
+    const int error = error_in;                           \
+    LOG(level, format " due to %d (%s)\n", ##args, error, \
+        aos_strerror(error));                             \
+  } while (0);
 
 // Allows format to not be a string constant.
 #define LOG_DYNAMIC(level, format, args...)                             \
@@ -123,7 +132,6 @@ namespace aos {
 // don't support streaming in extra text. Some of the implementation is borrowed
 // from there too.
 // They all LOG(FATAL) with a helpful message when the check fails.
-// TODO(brians): Replace assert with CHECK
 // Portions copyright (c) 1999, Google Inc.
 // All rights reserved.
 //
@@ -212,6 +220,18 @@ inline T* CheckNotNull(const char *value_name, T *t) {
 // Check that the input is non NULL.  This very useful in constructor
 // initializer lists.
 #define CHECK_NOTNULL(val) ::aos::CheckNotNull(STRINGIFY(val), val)
+
+inline int CheckSyscall(const char *syscall_string, int value) {
+  if (__builtin_expect(value == -1, false)) {
+    PLOG(FATAL, "%s failed", syscall_string);
+  }
+  return value;
+}
+
+// Check that syscall does not return -1. If it does, PLOG(FATAL)s. This is
+// useful for quickly checking syscalls where it's not very useful to print out
+// the values of any of the arguments.
+#define PCHECK(syscall) ::aos::CheckSyscall(STRINGIFY(syscall), syscall)
 
 }  // namespace aos
 

@@ -75,7 +75,7 @@ class ConditionTestProcess {
     new (shared_) Shared();
   }
   ~ConditionTestProcess() {
-    assert(child_ == -1);
+    CHECK_EQ(child_, -1);
   }
 
   void Start() {
@@ -87,7 +87,7 @@ class ConditionTestProcess {
       Run();
       exit(EXIT_SUCCESS);
     } else {  // in parent
-      assert(child_ != -1);
+      CHECK_NE(child_, -1);
 
       shared_->ready.Lock();
 
@@ -170,16 +170,16 @@ class ConditionTestProcess {
   }
 
   void Join() {
-    assert(child_ != -1);
+    CHECK_NE(child_, -1);
     int status;
     do {
-      assert(waitpid(child_, &status, 0) == child_);
+      CHECK_EQ(waitpid(child_, &status, 0), child_);
     } while (!(WIFEXITED(status) || WIFSIGNALED(status)));
     child_ = -1;
   }
   void Kill() {
-    assert(child_ != -1);
-    assert(kill(child_, SIGTERM) == 0);
+    CHECK_NE(child_, -1);
+    PCHECK(kill(child_, SIGTERM));
     Join();
   }
 

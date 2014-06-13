@@ -1,6 +1,5 @@
 #include "aos/common/logging/logging_impl.h"
 
-#include <assert.h>
 #include <stdarg.h>
 
 #include "aos/common/time.h"
@@ -21,23 +20,39 @@ using internal::global_top_implementation;
 // apply here (mostly the parts about being able to use LOG) because this is the
 // root one.
 class RootLogImplementation : public LogImplementation {
+ public:
+  void have_other_implementation() { only_implementation_ = false; }
+
+ private:
   virtual void set_next(LogImplementation *) {
     LOG(FATAL, "can't have a next logger from here\n");
   }
 
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
   virtual void DoLog(log_level level, const char *format, va_list ap) {
     LogMessage message;
     internal::FillInMessage(level, format, ap, &message);
     internal::PrintMessage(stderr, message);
-    fputs("root logger got used, see stderr for message\n", stdout);
+    if (!only_implementation_) {
+      fputs("root logger got used, see stderr for message\n", stdout);
+    }
   }
+
+  bool only_implementation_ = true;
 };
 
+RootLogImplementation *root_implementation = nullptr;
+
 void SetGlobalImplementation(LogImplementation *implementation) {
+  if (root_implementation == nullptr) {
+    fputs("Somebody didn't call logging::Init()!\n", stderr);
+    abort();
+  }
+
   Context *context = Context::Get();
 
   context->implementation = implementation;
-  global_top_implementation = implementation;
+  global_top_implementation.store(implementation);
 }
 
 void NewContext() {
@@ -45,7 +60,7 @@ void NewContext() {
 }
 
 void *DoInit() {
-  SetGlobalImplementation(new RootLogImplementation());
+  SetGlobalImplementation(root_implementation = new RootLogImplementation());
 
   if (pthread_atfork(NULL /*prepare*/, NULL /*parent*/,
                      NewContext /*child*/) != 0) {
@@ -149,7 +164,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               static_cast<int>(message.message_length), message.message);
       break;
     case LogMessage::Type::kStruct: {
-      char buffer[1024];
+      char buffer[2048];
       size_t output_length = sizeof(buffer);
       size_t input_length = message.message_length;
       if (!PrintMessage(
@@ -243,13 +258,35 @@ void LogImplementation::LogMatrix(
                 static_cast<int>(sizeof(printed) - printed_bytes), printed);
 }
 
+void HandleMessageLogImplementation::DoLog(log_level level, const char *format,
+                                           va_list ap) {
+  LogMessage message;
+  internal::FillInMessage(level, format, ap, &message);
+  HandleMessage(message);
+}
+
+void HandleMessageLogImplementation::LogStruct(
+    log_level level, const ::std::string &message_string, size_t size,
+    const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
+  LogMessage message;
+  internal::FillInMessageStructure(level, message_string, size, type, serialize,
+                                   &message);
+  HandleMessage(message);
+}
+
+void HandleMessageLogImplementation::LogMatrix(
+    log_level level, const ::std::string &message_string, uint32_t type_id,
+    int rows, int cols, const void *data) {
+  LogMessage message;
+  internal::FillInMessageMatrix(level, message_string, type_id, rows, cols,
+                                data, &message);
+  HandleMessage(message);
+}
+
 StreamLogImplementation::StreamLogImplementation(FILE *stream)
     : stream_(stream) {}
 
-void StreamLogImplementation::DoLog(log_level level, const char *format,
-                                    va_list ap) {
-  LogMessage message;
-  internal::FillInMessage(level, format, ap, &message);
+void StreamLogImplementation::HandleMessage(const LogMessage &message) {
   internal::PrintMessage(stream_, message);
 }
 
@@ -273,6 +310,7 @@ void AddImplementation(LogImplementation *implementation) {
     implementation->set_next(old);
   }
   SetGlobalImplementation(implementation);
+  root_implementation->have_other_implementation();
 }
 
 void Init() {

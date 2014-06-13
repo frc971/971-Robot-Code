@@ -117,8 +117,12 @@ struct Values {
   double drivetrain_max_speed;
 };
 
-// Creates (once) a Values instance and returns a reference to it.
+// Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
+// returns a reference to it.
 const Values &GetValues();
+
+// Creates Values instances for each team number it is called with and returns
+// them.
 const Values &GetValuesForTeam(uint16_t team_number);
 
 }  // namespace constants

@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/macros.h"
+#include "aos/common/util/death_test_log_implementation.h"
 
 namespace aos {
 namespace time {
@@ -11,7 +12,7 @@ namespace testing {
 TEST(TimeTest, timespecConversions) {
   timespec start{1234, 5678};  // NOLINT
   Time time(start);
-  EXPECT_EQ(start.tv_sec, static_cast<signed time_t>(time.sec()));
+  EXPECT_EQ(start.tv_sec, static_cast<time_t>(time.sec()));
   EXPECT_EQ(start.tv_nsec, time.nsec());
   timespec end = time.ToTimespec();
   EXPECT_EQ(start.tv_sec, end.tv_sec);
@@ -28,25 +29,43 @@ TEST(TimeTest, timevalConversions) {
   EXPECT_EQ(start.tv_usec, end.tv_usec);
 }
 
+TEST(TimeDeathTest, ConstructorChecking) {
+  logging::Init();
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        Time(0, -1);
+      },
+      ".*0 <= nsec\\(-1\\) < 10+ .*");
+  EXPECT_DEATH(
+      {
+        logging::AddImplementation(new util::DeathTestLogImplementation());
+        Time(0, Time::kNSecInSec);
+      },
+      ".*0 <= nsec\\(10+\\) < 10+ .*");
+}
+
 // It's kind of hard not to test Now and SleepFor at the same time.
 TEST(TimeTest, NowAndSleepFor) {
   // without this, it tends to fail the first time (ends up sleeping for way
   // longer than it should the second time, where it actually matters)
   SleepFor(Time(0, Time::kNSecInSec / 10));
   Time start = Time::Now();
-  SleepFor(Time(0, Time::kNSecInSec * 2 / 10));
-  EXPECT_TRUE(MACRO_DARG((Time::Now() - start)
-                         .IsWithin(Time(0, Time::kNSecInSec * 2 / 10),
-                                   Time::kNSecInSec / 1000)));
+  static constexpr Time kSleepTime = Time(0, Time::kNSecInSec * 2 / 10);
+  SleepFor(kSleepTime);
+  Time difference = Time::Now() - start;
+  EXPECT_GE(difference, kSleepTime);
+  EXPECT_LT(difference, kSleepTime + Time(0, Time::kNSecInSec / 100));
 }
 
 TEST(TimeTest, AbsoluteSleep) {
   Time start = Time::Now();
   SleepFor(Time(0, Time::kNSecInSec / 10));
-  SleepUntil((start + Time(0, Time::kNSecInSec * 2 / 10)));
-  EXPECT_TRUE(MACRO_DARG((Time::Now() - start)
-                         .IsWithin(Time(0, Time::kNSecInSec * 2 / 10),
-                                   Time::kNSecInSec / 1000)));
+  static constexpr Time kSleepTime = Time(0, Time::kNSecInSec * 2 / 10);
+  SleepUntil(start + kSleepTime);
+  Time difference = Time::Now() - start;
+  EXPECT_GE(difference, kSleepTime);
+  EXPECT_LT(difference, kSleepTime + Time(0, Time::kNSecInSec / 100));
 }
 
 TEST(TimeTest, Addition) {
@@ -144,9 +163,10 @@ TEST(TimeTest, Modulus) {
             Time(-50, 0) % (-Time::kNSecInSec / 10 * 3));
   EXPECT_EQ(Time(0, Time::kNSecInSec / 10 * 2),
             Time(50, 0) % (-Time::kNSecInSec / 10 * 3));
+  EXPECT_EQ(Time(1, Time::kNSecInSec / 10),
+            Time(60, Time::kNSecInSec / 10) % (Time::kNSecInSec / 10 * 12));
 }
 
-// TODO(brians): Finish tests for negatives from here on.
 TEST(TimeTest, InSeconds) {
   EXPECT_EQ(MACRO_DARG(Time(2, Time::kNSecInSec / 100 * 55 - 1)),
             Time::InSeconds(2.55));

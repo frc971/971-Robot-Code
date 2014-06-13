@@ -54,6 +54,7 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:run_command',
       ],
     },
     {
@@ -112,6 +113,7 @@
         'crc',
         'byte_io',
         '<(AOS)/common/util/util.gyp:log_interval',
+        '<(AOS)/common/util/util.gyp:run_command',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',

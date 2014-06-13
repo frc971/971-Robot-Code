@@ -6,7 +6,6 @@
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/logging/queue_logging.h"
 
 #include "frc971/autonomous/auto.q.h"
@@ -356,7 +355,7 @@ void HandleAuto() {
       auto_version = AutoVersion::kDoubleHot;
     }
   }
-  LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
+  LOG(INFO, "running auto %" PRIu8 "\n", static_cast<uint8_t>(auto_version));
 
   HotGoalDecoder hot_goal_decoder;
   // True for left, false for right.

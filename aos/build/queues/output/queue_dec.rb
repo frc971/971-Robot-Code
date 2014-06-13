@@ -10,9 +10,6 @@ class Target::QueueDec < Target::Node
 		type = cpp_tree.get(@type)
 		return @type.loc.to_cpp_id(type.name)
 	end
-	def full_ptr_name(cpp_tree)
-		return "::aos::SafeScopedMessagePtr< #{full_message_name(cpp_tree)}>"
-	end
 	def full_builder_name(cpp_tree)
 		return "::aos::MessageBuilder< #{full_message_name(cpp_tree)}>"
 	end

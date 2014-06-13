@@ -108,6 +108,7 @@
         'queue_types',
         '<(EXTERNALS):gtest',
         'test_queue',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
@@ -117,7 +118,7 @@
         'queue.cc',
       ],
       'conditions': [
-        ['OS=="crio"', {
+        ['PLATFORM=="crio"', {
           'dependencies': [
             '<(EXTERNALS):WPILib',
           ],
@@ -163,8 +164,6 @@
         'test_queue',
         '<(AOS)/common/util/util.gyp:thread',
         'die',
-        # We want to run it with the assertions etc to try and catch bugs there.
-        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue_debug',
       ],
     },
     {
@@ -218,6 +217,7 @@
         '<(EXTERNALS):gtest',
         'time',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
       ],
     },
     {
@@ -225,6 +225,12 @@
       'type': 'static_library',
       'sources': [
         'die.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/libc/libc.gyp:aos_strerror',
       ],
     },
     {
@@ -247,7 +253,7 @@
       'target_name': 'mutex',
       'type': 'static_library',
       'conditions': [
-        ['OS=="crio"', {
+        ['PLATFORM=="crio"', {
           'sources': [
             '<(AOS)/crio/shared_libs/mutex.cpp',
           ],
@@ -271,12 +277,16 @@
       'target_name': 'mutex_test',
       'type': 'executable',
       'sources': [
-        'mutex_test.cpp',
+        'mutex_test.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
         'mutex',
         'die',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
+        '<(AOS)/common/util/util.gyp:thread',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

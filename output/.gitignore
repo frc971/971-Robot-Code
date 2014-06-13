@@ -1,6 +1,14 @@
 /prime/
 /crio/
-/prime-amd64/
 /flasher/
 /compiled-*/
 /ip_base.txt
+/ccache_dir/
+
+/crio/
+/crio-debug/
+
+/arm-[^-]*-[^-]*/
+/arm-[^-]*-debug-[^-]*/
+/amd64-[^-]*-[^-]*/
+/amd64-[^-]*-debug-[^-]*/

@@ -9,6 +9,7 @@
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/logging.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/byteorder.h"
 
 #include "frc971/queues/hot_goal.q.h"
 
@@ -31,29 +32,27 @@ int main() {
     if (my_socket == -1) {
       my_socket = socket(AF_INET, SOCK_STREAM, 0);
       if (my_socket == -1) {
-        LOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed with %d: %s\n",
-            errno, strerror(errno));
+        PLOG(WARNING, "socket(AF_INET, SOCK_STREAM, 0) failed");
         continue;
       } else {
         LOG(INFO, "opened socket (is %d)\n", my_socket);
         sockaddr_in address, *sockaddr_pointer;
         memset(&address, 0, sizeof(address));
         address.sin_family = AF_INET;
-        address.sin_port = htons(1180);
+        address.sin_port = ::aos::hton<uint16_t>(1180);
         sockaddr *address_pointer;
         sockaddr_pointer = &address;
         memcpy(&address_pointer, &sockaddr_pointer, sizeof(void *));
         if (bind(my_socket, address_pointer, sizeof(address)) == -1) {
-          LOG(WARNING, "bind(%d, %p, %zu) failed with %d: %s\n",
-              my_socket, &address, sizeof(address), errno, strerror(errno));
+          PLOG(WARNING, "bind(%d, %p, %zu) failed",
+               my_socket, &address, sizeof(address));
           close(my_socket);
           my_socket = -1;
           continue;
         }
 
         if (listen(my_socket, 1) == -1) {
-          LOG(WARNING, "listen(%d, 1) failed with %d: %s\n",
-              my_socket, errno, strerror(errno));
+          PLOG(WARNING, "listen(%d, 1) failed", my_socket);
           close(my_socket);
           my_socket = -1;
           continue;
@@ -63,8 +62,7 @@ int main() {
 
     int connection = accept4(my_socket, nullptr, nullptr, SOCK_NONBLOCK);
     if (connection == -1) {
-      LOG(WARNING, "accept(%d, nullptr, nullptr) failed with %d: %s\n",
-          my_socket, errno, strerror(errno));
+      PLOG(WARNING, "accept(%d, nullptr, nullptr) failed", my_socket);
       continue;
     }
     LOG(INFO, "accepted (is %d)\n", connection);
@@ -99,9 +97,9 @@ int main() {
           connection = -1;
           break;
         default:
-          LOG(FATAL,
-              "select(%d, %p, nullptr, nullptr, %p) failed with %d: %s\n",
-              connection + 1, &fds, &timeout_timeval, errno, strerror(errno));
+          PLOG(FATAL,
+               "select(%d, %p, nullptr, nullptr, %p) failed",
+               connection + 1, &fds, &timeout_timeval);
       }
     }
   }

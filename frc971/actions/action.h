@@ -7,7 +7,6 @@
 #include <functional>
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/time.h"
 
 #include "frc971/constants.h"

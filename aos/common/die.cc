@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <string>
+#include <atomic>
 
 namespace aos {
 
@@ -38,14 +39,14 @@ const std::string GetFilename() {
     return r;
   } else {
     fprintf(stderr, "aos fatal: asprintf(%p, \"thingie with %%jd\", %jd)"
-            " failed with %d (%s)\n", &filename,
-            static_cast<intmax_t>(getpid()), errno, strerror(errno));
+            " failed with %d\n", &filename,
+            static_cast<intmax_t>(getpid()), errno);
     return std::string();
   }
 #endif
 }
 
-bool test_mode = false;
+::std::atomic_bool test_mode(false);
 
 }  // namespace
 
@@ -57,7 +58,7 @@ void VDie(const char *format, va_list args_in) {
   fputs("aos fatal: ERROR!! details following\n", stderr);
   va_copy(args1, args_in);
   vfprintf(stderr, format, args1);
-  if (!test_mode) {
+  if (!test_mode.load()) {
     fputs("aos fatal: ERROR!! see stderr for details\n", stdout);
 
     const std::string filename = GetFilename();
@@ -68,8 +69,8 @@ void VDie(const char *format, va_list args_in) {
         vfprintf(error_file, format, args2);
         fclose(error_file);
       } else {
-        fprintf(stderr, "aos fatal: fopen('%s', \"w\") failed with %d (%s)\n",
-                filename.c_str(), errno, strerror(errno));
+        fprintf(stderr, "aos fatal: fopen('%s', \"w\") failed with %d\n",
+                filename.c_str(), errno);
       }
     }
   }
@@ -78,7 +79,7 @@ void VDie(const char *format, va_list args_in) {
 }
 
 void SetDieTestMode(bool new_test_mode) {
-  test_mode = new_test_mode;
+  test_mode.store(new_test_mode);
 }
 
 }  // namespace aos

@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/byteorder.h"
 
 namespace aos {
 namespace network {
@@ -12,22 +13,20 @@ namespace network {
 int Socket::Connect(NetworkPort port, const char *address, int type) {
   last_ret_ = 0;
   if ((socket_ = socket(AF_INET, type, 0)) < 0) {
-    LOG(ERROR, "failed to create socket because of %d: %s\n",
-        errno, strerror(errno));
+    PLOG(ERROR, "failed to create socket");
     return last_ret_ = 1;
   }
 
   memset(&addr_, 0, sizeof(addr_));
   addr_.in.sin_family = AF_INET;
-  addr_.in.sin_port = htons(static_cast<uint16_t>(port));
+  addr_.in.sin_port = hton<uint16_t>(static_cast<uint16_t>(port));
 #ifndef __VXWORKS__
   const int failure_return = 0;
 #else
   const int failure_return = -1;
 #endif
   if (inet_aton(address, &addr_.in.sin_addr) == failure_return) {
-    LOG(ERROR, "Invalid IP address '%s' because of %d: %s\n", address,
-        errno, strerror(errno));
+    PLOG(ERROR, "invalid IP address '%s'", address);
     return last_ret_ = -1;
   }
 
@@ -68,8 +67,8 @@ int Socket::Receive(void *buf, int length, time::Time timeout) {
       if (errno == EINTR) {
         return last_ret_ = 0;
       }
-      LOG(FATAL, "select(FD_SETSIZE, %p, NULL, NULL, %p) failed with %d: %s\n",
-          &fds, &timeout_timeval, errno, strerror(errno));
+      PLOG(FATAL, "select(FD_SETSIZE, %p, NULL, NULL, %p) failed",
+          &fds, &timeout_timeval);
   }
 }
 

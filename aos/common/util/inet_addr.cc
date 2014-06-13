@@ -3,6 +3,16 @@
 #include <stdlib.h>
 #ifndef __VXWORKS__
 #include <string.h>
+
+#include "aos/common/byteorder.h"
+#else
+
+template<typename T>
+T hton(T);
+
+template<uint32_t>
+uint32_t hton(uint32_t v) { return v; }
+
 #endif
 
 namespace aos {
@@ -23,8 +33,8 @@ const char *MakeIPAddress(const in_addr &base_address,
 }
 
 void SetLastSegment(in_addr *address, ::aos::NetworkAddress last_segment) {
-  address->s_addr &= ~(htonl(0xFF));
-  address->s_addr |= htonl(static_cast<uint8_t>(last_segment));
+  address->s_addr &= ~(hton<uint32_t>(0xFF));
+  address->s_addr |= hton<uint32_t>(static_cast<uint8_t>(last_segment));
 }
 
 }  // namespace util

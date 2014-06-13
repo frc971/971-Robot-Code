@@ -40,6 +40,7 @@ struct MessageType {
     for (int i = 0; i < number_fields; ++i) {
       delete fields[i];
     }
+    delete[] fields;
   }
 
   // Returns -1 if max_bytes is too small.

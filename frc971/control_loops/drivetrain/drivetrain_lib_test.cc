@@ -4,9 +4,9 @@
 
 #include "gtest/gtest.h"
 #include "aos/common/network/team_number.h"
-#include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "aos/common/controls/polytope.h"
+#include "aos/common/controls/control_loop_test.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
@@ -15,8 +15,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/queues/other_sensors.q.h"
 
-
-using ::aos::time::Time;
 
 namespace frc971 {
 namespace control_loops {
@@ -105,10 +103,8 @@ class DrivetrainSimulation {
   double last_right_position_;
 };
 
-class DrivetrainTest : public ::testing::Test {
+class DrivetrainTest : public ::aos::testing::ControlLoopTest {
  protected:
-  ::aos::common::testing::GlobalCoreInstance my_core;
-
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
@@ -126,23 +122,7 @@ class DrivetrainTest : public ::testing::Test {
                                ".frc971.control_loops.drivetrain.status"),
                 drivetrain_motor_(&my_drivetrain_loop_),
                 drivetrain_motor_plant_() {
-    // Flush the robot state queue so we can use clean shared memory for this
-    // test, also for the gyro.
-    ::aos::robot_state.Clear();
-    ::aos::controls::sensor_generation.Clear();
-    ::aos::controls::sensor_generation.MakeWithBuilder()
-        .reader_pid(254)
-        .cape_resets(5)
-        .Send();
     ::frc971::sensors::gyro_reading.Clear();
-    SendDSPacket(true);
-  }
-
-  void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder().enabled(enabled)
-                                        .autonomous(false)
-                                        .team_id(971).Send();
-    ::aos::robot_state.FetchLatest();
   }
 
   void VerifyNearGoal() {
@@ -157,9 +137,7 @@ class DrivetrainTest : public ::testing::Test {
   }
 
   virtual ~DrivetrainTest() {
-    ::aos::robot_state.Clear();
     ::frc971::sensors::gyro_reading.Clear();
-    ::aos::controls::sensor_generation.Clear();
   }
 };
 
@@ -172,7 +150,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }
@@ -187,9 +165,9 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
     if (i > 20 && i < 200) {
-      SendDSPacket(false);
+      SimulateTimestep(false);
     } else {
-      SendDSPacket(true);
+      SimulateTimestep(true);
     }
   }
   VerifyNearGoal();
@@ -207,7 +185,7 @@ TEST_F(DrivetrainTest, SurvivesBadPosition) {
     }
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
-    SendDSPacket(true);
+    SimulateTimestep(true);
   }
   VerifyNearGoal();
 }

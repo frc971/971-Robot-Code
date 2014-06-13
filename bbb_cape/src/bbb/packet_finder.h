@@ -31,7 +31,7 @@ class PacketFinder {
   // pointed to is undefined.
   template <typename T>
   const T *get_packet() {
-    static_assert(alignof(T) <= alignof(*unstuffed_data_),
+    static_assert(alignof(T) <= alignof(AlignedChar),
                   "We need to align our data better.");
     CHECK(sizeof(T) <= packet_size_ - 8);
     return reinterpret_cast<const T *>(unstuffed_data_);
@@ -54,6 +54,14 @@ class PacketFinder {
   // data.
   bool ProcessPacket();
 
+  // Avoids issues with accessing elements of buf_ that are technically not
+  // aligned correctly.
+  uint8_t buf(size_t index) const {
+    uint8_t r;
+    memcpy(&r, &buf_[index], 1);
+    return r;
+  }
+
   ByteReaderInterface *const reader_;
   const size_t packet_size_;
 
@@ -71,9 +79,9 @@ class PacketFinder {
   static constexpr ::aos::time::Time kDebugLogInterval =
       ::aos::time::Time::InSeconds(0.3);
   SimpleLogInterval invalid_packet_ =
-      SimpleLogInterval(kDebugLogInterval, INFO, "invalid packet");
+      SimpleLogInterval(kDebugLogInterval, WARNING, "invalid packet");
   SimpleLogInterval bad_checksum_ =
-      SimpleLogInterval(kDebugLogInterval, INFO, "bad checksum");
+      SimpleLogInterval(kDebugLogInterval, WARNING, "bad checksum");
 
   DISALLOW_COPY_AND_ASSIGN(PacketFinder);
 };

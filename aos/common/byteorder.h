@@ -32,12 +32,19 @@ static inline T memcpier(T in) {
 // Needed because be64toh etc are macros (not that the manpage says
 // anything...).
 // These are used instead of ntohs etc because gcc didn't inline those.
+#ifdef __clang__
+// Apparently the macros use "register", and clang doesn't like that.
+#define register
+#endif
 static inline uint64_t _be64toh(uint64_t in) { return be64toh(in); }
 static inline uint64_t _htobe64(uint64_t in) { return htobe64(in); }
 static inline uint32_t _be32toh(uint32_t in) { return be32toh(in); }
 static inline uint32_t _htobe32(uint32_t in) { return htobe32(in); }
 static inline uint16_t _be16toh(uint16_t in) { return be16toh(in); }
 static inline uint16_t _htobe16(uint16_t in) { return htobe16(in); }
+#ifdef __clang__
+#undef register
+#endif
 
 template<int bytes, typename T> class do_ntoh {
  public:

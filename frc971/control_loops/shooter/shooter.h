@@ -26,13 +26,13 @@ using ::aos::time::Time;
 // that isn't true.
 
 // This class implements the CapU function correctly given all the extra
-// information that we know about from the wrist motor.
+// information that we know about.
 // It does not have any zeroing logic in it, only logic to deal with a delta U
 // controller.
 class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  public:
-  ZeroedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> loop)
-      : StateFeedbackLoop<3, 1, 1>(loop),
+  ZeroedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> &&loop)
+      : StateFeedbackLoop<3, 1, 1>(::std::move(loop)),
         voltage_(0.0),
         last_voltage_(0.0),
         uncapped_voltage_(0.0),
@@ -42,7 +42,6 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   const static int kZeroingMaxVoltage = 5;
 
-  // Caps U, but this time respects the state of the wrist as well.
   virtual void CapU();
 
   // Returns the accumulated voltage.

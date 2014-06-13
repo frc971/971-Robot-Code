@@ -9,6 +9,7 @@
 #include "aos/common/test_queue.q.h"
 #include "aos/common/byteorder.h"
 #include "aos/queue_primitives.h"
+#include "aos/common/logging/logging.h"
 
 using ::aos::common::testing::Structure;
 using ::aos::common::testing::MessageWithStructure;
@@ -160,7 +161,7 @@ TEST_F(PrintFieldTest, OtherSizes) {
   input_bytes = sizeof(kData) + kExtraInputBytes;
   to_network(&kData, input);
   output_bytes = kString.size() + 1;
-  assert(output_bytes <= sizeof(output));
+  CHECK_LE(output_bytes, sizeof(output));
   ASSERT_TRUE(PrintField(output, &output_bytes, input, &input_bytes,
                          Structure::GetType()->fields[2]->type));
   EXPECT_EQ(kExtraInputBytes, input_bytes);
@@ -195,7 +196,7 @@ static const ::std::string kTestStructure1String =
     ", struct_float:8.560000}";
 
 TEST_F(PrintMessageTest, Basic) {
-  assert(sizeof(input) >= kTestMessage1.Size());
+  CHECK_GE(sizeof(input), kTestMessage1.Size());
   input_bytes = kTestMessage1.Serialize(input);
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
@@ -205,7 +206,7 @@ TEST_F(PrintMessageTest, Basic) {
 }
 
 TEST_F(PrintMessageTest, OutputTooSmall) {
-  assert(sizeof(input) >= kTestMessage1.Size());
+  CHECK_GE(sizeof(input), kTestMessage1.Size());
   input_bytes = kTestMessage1.Serialize(input);
   output_bytes = kTestMessage1String.size();
   EXPECT_FALSE(PrintMessage(output, &output_bytes, input, &input_bytes,
@@ -220,7 +221,7 @@ TEST_F(PrintMessageTest, InputTooSmall) {
 }
 
 TEST_F(PrintMessageTest, Structure) {
-  assert(sizeof(input) >= kTestStructure1.Size());
+  CHECK_GE(sizeof(input), kTestStructure1.Size());
   input_bytes = kTestStructure1.Serialize(input);
   output_bytes = sizeof(output);
   ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,

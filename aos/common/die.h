@@ -3,6 +3,9 @@
 
 #include <stdarg.h>
 
+#include "aos/common/macros.h"
+#include "aos/common/libc/aos_strerror.h"
+
 namespace aos {
 
 // Terminates the task/process and logs a message (without using the logging
@@ -10,10 +13,20 @@ namespace aos {
 // (code that can should LOG(FATAL), which calls this).
 void Die(const char *format, ...)
     __attribute__((noreturn))
-    __attribute__((format(gnu_printf, 1, 2)));
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 1, 2)));
 void VDie(const char *format, va_list args)
     __attribute__((noreturn))
-    __attribute__((format(gnu_printf, 1, 0)));
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 1, 0)));
+
+
+// The same as Die except appends " because of %d (%s)" (formatted with errno
+// and aos_strerror(errno)) to the message.
+#define PDie(format, args...)                               \
+  do {                                                      \
+    const int error = errno;                                \
+    ::aos::Die(format " because of %d (%s)", ##args, error, \
+               aos_strerror(error));                        \
+  } while (false);
 
 // Turns on (or off) "test mode", where (V)Die doesn't write out files and
 // doesn't print to stdout.

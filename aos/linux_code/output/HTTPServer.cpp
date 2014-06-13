@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 
 #include <memory>
 
@@ -81,8 +82,8 @@ int OpenFile(evhttp_request *request, const char *path,
                    const char *directory) {
   char *temp;
   if (asprintf(&temp, "%s/%s", directory, path) == -1) {
-    LOG(WARNING, "asprintf(%p, \"%%s/%%s\", %p, %p) failed with %d: %s\n",
-        &temp, directory, path, errno, strerror(errno));
+    PLOG(WARNING, "asprintf(%p, \"%%s/%%s\", %p, %p) failed",
+         &temp, directory, path);
     evhttp_send_error(request, HTTP_INTERNAL, NULL);
     return -1;
   }
@@ -93,8 +94,7 @@ int OpenFile(evhttp_request *request, const char *path,
       evhttp_send_error(request, HTTP_NOTFOUND, NULL);
       return -1;
     }
-    LOG(ERROR, "open('%s', 0) failed with %d: %s\n", filename.get(),
-        errno, strerror(errno));
+    PLOG(ERROR, "open('%s', 0) failed", filename.get(),
     evhttp_send_error(request, HTTP_INTERNAL, NULL);
     return -1;
   }
@@ -104,8 +104,7 @@ int OpenFile(evhttp_request *request, const char *path,
 off_t GetSize(int file) {
   struct stat info;
   if (fstat(file, &info) == -1) {
-    LOG(ERROR, "stat(%d, %p) failed with %d: %s\n", file, &info,
-        errno, strerror(errno));
+    PLOG(ERROR, "stat(%d, %p) failed", file, &info);
     return -1;
   }
   return info.st_size;

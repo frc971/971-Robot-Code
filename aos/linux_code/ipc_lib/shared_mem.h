@@ -47,6 +47,7 @@ enum aos_core_create {
   reference
 };
 struct aos_core {
+  // Non-0 if we "own" shared_mem and should shm_unlink(3) it when we're done.
   int owner;
   void *shared_mem;
   // How large the chunk of shared memory is.
@@ -66,10 +67,10 @@ ptrdiff_t aos_core_get_mem_usage(void);
 // should be set correctly there.
 // The owner should verify that the first sizeof(mutex) of data is set to 0
 // before passing the memory to this function.
-int aos_core_use_address_as_shared_mem(void *address, size_t size);
+void aos_core_use_address_as_shared_mem(void *address, size_t size);
 
-int aos_core_create_shared_mem(enum aos_core_create to_create);
-int aos_core_free_shared_mem(void);
+void aos_core_create_shared_mem(enum aos_core_create to_create);
+void aos_core_free_shared_mem(void);
 
 // Returns whether or not the shared memory system is active.
 int aos_core_is_init(void);

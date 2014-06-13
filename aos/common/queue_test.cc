@@ -53,36 +53,12 @@ TEST_F(QueueTest, FetchBlocking) {
   usleep(50000);
   my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
   t.Join();
-  EXPECT_LE(t.threaded_test_queue.Age(), time::Time::InMS(55));
+  EXPECT_LE(t.threaded_test_queue.Age(), time::Time::InMS(57));
 }
 
 // Tests that we can send a message with the message pointer and get it back.
 TEST_F(QueueTest, SendMessage) {
   ScopedMessagePtr<TestingMessage> msg = my_test_queue.MakeMessage();
-  msg->test_bool = true;
-  msg->test_int = 0x971;
-  msg.Send();
-
-  ASSERT_TRUE(my_test_queue.FetchLatest());
-  EXPECT_TRUE(my_test_queue->test_bool);
-  EXPECT_EQ(0x971, my_test_queue->test_int);
-}
-
-// Tests that we can send a message with the message pointer and get it back.
-TEST_F(QueueTest, SendMessageBlockingSafe) {
-  SafeScopedMessagePtr<TestingMessage> msg = my_test_queue.SafeMakeMessage();
-  msg->test_bool = true;
-  msg->test_int = 0x971;
-  ASSERT_TRUE(msg.SendBlocking());
-
-  ASSERT_TRUE(my_test_queue.FetchLatest());
-  EXPECT_TRUE(my_test_queue->test_bool);
-  EXPECT_EQ(0x971, my_test_queue->test_int);
-}
-
-// Tests that we can send a message with the message pointer and get it back.
-TEST_F(QueueTest, SendMessageSafe) {
-  SafeScopedMessagePtr<TestingMessage> msg = my_test_queue.SafeMakeMessage();
   msg->test_bool = true;
   msg->test_int = 0x971;
   msg.Send();

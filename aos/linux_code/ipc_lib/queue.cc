@@ -1,4 +1,4 @@
-#if !QUEUE_DEBUG
+#if !AOS_DEBUG
 #define NDEBUG
 #endif
 
@@ -12,7 +12,6 @@
 #include <memory>
 #include <algorithm>
 
-#include "aos/common/logging/logging.h"
 #include "aos/common/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 
@@ -35,29 +34,52 @@ const int kExtraMessages = 20;
 
 }  // namespace
 
-const int RawQueue::kPeek;
-const int RawQueue::kFromEnd;
-const int RawQueue::kNonBlock;
-const int RawQueue::kBlock;
-const int RawQueue::kOverride;
+constexpr Options<RawQueue>::Option RawQueue::kPeek;
+constexpr Options<RawQueue>::Option RawQueue::kFromEnd;
+constexpr Options<RawQueue>::Option RawQueue::kNonBlock;
+constexpr Options<RawQueue>::Option RawQueue::kBlock;
+constexpr Options<RawQueue>::Option RawQueue::kOverride;
 
 // This is what gets stuck in before each queue message in memory. It is always
 // allocated aligned to 8 bytes and its size has to maintain that alignment for
 // the message that follows immediately.
 struct RawQueue::MessageHeader {
-  // This gets incremented and decremented with atomic instructions without any
-  // locks held.
-  int32_t ref_count;
   MessageHeader *next;
+
   // Gets the message header immediately preceding msg.
   static MessageHeader *Get(const void *msg) {
     return reinterpret_cast<MessageHeader *>(__builtin_assume_aligned(
         static_cast<uint8_t *>(const_cast<void *>(msg)) - sizeof(MessageHeader),
         alignof(MessageHeader)));
   }
+
+  int32_t ref_count() const {
+    return __atomic_load_n(&ref_count_, __ATOMIC_RELAXED);
+  }
+  void set_ref_count(int32_t val) {
+    __atomic_store_n(&ref_count_, val, __ATOMIC_RELAXED);
+  }
+
+  void ref_count_sub() {
+    __atomic_sub_fetch(&ref_count_, 1, __ATOMIC_RELAXED);
+  }
+  void ref_count_add() {
+    __atomic_add_fetch(&ref_count_, 1, __ATOMIC_RELAXED);
+  }
+
+ private:
+  // This gets accessed with atomic instructions without any
+  // locks held by various member functions.
+  int32_t ref_count_;
+
   // Padding to make the total size 8 bytes if we have 4-byte pointers or bump
   // it to 16 if a pointer is 8 bytes by itself.
 #if __SIZEOF_POINTER__ == 8
+#ifdef __clang__
+  // Clang is smart enough to realize this is unused, but GCC doesn't like the
+  // attribute here...
+  __attribute__((unused))
+#endif
   char padding[4];
 #elif __SIZEOF_POINTER__ == 4
   // No padding needed to get 8 byte total size.
@@ -79,25 +101,25 @@ inline int RawQueue::index_add1(int index) {
 
 void RawQueue::DecrementMessageReferenceCount(const void *msg) {
   MessageHeader *header = MessageHeader::Get(msg);
-  __atomic_sub_fetch(&header->ref_count, 1, __ATOMIC_RELAXED);
+  header->ref_count_sub();
   if (kRefDebug) {
-    printf("%p ref dec count: %p count=%d\n", this, msg, header->ref_count);
+    printf("%p ref dec count: %p count=%d\n", this, msg, header->ref_count());
   }
 
   // The only way it should ever be 0 is if we were the last one to decrement,
   // in which case nobody else should have it around to re-increment it or
   // anything in the middle, so this is safe to do not atomically with the
   // decrement.
-  if (header->ref_count == 0) {
+  if (header->ref_count() == 0) {
     DoFreeMessage(msg);
   } else {
-    assert(header->ref_count > 0);
+    assert(header->ref_count() > 0);
   }
 }
 
 inline void RawQueue::IncrementMessageReferenceCount(const void *msg) const {
   MessageHeader *const header = MessageHeader::Get(msg);
-  __atomic_add_fetch(&header->ref_count, 1, __ATOMIC_RELAXED);
+  header->ref_count_add();
   if (kRefDebug) {
     printf("%p ref inc count: %p\n", this, msg);
   }
@@ -115,9 +137,7 @@ inline void RawQueue::DoFreeMessage(const void *msg) {
       fprintf(stderr, "queue: couldn't get a message"
               " for recycle queue %p\n", recycle_);
     } else {
-      // Nobody else has a reference to the message at this point, so no need to
-      // be fancy about it.
-      ++header->ref_count;
+      header->ref_count_add();
       if (!recycle_->WriteMessage(const_cast<void *>(msg), kOverride)) {
         fprintf(stderr, "queue: %p->WriteMessage(%p, kOverride) failed."
                 " aborting\n", recycle_, msg);
@@ -158,10 +178,7 @@ void *RawQueue::GetMessage() {
   void *msg = reinterpret_cast<uint8_t *>(header + 1);
   // It might be uninitialized, 0 from a previous use, or 1 from previously
   // being recycled.
-  header->ref_count = 1;
-  static_assert(
-      __atomic_always_lock_free(sizeof(header->ref_count), &header->ref_count),
-      "we access this using not specifically atomic loads and stores");
+  header->set_ref_count(1);
   if (kRefDebug) {
     printf("%p ref alloc: %p\n", this, msg);
   }
@@ -279,9 +296,9 @@ RawQueue *RawQueue::Fetch(const char *name, size_t length, int hash,
   return r;
 }
 
-bool RawQueue::WriteMessage(void *msg, int options) {
+bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
   if (kWriteDebug) {
-    printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options);
+    printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options.printable());
   }
   {
     MutexLocker locker(&data_lock_);
@@ -306,6 +323,7 @@ bool RawQueue::WriteMessage(void *msg, int options) {
         DecrementMessageReferenceCount(data_[data_start_]);
         data_start_ = index_add1(data_start_);
       } else {  // kBlock
+        assert(options & kBlock);
         if (kWriteDebug) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
@@ -352,8 +370,7 @@ inline void RawQueue::ReadCommonEnd() {
   }
 }
 
-bool RawQueue::ReadCommonStart(int options, int *index) {
-  writable_start_ = is_writable();
+bool RawQueue::ReadCommonStart(Options<RawQueue> options, int *index) {
   while (data_start_ == data_end_ || ((index != NULL) && messages_ <= *index)) {
     if (options & kNonBlock) {
       if (kReadDebug) {
@@ -361,6 +378,7 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       }
       return false;
     } else {  // kBlock
+      assert(options & kBlock);
       if (kReadDebug) {
         printf("queue: going to wait for readable_ of %p\n", this);
       }
@@ -372,9 +390,12 @@ bool RawQueue::ReadCommonStart(int options, int *index) {
       }
     }
   }
+  // We have to check down here because we might have unlocked the mutex while
+  // Wait()ing above so this value might have changed.
+  writable_start_ = is_writable();
   if (kReadDebug) {
-    printf("queue: %p->read(%p) start=%d end=%d\n", this, index, data_start_,
-           data_end_);
+    printf("queue: %p->read(%p) start=%d end=%d writable_start=%d\n",
+           this, index, data_start_, data_end_, writable_start_);
   }
   return true;
 }
@@ -387,10 +408,10 @@ inline int RawQueue::LastMessageIndex() const {
   return pos;
 }
 
-const void *RawQueue::ReadMessage(int options) {
+const void *RawQueue::DoReadMessage(Options<RawQueue> options) {
   // TODO(brians): Test this function.
   if (kReadDebug) {
-    printf("queue: %p->ReadMessage(%x)\n", this, options);
+    printf("queue: %p->ReadMessage(%x)\n", this, options.printable());
   }
   void *msg = NULL;
 
@@ -448,10 +469,11 @@ const void *RawQueue::ReadMessage(int options) {
   return msg;
 }
 
-const void *RawQueue::ReadMessageIndex(int options, int *index) {
+const void *RawQueue::DoReadMessageIndex(Options<RawQueue> options,
+                                         int *index) {
   if (kReadDebug) {
     printf("queue: %p->ReadMessageIndex(%x, %p(*=%d))\n",
-           this, options, index, *index);
+           this, options.printable(), index, *index);
   }
   void *msg = NULL;
 
@@ -471,7 +493,10 @@ const void *RawQueue::ReadMessageIndex(int options, int *index) {
       printf("queue: %p reading from c1: %d\n", this, LastMessageIndex());
     }
     msg = data_[LastMessageIndex()];
-    if (!(options & kPeek)) *index = messages_;
+
+    // We'd skip this if we had kPeek, but kPeek | kFromEnd isn't valid for
+    // reading with an index.
+    *index = messages_;
   } else {
     // Where we're going to start reading.
     int my_start;
@@ -533,14 +558,6 @@ int RawQueue::FreeMessages() const {
     header = header->next;
   }
   return r;
-}
-
-bool RawQueue::IsDebug() {
-#if QUEUE_DEBUG
-  return true;
-#else
-  return false;
-#endif
 }
 
 }  // namespace aos

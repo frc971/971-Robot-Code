@@ -1,5 +1,7 @@
 # This is a shell fragment that sets up variables related to where the tools
 # that download_externals.sh downloads so build.sh can use.
+# It also gets parsed by build.py, so it has to stay just variable assignments
+# and comments.
 
 EXTERNALS=${AOS}/../output/downloaded
 

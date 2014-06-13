@@ -1,6 +1,42 @@
 {
   'targets': [
     {
+      'target_name': 'run_command',
+      'type': 'static_library',
+      'sources': [
+        'run_command.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+    },
+    {
+      'target_name': 'run_command_test',
+      'type': 'executable',
+      'sources': [
+        'run_command_test.cc',
+      ],
+      'dependencies': [
+        'run_command',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:logging',
+        'thread',
+      ],
+    },
+    {
+      'target_name': 'death_test_log_implementation',
+      'type': 'static_library',
+      'sources': [
+        #'death_test_log_implementation',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'inet_addr',
       'type': 'static_library',
       'sources': [
@@ -88,6 +124,16 @@
       ],
       'dependencies': [
         'wrapping_counter',
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
+      'target_name': 'options_test',
+      'type': 'executable',
+      'sources': [
+        'options_test.cc',
+      ],
+      'dependencies': [
         '<(EXTERNALS):gtest',
       ],
     },

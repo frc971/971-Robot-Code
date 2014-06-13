@@ -1,7 +1,6 @@
 #include "aos/linux_code/configuration.h"
 
 #include <string.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -17,37 +16,35 @@ namespace aos {
 namespace configuration {
 namespace {
 
-// Including the terminating '\0'.
-const size_t kMaxAddrLength = 18;
-
 // TODO(brians): This shouldn't be necesary for running tests.  Provide a way to
 // set the IP address when running tests from the test.
 const char *const kLinuxNetInterface = "eth0";
 const in_addr *DoGetOwnIPAddress() {
-    static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
-    const char *override_ip = getenv(kOverrideVariable);
-    if (override_ip != NULL) {
-        LOG(INFO, "Override IP is %s\n", override_ip);
-        static in_addr r;
-        if (inet_aton(override_ip, &r) != 0) {
-            return &r;
-        } else {
-            LOG(WARNING, "error parsing %s value '%s'\n", kOverrideVariable, override_ip);
-        }
+  static const char *kOverrideVariable = "FRC971_IP_OVERRIDE";
+  const char *override_ip = getenv(kOverrideVariable);
+  if (override_ip != NULL) {
+    LOG(INFO, "Override IP is %s\n", override_ip);
+    static in_addr r;
+    if (inet_aton(override_ip, &r) != 0) {
+      return &r;
     } else {
-        LOG(INFO, "Couldn't get environmental variable.\n");
+      LOG(WARNING, "error parsing %s value '%s'\n",
+          kOverrideVariable, override_ip);
     }
+  } else {
+    LOG(INFO, "Couldn't get environmental variable.\n");
+  }
 
   ifaddrs *addrs;
   if (getifaddrs(&addrs) != 0) {
-    LOG(FATAL, "getifaddrs(%p) failed with %d: %s\n", &addrs,
-        errno, strerror(errno));
+    PLOG(FATAL, "getifaddrs(%p) failed", &addrs);
   }
   // Smart pointers don't work very well for iterating through a linked list,
   // but it does do a very nice job of making sure that addrs gets freed.
   unique_c_ptr<ifaddrs, freeifaddrs> addrs_deleter(addrs);
 
   for (; addrs != nullptr; addrs = addrs->ifa_next) {
+    // ifa_addr tends to be nullptr on CAN interfaces.
     if (addrs->ifa_addr != nullptr && addrs->ifa_addr->sa_family == AF_INET) {
       if (strcmp(kLinuxNetInterface, addrs->ifa_name) == 0) {
         static const in_addr r =
@@ -74,8 +71,7 @@ const char *DoGetRootDirectory() {
       if (ret != -1) {
         LOG(WARNING, "it returned %zd, not -1\n", ret);
       }
-      LOG(FATAL, "readlink(\"/proc/self/exe\", %p, %zu) failed with %d: %s\n",
-          r, size, errno, strerror(errno));
+      PLOG(FATAL, "readlink(\"/proc/self/exe\", %p, %zu) failed", r, size);
     }
     if (ret < size) {
       void *last_slash = memrchr(r, '/', ret);

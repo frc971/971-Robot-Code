@@ -1,5 +1,7 @@
 #include "bbb/packet_finder.h"
 
+#include <malloc.h>
+
 #include <array>
 #include <algorithm>
 
@@ -15,10 +17,17 @@ namespace testing {
 
 class TestByteReader : public ByteReaderInterface {
  public:
-  // Holds a reference to data's element array.
   template <size_t bytes>
   TestByteReader(const ::std::array<uint8_t, bytes> &data)
-      : data_(&data.at(0)), data_size_(data.size()), bytes_left_(data.size()) {}
+      : data_(memalign(8, data.size())),
+        data_size_(data.size()),
+        bytes_left_(data.size()) {
+    memcpy(data_, &data.at(0), data.size());
+  }
+
+  ~TestByteReader() {
+    free(data_);
+  }
 
   virtual ssize_t ReadBytes(uint8_t *dest, size_t max_bytes,
                             const ::aos::time::Time &/*timeout_time*/)
@@ -32,7 +41,7 @@ class TestByteReader : public ByteReaderInterface {
   }
 
  private:
-  const void *const data_;
+  void *const data_;
   const size_t data_size_;
   size_t bytes_left_;
 };
@@ -43,10 +52,9 @@ class PacketFinderTest : public ::testing::Test {
     ::aos::common::testing::EnableTestLogging();
   }
 
-  template <typename Data, size_t N = 0>
+  template <typename Data, size_t N>
   void ReceivePackets(const Data &data, int packets,
-                      ::std::array<int, N> expected_failures =
-                          ::std::array<int, 0>()) {
+                      ::std::array<int, N> expected_failures) {
     TestByteReader reader(data);
     PacketFinder packet_finder(&reader, 144);
     auto failure = expected_failures.begin();
@@ -59,7 +67,9 @@ class PacketFinderTest : public ::testing::Test {
       }
       EXPECT_EQ(!expect_failure,
                 packet_finder.ReadPacket(::aos::time::Time(0, 0)));
-      if (expect_failure && i + 1 != *failure && i + 1 != packets) {
+      if (expect_failure &&
+          (failure == expected_failures.end() || i + 1 != *failure) &&
+          i + 1 != packets) {
         int failures = 0;
         while (!packet_finder.ReadPacket(::aos::time::Time(0, 0))) {
           ++failures;
@@ -68,6 +78,20 @@ class PacketFinderTest : public ::testing::Test {
         }
         i += 1;
       }
+    }
+    EXPECT_FALSE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
+  }
+
+  template <typename Data>
+  void ReceivePackets(const Data &data, int packets) {
+    // Not implemented as calling the overload with expected_failures because
+    // ubsan doesn't like stdlibc++'s std::array (at least for now) and this is
+    // really simple.
+    TestByteReader reader(data);
+    PacketFinder packet_finder(&reader, 144);
+    for (int i = 1; i < packets; ++i) {
+      SCOPED_TRACE("packet " + ::std::to_string(i));
+      EXPECT_TRUE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
     }
     EXPECT_FALSE(packet_finder.ReadPacket(::aos::time::Time(0, 0)));
   }

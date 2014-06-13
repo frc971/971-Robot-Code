@@ -1,6 +1,10 @@
+// This has to come before anybody drags in <stdlib.h> or else we end up with
+// the wrong version of WIFEXITED etc (for one thing, they don't const-qualify
+// their casts) (sometimes at least).
+#include <sys/wait.h>
+
 #include "bbb/packet_finder.h"
 
-#include <errno.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +13,7 @@
 #include <algorithm>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/util/run_command.h"
 
 #include "cape/cows.h"
 #include "bbb/crc.h"
@@ -36,8 +41,8 @@ PacketFinder::PacketFinder(ByteReaderInterface *reader, size_t packet_size)
 }
 
 PacketFinder::~PacketFinder() {
-  delete buf_;
-  delete unstuffed_data_;
+  delete[] buf_;
+  delete[] unstuffed_data_;
 }
 
 bool PacketFinder::FindPacket(const ::Time &timeout_time) {
@@ -52,10 +57,10 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
                            to_read, timeout_time);
     if (new_bytes < 0) {
       if (new_bytes == -1) {
-        LOG(ERROR, "ReadBytes(%p, %zd) failed with %d: %s\n",
-            buf_ + already_read, to_read, errno, strerror(errno));
+        PLOG(ERROR, "ReadBytes(%p, %zd) failed",
+             buf_ + already_read, to_read);
       } else if (new_bytes == -2) {
-        LOG(INFO, "timed out\n");
+        LOG(WARNING, "timed out\n");
       } else {
         LOG(WARNING, "bad ByteReader %p returned %zd\n", reader_, new_bytes);
       }
@@ -66,17 +71,16 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
       // Iff we're root.
       if (getuid() == 0) {
         // TODO(brians): Do this cleanly.
-        int chrt_result =
-            system("chrt -o 0 bash -c 'chrt -r -p 55"
-                   " $(pgrep irq/89)'");
+        const int chrt_result = ::aos::util::RunCommand(
+            "chrt -o 0 bash -c 'chrt -r -p 55 $(pgrep irq/89)'");
         if (chrt_result == -1) {
-          LOG(FATAL, "system(chrt -r -p 55 the_irq) failed\n");
+          LOG(FATAL, "RunCommand(chrt -r -p 55 the_irq) failed\n");
         } else if (!WIFEXITED(chrt_result) || WEXITSTATUS(chrt_result) != 0) {
-          LOG(FATAL, "$(chrt -r -p 55 the_irq) failed, return value = %d\n",
-              WEXITSTATUS(chrt_result));
+          LOG(FATAL, "$(chrt -r -p 55 the_irq) failed; result = %x\n",
+              chrt_result);
         }
       } else {
-        LOG(INFO, "not root, so not increasing priority of the IRQ\n");
+        LOG(WARNING, "not root, so not increasing priority of the IRQ\n");
       }
 
       irq_priority_increased_ = true;
@@ -85,7 +89,7 @@ bool PacketFinder::FindPacket(const ::Time &timeout_time) {
     if (packet_bytes_ == -1) {
       for (size_t to_check = already_read; to_check < already_read + new_bytes;
            ++to_check) {
-        if (buf_[to_check] == 0) {
+        if (buf(to_check) == 0) {
           ++zeros_found;
           if (zeros_found == kZeros) {
             packet_bytes_ = 0;
@@ -116,7 +120,7 @@ bool PacketFinder::ProcessPacket() {
   bad_checksum_.Print();
 
   if (unstuffed == 0) {
-    if (kDebugLogs) LOG(INFO, "invalid\n");
+    if (kDebugLogs) LOG(WARNING, "invalid\n");
     LOG_INTERVAL(invalid_packet_);
     return false;
   } else if (unstuffed != (packet_size_ - 4) / 4) {
@@ -132,7 +136,7 @@ bool PacketFinder::ProcessPacket() {
       reinterpret_cast<uint8_t *>(unstuffed_data_), packet_size_ - 8);
   if (sent_checksum != calculated_checksum) {
     if (kDebugLogs) {
-      LOG(INFO, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
+      LOG(WARNING, "sent %" PRIx32 " not %" PRIx32 "\n", sent_checksum,
           calculated_checksum);
     }
     LOG_INTERVAL(bad_checksum_);
@@ -149,7 +153,7 @@ bool PacketFinder::ReadPacket(const ::Time &timeout_time) {
     packet_bytes_ = -1;
     int zeros = 0;
     for (size_t i = 0; i < packet_size_; ++i) {
-      if (buf_[i] == 0) {
+      if (buf(i) == 0) {
         ++zeros;
         if (zeros == kZeros) {
           if (kDebugLogs) LOG(INFO, "start at %zd\n", i);

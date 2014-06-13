@@ -6,16 +6,17 @@
 #include <algorithm>
 #include <string>
 
+#include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
 #include "aos/common/network/send_socket.h"
 #include "aos/common/byteorder.h"
 #include "aos/common/type_traits.h"
-#include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
+#include "aos/common/util/log_interval.h"
 
 namespace aos {
 
 // A class for sending output values to a cRIO.
 // values_ gets completely reset each time through, so RunIteration() needs to
-// set everything each time.
+// set everything each time (except solenoids).
 class MotorOutput {
  public:
   MotorOutput();
@@ -51,7 +52,7 @@ class MotorOutput {
   void SetSolenoid(uint8_t channel, bool set);
   void SetPWMOutput(uint8_t channel, double value,
                     const MotorControllerBounds &bounds);
-  void SetRawPWMOutput(uint8_t cahnnel, uint8_t value);
+  void SetRawPWMOutput(uint8_t channel, uint8_t value);
   void DisablePWMOutput(uint8_t channel);
   void SetDigitalOutput(uint8_t channel, bool value);
 
@@ -65,6 +66,16 @@ class MotorOutput {
   virtual void RunIteration() = 0;
 
   network::SendSocket socket_;
+
+  util::SimpleLogInterval no_robot_state_ =
+      util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), INFO,
+                        "no robot state -> not outputting");
+  util::SimpleLogInterval fake_robot_state_ =
+      util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), DEBUG,
+                        "fake robot state -> not outputting");
+  util::SimpleLogInterval sending_failed_ =
+      util::SimpleLogInterval(::aos::time::Time::InSeconds(0.1), WARNING,
+                        "sending outputs failed");
 };
 
 }  // namespace aos

@@ -25,7 +25,7 @@ class WindupClawTest;
 
 class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
  public:
-  ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> loop);
+  ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> &&loop);
   virtual void CapU();
 
   void set_is_zeroing(bool is_zeroing) { is_zeroing_ = is_zeroing; }

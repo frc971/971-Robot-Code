@@ -4,7 +4,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include "gtest/gtest.h"
 
@@ -19,7 +18,7 @@ namespace common {
 namespace testing {
 namespace {
 
-class TestLogImplementation : public logging::LogImplementation {
+class TestLogImplementation : public logging::HandleMessageLogImplementation {
  public:
   const ::std::vector<LogMessage> &messages() { return messages_; }
 
@@ -49,12 +48,8 @@ class TestLogImplementation : public logging::LogImplementation {
     return new TestLogImplementation();
   }
 
-  virtual void DoLog(log_level level, const char *format, va_list ap) {
-    LogMessage message;
-
-    logging::internal::FillInMessage(level, format, ap, &message);
-
-    if (!logging::log_gt_important(WARNING, level)) {
+  virtual void HandleMessage(const LogMessage &message) override {
+    if (message.level == FATAL) {
       logging::internal::PrintMessage(stdout, message);
     }
 
@@ -130,15 +125,15 @@ GlobalCoreInstance::GlobalCoreInstance() {
   // "shared" memory.
   void *memory = mmap(NULL, kCoreSize, PROT_READ | PROT_WRITE,
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-  assert(memory != MAP_FAILED);
+  CHECK_NE(memory, MAP_FAILED);
 
-  assert(aos_core_use_address_as_shared_mem(memory, kCoreSize) == 0);
+  aos_core_use_address_as_shared_mem(memory, kCoreSize);
 
   EnableTestLogging();
 }
 
 GlobalCoreInstance::~GlobalCoreInstance() {
-  assert(munmap(global_core->mem_struct, kCoreSize) == 0);
+  PCHECK(munmap(global_core->mem_struct, kCoreSize));
   global_core = NULL;
 }
 
@@ -147,7 +142,7 @@ void EnableTestLogging() {
 }
 
 void PreventExit() {
-  assert(atexit(TerminateExitHandler) == 0);
+  CHECK_EQ(atexit(TerminateExitHandler), 0);
 }
 
 }  // namespace testing

@@ -4,9 +4,16 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#include <map>
+
+#if __has_feature(address_sanitizer)
+#include "sanitizer/lsan_interface.h"
+#endif
+
 #include "aos/common/logging/logging.h"
 #include "aos/common/once.h"
 #include "aos/common/network/team_number.h"
+#include "aos/common/mutex.h"
 
 #include "frc971/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
@@ -70,8 +77,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.1,
            0.0,
            1.57,
-           0,
-           0,
+           0.05,
+           1.5,
            {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
            {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
            0.01,  // claw_unimportant_epsilon
@@ -191,7 +198,20 @@ const Values &GetValues() {
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
-  return *(DoGetValuesForTeam(team_number));
+  static ::aos::Mutex mutex;
+  ::aos::MutexLocker locker(&mutex);
+
+  // IMPORTANT: This declaration has to stay after the mutex is locked to avoid
+  // race conditions.
+  static ::std::map<uint16_t, const Values *> values;
+
+  if (values.count(team_number) == 0) {
+    values[team_number] = DoGetValuesForTeam(team_number);
+#if __has_feature(address_sanitizer)
+    __lsan_ignore_object(values[team_number]);
+#endif
+  }
+  return *values[team_number];
 }
 
 }  // namespace constants

@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <libgen.h>
-#include <assert.h>
 
 #include <string>
 
@@ -15,6 +14,9 @@
 #include "aos/common/mutex.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/die.h"
+#include "aos/common/libc/dirname.h"
+#include "aos/common/libc/aos_strsignal.h"
+#include "aos/common/logging/logging.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
 // while and makes sure that they don't fail. It also captures the stdout and
@@ -82,20 +84,16 @@ static_assert(shm_ok<Shared>::value,
 void __attribute__((noreturn)) DoRunTest(
     Shared *shared, const char *(*test)[kTestMaxArgs], int pipes[2]) {
   if (close(pipes[0]) == -1) {
-    Die("close(%d) of read end of pipe failed with %d: %s\n",
-        pipes[0], errno, strerror(errno));
+    PDie("close(%d) of read end of pipe failed", pipes[0]);
   }
   if (close(STDIN_FILENO) == -1) {
-    Die("close(STDIN_FILENO(=%d)) failed with %d: %s\n",
-        STDIN_FILENO, errno, strerror(errno));
+    PDie("close(STDIN_FILENO(=%d)) failed", STDIN_FILENO);
   }
   if (dup2(pipes[1], STDOUT_FILENO) == -1) {
-    Die("dup2(%d, STDOUT_FILENO(=%d)) failed with %d: %s\n",
-        pipes[1], STDOUT_FILENO, errno, strerror(errno));
+    PDie("dup2(%d, STDOUT_FILENO(=%d)) failed", pipes[1], STDOUT_FILENO);
   }
   if (dup2(pipes[1], STDERR_FILENO) == -1) {
-    Die("dup2(%d, STDERR_FILENO(=%d)) failed with %d: %s\n",
-        pipes[1], STDERR_FILENO, errno, strerror(errno));
+    PDie("dup2(%d, STDERR_FILENO(=%d)) failed", pipes[1], STDERR_FILENO);
   }
 
   size_t size = kTestMaxArgs;
@@ -120,8 +118,7 @@ void __attribute__((noreturn)) DoRunTest(
   }
   args[size] = NULL;
   execv(executable.c_str(), const_cast<char *const *>(args));
-  Die("execv(%s, %p) failed with %d: %s\n",
-      executable.c_str(), args, errno, strerror(errno));
+  PDie("execv(%s, %p) failed", executable.c_str(), args);
 }
 
 void DoRun(Shared *shared) {
@@ -133,18 +130,17 @@ void DoRun(Shared *shared) {
   int pipes[2];
   while (time::Time::Now() < shared->stop_time) {
     if (pipe(pipes) == -1) {
-      Die("pipe(%p) failed with %d: %s\n", &pipes, errno, strerror(errno));
+      PDie("pipe(%p) failed", &pipes);
     }
     switch (fork()) {
       case 0:  // in runner
         DoRunTest(shared, test, pipes);
       case -1:
-        Die("fork() failed with %d: %s\n", errno, strerror(errno));
+        PDie("fork() failed");
     }
 
     if (close(pipes[1]) == -1) {
-      Die("close(%d) of write end of pipe failed with %d: %s\n",
-          pipes[1], errno, strerror(errno));
+      PDie("close(%d) of write end of pipe failed", pipes[1]);
     }
 
     ::std::string output;
@@ -153,13 +149,11 @@ void DoRun(Shared *shared) {
       ssize_t ret = read(pipes[0], &buffer, sizeof(buffer));
       if (ret == 0) {  // EOF
         if (close(pipes[0]) == -1) {
-          Die("close(%d) of pipe at EOF failed with %d: %s\n",
-              pipes[0], errno, strerror(errno));
+          PDie("close(%d) of pipe at EOF failed", pipes[0]);
         }
         break;
       } else if (ret == -1) {
-        Die("read(%d, %p, %zd) failed with %d: %s\n",
-            pipes[0], &buffer, sizeof(buffer), errno, strerror(errno));
+        PDie("read(%d, %p, %zd) failed", pipes[0], &buffer, sizeof(buffer));
       }
       output += ::std::string(buffer, ret);
     }
@@ -168,8 +162,7 @@ void DoRun(Shared *shared) {
     while (true) {
       if (wait(&status) == -1) {
         if (errno == EINTR) continue;
-        Die("wait(%p) in child failed with %d: %s\n",
-            &status, errno, strerror(errno));
+        PDie("wait(%p) in child failed", &status);
       } else {
         break;
       }
@@ -184,10 +177,10 @@ void DoRun(Shared *shared) {
     } else if (WIFSIGNALED(status)) {
       MutexLocker sync(&shared->output_mutex);
       fprintf(stderr, "Test %s terminated by signal %d: %s.\n", (*test)[0],
-              WTERMSIG(status), strsignal(WTERMSIG(status)));
+              WTERMSIG(status), aos_strsignal(WTERMSIG(status)));
         fputs(output.c_str(), stderr);
     } else {
-      assert(WIFSTOPPED(status));
+      CHECK(WIFSTOPPED(status));
       Die("Test %s was stopped.\n", (*test)[0]);
     }
 
@@ -207,24 +200,25 @@ void Run(Shared *shared) {
       DoRun(shared);
       _exit(EXIT_SUCCESS);
     case -1:
-      Die("fork() of child failed with %d: %s\n", errno, strerror(errno));
+      PDie("fork() of child failed");
   }
 }
 
 int Main(int argc, char **argv) {
-  assert(argc >= 1);
+  if (argc < 1) {
+    fputs("need an argument\n", stderr);
+    return EXIT_FAILURE;
+  }
 
   ::aos::common::testing::GlobalCoreInstance global_core;
 
   Shared *shared = static_cast<Shared *>(shm_malloc(sizeof(Shared)));
   new (shared) Shared(time::Time::Now() + kTestTime);
 
-  char *temp = strdup(argv[0]);
   if (asprintf(const_cast<char **>(&shared->path),
-               "%s/../tests", dirname(temp)) == -1) {
-    Die("asprintf failed with %d: %s\n", errno, strerror(errno));
+               "%s/../tests", ::aos::libc::Dirname(argv[0]).c_str()) == -1) {
+    PDie("asprintf failed");
   }
-  free(temp);
 
   for (int i = 0; i < kTesters; ++i) {
     Run(shared);
@@ -237,7 +231,7 @@ int Main(int argc, char **argv) {
       if (errno == EINTR) {
         --i;
       } else {
-        Die("wait(%p) failed with %d: %s\n", &status, errno, strerror(errno));
+        PDie("wait(%p) failed", &status);
       }
     }
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {

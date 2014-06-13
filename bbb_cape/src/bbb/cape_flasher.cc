@@ -1,6 +1,5 @@
 #include "bbb/cape_flasher.h"
 
-#include <errno.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -30,8 +29,7 @@ void CapeFlasher::Download(ByteReaderInterface *file) {
     bootloader_read = uart_->ReadBytes(&bootloader_receive, 1,
                                        ::aos::time::Time::InSeconds(2));
     if (bootloader_read == -1) {
-      LOG(WARNING, "reading from %p (uart) failed with %d: %s\n", uart_, errno,
-          strerror(errno));
+      PLOG(WARNING, "reading from %p (uart) failed", uart_);
     } else if (bootloader_read == -2) {
       LOG(WARNING, "timeout reading from uart %p\n", uart_);
     }
@@ -48,8 +46,7 @@ void CapeFlasher::Download(ByteReaderInterface *file) {
         memset(buffer + total_read, 0xFF, sizeof(buffer) - total_read);
         total_read = sizeof(buffer);
       } else if (read == -1) {
-        LOG(FATAL, "reading from file %p returned error %d: %s\n", file, errno,
-            strerror(errno));
+        PLOG(FATAL, "reading from file %p failed", file);
       } else {
         total_read += read;
       }
@@ -71,8 +68,7 @@ void CapeFlasher::WriteBuffer(uint8_t *buffer, size_t size) {
     ssize_t bootloader_read = uart_->ReadBytes(
         &bootloader_receive, 1, ::aos::time::Time::InSeconds(2));
     if (bootloader_read == -1) {
-      LOG(WARNING, "reading from %p (uart) failed with %d: %s\n", uart_,
-          errno, strerror(errno));
+      PLOG(WARNING, "reading from %p (uart) failed", uart_);
     } else if (bootloader_read == -2) {
       LOG(WARNING, "timeout reading from uart %p\n", uart_);
       do {

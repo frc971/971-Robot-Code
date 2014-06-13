@@ -28,7 +28,8 @@ namespace time {
 // not implemented because I can't think of any uses for them and there are
 // multiple ways to do it. Division of Times by Times is implemented as the
 // ratio of them. Multiplication, division, and modulus of Times by integers are
-// implemented as interpreting the argument as nanoseconds.
+// implemented as interpreting the argument as nanoseconds. Modulus takes the
+// sign from the first operand.
 struct Time {
 #ifdef SWIG
 // All of the uses of constexpr here can safely be simply removed.
@@ -205,8 +206,7 @@ struct Time {
   }
 
   // Enables returning the mock time value for Now instead of checking the
-  // system clock.  This should only be used when testing things depending on
-  // time, or many things may/will break.
+  // system clock.
   static void EnableMockTime(const Time &now = Now());
   // Calls SetMockTime with the current actual time.
   static void UpdateMockTime();
