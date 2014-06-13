@@ -44,6 +44,11 @@ class RootLogImplementation : public LogImplementation {
 RootLogImplementation *root_implementation = nullptr;
 
 void SetGlobalImplementation(LogImplementation *implementation) {
+  if (root_implementation == nullptr) {
+    fputs("Somebody didn't call logging::Init()!\n", stderr);
+    abort();
+  }
+
   Context *context = Context::Get();
 
   context->implementation = implementation;

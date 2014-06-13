@@ -46,6 +46,7 @@ TEST_F(MutexTest, Unlock) {
 
 // Sees what happens with multiple unlocks.
 TEST_F(MutexDeathTest, RepeatUnlock) {
+  logging::Init();
   test_mutex.Lock();
   test_mutex.Unlock();
   EXPECT_DEATH(
@@ -58,6 +59,7 @@ TEST_F(MutexDeathTest, RepeatUnlock) {
 
 // Sees what happens if you unlock without ever locking (or unlocking) it.
 TEST_F(MutexDeathTest, NeverLock) {
+  logging::Init();
   EXPECT_DEATH(
       {
         logging::AddImplementation(new util::DeathTestLogImplementation());

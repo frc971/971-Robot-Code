@@ -30,6 +30,7 @@ TEST(TimeTest, timevalConversions) {
 }
 
 TEST(TimeDeathTest, ConstructorChecking) {
+  logging::Init();
   EXPECT_DEATH(
       {
         logging::AddImplementation(new util::DeathTestLogImplementation());
