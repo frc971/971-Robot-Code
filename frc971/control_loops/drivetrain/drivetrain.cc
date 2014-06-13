@@ -118,7 +118,7 @@ class DrivetrainMotorsSS {
         }
 
         LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
-        change_U() =
+        mutable_U() =
             velocity_K * velocity_error + position_K * T * adjusted_pos_error;
         LOG_MATRIX(DEBUG, "U is now", U());
       } else {
@@ -148,7 +148,7 @@ class DrivetrainMotorsSS {
                double right_velocity) {
     left_goal_ = left;
     right_goal_ = right;
-    loop_->change_R() << left, left_velocity, right, right_velocity;
+    loop_->mutable_R() << left, left_velocity, right, right_velocity;
   }
   void SetRawPosition(double left, double right) {
     raw_right_ = right;
@@ -167,7 +167,7 @@ class DrivetrainMotorsSS {
   }
 
   void SetExternalMotors(double left_voltage, double right_voltage) {
-    loop_->change_U() << left_voltage, right_voltage;
+    loop_->mutable_U() << left_voltage, right_voltage;
   }
 
   void Update(bool stop_motors, bool enable_control_loop) {
@@ -175,8 +175,8 @@ class DrivetrainMotorsSS {
       loop_->Update(stop_motors);
     } else {
       if (stop_motors) {
-        loop_->change_U().setZero();
-        loop_->change_U_uncapped().setZero();
+        loop_->mutable_U().setZero();
+        loop_->mutable_U_uncapped().setZero();
       }
       loop_->UpdateObserver();
     }
@@ -564,7 +564,7 @@ class PolyDrivetrain {
 
       // Integrate velocity to get the position.
       // This position is used to get integral control.
-      loop_->change_R() << left_velocity, right_velocity;
+      loop_->mutable_R() << left_velocity, right_velocity;
 
       if (!quickturn_) {
         // K * R = w
@@ -578,7 +578,7 @@ class PolyDrivetrain {
             U_Poly_.k() + U_Poly_.H() * loop_->K() * loop_->X_hat());
 
         // Limit R back inside the box.
-        loop_->change_R() =
+        loop_->mutable_R() =
             CoerceGoal(R_poly, equality_k, equality_w, loop_->R());
       }
 
@@ -587,12 +587,12 @@ class PolyDrivetrain {
           loop_->K() * (loop_->R() - loop_->X_hat()) + FF_volts;
 
       for (int i = 0; i < 2; i++) {
-        loop_->change_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
+        loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
       }
 
       // TODO(austin): Model this better.
       // TODO(austin): Feed back?
-      loop_->change_X_hat() =
+      loop_->mutable_X_hat() =
           loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
     } else {
       // Any motor is not in gear.  Speed match.
@@ -604,13 +604,13 @@ class PolyDrivetrain {
       const double wiggle =
           (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
 
-      loop_->change_U(0) = ::aos::Clip(
+      loop_->mutable_U(0) = ::aos::Clip(
           (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->change_U(1) = ::aos::Clip(
+      loop_->mutable_U(1) = ::aos::Clip(
           (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->change_U() *= 12.0 / position_.battery_voltage;
+      loop_->mutable_U() *= 12.0 / position_.battery_voltage;
     }
   }
 

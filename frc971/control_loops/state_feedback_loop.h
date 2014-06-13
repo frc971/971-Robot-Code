@@ -137,12 +137,12 @@ class StateFeedbackPlant {
   const Eigen::Matrix<double, number_of_inputs, 1> &U() const { return U_; }
   double U(int i) const { return X()(i, 0); }
 
-  Eigen::Matrix<double, number_of_states, 1> &change_X() { return X_; }
-  double &change_X(int i) { return change_X()(i, 0); }
-  Eigen::Matrix<double, number_of_outputs, 1> &change_Y() { return Y_; }
-  double &change_Y(int i) { return change_Y()(i, 0); }
-  Eigen::Matrix<double, number_of_inputs, 1> &change_U() { return U_; }
-  double &change_U(int i) { return change_U()(i, 0); }
+  Eigen::Matrix<double, number_of_states, 1> &mutable_X() { return X_; }
+  double &mutable_X(int i) { return mutable_X()(i, 0); }
+  Eigen::Matrix<double, number_of_outputs, 1> &mutable_Y() { return Y_; }
+  double &mutable_Y(int i) { return mutable_Y()(i, 0); }
+  Eigen::Matrix<double, number_of_inputs, 1> &mutable_U() { return U_; }
+  double &mutable_U(int i) { return mutable_U()(i, 0); }
 
   const StateFeedbackPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>
@@ -324,18 +324,18 @@ class StateFeedbackLoop {
   const Eigen::Matrix<double, number_of_outputs, 1> &Y() const { return Y_; }
   double Y(int i) const { return Y()(i, 0); }
 
-  Eigen::Matrix<double, number_of_states, 1> &change_X_hat() { return X_hat_; }
-  double &change_X_hat(int i) { return change_X_hat()(i, 0); }
-  Eigen::Matrix<double, number_of_states, 1> &change_R() { return R_; }
-  double &change_R(int i) { return change_R()(i, 0); }
-  Eigen::Matrix<double, number_of_inputs, 1> &change_U() { return U_; }
-  double &change_U(int i) { return change_U()(i, 0); }
-  Eigen::Matrix<double, number_of_inputs, 1> &change_U_uncapped() {
+  Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
+  double &mutable_X_hat(int i) { return mutable_X_hat()(i, 0); }
+  Eigen::Matrix<double, number_of_states, 1> &mutable_R() { return R_; }
+  double &mutable_R(int i) { return mutable_R()(i, 0); }
+  Eigen::Matrix<double, number_of_inputs, 1> &mutable_U() { return U_; }
+  double &mutable_U(int i) { return mutable_U()(i, 0); }
+  Eigen::Matrix<double, number_of_inputs, 1> &mutable_U_uncapped() {
     return U_uncapped_;
   }
-  double &change_U_uncapped(int i) { return change_U_uncapped()(i, 0); }
-  Eigen::Matrix<double, number_of_outputs, 1> &change_Y() { return Y_; }
-  double &change_Y(int i) { return change_Y()(i, 0); }
+  double &mutable_U_uncapped(int i) { return mutable_U_uncapped()(i, 0); }
+  Eigen::Matrix<double, number_of_outputs, 1> &mutable_Y() { return Y_; }
+  double &mutable_Y(int i) { return mutable_Y()(i, 0); }
 
   const StateFeedbackController<number_of_states, number_of_inputs,
                                 number_of_outputs> &controller() const {

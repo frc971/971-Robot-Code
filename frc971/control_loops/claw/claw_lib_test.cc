@@ -54,11 +54,11 @@ class ClawMotorSimulation {
                     double initial_bottom_position) {
     LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
         initial_bottom_position);
-    claw_plant_->change_X(0) = initial_bottom_position;
-    claw_plant_->change_X(1) = initial_top_position - initial_bottom_position;
-    claw_plant_->change_X(2) = 0.0;
-    claw_plant_->change_X(3) = 0.0;
-    claw_plant_->change_Y() = claw_plant_->C() * claw_plant_->X();
+    claw_plant_->mutable_X(0) = initial_bottom_position;
+    claw_plant_->mutable_X(1) = initial_top_position - initial_bottom_position;
+    claw_plant_->mutable_X(2) = 0.0;
+    claw_plant_->mutable_X(3) = 0.0;
+    claw_plant_->mutable_Y() = claw_plant_->C() * claw_plant_->X();
 
     ReinitializePartial(TOP_CLAW, initial_top_position);
     ReinitializePartial(BOTTOM_CLAW, initial_bottom_position);
@@ -214,7 +214,7 @@ class ClawMotorSimulation {
     const frc971::constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue_group.output.FetchLatest());
 
-    claw_plant_->change_U() << claw_queue_group.output->bottom_claw_voltage,
+    claw_plant_->mutable_U() << claw_queue_group.output->bottom_claw_voltage,
         claw_queue_group.output->top_claw_voltage;
     claw_plant_->Update();
 

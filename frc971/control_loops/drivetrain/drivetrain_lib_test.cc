@@ -59,9 +59,9 @@ class DrivetrainSimulation {
 
   // Resets the plant.
   void Reinitialize() {
-    drivetrain_plant_->change_X(0) = 0.0;
-    drivetrain_plant_->change_X(1) = 0.0;
-    drivetrain_plant_->change_Y() =
+    drivetrain_plant_->mutable_X(0) = 0.0;
+    drivetrain_plant_->mutable_X(1) = 0.0;
+    drivetrain_plant_->mutable_Y() =
         drivetrain_plant_->C() * drivetrain_plant_->X();
     last_left_position_ = drivetrain_plant_->Y(0);
     last_right_position_ = drivetrain_plant_->Y(1);
@@ -88,7 +88,7 @@ class DrivetrainSimulation {
     last_left_position_ = drivetrain_plant_->Y(0);
     last_right_position_ = drivetrain_plant_->Y(1);
     EXPECT_TRUE(my_drivetrain_loop_.output.FetchLatest());
-    drivetrain_plant_->change_U() << my_drivetrain_loop_.output->left_voltage,
+    drivetrain_plant_->mutable_U() << my_drivetrain_loop_.output->left_voltage,
         my_drivetrain_loop_.output->right_voltage;
     drivetrain_plant_->Update();
   }

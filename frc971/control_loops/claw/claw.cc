@@ -177,7 +177,7 @@ void ClawLimitedLoop::CapU() {
     }
 
     LOG_MATRIX(DEBUG, "adjusted_pos_error", adjusted_pos_error);
-    change_U() = velocity_K * velocity_error + position_K * adjusted_pos_error;
+    mutable_U() = velocity_K * velocity_error + position_K * adjusted_pos_error;
     LOG_MATRIX(DEBUG, "U is now", U());
 
     {
@@ -185,20 +185,20 @@ void ClawLimitedLoop::CapU() {
       if (top_known_) {
         if (X_hat(0) + X_hat(1) > values.upper_claw.upper_limit && U(1) > 0) {
           LOG(WARNING, "upper claw too high and moving up\n");
-          change_U(1) = 0;
+          mutable_U(1) = 0;
         } else if (X_hat(0) + X_hat(1) < values.upper_claw.lower_limit &&
                    U(1) < 0) {
           LOG(WARNING, "upper claw too low and moving down\n");
-          change_U(1) = 0;
+          mutable_U(1) = 0;
         }
       }
       if (bottom_known_) {
         if (X_hat(0) > values.lower_claw.upper_limit && U(0) > 0) {
           LOG(WARNING, "lower claw too high and moving up\n");
-          change_U(0) = 0;
+          mutable_U(0) = 0;
         } else if (X_hat(0) < values.lower_claw.lower_limit && U(0) < 0) {
           LOG(WARNING, "lower claw too low and moving down\n");
-          change_U(0) = 0;
+          mutable_U(0) = 0;
         }
       }
     }
@@ -504,14 +504,14 @@ void ClawMotor::ChangeBottomOffset(double doffset) {
 }
 
 void ClawLimitedLoop::ChangeTopOffset(double doffset) {
-  change_Y()(1) += doffset;
-  change_X_hat()(1) += doffset;
+  mutable_Y()(1) += doffset;
+  mutable_X_hat()(1) += doffset;
   LOG(INFO, "Changing top offset by %f\n", doffset);
 }
 void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
-  change_Y()(0) += doffset;
-  change_X_hat()(0) += doffset;
-  change_X_hat()(1) -= doffset;
+  mutable_Y()(0) += doffset;
+  mutable_X_hat()(0) += doffset;
+  mutable_X_hat()(1) -= doffset;
   LOG(INFO, "Changing bottom offset by %f\n", doffset);
 }
 
@@ -863,7 +863,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
       bottom_claw_.zeroing_state() !=
           ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
   if (has_top_claw_goal_ && has_bottom_claw_goal_) {
-    claw_.change_R() << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
+    claw_.mutable_R() << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
         bottom_claw_velocity_, top_claw_velocity_ - bottom_claw_velocity_;
     LOG_MATRIX(DEBUG, "actual goal", claw_.R());
 
@@ -898,7 +898,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         Eigen::Matrix<double, 4, 1> R;
         R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2),
             claw_.R(3);
-        claw_.change_U() = claw_.K() * (R - claw_.X_hat());
+        claw_.mutable_U() = claw_.K() * (R - claw_.X_hat());
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup."
             " Uncapped is %f, max is %f, difference is %f\n",
@@ -920,7 +920,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
         Eigen::Matrix<double, 4, 1> R;
         R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2),
             claw_.R(3);
-        claw_.change_U() = claw_.K() * (R - claw_.X_hat());
+        claw_.mutable_U() = claw_.K() * (R - claw_.X_hat());
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
       }

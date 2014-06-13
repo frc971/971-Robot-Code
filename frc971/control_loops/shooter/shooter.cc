@@ -35,7 +35,7 @@ void ZeroedStateFeedbackLoop::CapU() {
 
   voltage_ = std::min(max_voltage_, voltage_);
   voltage_ = std::max(-max_voltage_, voltage_);
-  change_U(0) = voltage_ - old_voltage;
+  mutable_U(0) = voltage_ - old_voltage;
 
   LOG_STRUCT(DEBUG, "output", ShooterVoltageToLog(X_hat(2), voltage_));
 
@@ -49,11 +49,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     if (controller_index() == 0) {
       dx = (uncapped_voltage() - max_voltage_) /
            (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
-      change_R(0) -= dx;
-      change_R(2) -= -A(1, 0) / A(1, 2) * dx;
+      mutable_R(0) -= dx;
+      mutable_R(2) -= -A(1, 0) / A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() - max_voltage_) / K(0, 0);
-      change_R(0) -= dx;
+      mutable_R(0) -= dx;
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
@@ -62,11 +62,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     if (controller_index() == 0) {
       dx = (uncapped_voltage() + max_voltage_) /
            (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
-      change_R(0) -= dx;
-      change_R(2) -= -A(1, 0) / A(1, 2) * dx;
+      mutable_R(0) -= dx;
+      mutable_R(2) -= -A(1, 0) / A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() + max_voltage_) / K(0, 0);
-      change_R(0) -= dx;
+      mutable_R(0) -= dx;
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
@@ -77,9 +77,9 @@ void ZeroedStateFeedbackLoop::CapGoal() {
 
 void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
   if (controller_index() == 0) {
-    change_R(2) = (-A(1, 0) / A(1, 2) * R(0) - A(1, 1) / A(1, 2) * R(1));
+    mutable_R(2) = (-A(1, 0) / A(1, 2) * R(0) - A(1, 1) / A(1, 2) * R(1));
   } else {
-    change_R(2) = -A(1, 1) / A(1, 2) * R(1);
+    mutable_R(2) = -A(1, 1) / A(1, 2) * R(1);
   }
 }
 
@@ -89,15 +89,15 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   double previous_offset = offset_;
   offset_ = known_position - encoder_val;
   double doffset = offset_ - previous_offset;
-  change_X_hat(0) += doffset;
+  mutable_X_hat(0) += doffset;
   // Offset our measurements because the offset is baked into them.
   // This is safe because if we got here, it means position != nullptr, which
   // means we already set Y to something and it won't just get overwritten.
-  change_Y(0) += doffset;
+  mutable_Y(0) += doffset;
   // Offset the goal so we don't move.
-  change_R(0) += doffset;
+  mutable_R(0) += doffset;
   if (controller_index() == 0) {
-    change_R(2) += -A(1, 0) / A(1, 2) * (doffset);
+    mutable_R(2) += -A(1, 0) / A(1, 2) * (doffset);
   }
   LOG_STRUCT(
       DEBUG, "sensor edge (fake?)",

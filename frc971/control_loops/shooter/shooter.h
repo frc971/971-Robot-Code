@@ -74,14 +74,14 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double goal_position() const { return R(0) + kPositionOffset; }
   double goal_velocity() const { return R(1); }
   void InitializeState(double position) {
-    change_X_hat(0) = position - kPositionOffset;
+    mutable_X_hat(0) = position - kPositionOffset;
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
     LOG(DEBUG, "Goal position: %f Goal velocity: %f\n", desired_position,
         desired_velocity);
 
-    change_R() << desired_position - kPositionOffset, desired_velocity,
+    mutable_R() << desired_position - kPositionOffset, desired_velocity,
         (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
          A(1, 1) / A(1, 2) * desired_velocity);
   }
