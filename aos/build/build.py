@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import argparse
 import sys
 import subprocess
 import re
@@ -405,7 +404,7 @@ class CRIOProcessor(Processor):
       return (CRIOProcessor.Platform(True, self.wind_base()),)
     else:
       raise Processor.UnknownPlatform(
-          'Unknown cRIO platform "%s".' % platforms_string)
+          '"%s" not recognized as a cRIO platform.' % platforms_string)
 
   def wind_base(self):
     return self.__wind_base
@@ -664,7 +663,7 @@ class PrimeProcessor(Processor):
         sanitizer = part
       else:
         raise Processor.UnknownPlatform(
-            'Unknown platform string component "%s".' % part)
+            '"%s" not recognized as a platform string component.' % part)
     return self.select_platforms(
         architecture=architecture,
         compiler=compiler,
@@ -707,73 +706,116 @@ def strsignal(num):
   return SIGNALS_TO_NAMES.get(num, 'Unknown signal %d' % num)
 
 def main():
-  class TryParsingAgain(Exception):
-    pass
+  sys.argv.pop(0)
+  exec_name = sys.argv.pop(0)
+  def print_help(exit_status=None, message=None):
+    if message:
+      print(message)
+    sys.stdout.write(
+"""Usage: {name} [-j n] [action] [-n] [platform] [target]...
+Arguments:
+  -j, --jobs               Explicitly specify how many jobs to run at a time.
+                           Defaults to the number of processors + 2.
+  -n, --dry-run            Don't actually do whatever.
+                           Currently only meaningful for deploy.
+  action                   What to do. Defaults to build.
+                           build: Build the code.
+                           clean: Remove all the built output.
+                           tests: Build and then run tests.
+                           deploy: Build and then download.
+  platform                 What variants of the code to build.
+                           Defaults to something reasonable.
+                           See below for details.
+  target...                Which targets to build/test/etc.
+                           Defaults to everything.
 
-  class TryAgainArgumentParser(argparse.ArgumentParser):
-    def __init__(self, **kwargs):
-      super(TryAgainArgumentParser, self).__init__(**kwargs)
+Specifying targets:
+ Targets are combinations of architecture, compiler, and debug flags. Which
+  ones actually get run is built up as a set. It defaults to something
+  reasonable for the action (specified below).
+ The platform specification (the argument given to this script) is a comma-
+  separated sequence of hyphen-separated platforms, each with an optional
+  prefix.
+ Each selector (the things separated by commas) selects all of the platforms
+  which match all of its components. Its effect on the set of current platforms
+  depends on the prefix character.
+ Here are the prefix characters:
+    +          Adds the selected platforms.
+    -          Removes the selected platforms.
+    =          Sets the current set to the selected platforms.
+    [none]     Removes all non-selected platforms.
+               If this makes the current set empty, acts like =.
+  There is also the special psuedo-platform "all" which selects all platforms.
+ All of the available platforms:
+  {all_platforms}
+ Default platforms for deploying:
+  {deploy_platforms}
+ Default platforms for testing:
+  {test_platforms}
+ Default platforms for everything else:
+  {default_platforms}
 
-    def error(self, message):
-      raise TryParsingAgain
+Examples of specifying targets:
+ build everything: "all"
+ only build things with clang: "clang"
+ build everything that uses GCC 4.8 (not just the defaults): "=gcc_4.8"
+ build all of the arm targets that use clang: "clang-arm" or "arm-clang"
+""".format(
+    name=exec_name,
+    all_platforms=str_platforms(PrimeProcessor(False, False).platforms()),
+    deploy_platforms=str_platforms(PrimeProcessor(False, True).default_platforms()),
+    test_platforms=str_platforms(PrimeProcessor(True, False).default_platforms()),
+    default_platforms=str_platforms(PrimeProcessor(False, False).default_platforms()),
+    ))
+    if exit_status is not None:
+      sys.exit(exit_status)
 
-  def set_up_parser(parser, args):
-    def add_build_args(parser):
-      parser.add_argument(
-          'target',
-          help='target to build',
-          nargs='*')
-      parser.add_argument(
-          '--jobs', '-j',
-          help='number of things to do at once',
-          type=int)
-    def add_common_args(parser):
-      parser.add_argument(
-          'platforms',
-          help='platform(s) to act on',
-          nargs='?')
+  def sort_platforms(platforms):
+    return sorted(
+        platforms, key=lambda platform: (-platform.priority(), str(platform)))
 
-    parser.add_argument('--processor', required=True, help='prime or crio')
-    parser.add_argument('--main_gyp', required=True, help='main .gyp file')
-    subparsers = parser.add_subparsers(dest='action_name')
+  def str_platforms(platforms):
+    r = []
+    for platform in sort_platforms(platforms):
+      r.append(str(platform))
+    if len(r) > 1:
+      r[-1] = 'and ' + r[-1]
+    return ', '.join(r)
+  
+  class Arguments(object):
+    def __init__(self):
+      self.jobs = os.sysconf('SC_NPROCESSORS_ONLN') + 2
+      self.action_name = 'build'
+      self.dry_run = False
+      self.targets = []
+      self.platform = None
 
-    build_parser = subparsers.add_parser(
-        'build',
-        help='build the code (default)')
-    add_common_args(build_parser)
-    add_build_args(build_parser)
+  args = Arguments()
 
-    clean_parser = subparsers.add_parser(
-        'clean',
-        help='remove all output directories')
-    add_common_args(clean_parser)
-
-    deploy_parser = subparsers.add_parser(
-        'deploy',
-        help='build and download the code')
-    add_common_args(deploy_parser)
-    add_build_args(deploy_parser)
-    deploy_parser.add_argument(
-        '-n', '--dry-run',
-        help="don't actually download anything",
-        action='store_true')
-
-    tests_parser = subparsers.add_parser(
-        'tests',
-        help='run tests')
-    add_common_args(tests_parser)
-    add_build_args(tests_parser)
-
-    return parser.parse_args(args)
-
-  try:
-    parser = TryAgainArgumentParser()
-    args = set_up_parser(parser, sys.argv[1:])
-  except TryParsingAgain:
-    parser = argparse.ArgumentParser()
-    REQUIRED_ARGS_END = 5
-    args = set_up_parser(parser, sys.argv[1:REQUIRED_ARGS_END] + ['build'] +
-                         sys.argv[(REQUIRED_ARGS_END):])
+  if len(sys.argv) < 2:
+    print_help(1, 'Not enough arguments')
+  args.processor = sys.argv.pop(0)
+  args.main_gyp = sys.argv.pop(0)
+  VALID_ACTIONS = ['build', 'clean', 'deploy', 'tests']
+  while sys.argv:
+    arg = sys.argv.pop(0)
+    if arg == '-j' or arg == '--jobs':
+      args.jobs = int(sys.argv.pop(0))
+      continue
+    if arg in VALID_ACTIONS:
+      args.action_name = arg
+      continue
+    if arg == '-n' or arg == '--dry-run':
+      if args.action_name != 'deploy':
+        print_help(1, '--dry-run is only valid for deploy')
+      args.dry_run = True
+      continue
+    if arg == '-h' or arg == '--help':
+      print_help(0)
+    if args.platform:
+      args.targets.append(arg)
+    else:
+      args.platform = arg
 
   if args.processor == 'crio':
     processor = CRIOProcessor()
@@ -781,22 +823,17 @@ def main():
     processor = PrimeProcessor(args.action_name == 'tests',
                                args.action_name == 'deploy')
   else:
-    parser.exit(status=1, message='Unknown processor "%s".' % args.processor)
+    print_help(1, message='Unknown processor "%s".' % args.processor)
 
-  if 'target' in args:
-    targets = args.target[:]
-  else:
-    targets = []
   unknown_platform_error = None
   try:
-    platforms = processor.parse_platforms(args.platforms)
+    platforms = processor.parse_platforms(args.platform)
   except Processor.UnknownPlatform as e:
     unknown_platform_error = e.message
-    targets.append(args.platforms)
+    args.targets.insert(0, args.platform)
     platforms = processor.parse_platforms(None)
   if not platforms:
-    user_output("No platforms selected!")
-    exit(1)
+    print_help(1, 'No platforms selected')
 
   processor.check_installed(platforms, args.action_name == 'deploy')
   processor.download_externals(platforms)
@@ -867,15 +904,8 @@ def main():
       build_env['PATH'] = os.environ['PATH']
     return build_env
 
-  sorted_platforms = sorted(
-      platforms, key=lambda platform: (-platform.priority(), str(platform)))
-
-  to_build = []
-  for platform in sorted_platforms:
-    to_build.append(str(platform))
-  if len(to_build) > 1:
-    to_build[-1] = 'and ' + to_build[-1]
-  user_output('Building %s...' % ', '.join(to_build))
+  sorted_platforms = sort_platforms(platforms)
+  user_output('Building %s...' % str_platforms(sorted_platforms))
 
   if args.action_name == 'tests':
     for sanitizer, warning in PrimeProcessor.SANITIZER_TEST_WARNINGS.items():
@@ -933,7 +963,7 @@ def main():
 
       try:
         call = (tools_config['NINJA'],
-                '-C', platform.outdir()) + tuple(targets)
+                '-C', platform.outdir()) + tuple(args.targets)
         if args.jobs:
           call += ('-j', str(args.jobs))
         subprocess.check_call(call,
@@ -950,14 +980,10 @@ def main():
       dirname = os.path.join(platform.outdir(), 'tests')
       done_queue = queue.Queue()
       running = []
-      if args.jobs:
-        number_jobs = args.jobs
-      else:
-        number_jobs = os.sysconf('SC_NPROCESSORS_ONLN') + 2
-      test_start_semaphore = threading.Semaphore(number_jobs)
-      if targets:
+      test_start_semaphore = threading.Semaphore(args.jobs)
+      if args.targets:
         to_run = []
-        for target in targets:
+        for target in args.targets:
           if target.endswith('_test'):
             to_run.append(target)
       else:

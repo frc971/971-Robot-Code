@@ -2,4 +2,4 @@
 
 cd $(dirname $0)
 
-../../aos/build/build.py --processor prime --main_gyp prime.gyp "$@"
+exec ../../aos/build/build.py $0 prime prime.gyp "$@"
