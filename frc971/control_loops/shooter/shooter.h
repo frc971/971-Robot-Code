@@ -59,8 +59,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   double offset() const { return offset_; }
 
-  double absolute_position() const { return X_hat(0) + kPositionOffset; }
-  double absolute_velocity() const { return X_hat(1); }
+  double absolute_position() const { return X_hat(0, 0) + kPositionOffset; }
+  double absolute_velocity() const { return X_hat(1, 0); }
 
   void CorrectPosition(double position) {
     Eigen::Matrix<double, 1, 1> Y;
@@ -71,10 +71,10 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   // Recomputes the power goal for the current controller and position/velocity.
   void RecalculatePowerGoal();
 
-  double goal_position() const { return R(0) + kPositionOffset; }
-  double goal_velocity() const { return R(1); }
+  double goal_position() const { return R(0, 0) + kPositionOffset; }
+  double goal_velocity() const { return R(1, 0); }
   void InitializeState(double position) {
-    mutable_X_hat(0) = position - kPositionOffset;
+    mutable_X_hat(0, 0) = position - kPositionOffset;
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
@@ -86,7 +86,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
          A(1, 1) / A(1, 2) * desired_velocity);
   }
 
-  double position() const { return X_hat(0) - offset_ + kPositionOffset; }
+  double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }
 
   void set_max_voltage(double max_voltage) { max_voltage_ = max_voltage; }
   bool capped_goal() const { return capped_goal_; }

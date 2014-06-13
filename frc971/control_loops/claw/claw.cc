@@ -81,8 +81,8 @@ ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> &&loop)
 void ClawLimitedLoop::CapU() {
   const Eigen::Matrix<double, 4, 1> error = R() - X_hat();
 
-  double u_top = U(1);
-  double u_bottom = U(0);
+  double u_top = U(1, 0);
+  double u_bottom = U(0, 0);
 
   uncapped_average_voltage_ = (u_top + u_bottom) / 2;
 
@@ -129,7 +129,7 @@ void ClawLimitedLoop::CapU() {
       // If the top claw is above its soft upper limit, make the line actually
       // 45 degrees to avoid smashing it into the limit in an attempt to fix the
       // separation error faster than the bottom position one.
-      if (X_hat(0) + X_hat(1) >
+      if (X_hat(0, 0) + X_hat(1, 0) >
           constants::GetValues().claw.upper_claw.upper_limit) {
         angle_45 << 1, 1;
       } else {
@@ -183,22 +183,22 @@ void ClawLimitedLoop::CapU() {
     {
       const auto values = constants::GetValues().claw;
       if (top_known_) {
-        if (X_hat(0) + X_hat(1) > values.upper_claw.upper_limit && U(1) > 0) {
+        if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit && U(1, 0) > 0) {
           LOG(WARNING, "upper claw too high and moving up\n");
-          mutable_U(1) = 0;
-        } else if (X_hat(0) + X_hat(1) < values.upper_claw.lower_limit &&
-                   U(1) < 0) {
+          mutable_U(1, 0) = 0;
+        } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
+                   U(1, 0) < 0) {
           LOG(WARNING, "upper claw too low and moving down\n");
-          mutable_U(1) = 0;
+          mutable_U(1, 0) = 0;
         }
       }
       if (bottom_known_) {
-        if (X_hat(0) > values.lower_claw.upper_limit && U(0) > 0) {
+        if (X_hat(0, 0) > values.lower_claw.upper_limit && U(0, 0) > 0) {
           LOG(WARNING, "lower claw too high and moving up\n");
-          mutable_U(0) = 0;
-        } else if (X_hat(0) < values.lower_claw.lower_limit && U(0) < 0) {
+          mutable_U(0, 0) = 0;
+        } else if (X_hat(0, 0) < values.lower_claw.lower_limit && U(0, 0) < 0) {
           LOG(WARNING, "lower claw too low and moving down\n");
-          mutable_U(0) = 0;
+          mutable_U(0, 0) = 0;
         }
       }
     }
@@ -886,18 +886,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
     case FINE_TUNE_TOP:
     case UNKNOWN_LOCATION: {
       if (claw_.uncapped_average_voltage() > values.claw.max_zeroing_voltage) {
-        double dx_bot = (claw_.U_uncapped(0) -
+        double dx_bot = (claw_.U_uncapped(0, 0) -
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
-        double dx_top = (claw_.U_uncapped(1) -
+        double dx_top = (claw_.U_uncapped(1, 0) -
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
         double dx = ::std::max(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
-        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2),
-            claw_.R(3);
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0),
+            claw_.R(3, 0);
         claw_.mutable_U() = claw_.K() * (R - claw_.X_hat());
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup."
@@ -908,18 +908,18 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
              values.claw.max_zeroing_voltage));
       } else if (claw_.uncapped_average_voltage() <
                  -values.claw.max_zeroing_voltage) {
-        double dx_bot = (claw_.U_uncapped(0) +
+        double dx_bot = (claw_.U_uncapped(0, 0) +
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
-        double dx_top = (claw_.U_uncapped(1) +
+        double dx_top = (claw_.U_uncapped(1, 0) +
                      values.claw.max_zeroing_voltage) /
                     claw_.K(0, 0);
         double dx = ::std::min(dx_top, dx_bot);
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
-        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2),
-            claw_.R(3);
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0),
+            claw_.R(3, 0);
         claw_.mutable_U() = claw_.K() * (R - claw_.X_hat());
         capped_goal_ = true;
         LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
@@ -939,8 +939,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
               ? -12.0
               : goal->centering;
     }
-    output->top_claw_voltage = claw_.U(1);
-    output->bottom_claw_voltage = claw_.U(0);
+    output->top_claw_voltage = claw_.U(1, 0);
+    output->bottom_claw_voltage = claw_.U(0, 0);
 
     if (output->top_claw_voltage > kMaxVoltage) {
       output->top_claw_voltage = kMaxVoltage;
@@ -957,8 +957,8 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
 
   status->bottom = bottom_absolute_position();
   status->separation = top_absolute_position() - bottom_absolute_position();
-  status->bottom_velocity = claw_.X_hat(2);
-  status->separation_velocity = claw_.X_hat(3);
+  status->bottom_velocity = claw_.X_hat(2, 0);
+  status->separation_velocity = claw_.X_hat(3, 0);
 
   if (goal) {
     bool bottom_done =

@@ -224,9 +224,9 @@ class ClawMotor : public aos::controls::ControlLoop<
                             control_loops::ClawGroup::Status *status);
 
   double top_absolute_position() const {
-    return claw_.X_hat(1) + claw_.X_hat(0);
+    return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);
   }
-  double bottom_absolute_position() const { return claw_.X_hat(0); }
+  double bottom_absolute_position() const { return claw_.X_hat(0, 0); }
 
  private:
   // Friend the test classes for acces to the internal state.

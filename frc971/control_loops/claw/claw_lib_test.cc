@@ -54,10 +54,10 @@ class ClawMotorSimulation {
                     double initial_bottom_position) {
     LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n", initial_top_position,
         initial_bottom_position);
-    claw_plant_->mutable_X(0) = initial_bottom_position;
-    claw_plant_->mutable_X(1) = initial_top_position - initial_bottom_position;
-    claw_plant_->mutable_X(2) = 0.0;
-    claw_plant_->mutable_X(3) = 0.0;
+    claw_plant_->mutable_X(0, 0) = initial_bottom_position;
+    claw_plant_->mutable_X(1, 0) = initial_top_position - initial_bottom_position;
+    claw_plant_->mutable_X(2, 0) = 0.0;
+    claw_plant_->mutable_X(3, 0) = 0.0;
     claw_plant_->mutable_Y() = claw_plant_->C() * claw_plant_->X();
 
     ReinitializePartial(TOP_CLAW, initial_top_position);
@@ -69,9 +69,9 @@ class ClawMotorSimulation {
   // Returns the absolute angle of the wrist.
   double GetAbsolutePosition(ClawType type) const {
     if (type == TOP_CLAW) {
-      return claw_plant_->Y(1);
+      return claw_plant_->Y(1, 0);
     } else {
-      return claw_plant_->Y(0);
+      return claw_plant_->Y(0, 0);
     }
   }
 
@@ -219,15 +219,15 @@ class ClawMotorSimulation {
     claw_plant_->Update();
 
     // Check that the claw is within the limits.
-    EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0));
-    EXPECT_LE(v.claw.upper_claw.lower_hard_limit, claw_plant_->Y(0));
+    EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0, 0));
+    EXPECT_LE(v.claw.upper_claw.lower_hard_limit, claw_plant_->Y(0, 0));
 
-    EXPECT_GE(v.claw.lower_claw.upper_hard_limit, claw_plant_->Y(1));
-    EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1));
+    EXPECT_GE(v.claw.lower_claw.upper_hard_limit, claw_plant_->Y(1, 0));
+    EXPECT_LE(v.claw.lower_claw.lower_hard_limit, claw_plant_->Y(1, 0));
 
-    EXPECT_LE(claw_plant_->Y(1) - claw_plant_->Y(0),
+    EXPECT_LE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw.claw_max_separation);
-    EXPECT_GE(claw_plant_->Y(1) - claw_plant_->Y(0),
+    EXPECT_GE(claw_plant_->Y(1, 0) - claw_plant_->Y(0, 0),
               v.claw.claw_min_separation);
   }
   // The whole claw.

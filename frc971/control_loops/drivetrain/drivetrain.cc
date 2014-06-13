@@ -49,7 +49,7 @@ class DrivetrainMotorsSS {
     virtual void CapU() {
       const Eigen::Matrix<double, 4, 1> error = R() - X_hat();
 
-      if (::std::abs(U(0)) > 12.0 || ::std::abs(U(1)) > 12.0) {
+      if (::std::abs(U(0, 0)) > 12.0 || ::std::abs(U(1, 0)) > 12.0) {
         output_was_capped_ = true;
         LOG_MATRIX(DEBUG, "U at start", U());
 
@@ -186,15 +186,15 @@ class DrivetrainMotorsSS {
 
   double GetEstimatedRobotSpeed() const {
     // lets just call the average of left and right velocities close enough
-    return (loop_->X_hat(1) + loop_->X_hat(3)) / 2;
+    return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
   }
   
   double GetEstimatedLeftEncoder() const {
-    return loop_->X_hat(0);
+    return loop_->X_hat(0, 0);
   }
   
   double GetEstimatedRightEncoder() const {
-    return loop_->X_hat(2);
+    return loop_->X_hat(2, 0);
   }
 
   bool OutputWasCapped() const {
@@ -203,8 +203,8 @@ class DrivetrainMotorsSS {
 
   void SendMotors(Drivetrain::Output *output) const {
     if (output) {
-      output->left_voltage = loop_->U(0);
-      output->right_voltage = loop_->U(1);
+      output->left_voltage = loop_->U(0, 0);
+      output->right_voltage = loop_->U(1, 0);
       output->left_high = false;
       output->right_high = false;
     }
@@ -471,7 +471,7 @@ class PolyDrivetrain {
     const double adjusted_ff_voltage = ::aos::Clip(
         throttle * 12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
     return ((adjusted_ff_voltage +
-             ttrust_ * min_K_sum * (loop_->X_hat(0) + loop_->X_hat(1)) / 2.0) /
+             ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) / 2.0) /
             (ttrust_ * min_K_sum + min_FF_sum));
   }
 
@@ -604,10 +604,10 @@ class PolyDrivetrain {
       const double wiggle =
           (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
 
-      loop_->mutable_U(0) = ::aos::Clip(
+      loop_->mutable_U(0, 0) = ::aos::Clip(
           (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->mutable_U(1) = ::aos::Clip(
+      loop_->mutable_U(1, 0) = ::aos::Clip(
           (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
           -12.0, 12.0);
       loop_->mutable_U() *= 12.0 / position_.battery_voltage;
@@ -616,8 +616,8 @@ class PolyDrivetrain {
 
   void SendMotors(Drivetrain::Output *output) {
     if (output != NULL) {
-      output->left_voltage = loop_->U(0);
-      output->right_voltage = loop_->U(1);
+      output->left_voltage = loop_->U(0, 0);
+      output->right_voltage = loop_->U(1, 0);
       output->left_high = left_gear_ == HIGH || left_gear_ == SHIFTING_UP;
       output->right_high = right_gear_ == HIGH || right_gear_ == SHIFTING_UP;
     }
@@ -722,8 +722,8 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
     status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();
     status->output_was_capped = dt_closedloop.OutputWasCapped();
-    status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0);
-    status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1);
+    status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0, 0);
+    status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1, 0);
   }
 }
 

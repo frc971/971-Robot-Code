@@ -59,17 +59,17 @@ class DrivetrainSimulation {
 
   // Resets the plant.
   void Reinitialize() {
-    drivetrain_plant_->mutable_X(0) = 0.0;
-    drivetrain_plant_->mutable_X(1) = 0.0;
+    drivetrain_plant_->mutable_X(0, 0) = 0.0;
+    drivetrain_plant_->mutable_X(1, 0) = 0.0;
     drivetrain_plant_->mutable_Y() =
         drivetrain_plant_->C() * drivetrain_plant_->X();
-    last_left_position_ = drivetrain_plant_->Y(0);
-    last_right_position_ = drivetrain_plant_->Y(1);
+    last_left_position_ = drivetrain_plant_->Y(0, 0);
+    last_right_position_ = drivetrain_plant_->Y(1, 0);
   }
 
   // Returns the position of the drivetrain.
-  double GetLeftPosition() const { return drivetrain_plant_->Y(0); }
-  double GetRightPosition() const { return drivetrain_plant_->Y(1); }
+  double GetLeftPosition() const { return drivetrain_plant_->Y(0, 0); }
+  double GetRightPosition() const { return drivetrain_plant_->Y(1, 0); }
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
@@ -85,8 +85,8 @@ class DrivetrainSimulation {
 
   // Simulates the drivetrain moving for one timestep.
   void Simulate() {
-    last_left_position_ = drivetrain_plant_->Y(0);
-    last_right_position_ = drivetrain_plant_->Y(1);
+    last_left_position_ = drivetrain_plant_->Y(0, 0);
+    last_right_position_ = drivetrain_plant_->Y(1, 0);
     EXPECT_TRUE(my_drivetrain_loop_.output.FetchLatest());
     drivetrain_plant_->mutable_U() << my_drivetrain_loop_.output->left_voltage,
         my_drivetrain_loop_.output->right_voltage;
