@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
   bool skip_to_end = false;
   const char *filename = "aos_log-current";
 
+  ::aos::logging::Init();
   ::aos::logging::AddImplementation(
       new ::aos::logging::StreamLogImplementation(stdout));
 

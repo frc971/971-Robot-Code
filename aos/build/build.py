@@ -478,7 +478,6 @@ class PrimeProcessor(Processor):
         r += 5
       return r
 
-    # TODO(brians): test this
     def deploy(self, dry_run):
       # Downloads code to the prime in a way that avoids clashing too badly with
       # starter (like the naive download everything one at a time).
@@ -493,22 +492,24 @@ class PrimeProcessor(Processor):
                                      cwd=from_dir)
       to_download = subprocess.check_output(
           ('ssh', TARGET,
-           """rm -rf {TMPDIR} && mkdir {TMPDIR} && cd {TO_DIR}
-             && echo '{SUMS}' | {SUM} --check --quiet
-             |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*"'$'"/\\1/g'""".
-           format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums, SUM=SUM)))
+           """rm -rf {TMPDIR} && mkdir {TMPDIR} && cd {TO_DIR} \\
+             && echo '{SUMS}' | {SUM} --check --quiet \\
+             |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*$/\\1/g'""".
+           format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums.decode('utf-8'),
+                  SUM=SUM)))
       if not to_download:
         user_output("Nothing to download")
         return
       self.do_deploy(
           dry_run,
-          ('scp', '-o', 'Compression yes') + to_download
+          ('scp', '-o', 'Compression yes')
+          + tuple([os.path.join(from_dir, f) for f in to_download.decode('utf-8').split('\n')[:-1]])
           + (('%s:%s' % (TARGET, TEMP_DIR)),))
       if not dry_run:
         subprocess.check_call(
             ('ssh', TARGET,
-             """mv {TMPDIR}/* {TO_DIR}
-             && echo 'Done moving new executables into place'
+             """mv {TMPDIR}/* {TO_DIR} \\
+             && echo 'Done moving new executables into place' \\
              && ionice -c 3 bash -c 'sync && sync && sync'""".format(
                  TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
@@ -591,9 +592,8 @@ class PrimeProcessor(Processor):
         if warning[0]:
           default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
-      # TODO(brians): Switch to deploying the code built with clang.
       default_platforms = self.select_platforms(architecture='arm',
-                                                compiler='gcc',
+                                                compiler='clang',
                                                 debug=False)
     else:
       default_platforms = self.select_platforms(debug=False)

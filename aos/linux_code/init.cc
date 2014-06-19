@@ -39,6 +39,7 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
 // Common stuff that needs to happen at the beginning of both the realtime and
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
+  ::aos::logging::Init();
   // Allow locking as much as we want into RAM.
   SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
   WriteCoreDumps();
