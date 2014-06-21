@@ -179,7 +179,8 @@ void Shoot() {
 }
 
 ::std::unique_ptr<TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>
-SetDriveGoal(double distance, double maximum_velocity = 1.7, double theta = 0) {
+SetDriveGoal(double distance, bool slow_acceleration,
+             double maximum_velocity = 1.7, double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
   auto drivetrain_action = actions::MakeDrivetrainAction();
   drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
@@ -187,6 +188,8 @@ SetDriveGoal(double distance, double maximum_velocity = 1.7, double theta = 0) {
   drivetrain_action->GetGoal()->y_offset = distance;
   drivetrain_action->GetGoal()->theta_offset = theta;
   drivetrain_action->GetGoal()->maximum_velocity = maximum_velocity;
+  drivetrain_action->GetGoal()->maximum_acceleration =
+      slow_acceleration ? 2.5 : 3.0;
   drivetrain_action->Start();
   left_initial_position +=
       distance - theta * constants::GetValues().turn_width / 2.0;
@@ -358,6 +361,8 @@ void HandleAuto() {
   }
   LOG(INFO, "running auto %" PRIu8 "\n", auto_version);
 
+  const bool drive_slow_acceleration = auto_version == AutoVersion::kStraight;
+
   HotGoalDecoder hot_goal_decoder;
   // True for left, false for right.
   bool first_shot_left, second_shot_left_default, second_shot_left;
@@ -382,7 +387,8 @@ void HandleAuto() {
   {
     if (ShouldExitAuto()) return;
     // Drive to the goal.
-    auto drivetrain_action = SetDriveGoal(-kShootDistance, 2.5);
+    auto drivetrain_action = SetDriveGoal(-kShootDistance,
+                                          drive_slow_acceleration, 2.5);
     time::SleepFor(time::Time::InSeconds(0.75));
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
@@ -407,7 +413,8 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(0, 2, first_shot_left ? kTurnAngle : -kTurnAngle);
+        SetDriveGoal(0, drive_slow_acceleration, 2,
+                     first_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
@@ -419,6 +426,8 @@ void HandleAuto() {
     } while (!hot_goal_decoder.left_triggered() &&
              (::aos::time::Time::Now() - start_time) <
                  ::aos::time::Time::InSeconds(9));
+  } else if (auto_version == AutoVersion::kStraight) {
+    time::SleepFor(time::Time::InSeconds(0.4));
   }
 
   // Shoot.
@@ -430,7 +439,8 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(0, 2, first_shot_left ? -kTurnAngle : kTurnAngle);
+        SetDriveGoal(0, drive_slow_acceleration, 2,
+                     first_shot_left ? -kTurnAngle : kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
@@ -439,7 +449,7 @@ void HandleAuto() {
     PositionClawVertically(0.0, 0.0);
     return;
   }
-
+  
   {
     if (ShouldExitAuto()) return;
     // Intake the new ball.
@@ -447,7 +457,8 @@ void HandleAuto() {
         (::aos::time::Time::Now() - start_time).ToSeconds());
     PositionClawBackIntake();
     auto drivetrain_action =
-        SetDriveGoal(kShootDistance + kPickupDistance, 2.5);
+        SetDriveGoal(kShootDistance + kPickupDistance,
+                     drive_slow_acceleration, 2.5);
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
@@ -462,7 +473,8 @@ void HandleAuto() {
     LOG(INFO, "Driving back at %f\n",
         (::aos::time::Time::Now() - start_time).ToSeconds());
     auto drivetrain_action =
-        SetDriveGoal(-(kShootDistance + kPickupDistance), 2.5);
+        SetDriveGoal(-(kShootDistance + kPickupDistance),
+                     drive_slow_acceleration, 2.5);
     time::SleepFor(time::Time::InSeconds(0.3));
     hot_goal_decoder.ResetCounts();
     if (ShouldExitAuto()) return;
@@ -492,9 +504,12 @@ void HandleAuto() {
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
     auto drivetrain_action =
-        SetDriveGoal(0, 2, second_shot_left ? kTurnAngle : -kTurnAngle);
+        SetDriveGoal(0, drive_slow_acceleration, 2,
+                     second_shot_left ? kTurnAngle : -kTurnAngle);
     WaitUntilDoneOrCanceled(drivetrain_action.get());
     if (ShouldExitAuto()) return;
+  } else if (auto_version == AutoVersion::kStraight) {
+    time::SleepFor(time::Time::InSeconds(0.4));
   }
 
   LOG(INFO, "Shooting at %f\n",
