@@ -33,7 +33,7 @@ void DrivetrainAction::RunAction() {
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;
 
-  profile.set_maximum_acceleration(3.0);
+  profile.set_maximum_acceleration(action_q_->goal->maximum_acceleration);
   profile.set_maximum_velocity(action_q_->goal->maximum_velocity);
   turn_profile.set_maximum_acceleration(
       10.0 * constants::GetValues().turn_width / 2.0);
