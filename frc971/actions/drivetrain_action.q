@@ -12,6 +12,7 @@ queue_group DrivetrainActionQueueGroup {
     double y_offset;
     double theta_offset;
     double maximum_velocity;
+    double maximum_acceleration;
   };
 
   queue Goal goal;

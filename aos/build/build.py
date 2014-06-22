@@ -150,7 +150,7 @@ def get_ip(device):
     with open(FILENAME, 'w') as f:
       f.write('10.9.71')
   with open(FILENAME, 'r') as f:
-    base = f.readline()
+    base = f.readline().strip()
   if device == 'prime':
     return base + '.179'
   elif device == 'robot':
