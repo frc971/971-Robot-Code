@@ -523,7 +523,8 @@ class PrimeProcessor(Processor):
         r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
         r['ASAN_OPTIONS'] = \
             'detect_leaks=1:check_initialization_order=1:strict_init_order=1' \
-            ':detect_stack_use_after_return=1:detect_odr_violation=2'
+            ':detect_stack_use_after_return=1:detect_odr_violation=2' \
+            ':allow_user_segv_handler=1'
       elif self.sanitizer() == 'memory':
         r['MSAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
       elif self.sanitizer() == 'thread':
@@ -661,6 +662,8 @@ class PrimeProcessor(Processor):
         debug = False
       elif part in PrimeProcessor.SANITIZERS:
         sanitizer = part
+      elif part == 'all':
+        architecture = compiler = debug = sanitizer = None
       else:
         raise Processor.UnknownPlatform(
             '"%s" not recognized as a platform string component.' % part)
