@@ -25,6 +25,7 @@ class TestThread(threading.Thread):
 
   Attributes:
     executable: The file path of the executable to run.
+    args: A tuple of arguments to give the executable.
     env: The environment variables to set.
     done_queue: A queue.Queue to place self on once done running the test.
     start_semaphore: A threading.Semaphore to wait on before starting.
@@ -61,11 +62,12 @@ class TestThread(threading.Thread):
           else:
             raise e
 
-  def __init__(self, executable, env, done_queue, start_semaphore):
+  def __init__(self, executable, args, env, done_queue, start_semaphore):
     super(TestThread, self).__init__(
-        name=os.path.split(executable)[1])
+        name=os.path.split(executable)[-1])
 
     self.executable = executable
+    self.args = args
     self.env = env
     self.done_queue = done_queue
     self.start_semaphore = start_semaphore
@@ -89,7 +91,8 @@ class TestThread(threading.Thread):
       self.output_copier.start()
       try:
         with self.process_lock:
-          self.process = subprocess.Popen(self.executable,
+          self.process = subprocess.Popen((self.name,) + self.args,
+                                          executable=self.executable,
                                           env=self.env,
                                           stderr=subprocess.STDOUT,
                                           stdout=subprocess_output,
@@ -715,7 +718,7 @@ def main():
     if message:
       print(message)
     sys.stdout.write(
-"""Usage: {name} [-j n] [action] [-n] [platform] [target]...
+"""Usage: {name} [-j n] [action] [-n] [platform] [target|extra_flag]...
 Arguments:
   -j, --jobs               Explicitly specify how many jobs to run at a time.
                            Defaults to the number of processors + 2.
@@ -731,6 +734,8 @@ Arguments:
                            See below for details.
   target...                Which targets to build/test/etc.
                            Defaults to everything.
+  extra_flag...            Extra flags associated with the targets.
+                           --gtest_*: Arguments to pass on to tests.
 
 Specifying targets:
  Targets are combinations of architecture, compiler, and debug flags. Which
@@ -792,6 +797,7 @@ Examples of specifying targets:
       self.dry_run = False
       self.targets = []
       self.platform = None
+      self.extra_flags = []
 
   args = Arguments()
 
@@ -815,6 +821,12 @@ Examples of specifying targets:
       continue
     if arg == '-h' or arg == '--help':
       print_help(0)
+    if re.match('^--gtest_.*$', arg):
+      if args.action_name == 'tests':
+        args.extra_flags.append(arg)
+        continue
+      else:
+        print_help(1, '--gtest_* is only valid for tests')
     if args.platform:
       args.targets.append(arg)
     else:
@@ -992,7 +1004,8 @@ Examples of specifying targets:
       else:
         to_run = os.listdir(dirname)
       for f in to_run:
-        thread = TestThread(os.path.join(dirname, f), env(platform), done_queue,
+        thread = TestThread(os.path.join(dirname, f), tuple(args.extra_flags),
+                            env(platform), done_queue,
                             test_start_semaphore)
         running.append(thread)
         thread.start()
