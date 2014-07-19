@@ -138,7 +138,7 @@ class FileWatch {
   void RemoveWatchFromMap() {
     int watch = watch_to_remove_;
     if (watch == -1) {
-      CHECK_NE(watch, -1);
+      CHECK_NE(watch_, -1);
       watch = watch_;
     }
     if (watchers[watch] != this) {
