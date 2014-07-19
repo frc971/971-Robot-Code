@@ -124,6 +124,11 @@ const ShotGoal kTrussShotGoal = {
 const ShotGoal kFlippedTrussShotGoal = {
     {0.68, kShootSeparation}, 92.0, 0.4, kIntakePower};
 
+const ShotGoal kFlippedDemoShotGoal = {
+    {1.0, kShootSeparation}, 65.0, 0.0, kIntakePower};
+const ShotGoal kDemoShotGoal = {
+    {-1.0, kShootSeparation}, 50.0, 0.0, kIntakePower};
+
 const ClawGoal k254PassGoal = {-1.95, kGrabSeparation};
 const ClawGoal kFlipped254PassGoal = {1.96, kGrabSeparation};
 
@@ -399,6 +404,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlipped254PassGoal);
+      } else if (data.PosEdge(kUserRight)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kFlippedDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
@@ -441,6 +450,10 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(k254PassGoal);
+      } else if (data.PosEdge(kUserRight)) {
+        action_queue_.CancelAllActions();
+        LOG(DEBUG, "Canceling\n");
+        SetGoal(kDemoShotGoal);
       } else if (data.PosEdge(kTrussShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
