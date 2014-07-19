@@ -54,8 +54,8 @@ const ButtonLocation kVerticalTuck(2, 6);
 const JoystickAxis kFlipRobot(3, 3);
 
 const ButtonLocation kLongShot(3, 7);
-const ButtonLocation kMediumShot(3, 6);
-const ButtonLocation kShortShot(3, 2);
+const ButtonLocation kCloseShot(3, 6);
+const ButtonLocation kFenderShot(3, 2);
 const ButtonLocation kTrussShot(2, 11);
 const ButtonLocation kHumanPlayerShot(3, 1);
 
@@ -102,8 +102,7 @@ const ShotGoal kFlippedLongShotGoal = {
 // old 34" {0.96, kShootSeparation}, 140, 0.09, kIntakePower};
 
 // 78" between near edge of colored line and rear edge of bumper.
-// TODO(brians): kCloseShot
-const ShotGoal kMediumShotGoal = {
+const ShotGoal kCloseShotGoal = {
     {-0.95, kShootSeparation}, 105, 0.2, kIntakePower};
 // 3/4" plunger {-0.90, kShootSeparation}, 105, 0.2, kIntakePower};
 const ShotGoal kFlippedMediumShotGoal = {
@@ -111,8 +110,7 @@ const ShotGoal kFlippedMediumShotGoal = {
 // 3/4" plunger {0.80, kShootSeparation}, 105, 0.2, kIntakePower};
 
 // Shot from the fender.
-// TODO(brians): kFenderShot
-const ShotGoal kShortShotGoal = {
+const ShotGoal kFenderShotGoal = {
     {-0.68, kShootSeparation}, 115.0, 0.4, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
     {0.63, kShootSeparation}, 115.0, 0.4, kIntakePower};
@@ -385,11 +383,11 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedLongShotGoal);
-      } else if (data.PosEdge(kMediumShot)) {
+      } else if (data.PosEdge(kCloseShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedMediumShotGoal);
-      } else if (data.PosEdge(kShortShot)) {
+      } else if (data.PosEdge(kFenderShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kFlippedShortShotGoal);
@@ -427,14 +425,14 @@ class Reader : public ::aos::input::JoystickInput {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
         SetGoal(kLongShotGoal);
-      } else if (data.PosEdge(kMediumShot)) {
+      } else if (data.PosEdge(kCloseShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-        SetGoal(kMediumShotGoal);
-      } else if (data.PosEdge(kShortShot)) {
+        SetGoal(kCloseShotGoal);
+      } else if (data.PosEdge(kFenderShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
-        SetGoal(kShortShotGoal);
+        SetGoal(kFenderShotGoal);
       } else if (data.PosEdge(kHumanPlayerShot)) {
         action_queue_.CancelAllActions();
         LOG(DEBUG, "Canceling\n");
