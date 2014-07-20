@@ -296,7 +296,7 @@ class Reader : public ::aos::input::JoystickInput {
              .steering(wheel)
              .throttle(throttle)
              .highgear(is_high_gear_)
-             .quickturn(data.IsPressed(kQuickTurn))
+             .quickturn(false)
              .control_loop_driving(is_control_loop_driving)
              .left_goal(left_goal)
              .right_goal(right_goal)
