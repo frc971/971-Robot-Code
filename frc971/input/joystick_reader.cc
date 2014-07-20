@@ -28,6 +28,8 @@ using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
 
+#define OLD_DS 0
+
 namespace frc971 {
 namespace input {
 namespace joysticks {
@@ -40,6 +42,26 @@ const ButtonLocation kQuickTurn(1, 5);
 
 const ButtonLocation kCatch(3, 10);
 
+#if OLD_DS
+const ButtonLocation kFire(3, 11);
+const ButtonLocation kUnload(1, 4);
+const ButtonLocation kReload(1, 2);
+
+const ButtonLocation kRollersOut(3, 12);
+const ButtonLocation kRollersIn(3, 7);
+
+const ButtonLocation kTuck(3, 9);
+const ButtonLocation kIntakePosition(3, 8);
+const ButtonLocation kIntakeOpenPosition(3, 10);
+const ButtonLocation kVerticalTuck(3, 1);
+const JoystickAxis kFlipRobot(3, 3);
+
+const ButtonLocation kLongShot(3, 5);
+const ButtonLocation kCloseShot(3, 2);
+const ButtonLocation kFenderShot(3, 6);
+const ButtonLocation kTrussShot(2, 11);
+const ButtonLocation kHumanPlayerShot(3, 2);
+#else
 const ButtonLocation kFire(3, 9);
 const ButtonLocation kUnload(1, 4);
 const ButtonLocation kReload(1, 2);
@@ -58,6 +80,7 @@ const ButtonLocation kCloseShot(3, 6);
 const ButtonLocation kFenderShot(3, 2);
 const ButtonLocation kTrussShot(2, 11);
 const ButtonLocation kHumanPlayerShot(3, 1);
+#endif
 
 const ButtonLocation kUserLeft(2, 7);
 const ButtonLocation kUserRight(2, 10);
@@ -345,7 +368,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     static const double kAdjustClawGoalDeadband = 0.08;
     double claw_goal_adjust = data.GetAxis(kAdjustClawGoal);
-    if (::std::abs(claw_goal_adjust) < kAdjustClawGoalDeadband) {
+    if (OLD_DS || ::std::abs(claw_goal_adjust) < kAdjustClawGoalDeadband) {
       claw_goal_adjust = 0;
     } else {
       claw_goal_adjust = (claw_goal_adjust -
@@ -354,7 +377,8 @@ class Reader : public ::aos::input::JoystickInput {
                          0.035;
     }
     double claw_separation_adjust = data.GetAxis(kAdjustClawSeparation);
-    if (::std::abs(claw_separation_adjust) < kAdjustClawGoalDeadband) {
+    if (OLD_DS ||
+        ::std::abs(claw_separation_adjust) < kAdjustClawGoalDeadband) {
       claw_separation_adjust = 0;
     } else {
       claw_separation_adjust =
