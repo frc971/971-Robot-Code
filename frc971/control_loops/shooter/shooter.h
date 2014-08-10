@@ -16,6 +16,7 @@ namespace control_loops {
 namespace testing {
 class ShooterTest_UnloadWindupPositive_Test;
 class ShooterTest_UnloadWindupNegative_Test;
+class ShooterTest_RezeroWhileUnloading_Test;
 };
 
 using ::aos::time::Time;
@@ -93,6 +94,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   void CapGoal();
 
+  // Friend the test classes for acces to the internal state.
+  friend class testing::ShooterTest_RezeroWhileUnloading_Test;
+
  private:
   // The offset between what is '0' (0 rate on the spring) and the 0 (all the
   // way cocked).
@@ -125,6 +129,7 @@ class ShooterMotor
 
   double PowerToPosition(double power);
   double PositionToPower(double position);
+  void CheckCalibrations(const control_loops::ShooterGroup::Position *position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -156,6 +161,7 @@ class ShooterMotor
   // Friend the test classes for acces to the internal state.
   friend class testing::ShooterTest_UnloadWindupPositive_Test;
   friend class testing::ShooterTest_UnloadWindupNegative_Test;
+  friend class testing::ShooterTest_RezeroWhileUnloading_Test;
 
   // Enter state STATE_UNLOAD
   void Unload() {

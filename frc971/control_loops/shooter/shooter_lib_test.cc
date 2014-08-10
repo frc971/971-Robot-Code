@@ -63,12 +63,12 @@ class ShooterSimulation {
     SetPhysicalSensors(&last_position_message_);
   }
 
-  // Returns the absolute angle of the wrist.
+  // Returns the absolute angle of the shooter.
   double GetAbsolutePosition() const {
     return shooter_plant_->Y(0, 0) + kPositionOffset;
   }
 
-  // Returns the adjusted angle of the wrist.
+  // Returns the adjusted angle of the shooter.
   double GetPosition() const {
     return GetAbsolutePosition() - initial_position_;
   }
@@ -351,7 +351,7 @@ TEST_F(ShooterTest, InversePowerConversion) {
   EXPECT_NEAR(power, shooter_motor_.PositionToPower(position), 1e-5);
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, GoesToValue) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 200; ++i) {
@@ -368,7 +368,7 @@ TEST_F(ShooterTest, GoesToValue) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, Fire) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 120; ++i) {
@@ -408,7 +408,7 @@ TEST_F(ShooterTest, Fire) {
   EXPECT_TRUE(hit_fire);
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, FireLong) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
@@ -458,7 +458,7 @@ TEST_F(ShooterTest, LoadTooFar) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, MoveGoal) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
@@ -485,7 +485,6 @@ TEST_F(ShooterTest, MoveGoal) {
 }
 
 
-// Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ShooterTest, Unload) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
@@ -511,7 +510,42 @@ TEST_F(ShooterTest, Unload) {
   EXPECT_EQ(ShooterMotor::STATE_READY_UNLOAD, shooter_motor_.state());
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that it rezeros while unloading.
+TEST_F(ShooterTest, RezeroWhileUnloading) {
+  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  for (int i = 0; i < 150; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SimulateTimestep(true);
+  }
+  EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
+
+  shooter_motor_.shooter_.offset_ += 0.01;
+  for (int i = 0; i < 50; ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SimulateTimestep(true);
+  }
+
+  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+
+  for (int i = 0;
+       i < 800 && shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD;
+       ++i) {
+    shooter_motor_plant_.SendPositionMessage();
+    shooter_motor_.Iterate();
+    shooter_motor_plant_.Simulate();
+    SimulateTimestep(true);
+  }
+
+  EXPECT_NEAR(constants::GetValues().shooter.upper_limit,
+              shooter_motor_plant_.GetAbsolutePosition(), 0.015);
+  EXPECT_EQ(ShooterMotor::STATE_READY_UNLOAD, shooter_motor_.state());
+}
+
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupNegative) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
@@ -551,7 +585,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
   EXPECT_GE(3, capped_goal_count);
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupPositive) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
@@ -595,7 +629,7 @@ double HallEffectMiddle(constants::Values::AnglePair pair) {
   return (pair.lower_angle + pair.upper_angle) / 2.0;
 }
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, StartsOnDistal) {
   Reinitialize(HallEffectMiddle(constants::GetValues().shooter.pusher_distal));
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
@@ -614,7 +648,7 @@ TEST_F(ShooterTest, StartsOnDistal) {
 }
 
 
-// Tests that the wrist zeros correctly and goes to a position.
+// Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, StartsOnProximal) {
   Reinitialize(
       HallEffectMiddle(constants::GetValues().shooter.pusher_proximal));

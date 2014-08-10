@@ -155,6 +155,54 @@ double ShooterMotor::PositionToPower(double position) {
   return power;
 }
 
+void ShooterMotor::CheckCalibrations(
+    const control_loops::ShooterGroup::Position *position) {
+  CHECK_NOTNULL(position);
+  const frc971::constants::Values &values = constants::GetValues();
+
+  // TODO(austin): Validate that this is the right edge.
+  // If we see a posedge on any of the hall effects,
+  if (position->pusher_proximal.posedge_count != last_proximal_posedge_count_ &&
+      !last_proximal_current_) {
+    proximal_posedge_validation_cycles_left_ = 2;
+  }
+  if (proximal_posedge_validation_cycles_left_ > 0) {
+    if (position->pusher_proximal.current) {
+      --proximal_posedge_validation_cycles_left_;
+      if (proximal_posedge_validation_cycles_left_ == 0) {
+        shooter_.SetCalibration(
+            position->pusher_proximal.posedge_value,
+            values.shooter.pusher_proximal.upper_angle);
+
+        LOG(DEBUG, "Setting calibration using proximal sensor\n");
+        zeroed_ = true;
+      }
+    } else {
+      proximal_posedge_validation_cycles_left_ = 0;
+    }
+  }
+
+  if (position->pusher_distal.posedge_count != last_distal_posedge_count_ &&
+      !last_distal_current_) {
+    distal_posedge_validation_cycles_left_ = 2;
+  }
+  if (distal_posedge_validation_cycles_left_ > 0) {
+    if (position->pusher_distal.current) {
+      --distal_posedge_validation_cycles_left_;
+      if (distal_posedge_validation_cycles_left_ == 0) {
+        shooter_.SetCalibration(
+            position->pusher_distal.posedge_value,
+            values.shooter.pusher_distal.upper_angle);
+
+        LOG(DEBUG, "Setting calibration using distal sensor\n");
+        zeroed_ = true;
+      }
+    } else {
+      distal_posedge_validation_cycles_left_ = 0;
+    }
+  }
+}
+
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
     const control_loops::ShooterGroup::Goal *goal,
@@ -330,49 +378,7 @@ void ShooterMotor::RunIteration(
       shooter_.SetGoalPosition(0.0, 0.0);
 
       if (position) {
-        // TODO(austin): Validate that this is the right edge.
-        // If we see a posedge on any of the hall effects,
-        if (position->pusher_proximal.posedge_count !=
-                last_proximal_posedge_count_ &&
-            !last_proximal_current_) {
-          proximal_posedge_validation_cycles_left_ = 2;
-        }
-        if (proximal_posedge_validation_cycles_left_ > 0) {
-          if (position->pusher_proximal.current) {
-            --proximal_posedge_validation_cycles_left_;
-            if (proximal_posedge_validation_cycles_left_ == 0) {
-              shooter_.SetCalibration(
-                  position->pusher_proximal.posedge_value,
-                  values.shooter.pusher_proximal.upper_angle);
-
-              LOG(DEBUG, "Setting calibration using proximal sensor\n");
-              zeroed_ = true;
-            }
-          } else {
-            proximal_posedge_validation_cycles_left_ = 0;
-          }
-        }
-
-        if (position->pusher_distal.posedge_count !=
-                last_distal_posedge_count_ &&
-            !last_distal_current_) {
-          distal_posedge_validation_cycles_left_ = 2;
-        }
-        if (distal_posedge_validation_cycles_left_ > 0) {
-          if (position->pusher_distal.current) {
-            --distal_posedge_validation_cycles_left_;
-            if (distal_posedge_validation_cycles_left_ == 0) {
-              shooter_.SetCalibration(
-                  position->pusher_distal.posedge_value,
-                  values.shooter.pusher_distal.upper_angle);
-
-              LOG(DEBUG, "Setting calibration using distal sensor\n");
-              zeroed_ = true;
-            }
-          } else {
-            distal_posedge_validation_cycles_left_ = 0;
-          }
-        }
+        CheckCalibrations(position);
 
         // Latch if the plunger is far enough back to trigger the hall effect.
         // This happens when the distal sensor is triggered.
@@ -552,6 +558,10 @@ void ShooterMotor::RunIteration(
           latch_piston_ = false;
         } else {
           latch_piston_ = true;
+
+          if (position) {
+            CheckCalibrations(position);
+          }
         }
       } else {
         // The plunger isn't all the way back, or it is and it is unlatched, so
