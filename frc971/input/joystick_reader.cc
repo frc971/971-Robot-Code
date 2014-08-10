@@ -58,7 +58,7 @@ const JoystickAxis kFlipRobot(3, 3);
 
 const ButtonLocation kLongShot(3, 5);
 const ButtonLocation kCloseShot(3, 2);
-const ButtonLocation kFenderShot(3, 6);
+const ButtonLocation kFenderShot(3, 3);
 const ButtonLocation kTrussShot(2, 11);
 const ButtonLocation kHumanPlayerShot(3, 2);
 #else
@@ -388,7 +388,11 @@ class Reader : public ::aos::input::JoystickInput {
           -0.035;
     }
 
+#if OLD_DS
+    if (data.IsPressed(kFenderShot)) {
+#else
     if (data.GetAxis(kFlipRobot) > 0.9) {
+#endif
       claw_goal_adjust += claw_separation_adjust;
       claw_goal_adjust *= -1;
 
