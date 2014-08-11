@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE eagle SYSTEM "eagle.dtd">
+<eagle version="6.5.0">
+<drawing>
+<settings>
+<setting alwaysvectorfont="no"/>
+<setting verticaltext="up"/>
+</settings>
+<grid distance="0.05" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.025" altunitdist="inch" altunit="inch"/>
+<layers>
+<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="19" name="Unrouted" color="6" fill="1" visible="yes" active="yes"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="23" name="tOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="26" name="bNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="28" name="bValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="29" name="tStop" color="7" fill="3" visible="no" active="yes"/>
+<layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
+<layer number="31" name="tCream" color="7" fill="4" visible="no" active="yes"/>
+<layer number="32" name="bCream" color="7" fill="5" visible="no" active="yes"/>
+<layer number="33" name="tFinish" color="6" fill="3" visible="no" active="yes"/>
+<layer number="34" name="bFinish" color="6" fill="6" visible="no" active="yes"/>
+<layer number="35" name="tGlue" color="7" fill="4" visible="no" active="yes"/>
+<layer number="36" name="bGlue" color="7" fill="5" visible="no" active="yes"/>
+<layer number="37" name="tTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="38" name="bTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="39" name="tKeepout" color="4" fill="11" visible="yes" active="yes"/>
+<layer number="40" name="bKeepout" color="1" fill="11" visible="yes" active="yes"/>
+<layer number="41" name="tRestrict" color="4" fill="10" visible="yes" active="yes"/>
+<layer number="42" name="bRestrict" color="1" fill="10" visible="yes" active="yes"/>
+<layer number="43" name="vRestrict" color="2" fill="10" visible="yes" active="yes"/>
+<layer number="44" name="Drills" color="7" fill="1" visible="no" active="yes"/>
+<layer number="45" name="Holes" color="7" fill="1" visible="no" active="yes"/>
+<layer number="46" name="Milling" color="3" fill="1" visible="no" active="yes"/>
+<layer number="47" name="Measures" color="7" fill="1" visible="no" active="yes"/>
+<layer number="48" name="Document" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="49" name="Reference" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="51" name="tDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="52" name="bDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="93" name="Pins" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="94" name="Symbols" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="95" name="Names" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="96" name="Values" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="97" name="Info" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="98" name="Guide" color="6" fill="1" visible="yes" active="yes"/>
+</layers>
+<library>
+<packages>
+<package name="SFH11-PBPC-D17-ST-BK">
+<description>2x17 0.01" keyed female connector.
+
+Sullins SFH11-PBPC-D17-ST-BK&lt;br&gt;&lt;br&gt;
+
+This package is upside down (you put it on the top side and it corresponds to a connector on the bottom); oops...</description>
+<pad name="18" x="-1.27" y="0" drill="1.016"/>
+<pad name="17" x="1.27" y="0" drill="1.016"/>
+<pad name="20" x="-1.27" y="2.54" drill="1.016"/>
+<pad name="22" x="-1.27" y="5.08" drill="1.016"/>
+<pad name="24" x="-1.27" y="7.62" drill="1.016"/>
+<pad name="26" x="-1.27" y="10.16" drill="1.016"/>
+<pad name="28" x="-1.27" y="12.7" drill="1.016"/>
+<pad name="30" x="-1.27" y="15.24" drill="1.016"/>
+<pad name="32" x="-1.27" y="17.78" drill="1.016"/>
+<pad name="34" x="-1.27" y="20.32" drill="1.016"/>
+<pad name="16" x="-1.27" y="-2.54" drill="1.016"/>
+<pad name="14" x="-1.27" y="-5.08" drill="1.016"/>
+<pad name="12" x="-1.27" y="-7.62" drill="1.016"/>
+<pad name="10" x="-1.27" y="-10.16" drill="1.016"/>
+<pad name="8" x="-1.27" y="-12.7" drill="1.016"/>
+<pad name="6" x="-1.27" y="-15.24" drill="1.016"/>
+<pad name="4" x="-1.27" y="-17.78" drill="1.016"/>
+<pad name="2" x="-1.27" y="-20.32" drill="1.016"/>
+<pad name="1" x="1.27" y="-20.32" drill="1.016" shape="square"/>
+<pad name="3" x="1.27" y="-17.78" drill="1.016"/>
+<pad name="5" x="1.27" y="-15.24" drill="1.016"/>
+<pad name="7" x="1.27" y="-12.7" drill="1.016"/>
+<pad name="9" x="1.27" y="-10.16" drill="1.016"/>
+<pad name="11" x="1.27" y="-7.62" drill="1.016"/>
+<pad name="13" x="1.27" y="-5.08" drill="1.016"/>
+<pad name="15" x="1.27" y="-2.54" drill="1.016"/>
+<pad name="19" x="1.27" y="2.54" drill="1.016"/>
+<pad name="21" x="1.27" y="5.08" drill="1.016"/>
+<pad name="23" x="1.27" y="7.62" drill="1.016"/>
+<pad name="25" x="1.27" y="10.16" drill="1.016"/>
+<pad name="27" x="1.27" y="12.7" drill="1.016"/>
+<pad name="29" x="1.27" y="15.24" drill="1.016"/>
+<pad name="31" x="1.27" y="17.78" drill="1.016"/>
+<pad name="33" x="1.27" y="20.32" drill="1.016"/>
+<text x="4.445" y="-20.32" size="1.27" layer="21" rot="R90">1</text>
+<text x="-3.175" y="19.05" size="1.27" layer="21" rot="R90">34</text>
+<wire x1="2.9972" y1="1.8542" x2="3.9878" y2="1.8542" width="0.127" layer="22"/>
+<wire x1="3.9878" y1="1.8542" x2="3.9878" y2="-1.8542" width="0.127" layer="22"/>
+<wire x1="3.9878" y1="-1.8542" x2="2.9972" y2="-1.8542" width="0.127" layer="22"/>
+<wire x1="-2.9972" y1="24.13" x2="2.9972" y2="24.13" width="0.127" layer="22"/>
+<wire x1="2.9972" y1="24.13" x2="2.9972" y2="1.8542" width="0.127" layer="22"/>
+<wire x1="2.9972" y1="1.8542" x2="2.9972" y2="-1.8542" width="0.127" layer="22"/>
+<wire x1="2.9972" y1="-1.8542" x2="2.9972" y2="-24.13" width="0.127" layer="22"/>
+<wire x1="2.9972" y1="-24.13" x2="-2.9972" y2="-24.13" width="0.127" layer="22"/>
+<wire x1="-2.9972" y1="-24.13" x2="-2.9972" y2="24.13" width="0.127" layer="22"/>
+<wire x1="-4.5466" y1="25.4" x2="4.5466" y2="25.4" width="0.127" layer="21"/>
+<wire x1="4.5466" y1="25.4" x2="4.5466" y2="-25.4" width="0.127" layer="21"/>
+<wire x1="4.5466" y1="-25.4" x2="-4.5466" y2="-25.4" width="0.127" layer="21"/>
+<wire x1="-4.5466" y1="-25.4" x2="-4.5466" y2="25.4" width="0.127" layer="21"/>
+<rectangle x1="-4.5466" y1="-25.4" x2="4.5466" y2="25.4" layer="40"/>
+</package>
+<package name="22-23-2031">
+<description>3-pin Molex locking connector (male) 22-23-2031.</description>
+<pad name="2" x="0" y="0" drill="1.016"/>
+<pad name="1" x="0" y="2.54" drill="1.016"/>
+<pad name="3" x="0" y="-2.54" drill="1.016"/>
+<wire x1="-3.1242" y1="3.7338" x2="1.0668" y2="3.7338" width="0.127" layer="21"/>
+<wire x1="1.0668" y1="3.7338" x2="1.0668" y2="-3.7338" width="0.127" layer="21"/>
+<wire x1="1.0668" y1="-3.7338" x2="-3.1242" y2="-3.7338" width="0.127" layer="21"/>
+<wire x1="-3.1242" y1="-3.7338" x2="-3.1242" y2="3.7338" width="0.127" layer="21"/>
+<rectangle x1="-3.1242" y1="-3.7338" x2="3.0988" y2="3.7338" layer="39"/>
+<wire x1="3.0988" y1="3.7338" x2="3.0988" y2="-3.7338" width="0.127" layer="21"/>
+<wire x1="3.0988" y1="3.7338" x2="1.0668" y2="3.7338" width="0.127" layer="21"/>
+<wire x1="3.0988" y1="-3.7338" x2="1.0668" y2="-3.7338" width="0.127" layer="21"/>
+</package>
+<package name="22-23-2041">
+<description>4-pin Molex locking connector (male) 22-23-2041.</description>
+<pad name="2" x="0" y="1.27" drill="1.016"/>
+<pad name="1" x="0" y="3.81" drill="1.016"/>
+<pad name="3" x="0" y="-1.27" drill="1.016"/>
+<wire x1="-3.1242" y1="5.0038" x2="1.0668" y2="5.0038" width="0.127" layer="21"/>
+<wire x1="1.0668" y1="5.0038" x2="1.0668" y2="-5.0038" width="0.127" layer="21"/>
+<wire x1="1.0668" y1="-5.0038" x2="-3.1242" y2="-5.0038" width="0.127" layer="21"/>
+<wire x1="-3.1242" y1="-5.0038" x2="-3.1242" y2="5.0038" width="0.127" layer="21"/>
+<rectangle x1="-3.1242" y1="-5.0038" x2="3.0988" y2="5.0038" layer="39"/>
+<wire x1="3.0988" y1="5.0038" x2="3.0988" y2="-5.0038" width="0.127" layer="21"/>
+<wire x1="3.0988" y1="5.0038" x2="1.0668" y2="5.0038" width="0.127" layer="21"/>
+<wire x1="3.0988" y1="-5.0038" x2="1.0668" y2="-5.0038" width="0.127" layer="21"/>
+<pad name="4" x="0" y="-3.81" drill="1.016"/>
+</package>
+<package name="PWM_1X3">
+<description>Generic 1x3 0.1" pitch connector.</description>
+<pad name="2" x="0" y="0" drill="1.016"/>
+<pad name="1" x="0" y="2.54" drill="1.016"/>
+<pad name="3" x="0" y="-2.54" drill="1.016"/>
+<wire x1="-1.27" y1="3.81" x2="1.27" y2="3.81" width="0.127" layer="21"/>
+<wire x1="1.27" y1="3.81" x2="1.27" y2="-3.81" width="0.127" layer="21"/>
+<wire x1="1.27" y1="-3.81" x2="-1.27" y2="-3.81" width="0.127" layer="21"/>
+<wire x1="-1.27" y1="-3.81" x2="-1.27" y2="3.81" width="0.127" layer="21"/>
+<rectangle x1="-1.27" y1="-3.81" x2="1.27" y2="3.81" layer="39"/>
+</package>
+</packages>
+<symbols>
+<symbol name="CONN_34PIN">
+<description>2x17 pin connector (NI MXP port).</description>
+<pin name="DIO7_SPI-MOSI" x="-20.32" y="5.08" length="middle"/>
+<pin name="DIO6_SPI-MISO" x="-20.32" y="10.16" length="middle"/>
+<pin name="DIO5_SPI-CLK" x="-20.32" y="15.24" length="middle"/>
+<pin name="DIO4_SPI-CS" x="-20.32" y="20.32" length="middle"/>
+<pin name="DIO3_PWM3" x="-20.32" y="25.4" length="middle"/>
+<pin name="DIO2_PWM2" x="-20.32" y="30.48" length="middle"/>
+<pin name="DIO1_PWM1" x="-20.32" y="35.56" length="middle"/>
+<pin name="DIO0_PWM0" x="-20.32" y="40.64" length="middle"/>
+<pin name="DIO8_PWM4" x="-20.32" y="0" length="middle"/>
+<pin name="DIO9_PWM5" x="-20.32" y="-5.08" length="middle"/>
+<pin name="DIO10_PWM6" x="-20.32" y="-10.16" length="middle"/>
+<pin name="DIO11_PWM7" x="-20.32" y="-15.24" length="middle"/>
+<pin name="DIO12_PWM8" x="-20.32" y="-20.32" length="middle"/>
+<pin name="DIO13_PWM9" x="-20.32" y="-25.4" length="middle"/>
+<pin name="DIO14_I2C-SCL" x="-20.32" y="-30.48" length="middle"/>
+<pin name="DIO15_I2C-SDA" x="-20.32" y="-35.56" length="middle"/>
+<pin name="5V" x="-20.32" y="-40.64" length="middle" direction="pwr"/>
+<pin name="DGND0" x="20.32" y="-5.08" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND1" x="20.32" y="-10.16" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND2" x="20.32" y="-15.24" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND3" x="20.32" y="-20.32" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND4" x="20.32" y="-25.4" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND5" x="20.32" y="-30.48" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="DGND6" x="20.32" y="-35.56" length="middle" direction="pwr" swaplevel="1" rot="R180"/>
+<pin name="3V3" x="20.32" y="-40.64" length="middle" direction="pwr" rot="R180"/>
+<pin name="UART-RX" x="20.32" y="0" length="middle" direction="in" rot="R180"/>
+<pin name="UART-TX" x="20.32" y="5.08" length="middle" direction="out" rot="R180"/>
+<pin name="AGND" x="20.32" y="10.16" length="middle" direction="pwr" rot="R180"/>
+<pin name="AI3" x="20.32" y="15.24" length="middle" direction="in" rot="R180"/>
+<pin name="AI2" x="20.32" y="20.32" length="middle" direction="in" rot="R180"/>
+<pin name="AI1" x="20.32" y="25.4" length="middle" direction="in" rot="R180"/>
+<pin name="AI0" x="20.32" y="30.48" length="middle" direction="in" rot="R180"/>
+<pin name="AO1" x="20.32" y="35.56" length="middle" direction="out" rot="R180"/>
+<pin name="AO0" x="20.32" y="40.64" length="middle" direction="out" rot="R180"/>
+<wire x1="-15.24" y1="43.18" x2="15.24" y2="43.18" width="0.254" layer="94"/>
+<wire x1="15.24" y1="43.18" x2="15.24" y2="-43.18" width="0.254" layer="94"/>
+<wire x1="15.24" y1="-43.18" x2="-15.24" y2="-43.18" width="0.254" layer="94"/>
+<wire x1="-15.24" y1="-43.18" x2="-15.24" y2="43.18" width="0.254" layer="94"/>
+<text x="-12.7" y="45.72" size="1.778" layer="95">&gt;NAME</text>
+</symbol>
+<symbol name="22-23-2031">
+<description>3-pin Molex locking connector (male).</description>
+<pin name="PWR" x="-7.62" y="0" length="middle" direction="pwr"/>
+<pin name="GND" x="-7.62" y="5.08" length="middle" direction="pwr"/>
+<pin name="SIG" x="-7.62" y="-5.08" length="middle"/>
+<wire x1="-2.54" y1="7.62" x2="5.08" y2="7.62" width="0.254" layer="94"/>
+<wire x1="5.08" y1="7.62" x2="5.08" y2="-7.62" width="0.254" layer="94"/>
+<wire x1="5.08" y1="-7.62" x2="-2.54" y2="-7.62" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="-7.62" x2="-2.54" y2="7.62" width="0.254" layer="94"/>
+<text x="-5.08" y="8.255" size="1.778" layer="95">&gt;NAME</text>
+</symbol>
+<symbol name="22-23-2041">
+<description>4-pin Molex locking connector (male).</description>
+<pin name="PWR" x="-10.16" y="2.54" length="middle" direction="pwr"/>
+<pin name="GND" x="-10.16" y="7.62" length="middle" direction="pwr"/>
+<pin name="A" x="-10.16" y="-2.54" length="middle"/>
+<wire x1="-5.08" y1="10.16" x2="2.54" y2="10.16" width="0.254" layer="94"/>
+<wire x1="2.54" y1="10.16" x2="2.54" y2="-10.16" width="0.254" layer="94"/>
+<wire x1="2.54" y1="-10.16" x2="-5.08" y2="-10.16" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="-10.16" x2="-5.08" y2="10.16" width="0.254" layer="94"/>
+<pin name="B" x="-10.16" y="-7.62" length="middle"/>
+<text x="-7.62" y="10.795" size="1.778" layer="95">&gt;NAME</text>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="MXP">
+<description>NI MXP female connector.</description>
+<gates>
+<gate name="G$1" symbol="CONN_34PIN" x="0" y="0" swaplevel="1"/>
+</gates>
+<devices>
+<device name="" package="SFH11-PBPC-D17-ST-BK">
+<connects>
+<connect gate="G$1" pin="3V3" pad="33"/>
+<connect gate="G$1" pin="5V" pad="1"/>
+<connect gate="G$1" pin="AGND" pad="6"/>
+<connect gate="G$1" pin="AI0" pad="3"/>
+<connect gate="G$1" pin="AI1" pad="5"/>
+<connect gate="G$1" pin="AI2" pad="7"/>
+<connect gate="G$1" pin="AI3" pad="9"/>
+<connect gate="G$1" pin="AO0" pad="2"/>
+<connect gate="G$1" pin="AO1" pad="4"/>
+<connect gate="G$1" pin="DGND0" pad="8"/>
+<connect gate="G$1" pin="DGND1" pad="12"/>
+<connect gate="G$1" pin="DGND2" pad="16"/>
+<connect gate="G$1" pin="DGND3" pad="20"/>
+<connect gate="G$1" pin="DGND4" pad="24"/>
+<connect gate="G$1" pin="DGND5" pad="28"/>
+<connect gate="G$1" pin="DGND6" pad="30"/>
+<connect gate="G$1" pin="DIO0_PWM0" pad="11"/>
+<connect gate="G$1" pin="DIO10_PWM6" pad="31"/>
+<connect gate="G$1" pin="DIO11_PWM7" pad="18"/>
+<connect gate="G$1" pin="DIO12_PWM8" pad="22"/>
+<connect gate="G$1" pin="DIO13_PWM9" pad="26"/>
+<connect gate="G$1" pin="DIO14_I2C-SCL" pad="32"/>
+<connect gate="G$1" pin="DIO15_I2C-SDA" pad="34"/>
+<connect gate="G$1" pin="DIO1_PWM1" pad="13"/>
+<connect gate="G$1" pin="DIO2_PWM2" pad="15"/>
+<connect gate="G$1" pin="DIO3_PWM3" pad="17"/>
+<connect gate="G$1" pin="DIO4_SPI-CS" pad="19"/>
+<connect gate="G$1" pin="DIO5_SPI-CLK" pad="21"/>
+<connect gate="G$1" pin="DIO6_SPI-MISO" pad="23"/>
+<connect gate="G$1" pin="DIO7_SPI-MOSI" pad="25"/>
+<connect gate="G$1" pin="DIO8_PWM4" pad="27"/>
+<connect gate="G$1" pin="DIO9_PWM5" pad="29"/>
+<connect gate="G$1" pin="UART-RX" pad="10"/>
+<connect gate="G$1" pin="UART-TX" pad="14"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="22-23-2031">
+<description>Molex 3-pin male connector 22-23-2031.</description>
+<gates>
+<gate name="G$1" symbol="22-23-2031" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="22-23-2031">
+<connects>
+<connect gate="G$1" pin="GND" pad="1"/>
+<connect gate="G$1" pin="PWR" pad="2"/>
+<connect gate="G$1" pin="SIG" pad="3"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="GENERIC" package="PWM_1X3">
+<connects>
+<connect gate="G$1" pin="GND" pad="1"/>
+<connect gate="G$1" pin="PWR" pad="2"/>
+<connect gate="G$1" pin="SIG" pad="3"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="22-23-2041">
+<description>Molex 4-pin male connector 22-23-2041.</description>
+<gates>
+<gate name="G$1" symbol="22-23-2041" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="22-23-2041">
+<connects>
+<connect gate="G$1" pin="A" pad="3"/>
+<connect gate="G$1" pin="B" pad="4"/>
+<connect gate="G$1" pin="GND" pad="1"/>
+<connect gate="G$1" pin="PWR" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
+</drawing>
+</eagle>
