@@ -308,6 +308,7 @@
                 'cflags': [
                   '-fcolor-diagnostics',
                   '-fmessage-length=80',
+                  '-fmacro-backtrace-limit=0',
                 ],
                 'defines': [
                   # This tells clang's optimizer the same thing.
