@@ -311,7 +311,7 @@
                 ],
                 'defines': [
                   # This tells clang's optimizer the same thing.
-                  '__builtin_assume_aligned(p, a)=(((uintptr_t(p) % (a)) == 0) ? (p) : (__builtin_unreachable(), (p)))',
+                  '__builtin_assume_aligned(p, a)=({ const typeof(p) my_p_ = (p); ((((uintptr_t)my_p_ % (a)) == 0u) ? my_p_ : (__builtin_unreachable(), (my_p_))); })',
                 ],
               },
             ],
