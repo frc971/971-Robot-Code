@@ -174,16 +174,21 @@ namespace aos {
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
 // unnamed enum type.
-#define DEFINE_CHECK_OP_IMPL(name, op)                              \
-  template <typename T1, typename T2>                               \
-  inline void LogImpl##name(const T1 &v1, const T2 &v2,             \
-                            const char *exprtext) {                 \
-    if (!__builtin_expect(v1 op v2, 1)) {                           \
-      LOG(FATAL, "CHECK(%s) failed\n", exprtext);                   \
-    }                                                               \
-  }                                                                 \
-  inline void LogImpl##name(int v1, int v2, const char *exprtext) { \
-    ::aos::LogImpl##name<int, int>(v1, v2, exprtext);               \
+#define DEFINE_CHECK_OP_IMPL(name, op)                                       \
+  template <typename T1, typename T2>                                        \
+  inline void LogImpl##name(const T1 &v1, const T2 &v2,                      \
+                            const char *exprtext) {                          \
+    if (!__builtin_expect(v1 op v2, 1)) {                                    \
+      log_do(FATAL,                                                          \
+             LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": CHECK(%s) failed\n", \
+             exprtext);                                                      \
+      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");                  \
+      printf("see stderr\n");                                                \
+      abort();                                                               \
+    }                                                                        \
+  }                                                                          \
+  inline void LogImpl##name(int v1, int v2, const char *exprtext) {          \
+    ::aos::LogImpl##name<int, int>(v1, v2, exprtext);                        \
   }
 
 // We use the full name Check_EQ, Check_NE, etc. in case the file including
