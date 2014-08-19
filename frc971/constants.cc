@@ -66,9 +66,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
           // ShooterLimits
-          // TODO(ben): make these real numbers
-          {-0.00127, 0.298196, -0.001524, 0.305054, 0.0149098,
-           {-0.001778, 0.000762, 0, 0}, {-0.001778, 0.009906, 0, 0}, {0.006096, 0.026416, 0, 0},
+          {-0.00127, 0.298196, -0.0017, 0.305054, 0.0149098,
+           {-0.001778, 0.000762, 0, 0},
+           {-0.001778, 0.008906, 0, 0},
+           {0.006096, 0.026416, 0, 0},
            shooter_zeroing_speed,
            shooter_unload_speed
           },

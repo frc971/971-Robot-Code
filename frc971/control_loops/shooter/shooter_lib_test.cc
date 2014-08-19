@@ -16,10 +16,12 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+static const int kTestTeam = 1;
+
 class TeamNumberEnvironment : public ::testing::Environment {
  public:
   // Override this to define how to set up the environment.
-  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
+  virtual void SetUp() { aos::network::OverrideTeamNumber(kTestTeam); }
 };
 
 ::testing::Environment *const team_number_env =
@@ -181,21 +183,21 @@ class ShooterSimulation {
     EXPECT_TRUE(shooter_queue_group_.output.FetchLatest());
     if (shooter_queue_group_.output->latch_piston && !latch_piston_state_ &&
         latch_delay_count_ <= 0) {
-      ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
+      ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = 6;
     } else if (!shooter_queue_group_.output->latch_piston &&
                latch_piston_state_ && latch_delay_count_ >= 0) {
-      ASSERT_EQ(0, latch_delay_count_) << ": The test doesn't support that.";
+      ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = -6;
     }
 
     if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
         brake_delay_count_ <= 0) {
-      ASSERT_EQ(0, brake_delay_count_) << ": The test doesn't support that.";
+      ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = 5;
     } else if (!shooter_queue_group_.output->brake_piston &&
                brake_piston_state_ && brake_delay_count_ >= 0) {
-      ASSERT_EQ(0, brake_delay_count_) << ": The test doesn't support that.";
+      ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = -5;
     }
 
@@ -239,9 +241,9 @@ class ShooterSimulation {
       if (latch_delay_count_ == -1) {
         latch_piston_state_ = false;
         if (GetAbsolutePosition() > 0.002) {
-          EXPECT_TRUE(brake_piston_state_) << ": Must have the brake set when "
+          EXPECT_TRUE(brake_piston_state_) << "Must have the brake set when "
                                               "releasing the latch for "
-                                              "powerful shots..";
+                                              "powerful shots.";
         }
         plunger_latched_ = false;
         // TODO(austin): The brake should be set for a number of cycles after
@@ -446,14 +448,14 @@ TEST_F(ShooterTest, FireLong) {
 // power.
 TEST_F(ShooterTest, LoadTooFar) {
   shooter_queue_group_.goal.MakeWithBuilder().shot_power(500.0).Send();
-  for (int i = 0; i < 150; ++i) {
+  for (int i = 0; i < 160; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
     SimulateTimestep(true);
     EXPECT_LT(
         shooter_motor_plant_.GetAbsolutePosition(),
-        constants::GetValuesForTeam(971).shooter.upper_limit);
+        constants::GetValuesForTeam(kTestTeam).shooter.upper_limit);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
@@ -702,12 +704,14 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(
         ::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
         ::testing::Values(
-            0.05, constants::GetValuesForTeam(971).shooter.upper_limit - 0.05,
-            HallEffectMiddle(constants::GetValuesForTeam(971)
+            0.05,
+            constants::GetValuesForTeam(kTestTeam).shooter.upper_limit - 0.05,
+            HallEffectMiddle(constants::GetValuesForTeam(kTestTeam)
                                  .shooter.pusher_proximal),
-            HallEffectMiddle(constants::GetValuesForTeam(971)
+            HallEffectMiddle(constants::GetValuesForTeam(kTestTeam)
                                  .shooter.pusher_distal),
-            constants::GetValuesForTeam(971).shooter.latch_max_safe_position -
+            constants::GetValuesForTeam(kTestTeam)
+                    .shooter.latch_max_safe_position -
                 0.001)));
 
 // TODO(austin): Slip the encoder somewhere.
