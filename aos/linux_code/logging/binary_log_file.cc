@@ -195,10 +195,10 @@ void LogFileReader::CheckCurrentPageReadable() {
 
 LogFileMessageHeader *LogFileWriter::GetWritePosition(size_t message_size) {
   if (position() + message_size + (kAlignment - (message_size % kAlignment)) +
-      sizeof(mutex) > kPageSize) {
+      sizeof(aos_futex) > kPageSize) {
     char *const temp = current();
     MapNextPage();
-    if (futex_set_value(static_cast<mutex *>(static_cast<void *>(
+    if (futex_set_value(static_cast<aos_futex *>(static_cast<void *>(
                     &temp[position()])), 2) == -1) {
       PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
            &temp[position()]);

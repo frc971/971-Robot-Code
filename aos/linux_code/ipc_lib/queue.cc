@@ -301,7 +301,8 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
     printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options.printable());
   }
   {
-    MutexLocker locker(&data_lock_);
+    IPCMutexLocker locker(&data_lock_);
+    CHECK(!locker.owner_died());
     bool writable_waited = false;
 
     int new_end;
@@ -327,7 +328,7 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
         if (kWriteDebug) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
-        writable_.Wait();
+        CHECK(!writable_.Wait());
         writable_waited = true;
       }
     }
@@ -384,7 +385,7 @@ bool RawQueue::ReadCommonStart(Options<RawQueue> options, int *index) {
       }
       readable_waiting_ = true;
       // Wait for a message to become readable.
-      readable_.Wait();
+      CHECK(!readable_.Wait());
       if (kReadDebug) {
         printf("queue: done waiting for readable_ of %p\n", this);
       }
@@ -415,7 +416,8 @@ const void *RawQueue::DoReadMessage(Options<RawQueue> options) {
   }
   void *msg = NULL;
 
-  MutexLocker locker(&data_lock_);
+  IPCMutexLocker locker(&data_lock_);
+  CHECK(!locker.owner_died());
 
   if (!ReadCommonStart(options, nullptr)) {
     if (kReadDebug) {
@@ -477,7 +479,8 @@ const void *RawQueue::DoReadMessageIndex(Options<RawQueue> options,
   }
   void *msg = NULL;
 
-  MutexLocker locker(&data_lock_);
+  IPCMutexLocker locker(&data_lock_);
+  CHECK(!locker.owner_died());
 
   if (!ReadCommonStart(options, index)) {
     if (kReadDebug) {

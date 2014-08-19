@@ -1,18 +1,18 @@
 #ifndef AOS_COMMON_CONDITION_H_
 #define AOS_COMMON_CONDITION_H_
 
-#include "aos/common/mutex.h"
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
+
+class Mutex;
 
 // A condition variable (IPC mechanism where 1 process/task can notify all
 // others that are waiting for something to happen) without the race condition
 // where a notification is sent after some process has checked if the thing has
 // happened but before it has started listening for notifications.
 //
-// This implementation will print debugging information and abort the process
-// if anything weird happens.
+// This implementation will LOG(FATAL) if anything weird happens.
 //
 // A simple example of the use of a condition variable (adapted from
 // pthread_cond(3)):
@@ -41,7 +41,7 @@ namespace aos {
 // the mutex and the Wait()er(s) relocking it.
 //
 // Multiple condition variables may be associated with the same mutex but
-// exactly 1 mutex must be associated with each condition variable.
+// exactly one mutex must be associated with each condition variable.
 class Condition {
  public:
   // m is the mutex that will be associated with this condition variable. This
@@ -55,12 +55,15 @@ class Condition {
   // NOTE: The relocking of the mutex is not performed atomically with waking
   // up.
   // Returns false.
-  bool Wait();
+  bool Wait() __attribute__((warn_unused_result));
 
-  // Signals at most 1 other process currently Wait()ing on this condition
+  // Signals approximately 1 other process currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this
   // condition variable to be locked.
   // One of the processes with the highest priority level will be woken.
+  // If there aren't any waiting at the time, none will be woken. There is a
+  // small race condition in the Linux implementation that can result in more
+  // than 1 being woken.
   void Signal();
   // Wakes all processes that are currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this
@@ -71,7 +74,7 @@ class Condition {
   Mutex *m() { return m_; }
 
  private:
-  mutex impl_;
+  aos_condition impl_;
   Mutex *m_;
 };
 

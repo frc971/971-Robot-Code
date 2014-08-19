@@ -15,6 +15,7 @@
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
 #include "aos/common/util/thread.h"
 
@@ -88,6 +89,9 @@ class ConditionTest : public ConditionTestCommon {
   ConditionTest() : shared_(static_cast<Shared *>(shm_malloc(sizeof(Shared)))) {
     new (shared_) Shared();
   }
+  ~ConditionTest() {
+    shared_->~Shared();
+  }
 
   GlobalCoreInstance my_core;
 
@@ -111,8 +115,8 @@ class ConditionTestProcess {
   };
 
   // This amount gets added to any passed in delay to make the test repeatable.
-  static constexpr ::Time kMinimumDelay = ::Time::InSeconds(0.015);
-  static constexpr ::Time kDefaultTimeout = ::Time::InSeconds(0.09);
+  static constexpr ::Time kMinimumDelay = ::Time::InSeconds(0.15);
+  static constexpr ::Time kDefaultTimeout = ::Time::InSeconds(0.15);
 
   // delay is how long to wait before doing action to condition.
   // timeout is how long to wait after delay before deciding that it's hung.
@@ -138,7 +142,7 @@ class ConditionTestProcess {
     } else {  // in parent
       CHECK_NE(child_, -1);
 
-      shared_->ready.Lock();
+      ASSERT_EQ(0, futex_wait(&shared_->ready));
 
       shared_->started = true;
     }
@@ -163,7 +167,7 @@ class ConditionTestProcess {
         return ::testing::AssertionSuccess() << "already been too long";
       }
     } else {
-      shared_->done_delaying.Lock();
+      CHECK_EQ(0, futex_wait(&shared_->done_delaying));
     }
     time::SleepFor(::Time::InSeconds(0.01));
     if (!shared_->finished) time::SleepUntil(shared_->start_time + timeout_);
@@ -183,35 +187,35 @@ class ConditionTestProcess {
  private:
   struct Shared {
     Shared()
-      : started(false), delayed(false), start_time(0, 0), finished(false) {
-      done_delaying.Lock();
-      ready.Lock();
+      : started(false), delayed(false), done_delaying(0), start_time(0, 0),
+        finished(false), ready(0) {
     }
 
     volatile bool started;
     volatile bool delayed;
-    Mutex done_delaying;
+    aos_futex done_delaying;
     ::Time start_time;
     volatile bool finished;
-    Mutex ready;
+    aos_futex ready;
   };
   static_assert(shm_ok<Shared>::value,
                 "it's going to get shared between forked processes");
 
   void Run() {
     if (action_ == Action::kWaitLockStart) {
-      shared_->ready.Unlock();
-      condition_->m()->Lock();
+      ASSERT_EQ(1, futex_set(&shared_->ready));
+      ASSERT_FALSE(condition_->m()->Lock());
     }
     time::SleepFor(delay_);
     shared_->start_time = ::Time::Now();
     shared_->delayed = true;
-    shared_->done_delaying.Unlock();
+    ASSERT_NE(-1, futex_set(&shared_->done_delaying));
     if (action_ != Action::kWaitLockStart) {
-      shared_->ready.Unlock();
-      condition_->m()->Lock();
+      ASSERT_EQ(1, futex_set(&shared_->ready));
+      ASSERT_FALSE(condition_->m()->Lock());
     }
-    condition_->Wait();
+    // TODO(brians): Test this returning true (aka the owner dying).
+    ASSERT_FALSE(condition_->Wait());
     shared_->finished = true;
     if (action_ != Action::kWaitNoUnlock) {
       condition_->m()->Unlock();
@@ -264,7 +268,7 @@ TEST_F(ConditionTest, Locking) {
   ConditionTestProcess child(::Time(0, 0),
                              ConditionTestProcess::Action::kWait,
                              &shared_->condition);
-  shared_->mutex.Lock();
+  ASSERT_FALSE(shared_->mutex.Lock());
   child.Start();
   Settle();
   // This Signal() shouldn't do anything because the child should still be
@@ -281,7 +285,7 @@ TEST_F(ConditionTest, LockFirst) {
   ConditionTestProcess child(::Time(0, 0),
                              ConditionTestProcess::Action::kWait,
                              &shared_->condition);
-  shared_->mutex.Lock();
+  ASSERT_FALSE(shared_->mutex.Lock());
   child.Start();
   Settle();
   shared_->condition.Signal();
@@ -303,7 +307,7 @@ TEST_F(ConditionTest, Relocking) {
   Settle();
   shared_->condition.Signal();
   EXPECT_FALSE(child.Hung());
-  EXPECT_FALSE(shared_->mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kUnlocked, shared_->mutex.TryLock());
 }
 
 // Tests that Signal() stops exactly 1 Wait()er.

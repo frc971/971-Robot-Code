@@ -1,87 +1,104 @@
 #ifndef AOS_COMMON_MUTEX_H_
 #define AOS_COMMON_MUTEX_H_
 
-#ifdef __VXWORKS__
-#include <semLib.h>
-#endif
-
 #include "aos/common/macros.h"
-#include "aos/common/type_traits.h"
 #include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/common/die.h"
 
 namespace aos {
 
 class Condition;
 
-// An abstraction of a mutex that has implementations both for
-// linux and for the cRIO.
-// If there are multiple tasks or processes contending for the mutex,
+// An abstraction of a mutex that is easy to implement for environments other
+// than Linux too.
+// If there are multiple threads or processes contending for the mutex,
 // higher priority ones will succeed in locking first,
 // and tasks of equal priorities have the same chance of getting the lock.
-// There is no priority inversion protection.
+// To deal with priority inversion, the linux implementation does priority
+// inheritance.
+// Before destroying a mutex, it is important to make sure it isn't locked.
+// Otherwise, the destructor will LOG(FATAL).
 class Mutex {
  public:
+  enum class State {
+    kLocked, kUnlocked
+  };
+
   // Creates an unlocked mutex.
   Mutex();
-#ifdef __VXWORKS__
-  // Will not make sure that it is either locked or unlocked.
+  // Verifies that it isn't locked.
+  //
+  // This is important because freeing a locked mutex means there is freed
+  // memory in the middle of the robust list, which breaks things horribly.
   ~Mutex();
-#endif
+
   // Locks the mutex. If it fails, it calls LOG(FATAL).
   // Returns false.
-  bool Lock();
+  bool Lock() __attribute__((warn_unused_result));
   // Unlocks the mutex. Fails like Lock.
   // Multiple unlocking is undefined.
   void Unlock();
   // Locks the mutex unless it is already locked.
-  // Returns whether it succeeded or not.
+  // Returns the new state of the mutex.
   // Doesn't wait for the mutex to be unlocked if it is locked.
-  bool TryLock();
+  State TryLock() __attribute__((warn_unused_result));
 
  private:
-#ifdef __VXWORKS__
-  typedef SEM_ID ImplementationType;
-#else
-  typedef mutex ImplementationType;
-#endif
-  ImplementationType impl_;
+  aos_mutex impl_;
 
   friend class Condition;  // for access to impl_
-
-#ifdef __VXWORKS__
-  DISALLOW_COPY_AND_ASSIGN(Mutex);
-#endif
 };
 
 // A class that locks a Mutex when constructed and unlocks it when destructed.
 // Designed to be used as a local variable so that
 // the mutex will be unlocked when the scope is exited.
+// This one immediately Dies if the previous owner died. This makes it a good
+// choice for mutexes that are only used within a single process, but NOT for
+// mutexes shared by multiple processes. For those, use IPCMutexLocker.
 class MutexLocker {
  public:
   explicit MutexLocker(Mutex *mutex) : mutex_(mutex) {
-    mutex_->Lock();
+    if (__builtin_expect(mutex_->Lock(), false)) {
+      ::aos::Die("previous owner of mutex %p died but it shouldn't be able to",
+                 this);
+    }
   }
   ~MutexLocker() {
     mutex_->Unlock();
   }
 
  private:
-  Mutex *mutex_;
+  Mutex *const mutex_;
+
   DISALLOW_COPY_AND_ASSIGN(MutexLocker);
 };
-// The inverse of MutexLocker.
-class MutexUnlocker {
+
+// A version of MutexLocker which reports the previous owner dying instead of
+// immediately LOG(FATAL)ing.
+class IPCMutexLocker {
  public:
-  explicit MutexUnlocker(Mutex *mutex) : mutex_(mutex) {
+  explicit IPCMutexLocker(Mutex *mutex)
+      : mutex_(mutex), owner_died_(mutex_->Lock()) {}
+  ~IPCMutexLocker() {
+    if (__builtin_expect(!owner_died_checked_, false)) {
+      ::aos::Die("nobody checked if the previous owner of mutex %p died", this);
+    }
     mutex_->Unlock();
   }
-  ~MutexUnlocker() {
-    mutex_->Lock();
+
+  // Whether or not the previous owner died. If this is not called at least
+  // once, the destructor will ::aos::Die.
+  __attribute__((warn_unused_result)) bool owner_died() {
+    owner_died_checked_ = true;
+    return __builtin_expect(owner_died_, false);
   }
 
  private:
-  Mutex *mutex_;
-  DISALLOW_COPY_AND_ASSIGN(MutexUnlocker);
+  Mutex *const mutex_;
+  const bool owner_died_;
+  bool owner_died_checked_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(IPCMutexLocker);
 };
 
 }  // namespace aos

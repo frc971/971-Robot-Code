@@ -93,12 +93,6 @@
       'sources': [
         'thread.cc',
       ],
-      'dependencies': [
-        '<(AOS)/common/common.gyp:mutex',
-      ],
-      'export_dependent_settings': [
-        '<(AOS)/common/common.gyp:mutex',
-      ],
     },
     {
       'target_name': 'trapezoid_profile',

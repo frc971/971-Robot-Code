@@ -4,10 +4,11 @@
       'target_name': 'aos_sync',
       'type': 'static_library',
       'sources': [
-        'aos_sync.c',
+        'aos_sync.cc',
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging_interface',
+        '<(AOS)/common/common.gyp:once',
       ],
     },
     {
