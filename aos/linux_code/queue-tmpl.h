@@ -108,7 +108,9 @@ T *Queue<T>::MakeRawMessage() {
 template <class T>
 aos::MessageBuilder<T> Queue<T>::MakeWithBuilder() {
   Init();
-  return aos::MessageBuilder<T>(queue_, MakeRawMessage());
+  T *const ret = MakeRawMessage();
+  ret->Zero();
+  return aos::MessageBuilder<T>(queue_, ret);
 }
 
 }  // namespace aos

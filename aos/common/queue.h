@@ -234,6 +234,7 @@ class Queue {
   ScopedMessagePtr<T> MakeMessage();
 
   // Returns a message builder that contains a pre-allocated message.
+  // This message will start out completely zeroed.
   aos::MessageBuilder<T> MakeWithBuilder();
 
   const char *name() const { return queue_name_; }

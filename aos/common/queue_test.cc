@@ -78,6 +78,17 @@ TEST_F(QueueTest, SendWithBuilder) {
   EXPECT_EQ(true, my_test_queue.IsNewerThanMS(10000));
 }
 
+// Makes sure that MakeWithBuilder zeros the message initially.
+// This might randomly succeed sometimes, but it will fail with asan if it
+// doesn't.
+TEST_F(QueueTest, BuilderZero) {
+  my_test_queue.MakeWithBuilder().Send();
+
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_FALSE(my_test_queue->test_bool);
+  EXPECT_EQ(0, my_test_queue->test_int);
+}
+
 // Tests that various pointer deref functions at least seem to work.
 TEST_F(QueueTest, PointerDeref) {
   my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
