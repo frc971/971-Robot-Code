@@ -4,6 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/queue_testutils.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace testing {
@@ -24,6 +25,7 @@ class ControlLoopTest : public ::testing::Test {
 
  private:
   bool sent_robot_state_last_time_ = false;
+  ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
 
   ::aos::common::testing::GlobalCoreInstance my_core;
 };

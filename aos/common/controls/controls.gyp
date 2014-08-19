@@ -16,6 +16,7 @@
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/common.gyp:queue_testutils',
       ],
     },

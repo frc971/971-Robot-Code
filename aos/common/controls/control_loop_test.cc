@@ -3,7 +3,6 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/controls/output_check.q.h"
-#include "aos/common/time.h"
 
 namespace aos {
 namespace testing {
@@ -17,7 +16,7 @@ ControlLoopTest::ControlLoopTest() {
       .reader_pid(254)
       .cape_resets(5)
       .Send();
-  ::aos::time::Time::EnableMockTime(::aos::time::Time::InSeconds(0.0));
+  ::aos::time::Time::EnableMockTime(current_time_);
 
   SimulateTimestep(false);
 }
@@ -50,7 +49,8 @@ void ControlLoopTest::SimulateTimestep(bool enabled) {
         .pulse_length(0)
         .Send();
   }
-  ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
+  ::aos::time::Time::SetMockTime(current_time_ +=
+                                 ::aos::time::Time::InMS(10.0));
 }
 
 }  // namespace testing
