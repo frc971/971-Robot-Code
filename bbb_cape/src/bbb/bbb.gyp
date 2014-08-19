@@ -76,6 +76,17 @@
       ],
     },
     {
+      'target_name': 'all_tests',
+      'type': 'none',
+      'variables': {
+        'no_rsync': 1,
+      },
+      'dependencies': [
+        'cows_test',
+        'packet_finder_test',
+      ],
+    },
+    {
       'target_name': 'cows_test',
       'type': 'executable',
       'sources': [

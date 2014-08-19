@@ -5,6 +5,8 @@
       'type': 'none',
       'dependencies': [
         '<(AOS)/build/aos_all.gyp:Prime',
+        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:all_tests',
+
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain',
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain_lib_test',
         '../control_loops/claw/claw.gyp:claw',
@@ -23,8 +25,6 @@
         '../input/input.gyp:sensor_receiver',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
         '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
         '../output/output.gyp:led_setter',
       ],
