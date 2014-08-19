@@ -12,6 +12,7 @@ cc_library(
     '//aos/common/logging',
     '//aos/common:once',
     '//aos/common:macros',
+    '//aos/common/util:compiler_memory_barrier',
   ],
 )
 

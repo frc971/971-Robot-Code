@@ -54,7 +54,7 @@ class Condition {
   // and will be locked when this method returns.
   // NOTE: The relocking of the mutex is not performed atomically with waking
   // up.
-  // Returns false.
+  // Returns true if the previous owner of the mutex died before we relocked it.
   bool Wait() __attribute__((warn_unused_result));
 
   // Signals approximately 1 other process currently Wait()ing on this condition

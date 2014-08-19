@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 
 #include <atomic>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -73,6 +74,22 @@ TEST_F(SimpleConditionTest, Basic) {
   mutex_.Unlock();
   child.Join();
   EXPECT_TRUE(child_finished.load());
+}
+
+// Tests that contention on the associated mutex doesn't break anything.
+// This seems likely to cause issues with AddressSanitizer in particular.
+TEST_F(SimpleConditionTest, MutexContention) {
+  for (int i = 0; i < 1000; ++i) {
+    ASSERT_FALSE(mutex_.Lock());
+    ::std::thread thread([this]() {
+      ASSERT_FALSE(mutex_.Lock());
+      condition_.Signal();
+      mutex_.Unlock();
+    });
+    ASSERT_FALSE(condition_.Wait());
+    mutex_.Unlock();
+    thread.join();
+  }
 }
 
 class ConditionTest : public ConditionTestCommon {
@@ -307,7 +324,8 @@ TEST_F(ConditionTest, Relocking) {
   Settle();
   shared_->condition.Signal();
   EXPECT_FALSE(child.Hung());
-  EXPECT_EQ(Mutex::State::kLockFailed, shared_->mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kOwnerDied, shared_->mutex.TryLock());
+  shared_->mutex.Unlock();
 }
 
 // Tests that Signal() stops exactly 1 Wait()er.
