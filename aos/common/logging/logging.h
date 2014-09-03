@@ -233,10 +233,26 @@ inline int CheckSyscall(const char *syscall_string, int value) {
   return value;
 }
 
+inline void CheckSyscallReturn(const char *syscall_string, int value) {
+  if (__builtin_expect(value != 0, false)) {
+    PELOG(FATAL, value, "%s failed", syscall_string);
+  }
+}
+
 // Check that syscall does not return -1. If it does, PLOG(FATAL)s. This is
 // useful for quickly checking syscalls where it's not very useful to print out
-// the values of any of the arguments.
+// the values of any of the arguments. Returns the result otherwise.
+//
+// Example: const int fd = PCHECK(open("/tmp/whatever", O_WRONLY))
 #define PCHECK(syscall) ::aos::CheckSyscall(STRINGIFY(syscall), syscall)
+
+// PELOG(FATAL)s with the result of syscall if it returns anything other than 0.
+// This is useful for quickly checking things like many of the pthreads
+// functions where it's not very useful to print out the values of any of the
+// arguments.
+//
+// Example: PRCHECK(munmap(address, length))
+#define PRCHECK(syscall) ::aos::CheckSyscallReturn(STRINGIFY(syscall), syscall)
 
 }  // namespace aos
 

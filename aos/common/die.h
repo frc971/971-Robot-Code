@@ -26,7 +26,20 @@ void VDie(const char *format, va_list args)
     const int error = errno;                                \
     ::aos::Die(format " because of %d (%s)", ##args, error, \
                aos_strerror(error));                        \
-  } while (false);
+  } while (false)
+
+// The same as Die except appends " because of %d (%s)" (formatted with error
+// and aos_strerror(error)) to the message.
+// PCHECK is to PDie as PRCHECK is to PRDie
+//
+// Example:
+// const int ret = pthread_mutex_lock(whatever);
+// if (ret != 0) PRDie(ret, "pthread_mutex_lock(%p) failed", whatever);
+#define PRDie(error, format, args...)                       \
+  do {                                                      \
+    ::aos::Die(format " because of %d (%s)", ##args, error, \
+               aos_strerror(error));                        \
+  } while (false)
 
 // Turns on (or off) "test mode", where (V)Die doesn't write out files and
 // doesn't print to stdout.
