@@ -23,7 +23,19 @@ class Thread {
   void Start();
 
   // Asks the code to stop and then waits until it has done so.
+  // This or TryJoin() (returning true) must be called exactly once for every
+  // instance.
   void Join();
+
+  // If the code has already finished, returns true. Does not block waiting if
+  // it isn't.
+  // Join() must not be called on this instance if this returns true.
+  // This must return true or Join() must be called exactly once for every
+  // instance.
+  bool TryJoin();
+
+  // Asks the code to stop (in preparation for a Join()).
+  void RequestStop();
 
   // Waits until the code has stopped. Does not ask it to do so.
   void WaitUntilDone();
