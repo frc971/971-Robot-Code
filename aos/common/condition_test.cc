@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <atomic>
+
 #include "gtest/gtest.h"
 
 #include "aos/common/time.h"
@@ -14,6 +16,7 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
 #include "aos/common/die.h"
+#include "aos/common/util/thread.h"
 
 using ::aos::time::Time;
 using ::aos::common::testing::GlobalCoreInstance;
@@ -21,7 +24,57 @@ using ::aos::common::testing::GlobalCoreInstance;
 namespace aos {
 namespace testing {
 
-class ConditionTest : public ::testing::Test {
+class ConditionTestCommon : public ::testing::Test {
+ public:
+  ConditionTestCommon() {}
+
+  void Settle() {
+    time::SleepFor(::Time::InSeconds(0.008));
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ConditionTestCommon);
+};
+
+// Some simple tests that don't rely on a GlobalCoreInstance to help with
+// debugging problems that cause tests using that to just completely lock up.
+class SimpleConditionTest : public ConditionTestCommon {
+ public:
+  SimpleConditionTest() : condition_(&mutex_) {}
+
+  Mutex mutex_;
+  Condition condition_;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(SimpleConditionTest);
+};
+
+// Makes sure that nothing crashes or anything with a basic Wait() and then
+// Signal().
+// This test is written to hopefully fail instead of deadlocking on failure, but
+// it's tricky because there's no way to kill the child in the middle.
+TEST_F(SimpleConditionTest, Basic) {
+  ::std::atomic_bool child_finished(false);
+  Condition child_ready(&mutex_);
+  ASSERT_FALSE(mutex_.Lock());
+  util::FunctionThread child([this, &child_finished, &child_ready](
+      util::FunctionThread *) {
+    ASSERT_FALSE(mutex_.Lock());
+    child_ready.Broadcast();
+    ASSERT_FALSE(condition_.Wait());
+    child_finished.store(true);
+    mutex_.Unlock();
+  });
+  child.Start();
+  ASSERT_FALSE(child_ready.Wait());
+  EXPECT_FALSE(child_finished.load());
+  condition_.Signal();
+  mutex_.Unlock();
+  child.Join();
+  EXPECT_TRUE(child_finished.load());
+}
+
+class ConditionTest : public ConditionTestCommon {
  public:
   struct Shared {
     Shared() : condition(&mutex) {}
@@ -39,10 +92,6 @@ class ConditionTest : public ::testing::Test {
   GlobalCoreInstance my_core;
 
   Shared *const shared_;
-
-  void Settle() {
-    time::SleepFor(::Time::InSeconds(0.008));
-  }
 
  protected:
   void SetUp() override {

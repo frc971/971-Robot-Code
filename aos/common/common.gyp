@@ -305,6 +305,7 @@
         'queue_testutils',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
         'die',
+        '<(AOS)/common/util/util.gyp:thread',
        ],
     },
     {
