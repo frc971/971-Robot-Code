@@ -69,6 +69,13 @@ class FunctionThread : public Thread {
   FunctionThread(::std::function<void(FunctionThread *)> function)
       : function_(function) {}
 
+  // Runs function in a new thread and waits for it to return.
+  static void RunInOtherThread(::std::function<void()> function) {
+    FunctionThread t([&function](FunctionThread *) { function(); });
+    t.Start();
+    t.Join();
+  }
+
  private:
   virtual void Run() override {
     function_(this);
