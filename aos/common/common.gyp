@@ -361,5 +361,31 @@
         'die',
       ],
     },
+    {
+      'target_name': 'transaction',
+      'type': 'static_library',
+      'sources': [
+        #'transaction.h',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+    },
+    {
+      'target_name': 'transaction_test',
+      'type': 'executable',
+      'sources': [
+        'transaction_test.cc',
+      ],
+      'dependencies': [
+        'transaction',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:death_test_log_implementation',
+      ],
+    },
   ],
 }

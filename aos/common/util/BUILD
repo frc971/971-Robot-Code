@@ -172,3 +172,10 @@ cc_test(
     '//aos/testing:googletest',
   ],
 )
+
+cc_library(
+  name = 'compiler_memory_barrier',
+  hdrs = [
+    'compiler_memory_barrier.h',
+  ],
+)
