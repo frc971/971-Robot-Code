@@ -10,6 +10,8 @@ namespace logging {
 namespace internal {
 namespace {
 
+// TODO(brians): Differentiate between threads in the same process.
+
 ::std::string GetMyName() {
   // The maximum number of characters that can make up a thread name.
   // The docs are unclear if it can be 16 characters with no '\0', so we'll be
