@@ -91,6 +91,10 @@
           'ldflags': [
             '-fsanitize=<(SANITIZER)',
           ],
+          'defines': [
+# GCC doesn't have __has_feature, so we have to use this instead.
+            'AOS_SANITIZER_<(SANITIZER)',
+          ],
         },
       },
     ], ['SANITIZER!="none" and COMPILER!="gcc"', {
