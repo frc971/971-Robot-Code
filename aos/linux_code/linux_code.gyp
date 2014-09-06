@@ -1,6 +1,30 @@
 {
   'targets': [
     {
+      'target_name': 'complex_thread_local',
+      'type': 'static_library',
+      'sources': [
+        'complex_thread_local.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:once',
+        '<(AOS)/common/common.gyp:die',
+      ],
+    },
+    {
+      'target_name': 'complex_thread_local_test',
+      'type': 'executable',
+      'sources': [
+        'complex_thread_local_test.cc',
+      ],
+      'dependencies': [
+        'complex_thread_local',
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/util/util.gyp:thread',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
       'target_name': 'init',
       'type': 'static_library',
       'sources': [

@@ -29,6 +29,7 @@
         '<(AOS)/common/util/util.gyp:run_command_test',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:cows_test',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:packet_finder_test',
+        '<(AOS)/linux_code/linux_code.gyp:complex_thread_local_test',
         'Common',
       ],
     },
