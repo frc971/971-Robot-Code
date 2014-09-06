@@ -2,6 +2,7 @@
 
 #include <sys/prctl.h>
 
+#include "aos/linux_code/complex_thread_local.h"
 #include "aos/linux_code/thread_local.h"
 #include "aos/common/die.h"
 
@@ -39,23 +40,23 @@ namespace {
   return process_name + '.' + thread_name;
 }
 
-AOS_THREAD_LOCAL Context *my_context(nullptr);
+::aos::ComplexThreadLocal<Context> my_context;
 
-// A temporary stash for Context objects that we're going to delete ASAP. The
+// True if we're going to delete the current Context object ASAP. The
 // reason for doing this instead of just deleting them is that tsan (at least)
 // doesn't like it when pthread_atfork handlers do complicated stuff and it's
 // not a great idea anyways.
-AOS_THREAD_LOCAL Context *old_context(nullptr);
+AOS_THREAD_LOCAL bool delete_current_context(false);
 
 }  // namespace
 
 Context *Context::Get() {
-  if (__builtin_expect(my_context == nullptr, 0)) {
-    if (old_context != nullptr) {
-      delete old_context;
-      old_context = nullptr;
-    }
-    my_context = new Context();
+  if (__builtin_expect(delete_current_context, false)) {
+    my_context.Clear();
+    delete_current_context = false;
+  }
+  if (__builtin_expect(!my_context.created(), false)) {
+    my_context.Create();
     my_context->name = GetMyName();
     if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
       Die("logging: process/thread name '%s' is too long\n",
@@ -63,17 +64,11 @@ Context *Context::Get() {
     }
     my_context->source = getpid();
   }
-  return my_context;
+  return my_context.get();
 }
 
 void Context::Delete() {
-  if (my_context != nullptr) {
-    if (old_context != nullptr) {
-      delete old_context;
-    }
-    old_context = my_context;
-    my_context = nullptr;
-  }
+  delete_current_context = true;
 }
 
 }  // namespace internal
