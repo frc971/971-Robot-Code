@@ -21,7 +21,7 @@ namespace testing {
 
 class MutexTest : public ::testing::Test {
  public:
-  Mutex test_mutex;
+  Mutex test_mutex_;
 
  protected:
   void SetUp() override {
@@ -35,39 +35,40 @@ typedef MutexTest MutexLockerTest;
 typedef MutexTest MutexLockerDeathTest;
 typedef MutexTest IPCMutexLockerTest;
 typedef MutexTest IPCMutexLockerDeathTest;
+typedef MutexTest IPCRecursiveMutexLockerTest;
 
 TEST_F(MutexTest, TryLock) {
-  EXPECT_EQ(Mutex::State::kLocked, test_mutex.TryLock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
+  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
 
-  test_mutex.Unlock();
+  test_mutex_.Unlock();
 }
 
 TEST_F(MutexTest, Lock) {
-  ASSERT_FALSE(test_mutex.Lock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex.TryLock());
+  ASSERT_FALSE(test_mutex_.Lock());
+  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
 
-  test_mutex.Unlock();
+  test_mutex_.Unlock();
 }
 
 TEST_F(MutexTest, Unlock) {
-  ASSERT_FALSE(test_mutex.Lock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex.TryLock());
-  test_mutex.Unlock();
-  EXPECT_EQ(Mutex::State::kLocked, test_mutex.TryLock());
+  ASSERT_FALSE(test_mutex_.Lock());
+  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+  test_mutex_.Unlock();
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
 
-  test_mutex.Unlock();
+  test_mutex_.Unlock();
 }
 
 // Sees what happens with multiple unlocks.
 TEST_F(MutexDeathTest, RepeatUnlock) {
   logging::Init();
-  ASSERT_FALSE(test_mutex.Lock());
-  test_mutex.Unlock();
+  ASSERT_FALSE(test_mutex_.Lock());
+  test_mutex_.Unlock();
   EXPECT_DEATH(
       {
         logging::AddImplementation(new util::DeathTestLogImplementation());
-        test_mutex.Unlock();
+        test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
 }
@@ -78,7 +79,7 @@ TEST_F(MutexDeathTest, NeverLock) {
   EXPECT_DEATH(
       {
         logging::AddImplementation(new util::DeathTestLogImplementation());
-        test_mutex.Unlock();
+        test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
 }
@@ -88,8 +89,8 @@ TEST_F(MutexDeathTest, RepeatLock) {
   EXPECT_DEATH(
       {
         logging::AddImplementation(new util::DeathTestLogImplementation());
-        ASSERT_FALSE(test_mutex.Lock());
-        ASSERT_FALSE(test_mutex.Lock());
+        ASSERT_FALSE(test_mutex_.Lock());
+        ASSERT_FALSE(test_mutex_.Lock());
       },
       ".*multiple lock.*");
 }
@@ -134,9 +135,9 @@ class AdderThread : public ::aos::util::Thread {
 TEST_F(MutexTest, ThreadSanitizerContended) {
   int counter = 0;
   AdderThread threads[2]{
-      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0.2),
+      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0.2),
        ::aos::time::Time::InSeconds(0)},
-      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0),
+      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0),
        ::aos::time::Time::InSeconds(0)}, };
   for (auto &c : threads) {
     c.Start();
@@ -153,12 +154,12 @@ TEST_F(MutexTest, ThreadSanitizerMutexLocker) {
   int counter = 0;
   ::std::thread thread([&counter, this]() {
     for (int i = 0; i < 1000; ++i) {
-      MutexLocker locker(&test_mutex);
+      MutexLocker locker(&test_mutex_);
       ++counter;
     }
   });
   for (int i = 0; i < 1000; ++i) {
-    MutexLocker locker(&test_mutex);
+    MutexLocker locker(&test_mutex_);
     --counter;
   }
   thread.join();
@@ -170,9 +171,9 @@ TEST_F(MutexTest, ThreadSanitizerMutexLocker) {
 TEST_F(MutexTest, ThreadSanitizerUncontended) {
   int counter = 0;
   AdderThread threads[2]{
-      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0.2),
+      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0.2),
        ::aos::time::Time::InSeconds(0)},
-      {&counter, &test_mutex, ::aos::time::Time::InSeconds(0),
+      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0),
        ::aos::time::Time::InSeconds(0)}, };
   for (auto &c : threads) {
     c.Start();
@@ -183,30 +184,89 @@ TEST_F(MutexTest, ThreadSanitizerUncontended) {
   EXPECT_EQ(2, counter);
 }
 
+namespace {
+
+class LockerThread : public util::Thread {
+ public:
+  LockerThread(Mutex *mutex, bool lock, bool unlock)
+      : mutex_(mutex), lock_(lock), unlock_(unlock) {}
+
+ private:
+  virtual void Run() override {
+    if (lock_) ASSERT_FALSE(mutex_->Lock());
+    if (unlock_) mutex_->Unlock();
+  }
+
+  Mutex *const mutex_;
+  const bool lock_, unlock_;
+};
+
+}  // namespace
+
+// Makes sure that we don't SIGSEGV or something with multiple threads.
+TEST_F(MutexTest, MultiThreadedLock) {
+  LockerThread t(&test_mutex_, true, true);
+  t.Start();
+  ASSERT_FALSE(test_mutex_.Lock());
+  test_mutex_.Unlock();
+  t.Join();
+}
+
 TEST_F(MutexLockerTest, Basic) {
   {
-    aos::MutexLocker locker(&test_mutex);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex.TryLock());
+    aos::MutexLocker locker(&test_mutex_);
+    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
   }
-  EXPECT_EQ(Mutex::State::kLocked, test_mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
 
-  test_mutex.Unlock();
+  test_mutex_.Unlock();
 }
 
 TEST_F(IPCMutexLockerTest, Basic) {
   {
-    aos::IPCMutexLocker locker(&test_mutex);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex.TryLock());
+    aos::IPCMutexLocker locker(&test_mutex_);
+    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
     EXPECT_FALSE(locker.owner_died());
   }
-  EXPECT_EQ(Mutex::State::kLocked, test_mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
 
-  test_mutex.Unlock();
+  test_mutex_.Unlock();
 }
 
+// Tests what happens when the caller doesn't check if the previous owner died
+// with an IPCMutexLocker.
 TEST_F(IPCMutexLockerDeathTest, NoCheckOwnerDied) {
-  EXPECT_DEATH({ aos::IPCMutexLocker locker(&test_mutex); },
+  EXPECT_DEATH({ aos::IPCMutexLocker locker(&test_mutex_); },
                "nobody checked if the previous owner of mutex [^ ]+ died.*");
+}
+
+TEST_F(IPCRecursiveMutexLockerTest, Basic) {
+  {
+    aos::IPCRecursiveMutexLocker locker(&test_mutex_);
+    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_FALSE(locker.owner_died());
+  }
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
+
+  test_mutex_.Unlock();
+}
+
+// Tests actually locking a mutex recursively with IPCRecursiveMutexLocker.
+TEST_F(IPCRecursiveMutexLockerTest, RecursiveLock) {
+  {
+    aos::IPCRecursiveMutexLocker locker(&test_mutex_);
+    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    {
+      aos::IPCRecursiveMutexLocker locker(&test_mutex_);
+      EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+      EXPECT_FALSE(locker.owner_died());
+    }
+    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_FALSE(locker.owner_died());
+  }
+  EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
+
+  test_mutex_.Unlock();
 }
 
 }  // namespace testing

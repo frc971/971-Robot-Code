@@ -43,6 +43,10 @@ class Mutex {
   // Doesn't wait for the mutex to be unlocked if it is locked.
   State TryLock() __attribute__((warn_unused_result));
 
+  // Returns true iff the current task has this mutex locked.
+  // This is mainly for IPCRecursiveMutexLocker to use.
+  bool OwnedBySelf() const;
+
  private:
   aos_mutex impl_;
 
@@ -99,6 +103,36 @@ class IPCMutexLocker {
   bool owner_died_checked_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(IPCMutexLocker);
+};
+
+// A version of IPCMutexLocker which only locks (and unlocks) the mutex if the
+// current task does not already hold it.
+class IPCRecursiveMutexLocker {
+ public:
+  explicit IPCRecursiveMutexLocker(Mutex *mutex)
+      : mutex_(mutex),
+        locked_(!mutex_->OwnedBySelf()),
+        owner_died_(locked_ ? mutex_->Lock() : false) {}
+  ~IPCRecursiveMutexLocker() {
+    if (__builtin_expect(!owner_died_checked_, false)) {
+      ::aos::Die("nobody checked if the previous owner of mutex %p died", this);
+    }
+    if (locked_) mutex_->Unlock();
+  }
+
+  // Whether or not the previous owner died. If this is not called at least
+  // once, the destructor will ::aos::Die.
+  __attribute__((warn_unused_result)) bool owner_died() {
+    owner_died_checked_ = true;
+    return __builtin_expect(owner_died_, false);
+  }
+
+ private:
+  Mutex *const mutex_;
+  const bool locked_, owner_died_;
+  bool owner_died_checked_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(IPCRecursiveMutexLocker);
 };
 
 }  // namespace aos

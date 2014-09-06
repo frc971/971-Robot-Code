@@ -15,7 +15,7 @@ Mutex::Mutex() : impl_() {
 }
 
 Mutex::~Mutex() {
-  if (__builtin_expect(mutex_islocked(&impl_), 0)) {
+  if (__builtin_expect(mutex_islocked(&impl_), false)) {
     LOG(FATAL, "destroying locked mutex %p (aka %p)\n",
         this, &impl_);
   }
@@ -49,6 +49,10 @@ Mutex::State Mutex::TryLock() {
       LOG(FATAL, "mutex_trylock(%p(=%" PRIu32 ")) failed with %d\n",
           &impl_, impl_.futex, ret);
   }
+}
+
+bool Mutex::OwnedBySelf() const {
+  return mutex_islocked(&impl_);
 }
 
 }  // namespace aos
