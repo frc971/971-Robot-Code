@@ -24,10 +24,7 @@ void Thread::Start() {
 void Thread::Join() {
   CHECK(!joined_ && started_);
   joined_ = true;
-  {
-    MutexLocker locker(&should_terminate_mutex_);
-    should_terminate_ = true;
-  }
+  should_terminate_.store(true);
   CHECK(pthread_join(thread_, NULL) == 0);
 }
 

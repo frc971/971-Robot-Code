@@ -2,8 +2,10 @@
 #define AOS_COMMON_UTIL_THREAD_H_
 
 #include <functional>
+#include <atomic>
 
-#include "aos/common/mutex.h"
+#include <pthread.h>
+
 #include "aos/common/macros.h"
 
 namespace aos {
@@ -30,8 +32,7 @@ class Thread {
   // Subclasses need to call this periodically if they are going to loop to
   // check whether they have been asked to stop.
   bool should_continue() {
-    MutexLocker locker(&should_terminate_mutex_);
-    return !should_terminate_;
+    return !should_terminate_.load();
   }
 
  private:
@@ -46,8 +47,7 @@ class Thread {
   pthread_t thread_;
   bool started_;
   bool joined_;
-  bool should_terminate_;
-  Mutex should_terminate_mutex_;
+  ::std::atomic_bool should_terminate_;
 
   DISALLOW_COPY_AND_ASSIGN(Thread);
 };
