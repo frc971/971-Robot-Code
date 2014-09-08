@@ -16,6 +16,7 @@
 #include "aos/common/util/log_interval.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/util/wrapping_counter.h"
+#include "aos/common/stl_mutex.h"
 #include "aos/linux_code/init.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -47,54 +48,11 @@ using ::aos::util::WrappingCounter;
 namespace frc971 {
 namespace wpilib {
 
-class priority_mutex {
- public:
-  typedef pthread_mutex_t *native_handle_type;
-
-  // TODO(austin): Write a test case for the mutex, and make the constructor
-  // constexpr.
-  priority_mutex() {
-    pthread_mutexattr_t attr;
-#ifdef NDEBUG
-#error "Won't let assert_perror be no-op ed"
-#endif
-    // Turn on priority inheritance.
-    assert_perror(pthread_mutexattr_init(&attr));
-    assert_perror(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_NORMAL));
-    assert_perror(pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT));
-
-    assert_perror(pthread_mutex_init(native_handle(), &attr));
-
-    assert_perror(pthread_mutexattr_destroy(&attr));
-  }
-
-  ~priority_mutex() { pthread_mutex_destroy(&handle_); }
-
-  void lock() { assert_perror(pthread_mutex_lock(&handle_)); }
-  bool try_lock() {
-    int ret = pthread_mutex_trylock(&handle_);
-    if (ret == 0) {
-      return true;
-    } else if (ret == EBUSY) {
-      return false;
-    } else {
-      assert_perror(ret);
-    }
-  }
-  void unlock() { assert_perror(pthread_mutex_unlock(&handle_)); }
-
-  native_handle_type native_handle() { return &handle_; }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(priority_mutex);
-  pthread_mutex_t handle_;
-};
-
 // TODO(brian): Split this out into a separate file once DMA is in.
 class EdgeCounter {
  public:
   EdgeCounter(int priority, Encoder *encoder, HallEffect *input,
-              priority_mutex *mutex)
+              ::aos::stl_mutex *mutex)
       : priority_(priority),
         encoder_(encoder),
         input_(input),
@@ -115,7 +73,7 @@ class EdgeCounter {
     input_->SetUpSourceEdge(true, true);
 
     {
-      ::std::unique_lock<priority_mutex> mutex_guard(*mutex_);
+      ::std::unique_lock<::aos::stl_mutex> mutex_guard(*mutex_);
       current_value_ = input_->GetHall();
     }
 
@@ -129,7 +87,7 @@ class EdgeCounter {
       }
       ++any_interrupt_count_;
 
-      ::std::unique_lock<priority_mutex> mutex_guard(*mutex_);
+      ::std::unique_lock<::aos::stl_mutex> mutex_guard(*mutex_);
       int32_t encoder_value = encoder_->GetRaw();
       bool hall_value = input_->GetHall();
       if (current_value_ != hall_value) {
@@ -188,7 +146,7 @@ class EdgeCounter {
   int priority_;
   Encoder *encoder_;
   HallEffect *input_;
-  priority_mutex *mutex_;
+  ::aos::stl_mutex *mutex_;
   ::std::atomic<bool> run_;
 
   ::std::atomic<int> any_interrupt_count_;
@@ -247,7 +205,7 @@ class PeriodicHallSynchronizer {
 
     {
       // Now, update the encoder and sensor values.
-      ::std::unique_lock<priority_mutex> mutex_guard(mutex_);
+      ::std::unique_lock<::aos::stl_mutex> mutex_guard(mutex_);
       encoder_value_ = encoder_->GetRaw();
       for (int i = 0; i < num_sensors; ++i) {
         edge_counters_[i]->set_polled_value(sensors_[i]->GetHall());
@@ -260,7 +218,7 @@ class PeriodicHallSynchronizer {
   bool TryFinishingIteration() {
     // Make sure no interrupts have occurred while we were waiting.  If they
     // have, we are in an inconsistent state and need to try again.
-    ::std::unique_lock<priority_mutex> mutex_guard(mutex_);
+    ::std::unique_lock<::aos::stl_mutex> mutex_guard(mutex_);
     bool retry = false;
     for (int i = 0; i < num_sensors; ++i) {
       retry = retry || (interrupt_counts_[i] !=
@@ -325,7 +283,7 @@ class PeriodicHallSynchronizer {
   // A list of all the digital inputs.
   ::std::array<::std::unique_ptr<HallEffect>, num_sensors> sensors_;
   // The mutex used to synchronize all the state.
-  priority_mutex mutex_;
+  ::aos::stl_mutex mutex_;
   ::std::atomic<bool> run_;
 
   // The state.

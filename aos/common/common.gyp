@@ -300,5 +300,34 @@
         'die',
       ],
     },
+    {
+      'target_name': 'stl_mutex',
+      'type': 'static_library',
+      'sources': [
+        #'stl_mutex.h'
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+    },
+    {
+      'target_name': 'stl_mutex_test',
+      'type': 'executable',
+      'sources': [
+        'stl_mutex_test.cc',
+      ],
+      'dependencies': [
+        'stl_mutex',
+        '<(EXTERNALS):gtest',
+        'queue_testutils',
+        '<(AOS)/common/util/util.gyp:thread',
+        'die',
+      ],
+    },
   ],
 }
