@@ -135,8 +135,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  fprintf(stderr, "displaying down to level %s from file '%s'\n",
-          ::aos::logging::log_str(filter_level), filename);
+  if (optind < argc) {
+    // We got a filename.
+    filename = argv[optind++];
+  }
   if (optind < argc) {
     fprintf(stderr, "non-option ARGV-elements: ");
     while (optind < argc) {
@@ -144,7 +146,11 @@ int main(int argc, char **argv) {
     }
   }
 
+  fprintf(stderr, "displaying down to level %s from file '%s'\n",
+      ::aos::logging::log_str(filter_level), filename);
+
   int fd = open(filename, O_RDONLY);
+
   if (fd == -1) {
     PLOG(FATAL, "couldn't open file '%s' for reading", filename);
   }
