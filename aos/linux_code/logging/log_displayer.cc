@@ -38,7 +38,7 @@ const char *kArgsHelp = "[OPTION]... [FILE]\n"
     "LEVEL must be DEBUG, INFO, WARNING, ERROR, or FATAL.\n"
     "  It defaults to INFO.\n"
     "\n"
-    "TODO(brians) implement the commented out ones and changing FILE\n";
+    "TODO(brians) implement the commented out ones.\n";
 
 void PrintHelpAndExit() {
   fprintf(stderr, "Usage: %s %s", program_invocation_name, kArgsHelp);
