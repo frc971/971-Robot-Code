@@ -43,8 +43,54 @@ const char *kArgsHelp = "[OPTION]... [FILE]\n"
     "\n"
     "TODO(brians) implement the commented out ones.\n";
 
+const char *kExampleUsages = "To view logs from the shooter:\n"
+    "\t`log_displayer -n shooter`\n"
+    "To view debug logs from the shooter:\n"
+    "\t`log_displayer -n shooter -l DEBUG`\n"
+    "To view what the shooter is logging in realtime:\n"
+    "\t`log_displayer -f -n shooter`\n"
+    "To view shooter logs from an old log file:\n"
+    "\t`log_displayer aos_log-<number> -n shooter`\n"
+    "To view the statuses of the shooter hall effects in realtime:\n"
+    "\t`log_displayer -f -n shooter -l DEBUG | grep .Position`\n";
+
 void PrintHelpAndExit() {
   fprintf(stderr, "Usage: %s %s", program_invocation_name, kArgsHelp);
+  fprintf(stderr, "\nExample usages:\n\n%s", kExampleUsages);
+
+  // Get the possible executables from start_list.txt.
+  FILE *start_list = fopen("start_list.txt", "r");
+  if (start_list == NULL) {
+    PLOG(FATAL, "Unable to open start_list.txt");
+  }
+
+  // Get file size.
+  if (fseek(start_list, 0, SEEK_END)) {
+    PLOG(FATAL, "fseek() failed while reading start_list.txt");
+  }
+  int size = ftell(start_list);
+  if (size < 0) {
+    PLOG(FATAL, "ftell() failed while reading start_list.txt");
+  }
+  rewind(start_list);
+
+  ::std::unique_ptr<char[]> contents(new char[size + 1]);
+  if (contents == NULL) {
+    LOG(FATAL, "malloc() failed while reading start_list.txt.\n");
+  }
+  size_t bytes_read = fread(contents.get(), 1, size, start_list);
+  if (bytes_read < static_cast<size_t>(size)) {
+    LOG(FATAL, "Read %zu bytes from start_list.txt, expected %d.\n",
+        bytes_read, size);
+  }
+
+  // printf doesn't like strings without the \0.
+  contents[size] = '\0';
+  fprintf(stderr, "\nPossible arguments for the -n option:\n%s", contents.get());
+
+  if (fclose(start_list)) {
+    LOG(FATAL, "fclose() failed.\n");
+  }
 
   exit(EXIT_SUCCESS);
 }
@@ -93,7 +139,7 @@ int main(int argc, char **argv) {
     }
     switch (c) {
       case 0:
-        fprintf(stderr, "LogDisplayer: got a 0 option but didn't set up any\n");
+        fputs("LogDisplayer: got a 0 option but didn't set up any\n", stderr);
         abort();
       case 'n':
         filter_name = optarg;
@@ -160,7 +206,7 @@ int main(int argc, char **argv) {
     filename = argv[optind++];
   }
   if (optind < argc) {
-    fprintf(stderr, "non-option ARGV-elements: ");
+    fputs("non-option ARGV-elements: ", stderr);
     while (optind < argc) {
       fprintf(stderr, "%s\n", argv[optind++]);
     }
