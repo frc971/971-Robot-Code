@@ -21,6 +21,7 @@
         '<(AOS)/common/common.gyp:queue_test',
         '<(AOS)/common/common.gyp:die_test',
         '<(AOS)/common/common.gyp:queue_types_test',
+        '<(AOS)/common/util/util.gyp:string_to_num_test',
         '<(AOS)/common/util/util.gyp:trapezoid_profile_test',
         '<(AOS)/common/util/util.gyp:wrapping_counter_test',
         '<(AOS)/common/libc/libc.gyp:dirname_test',

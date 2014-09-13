@@ -70,6 +70,24 @@
       ],
     },
     {
+      'target_name': 'string_to_num',
+      'type': 'static_library',
+      'sources': [
+        #'string_to_num.h',
+      ],
+    },
+    {
+      'target_name': 'string_to_num_test',
+      'type': 'executable',
+      'sources': [
+        'string_to_num_test.cc',
+      ],
+      'dependencies': [
+        ':string_to_num',
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
       'target_name': 'thread',
       'type': 'static_library',
       'sources': [

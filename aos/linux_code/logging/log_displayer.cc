@@ -7,11 +7,14 @@
 #include <inttypes.h>
 
 #include <algorithm>
+#include <memory>
+#include <string>
 
 #include "aos/linux_code/logging/binary_log_file.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/logging/logging_printf_formats.h"
+#include "aos/common/util/string_to_num.h"
 
 using ::aos::logging::linux_code::LogFileMessageHeader;
 
@@ -24,14 +27,14 @@ const char *kArgsHelp = "[OPTION]... [FILE]\n"
     "  -n, --name NAME       only display entries from processes named NAME\n"
     "  -l, --level LEVEL     "
       "only display log entries at least as important as LEVEL\n"
-    "  // -p, --pid PID        only display log entries from process PID\n"
+    "  -p, --pid PID        only display log entries from process PID\n"
     "  -f, --follow          "
       "wait when the end of the file is reached (implies --end)\n"
     "  -t, --terminate       stop when the end of file is reached (default)\n"
     "  -b, --beginning       start at the beginning of the file (default)\n"
     "  -e, --end             start at the end of the file\n"
     "  -s, --skip NUMBER     skip NUMBER matching logs\n"
-    "  // -m, --max NUMBER     only display up to NUMBER logs\n"
+    "  -m, --max NUMBER     only display up to NUMBER logs\n"
     "  // -o, --format FORMAT  use FORMAT to display log entries\n"
     "  -h, --help            display this help and exit\n"
     "\n"
@@ -56,6 +59,8 @@ int main(int argc, char **argv) {
   // Whether we need to skip everything until we get to the end of the file.
   bool skip_to_end = false;
   const char *filename = "aos_log-current";
+  int display_max = 0;
+  int32_t source_pid = -1;
 
   ::aos::logging::Init();
   ::aos::logging::AddImplementation(
@@ -102,7 +107,14 @@ int main(int argc, char **argv) {
         }
         break;
       case 'p':
-        abort();
+        if (!::aos::util::StringToInteger(::std::string(optarg), &source_pid)) {
+          fprintf(stderr, "ERROR: -p expects a number, not '%s'.\n", optarg);
+          exit(EXIT_FAILURE);
+        }
+        if (source_pid < 0) {
+          fprintf(stderr, "LogDisplayer: invalid pid '%s'\n", optarg);
+          exit(EXIT_FAILURE);
+        }
         break;
       case 'f':
         follow = true;
@@ -118,7 +130,15 @@ int main(int argc, char **argv) {
         skip_to_end = true;
         break;
       case 'm':
-        abort();
+        if (!::aos::util::StringToInteger(::std::string(optarg), &display_max)) {
+          fprintf(stderr, "ERROR: -m expects a number, not '%s'.\n", optarg);
+          exit(EXIT_FAILURE);
+        }
+        if (display_max <= 0) {
+          fprintf(stderr, "LogDisplayer: invalid max log number '%s'\n",
+              optarg);
+          exit(EXIT_FAILURE);
+        }
         break;
       case 'o':
         abort();
@@ -161,11 +181,17 @@ int main(int argc, char **argv) {
   }
 
   const LogFileMessageHeader *msg;
+  int displayed = 0;
   do {
     msg = reader.ReadNextMessage(follow);
     if (msg == NULL) {
       fputs("reached end of file\n", stderr);
       return 0;
+    }
+
+    if (source_pid >= 0 && msg->source != source_pid) {
+      // Message is from the wrong process.
+      continue;
     }
 
     if (msg->type == LogFileMessageHeader::MessageType::kStructType) {
@@ -194,6 +220,11 @@ int main(int argc, char **argv) {
           0) {
         continue;
       }
+    }
+
+    if (display_max && displayed++ >= display_max) {
+      fputs("Not displaying the rest of the messages.\n", stderr);
+      return 0;
     }
 
     const char *position =
