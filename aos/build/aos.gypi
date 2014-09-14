@@ -209,12 +209,6 @@
                 '-fno-strict-aliasing',
               ],
             }],
-            ['ARCHITECTURE=="arm"', {
-              'cflags': [
-                '-mcpu=cortex-a8',
-                '-mfpu=neon',
-              ],
-            }],
             ['ARCHITECTURE=="amd64"', {
               'cflags': [
                 '-fstack-protector-all',
@@ -234,6 +228,16 @@
           ],
         }
       ],
+      ['ARCHITECTURE=="arm"', {
+        'cflags': [
+          '-mcpu=cortex-a8',
+          '-mfpu=neon',
+        ],
+        'ldflags': [
+          '-mcpu=cortex-a8',
+          '-mfpu=neon',
+        ],
+      }],
       ['PLATFORM=="crio"', {
           'target_conditions': [
             ['_type=="shared_library"', {
