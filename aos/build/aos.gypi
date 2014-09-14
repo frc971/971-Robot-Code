@@ -28,6 +28,12 @@
           ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
         ],
       }
+    ], ['PLATFORM=="linux-arm-gcc_frc"', {
+        'make_global_settings': [
+          ['CC', '<(ccache)<!(which arm-frc-linux-gnueabi-gcc-4.9)'],
+          ['CXX', '<(ccache)<!(which arm-frc-linux-gnueabi-g++-4.9)'],
+        ],
+      },
     ], ['PLATFORM=="linux-arm-gcc"', {
         'make_global_settings': [
           ['CC', '<(ccache)<!(which arm-linux-gnueabihf-gcc-4.7)'],
@@ -228,7 +234,7 @@
           ],
         }
       ],
-      ['ARCHITECTURE=="arm"', {
+      ['ARCHITECTURE=="arm" and FULL_COMPILER!="gcc_frc"', {
         'cflags': [
           '-mcpu=cortex-a8',
           '-mfpu=neon',
@@ -236,6 +242,18 @@
         'ldflags': [
           '-mcpu=cortex-a8',
           '-mfpu=neon',
+        ],
+      }],
+      ['ARCHITECTURE=="arm" and FULL_COMPILER=="gcc_frc"', {
+        'cflags': [
+          '-mcpu=cortex-a9',
+          '-mfpu=neon',
+          '-mfloat-abi=softfp',
+        ],
+        'ldflags': [
+          '-mcpu=cortex-a9',
+          '-mfpu=neon',
+          '-mfloat-abi=softfp',
         ],
       }],
       ['PLATFORM=="crio"', {

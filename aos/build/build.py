@@ -553,7 +553,7 @@ class PrimeProcessor(Processor):
       return r
 
   ARCHITECTURES = ('arm', 'amd64')
-  COMPILERS = ('clang', 'gcc', 'gcc_4.8')
+  COMPILERS = ('clang', 'gcc', 'gcc_4.8', 'gcc_frc')
   SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
   SANITIZER_TEST_WARNINGS = {
       'memory': (True,
@@ -570,7 +570,8 @@ class PrimeProcessor(Processor):
     for architecture in PrimeProcessor.ARCHITECTURES:
       for compiler in PrimeProcessor.COMPILERS:
         for debug in [True, False]:
-          if architecture == 'arm' and compiler == 'gcc_4.8':
+          if ((architecture == 'arm' and compiler == 'gcc_4.8') or
+              (architecture == 'amd64' and compiler == 'gcc_frc')):
             # We don't have a compiler to use here.
             continue
           platforms.append(
@@ -618,7 +619,12 @@ class PrimeProcessor(Processor):
       if platforms & pie_sanitizers:
         to_download.add(architecture + '-fPIE')
 
-      if platforms & (self.platforms() - pie_sanitizers):
+      frc_platforms = self.select_platforms(architecture=architecture,
+                                            compiler='gcc_frc')
+      if platforms & frc_platforms:
+        to_download.add(architecture + '_frc')
+
+      if platforms & (self.platforms() - pie_sanitizers - frc_platforms):
         to_download.add(architecture)
 
     for download_target in to_download:
@@ -698,6 +704,9 @@ class PrimeProcessor(Processor):
       if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
         packages.add('gcc-4.7')
         packages.add('g++-4.7')
+      elif platform.compiler() == 'gcc_frc':
+        packages.add('gcc-4.9-arm-frc-linux-gnueabi')
+        packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
     self.do_check_installed(tuple(packages))
 
@@ -960,7 +969,7 @@ Examples of specifying targets:
              '-DSANITIZER=%s' % platform.sanitizer(),
              '-DEXTERNALS_EXTRA=%s' %
              ('-fPIE' if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
-              else '')) +
+              else ('_frc' if platform.compiler() == 'gcc_frc' else ''))) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""

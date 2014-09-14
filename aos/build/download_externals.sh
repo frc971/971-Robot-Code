@@ -10,6 +10,11 @@ AOS=$(readlink -f $(dirname $0)/..)
 # the value from CONFIGURE_FLAGS has to get overriden in some places.
 ALL_LDFLAGS=""
 
+# Flags that should get passed to all configure scripts.
+# Some of them need to set LDFLAGS separately to work around stupid configure
+# scripts, so we can't just set that here.
+CONFIGURE_FLAGS=""
+
 if [ "$1" == "arm" ]; then
   COMPILED=${EXTERNALS}/../compiled-arm
 
@@ -20,11 +25,19 @@ if [ "$1" == "arm" ]; then
   export CFLAGS="-mcpu=cortex-a8 -mfpu=neon"
   export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
   export OBJDUMP=${CROSS_COMPILE}objdump
-  # Flags that should get passed to all configure scripts.
-  # Some of them need to set LDFLAGS separately to work around stupid configure
-  # scripts, so we can't just set that here.
   CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
   IS_CRIO=0
+elif [ "$1" == "arm_frc" ]; then
+  COMPILED=${EXTERNALS}/../compiled-arm_frc
+
+  CROSS_COMPILE=arm-frc-linux-gnueabi-
+
+  export CC=${CROSS_COMPILE}gcc-4.9
+  export CXX=${CROSS_COMPILE}g++-4.9
+  export CFLAGS="-mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp"
+  export CXXFLAGS="-mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp"
+  export OBJDUMP=${CROSS_COMPILE}objdump
+  CONFIGURE_FLAGS="--host=arm-frc-linux-gnueabi CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
 elif [ "$1" == "amd64" ]; then
   COMPILED=${EXTERNALS}/../compiled-amd64
   IS_CRIO=0
