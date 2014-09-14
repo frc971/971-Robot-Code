@@ -137,7 +137,6 @@
       '__STDC_FORMAT_MACROS',
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
-      '_FORTIFY_SOURCE=2',
     ],
     'ldflags': [
       '-pipe',
@@ -193,6 +192,7 @@
         }, { # 'DEBUG=="no"'
           'defines': [
             'AOS_DEBUG=0',
+            '_FORTIFY_SOURCE=2',
           ],
           'cflags': [
             '-O3',
