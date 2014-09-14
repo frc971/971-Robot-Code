@@ -105,7 +105,7 @@
           ],
         },
       },
-    ], ['SANITIZER_FPIE!=""', {
+    ], ['EXTERNALS_EXTRA=="-fPIE"', {
         'target_defaults': {
           'cflags': [
             '-fPIE',

@@ -611,13 +611,16 @@ class PrimeProcessor(Processor):
   def download_externals(self, platforms):
     to_download = set()
     for architecture in PrimeProcessor.ARCHITECTURES:
+      pie_sanitizers = set()
       for sanitizer in PrimeProcessor.PIE_SANITIZERS:
-        if platforms & self.select_platforms(architecture=architecture,
-                                             sanitizer=sanitizer):
-          to_download.add(architecture + '-fPIE')
-        if platforms & self.select_platforms(architecture=architecture,
-                                             sanitizer='none'):
-          to_download.add(architecture)
+        pie_sanitizers.update(self.select_platforms(architecture=architecture,
+                                                    sanitizer=sanitizer))
+      if platforms & pie_sanitizers:
+        to_download.add(architecture + '-fPIE')
+
+      if platforms & (self.platforms() - pie_sanitizers):
+        to_download.add(architecture)
+
     for download_target in to_download:
       call_download_externals(download_target)
 
@@ -955,7 +958,7 @@ Examples of specifying targets:
              '-DFULL_COMPILER=%s' % platform.compiler(),
              '-DDEBUG=%s' % ('yes' if platform.debug() else 'no'),
              '-DSANITIZER=%s' % platform.sanitizer(),
-             '-DSANITIZER_FPIE=%s' %
+             '-DEXTERNALS_EXTRA=%s' %
              ('-fPIE' if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
               else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
