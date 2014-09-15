@@ -7,6 +7,7 @@
         '<(AOS)/build/aos_all.gyp:Prime',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:all_tests',
 
+        '../control_loops/control_loops.gyp:state_feedback_loop_test',
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain',
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain_lib_test',
         '../control_loops/claw/claw.gyp:claw',
