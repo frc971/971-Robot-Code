@@ -54,7 +54,8 @@ class Condition {
   // and will be locked when this method returns.
   // NOTE: The relocking of the mutex is not performed atomically with waking
   // up.
-  void Wait();
+  // Returns false.
+  bool Wait();
 
   // Signals at most 1 other process currently Wait()ing on this condition
   // variable. Calling this does not require the mutex associated with this

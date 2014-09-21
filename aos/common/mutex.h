@@ -28,7 +28,8 @@ class Mutex {
   ~Mutex();
 #endif
   // Locks the mutex. If it fails, it calls LOG(FATAL).
-  void Lock();
+  // Returns false.
+  bool Lock();
   // Unlocks the mutex. Fails like Lock.
   // Multiple unlocking is undefined.
   void Unlock();

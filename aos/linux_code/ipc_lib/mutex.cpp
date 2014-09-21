@@ -17,9 +17,11 @@ Mutex::Mutex() : impl_(0) {
 // Lock and Unlock use the return values of mutex_lock/mutex_unlock
 // to determine whether the lock/unlock succeeded.
 
-void Mutex::Lock() {
+bool Mutex::Lock() {
   if (mutex_grab(&impl_) != 0) {
     PLOG(FATAL, "mutex_grab(%p(=%" PRIu32 ")) failed", &impl_, impl_);
+  } else {
+    return false;
   }
 }
 

@@ -11,8 +11,9 @@ static_assert(shm_ok<Condition>::value,
 
 Condition::Condition(Mutex *m) : impl_(), m_(m) {}
 
-void Condition::Wait() {
+bool Condition::Wait() {
   condition_wait(&impl_, &m_->impl_);
+  return false;
 }
 
 void Condition::Signal() {
