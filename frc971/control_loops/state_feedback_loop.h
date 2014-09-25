@@ -11,6 +11,13 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
 
+// For everything in this file, "inputs" and "outputs" are defined from the
+// perspective of the plant. This means U is an input and Y is an output
+// (because you give the plant U (powers) and it gives you back a Y (sensor
+// values). This is the opposite of what they mean from the perspective of the
+// controller (U is an output because that's what goes to the motors and Y is an
+// input because that's what comes back from the sensors).
+
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
 class StateFeedbackPlantCoefficients final {
  public:
@@ -30,8 +37,8 @@ class StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<double, number_of_states, number_of_inputs> &B,
       const Eigen::Matrix<double, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D,
-      const Eigen::Matrix<double, number_of_outputs, 1> &U_max,
-      const Eigen::Matrix<double, number_of_outputs, 1> &U_min)
+      const Eigen::Matrix<double, number_of_inputs, 1> &U_max,
+      const Eigen::Matrix<double, number_of_inputs, 1> &U_min)
       : A_(A),
         B_(B),
         C_(C),
@@ -135,7 +142,7 @@ class StateFeedbackPlant {
   const Eigen::Matrix<double, number_of_outputs, 1> &Y() const { return Y_; }
   double Y(int i, int j) const { return Y()(i, j); }
   const Eigen::Matrix<double, number_of_inputs, 1> &U() const { return U_; }
-  double U(int i, int j) const { return X()(i, j); }
+  double U(int i, int j) const { return U()(i, j); }
 
   Eigen::Matrix<double, number_of_states, 1> &mutable_X() { return X_; }
   double &mutable_X(int i, int j) { return mutable_X()(i, j); }
@@ -169,7 +176,7 @@ class StateFeedbackPlant {
 
   // Assert that U is within the hardware range.
   virtual void CheckU() {
-    for (int i = 0; i < kNumOutputs; ++i) {
+    for (int i = 0; i < kNumInputs; ++i) {
       assert(U(i, 0) <= U_max(i, 0) + 0.00001);
       assert(U(i, 0) >= U_min(i, 0) - 0.00001);
     }
@@ -211,13 +218,13 @@ struct StateFeedbackController final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   const Eigen::Matrix<double, number_of_states, number_of_outputs> L;
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> K;
+  const Eigen::Matrix<double, number_of_inputs, number_of_states> K;
   StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                  number_of_outputs> plant;
 
   StateFeedbackController(
       const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
-      const Eigen::Matrix<double, number_of_outputs, number_of_states> &K,
+      const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
       const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                            number_of_outputs> &plant)
       : L(L),
@@ -241,7 +248,7 @@ class StateFeedbackLoop {
 
   StateFeedbackLoop(
       const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
-      const Eigen::Matrix<double, number_of_outputs, number_of_states> &K,
+      const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
       const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                number_of_outputs> &plant)
       : controller_index_(0) {
@@ -300,7 +307,7 @@ class StateFeedbackLoop {
   }
   double U_max(int i, int j) const { return U_max()(i, j); }
 
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> &K() const {
+  const Eigen::Matrix<double, number_of_inputs, number_of_states> &K() const {
     return controller().K;
   }
   double K(int i, int j) const { return K()(i, j); }
@@ -360,7 +367,7 @@ class StateFeedbackLoop {
   // If U is outside the hardware range, limit it before the plant tries to use
   // it.
   virtual void CapU() {
-    for (int i = 0; i < kNumOutputs; ++i) {
+    for (int i = 0; i < kNumInputs; ++i) {
       if (U(i, 0) > U_max(i, 0)) {
         U_(i, 0) = U_max(i, 0);
       } else if (U(i, 0) < U_min(i, 0)) {

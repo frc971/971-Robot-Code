@@ -1,6 +1,17 @@
 {
   'targets': [
     {
+      'target_name': 'state_feedback_loop_test',
+      'type': 'executable',
+      'sources': [
+        'state_feedback_loop_test.cc',
+      ],
+      'dependencies': [
+        'state_feedback_loop',
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
       'target_name': 'hall_effect_tracker',
       'type': 'static_library',
       'sources': [
