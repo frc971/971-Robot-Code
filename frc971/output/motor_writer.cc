@@ -48,7 +48,7 @@ class MotorWriter : public ::aos::MotorOutput {
         SetSolenoid(8, drivetrain->right_high);
       } else {
         DisablePWMOutput(3);
-        DisablePWMOutput(8);
+        DisablePWMOutput(6);
         LOG_INTERVAL(drivetrain_old_);
       }
       drivetrain_old_.Print();
