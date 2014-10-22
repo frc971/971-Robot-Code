@@ -326,7 +326,7 @@ module Types
 				state.pp("template < ")
 				state.pp(@t_args)
 			else
-				state.pp("template <")
+				state.pp("template < ")
 			end
 			state.pp(">\n")
 		end

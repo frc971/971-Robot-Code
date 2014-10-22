@@ -43,6 +43,8 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   for (int i = 0; i < number_fields; ++i) {
     to_network(&fields[i]->type, buffer);
     buffer += sizeof(fields[i]->type);
+    to_network(&fields[i]->length, buffer);
+    buffer += sizeof(fields[i]->length);
     length = fields[i]->name.size();
     to_network(&length, buffer);
     buffer += sizeof(length);
@@ -53,7 +55,8 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   return buffer - buffer_start;
 }
 
-MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
+MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes,
+                                      bool deserialize_length) {
   uint16_t name_length;
   decltype(MessageType::super_size) super_size;
   decltype(MessageType::id) id;
@@ -94,6 +97,10 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
 
     to_host(buffer, &fields[i]->type);
     buffer += sizeof(fields[i]->type);
+    if (deserialize_length) {
+      to_host(buffer, &fields[i]->length);
+      buffer += sizeof(fields[i]->length);
+    }
     to_host(buffer, &field_name_length);
     buffer += sizeof(field_name_length);
 
@@ -106,6 +113,50 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes) {
   }
 
   return r.release();
+}
+
+bool PrintArray(char *output, size_t *output_bytes, const void *input,
+                size_t *input_bytes, uint32_t type_id, uint32_t length) {
+  if (*output_bytes < 1) return false;
+  *output_bytes -= 1;
+  *(output++) = '[';
+
+  bool first = true;
+  for (uint32_t i = 0; i < length; ++i) {
+    if (first) {
+      first = false;
+    } else {
+      if (*output_bytes < 2) return false;
+      *output_bytes -= 2;
+      *(output++) = ',';
+      *(output++) = ' ';
+    }
+
+    const size_t output_bytes_before = *output_bytes,
+                 input_bytes_before = *input_bytes;
+    if (MessageType::IsPrimitive(type_id)) {
+      if (!PrintField(output, output_bytes, input, input_bytes, type_id)) {
+        return false;
+      }
+    } else {
+      if (!PrintMessage(output, output_bytes, input, input_bytes,
+                        type_cache::Get(type_id))) {
+        return false;
+      }
+      // Ignore the trailing '\0' that the subcall put on.
+      *output_bytes += 1;
+    }
+
+    // Update the input and output pointers.
+    output += output_bytes_before - *output_bytes;
+    input =
+        static_cast<const char *>(input) + input_bytes_before - *input_bytes;
+  }
+  if (*output_bytes < 2) return false;
+  *output_bytes -= 2;
+  *(output++) = ']';
+  *(output++) = '\0';
+  return true;
 }
 
 bool PrintMessage(char *output, size_t *output_bytes, const void *input,
@@ -138,14 +189,21 @@ bool PrintMessage(char *output, size_t *output_bytes, const void *input,
 
     const size_t output_bytes_before = *output_bytes,
                  input_bytes_before = *input_bytes;
-    if (MessageType::IsPrimitive(type.fields[i]->type)) {
-      if (!PrintField(output, output_bytes, input, input_bytes,
-                      type.fields[i]->type)) {
+    const uint32_t type_id = type.fields[i]->type;
+    if (type.fields[i]->length > 0) {
+      if (!PrintArray(output, output_bytes, input, input_bytes, type_id,
+                      type.fields[i]->length)) {
+        return false;
+      }
+      // Ignore the trailing '\0' that the subcall put on.
+      *output_bytes += 1;
+    } else if (MessageType::IsPrimitive(type_id)) {
+      if (!PrintField(output, output_bytes, input, input_bytes, type_id)) {
         return false;
       }
     } else {
       if (!PrintMessage(output, output_bytes, input, input_bytes,
-                        type_cache::Get(type.fields[i]->type))) {
+                        type_cache::Get(type_id))) {
         return false;
       }
       // Ignore the trailing '\0' that the subcall put on.

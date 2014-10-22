@@ -16,7 +16,7 @@ class Target::StructBase < Target::Node
 			if(member.respond_to?(:add_TypeRegister))
         register_members.push(member)
 			end
-			fields << "new ::aos::MessageType::Field{#{tId}, #{fieldName}}"
+			fields << "new ::aos::MessageType::Field{#{tId}, #{member.respond_to?(:length) ? member.length : 0}, #{fieldName}}"
 		end
     register_members.uniq do |member|
       member.type
@@ -35,12 +35,12 @@ class Target::StructBase < Target::Node
           type_class.add_member(cons)
           @members.each do |member|
             if member.respond_to?(:type_name)
-              type_name = member.type_name(cpp_tree)
+              type_name = "#{member.type_name(cpp_tree)} #{member.name}_in"
             else
-              type_name = member.type
+              type_name = member.create_usage(cpp_tree, "#{member.name}_in")
             end
 
-            cons.args << "#{type_name} #{member.name}_in"
+            cons.args << type_name
             cons.add_cons(member.name, member.name + '_in')
           end
         end
@@ -187,7 +187,7 @@ class Target::MessageDec < Target::StructBase
 		type_class.set_parent("public ::aos::Message")
 		ts = self.simpleStr()
 		self.msg_hash = "0x#{Digest::SHA1.hexdigest(ts)[-8..-1]}"
-		type_class.add_member("enum {kQueueLength = 200, kHash = #{self.msg_hash}}")
+		type_class.add_member("enum {kQueueLength = 100, kHash = #{self.msg_hash}}")
 		@members.each do |elem|
 			type_class.add_member(elem.create_usage(cpp_tree))
 		end
@@ -245,22 +245,37 @@ class Target::MessageElement < Target::Node
 	def initialize(type,name)
 		@type,@name = type,name
 	end
+  def type()
+    return @type
+  end
+  def type_name(cpp_tree)
+    return type()
+  end
 	def toPrintFormat()
 		return printformat
 	end
-	def create_usage(cpp_tree)
-		"#{@type} #{@name}"
+	def create_usage(cpp_tree, this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		"#{@type} #{this_name}"
 	end
-	def toNetwork(offset,suite, parent = "")
+	def toNetwork(offset,suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
 		suite << f_call = CPP::FuncCall.build("to_network",
-									 "&#{parent}#{@name}",
+									 "&#{parent}#{this_name}",
 									 "&buffer[#{offset}]")
 		f_call.args.dont_wrap = true
 	end
-	def toHost(offset,suite, parent = "")
+	def toHost(offset,suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
 		suite << f_call = CPP::FuncCall.build("to_host",
 									 "&buffer[#{offset}]",
-									 "&#{parent}#{@name}")
+									 "&#{parent}#{this_name}")
 		f_call.args.dont_wrap = true
 	end
 	def getTypeID()
@@ -271,57 +286,112 @@ class Target::MessageElement < Target::Node
 	def simpleStr()
 		"#{@type} #{@name}"
 	end
-	def set_message_builder(suite)
-		suite << "msg_ptr_->#{@name} = #{@name}"
+	def set_message_builder(suite, this_name=nil)
+    this_name ||= @name
+		suite << "msg_ptr_->#{this_name} = #{this_name}"
 	end
 
-	def zeroCall(suite, parent = "")
-		suite << CPP::Assign.new(parent + @name,@zero)
+	def zeroCall(suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		suite << CPP::Assign.new(parent + this_name,@zero)
 	end
-	def fetchPrintArgs(args, parent = "")
-		if (self.type == 'bool')
-			args.push("#{parent}#{self.name} ? 'T' : 'f'")
-    elsif (self.type == '::aos::time::Time')
-      args.push("AOS_TIME_ARGS(#{parent}#{self.name}.sec(), #{parent}#{self.name}.nsec())")
+	def fetchPrintArgs(args, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		if (@type == 'bool')
+			args.push("#{parent}#{this_name} ? 'T' : 'f'")
+    elsif (@type == '::aos::time::Time')
+      args.push("AOS_TIME_ARGS(#{parent}#{this_name}.sec(), #{parent}#{this_name}.nsec())")
 		else
-			args.push("#{parent}#{self.name}")
+			args.push("#{parent}#{this_name}")
 		end
 	end
 end
 class Target::MessageArrayElement < Target::Node
-	attr_accessor :name,:loc,:size,:zero,:type
-	def initialize(type,name,length)
-		@type,@name,@length = type,name,length
+	attr_accessor :loc, :length
+	def initialize(type,length)
+		@type,@length = type,length
 	end
-	def create_usage(cpp_tree)
-		"#{@type} #{@name}[#@length]"
+  def zero()
+    return @type.zero()
+  end
+  def name()
+    return @type.name()
+  end
+
+  def add_TypeRegister(*args)
+    if @type.respond_to?(:add_TypeRegister)
+      @type.add_TypeRegister(*args)
+    end
+  end
+
+	def toPrintFormat()
+		return ([@type.toPrintFormat] * @length).join(", ")
+	end
+	def create_usage(cpp_tree, this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
+		return "::std::array< #{@type.type_name(cpp_tree)}, #{@length}> #{this_name}"
 	end
 	def type()
-		"#{@type}[#@length]"
+		return "::std::array< #{@type.type()}, #{@length}>"
+	end
+	def simpleStr()
+		return "#{@type.type} #{@name}[#{@length}]"
+	end
+	def getTypeID()
+    return @type.getTypeID()
 	end
 	def size()
-		@size * @length
+		return @type.size * @length
 	end
-	def toNetwork(offset,suite)
+	def toNetwork(offset, suite, parent="", this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
 		offset = (offset == 0) ? "" : "#{offset} + "
-		suite << for_stmt = CPP::For.new("int i = 0","i < #{@length}","i++")
-		for_stmt.suite << f_call = CPP::FuncCall.build("to_network",
-									 "&(#{@name}[i])",
-									 "&buffer[i + #{offset}::aos::Message::Size()]")
-		f_call.args.dont_wrap = true
+    for_loop_var = getForLoopVar()
+		suite << for_stmt = CPP::For.new("int #{for_loop_var} = 0","#{for_loop_var} < #{@length}","#{for_loop_var}++")
+		@type.toNetwork("#{offset} (#{for_loop_var} * #{@type.size})", for_stmt.suite, parent, "#{this_name}[#{for_loop_var}]")
 	end
-	def toHost(offset,suite)
+	def toHost(offset, suite, parent="", this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
 		offset = (offset == 0) ? "" : "#{offset} + "
-		suite << for_stmt = CPP::For.new("int i = 0","i < #{@length}","i++")
-		for_stmt.suite << f_call = CPP::FuncCall.build("to_host",
-									 "&buffer[i + #{offset}::aos::Message::Size()]",
-									 "&(#{@name}[i])")
-		f_call.args.dont_wrap = true
+    for_loop_var = getForLoopVar()
+		suite << for_stmt = CPP::For.new("int #{for_loop_var} = 0","#{for_loop_var} < #{@length}","#{for_loop_var}++")
+		@type.toHost("#{offset} (#{for_loop_var} * #{@type.size})", for_stmt.suite, parent, "#{this_name}[#{for_loop_var}]")
 	end
-	def set_message_builder(suite)
-		suite << "memcpy(msg_ptr_->#{@name},#{@name},#@length)"
+	def set_message_builder(suite, this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
+
+    for_loop_var = getForLoopVar()
+		suite << for_stmt = CPP::For.new("int #{for_loop_var} = 0","#{for_loop_var} < #{@length}","#{for_loop_var}++")
+		@type.set_message_builder(for_stmt.suite, "#{this_name}[#{for_loop_var}]")
 	end
-	def zeroCall(suite)
-		suite << "memset(#@name,0,#{size()})"
+	def zeroCall(suite, parent="", this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
+
+		offset = (offset == 0) ? "" : "#{offset} + "
+    for_loop_var = getForLoopVar()
+		suite << for_stmt = CPP::For.new("int #{for_loop_var} = 0","#{for_loop_var} < #{@length}","#{for_loop_var}++")
+		@type.zeroCall(for_stmt.suite, parent, "#{this_name}[#{for_loop_var}]")
+	end
+	def fetchPrintArgs(args, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = name
+    end
+    for i in 0..(@length-1)
+		  @type.fetchPrintArgs(args, parent, "#{this_name}[#{i}]")
+    end
 	end
 end

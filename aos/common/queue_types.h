@@ -21,6 +21,8 @@ struct MessageType {
   struct Field {
     // The type ID for the type of this field.
     uint32_t type;
+    // The length of the array if it is one or 0.
+    uint32_t length;
     ::std::string name;
   };
 
@@ -47,8 +49,11 @@ struct MessageType {
   ssize_t Serialize(char *buffer, size_t max_bytes) const;
   // bytes should start out as the number of bytes available in buffer and gets
   // reduced by the number actually read before returning.
+  // deserialize_length is whether to look for a length field in the serialized
+  // data.
   // Returns a new instance allocated with new or nullptr for error.
-  static MessageType *Deserialize(const char *buffer, size_t *bytes);
+  static MessageType *Deserialize(const char *buffer, size_t *bytes,
+                                  bool deserialize_length = true);
 
   static bool IsPrimitive(uint32_t type_id) {
     return (type_id & 0x2000) != 0;

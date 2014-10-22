@@ -23,6 +23,11 @@ message OtherTestingMessage {
   double test_double;
 };
 
+message MessageWithArrays {
+  uint16_t[3] test_int;
+  Structure[2] test_struct;
+};
+
 queue TestingMessage test_queue;
 
 queue_group TwoQueues {

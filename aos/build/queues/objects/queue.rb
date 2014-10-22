@@ -84,16 +84,21 @@ ERROR_MSG
 		check_type_error(locals)
 		if(@is_struct_type)
 			tval = lookup_type(locals)
-			member = Target::MessageStructElement.new(tval, name)
+			member = Target::MessageStructElement.new(tval, @name)
+      if (@length != nil)
+        inner_member = member
+        member = Target::MessageArrayElement.new(inner_member, @length)
+      end
 		else
-			if(@length == nil)
-				member = Target::MessageElement.new(@type,@name)
-			else
-				member = Target::MessageArrayElement.new(@type,@name,@length)
-			end
+			member = Target::MessageElement.new(@type,@name)
 			member.size = size()
 			member.zero = Zero[@type] || "0";
 			member.printformat = toPrintFormat()
+
+			if(@length != nil)
+        inner_member = member
+				member = Target::MessageArrayElement.new(inner_member,@length)
+			end
 		end
 		locals.local.add_member(member)
 	end

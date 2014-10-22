@@ -109,6 +109,7 @@
         '<(EXTERNALS):gtest',
         'test_queue',
         '<(AOS)/build/aos.gyp:logging',
+        'queue_testutils',
       ],
     },
     {

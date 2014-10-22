@@ -85,29 +85,47 @@ class Target::MessageStructElement < Target::Node
 	def toPrintFormat()
 		@type.getPrintFormat()
 	end
-	def create_usage(cpp_tree)
-		return "#{type_name(cpp_tree)} #{@name}"
+	def create_usage(cpp_tree, this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		return "#{type_name(cpp_tree)} #{this_name}"
 	end
 	def add_TypeRegister(cpp_tree, o_type, member_func)
 		type = cpp_tree.get(@type)
 		tName = @type.loc.to_cpp_id(type.name)
 		member_func.suite << "#{tName}::GetType()"
 	end
-	def fetchPrintArgs(args, parent = "")
-		@type.fetchPrintArgs(args, parent + "#{@name}.")
+	def fetchPrintArgs(args, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		@type.fetchPrintArgs(args, parent + "#{this_name}.")
 	end
-	def toNetwork(offset,suite, parent = "")
-		@type.toNetwork(offset, suite, parent + "#{@name}.")
+	def toNetwork(offset,suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		@type.toNetwork(offset, suite, parent + "#{this_name}.")
 	end
-	def toHost(offset,suite, parent = "")
-		@type.toHost(offset, suite, parent + "#{@name}.")
+	def toHost(offset,suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		@type.toHost(offset, suite, parent + "#{this_name}.")
 	end
-	def set_message_builder(suite)
-		suite << "msg_ptr_->#{@name} = #{@name}"
+	def set_message_builder(suite, this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		suite << "msg_ptr_->#{this_name} = #{this_name}"
 	end
 
-	def zeroCall(suite, parent = "")
-		@type.zeroCall(suite, parent + "#{@name}.")
+	def zeroCall(suite, parent = "", this_name=nil)
+    if (this_name == nil)
+      this_name = @name
+    end
+		@type.zeroCall(suite, parent + "#{this_name}.")
 	end
 	def simpleStr()
 		"#{@type.simpleStr()} #{@name}"

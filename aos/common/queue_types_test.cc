@@ -10,10 +10,12 @@
 #include "aos/common/byteorder.h"
 #include "aos/queue_primitives.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/queue_testutils.h"
 
 using ::aos::common::testing::Structure;
 using ::aos::common::testing::MessageWithStructure;
 using ::aos::common::testing::OtherTestingMessage;
+using ::aos::common::testing::MessageWithArrays;
 
 namespace aos {
 namespace testing {
@@ -21,12 +23,16 @@ namespace testing {
 typedef MessageType::Field Field;
 
 static const MessageType kTestType1(5, 0x1234, "TestType1",
-                                    {new Field{0, "field1"},
-                                     new Field{0, "field2"},
-                                     new Field{0, "field3"}});
+                                    {new Field{0, 0, "field1"},
+                                     new Field{0, 0, "field2"},
+                                     new Field{0, 0, "field3"}});
 
 class QueueTypesTest : public ::testing::Test {
  public:
+  QueueTypesTest() {
+    ::aos::common::testing::EnableTestLogging();
+  }
+
   ::testing::AssertionResult Equal(const MessageType &l, const MessageType &r) {
     using ::testing::AssertionFailure;
     if (l.id != r.id) {
@@ -83,7 +89,7 @@ TEST_F(QueueTypesTest, Serialization) {
 
 class PrintMessageTest : public ::testing::Test {
  public:
-  char input[128], output[128];
+  char input[128], output[256];
   size_t input_bytes, output_bytes;
 };
 
@@ -194,6 +200,15 @@ static const Structure kTestStructure1(false, 973, 8.56);
 static const ::std::string kTestStructure1String =
     ".aos.common.testing.Structure{struct_bool:f, struct_int:973"
     ", struct_float:8.560000}";
+static const ::aos::common::testing::Structure kStructureValue(true, 973, 3.14);
+static const MessageWithArrays kTestMessageWithArrays({{971, 254, 1678}},
+                                                      {{kStructureValue,
+                                                        kStructureValue}});
+static const ::std::string kTestMessageWithArraysString =
+    ".aos.common.testing.MessageWithArrays{test_int:[971, 254, 1678], "
+    "test_struct:[.aos.common.testing.Structure{struct_bool:T, struct_int:973, "
+    "struct_float:3.140000}, .aos.common.testing.Structure{struct_bool:T, "
+    "struct_int:973, struct_float:3.140000}]}";
 
 TEST_F(PrintMessageTest, Basic) {
   CHECK_GE(sizeof(input), kTestMessage1.Size());
@@ -242,6 +257,17 @@ TEST_F(PrintMessageTest, Matrix) {
                           queue_primitive_types::uint16_t_p, 3, 2));
   EXPECT_EQ(kOutput, ::std::string(output));
   EXPECT_EQ(kOutput.size() + 1, sizeof(output) - output_bytes);
+}
+
+TEST_F(PrintMessageTest, Array) {
+  CHECK_GE(sizeof(input), kTestMessageWithArrays.Size());
+  input_bytes = kTestMessageWithArrays.Serialize(input);
+  output_bytes = sizeof(output);
+  ASSERT_TRUE(PrintMessage(output, &output_bytes, input, &input_bytes,
+                           *kTestMessageWithArrays.GetType()));
+  EXPECT_EQ(kTestMessageWithArraysString, ::std::string(output));
+  EXPECT_EQ(kTestMessageWithArraysString.size() + 1,
+            sizeof(output) - output_bytes);
 }
 
 }  // namespace testing

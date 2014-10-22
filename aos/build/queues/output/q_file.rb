@@ -4,6 +4,12 @@ rescue LoadError
   require "digest/sha1"
 end
 
+$i = 0
+def getForLoopVar()
+  $i = $i + 1
+  return "_autogen_index_#{$i}"
+end
+
 module Target
 end
 class Target::Node
@@ -30,6 +36,7 @@ class Target::QFile < Target::Node
 	end
 	def make_cpp_tree(rel_path)
 		cpp_tree = DepFilePair.new(rel_path)
+		cpp_tree.add_header_include("<array>")
 		cpp_tree.add_header_include("\"aos/common/macros.h\"")
 		cpp_tree.add_header_include("\"aos/common/queue.h\"")
 		@class_types.each do |type|

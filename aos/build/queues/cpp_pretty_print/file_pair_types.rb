@@ -157,7 +157,7 @@ class CPP::TemplateClass < CPP::ClassPair
 			state.pp("template < ")
 			state.pp(@t_args)
 		else
-			state.pp("template <")
+			state.pp("template < ")
 		end
 		state.pp(">\n")
 		state.pp("class #@name")
