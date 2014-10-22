@@ -122,9 +122,9 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
 
   ::aos::controls::output_check_received.FetchLatest();
   // True if we're enabled but the motors aren't working.
-  // The 100ms is the result of disabling the robot while it's putting out a lot
-  // of power and looking at the time delay between the last PWM pulse and the
-  // battery voltage coming back up.
+  // The 100ms is the result of using an oscilliscope to look at the PWM signal
+  // and output of a talon, and timing the delay between the last pulse and the
+  // talon turning off.
   const bool motors_off =
       !::aos::controls::output_check_received.get() ||
       !::aos::controls::output_check_received.IsNewerThanMS(100);
