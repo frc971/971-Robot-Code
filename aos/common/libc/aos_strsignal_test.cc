@@ -1,6 +1,7 @@
 #include "aos/common/libc/aos_strsignal.h"
 
 #include <signal.h>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -16,11 +17,23 @@ TEST(StrsignalTest, Basic) {
   EXPECT_STREQ("Unknown signal 155", aos_strsignal(155));
 }
 
+class SignalNameTester {
+ public:
+  void operator()() {
+    for (int i = 0; i < SIGRTMAX + 5; ++i) {
+      EXPECT_STREQ(strsignal(i), aos_strsignal(i));
+    }
+  }
+};
+
 // Tests that all the signals give the same result as strsignal(3).
 TEST(StrsignalTest, All) {
-  for (int i = 0; i < SIGRTMAX + 5; ++i) {
-    EXPECT_STREQ(strsignal(i), aos_strsignal(i));
-  }
+  // Sigh, strsignal allocates a buffer that uses pthread local storage.  This
+  // interacts poorly with asan.  Spawning a thread causes the storage to get
+  // cleaned up before asan checks.
+  SignalNameTester t;
+  ::std::thread thread(::std::ref(t));
+  thread.join();
 }
 
 }  // namespace testing
