@@ -158,6 +158,8 @@ def get_ip(device):
     return base + '.179'
   elif device == 'robot':
     return base + '.2'
+  elif device == 'roboRIO':
+    return base + '.2'
   else:
     raise Exception('Unknown device %s to get an IP address for.' % device)
 
@@ -495,8 +497,8 @@ class PrimeProcessor(Processor):
                                      cwd=from_dir)
       to_download = subprocess.check_output(
           ('ssh', TARGET,
-           """rm -rf {TMPDIR} && mkdir {TMPDIR} && cd {TO_DIR} \\
-             && echo '{SUMS}' | {SUM} --check --quiet \\
+           """rm -rf {TMPDIR} && mkdir -p {TMPDIR} && cd {TO_DIR} \\
+             && echo '{SUMS}' | {SUM} -c \\
              |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*$/\\1/g'""".
            format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums.decode('utf-8'),
                   SUM=SUM)))
@@ -513,7 +515,7 @@ class PrimeProcessor(Processor):
             ('ssh', TARGET,
              """mv {TMPDIR}/* {TO_DIR} \\
              && echo 'Done moving new executables into place' \\
-             && ionice -c 3 bash -c 'sync && sync && sync'""".format(
+             && bash -c 'sync && sync && sync'""".format(
                  TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
     def build_env(self):
