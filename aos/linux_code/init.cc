@@ -28,6 +28,8 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
            program_invocation_short_name, resource);
     }
     rlim.rlim_cur = soft;
+    rlim.rlim_max = ::std::max(rlim.rlim_max, soft);
+
     if (setrlimit64(resource, &rlim) == -1) {
       PDie("%s-init: setrlimit64(%d, {cur=%ju,max=%ju}) failed",
            program_invocation_short_name, resource, (uintmax_t)rlim.rlim_cur,
