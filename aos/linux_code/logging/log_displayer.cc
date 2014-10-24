@@ -23,6 +23,7 @@ namespace {
 const char *kArgsHelp = "[OPTION]... [FILE]\n"
     "Display log file FILE (created by BinaryLogReader) to stdout.\n"
     "FILE is \"aos_log-current\" by default.\n"
+    "FILE can also be \"-\" to read from standard input.\n"
     "\n"
     "  -n, --name NAME       only display entries from processes named NAME\n"
     "  -l, --level LEVEL     "
@@ -215,7 +216,12 @@ int main(int argc, char **argv) {
   fprintf(stderr, "displaying down to level %s from file '%s'\n",
       ::aos::logging::log_str(filter_level), filename);
 
-  int fd = open(filename, O_RDONLY);
+  int fd;
+  if (strcmp(filename, "-") == 0) {
+    fd = STDIN_FILENO;
+  } else {
+    fd = open(filename, O_RDONLY);
+  }
 
   if (fd == -1) {
     PLOG(FATAL, "couldn't open file '%s' for reading", filename);
