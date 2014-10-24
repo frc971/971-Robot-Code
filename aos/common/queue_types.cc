@@ -285,8 +285,12 @@ void Add(const MessageType &type) {
 
 const MessageType &Get(uint32_t type_id) {
   ::aos::MutexLocker locker(&cache_lock);
-  if (cache.count(type_id) > 0) {
-    return cache.at(type_id).type;
+
+  {
+    const auto cached = cache.find(type_id);
+    if (cached != cache.end()) {
+      return cached->second.type;
+    }
   }
 
   if (aos_core_is_init()) {
