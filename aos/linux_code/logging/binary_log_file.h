@@ -96,6 +96,10 @@ class LogFileAccessor {
 
   bool IsLastPage();
 
+  size_t file_offset(const void *msg) {
+    return offset() + (static_cast<const char *>(msg) - current());
+  }
+
  protected:
   // The size of the chunks that get mmaped/munmapped together. Large enough so
   // that not too much space is wasted and it's hopefully bigger than and a

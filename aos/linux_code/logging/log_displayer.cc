@@ -250,7 +250,13 @@ int main(int argc, char **argv) {
       size_t bytes = msg->message_size;
       ::aos::MessageType *type = ::aos::MessageType::Deserialize(
           reinterpret_cast<const char *>(msg + 1), &bytes);
-      ::aos::type_cache::Add(*type);
+      if (type == nullptr) {
+        LOG(WARNING, "Error deserializing MessageType of size %" PRIx32
+                     " starting at %zx.\n",
+            msg->message_size, reader.file_offset(msg + 1));
+      } else {
+        ::aos::type_cache::Add(*type);
+      }
       continue;
     }
 
