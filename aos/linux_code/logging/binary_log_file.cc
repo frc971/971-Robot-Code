@@ -36,8 +36,8 @@ void LogFileAccessor::Sync() const {
 }
 
 bool LogFileAccessor::IsLastPage() {
-  if (is_last_page_ != 0) {
-    return is_last_page_ == 2;
+  if (is_last_page_ != Maybe::kUnknown) {
+    return is_last_page_ == Maybe::kYes;
   }
 
   struct stat info;
@@ -45,7 +45,7 @@ bool LogFileAccessor::IsLastPage() {
     PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
   }
   bool r = offset_ == static_cast<off_t>(info.st_size - kPageSize);
-  is_last_page_ = r ? 2 : 1;
+  is_last_page_ = r ? Maybe::kYes : Maybe::kNo;
   return r;
 }
 
@@ -55,26 +55,55 @@ void LogFileAccessor::MapNextPage() {
       PLOG(FATAL, "ftruncate(%d, %zd) failed", fd_, kPageSize);
     }
   }
-  current_ = static_cast<char *>(
-      mmap(NULL, kPageSize, PROT_READ | (writable_ ? PROT_WRITE : 0),
-           MAP_SHARED, fd_, offset_));
-  if (current_ == MAP_FAILED) {
-    PLOG(FATAL,
-         "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
-         " failed", kPageSize, fd_, static_cast<intmax_t>(offset_));
-  }
-  if (madvise(current_, kPageSize, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) {
-    PLOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED) failed",
-         current_, kPageSize);
+
+  if (use_read_ == Maybe::kYes) {
+    ssize_t todo = kPageSize;
+    while (todo > 0) {
+      ssize_t result = read(fd_, current_ + (kPageSize - todo), todo);
+      if (result == -1) {
+        PLOG(FATAL, "read(%d, %p, %zu) failed", fd_,
+             current_ + (kPageSize - todo), todo);
+      }
+      todo -= result;
+    }
+    CHECK_EQ(0, todo);
+  } else {
+    current_ = static_cast<char *>(
+        mmap(NULL, kPageSize, PROT_READ | (writable_ ? PROT_WRITE : 0),
+             MAP_SHARED, fd_, offset_));
+    if (current_ == MAP_FAILED) {
+      if (!writable_ && use_read_ == Maybe::kUnknown && errno == ENODEV) {
+        LOG(INFO, "Falling back to reading the file using read(2).\n");
+        use_read_ = Maybe::kYes;
+        current_ = new char[kPageSize];
+        MapNextPage();
+        return;
+      } else {
+        PLOG(FATAL,
+             "mmap(NULL, %zd, PROT_READ [ | PROT_WRITE], MAP_SHARED, %d, %jd)"
+             " failed",
+             kPageSize, fd_, static_cast<intmax_t>(offset_));
+      }
+    } else {
+      use_read_ = Maybe::kNo;
+    }
+    if (madvise(current_, kPageSize, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) {
+      PLOG(WARNING, "madvise(%p, %zd, MADV_SEQUENTIAL | MADV_WILLNEED) failed",
+           current_, kPageSize);
+    }
   }
   offset_ += kPageSize;
 }
 
 void LogFileAccessor::Unmap(void *location) {
-  if (munmap(location, kPageSize) == -1) {
-    PLOG(FATAL, "munmap(%p, %zd) failed", location, kPageSize);
+  CHECK_NE(Maybe::kUnknown, use_read_);
+
+  if (use_read_ == Maybe::kNo) {
+    if (munmap(location, kPageSize) == -1) {
+      PLOG(FATAL, "munmap(%p, %zd) failed", location, kPageSize);
+    }
   }
-  is_last_page_ = 0;
+  is_last_page_ = Maybe::kUnknown;
   position_ = 0;
 }
 
@@ -123,6 +152,8 @@ void CheckCurrentPageReadableHandler(int /*signal*/, siginfo_t *info, void *) {
 
 }  // namespace
 void LogFileReader::CheckCurrentPageReadable() {
+  if (definitely_use_read()) return;
+
   if (sigsetjmp(jump_context, 1) == 0) {
     struct sigaction action;
     action.sa_sigaction = CheckCurrentPageReadableHandler;

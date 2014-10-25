@@ -46,7 +46,7 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
   // for readers keeping up with a live writer.
   //
   // Gets initialized to 0 by ftruncate.
-  // 
+  //
   // There will be something here after the last message on a "page" set to 2
   // (by the futex_set) to indicate that the next message is on the next page.
   mutex marker;
@@ -85,6 +85,11 @@ static_assert(offsetof(LogFileMessageHeader, marker) == 0,
 class LogFileAccessor {
  public:
   LogFileAccessor(int fd, bool writable);
+  ~LogFileAccessor() {
+    if (use_read_ == Maybe::kYes) {
+      delete[] current_;
+    }
+  }
 
   // Asynchronously syncs all open mappings.
   void Sync() const;
@@ -118,7 +123,15 @@ class LogFileAccessor {
     position_ += kAlignment - (position_ % kAlignment);
   }
 
+ protected:
+  bool definitely_use_read() const { return use_read_ == Maybe::kYes; }
+  bool definitely_use_mmap() const { return use_read_ == Maybe::kNo; }
+
  private:
+  // Used for representing things that we might know to be true/false or we
+  // might not know (yet).
+  enum class Maybe { kUnknown, kYes, kNo };
+
   const int fd_;
   const bool writable_;
 
@@ -127,8 +140,10 @@ class LogFileAccessor {
   char *current_;
   size_t position_;
 
-  // 0 = unknown, 1 = no, 2 = yes
-  int is_last_page_ = 0;
+  Maybe is_last_page_ = Maybe::kUnknown;
+
+  // Use read instead of mmap (necessary for fds that don't support mmap).
+  Maybe use_read_ = Maybe::kUnknown;
 };
 
 class LogFileReader : public LogFileAccessor {
