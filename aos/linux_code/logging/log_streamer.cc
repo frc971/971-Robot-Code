@@ -28,9 +28,8 @@ int LogStreamerMain() {
   printf("starting at %" PRId32 "s%" PRId32 "ns-----------------------------\n",
          now.sec(), now.nsec());
 
-  int index = 0;
   while (true) {
-    const LogMessage *const msg = ReadNext(RawQueue::kBlock, &index);
+    const LogMessage *const msg = ReadNext();
     if (msg == NULL) continue;
 
     internal::PrintMessage(stdout, *msg);
