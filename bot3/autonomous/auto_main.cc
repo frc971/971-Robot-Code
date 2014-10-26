@@ -3,8 +3,8 @@
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
+#include "bot3/autonomous/auto.h"
 #include "frc971/autonomous/auto.q.h"
-#include "frc971/autonomous/auto.h"
 
 using ::aos::time::Time;
 
@@ -25,7 +25,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
     }
     LOG(INFO, "Starting auto mode\n");
     ::aos::time::Time start_time = ::aos::time::Time::Now();
-    ::frc971::autonomous::HandleAuto();
+    ::bot3::autonomous::HandleAuto();
 
     ::aos::time::Time elapsed_time = ::aos::time::Time::Now() - start_time;
     LOG(INFO, "Auto mode exited in %f, waiting for it to finish.\n",

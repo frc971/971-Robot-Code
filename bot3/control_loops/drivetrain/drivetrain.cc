@@ -1,9 +1,12 @@
-#include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "bot3/control_loops/drivetrain/drivetrain.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <sched.h>
-#include <cmath>
+
+#include <functional>
 #include <memory>
+
 #include "Eigen/Dense"
 
 #include "aos/common/logging/logging.h"
@@ -12,17 +15,20 @@
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/matrix_logging.h"
 
-#include "frc971/control_loops/state_feedback_loop.h"
+#include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/drivetrain/drivetrain_constants.h"
+#include "bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "bot3/control_loops/drivetrain/polydrivetrain_cim_plant.h"
+#include "bot3/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/queues/other_sensors.q.h"
-#include "frc971/constants.h"
-#include "frc971/shifter_hall_effect.h"
 
-using frc971::sensors::gyro_reading;
+using ::frc971::sensors::gyro_reading;
+using ::frc971::control_loops::DoCoerceGoal;
+using ::frc971::control_loops::CoerceGoal;
 
-namespace frc971 {
+namespace bot3 {
 namespace control_loops {
 
 class DrivetrainMotorsSS {
@@ -134,7 +140,7 @@ class DrivetrainMotorsSS {
 
   DrivetrainMotorsSS()
       : loop_(new LimitedDrivetrainLoop(
-            constants::GetValues().make_drivetrain_loop())),
+            MakeDrivetrainLoop())),
         filtered_offset_(0.0),
         gyro_(0.0),
         left_goal_(0.0),
@@ -161,7 +167,7 @@ class DrivetrainMotorsSS {
   void SetPosition(double left, double right, double gyro) {
     // Decay the offset quickly because this gyro is great.
     const double offset =
-        (right - left - gyro * constants::GetValues().turn_width) / 2.0;
+        (right - left - gyro * kBot3TurnWidth) / 2.0;
     // TODO(brians): filtered_offset_ = offset first time around.
     filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
     gyro_ = gyro;
@@ -190,11 +196,11 @@ class DrivetrainMotorsSS {
     // lets just call the average of left and right velocities close enough
     return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
   }
-  
+
   double GetEstimatedLeftEncoder() const {
     return loop_->X_hat(0, 0);
   }
-  
+
   double GetEstimatedRightEncoder() const {
     return loop_->X_hat(2, 0);
   }
@@ -268,7 +274,7 @@ class PolyDrivetrain {
                  /*[*/ 12 /*]*/,
                  /*[*/ 12 /*]]*/).finished()),
         loop_(new StateFeedbackLoop<2, 2, 2>(
-            constants::GetValues().make_v_drivetrain_loop())),
+            MakeVelocityDrivetrainLoop())),
         ttrust_(1.1),
         wheel_(0.0),
         throttle_(0.0),
@@ -284,20 +290,20 @@ class PolyDrivetrain {
   }
   static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
-  static double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
+  static double MotorSpeed(const ::frc971::constants::ShifterHallEffect &hall_effect,
                            double shifter_position, double velocity) {
     // TODO(austin): G_high, G_low and kWheelRadius
     const double avg_hall_effect =
         (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
 
     if (shifter_position > avg_hall_effect) {
-      return velocity / constants::GetValues().high_gear_ratio / kWheelRadius;
+      return velocity / kBot3HighGearRatio / kWheelRadius;
     } else {
-      return velocity / constants::GetValues().low_gear_ratio / kWheelRadius;
+      return velocity / kBot3LowGearRatio / kWheelRadius;
     }
   }
 
-  Gear ComputeGear(const constants::ShifterHallEffect &hall_effect,
+  Gear ComputeGear(const ::frc971::constants::ShifterHallEffect &hall_effect,
                    double velocity, Gear current) {
     const double low_omega = MotorSpeed(hall_effect, 0.0, ::std::abs(velocity));
     const double high_omega =
@@ -336,7 +342,6 @@ class PolyDrivetrain {
     // TODO(austin): Fix the upshift logic to include states.
     Gear requested_gear;
     if (false) {
-      const auto &values = constants::GetValues();
       const double current_left_velocity =
           (position_.left_encoder - last_position_.left_encoder) /
           position_time_delta_;
@@ -345,19 +350,17 @@ class PolyDrivetrain {
           position_time_delta_;
 
       Gear left_requested =
-          ComputeGear(values.left_drive, current_left_velocity, left_gear_);
+          ComputeGear(kBot3LeftDriveShifter, current_left_velocity, left_gear_);
       Gear right_requested =
-          ComputeGear(values.right_drive, current_right_velocity, right_gear_);
+          ComputeGear(kBot3RightDriveShifter, current_right_velocity, right_gear_);
       requested_gear =
           (left_requested == HIGH || right_requested == HIGH) ? HIGH : LOW;
     } else {
       requested_gear = highgear ? HIGH : LOW;
     }
 
-    const Gear shift_up =
-        constants::GetValues().clutch_transmission ? HIGH : SHIFTING_UP;
-    const Gear shift_down =
-        constants::GetValues().clutch_transmission ? LOW : SHIFTING_DOWN;
+    const Gear shift_up = SHIFTING_UP;
+    const Gear shift_down = SHIFTING_DOWN;
 
     if (left_gear_ != requested_gear) {
       if (IsInGear(left_gear_)) {
@@ -391,7 +394,6 @@ class PolyDrivetrain {
     }
   }
   void SetPosition(const Drivetrain::Position *position) {
-    const auto &values = constants::GetValues();
     if (position == NULL) {
       ++stale_count_;
     } else {
@@ -405,9 +407,11 @@ class PolyDrivetrain {
       GearLogging gear_logging;
       // Switch to the correct controller.
       const double left_middle_shifter_position =
-          (values.left_drive.clear_high + values.left_drive.clear_low) / 2.0;
+          (kBot3LeftDriveShifter.clear_high +
+          kBot3LeftDriveShifter.clear_low) / 2.0;
       const double right_middle_shifter_position =
-          (values.right_drive.clear_high + values.right_drive.clear_low) / 2.0;
+          (kBot3RightDriveShifter.clear_high +
+          kBot3RightDriveShifter.clear_low) / 2.0;
 
       if (position->left_shifter_position < left_middle_shifter_position) {
         if (position->right_shifter_position < right_middle_shifter_position ||
@@ -434,16 +438,24 @@ class PolyDrivetrain {
       }
 
       // TODO(austin): Constants.
-      if (position->left_shifter_position > values.left_drive.clear_high && left_gear_ == SHIFTING_UP) {
+      if (position->left_shifter_position >
+          kBot3LeftDriveShifter.clear_high &&
+          left_gear_ == SHIFTING_UP) {
         left_gear_ = HIGH;
       }
-      if (position->left_shifter_position < values.left_drive.clear_low && left_gear_ == SHIFTING_DOWN) {
+      if (position->left_shifter_position <
+          kBot3LeftDriveShifter.clear_low &&
+          left_gear_ == SHIFTING_DOWN) {
         left_gear_ = LOW;
       }
-      if (position->right_shifter_position > values.right_drive.clear_high && right_gear_ == SHIFTING_UP) {
+      if (position->right_shifter_position >
+          kBot3RightDriveShifter.clear_high &&
+          right_gear_ == SHIFTING_UP) {
         right_gear_ = HIGH;
       }
-      if (position->right_shifter_position < values.right_drive.clear_low && right_gear_ == SHIFTING_DOWN) {
+      if (position->right_shifter_position <
+          kBot3RightDriveShifter.clear_low &&
+          right_gear_ == SHIFTING_DOWN) {
         right_gear_ = LOW;
       }
 
@@ -500,7 +512,6 @@ class PolyDrivetrain {
   }
 
   void Update() {
-    const auto &values = constants::GetValues();
     // TODO(austin): Observer for the current velocity instead of difference
     // calculations.
     ++counter_;
@@ -511,10 +522,12 @@ class PolyDrivetrain {
         (position_.right_encoder - last_position_.right_encoder) /
         position_time_delta_;
     const double left_motor_speed =
-        MotorSpeed(values.left_drive, position_.left_shifter_position,
+        MotorSpeed(kBot3LeftDriveShifter,
+                   position_.left_shifter_position,
                    current_left_velocity);
     const double right_motor_speed =
-        MotorSpeed(values.right_drive, position_.right_shifter_position,
+        MotorSpeed(kBot3RightDriveShifter,
+                   position_.right_shifter_position,
                    current_right_velocity);
 
     {
@@ -707,17 +720,17 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     }
     dt_closedloop.Update(output == NULL, false);
   }
-  
+
   // set the output status of the control loop state
   if (status) {
     bool done = false;
     if (goal) {
       done = ((::std::abs(goal->left_goal -
                           dt_closedloop.GetEstimatedLeftEncoder()) <
-               constants::GetValues().drivetrain_done_distance) &&
+               kBot3DrivetrainDoneDistance) &&
               (::std::abs(goal->right_goal -
                           dt_closedloop.GetEstimatedRightEncoder()) <
-               constants::GetValues().drivetrain_done_distance));
+               kBot3DrivetrainDoneDistance));
     }
     status->is_done = done;
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
@@ -730,4 +743,4 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace bot3

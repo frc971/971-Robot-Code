@@ -615,7 +615,7 @@ class PrimeProcessor(Processor):
             # We don't have a compiler to use here.
             continue
           platforms.append(
-              PrimeProcessor.Platform(architecture, compiler, debug, 'none'))
+              self.Platform(architecture, compiler, debug, 'none'))
     for sanitizer in PrimeProcessor.SANITIZERS:
       for compiler in ('gcc_4.8', 'clang'):
         if compiler == 'gcc_4.8' and (sanitizer == 'undefined' or
@@ -627,7 +627,7 @@ class PrimeProcessor(Processor):
           # We already added sanitizer == 'none' above.
           continue
         platforms.append(
-            PrimeProcessor.Platform('amd64', compiler, True, sanitizer))
+            self.Platform('amd64', compiler, True, sanitizer))
     self.__platforms = frozenset(platforms)
 
     if is_test:
@@ -753,6 +753,15 @@ class PrimeProcessor(Processor):
         packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
     self.do_check_installed(tuple(packages))
+
+class Bot3PrimeProcessor(PrimeProcessor):
+  """A very simple subclass of PrimeProcessor whose main function is to allow
+  the building of third robot targets in separate directories from those of
+  the main robot."""
+  class Platform(PrimeProcessor.Platform):
+    def __str__(self):
+      return 'bot3-%s' % (super(Bot3PrimeProcessor.Platform, self).__str__())
+
 
 def strsignal(num):
   # It ends up with SIGIOT instead otherwise, which is weird.
@@ -893,6 +902,9 @@ Examples of specifying targets:
   elif args.processor == 'prime':
     processor = PrimeProcessor(args.action_name == 'tests',
                                args.action_name == 'deploy')
+  elif args.processor == 'bot3_prime':
+    processor = Bot3PrimeProcessor(args.action_name == 'tests',
+                                   args.action_name == 'deploy')
   else:
     print_help(1, message='Unknown processor "%s".' % args.processor)
 

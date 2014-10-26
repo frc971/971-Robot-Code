@@ -4,23 +4,13 @@
 #include <stdint.h>
 
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/shifter_hall_effect.h"
 
 namespace frc971 {
 namespace constants {
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
-
-// Contains the voltages for an analog hall effect sensor on a shifter.
-struct ShifterHallEffect {
-  // The numbers to use for scaling raw voltages to 0-1.
-  // Low is near 0.0, high is near 1.0
-  double low_gear_middle, low_gear_low;
-  double high_gear_high, high_gear_middle;
-
-  // The numbers for when the dog is clear of each gear.
-  double clear_low, clear_high;
-};
 
 // This structure contains current values for all of the things that change.
 struct Values {

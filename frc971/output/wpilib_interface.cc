@@ -24,6 +24,7 @@
 #include "frc971/constants.h"
 #include "frc971/queues/other_sensors.q.h"
 #include "frc971/queues/to_log.q.h"
+#include "frc971/shifter_hall_effect.h"
 
 #include <WPILib.h>
 
