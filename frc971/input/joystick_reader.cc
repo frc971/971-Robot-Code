@@ -134,9 +134,9 @@ const ShotGoal kFlippedMediumShotGoal = {
 
 // Shot from the fender.
 const ShotGoal kFenderShotGoal = {
-    {-0.68, kShootSeparation}, 115.0, 0.4, kIntakePower};
+    {-0.68, kShootSeparation}, 115.0, 0.0, kIntakePower};
 const ShotGoal kFlippedShortShotGoal = {
-    {0.63, kShootSeparation}, 115.0, 0.4, kIntakePower};
+    {0.63, kShootSeparation}, 115.0, 0.0, kIntakePower};
 
 const ShotGoal kHumanShotGoal = {
     {-0.90, kShootSeparation}, 140, 0.04, kIntakePower};
