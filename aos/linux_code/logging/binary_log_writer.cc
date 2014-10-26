@@ -9,6 +9,7 @@
 #include <pwd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <mntent.h>
 
 #include <map>
 #include <unordered_set>
@@ -107,11 +108,70 @@ void AllocateLogName(char **filename, const char *directory) {
          fileindex, directory, previous);
 }
 
+#ifdef AOS_COMPILER_gcc_frc
+bool FoundThumbDrive(const char *path) {
+  FILE *mnt_fp = setmntent("/etc/mtab", "r");
+  if (mnt_fp == nullptr) {
+    Die("Could not open /etc/mtab");
+  }
+
+  bool found = false;
+  struct mntent mntbuf;
+  char buf[256];
+  while (!found) {
+    struct mntent *mount_list = getmntent_r(mnt_fp, &mntbuf, buf, sizeof(buf));
+    if (mount_list == nullptr) {
+      break;
+    }
+    if (strcmp(mount_list->mnt_dir, path) == 0) {
+      found = true;
+    }
+  }
+  endmntent(mnt_fp);
+  return found;
+}
+
+bool FindDevice(char *device, size_t device_size) {
+  char test_device[10];
+  for (char i = 'a'; i < 'z'; ++i) {
+    snprintf(test_device, sizeof(test_device), "/dev/sd%c", i);
+    LOG(INFO, "Trying to access %s\n", test_device);
+    if (access(test_device, F_OK) != -1) {
+      snprintf(device, device_size, "sd%c", i);
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 int BinaryLogReaderMain() {
   InitNRT();
 
+#ifdef AOS_COMPILER_gcc_frc
+  char folder[128];
+
+  {
+    char dev_name[8];
+    while (!FindDevice(dev_name, sizeof(dev_name))) {
+      LOG(INFO, "Waiting for a device\n");
+      printf("Waiting for a device\n");
+      sleep(5);
+    }
+    snprintf(folder, sizeof(folder), "/media/%s1", dev_name);
+    while (!FoundThumbDrive(folder)) {
+      LOG(INFO, "Waiting for %s\n", folder);
+      printf("Waiting for %s\n", folder);
+      sleep(1);
+    }
+    snprintf(folder, sizeof(folder), "/media/%s1/", dev_name);
+  }
+
+  if (access(folder, F_OK) == -1) {
+#else
   const char *folder = configuration::GetLoggingDirectory();
   if (access(folder, R_OK | W_OK) == -1) {
+#endif
     LOG(FATAL, "folder '%s' does not exist. please create it\n", folder);
   }
   LOG(INFO, "logging to folder '%s'\n", folder);
