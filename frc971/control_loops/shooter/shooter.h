@@ -76,6 +76,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double goal_velocity() const { return R(1, 0); }
   void InitializeState(double position) {
     mutable_X_hat(0, 0) = position - kPositionOffset;
+    mutable_X_hat(1, 0) = 0.0;
+    mutable_X_hat(2, 0) = 0.0;
   }
 
   void SetGoalPosition(double desired_position, double desired_velocity) {
