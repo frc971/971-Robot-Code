@@ -143,6 +143,7 @@
       '__STDC_FORMAT_MACROS',
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
+      'AOS_COMPILER_<!(echo <(FULL_COMPILER) | sed \'s/\./_/g\')',
     ],
     'ldflags': [
       '-pipe',
