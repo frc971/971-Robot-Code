@@ -28,6 +28,7 @@ namespace {
 
 const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
+const uint16_t kRoboRioTeamNumber = 254;
 
 const double kCompDrivetrainEncoderRatio =
     (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0) /*encoder gears*/;
@@ -41,8 +42,8 @@ const double kPracticeHighGearRatio = kCompHighGearRatio;
 const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
 const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
 
-const ShifterHallEffect kPracticeRightDriveShifter{550, 640, 635, 550, 0.2, 0.7};
-const ShifterHallEffect kPracticeLeftDriveShifter{540, 620, 640, 550, 0.2, 0.7};
+const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
+const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
 
 const double kRobotWidth = 25.0 / 100.0 * 2.54;
 
@@ -137,6 +138,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       };
       break;
     case kPracticeTeamNumber:
+    case kRoboRioTeamNumber:
       return new Values{
           kPracticeDrivetrainEncoderRatio,
           kPracticeLowGearRatio,
@@ -165,13 +167,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           {-3.364758, 2.086668, -3.166136, 1.95,
             {-1.7 * 2.0, -1.544662 * 2.0, -1.7 * 2.0, -1.547616 * 2.0},
             {-0.130218 * 2.0, -0.019771 * 2.0, -0.132036 * 2.0, -0.018862 * 2.0},
-            {0.935842 * 2.0, 1.1 * 2.0, 0.932660 * 2.0, 1.1 * 2.0}},
+            {1.871684, 2.2, 1.86532, 2.2}},
           {-2.451642, 3.107504, -2.273474, 2.750,
-            {-1.3 * 2.0, -1.088331 * 2.0, -1.3 * 2.0, -1.088331 * 2.0},
-            {-0.134536 * 2.0, -0.018408 * 2.0, -0.136127 * 2.0, -0.019771 * 2.0},
-            {1.447396 * 2.0, 1.6 * 2.0, 1.443987 * 2.0, 1.6 * 2.0}},
-          0.020000 * 2.0,  // claw_unimportant_epsilon
-          -0.200000 * 2.0,   // start_fine_tune_pos
+            {-2.6, -2.176662, -2.6, -2.176662},
+            {-0.269072, -0.036816, -0.272254, -0.039542},
+            {2.894792, 3.2, 2.887974, 3.2}},
+          0.040000,  // claw_unimportant_epsilon
+          -0.400000,   // start_fine_tune_pos
           4.000000,
           },
           //TODO(james): Get realer numbers for shooter_action.

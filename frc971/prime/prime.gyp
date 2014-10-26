@@ -20,15 +20,9 @@
         '../actions/actions.gyp:selfcatch_action',
         '../actions/actions.gyp:catch_action',
         '../actions/actions.gyp:drivetrain_action',
-        '../input/input.gyp:joystick_proxy',
         '../input/input.gyp:joystick_reader',
         '../input/input.gyp:hot_goal_reader',
-        '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',
-        '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
-        '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
-        '../output/output.gyp:led_setter',
       ],
       'variables': {
         'cape_src': '<(DEPTH)/bbb_cape/src/cape',
@@ -52,11 +46,37 @@
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'start_list.txt',
             '<(cape_hex)',
           ],
+          'conditions': [
+            ['FULL_COMPILER=="gcc_frc"', {
+              'files': [
+                'roborio/start_list.txt',
+              ],
+            }, {
+              'files': [
+                'start_list.txt',
+              ],
+            }
+          ]],
         },
       ],
+      'conditions': [
+        ['FULL_COMPILER=="gcc_frc"', {
+          'dependencies': [
+            '../output/output.gyp:wpilib_interface',
+          ],
+        }, {
+          'dependencies': [
+            '<(DEPTH)/bbb_cape/src/flasher/flasher.gyp:stm32_flasher',
+            '../output/output.gyp:motor_writer',
+            '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',
+            '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
+            '../output/output.gyp:led_setter',
+            '../input/input.gyp:joystick_proxy',
+          ],
+        }
+      ]],
     },
   ],
 }

@@ -19,6 +19,34 @@
   },
   'targets': [
     {
+      'target_name': 'WPILib_roboRIO',
+      'type': 'static_library',
+      'include_dirs': [
+        '/opt/wpilib_4.8.3/include',
+      ],
+      'link_settings': {
+        'libraries': [
+          '-L/opt/wpilib_4.8.3/lib/',
+          '-lpthread',
+          '-lFRC_NetworkCommunication',
+          '-lRoboRIO_FRC_ChipObject',
+          '-lNiFpgaLv',
+          '-lNiFpga',
+          '-lNiRioSrv',
+          '-lspi',
+          '-li2c',
+          '/opt/wpilib_4.8.3/lib/libwpilib_nonshared.a',
+          '/opt/wpilib_4.8.3/lib/libHALAthena.a',
+          '/opt/wpilib_4.8.3/lib/libNetworkTables.a',
+        ],
+      },
+      'direct_dependent_settings': {
+        'cflags': [
+          '-isystem', '/opt/wpilib_4.8.3/include/',
+        ],
+      },
+    },
+    {
       'target_name': 'WPILib',
       'type': 'static_library',
       'sources': [

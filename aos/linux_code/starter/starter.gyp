@@ -32,9 +32,19 @@
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'starter.sh',
             'starter_loop.sh',
           ],
+          'conditions': [
+            ['FULL_COMPILER=="gcc_frc"', {
+              'files': [
+                'starter_roborio.sh',
+              ],
+            }, {
+              'files': [
+                'starter.sh',
+              ],
+            }
+          ]],
         },
       ],
     },
