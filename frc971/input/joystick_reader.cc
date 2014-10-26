@@ -143,7 +143,7 @@ const ShotGoal kHumanShotGoal = {
 const ShotGoal kFlippedHumanShotGoal = {
     {0.90, kShootSeparation}, 140, 0, kIntakePower};
 const ShotGoal kTrussShotGoal = {
-    {-0.68, kShootSeparation}, 83.0, 0.4, kIntakePower};
+    {-0.68, kShootSeparation}, 88.0, 0.4, kIntakePower};
 const ShotGoal kFlippedTrussShotGoal = {
     {0.68, kShootSeparation}, 92.0, 0.4, kIntakePower};
 
