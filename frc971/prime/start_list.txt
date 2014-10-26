@@ -4,6 +4,7 @@ joystick_reader
 drivetrain
 auto
 sensor_receiver
+joystick_proxy
 claw
 shooter
 shoot_action

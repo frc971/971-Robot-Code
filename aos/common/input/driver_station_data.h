@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "aos/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.h"
+#include "aos/common/messages/robot_state.q.h"
 
 namespace aos {
 namespace input {
@@ -20,8 +20,8 @@ class JoystickFeature {
       : joystick_(joystick), number_(number) {}
 
   // How many joysticks there are.
-  static const int kJoysticks = sizeof(NetworkRobotJoysticks::joysticks) /
-                                sizeof(NetworkRobotJoysticks::joysticks[0]);
+  static const int kJoysticks = sizeof(RobotState::joysticks) /
+                                sizeof(RobotState::joysticks[0]);
 
   // Which joystick number this is (1-based).
   int joystick() const { return joystick_; }
@@ -59,8 +59,8 @@ class JoystickAxis : public JoystickFeature {
       : JoystickFeature(joystick, number) {}
 
   // How many axes there are available on each joystick.
-  static const int kAxes = sizeof(NetworkRobotJoysticks::Joystick::axes) /
-                           sizeof(NetworkRobotJoysticks::Joystick::axes[0]);
+  static const int kAxes = sizeof(Joystick::axis) /
+                           sizeof(Joystick::axis[0]);
 };
 
 class Data {
@@ -70,7 +70,7 @@ class Data {
   Data();
 
   // Updates the current information with a new set of values.
-  void Update(const NetworkRobotJoysticks &new_values);
+  void Update(const RobotState &new_values);
 
   bool IsPressed(ButtonLocation location) const;
   bool PosEdge(ButtonLocation location) const;
@@ -84,7 +84,7 @@ class Data {
   float GetAxis(JoystickAxis axis) const;
 
  private:
-  NetworkRobotJoysticks current_values_, old_values_;
+  RobotState current_values_, old_values_;
 };
 
 }  // namespace driver_station

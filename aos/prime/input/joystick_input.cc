@@ -13,7 +13,7 @@
 namespace aos {
 namespace input {
 
-void JoystickInput::Run() {
+void JoystickProxy::Run() {
   network::ReceiveSocket sock(NetworkPort::kDS);
   // If true, this code won't try to read anything from the network and instead
   // feed all 0s to the joystick code.
@@ -23,7 +23,6 @@ void JoystickInput::Run() {
 
   NetworkRobotJoysticks joysticks;
   char buffer[sizeof(joysticks) + ::buffers::kOverhead];
-  driver_station::Data data;
 
   while (true) {
     if (kFakeJoysticks) {
@@ -43,17 +42,38 @@ void JoystickInput::Run() {
     }
 
     auto new_state = robot_state.MakeMessage();
+    new_state->test_mode = joysticks.control.test_mode();
+    new_state->fms_attached = joysticks.control.fms_attached();
     new_state->enabled = joysticks.control.enabled();
     new_state->autonomous = joysticks.control.autonomous();
     new_state->team_id = joysticks.team_number;
     new_state->fake = kFakeJoysticks;
+
+    for (int i = 0; i < 4; ++i) {
+      new_state->joysticks[i].buttons = joysticks.joysticks[i].buttons;
+      for (int j = 0; j < 4; ++j) {
+        // TODO(brians): check this math against what our joysticks report as
+        // their logical minimums and maximums
+        new_state->joysticks[i].axis[j] = joysticks.joysticks[i].axes[j] / 127.0;
+      }
+    }
+
     LOG_STRUCT(DEBUG, "sending", *new_state);
 
     if (!new_state.Send()) {
       LOG(WARNING, "sending robot_state failed\n");
     }
+  }
+}
 
-    data.Update(joysticks);
+void JoystickInput::Run() {
+  driver_station::Data data;
+  while (true) {
+    robot_state.FetchAnother();
+
+    LOG_STRUCT(DEBUG, "sending", *robot_state);
+
+    data.Update(*robot_state);
 
     {
       using driver_station::JoystickFeature;

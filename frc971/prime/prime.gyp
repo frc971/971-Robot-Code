@@ -20,6 +20,7 @@
         '../actions/actions.gyp:selfcatch_action',
         '../actions/actions.gyp:catch_action',
         '../actions/actions.gyp:drivetrain_action',
+        '../input/input.gyp:joystick_proxy',
         '../input/input.gyp:joystick_reader',
         '../input/input.gyp:hot_goal_reader',
         '../output/output.gyp:motor_writer',

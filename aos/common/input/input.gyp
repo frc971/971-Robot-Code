@@ -8,9 +8,11 @@
       ],
       'dependencies': [
         '<(EXTERNALS):WPILib-NetworkRobotValues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib-NetworkRobotValues',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
       ],
     },
   ],

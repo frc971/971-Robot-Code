@@ -20,6 +20,12 @@ class JoystickInput {
   virtual void RunIteration(const driver_station::Data &data) = 0;
 };
 
+// Class which will proxy joystick information from UDP packets to the queues.
+class JoystickProxy {
+ public:
+  void Run();
+};
+
 }  // namespace input
 }  // namespace aos
 

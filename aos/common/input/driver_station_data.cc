@@ -6,7 +6,7 @@ namespace driver_station {
 
 Data::Data() : current_values_(), old_values_() {}
 
-void Data::Update(const NetworkRobotJoysticks &new_values) {
+void Data::Update(const RobotState &new_values) {
   old_values_ = current_values_;
   current_values_ = new_values;
 }
@@ -14,22 +14,22 @@ void Data::Update(const NetworkRobotJoysticks &new_values) {
 namespace {
 
 bool GetButton(const ButtonLocation location,
-               const NetworkRobotJoysticks &values) {
+               const RobotState &values) {
   return values.joysticks[location.joystick() - 1].buttons &
       (1 << (location.number() - 1));
 }
 
 bool GetControlBitValue(const ControlBit bit,
-                        const NetworkRobotJoysticks &values) {
+                        const RobotState &values) {
   switch (bit) {
     case ControlBit::kTestMode:
-      return values.control.test_mode();
+      return values.test_mode;
     case ControlBit::kFmsAttached:
-      return values.control.fms_attached();
+      return values.fms_attached;
     case ControlBit::kAutonomous:
-      return values.control.autonomous();
+      return values.autonomous;
     case ControlBit::kEnabled:
-      return values.control.enabled();
+      return values.enabled;
     default:
       __builtin_unreachable();
   }
@@ -66,9 +66,7 @@ bool Data::NegEdge(const ControlBit bit) const {
 }
 
 float Data::GetAxis(JoystickAxis axis) const {
-  // TODO(brians): check this math against what our joysticks report as their
-  // logical minimums and maximums
-  return current_values_.joysticks[axis.joystick() - 1].axes[axis.number() - 1] / 127.0;
+  return current_values_.joysticks[axis.joystick() - 1].axis[axis.number() - 1];
 }
 
 }  // namespace driver_station
