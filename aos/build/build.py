@@ -144,8 +144,8 @@ def aos_path():
   """
   return os.path.join(os.path.dirname(__file__), '..')
 
-def get_ip(device):
-  """Retrieves the IP address for a given device."""
+def get_ip_base():
+  """Retrieves the IP address base."""
   FILENAME = os.path.normpath(os.path.join(aos_path(), '..',
                                            'output', 'ip_base.txt'))
   if not os.access(FILENAME, os.R_OK):
@@ -154,6 +154,11 @@ def get_ip(device):
       f.write('10.9.71')
   with open(FILENAME, 'r') as f:
     base = f.readline().strip()
+  return base
+
+def get_ip(device):
+  """Retrieves the IP address for a given device."""
+  base = get_ip_base()
   if device == 'prime':
     return base + '.179'
   elif device == 'robot':
@@ -162,6 +167,33 @@ def get_ip(device):
     return base + '.2'
   else:
     raise Exception('Unknown device %s to get an IP address for.' % device)
+
+def get_user(device):
+  """Retrieves the user for a given device."""
+  if device == 'prime':
+    return 'driver'
+  elif device == 'roboRIO':
+    return 'admin'
+  else:
+    raise Exception('Unknown device %s to get a user for.' % device)
+
+def get_temp_dir(device):
+  """Retrieves the temporary download directory for a given device."""
+  if device == 'prime':
+    return '/tmp/aos_downloader'
+  elif device == 'roboRIO':
+    return '/home/admin/tmp/aos_downloader'
+  else:
+    raise Exception('Unknown device %s to get a temp_dir for.' % device)
+
+def get_target_dir(device):
+  """Retrieves the tempory deploy directory for a given device."""
+  if device == 'prime':
+    return '/home/driver/robot_code/bin'
+  elif device == 'roboRIO':
+    return '/home/admin/robot_code'
+  else:
+    raise Exception('Unknown device %s to get a temp_dir for.' % device)
 
 def user_output(message):
   """Prints message to the user."""
@@ -486,10 +518,14 @@ class PrimeProcessor(Processor):
     def deploy(self, dry_run):
       # Downloads code to the prime in a way that avoids clashing too badly with
       # starter (like the naive download everything one at a time).
+      if self.compiler() == 'gcc_frc':
+        device = 'roboRIO'
+      else:
+        device = 'prime'
       SUM = 'md5sum'
-      TARGET_DIR = '/home/driver/robot_code/bin'
-      TEMP_DIR = '/tmp/aos_downloader'
-      TARGET = 'driver@' + get_ip('prime')
+      TARGET_DIR = get_target_dir(device)
+      TEMP_DIR = get_temp_dir(device)
+      TARGET = get_user(device) + '@' + get_ip(device)
 
       from_dir = os.path.join(self.outdir(), 'outputs')
       sums = subprocess.check_output((SUM,) + tuple(os.listdir(from_dir)),
@@ -511,12 +547,14 @@ class PrimeProcessor(Processor):
           + tuple([os.path.join(from_dir, f) for f in to_download.decode('utf-8').split('\n')[:-1]])
           + (('%s:%s' % (TARGET, TEMP_DIR)),))
       if not dry_run:
+        mv_cmd = ['mv {TMPDIR}/* {TO_DIR} ']
+        if device == 'roboRIO':
+          mv_cmd.append('&& chmod u+s {TO_DIR}/starter_exe ')
+        mv_cmd.append('&& echo \'Done moving new executables into place\' ')
+        mv_cmd.append('&& bash -c \'sync && sync && sync\'')
         subprocess.check_call(
             ('ssh', TARGET,
-             """mv {TMPDIR}/* {TO_DIR} \\
-             && echo 'Done moving new executables into place' \\
-             && bash -c 'sync && sync && sync'""".format(
-                 TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
+             ''.join(mv_cmd).format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
     def build_env(self):
       OTHER_SYSROOT = '/opt/clang-3.5/'
@@ -599,8 +637,12 @@ class PrimeProcessor(Processor):
         if warning[0]:
           default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
+      if get_ip_base() == '10.99.71':
+        compiler = 'gcc_frc'
+      else:
+        compiler = 'clang'
       default_platforms = self.select_platforms(architecture='arm',
-                                                compiler='clang',
+                                                compiler=compiler,
                                                 debug=False)
     else:
       default_platforms = self.select_platforms(debug=False)
