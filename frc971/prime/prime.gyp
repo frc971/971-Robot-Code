@@ -73,7 +73,7 @@
             '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',
             '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:test_sensor_receiver',
             '../output/output.gyp:led_setter',
-            '../input/input.gyp:joystick_proxy',
+            '<(AOS)/prime/input/input.gyp:joystick_proxy',
           ],
         }
       ]],

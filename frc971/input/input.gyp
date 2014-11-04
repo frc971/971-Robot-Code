@@ -15,17 +15,6 @@
       ],
     },
     {
-      'target_name': 'joystick_proxy',
-      'type': 'executable',
-      'sources': [
-        'joystick_proxy.cc',
-      ],
-      'dependencies': [
-        '<(AOS)/prime/input/input.gyp:joystick_input',
-        '<(AOS)/linux_code/linux_code.gyp:init',
-      ],
-    },
-    {
       'target_name': 'joystick_reader',
       'type': 'executable',
       'sources': [
