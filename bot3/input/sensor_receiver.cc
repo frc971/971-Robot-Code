@@ -12,8 +12,8 @@
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain_constants.h"
 #include "bot3/queues/to_log.q.h"
+#include "bot3/shifter_hall_effect.h"
 #include "frc971/queues/other_sensors.q.h"
-#include "frc971/shifter_hall_effect.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -64,21 +64,10 @@ double gyro_translate(int64_t in) {
   return in / 16.0 / 1000.0 / (180.0 / M_PI);
 }
 
-double hall_translate(const ::frc971::constants::ShifterHallEffect &k, uint16_t in_low,
-                      uint16_t in_high) {
-  const double low_ratio =
-      0.5 * (in_low - static_cast<double>(k.low_gear_low)) /
-      static_cast<double>(k.low_gear_middle - k.low_gear_low);
-  const double high_ratio =
-      0.5 + 0.5 * (in_high - static_cast<double>(k.high_gear_middle)) /
-      static_cast<double>(k.high_gear_high - k.high_gear_middle);
-
-  // Return low when we are below 1/2, and high when we are above 1/2.
-  if (low_ratio + high_ratio < 1.0) {
-    return low_ratio;
-  } else {
-    return high_ratio;
-  }
+double hall_translate(const constants::ShifterHallEffect & k,
+    uint16_t in_value) {
+    return (in_value - static_cast<double>(k.low)) /
+        static_cast<double>(k.high - k.low);
 }
 
 void PacketReceived(const ::bbb::DataStruct *data,
@@ -137,11 +126,9 @@ void PacketReceived(const ::bbb::DataStruct *data,
       .right_encoder(drivetrain_translate(data->main.right_drive))
       .left_encoder(-drivetrain_translate(data->main.left_drive))
       .left_shifter_position(hall_translate(control_loops::kBot3LeftDriveShifter,
-                                            data->main.low_left_drive_hall,
-                                            data->main.high_left_drive_hall))
+                                            data->main.low_left_drive_hall))
       .right_shifter_position(hall_translate(control_loops::kBot3RightDriveShifter,
-                                             data->main.low_right_drive_hall,
-                                             data->main.high_right_drive_hall))
+                                             data->main.low_right_drive_hall))
       .battery_voltage(battery_translate(data->main.battery_voltage_high,
                                          data->main.battery_voltage_low))
       .Send();

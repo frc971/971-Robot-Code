@@ -20,6 +20,7 @@
 #include "bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "bot3/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "bot3/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+#include "bot3/shifter_hall_effect.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/queues/other_sensors.q.h"
@@ -290,7 +291,7 @@ class PolyDrivetrain {
   }
   static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
-  static double MotorSpeed(const ::frc971::constants::ShifterHallEffect &hall_effect,
+  static double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
                            double shifter_position, double velocity) {
     // TODO(austin): G_high, G_low and kWheelRadius
     const double avg_hall_effect =
@@ -303,7 +304,7 @@ class PolyDrivetrain {
     }
   }
 
-  Gear ComputeGear(const ::frc971::constants::ShifterHallEffect &hall_effect,
+  Gear ComputeGear(const constants::ShifterHallEffect &hall_effect,
                    double velocity, Gear current) {
     const double low_omega = MotorSpeed(hall_effect, 0.0, ::std::abs(velocity));
     const double high_omega =

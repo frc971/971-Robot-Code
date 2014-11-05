@@ -12,12 +12,12 @@
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/matrix_logging.h"
 
+#include "frc971/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/other_sensors.q.h"
-#include "frc971/constants.h"
 #include "frc971/shifter_hall_effect.h"
 
 using frc971::sensors::gyro_reading;
