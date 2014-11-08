@@ -17,6 +17,9 @@ constexpr double kBot3DrivetrainDoneDistance = 0.02;
 constexpr double kBot3LowGearRatio = 14.0 / 60.0 * 17.0 / 50.0;
 constexpr double kBot3HighGearRatio = 30.0 / 44.0 * 17.0 / 50.0;
 
+// If this is true, we don't use the analog hall effects for shifting.
+constexpr bool kBot3SimpleShifting = true;
+
 }  // control_loops
 }  // bot3
 

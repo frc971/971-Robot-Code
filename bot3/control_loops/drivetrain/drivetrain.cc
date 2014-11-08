@@ -292,35 +292,17 @@ class PolyDrivetrain {
   static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
   static double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
-                           double shifter_position, double velocity) {
+                           double shifter_position, double velocity, Gear gear) {
     // TODO(austin): G_high, G_low and kWheelRadius
     const double avg_hall_effect =
         (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
 
-    if (shifter_position > avg_hall_effect) {
+    const bool use_high =
+        kBot3SimpleShifting ? gear == HIGH : shifter_position > avg_hall_effect;
+    if (use_high) {
       return velocity / kBot3HighGearRatio / kWheelRadius;
     } else {
       return velocity / kBot3LowGearRatio / kWheelRadius;
-    }
-  }
-
-  Gear ComputeGear(const constants::ShifterHallEffect &hall_effect,
-                   double velocity, Gear current) {
-    const double low_omega = MotorSpeed(hall_effect, 0.0, ::std::abs(velocity));
-    const double high_omega =
-        MotorSpeed(hall_effect, 1.0, ::std::abs(velocity));
-
-    double high_torque = ((12.0 - high_omega / Kv) * Kt / kR);
-    double low_torque = ((12.0 - low_omega / Kv) * Kt / kR);
-    double high_power = high_torque * high_omega;
-    double low_power = low_torque * low_omega;
-
-    // TODO(aschuh): Do this right!
-    if ((current == HIGH || high_power > low_power + 160) &&
-        ::std::abs(velocity) > 0.14) {
-      return HIGH;
-    } else {
-      return LOW;
     }
   }
 
@@ -342,26 +324,11 @@ class PolyDrivetrain {
 
     // TODO(austin): Fix the upshift logic to include states.
     Gear requested_gear;
-    if (false) {
-      const double current_left_velocity =
-          (position_.left_encoder - last_position_.left_encoder) /
-          position_time_delta_;
-      const double current_right_velocity =
-          (position_.right_encoder - last_position_.right_encoder) /
-          position_time_delta_;
+    requested_gear = highgear ? HIGH : LOW;
 
-      Gear left_requested =
-          ComputeGear(kBot3LeftDriveShifter, current_left_velocity, left_gear_);
-      Gear right_requested =
-          ComputeGear(kBot3RightDriveShifter, current_right_velocity, right_gear_);
-      requested_gear =
-          (left_requested == HIGH || right_requested == HIGH) ? HIGH : LOW;
-    } else {
-      requested_gear = highgear ? HIGH : LOW;
-    }
-
-    const Gear shift_up = SHIFTING_UP;
-    const Gear shift_down = SHIFTING_DOWN;
+    // Can be set to HIGH and LOW instead if we want to use simple shifting.
+    const Gear shift_up = kBot3SimpleShifting ? HIGH : SHIFTING_UP;
+    const Gear shift_down = kBot3SimpleShifting ? LOW : SHIFTING_DOWN;
 
     if (left_gear_ != requested_gear) {
       if (IsInGear(left_gear_)) {
@@ -394,6 +361,7 @@ class PolyDrivetrain {
       }
     }
   }
+
   void SetPosition(const Drivetrain::Position *position) {
     if (position == NULL) {
       ++stale_count_;
@@ -414,7 +382,8 @@ class PolyDrivetrain {
           (kBot3RightDriveShifter.clear_high +
           kBot3RightDriveShifter.clear_low) / 2.0;
 
-      if (position->left_shifter_position < left_middle_shifter_position) {
+      if (position->left_shifter_position < left_middle_shifter_position ||
+          left_gear_ == LOW) {
         if (position->right_shifter_position < right_middle_shifter_position ||
             right_gear_ == LOW) {
           gear_logging.left_loop_high = false;
@@ -427,7 +396,7 @@ class PolyDrivetrain {
         }
       } else {
         if (position->right_shifter_position < right_middle_shifter_position ||
-            left_gear_ == LOW) {
+            right_gear_ == LOW) {
           gear_logging.left_loop_high = true;
           gear_logging.right_loop_high = false;
           loop_->set_controller_index(gear_logging.controller_index = 2);
@@ -525,11 +494,13 @@ class PolyDrivetrain {
     const double left_motor_speed =
         MotorSpeed(kBot3LeftDriveShifter,
                    position_.left_shifter_position,
-                   current_left_velocity);
+                   current_left_velocity,
+                   left_gear_);
     const double right_motor_speed =
         MotorSpeed(kBot3RightDriveShifter,
                    position_.right_shifter_position,
-                   current_right_velocity);
+                   current_right_velocity,
+                   right_gear_);
 
     {
       CIMLogging logging;

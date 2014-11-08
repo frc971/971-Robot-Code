@@ -409,7 +409,8 @@ class PolyDrivetrain {
       const double right_middle_shifter_position =
           (values.right_drive.clear_high + values.right_drive.clear_low) / 2.0;
 
-      if (position->left_shifter_position < left_middle_shifter_position) {
+      if (position->left_shifter_position < left_middle_shifter_position ||
+          left_gear_ == LOW) {
         if (position->right_shifter_position < right_middle_shifter_position ||
             right_gear_ == LOW) {
           gear_logging.left_loop_high = false;
@@ -422,7 +423,7 @@ class PolyDrivetrain {
         }
       } else {
         if (position->right_shifter_position < right_middle_shifter_position ||
-            left_gear_ == LOW) {
+            right_gear_ == LOW) {
           gear_logging.left_loop_high = true;
           gear_logging.right_loop_high = false;
           loop_->set_controller_index(gear_logging.controller_index = 2);
