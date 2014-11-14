@@ -9,9 +9,9 @@ namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowLowPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.548849954683, 0.0396601987617, 0.0396601987617, 0.548849954683;
+  A << 0.498791664199, 0.0897184892451, 0.0897184892451, 0.498791664199;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0648871256127, -0.0057041694345, -0.0057041694345, 0.0648871256127;
+  B << 0.0720868114296, -0.0129038552514, -0.0129038552514, 0.0720868114296;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -25,9 +25,9 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowLowPlantCoeffic
 
 StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowHighPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.547617329816, 0.00612721792429, 0.0523174915529, 0.932105674456;
+  A << 0.491841728751, 0.0145551608494, 0.124279814134, 0.921454874639;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0650644091693, -0.00257509141326, -0.00752461776602, 0.0285340095421;
+  B << 0.0730863931411, -0.00611711060145, -0.0178746738354, 0.0330102308046;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -41,9 +41,9 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowHighPlantCoeffi
 
 StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighLowPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.932105674456, 0.0523174915529, 0.00612721792429, 0.547617329816;
+  A << 0.921454874639, 0.124279814134, 0.0145551608494, 0.491841728751;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0285340095421, -0.00752461776602, -0.00257509141326, 0.0650644091693;
+  B << 0.0330102308046, -0.0178746738354, -0.00611711060145, 0.0730863931411;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -57,9 +57,9 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighLowPlantCoeffi
 
 StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighHighPlantCoefficients() {
   Eigen::Matrix<double, 2, 2> A;
-  A << 0.931897839258, 0.00790011087396, 0.00790011087396, 0.931897839258;
+  A << 0.920202836632, 0.0195951135, 0.0195951135, 0.920202836632;
   Eigen::Matrix<double, 2, 2> B;
-  B << 0.0286213566286, -0.00332018673511, -0.00332018673511, 0.0286213566286;
+  B << 0.0335364259492, -0.00823525605573, -0.00823525605573, 0.0335364259492;
   Eigen::Matrix<double, 2, 2> C;
   C << 1.0, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 2, 2> D;
@@ -73,33 +73,33 @@ StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainHighHighPlantCoeff
 
 StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowLowController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.528849954683, 0.0396601987617, 0.0396601987617, 0.528849954683;
+  L << 0.478791664199, 0.0897184892451, 0.0897184892451, 0.478791664199;
   Eigen::Matrix<double, 2, 2> K;
-  K << -0.740281917714, 0.546140778145, 0.546140778145, -0.740281917714;
+  K << -1.22029287467, 1.0261517351, 1.0261517351, -1.22029287467;
   return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainLowLowPlantCoefficients());
 }
 
 StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainLowHighController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.524323257635, 0.0520813668112, 0.0520813668112, 0.915399746637;
+  L << 0.450790078471, 0.12008012565, 0.12008012565, 0.922506524919;
   Eigen::Matrix<double, 2, 2> K;
-  K << -0.740249343264, 0.560664230143, 1.6383045686, 11.786792809;
+  K << -1.22005303899, 1.06234079364, 3.10424257883, 10.3132835345;
   return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainLowHighPlantCoefficients());
 }
 
 StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighLowController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.915985613609, 0.00645546174383, 0.00645546174383, 0.523737390662;
+  L << 0.918551885829, 0.0172871978996, 0.0172871978996, 0.454744717561;
   Eigen::Matrix<double, 2, 2> K;
-  K << 11.786792809, 1.6383045686, 0.560664230143, -0.740249343264;
+  K << 10.3132835345, 3.10424257883, 1.06234079364, -1.22005303899;
   return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainHighLowPlantCoefficients());
 }
 
 StateFeedbackController<2, 2, 2> MakeVelocityDrivetrainHighHighController() {
   Eigen::Matrix<double, 2, 2> L;
-  L << 0.911897839258, 0.00790011087396, 0.00790011087396, 0.911897839258;
+  L << 0.900202836632, 0.0195951135, 0.0195951135, 0.900202836632;
   Eigen::Matrix<double, 2, 2> K;
-  K << 11.7867933868, 1.64333460977, 1.64333460977, 11.7867933868;
+  K << 10.3132878272, 3.11684016931, 3.11684016931, 10.3132878272;
   return StateFeedbackController<2, 2, 2>(L, K, MakeVelocityDrivetrainHighHighPlantCoefficients());
 }
 
