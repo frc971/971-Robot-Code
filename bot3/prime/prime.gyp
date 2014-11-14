@@ -11,7 +11,7 @@
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain_lib_test',
         '../control_loops/rollers/rollers.gyp:rollers',
         '../autonomous/autonomous.gyp:auto',
-        #'../input/input.gyp:joystick_reader',
+        '../input/input.gyp:joystick_reader',
         '../output/output.gyp:motor_writer',
         '../input/input.gyp:sensor_receiver',
         '<(DEPTH)/bbb_cape/src/bbb/bbb.gyp:uart_reader_main',

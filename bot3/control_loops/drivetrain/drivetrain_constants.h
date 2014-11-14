@@ -2,7 +2,6 @@
 #define BOT3_CONTROL_LOOPS_DRIVETRAIN_CONSTANTS_H_
 
 #include "bot3/shifter_hall_effect.h"
-#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace bot3 {
 namespace control_loops {
