@@ -31,6 +31,9 @@ class Target::StructBase < Target::Node
 		member_func.suite << CPP::Return.new("&kMsgMessageType")
 	end
         def create_InOrderConstructor(type_class, cpp_tree)
+          if @members.empty?
+            return
+          end
           cons = CPP::Constructor.new(type_class)
           type_class.add_member(cons)
           @members.each do |member|
@@ -151,7 +154,12 @@ class Target::MessageDec < Target::StructBase
     member_func.suite << "size_t super_size = ::aos::Message::Print(buffer, length)"
     member_func.suite << "buffer += super_size"
     member_func.suite << "length -= super_size"
-    member_func.suite << "return super_size + snprintf(buffer, length, " + ([format] + args).join(", ") + ")";
+    if !args.empty?
+      member_func.suite << "return super_size + snprintf(buffer, length, " + ([format] + args).join(", ") + ")";
+    else
+      # snprintf will return zero.
+      member_func.suite << "return super_size"
+    end
 	end
 	def create_GetType(type_class, cpp_tree)
 		member_func = CPP::MemberFunc.new(type_class,"const ::aos::MessageType*","GetType")
