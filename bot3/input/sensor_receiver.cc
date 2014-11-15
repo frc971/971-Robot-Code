@@ -26,13 +26,12 @@ using ::aos::util::WrappingCounter;
 namespace bot3 {
 namespace {
 
-// TODO (danielp): Find out the real ratios here.
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in)
       / (256.0 /*cpr*/ * 4.0 /*quad*/)
-      * (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
+      * (18.0 / 50.0 /*output stage*/) * (64.0 / 24.0 /*encoder gears*/)
       // * constants::GetValues().drivetrain_encoder_ratio
-      * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+      * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * -1.0;
 }
 
 static const double kVcc = 5.15;
@@ -66,8 +65,9 @@ double gyro_translate(int64_t in) {
 
 double hall_translate(const constants::ShifterHallEffect & k,
     uint16_t in_value) {
-    return (in_value - static_cast<double>(k.low)) /
+    double out = (in_value - static_cast<double>(k.low)) /
         static_cast<double>(k.high - k.low);
+    return out;
 }
 
 void PacketReceived(const ::bbb::DataStruct *data,
@@ -116,7 +116,8 @@ void PacketReceived(const ::bbb::DataStruct *data,
     if (message->pulse_length > 2.7) {
       LOG(WARNING, "insane PWM pulse length %fms\n", message->pulse_length);
     } else {
-      message->pwm_value = (message->pulse_length - 0.5) / 2.0 * 255.0 + 0.5;
+      // TODO(danielp): Send the actual pulse length if we ever add that cable.
+      message->pwm_value = 1.0;
       LOG_STRUCT(DEBUG, "received", *message);
       message.Send();
     }
