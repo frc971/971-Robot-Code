@@ -193,8 +193,7 @@ SetDriveGoal(double distance, bool slow_acceleration,
   left_initial_position +=
       distance - theta * constants::GetValues().turn_width / 2.0;
   right_initial_position +=
-      distance + theta * constants::GetValues().turn_width / 2. -
-      theta * constants::GetValues().turn_width / 2.00;
+      distance + theta * constants::GetValues().turn_width / 2.0;
   return ::std::move(drivetrain_action);
 }
 

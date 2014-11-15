@@ -140,12 +140,10 @@
       ],
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
-        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
-        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
       ],
     },

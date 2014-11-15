@@ -6,9 +6,13 @@
 #include "aos/common/time.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
-#include "aos/common/logging/queue_logging.h"
 
+#include "bot3/actions/drivetrain_action.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/drivetrain/drivetrain_constants.h"
+#include "bot3/control_loops/rollers/rollers.q.h"
+#include "frc971/actions/action_client.h"
+#include "frc971/actions/drivetrain_action.q.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/queues/other_sensors.q.h"
 
@@ -56,43 +60,35 @@ void ResetDrivetrain() {
       .Send();
 }
 
-void DriveSpin(double radians) {
-  LOG(INFO, "going to spin %f\n", radians);
-
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
-  ::Eigen::Matrix<double, 2, 1> driveTrainState;
-  const double goal_velocity = 0.0;
-  const double epsilon = 0.01;
-  // in drivetrain "meters"
-  const double kRobotWidth = 0.4544;
-
-  profile.set_maximum_acceleration(1.5);
-  profile.set_maximum_velocity(0.8);
-
-  const double side_offset = kRobotWidth * radians / 2.0;
-
+void WaitUntilDoneOrCanceled(::frc971::Action *action) {
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
-    driveTrainState = profile.Update(side_offset, goal_velocity);
-
-    if (::std::abs(driveTrainState(0, 0) - side_offset) < epsilon) break;
-    if (ShouldExitAuto()) return;
-
-    LOG(DEBUG, "Driving left to %f, right to %f\n",
-        left_initial_position - driveTrainState(0, 0),
-        right_initial_position + driveTrainState(0, 0));
-    control_loops::drivetrain.goal.MakeWithBuilder()
-        .control_loop_driving(true)
-        .highgear(false)
-        .left_goal(left_initial_position - driveTrainState(0, 0))
-        .right_goal(right_initial_position + driveTrainState(0, 0))
-        .left_velocity_goal(-driveTrainState(1, 0))
-        .right_velocity_goal(driveTrainState(1, 0))
-        .Send();
+    // Poll the running bit and auto done bits.
+    ::aos::time::PhasedLoop10MS(5000);
+    if (!action->Running() || ShouldExitAuto()) {
+      return;
+    }
   }
-  left_initial_position -= side_offset;
-  right_initial_position += side_offset;
-  LOG(INFO, "Done moving\n");
+}
+
+::std::unique_ptr<::frc971::TypedAction
+    < ::frc971::actions::DrivetrainActionQueueGroup>>
+SetDriveGoal(double distance, bool slow_acceleration,
+             double maximum_velocity = 1.7, double theta = 0) {
+  LOG(INFO, "Driving to %f\n", distance);
+  auto drivetrain_action = actions::MakeDrivetrainAction();
+  drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
+  drivetrain_action->GetGoal()->right_initial_position = right_initial_position;
+  drivetrain_action->GetGoal()->y_offset = distance;
+  drivetrain_action->GetGoal()->theta_offset = theta;
+  drivetrain_action->GetGoal()->maximum_velocity = maximum_velocity;
+  drivetrain_action->GetGoal()->maximum_acceleration =
+      slow_acceleration ? 2.5 : 3.0;
+  drivetrain_action->Start();
+  left_initial_position +=
+      distance - theta * control_loops::kBot3TurnWidth / 2.0;
+  right_initial_position +=
+      distance + theta * control_loops::kBot3TurnWidth / 2.0;
+  return ::std::move(drivetrain_action);
 }
 
 void InitializeEncoders() {
@@ -109,8 +105,72 @@ void InitializeEncoders() {
 
 }
 
+void StopRollers() {
+  control_loops::rollers.goal.MakeWithBuilder()
+    .intake(0)
+    .low_spit(0)
+    .human_player(false)
+    .Send();
+}
+
+void SpitBallFront() {
+  control_loops::rollers.goal.MakeWithBuilder()
+      .intake(0)
+      .low_spit(1)
+      .human_player(false)
+      .Send();
+  time::SleepFor(time::Time::InSeconds(1));
+  StopRollers();
+}
+
+void IntakeBallBack() {
+  control_loops::rollers.goal.MakeWithBuilder()
+    .intake(-1)
+    .low_spit(0)
+    .human_player(false)
+    .Send();
+  time::SleepFor(time::Time::InSeconds(1.5));
+  StopRollers();
+}
+
+void ScoreBall(const double distance, const double velocity) {
+  // Drive to the goal, score, and drive back.
+  {
+    // Drive forward.
+    auto drivetrain_action = SetDriveGoal(distance,
+                                          false, velocity);
+    LOG(INFO, "Waiting until drivetrain is finished.\n");
+    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    time::SleepFor(time::Time::InSeconds(0.5));
+    if (ShouldExitAuto()) return;
+  }
+  {
+    LOG(INFO, "Spitting ball.\n");
+    SpitBallFront();
+    time::SleepFor(time::Time::InSeconds(0.5));
+    if (ShouldExitAuto()) return;
+  }
+  {
+    // Drive back.
+    LOG(INFO, "Driving back.\n");
+    auto drivetrain_action = SetDriveGoal(-distance,
+                                          false, velocity);
+    LOG(INFO, "Waiting until drivetrain is finished.\n");
+    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    if (ShouldExitAuto()) return;
+  }
+}
+
 void HandleAuto() {
-  //TODO (danielp): Implement this.
+  constexpr double kDriveDistance = 4.86;
+  constexpr double kAutoVelocity = 2.5;
+
+  if (ShouldExitAuto()) return;
+  ResetDrivetrain();
+  InitializeEncoders();
+  if (ShouldExitAuto()) return;
+
+  ScoreBall(kDriveDistance, kAutoVelocity);
 }
 
 }  // namespace autonomous

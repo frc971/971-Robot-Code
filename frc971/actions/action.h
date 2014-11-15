@@ -9,8 +9,6 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
 
-#include "frc971/constants.h"
-
 namespace frc971 {
 namespace actions {
 

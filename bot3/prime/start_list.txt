@@ -2,7 +2,9 @@ binary_log_writer
 motor_writer
 joystick_reader
 drivetrain
+drivetrain_action
 auto
 sensor_receiver
 joystick_proxy
 rollers
+auto
