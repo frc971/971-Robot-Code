@@ -1,7 +1,6 @@
 {
   'variables': {
     'queue_files': [
-      'rollers.q',
       'to_log.q',
     ]
   },

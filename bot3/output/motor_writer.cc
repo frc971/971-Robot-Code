@@ -11,7 +11,7 @@
 #include "aos/common/controls/output_check.q.h"
 
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
-#include "bot3/queues/rollers.q.h"
+#include "bot3/control_loops/rollers/rollers.q.h"
 
 using ::aos::util::SimpleLogInterval;
 
@@ -54,8 +54,7 @@ class MotorWriter : public ::aos::MotorOutput {
     }
 
     {
-      // This isn't actually a queue group...
-      static auto &rollers = ::bot3::rollers;
+      static auto &rollers = ::bot3::control_loops::rollers.output;
       rollers.FetchLatest();
       if (rollers.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *rollers);
@@ -65,6 +64,7 @@ class MotorWriter : public ::aos::MotorOutput {
         SetPWMOutput(1, rollers->back_intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(6, -rollers->back_intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(4, rollers->low_goal_voltage / 12.0, kTalonBounds);
+
         SetSolenoid(2, rollers->front_extended);
         SetSolenoid(5, !rollers->front_extended);
         SetSolenoid(3, rollers->back_extended);

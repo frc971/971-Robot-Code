@@ -5,3 +5,4 @@ drivetrain
 auto
 sensor_receiver
 joystick_proxy
+rollers

@@ -11,6 +11,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/bot3/control_loops/rollers/rollers.gyp:rollers_loop',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/bot3/queues/queues.gyp:queues',
         '<(AOS)/common/util/util.gyp:log_interval',
