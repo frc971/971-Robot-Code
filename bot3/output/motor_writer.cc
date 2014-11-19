@@ -41,13 +41,13 @@ class MotorWriter : public ::aos::MotorOutput {
       drivetrain.FetchLatest();
       if (drivetrain.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *drivetrain);
-        SetPWMOutput(3, drivetrain->right_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(6, -drivetrain->left_voltage / 12.0, kTalonBounds);
-        SetSolenoid(7, drivetrain->left_high);
+        SetPWMOutput(5, drivetrain->right_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(2, -drivetrain->left_voltage / 12.0, kTalonBounds);
+        SetSolenoid(1, drivetrain->left_high);
         SetSolenoid(8, drivetrain->right_high);
       } else {
-        DisablePWMOutput(3);
-        DisablePWMOutput(8);
+        DisablePWMOutput(2);
+        DisablePWMOutput(5);
         LOG_INTERVAL(drivetrain_old_);
       }
       drivetrain_old_.Print();
@@ -59,33 +59,28 @@ class MotorWriter : public ::aos::MotorOutput {
       rollers.FetchLatest();
       if (rollers.IsNewerThanMS(kOutputMaxAgeMS)) {
         LOG_STRUCT(DEBUG, "will output", *rollers);
-        // TODO (danielp): Figure out what the actual PWM outputs will be here.
         // There are two motors for each of these.
-        SetPWMOutput(1, rollers->front_intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(5, -rollers->front_intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(2, rollers->back_intake_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(7, -rollers->back_intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(3, rollers->front_intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(7, -rollers->front_intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(1, rollers->back_intake_voltage / 12.0, kTalonBounds);
+        SetPWMOutput(6, -rollers->back_intake_voltage / 12.0, kTalonBounds);
         SetPWMOutput(4, rollers->low_goal_voltage / 12.0, kTalonBounds);
-        SetPWMOutput(8, -rollers->low_goal_voltage / 12.0, kTalonBounds);
-
-        // We have two pistons for each intake.
-        SetSolenoid(5, rollers->front_extended);
-        SetSolenoid(6, rollers->front_extended);
+        SetSolenoid(2, rollers->front_extended);
+        SetSolenoid(5, !rollers->front_extended);
         SetSolenoid(3, rollers->back_extended);
-        SetSolenoid(4, rollers->back_extended);
+        SetSolenoid(4, !rollers->back_extended);
       } else {
-        DisablePWMOutput(1);
-        DisablePWMOutput(5);
-        DisablePWMOutput(2);
+        DisablePWMOutput(3);
         DisablePWMOutput(7);
+        DisablePWMOutput(1);
+        DisablePWMOutput(6);
         DisablePWMOutput(4);
-        DisablePWMOutput(8);
 
         // Retract intakes.
-        SetSolenoid(5, false);
-        SetSolenoid(6, false);
+        SetSolenoid(2, false);
         SetSolenoid(3, false);
-        SetSolenoid(4, false);
+        SetSolenoid(5, true);
+        SetSolenoid(4, true);
 
         LOG_INTERVAL(rollers_old_);
       }
