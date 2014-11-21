@@ -90,7 +90,8 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes,
 
   for (int i = 0; i < number_fields; ++i) {
     uint16_t field_name_length;
-    if (*bytes < sizeof(fields[i]->type) + sizeof(field_name_length)) {
+    if (*bytes < sizeof(fields[i]->type) + sizeof(field_name_length) +
+                     (deserialize_length ? sizeof(fields[i]->length) : 0)) {
       return nullptr;
     }
     *bytes -= sizeof(fields[i]->type) + sizeof(field_name_length);
@@ -100,6 +101,7 @@ MessageType *MessageType::Deserialize(const char *buffer, size_t *bytes,
     if (deserialize_length) {
       to_host(buffer, &fields[i]->length);
       buffer += sizeof(fields[i]->length);
+      *bytes -= sizeof(fields[i]->length);
     }
     to_host(buffer, &field_name_length);
     buffer += sizeof(field_name_length);
