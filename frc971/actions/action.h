@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
 #include "aos/common/time.h"
 
 #include "frc971/constants.h"
@@ -26,15 +27,18 @@ template <class T> class ActionBase {
 
     action_q_->goal.FetchLatest();
     if (action_q_->goal.get()) {
+      LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
       const uint32_t initially_running = action_q_->goal->run;
       if (initially_running != 0) {
         while (action_q_->goal->run == initially_running) {
           LOG(INFO, "run is still %" PRIx32 "\n", initially_running);
           action_q_->goal.FetchNextBlocking();
+          LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
         }
       }
     } else {
       action_q_->goal.FetchNextBlocking();
+      LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
     }
 
     LOG(DEBUG, "actually starting\n");
@@ -46,6 +50,7 @@ template <class T> class ActionBase {
       while (!action_q_->goal->run) {
         LOG(INFO, "Waiting for an action request.\n");
         action_q_->goal.FetchNextBlocking();
+        LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
         if (!action_q_->goal->run) {
           if (!action_q_->status.MakeWithBuilder().running(0).Send()) {
             LOG(ERROR, "Failed to send the status.\n");
@@ -75,6 +80,7 @@ template <class T> class ActionBase {
         LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
             running_id);
         action_q_->goal.FetchNextBlocking();
+        LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
       }
       LOG(DEBUG, "action %" PRIx32 " was stopped\n", running_id);
     }
@@ -112,7 +118,9 @@ template <class T> class ActionBase {
 
   // Returns true if the action should be canceled.
   bool ShouldCancel() {
-    action_q_->goal.FetchLatest();
+    if (action_q_->goal.FetchNext()) {
+      LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+    }
     bool ans = !action_q_->goal->run;
     if (ans) {
       LOG(INFO, "Time to stop action\n");
