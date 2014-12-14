@@ -198,6 +198,17 @@ void PacketReceived(const ::bbb::DataStruct *data,
     }
   }
 
+  // Only send them out (approximately) every 10ms because the loops are now
+  // clocked off of this.
+  static int i = 0;
+  ++i;
+  if (i < 5) {
+    LOG(DEBUG, "skipping\n");
+    return;
+  } else {
+    i = 0;
+  }
+
   other_sensors.MakeWithBuilder()
       .sonar_distance(sonar_translate(data->main.ultrasonic_pulse_length))
       .Send();

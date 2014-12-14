@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include <string.h>
-#include <thread>
-#include <mutex>
 #include <unistd.h>
 #include <inttypes.h>
 
+#include <thread>
+#include <mutex>
+#include <functional>
+
 #include "aos/prime/output/motor_output.h"
 #include "aos/common/controls/output_check.q.h"
-#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/common/util/phased_loop.h"
@@ -27,12 +29,14 @@
 
 #include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/buffered_pcm.h"
 
 #include "Encoder.h"
 #include "Talon.h"
 #include "DriverStation.h"
 #include "AnalogInput.h"
-#include "Solenoid.h"
 #include "Compressor.h"
 #include "RobotBase.h"
 
@@ -736,7 +740,7 @@ class SensorReader {
         .battery_voltage(ds->GetBatteryVoltage())
         .Send();
 
-    // Signal that we are allive.
+    // Signal that we are alive.
     ::aos::controls::sensor_generation.MakeWithBuilder()
         .reader_pid(getpid())
         .cape_resets(0)
@@ -775,166 +779,189 @@ class SensorReader {
   DigitalGlitchFilter filter_;
 };
 
-class MotorWriter {
+class SolenoidWriter {
  public:
-  MotorWriter()
-      : right_drivetrain_talon_(new Talon(2)),
-        left_drivetrain_talon_(new Talon(5)),
-        shooter_talon_(new Talon(6)),
-        top_claw_talon_(new Talon(1)),
-        bottom_claw_talon_(new Talon(0)),
-        left_tusk_talon_(new Talon(4)),
-        right_tusk_talon_(new Talon(3)),
-        intake1_talon_(new Talon(7)),
-        intake2_talon_(new Talon(8)),
-        left_shifter_(new Solenoid(6)),
-        right_shifter_(new Solenoid(7)),
-        shooter_latch_(new Solenoid(5)),
-        shooter_brake_(new Solenoid(4)),
-        compressor_(new Compressor()) {
-    compressor_->SetClosedLoopControl(true);
-    // right_drivetrain_talon_->EnableDeadbandElimination(true);
-    // left_drivetrain_talon_->EnableDeadbandElimination(true);
-    // shooter_talon_->EnableDeadbandElimination(true);
-    // top_claw_talon_->EnableDeadbandElimination(true);
-    // bottom_claw_talon_->EnableDeadbandElimination(true);
-    // left_tusk_talon_->EnableDeadbandElimination(true);
-    // right_tusk_talon_->EnableDeadbandElimination(true);
-    // intake1_talon_->EnableDeadbandElimination(true);
-    // intake2_talon_->EnableDeadbandElimination(true);
+  SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
+      : pcm_(pcm),
+        drivetrain_(".frc971.control_loops.drivetrain.output"),
+        shooter_(".frc971.control_loops.shooter_queue_group.output") {}
+
+  void set_drivetrain_left(::std::unique_ptr<BufferedSolenoid> s) {
+    drivetrain_left_ = ::std::move(s);
   }
 
-  // Maximum age of an output packet before the motors get zeroed instead.
-  static const int kOutputMaxAgeMS = 20;
-  static constexpr ::aos::time::Time kOldLogInterval =
-      ::aos::time::Time::InSeconds(0.5);
-
-  void Run() {
-    //::aos::time::Time::EnableMockTime();
-    while (true) {
-      //::aos::time::Time::UpdateMockTime();
-      // 200 hz loop
-      ::aos::time::PhasedLoopXMS(5, 1000);
-      //::aos::time::Time::UpdateMockTime();
-
-      no_robot_state_.Print();
-      fake_robot_state_.Print();
-      sending_failed_.Print();
-
-      RunIteration();
-    }
+  void set_drivetrain_right(::std::unique_ptr<BufferedSolenoid> s) {
+    drivetrain_right_ = ::std::move(s);
   }
 
-  virtual void RunIteration() {
-    ::aos::robot_state.FetchLatest();
-    if (!::aos::robot_state.get()) {
-      LOG_INTERVAL(no_robot_state_);
-      return;
-    }
-    if (::aos::robot_state->fake) {
-      LOG_INTERVAL(fake_robot_state_);
-      return;
-    }
+  void set_shooter_latch(::std::unique_ptr<BufferedSolenoid> s) {
+    shooter_latch_ = ::std::move(s);
+  }
 
-    // TODO(austin): Write the motor values out when they change!  One thread
-    // per queue.
-    // TODO(austin): Figure out how to synchronize everything to the PWM update
-    // rate, or get the pulse to go out clocked off of this code.  That would be
-    // awesome.
-    {
-      static auto &drivetrain = ::frc971::control_loops::drivetrain.output;
-      drivetrain.FetchLatest();
-      if (drivetrain.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *drivetrain);
-        left_drivetrain_talon_->Set(-drivetrain->left_voltage / 12.0);
-        right_drivetrain_talon_->Set(drivetrain->right_voltage / 12.0);
-        left_shifter_->Set(drivetrain->left_high);
-        right_shifter_->Set(drivetrain->right_high);
-      } else {
-        left_drivetrain_talon_->Disable();
-        right_drivetrain_talon_->Disable();
-        LOG_INTERVAL(drivetrain_old_);
-      }
-      drivetrain_old_.Print();
-    }
+  void set_shooter_brake(::std::unique_ptr<BufferedSolenoid> s) {
+    shooter_brake_ = ::std::move(s);
+  }
 
-    {
-      static auto &shooter =
-          ::frc971::control_loops::shooter_queue_group.output;
-      shooter.FetchLatest();
-      if (shooter.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *shooter);
-        shooter_talon_->Set(shooter->voltage / 12.0);
-        shooter_latch_->Set(!shooter->latch_piston);
-        shooter_brake_->Set(!shooter->brake_piston);
-      } else {
-        shooter_talon_->Disable();
-        shooter_brake_->Set(false);  // engage the brake
-        LOG_INTERVAL(shooter_old_);
-      }
-      shooter_old_.Print();
-    }
+  void operator()() {
+    ::aos::SetCurrentThreadName("Solenoids");
+    ::aos::SetCurrentThreadRealtimePriority(30);
 
-    {
-      static auto &claw = ::frc971::control_loops::claw_queue_group.output;
-      claw.FetchLatest();
-      if (claw.IsNewerThanMS(kOutputMaxAgeMS)) {
-        LOG_STRUCT(DEBUG, "will output", *claw);
-        intake1_talon_->Set(claw->intake_voltage / 12.0);
-        intake2_talon_->Set(claw->intake_voltage / 12.0);
-        bottom_claw_talon_->Set(-claw->bottom_claw_voltage / 12.0);
-        top_claw_talon_->Set(claw->top_claw_voltage / 12.0);
-        left_tusk_talon_->Set(claw->tusk_voltage / 12.0);
-        right_tusk_talon_->Set(-claw->tusk_voltage / 12.0);
-      } else {
-        intake1_talon_->Disable();
-        intake2_talon_->Disable();
-        bottom_claw_talon_->Disable();
-        top_claw_talon_->Disable();
-        left_tusk_talon_->Disable();
-        right_tusk_talon_->Disable();
-        LOG_INTERVAL(claw_old_);
+    while (run_) {
+      ::aos::time::PhasedLoopXMS(20, 1000);
+
+      {
+        drivetrain_.FetchLatest();
+        if (drivetrain_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
+          drivetrain_left_->Set(drivetrain_->left_high);
+          drivetrain_right_->Set(drivetrain_->right_high);
+        }
       }
-      claw_old_.Print();
+
+      {
+        shooter_.FetchLatest();
+        if (shooter_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+          shooter_latch_->Set(!shooter_->latch_piston);
+          shooter_brake_->Set(!shooter_->brake_piston);
+        }
+      }
+
+      pcm_->Flush();
     }
   }
 
-  SimpleLogInterval drivetrain_old_ =
-      SimpleLogInterval(kOldLogInterval, WARNING, "drivetrain too old");
-  SimpleLogInterval shooter_old_ =
-      SimpleLogInterval(kOldLogInterval, WARNING, "shooter too old");
-  SimpleLogInterval claw_old_ =
-      SimpleLogInterval(kOldLogInterval, WARNING, "claw too old");
+  void Quit() { run_ = false; }
 
-  ::std::unique_ptr<Talon> right_drivetrain_talon_;
+ private:
+  const ::std::unique_ptr<BufferedPcm> &pcm_;
+  ::std::unique_ptr<BufferedSolenoid> drivetrain_left_;
+  ::std::unique_ptr<BufferedSolenoid> drivetrain_right_;
+  ::std::unique_ptr<BufferedSolenoid> shooter_latch_;
+  ::std::unique_ptr<BufferedSolenoid> shooter_brake_;
+
+  ::aos::Queue<::frc971::control_loops::Drivetrain::Output> drivetrain_;
+  ::aos::Queue<::frc971::control_loops::ShooterGroup::Output> shooter_;
+
+  ::std::atomic<bool> run_{true};
+};
+
+class DrivetrainWriter : public LoopOutputHandler {
+ public:
+  void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
+    left_drivetrain_talon_ = ::std::move(t);
+  }
+
+  void set_right_drivetrain_talon(::std::unique_ptr<Talon> t) {
+    right_drivetrain_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::drivetrain.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::drivetrain.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
+    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "drivetrain output too old\n");
+    left_drivetrain_talon_->Disable();
+    right_drivetrain_talon_->Disable();
+  }
+
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
+  ::std::unique_ptr<Talon> right_drivetrain_talon_;
+};
+
+class ShooterWriter : public LoopOutputHandler {
+ public:
+  void set_shooter_talon(::std::unique_ptr<Talon> t) {
+    shooter_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::shooter_queue_group.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::shooter_queue_group.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    shooter_talon_->Set(queue->voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "shooter output too old\n");
+    shooter_talon_->Disable();
+  }
+
   ::std::unique_ptr<Talon> shooter_talon_;
+};
+
+class ClawWriter : public LoopOutputHandler {
+ public:
+  void set_top_claw_talon(::std::unique_ptr<Talon> t) {
+    top_claw_talon_ = ::std::move(t);
+  }
+
+  void set_bottom_claw_talon(::std::unique_ptr<Talon> t) {
+    bottom_claw_talon_ = ::std::move(t);
+  }
+
+  void set_left_tusk_talon(::std::unique_ptr<Talon> t) {
+    left_tusk_talon_ = ::std::move(t);
+  }
+
+  void set_right_tusk_talon(::std::unique_ptr<Talon> t) {
+    right_tusk_talon_ = ::std::move(t);
+  }
+
+  void set_intake1_talon(::std::unique_ptr<Talon> t) {
+    intake1_talon_ = ::std::move(t);
+  }
+
+  void set_intake2_talon(::std::unique_ptr<Talon> t) {
+    intake2_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::claw_queue_group.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::claw_queue_group.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    intake1_talon_->Set(queue->intake_voltage / 12.0);
+    intake2_talon_->Set(queue->intake_voltage / 12.0);
+    bottom_claw_talon_->Set(-queue->bottom_claw_voltage / 12.0);
+    top_claw_talon_->Set(queue->top_claw_voltage / 12.0);
+    left_tusk_talon_->Set(queue->tusk_voltage / 12.0);
+    right_tusk_talon_->Set(-queue->tusk_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "claw output too old\n");
+    intake1_talon_->Disable();
+    intake2_talon_->Disable();
+    bottom_claw_talon_->Disable();
+    top_claw_talon_->Disable();
+    left_tusk_talon_->Disable();
+    right_tusk_talon_->Disable();
+  }
+
   ::std::unique_ptr<Talon> top_claw_talon_;
   ::std::unique_ptr<Talon> bottom_claw_talon_;
   ::std::unique_ptr<Talon> left_tusk_talon_;
   ::std::unique_ptr<Talon> right_tusk_talon_;
   ::std::unique_ptr<Talon> intake1_talon_;
   ::std::unique_ptr<Talon> intake2_talon_;
-
-  ::std::unique_ptr<Solenoid> left_shifter_;
-  ::std::unique_ptr<Solenoid> right_shifter_;
-  ::std::unique_ptr<Solenoid> shooter_latch_;
-  ::std::unique_ptr<Solenoid> shooter_brake_;
-
-  ::std::unique_ptr<Compressor> compressor_;
-
-  ::aos::util::SimpleLogInterval no_robot_state_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), INFO,
-                                     "no robot state -> not outputting");
-  ::aos::util::SimpleLogInterval fake_robot_state_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), DEBUG,
-                                     "fake robot state -> not outputting");
-  ::aos::util::SimpleLogInterval sending_failed_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.1), WARNING,
-                                     "sending outputs failed");
 };
-
-constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
 
 }  // namespace wpilib
 }  // namespace frc971
@@ -942,19 +969,64 @@ constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
 class WPILibRobot : public RobotBase {
  public:
   virtual void StartCompetition() {
-    ::aos::Init();
+    ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
-    ::frc971::wpilib::MotorWriter writer;
-    ::frc971::wpilib::SensorReader reader;
-    ::std::thread reader_thread(::std::ref(reader));
+
     ::frc971::wpilib::JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
-    writer.Run();
+    ::frc971::wpilib::SensorReader reader;
+    ::std::thread reader_thread(::std::ref(reader));
+    ::std::unique_ptr<Compressor> compressor(new Compressor());
+    compressor->SetClosedLoopControl(true);
+
+    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    drivetrain_writer.set_left_drivetrain_talon(
+        ::std::unique_ptr<Talon>(new Talon(5)));
+    drivetrain_writer.set_right_drivetrain_talon(
+        ::std::unique_ptr<Talon>(new Talon(2)));
+    ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+
+
+    ::frc971::wpilib::ClawWriter claw_writer;
+    claw_writer.set_top_claw_talon(::std::unique_ptr<Talon>(new Talon(1)));
+    claw_writer.set_bottom_claw_talon(::std::unique_ptr<Talon>(new Talon(0)));
+    claw_writer.set_left_tusk_talon(::std::unique_ptr<Talon>(new Talon(4)));
+    claw_writer.set_right_tusk_talon(::std::unique_ptr<Talon>(new Talon(3)));
+    claw_writer.set_intake1_talon(::std::unique_ptr<Talon>(new Talon(7)));
+    claw_writer.set_intake2_talon(::std::unique_ptr<Talon>(new Talon(8)));
+    ::std::thread claw_writer_thread(::std::ref(claw_writer));
+
+    ::frc971::wpilib::ShooterWriter shooter_writer;
+    shooter_writer.set_shooter_talon(::std::unique_ptr<Talon>(new Talon(6)));
+    ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
+
+    ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
+        new ::frc971::wpilib::BufferedPcm());
+    ::frc971::wpilib::SolenoidWriter solenoid_writer(pcm);
+    solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(6));
+    solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(7));
+    solenoid_writer.set_shooter_latch(pcm->MakeSolenoid(5));
+    solenoid_writer.set_shooter_brake(pcm->MakeSolenoid(4));
+    ::std::thread solenoid_thread(::std::ref(solenoid_writer));
+
+    // Wait forever. Not much else to do...
+    PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
+
     LOG(ERROR, "Exiting WPILibRobot\n");
-    reader.Quit();
-    reader_thread.join();
     joystick_sender.Quit();
     joystick_thread.join();
+    reader.Quit();
+    reader_thread.join();
+
+    drivetrain_writer.Quit();
+    drivetrain_writer_thread.join();
+    claw_writer.Quit();
+    claw_writer_thread.join();
+    shooter_writer.Quit();
+    shooter_writer_thread.join();
+    solenoid_writer.Quit();
+    solenoid_thread.join();
+
     ::aos::Cleanup();
   }
 };

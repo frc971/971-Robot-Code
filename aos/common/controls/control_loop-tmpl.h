@@ -12,29 +12,30 @@ namespace controls {
 
 // TODO(aschuh): Tests.
 
-template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
-constexpr ::aos::time::Time ControlLoop<T, has_position, fail_no_position,
-                                        fail_no_goal>::kStaleLogInterval;
+template <class T, bool fail_no_goal>
+constexpr ::aos::time::Time ControlLoop<T, fail_no_goal>::kStaleLogInterval;
 
-template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
+template <class T, bool fail_no_goal>
 void
-ControlLoop<T, has_position, fail_no_position, fail_no_goal>::ZeroOutputs() {
+ControlLoop<T, fail_no_goal>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
-void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
+template <class T, bool fail_no_goal>
+void ControlLoop<T, fail_no_goal>::Iterate() {
   no_prior_goal_.Print();
   no_sensor_generation_.Print();
-  very_stale_position_.Print();
-  no_prior_position_.Print();
   driver_station_old_.Print();
   no_driver_station_.Print();
 
-  // Fetch the latest control loop goal and position.  If there is no new
+  control_loop_->position.FetchAnother();
+  const PositionType *const position = control_loop_->position.get();
+  LOG_STRUCT(DEBUG, "position", *position);
+
+  // Fetch the latest control loop goal. If there is no new
   // goal, we will just reuse the old one.
   // If there is no goal, we haven't started up fully.  It isn't worth
   // the added complexity for each loop implementation to handle that case.
@@ -70,39 +71,6 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
 
   if (goal) {
     LOG_STRUCT(DEBUG, "goal", *goal);
-  }
-
-  // Only pass in a position if we got one this cycle.
-  const PositionType *position = NULL;
-
-  // Only fetch the latest position if we have one.
-  if (has_position) {
-    // If the position is stale, this is really bad.  Try fetching a position
-    // and check how fresh it is, and then take the appropriate action.
-    if (control_loop_->position.FetchLatest()) {
-      position = control_loop_->position.get();
-    } else {
-      if (control_loop_->position.get() && !reset_) {
-        int msec_age = control_loop_->position.Age().ToMSec();
-        if (!control_loop_->position.IsNewerThanMS(kPositionTimeoutMs)) {
-          LOG_INTERVAL(very_stale_position_);
-          ZeroOutputs();
-          return;
-        } else {
-          LOG(ERROR, "Stale position. %d ms (< %d ms)\n", msec_age,
-              kPositionTimeoutMs);
-        }
-      } else {
-        LOG_INTERVAL(no_prior_position_);
-        if (fail_no_position) {
-          ZeroOutputs();
-          return;
-        }
-      }
-    }
-    if (position) {
-      LOG_STRUCT(DEBUG, "position", *position);
-    }
   }
 
   bool outputs_enabled = false;
@@ -160,14 +128,9 @@ void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Iterate() {
   status.Send();
 }
 
-template <class T, bool has_position, bool fail_no_position, bool fail_no_goal>
-void ControlLoop<T, has_position, fail_no_position, fail_no_goal>::Run() {
-  ::aos::time::Time::EnableMockTime();
+template <class T, bool fail_no_goal>
+void ControlLoop<T, fail_no_goal>::Run() {
   while (true) {
-    ::aos::time::Time::UpdateMockTime();
-    const ::aos::time::Time next_loop = NextLoopTime();
-    time::SleepUntil(next_loop);
-    ::aos::time::Time::SetMockTime(next_loop);
     Iterate();
   }
 }
