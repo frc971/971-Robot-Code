@@ -49,7 +49,7 @@ namespace control_loops {
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
-const double kRezeroThreshold = 0.03;
+const double kRezeroThreshold = 0.07;
 
 ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> &&loop)
     : StateFeedbackLoop<4, 2, 2>(::std::move(loop)),
