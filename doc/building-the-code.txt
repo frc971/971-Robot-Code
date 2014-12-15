@@ -1,7 +1,7 @@
 This file contains instructions on how to set up a computer to build the code.
 
 [OS]
-Most of these instructions assume 64 bit Debian Squeeze.
+Most of these instructions assume 64 bit Debian Wheezy.
 
 [Install Packages]
 First, you have to download and follow the directions in
@@ -18,17 +18,19 @@ The build script will tell you what other packages to install when you run it.
 [Running Locally]
 If you want to be able to run the realtime code on your development machine
   without just disabling the realtime part (set the AOS_NO_REALTIME environment
-  variable), follow the directions in /src/aos/config/aos.conf.
+  variable), follow the directions in //aos/config/aos.conf.
+If you want to run the clang or gcc_4.8 amd64 code, add /opt/clang-3.5/lib64/ to
+  LD_LIBRARY_PATH. Using the system gcc-compiled versions should just work.
 
 [Compiling and Downloading]
-Run src/frc971/{atom_code,crio}/build.sh.
+Run //frc971/*/build.sh.
   Give it clean, tests, or deploy as a first argument to do something other
     than just build.
   Each action (build (the default), clean, tests, or deploy) has a different
     default set of versions of the code it builds. You can change those by
     passing another argument. Some popular ones are 'all' (build everything),
         'clang-amd64-none' (the most basic one for local testing), and
-        'gcc-arm-nodebug' (the one that gets downloaded). See its --help for
+        'gcc_frc-arm-nodebug' (the one that gets downloaded). See its --help for
         more details.
 
 [Communicating with the cRIO]
