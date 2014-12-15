@@ -365,20 +365,27 @@ class Processor(object):
     all_packages += ('wget', 'git', 'subversion', 'patch', 'unzip', 'bzip2')
     # Necessary to build externals stuff.
     all_packages += ('python', 'gcc', 'g++')
+    not_found = []
     try:
       # TODO(brians): Check versions too.
       result = subprocess.check_output(
-          ('dpkg-query', '--show') + all_packages,
+          ('dpkg-query',
+           r"--showformat='${binary:Package}\t${db:Status-Abbrev}\n'",
+           '--show') + all_packages,
           stdin=open(os.devnull, 'r'),
           stderr=subprocess.STDOUT)
+      for line in result.decode('utf-8').rstrip().splitlines(True):
+        match = re.match('^([^\t]+)\t[^i][^i]$', line)
+        if match:
+          not_found.append(match.group(1))
     except subprocess.CalledProcessError as e:
       output = e.output.decode('utf-8').rstrip()
-      not_found = []
       for line in output.splitlines(True):
         match = re.match(r'dpkg-query: no packages found matching (.*)',
                          line)
         if match:
           not_found.append(match.group(1))
+    if not_found:
       user_output('Some packages not installed: %s.' % ', '.join(not_found))
       user_output('Try something like `sudo apt-get install %s`.' %
                   ' '.join(not_found))
