@@ -25,7 +25,14 @@
 #include "frc971/queues/other_sensors.q.h"
 #include "frc971/queues/to_log.q.h"
 
-#include <WPILib.h>
+#include "Encoder.h"
+#include "DigitalInput.h"
+#include "Talon.h"
+#include "DriverStation.h"
+#include "AnalogInput.h"
+#include "Solenoid.h"
+#include "Compressor.h"
+#include "RobotBase.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -574,33 +581,32 @@ class ShooterHallSynchronizer : public PeriodicHallSynchronizer<2> {
   ::std::unique_ptr<HallEffect> shooter_latch_;
 };
 
-
 class SensorReader {
  public:
   SensorReader()
       : auto_selector_analog_(new AnalogInput(4)),
-        left_encoder_(new Encoder(10, 11, false, Encoder::k2X)),   // E0
-        right_encoder_(new Encoder(12, 13, false, Encoder::k2X)),  // E1
-        low_left_drive_hall_(new AnalogInput(2)),
-        high_left_drive_hall_(new AnalogInput(3)),
-        low_right_drive_hall_(new AnalogInput(1)),
-        high_right_drive_hall_(new AnalogInput(0)),
-        shooter_plunger_(new HallEffect(1)),            // S3
-        shooter_latch_(new HallEffect(0)),              // S4
-        shooter_distal_(new HallEffect(2)),             // S2
-        shooter_proximal_(new HallEffect(3)),           // S1
-        shooter_encoder_(new Encoder(15, 14)),          // E2
-        claw_top_front_hall_(new HallEffect(5)),        // R2
-        claw_top_calibration_hall_(new HallEffect(6)),  // R3
-        claw_top_back_hall_(new HallEffect(4)),         // R2
-        claw_top_encoder_(new Encoder(16, 17)),         // E3
+        left_encoder_(new Encoder(11, 10, false, Encoder::k2X)),   // E0
+        right_encoder_(new Encoder(13, 12, false, Encoder::k2X)),  // E1
+        low_left_drive_hall_(new AnalogInput(1)),
+        high_left_drive_hall_(new AnalogInput(0)),
+        low_right_drive_hall_(new AnalogInput(2)),
+        high_right_drive_hall_(new AnalogInput(3)),
+        shooter_plunger_(new HallEffect(8)),            // S3
+        shooter_latch_(new HallEffect(9)),              // S4
+        shooter_distal_(new HallEffect(7)),             // S2
+        shooter_proximal_(new HallEffect(6)),           // S1
+        shooter_encoder_(new Encoder(14, 15)),          // E2
+        claw_top_front_hall_(new HallEffect(4)),        // R2
+        claw_top_calibration_hall_(new HallEffect(3)),  // R3
+        claw_top_back_hall_(new HallEffect(5)),         // R1
+        claw_top_encoder_(new Encoder(17, 16)),         // E3
         // L2  Middle Left hall effect sensor.
-        claw_bottom_front_hall_(new HallEffect(8)),
+        claw_bottom_front_hall_(new HallEffect(1)),
         // L3  Bottom Left hall effect sensor
-        claw_bottom_calibration_hall_(new HallEffect(9)),
+        claw_bottom_calibration_hall_(new HallEffect(0)),
         // L1  Top Left hall effect sensor
-        claw_bottom_back_hall_(new HallEffect(7)),
-        claw_bottom_encoder_(new Encoder(18, 19)),  // E5
+        claw_bottom_back_hall_(new HallEffect(2)),
+        claw_bottom_encoder_(new Encoder(21, 20)),  // E5
         run_(true) {
     filter_.SetPeriodNanoSeconds(100000);
     filter_.Add(shooter_plunger_.get());
@@ -955,9 +961,13 @@ class JoystickSender {
       new_state->fake = false;
 
       for (int i = 0; i < 4; ++i) {
-        new_state->joysticks[i].buttons = ds->GetStickButtons(i);
+        new_state->joysticks[i].buttons = 0;
+        for (int button = 0; button < 16; ++button) {
+          new_state->joysticks[i].buttons |=
+              ds->GetStickButton(i, button + 1) << button;
+        }
         for (int j = 0; j < 4; ++j) {
-          new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j + 1);
+          new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
         }
       }
       LOG_STRUCT(DEBUG, "robot_state", *new_state);

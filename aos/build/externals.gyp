@@ -37,7 +37,6 @@
           '-li2c',
           '/opt/wpilib_4.8.3/lib/libwpilib_nonshared.a',
           '/opt/wpilib_4.8.3/lib/libHALAthena.a',
-          '/opt/wpilib_4.8.3/lib/libNetworkTables.a',
         ],
       },
       'direct_dependent_settings': {
