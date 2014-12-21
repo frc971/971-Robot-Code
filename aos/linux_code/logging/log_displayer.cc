@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <string>
 
+#include "aos/linux_code/configuration.h"
 #include "aos/linux_code/logging/binary_log_file.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/logging/logging_impl.h"
@@ -61,8 +63,17 @@ void PrintHelpAndExit() {
 
   // Get the possible executables from start_list.txt.
   FILE *start_list = fopen("start_list.txt", "r");
-  if (start_list == NULL) {
-    PLOG(FATAL, "Unable to open start_list.txt");
+  if (!start_list) {
+    ::std::string path(::aos::configuration::GetRootDirectory());
+    path += "/start_list.txt";
+    start_list = fopen(path.c_str(), "r");
+    if (!start_list) {
+      printf("\nCannot open start_list.txt. This means that the\n"
+      "possible arguments for the -n option cannot be shown. log_displayer\n"
+      "looks for start_list.txt in the current working directory and in\n"
+      "%s.\n\n", ::aos::configuration::GetRootDirectory());
+      PLOG(FATAL, "Unable to open start_list.txt");
+    }
   }
 
   // Get file size.
