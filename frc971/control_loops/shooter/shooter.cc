@@ -449,9 +449,8 @@ void ShooterMotor::RunIteration(
       LOG(DEBUG, "PDIFF: absolute_position: %.2f, pow: %.2f\n",
           shooter_.absolute_position(), PowerToPosition(goal->shot_power));
       if (::std::abs(shooter_.absolute_position() -
-                     PowerToPosition(goal->shot_power)) +
-              ::std::abs(shooter_.absolute_velocity()) <
-          0.001) {
+                     PowerToPosition(goal->shot_power)) < 0.001 &&
+          ::std::abs(shooter_.absolute_velocity()) < 0.005) {
         // We are there, set the brake and move on.
         latch_piston_ = true;
         brake_piston_ = true;
