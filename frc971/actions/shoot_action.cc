@@ -114,29 +114,25 @@ bool ClawIsReady() {
       (::std::abs(control_loops::claw_queue_group.status->separation -
                   control_loops::claw_queue_group.goal->separation_angle) <
        0.4);
-  if (!ans) {
-    LOG(INFO, "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
-        ans ? "" : "not ", control_loops::claw_queue_group.status->zeroed,
-        ::std::abs(control_loops::claw_queue_group.status->bottom_velocity),
-        ::std::abs(control_loops::claw_queue_group.status->bottom -
-                   control_loops::claw_queue_group.goal->bottom_angle),
-        ::std::abs(control_loops::claw_queue_group.status->separation -
-                   control_loops::claw_queue_group.goal->separation_angle));
-  }
+  LOG(DEBUG, "Claw is %sready zeroed %d bottom_velocity %f bottom %f sep %f\n",
+      ans ? "" : "not ", control_loops::claw_queue_group.status->zeroed,
+      ::std::abs(control_loops::claw_queue_group.status->bottom_velocity),
+      ::std::abs(control_loops::claw_queue_group.status->bottom -
+                 control_loops::claw_queue_group.goal->bottom_angle),
+      ::std::abs(control_loops::claw_queue_group.status->separation -
+                 control_loops::claw_queue_group.goal->separation_angle));
   return ans;
 }
 
 bool ShooterIsReady() {
   control_loops::shooter_queue_group.goal.FetchLatest();
 
-  if (control_loops::shooter_queue_group.status->ready) {
-    LOG(INFO, "Power error is %f - %f -> %f, ready %d\n",
-        control_loops::shooter_queue_group.status->hard_stop_power,
-        control_loops::shooter_queue_group.goal->shot_power,
-        ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
-                   control_loops::shooter_queue_group.goal->shot_power),
-        control_loops::shooter_queue_group.status->ready);
-  }
+  LOG(DEBUG, "Power error is %f - %f -> %f, ready %d\n",
+      control_loops::shooter_queue_group.status->hard_stop_power,
+      control_loops::shooter_queue_group.goal->shot_power,
+      ::std::abs(control_loops::shooter_queue_group.status->hard_stop_power -
+                 control_loops::shooter_queue_group.goal->shot_power),
+      control_loops::shooter_queue_group.status->ready);
   return (::std::abs(
               control_loops::shooter_queue_group.status->hard_stop_power -
               control_loops::shooter_queue_group.goal->shot_power) < 1.0) &&
