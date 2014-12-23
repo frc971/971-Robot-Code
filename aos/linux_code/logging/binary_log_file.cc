@@ -63,6 +63,9 @@ void LogFileAccessor::MapNextPage() {
       if (result == -1) {
         PLOG(FATAL, "read(%d, %p, %zu) failed", fd_,
              current_ + (kPageSize - todo), todo);
+      } else if (result == 0) {
+        memset(current_, 0, todo);
+        result = todo;
       }
       todo -= result;
     }
