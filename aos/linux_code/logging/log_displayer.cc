@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
         }
         break;
       case 'p':
-        if (!::aos::util::StringToInteger(::std::string(optarg), &source_pid)) {
+        if (!::aos::util::StringToNumber(::std::string(optarg), &source_pid)) {
           fprintf(stderr, "ERROR: -p expects a number, not '%s'.\n", optarg);
           exit(EXIT_FAILURE);
         }
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
         skip_to_end = true;
         break;
       case 'm':
-        if (!::aos::util::StringToInteger(::std::string(optarg), &display_max)) {
+        if (!::aos::util::StringToNumber(::std::string(optarg), &display_max)) {
           fprintf(stderr, "ERROR: -m expects a number, not '%s'.\n", optarg);
           exit(EXIT_FAILURE);
         }
