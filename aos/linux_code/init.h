@@ -25,6 +25,9 @@ void Cleanup();
 // behavior without calling Init*.
 void WriteCoreDumps();
 
+// Sets the current thread's realtime priority.
+void SetCurrentThreadRealtimePriority(int priority);
+
 }  // namespace aos
 
 #endif  // AOS_LINUX_CODE_INIT_H_

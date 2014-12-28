@@ -109,4 +109,12 @@ void WriteCoreDumps() {
   SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, true);
 }
 
+void SetCurrentThreadRealtimePriority(int priority) {
+  struct sched_param param;
+  param.sched_priority = priority;
+  if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+    PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed", priority);
+  }
+}
+
 }  // namespace aos

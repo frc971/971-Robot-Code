@@ -64,7 +64,7 @@
       'conditions': [
         ['FULL_COMPILER=="gcc_frc"', {
           'dependencies': [
-            '../output/output.gyp:wpilib_interface',
+            '../wpilib/wpilib.gyp:wpilib_interface',
           ],
         }, {
           'dependencies': [

@@ -7,15 +7,14 @@
 
 #include "aos/prime/output/motor_output.h"
 #include "aos/common/controls/output_check.q.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
-#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/util/wrapping_counter.h"
-#include "aos/common/network/team_number.h"
 #include "aos/linux_code/init.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -25,8 +24,10 @@
 #include "frc971/queues/other_sensors.q.h"
 #include "frc971/queues/to_log.q.h"
 
+#include "frc971/wpilib/hall_effect.h"
+#include "frc971/wpilib/joystick_sender.h"
+
 #include "Encoder.h"
-#include "DigitalInput.h"
 #include "Talon.h"
 #include "DriverStation.h"
 #include "AnalogInput.h"
@@ -45,15 +46,7 @@ using ::frc971::sensors::gyro_reading;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
-namespace output {
-
-void SetThreadRealtimePriority(int priority) {
-  struct sched_param param;
-  param.sched_priority = priority;
-  if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-    PLOG(FATAL, "sched_setscheduler failed");
-  }
-}
+namespace wpilib {
 
 class priority_mutex {
  public:
@@ -64,7 +57,7 @@ class priority_mutex {
   priority_mutex() {
     pthread_mutexattr_t attr;
 #ifdef NDEBUG
-#error "Won't let perror be no-op ed"
+#error "Won't let assert_perror be no-op ed"
 #endif
     // Turn on priority inheritance.
     assert_perror(pthread_mutexattr_init(&attr));
@@ -98,12 +91,7 @@ class priority_mutex {
   pthread_mutex_t handle_;
 };
 
-class HallEffect : public DigitalInput {
- public:
-  HallEffect(int index) : DigitalInput(index) {}
-  bool GetHall() { return !Get(); }
-};
-
+// TODO(brian): Split this out into a separate file once DMA is in.
 class EdgeCounter {
  public:
   EdgeCounter(int priority, Encoder *encoder, HallEffect *input,
@@ -121,7 +109,7 @@ class EdgeCounter {
   // Updates the any_interrupt_count count when the interrupt comes in without
   // the lock.
   void operator()() {
-    SetThreadRealtimePriority(priority_);
+    ::aos::SetCurrentThreadRealtimePriority(priority_);
 
     input_->RequestInterrupts();
     input_->SetUpSourceEdge(true, true);
@@ -217,11 +205,13 @@ class EdgeCounter {
   ::std::unique_ptr<::std::thread> thread_;
 };
 
-// This class will synchronize sampling edges on a bunch of DigitalInputs with
+// This class will synchronize sampling edges on a bunch of HallEffects with
 // the periodic poll.
 //
 // The data is provided to subclasses by calling SaveState when the state is
 // consistent and ready.
+//
+// TODO(brian): Split this out into a separate file once DMA is in.
 template <int num_sensors>
 class PeriodicHallSynchronizer {
  public:
@@ -299,7 +289,7 @@ class PeriodicHallSynchronizer {
   }
 
   void operator()() {
-    SetThreadRealtimePriority(priority_);
+    ::aos::SetCurrentThreadRealtimePriority(priority_);
     while (run_) {
       ::aos::time::PhasedLoopXMS(10, 9000);
       RunIteration();
@@ -627,7 +617,7 @@ class SensorReader {
   void operator()() {
     const int kPriority = 30;
     const int kInterruptPriority = 55;
-    SetThreadRealtimePriority(kPriority);
+    ::aos::SetCurrentThreadRealtimePriority(kPriority);
 
     ::std::array<::std::unique_ptr<HallEffect>, 2> shooter_sensors;
     shooter_sensors[0] = ::std::move(shooter_proximal_);
@@ -940,60 +930,17 @@ class MotorWriter {
 
 constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
 
-class JoystickSender {
- public:
-  JoystickSender() : run_(true) {}
-
-  void operator()() {
-    DriverStation *ds = DriverStation::GetInstance();
-    SetThreadRealtimePriority(29);
-    uint16_t team_id = ::aos::network::GetTeamNumber();
-
-    while (run_) {
-      ds->WaitForData();
-      auto new_state = ::aos::robot_state.MakeMessage();
-
-      new_state->test_mode = ds->IsAutonomous();
-      new_state->fms_attached = ds->IsFMSAttached();
-      new_state->enabled = ds->IsEnabled();
-      new_state->autonomous = ds->IsAutonomous();
-      new_state->team_id = team_id;
-      new_state->fake = false;
-
-      for (int i = 0; i < 4; ++i) {
-        new_state->joysticks[i].buttons = 0;
-        for (int button = 0; button < 16; ++button) {
-          new_state->joysticks[i].buttons |=
-              ds->GetStickButton(i, button + 1) << button;
-        }
-        for (int j = 0; j < 4; ++j) {
-          new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
-        }
-      }
-      LOG_STRUCT(DEBUG, "robot_state", *new_state);
-
-      if (!new_state.Send()) {
-        LOG(WARNING, "sending robot_state failed\n");
-      }
-    }
-  }
-
-  void Quit() { run_ = false; }
-
- private:
-  ::std::atomic<bool> run_;
-};
-}  // namespace output
+}  // namespace wpilib
 }  // namespace frc971
 
 class WPILibRobot : public RobotBase {
  public:
   virtual void StartCompetition() {
     ::aos::Init();
-    ::frc971::output::MotorWriter writer;
-    ::frc971::output::SensorReader reader;
+    ::frc971::wpilib::MotorWriter writer;
+    ::frc971::wpilib::SensorReader reader;
     ::std::thread reader_thread(::std::ref(reader));
-    ::frc971::output::JoystickSender joystick_sender;
+    ::frc971::wpilib::JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
     writer.Run();
     LOG(ERROR, "Exiting WPILibRobot\n");
