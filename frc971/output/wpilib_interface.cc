@@ -56,10 +56,10 @@ class priority_mutex {
   // constexpr.
   priority_mutex() {
     pthread_mutexattr_t attr;
-    // Turn on priority inheritance.
 #ifdef NDEBUG
 #error "Won't let perror be no-op ed"
 #endif
+    // Turn on priority inheritance.
     assert_perror(pthread_mutexattr_init(&attr));
     assert_perror(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_NORMAL));
     assert_perror(pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT));
@@ -113,7 +113,7 @@ class EdgeCounter {
   // Waits for interrupts, locks the mutex, and updates the internal state.
   // Updates the any_interrupt_count count when the interrupt comes in without
   // the lock.
-  void operator ()() {
+  void operator()() {
     SetThreadRealtimePriority(priority_);
 
     input_->RequestInterrupts();
@@ -340,11 +340,12 @@ class PeriodicHallSynchronizer {
 };
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in)
-      / (256.0 /*cpr*/ * 2.0 /*2x.  Stupid WPILib*/)
-      * (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
-      // * constants::GetValues().drivetrain_encoder_ratio
-      * (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+  return static_cast<double>(in) /
+         (256.0 /*cpr*/ * 2.0 /*2x.  Stupid WPILib*/) *
+         (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
+         // * constants::GetValues().drivetrain_encoder_ratio
+         *
+         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 static const double kVcc = 5.15;
@@ -371,21 +372,17 @@ float hall_translate(const constants::ShifterHallEffect &k, float in_low,
 }
 
 double claw_translate(int32_t in) {
-  return static_cast<double>(in)
-      / (256.0 /*cpr*/ * 4.0 /*quad*/)
-      / (18.0 / 48.0 /*encoder gears*/)
-      / (12.0 / 60.0 /*chain reduction*/)
-      * (M_PI / 180.0)
-      * 2.0 /*TODO(austin): Debug this, encoders read too little*/;
+  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) /
+         (18.0 / 48.0 /*encoder gears*/) / (12.0 / 60.0 /*chain reduction*/) *
+         (M_PI / 180.0) *
+         2.0 /*TODO(austin): Debug this, encoders read too little*/;
 }
 
 double shooter_translate(int32_t in) {
-  return static_cast<double>(in)
-      / (256.0 /*cpr*/ * 4.0 /*quad*/)
-      * 16 /*sprocket teeth*/ * 0.375 /*chain pitch*/
-      * (2.54 / 100.0 /*in to m*/);
+  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) *
+         16 /*sprocket teeth*/ * 0.375 /*chain pitch*/
+         * (2.54 / 100.0 /*in to m*/);
 }
-
 
 // This class sends out half of the claw position state at 100 hz.
 class HalfClawHallSynchronizer : public PeriodicHallSynchronizer<3> {
@@ -396,7 +393,8 @@ class HalfClawHallSynchronizer : public PeriodicHallSynchronizer<3> {
   // interrupt_priority is the priority of the interrupt threads.
   // encoder is the encoder to read.
   // sensors is an array of hall effect sensors.  The sensors[0] is the front
-  //   sensor, sensors[1] is the calibration sensor, sensors[2] is the back sensor.
+  //   sensor, sensors[1] is the calibration sensor, sensors[2] is the back
+  //   sensor.
   HalfClawHallSynchronizer(
       const char *name, int priority, int interrupt_priority,
       ::std::unique_ptr<Encoder> encoder,
@@ -513,7 +511,6 @@ class HalfClawHallSynchronizer : public PeriodicHallSynchronizer<3> {
   bool reversed_;
 };
 
-
 // This class sends out the shooter position state at 100 hz.
 class ShooterHallSynchronizer : public PeriodicHallSynchronizer<2> {
  public:
@@ -558,15 +555,15 @@ class ShooterHallSynchronizer : public PeriodicHallSynchronizer<2> {
     }
 
     {
-    const auto &distal_edge_counter = edge_counters()[1];
-    shooter_position->pusher_distal.current =
-        distal_edge_counter->polled_value();
-    shooter_position->pusher_distal.posedge_count =
-        distal_edge_counter->positive_interrupt_count();
-    shooter_position->pusher_distal.negedge_count =
-        distal_edge_counter->negative_interrupt_count();
-    shooter_position->pusher_distal.posedge_value =
-        shooter_translate(distal_edge_counter->last_positive_encoder_value());
+      const auto &distal_edge_counter = edge_counters()[1];
+      shooter_position->pusher_distal.current =
+          distal_edge_counter->polled_value();
+      shooter_position->pusher_distal.posedge_count =
+          distal_edge_counter->positive_interrupt_count();
+      shooter_position->pusher_distal.negedge_count =
+          distal_edge_counter->negative_interrupt_count();
+      shooter_position->pusher_distal.posedge_value =
+          shooter_translate(distal_edge_counter->last_positive_encoder_value());
     }
 
     shooter_position.Send();
@@ -592,18 +589,18 @@ class SensorReader {
         shooter_latch_(new HallEffect(0)),              // S4
         shooter_distal_(new HallEffect(2)),             // S2
         shooter_proximal_(new HallEffect(3)),           // S1
-        shooter_encoder_(new Encoder(19, 18)),          // E2
+        shooter_encoder_(new Encoder(15, 14)),          // E2
         claw_top_front_hall_(new HallEffect(5)),        // R2
         claw_top_calibration_hall_(new HallEffect(6)),  // R3
         claw_top_back_hall_(new HallEffect(4)),         // R2
-        claw_top_encoder_(new Encoder(20, 21)),         // E3
+        claw_top_encoder_(new Encoder(16, 17)),         // E3
         // L2  Middle Left hall effect sensor.
         claw_bottom_front_hall_(new HallEffect(8)),
         // L3  Bottom Left hall effect sensor
         claw_bottom_calibration_hall_(new HallEffect(9)),
         // L1  Top Left hall effect sensor
         claw_bottom_back_hall_(new HallEffect(7)),
-        claw_bottom_encoder_(new Encoder(22, 23)),  // E5
+        claw_bottom_encoder_(new Encoder(18, 19)),  // E5
         run_(true) {
     filter_.SetPeriodNanoSeconds(100000);
     filter_.Add(shooter_plunger_.get());
@@ -667,7 +664,8 @@ class SensorReader {
         // to go from visible to software to having triggered an interrupt.
         ::aos::time::SleepFor(::aos::time::Time::InUS(120));
 
-        if (bottom_claw.TryFinishingIteration() && top_claw.TryFinishingIteration()) {
+        if (bottom_claw.TryFinishingIteration() &&
+            top_claw.TryFinishingIteration()) {
           break;
         }
       }
@@ -708,7 +706,7 @@ class SensorReader {
       gyro_reading.MakeWithBuilder().angle(0).Send();
     }
 
-    if (ds->SystemActive()) {
+    if (ds->IsSysActive()) {
       auto message = ::aos::controls::output_check_received.MakeMessage();
       // TODO(brians): Actually read a pulse value from the roboRIO.
       message->pwm_value = 0;
@@ -793,15 +791,15 @@ class MotorWriter {
         shooter_brake_(new Solenoid(4)),
         compressor_(new Compressor()) {
     compressor_->SetClosedLoopControl(true);
-    //right_drivetrain_talon_->EnableDeadbandElimination(true);
-    //left_drivetrain_talon_->EnableDeadbandElimination(true);
-    //shooter_talon_->EnableDeadbandElimination(true);
-    //top_claw_talon_->EnableDeadbandElimination(true);
-    //bottom_claw_talon_->EnableDeadbandElimination(true);
-    //left_tusk_talon_->EnableDeadbandElimination(true);
-    //right_tusk_talon_->EnableDeadbandElimination(true);
-    //intake1_talon_->EnableDeadbandElimination(true);
-    //intake2_talon_->EnableDeadbandElimination(true);
+    // right_drivetrain_talon_->EnableDeadbandElimination(true);
+    // left_drivetrain_talon_->EnableDeadbandElimination(true);
+    // shooter_talon_->EnableDeadbandElimination(true);
+    // top_claw_talon_->EnableDeadbandElimination(true);
+    // bottom_claw_talon_->EnableDeadbandElimination(true);
+    // left_tusk_talon_->EnableDeadbandElimination(true);
+    // right_tusk_talon_->EnableDeadbandElimination(true);
+    // intake1_talon_->EnableDeadbandElimination(true);
+    // intake2_talon_->EnableDeadbandElimination(true);
   }
 
   // Maximum age of an output packet before the motors get zeroed instead.
@@ -975,7 +973,6 @@ class JoystickSender {
  private:
   ::std::atomic<bool> run_;
 };
-
 }  // namespace output
 }  // namespace frc971
 
@@ -997,5 +994,6 @@ class WPILibRobot : public RobotBase {
     ::aos::Cleanup();
   }
 };
+
 
 START_ROBOT_CLASS(WPILibRobot);
