@@ -1,6 +1,17 @@
 {
   'targets': [
     {
+      'target_name': 'dump_rtprio',
+      'type': 'executable',
+      'sources': [
+        'dump_rtprio.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
       'target_name': 'complex_thread_local',
       'type': 'static_library',
       'sources': [

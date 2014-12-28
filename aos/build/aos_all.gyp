@@ -19,6 +19,7 @@
         '<(AOS)/linux_code/starter/starter.gyp:starter_exe',
         '<(AOS)/linux_code/starter/starter.gyp:netconsole',
         '<(AOS)/linux_code/linux_code.gyp:complex_thread_local_test',
+        '<(AOS)/linux_code/linux_code.gyp:dump_rtprio',
       ],
     },
     {
