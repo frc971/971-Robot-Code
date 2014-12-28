@@ -13,7 +13,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "frc971/queues/other_sensors.q.h"
+#include "frc971/queues/gyro.q.h"
 
 
 namespace frc971 {

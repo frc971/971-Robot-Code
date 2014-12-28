@@ -32,6 +32,7 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/gyro_sender.h"
 
 #include "Encoder.h"
 #include "Talon.h"
@@ -46,8 +47,6 @@
 
 using ::aos::util::SimpleLogInterval;
 using ::frc971::control_loops::drivetrain;
-using ::frc971::sensors::other_sensors;
-using ::frc971::sensors::gyro_reading;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
@@ -355,10 +354,6 @@ double drivetrain_translate(int32_t in) {
 
 static const double kVcc = 5.15;
 
-double gyro_translate(int64_t in) {
-  return in / 16.0 / 1000.0 / (180.0 / M_PI);
-}
-
 float hall_translate(const constants::ShifterHallEffect &k, float in_low,
                      float in_high) {
   const float low_ratio =
@@ -617,9 +612,6 @@ class SensorReader {
     filter_.Add(claw_bottom_front_hall_.get());
     filter_.Add(claw_bottom_calibration_hall_.get());
     filter_.Add(claw_bottom_back_hall_.get());
-    printf("Filtering all hall effect sensors with a %" PRIu64
-           " nanosecond window\n",
-           filter_.GetPeriodNanoSeconds());
   }
 
   void operator()() {
@@ -686,31 +678,6 @@ class SensorReader {
   void RunIteration() {
     //::aos::time::TimeFreezer time_freezer;
     DriverStation *ds = DriverStation::GetInstance();
-
-    bool bad_gyro = true;
-    // TODO(brians): Switch to LogInterval for these things.
-    /*
-    if (data->uninitialized_gyro) {
-      LOG(DEBUG, "uninitialized gyro\n");
-      bad_gyro = true;
-    } else if (data->zeroing_gyro) {
-      LOG(DEBUG, "zeroing gyro\n");
-      bad_gyro = true;
-    } else if (data->bad_gyro) {
-      LOG(ERROR, "bad gyro\n");
-      bad_gyro = true;
-    } else if (data->old_gyro_reading) {
-      LOG(WARNING, "old/bad gyro reading\n");
-      bad_gyro = true;
-    } else {
-      bad_gyro = false;
-    }
-    */
-
-    if (!bad_gyro) {
-      // TODO(austin): Read the gyro.
-      gyro_reading.MakeWithBuilder().angle(0).Send();
-    }
 
     if (ds->IsSysActive()) {
       auto message = ::aos::controls::output_check_received.MakeMessage();
@@ -976,6 +943,8 @@ class WPILibRobot : public RobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
     ::frc971::wpilib::SensorReader reader;
     ::std::thread reader_thread(::std::ref(reader));
+    ::frc971::wpilib::GyroSender gyro_sender;
+    ::std::thread gyro_thread(::std::ref(gyro_sender));
     ::std::unique_ptr<Compressor> compressor(new Compressor());
     compressor->SetClosedLoopControl(true);
 
@@ -985,7 +954,6 @@ class WPILibRobot : public RobotBase {
     drivetrain_writer.set_right_drivetrain_talon(
         ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
-
 
     ::frc971::wpilib::ClawWriter claw_writer;
     claw_writer.set_top_claw_talon(::std::unique_ptr<Talon>(new Talon(1)));
@@ -1013,10 +981,13 @@ class WPILibRobot : public RobotBase {
     PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
 
     LOG(ERROR, "Exiting WPILibRobot\n");
+
     joystick_sender.Quit();
     joystick_thread.join();
     reader.Quit();
     reader_thread.join();
+    gyro_sender.Quit();
+    gyro_thread.join();
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();

@@ -22,10 +22,12 @@
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(AOS)/common/controls/controls.gyp:output_check',
         '<(AOS)/common/messages/messages.gyp:robot_state',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         'hall_effect',
         'joystick_sender',
         'loop_output_handler',
         'buffered_pcm',
+        'gyro_sender',
       ],
     },
     {
@@ -41,6 +43,41 @@
       ],
       'export_dependent_settings': [
         '<(EXTERNALS):WPILib_roboRIO',
+      ],
+    },
+    {
+      'target_name': 'gyro_interface',
+      'type': 'static_library',
+      'sources': [
+        'gyro_interface.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib_roboRIO',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib_roboRIO',
+      ],
+    },
+    {
+      'target_name': 'gyro_sender',
+      'type': 'static_library',
+      'sources': [
+        'gyro_sender.cc',
+      ],
+      'dependencies': [
+        '<(DEPTH)/frc971/queues/queues.gyp:gyro',
+        'gyro_interface',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/common.gyp:time',
+      ],
+      'export_dependent_settings': [
+        'gyro_interface',
+        '<(AOS)/common/common.gyp:time',
       ],
     },
     {

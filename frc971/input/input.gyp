@@ -27,7 +27,7 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:log_interval',
 
-        '<(DEPTH)/frc971/queues/queues.gyp:queues',
+        '<(DEPTH)/frc971/queues/queues.gyp:gyro',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
@@ -58,6 +58,7 @@
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_loop',
         '<(DEPTH)/frc971/control_loops/shooter/shooter.gyp:shooter_loop',
         '<(AOS)/common/controls/controls.gyp:output_check',
+        '<(DEPTH)/frc971/queues/queues.gyp:gyro',
       ],
     },
   ],
