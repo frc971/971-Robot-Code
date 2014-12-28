@@ -10,13 +10,21 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/prctl.h>
 
 #include "aos/common/die.h"
 #include "aos/linux_code/logging/linux_logging.h"
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 
 namespace aos {
+namespace logging {
+namespace internal {
 
+// Implemented in aos/linux_code/logging/linux_interface.cc.
+void ReloadThreadName();
+
+}  // namespace internal
+}  // namespace logging
 namespace {
 
 void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
@@ -115,6 +123,15 @@ void SetCurrentThreadRealtimePriority(int priority) {
   if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
     PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed", priority);
   }
+}
+
+void SetCurrentThreadName(const ::std::string &name) {
+  if (name.size() > 16) {
+    LOG(FATAL, "thread name '%s' too long\n", name.c_str());
+  }
+  LOG(INFO, "this thread is changing to '%s'\n", name.c_str());
+  PCHECK(prctl(PR_SET_NAME, name.c_str()));
+  logging::internal::ReloadThreadName();
 }
 
 }  // namespace aos

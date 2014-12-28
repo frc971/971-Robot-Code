@@ -1,6 +1,8 @@
 #ifndef AOS_LINUX_CODE_INIT_H_
 #define AOS_LINUX_CODE_INIT_H_
 
+#include <string>
+
 namespace aos {
 
 // In order to use shared memory, one of the Init* functions must be called in
@@ -27,6 +29,11 @@ void WriteCoreDumps();
 
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
+
+// Sets the name of the current thread.
+// This will displayed by `top -H`, dump_rtprio, and show up in logs.
+// name can have a maximum of 16 characters.
+void SetCurrentThreadName(const ::std::string &name);
 
 }  // namespace aos
 

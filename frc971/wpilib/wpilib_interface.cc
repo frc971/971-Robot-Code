@@ -109,7 +109,8 @@ class EdgeCounter {
   // Updates the any_interrupt_count count when the interrupt comes in without
   // the lock.
   void operator()() {
-    ::aos::SetCurrentThreadRealtimePriority(priority_);
+    ::aos::SetCurrentThreadName("EdgeCounter_" +
+                                ::std::to_string(input_->GetChannel()));
 
     input_->RequestInterrupts();
     input_->SetUpSourceEdge(true, true);
@@ -119,6 +120,7 @@ class EdgeCounter {
       current_value_ = input_->GetHall();
     }
 
+    ::aos::SetCurrentThreadRealtimePriority(priority_);
     InterruptableSensorBase::WaitResult result = InterruptableSensorBase::kBoth;
     while (run_) {
       result = input_->WaitForInterrupt(
@@ -289,6 +291,7 @@ class PeriodicHallSynchronizer {
   }
 
   void operator()() {
+    ::aos::SetCurrentThreadName("HallSync" + ::std::to_string(num_sensors));
     ::aos::SetCurrentThreadRealtimePriority(priority_);
     while (run_) {
       ::aos::time::PhasedLoopXMS(10, 9000);
@@ -615,9 +618,10 @@ class SensorReader {
   }
 
   void operator()() {
+    ::aos::SetCurrentThreadName("SensorReader");
+
     const int kPriority = 30;
     const int kInterruptPriority = 55;
-    ::aos::SetCurrentThreadRealtimePriority(kPriority);
 
     ::std::array<::std::unique_ptr<HallEffect>, 2> shooter_sensors;
     shooter_sensors[0] = ::std::move(shooter_proximal_);
@@ -644,6 +648,7 @@ class SensorReader {
         "bottom_claw", kPriority, kInterruptPriority,
         ::std::move(claw_bottom_encoder_), &claw_bottom_sensors, true);
 
+    ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
       ::aos::time::PhasedLoopXMS(10, 9000);
       RunIteration();
@@ -937,6 +942,7 @@ class WPILibRobot : public RobotBase {
  public:
   virtual void StartCompetition() {
     ::aos::Init();
+    ::aos::SetCurrentThreadName("StartCompetition");
     ::frc971::wpilib::MotorWriter writer;
     ::frc971::wpilib::SensorReader reader;
     ::std::thread reader_thread(::std::ref(reader));

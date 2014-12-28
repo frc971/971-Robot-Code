@@ -11,7 +11,8 @@ namespace logging {
 namespace internal {
 namespace {
 
-// TODO(brians): Differentiate between threads in the same process.
+// TODO(brians): Differentiate between threads with the same name in the same
+// process.
 
 ::std::string GetMyName() {
   // The maximum number of characters that can make up a thread name.
@@ -50,6 +51,17 @@ AOS_THREAD_LOCAL bool delete_current_context(false);
 
 }  // namespace
 
+// Used in aos/linux_code/init.cc when a thread's name is changed.
+void ReloadThreadName() {
+  if (my_context.created()) {
+    my_context->name = GetMyName();
+    if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
+      Die("logging: process/thread name '%s' is too long\n",
+          my_context->name.c_str());
+    }
+  }
+}
+
 Context *Context::Get() {
   if (__builtin_expect(delete_current_context, false)) {
     my_context.Clear();
@@ -58,10 +70,7 @@ Context *Context::Get() {
   if (__builtin_expect(!my_context.created(), false)) {
     my_context.Create();
     my_context->name = GetMyName();
-    if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
-      Die("logging: process/thread name '%s' is too long\n",
-          my_context->name.c_str());
-    }
+    ReloadThreadName();
     my_context->source = getpid();
   }
   return my_context.get();
