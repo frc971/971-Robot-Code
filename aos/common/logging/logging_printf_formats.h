@@ -24,7 +24,7 @@
 
 // These 2 define how many digits we use to print out the nseconds fields of
 // times. They have to stay matching.
-#define AOS_TIME_NSECONDS_DIGITS 5
+#define AOS_TIME_NSECONDS_DIGITS 6
 #define AOS_TIME_NSECONDS_DENOMINATOR 10000
 
 #endif  // AOS_COMMON_LOGGING_LOGGING_PRINTF_FORMATS_H_
