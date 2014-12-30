@@ -1,3 +1,6 @@
+#ifndef FRC971_ACTIONS_DRIVETRAIN_ACTION_H_
+#define FRC971_ACTIONS_DRIVETRAIN_ACTION_H_
+
 #include <memory>
 
 #include "frc971/actions/drivetrain_action.q.h"
@@ -20,3 +23,5 @@ MakeDrivetrainAction();
 
 }  // namespace actions
 }  // namespace frc971
+
+#endif

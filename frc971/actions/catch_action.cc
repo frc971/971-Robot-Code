@@ -1,3 +1,4 @@
+#include <complex>
 #include <functional>
 
 #include "aos/common/logging/logging.h"

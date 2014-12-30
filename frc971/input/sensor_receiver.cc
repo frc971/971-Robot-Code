@@ -15,6 +15,7 @@
 #include "frc971/queues/to_log.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/shifter_hall_effect.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
