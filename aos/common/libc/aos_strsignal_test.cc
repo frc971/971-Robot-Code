@@ -32,8 +32,14 @@ TEST(StrsignalTest, All) {
   // interacts poorly with asan.  Spawning a thread causes the storage to get
   // cleaned up before asan checks.
   SignalNameTester t;
+#ifdef AOS_SANITIZER_thread
+  // tsan doesn't like this usage of ::std::thread. It looks like
+  // <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57507>.
+  t();
+#else
   ::std::thread thread(::std::ref(t));
   thread.join();
+#endif
 }
 
 }  // namespace testing
