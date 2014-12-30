@@ -111,6 +111,12 @@
           ],
         },
       },
+    ], ['SANITIZER!="thread"', {
+        'libraries': [
+          '<!(readlink -f <(AOS)/../output/compiled-<(ARCHITECTURE)<(EXTERNALS_EXTRA)/gperftools-2.3-prefix/lib/libtcmalloc.a)',
+          '<!(readlink -f <(AOS)/../output/compiled-<(ARCHITECTURE)<(EXTERNALS_EXTRA)/libunwind-1.1-prefix/lib/libunwind.a)',
+        ],
+      },
     ], ['EXTERNALS_EXTRA=="-fPIE"', {
         'target_defaults': {
           'cflags': [

@@ -191,7 +191,7 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
 [ -f ${LIBCDD_LIB} ] || \
 	bash -c "cd ${LIBCDD_DIR} && ./configure \
 	--disable-shared ${CONFIGURE_FLAGS} \
-	LDFLAGS=\"${ALL_LDFLAGS} -L${GMP_PREFIX}/lib\"\
+	LDFLAGS=\"${ALL_LDFLAGS} -L${GMP_PREFIX}/lib\" \
 	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
 	&& make gmpdir=${GMP_PREFIX} && make install"
 
@@ -202,5 +202,40 @@ STM32FLASH_URL=https://git.gitorious.org/stm32flash/stm32flash.git
 [ -d ${STM32FLASH_DIR} ] || ( mkdir ${STM32FLASH_DIR} && \
 	git clone ${STM32FLASH_URL} ${STM32FLASH_DIR}/stm32flash && \
 	cd ${STM32FLASH_DIR}/stm32flash && git checkout ${STM32FLASH_COMMIT} )
+
+# get and build libunwind
+LIBUNWIND_VERSION=1.1
+LIBUNWIND_TAR=${EXTERNALS}/libunwind-${LIBUNWIND_VERSION}.tar.gz
+LIBUNWIND_DIR=${COMPILED}/libunwind-${LIBUNWIND_VERSION}
+LIBUNWIND_PREFIX=${LIBUNWIND_DIR}-prefix
+LIBUNWIND_LIB=${LIBUNWIND_PREFIX}/lib/libunwind.a
+LIBUNWIND_URL=http://download.savannah.gnu.org/releases/libunwind/libunwind-${LIBUNWIND_VERSION}.tar.gz
+[ -f ${LIBUNWIND_TAR} ] || \
+	wget ${LIBUNWIND_URL} -O ${LIBUNWIND_TAR}
+[ -d ${LIBUNWIND_DIR} ] || ( mkdir ${LIBUNWIND_DIR} && tar \
+	--strip-components=1 -C ${LIBUNWIND_DIR} -xf ${LIBUNWIND_TAR} )
+[ -f ${LIBUNWIND_LIB} ] || \
+	bash -c "cd ${LIBUNWIND_DIR} && ./configure \
+	--prefix=$(readlink -f ${LIBUNWIND_PREFIX}) \
+	${CONFIGURE_FLAGS} \
+	&& make && make install"
+
+# get and build gperftools
+GPERFTOOLS_VERSION=2.3
+GPERFTOOLS_TAR=${EXTERNALS}/gperftools-${GPERFTOOLS_VERSION}.tar.gz
+GPERFTOOLS_DIR=${COMPILED}/gperftools-${GPERFTOOLS_VERSION}
+GPERFTOOLS_PREFIX=${GPERFTOOLS_DIR}-prefix
+TCMALLOC_LIB=${GPERFTOOLS_PREFIX}/lib/libtcmalloc.a
+GPERFTOOLS_URL=https://googledrive.com/host/0B6NtGsLhIcf7MWxMMF9JdTN3UVk/gperftools-2.3.tar.gz
+[ -f ${GPERFTOOLS_TAR} ] || \
+	wget ${GPERFTOOLS_URL} -O ${GPERFTOOLS_TAR}
+[ -d ${GPERFTOOLS_DIR} ] || ( mkdir ${GPERFTOOLS_DIR} && tar \
+	--strip-components=1 -C ${GPERFTOOLS_DIR} -xf ${GPERFTOOLS_TAR} )
+[ -f ${TCMALLOC_LIB} ] || \
+	bash -c "cd ${GPERFTOOLS_DIR} && ./configure \
+	${CONFIGURE_FLAGS} --prefix=$(readlink -f ${GPERFTOOLS_PREFIX}) \
+	LDFLAGS=\"${ALL_LDFLAGS} -L${LIBUNWIND_PREFIX}/lib -Wl,-rpath-link=${LIBUNWIND_PREFIX}/lib\" \
+	CPPFLAGS=\"-I ${LIBUNWIND_PREFIX}/include\" \
+	&& make && make install"
 
 rm -rf ${TMPDIR}
