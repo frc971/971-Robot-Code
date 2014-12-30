@@ -178,7 +178,7 @@ int mutex_trylock(mutex *m) {
 }
 
 int futex_wait(mutex *m) {
-  if (*m) {
+  if (__atomic_load_n(m, __ATOMIC_SEQ_CST)) {
     return 0;
   }
   const int ret = sys_futex_wait(m, 0, NULL);
@@ -210,7 +210,7 @@ int futex_unset(mutex *m) {
 }
 
 void condition_wait(mutex *c, mutex *m) {
-  const mutex wait_start = *c;
+  const mutex wait_start = __atomic_load_n(c, __ATOMIC_RELAXED);
 
   mutex_unlock(m);
 
@@ -221,7 +221,8 @@ void condition_wait(mutex *c, mutex *m) {
     if (ret != 0) {
       // If it failed for some reason other than somebody else doing a wake
       // before we actually made it to sleep.
-      if (__builtin_expect(*c == wait_start, 0)) {
+      if (__builtin_expect(__atomic_load_n(c, __ATOMIC_RELAXED) == wait_start,
+                           0)) {
         // Try again if it was because of a signal.
         if (ret == -EINTR) continue;
         PELOG(FATAL, -ret, "FUTEX_WAIT(%p, %" PRIu32 ", NULL, NULL, 0) failed",
@@ -234,7 +235,7 @@ void condition_wait(mutex *c, mutex *m) {
     // If we got requeued above, this will just succeed the first time because
     // the person waking us from the above wait (changed to be on the mutex
     // instead of the condition) will have just set it to 0.
-    while (__atomic_exchange_n(m, 2, __ATOMIC_SEQ_CST) != 0) {
+    while (__atomic_exchange_n(m, 2, __ATOMIC_ACQ_REL) != 0) {
       const int ret = sys_futex_wait(m, 2, NULL);
       if (ret != 0) {
         // Try again if it was because of a signal or somebody else unlocked it
