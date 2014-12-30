@@ -81,9 +81,14 @@ class TestThread(threading.Thread):
     self.output_copier = None
 
   def run(self):
+    def setup_test_process():
+# Shove it into its own process group so we can kill any subprocesses easily.
+      os.setpgid(0, 0)
+
     with self.start_semaphore:
-      if self.stopped:
-        return
+      with self.process_lock:
+        if self.stopped:
+          return
       test_output('Starting test %s...' % self.name)
       output_to_read, subprocess_output = pty.openpty()
       self.output_copier = TestThread.OutputCopier(self.name, output_to_read,
@@ -96,7 +101,8 @@ class TestThread(threading.Thread):
                                           env=self.env,
                                           stderr=subprocess.STDOUT,
                                           stdout=subprocess_output,
-                                          stdin=open(os.devnull, 'r'))
+                                          stdin=open(os.devnull, 'r'),
+                                          preexec_fn=setup_test_process)
       finally:
         os.close(subprocess_output)
       self.process.wait()
@@ -107,26 +113,13 @@ class TestThread(threading.Thread):
           self.output_copier.join()
           self.done_queue.put(self)
 
-  def terminate_process(self):
-    """Asks any currently running process to stop."""
-    with self.process_lock:
-      if not self.process:
-        return
-      try:
-        self.process.terminate()
-      except OSError as e:
-        if e.errno == errno.ESRCH:
-          # We don't really care if it's already gone.
-          pass
-        else:
-          raise e
   def kill_process(self):
     """Forcibly terminates any running process."""
     with self.process_lock:
       if not self.process:
         return
       try:
-        self.process.kill()
+        os.killpg(self.process.pid, signal.SIGKILL)
       except OSError as e:
         if e.errno == errno.ESRCH:
           # We don't really care if it's already gone.
@@ -1113,20 +1106,13 @@ Examples of specifying targets:
 # Stop all of them before killing processes because otherwise stopping some of
 # them tends to let other ones that are waiting to start go.
           for thread in running:
-            test_output('\tKilling %s' % thread.name)
             thread.stop()
           for thread in running:
-            thread.terminate_process()
-          to_remove = []
+            test_output('\tKilling %s' % thread.name)
+            thread.kill_process()
+            thread.kill_process()
+          test_output('Waiting for other tests to die')
           for thread in running:
-            thread.join(5)
-            if not thread.is_alive():
-              to_remove.append(thread)
-          for thread in to_remove:
-            running.remove(thread)
-          for thread in running:
-            test_output(
-                'Test %s did not terminate. Killing it.' % thread.name)
             thread.kill_process()
             thread.join()
           test_output('Done killing other tests')
