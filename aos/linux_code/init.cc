@@ -11,10 +11,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/prctl.h>
+#include <malloc.h>
 
 #include "aos/common/die.h"
 #include "aos/linux_code/logging/linux_logging.h"
 #include "aos/linux_code/ipc_lib/shared_mem.h"
+
+#ifdef TCMALLOC
+namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
+extern double FLAGS_tcmalloc_release_rate;
+}
+using FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead::
+    FLAGS_tcmalloc_release_rate;
+#endif
 
 namespace aos {
 namespace logging {
@@ -61,11 +70,26 @@ void LockAllMemory() {
     PDie("%s-init: mlockall failed", program_invocation_short_name);
   }
 
+  // Don't give freed memory back to the OS.
+  CHECK_EQ(1, mallopt(M_TRIM_THRESHOLD, -1));
+  // Don't use mmap for large malloc chunks.
+  CHECK_EQ(1, mallopt(M_MMAP_MAX, 0));
+
+#ifdef TCMALLOC
+  // Tell tcmalloc not to return memory.
+  FLAGS_tcmalloc_release_rate = 0.0;
+#endif
+
   // Forces the memory pages for all the stack space that we're ever going to
   // use to be loaded into memory (so it can be locked there).
   uint8_t data[4096 * 8];
   // Not 0 because linux might optimize that to a 0-filled page.
   memset(data, 1, sizeof(data));
+
+  static const size_t kHeapPreallocSize = 1024 * 1024 * 2;
+  char *const heap_data = static_cast<char *>(malloc(kHeapPreallocSize));
+  memset(heap_data, 1, kHeapPreallocSize);
+  free(heap_data);
 }
 
 // Do the initialization code that is necessary for both realtime and
