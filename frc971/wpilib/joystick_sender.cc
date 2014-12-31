@@ -12,8 +12,10 @@ namespace wpilib {
 
 void JoystickSender::operator()() {
   DriverStation *ds = DriverStation::GetInstance();
-  ::aos::SetCurrentThreadRealtimePriority(29);
+  ::aos::SetCurrentThreadName("DSReader");
   uint16_t team_id = ::aos::network::GetTeamNumber();
+
+  ::aos::SetCurrentThreadRealtimePriority(29);
 
   while (run_) {
     ds->WaitForData();
