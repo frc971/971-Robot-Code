@@ -6,6 +6,7 @@
 #include "aos/common/logging/queue_logging.h"
 
 #include "DriverStation.h"
+#include "HAL/HAL.hpp"
 
 namespace frc971 {
 namespace wpilib {
@@ -21,10 +22,12 @@ void JoystickSender::operator()() {
     ds->WaitForData();
     auto new_state = ::aos::robot_state.MakeMessage();
 
-    new_state->test_mode = ds->IsAutonomous();
-    new_state->fms_attached = ds->IsFMSAttached();
-    new_state->enabled = ds->IsEnabled();
-    new_state->autonomous = ds->IsAutonomous();
+    HALControlWord control_word;
+    HALGetControlWord(&control_word);
+    new_state->test_mode = control_word.test;
+    new_state->fms_attached = control_word.fmsAttached;
+    new_state->enabled = control_word.enabled;
+    new_state->autonomous = control_word.autonomous;
     new_state->team_id = team_id;
     new_state->fake = false;
 
