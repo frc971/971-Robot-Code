@@ -29,11 +29,7 @@ void JoystickSender::operator()() {
     new_state->fake = false;
 
     for (int i = 0; i < 4; ++i) {
-      new_state->joysticks[i].buttons = 0;
-      for (int button = 0; button < 16; ++button) {
-        new_state->joysticks[i].buttons |= ds->GetStickButton(i, button + 1)
-                                           << button;
-      }
+      new_state->joysticks[i].buttons = ds->GetStickButtons(i);
       for (int j = 0; j < 4; ++j) {
         new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
       }
