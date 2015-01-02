@@ -40,6 +40,7 @@
         '<(AOS)/linux_code/linux_code.gyp:init',
         'binary_log_file',
         '<(AOS)/common/common.gyp:queue_types',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
     },
     {
