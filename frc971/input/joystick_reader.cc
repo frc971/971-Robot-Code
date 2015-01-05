@@ -12,7 +12,7 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/constants.h"
-#include "frc971/queues/other_sensors.q.h"
+#include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/shooter/shooter.q.h"
