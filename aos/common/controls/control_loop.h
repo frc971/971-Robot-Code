@@ -39,19 +39,12 @@ class SerializableControlLoop : public Runnable {
 // Control loops run this often, "starting" at time 0.
 constexpr time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 
-// Calculates the next time to run control loops after start.
-time::Time NextLoopTime(time::Time start = time::Time::Now());
-
 // Provides helper methods to assist in writing control loops.
 // This template expects to be constructed with a queue group as an argument
 // that has a goal, position, status, and output queue.
 // It will then call the RunIteration method every cycle that it has enough
 // valid data for the control loop to run.
-// If has_position is false, the control loop will always use NULL as the
-// position and not check the queue.  This is used for "loops" that control
-// motors open loop.
-template <class T, bool has_position = true, bool fail_no_position = true,
-         bool fail_no_goal = true>
+template <class T, bool fail_no_goal = true>
 class ControlLoop : public SerializableControlLoop {
  public:
   // Maximum age of position packets before the loop will be disabled due to
@@ -157,15 +150,9 @@ class ControlLoop : public SerializableControlLoop {
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   static constexpr ::aos::time::Time kStaleLogInterval =
       ::aos::time::Time::InSeconds(0.1);
-  SimpleLogInterval very_stale_position_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "outputs disabled because position is very stale");
   SimpleLogInterval no_prior_goal_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "no prior goal");
-  SimpleLogInterval no_prior_position_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "no prior position");
   SimpleLogInterval no_driver_station_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "no driver station packet");

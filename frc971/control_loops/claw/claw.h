@@ -185,7 +185,7 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 };
 
 class ClawMotor : public aos::controls::ControlLoop<
-    control_loops::ClawGroup, true, true, false> {
+    control_loops::ClawGroup, false> {
  public:
   explicit ClawMotor(control_loops::ClawGroup *my_claw =
                          &control_loops::claw_queue_group);

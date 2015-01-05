@@ -24,6 +24,42 @@
         '<(AOS)/common/messages/messages.gyp:robot_state',
         'hall_effect',
         'joystick_sender',
+        'loop_output_handler',
+        'buffered_pcm',
+      ],
+    },
+    {
+      'target_name': 'buffered_pcm',
+      'type': 'static_library',
+      'sources': [
+        'buffered_solenoid.cc',
+        'buffered_pcm.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib_roboRIO',
+        '<(AOS)/build/aos.gyp:logging',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib_roboRIO',
+      ],
+    },
+    {
+      'target_name': 'loop_output_handler',
+      'type': 'static_library',
+      'sources': [
+        'loop_output_handler.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:scoped_fd',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:log_interval',
+        '<(AOS)/common/messages/messages.gyp:robot_state',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:scoped_fd',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/util/util.gyp:log_interval',
       ],
     },
     {

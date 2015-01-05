@@ -13,14 +13,13 @@ namespace frc971 {
 namespace control_loops {
 
 class DrivetrainLoop
-    : public aos::controls::ControlLoop<control_loops::Drivetrain, true, false> {
+    : public aos::controls::ControlLoop<control_loops::Drivetrain> {
  public:
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(
       control_loops::Drivetrain *my_drivetrain = &control_loops::drivetrain)
-      : aos::controls::ControlLoop<control_loops::Drivetrain, true, false>(
-          my_drivetrain) {
+      : aos::controls::ControlLoop<control_loops::Drivetrain>(my_drivetrain) {
     ::aos::controls::HPolytope<0>::Init();
   }
 
