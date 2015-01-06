@@ -26,7 +26,6 @@ if [ "$1" == "arm" ]; then
   export CXXFLAGS="-mcpu=cortex-a8 -mfpu=neon"
   export OBJDUMP=${CROSS_COMPILE}objdump
   CONFIGURE_FLAGS="--host=arm-linux-gnueabihf CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
-  IS_CRIO=0
 elif [ "$1" == "arm_frc" ]; then
   COMPILED=${EXTERNALS}/../compiled-arm_frc
 
@@ -40,7 +39,6 @@ elif [ "$1" == "arm_frc" ]; then
   CONFIGURE_FLAGS="--host=arm-frc-linux-gnueabi CC=${CC} CXX=${CXX} CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" OBJDUMP=${OBJDUMP}"
 elif [ "$1" == "amd64" ]; then
   COMPILED=${EXTERNALS}/../compiled-amd64
-  IS_CRIO=0
 elif [ "$1" == "amd64-fPIE" ]; then
   COMPILED=${EXTERNALS}/../compiled-amd64-fPIE
 
@@ -49,9 +47,6 @@ elif [ "$1" == "amd64-fPIE" ]; then
   ALL_LDFLAGS="-fPIE"
   export LDFLAGS=${ALL_LDFLAGS}
   CONFIGURE_FLAGS="CFLAGS=\"${CFLAGS}\" CXXFLAGS=\"${CXXFLAGS}\" LDFLAGS=\"${LDFLAGS}\""
-  IS_CRIO=0
-elif [ "$1" == "crio" ]; then
-  IS_CRIO=1
 else
   echo "Unknown platform $1 to download externals for." 1>&2
   exit 1
@@ -68,23 +63,11 @@ mkdir -p ${EXTERNALS}
 # get gyp
 [ -d ${GYP_DIR} ] || ( svn co http://gyp.googlecode.com/svn/trunk -r ${GYP_REVISION} ${GYP_DIR} && patch -p1 -d ${GYP_DIR} < ${AOS}/externals/gyp.patch )
 
-# get gccdist
-GCCDIST=${EXTERNALS}/gccdist
-[ -f ${GCCDIST}.zip ] || wget ftp://ftp.ni.com/pub/devzone/tut/updated_vxworks63gccdist.zip -O ${GCCDIST}.zip
-[ -d ${GCCDIST} ] || ( cd ${EXTERNALS} && unzip -q ${GCCDIST}.zip )
-
 # get eigen
 EIGEN_VERSION=3.2.1
 EIGEN_DIR=${EXTERNALS}/eigen-${EIGEN_VERSION}
 [ -f ${EIGEN_DIR}.tar.bz2 ] || wget http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2 -O ${EIGEN_DIR}.tar.bz2
 [ -d ${EIGEN_DIR} ] || ( mkdir ${EIGEN_DIR} && tar --strip-components=1 -C ${EIGEN_DIR} -xf ${EIGEN_DIR}.tar.bz2 )
-
-# get the LLVM Compiler-RT source
-COMPILER_RT_TAG=RELEASE_32/final
-COMPILER_RT_VERSION=`echo ${COMPILER_RT_TAG} | sed s:/:_:`
-COMPILER_RT_DIR=${EXTERNALS}/compiler-rt-${COMPILER_RT_VERSION}
-COMPILER_RT_URL=http://llvm.org/svn/llvm-project/compiler-rt/tags/${COMPILER_RT_TAG}
-[ -d ${COMPILER_RT_DIR} ] || svn checkout ${COMPILER_RT_URL} ${COMPILER_RT_DIR}
 
 # get gtest
 GTEST_VERSION=1.6.0
@@ -92,8 +75,6 @@ GTEST_DIR=${EXTERNALS}/gtest-${GTEST_VERSION}-p2
 GTEST_ZIP=${EXTERNALS}/gtest-${GTEST_VERSION}.zip
 [ -f ${GTEST_ZIP} ] || wget http://googletest.googlecode.com/files/gtest-${GTEST_VERSION}.zip -O ${GTEST_ZIP}
 [ -d ${GTEST_DIR} ] || ( unzip ${GTEST_ZIP} -d ${TMPDIR} && mv ${TMPDIR}/gtest-${GTEST_VERSION} ${GTEST_DIR} && cd ${GTEST_DIR} && patch -p1 < ${AOS}/externals/gtest.patch )
-
-[[ ${IS_CRIO} -eq 1 ]] && exit 0
 
 # get and build libjpeg
 LIBJPEG_VERSION=8d
@@ -194,14 +175,6 @@ LIBCDD_URL=ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/cddlib-${LIBCDD_VERSION}.t
 	LDFLAGS=\"${ALL_LDFLAGS} -L${GMP_PREFIX}/lib\" \
 	--prefix=$(readlink -f ${LIBCDD_PREFIX}) \
 	&& make gmpdir=${GMP_PREFIX} && make install"
-
-# download stm32flash
-STM32FLASH_COMMIT=8399fbe1baf2b7d097746786458021d92895d71b
-STM32FLASH_DIR=${EXTERNALS}/stm32flash-${STM32FLASH_COMMIT}
-STM32FLASH_URL=https://git.gitorious.org/stm32flash/stm32flash.git
-[ -d ${STM32FLASH_DIR} ] || ( mkdir ${STM32FLASH_DIR} && \
-	git clone ${STM32FLASH_URL} ${STM32FLASH_DIR}/stm32flash && \
-	cd ${STM32FLASH_DIR}/stm32flash && git checkout ${STM32FLASH_COMMIT} )
 
 # get and build libunwind
 LIBUNWIND_VERSION=1.1

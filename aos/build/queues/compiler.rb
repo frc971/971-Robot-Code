@@ -60,7 +60,7 @@ def parse_args(globals,args)
 end
 def format_pipeline(output)
   read_in, write_in = IO.pipe()
-  child = Process.spawn('/opt/clang-3.5/bin/clang-format --style=google',
+  child = Process.spawn('/usr/bin/clang-format-3.5 --style=google',
                         {:in=>read_in, write_in=>:close,
                          :out=>output.fileno})
   read_in.close
