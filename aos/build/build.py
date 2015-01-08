@@ -661,7 +661,8 @@ class PrimeProcessor(Processor):
       if platforms & frc_platforms:
         to_download.add(architecture + '_frc')
 
-      if platforms & (self.platforms() - pie_sanitizers - frc_platforms):
+      if platforms & (self.select_platforms(architecture=architecture) -
+                      pie_sanitizers - frc_platforms):
         to_download.add(architecture)
 
     for download_target in to_download:
