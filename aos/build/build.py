@@ -726,8 +726,8 @@ class PrimeProcessor(Processor):
   def check_installed(self, platforms, is_deploy):
     packages = set(('lzip', 'm4', 'realpath'))
     packages.add('ruby')
-    # clang-format from here gets used for all versions.
     packages.add('clang-3.5')
+    packages.add('clang-format-3.5')
     packages.add('arm-eabi-gcc')
     for platform in platforms:
       if platform.architecture() == 'arm':
