@@ -377,86 +377,6 @@ class Processor(object):
                   ' '.join(not_found))
       exit(1)
 
-class CRIOProcessor(Processor):
-  """A Processor subclass for building cRIO code."""
-
-  class Platform(Processor.Platform):
-    def __init__(self, debug, wind_base):
-      super(CRIOProcessor.Platform, self).__init__()
-
-      self.__debug = debug
-      self.__wind_base = wind_base
-
-    def __repr__(self):
-      return 'CRIOProcessor.Platform(debug=%s)' % self.debug()
-    def __str__(self):
-      return 'crio%s' % ('-debug' if self.debug() else '')
-
-    def outname(self):
-      return 'crio-debug' if self.debug() else 'crio'
-    def os(self):
-      return 'vxworks'
-    def gyp_platform(self):
-      return 'crio'
-    def architecture(self):
-      return 'ppc'
-    def compiler(self):
-      return 'gcc'
-    def sanitizer(self):
-      return 'none'
-    def debug(self):
-      return self.__debug
-    def wind_base(self):
-      return self.__wind_base
-
-    # TODO(brians): test this
-    def deploy(self, dry_run):
-      self.do_deploy(dry_run,
-                     ('ncftpput', get_ip('robot'), '/',
-                      os.path.join(self.outdir(), 'lib',
-                                   'FRC_UserProgram.out')))
-
-    def build_env(self):
-      return {'WIND_BASE': self.wind_base()}
-
-  def __init__(self):
-    super(CRIOProcessor, self).__init__()
-
-    if 'WIND_BASE' in os.environ:
-      self.__wind_base = os.environ['WIND_BASE']
-    else:
-      self.__wind_base = '/usr/local/powerpc-wrs-vxworks/wind_base'
-
-  def parse_platforms(self, platforms_string):
-    if platforms_string is None or platforms_string == 'crio':
-      return (CRIOProcessor.Platform(False, self.wind_base()),)
-    elif string == 'crio-debug' or string == 'debug':
-      return (CRIOProcessor.Platform(True, self.wind_base()),)
-    else:
-      raise Processor.UnknownPlatform(
-          '"%s" not recognized as a cRIO platform.' % platforms_string)
-
-  def wind_base(self):
-    return self.__wind_base
-
-  def extra_gyp_flags(self):
-    return ('-DWIND_BASE=%s' % self.wind_base(),)
-
-  def modify_ninja_file(self, ninja_file):
-    subprocess.check_call(
-        ('sed', '-i',
-         's/nm -gD/nm/g', ninja_file),
-        stdin=open(os.devnull, 'r'))
-
-  def download_externals(self, _):
-    call_download_externals('crio')
-
-  def check_installed(self, platforms, is_deploy):
-    packages = ('powerpc-wrs-vxworks', 'tcl')
-    if is_deploy:
-      packages += ('ncftp',)
-    self.do_check_installed(packages)
-
 class PrimeProcessor(Processor):
   """A Processor subclass for building prime code."""
 
@@ -511,7 +431,7 @@ class PrimeProcessor(Processor):
     def deploy(self, dry_run):
       # Downloads code to the prime in a way that avoids clashing too badly with
       # starter (like the naive download everything one at a time).
-      if self.compiler() == 'gcc_frc':
+      if self.compiler().endswith('_frc'):
         device = 'roboRIO'
       else:
         device = 'prime'
@@ -550,11 +470,11 @@ class PrimeProcessor(Processor):
              ''.join(mv_cmd).format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
     def build_env(self):
-      OTHER_SYSROOT = '/opt/clang-3.5/'
+      OTHER_SYSROOT = '/usr/lib/llvm-3.5'
       SYMBOLIZER_PATH = OTHER_SYSROOT + 'bin/llvm-symbolizer'
       r = {}
       if self.compiler() == 'clang' or self.compiler() == 'gcc_4.8':
-        r['LD_LIBRARY_PATH'] = OTHER_SYSROOT + 'lib64'
+        r['LD_LIBRARY_PATH'] = OTHER_SYSROOT + 'lib'
       if self.sanitizer() == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
         r['ASAN_OPTIONS'] = \
@@ -570,7 +490,7 @@ class PrimeProcessor(Processor):
       r['CCACHE_DIR'] = os.path.abspath(os.path.join(aos_path(), '..', 'output',
                                                      'ccache_dir'))
       r['CCACHE_HASHDIR'] = 'yes'
-      if self.compiler() == 'clang':
+      if self.compiler().startswith('clang'):
         # clang doesn't like being run directly on the preprocessed files.
         r['CCACHE_CPP2'] = 'yes'
       # Without this, ccache slows down because of the generated header files.
@@ -586,7 +506,7 @@ class PrimeProcessor(Processor):
       return r
 
   ARCHITECTURES = ('arm', 'amd64')
-  COMPILERS = ('clang', 'gcc', 'gcc_4.8', 'gcc_frc')
+  COMPILERS = ('clang', 'gcc', 'gcc_frc')
   SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
   SANITIZER_TEST_WARNINGS = {
       'memory': (True,
@@ -603,14 +523,14 @@ class PrimeProcessor(Processor):
     for architecture in PrimeProcessor.ARCHITECTURES:
       for compiler in PrimeProcessor.COMPILERS:
         for debug in [True, False]:
-          if ((architecture == 'arm' and compiler == 'gcc_4.8') or
-              (architecture == 'amd64' and compiler == 'gcc_frc')):
+          if ((architecture == 'arm' and not compiler.endswith('_frc')) or
+              (architecture == 'amd64' and compiler.endswith('_frc'))):
             # We don't have a compiler to use here.
             continue
           platforms.append(
               self.Platform(architecture, compiler, debug, 'none'))
     for sanitizer in PrimeProcessor.SANITIZERS:
-      for compiler in ('gcc_4.8', 'clang'):
+      for compiler in ('clang',):
         if compiler == 'gcc_4.8' and (sanitizer == 'undefined' or
                                       sanitizer == 'integer' or
                                       sanitizer == 'memory'):
@@ -630,12 +550,8 @@ class PrimeProcessor(Processor):
         if warning[0]:
           default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
-      if get_ip_base() == '10.99.71':
-        compiler = 'gcc_frc'
-      else:
-        compiler = 'clang'
       default_platforms = self.select_platforms(architecture='arm',
-                                                compiler=compiler,
+                                                compiler='gcc_frc',
                                                 debug=False)
     else:
       default_platforms = self.select_platforms(debug=False)
@@ -733,7 +649,8 @@ class PrimeProcessor(Processor):
       if platform.architecture() == 'arm':
         packages.add('gcc-4.7-arm-linux-gnueabihf')
         packages.add('g++-4.7-arm-linux-gnueabihf')
-      if platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8':
+      if (platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8' or
+          platform.compiler() == 'clang_frc'):
         packages.add('clang-3.5')
       if platform.compiler() == 'gcc_4.8':
         packages.add('libcloog-isl3:amd64')
@@ -848,7 +765,7 @@ Examples of specifying targets:
     if len(r) > 1:
       r[-1] = 'and ' + r[-1]
     return ', '.join(r)
-  
+
   class Arguments(object):
     def __init__(self):
       self.jobs = os.sysconf('SC_NPROCESSORS_ONLN') + 2
@@ -891,9 +808,7 @@ Examples of specifying targets:
     else:
       args.platform = arg
 
-  if args.processor == 'crio':
-    processor = CRIOProcessor()
-  elif args.processor == 'prime':
+  if args.processor == 'prime':
     processor = PrimeProcessor(args.action_name == 'tests',
                                args.action_name == 'deploy')
   elif args.processor == 'bot3_prime':
@@ -1019,7 +934,7 @@ Examples of specifying targets:
              '-DSANITIZER=%s' % platform.sanitizer(),
              '-DEXTERNALS_EXTRA=%s' %
              ('-fPIE' if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
-              else ('_frc' if platform.compiler() == 'gcc_frc' else ''))) +
+              else ('_frc' if platform.compiler().endswith('_frc') else ''))) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""

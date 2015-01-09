@@ -2,8 +2,6 @@
 /ctemplate-129/
 /eigen-3.2.1.tar.bz2
 /eigen-3.2.1/
-/gccdist.zip
-/gccdist/
 /gtest-1.6.0-p2/
 /gtest-1.6.0.zip
 /gyp-1738/
@@ -13,12 +11,10 @@
 /ninja-v1.4.0/
 /gflags-2.0.tar.gz
 /gflags-2.0/
-/compiler-rt-RELEASE_32_final/
 /libevent-2.0.21.tar.gz
 /libevent-2.0.21/
 /libcdd-094g.tar.gz
 /libcdd-094g/
 /gmp-5.1.3.tar.lz
-/stm32flash-8399fbe1baf2b7d097746786458021d92895d71b/
 /gperftools-2.3.tar.gz
 /libunwind-1.1.tar.gz

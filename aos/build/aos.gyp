@@ -1,9 +1,4 @@
 # This file has all of the aos targets.
-# For the cRIO, shared_library means to build a .out file, NOT a shared library.
-#   This means that depending on shared libraries doesn't work very well.
-# Shared libraries don't seem to be supported by the powerpc-wrs-vxworks
-# tools and gyp doesn't like a static_library that depends only on
-# other static_librarys.
 {
   'targets': [
     # A target for things used by the logging implementation (except die) to

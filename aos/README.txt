@@ -10,9 +10,8 @@ config/ has some configuration files
 	the .config files are for building linux kernels
 
 linux/ has code that only runs on linux systems
-crio/ has code that only runs on the crio
 
-common/ is where stuff that runs on both the crio and linux is
+common/ is where stuff that runs on all platforms is
 common/input/ is where the framework code for reading stuff into the queues system is
 common/output/ is where the framework for writing things out of the queues system is
 common/messages is where the c++ wrappers for "queues" are

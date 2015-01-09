@@ -1,9 +1,9 @@
-see ../README.txt for stuff affecting crio and linux code
+see ../README.txt for stuff affecting all code
 
 The folder is called linux_code because it mainly deals with code that uses the queue system, which only works under GNU/Linux for a variety of reasons, some fundamental (futexes) and some because nobody bothers to fix them.
 The layout is designed with multiple linux boxes in mind.
 
-The code for the linux box that talks the cRIO etc is in ../prime/.
+The code for the linux box that sends motor outputs etc is in ../prime/.
 
 [NOTES]
 Any code should call aos::Init() (or aos::InitNRT() for processes that don't need to be realtime) before making any calls to any of the aos functions.

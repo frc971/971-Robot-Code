@@ -22,32 +22,20 @@
     ],
   },
   'conditions': [
-    ['PLATFORM=="crio"', {
-        'make_global_settings': [
-          ['CC', '<!(readlink -f <(AOS)/build/crio_cc)'],
-          ['CXX', '<!(readlink -f <(AOS)/build/crio_cxx)'],
-        ],
-      }
-    ], ['PLATFORM=="linux-arm-gcc_frc"', {
+    ['PLATFORM=="linux-arm-gcc_frc"', {
         'make_global_settings': [
           ['CC', '<(ccache)<!(which arm-frc-linux-gnueabi-gcc-4.9)'],
           ['CXX', '<(ccache)<!(which arm-frc-linux-gnueabi-g++-4.9)'],
         ],
       },
-    ], ['PLATFORM=="linux-arm-gcc"', {
-        'make_global_settings': [
-          ['CC', '<(ccache)<!(which arm-linux-gnueabihf-gcc-4.7)'],
-          ['CXX', '<(ccache)<!(which arm-linux-gnueabihf-g++-4.7)'],
-        ],
-      },
-    ], ['PLATFORM=="linux-arm-clang"', {
+    ], ['PLATFORM=="linux-arm-clang_frc"', {
         'variables': {
           'arm-clang-symlinks': '<!(realpath -s <(AOS)/build/arm-clang-symlinks)',
           'arm-clang-sysroot': '<(arm-clang-symlinks)/sysroot',
 # Flags that should be passed to all compile/link/etc commands.
           'platflags': [
-            '-target', 'armv7a-linux-gnueabihf',
-            '-mfloat-abi=hard',
+            '-target', 'armv7a-frc-linux-gnueabi',
+            '-mfloat-abi=softfp',
             '--sysroot=<(arm-clang-sysroot)',
 
             # TODO(brians): See if it will run with this enabled.
@@ -63,18 +51,21 @@
             '<@(platflags)',
           ],
           'cflags_cc': [
-            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2',
-            '-isystem', '<(arm-clang-sysroot)/usr/include/c++/4.7.2/arm-linux-gnueabihf',
+            '-isystem', '<(arm-clang-sysroot)/include/c++/4.9.1',
+            '-isystem', '<(arm-clang-sysroot)/include/c++/4.9.1/arm-frc-linux-gnueabi',
           ],
           'ldflags': [
             '<@(platflags)',
+            '-L', '/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.1',
+            #'-L', '<(arm-clang-sysroot)/other_lib/',
+            #'-nostartfiles',
           ],
         },
       },
     ], ['PLATFORM=="linux-amd64-clang"', {
         'make_global_settings': [
-          ['CC', '<(ccache)/opt/clang-3.5/bin/clang'],
-          ['CXX', '<(ccache)/opt/clang-3.5/bin/clang++'],
+          ['CC', '<(ccache)<!(which clang)'],
+          ['CXX', '<(ccache)<!(which clang++)'],
         ],
       },
     ], ['PLATFORM=="linux-amd64-gcc"', {
@@ -153,12 +144,20 @@
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
       'AOS_COMPILER_<!(echo <(FULL_COMPILER) | sed \'s/\./_/g\')',
+      '_FILE_OFFSET_BITS=64',
     ],
     'ldflags': [
       '-pipe',
+      '-pthread',
+    ],
+    'libraries': [
+      '-lm',
+      '-lrt',
     ],
     'cflags': [
       '-pipe',
+
+      '-pthread',
 
       '-Wall',
       '-Wextra',
@@ -177,6 +176,9 @@
     ],
     'cflags_c': [
       '-std=gnu99',
+    ],
+    'cflags_cc': [
+      '-std=gnu++11',
     ],
     'include_dirs': [
       '<(DEPTH)',
@@ -217,15 +219,7 @@
           'ldflags': [
             '-O3',
           ],
-          'conditions': [['PLATFORM=="crio"', {
-# Copied from stuff that I think started with the supplied Makefiles.
-              'cflags': [
-                '-fstrength-reduce',
-                '-fno-builtin',
-                '-fno-strict-aliasing',
-              ],
-            }],
-            ['ARCHITECTURE=="amd64"', {
+          'conditions': [['ARCHITECTURE=="amd64"', {
               'cflags': [
                 '-fstack-protector-all',
               ],
@@ -244,17 +238,7 @@
           ],
         }
       ],
-      ['ARCHITECTURE=="arm" and FULL_COMPILER!="gcc_frc"', {
-        'cflags': [
-          '-mcpu=cortex-a8',
-          '-mfpu=neon',
-        ],
-        'ldflags': [
-          '-mcpu=cortex-a8',
-          '-mfpu=neon',
-        ],
-      }],
-      ['ARCHITECTURE=="arm" and FULL_COMPILER=="gcc_frc"', {
+      ['ARCHITECTURE=="arm"', {
         'cflags': [
           '-mcpu=cortex-a9',
           '-mfpu=neon',
@@ -266,95 +250,31 @@
           '-mfloat-abi=softfp',
         ],
       }],
-      ['PLATFORM=="crio"', {
-          'target_conditions': [
-            ['_type=="shared_library"', {
-                'ldflags': [
-                  '-r',
-                  '-nostdlib',
-                  '-Wl,-X',
-                ],
-              }
-            ],
-          ],
-          'ldflags': [
-            '-mcpu=603e',
-            '-mstrict-align',
-            '-mlongcall',
-          ],
-          'cflags': [
-            # The Freescale MPC5200B (cRIO-FRC) and MPC5125 (cRIO-FRC II) both
-            # have MPC603e cores according to Freescale docs.
-            '-mcpu=603e',
-            '-mstrict-align',
-            '-mlongcall',
-            '-isystem', '<(aos_abs)/../output/downloaded/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/lib/gcc/powerpc-wrs-vxworks/3.4.4/include/',
-            '-isystem', '<(aos_abs)/../output/downloaded/gccdist/WindRiver/vxworks-6.3/target/h/',
-            '-isystem', '<(aos_abs)/../output/downloaded/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/include/c++/3.4.4/',
-            '-isystem', '<(aos_abs)/../output/downloaded/gccdist/WindRiver/gnu/3.4.4-vxworks-6.3/x86-win32/include/c++/3.4.4/powerpc-wrs-vxworks/',
-            '-isystem', '<(WIND_BASE)/target/h',
-            '-isystem', '<(WIND_BASE)/target/h/wrn/coreip',
-          ],
-          'cflags_cc': [
-            '-std=gnu++0x',
-          ],
-          'defines': [
-            'CPU=PPC603',
-            'TOOL_FAMILY=gnu',
-            'TOOL=gnu',
-            '_WRS_KERNEL',
-            '__PPC__',
-# Prevent the vxworks system headers from being dumb and #defining min and max.
-            'NOMINMAX',
-          ],
-        }, { # 'PLATFORM!="crio"'
-          'target_conditions': [
+      ['COMPILER=="gcc"', {
+        'cflags': [
+          '-Wunused-local-typedefs',
+        ],
+        'defines': [
+          '__has_feature(n)=0'
+        ],
+      }], ['COMPILER=="clang"', {
+        'cflags': [
+          '-fcolor-diagnostics',
+          '-fmessage-length=80',
+          '-fmacro-backtrace-limit=0',
+        ],
+        'defines': [
+          # This tells clang's optimizer the same thing.
+          '__builtin_assume_aligned(p, a)=({ const typeof(p) my_p_ = (p); ((((uintptr_t)my_p_ % (a)) == 0u) ? my_p_ : (__builtin_unreachable(), (my_p_))); })',
+        ],
+      }],
+    ],
+    'target_conditions': [
 # Default to putting outputs into rsync_dir.
-            ['no_rsync==0 and _type!="static_library"', {
-                'product_dir': '<(rsync_dir)',
-              },
-            ],
-          ],
-          'ldflags': [
-            '-pthread',
-          ],
-          'cflags': [
-            '-pthread',
-          ],
-          'cflags_cc': [
-            '-std=gnu++11',
-          ],
-          'defines': [
-            '_FILE_OFFSET_BITS=64',
-          ],
-          'libraries': [
-            '-lm',
-            '-lrt',
-          ],
-          'conditions': [
-            ['COMPILER=="gcc"', {
-                'cflags': [
-                  '-Wunused-local-typedefs',
-                ],
-                'defines': [
-                  '__has_feature(n)=0'
-                ],
-              },
-            ], ['COMPILER=="clang"', {
-                'cflags': [
-                  '-fcolor-diagnostics',
-                  '-fmessage-length=80',
-                  '-fmacro-backtrace-limit=0',
-                ],
-                'defines': [
-                  # This tells clang's optimizer the same thing.
-                  '__builtin_assume_aligned(p, a)=({ const typeof(p) my_p_ = (p); ((((uintptr_t)my_p_ % (a)) == 0u) ? my_p_ : (__builtin_unreachable(), (my_p_))); })',
-                ],
-              },
-            ],
-          ],
-        }
-      ]
+      ['no_rsync==0 and _type!="static_library"', {
+          'product_dir': '<(rsync_dir)',
+        },
+      ],
     ],
   },
 }

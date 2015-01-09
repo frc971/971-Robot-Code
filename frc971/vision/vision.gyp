@@ -1,25 +1,23 @@
 {
   'targets': [
     {
-      'target_name': 'starter_exe',
+      'target_name': 'CameraServer',
       'type': 'executable',
       'sources': [
-        'starter.cc',
+        'CameraServer.cc',
       ],
       'dependencies': [
+        '<(AOS)/linux_code/output/output.gyp:http_server',
+        '../frc971.gyp:constants',
         '<(AOS)/linux_code/linux_code.gyp:init',
-        '<(EXTERNALS):libevent',
         '<(AOS)/build/aos.gyp:logging',
-        '<(AOS)/common/common.gyp:once',
-        '<(AOS)/common/common.gyp:time',
-        '<(AOS)/common/libc/libc.gyp:aos_strsignal',
-        '<(AOS)/common/util/util.gyp:run_command',
+        '<(AOS)/linux_code/linux_code.gyp:configuration',
       ],
       'copies': [
         {
           'destination': '<(rsync_dir)',
           'files': [
-            'starter.sh',
+            'robot.html.tpl',
           ],
         },
       ],

@@ -1,6 +1,0 @@
-sprintf
-ErrorBase/Error not thread safe (aka CANJaguar)
-all of the sync issues last year
-Module not thread safe
-
-compressor turned on as soon as power was turned on (2 times in a row)

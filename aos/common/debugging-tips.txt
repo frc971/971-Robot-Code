@@ -12,8 +12,7 @@ All of the binaries get put in the same place. That is
 [Startup]
 Low level startup errors often end up in
   /tmp/aos_fatal_error.* under linux. Also helpful are the /tmp/starter*_std*
-  files (if the standard start scripts are being used) and
-  aos/crio/bin/netconsole.sh for reading cRIO stdout and stderr.
+  files (if the standard start scripts are being used).
     If lots of the /tmp/starter_*std* files (with different numbers) are being
     created, that means that starter_exe is dying constantly.
 

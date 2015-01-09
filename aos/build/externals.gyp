@@ -46,54 +46,6 @@
       },
     },
     {
-      'target_name': 'WPILib',
-      'type': 'static_library',
-      'sources': [
-        '<!@(find <(AOS)/externals/WPILib/WPILib/ -name *.cpp)',
-      ],
-      'cflags!': [
-        '-Werror',
-        '-ggdb3',
-        '-O0'
-      ],
-      'cflags': [
-        '-ggdb1',
-        '-O3'
-      ],
-      'include_dirs': [
-        '<(AOS)/externals/WPILib',
-        '<(AOS)/externals/WPILib/WPILib',
-      ],
-      'direct_dependent_settings': {
-        'cflags': [
-          '-isystem', '<(AOS)/externals/WPILib',
-          '-isystem', '<(AOS)/externals/WPILib/WPILib',
-        ],
-      },
-    },
-    {
-      'target_name': 'WPILib-NetworkRobotValues',
-      'type': 'static_library',
-      'sources': [
-        '<(AOS)/externals/WPILib/WPILib/NetworkRobot/NetworkRobotValues.cpp'
-      ],
-      'include_dirs': [
-        '<(AOS)/externals/WPILib',
-      ],
-      'defines': [
-        # Clang doesn't like having register in the hton* macros.
-        'register=',
-      ],
-      'direct_dependent_settings': {
-        'include_dirs': [
-          '<(AOS)/externals/WPILib',
-        ],
-        'defines': [
-          'register=',
-        ],
-      },
-    },
-    {
       'target_name': 'opencv',
       'type': 'none',
       'link_settings': {
@@ -205,26 +157,5 @@
         'include_dirs': ['<(compiled_abs)/'],
       },
     },
-    {
-      'target_name': 'stm32flash',
-      'type': 'static_library',
-      'sources': [
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/init.c',
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/parsers/hex.c',
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/serial_common.c',
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/serial_platform.c',
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/utils.c',
-        '<(externals)/stm32flash-<(stm32flash_commit)/stm32flash/stm32.c',
-      ],
-      'cflags': [
-        '-Wno-error',
-      ],
-      'direct_dependent_settings': {
-        'include_dirs': ['<(externals_abs)/stm32flash-<(stm32flash_commit)'],
-      },
-    },
-  ],
-  'includes': [
-    'libgcc-additions/libgcc-additions.gypi',
   ],
 }

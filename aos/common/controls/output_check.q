@@ -7,7 +7,7 @@ message OutputCheck {
 	double pulse_length;
 };
 
-// Each message here represents a value that was sent to the cRIO.
+// Each message here represents a value that was sent out.
 // The sent timestamp of the message is when the value was sent.
 queue OutputCheck output_check_sent;
 

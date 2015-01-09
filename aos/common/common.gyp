@@ -118,25 +118,12 @@
       'sources': [
         'queue.cc',
       ],
-      'conditions': [
-        ['PLATFORM=="crio"', {
-          'dependencies': [
-            '<(EXTERNALS):WPILib',
-          ],
-        },
-        {
-          'dependencies': [
-            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
-          ],
-          'export_dependent_settings': [
-            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
-          ],
-        }]
-      ],
       'dependencies': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
         'time',
       ],
       'export_dependent_settings': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
         'time',
       ],
     },
@@ -253,25 +240,15 @@
     {
       'target_name': 'mutex',
       'type': 'static_library',
-      'conditions': [
-        ['PLATFORM=="crio"', {
-          'sources': [
-            '<(AOS)/crio/shared_libs/mutex.cpp',
-          ],
-        }, {
-          'sources': [
-            '<(AOS)/linux_code/ipc_lib/mutex.cpp',
-          ],
-          'dependencies': [
-            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
-          ],
-          'export_dependent_settings': [
-            '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
-          ],
-        }],
+      'sources': [
+        '<(AOS)/linux_code/ipc_lib/mutex.cpp',
       ],
       'dependencies': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
         '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
       ],
     },
     {
