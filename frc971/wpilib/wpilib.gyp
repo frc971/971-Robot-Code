@@ -9,7 +9,7 @@
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/build/aos.gyp:logging',
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/controls/controls.gyp:sensor_generation',
@@ -35,11 +35,11 @@
         'buffered_pcm.cc',
       ],
       'dependencies': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
         '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
       ],
     },
     {
@@ -49,11 +49,11 @@
         'gyro_interface.cc',
       ],
       'dependencies': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
         '<(AOS)/build/aos.gyp:logging',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
       ],
     },
     {
@@ -103,7 +103,7 @@
         'joystick_sender.cc',
       ],
       'dependencies': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
         '<(AOS)/common/messages/messages.gyp:robot_state',
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/common/network/network.gyp:team_number',
@@ -117,10 +117,10 @@
         #'hall_effect.h',
       ],
       'dependencies': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):WPILib_roboRIO',
+        '<(EXTERNALS):WPILib',
       ],
     },
   ],
