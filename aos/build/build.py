@@ -651,7 +651,6 @@ class PrimeProcessor(Processor):
     packages.add('ruby')
     packages.add('clang-3.5')
     packages.add('clang-format-3.5')
-    packages.add('arm-eabi-gcc')
     for platform in platforms:
       if platform.architecture() == 'arm':
         packages.add('gcc-4.7-arm-linux-gnueabihf')
