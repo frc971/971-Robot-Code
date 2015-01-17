@@ -16,17 +16,40 @@
     'libevent_version': '2.0.21',
     'libcdd_version': '094g',
     'stm32flash_commit': '8399fbe1baf2b7d097746786458021d92895d71b',
+
+    'allwpilib': '<(AOS)/externals/allwpilib',
   },
   'targets': [
     {
-      'target_name': 'WPILib_roboRIO',
+      'target_name': 'WPILib',
       'type': 'static_library',
+      'variables': {
+        'header_dirs': [
+          '<(allwpilib)/wpilibc/wpilibC++/include',
+          '<(allwpilib)/wpilibc/wpilibC++Devices/include',
+          '<(allwpilib)/hal/include',
+          '<(allwpilib)/hal/lib/Athena/FRC_FPGA_ChipObject',
+        ],
+      },
       'include_dirs': [
-        '/opt/wpilib_4.8.3/include',
+        '<@(header_dirs)'
+      ],
+      'cflags': [
+        '-Wno-error=unused-parameter',
+        '-Wno-error=switch-enum',
+      ],
+      'sources': [
+        '<!@(ls <(allwpilib)/wpilibc/wpilibC++/src/*.cpp)',
+        '<!@(ls <(allwpilib)/wpilibc/wpilibC++Devices/src/*.cpp)',
+        '<!@(ls <(allwpilib)/wpilibc/wpilibC++Devices/src/Internal/*.cpp)',
+        '<!@(ls <(allwpilib)/hal/lib/Athena/*.cpp)',
+        '<!@(ls <(allwpilib)/hal/lib/Athena/ctre/*.cpp)',
       ],
       'link_settings': {
+        'library_dirs': [
+          '<(allwpilib)/ni-libraries',
+        ],
         'libraries': [
-          '-L/opt/wpilib_4.8.3/lib/',
           '-lpthread',
           '-lFRC_NetworkCommunication',
           '-lRoboRIO_FRC_ChipObject',
@@ -35,13 +58,11 @@
           '-lNiRioSrv',
           '-lspi',
           '-li2c',
-          '/opt/wpilib_4.8.3/lib/libwpilib_nonshared.a',
-          '/opt/wpilib_4.8.3/lib/libHALAthena.a',
         ],
       },
       'direct_dependent_settings': {
-        'cflags': [
-          '-isystem', '/opt/wpilib_4.8.3/include/',
+        'include_dirs': [
+          '<@(header_dirs)'
         ],
       },
     },
