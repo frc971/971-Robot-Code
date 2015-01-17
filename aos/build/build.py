@@ -652,9 +652,6 @@ class PrimeProcessor(Processor):
     packages.add('clang-3.5')
     packages.add('clang-format-3.5')
     for platform in platforms:
-      if platform.architecture() == 'arm':
-        packages.add('gcc-4.7-arm-linux-gnueabihf')
-        packages.add('g++-4.7-arm-linux-gnueabihf')
       if (platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8' or
           platform.compiler() == 'clang_frc'):
         packages.add('clang-3.5')
@@ -665,7 +662,7 @@ class PrimeProcessor(Processor):
       if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
         packages.add('gcc-4.7')
         packages.add('g++-4.7')
-      elif platform.compiler() == 'gcc_frc':
+      elif platform.compiler() == 'gcc_frc' || platform.compiler() == 'clang_frc':
         packages.add('gcc-4.9-arm-frc-linux-gnueabi')
         packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
