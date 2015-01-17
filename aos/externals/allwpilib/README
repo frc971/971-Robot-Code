@@ -1,0 +1,3 @@
+This is our version of WPILib. We copy the wpilibc/ and hal/ folders from
+our customized version periodically. The commit messages all include the commit
+which is being copied in and the corresponding FPGA image version.
