@@ -170,23 +170,6 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
   VerifyNearGoal();
 }
 
-// Tests surviving bad positions.
-TEST_F(DrivetrainTest, SurvivesBadPosition) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
-      .left_goal(-1.0)
-      .right_goal(1.0).Send();
-  for (int i = 0; i < 500; ++i) {
-    if (i > 20 && i < 200) {
-    } else {
-      drivetrain_motor_plant_.SendPositionMessage();
-    }
-    drivetrain_motor_.Iterate();
-    drivetrain_motor_plant_.Simulate();
-    SimulateTimestep(true);
-  }
-  VerifyNearGoal();
-}
-
 ::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
                                       double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;
