@@ -18,6 +18,7 @@
     'stm32flash_commit': '8399fbe1baf2b7d097746786458021d92895d71b',
 
     'allwpilib': '<(AOS)/externals/allwpilib',
+    'forwpilib': '<(AOS)/externals/forwpilib',
   },
   'targets': [
     {
@@ -25,10 +26,12 @@
       'type': 'static_library',
       'variables': {
         'header_dirs': [
+          '<(forwpilib)',
           '<(allwpilib)/wpilibc/wpilibC++/include',
           '<(allwpilib)/wpilibc/wpilibC++Devices/include',
           '<(allwpilib)/hal/include',
           '<(allwpilib)/hal/lib/Athena/FRC_FPGA_ChipObject',
+          '<(allwpilib)/hal/lib/Athena',
         ],
       },
       'include_dirs': [
@@ -44,6 +47,7 @@
         '<!@(ls <(allwpilib)/wpilibc/wpilibC++Devices/src/Internal/*.cpp)',
         '<!@(ls <(allwpilib)/hal/lib/Athena/*.cpp)',
         '<!@(ls <(allwpilib)/hal/lib/Athena/ctre/*.cpp)',
+        '<(forwpilib)/dma.cc',
       ],
       'link_settings': {
         'library_dirs': [
