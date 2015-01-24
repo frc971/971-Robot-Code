@@ -66,7 +66,13 @@ DriverStation::DriverStation()
 
 	AddToSingletonList();
 
-	if (!m_task.Start((int32_t)this))
+  // They need to be identical or it could lead to runtime stack corruption if
+  // the caller and callee push and pop different amounts of data on the stack.
+  static_assert(sizeof(this) == sizeof(uint32_t),
+                "We are passing a pointer through a uint32_t");
+  static_assert(alignof(this) <= alignof(uint32_t),
+                "We are passing a pointer through a uint32_t");
+	if (!m_task.Start((uint32_t)this))
 	{
 		wpi_setWPIError(DriverStationTaskError);
 	}
@@ -84,6 +90,8 @@ DriverStation::~DriverStation()
 	deleteMutex(m_waitForDataMutex);
 }
 
+// XXX: This assumes that the calling convention treats pointers and uint32_ts
+// identical, which is not necessarily true.
 void DriverStation::InitTask(DriverStation *ds)
 {
 	ds->Run();

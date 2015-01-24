@@ -91,6 +91,7 @@ float CANTalon::Get()
       m_impl->GetSensorPosition(value);
       return value;
     case kPercentVbus:
+    case kFollower:
     default:
       m_impl->GetAppliedThrottle(value);
       return (float)value / 1023.0;
@@ -143,7 +144,9 @@ void CANTalon::Set(float value, uint8_t syncGroup)
       case CANSpeedController::kPosition:
         status = m_impl->SetDemand(value);
         break;
+      // XXX: What about CANSpeedController::kCurrent?
       default:
+        status = CTR_InvalidParamValue;
         break;
     }
     if (status != CTR_OKAY) {
