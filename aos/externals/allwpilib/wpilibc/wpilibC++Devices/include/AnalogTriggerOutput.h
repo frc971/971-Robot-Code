@@ -42,7 +42,7 @@ class AnalogTriggerOutput : public DigitalSource
 public:
 
 	virtual ~AnalogTriggerOutput();
-	bool Get();
+	virtual bool Get();
 
 	// DigitalSource interface
 	virtual uint32_t GetChannelForRouting();

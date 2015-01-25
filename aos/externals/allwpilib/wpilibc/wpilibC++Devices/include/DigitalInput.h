@@ -25,7 +25,7 @@ class DigitalInput : public DigitalSource
 public:
 	explicit DigitalInput(uint32_t channel);
 	virtual ~DigitalInput();
-	bool Get();
+	virtual bool Get();
 	uint32_t GetChannel();
 
 	// Digital Source Interface
