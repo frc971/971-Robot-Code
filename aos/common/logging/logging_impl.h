@@ -281,8 +281,8 @@ struct Context {
   LogImplementation *implementation;
 
   // A name representing this task/(process and thread).
-  // strlen(name.c_str()) must be <= sizeof(LogMessage::name).
-  ::std::string name;
+  char name[sizeof(LogMessage::name)];
+  size_t name_size;
 
   // What to assign LogMessage::source to in this task/thread.
   pid_t source;
