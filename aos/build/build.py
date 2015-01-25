@@ -662,7 +662,7 @@ class PrimeProcessor(Processor):
       if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
         packages.add('gcc-4.7')
         packages.add('g++-4.7')
-      elif platform.compiler() == 'gcc_frc' || platform.compiler() == 'clang_frc':
+      elif platform.compiler() == 'gcc_frc' or platform.compiler() == 'clang_frc':
         packages.add('gcc-4.9-arm-frc-linux-gnueabi')
         packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
