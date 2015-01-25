@@ -80,8 +80,8 @@ void FillInMessageBase(log_level level, LogMessage *message) {
 
   message->level = level;
   message->source = context->source;
-  memcpy(message->name, context->name.c_str(), context->name.size());
-  message->name_length = context->name.size();
+  memcpy(message->name, context->name, context->name_size);
+  message->name_length = context->name_size;
 
   time::Time now = time::Time::Now();
   message->seconds = now.sec();

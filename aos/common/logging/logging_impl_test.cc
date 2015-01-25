@@ -63,13 +63,13 @@ class LoggingTest : public ::testing::Test {
           static_cast<uint32_t>(log_implementation->message().source),
           static_cast<uint32_t>(context->source));
     }
-    if (log_implementation->message().name_length != context->name.size() ||
-        memcmp(log_implementation->message().name, context->name.c_str(),
-               context->name.size()) !=
+    if (log_implementation->message().name_length != context->name_size ||
+        memcmp(log_implementation->message().name, context->name,
+               context->name_size) !=
             0) {
       LOG(FATAL, "got a message from %.*s, but we're %s\n",
           static_cast<int>(log_implementation->message().name_length),
-          log_implementation->message().name, context->name.c_str());
+          log_implementation->message().name, context->name);
     }
     if (strstr(log_implementation->message().message, message.c_str())
         == NULL) {

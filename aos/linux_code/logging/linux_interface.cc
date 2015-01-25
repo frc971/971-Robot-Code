@@ -54,11 +54,13 @@ AOS_THREAD_LOCAL bool delete_current_context(false);
 // Used in aos/linux_code/init.cc when a thread's name is changed.
 void ReloadThreadName() {
   if (my_context.created()) {
-    my_context->name = GetMyName();
-    if (my_context->name.size() + 1 > sizeof(LogMessage::name)) {
+    ::std::string my_name = GetMyName();
+    if (my_name.size() + 1 > sizeof(Context::name)) {
       Die("logging: process/thread name '%s' is too long\n",
-          my_context->name.c_str());
+          my_name.c_str());
     }
+    strcpy(my_context->name, my_name.c_str());
+    my_context->name_size = my_name.size();
   }
 }
 
@@ -69,7 +71,6 @@ Context *Context::Get() {
   }
   if (__builtin_expect(!my_context.created(), false)) {
     my_context.Create();
-    my_context->name = GetMyName();
     ReloadThreadName();
     my_context->source = getpid();
   }
