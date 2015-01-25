@@ -22,7 +22,7 @@ queue_group Claw {
   };
 
   message Position {
-    PotAndIndexPair joint;
+    PotAndIndexPosition joint;
   };
 
   message Output {
