@@ -1,0 +1,155 @@
+#ifndef FRC971_WPILIB_DMA_EDGE_COUNTING_H_
+#define FRC971_WPILIB_DMA_EDGE_COUNTING_H_
+
+#include <memory>
+#include <vector>
+
+#include "aos/common/macros.h"
+
+#include "frc971/wpilib/hall_effect.h"
+
+#include "DigitalSource.h"
+#include "Encoder.h"
+#include "AnalogInput.h"
+#include "Utility.h"
+#include "dma.h"
+
+namespace frc971 {
+namespace wpilib {
+
+// Generic interface for classes that do something with DMA samples and also
+// poll current sensor values.
+class DMASampleHandlerInterface {
+ public:
+  virtual ~DMASampleHandlerInterface() {}
+
+  // Updates values based on a new DMA sample.
+  virtual void UpdateFromSample(const DMASample &sample) = 0;
+
+  // Polls the current values and saves them for later reference.
+  virtual void UpdatePolledValue() = 0;
+
+  // Fills in the "polled" values from sample.
+  // This is only called when a DMA event happens right as we're polling values.
+  virtual void PollFromSample(const DMASample &sample) = 0;
+
+  // Adds readings and triggers appropriate to this object to dma.
+  virtual void AddToDMA(DMA *dma) = 0;
+};
+
+// Counts edges on a sensor using DMA data and latches encoder values
+// corresponding to those edges.
+class DMAEdgeCounter : public DMASampleHandlerInterface {
+ public:
+  DMAEdgeCounter(Encoder *encoder, DigitalSource *input)
+      : encoder_(encoder), input_(input), inverted_(false) {}
+  DMAEdgeCounter(Encoder *encoder, HallEffect *input)
+      : encoder_(encoder), input_(input), inverted_(true) {}
+
+  virtual void UpdateFromSample(const DMASample &sample) override;
+  virtual void UpdatePolledValue() override {
+    polled_value_ = input_->Get();
+    polled_encoder_ = encoder_->GetRaw();
+  }
+  virtual void PollFromSample(const DMASample &sample) override {
+    polled_value_ = ExtractValue(sample);
+    polled_encoder_ = sample.GetRaw(encoder_);
+  }
+  virtual void AddToDMA(DMA *dma) override {
+    dma->Add(encoder_);
+    dma->Add(input_);
+  }
+
+  int positive_count() { return pos_edge_count_; }
+  int negative_count() { return neg_edge_count_; }
+  int last_positive_encoder_value() { return pos_last_encoder_; }
+  int last_negative_encoder_value() { return neg_last_encoder_; }
+
+  // Returns the value of the sensor in the last-read DMA sample.
+  bool last_value() { return ExtractValue(prev_sample_); }
+  // Returns the most recent polled value of the sensor.
+  bool polled_value() const { return polled_value_; }
+  // Returns the most recent polled reading from the encoder.
+  int polled_encoder() const { return polled_encoder_; }
+
+ private:
+  bool ExtractValue(const DMASample &sample);
+
+  Encoder *const encoder_;
+  DigitalSource *const input_;
+  const bool inverted_;
+
+  // The last DMA reading we got.
+  DMASample prev_sample_;
+  // Whether or not we actually have anything in prev_sample_.
+  bool have_prev_sample_ = false;
+
+  // Values related to the positive edge.
+  int pos_edge_count_ = 0;
+  double pos_edge_time_ = 0.0;
+  int pos_last_encoder_ = 0;
+
+  // Values related to the negative edge.
+  int neg_edge_count_ = 0;
+  double neg_edge_time_ = 0.0;
+  int neg_last_encoder_ = 0;
+
+  bool polled_value_ = false;
+  int polled_encoder_ = 0;
+
+  DISALLOW_COPY_AND_ASSIGN(DMAEdgeCounter);
+};
+
+// This class handles updating the sampled data on multiple
+// DMASampleHandlerInterfaces. The caller should create an instance and then
+// periodically call RunIteration, retrieving whatever data from the
+// DMASampleHandlerInterfaces after each iteration.
+class DMASynchronizer {
+ public:
+  DMASynchronizer(::std::unique_ptr<DMA> dma) : dma_(::std::move(dma)) {}
+
+  // Adds a new handler to this object. This method must not be called after
+  // Start().
+  void Add(DMASampleHandlerInterface *handler) {
+    handler->AddToDMA(dma_.get());
+    handlers_.emplace_back(handler);
+  }
+
+  // Actually starts watching for DMA samples.
+  // Add may not be called any more after this.
+  void Start() {
+    dma_->Start(1024);
+  }
+
+  // Updates all sensor values.
+  void RunIteration() {
+    SampleSensors();
+    CheckDMA();
+  }
+
+ private:
+  // Reads the state of all the sensors and records it as the polled values of
+  // all the inputs.
+  void SampleSensors() {
+    sample_time_ = GetFPGATime();
+    for (auto &c : handlers_) {
+      c->UpdatePolledValue();
+    }
+  }
+
+  // Gets called by the DMA handler to update edge counts.
+  void CheckDMA();
+
+  const ::std::unique_ptr<DMA> dma_;
+  ::std::vector<DMASampleHandlerInterface *> handlers_;
+
+  // The time at which we most recently read the sensor values.
+  double sample_time_ = 0.0;
+
+  DISALLOW_COPY_AND_ASSIGN(DMASynchronizer);
+};
+
+}  // namespace wpilib
+}  // namespace frc971
+
+#endif  // FRC971_WPILIB_DMA_EDGE_COUNTING_H_
