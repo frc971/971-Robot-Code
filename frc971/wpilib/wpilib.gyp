@@ -26,6 +26,26 @@
         'loop_output_handler',
         'buffered_pcm',
         'gyro_sender',
+        'interrupt_edge_counting',
+      ],
+    },
+    {
+      'target_name': 'interrupt_edge_counting',
+      'type': 'static_library',
+      'sources': [
+        'interrupt_edge_counting.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:stl_mutex',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:stl_mutex',
       ],
     },
     {
