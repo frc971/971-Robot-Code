@@ -3,7 +3,7 @@ package frc971.control_loops;
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
-queue_group Claw {
+queue_group ClawQueue {
   implements aos.control_loops.ControlLoop;
 
   // All angles are in radians with 0 sticking straight out the front. Rotating
@@ -42,6 +42,12 @@ queue_group Claw {
     // Has claw zeroed and reached goal?
     bool done;
 
+    // Angle of wrist joint.
+    double angle;
+    // Voltage of intake rollers. Positive means sucking in, negative means
+    // spitting out.
+    double intake;
+
     // True iff there has been enough time since we actuated the rollers outward
     // that they should be there.
     bool rollers_open;
@@ -56,4 +62,5 @@ queue_group Claw {
   queue Status status;
 };
 
-queue_group Claw claw;
+queue_group ClawQueue claw_queue;
+

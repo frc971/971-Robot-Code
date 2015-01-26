@@ -12,7 +12,7 @@ struct GrabberPistons {
   bool bottom_back;
 };
 
-queue_group Fridge {
+queue_group FridgeQueue {
   implements aos.control_loops.ControlLoop;
 
   // All angles are in radians with 0 sticking straight out horizontally over
@@ -43,6 +43,13 @@ queue_group Fridge {
     // Are we zeroed and have reached our goal position on both the arm and
     // elevator?
     bool done;
+    
+    // Angle of the arm.
+    double angle;
+    // Height of the elevator.
+    double height;
+    // state of the grabber pistons
+    GrabberPistons grabbers;
   };
 
   message Output {
@@ -60,4 +67,4 @@ queue_group Fridge {
   queue Status status;
 };
 
-queue_group Fridge fridge;
+queue_group FridgeQueue fridge_queue;
