@@ -18,6 +18,7 @@
         '../actions/actions.gyp:drivetrain_action',
         '../frc971.gyp:joystick_reader',
         '../zeroing/zeroing.gyp:zeroing_test',
+        '../control_loops/voltage_cap/voltage_cap.gyp:voltage_cap_test',
       ],
       'copies': [
         {
