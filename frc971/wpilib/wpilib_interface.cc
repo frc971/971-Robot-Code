@@ -60,18 +60,23 @@ double drivetrain_translate(int32_t in) {
 
 class SensorReader {
  public:
-  SensorReader()
-      : left_encoder_(new Encoder(11, 10, false, Encoder::k2X)),   // E0
-        right_encoder_(new Encoder(13, 12, false, Encoder::k2X)),  // E1
-        run_(true) {
+  SensorReader() {
     filter_.SetPeriodNanoSeconds(100000);
+  }
+
+  void set_left_encoder(::std::unique_ptr<Encoder> left_encoder) {
+    left_encoder_ = ::std::move(left_encoder);
+  }
+
+  void set_right_encoder(::std::unique_ptr<Encoder> right_encoder) {
+    right_encoder_ = ::std::move(right_encoder);
   }
 
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
-    const int kPriority = 30;
-    //const int kInterruptPriority = 55;
+    static const int kPriority = 30;
+    //static const int kInterruptPriority = 55;
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -117,7 +122,7 @@ class SensorReader {
   ::std::unique_ptr<Encoder> left_encoder_;
   ::std::unique_ptr<Encoder> right_encoder_;
 
-  ::std::atomic<bool> run_;
+  ::std::atomic<bool> run_{true};
   DigitalGlitchFilter filter_;
 };
 
@@ -198,6 +203,13 @@ class DrivetrainWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> right_drivetrain_talon_;
 };
 
+// TODO(brian): Replace this with ::std::make_unique once all our toolchains
+// have support.
+template <class T, class... U>
+std::unique_ptr<T> make_unique(U &&... u) {
+  return std::unique_ptr<T>(new T(std::forward<U>(u)...));
+}
+
 class WPILibRobot : public RobotBase {
  public:
   virtual void StartCompetition() {
@@ -210,6 +222,9 @@ class WPILibRobot : public RobotBase {
     compressor->SetClosedLoopControl(true);
 
     SensorReader reader;
+    // TODO(sensors): Replace all the 99s with real port numbers.
+    reader.set_left_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_right_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
