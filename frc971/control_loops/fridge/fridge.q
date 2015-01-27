@@ -59,3 +59,5 @@ queue_group Fridge {
   queue Output output;
   queue Status status;
 };
+
+queue_group Fridge fridge;
