@@ -48,7 +48,7 @@ void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
   control_loops::drivetrain.goal.MakeWithBuilder()
       .control_loop_driving(false)
-      .highgear(false)
+      //.highgear(false)
       .steering(0.0)
       .throttle(0.0)
       .left_goal(left_initial_position)
@@ -85,7 +85,7 @@ void DriveSpin(double radians) {
         right_initial_position + driveTrainState(0, 0));
     control_loops::drivetrain.goal.MakeWithBuilder()
         .control_loop_driving(true)
-        .highgear(false)
+        //.highgear(false)
         .left_goal(left_initial_position - driveTrainState(0, 0))
         .right_goal(right_initial_position + driveTrainState(0, 0))
         .left_velocity_goal(-driveTrainState(1, 0))

@@ -97,13 +97,9 @@ class SensorReader {
       message.Send();
     }
 
-    // TODO(austin): Calibrate the shifter constants again.
-    // TODO(sensors): Hook up the new dog position sensors.
     drivetrain.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(right_encoder_->GetRaw()))
         .left_encoder(-drivetrain_translate(left_encoder_->GetRaw()))
-        .left_shifter_position(0)
-        .right_shifter_position(0)
         .battery_voltage(ds->GetBatteryVoltage())
         .Send();
 
@@ -117,8 +113,6 @@ class SensorReader {
   void Quit() { run_ = false; }
 
  private:
-  ::std::unique_ptr<AnalogInput> auto_selector_analog_;
-
   ::std::unique_ptr<Encoder> left_encoder_;
   ::std::unique_ptr<Encoder> right_encoder_;
 

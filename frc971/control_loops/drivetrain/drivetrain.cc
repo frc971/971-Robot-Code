@@ -20,6 +20,10 @@
 #include "frc971/queues/gyro.q.h"
 #include "frc971/shifter_hall_effect.h"
 
+// A consistent way to mark code that goes away without shifters. It's still
+// here because we will have shifters again in the future.
+#define HAVE_SHIFTERS 0
+
 using frc971::sensors::gyro_reading;
 
 namespace frc971 {
@@ -401,6 +405,7 @@ class PolyDrivetrain {
       stale_count_ = 0;
     }
 
+#if HAVE_SHIFTERS
     if (position) {
       GearLogging gear_logging;
       // Switch to the correct controller.
@@ -452,6 +457,9 @@ class PolyDrivetrain {
       gear_logging.right_state = right_gear_;
       LOG_STRUCT(DEBUG, "state", gear_logging);
     }
+#else
+    (void) values;
+#endif
   }
 
   double FilterVelocity(double throttle) {
@@ -505,6 +513,7 @@ class PolyDrivetrain {
     // TODO(austin): Observer for the current velocity instead of difference
     // calculations.
     ++counter_;
+#if HAVE_SHIFTERS
     const double current_left_velocity =
         (position_.left_encoder - last_position_.left_encoder) /
         position_time_delta_;
@@ -540,8 +549,15 @@ class PolyDrivetrain {
 
       LOG_STRUCT(DEBUG, "currently", logging);
     }
+#else
+    (void) values;
+#endif
 
+#if HAVE_SHIFTERS
     if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
+#else
+    {
+#endif
       // FF * X = U (steady state)
       const Eigen::Matrix<double, 2, 2> FF =
           loop_->B().inverse() *
@@ -597,6 +613,7 @@ class PolyDrivetrain {
       // TODO(austin): Feed back?
       loop_->mutable_X_hat() =
           loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
+#if HAVE_SHIFTERS
     } else {
       // Any motor is not in gear.  Speed match.
       ::Eigen::Matrix<double, 1, 1> R_left;
@@ -614,6 +631,7 @@ class PolyDrivetrain {
           (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
           -12.0, 12.0);
       loop_->mutable_U() *= 12.0 / position_.battery_voltage;
+#endif
     }
   }
 
@@ -674,7 +692,9 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
   double wheel = goal->steering;
   double throttle = goal->throttle;
   bool quickturn = goal->quickturn;
+#if HAVE_SHIFTERS
   bool highgear = goal->highgear;
+#endif
 
   bool control_loop_driving = goal->control_loop_driving;
   double left_goal = goal->left_goal;
@@ -694,7 +714,11 @@ void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
     }
   }
   dt_openloop.SetPosition(position);
+#if HAVE_SHIFTERS
   dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
+#else
+  dt_openloop.SetGoal(wheel, throttle, quickturn, false);
+#endif
   dt_openloop.Update();
 
   if (control_loop_driving) {

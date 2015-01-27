@@ -112,7 +112,7 @@ void DrivetrainAction::RunAction() {
         right_goal_state(0, 0) + action_q_->goal->right_initial_position);
     control_loops::drivetrain.goal.MakeWithBuilder()
         .control_loop_driving(true)
-        .highgear(false)
+        //.highgear(false)
         .left_goal(left_goal_state(0, 0) + action_q_->goal->left_initial_position)
         .right_goal(right_goal_state(0, 0) + action_q_->goal->right_initial_position)
         .left_velocity_goal(left_goal_state(1, 0))

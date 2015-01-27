@@ -174,7 +174,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (!drivetrain.goal.MakeWithBuilder()
              .steering(wheel)
              .throttle(throttle)
-             .highgear(is_high_gear_)
+             //.highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))
              .control_loop_driving(is_control_loop_driving)
              .left_goal(left_goal)

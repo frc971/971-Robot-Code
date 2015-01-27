@@ -25,7 +25,7 @@ queue_group Drivetrain {
   message Goal {
     double steering;
     double throttle;
-    bool highgear;
+    //bool highgear;
     bool quickturn;
     bool control_loop_driving;
     double left_goal;
@@ -37,8 +37,8 @@ queue_group Drivetrain {
   message Position {
     double left_encoder;
     double right_encoder;
-    double left_shifter_position;
-    double right_shifter_position;
+    //double left_shifter_position;
+    //double right_shifter_position;
     double battery_voltage;
   };
 
