@@ -17,7 +17,6 @@
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/controls/controls.gyp:sensor_generation',
         '<(AOS)/common/util/util.gyp:log_interval',
-        '../frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/controls/controls.gyp:output_check',
@@ -31,6 +30,7 @@
         'dma_edge_counting',
         'interrupt_edge_counting',
         'encoder_and_potentiometer',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
     },
     {

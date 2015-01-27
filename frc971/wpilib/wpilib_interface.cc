@@ -19,11 +19,10 @@
 #include "aos/common/stl_mutex.h"
 #include "aos/linux_code/init.h"
 
+#include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/control_loops/claw/claw.q.h"
-#include "frc971/constants.h"
-#include "frc971/shifter_hall_effect.h"
 
 #include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -41,6 +40,7 @@
 #include "AnalogInput.h"
 #include "Compressor.h"
 #include "RobotBase.h"
+#include "dma.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -48,7 +48,8 @@
 
 using ::aos::util::SimpleLogInterval;
 using ::frc971::control_loops::drivetrain_queue;
-using ::aos::util::WrappingCounter;
+using ::frc971::control_loops::fridge_queue;
+using ::frc971::control_loops::claw_queue;
 
 namespace frc971 {
 namespace wpilib {
@@ -103,10 +104,92 @@ double claw_pot_translate(double voltage) {
           (2 * M_PI /*radians*/);
 }
 
+static const double kMaximumEncoderPulsesPerSecond =
+    19500.0 /* free speed RPM */ * 12.0 / 56.0 /* belt reduction */ /
+    60.0 /* seconds / minute */ * 256.0 /* CPR */ *
+    4.0 /* index pulse = 1/4 cycle */;
+
 class SensorReader {
  public:
   SensorReader() {
-    filter_.SetPeriodNanoSeconds(100000);
+    // Set it to filter out anything shorter than 1/4 of the minimum pulse width
+    // we should ever see.
+    filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 / kMaximumEncoderPulsesPerSecond * 1e9 + 0.5));
+  }
+
+  void set_arm_left_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    arm_left_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_arm_left_index(::std::unique_ptr<DigitalSource> index) {
+    filter_.Add(index.get());
+    arm_left_encoder_.set_index(::std::move(index));
+  }
+
+  void set_arm_left_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    arm_left_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_arm_right_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    arm_right_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_arm_right_index(::std::unique_ptr<DigitalSource> index) {
+    filter_.Add(index.get());
+    arm_right_encoder_.set_index(::std::move(index));
+  }
+
+  void set_arm_right_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    arm_right_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_elevator_left_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    elevator_left_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_elevator_left_index(::std::unique_ptr<DigitalSource> index) {
+    filter_.Add(index.get());
+    elevator_left_encoder_.set_index(::std::move(index));
+  }
+
+  void set_elevator_left_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    elevator_left_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_elevator_right_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    elevator_right_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_elevator_right_index(::std::unique_ptr<DigitalSource> index) {
+    filter_.Add(index.get());
+    elevator_right_encoder_.set_index(::std::move(index));
+  }
+
+  void set_elevator_right_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    elevator_right_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_wrist_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    wrist_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_wrist_index(::std::unique_ptr<DigitalSource> index) {
+    filter_.Add(index.get());
+    wrist_encoder_.set_index(::std::move(index));
+  }
+
+  void set_wrist_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    wrist_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   void set_left_encoder(::std::unique_ptr<Encoder> left_encoder) {
@@ -117,17 +200,29 @@ class SensorReader {
     right_encoder_ = ::std::move(right_encoder);
   }
 
+  // All of the DMA-related set_* calls must be made before this, and it doesn't
+  // hurt to do all of them.
+  void set_dma(::std::unique_ptr<DMA> dma) {
+    dma_synchronizer_.reset(new DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_->Add(&arm_left_encoder_);
+    dma_synchronizer_->Add(&arm_right_encoder_);
+    dma_synchronizer_->Add(&elevator_left_encoder_);
+    dma_synchronizer_->Add(&elevator_right_encoder_);
+  }
+
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
-    static const int kPriority = 30;
-    //static const int kInterruptPriority = 55;
+    wrist_encoder_.Start();
+    dma_synchronizer_->Start();
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
       ::aos::time::PhasedLoopXMS(5, 9000);
       RunIteration();
     }
+
+    wrist_encoder_.Stop();
   }
 
   void RunIteration() {
@@ -153,11 +248,79 @@ class SensorReader {
         .reader_pid(getpid())
         .cape_resets(0)
         .Send();
+
+    dma_synchronizer_->RunIteration();
+
+    {
+      auto fridge_message = fridge_queue.position.MakeMessage();
+      CopyPotAndIndexPosition(arm_left_encoder_, &fridge_message->arm.left,
+                              arm_translate, arm_pot_translate, false);
+      CopyPotAndIndexPosition(arm_right_encoder_, &fridge_message->arm.right,
+                              arm_translate, arm_pot_translate, true);
+      CopyPotAndIndexPosition(
+          elevator_left_encoder_, &fridge_message->elevator.left,
+          elevator_translate, elevator_pot_translate, false);
+      CopyPotAndIndexPosition(elevator_right_encoder_,
+                              &fridge_message->elevator.right,
+                              elevator_translate, elevator_pot_translate, true);
+      fridge_message.Send();
+    }
+
+    {
+      auto claw_message = claw_queue.position.MakeMessage();
+      CopyPotAndIndexPosition(wrist_encoder_, &claw_message->joint,
+                              claw_translate, claw_pot_translate, false);
+      claw_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
 
  private:
+  static const int kPriority = 30;
+  static const int kInterruptPriority = 55;
+
+  void CopyPotAndIndexPosition(
+      const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> pot_translate, bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+    position->pot =
+        multiplier * pot_translate(encoder.polled_potentiometer_voltage());
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->latched_pot =
+        multiplier * pot_translate(encoder.last_potentiometer_voltage());
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
+  void CopyPotAndIndexPosition(
+      const InterruptEncoderAndPotentiometer &encoder,
+      PotAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> pot_translate, bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.encoder()->GetRaw());
+    position->pot =
+        multiplier * pot_translate(encoder.potentiometer()->GetVoltage());
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->latched_pot =
+        multiplier * pot_translate(encoder.last_potentiometer_voltage());
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
+
+  ::std::unique_ptr<DMASynchronizer> dma_synchronizer_;
+
+  DMAEncoderAndPotentiometer arm_left_encoder_, arm_right_encoder_,
+      elevator_left_encoder_, elevator_right_encoder_;
+
+  InterruptEncoderAndPotentiometer wrist_encoder_{kInterruptPriority};
+
   ::std::unique_ptr<Encoder> left_encoder_;
   ::std::unique_ptr<Encoder> right_encoder_;
 
@@ -370,8 +533,28 @@ class WPILibRobot : public RobotBase {
 
     SensorReader reader;
     // TODO(sensors): Replace all the 99s with real port numbers.
+    reader.set_arm_left_encoder(
+        make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_arm_left_index(make_unique<DigitalInput>(99));
+    reader.set_arm_left_potentiometer(make_unique<AnalogInput>(99));
+    reader.set_arm_right_encoder(
+        make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_arm_right_index(make_unique<DigitalInput>(99));
+    reader.set_arm_right_potentiometer(make_unique<AnalogInput>(99));
+    reader.set_elevator_left_encoder(
+        make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_elevator_left_index(make_unique<DigitalInput>(99));
+    reader.set_elevator_left_potentiometer(make_unique<AnalogInput>(99));
+    reader.set_elevator_right_encoder(
+        make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_elevator_right_index(make_unique<DigitalInput>(99));
+    reader.set_elevator_right_potentiometer(make_unique<AnalogInput>(99));
+    reader.set_wrist_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_wrist_index(make_unique<DigitalInput>(99));
+    reader.set_wrist_potentiometer(make_unique<AnalogInput>(99));
     reader.set_left_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
     reader.set_right_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
