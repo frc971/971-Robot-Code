@@ -12,6 +12,8 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(EXTERNALS):WPILib',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/controls/controls.gyp:sensor_generation',
         '<(AOS)/common/util/util.gyp:log_interval',

@@ -20,6 +20,8 @@
 #include "aos/linux_code/init.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/fridge/fridge.q.h"
+#include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/constants.h"
 #include "frc971/shifter_hall_effect.h"
 
@@ -52,11 +54,52 @@ namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) /
-         (256.0 /*cpr*/ * 2.0 /*2x.  Stupid WPILib*/) *
-         (18.0 / 50.0 /*output stage*/) * (56.0 / 30.0 /*encoder gears*/)
+         (256.0 /*cpr*/ * 4.0 /*4x*/) *
+         (20.0 / 50.0 /*output stage*/) *
          // * constants::GetValues().drivetrain_encoder_ratio
-         *
-         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+         (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+}
+
+double arm_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (512.0 /*cpr*/ * 4.0 /*4x*/) *
+          (14.0 / 17.0 /*output sprockets*/) *
+          (18.0 / 48.0 /*encoder pulleys*/) *
+          (2 * M_PI /*radians*/);
+}
+
+double arm_pot_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (14.0 / 17.0 /*output sprockets*/) *
+          (5.0 /*volts*/ / 5.0 /*turns*/) *
+          (2 * M_PI /*radians*/);
+}
+
+double elevator_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (512.0 /*cpr*/ * 4.0 /*4x*/) *
+          (14.0 / 84.0 /*output stage*/) *
+          (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/);
+}
+
+double elevator_pot_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/) *
+          (5.0 /*volts*/ / 5.0 /*turns*/);
+}
+
+double claw_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (512.0 /*cpr*/ * 4.0 /*4x*/) *
+          (16.0 / 72.0 /*output sprockets*/) *
+          (2 * M_PI /*radians*/);
+}
+
+double claw_pot_translate(int32_t in) {
+  return static_cast<double>(in) /
+          (16.0 / 72.0 /*output sprockets*/) *
+          (5.0 /*volts*/ / 5.0 /*turns*/) *
+          (2 * M_PI /*radians*/);
 }
 
 class SensorReader {
@@ -124,14 +167,30 @@ class SensorReader {
 class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
-      : pcm_(pcm), drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
+      : pcm_(pcm),
+      fridge_(".frc971.control_loops.fridge.output"),
+      claw_(".frc971.control_loops.claw.output") {}
 
-  void set_drivetrain_left(::std::unique_ptr<BufferedSolenoid> s) {
-    drivetrain_left_ = ::std::move(s);
+  void set_fridge_grabbers_top_front(::std::unique_ptr<BufferedSolenoid> s) {
+    fridge_grabbers_top_front_ = ::std::move(s);
   }
 
-  void set_drivetrain_right(::std::unique_ptr<BufferedSolenoid> s) {
-    drivetrain_right_ = ::std::move(s);
+  void set_fridge_grabbers_top_back(::std::unique_ptr<BufferedSolenoid> s) {
+    fridge_grabbers_top_back_ = ::std::move(s);
+  }
+
+  void set_fridge_grabbers_bottom_front(
+      ::std::unique_ptr<BufferedSolenoid> s) {
+    fridge_grabbers_bottom_front_ = ::std::move(s);
+  }
+
+  void set_fridge_grabbers_bottom_back(
+      ::std::unique_ptr<BufferedSolenoid> s) {
+    fridge_grabbers_bottom_back_ = ::std::move(s);
+  }
+
+  void set_claw_pinchers(::std::unique_ptr<BufferedSolenoid> s) {
+    claw_pinchers_ = ::std::move(s);
   }
 
   void operator()() {
@@ -142,11 +201,21 @@ class SolenoidWriter {
       ::aos::time::PhasedLoopXMS(20, 1000);
 
       {
-        drivetrain_.FetchLatest();
-        if (drivetrain_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          drivetrain_left_->Set(drivetrain_->left_high);
-          drivetrain_right_->Set(drivetrain_->right_high);
+        fridge_.FetchLatest();
+        if (fridge_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *fridge_);
+          fridge_grabbers_top_front_->Set(fridge_->grabbers.top_front);
+          fridge_grabbers_top_back_->Set(fridge_->grabbers.top_back);
+          fridge_grabbers_bottom_front_->Set(fridge_->grabbers.bottom_front);
+          fridge_grabbers_bottom_back_->Set(fridge_->grabbers.bottom_back);
+        }
+      }
+
+      {
+        claw_.FetchLatest();
+        if (claw_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *claw_);
+          claw_pinchers_->Set(claw_->rollers_closed);
         }
       }
 
@@ -158,10 +227,14 @@ class SolenoidWriter {
 
  private:
   const ::std::unique_ptr<BufferedPcm> &pcm_;
-  ::std::unique_ptr<BufferedSolenoid> drivetrain_left_;
-  ::std::unique_ptr<BufferedSolenoid> drivetrain_right_;
+  ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_top_front_;
+  ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_top_back_;
+  ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_front_;
+  ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_back_;
+  ::std::unique_ptr<BufferedSolenoid> claw_pinchers_;
 
-  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::frc971::control_loops::FridgeQueue::Output> fridge_;
+  ::aos::Queue<::frc971::control_loops::ClawQueue::Output> claw_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -198,6 +271,84 @@ class DrivetrainWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> right_drivetrain_talon_;
 };
 
+class FridgeWriter : public LoopOutputHandler {
+ public:
+  void set_left_arm_talon(::std::unique_ptr<Talon> t) {
+    left_arm_talon_ = ::std::move(t);
+  }
+
+  void set_right_arm_talon(::std::unique_ptr<Talon> t) {
+    right_arm_talon_ = ::std::move(t);
+  }
+
+  void set_left_elevator_talon(::std::unique_ptr<Talon> t) {
+    left_elevator_talon_ = ::std::move(t);
+  }
+
+  void set_right_elevator_talon(::std::unique_ptr<Talon> t) {
+    right_elevator_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::fridge_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::fridge_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    left_arm_talon_->Set(-queue->left_arm / 12.0);
+    right_arm_talon_->Set(queue->right_arm / 12.0);
+    left_elevator_talon_->Set(-queue->left_elevator / 12.0);
+    right_elevator_talon_->Set(queue->right_elevator / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Fridge output too old.\n");
+    left_arm_talon_->Disable();
+    right_arm_talon_->Disable();
+    left_elevator_talon_->Disable();
+    right_elevator_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> left_arm_talon_;
+  ::std::unique_ptr<Talon> right_arm_talon_;
+  ::std::unique_ptr<Talon> left_elevator_talon_;
+  ::std::unique_ptr<Talon> right_elevator_talon_;
+};
+
+class ClawWriter : public LoopOutputHandler {
+ public:
+  void set_intake_talon(::std::unique_ptr<Talon> t) {
+    intake_talon_ = ::std::move(t);
+  }
+
+  void set_wrist_talon(::std::unique_ptr<Talon> t) {
+    wrist_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::claw_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::claw_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    intake_talon_->Set(queue->intake_voltage / 12.0);
+    wrist_talon_->Set(queue->voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Claw output too old.\n");
+    intake_talon_->Disable();
+    wrist_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> intake_talon_;
+  ::std::unique_ptr<Talon> wrist_talon_;
+};
+
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
 // have support.
 template <class T, class... U>
@@ -231,10 +382,34 @@ class WPILibRobot : public RobotBase {
         ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ::std::unique_ptr<BufferedPcm> pcm(new BufferedPcm());
+    // TODO(sensors): Get real PWM output and relay numbers for the fridge and
+    // claw.
+    FridgeWriter fridge_writer;
+    fridge_writer.set_left_arm_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    fridge_writer.set_right_arm_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    fridge_writer.set_left_elevator_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    fridge_writer.set_right_elevator_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    ::std::thread fridge_writer_thread(::std::ref(fridge_writer));
+
+    ClawWriter claw_writer;
+    claw_writer.set_intake_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    claw_writer.set_wrist_talon(
+        ::std::unique_ptr<Talon>(new Talon(99)));
+    ::std::thread claw_writer_thread(::std::ref(claw_writer));
+
+    ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
+        new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(6));
-    solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(7));
+    solenoid_writer.set_fridge_grabbers_top_front(pcm->MakeSolenoid(99));
+    solenoid_writer.set_fridge_grabbers_top_back(pcm->MakeSolenoid(99));
+    solenoid_writer.set_fridge_grabbers_bottom_front(pcm->MakeSolenoid(99));
+    solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(99));
+    solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(99));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
