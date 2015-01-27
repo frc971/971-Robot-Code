@@ -33,6 +33,7 @@
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
 
 #include "Encoder.h"
 #include "Talon.h"

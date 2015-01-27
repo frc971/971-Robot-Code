@@ -30,6 +30,26 @@
         'gyro_sender',
         'dma_edge_counting',
         'interrupt_edge_counting',
+        'encoder_and_potentiometer',
+      ],
+    },
+    {
+      'target_name': 'encoder_and_potentiometer',
+      'type': 'static_library',
+      'sources': [
+        'encoder_and_potentiometer.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib',
+        'dma_edge_counting',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/common.gyp:mutex',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib',
+        'dma_edge_counting',
+        '<(AOS)/common/common.gyp:mutex',
       ],
     },
     {
