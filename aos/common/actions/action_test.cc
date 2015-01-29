@@ -1,0 +1,286 @@
+#include <unistd.h>
+
+#include <memory>
+
+#include "gtest/gtest.h"
+#include "aos/common/queue.h"
+#include "aos/common/queue_testutils.h"
+#include "aos/common/actions/actor.h"
+#include "aos/common/actions/actions.h"
+#include "aos/common/actions/actions.q.h"
+#include "aos/common/actions/test_action.q.h"
+
+using ::aos::time::Time;
+
+namespace aos {
+namespace common {
+namespace actions {
+namespace testing {
+
+class TestActorNOP
+    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+ public:
+  explicit TestActorNOP(actions::TestActionQueueGroup* s)
+      : actions::ActorBase<actions::TestActionQueueGroup>(s) {}
+
+  void RunAction() { return; }
+};
+
+::std::unique_ptr<
+    aos::common::actions::TypedAction<actions::TestActionQueueGroup>>
+MakeTestActionNOP() {
+  return ::std::unique_ptr<
+      aos::common::actions::TypedAction<actions::TestActionQueueGroup>>(
+      new aos::common::actions::TypedAction<actions::TestActionQueueGroup>(
+          &actions::test_action));
+}
+
+class TestActorShouldCancel
+    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+ public:
+  explicit TestActorShouldCancel(actions::TestActionQueueGroup* s)
+      : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(s) {}
+
+  void RunAction() {
+    while (!ShouldCancel()) {
+      LOG(FATAL, "NOT CANCELED!!\n");
+    }
+    return;
+  }
+};
+
+::std::unique_ptr<
+    aos::common::actions::TypedAction<actions::TestActionQueueGroup>>
+MakeTestActionShouldCancel() {
+  return ::std::unique_ptr<
+      aos::common::actions::TypedAction<actions::TestActionQueueGroup>>(
+      new aos::common::actions::TypedAction<actions::TestActionQueueGroup>(
+          &actions::test_action));
+}
+
+class ActionTest : public ::testing::Test {
+ protected:
+  ActionTest() {
+    // Flush the robot state queue so we can use clean shared memory for this.
+    // test.
+    actions::test_action.goal.Clear();
+    actions::test_action.status.Clear();
+  }
+
+  virtual ~ActionTest() {
+    actions::test_action.goal.Clear();
+    actions::test_action.status.Clear();
+  }
+
+  // Bring up and down Core.
+  ::aos::common::testing::GlobalCoreInstance my_core;
+  ::aos::common::actions::ActionQueue action_queue_;
+};
+
+// Tests that the the actions exist in a safe state at startup.
+TEST_F(ActionTest, DoesNothing) {
+  // Tick an empty queue and make sure it was not running.
+  EXPECT_FALSE(action_queue_.Running());
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+// Tests that the queues are properly configured for testing. Tests that queues
+// work exactly as used in the tests.
+TEST_F(ActionTest, QueueCheck) {
+  actions::TestActionQueueGroup* send_side = &actions::test_action;
+  actions::TestActionQueueGroup* recv_side = &actions::test_action;
+
+  send_side->goal.MakeMessage();
+  send_side->goal.MakeWithBuilder().run(1).Send();
+
+  EXPECT_TRUE(recv_side->goal.FetchLatest());
+  EXPECT_TRUE(recv_side->goal->run);
+
+  send_side->goal.MakeWithBuilder().run(0).Send();
+
+  EXPECT_TRUE(recv_side->goal.FetchLatest());
+  EXPECT_FALSE(recv_side->goal->run);
+
+  send_side->status.MakeMessage();
+  send_side->status.MakeWithBuilder().running(5).last_running(6).Send();
+
+  EXPECT_TRUE(recv_side->status.FetchLatest());
+  EXPECT_EQ(5, static_cast<int>(recv_side->status->running));
+  EXPECT_EQ(6, static_cast<int>(recv_side->status->last_running));
+}
+
+// Tests that an action starts and stops.
+TEST_F(ActionTest, ActionQueueWasRunning) {
+  TestActorNOP nop_act(&actions::test_action);
+
+  // Tick an empty queue and make sure it was not running.
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  nop_act.WaitForActionRequest();
+
+  // We started an action and it should be running.
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Tick it and make sure it is still running.
+  action_queue_.Tick();
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Run the action so it can signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
+
+  // Make sure it stopped.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+// Tests that we can cancel two actions and have them both stop.
+TEST_F(ActionTest, ActionQueueCancelAll) {
+  TestActorNOP nop_act(&actions::test_action);
+
+  // Tick an empty queue and make sure it was not running.
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+
+  // Enqueue two actions to test both cancel. We can have an action and a next
+  // action so we want to test that.
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  nop_act.WaitForActionRequest();
+  action_queue_.Tick();
+
+  // Check that current and next exist.
+  EXPECT_TRUE(action_queue_.GetCurrentActionState(nullptr, nullptr, nullptr,
+                                                  nullptr, nullptr, nullptr));
+  EXPECT_TRUE(action_queue_.GetNextActionState(nullptr, nullptr, nullptr,
+                                               nullptr, nullptr, nullptr));
+
+  action_queue_.CancelAllActions();
+  action_queue_.Tick();
+
+  // It should still be running as the actor could not have signaled.
+  EXPECT_TRUE(action_queue_.Running());
+
+  bool sent_started, sent_cancel, interrupted;
+  EXPECT_TRUE(action_queue_.GetCurrentActionState(
+      nullptr, &sent_started, &sent_cancel, &interrupted, nullptr, nullptr));
+  EXPECT_TRUE(sent_started);
+  EXPECT_TRUE(sent_cancel);
+  EXPECT_FALSE(interrupted);
+
+  EXPECT_FALSE(action_queue_.GetNextActionState(nullptr, nullptr, nullptr,
+                                                nullptr, nullptr, nullptr));
+
+  // Run the action so it can signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
+
+  // Make sure it stopped.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+// Tests that an action that would block forever stops when canceled.
+TEST_F(ActionTest, ActionQueueCancelOne) {
+  TestActorShouldCancel cancel_act(&actions::test_action);
+
+  // Enqueue blocking action.
+  action_queue_.EnqueueAction(MakeTestActionShouldCancel());
+
+  cancel_act.WaitForActionRequest();
+  action_queue_.Tick();
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Tell action to cancel.
+  action_queue_.CancelCurrentAction();
+  action_queue_.Tick();
+
+  // This will block forever on failure.
+  // TODO(ben): prolly a bad way to fail
+  cancel_act.RunIteration();
+  action_queue_.Tick();
+
+  // It should still be running as the actor could not have signalled.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+// Tests that an action starts and stops.
+TEST_F(ActionTest, ActionQueueTwoActions) {
+  TestActorNOP nop_act(&actions::test_action);
+
+  // Tick an empty queue and make sure it was not running.
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+
+  // Enqueue action to be canceled.
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  nop_act.WaitForActionRequest();
+  action_queue_.Tick();
+
+  // Should still be running as the actor could not have signalled.
+  EXPECT_TRUE(action_queue_.Running());
+
+  // id for the first time run.
+  uint32_t nop_act_id = 0;
+  // Check the internal state and write down id for later use.
+  bool sent_started, sent_cancel, interrupted;
+  EXPECT_TRUE(action_queue_.GetCurrentActionState(nullptr, &sent_started,
+                                                  &sent_cancel, &interrupted,
+                                                  &nop_act_id, nullptr));
+  EXPECT_TRUE(sent_started);
+  EXPECT_FALSE(sent_cancel);
+  EXPECT_FALSE(interrupted);
+  ASSERT_NE(0u, nop_act_id);
+
+  // Add the next action which should ensure the first stopped.
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+
+  // id for the second run.
+  uint32_t nop_act2_id = 0;
+  // Check the internal state and write down id for later use.
+  EXPECT_TRUE(action_queue_.GetNextActionState(nullptr, &sent_started,
+                                               &sent_cancel, &interrupted,
+                                               &nop_act2_id, nullptr));
+  EXPECT_NE(nop_act_id, nop_act2_id);
+  EXPECT_FALSE(sent_started);
+  EXPECT_FALSE(sent_cancel);
+  EXPECT_FALSE(interrupted);
+  ASSERT_NE(0u, nop_act2_id);
+
+  action_queue_.Tick();
+
+  // Run the action so it can signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
+  // Wait for the first id to finish, needed for the correct number of fetches.
+  nop_act.WaitForStop(nop_act_id);
+
+  // Start the next action on the actor side.
+  nop_act.WaitForActionRequest();
+
+  // Check the new action is the right one.
+  uint32_t test_id = 0;
+  EXPECT_TRUE(action_queue_.GetCurrentActionState(
+      nullptr, &sent_started, &sent_cancel, &interrupted, &test_id, nullptr));
+  EXPECT_TRUE(sent_started);
+  EXPECT_FALSE(sent_cancel);
+  EXPECT_FALSE(interrupted);
+  EXPECT_EQ(nop_act2_id, test_id);
+
+  // Make sure it is still going.
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Run the next action so it can accomplish signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
+  nop_act.WaitForStop(nop_act_id);
+
+  // Make sure it stopped.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+}  // namespace testing.
+}  // namespace actions.
+}  // namespace common.
+}  // namespace aos.

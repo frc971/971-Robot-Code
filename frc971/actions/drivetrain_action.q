@@ -1,9 +1,9 @@
 package frc971.actions;
 
-import "frc971/actions/action.q";
+import "aos/common/actions/actions.q";
 
 queue_group DrivetrainActionQueueGroup {
-  implements frc971.actions.ActionQueueGroup;
+  implements aos.common.actions.ActionQueueGroup;
 
   message Goal {
     uint32_t run;
@@ -16,7 +16,7 @@ queue_group DrivetrainActionQueueGroup {
   };
 
   queue Goal goal;
-  queue frc971.actions.Status status;
+  queue aos.common.actions.Status status;
 };
 
 queue_group DrivetrainActionQueueGroup drivetrain_action;

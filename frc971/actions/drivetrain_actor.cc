@@ -1,3 +1,5 @@
+#include "frc971/actions/drivetrain_actor.h"
+
 #include <functional>
 #include <numeric>
 
@@ -7,18 +9,19 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/commonmath.h"
+#include "aos/common/time.h"
 
-#include "frc971/actions/drivetrain_action.h"
+#include "frc971/actions/drivetrain_actor.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
 namespace actions {
 
-DrivetrainAction::DrivetrainAction(actions::DrivetrainActionQueueGroup* s)
-    : actions::ActionBase<actions::DrivetrainActionQueueGroup>(s) {}
+DrivetrainActor::DrivetrainActor(actions::DrivetrainActionQueueGroup* s)
+    : aos::common::actions::ActorBase<actions::DrivetrainActionQueueGroup>(s) {}
 
-void DrivetrainAction::RunAction() {
+void DrivetrainActor::RunAction() {
   static const auto K = constants::GetValues().make_drivetrain_loop().K();
 
   const double yoffset = action_q_->goal->y_offset;
@@ -27,6 +30,7 @@ void DrivetrainAction::RunAction() {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
+  // TODO(sensors): update this time thing for some reason.
   ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
   ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(10));
   const double goal_velocity = 0.0;
@@ -42,14 +46,14 @@ void DrivetrainAction::RunAction() {
 
   while (true) {
     // wait until next 10ms tick
+    // TODO(sensors): update this time thing for some reason.
     ::aos::time::PhasedLoop10MS(5000);
 
     control_loops::drivetrain_queue.status.FetchLatest();
     if (control_loops::drivetrain_queue.status.get()) {
       const auto& status = *control_loops::drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
-                     status.uncapped_right_voltage) >
-          24) {
+                     status.uncapped_right_voltage) > 24) {
         LOG(DEBUG, "spinning in place\n");
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
@@ -151,11 +155,13 @@ void DrivetrainAction::RunAction() {
   LOG(INFO, "Done moving\n");
 }
 
-::std::unique_ptr<TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>
+::std::unique_ptr<aos::common::actions::TypedAction<
+    ::frc971::actions::DrivetrainActionQueueGroup>>
 MakeDrivetrainAction() {
-  return ::std::unique_ptr<
-      TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>(
-      new TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>(
+  return ::std::unique_ptr<aos::common::actions::TypedAction<
+      ::frc971::actions::DrivetrainActionQueueGroup>>(
+      new aos::common::actions::TypedAction<
+          ::frc971::actions::DrivetrainActionQueueGroup>(
           &::frc971::actions::drivetrain_action));
 }
 

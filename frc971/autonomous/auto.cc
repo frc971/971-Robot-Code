@@ -11,8 +11,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/actions/action_client.h"
-#include "frc971/actions/drivetrain_action.h"
+#include "frc971/actions/drivetrain_actor.h"
 
 using ::aos::time::Time;
 
@@ -61,6 +60,7 @@ void ResetDrivetrain() {
 void DriveSpin(double radians) {
   LOG(INFO, "going to spin %f\n", radians);
 
+  //TODO(sensors): update this time thing maybe?
   ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
   ::Eigen::Matrix<double, 2, 1> driveTrainState;
   const double goal_velocity = 0.0;
@@ -74,7 +74,7 @@ void DriveSpin(double radians) {
   const double side_offset = kRobotWidth * radians / 2.0;
 
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);      // wait until next 10ms tick
+    ::aos::time::PhasedLoop10MS(5000);  // wait until next 10ms tick
     driveTrainState = profile.Update(side_offset, goal_velocity);
 
     if (::std::abs(driveTrainState(0, 0) - side_offset) < epsilon) break;
@@ -97,7 +97,7 @@ void DriveSpin(double radians) {
   LOG(INFO, "Done moving\n");
 }
 
-void WaitUntilDoneOrCanceled(Action *action) {
+void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
   while (true) {
     // Poll the running bit and auto done bits.
     ::aos::time::PhasedLoop10MS(5000);
@@ -107,7 +107,8 @@ void WaitUntilDoneOrCanceled(Action *action) {
   }
 }
 
-::std::unique_ptr<TypedAction< ::frc971::actions::DrivetrainActionQueueGroup>>
+::std::unique_ptr<aos::common::actions::TypedAction<
+    ::frc971::actions::DrivetrainActionQueueGroup>>
 SetDriveGoal(double distance, bool slow_acceleration,
              double maximum_velocity = 1.7, double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
