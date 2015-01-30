@@ -1,6 +1,13 @@
 #include "dma.h"
 
 #include <algorithm>
+#include <type_traits>
+
+#include "DigitalSource.h"
+#include "AnalogInput.h"
+#include "Encoder.h"
+
+// Interface to the roboRIO FPGA's DMA features.
 
 // Like tEncoder::tOutput with the bitfields reversed.
 typedef union {
@@ -102,6 +109,27 @@ void DMA::Add(DigitalSource * /*input*/) {
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 }
 
+void DMA::Add(AnalogInput *input) {
+  tRioStatusCode status = 0;
+
+  if (manager_) {
+    wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
+        "DMA::Add() only works before DMA::Start()");
+    return;
+  }
+
+  fprintf(stderr, "DMA::Add(AnalogInput*) needs testing. aborting\n");
+  abort();
+
+  // TODO(brian): Figure out if this math is actually correct.
+  if (input->GetChannel() <= 3) {
+    tdma_config_->writeConfig_Enable_AI0_Low(true, &status);
+  } else {
+    tdma_config_->writeConfig_Enable_AI0_High(true, &status);
+  }
+  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+}
+
 void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   tRioStatusCode status = 0;
 
@@ -163,10 +191,10 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
 }
 
 DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
-                          size_t *remaining) {
+                          size_t *remaining_out) {
   tRioStatusCode status = 0;
   size_t remainingBytes = 0;
-  *remaining = 0;
+  *remaining_out = 0;
 
   if (!manager_.get()) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
@@ -174,6 +202,7 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
     return STATUS_ERROR;
   }
 
+  sample->dma_ = this;
   // memset(&sample->read_buffer_, 0, sizeof(read_buffer_));
   manager_->read(sample->read_buffer_, capture_size_, timeout_ms,
                  &remainingBytes, &status);
@@ -192,11 +221,10 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   }
 
   // TODO(jerry): Do this only if status == 0?
-  *remaining = remainingBytes / capture_size_;
-  sample->dma_ = this;
+  *remaining_out = remainingBytes / capture_size_;
 
   if (0) { // DEBUG
-    printf("Remaining samples = %d\n", *remaining);
+    printf("Remaining samples = %d\n", *remaining_out);
   }
 
   // TODO(austin): Check that *remainingBytes % capture_size_ == 0 and deal
@@ -208,6 +236,15 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   } else {
     wpi_setErrorWithContext(status, getHALErrorMessage(status));
     return STATUS_ERROR;
+  }
+}
+
+const char *DMA::NameOfReadStatus(ReadStatus s) {
+  switch (s) {
+    case STATUS_OK:      return "OK";
+    case STATUS_TIMEOUT: return "TIMEOUT";
+    case STATUS_ERROR:   return "ERROR";
+    default:             return "(bad ReadStatus code)";
   }
 }
 
@@ -274,6 +311,8 @@ void DMA::Start(size_t queue_depth) {
   }
 }
 
+static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
+
 ssize_t DMASample::offset(int index) const { return dma_->channel_offsets_[index]; }
 
 double DMASample::GetTimestamp() const {
@@ -322,8 +361,7 @@ int32_t DMASample::GetRaw(Encoder *input) const {
   } else if (1) {
     // Extract the 31-bit signed tEncoder::tOutput Value using right-shift.
     // This works even though C/C++ doesn't guarantee whether signed >> does
-    // arithmetic or logical shift. (dmaWord / 2) is not a great alternative
-    // since it rounds.
+    // arithmetic or logical shift. (dmaWord / 2) would fix that but it rounds.
     result = static_cast<int32_t>(dmaWord) >> 1;
   }
 #if 0  // This approach was recommended but it doesn't return the right value.
@@ -343,6 +381,33 @@ int32_t DMASample::GetRaw(Encoder *input) const {
 int32_t DMASample::Get(Encoder *input) const {
   int32_t raw = GetRaw(input);
 
-  // TODO(austin): Really bad...  DecodingScaleFactor?
-  return raw / 4.0;
+  return raw / input->GetEncodingScale();
+}
+
+int16_t DMASample::GetValue(AnalogInput *input) const {
+  if (offset(kEnable_Encoders) == -1) {
+    wpi_setStaticErrorWithContext(dma_,
+        NiFpga_Status_ResourceNotFound,
+        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+    return -1;
+  }
+
+  uint32_t dmaWord;
+  // TODO(brian): Figure out if this math is actually correct.
+  if (input->GetChannel() <= 3) {
+    dmaWord = read_buffer_[offset(kEnable_AI0_Low) + input->GetChannel()];
+  } else {
+    dmaWord = read_buffer_[offset(kEnable_AI0_High) + input->GetChannel() - 4];
+  }
+  // TODO(brian): Verify that this is correct.
+  return static_cast<int16_t>(dmaWord);
+}
+
+float DMASample::GetVoltage(AnalogInput *input) const {
+  int16_t value = GetValue(input);
+  if (value == -1) return 0.0;
+  uint32_t lsb_weight = input->GetLSBWeight();
+  int32_t offset = input->GetOffset();
+  float voltage = lsb_weight * 1.0e-9 * value - offset * 1.0e-9;
+  return voltage;
 }

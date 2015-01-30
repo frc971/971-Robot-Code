@@ -1,20 +1,26 @@
 #ifndef _DMA_H_
 #define _DMA_H_
 
+// Interface to the roboRIO FPGA's DMA features.
+
 #include <stdint.h>
 
 #include <array>
 #include <memory>
 
 #include "ChipObject.h"
-#include "DigitalSource.h"
-#include "Encoder.h"
+#include "ErrorBase.h"
 
 class DMA;
+class DigitalSource;
+class AnalogInput;
+class Encoder;
 
+// A POD class which stores the data from a DMA sample and provides safe ways to
+// access it.
 class DMASample {
  public:
-  DMASample() {}
+  DMASample() = default;
 
   // Returns the FPGA timestamp of the sample.
   double GetTimestamp() const;
@@ -27,6 +33,10 @@ class DMASample {
   int32_t GetRaw(Encoder *input) const;
   // Returns the {1, 2, or 4} X scaled value of the encoder in the sample.
   int32_t Get(Encoder *input) const;
+  // Returns the raw 12-bit value from the ADC.
+  int16_t GetValue(AnalogInput *input) const;
+  // Returns the scaled value of an analog input.
+  float GetVoltage(AnalogInput *input) const;
 
  private:
   friend DMA;
@@ -42,6 +52,7 @@ class DMASample {
   uint32_t read_buffer_[64];
 };
 
+// TODO(austin): ErrorBase...
 class DMA : public ErrorBase {
  public:
   DMA();
@@ -54,9 +65,12 @@ class DMA : public ErrorBase {
   void SetRate(uint32_t cycles);
 
   // Adds the input signal to the state to snapshot on the trigger event.
+  // It is safe to add the same input multiple times, but there is currently
+  // no way to remove one once it has been added.
   // Call Add() and SetExternalTrigger() before Start().
   void Add(Encoder *encoder);
   void Add(DigitalSource *input);
+  void Add(AnalogInput *input);
 
   // Configures DMA to trigger on an external trigger.  There can only be 4
   // external triggers.
@@ -77,9 +91,15 @@ class DMA : public ErrorBase {
   // Reads a sample from the DMA buffer, waiting up to timeout_ms for it.
   // Returns a status code indicating whether the read worked, timed out, or
   // failed.
+  // Returns in *remaining_out the number of DMA samples still queued after this
+  // Read().
   // Call Add() and SetExternalTrigger() then Start() before Read().
   // The sample is only usable while this DMA object is left started.
-  ReadStatus Read(DMASample *sample, uint32_t timeout_ms, size_t *remaining);
+  ReadStatus Read(DMASample *sample, uint32_t timeout_ms,
+                  size_t *remaining_out);
+
+  // Translates a ReadStatus code to a string name.
+  static const char *NameOfReadStatus(ReadStatus s);
 
  private:
   ::std::unique_ptr<nFPGA::tDMAManager> manager_;  // set by Start()
