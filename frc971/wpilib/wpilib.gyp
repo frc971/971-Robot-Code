@@ -8,6 +8,7 @@
       ],
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/common.gyp:stl_mutex',
         '<(AOS)/build/aos.gyp:logging',
         '<(EXTERNALS):WPILib',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
