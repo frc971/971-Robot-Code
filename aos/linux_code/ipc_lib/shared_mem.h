@@ -21,7 +21,7 @@ extern struct aos_core *global_core;
 // A structure that represents some kind of global pointer that everything
 // shares.
 typedef struct aos_global_pointer_t {
-  mutex lock;
+  struct aos_mutex lock;
   void *pointer;
 } aos_global_pointer;
 
@@ -31,8 +31,8 @@ typedef struct aos_shm_core_t {
   struct timespec identifier;
   // gets 0-initialized at the start (as part of shared memory) and
   // the owner sets as soon as it finishes setting stuff up
-  mutex creation_condition;
-  mutex msg_alloc_lock;
+  aos_condition creation_condition;
+  struct aos_mutex msg_alloc_lock;
   void *msg_alloc;
   // A pointer to the head of the linked list of queues.
   // pointer points to a ::aos::Queue.

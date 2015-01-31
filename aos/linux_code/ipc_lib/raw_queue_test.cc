@@ -58,8 +58,7 @@ class RawQueueTest : public ::testing::Test {
                 "this will get put in shared memory");
   template<typename T>
   struct FunctionToCall {
-    FunctionToCall() : result(ResultType::NotCalled) {
-      started.Lock();
+    FunctionToCall() : result(ResultType::NotCalled), started() {
     }
 
     volatile ResultType result;
@@ -67,18 +66,19 @@ class RawQueueTest : public ::testing::Test {
     void (*function)(T*, char*);
     T *arg;
     volatile char failure[kFailureSize];
-    Mutex started;
+    aos_futex started;
   };
   template<typename T>
   static void Hangs_(FunctionToCall<T> *const to_call) {
-    to_call->started.Unlock();
+    time::SleepFor(time::Time::InSeconds(0.01));
+    ASSERT_EQ(1, futex_set(&to_call->started));
     to_call->result = ResultType::Called;
     to_call->function(to_call->arg, const_cast<char *>(to_call->failure));
     to_call->result = ResultType::Returned;
   }
 
   // How long until a function is considered to have hung.
-  static constexpr time::Time kHangTime = time::Time::InSeconds(0.035);
+  static constexpr time::Time kHangTime = time::Time::InSeconds(0.09);
   // How long to sleep after forking (for debugging).
   static constexpr time::Time kForkSleep = time::Time::InSeconds(0);
 
@@ -86,15 +86,19 @@ class RawQueueTest : public ::testing::Test {
   // process and wait(2)s for it.
   class ForkedProcess {
    public:
-    ForkedProcess(pid_t pid, mutex *lock) : pid_(pid), lock_(lock) {};
+    ForkedProcess(pid_t pid, aos_futex *done)
+        : pid_(pid), done_(done), exiting_(false) {};
     ~ForkedProcess() {
-      if (kill(pid_, SIGINT) == -1) {
-        if (errno == ESRCH) {
-          printf("process %jd was already dead\n", static_cast<intmax_t>(pid_));
-        } else {
-          PLOG(FATAL, "kill(SIGKILL, %jd) failed", static_cast<intmax_t>(pid_));
+      if (!exiting_) {
+        if (kill(pid_, SIGTERM) == -1) {
+          if (errno == ESRCH) {
+            printf("process %jd was already dead\n",
+                   static_cast<intmax_t>(pid_));
+          } else {
+            PLOG(FATAL, "kill(SIGKILL, %jd) failed",
+                 static_cast<intmax_t>(pid_));
+          }
         }
-        return;
       }
       const pid_t ret = wait(NULL);
       if (ret == -1) {
@@ -115,11 +119,12 @@ class RawQueueTest : public ::testing::Test {
       Finished, Hung, Error
     };
     JoinResult Join(time::Time timeout = kHangTime) {
-      timespec lock_timeout = (kForkSleep + timeout).ToTimespec();
-      switch (mutex_lock_timeout(lock_, &lock_timeout)) {
+      timespec done_timeout = (kForkSleep + timeout).ToTimespec();
+      switch (futex_wait_timeout(done_, &done_timeout)) {
         case 2:
           return JoinResult::Hung;
         case 0:
+          exiting_ = true;
           return JoinResult::Finished;
         default:
           return JoinResult::Error;
@@ -128,7 +133,9 @@ class RawQueueTest : public ::testing::Test {
 
    private:
     const pid_t pid_;
-    mutex *const lock_;
+    aos_futex *const done_;
+    // True iff we know that the process is already exiting.
+    bool exiting_;
   } __attribute__((unused));
 
   // State for HangsFork and HangsCheck.
@@ -159,9 +166,9 @@ class RawQueueTest : public ::testing::Test {
   // Leaks shared memory.
   template<typename T> __attribute__((warn_unused_result))
   std::unique_ptr<ForkedProcess> ForkExecute(void (*function)(T*), T *arg) {
-    mutex *lock = static_cast<mutex *>(shm_malloc_aligned(
-            sizeof(*lock), sizeof(int)));
-    CHECK_EQ(mutex_lock(lock), 0);
+    aos_futex *done = static_cast<aos_futex *>(shm_malloc_aligned(
+            sizeof(*done), alignof(aos_futex)));
+    *done = 0;
     const pid_t pid = fork();
     switch (pid) {
       case 0:  // child
@@ -173,13 +180,13 @@ class RawQueueTest : public ::testing::Test {
         }
         ::aos::common::testing::PreventExit();
         function(arg);
-        mutex_unlock(lock);
+        CHECK_NE(-1, futex_set(done));
         exit(EXIT_SUCCESS);
       case -1:  // parent failure
         PLOG(ERROR, "fork() failed");
         return std::unique_ptr<ForkedProcess>();
       default:  // parent
-        return std::unique_ptr<ForkedProcess>(new ForkedProcess(pid, lock));
+        return std::unique_ptr<ForkedProcess>(new ForkedProcess(pid, done));
     }
   }
 
@@ -216,8 +223,8 @@ class RawQueueTest : public ::testing::Test {
     static_cast<char *>(fatal_failure)[0] = '\0';
     children_[id] = ForkExecute(Hangs_, to_call).release();
     if (!children_[id]) return AssertionFailure() << "ForkExecute failed";
+    CHECK_EQ(0, futex_wait(&to_call->started));
     to_calls_[id] = reinterpret_cast<FunctionToCall<void> *>(to_call);
-    to_call->started.Lock();
     return AssertionSuccess();
   }
   // Checks whether or not a function hung like it was supposed to.
@@ -244,7 +251,9 @@ class RawQueueTest : public ::testing::Test {
       } else if (result == ForkedProcess::JoinResult::Error) {
         return AssertionFailure() << "error joining child";
       } else {
-        abort();
+        if (to_calls_[id]->result == ResultType::NotCalled) {
+          return AssertionFailure() << "stuff took too long getting started";
+        }
         return AssertionFailure() << "something weird happened";
       }
     }
@@ -393,7 +402,10 @@ TEST_F(RawQueueTest, MultiRead) {
   args.flags = RawQueue::kBlock;
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 1));
   ASSERT_TRUE(HangsFork(ReadTestMessage, &args, true, 2));
-  EXPECT_TRUE(HangsCheck(1) != HangsCheck(2));
+  AssertionResult one = HangsCheck(1);
+  AssertionResult two = HangsCheck(2);
+  EXPECT_TRUE(one != two) << "'" <<
+      one.failure_message() << "' vs '" << two.failure_message() << "'";
   // TODO(brians) finish this
 }
 

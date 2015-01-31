@@ -21,11 +21,11 @@
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
   clock_gettime(CLOCK_REALTIME, &shm_core->identifier);
-  shm_core->msg_alloc_lock = 0;
+  memset(&shm_core->msg_alloc_lock, 0, sizeof(shm_core->msg_alloc_lock));
   shm_core->queues.pointer = NULL;
-  shm_core->queues.lock = 0;
+  memset(&shm_core->queues.lock, 0, sizeof(shm_core->queues.lock));
   shm_core->queue_types.pointer = NULL;
-  shm_core->queue_types.lock = 0;
+  memset(&shm_core->queue_types.lock, 0, sizeof(shm_core->queue_types.lock));
 }
 
 ptrdiff_t aos_core_get_mem_usage(void) {

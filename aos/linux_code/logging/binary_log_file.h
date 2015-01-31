@@ -49,9 +49,9 @@ struct __attribute__((aligned(MESSAGE_ALIGNMENT))) __attribute__((packed))
   //
   // There will be something here after the last message on a "page" set to 2
   // (by the futex_set) to indicate that the next message is on the next page.
-  mutex marker;
+  aos_futex marker;
   static_assert(sizeof(marker) == 4, "mutex changed size!");
-  static_assert(MESSAGE_ALIGNMENT >= alignof(mutex),
+  static_assert(MESSAGE_ALIGNMENT >= alignof(aos_futex),
                 "MESSAGE_ALIGNMENT is too small");
 
   uint32_t time_sec;

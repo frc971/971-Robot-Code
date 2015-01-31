@@ -233,7 +233,6 @@
         '<(AOS)/build/aos.gyp:logging_interface',
       ],
       'export_dependent_settings': [
-        'mutex',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
       ],
     },
@@ -241,14 +240,16 @@
       'target_name': 'mutex',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/linux_code/ipc_lib/mutex.cpp',
+        '<(AOS)/linux_code/ipc_lib/mutex.cc',
       ],
       'dependencies': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
         '<(AOS)/build/aos.gyp:logging_interface',
+        'die',
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        'die',
       ],
     },
     {
@@ -265,6 +266,7 @@
         '<(AOS)/common/util/util.gyp:death_test_log_implementation',
         '<(AOS)/common/util/util.gyp:thread',
         '<(AOS)/common/common.gyp:time',
+        'queue_testutils',
       ],
     },
     {
@@ -282,6 +284,7 @@
         '<(AOS)/build/aos.gyp:logging',
         'queue_testutils',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:core_lib',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
         'die',
         '<(AOS)/common/util/util.gyp:thread',
        ],

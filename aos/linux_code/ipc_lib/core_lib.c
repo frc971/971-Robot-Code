@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 
@@ -27,7 +28,8 @@ void *shm_malloc_aligned(size_t length, uint8_t alignment) {
 
   void *msg = NULL;
   aos_shm_core *shm_core = global_core->mem_struct;
-  mutex_grab(&shm_core->msg_alloc_lock);
+  int result = mutex_grab(&shm_core->msg_alloc_lock);
+  assert(result == 0);
   shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - length;
   const uint8_t align_extra = (uintptr_t)shm_core->msg_alloc % alignment;
   shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - align_extra;
