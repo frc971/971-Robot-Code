@@ -445,34 +445,31 @@ class DrivetrainWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> right_drivetrain_talon_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
-
 class WPILibRobot : public RobotBase {
  public:
   virtual void StartCompetition() {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    ::frc971::wpilib::JoystickSender joystick_sender;
+    JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
-    ::frc971::wpilib::SensorReader reader;
-    ::std::thread reader_thread(::std::ref(reader));
-    ::frc971::wpilib::GyroSender gyro_sender;
-    ::std::thread gyro_thread(::std::ref(gyro_sender));
     ::std::unique_ptr<Compressor> compressor(new Compressor());
     compressor->SetClosedLoopControl(true);
 
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer;
+    SensorReader reader;
+    ::std::thread reader_thread(::std::ref(reader));
+    GyroSender gyro_sender;
+    ::std::thread gyro_thread(::std::ref(gyro_sender));
+
+    DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_left_drivetrain_talon(
         ::std::unique_ptr<Talon>(new Talon(5)));
     drivetrain_writer.set_right_drivetrain_talon(
         ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
-        new ::frc971::wpilib::BufferedPcm());
-    ::frc971::wpilib::SolenoidWriter solenoid_writer(pcm);
+    ::std::unique_ptr<BufferedPcm> pcm(new BufferedPcm());
+    SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(6));
     solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(7));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
@@ -498,5 +495,8 @@ class WPILibRobot : public RobotBase {
   }
 };
 
+}  // namespace wpilib
+}  // namespace frc971
 
-START_ROBOT_CLASS(WPILibRobot);
+
+START_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);
