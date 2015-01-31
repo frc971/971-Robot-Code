@@ -18,6 +18,7 @@ public:
 	explicit DigitalOutput(uint32_t channel);
 	virtual ~DigitalOutput();
 	void Set(uint32_t value);
+  virtual bool Get();
 	uint32_t GetChannel();
 	void Pulse(float length);
 	bool IsPulsing();

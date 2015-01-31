@@ -74,6 +74,18 @@ void DigitalOutput::Set(uint32_t value)
 }
 
 /**
+ * Get the value from a digital output channel.
+ * Retrieve the value of a single digital output channel from the FPGA.
+ */
+bool DigitalOutput::Get()
+{
+	int32_t status = 0;
+	bool value = getDIO(m_digital_ports[m_channel], &status);
+	wpi_setErrorWithContext(status, getHALErrorMessage(status));
+	return value;
+}
+
+/**
  * @return The GPIO channel number that this object represents.
  */
 uint32_t DigitalOutput::GetChannel()
