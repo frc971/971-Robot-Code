@@ -16,6 +16,7 @@
         '../autonomous/autonomous.gyp:auto',
         '../actions/actions.gyp:drivetrain_action',
         '../frc971.gyp:joystick_reader',
+        '../zeroing/zeroing.gyp:zeroing_test',
       ],
       'copies': [
         {
