@@ -6,11 +6,15 @@
 namespace frc971 {
 namespace control_loops {
 
+StateFeedbackPlantCoefficients<2, 1, 1> MakeClawPlantCoefficients();
+
+StateFeedbackController<2, 1, 1> MakeClawController();
+
 StateFeedbackPlant<2, 1, 1> MakeClawPlant();
 
 StateFeedbackLoop<2, 1, 1> MakeClawLoop();
 
-}  // namespace frc971
 }  // namespace control_loops
+}  // namespace frc971
 
 #endif  // FRC971_CONTROL_LOOPS_CLAW_CLAW_MOTOR_PLANT_H_

@@ -6,11 +6,15 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlant<2, 1, 1> MakeArmPlant();
+StateFeedbackPlantCoefficients<4, 2, 2> MakeArmPlantCoefficients();
 
-StateFeedbackLoop<2, 1, 1> MakeArmLoop();
+StateFeedbackController<4, 2, 2> MakeArmController();
 
-}  // namespace frc971
+StateFeedbackPlant<4, 2, 2> MakeArmPlant();
+
+StateFeedbackLoop<4, 2, 2> MakeArmLoop();
+
 }  // namespace control_loops
+}  // namespace frc971
 
 #endif  // FRC971_CONTROL_LOOPS_FRIDGE_ARM_MOTOR_PLANT_H_

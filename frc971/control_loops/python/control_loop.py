@@ -2,16 +2,16 @@ import controls
 import numpy
 
 class Constant(object):
-    def __init__ (self, name, formatt, value):
-        self.name = name
-        self.formatt = formatt
-        self.value = value
-        self.formatToType = {}
-        self.formatToType['%f'] = "double";
-        self.formatToType['%d'] = "int";
-    def __str__ (self):
-        return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
-            (self.formatToType[self.formatt], self.name, self.value)
+  def __init__ (self, name, formatt, value):
+    self.name = name
+    self.formatt = formatt
+    self.value = value
+    self.formatToType = {}
+    self.formatToType['%f'] = "double";
+    self.formatToType['%d'] = "int";
+  def __str__ (self):
+    return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
+        (self.formatToType[self.formatt], self.name, self.value)
 
 
 class ControlLoopWriter(object):
@@ -140,24 +140,24 @@ class ControlLoopWriter(object):
 
       fd.write('%s Make%sPlant() {\n' %
                (self._PlantType(), self._gain_schedule_name))
-      fd.write('  ::std::vector<%s *> plants(%d);\n' % (
+      fd.write('  ::std::vector< ::std::unique_ptr<%s>> plants(%d);\n' % (
           self._CoeffType(), len(self._loops)))
       for index, loop in enumerate(self._loops):
-        fd.write('  plants[%d] = new %s(%s);\n' %
-                 (index, self._CoeffType(),
+        fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
+                 (index, self._CoeffType(), self._CoeffType(),
                   loop.PlantFunction()))
-      fd.write('  return %s(plants);\n' % self._PlantType())
+      fd.write('  return %s(&plants);\n' % self._PlantType())
       fd.write('}\n\n')
 
       fd.write('%s Make%sLoop() {\n' %
                (self._LoopType(), self._gain_schedule_name))
-      fd.write('  ::std::vector<%s *> controllers(%d);\n' % (
+      fd.write('  ::std::vector< ::std::unique_ptr<%s>> controllers(%d);\n' % (
           self._ControllerType(), len(self._loops)))
       for index, loop in enumerate(self._loops):
-        fd.write('  controllers[%d] = new %s(%s);\n' %
-                 (index, self._ControllerType(),
+        fd.write('  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
+                 (index, self._ControllerType(), self._ControllerType(),
                   loop.ControllerFunction()))
-      fd.write('  return %s(controllers);\n' % self._LoopType())
+      fd.write('  return %s(&controllers);\n' % self._LoopType())
       fd.write('}\n\n')
 
       fd.write(self._namespace_end)
@@ -215,6 +215,15 @@ class ControlLoop(object):
    #U = numpy.clip(U, self.U_min, self.U_max)
     self.X = self.A * self.X + self.B * U
     self.Y = self.C * self.X + self.D * U
+
+  def PredictObserver(self, U):
+    """Runs the predict step of the observer update."""
+    self.X_hat = (self.A * self.X_hat + self.B * U)
+
+  def CorrectObserver(self, U):
+    """Runs the correct step of the observer update."""
+    self.X_hat += numpy.linalg.inv(self.A) * self.L * (
+        self.Y - self.C * self.X_hat - self.D * U)
 
   def UpdateObserver(self, U):
     """Updates the observer given the provided U."""
@@ -320,9 +329,10 @@ class ControlLoop(object):
 
     ans.append(self._DumpMatrix('L', self.L))
     ans.append(self._DumpMatrix('K', self.K))
+    ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
 
     ans.append('  return StateFeedbackController<%d, %d, %d>'
-               '(L, K, Make%sPlantCoefficients());\n' % (num_states, num_inputs,
-                                             num_outputs, self._name))
+               '(L, K, A_inv, Make%sPlantCoefficients());\n' % (
+                   num_states, num_inputs, num_outputs, self._name))
     ans.append('}\n')
     return ''.join(ans)

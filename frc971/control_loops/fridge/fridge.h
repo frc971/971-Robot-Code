@@ -36,10 +36,8 @@ class Fridge
 
  private:
   // The state feedback control loop or loops to talk to.
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> left_arm_loop_;
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> right_arm_loop_;
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> left_elev_loop_;
-  ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> right_elev_loop_;
+  ::std::unique_ptr<StateFeedbackLoop<4, 2, 2>> arm_loop_;
+  ::std::unique_ptr<StateFeedbackLoop<4, 2, 2>> elev_loop_;
 };
 
 }  // namespace control_loops

@@ -6,11 +6,15 @@
 namespace frc971 {
 namespace control_loops {
 
-StateFeedbackPlant<2, 1, 1> MakeElevatorPlant();
+StateFeedbackPlantCoefficients<4, 2, 2> MakeElevatorPlantCoefficients();
 
-StateFeedbackLoop<2, 1, 1> MakeElevatorLoop();
+StateFeedbackController<4, 2, 2> MakeElevatorController();
 
-}  // namespace frc971
+StateFeedbackPlant<4, 2, 2> MakeElevatorPlant();
+
+StateFeedbackLoop<4, 2, 2> MakeElevatorLoop();
+
 }  // namespace control_loops
+}  // namespace frc971
 
 #endif  // FRC971_CONTROL_LOOPS_FRIDGE_ELEVATOR_MOTOR_PLANT_H_

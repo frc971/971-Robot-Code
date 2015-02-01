@@ -28,19 +28,21 @@ StateFeedbackController<1, 1, 1> MakeCIMController() {
   L << 0.604537580221;
   Eigen::Matrix<double, 1, 1> K;
   K << 0.0378646293422;
-  return StateFeedbackController<1, 1, 1>(L, K, MakeCIMPlantCoefficients());
+  Eigen::Matrix<double, 1, 1> A_inv;
+  A_inv << 1.62723978514;
+  return StateFeedbackController<1, 1, 1>(L, K, A_inv, MakeCIMPlantCoefficients());
 }
 
 StateFeedbackPlant<1, 1, 1> MakeCIMPlant() {
-  ::std::vector<StateFeedbackPlantCoefficients<1, 1, 1> *> plants(1);
-  plants[0] = new StateFeedbackPlantCoefficients<1, 1, 1>(MakeCIMPlantCoefficients());
-  return StateFeedbackPlant<1, 1, 1>(plants);
+  ::std::vector< ::std::unique_ptr<StateFeedbackPlantCoefficients<1, 1, 1>>> plants(1);
+  plants[0] = ::std::unique_ptr<StateFeedbackPlantCoefficients<1, 1, 1>>(new StateFeedbackPlantCoefficients<1, 1, 1>(MakeCIMPlantCoefficients()));
+  return StateFeedbackPlant<1, 1, 1>(&plants);
 }
 
 StateFeedbackLoop<1, 1, 1> MakeCIMLoop() {
-  ::std::vector<StateFeedbackController<1, 1, 1> *> controllers(1);
-  controllers[0] = new StateFeedbackController<1, 1, 1>(MakeCIMController());
-  return StateFeedbackLoop<1, 1, 1>(controllers);
+  ::std::vector< ::std::unique_ptr<StateFeedbackController<1, 1, 1>>> controllers(1);
+  controllers[0] = ::std::unique_ptr<StateFeedbackController<1, 1, 1>>(new StateFeedbackController<1, 1, 1>(MakeCIMController()));
+  return StateFeedbackLoop<1, 1, 1>(&controllers);
 }
 
 }  // namespace control_loops

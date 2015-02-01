@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
@@ -21,37 +22,37 @@ class FridgeSimulation {
  public:
   // Constructs a simulation.
   FridgeSimulation()
-      : left_arm_plant_(new StateFeedbackPlant<2, 1, 1>(MakeArmPlant())),
-        right_arm_plant_(new StateFeedbackPlant<2, 1, 1>(MakeArmPlant())),
-        left_elev_plant_(new StateFeedbackPlant<2, 1, 1>(MakeElevatorPlant())),
-        right_elev_plant_(new StateFeedbackPlant<2, 1, 1>(MakeElevatorPlant())),
-        fridge_queue_(".frc971.control_loops.fridge",
-          0x78d8e372, ".frc971.control_loops.fridge.goal",
-          ".frc971.control_loops.fridge.position",
-          ".frc971.control_loops.fridge.output",
-          ".frc971.control_loops.fridge.status") {
-  }
+      : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
+        elev_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
+        fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
+                      ".frc971.control_loops.fridge_queue.goal",
+                      ".frc971.control_loops.fridge_queue.position",
+                      ".frc971.control_loops.fridge_queue.output",
+                      ".frc971.control_loops.fridge_queue.status") {}
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
+    ::aos::ScopedMessagePtr<aos::controls::SensorGeneration>
+        sensor_generation_msg =
+            ::aos::controls::sensor_generation.MakeMessage();
+    sensor_generation_msg->reader_pid = 0;
+    sensor_generation_msg->cape_resets = 0;
+    sensor_generation_msg.Send();
+
     ::aos::ScopedMessagePtr<control_loops::FridgeQueue::Position> position =
-      fridge_queue_.position.MakeMessage();
+        fridge_queue_.position.MakeMessage();
     position.Send();
   }
 
   // Simulates for a single timestep.
   void Simulate() {
     EXPECT_TRUE(fridge_queue_.output.FetchLatest());
-    left_arm_plant_->Update();
-    right_arm_plant_->Update();
-    left_elev_plant_->Update();
-    right_elev_plant_->Update();
+    arm_plant_->Update();
+    elev_plant_->Update();
   }
 
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> left_arm_plant_;
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> right_arm_plant_;
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> left_elev_plant_;
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> right_elev_plant_;
+  ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> arm_plant_;
+  ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> elev_plant_;
 
  private:
   FridgeQueue fridge_queue_;
@@ -59,14 +60,14 @@ class FridgeSimulation {
 
 class FridgeTest : public ::testing::Test {
  protected:
-  FridgeTest() : fridge_queue_(".frc971.control_loops.fridge_queue",
-                                   0x78d8e372,
-                                   ".frc971.control_loops.fridge_queue.goal",
-                                   ".frc971.control_loops.fridge_queue.position",
-                                   ".frc971.control_loops.fridge_queue.output",
-                                   ".frc971.control_loops.fridge_queue.status"),
-                  fridge_(&fridge_queue_),
-                  fridge_plant_() {
+  FridgeTest()
+      : fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
+                      ".frc971.control_loops.fridge_queue.goal",
+                      ".frc971.control_loops.fridge_queue.position",
+                      ".frc971.control_loops.fridge_queue.output",
+                      ".frc971.control_loops.fridge_queue.status"),
+        fridge_(&fridge_queue_),
+        fridge_plant_() {
     // Flush the robot state queue so we can use clean shared memory for this
     // test.
     ::aos::robot_state.Clear();
@@ -75,6 +76,7 @@ class FridgeTest : public ::testing::Test {
 
   virtual ~FridgeTest() {
     ::aos::robot_state.Clear();
+    ::aos::controls::sensor_generation.Clear();
   }
 
   // Update the robot state. Without this, the Iteration of the control loop

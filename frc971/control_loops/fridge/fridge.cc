@@ -11,10 +11,8 @@ namespace control_loops {
 
 Fridge::Fridge(control_loops::FridgeQueue *fridge)
     : aos::controls::ControlLoop<control_loops::FridgeQueue>(fridge),
-      left_arm_loop_(new StateFeedbackLoop<2, 1, 1>(MakeArmLoop())),
-      right_arm_loop_(new StateFeedbackLoop<2, 1, 1>(MakeArmLoop())),
-      left_elev_loop_(new StateFeedbackLoop<2, 1, 1>(MakeArmLoop())),
-      right_elev_loop_(new StateFeedbackLoop<2, 1, 1>(MakeArmLoop())) {}
+      arm_loop_(new StateFeedbackLoop<4, 2, 2>(MakeArmLoop())),
+      elev_loop_(new StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop())) {}
 
 void Fridge::RunIteration(
     const control_loops::FridgeQueue::Goal * /*goal*/,
@@ -22,7 +20,7 @@ void Fridge::RunIteration(
     control_loops::FridgeQueue::Output * /*output*/,
     control_loops::FridgeQueue::Status * /*status*/) {
 
-  LOG(DEBUG, "Hi Brian!");
+  LOG(DEBUG, "Hi Brian!\n");
 }
 
 }  // namespace control_loops

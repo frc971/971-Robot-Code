@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/queue.h"
 #include "aos/common/queue_testutils.h"
 #include "frc971/control_loops/claw/claw.q.h"
@@ -23,7 +24,7 @@ class ClawSimulation {
   ClawSimulation()
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
         claw_queue_(".frc971.control_loops.claw_queue",
-          0x78d8e372, ".frc971.control_loops.claw_queue.goal",
+          0x9d7452fb, ".frc971.control_loops.claw_queue.goal",
           ".frc971.control_loops.claw_queue.position",
           ".frc971.control_loops.claw_queue.output",
           ".frc971.control_loops.claw_queue.status") {
@@ -31,6 +32,13 @@ class ClawSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
+    ::aos::ScopedMessagePtr<aos::controls::SensorGeneration>
+        sensor_generation_msg =
+            ::aos::controls::sensor_generation.MakeMessage();
+    sensor_generation_msg->reader_pid = 0;
+    sensor_generation_msg->cape_resets = 0;
+    sensor_generation_msg.Send();
+
     ::aos::ScopedMessagePtr<control_loops::ClawQueue::Position> position =
       claw_queue_.position.MakeMessage();
     position.Send();
@@ -51,7 +59,7 @@ class ClawSimulation {
 class ClawTest : public ::testing::Test {
  protected:
   ClawTest() : claw_queue_(".frc971.control_loops.claw_queue",
-                                   0x78d8e372,
+                                   0x9d7452fb,
                                    ".frc971.control_loops.claw_queue.goal",
                                    ".frc971.control_loops.claw_queue.position",
                                    ".frc971.control_loops.claw_queue.output",
@@ -66,6 +74,7 @@ class ClawTest : public ::testing::Test {
 
   virtual ~ClawTest() {
     ::aos::robot_state.Clear();
+    ::aos::controls::sensor_generation.Clear();
   }
 
   // Update the robot state. Without this, the Iteration of the control loop

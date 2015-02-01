@@ -89,8 +89,8 @@ def c2d(A, B, dt):
      integral(e^(A t) * B, 0, dt).
      Returns (A, B).  C and D are unchanged."""
   e, P = numpy.linalg.eig(A)
-  diag = numpy.matrix(numpy.eye(A.shape[0]))
-  diage = numpy.matrix(numpy.eye(A.shape[0]))
+  diag = numpy.matrix(numpy.eye(A.shape[0]), dtype=numpy.complex128)
+  diage = numpy.matrix(numpy.eye(A.shape[0]), dtype=numpy.complex128)
   for eig, count in zip(e, range(0, A.shape[0])):
     diag[count, count] = numpy.exp(eig * dt)
     if abs(eig) < 1.0e-16:
@@ -98,7 +98,13 @@ def c2d(A, B, dt):
     else:
       diage[count, count] = (numpy.exp(eig * dt) - 1.0) / eig
 
-  return (P * diag * numpy.linalg.inv(P), P * diage * numpy.linalg.inv(P) * B)
+  ans_a = P * diag * numpy.linalg.inv(P)
+  ans_b = P * diage * numpy.linalg.inv(P) * B
+  if numpy.abs(ans_a.imag).sum() / numpy.abs(ans_a).sum() < 1e-6:
+    ans_a = ans_a.real
+  if numpy.abs(ans_b.imag).sum() / numpy.abs(ans_b).sum() < 1e-6:
+    ans_b = ans_b.real
+  return (ans_a, ans_b)
 
 def ctrb(A, B):
   """Returns the controlability matrix.
@@ -123,7 +129,8 @@ def dlqr(A, B, Q, R):
 
   # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P *B) * (A.T * P.T * B).T + Q
 
-  P, rcond, w, S, T = slycot.sb02od(A.shape[0], B.shape[1], A, B, Q, R, 'D')
+  P, rcond, w, S, T = slycot.sb02od(
+      n=A.shape[0], m=B.shape[1], A=A, B=B, Q=Q, R=R, dico='D')
 
   F = numpy.linalg.inv(R + B.T * P *B) * B.T * P * A
   return F
