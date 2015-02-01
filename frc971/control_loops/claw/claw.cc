@@ -18,7 +18,7 @@ void Claw::RunIteration(
     control_loops::ClawQueue::Output * /*output*/,
     control_loops::ClawQueue::Status * /*status*/) {
 
-  LOG(DEBUG, "Hi Brian!");
+  LOG(DEBUG, "Hi Brian!\n");
 }
 
 }  // namespace control_loops

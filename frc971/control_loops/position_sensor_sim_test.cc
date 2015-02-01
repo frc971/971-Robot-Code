@@ -24,7 +24,8 @@ TEST_F(PositionSensorSimTest, NoIndices) {
   // mechanism stays between two index pulses.
   const double index_diff = 0.5;
   PotAndIndexPosition position;
-  PositionSensorSimulator sim(3.6 * index_diff, index_diff, 0);
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(3.6 * index_diff, 0);
 
   // Make sure that we don't accidentally hit an index pulse.
   for (int i = 0; i < 30; i++) {
@@ -63,7 +64,8 @@ TEST_F(PositionSensorSimTest, CountIndices) {
   // mechanism's position during the index pulses.
   const double index_diff = 0.8;
   PotAndIndexPosition position;
-  PositionSensorSimulator sim(4.6 * index_diff, index_diff, 0);
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(4.6 * index_diff, 0);
 
   // Make sure that we get an index pulse on every transition.
   sim.GetSensorValues(&position);

@@ -29,6 +29,13 @@ queue_group FridgeQueue {
     // Height of the elevator.
     double height;
 
+    // Angular velocity of the arm.
+    double angular_velocity;
+    // Linear velocity of the elevator.
+    double velocity;
+
+    // TODO(austin): Do I need acceleration here too?
+
     GrabberPistons grabbers;
   };
 
@@ -50,6 +57,9 @@ queue_group FridgeQueue {
     double height;
     // state of the grabber pistons
     GrabberPistons grabbers;
+
+    // TODO(austin): Internal state.
+    bool estopped;
   };
 
   message Output {

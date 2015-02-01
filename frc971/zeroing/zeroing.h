@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "frc971/zeroing/zeroing_queue.q.h"
+#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/constants.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -12,11 +14,21 @@ namespace zeroing {
 class ZeroingEstimator {
  public:
   ZeroingEstimator(double index_difference, size_t max_sample_count);
-  void UpdateEstimate(const ZeroingInfo& info);
-  double getPosition();
+  ZeroingEstimator(const constants::Values::ZeroingConstants &constants);
+  void UpdateEstimate(const PotAndIndexPosition &info);
+  void UpdateEstimate(const ZeroingInfo &info);
+
+  double offset() const { return offset_; }
+  bool zeroed() const { return zeroed_; }
+  double offset_ratio_ready() const {
+    return start_pos_samples_.size() / static_cast<double>(max_sample_count_);
+  }
+
  private:
-  // The estimated position.
-  double pos_;
+  void DoInit(double index_difference, size_t max_sample_count);
+
+  double offset_ = 0.0;
+  bool zeroed_ = false;
   // The distance between two consecutive index positions.
   double index_diff_;
   // The next position in 'start_pos_samples_' to be used to store the
