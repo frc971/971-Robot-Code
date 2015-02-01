@@ -26,7 +26,24 @@
         'loop_output_handler',
         'buffered_pcm',
         'gyro_sender',
+        'dma_edge_counting',
         'interrupt_edge_counting',
+      ],
+    },
+    {
+      'target_name': 'dma_edge_counting',
+      'type': 'static_library',
+      'sources': [
+        'dma_edge_counting.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):WPILib',
+        '<(AOS)/build/aos.gyp:logging',
+        'hall_effect',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):WPILib',
+        'hall_effect',
       ],
     },
     {
