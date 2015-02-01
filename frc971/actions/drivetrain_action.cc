@@ -44,9 +44,9 @@ void DrivetrainAction::RunAction() {
     // wait until next 10ms tick
     ::aos::time::PhasedLoop10MS(5000);
 
-    control_loops::drivetrain.status.FetchLatest();
-    if (control_loops::drivetrain.status.get()) {
-      const auto &status = *control_loops::drivetrain.status;
+    control_loops::drivetrain_queue.status.FetchLatest();
+    if (control_loops::drivetrain_queue.status.get()) {
+      const auto& status = *control_loops::drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) >
           24) {
@@ -110,7 +110,7 @@ void DrivetrainAction::RunAction() {
     LOG(DEBUG, "Driving left to %f, right to %f\n",
         left_goal_state(0, 0) + action_q_->goal->left_initial_position,
         right_goal_state(0, 0) + action_q_->goal->right_initial_position);
-    control_loops::drivetrain.goal.MakeWithBuilder()
+    control_loops::drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
         //.highgear(false)
         .left_goal(left_goal_state(0, 0) + action_q_->goal->left_initial_position)
@@ -120,11 +120,11 @@ void DrivetrainAction::RunAction() {
         .Send();
   }
   if (ShouldCancel()) return;
-  control_loops::drivetrain.status.FetchLatest();
-  while (!control_loops::drivetrain.status.get()) {
+  control_loops::drivetrain_queue.status.FetchLatest();
+  while (!control_loops::drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain status packet, trying to fetch again\n");
-    control_loops::drivetrain.status.FetchNextBlocking();
+    control_loops::drivetrain_queue.status.FetchNextBlocking();
     if (ShouldCancel()) return;
   }
   while (true) {
@@ -132,13 +132,13 @@ void DrivetrainAction::RunAction() {
     const double kPositionThreshold = 0.05;
 
     const double left_error = ::std::abs(
-        control_loops::drivetrain.status->filtered_left_position -
+        control_loops::drivetrain_queue.status->filtered_left_position -
         (left_goal_state(0, 0) + action_q_->goal->left_initial_position));
     const double right_error = ::std::abs(
-        control_loops::drivetrain.status->filtered_right_position -
+        control_loops::drivetrain_queue.status->filtered_right_position -
         (right_goal_state(0, 0) + action_q_->goal->right_initial_position));
     const double velocity_error =
-        ::std::abs(control_loops::drivetrain.status->robot_speed);
+        ::std::abs(control_loops::drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
         velocity_error < 0.2) {
       break;
@@ -146,7 +146,7 @@ void DrivetrainAction::RunAction() {
       LOG(DEBUG, "Drivetrain error is %f, %f, %f\n", left_error, right_error,
           velocity_error);
     }
-    control_loops::drivetrain.status.FetchNextBlocking();
+    control_loops::drivetrain_queue.status.FetchNextBlocking();
   }
   LOG(INFO, "Done moving\n");
 }

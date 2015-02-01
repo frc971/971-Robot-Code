@@ -49,7 +49,7 @@ class DrivetrainSimulation {
   DrivetrainSimulation()
       : drivetrain_plant_(
             new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
-        my_drivetrain_loop_(".frc971.control_loops.drivetrain",
+        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
                        0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
                        ".frc971.control_loops.drivetrain.position",
                        ".frc971.control_loops.drivetrain.output",
@@ -76,8 +76,8 @@ class DrivetrainSimulation {
     const double left_encoder = GetLeftPosition();
     const double right_encoder = GetRightPosition();
 
-    ::aos::ScopedMessagePtr<control_loops::Drivetrain::Position> position =
-        my_drivetrain_loop_.position.MakeMessage();
+    ::aos::ScopedMessagePtr<control_loops::DrivetrainQueue::Position> position =
+        my_drivetrain_queue_.position.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
     position.Send();
@@ -87,15 +87,15 @@ class DrivetrainSimulation {
   void Simulate() {
     last_left_position_ = drivetrain_plant_->Y(0, 0);
     last_right_position_ = drivetrain_plant_->Y(1, 0);
-    EXPECT_TRUE(my_drivetrain_loop_.output.FetchLatest());
-    drivetrain_plant_->mutable_U() << my_drivetrain_loop_.output->left_voltage,
-        my_drivetrain_loop_.output->right_voltage;
+    EXPECT_TRUE(my_drivetrain_queue_.output.FetchLatest());
+    drivetrain_plant_->mutable_U() << my_drivetrain_queue_.output->left_voltage,
+        my_drivetrain_queue_.output->right_voltage;
     drivetrain_plant_->Update();
   }
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
  private:
-  Drivetrain my_drivetrain_loop_;
+  DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
   double last_right_position_;
 };
@@ -105,30 +105,30 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  Drivetrain my_drivetrain_loop_;
+  DrivetrainQueue my_drivetrain_queue_;
 
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
-  DrivetrainTest() : my_drivetrain_loop_(".frc971.control_loops.drivetrain",
+  DrivetrainTest() : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
                                0x8a8dde77,
                                ".frc971.control_loops.drivetrain.goal",
                                ".frc971.control_loops.drivetrain.position",
                                ".frc971.control_loops.drivetrain.output",
                                ".frc971.control_loops.drivetrain.status"),
-                drivetrain_motor_(&my_drivetrain_loop_),
+                drivetrain_motor_(&my_drivetrain_queue_),
                 drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();
   }
 
   void VerifyNearGoal() {
-    my_drivetrain_loop_.goal.FetchLatest();
-    my_drivetrain_loop_.position.FetchLatest();
-    EXPECT_NEAR(my_drivetrain_loop_.goal->left_goal,
+    my_drivetrain_queue_.goal.FetchLatest();
+    my_drivetrain_queue_.position.FetchLatest();
+    EXPECT_NEAR(my_drivetrain_queue_.goal->left_goal,
                 drivetrain_motor_plant_.GetLeftPosition(),
                 1e-2);
-    EXPECT_NEAR(my_drivetrain_loop_.goal->right_goal,
+    EXPECT_NEAR(my_drivetrain_queue_.goal->right_goal,
                 drivetrain_motor_plant_.GetRightPosition(),
                 1e-2);
   }
@@ -140,7 +140,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
       .left_goal(-1.0)
       .right_goal(1.0).Send();
   for (int i = 0; i < 200; ++i) {
@@ -154,7 +154,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 
 // Tests that it survives disabling.
 TEST_F(DrivetrainTest, SurvivesDisabling) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
       .left_goal(-1.0)
       .right_goal(1.0).Send();
   for (int i = 0; i < 500; ++i) {

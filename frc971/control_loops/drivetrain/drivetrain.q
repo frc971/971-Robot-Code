@@ -19,7 +19,7 @@ struct CIMLogging {
   double right_velocity;
 };
 
-queue_group Drivetrain {
+queue_group DrivetrainQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
@@ -67,4 +67,4 @@ queue_group Drivetrain {
   queue Status status;
 };
 
-queue_group Drivetrain drivetrain;
+queue_group DrivetrainQueue drivetrain_queue;

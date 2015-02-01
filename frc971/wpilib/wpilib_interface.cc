@@ -43,7 +43,7 @@
 #endif
 
 using ::aos::util::SimpleLogInterval;
-using ::frc971::control_loops::drivetrain;
+using ::frc971::control_loops::drivetrain_queue;
 using ::aos::util::WrappingCounter;
 
 namespace frc971 {
@@ -97,7 +97,7 @@ class SensorReader {
       message.Send();
     }
 
-    drivetrain.position.MakeWithBuilder()
+    drivetrain_queue.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(right_encoder_->GetRaw()))
         .left_encoder(-drivetrain_translate(left_encoder_->GetRaw()))
         .battery_voltage(ds->GetBatteryVoltage())
@@ -123,7 +123,7 @@ class SensorReader {
 class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
-      : pcm_(pcm), drivetrain_(".frc971.control_loops.drivetrain.output") {}
+      : pcm_(pcm), drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
 
   void set_drivetrain_left(::std::unique_ptr<BufferedSolenoid> s) {
     drivetrain_left_ = ::std::move(s);
@@ -160,7 +160,7 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> drivetrain_left_;
   ::std::unique_ptr<BufferedSolenoid> drivetrain_right_;
 
-  ::aos::Queue<::frc971::control_loops::Drivetrain::Output> drivetrain_;
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -177,11 +177,11 @@ class DrivetrainWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::drivetrain.output.FetchAnother();
+    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::drivetrain.output;
+    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(queue->right_voltage / 12.0);

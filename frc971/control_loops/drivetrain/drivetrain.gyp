@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'drivetrain_loop',
+      'target_name': 'drivetrain_queue',
       'type': 'static_library',
       'sources': ['drivetrain.q'],
       'variables': {
@@ -37,7 +37,7 @@
         'polydrivetrain_cim_plant.cc',
       ],
       'dependencies': [
-        'drivetrain_loop',
+        'drivetrain_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/controls/controls.gyp:polytope',
@@ -53,7 +53,7 @@
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:coerce_goal',
         '<(AOS)/common/controls/controls.gyp:control_loop',
-        'drivetrain_loop',
+        'drivetrain_queue',
       ],
     },
     {
@@ -64,7 +64,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'drivetrain_loop',
+        'drivetrain_queue',
         'drivetrain_lib',
         '<(AOS)/common/controls/controls.gyp:control_loop_test',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
@@ -81,7 +81,7 @@
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
         'drivetrain_lib',
-        'drivetrain_loop',
+        'drivetrain_queue',
       ],
     },
   ],

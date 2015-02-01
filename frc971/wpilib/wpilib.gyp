@@ -11,7 +11,7 @@
         '<(AOS)/common/common.gyp:stl_mutex',
         '<(AOS)/build/aos.gyp:logging',
         '<(EXTERNALS):WPILib',
-        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/controls/controls.gyp:sensor_generation',
         '<(AOS)/common/util/util.gyp:log_interval',

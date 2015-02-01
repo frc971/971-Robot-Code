@@ -16,7 +16,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/actions/action_client.h"
 
-using ::frc971::control_loops::drivetrain;
+using ::frc971::control_loops::drivetrain_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -111,7 +111,7 @@ class Reader : public ::aos::input::JoystickInput {
             .Send();
       } else if (!data.GetControlBit(ControlBit::kEnabled)) {
         {
-          auto goal = drivetrain.goal.MakeMessage();
+          auto goal = drivetrain_queue.goal.MakeMessage();
           goal->Zero();
           goal->control_loop_driving = false;
           goal->left_goal = goal->right_goal = 0;
@@ -141,9 +141,10 @@ class Reader : public ::aos::input::JoystickInput {
       static double filtered_goal_distance = 0.0;
       if (data.PosEdge(kDriveControlLoopEnable1) ||
           data.PosEdge(kDriveControlLoopEnable2)) {
-        if (drivetrain.position.FetchLatest() && gyro_reading.FetchLatest()) {
-          distance = (drivetrain.position->left_encoder +
-                      drivetrain.position->right_encoder) /
+        if (drivetrain_queue.position.FetchLatest() &&
+            gyro_reading.FetchLatest()) {
+          distance = (drivetrain_queue.position->left_encoder +
+                      drivetrain_queue.position->right_encoder) /
                          2.0 -
                      throttle * kThrottleGain / 2.0;
           angle = gyro_reading->angle;
@@ -171,7 +172,7 @@ class Reader : public ::aos::input::JoystickInput {
 
       LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
     }
-    if (!drivetrain.goal.MakeWithBuilder()
+    if (!drivetrain_queue.goal.MakeWithBuilder()
              .steering(wheel)
              .throttle(throttle)
              //.highgear(is_high_gear_)

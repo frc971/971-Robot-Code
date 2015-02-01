@@ -54,7 +54,7 @@
         'action_client',
         'action',
         '<(EXTERNALS):eigen',
-        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
       ],
       'export_dependent_settings': [

@@ -18,7 +18,7 @@
       'dependencies': [
         'auto_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
-        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
+        '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:phased_loop',

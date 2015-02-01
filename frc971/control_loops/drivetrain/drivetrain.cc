@@ -194,11 +194,11 @@ class DrivetrainMotorsSS {
     // lets just call the average of left and right velocities close enough
     return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
   }
-  
+
   double GetEstimatedLeftEncoder() const {
     return loop_->X_hat(0, 0);
   }
-  
+
   double GetEstimatedRightEncoder() const {
     return loop_->X_hat(2, 0);
   }
@@ -207,7 +207,7 @@ class DrivetrainMotorsSS {
     return loop_->output_was_capped();
   }
 
-  void SendMotors(Drivetrain::Output *output) const {
+  void SendMotors(DrivetrainQueue::Output *output) const {
     if (output) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
@@ -394,7 +394,7 @@ class PolyDrivetrain {
       }
     }
   }
-  void SetPosition(const Drivetrain::Position *position) {
+  void SetPosition(const DrivetrainQueue::Position *position) {
     const auto &values = constants::GetValues();
     if (position == NULL) {
       ++stale_count_;
@@ -635,7 +635,7 @@ class PolyDrivetrain {
     }
   }
 
-  void SendMotors(Drivetrain::Output *output) {
+  void SendMotors(DrivetrainQueue::Output *output) {
     if (output != NULL) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
@@ -657,8 +657,8 @@ class PolyDrivetrain {
   double position_time_delta_;
   Gear left_gear_;
   Gear right_gear_;
-  Drivetrain::Position last_position_;
-  Drivetrain::Position position_;
+  DrivetrainQueue::Position last_position_;
+  DrivetrainQueue::Position position_;
   int counter_;
 };
 constexpr double PolyDrivetrain::kStallTorque;
@@ -674,10 +674,10 @@ constexpr double PolyDrivetrain::Kv;
 constexpr double PolyDrivetrain::Kt;
 
 
-void DrivetrainLoop::RunIteration(const Drivetrain::Goal *goal,
-                                  const Drivetrain::Position *position,
-                                  Drivetrain::Output *output,
-                                  Drivetrain::Status * status) {
+void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
+                                  const DrivetrainQueue::Position *position,
+                                  DrivetrainQueue::Output *output,
+                                  DrivetrainQueue::Status * status) {
   // TODO(aschuh): These should be members of the class.
   static DrivetrainMotorsSS dt_closedloop;
   static PolyDrivetrain dt_openloop;

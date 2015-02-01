@@ -34,7 +34,7 @@ bool ShouldExitAuto() {
 
 void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
-  control_loops::drivetrain.goal.MakeWithBuilder()
+  control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .left_goal(left_initial_position)
       .left_velocity_goal(0)
@@ -46,7 +46,7 @@ void StopDrivetrain() {
 
 void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
-  control_loops::drivetrain.goal.MakeWithBuilder()
+  control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       //.highgear(false)
       .steering(0.0)
@@ -83,7 +83,7 @@ void DriveSpin(double radians) {
     LOG(DEBUG, "Driving left to %f, right to %f\n",
         left_initial_position - driveTrainState(0, 0),
         right_initial_position + driveTrainState(0, 0));
-    control_loops::drivetrain.goal.MakeWithBuilder()
+    control_loops::drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
         //.highgear(false)
         .left_goal(left_initial_position - driveTrainState(0, 0))
@@ -128,17 +128,16 @@ SetDriveGoal(double distance, bool slow_acceleration,
 }
 
 void InitializeEncoders() {
-  control_loops::drivetrain.status.FetchLatest();
-  while (!control_loops::drivetrain.status.get()) {
+  control_loops::drivetrain_queue.status.FetchLatest();
+  while (!control_loops::drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain position packet, trying to fetch again\n");
-    control_loops::drivetrain.status.FetchNextBlocking();
+    control_loops::drivetrain_queue.status.FetchNextBlocking();
   }
   left_initial_position =
-    control_loops::drivetrain.status->filtered_left_position;
+      control_loops::drivetrain_queue.status->filtered_left_position;
   right_initial_position =
-    control_loops::drivetrain.status->filtered_right_position;
-
+      control_loops::drivetrain_queue.status->filtered_right_position;
 }
 
 void HandleAuto() {
