@@ -1,6 +1,20 @@
 {
   'targets': [
     {
+      'target_name': 'team_number_test_environment',
+      'type': 'static_library',
+      'sources': [
+        'team_number_test_environment.cc'
+      ],
+      'dependencies': [
+        '<(AOS)/common/network/network.gyp:team_number',
+        '<(EXTERNALS):gtest',
+      ],
+      'export_dependent_settings': [
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
       'target_name': 'state_feedback_loop_test',
       'type': 'executable',
       'sources': [

@@ -15,6 +15,7 @@ uint16_t GetTeamNumber();
 // before GetTeamNumber() is ever called.
 // Overriding to team 0 won't work.
 // Intended only for tests.
+// Guaranteed to be safe to call during static initialization time.
 void OverrideTeamNumber(uint16_t team);
 
 }  // namespace network

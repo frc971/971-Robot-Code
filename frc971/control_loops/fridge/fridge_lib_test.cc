@@ -9,13 +9,13 @@
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/control_loops/fridge/fridge.h"
 #include "frc971/constants.h"
+#include "frc971/control_loops/team_number_test_environment.h"
 
 using ::aos::time::Time;
 
 namespace frc971 {
 namespace control_loops {
 namespace testing {
-
 // Class which simulates the fridge and sends out queue messages with the
 // position.
 class FridgeSimulation {
@@ -131,7 +131,9 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
                       ".frc971.control_loops.fridge_queue.output",
                       ".frc971.control_loops.fridge_queue.status"),
         fridge_(&fridge_queue_),
-        fridge_plant_() {}
+        fridge_plant_() {
+    set_team_id(kTeamNumber);
+  }
 
   void VerifyNearGoal() {
     fridge_queue_.goal.FetchLatest();
