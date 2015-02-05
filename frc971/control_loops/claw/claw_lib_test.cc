@@ -7,6 +7,7 @@
 #include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw.h"
+#include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/constants.h"
 
 using ::aos::time::Time;
@@ -22,6 +23,10 @@ class ClawSimulation {
   // Constructs a claw simulation.
   ClawSimulation()
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
+        pot_and_encoder_(0.0,
+                         constants::GetValues().claw.wrist.lower_hard_limit,
+                         constants::GetValues().claw_index_diff,
+                         0.3),
         claw_queue_(".frc971.control_loops.claw_queue",
           0x9d7452fb, ".frc971.control_loops.claw_queue.goal",
           ".frc971.control_loops.claw_queue.position",
@@ -29,22 +34,38 @@ class ClawSimulation {
           ".frc971.control_loops.claw_queue.status") {
   }
 
+  // Do specific initialization for the sensors.
+  void SetSensors(double start_value, double pot_noise_stddev) {
+    pot_and_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  }
+
   // Sends a queue message with the position.
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::ClawQueue::Position> position =
       claw_queue_.position.MakeMessage();
+    pot_and_encoder_.GetSensorValues(&position->joint);
     position.Send();
   }
 
   // Simulates for a single timestep.
   void Simulate() {
     EXPECT_TRUE(claw_queue_.output.FetchLatest());
+
+    // Feed voltages into physics simulation.
+    claw_plant_->mutable_U() << claw_queue_.output->voltage;
     claw_plant_->Update();
+
+    const double wrist_angle = claw_plant_->Y(0, 0);
+
+    // TODO(danielp): Sanity checks.
+
+    pot_and_encoder_.MoveTo(wrist_angle);
   }
 
-  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> claw_plant_;
-
  private:
+  ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> claw_plant_;
+  PositionSensorSimulator pot_and_encoder_;
+
   ClawQueue claw_queue_;
 };
 

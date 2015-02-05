@@ -49,6 +49,7 @@
         'fridge_lib',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/controls/controls.gyp:control_loop_test',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:position_sensor_sim',
       ],
     },
     {
