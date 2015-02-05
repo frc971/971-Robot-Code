@@ -47,8 +47,8 @@
       'dependencies': [
         '<(EXTERNALS):gtest',
         'fridge_lib',
-        '<(AOS)/common/common.gyp:queue_testutils',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(AOS)/common/controls/controls.gyp:control_loop_test',
       ],
     },
     {

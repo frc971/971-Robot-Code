@@ -17,14 +17,27 @@ namespace testing {
 class ControlLoopTest : public ::testing::Test {
  public:
   ControlLoopTest();
-
   virtual ~ControlLoopTest();
 
-  // Simulates everything that happens during 1 time step.
-  void SimulateTimestep(bool enabled);
+  // Sends out all of the required queue messages.
+  void SendMessages(bool enabled);
+  // Ticks time for a single control loop cycle.
+  void TickTime() {
+    ::aos::time::Time::SetMockTime(current_time_ += kTimeTick);
+  }
+
+  // Simulates everything that happens during 1 loop time step.
+  void SimulateTimestep(bool enabled) {
+    SendMessages(enabled);
+    TickTime();
+  }
 
  private:
-  bool sent_robot_state_last_time_ = false;
+  static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(10000);
+  static constexpr ::aos::time::Time kDSPacketTime =
+      ::aos::time::Time::InMS(20);
+
+  ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
 
   ::aos::common::testing::GlobalCoreInstance my_core;

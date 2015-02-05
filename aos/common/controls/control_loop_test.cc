@@ -7,6 +7,9 @@
 namespace aos {
 namespace testing {
 
+constexpr ::aos::time::Time ControlLoopTest::kTimeTick;
+constexpr ::aos::time::Time ControlLoopTest::kDSPacketTime;
+
 ControlLoopTest::ControlLoopTest() {
   ::aos::robot_state.Clear();
   ::aos::controls::sensor_generation.Clear();
@@ -29,17 +32,15 @@ ControlLoopTest::~ControlLoopTest() {
   ::aos::time::Time::DisableMockTime();
 }
 
-void ControlLoopTest::SimulateTimestep(bool enabled) {
-  if (sent_robot_state_last_time_) {
-    sent_robot_state_last_time_ = false;
-  } else {
+void ControlLoopTest::SendMessages(bool enabled) {
+  if (current_time_ - last_ds_time_ >= kDSPacketTime) {
     ::aos::robot_state.MakeWithBuilder()
         .enabled(enabled)
         .autonomous(false)
         .fake(true)
         .team_id(971)
         .Send();
-    sent_robot_state_last_time_ = true;
+    last_ds_time_ = current_time_;
   }
   if (enabled) {
     // TODO(brians): Actually make this realistic once we figure out what that
@@ -49,8 +50,6 @@ void ControlLoopTest::SimulateTimestep(bool enabled) {
         .pulse_length(0)
         .Send();
   }
-  ::aos::time::Time::SetMockTime(current_time_ +=
-                                 ::aos::time::Time::InMS(10.0));
 }
 
 }  // namespace testing

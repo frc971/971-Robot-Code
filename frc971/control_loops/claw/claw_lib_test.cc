@@ -3,9 +3,8 @@
 #include <memory>
 
 #include "gtest/gtest.h"
-#include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw.h"
 #include "frc971/constants.h"
@@ -32,13 +31,6 @@ class ClawSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<aos::controls::SensorGeneration>
-        sensor_generation_msg =
-            ::aos::controls::sensor_generation.MakeMessage();
-    sensor_generation_msg->reader_pid = 0;
-    sensor_generation_msg->cape_resets = 0;
-    sensor_generation_msg.Send();
-
     ::aos::ScopedMessagePtr<control_loops::ClawQueue::Position> position =
       claw_queue_.position.MakeMessage();
     position.Send();
@@ -56,35 +48,16 @@ class ClawSimulation {
   ClawQueue claw_queue_;
 };
 
-class ClawTest : public ::testing::Test {
+class ClawTest : public ::aos::testing::ControlLoopTest {
  protected:
-  ClawTest() : claw_queue_(".frc971.control_loops.claw_queue",
-                                   0x9d7452fb,
-                                   ".frc971.control_loops.claw_queue.goal",
-                                   ".frc971.control_loops.claw_queue.position",
-                                   ".frc971.control_loops.claw_queue.output",
-                                   ".frc971.control_loops.claw_queue.status"),
-                  claw_(&claw_queue_),
-                  claw_plant_() {
-    // Flush the robot state queue so we can use clean shared memory for this
-    // test.
-    ::aos::robot_state.Clear();
-    SendDSPacket(true);
-  }
-
-  virtual ~ClawTest() {
-    ::aos::robot_state.Clear();
-    ::aos::controls::sensor_generation.Clear();
-  }
-
-  // Update the robot state. Without this, the Iteration of the control loop
-  // will stop all the motors and this won't go anywhere.
-  void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder().enabled(enabled)
-                                        .autonomous(false)
-                                        .team_id(971).Send();
-    ::aos::robot_state.FetchLatest();
-  }
+  ClawTest()
+      : claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
+                    ".frc971.control_loops.claw_queue.goal",
+                    ".frc971.control_loops.claw_queue.position",
+                    ".frc971.control_loops.claw_queue.output",
+                    ".frc971.control_loops.claw_queue.status"),
+        claw_(&claw_queue_),
+        claw_plant_() {}
 
   void VerifyNearGoal() {
     claw_queue_.goal.FetchLatest();
@@ -93,9 +66,6 @@ class ClawTest : public ::testing::Test {
                 claw_queue_.status->angle,
                 10.0);
   }
-
-  // Bring up and down Core.
-  ::aos::common::testing::GlobalCoreInstance my_core;
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
@@ -110,10 +80,11 @@ class ClawTest : public ::testing::Test {
 // Tests that the loop does nothing when the goal is zero.
 TEST_F(ClawTest, DoesNothing) {
   claw_queue_.goal.MakeWithBuilder().angle(0.0).Send();
-  SendDSPacket(true);
+  SendMessages(true);
   claw_plant_.SendPositionMessage();
   claw_.Iterate();
   claw_plant_.Simulate();
+  TickTime();
   VerifyNearGoal();
   claw_queue_.output.FetchLatest();
   EXPECT_EQ(claw_queue_.output->voltage, 0.0);
