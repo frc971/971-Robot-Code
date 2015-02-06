@@ -21,16 +21,16 @@ void LoopOutputHandler::operator()() {
 
   ::aos::SetCurrentThreadRealtimePriority(30);
   while (run_) {
-    no_robot_state_.Print();
-    fake_robot_state_.Print();
+    no_joystick_state_.Print();
+    fake_joystick_state_.Print();
     Read();
-    ::aos::robot_state.FetchLatest();
-    if (!::aos::robot_state.get()) {
-      LOG_INTERVAL(no_robot_state_);
+    ::aos::joystick_state.FetchLatest();
+    if (!::aos::joystick_state.get()) {
+      LOG_INTERVAL(no_joystick_state_);
       continue;
     }
-    if (::aos::robot_state->fake) {
-      LOG_INTERVAL(fake_robot_state_);
+    if (::aos::joystick_state->fake) {
+      LOG_INTERVAL(fake_joystick_state_);
       continue;
     }
 

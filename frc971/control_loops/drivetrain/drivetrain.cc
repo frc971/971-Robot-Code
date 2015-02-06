@@ -630,7 +630,7 @@ class PolyDrivetrain {
       loop_->mutable_U(1, 0) = ::aos::Clip(
           (R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
           -12.0, 12.0);
-      loop_->mutable_U() *= 12.0 / position_.battery_voltage;
+      loop_->mutable_U() *= 12.0 / ::aos::robot_state->voltage_battery;
 #endif
     }
   }

@@ -20,8 +20,8 @@ class JoystickFeature {
       : joystick_(joystick), number_(number) {}
 
   // How many joysticks there are.
-  static const int kJoysticks = sizeof(RobotState::joysticks) /
-                                sizeof(RobotState::joysticks[0]);
+  static const int kJoysticks = sizeof(JoystickState::joysticks) /
+                                sizeof(JoystickState::joysticks[0]);
 
   // Which joystick number this is (1-based).
   int joystick() const { return joystick_; }
@@ -70,7 +70,7 @@ class Data {
   Data();
 
   // Updates the current information with a new set of values.
-  void Update(const RobotState &new_values);
+  void Update(const JoystickState &new_values);
 
   bool IsPressed(ButtonLocation location) const;
   bool PosEdge(ButtonLocation location) const;
@@ -84,7 +84,7 @@ class Data {
   float GetAxis(JoystickAxis axis) const;
 
  private:
-  RobotState current_values_, old_values_;
+  JoystickState current_values_, old_values_;
 };
 
 }  // namespace driver_station

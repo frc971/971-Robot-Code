@@ -1,8 +1,6 @@
 #include "aos/common/controls/control_loop_test.h"
 
 #include "aos/common/messages/robot_state.q.h"
-#include "aos/common/controls/sensor_generation.q.h"
-#include "aos/common/controls/output_check.q.h"
 
 namespace aos {
 namespace testing {
@@ -11,44 +9,49 @@ constexpr ::aos::time::Time ControlLoopTest::kTimeTick;
 constexpr ::aos::time::Time ControlLoopTest::kDSPacketTime;
 
 ControlLoopTest::ControlLoopTest() {
+  ::aos::joystick_state.Clear();
   ::aos::robot_state.Clear();
-  ::aos::controls::sensor_generation.Clear();
-  ::aos::controls::output_check_received.Clear();
 
-  ::aos::controls::sensor_generation.MakeWithBuilder()
-      .reader_pid(254)
-      .cape_resets(5)
-      .Send();
   ::aos::time::Time::EnableMockTime(current_time_);
 
-  SimulateTimestep(false);
+  SendMessages(false);
 }
 
 ControlLoopTest::~ControlLoopTest() {
+  ::aos::joystick_state.Clear();
   ::aos::robot_state.Clear();
-  ::aos::controls::sensor_generation.Clear();
-  ::aos::controls::output_check_received.Clear();
 
   ::aos::time::Time::DisableMockTime();
 }
 
 void ControlLoopTest::SendMessages(bool enabled) {
   if (current_time_ - last_ds_time_ >= kDSPacketTime) {
-    ::aos::robot_state.MakeWithBuilder()
-        .enabled(enabled)
-        .autonomous(false)
-        .fake(true)
-        .team_id(971)
-        .Send();
     last_ds_time_ = current_time_;
+    auto new_state = ::aos::joystick_state.MakeMessage();
+    new_state->fake = true;
+
+    new_state->enabled = enabled;
+    new_state->autonomous = false;
+    new_state->team_id = 971;
+
+    new_state.Send();
   }
-  if (enabled) {
-    // TODO(brians): Actually make this realistic once we figure out what that
-    // means.
-    ::aos::controls::output_check_received.MakeWithBuilder()
-        .pwm_value(0)
-        .pulse_length(0)
-        .Send();
+
+  {
+    auto new_state = ::aos::robot_state.MakeMessage();
+
+    new_state->reader_pid = 971;
+    new_state->outputs_enabled = enabled;
+    new_state->browned_out = false;
+
+    new_state->is_3v3_active = true;
+    new_state->is_5v_active = true;
+    new_state->voltage_3v3 = 3.3;
+    new_state->voltage_5v = 5.0;
+
+    new_state->voltage_roborio_in = 12.4;
+
+    new_state.Send();
   }
 }
 

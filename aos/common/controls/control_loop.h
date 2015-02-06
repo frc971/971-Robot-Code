@@ -47,16 +47,6 @@ constexpr time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 template <class T, bool fail_no_goal = true>
 class ControlLoop : public SerializableControlLoop {
  public:
-  // Maximum age of position packets before the loop will be disabled due to
-  // invalid position data.
-  static const int kPositionTimeoutMs = 1000;
-  // Maximum age of driver station packets before the loop will be disabled.
-  static const int kDSPacketTimeoutMs = 500;
-
-  ControlLoop(T *control_loop)
-      : control_loop_(control_loop),
-        reset_(true),
-        has_sensor_reset_counters_(false) {}
   // Create some convenient typedefs to reference the Goal, Position, Status,
   // and Output structures.
   typedef typename std::remove_reference<
@@ -72,6 +62,19 @@ class ControlLoop : public SerializableControlLoop {
     decltype(*(static_cast<T *>(NULL)->output.MakeMessage().get()))>::type
       OutputType;
 
+  ControlLoop(T *control_loop) : control_loop_(control_loop) {}
+
+  // Returns true if all the counters etc in the sensor data have been reset.
+  // This will return true only a single time per reset.
+  bool WasReset() {
+    if (reset_) {
+      reset_ = false;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   // Constructs and sends a message on the output queue which sets everything to
   // a safe state (generally motors off). For some subclasses, this will be a
   // bit different (ie pistons).
@@ -79,47 +82,37 @@ class ControlLoop : public SerializableControlLoop {
   // and then sends it.
   virtual void ZeroOutputs();
 
-  // Returns true if the device reading the sensors reset and potentially lost
-  // track of encoder counts.  Calling this read method clears the flag.  After
-  // a reset, RunIteration will not be called until there is a valid position
-  // message.
-  bool reset() {
-    bool ans = reset_;
-    reset_ = false;
-    return ans;
-  }
-
   // Sets the output to zero.
   // Over-ride if a value of zero is not "off" for this subsystem.
   virtual void Zero(OutputType *output) { output->Zero(); }
 
   // Runs the loop forever.
-  virtual void Run();
+  void Run() override;
 
   // Runs one cycle of the loop.
-  virtual void Iterate();
+  void Iterate() override;
 
   // Returns the name of the queue group.
   const char *name() { return control_loop_->name(); }
 
   // Methods to serialize all the data that should be sent over the network.
-  virtual size_t SeralizedSize() { return control_loop_->goal->Size(); }
-  virtual void Serialize(char *buffer) const {
+  size_t SeralizedSize() override { return control_loop_->goal->Size(); }
+  void Serialize(char *buffer) const override {
     control_loop_->goal->Serialize(buffer);
   }
-  virtual void SerializeZeroMessage(char *buffer) const {
+  void SerializeZeroMessage(char *buffer) const override {
     GoalType zero_goal;
     zero_goal.Zero();
     zero_goal.Serialize(buffer);
   }
 
-  virtual void Deserialize(const char *buffer) {
+  void Deserialize(const char *buffer) override {
     ScopedMessagePtr<GoalType> new_msg = control_loop_->goal.MakeMessage();
     new_msg->Deserialize(buffer);
     new_msg.Send();
   }
 
-  virtual uint32_t UniqueID() { return control_loop_->hash(); }
+  uint32_t UniqueID() override { return control_loop_->hash(); }
 
  protected:
   // Runs an iteration of the control loop.
@@ -139,31 +132,39 @@ class ControlLoop : public SerializableControlLoop {
   const T *queue_group() const { return control_loop_; }
 
  private:
+  static constexpr ::aos::time::Time kStaleLogInterval =
+      ::aos::time::Time::InSeconds(0.1);
+  // The amount of time after the last PWM pulse we consider motors enabled for.
+  // 100ms is the result of using an oscilliscope to look at the input and
+  // output of a Talon. The Info Sheet also lists 100ms for Talon SR, Talon SRX,
+  // and Victor SP.
+  static constexpr ::aos::time::Time kPwmDisableTime =
+      ::aos::time::Time::InMS(100);
+
+  // Maximum age of driver station packets before the loop will be disabled.
+  static const int kDSPacketTimeoutMs = 500;
+
   // Pointer to the queue group
   T *control_loop_;
 
-  bool reset_;
-  bool has_sensor_reset_counters_;
-  int32_t reader_pid_;
-  uint32_t cape_resets_;
+  bool reset_ = false;
+  int32_t sensor_reader_pid_ = 0;
+
+  ::aos::time::Time last_pwm_sent_{0, 0};
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
-  static constexpr ::aos::time::Time kStaleLogInterval =
-      ::aos::time::Time::InSeconds(0.1);
-  SimpleLogInterval no_prior_goal_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "no prior goal");
   SimpleLogInterval no_driver_station_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "no driver station packet");
   SimpleLogInterval driver_station_old_ =
       SimpleLogInterval(kStaleLogInterval, ERROR,
                         "driver station packet is too old");
-  SimpleLogInterval no_sensor_generation_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "no sensor_generation message");
+  SimpleLogInterval no_sensor_state_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR, "no sensor state");
   SimpleLogInterval motors_off_log_ =
       SimpleLogInterval(kStaleLogInterval, WARNING, "motors disabled");
+  SimpleLogInterval no_goal_ =
+      SimpleLogInterval(kStaleLogInterval, ERROR, "no goal");
 };
 
 }  // namespace controls

@@ -7,17 +7,15 @@
 #include <mutex>
 #include <functional>
 
-#include "aos/common/controls/output_check.q.h"
-#include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
-#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/util/wrapping_counter.h"
 #include "aos/common/stl_mutex.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/messages/robot_state.q.h"
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -41,6 +39,7 @@
 #include "Compressor.h"
 #include "RobotBase.h"
 #include "dma.h"
+#include "ControllerPower.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -213,6 +212,9 @@ class SensorReader {
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
 
+    my_pid_ = getpid();
+    ds_ = DriverStation::GetInstance();
+
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
 
@@ -226,27 +228,26 @@ class SensorReader {
   }
 
   void RunIteration() {
-    DriverStation *ds = DriverStation::GetInstance();
+    {
+      auto new_state = ::aos::robot_state.MakeMessage();
 
-    if (ds->IsSysActive()) {
-      auto message = ::aos::controls::output_check_received.MakeMessage();
-      // TODO(brians): Actually read a pulse value from the roboRIO.
-      message->pwm_value = 0;
-      message->pulse_length = -1;
-      LOG_STRUCT(DEBUG, "received", *message);
-      message.Send();
+      new_state->outputs_enabled = ds_->IsSysActive();
+      new_state->browned_out = ds_->IsSysBrownedOut();
+
+      new_state->is_3v3_active = ControllerPower::GetEnabled3V3();
+      new_state->is_5v_active = ControllerPower::GetEnabled5V();
+      new_state->voltage_3v3 = ControllerPower::GetVoltage3V3();
+      new_state->voltage_5v = ControllerPower::GetVoltage5V();
+
+      new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
+      new_state->voltage_battery = ds_->GetBatteryVoltage();
+
+      new_state.Send();
     }
 
     drivetrain_queue.position.MakeWithBuilder()
         .right_encoder(drivetrain_translate(right_encoder_->GetRaw()))
         .left_encoder(-drivetrain_translate(left_encoder_->GetRaw()))
-        .battery_voltage(ds->GetBatteryVoltage())
-        .Send();
-
-    // Signal that we are alive.
-    ::aos::controls::sensor_generation.MakeWithBuilder()
-        .reader_pid(getpid())
-        .cape_resets(0)
         .Send();
 
     dma_synchronizer_->RunIteration();
@@ -279,6 +280,9 @@ class SensorReader {
  private:
   static const int kPriority = 30;
   static const int kInterruptPriority = 55;
+
+  int32_t my_pid_;
+  DriverStation *ds_;
 
   void CopyPotAndIndexPosition(
       const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,

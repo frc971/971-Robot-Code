@@ -12,11 +12,11 @@ namespace input {
 void JoystickInput::Run() {
   driver_station::Data data;
   while (true) {
-    robot_state.FetchAnother();
+    joystick_state.FetchAnother();
 
-    LOG_STRUCT(DEBUG, "sending", *robot_state);
+    LOG_STRUCT(DEBUG, "sending", *joystick_state);
 
-    data.Update(*robot_state);
+    data.Update(*joystick_state);
 
     {
       using driver_station::JoystickFeature;

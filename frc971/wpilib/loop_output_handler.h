@@ -75,12 +75,12 @@ class LoopOutputHandler {
 
   ::std::atomic<bool> run_{true};
 
-  ::aos::util::SimpleLogInterval no_robot_state_ =
+  ::aos::util::SimpleLogInterval no_joystick_state_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), INFO,
-                                     "no robot state -> not outputting");
-  ::aos::util::SimpleLogInterval fake_robot_state_ =
+                                     "no joystick state -> not outputting");
+  ::aos::util::SimpleLogInterval fake_joystick_state_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), DEBUG,
-                                     "fake robot state -> not outputting");
+                                     "fake joystick state -> not outputting");
 };
 
 }  // namespace wpilib

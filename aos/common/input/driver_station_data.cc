@@ -6,7 +6,7 @@ namespace driver_station {
 
 Data::Data() : current_values_(), old_values_() {}
 
-void Data::Update(const RobotState &new_values) {
+void Data::Update(const JoystickState &new_values) {
   old_values_ = current_values_;
   current_values_ = new_values;
 }
@@ -14,13 +14,13 @@ void Data::Update(const RobotState &new_values) {
 namespace {
 
 bool GetButton(const ButtonLocation location,
-               const RobotState &values) {
+               const JoystickState &values) {
   return values.joysticks[location.joystick() - 1].buttons &
       (1 << (location.number() - 1));
 }
 
 bool GetControlBitValue(const ControlBit bit,
-                        const RobotState &values) {
+                        const JoystickState &values) {
   switch (bit) {
     case ControlBit::kTestMode:
       return values.test_mode;

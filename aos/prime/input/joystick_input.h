@@ -9,8 +9,8 @@ namespace input {
 // A class for handling joystick packet values.
 // It will call RunIteration each time a new packet is received.
 //
-// This class automatically handles updating ::aos::robot_state and logging (at
-// INFO) button edges.
+// This class automatically handles updating ::aos::joystick_state and logging
+// (at INFO) button edges.
 class JoystickInput {
  public:
   void Run();

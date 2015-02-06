@@ -20,7 +20,7 @@ void JoystickSender::operator()() {
 
   while (run_) {
     ds->WaitForData();
-    auto new_state = ::aos::robot_state.MakeMessage();
+    auto new_state = ::aos::joystick_state.MakeMessage();
 
     HALControlWord control_word;
     HALGetControlWord(&control_word);
@@ -37,10 +37,10 @@ void JoystickSender::operator()() {
         new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
       }
     }
-    LOG_STRUCT(DEBUG, "robot_state", *new_state);
+    LOG_STRUCT(DEBUG, "joystick_state", *new_state);
 
     if (!new_state.Send()) {
-      LOG(WARNING, "sending robot_state failed\n");
+      LOG(WARNING, "sending joystick_state failed\n");
     }
   }
 }

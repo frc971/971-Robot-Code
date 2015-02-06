@@ -116,8 +116,8 @@ void GyroSender::operator()() {
         have_zeroing_data = true;
       }
 
-      ::aos::robot_state.FetchLatest();
-      if (::aos::robot_state.get() && ::aos::robot_state->enabled &&
+      ::aos::joystick_state.FetchLatest();
+      if (::aos::joystick_state.get() && ::aos::joystick_state->enabled &&
           have_zeroing_data) {
         zero_offset = 0;
         for (size_t i = 0; i < sizeof(zeroing_data) / sizeof(zeroing_data[0]);

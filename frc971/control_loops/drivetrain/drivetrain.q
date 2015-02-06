@@ -39,7 +39,6 @@ queue_group DrivetrainQueue {
     double right_encoder;
     //double left_shifter_position;
     //double right_shifter_position;
-    double battery_voltage;
   };
 
   message Output {

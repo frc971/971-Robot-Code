@@ -1,11 +1,10 @@
 #include <stddef.h>
+#include <inttypes.h>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/util/phased_loop.h"
-#include "aos/common/controls/sensor_generation.q.h"
-#include "aos/common/controls/output_check.q.h"
 
 namespace aos {
 namespace controls {
@@ -14,6 +13,8 @@ namespace controls {
 
 template <class T, bool fail_no_goal>
 constexpr ::aos::time::Time ControlLoop<T, fail_no_goal>::kStaleLogInterval;
+template <class T, bool fail_no_goal>
+constexpr ::aos::time::Time ControlLoop<T, fail_no_goal>::kPwmDisableTime;
 
 template <class T, bool fail_no_goal>
 void
@@ -26,10 +27,11 @@ ControlLoop<T, fail_no_goal>::ZeroOutputs() {
 
 template <class T, bool fail_no_goal>
 void ControlLoop<T, fail_no_goal>::Iterate() {
-  no_prior_goal_.Print();
-  no_sensor_generation_.Print();
+  no_goal_.Print();
   driver_station_old_.Print();
+  no_sensor_state_.Print();
   no_driver_station_.Print();
+  motors_off_log_.Print();
 
   control_loop_->position.FetchAnother();
   const PositionType *const position = control_loop_->position.get();
@@ -43,71 +45,61 @@ void ControlLoop<T, fail_no_goal>::Iterate() {
   // TODO(aschuh): Check the age here if we want the loop to stop on old
   // goals.
   const GoalType *goal = control_loop_->goal.get();
-  if (goal == NULL) {
-    LOG_INTERVAL(no_prior_goal_);
+  if (goal) {
+    LOG_STRUCT(DEBUG, "goal", *goal);
+  } else {
+    LOG_INTERVAL(no_goal_);
     if (fail_no_goal) {
       ZeroOutputs();
       return;
     }
   }
 
-  sensor_generation.FetchLatest();
-  if (sensor_generation.get() == nullptr) {
-    LOG_INTERVAL(no_sensor_generation_);
-    ZeroOutputs();
+  ::aos::robot_state.FetchLatest();
+  if (!::aos::robot_state.get()) {
+    LOG_INTERVAL(no_sensor_state_);
     return;
   }
-  if (!has_sensor_reset_counters_ ||
-      sensor_generation->reader_pid != reader_pid_ ||
-      sensor_generation->cape_resets != cape_resets_) {
-    LOG_STRUCT(INFO, "new sensor_generation message",
-               *sensor_generation.get());
-
-    reader_pid_ = sensor_generation->reader_pid;
-    cape_resets_ = sensor_generation->cape_resets;
-    has_sensor_reset_counters_ = true;
+  if (sensor_reader_pid_ != ::aos::robot_state->reader_pid) {
+    LOG(INFO, "new sensor reader PID %" PRId32 ", old was %" PRId32 "\n",
+        ::aos::robot_state->reader_pid, sensor_reader_pid_);
     reset_ = true;
-  }
-
-  if (goal) {
-    LOG_STRUCT(DEBUG, "goal", *goal);
+    sensor_reader_pid_ = ::aos::robot_state->reader_pid;
   }
 
   bool outputs_enabled = false;
 
   // Check to see if we got a driver station packet recently.
-  if (::aos::robot_state.FetchLatest()) {
+  if (::aos::joystick_state.FetchLatest()) {
     outputs_enabled = true;
-  } else if (::aos::robot_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
+    if (::aos::robot_state->outputs_enabled) {
+      last_pwm_sent_ = ::aos::robot_state->sent_time;
+    }
+  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
     outputs_enabled = true;
   } else {
-    if (::aos::robot_state.get()) {
+    if (::aos::joystick_state.get()) {
       LOG_INTERVAL(driver_station_old_);
     } else {
       LOG_INTERVAL(no_driver_station_);
     }
   }
 
-  ::aos::controls::output_check_received.FetchLatest();
-  // True if we're enabled but the motors aren't working.
   // The 100ms is the result of using an oscilliscope to look at the PWM signal
   // and output of a talon, and timing the delay between the last pulse and the
   // talon turning off.
   const bool motors_off =
-      !::aos::controls::output_check_received.get() ||
-      !::aos::controls::output_check_received.IsNewerThanMS(100);
-  motors_off_log_.Print();
+      (::aos::time::Time::Now() - last_pwm_sent_) >= kPwmDisableTime;
   if (motors_off) {
-    if (!::aos::robot_state.get() || ::aos::robot_state->enabled) {
+    if (::aos::joystick_state.get() && ::aos::joystick_state->enabled) {
       LOG_INTERVAL(motors_off_log_);
     }
     outputs_enabled = false;
   }
 
-  // Run the iteration.
   aos::ScopedMessagePtr<StatusType> status =
       control_loop_->status.MakeMessage();
-  if (status.get() == NULL) {
+  if (status.get() == nullptr) {
     return;
   }
 
@@ -119,7 +111,7 @@ void ControlLoop<T, fail_no_goal>::Iterate() {
     LOG_STRUCT(DEBUG, "output", *output);
     output.Send();
   } else {
-    // The outputs are disabled, so pass NULL in for the output.
+    // The outputs are disabled, so pass nullptr in for the output.
     RunIteration(goal, position, nullptr, status.get());
     ZeroOutputs();
   }

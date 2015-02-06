@@ -33,7 +33,7 @@ class ControlLoopTest : public ::testing::Test {
   }
 
  private:
-  static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(10000);
+  static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(5000);
   static constexpr ::aos::time::Time kDSPacketTime =
       ::aos::time::Time::InMS(20);
 

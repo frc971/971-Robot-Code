@@ -323,7 +323,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
         // Set the goal to here to make it so it doesn't move when disabled.
         loop_->R = loop_->X_hat;
         // Only progress if we are enabled.
-        if (::aos::robot_state->enabled) {
+        if (::aos::joystick_state->enabled) {
           if (AnySensorsActive(position)) {
             state_ = MOVING_OFF;
           } else {
@@ -336,7 +336,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       LOG(DEBUG, "MOVING_OFF\n");
       {
         // Move off the hall effect sensor.
-        if (!::aos::robot_state->enabled) {
+        if (!::aos::joystick_state->enabled) {
           // Start over if disabled.
           state_ = UNINITIALIZED;
         } else if (position && !AnySensorsActive(position)) {
@@ -353,7 +353,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
       LOG(DEBUG, "ZEROING\n");
       {
         int active_sensor_index = ActiveSensorIndex(position);
-        if (!::aos::robot_state->enabled) {
+        if (!::aos::joystick_state->enabled) {
           // Start over if disabled.
           state_ = UNINITIALIZED;
         } else if (position && active_sensor_index != -1) {
