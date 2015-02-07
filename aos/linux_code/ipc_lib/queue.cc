@@ -169,7 +169,7 @@ void *RawQueue::GetMessage() {
   MessageHeader *header = __atomic_load_n(&free_messages_, __ATOMIC_RELAXED);
   do {
     if (__builtin_expect(header == nullptr, 0)) {
-      LOG(FATAL, "overused pool of queue %p\n", this);
+      LOG(FATAL, "overused pool of queue %p (%s)\n", this, name_);
     }
   } while (__builtin_expect(
       !__atomic_compare_exchange_n(&free_messages_, &header, header->next, true,
@@ -193,7 +193,8 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
                 "need to revalidate size/alignent assumptions");
 
   if (queue_length < 1) {
-    LOG(FATAL, "queue length %d needs to be at least 1\n", queue_length);
+    LOG(FATAL, "queue length %d of %s needs to be at least 1\n", queue_length,
+        name_);
   }
 
   const size_t name_size = strlen(name) + 1;
