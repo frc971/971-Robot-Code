@@ -3,9 +3,8 @@
 #include <memory>
 
 #include "gtest/gtest.h"
-#include "aos/common/controls/sensor_generation.q.h"
 #include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/control_loops/fridge/fridge.h"
 #include "frc971/constants.h"
@@ -32,13 +31,6 @@ class FridgeSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<aos::controls::SensorGeneration>
-        sensor_generation_msg =
-            ::aos::controls::sensor_generation.MakeMessage();
-    sensor_generation_msg->reader_pid = 0;
-    sensor_generation_msg->cape_resets = 0;
-    sensor_generation_msg.Send();
-
     ::aos::ScopedMessagePtr<control_loops::FridgeQueue::Position> position =
         fridge_queue_.position.MakeMessage();
     position.Send();
@@ -58,7 +50,7 @@ class FridgeSimulation {
   FridgeQueue fridge_queue_;
 };
 
-class FridgeTest : public ::testing::Test {
+class FridgeTest : public ::aos::testing::ControlLoopTest {
  protected:
   FridgeTest()
       : fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
@@ -67,26 +59,7 @@ class FridgeTest : public ::testing::Test {
                       ".frc971.control_loops.fridge_queue.output",
                       ".frc971.control_loops.fridge_queue.status"),
         fridge_(&fridge_queue_),
-        fridge_plant_() {
-    // Flush the robot state queue so we can use clean shared memory for this
-    // test.
-    ::aos::robot_state.Clear();
-    SendDSPacket(true);
-  }
-
-  virtual ~FridgeTest() {
-    ::aos::robot_state.Clear();
-    ::aos::controls::sensor_generation.Clear();
-  }
-
-  // Update the robot state. Without this, the Iteration of the control loop
-  // will stop all the motors and the shooter won't go anywhere.
-  void SendDSPacket(bool enabled) {
-    ::aos::robot_state.MakeWithBuilder().enabled(enabled)
-                                        .autonomous(false)
-                                        .team_id(971).Send();
-    ::aos::robot_state.FetchLatest();
-  }
+        fridge_plant_() {}
 
   void VerifyNearGoal() {
     fridge_queue_.goal.FetchLatest();
@@ -98,9 +71,6 @@ class FridgeTest : public ::testing::Test {
                 fridge_queue_.status->height,
                 10.0);
   }
-
-  // Bring up and down Core.
-  ::aos::common::testing::GlobalCoreInstance my_core;
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
@@ -115,10 +85,11 @@ class FridgeTest : public ::testing::Test {
 // Tests that the loop does nothing when the goal is zero.
 TEST_F(FridgeTest, DoesNothing) {
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.0).Send();
-  SendDSPacket(true);
+  SendMessages(true);
   fridge_plant_.SendPositionMessage();
   fridge_.Iterate();
   fridge_plant_.Simulate();
+  TickTime();
   VerifyNearGoal();
   fridge_queue_.output.FetchLatest();
   EXPECT_EQ(fridge_queue_.output->left_arm, 0.0);
