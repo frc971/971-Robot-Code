@@ -36,6 +36,24 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'position_sensor_sim',
+      'type': 'static_library',
+      'sources': [
+        'position_sensor_sim.cc',
+      ],
+      'dependencies': [
+        'queues',
+        'gaussian_noise',
+      ],
+    },
+    {
+      'target_name': 'gaussian_noise',
+      'type': 'static_library',
+      'sources': [
+        'gaussian_noise.cc',
+      ],
+    },
+    {
       'target_name': 'coerce_goal',
       'type': 'static_library',
       'sources': [
