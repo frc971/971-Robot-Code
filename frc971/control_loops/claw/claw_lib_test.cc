@@ -1,9 +1,11 @@
+#include <math.h>
 #include <unistd.h>
 
 #include <memory>
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
+#include "aos/common/time.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw.h"
@@ -25,8 +27,9 @@ class ClawSimulation {
   ClawSimulation()
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
         pot_and_encoder_(
-            0.0, constants::GetValues().claw_zeroing_constants.index_difference,
-            0.3),
+            constants::GetValues().claw.wrist.lower_limit,
+            constants::GetValues().claw_zeroing_constants.index_difference,
+            constants::GetValues().claw_zeroing_constants.index_difference / 3.0),
         claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
                     ".frc971.control_loops.claw_queue.goal",
                     ".frc971.control_loops.claw_queue.position",
@@ -34,8 +37,8 @@ class ClawSimulation {
                     ".frc971.control_loops.claw_queue.status") {}
 
   // Do specific initialization for the sensors.
-  void SetSensors(double start_value, double pot_noise_stddev) {
-    pot_and_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  void SetSensors(double start_pos, double pot_noise_stddev) {
+    pot_and_encoder_.OverrideParams(start_pos, pot_noise_stddev);
   }
 
   // Sends a queue message with the position.
@@ -89,6 +92,25 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
                 10.0);
   }
 
+  // Runs one iteration of the whole simulation.
+  void RunIteration() {
+    SendMessages(true);
+
+    claw_plant_.SendPositionMessage();
+    claw_.Iterate();
+    claw_plant_.Simulate();
+
+    TickTime();
+  }
+
+  // Runs iterations until the specified amount of simulated time has elapsed.
+  void RunForTime(const Time &run_for) {
+    const auto start_time = Time::Now();
+    while (Time::Now() < start_time + run_for) {
+      RunIteration();
+    }
+  }
+
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
   // shared memory that is no longer valid.
@@ -99,17 +121,56 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   ClawSimulation claw_plant_;
 };
 
-// Tests that the loop does nothing when the goal is zero.
+// Tests that the loop does nothing when the goal is our lower limit.
 TEST_F(ClawTest, DoesNothing) {
-  claw_queue_.goal.MakeWithBuilder().angle(0.0).Send();
-  SendMessages(true);
-  claw_plant_.SendPositionMessage();
-  claw_.Iterate();
-  claw_plant_.Simulate();
-  TickTime();
+  const auto values = constants::GetValues();
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
+      .angle(values.claw.wrist.lower_limit)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  // We should not have moved.
   VerifyNearGoal();
-  claw_queue_.output.FetchLatest();
-  EXPECT_EQ(claw_queue_.output->voltage, 0.0);
+}
+
+// Tests that we can reach a reasonable goal.
+TEST_F(ClawTest, ReachesGoal) {
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
+      .angle(M_PI / 4.0)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  VerifyNearGoal();
+}
+
+// Tests that it doesn't try to move past the physical range of the mechanism.
+TEST_F(ClawTest, RespectsRange) {
+  const auto values = constants::GetValues();
+  // Upper limit
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
+      .angle(values.claw.wrist.upper_hard_limit + 5.0)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  claw_queue_.status.FetchLatest();
+  EXPECT_NEAR(values.claw.wrist.upper_limit,
+              claw_queue_.status->angle,
+              2.0 * M_PI / 180.0);
+
+  // Lower limit.
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
+      .angle(values.claw.wrist.lower_hard_limit + 5.0)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  claw_queue_.status.FetchLatest();
+  EXPECT_NEAR(values.claw.wrist.lower_limit,
+              claw_queue_.status->angle,
+              2.0 * M_PI / 180.0);
 }
 
 }  // namespace testing

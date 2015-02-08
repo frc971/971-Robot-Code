@@ -1,9 +1,11 @@
+#include <math.h>
 #include <unistd.h>
 
 #include <memory>
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
+#include "aos/common/time.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
@@ -25,21 +27,27 @@ class FridgeSimulation {
       : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
         elev_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
         left_arm_pot_encoder_(
-            0.0,
+            constants::GetValues().fridge.arm.lower_limit,
             constants::GetValues().left_arm_zeroing_constants.index_difference,
-            0.3),
+            constants::GetValues().left_arm_zeroing_constants.index_difference
+                / 3.0),
         right_arm_pot_encoder_(
-            0.0,
+            constants::GetValues().fridge.arm.lower_limit,
             constants::GetValues().right_arm_zeroing_constants.index_difference,
-            0.3),
+            constants::GetValues().right_arm_zeroing_constants.index_difference
+                / 3.0),
         left_elev_pot_encoder_(
-            0.0, constants::GetValues()
-                     .left_elevator_zeroing_constants.index_difference,
-            0.3),
+            constants::GetValues().fridge.elevator.lower_limit,
+            constants::GetValues()
+                .left_elevator_zeroing_constants.index_difference,
+            constants::GetValues()
+                .left_elevator_zeroing_constants.index_difference / 3.0),
         right_elev_pot_encoder_(
-            0.0, constants::GetValues()
-                     .right_elevator_zeroing_constants.index_difference,
-            0.3),
+            constants::GetValues().fridge.elevator.lower_limit,
+            constants::GetValues()
+                .right_elevator_zeroing_constants.index_difference,
+            constants::GetValues()
+                .right_elevator_zeroing_constants.index_difference / 3.0),
         fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
                       ".frc971.control_loops.fridge_queue.goal",
                       ".frc971.control_loops.fridge_queue.position",
@@ -47,20 +55,20 @@ class FridgeSimulation {
                       ".frc971.control_loops.fridge_queue.status") {}
 
   // Do specific initialization for all the sensors.
-  void SetLeftElevatorSensors(double start_value, double pot_noise_stddev) {
-    left_elev_pot_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  void SetLeftElevatorSensors(double start_pos, double pot_noise_stddev) {
+    left_elev_pot_encoder_.OverrideParams(start_pos, pot_noise_stddev);
   }
 
-  void SetRightElevatorSensors(double start_value, double pot_noise_stddev) {
-    right_elev_pot_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  void SetRightElevatorSensors(double start_pos, double pot_noise_stddev) {
+    right_elev_pot_encoder_.OverrideParams(start_pos, pot_noise_stddev);
   }
 
-  void SetLeftArmSensors(double start_value, double pot_noise_stddev) {
-    left_arm_pot_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  void SetLeftArmSensors(double start_pos, double pot_noise_stddev) {
+    left_arm_pot_encoder_.OverrideParams(start_pos, pot_noise_stddev);
   }
 
-  void SetRightArmSensors(double start_value, double pot_noise_stddev) {
-    right_arm_pot_encoder_.OverrideParams(start_value, pot_noise_stddev);
+  void SetRightArmSensors(double start_pos, double pot_noise_stddev) {
+    right_arm_pot_encoder_.OverrideParams(start_pos, pot_noise_stddev);
   }
 
   // Sends a queue message with the position.
@@ -110,6 +118,18 @@ class FridgeSimulation {
     right_elev_pot_encoder_.MoveTo(right_elev_height);
   }
 
+  void VerifySeparation() {
+    // TODO(danielp): Make sure that we are getting the correct values from the
+    // plant.
+    const double left_arm_angle = arm_plant_->Y(0, 0);
+    const double right_arm_angle = arm_plant_->Y(1, 0);
+    const double left_elev_height = elev_plant_->Y(0, 0);
+    const double right_elev_height = elev_plant_->Y(1, 0);
+
+    EXPECT_NEAR(left_arm_angle, right_arm_angle, 5.0 * M_PI / 180.0);
+    EXPECT_NEAR(left_elev_height, right_elev_height, 0.05);
+  }
+
  private:
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> arm_plant_;
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> elev_plant_;
@@ -138,8 +158,31 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
   void VerifyNearGoal() {
     fridge_queue_.goal.FetchLatest();
     fridge_queue_.status.FetchLatest();
+    // TODO(danielp): I think those tens need to change...
     EXPECT_NEAR(fridge_queue_.goal->angle, fridge_queue_.status->angle, 10.0);
     EXPECT_NEAR(fridge_queue_.goal->height, fridge_queue_.status->height, 10.0);
+  }
+
+  // Runs one iteration of the whole simulation and checks that separation
+  // remains reasonable.
+  void RunIteration() {
+    SendMessages(true);
+
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+
+    TickTime();
+
+    fridge_plant_.VerifySeparation();
+  }
+
+  // Runs iterations until the specified amount of simulated time has elapsed.
+  void RunForTime(const Time &run_for) {
+    const auto start_time = Time::Now();
+    while (Time::Now() < start_time + run_for) {
+      RunIteration();
+    }
   }
 
   // Create a new instance of the test queue so that it invalidates the queue
@@ -154,41 +197,70 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the loop does nothing when the goal is zero.
 TEST_F(FridgeTest, DoesNothing) {
-  // Set the initial positions/angles etc explicitly to zero.
-  // TODO(danielp): Correct values for this.
-  static constexpr double kStartValue = 0.0;
-  const constants::Values values = constants::GetValues();
-  fridge_plant_.SetLeftElevatorSensors(
-      kStartValue, values.left_elevator_zeroing_constants.index_difference / 3);
-  fridge_plant_.SetRightElevatorSensors(
-      kStartValue,
-      values.right_elevator_zeroing_constants.index_difference / 3);
-  fridge_plant_.SetLeftArmSensors(
-      kStartValue, values.left_arm_zeroing_constants.index_difference / 3);
-  fridge_plant_.SetRightArmSensors(
-      kStartValue, values.right_arm_zeroing_constants.index_difference / 3);
-
   // Set the goals to the starting values. This should theoretically guarantee
   // that the controller does nothing.
-  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.0).Send();
+  const constants::Values values = constants::GetValues();
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+      .angle(0.0)
+      .height(values.fridge.elevator.lower_limit)
+      .Send());
 
-  for (int i = 0; i < 10; ++i) {
-    // Run one iteration of the simulation.
-    SendMessages(true);
-    fridge_plant_.SendPositionMessage();
-    fridge_.Iterate();
-    fridge_plant_.Simulate();
-    TickTime();
-  }
+  // Run a few iterations.
+  RunForTime(Time::InMS(50));
 
   VerifyNearGoal();
+}
 
-  // Make sure that all outputs are turned off.
-  fridge_queue_.output.FetchLatest();
-  EXPECT_EQ(fridge_queue_.output->left_arm, 0.0);
-  EXPECT_EQ(fridge_queue_.output->right_arm, 0.0);
-  EXPECT_EQ(fridge_queue_.output->left_elevator, 0.0);
-  EXPECT_EQ(fridge_queue_.output->right_elevator, 0.0);
+// Tests that the loop can reach a goal.
+TEST_F(FridgeTest, ReachesGoal) {
+  // Set a reasonable goal.
+  const auto values = constants::GetValues();
+  const double soft_limit = values.fridge.elevator.lower_limit;
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+      .angle(M_PI / 4.0)
+      .height(soft_limit + 0.5)
+      .Send());
+
+  // Give it a lot of time to get there.
+  RunForTime(Time::InMS(4000));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop doesn't try and go beyond the physical range of the
+// mechanisms.
+TEST_F(FridgeTest, RespectsRange) {
+  // Put the arm up to get it out of the way.
+  // We're going to send the elevator to zero, which should be significantly too
+  // low.
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+      .angle(M_PI / 2.0)
+      .height(0.0)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  // Check that we are near our soft limit.
+  fridge_queue_.status.FetchLatest();
+  const auto values = constants::GetValues();
+  EXPECT_NEAR(values.fridge.elevator.lower_limit,
+              fridge_queue_.status->height,
+              0.05);
+
+  // Put the arm down to get it out of the way.
+  // We're going to give the elevator some ridiculously high goal.
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+      .angle(-M_PI / 2.0)
+      .height(50.0)
+      .Send());
+
+  RunForTime(Time::InMS(4000));
+
+  // Check that we are near our soft limit.
+  fridge_queue_.status.FetchLatest();
+  EXPECT_NEAR(values.fridge.elevator.upper_limit,
+              fridge_queue_.status->height,
+              0.05);
 }
 
 }  // namespace testing
