@@ -68,8 +68,8 @@ double arm_translate(int32_t in) {
           (2 * M_PI /*radians*/);
 }
 
-double arm_pot_translate(int32_t in) {
-  return static_cast<double>(in) /
+double arm_pot_translate(double voltage) {
+  return voltage /
           (14.0 / 17.0 /*output sprockets*/) *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
           (2 * M_PI /*radians*/);
@@ -82,8 +82,8 @@ double elevator_translate(int32_t in) {
           (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/);
 }
 
-double elevator_pot_translate(int32_t in) {
-  return static_cast<double>(in) /
+double elevator_pot_translate(double voltage) {
+  return voltage /
           (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/) *
           (5.0 /*volts*/ / 5.0 /*turns*/);
 }
@@ -95,8 +95,8 @@ double claw_translate(int32_t in) {
           (2 * M_PI /*radians*/);
 }
 
-double claw_pot_translate(int32_t in) {
-  return static_cast<double>(in) /
+double claw_pot_translate(double voltage) {
+  return voltage /
           (16.0 / 72.0 /*output sprockets*/) *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
           (2 * M_PI /*radians*/);
