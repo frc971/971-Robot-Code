@@ -28,7 +28,8 @@ namespace {
 
 const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
-const uint16_t kRoboRioTeamNumber = 254;
+
+// ///// Drivetrain Constants
 
 const double kCompDrivetrainEncoderRatio =
     (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0) /*encoder gears*/;
@@ -45,13 +46,37 @@ const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
 const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
 
+// TODO(sensors): Get actual robot width before turning on robot.
 const double kRobotWidth = 25.0 / 100.0 * 2.54;
 
-const double shooter_zeroing_speed = 0.05;
-const double shooter_unload_speed = 0.08;
 
-// Smaller (more negative) = opening.
-const double kCompTopClawOffset = -0.120;
+// ///// Superstructure Constants
+
+// Gearing ratios of the pots and encoders for the elevator and arm.
+// Ratio is output shaft rotations per encoder/pot rotation
+const double kArmEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
+// const double kArmPotRatio = 48.0 / 48.0 * 16.0 / 72.0;
+const double kElevatorEncoderRatio = 14.0 / 84.0;
+// const double kElevatorPotRatio = 1.0;
+const double kClawEncoderRatio = 18.0 / 72.0;
+// const double kClawPotRatio = 18.0/72.0;
+
+// Elevator gearbox pulley output constants.
+const int kElevatorGearboxOutputPulleyTeeth = 32;  // 32 teeth
+const double kElevatorGearboxOutputPitch = 0.005;  // 5 mm/tooth
+const double kElevatorGearboxOutputRotationDistance =
+    kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch;
+
+// Number of radians between each index pulse on the arm.
+const double kArmEncoderIndexDifference = 2 * M_PI *  kArmEncoderRatio;
+
+// Number of meters betwen index pulses on the elevator.
+const double kElevatorEncoderIndexDifference =
+    kElevatorGearboxOutputRotationDistance * kElevatorEncoderRatio;
+
+const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
+
+const int kZeroingSampleSize = 20;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
@@ -66,30 +91,45 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.5,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          // ShooterLimits
-          {-0.00127, 0.298196, -0.0017, 0.305054, 0.0149098,
-           {-0.001778, 0.000762, 0, 0},
-           {-0.001778, 0.008906, 0, 0},
-           {0.006096, 0.026416, 0, 0},
-           shooter_zeroing_speed,
-           shooter_unload_speed
+          0.02,  // drivetrain done delta
+          5.0,   // drivetrain max speed
+
+          // Zeroing constants: left arm, right arm, left elev, right elev
+          {
+           kZeroingSampleSize, kArmEncoderIndexDifference,
+           // TODO(sensors): Get actual offsets before turning on robot.
+           0.0 /*index_offset_at_zero*/
           },
-          {0.5,
-           0.1,
-           0.1,
-           0.0,
-           1.57,
-           0.05,
-           1.5,
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
-           0.01,  // claw_unimportant_epsilon
-           0.9,   // start_fine_tune_pos
-           4.0,
+          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+
+          // Motion ranges: hard_lower_limit, hard_upper_limit,
+          //                soft_lower_limit, soft_upper_limit
+          // TODO(sensors): Get actual bounds before turning on robot.
+          {
+            // Claw values, in radians.
+            // 0 is level with the ground.
+            // Positive moves in the direction of positive encoder values.
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
           },
-          {0.07, 0.15}, // shooter_action
-          0.02, // drivetrain done delta
-          5.0 // drivetrain max speed
+
+          {
+            // Elevator values, in meters.
+            // 0 is at the top of the elevator frame.
+            // Positive is down towards the drivebase.
+            {0.0000000000, 0.6790000000,
+             0.2000000000, 0.6000000000},
+
+            // Arm values, in radians.
+            // 0 is sticking straight out horizontally over the intake/front.
+            // Positive is rotating up and into the robot (towards the back).
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
+          }
+          // End "sensor" values.
       };
       break;
     case kCompTeamNumber:
@@ -103,42 +143,48 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          // ShooterLimits
-          {-0.001041, 0.296019, -0.001488, 0.302717, 0.0149098,
-           {-0.002, 0.000446, -0.002, 0.000446},
-           {-0.002, 0.009078, -0.002, 0.009078},
-           {0.003870, 0.026194, 0.003869, 0.026343},
-           shooter_zeroing_speed,
-           shooter_unload_speed
+          0.02,  // drivetrain done delta
+          5.0,   // drivetrain max speed
+
+          // Zeroing constants: left arm, right arm, left elev, right elev
+          {
+           kZeroingSampleSize, kArmEncoderIndexDifference,
+           // TODO(sensors): Get actual offsets before turning on robot.
+           0.0 /*index_offset_at_zero*/
           },
-          {0.800000,
-           0.400000,
-           0.000000,
-           -1.220821,
-           1.822142,
-           -0.849484,
-           1.42309,
-           // 0.0371
-           {-3.3284, 2.0917, -3.1661, 1.95,
-             {-3.4, -3.02 + kCompTopClawOffset, -3.4, -2.9876 + kCompTopClawOffset},
-             {-0.1433 + kCompTopClawOffset, 0.0670 + kCompTopClawOffset, -0.1460 + kCompTopClawOffset, 0.0648 + kCompTopClawOffset},
-             {1.9952 + kCompTopClawOffset, 2.2, 1.9898 + kCompTopClawOffset, 2.2}},
-           {-2.453460, 3.082960, -2.453460, 3.082960,
-             {-2.6, -2.185752, -2.6, -2.184843},
-             {-0.322249, -0.053177, -0.332248, -0.059086},
-             {2.892065, 3.2, 2.888429, 3.2}},
-           0.040000,  // claw_unimportant_epsilon
-           -0.400000,   // start_fine_tune_pos
-           4.000000,
+          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+
+          // Motion ranges: hard_lower_limit, hard_upper_limit,
+          //                soft_lower_limit, soft_upper_limit
+          // TODO(sensors): Get actual bounds before turning on robot.
+          {
+            // Claw values, in radians.
+            // 0 is level with the ground.
+            // Positive moves in the direction of positive encoder values.
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
           },
-          //TODO(james): Get realer numbers for shooter_action.
-          {0.07, 0.15}, // shooter_action
-          0.02, // drivetrain done delta
-          5.0 // drivetrain max speed
+
+          {
+            // Elevator values, in meters.
+            // 0 is at the top of the elevator frame.
+            // Positive is down towards the drivebase.
+            {0.0000000000, 0.6790000000,
+             0.2000000000, 0.6000000000},
+
+            // Arm values, in radians.
+            // 0 is sticking straight out horizontally over the intake/front.
+            // Positive is rotating up and into the robot (towards the back).
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
+          }
+          // End "sensor" values.
       };
       break;
     case kPracticeTeamNumber:
-    case kRoboRioTeamNumber:
       return new Values{
           kPracticeDrivetrainEncoderRatio,
           kPracticeLowGearRatio,
@@ -149,37 +195,46 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          // ShooterLimits
-          {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
-           {-0.002, 0.000446, -0.002, 0.000446},
-           {-0.002, 0.009078, -0.002, 0.009078},
-           {0.003869, 0.026194, 0.003869, 0.026194},
-           shooter_zeroing_speed,
-           shooter_unload_speed
+          0.02,  // drivetrain done delta
+          5.0,   // drivetrain max speed
+
+          // Zeroing constants: left arm, right arm, left elev, right elev
+          {
+           kZeroingSampleSize, kArmEncoderIndexDifference,
+           // TODO(sensors): Get actual offsets before turning on robot.
+           0.0 /*index_offset_at_zero*/
           },
-          {0.400000 * 2.0,
-          0.200000 * 2.0,
-          0.000000 * 2.0,
-          -0.762218 * 2.0,
-          1.767146,
-          -0.849484,
-          1.42308,
-          {-3.364758, 2.086668, -3.166136, 1.95,
-            {-1.7 * 2.0, -1.544662 * 2.0, -1.7 * 2.0, -1.547616 * 2.0},
-            {-0.130218 * 2.0, -0.019771 * 2.0, -0.132036 * 2.0, -0.018862 * 2.0},
-            {1.871684, 2.2, 1.86532, 2.2}},
-          {-2.451642, 3.107504, -2.273474, 2.750,
-            {-2.6, -2.176662, -2.6, -2.176662},
-            {-0.316796, -0.054088, -0.319978, -0.062723},
-            {2.894792, 3.2, 2.887974, 3.2}},
-          0.040000,  // claw_unimportant_epsilon
-          -0.400000,   // start_fine_tune_pos
-          4.000000,
+          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+          // TODO(sensors): End "sensors" values
+
+          // Motion ranges: hard_lower_limit, hard_upper_limit,
+          //                soft_lower_limit, soft_upper_limit
+          // TODO(sensors): Get actual bounds before turning on robot.
+          {
+            // Claw values, in radians.
+            // 0 is level with the ground.
+            // Positive moves in the direction of positive encoder values.
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
           },
-          //TODO(james): Get realer numbers for shooter_action.
-          {0.07, 0.15}, // shooter_action
-          0.02, // drivetrain done delta
-          5.0 // drivetrain max speed
+
+          {
+            // Elevator values, in meters.
+            // 0 is at the top of the elevator frame.
+            // Positive is down towards the drivebase.
+            {0.0000000000, 0.6790000000,
+             0.2000000000, 0.6000000000},
+
+            // Arm values, in radians.
+            // 0 is sticking straight out horizontally over the intake/front.
+            // Positive is rotating up and into the robot (towards the back).
+            {0.0000000000, 1.5700000000,
+             0.1000000000, 1.2000000000}
+          }
+          // TODO(sensors): End "sensor" values.
       };
       break;
     default:
