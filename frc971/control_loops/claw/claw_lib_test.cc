@@ -23,16 +23,14 @@ class ClawSimulation {
   // Constructs a claw simulation.
   ClawSimulation()
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
-        pot_and_encoder_(0.0,
-                         constants::GetValues().claw.wrist.lower_hard_limit,
-                         constants::GetValues().claw_index_diff,
-                         0.3),
-        claw_queue_(".frc971.control_loops.claw_queue",
-          0x9d7452fb, ".frc971.control_loops.claw_queue.goal",
-          ".frc971.control_loops.claw_queue.position",
-          ".frc971.control_loops.claw_queue.output",
-          ".frc971.control_loops.claw_queue.status") {
-  }
+        pot_and_encoder_(
+            0.0, constants::GetValues().claw_zeroing_constants.index_difference,
+            0.3),
+        claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
+                    ".frc971.control_loops.claw_queue.goal",
+                    ".frc971.control_loops.claw_queue.position",
+                    ".frc971.control_loops.claw_queue.output",
+                    ".frc971.control_loops.claw_queue.status") {}
 
   // Do specific initialization for the sensors.
   void SetSensors(double start_value, double pot_noise_stddev) {
