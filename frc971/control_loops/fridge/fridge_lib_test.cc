@@ -24,21 +24,21 @@ class FridgeSimulation {
   FridgeSimulation()
       : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
         elev_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
-        left_arm_pot_encoder_(0.0,
-            constants::GetValues().fridge.arm.lower_hard_limit,
-            constants::GetValues().arm_index_diff,
+        left_arm_pot_encoder_(
+            0.0,
+            constants::GetValues().left_arm_zeroing_constants.index_difference,
             0.3),
-        right_arm_pot_encoder_(0.0,
-            constants::GetValues().fridge.arm.lower_hard_limit,
-            constants::GetValues().arm_index_diff,
+        right_arm_pot_encoder_(
+            0.0,
+            constants::GetValues().right_arm_zeroing_constants.index_difference,
             0.3),
-        left_elev_pot_encoder_(0.0,
-            constants::GetValues().fridge.elevator.lower_hard_limit,
-            constants::GetValues().elevator_index_diff,
+        left_elev_pot_encoder_(
+            0.0, constants::GetValues()
+                     .left_elevator_zeroing_constants.index_difference,
             0.3),
-        right_elev_pot_encoder_(0.0,
-            constants::GetValues().fridge.elevator.lower_hard_limit,
-            constants::GetValues().elevator_index_diff,
+        right_elev_pot_encoder_(
+            0.0, constants::GetValues()
+                     .right_elevator_zeroing_constants.index_difference,
             0.3),
         fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
                       ".frc971.control_loops.fridge_queue.goal",
@@ -156,14 +156,15 @@ TEST_F(FridgeTest, DoesNothing) {
   // TODO(danielp): Correct values for this.
   static constexpr double kStartValue = 0.0;
   const constants::Values values = constants::GetValues();
-  fridge_plant_.SetLeftElevatorSensors(kStartValue,
-      values.elevator_index_diff / 3);
-  fridge_plant_.SetRightElevatorSensors(kStartValue,
-      values.elevator_index_diff / 3);
-  fridge_plant_.SetLeftArmSensors(kStartValue,
-      values.arm_index_diff / 3);
-  fridge_plant_.SetRightArmSensors(kStartValue,
-      values.arm_index_diff / 3);
+  fridge_plant_.SetLeftElevatorSensors(
+      kStartValue, values.left_elevator_zeroing_constants.index_difference / 3);
+  fridge_plant_.SetRightElevatorSensors(
+      kStartValue,
+      values.right_elevator_zeroing_constants.index_difference / 3);
+  fridge_plant_.SetLeftArmSensors(
+      kStartValue, values.left_arm_zeroing_constants.index_difference / 3);
+  fridge_plant_.SetRightArmSensors(
+      kStartValue, values.right_arm_zeroing_constants.index_difference / 3);
 
   // Set the goals to the starting values. This should theoretically guarantee
   // that the controller does nothing.
