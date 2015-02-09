@@ -252,11 +252,6 @@ int main(int argc, char **argv) {
       return 0;
     }
 
-    if (source_pid >= 0 && msg->source != source_pid) {
-      // Message is from the wrong process.
-      continue;
-    }
-
     if (msg->type == LogFileMessageHeader::MessageType::kStructType) {
       size_t bytes = msg->message_size;
       ::aos::MessageType *type = ::aos::MessageType::Deserialize(
@@ -275,6 +270,11 @@ int main(int argc, char **argv) {
       } else {
         ::aos::type_cache::Add(*type);
       }
+      continue;
+    }
+
+    if (source_pid >= 0 && msg->source != source_pid) {
+      // Message is from the wrong process.
       continue;
     }
 
