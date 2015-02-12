@@ -7,6 +7,7 @@
         '<(AOS)/build/aos_all.gyp:Prime',
 
         '../control_loops/control_loops.gyp:state_feedback_loop_test',
+        '../control_loops/control_loops.gyp:position_sensor_sim_test',
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain',
         '../control_loops/drivetrain/drivetrain.gyp:drivetrain_lib_test',
         '../control_loops/fridge/fridge.gyp:fridge',

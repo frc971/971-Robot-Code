@@ -50,6 +50,18 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'position_sensor_sim_test',
+      'type': 'executable',
+      'sources': [
+        'position_sensor_sim_test.cc',
+      ],
+      'dependencies': [
+        'queues',
+        'position_sensor_sim',
+        '<(EXTERNALS):gtest',
+      ],
+    },
+    {
       'target_name': 'position_sensor_sim',
       'type': 'static_library',
       'sources': [
