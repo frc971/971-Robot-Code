@@ -11,7 +11,7 @@ namespace aos {
 namespace network {
 namespace {
 
-uint16_t override_team = 0;
+uint16_t override_team;
 
 uint16_t *DoGetTeamNumber() {
   if (override_team != 0) return &override_team;

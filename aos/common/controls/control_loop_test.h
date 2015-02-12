@@ -19,6 +19,9 @@ class ControlLoopTest : public ::testing::Test {
   ControlLoopTest();
   virtual ~ControlLoopTest();
 
+  void set_team_id(uint16_t team_id) { team_id_ = team_id; }
+  uint16_t team_id() const { return team_id_; }
+
   // Sends out all of the required queue messages.
   void SendMessages(bool enabled);
   // Ticks time for a single control loop cycle.
@@ -36,6 +39,8 @@ class ControlLoopTest : public ::testing::Test {
   static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(5000);
   static constexpr ::aos::time::Time kDSPacketTime =
       ::aos::time::Time::InMS(20);
+
+  uint16_t team_id_ = 971;
 
   ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);

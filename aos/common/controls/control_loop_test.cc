@@ -32,7 +32,7 @@ void ControlLoopTest::SendMessages(bool enabled) {
 
     new_state->enabled = enabled;
     new_state->autonomous = false;
-    new_state->team_id = 971;
+    new_state->team_id = team_id_;
 
     new_state.Send();
   }

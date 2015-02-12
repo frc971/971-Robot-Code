@@ -9,6 +9,7 @@
 #include "frc971/control_loops/claw/claw.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/constants.h"
+#include "frc971/control_loops/team_number_test_environment.h"
 
 using ::aos::time::Time;
 
@@ -76,7 +77,9 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
                     ".frc971.control_loops.claw_queue.output",
                     ".frc971.control_loops.claw_queue.status"),
         claw_(&claw_queue_),
-        claw_plant_() {}
+        claw_plant_() {
+    set_team_id(kTeamNumber);
+  }
 
   void VerifyNearGoal() {
     claw_queue_.goal.FetchLatest();
