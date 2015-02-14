@@ -79,6 +79,12 @@ struct Values {
     // to radians so that the resulting value is 0 when the claw is at absolute
     // 0 (horizontal straight out the front).
     double potentiometer_offset;
+
+    // Time between sending commands to claw opening pistons and them reaching
+    // the new state.
+    double piston_switch_time;
+    // How far on either side we look for the index pulse before we give up.
+    double zeroing_range;
   };
   Claw claw;
 

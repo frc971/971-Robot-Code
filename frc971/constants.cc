@@ -80,6 +80,10 @@ const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
 
 const int kZeroingSampleSize = 20;
 
+// TODO(danielp): All these values might need to change.
+const double kClawPistonSwitchTime = 0.4;
+const double kClawZeroingRange = 0.3;
+
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
@@ -114,9 +118,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
              0.1000000000, 1.2000000000},
 
             // Zeroing constants for wrist.
-            // TODO(sensors): Get actual offsets for these.
-            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.35},
+
             0.0,
+            kClawPistonSwitchTime,
+            kClawZeroingRange
           },
 
           {
@@ -180,9 +186,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
              0.1000000000, 1.2000000000},
 
             // Zeroing constants for wrist.
-            // TODO(sensors): Get actual offsets for these.
             {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+
             0.0,
+            kClawPistonSwitchTime,
+            kClawZeroingRange
           },
 
           {
@@ -246,6 +254,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            // TODO(sensors): Get actual offsets for these.
            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.977913},
            6.1663463999999992,
+
+           kClawPistonSwitchTime,
+           kClawZeroingRange
           },
 
           {// Elevator values, in meters.

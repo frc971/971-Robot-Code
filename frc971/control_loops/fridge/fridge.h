@@ -45,15 +45,6 @@ class Fridge
   explicit Fridge(
       control_loops::FridgeQueue *fridge_queue = &control_loops::fridge_queue);
 
-  // Control loop time step.
-  // Please figure out how to set dt from a common location
-  // Please decide the correct value
-  // Please use dt in your implementation so we can change looptimnig
-  // and be consistent with legacy
-  // And Brian please approve my code review as people are wait on
-  // these files to exist and they will be rewritten anyway
-  //static constexpr double dt;
-
   enum State {
     // Waiting to receive data before doing anything.
     UNINITIALIZED = 0,
@@ -148,7 +139,6 @@ class Fridge
   State last_state_ = UNINITIALIZED;
 
   control_loops::FridgeQueue::Position current_position_;
-  static constexpr double dt = 0.005;
 };
 
 }  // namespace control_loops

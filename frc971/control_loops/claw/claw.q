@@ -13,6 +13,8 @@ queue_group ClawQueue {
   message Goal {
     // Angle of wrist joint.
     double angle;
+    // Angular velocity of wrist.
+    double angular_velocity;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;
@@ -39,8 +41,10 @@ queue_group ClawQueue {
   message Status {
     // Is claw zeroed?
     bool zeroed;
-    // Has claw zeroed and reached goal?
-    bool done;
+    // Did the claw estop?
+    bool estopped;
+    // The internal state of the claw state machine.
+    uint32_t state;
 
     // Angle of wrist joint.
     double angle;
@@ -53,7 +57,7 @@ queue_group ClawQueue {
     bool rollers_open;
     // True iff there has been enough time since we actuated the rollers closed
     // that they should be there.
-    bool rollers_close;
+    bool rollers_closed;
   };
 
   queue Goal goal;

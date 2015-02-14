@@ -28,13 +28,17 @@
       'dependencies': [
         'claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(AOS)/common/common.gyp:time',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/frc971/zeroing/zeroing.gyp:zeroing',
       ],
       'export_dependent_settings': [
         'claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(AOS)/common/common.gyp:time',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/frc971/zeroing/zeroing.gyp:zeroing',
       ],
     },
     {

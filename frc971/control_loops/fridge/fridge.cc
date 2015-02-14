@@ -15,8 +15,6 @@
 namespace frc971 {
 namespace control_loops {
 
-constexpr double Fridge::dt;
-
 namespace {
 constexpr double kZeroingVoltage = 4.0;
 constexpr double kElevatorZeroingVelocity = 0.10;
@@ -321,7 +319,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         LOG(DEBUG, "Zeroed the elevator!\n");
       } else if (!disable) {
         elevator_goal_velocity = elevator_zeroing_velocity();
-        elevator_goal_ += elevator_goal_velocity * dt;
+        elevator_goal_ += elevator_goal_velocity *
+            ::aos::controls::kLoopFrequency.ToSeconds();
       }
       break;
 
@@ -337,7 +336,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         LOG(DEBUG, "Zeroed the arm!\n");
       } else if (!disable) {
         arm_goal_velocity = arm_zeroing_velocity();
-        arm_goal_ += arm_goal_velocity * dt;
+        arm_goal_ += arm_goal_velocity *
+            ::aos::controls::kLoopFrequency.ToSeconds();
       }
       break;
 
