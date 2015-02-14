@@ -61,12 +61,12 @@ Fridge::Fridge(control_loops::FridgeQueue *fridge)
           StateFeedbackLoop<4, 2, 2>(MakeArmLoop()))),
       elevator_loop_(new CappedStateFeedbackLoop(
           StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop()))),
-      left_arm_estimator_(constants::GetValues().left_arm_zeroing_constants),
-      right_arm_estimator_(constants::GetValues().right_arm_zeroing_constants),
+      left_arm_estimator_(constants::GetValues().fridge.left_arm_zeroing),
+      right_arm_estimator_(constants::GetValues().fridge.right_arm_zeroing),
       left_elevator_estimator_(
-          constants::GetValues().left_elevator_zeroing_constants),
+          constants::GetValues().fridge.left_elev_zeroing),
       right_elevator_estimator_(
-          constants::GetValues().right_elevator_zeroing_constants) {}
+          constants::GetValues().fridge.right_elev_zeroing) {}
 
 void Fridge::UpdateZeroingState() {
   if (left_elevator_estimator_.offset_ratio_ready() < 0.5 ||
@@ -184,8 +184,8 @@ double Fridge::elevator_zeroing_velocity() {
       2.0;
 
   const double pulse_width = ::std::max(
-      constants::GetValues().left_elevator_zeroing_constants.index_difference,
-      constants::GetValues().right_elevator_zeroing_constants.index_difference);
+      constants::GetValues().fridge.left_elev_zeroing.index_difference,
+      constants::GetValues().fridge.right_elev_zeroing.index_difference);
 
   if (elevator_zeroing_velocity_ == 0) {
     if (estimated_elevator() > average_elevator) {
@@ -208,8 +208,8 @@ double Fridge::arm_zeroing_velocity() {
                               constants::GetValues().fridge.arm.upper_limit) /
                              2.0;
   const double pulse_width = ::std::max(
-      constants::GetValues().right_arm_zeroing_constants.index_difference,
-      constants::GetValues().left_arm_zeroing_constants.index_difference);
+      constants::GetValues().fridge.right_arm_zeroing.index_difference,
+      constants::GetValues().fridge.left_arm_zeroing.index_difference);
 
   if (arm_zeroing_velocity_ == 0) {
     if (estimated_arm() > average_arm) {

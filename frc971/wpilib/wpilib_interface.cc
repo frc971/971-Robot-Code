@@ -17,6 +17,7 @@
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
 
+#include "frc971/constants.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
@@ -56,22 +57,20 @@ namespace wpilib {
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) /
          (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         (20.0 / 50.0 /*output stage*/) *
-         // * constants::GetValues().drivetrain_encoder_ratio
+         constants::GetValues().drivetrain_encoder_ratio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 double arm_translate(int32_t in) {
   return static_cast<double>(in) /
           (512.0 /*cpr*/ * 4.0 /*4x*/) *
-          (14.0 / 17.0 /*output sprockets*/) *
-          (18.0 / 48.0 /*encoder pulleys*/) *
+          constants::GetValues().arm_encoder_ratio *
           (2 * M_PI /*radians*/);
 }
 
 double arm_pot_translate(double voltage) {
   return voltage /
-          (14.0 / 17.0 /*output sprockets*/) *
+          constants::GetValues().arm_pot_ratio *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
           (2 * M_PI /*radians*/);
 }
@@ -79,26 +78,29 @@ double arm_pot_translate(double voltage) {
 double elevator_translate(int32_t in) {
   return static_cast<double>(in) /
           (512.0 /*cpr*/ * 4.0 /*4x*/) *
-          (14.0 / 84.0 /*output stage*/) *
-          (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/);
+          constants::GetValues().elev_encoder_ratio *
+          (2 * M_PI /*radians*/) *
+          constants::GetValues().elev_distance_per_radian;
 }
 
 double elevator_pot_translate(double voltage) {
   return voltage /
-          (32 * 5 / 2.54 / 10 /*pulley circumference (in)*/) *
+          constants::GetValues().elev_pot_ratio *
+          (2 * M_PI /*radians*/) *
+          constants::GetValues().elev_distance_per_radian *
           (5.0 /*volts*/ / 5.0 /*turns*/);
 }
 
 double claw_translate(int32_t in) {
   return static_cast<double>(in) /
           (512.0 /*cpr*/ * 4.0 /*4x*/) *
-          (16.0 / 72.0 /*output sprockets*/) *
+          constants::GetValues().claw_encoder_ratio *
           (2 * M_PI /*radians*/);
 }
 
 double claw_pot_translate(double voltage) {
   return voltage /
-          (16.0 / 72.0 /*output sprockets*/) *
+          constants::GetValues().claw_pot_ratio *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
           (2 * M_PI /*radians*/);
 }

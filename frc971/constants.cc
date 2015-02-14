@@ -31,14 +31,10 @@ const uint16_t kPracticeTeamNumber = 9971;
 
 // ///// Drivetrain Constants
 
-const double kCompDrivetrainEncoderRatio =
-    (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0) /*encoder gears*/;
-const double kCompLowGearRatio = 18.0 / 60.0 * 18.0 / 50.0;
-const double kCompHighGearRatio = 28.0 / 50.0 * 18.0 / 50.0;
-
-const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
-const double kPracticeLowGearRatio = kCompLowGearRatio;
-const double kPracticeHighGearRatio = kCompHighGearRatio;
+// These three constants were set by Daniel on 2/13/15.
+const double kDrivetrainEncoderRatio = 20.0 / 64.0;
+const double kLowGearRatio = kDrivetrainEncoderRatio * 20.0 / 50.0;
+const double kHighGearRatio = kLowGearRatio;
 
 const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
 const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
@@ -46,37 +42,40 @@ const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
 const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
 
-// TODO(sensors): Get actual robot width before turning on robot.
-const double kRobotWidth = 25.0 / 100.0 * 2.54;
-
+// Set by Daniel on 2/13/15.
+// Distance from the center of the left wheel to the center of the right wheel.
+const double kRobotWidth = 37.806 /*inches*/ * 0.0254;
 
 // ///// Superstructure Constants
-
-// Gearing ratios of the pots and encoders for the elevator and arm.
-// Ratio is output shaft rotations per encoder/pot rotation
-const double kArmEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
-// const double kArmPotRatio = 48.0 / 48.0 * 16.0 / 72.0;
-const double kElevatorEncoderRatio = 14.0 / 84.0;
-// const double kElevatorPotRatio = 1.0;
-const double kClawEncoderRatio = 18.0 / 72.0;
-// const double kClawPotRatio = 18.0/72.0;
 
 // Elevator gearbox pulley output constants.
 const int kElevatorGearboxOutputPulleyTeeth = 32;  // 32 teeth
 const double kElevatorGearboxOutputPitch = 0.005;  // 5 mm/tooth
-const double kElevatorGearboxOutputRotationDistance =
-    kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch;
+const double kElevatorGearboxOutputRadianDistance =
+    kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch /
+    (2.0 * M_PI);
 
 const double kMaxAllowedLeftRightArmDifference = 0.01;  // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
 
+// Gearing ratios of the pots and encoders for the elevator and arm.
+// Ratio is output shaft rotations per encoder/pot rotation
+// Checked by Daniel on 2/13/15.
+const double kArmEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
+const double kArmPotRatio = 48.0 / 48.0 * 16.0 / 72.0;
+const double kElevatorEncoderRatio = 14.0 / 84.0;
+const double kElevatorPotRatio = 1.0;
+const double kClawEncoderRatio = 18.0 / 72.0;
+const double kClawPotRatio = 18.0 / 72.0;
+
 // Number of radians between each index pulse on the arm.
-const double kArmEncoderIndexDifference = 2 * M_PI *  kArmEncoderRatio;
-
-// Number of meters betwen index pulses on the elevator.
+const double kArmEncoderIndexDifference = 2.0 * M_PI *  kArmEncoderRatio;
+// Number of meters between each index pulse on the elevator.
 const double kElevatorEncoderIndexDifference =
-    kElevatorGearboxOutputRotationDistance * kElevatorEncoderRatio;
-
+    kElevatorEncoderRatio *
+    2.0 * M_PI * // radians
+    kElevatorGearboxOutputRadianDistance;
+// Number of radians between index pulses on the claw.
 const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
 
 const int kZeroingSampleSize = 20;
@@ -85,9 +84,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
       return new Values{
-          kCompDrivetrainEncoderRatio,
-          kCompLowGearRatio,
-          kCompHighGearRatio,
+          kDrivetrainEncoderRatio,
+          kArmEncoderRatio,
+          kArmPotRatio,
+          kElevatorEncoderRatio,
+          kElevatorPotRatio,
+          kElevatorGearboxOutputRadianDistance,
+          kClawEncoderRatio,
+          kClawPotRatio,
+          kLowGearRatio,
+          kHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
@@ -97,17 +103,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
-          // Zeroing constants: left arm, right arm, left elev, right elev
-          {
-           kZeroingSampleSize, kArmEncoderIndexDifference,
-           // TODO(sensors): Get actual offsets before turning on robot.
-           0.0 /*index_offset_at_zero*/
-          },
-          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
-
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
           // TODO(sensors): Get actual bounds before turning on robot.
@@ -116,7 +111,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is level with the ground.
             // Positive moves in the direction of positive encoder values.
             {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
+             0.1000000000, 1.2000000000},
+
+            // Zeroing constants for wrist.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
           },
 
           {
@@ -131,7 +130,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
             {-1.570000000, 1.5700000000,
-             -1.200000000, 1.2000000000}
+             -1.200000000, 1.2000000000},
+
+            // Elevator zeroing constants: left, right.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            // Arm zeroing constants: left, right.
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
           },
           // End "sensor" values.
 
@@ -141,9 +148,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
     case kCompTeamNumber:
       return new Values{
-          kCompDrivetrainEncoderRatio,
-          kCompLowGearRatio,
-          kCompHighGearRatio,
+          kDrivetrainEncoderRatio,
+          kArmEncoderRatio,
+          kArmPotRatio,
+          kElevatorEncoderRatio,
+          kElevatorPotRatio,
+          kElevatorGearboxOutputRadianDistance,
+          kClawEncoderRatio,
+          kClawPotRatio,
+          kLowGearRatio,
+          kHighGearRatio,
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
@@ -153,17 +167,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
-          // Zeroing constants: left arm, right arm, left elev, right elev
-          {
-           kZeroingSampleSize, kArmEncoderIndexDifference,
-           // TODO(sensors): Get actual offsets before turning on robot.
-           0.0 /*index_offset_at_zero*/
-          },
-          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
-
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
           // TODO(sensors): Get actual bounds before turning on robot.
@@ -172,7 +175,12 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is level with the ground.
             // Positive moves in the direction of positive encoder values.
             {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
+             0.1000000000, 1.2000000000},
+
+            // Zeroing constants for wrist.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+
           },
 
           {
@@ -186,7 +194,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
             {-1.570000000, 1.5700000000,
-             -1.200000000, 1.2000000000}
+             -1.200000000, 1.2000000000},
+
+            // Elevator zeroing constants: left, right.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            // Arm zeroing constants: left, right.
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
           },
           // End "sensor" values.
 
@@ -196,9 +212,16 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
     case kPracticeTeamNumber:
       return new Values{
-          kPracticeDrivetrainEncoderRatio,
-          kPracticeLowGearRatio,
-          kPracticeHighGearRatio,
+          kDrivetrainEncoderRatio,
+          kArmEncoderRatio,
+          kArmPotRatio,
+          kElevatorEncoderRatio,
+          kElevatorPotRatio,
+          kElevatorGearboxOutputRadianDistance,
+          kClawEncoderRatio,
+          kClawPotRatio,
+          kLowGearRatio,
+          kHighGearRatio,
           kPracticeLeftDriveShifter,
           kPracticeRightDriveShifter,
           false,
@@ -208,18 +231,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
-          // Zeroing constants: left arm, right arm, left elev, right elev
-          {
-           kZeroingSampleSize, kArmEncoderIndexDifference,
-           // TODO(sensors): Get actual offsets before turning on robot.
-           0.0 /*index_offset_at_zero*/
-          },
-          {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-          {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
-          // TODO(sensors): End "sensors" values
-
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
           // TODO(sensors): Get actual bounds before turning on robot.
@@ -228,7 +239,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is level with the ground.
             // Positive moves in the direction of positive encoder values.
             {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
+             0.1000000000, 1.2000000000},
+
+            // Zeroing constants for wrist.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
           },
 
           {
@@ -242,7 +257,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
             {-1.570000000, 1.5700000000,
-             -1.200000000, 1.2000000000}
+             -1.200000000, 1.2000000000},
+
+            // Elevator zeroing constants: left, right.
+            // TODO(sensors): Get actual offsets for these.
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+            // Arm zeroing constants: left, right.
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
           },
           // TODO(sensors): End "sensor" values.
 

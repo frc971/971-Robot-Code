@@ -26,8 +26,7 @@ class ClawSimulation {
   // Constructs a claw simulation.
   ClawSimulation()
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
-        pot_and_encoder_(
-            constants::GetValues().claw_zeroing_constants.index_difference),
+        pot_and_encoder_(constants::GetValues().claw.zeroing.index_difference),
         claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
                     ".frc971.control_loops.claw_queue.goal",
                     ".frc971.control_loops.claw_queue.position",
@@ -35,7 +34,7 @@ class ClawSimulation {
                     ".frc971.control_loops.claw_queue.status") {
     pot_and_encoder_.Initialize(
         constants::GetValues().claw.wrist.lower_limit,
-        constants::GetValues().claw_zeroing_constants.index_difference / 3.0);
+        constants::GetValues().claw.zeroing.index_difference / 3.0);
   }
 
   // Do specific initialization for the sensors.
@@ -164,7 +163,7 @@ TEST_F(ClawTest, RespectsRange) {
 
   // Lower limit.
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(values.claw.wrist.lower_hard_limit + 5.0)
+      .angle(values.claw.wrist.lower_hard_limit - 5.0)
       .Send());
 
   RunForTime(Time::InMS(4000));

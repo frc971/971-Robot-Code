@@ -28,16 +28,13 @@ class FridgeSimulation {
       : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
         elev_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
         left_arm_pot_encoder_(
-            constants::GetValues().left_arm_zeroing_constants.index_difference),
+            constants::GetValues().fridge.left_arm_zeroing.index_difference),
         right_arm_pot_encoder_(
-            constants::GetValues()
-                .right_arm_zeroing_constants.index_difference),
+            constants::GetValues().fridge.right_arm_zeroing.index_difference),
         left_elev_pot_encoder_(
-            constants::GetValues()
-                .left_elevator_zeroing_constants.index_difference),
+            constants::GetValues().fridge.left_elev_zeroing.index_difference),
         right_elev_pot_encoder_(
-            constants::GetValues()
-                .right_elevator_zeroing_constants.index_difference),
+            constants::GetValues().fridge.right_elev_zeroing.index_difference),
         fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
                       ".frc971.control_loops.fridge_queue.goal",
                       ".frc971.control_loops.fridge_queue.position",
@@ -48,13 +45,12 @@ class FridgeSimulation {
         constants::GetValues().fridge.elevator.lower_limit,
         constants::GetValues().fridge.elevator.lower_limit,
         kNoiseScalar *
-            constants::GetValues()
-                .right_elevator_zeroing_constants.index_difference);
+            constants::GetValues().fridge.right_elev_zeroing.index_difference);
     // Initialize the arm.
     SetArmSensors(0.0, 0.0,
                   kNoiseScalar *
                       constants::GetValues()
-                          .right_arm_zeroing_constants.index_difference);
+                          .fridge.right_arm_zeroing.index_difference);
   }
 
   void SetElevatorSensors(double left_start_pos, double right_start_pos,
@@ -123,8 +119,6 @@ class FridgeSimulation {
   }
 
   void VerifySeparation() {
-    // TODO(danielp): Make sure that we are getting the correct values from the
-    // plant.
     const double left_arm_angle = arm_plant_->Y(0, 0);
     const double right_arm_angle = arm_plant_->Y(1, 0);
     const double left_elev_height = elev_plant_->Y(0, 0);
@@ -235,7 +229,7 @@ TEST_F(FridgeTest, ReachesGoal) {
 // mechanisms.
 TEST_F(FridgeTest, RespectsRange) {
   // Put the arm up to get it out of the way.
-  // We're going to send the elevator to zero, which should be significantly too
+  // We're going to send the elevator to -5, which should be significantly too
   // low.
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
       .angle(M_PI)

@@ -11,6 +11,7 @@
         '<(AOS)/common/common.gyp:stl_mutex',
         '<(AOS)/build/aos.gyp:logging',
         '<(EXTERNALS):WPILib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',

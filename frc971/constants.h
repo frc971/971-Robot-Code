@@ -17,6 +17,20 @@ struct Values {
 
   // The ratio from the encoder shaft to the drivetrain wheels.
   double drivetrain_encoder_ratio;
+  // The ratio from the encoder shaft to the arm joint.
+  double arm_encoder_ratio;
+  // The ratio from the pot shaft to the arm joint.
+  double arm_pot_ratio;
+  // The ratio from the encoder shaft to the elevator output pulley.
+  double elev_encoder_ratio;
+  // The ratio from the pot shaft to the elevator output pulley.
+  double elev_pot_ratio;
+  // How far the elevator moves (meters) per radian on the output pulley.
+  double elev_distance_per_radian;
+  // The ratio from the encoder shaft to the claw joint.
+  double claw_encoder_ratio;
+  // The ratio from the pot shaft to the claw joint.
+  double claw_pot_ratio;
 
   // The gear ratios from motor shafts to the drivetrain wheels for high and low
   // gear.
@@ -45,12 +59,6 @@ struct Values {
     double measured_index_position;
   };
 
-  ZeroingConstants left_arm_zeroing_constants;
-  ZeroingConstants right_arm_zeroing_constants;
-  ZeroingConstants left_elevator_zeroing_constants;
-  ZeroingConstants right_elevator_zeroing_constants;
-  ZeroingConstants claw_zeroing_constants;
-
   // Defines a range of motion for a subsystem.
   struct Range {
     double lower_hard_limit;
@@ -61,12 +69,18 @@ struct Values {
 
   struct Claw {
     Range wrist;
+    ZeroingConstants zeroing;
   };
   Claw claw;
 
   struct Fridge {
     Range elevator;
     Range arm;
+
+    ZeroingConstants left_elev_zeroing;
+    ZeroingConstants right_elev_zeroing;
+    ZeroingConstants left_arm_zeroing;
+    ZeroingConstants right_arm_zeroing;
   };
   Fridge fridge;
 
