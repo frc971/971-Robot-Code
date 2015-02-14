@@ -28,7 +28,7 @@ class CIM(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Control loop time step
-    self.dt = 0.01
+    self.dt = 0.005
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(
@@ -69,7 +69,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the robot, in meters (from last year).
     self.rb = 0.617998644 / 2.0
     # Radius of the wheels, in meters.
-    self.r = .04445
+    self.r = .0515938
     # Resistance of the motor, divided by the number of motors.
     self.R = 12.0 / self.stall_current / 4
     # Motor velocity constant
@@ -78,8 +78,11 @@ class Drivetrain(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 18.0 / 60.0 * 18.0 / 50.0
-    self.G_high = 28.0 / 50.0 * 18.0 / 50.0
+    self.G_const = 28.0 / 50.0 * 20.0 / 64.0
+
+    self.G_low = self.G_const
+    self.G_high = self.G_const
+
     if left_low:
       self.Gl = self.G_low
     else:
@@ -88,9 +91,10 @@ class Drivetrain(control_loop.ControlLoop):
       self.Gr = self.G_low
     else:
       self.Gr = self.G_high
+
     # Control loop time step
-    self.dt = 0.01
-    
+    self.dt = 0.005
+
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.
     self.msp = 1.0 / self.m + self.rb * self.rb / self.J
