@@ -37,10 +37,12 @@ struct Values {
   // Superstructure Values /////
 
   struct ZeroingConstants {
+    // The number of samples in the moving average filter.
     int average_filter_size;
+    // The difference in SI units between two index pulses.
     double index_difference;
-    // Offset between the physical encoder index and the index we want.
-    double index_offset_at_zero;
+    // The absolute position in SI units of one of the index pulses.
+    double measured_index_position;
   };
 
   ZeroingConstants left_arm_zeroing_constants;
@@ -67,6 +69,9 @@ struct Values {
     Range arm;
   };
   Fridge fridge;
+
+  double max_allowed_left_right_arm_difference;
+  double max_allowed_left_right_elevator_difference;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

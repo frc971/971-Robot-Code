@@ -19,6 +19,13 @@
       ],
       'dependencies': [
         'zeroing_queue',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+      ],
+      'export_dependent_settings': [
+        'zeroing_queue',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
       ],
     },
     {

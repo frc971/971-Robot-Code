@@ -59,6 +59,7 @@
         'queues',
         'position_sensor_sim',
         '<(EXTERNALS):gtest',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {

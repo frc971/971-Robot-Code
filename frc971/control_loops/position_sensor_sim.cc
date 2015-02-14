@@ -30,15 +30,13 @@ namespace control_loops {
  *              index pulse
  */
 
-PositionSensorSimulator::PositionSensorSimulator(double start_position,
-                                                 double index_diff,
-                                                 double pot_noise_stddev)
-    : index_diff_(index_diff), pot_noise_(0, pot_noise_stddev) {
-  OverrideParams(start_position, pot_noise_stddev);
+PositionSensorSimulator::PositionSensorSimulator(double index_diff)
+    : index_diff_(index_diff), pot_noise_(0, 0.0) {
+  Initialize(0.0, 0.0);
 }
 
-void PositionSensorSimulator::OverrideParams(double start_position,
-                                             double pot_noise_stddev) {
+void PositionSensorSimulator::Initialize(double start_position,
+                                         double pot_noise_stddev) {
   cur_index_segment_ = floor(start_position / index_diff_);
   cur_index_ = 0;
   index_count_ = 0;

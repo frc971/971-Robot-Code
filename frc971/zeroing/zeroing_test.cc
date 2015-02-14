@@ -95,19 +95,18 @@ class ZeroingEstimatorSimulator {
   }
 
   ZeroingInfo getInfo() {
-    ZeroingInfo estimate;
-    estimate.pot = noise_generator_.AddNoiseToSample(cur_pos_);
+    estimate_.pot = noise_generator_.AddNoiseToSample(cur_pos_);
     if (index_count_ == 0) {
-      estimate.index_encoder = 0.0;
+      estimate_.index_encoder = 0.0;
     } else {
-      estimate.index_encoder = cur_index_ * index_diff_ - start_pos_;
+      estimate_.index_encoder = cur_index_ * index_diff_ - start_pos_;
     }
-    estimate.index_count = index_count_;
-    estimate.encoder = cur_pos_ - start_pos_ - encoder_slip_;
-    return estimate;
+    estimate_.index_count = index_count_;
+    estimate_.encoder = cur_pos_ - start_pos_ - encoder_slip_;
+    return estimate_;
   }
 
-  double getEstimate(void) { return estimator_.getPosition(); }
+  double getEstimate(void) { return estimator_.offset() + estimate_.encoder; }
 
  private:
   int index_count_;
@@ -119,6 +118,7 @@ class ZeroingEstimatorSimulator {
   double encoder_slip_;
   ZeroingEstimator estimator_;
   NoiseGenerator& noise_generator_;
+  ZeroingInfo estimate_;
 };
 
 class QueueTest : public ::testing::Test {

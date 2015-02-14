@@ -67,6 +67,9 @@ const double kElevatorGearboxOutputPitch = 0.005;  // 5 mm/tooth
 const double kElevatorGearboxOutputRotationDistance =
     kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch;
 
+const double kMaxAllowedLeftRightArmDifference = 0.01;  // radians
+const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
+
 // Number of radians between each index pulse on the arm.
 const double kArmEncoderIndexDifference = 2 * M_PI *  kArmEncoderRatio;
 
@@ -118,6 +121,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           {
             // Elevator values, in meters.
+            // TODO(austin): Fix this.  Positive is up.
             // 0 is at the top of the elevator frame.
             // Positive is down towards the drivebase.
             {0.0000000000, 0.6790000000,
@@ -126,10 +130,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm values, in radians.
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
-            {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
-          }
+            {-1.570000000, 1.5700000000,
+             -1.200000000, 1.2000000000}
+          },
           // End "sensor" values.
+
+          kMaxAllowedLeftRightArmDifference,
+          kMaxAllowedLeftRightElevatorDifference,
       };
       break;
     case kCompTeamNumber:
@@ -178,10 +185,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm values, in radians.
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
-            {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
-          }
+            {-1.570000000, 1.5700000000,
+             -1.200000000, 1.2000000000}
+          },
           // End "sensor" values.
+
+          kMaxAllowedLeftRightArmDifference,
+          kMaxAllowedLeftRightElevatorDifference,
       };
       break;
     case kPracticeTeamNumber:
@@ -231,10 +241,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm values, in radians.
             // 0 is sticking straight out horizontally over the intake/front.
             // Positive is rotating up and into the robot (towards the back).
-            {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000}
-          }
+            {-1.570000000, 1.5700000000,
+             -1.200000000, 1.2000000000}
+          },
           // TODO(sensors): End "sensor" values.
+
+          kMaxAllowedLeftRightArmDifference,
+          kMaxAllowedLeftRightElevatorDifference,
       };
       break;
     default:

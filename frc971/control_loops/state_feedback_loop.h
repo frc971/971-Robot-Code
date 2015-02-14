@@ -271,8 +271,6 @@ class StateFeedbackLoop {
     U_.swap(other.U_);
     U_uncapped_.swap(other.U_uncapped_);
     ::std::swap(controllers_, other.controllers_);
-    Y_.swap(other.Y_);
-    new_y_ = other.new_y_;
     controller_index_ = other.controller_index_;
   }
 
@@ -285,6 +283,10 @@ class StateFeedbackLoop {
   const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
     return controller().plant.B();
   }
+  const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv() const {
+    return controller().A_inv;
+  }
+  double A_inv(int i, int j) const { return A_inv()(i, j); }
   double B(int i, int j) const { return B()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
     return controller().plant.C();
@@ -324,8 +326,6 @@ class StateFeedbackLoop {
     return U_uncapped_;
   }
   double U_uncapped(int i, int j) const { return U_uncapped()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, 1> &Y() const { return Y_; }
-  double Y(int i, int j) const { return Y()(i, j); }
 
   Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
   double &mutable_X_hat(int i, int j) { return mutable_X_hat()(i, j); }
@@ -339,8 +339,6 @@ class StateFeedbackLoop {
   double &mutable_U_uncapped(int i, int j) {
     return mutable_U_uncapped()(i, j);
   }
-  Eigen::Matrix<double, number_of_outputs, 1> &mutable_Y() { return Y_; }
-  double &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
 
   const StateFeedbackController<number_of_states, number_of_inputs,
                                 number_of_outputs> &controller() const {
@@ -374,25 +372,7 @@ class StateFeedbackLoop {
 
   // Corrects X_hat given the observation in Y.
   void Correct(const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
-  /*
-    auto eye =
-        Eigen::Matrix<double, number_of_states, number_of_states>::Identity();
-    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
-    ::std::cout << "Identity " << eye << ::std::endl;
-    ::std::cout << "X_hat " << X_hat << ::std::endl;
-    ::std::cout << "LC " << L() * C() << ::std::endl;
-    ::std::cout << "L " << L() << ::std::endl;
-    ::std::cout << "C " << C() << ::std::endl;
-    ::std::cout << "y " << Y << ::std::endl;
-    ::std::cout << "z " << (Y - C() * X_hat) << ::std::endl;
-    ::std::cout << "correction " << L() * (Y - C() * X_hat) << ::std::endl;
-    X_hat = (eye - L() * C()) * X_hat + L() * Y;
-    ::std::cout << "X_hat after " << X_hat << ::std::endl;
-    ::std::cout << ::std::endl;
-    */
-    //LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
-    Y_ = Y;
-    new_y_ = true;
+    X_hat_ += A_inv() * L() * (Y - C() * X_hat_ - D() * U());
   }
 
   // stop_motors is whether or not to output all 0s.
@@ -409,12 +389,7 @@ class StateFeedbackLoop {
   }
 
   void UpdateObserver() {
-    if (new_y_) {
-      X_hat_ = (A() - L() * C()) * X_hat() + L() * Y() + B() * U();
-      new_y_ = false;
-    } else {
-      X_hat_ = A() * X_hat() + B() * U();
-    }
+    X_hat_ = A() * X_hat() + B() * U();
   }
 
   // Sets the current controller to be index, clamped to be within range.
@@ -444,11 +419,6 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_states, 1> R_;
   Eigen::Matrix<double, number_of_inputs, 1> U_;
   Eigen::Matrix<double, number_of_inputs, 1> U_uncapped_;
-
-  // Temporary storage for a measurement until I can figure out why I can't
-  // correct when the measurement is made.
-  Eigen::Matrix<double, number_of_outputs, 1> Y_;
-  bool new_y_ = false;
 
   int controller_index_;
 

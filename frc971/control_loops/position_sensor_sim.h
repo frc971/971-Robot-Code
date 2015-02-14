@@ -12,24 +12,23 @@ namespace control_loops {
 
 class PositionSensorSimulator {
  public:
-  // start_position: The position relative to absolute zero where the simulated
-  //                 structure starts. For example, to simulate the elevator
-  //                 starting at 40cm above absolute zero, set this to 0.4.
   // index_diff: The interval between index pulses. This is measured in SI
   //             units. For example, if an index pulse hits every 5cm on the
   //             elevator, set this to 0.05.
-  // pot_noise_stddev: The pot noise is sampled from a gaussian distribution.
-  //                   This specifies the standard deviation of that
-  //                   distribution.
   // TODO(danielp): Allow for starting with a non-zero encoder value.
   // TODO(danielp): Allow for the first index pulse to be at a non-zero
   // position.
-  PositionSensorSimulator(double start_position, double index_diff,
-                          double pot_noise_stddev);
+  PositionSensorSimulator(double index_diff);
 
   // Set new parameters for the sensors. This is useful for unit tests to change
   // the simulated sensors' behavior on the fly.
-  void OverrideParams(double start_position, double pot_noise_stddev);
+  // start_position: The position relative to absolute zero where the simulated
+  //                 structure starts. For example, to simulate the elevator
+  //                 starting at 40cm above absolute zero, set this to 0.4.
+  // pot_noise_stddev: The pot noise is sampled from a gaussian distribution.
+  //                   This specifies the standard deviation of that
+  //                   distribution.
+  void Initialize(double start_position, double pot_noise_stddev);
 
   // Simulate the structure moving to a new position. The new value is measured
   // relative to absolute zero. This will update the simulated sensors with new

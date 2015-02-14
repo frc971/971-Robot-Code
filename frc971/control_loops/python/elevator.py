@@ -45,7 +45,7 @@ class Elevator(control_loop.ControlLoop):
 
     # State is [average position, average velocity,
     #           position difference/2, velocity difference/2]
-    # Input is [V1, V2]
+    # Input is [V_left, V_right]
 
     C1 = self.spring / (self.mass * 0.5)
     C2 = self.Kt * self.G / (self.mass * 0.5 * self.r * self.R)

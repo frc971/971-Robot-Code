@@ -10,11 +10,12 @@
       'dependencies': [
         '<(AOS)/common/controls/controls.gyp:control_loop_queues',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
+        '<(DEPTH)/frc971/zeroing/zeroing.gyp:zeroing',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/controls/controls.gyp:control_loop_queues',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
-
+        '<(DEPTH)/frc971/zeroing/zeroing.gyp:zeroing',
       ],
       'includes': ['../../../aos/build/queues.gypi'],
     },
