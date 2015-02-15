@@ -16,8 +16,6 @@ class PositionSensorSimulator {
   //             units. For example, if an index pulse hits every 5cm on the
   //             elevator, set this to 0.05.
   // TODO(danielp): Allow for starting with a non-zero encoder value.
-  // TODO(danielp): Allow for the first index pulse to be at a non-zero
-  // position.
   PositionSensorSimulator(double index_diff);
 
   // Set new parameters for the sensors. This is useful for unit tests to change
@@ -28,7 +26,10 @@ class PositionSensorSimulator {
   // pot_noise_stddev: The pot noise is sampled from a gaussian distribution.
   //                   This specifies the standard deviation of that
   //                   distribution.
-  void Initialize(double start_position, double pot_noise_stddev);
+  // known_index_pos: The absolute position of an index pulse.
+  void Initialize(double start_position,
+                  double pot_noise_stddev,
+                  double known_index_pos = 0.0);
 
   // Simulate the structure moving to a new position. The new value is measured
   // relative to absolute zero. This will update the simulated sensors with new
@@ -56,6 +57,8 @@ class PositionSensorSimulator {
   int index_count_;
   // Distance between index pulses on the mechanism.
   double index_diff_;
+  // Absolute position of a known index pulse.
+  double known_index_pos_;
   // Current position of the mechanism relative to absolute zero.
   double cur_pos_;
   // Starting position of the mechanism relative to absolute zero. See the
