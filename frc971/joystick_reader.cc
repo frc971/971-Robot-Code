@@ -98,30 +98,18 @@ class Reader : public ::aos::input::JoystickInput {
         was_running_(false) {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
-    if (data.GetControlBit(ControlBit::kAutonomous)) {
-      if (data.PosEdge(ControlBit::kEnabled)){
-        LOG(INFO, "Starting auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder()
-            .run_auto(true)
-            .Send();
-      } else if (data.NegEdge(ControlBit::kEnabled)) {
-        LOG(INFO, "Stopping auto mode\n");
-        ::frc971::autonomous::autonomous.MakeWithBuilder()
-            .run_auto(false)
-            .Send();
-      } else if (!data.GetControlBit(ControlBit::kEnabled)) {
-        {
-          auto goal = drivetrain_queue.goal.MakeMessage();
-          goal->Zero();
-          goal->control_loop_driving = false;
-          goal->left_goal = goal->right_goal = 0;
-          goal->left_velocity_goal = goal->right_velocity_goal = 0;
-          if (!goal.Send()) {
-            LOG(WARNING, "sending 0 drivetrain goal failed\n");
-          }
-        }
+    bool last_auto_running = auto_running_;
+    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
+                    data.IsPressed(ControlBit::kEnabled);
+    if (auto_running_ != last_auto_running) {
+      if (auto_running_) {
+        StartAuto();
+      } else {
+        StopAuto();
       }
-    } else {
+    }
+
+    if (!data.GetControlBit(ControlBit::kAutonomous)) {
       HandleTeleop(data);
     }
   }
@@ -197,7 +185,7 @@ class Reader : public ::aos::input::JoystickInput {
     HandleDrivetrain(data);
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
-        LOG(DEBUG, "Canceling\n");
+      LOG(DEBUG, "Canceling\n");
     }
 
     action_queue_.Tick();
@@ -205,8 +193,20 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
  private:
+  void StartAuto() {
+    LOG(INFO, "Starting auto mode\n");
+    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
+  }
+
+  void StopAuto() {
+    LOG(INFO, "Stopping auto mode\n");
+    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
+  }
+
   bool is_high_gear_;
   bool was_running_;
+
+  bool auto_running_ = false;
 
   ActionQueue action_queue_;
 
