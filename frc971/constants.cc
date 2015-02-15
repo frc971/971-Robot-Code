@@ -116,6 +116,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Zeroing constants for wrist.
             // TODO(sensors): Get actual offsets for these.
             {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+            0.0,
           },
 
           {
@@ -139,6 +140,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm zeroing constants: left, right.
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            0.0, 0.0, 0.0, 0.0,
           },
           // End "sensor" values.
 
@@ -180,7 +182,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Zeroing constants for wrist.
             // TODO(sensors): Get actual offsets for these.
             {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
-
+            0.0,
           },
 
           {
@@ -203,6 +205,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm zeroing constants: left, right.
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            0.0, 0.0, 0.0, 0.0,
           },
           // End "sensor" values.
 
@@ -244,6 +247,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Zeroing constants for wrist.
             // TODO(sensors): Get actual offsets for these.
             {kZeroingSampleSize, kClawEncoderIndexDifference, 0.0},
+            0.0,
           },
 
           {
@@ -266,6 +270,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             // Arm zeroing constants: left, right.
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+            0.0, 0.0, 0.0, 0.0,
           },
           // TODO(sensors): End "sensor" values.
 
