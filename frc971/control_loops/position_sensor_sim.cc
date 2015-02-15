@@ -13,8 +13,7 @@ namespace control_loops {
  * constructor below.
  *
  * The index pulses are encountered when the mechanism moves from one index
- * segment to another. Currently the first index pulse is limited to occur at
- * absolute zero.
+ * segment to another.
  *
  *         index segment
  *               |
@@ -31,13 +30,17 @@ namespace control_loops {
  */
 
 PositionSensorSimulator::PositionSensorSimulator(double index_diff)
-    : index_diff_(index_diff), pot_noise_(0, 0.0) {
+    : index_diff_(index_diff),
+      pot_noise_(0, 0.0) {
   Initialize(0.0, 0.0);
 }
 
 void PositionSensorSimulator::Initialize(double start_position,
-                                         double pot_noise_stddev) {
-  cur_index_segment_ = floor(start_position / index_diff_);
+                                         double pot_noise_stddev,
+                                         double known_index_pos/* = 0*/) {
+  // We're going to make the index pulse we know "segment zero".
+  cur_index_segment_ = floor((start_position - known_index_pos) / index_diff_);
+  known_index_pos_ = known_index_pos;
   cur_index_ = 0;
   index_count_ = 0;
   cur_pos_ = start_position;
@@ -48,7 +51,8 @@ void PositionSensorSimulator::Initialize(double start_position,
 void PositionSensorSimulator::MoveTo(double new_pos) {
   // Compute which index segment we're in. In other words, compute between
   // which two index pulses we are.
-  const int new_index_segment = floor(new_pos / index_diff_);
+  const int new_index_segment = floor((new_pos - known_index_pos_)
+      / index_diff_);
 
   if (new_index_segment < cur_index_segment_) {
     // We've crossed an index pulse in the negative direction. That means the
@@ -79,7 +83,7 @@ void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
     values->latched_encoder = 0.0;
   } else {
     // Determine the position of the index pulse relative to absolute zero.
-    double index_pulse_position = cur_index_ * index_diff_;
+    double index_pulse_position = cur_index_ * index_diff_ + known_index_pos_;
 
     // Populate the latched pot/encoder samples.
     values->latched_pot = pot_noise_.AddNoiseToSample(index_pulse_position);
