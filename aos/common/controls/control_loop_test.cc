@@ -40,7 +40,7 @@ void ControlLoopTest::SendMessages(bool enabled) {
   {
     auto new_state = ::aos::robot_state.MakeMessage();
 
-    new_state->reader_pid = 971;
+    new_state->reader_pid = reader_pid_;
     new_state->outputs_enabled = enabled;
     new_state->browned_out = false;
 

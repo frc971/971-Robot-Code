@@ -35,12 +35,19 @@ class ControlLoopTest : public ::testing::Test {
     TickTime();
   }
 
+  // Simulate a reset of the process reading sensors, which tells loops that all
+  // index counts etc will be reset.
+  void SimulateSensorReset() {
+    ++reader_pid_;
+  }
+
  private:
   static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(5000);
   static constexpr ::aos::time::Time kDSPacketTime =
       ::aos::time::Time::InMS(20);
 
   uint16_t team_id_ = 971;
+  int32_t reader_pid_ = 1;
 
   ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
