@@ -3,26 +3,26 @@
 
 #include <memory>
 
-#include "frc971/actions/drivetrain_action.q.h"
+#include "frc971/actors/drivetrain_action.q.h"
 #include "aos/common/actions/actor.h"
 #include "aos/common/actions/actions.h"
 
 namespace frc971 {
-namespace actions {
+namespace actors {
 
 class DrivetrainActor
     : public aos::common::actions::ActorBase<DrivetrainActionQueueGroup> {
  public:
   explicit DrivetrainActor(DrivetrainActionQueueGroup* s);
 
-  void RunAction() override;
+  bool RunAction() override;
 };
 
 // Makes a new DrivetrainActor action.
 ::std::unique_ptr<aos::common::actions::TypedAction<DrivetrainActionQueueGroup>>
     MakeDrivetrainAction();
 
-}  // namespace actions
+}  // namespace actors
 }  // namespace frc971
 
 #endif

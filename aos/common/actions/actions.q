@@ -15,6 +15,9 @@ message Status {
   uint32_t running;
   // A run value we were previously running or 0.
   uint32_t last_running;
+  // If false the action failed to complete and may be in a bad state,
+  // this is a critical problem not a cancellation.
+  bool success;
 };
 
 message Goal {

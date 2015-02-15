@@ -15,11 +15,13 @@
         '../control_loops/claw/claw.gyp:claw',
         '../control_loops/claw/claw.gyp:claw_lib_test',
         '../autonomous/autonomous.gyp:auto',
-        '../actions/actions.gyp:drivetrain_action',
         '../frc971.gyp:joystick_reader',
         '../zeroing/zeroing.gyp:zeroing_test',
         '../control_loops/voltage_cap/voltage_cap.gyp:voltage_cap_test',
         '../../aos/common/actions/actions.gyp:action_test',
+        '../actors/actors.gyp:drivetrain_action',
+        '../actors/actors.gyp:fridge_profile_action',
+        '../actors/actors.gyp:fridge_profile_action_test',
       ],
       'copies': [
         {

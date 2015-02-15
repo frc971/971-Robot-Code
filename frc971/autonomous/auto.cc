@@ -11,7 +11,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "frc971/actions/drivetrain_actor.h"
+#include "frc971/actors/drivetrain_actor.h"
 
 using ::aos::time::Time;
 
@@ -108,11 +108,11 @@ void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
 }
 
 ::std::unique_ptr<aos::common::actions::TypedAction<
-    ::frc971::actions::DrivetrainActionQueueGroup>>
+    ::frc971::actors::DrivetrainActionQueueGroup>>
 SetDriveGoal(double distance, bool slow_acceleration,
              double maximum_velocity = 1.7, double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
-  auto drivetrain_action = actions::MakeDrivetrainAction();
+  auto drivetrain_action = actors::MakeDrivetrainAction();
   drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
   drivetrain_action->GetGoal()->right_initial_position = right_initial_position;
   drivetrain_action->GetGoal()->y_offset = distance;
