@@ -100,7 +100,7 @@ class Reader : public ::aos::input::JoystickInput {
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     bool last_auto_running = auto_running_;
     auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
-                    data.IsPressed(ControlBit::kEnabled);
+                    data.GetControlBit(ControlBit::kEnabled);
     if (auto_running_ != last_auto_running) {
       if (auto_running_) {
         StartAuto();
