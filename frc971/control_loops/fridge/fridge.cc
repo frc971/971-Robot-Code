@@ -285,6 +285,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       right_elevator_offset_ = -position->elevator.right.encoder;
       left_arm_offset_ = -position->arm.left.encoder;
       right_arm_offset_ = -position->arm.right.encoder;
+      elevator_loop_->mutable_X_hat().setZero();
+      arm_loop_->mutable_X_hat().setZero();
       LOG(INFO, "Initializing arm offsets to %f, %f\n", left_arm_offset_,
           right_arm_offset_);
       LOG(INFO, "Initializing elevator offsets to %f, %f\n",
