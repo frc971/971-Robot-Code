@@ -27,8 +27,6 @@ namespace frc971 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kDriveControlLoopEnable1(1, 7),
-                     kDriveControlLoopEnable2(1, 11);
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
@@ -36,9 +34,7 @@ const ButtonLocation kQuickTurn(1, 5);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
-  Reader()
-      : is_high_gear_(false),
-        was_running_(false) {}
+  Reader() : was_running_(false) {}
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     bool last_auto_running = auto_running_;
@@ -58,69 +54,16 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
-    bool is_control_loop_driving = false;
-    double left_goal = 0.0;
-    double right_goal = 0.0;
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
-    const double kThrottleGain = 1.0 / 2.5;
-    if (false && (data.IsPressed(kDriveControlLoopEnable1) ||
-                  data.IsPressed(kDriveControlLoopEnable2))) {
-      // TODO(austin): Static sucks!
-      static double distance = 0.0;
-      static double angle = 0.0;
-      static double filtered_goal_distance = 0.0;
-      if (data.PosEdge(kDriveControlLoopEnable1) ||
-          data.PosEdge(kDriveControlLoopEnable2)) {
-        if (drivetrain_queue.position.FetchLatest() &&
-            gyro_reading.FetchLatest()) {
-          distance = (drivetrain_queue.position->left_encoder +
-                      drivetrain_queue.position->right_encoder) /
-                         2.0 -
-                     throttle * kThrottleGain / 2.0;
-          angle = gyro_reading->angle;
-          filtered_goal_distance = distance;
-        }
-      }
-      is_control_loop_driving = true;
 
-      // const double gyro_angle = Gyro.View().angle;
-      const double goal_theta = angle - wheel * 0.27;
-      const double goal_distance = distance + throttle * kThrottleGain;
-      const double robot_width = 22.0 / 100.0 * 2.54;
-      const double kMaxVelocity = 0.6;
-      if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance) {
-        filtered_goal_distance += kMaxVelocity * 0.02;
-      } else if (goal_distance <
-                 -kMaxVelocity * 0.02 + filtered_goal_distance) {
-        filtered_goal_distance -= kMaxVelocity * 0.02;
-      } else {
-        filtered_goal_distance = goal_distance;
-      }
-      left_goal = filtered_goal_distance - robot_width * goal_theta / 2.0;
-      right_goal = filtered_goal_distance + robot_width * goal_theta / 2.0;
-      is_high_gear_ = false;
-
-      LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
-    }
     if (!drivetrain_queue.goal.MakeWithBuilder()
              .steering(wheel)
              .throttle(throttle)
-             //.highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))
-             .control_loop_driving(is_control_loop_driving)
-             .left_goal(left_goal)
-             .right_goal(right_goal)
-             .left_velocity_goal(0)
-             .right_velocity_goal(0)
+             .control_loop_driving(false)
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
-    }
-    if (data.PosEdge(kShiftHigh)) {
-      is_high_gear_ = false;
-    }
-    if (data.PosEdge(kShiftLow)) {
-      is_high_gear_ = true;
     }
   }
 
@@ -146,12 +89,10 @@ class Reader : public ::aos::input::JoystickInput {
     ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
   }
 
-  bool is_high_gear_;
   bool was_running_;
-
   bool auto_running_ = false;
 
-  aos::common::actions::ActionQueue action_queue_;
+  ::aos::common::actions::ActionQueue action_queue_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
