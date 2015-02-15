@@ -6,6 +6,7 @@
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/time.h"
+#include "aos/common/logging/logging_printf_formats.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -184,6 +185,53 @@ TEST_F(LoggingTest, Timing) {
   diff = end - start;
   printf("long message took %" PRId64 " nsec for %ld\n",
          diff.ToNSec(), kTimingCycles);
+}
+
+TEST(LoggingPrintFormatTest, Time) {
+  char buffer[1024];
+
+  // Easy ones.
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 0)));
+  EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 1)));
+  EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
+
+  // This one should be exact.
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 1000)));
+  EXPECT_EQ("0000000002.000001s", ::std::string(buffer));
+
+  // Make sure rounding works correctly.
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 999)));
+  EXPECT_EQ("0000000002.000001s", ::std::string(buffer));
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 500)));
+  EXPECT_EQ("0000000002.000001s", ::std::string(buffer));
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(2, 499)));
+  EXPECT_EQ("0000000002.000000s", ::std::string(buffer));
+
+  // This used to result in "0000000001.099500s".
+  ASSERT_EQ(18, snprintf(buffer, sizeof(buffer), AOS_TIME_FORMAT,
+                         AOS_TIME_ARGS(1, 995000000)));
+  EXPECT_EQ("0000000001.995000s", ::std::string(buffer));
+}
+
+TEST(LoggingPrintFormatTest, Base) {
+  char buffer[1024];
+
+  static const ::std::string kExpected1 =
+      "name(971)(01678): ERROR   at 0000000001.995000s: ";
+  ASSERT_GT(sizeof(buffer), kExpected1.size());
+  ASSERT_EQ(
+      kExpected1.size(),
+      static_cast<size_t>(snprintf(
+          buffer, sizeof(buffer), AOS_LOGGING_BASE_FORMAT,
+          AOS_LOGGING_BASE_ARGS(4, "name", 971, 1678, ERROR, 1, 995000000))));
+  EXPECT_EQ(kExpected1, ::std::string(buffer));
 }
 
 }  // namespace testing
