@@ -10,6 +10,7 @@ ZeroingEstimator::ZeroingEstimator(
     const constants::Values::ZeroingConstants& constants) {
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
+  index_pulse_count_after_reset_ = 0;
 
   start_pos_samples_.reserve(max_sample_count_);
 
@@ -21,9 +22,19 @@ void ZeroingEstimator::Reset() {
   start_pos_ = 0;
   start_pos_samples_.clear();
   zeroed_ = false;
+  wait_for_index_pulse_ = true;
 }
 
 void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
+  // We want to make sure that we encounter at least one index pulse while
+  // zeroing. So we take the index pulse count from the first sample after
+  // reset and wait for that count to change before we consider ourselves
+  // zeroed.
+  if (wait_for_index_pulse_) {
+    index_pulse_count_after_reset_ = info.index_pulses;
+    wait_for_index_pulse_ = false;
+  }
+
   if (start_pos_samples_.size() < max_sample_count_) {
     start_pos_samples_.push_back(info.pot - info.encoder);
   } else {
@@ -45,7 +56,8 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
   // If there are no index pulses to use or we don't have enough samples yet to
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
-  if (info.index_pulses == 0 || offset_ratio_ready() < 1.0) {
+  if (info.index_pulses == index_pulse_count_after_reset_ ||
+      offset_ratio_ready() < 1.0) {
     start_pos_ = start_average;
   } else {
     // We calculate an aproximation of the value of the last index position.

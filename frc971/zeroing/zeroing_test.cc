@@ -166,10 +166,47 @@ TEST_F(ZeroingTest, TestOffset) {
   ZeroingEstimator estimator(
       Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
 
+  MoveTo(&sim, &estimator, 3.1 * index_diff);
+
   for (unsigned int i = 0; i < kSampleSize; i++) {
     MoveTo(&sim, &estimator, 5.0 * index_diff);
   }
+
   ASSERT_NEAR(3.1 * index_diff, estimator.offset(), 0.001);
+}
+
+TEST_F(ZeroingTest, WaitForIndexPulseAfterReset) {
+  double index_diff = 0.6;
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(3.1 * index_diff, index_diff / 3.0);
+  ZeroingEstimator estimator(
+      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+
+  // Make sure to fill up the averaging filter with samples.
+  for (unsigned int i = 0; i < kSampleSize; i++) {
+    MoveTo(&sim, &estimator, 3.1 * index_diff);
+  }
+
+  // Make sure we're not zeroed until we hit an index pulse.
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Trigger an index pulse; we should now be zeroed.
+  MoveTo(&sim, &estimator, 4.5 * index_diff);
+  ASSERT_TRUE(estimator.zeroed());
+
+  // Reset the zeroing logic and supply a bunch of samples within the current
+  // index segment.
+  estimator.Reset();
+  for (unsigned int i = 0; i < kSampleSize; i++) {
+    MoveTo(&sim, &estimator, 4.2 * index_diff);
+  }
+
+  // Make sure we're not zeroed until we hit an index pulse.
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Trigger another index pulse; we should be zeroed again.
+  MoveTo(&sim, &estimator, 3.1 * index_diff);
+  ASSERT_TRUE(estimator.zeroed());
 }
 
 }  // namespace zeroing

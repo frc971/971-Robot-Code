@@ -1,16 +1,14 @@
 #ifndef FRC971_ZEROING_ZEROING_H_
 #define FRC971_ZEROING_ZEROING_H_
 
+#include <cstdint>
 #include <vector>
+
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/constants.h"
 
 // TODO(pschrader): Support the ZeroingConstants::measured_index_position
 // parameter.
-//
-// TODO(pschrader): Wait for an index pulse during zeroing. If we start up with
-// a non-zero number of index pulses then the logic will use that pulse to
-// compute the starting position (a/k/a the offset).
 //
 // TODO(pschrader): Create an error API to flag faults/errors etc..
 //
@@ -78,6 +76,13 @@ class ZeroingEstimator {
   // The estimated starting position of the mechanism. We also call this the
   // 'offset' in some contexts.
   double start_pos_;
+  // Flag for triggering logic that takes note of the current index pulse count
+  // after a reset. See `index_pulse_count_after_reset_'.
+  bool wait_for_index_pulse_;
+  // After a reset we keep track of the index pulse count with this. Only after
+  // the index pulse count changes (i.e. increments at least once or wraps
+  // around) will we consider the mechanism zeroed.
+  uint32_t index_pulse_count_after_reset_;
   // Marker to track whether we're fully zeroed yet or not.
   bool zeroed_;
 };
