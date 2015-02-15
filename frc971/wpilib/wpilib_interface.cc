@@ -68,7 +68,7 @@ double arm_translate(int32_t in) {
           (2 * M_PI /*radians*/);
 }
 
-double arm_pot_translate(double voltage) {
+double arm_potentiometer_translate(double voltage) {
   return voltage /
           constants::GetValues().arm_pot_ratio *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
@@ -83,7 +83,7 @@ double elevator_translate(int32_t in) {
           constants::GetValues().elev_distance_per_radian;
 }
 
-double elevator_pot_translate(double voltage) {
+double elevator_potentiometer_translate(double voltage) {
   return voltage /
           constants::GetValues().elev_pot_ratio *
           (2 * M_PI /*radians*/) *
@@ -98,7 +98,7 @@ double claw_translate(int32_t in) {
           (2 * M_PI /*radians*/);
 }
 
-double claw_pot_translate(double voltage) {
+double claw_potentiometer_translate(double voltage) {
   return voltage /
           constants::GetValues().claw_pot_ratio *
           (5.0 /*volts*/ / 5.0 /*turns*/) *
@@ -254,25 +254,33 @@ class SensorReader {
 
     dma_synchronizer_->RunIteration();
 
+    const auto values = constants::GetValues();
+
     {
       auto fridge_message = fridge_queue.position.MakeMessage();
       CopyPotAndIndexPosition(arm_left_encoder_, &fridge_message->arm.left,
-                              arm_translate, arm_pot_translate, false);
-      CopyPotAndIndexPosition(arm_right_encoder_, &fridge_message->arm.right,
-                              arm_translate, arm_pot_translate, true);
+                              arm_translate, arm_potentiometer_translate, false,
+                              values.fridge.left_elevator_potentiometer_offset);
+      CopyPotAndIndexPosition(
+          arm_right_encoder_, &fridge_message->arm.right, arm_translate,
+          arm_potentiometer_translate, true,
+          values.fridge.right_elevator_potentiometer_offset);
       CopyPotAndIndexPosition(
           elevator_left_encoder_, &fridge_message->elevator.left,
-          elevator_translate, elevator_pot_translate, false);
-      CopyPotAndIndexPosition(elevator_right_encoder_,
-                              &fridge_message->elevator.right,
-                              elevator_translate, elevator_pot_translate, true);
+          elevator_translate, elevator_potentiometer_translate, false,
+          values.fridge.left_arm_potentiometer_offset);
+      CopyPotAndIndexPosition(
+          elevator_right_encoder_, &fridge_message->elevator.right,
+          elevator_translate, elevator_potentiometer_translate, true,
+          values.fridge.right_arm_potentiometer_offset);
       fridge_message.Send();
     }
 
     {
       auto claw_message = claw_queue.position.MakeMessage();
       CopyPotAndIndexPosition(wrist_encoder_, &claw_message->joint,
-                              claw_translate, claw_pot_translate, false);
+                              claw_translate, claw_potentiometer_translate,
+                              false, values.claw.potentiometer_offset);
       claw_message.Send();
     }
   }
@@ -289,16 +297,20 @@ class SensorReader {
   void CopyPotAndIndexPosition(
       const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,
       ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> pot_translate, bool reverse) {
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double potentiometer_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.polled_encoder_value());
-    position->pot =
-        multiplier * pot_translate(encoder.polled_potentiometer_voltage());
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.polled_potentiometer_voltage()) +
+                    potentiometer_offset;
     position->latched_encoder =
         multiplier * encoder_translate(encoder.last_encoder_value());
     position->latched_pot =
-        multiplier * pot_translate(encoder.last_potentiometer_voltage());
+        multiplier *
+            potentiometer_translate(encoder.last_potentiometer_voltage()) +
+        potentiometer_offset;
     position->index_pulses = encoder.index_posedge_count();
   }
 
@@ -306,19 +318,22 @@ class SensorReader {
       const InterruptEncoderAndPotentiometer &encoder,
       PotAndIndexPosition *position,
       ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> pot_translate, bool reverse) {
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double potentiometer_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.encoder()->GetRaw());
-    position->pot =
-        multiplier * pot_translate(encoder.potentiometer()->GetVoltage());
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.potentiometer()->GetVoltage()) +
+                    potentiometer_offset;
     position->latched_encoder =
         multiplier * encoder_translate(encoder.last_encoder_value());
     position->latched_pot =
-        multiplier * pot_translate(encoder.last_potentiometer_voltage());
+        multiplier *
+            potentiometer_translate(encoder.last_potentiometer_voltage()) +
+        potentiometer_offset;
     position->index_pulses = encoder.index_posedge_count();
   }
-
 
   ::std::unique_ptr<DMASynchronizer> dma_synchronizer_;
 

@@ -11,6 +11,10 @@ namespace constants {
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
 
+// Everything is in SI units (volts, radians, meters, seconds, etc).
+// Some of these values are related to the conversion between raw values
+// (encoder counts, voltage, etc) to scaled units (radians, meters, etc).
+
 // This structure contains current values for all of the things that change.
 struct Values {
   // Drivetrain Values /////
@@ -53,13 +57,14 @@ struct Values {
   struct ZeroingConstants {
     // The number of samples in the moving average filter.
     int average_filter_size;
-    // The difference in SI units between two index pulses.
+    // The difference in scaled units between two index pulses.
     double index_difference;
-    // The absolute position in SI units of one of the index pulses.
+    // The absolute position in scaled units of one of the index pulses.
     double measured_index_position;
   };
 
   // Defines a range of motion for a subsystem.
+  // These are all absolute positions in scaled units.
   struct Range {
     double lower_hard_limit;
     double upper_hard_limit;
@@ -70,6 +75,10 @@ struct Values {
   struct Claw {
     Range wrist;
     ZeroingConstants zeroing;
+    // The value to add to potentiometer readings after they have been converted
+    // to radians so that the resulting value is 0 when the claw is at absolute
+    // 0 (horizontal straight out the front).
+    double potentiometer_offset;
   };
   Claw claw;
 
@@ -81,6 +90,13 @@ struct Values {
     ZeroingConstants right_elev_zeroing;
     ZeroingConstants left_arm_zeroing;
     ZeroingConstants right_arm_zeroing;
+
+    // Values to add to scaled potentiometer readings so 0 lines up with the
+    // physical absolute 0.
+    double left_elevator_potentiometer_offset;
+    double right_elevator_potentiometer_offset;
+    double left_arm_potentiometer_offset;
+    double right_arm_potentiometer_offset;
   };
   Fridge fridge;
 
