@@ -24,7 +24,6 @@
         '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
         '<(AOS)/build/aos.gyp:logging',
-        '<(DEPTH)/frc971/actions/actions.gyp:action_client',
         '<(DEPTH)/frc971/actions/actions.gyp:drivetrain_action_lib',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],

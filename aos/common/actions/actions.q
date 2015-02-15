@@ -1,4 +1,4 @@
-package frc971.actions;
+package aos.common.actions;
 
 interface StatusInterface {
   // 0 if the action isn't running or the value from goal.run.
@@ -11,10 +11,15 @@ interface GoalInterface {
 };
 
 message Status {
+  // The run value of the instance we're currently running or 0.
   uint32_t running;
+  // A run value we were previously running or 0.
+  uint32_t last_running;
 };
 
 message Goal {
+  // The unique value to put into status.running while running this instance or
+  // 0 to cancel.
   uint32_t run;
 };
 

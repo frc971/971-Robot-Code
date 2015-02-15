@@ -9,12 +9,12 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/log_interval.h"
 #include "aos/common/time.h"
+#include "aos/common/actions/actions.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
-#include "frc971/actions/action_client.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::frc971::sensors::gyro_reading;
@@ -32,63 +32,6 @@ const ButtonLocation kDriveControlLoopEnable1(1, 7),
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
-
-// A queue which queues Actions and cancels them.
-class ActionQueue {
- public:
-  // Queues up an action for sending.
-  void QueueAction(::std::unique_ptr<Action> action) {
-    if (current_action_) {
-      LOG(INFO, "Queueing action, canceling prior\n");
-      current_action_->Cancel();
-      next_action_ = ::std::move(action);
-    } else {
-      LOG(INFO, "Queueing action\n");
-      current_action_ = ::std::move(action);
-      current_action_->Start();
-    }
-  }
-
-  // Cancels the current action, and runs the next one when the current one has
-  // finished.
-  void CancelCurrentAction() {
-    LOG(INFO, "Canceling current action\n");
-    if (current_action_) {
-      current_action_->Cancel();
-    }
-  }
-
-  // Cancels all running actions.
-  void CancelAllActions() {
-    LOG(DEBUG, "Cancelling all actions\n");
-    if (current_action_) {
-      current_action_->Cancel();
-    }
-    next_action_.reset();
-  }
-
-  // Runs the next action when the current one is finished running.
-  void Tick() {
-    if (current_action_) {
-      if (!current_action_->Running()) {
-        LOG(INFO, "Action is done.\n");
-        current_action_ = ::std::move(next_action_);
-        if (current_action_) {
-          LOG(INFO, "Running next action\n");
-          current_action_->Start();
-        }
-      }
-    }
-  }
-
-  // Returns true if any action is running or could be running.
-  // For a one cycle faster response, call Tick before running this.
-  bool Running() { return static_cast<bool>(current_action_); }
-
- private:
-  ::std::unique_ptr<Action> current_action_;
-  ::std::unique_ptr<Action> next_action_;
-};
 
 
 class Reader : public ::aos::input::JoystickInput {
@@ -208,7 +151,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool auto_running_ = false;
 
-  ActionQueue action_queue_;
+  aos::common::actions::ActionQueue action_queue_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,

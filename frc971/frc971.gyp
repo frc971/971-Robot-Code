@@ -34,7 +34,7 @@
         '<(DEPTH)/frc971/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
-        '<(DEPTH)/frc971/actions/actions.gyp:action_client',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
       ],
     },
   ],

@@ -4,8 +4,5 @@ joystick_reader
 drivetrain
 auto
 claw
-shooter
-shoot_action
+fridge
 drivetrain_action
-catch_action
-hot_goal_reader
