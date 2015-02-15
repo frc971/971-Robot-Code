@@ -71,11 +71,21 @@ void ControlLoop<T, fail_no_goal>::Iterate() {
 
   // Check to see if we got a driver station packet recently.
   if (::aos::joystick_state.FetchLatest()) {
-    outputs_enabled = true;
+    if (::aos::joystick_state->enabled) outputs_enabled = true;
     if (::aos::robot_state->outputs_enabled) {
-      last_pwm_sent_ = ::aos::robot_state->sent_time;
+      // If the driver's station reports being disabled, we're probably not
+      // actually going to send motor values regardless of what the FPGA
+      // reports.
+      if (::aos::joystick_state->enabled) {
+        last_pwm_sent_ = ::aos::robot_state->sent_time;
+      } else {
+        LOG(WARNING, "outputs enabled while disabled\n");
+      }
+    } else if (::aos::joystick_state->enabled) {
+      LOG(WARNING, "outputs disabled while enabled\n");
     }
-  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
+  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs) &&
+             ::aos::joystick_state->enabled) {
     outputs_enabled = true;
   } else {
     if (::aos::joystick_state.get()) {
