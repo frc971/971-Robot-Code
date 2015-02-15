@@ -170,6 +170,26 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
   VerifyNearGoal();
 }
 
+// Tests that never having a goal doesn't break.
+TEST_F(DrivetrainTest, NoGoalStart) {
+  for (int i = 0; i < 20; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
+  }
+}
+
+// Tests that never having a goal, but having driver's station messages, doesn't
+// break.
+TEST_F(DrivetrainTest, NoGoalWithRobotState) {
+  for (int i = 0; i < 20; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
+    SimulateTimestep(true);
+  }
+}
+
 ::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
                                       double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;

@@ -689,19 +689,28 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
   }
   no_position_.Print();
 
-  double wheel = goal->steering;
-  double throttle = goal->throttle;
-  bool quickturn = goal->quickturn;
+  bool control_loop_driving = false;
+  if (goal) {
+    double wheel = goal->steering;
+    double throttle = goal->throttle;
+    bool quickturn = goal->quickturn;
 #if HAVE_SHIFTERS
-  bool highgear = goal->highgear;
+    bool highgear = goal->highgear;
 #endif
 
-  bool control_loop_driving = goal->control_loop_driving;
-  double left_goal = goal->left_goal;
-  double right_goal = goal->right_goal;
+    control_loop_driving = goal->control_loop_driving;
+    double left_goal = goal->left_goal;
+    double right_goal = goal->right_goal;
 
-  dt_closedloop.SetGoal(left_goal, goal->left_velocity_goal, right_goal,
-                        goal->right_velocity_goal);
+    dt_closedloop.SetGoal(left_goal, goal->left_velocity_goal, right_goal,
+                          goal->right_velocity_goal);
+#if HAVE_SHIFTERS
+    dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
+#else
+    dt_openloop.SetGoal(wheel, throttle, quickturn, false);
+#endif
+  }
+
   if (!bad_pos) {
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
@@ -714,11 +723,6 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
     }
   }
   dt_openloop.SetPosition(position);
-#if HAVE_SHIFTERS
-  dt_openloop.SetGoal(wheel, throttle, quickturn, highgear);
-#else
-  dt_openloop.SetGoal(wheel, throttle, quickturn, false);
-#endif
   dt_openloop.Update();
 
   if (control_loop_driving) {
@@ -732,7 +736,7 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
     }
     dt_closedloop.Update(output == NULL, false);
   }
-  
+
   // set the output status of the control loop state
   if (status) {
     bool done = false;
