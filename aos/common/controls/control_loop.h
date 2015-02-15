@@ -44,7 +44,7 @@ constexpr time::Time kLoopFrequency = time::Time::InSeconds(0.01);
 // that has a goal, position, status, and output queue.
 // It will then call the RunIteration method every cycle that it has enough
 // valid data for the control loop to run.
-template <class T, bool fail_no_goal = true>
+template <class T>
 class ControlLoop : public SerializableControlLoop {
  public:
   // Create some convenient typedefs to reference the Goal, Position, Status,
@@ -116,11 +116,12 @@ class ControlLoop : public SerializableControlLoop {
 
  protected:
   // Runs an iteration of the control loop.
-  // goal is the last goal that was sent.  It might be any number of cycles old.
-  // position is the current position, or NULL if we didn't get a position this
-  // cycle.
-  // output is the values to be sent to the motors.  This is NULL if the output
-  // is going to be ignored and set to 0.
+  // goal is the last goal that was sent.  It might be any number of cycles old
+  // or nullptr if we haven't ever received a goal.
+  // position is the current position, or nullptr if we didn't get a position
+  // this cycle.
+  // output is the values to be sent to the motors.  This is nullptr if the
+  // output is going to be ignored and set to 0.
   // status is the status of the control loop.
   // Both output and status should be filled in by the implementation.
   virtual void RunIteration(const GoalType *goal,

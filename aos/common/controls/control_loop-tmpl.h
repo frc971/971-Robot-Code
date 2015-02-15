@@ -11,22 +11,21 @@ namespace controls {
 
 // TODO(aschuh): Tests.
 
-template <class T, bool fail_no_goal>
-constexpr ::aos::time::Time ControlLoop<T, fail_no_goal>::kStaleLogInterval;
-template <class T, bool fail_no_goal>
-constexpr ::aos::time::Time ControlLoop<T, fail_no_goal>::kPwmDisableTime;
+template <class T>
+constexpr ::aos::time::Time ControlLoop<T>::kStaleLogInterval;
+template <class T>
+constexpr ::aos::time::Time ControlLoop<T>::kPwmDisableTime;
 
-template <class T, bool fail_no_goal>
-void
-ControlLoop<T, fail_no_goal>::ZeroOutputs() {
+template <class T>
+void ControlLoop<T>::ZeroOutputs() {
   aos::ScopedMessagePtr<OutputType> output =
       control_loop_->output.MakeMessage();
   Zero(output.get());
   output.Send();
 }
 
-template <class T, bool fail_no_goal>
-void ControlLoop<T, fail_no_goal>::Iterate() {
+template <class T>
+void ControlLoop<T>::Iterate() {
   no_goal_.Print();
   driver_station_old_.Print();
   no_sensor_state_.Print();
@@ -49,10 +48,6 @@ void ControlLoop<T, fail_no_goal>::Iterate() {
     LOG_STRUCT(DEBUG, "goal", *goal);
   } else {
     LOG_INTERVAL(no_goal_);
-    if (fail_no_goal) {
-      ZeroOutputs();
-      return;
-    }
   }
 
   ::aos::robot_state.FetchLatest();
@@ -130,8 +125,8 @@ void ControlLoop<T, fail_no_goal>::Iterate() {
   status.Send();
 }
 
-template <class T, bool fail_no_goal>
-void ControlLoop<T, fail_no_goal>::Run() {
+template <class T>
+void ControlLoop<T>::Run() {
   while (true) {
     Iterate();
   }

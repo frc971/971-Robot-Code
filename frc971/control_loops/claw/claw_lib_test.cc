@@ -174,6 +174,17 @@ TEST_F(ClawTest, RespectsRange) {
               2.0 * M_PI / 180.0);*/
 }
 
+// Tests that not having a goal doesn't break anything.
+TEST_F(ClawTest, NoGoal) {
+  for (int i = 0; i < 10; ++i) {
+    claw_plant_.SendPositionMessage();
+    claw_.Iterate();
+    claw_plant_.Simulate();
+
+    TickTime();
+  }
+}
+
 }  // namespace testing
 }  // namespace control_loops
 }  // namespace frc971
