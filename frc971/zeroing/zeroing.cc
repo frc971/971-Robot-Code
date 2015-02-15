@@ -11,6 +11,7 @@ ZeroingEstimator::ZeroingEstimator(
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
   index_pulse_count_after_reset_ = 0;
+  known_index_pos_ = constants.measured_index_position;
 
   start_pos_samples_.reserve(max_sample_count_);
 
@@ -61,11 +62,13 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
     start_pos_ = start_average;
   } else {
     // We calculate an aproximation of the value of the last index position.
-    double index_pos = start_average + info.latched_encoder;
+    // Also account for index pulses not lining up with integer multiples of
+    // the index_diff.
+    double index_pos = start_average + info.latched_encoder - known_index_pos_;
     // We round index_pos to the closest valid value of the index.
     double accurate_index_pos = (round(index_pos / index_diff_)) * index_diff_;
-    // Now we reverse the first calculation to the accurate start position.
-    start_pos_ = accurate_index_pos - info.latched_encoder;
+    // Now we reverse the first calculation to get the accurate start position.
+    start_pos_ = accurate_index_pos - info.latched_encoder + known_index_pos_;
 
     // Now that we have an accurate starting position we can consider ourselves
     // zeroed.
