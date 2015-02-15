@@ -237,5 +237,28 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
   ASSERT_DOUBLE_EQ(4.7 * index_diff, estimator.position());
 }
 
+TEST_F(ZeroingTest, BasicErrorAPITest) {
+  const double index_diff = 1.0;
+  ZeroingEstimator estimator(
+      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(1.5 * index_diff, index_diff / 3.0, 0.0);
+
+  // Perform a simple move and make sure that no error occured.
+  MoveTo(&sim, &estimator, 3.5 * index_diff);
+  ASSERT_FALSE(estimator.error());
+
+  // Trigger an error and make sure it's reported.
+  estimator.TriggerError();
+  ASSERT_TRUE(estimator.error());
+
+  // Make sure that it can recover after a reset.
+  estimator.Reset();
+  ASSERT_FALSE(estimator.error());
+  MoveTo(&sim, &estimator, 4.5 * index_diff);
+  MoveTo(&sim, &estimator, 5.5 * index_diff);
+  ASSERT_FALSE(estimator.error());
+}
+
 }  // namespace zeroing
 }  // namespace frc971
