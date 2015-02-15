@@ -69,10 +69,10 @@ Fridge::Fridge(control_loops::FridgeQueue *fridge)
           constants::GetValues().fridge.right_elev_zeroing) {}
 
 void Fridge::UpdateZeroingState() {
-  if (left_elevator_estimator_.offset_ratio_ready() < 0.5 ||
-      right_elevator_estimator_.offset_ratio_ready() < 0.5 ||
-      left_arm_estimator_.offset_ratio_ready() < 0.5 ||
-      right_arm_estimator_.offset_ratio_ready() < 0.5) {
+  if (left_elevator_estimator_.offset_ratio_ready() < 1.0 ||
+      right_elevator_estimator_.offset_ratio_ready() < 1.0 ||
+      left_arm_estimator_.offset_ratio_ready() < 1.0 ||
+      right_arm_estimator_.offset_ratio_ready() < 1.0) {
     state_ = INITIALIZING;
   } else if (!left_elevator_estimator_.zeroed() ||
       !right_elevator_estimator_.zeroed()) {
