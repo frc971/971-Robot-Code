@@ -7,9 +7,6 @@
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/constants.h"
 
-// TODO(pschrader): Support the ZeroingConstants::measured_index_position
-// parameter.
-//
 // TODO(pschrader): Create an error API to flag faults/errors etc..
 //
 // TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
@@ -76,6 +73,9 @@ class ZeroingEstimator {
   // The estimated starting position of the mechanism. We also call this the
   // 'offset' in some contexts.
   double start_pos_;
+  // The absolute position of any index pulse on the mechanism. This is used to
+  // account for the various ways the encoders get mounted into the robot.
+  double known_index_pos_;
   // Flag for triggering logic that takes note of the current index pulse count
   // after a reset. See `index_pulse_count_after_reset_'.
   bool wait_for_index_pulse_;

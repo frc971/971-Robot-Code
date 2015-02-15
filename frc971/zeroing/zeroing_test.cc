@@ -209,5 +209,33 @@ TEST_F(ZeroingTest, WaitForIndexPulseAfterReset) {
   ASSERT_TRUE(estimator.zeroed());
 }
 
+TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
+  const double index_diff = 0.9;
+  const double known_index_pos = 3.5 * index_diff;
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(3.3 * index_diff, index_diff / 3.0, known_index_pos);
+  ZeroingEstimator estimator(
+      Values::ZeroingConstants{kSampleSize, index_diff, known_index_pos});
+
+  // Make sure to fill up the averaging filter with samples.
+  for (unsigned int i = 0; i < kSampleSize; i++) {
+    MoveTo(&sim, &estimator, 3.3 * index_diff);
+  }
+
+  // Make sure we're not zeroed until we hit an index pulse.
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Trigger an index pulse; we should now be zeroed.
+  MoveTo(&sim, &estimator, 3.7 * index_diff);
+  ASSERT_TRUE(estimator.zeroed());
+  ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
+  ASSERT_DOUBLE_EQ(3.7 * index_diff, estimator.position());
+
+  // Trigger one more index pulse and check the offset.
+  MoveTo(&sim, &estimator, 4.7 * index_diff);
+  ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
+  ASSERT_DOUBLE_EQ(4.7 * index_diff, estimator.position());
+}
+
 }  // namespace zeroing
 }  // namespace frc971
