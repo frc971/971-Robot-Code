@@ -2,9 +2,26 @@
 #define FRC971_ZEROING_ZEROING_H_
 
 #include <vector>
-#include "frc971/zeroing/zeroing_queue.q.h"
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/constants.h"
+
+// TODO(pschrader): Support the ZeroingConstants::measured_index_position
+// parameter.
+//
+// TODO(pschrader): Wait for an index pulse during zeroing. If we start up with
+// a non-zero number of index pulses then the logic will use that pulse to
+// compute the starting position (a/k/a the offset).
+//
+// TODO(pschrader): Create an error API to flag faults/errors etc..
+//
+// TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
+// away from the last one (i.e. got extra counts from noise, etc..)
+//
+// TODO(pschrader): Flag error if the pot disagrees too much with the encoder
+// after being zeroed.
+//
+// TODO(pschrader): Watch the offset over long periods of time and flag if it
+// gets too far away from the initial value.
 
 namespace frc971 {
 namespace zeroing {
@@ -13,35 +30,59 @@ namespace zeroing {
 // the pot and the indices.
 class ZeroingEstimator {
  public:
-  ZeroingEstimator(double index_difference, size_t max_sample_count);
   ZeroingEstimator(const constants::Values::ZeroingConstants &constants);
-  void UpdateEstimate(const PotAndIndexPosition &info);
-  void UpdateEstimate(const ZeroingInfo &info);
 
-  double offset() const { return offset_; }
+  // Update the internal logic with the next sensor values.
+  void UpdateEstimate(const PotAndIndexPosition &info);
+
+  // Reset the internal logic so it needs to be re-zeroed.
+  void Reset();
+
+  // Returns true if the logic considers the corresponding mechanism to be
+  // zeroed. It return false otherwise. For example, right after a call to
+  // Reset() this returns false.
   bool zeroed() const { return zeroed_; }
+
+  // Return the estimated position of the corresponding mechanism. This value
+  // is in SI units. For example, the estimator for the elevator would return a
+  // value in meters for the height relative to absolute zero.
+  double position() const { return pos_; }
+
+  // Return the estimated starting position of the corresponding mechansim. In
+  // some contexts we refer to this as the "offset".
+  double offset() const { return start_pos_; }
+
+  // Returns a number between 0 and 1 that represents the percentage of the
+  // samples being used in the moving average filter. A value of 0.0 means that
+  // no samples are being used. A value of 1.0 means that the filter is using
+  // as many samples as it has room for. For example, after a Reset() this
+  // value returns 0.0. As more samples get added with UpdateEstimate(...) the
+  // return value starts increasing to 1.0.
   double offset_ratio_ready() const {
     return start_pos_samples_.size() / static_cast<double>(max_sample_count_);
   }
 
  private:
-  void DoInit(double index_difference, size_t max_sample_count);
-
-  double offset_ = 0.0;
-  bool zeroed_ = false;
+  // The estimated position.
+  double pos_;
   // The distance between two consecutive index positions.
   double index_diff_;
-  // The next position in 'start_pos_samples_' to be used to store the
-  // next sample.
+  // The next position in 'start_pos_samples_' to be used to store the next
+  // sample.
   int samples_idx_;
   // Last 'max_sample_count_' samples for start positions.
   std::vector<double> start_pos_samples_;
-  // The number of the last samples of start position to consider
-  // in the estimation.
+  // The number of the last samples of start position to consider in the
+  // estimation.
   size_t max_sample_count_;
+  // The estimated starting position of the mechanism. We also call this the
+  // 'offset' in some contexts.
+  double start_pos_;
+  // Marker to track whether we're fully zeroed yet or not.
+  bool zeroed_;
 };
 
-} // namespace zeroing
-} // namespace frc971
+}  // namespace zeroing
+}  // namespace frc971
 
 #endif  // FRC971_ZEROING_ZEROING_H_
