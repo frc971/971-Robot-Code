@@ -55,7 +55,7 @@ const double kElevatorGearboxOutputRadianDistance =
     kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch /
     (2.0 * M_PI);
 
-const double kMaxAllowedLeftRightArmDifference = 0.01;  // radians
+const double kMaxAllowedLeftRightArmDifference = 0.04;  // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
 
 // Gearing ratios of the pots and encoders for the elevator and arm.

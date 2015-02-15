@@ -1,3 +1,5 @@
+#include "frc971/control_loops/fridge/fridge.h"
+
 #include <math.h>
 #include <unistd.h>
 
@@ -9,7 +11,6 @@
 #include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
-#include "frc971/control_loops/fridge/fridge.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 
@@ -22,18 +23,18 @@ namespace testing {
 // position.
 class FridgeSimulation {
  public:
-  static constexpr double kNoiseScalar = 3.0;
+  static constexpr double kNoiseScalar = 1.0;
   // Constructs a simulation.
   FridgeSimulation()
       : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
-        elev_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
+        elevator_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
         left_arm_pot_encoder_(
             constants::GetValues().fridge.left_arm_zeroing.index_difference),
         right_arm_pot_encoder_(
             constants::GetValues().fridge.right_arm_zeroing.index_difference),
-        left_elev_pot_encoder_(
+        left_elevator_pot_encoder_(
             constants::GetValues().fridge.left_elev_zeroing.index_difference),
-        right_elev_pot_encoder_(
+        right_elevator_pot_encoder_(
             constants::GetValues().fridge.right_elev_zeroing.index_difference),
         fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
                       ".frc971.control_loops.fridge_queue.goal",
@@ -41,36 +42,65 @@ class FridgeSimulation {
                       ".frc971.control_loops.fridge_queue.output",
                       ".frc971.control_loops.fridge_queue.status") {
     // Initialize the elevator.
-    SetElevatorSensors(
-        constants::GetValues().fridge.elevator.lower_limit,
-        constants::GetValues().fridge.elevator.lower_limit,
+    InitializeElevatorPosition(
+        constants::GetValues().fridge.elevator.lower_limit);
+    // Initialize the arm.
+    InitializeArmPosition(0.0);
+  }
+
+  void InitializeElevatorPosition(double start_pos) {
+    InitializeElevatorPosition(start_pos, start_pos);
+  }
+
+  void InitializeElevatorPosition(double left_start_pos,
+                                  double right_start_pos) {
+    InitializeElevatorPosition(
+        left_start_pos, right_start_pos,
         kNoiseScalar *
             constants::GetValues().fridge.right_elev_zeroing.index_difference);
-    // Initialize the arm.
-    SetArmSensors(0.0, 0.0,
-                  kNoiseScalar *
-                      constants::GetValues()
-                          .fridge.right_arm_zeroing.index_difference);
   }
 
-  void SetElevatorSensors(double left_start_pos, double right_start_pos,
-                          double pot_noise_stddev) {
+  void InitializeElevatorPosition(double left_start_pos, double right_start_pos,
+                                  double pot_noise_stddev) {
     // Update the internal state of the elevator plant.
-    elev_plant_->mutable_X(0, 0) = (left_start_pos + right_start_pos) / 2.0;
-    elev_plant_->mutable_X(2, 0) = (left_start_pos - right_start_pos) / 2.0;
+    elevator_plant_->mutable_X(0, 0) = (left_start_pos + right_start_pos) / 2.0;
+    elevator_plant_->mutable_X(1, 0) = 0.0;
+    elevator_plant_->mutable_X(2, 0) = (left_start_pos - right_start_pos) / 2.0;
+    elevator_plant_->mutable_X(3, 0) = 0.0;
 
-    right_elev_pot_encoder_.Initialize(right_start_pos, pot_noise_stddev);
-    left_elev_pot_encoder_.Initialize(left_start_pos, pot_noise_stddev);
+    right_elevator_pot_encoder_.Initialize(right_start_pos, pot_noise_stddev);
+    left_elevator_pot_encoder_.Initialize(left_start_pos, pot_noise_stddev);
+    elevator_initial_difference_ = left_start_pos - right_start_pos;
   }
 
-  void SetArmSensors(double left_start_pos, double right_start_pos,
-                     double pot_noise_stddev) {
+  void InitializeArmPosition(double start_pos) {
+    InitializeArmPosition(start_pos, start_pos);
+  }
+
+  void InitializeArmPosition(double left_start_pos, double right_start_pos) {
+    InitializeArmPosition(
+        left_start_pos, right_start_pos,
+        kNoiseScalar *
+            constants::GetValues().fridge.right_arm_zeroing.index_difference);
+  }
+  void InitializeArmPosition(double left_start_pos, double right_start_pos,
+                             double pot_noise_stddev) {
     // Update the internal state of the arm plant.
     arm_plant_->mutable_X(0, 0) = (left_start_pos + right_start_pos) / 2.0;
+    arm_plant_->mutable_X(1, 0) = 0.0;
     arm_plant_->mutable_X(2, 0) = (left_start_pos - right_start_pos) / 2.0;
+    arm_plant_->mutable_X(3, 0) = 0.0;
 
     left_arm_pot_encoder_.Initialize(left_start_pos, pot_noise_stddev);
     right_arm_pot_encoder_.Initialize(right_start_pos, pot_noise_stddev);
+    arm_initial_difference_ = left_start_pos - right_start_pos;
+  }
+
+  // Changes the left-right calculations in the limit checks to measure absolute
+  // differences instead of differences relative to the starting offset.
+  void ErrorOnAbsoluteDifference() {
+    arm_initial_difference_ = 0.0;
+    elevator_initial_difference_ = 0.0;
   }
 
   // Sends a queue message with the position.
@@ -80,8 +110,8 @@ class FridgeSimulation {
 
     left_arm_pot_encoder_.GetSensorValues(&position->arm.left);
     right_arm_pot_encoder_.GetSensorValues(&position->arm.right);
-    left_elev_pot_encoder_.GetSensorValues(&position->elevator.left);
-    right_elev_pot_encoder_.GetSensorValues(&position->elevator.right);
+    left_elevator_pot_encoder_.GetSensorValues(&position->elevator.left);
+    right_elevator_pot_encoder_.GetSensorValues(&position->elevator.right);
 
     position.Send();
   }
@@ -93,18 +123,18 @@ class FridgeSimulation {
     // Feed voltages into physics simulation.
     arm_plant_->mutable_U() << fridge_queue_.output->left_arm,
         fridge_queue_.output->right_arm;
-    elev_plant_->mutable_U() << fridge_queue_.output->left_elevator,
+    elevator_plant_->mutable_U() << fridge_queue_.output->left_elevator,
         fridge_queue_.output->right_elevator;
 
     // Use the plant to generate the next physical state given the voltages to
     // the motors.
     arm_plant_->Update();
-    elev_plant_->Update();
+    elevator_plant_->Update();
 
     const double left_arm_angle = arm_plant_->Y(0, 0);
     const double right_arm_angle = arm_plant_->Y(1, 0);
-    const double left_elev_height = elev_plant_->Y(0, 0);
-    const double right_elev_height = elev_plant_->Y(1, 0);
+    const double left_elevator_height = elevator_plant_->Y(0, 0);
+    const double right_elevator_height = elevator_plant_->Y(1, 0);
 
     // TODO (phil) Do some sanity tests on the arm angles and the elevator
     // heights. For example, we need to make sure that both sides are within a
@@ -114,30 +144,51 @@ class FridgeSimulation {
     // Use the physical state to simulate sensor readings.
     left_arm_pot_encoder_.MoveTo(left_arm_angle);
     right_arm_pot_encoder_.MoveTo(right_arm_angle);
-    left_elev_pot_encoder_.MoveTo(left_elev_height);
-    right_elev_pot_encoder_.MoveTo(right_elev_height);
-  }
+    left_elevator_pot_encoder_.MoveTo(left_elevator_height);
+    right_elevator_pot_encoder_.MoveTo(right_elevator_height);
 
-  void VerifySeparation() {
-    const double left_arm_angle = arm_plant_->Y(0, 0);
-    const double right_arm_angle = arm_plant_->Y(1, 0);
-    const double left_elev_height = elev_plant_->Y(0, 0);
-    const double right_elev_height = elev_plant_->Y(1, 0);
+    // Verify that the arm and elevator sides don't change much from their
+    // initial difference.  Use the initial difference instead of the absolute
+    // difference to handle starting too far apart to test e-stopping.
+    EXPECT_NEAR(left_arm_angle - right_arm_angle, arm_initial_difference_,
+                5.0 * M_PI / 180.0);
+    EXPECT_NEAR(left_elevator_height - right_elevator_height,
+                elevator_initial_difference_, 0.0254);
 
-    EXPECT_NEAR(left_arm_angle, right_arm_angle, 5.0 * M_PI / 180.0);
-    EXPECT_NEAR(left_elev_height, right_elev_height, 0.05);
+    // Validate that the arm is within range.
+    EXPECT_GE(left_arm_angle,
+              constants::GetValues().fridge.arm.lower_hard_limit);
+    EXPECT_GE(right_arm_angle,
+              constants::GetValues().fridge.arm.lower_hard_limit);
+    EXPECT_LE(left_arm_angle,
+              constants::GetValues().fridge.arm.upper_hard_limit);
+    EXPECT_LE(right_arm_angle,
+              constants::GetValues().fridge.arm.upper_hard_limit);
+
+    // Validate that the elevator is within range.
+    EXPECT_GE(left_elevator_height,
+              constants::GetValues().fridge.elevator.lower_hard_limit);
+    EXPECT_GE(right_elevator_height,
+              constants::GetValues().fridge.elevator.lower_hard_limit);
+    EXPECT_LE(left_elevator_height,
+              constants::GetValues().fridge.elevator.upper_hard_limit);
+    EXPECT_LE(right_elevator_height,
+              constants::GetValues().fridge.elevator.upper_hard_limit);
   }
 
  private:
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> arm_plant_;
-  ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> elev_plant_;
+  ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> elevator_plant_;
 
   PositionSensorSimulator left_arm_pot_encoder_;
   PositionSensorSimulator right_arm_pot_encoder_;
-  PositionSensorSimulator left_elev_pot_encoder_;
-  PositionSensorSimulator right_elev_pot_encoder_;
+  PositionSensorSimulator left_elevator_pot_encoder_;
+  PositionSensorSimulator right_elevator_pot_encoder_;
 
   FridgeQueue fridge_queue_;
+
+  double elevator_initial_difference_ = 0.0;
+  double arm_initial_difference_ = 0.0;
 };
 
 class FridgeTest : public ::aos::testing::ControlLoopTest {
@@ -163,23 +214,21 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
 
   // Runs one iteration of the whole simulation and checks that separation
   // remains reasonable.
-  void RunIteration() {
-    SendMessages(true);
+  void RunIteration(bool enabled = true) {
+    SendMessages(enabled);
 
     fridge_plant_.SendPositionMessage();
     fridge_.Iterate();
     fridge_plant_.Simulate();
 
     TickTime();
-
-    fridge_plant_.VerifySeparation();
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for) {
+  void RunForTime(const Time &run_for, bool enabled = true) {
     const auto start_time = Time::Now();
     while (Time::Now() < start_time + run_for) {
-      RunIteration();
+      RunIteration(enabled);
     }
   }
 
@@ -266,7 +315,60 @@ TEST_F(FridgeTest, RespectsRange) {
 // Tests that the loop zeroes when run for a while.
 TEST_F(FridgeTest, ZeroTest) {
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.5).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InMS(4000)) {
+  RunForTime(Time::InMS(4000));
+
+  VerifyNearGoal();
+}
+
+// Tests that starting at the lower hardstops doesn't cause an abort.
+TEST_F(FridgeTest, LowerHardstopStartup) {
+  fridge_plant_.InitializeElevatorPosition(
+      constants::GetValues().fridge.elevator.lower_hard_limit,
+      constants::GetValues().fridge.elevator.lower_hard_limit);
+  fridge_plant_.InitializeArmPosition(
+      constants::GetValues().fridge.arm.lower_hard_limit,
+      constants::GetValues().fridge.arm.lower_hard_limit);
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+  RunForTime(Time::InMS(4000));
+
+  VerifyNearGoal();
+}
+
+// Tests that starting at the upper hardstops doesn't cause an abort.
+TEST_F(FridgeTest, UpperHardstopStartup) {
+  fridge_plant_.InitializeElevatorPosition(
+      constants::GetValues().fridge.elevator.upper_hard_limit,
+      constants::GetValues().fridge.elevator.upper_hard_limit);
+  fridge_plant_.InitializeArmPosition(
+      constants::GetValues().fridge.arm.upper_hard_limit,
+      constants::GetValues().fridge.arm.upper_hard_limit);
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+  RunForTime(Time::InMS(4000));
+
+  VerifyNearGoal();
+}
+
+// Tests that starting with an initial arm difference triggers an ESTOP.
+TEST_F(FridgeTest, ArmFarApartEstop) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+
+  do {
+    fridge_plant_.InitializeArmPosition(
+        constants::GetValues().fridge.arm.lower_limit,
+        constants::GetValues().fridge.arm.lower_limit + 0.1);
+    SendMessages(true);
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+    TickTime();
+  } while (fridge_.state() == Fridge::INITIALIZING);
+
+  EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
+
+  // TODO(austin): We should estop earlier once Phil's code to detect issues
+  // before the index pulse is merged.
+  while (fridge_.state() != Fridge::RUNNING &&
+         fridge_.state() != Fridge::ESTOP) {
     SendMessages(true);
     fridge_plant_.SendPositionMessage();
     fridge_.Iterate();
@@ -274,24 +376,204 @@ TEST_F(FridgeTest, ZeroTest) {
     TickTime();
   }
 
+  EXPECT_EQ(Fridge::ESTOP, fridge_.state());
+}
+
+// Tests that starting with an initial elevator difference triggers an ESTOP.
+TEST_F(FridgeTest, ElevatorFarApartEstop) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+
+  do {
+    fridge_plant_.InitializeElevatorPosition(
+        constants::GetValues().fridge.elevator.lower_limit,
+        constants::GetValues().fridge.elevator.lower_limit + 0.1);
+    SendMessages(true);
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+    TickTime();
+  } while (fridge_.state() == Fridge::INITIALIZING);
+
+  EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
+
+  // TODO(austin): We should estop earlier once Phil's code to detect issues
+  // before the index pulse is merged.
+  while (fridge_.state() != Fridge::RUNNING &&
+         fridge_.state() != Fridge::ESTOP) {
+    SendMessages(true);
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+    TickTime();
+  }
+
+  EXPECT_EQ(Fridge::ESTOP, fridge_.state());
+}
+
+// Tests that starting with an initial elevator difference converges back to 0
+// error when zeroed.
+TEST_F(FridgeTest, ElevatorFixError) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+
+  do {
+    fridge_plant_.InitializeElevatorPosition(
+        constants::GetValues().fridge.elevator.lower_limit,
+        constants::GetValues().fridge.elevator.lower_limit + 0.01);
+    fridge_plant_.ErrorOnAbsoluteDifference();
+    SendMessages(true);
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+    TickTime();
+  } while (fridge_.state() == Fridge::INITIALIZING);
+
+  EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
+
+  RunForTime(Time::InMS(4000));
   VerifyNearGoal();
 }
 
-// TODO(austin): Update unit test to abort when limits are violated.
-// TODO(austin): Test that voltages are within 12 volt ranges.
+// Tests that starting with an initial arm difference converges back to 0
+// error when zeroed.
+TEST_F(FridgeTest, ArmFixError) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
 
-// TODO(austin): Test starting with nonzero encoder values.
-// TODO(austin): Test that we ignore DMA counts during the uninitialized period
-// TODO(austin): Test starting with nonzero DMA counts.
+  do {
+    fridge_plant_.InitializeArmPosition(0.0, 0.02);
+    fridge_plant_.ErrorOnAbsoluteDifference();
+    SendMessages(true);
+    fridge_plant_.SendPositionMessage();
+    fridge_.Iterate();
+    fridge_plant_.Simulate();
+    TickTime();
+  } while (fridge_.state() == Fridge::INITIALIZING);
 
-// TODO(austin): Test starting at all 4 hard limits.
+  EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
 
-// TODO(austin): Check that we don't move the zeroing goals if disabled.
-// TODO(austin): Test that windup works correctly for both the arm and elevator.
-// TODO(austin): Check that we e-stop if the joints start too far apart.
+  RunForTime(Time::InMS(4000));
+  VerifyNearGoal();
+}
 
-// Nice to have below here.
+// Tests that resetting WPILib results in a rezero.
+TEST_F(FridgeTest, ResetTest) {
+  fridge_plant_.InitializeElevatorPosition(
+      constants::GetValues().fridge.elevator.upper_hard_limit,
+      constants::GetValues().fridge.elevator.upper_hard_limit);
+  fridge_plant_.InitializeArmPosition(
+      constants::GetValues().fridge.arm.upper_hard_limit,
+      constants::GetValues().fridge.arm.upper_hard_limit);
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+  RunForTime(Time::InMS(4000));
 
+  EXPECT_EQ(Fridge::RUNNING, fridge_.state());
+  VerifyNearGoal();
+  SimulateSensorReset();
+  RunForTime(Time::InMS(100));
+  EXPECT_NE(Fridge::RUNNING, fridge_.state());
+  RunForTime(Time::InMS(4000));
+  EXPECT_EQ(Fridge::RUNNING, fridge_.state());
+  VerifyNearGoal();
+}
+
+// Tests that the internal goals don't change while disabled.
+TEST_F(FridgeTest, DisabledGoalTest) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+
+  RunForTime(Time::InMS(100), false);
+  EXPECT_EQ(0.0, fridge_.elevator_goal_);
+  EXPECT_EQ(0.0, fridge_.arm_goal_);
+
+  // Now make sure they move correctly
+  RunForTime(Time::InMS(1000), true);
+  EXPECT_NE(0.0, fridge_.elevator_goal_);
+  EXPECT_NE(0.0, fridge_.arm_goal_);
+}
+
+// Tests that the elevator zeroing goals don't wind up too far.
+TEST_F(FridgeTest, ElevatorGoalPositiveWindupTest) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+
+  while (fridge_.state() != Fridge::ZEROING_ELEVATOR) {
+    RunIteration();
+  }
+
+  // Kick it.
+  RunForTime(Time::InMS(50));
+  double orig_fridge_goal = fridge_.elevator_goal_;
+  fridge_.elevator_goal_ += 100.0;
+
+  RunIteration();
+  EXPECT_NEAR(orig_fridge_goal, fridge_.elevator_goal_, 0.05);
+
+  RunIteration();
+
+  EXPECT_EQ(fridge_.elevator_loop_->U(), fridge_.elevator_loop_->U_uncapped());
+}
+
+// Tests that the arm zeroing goals don't wind up too far.
+TEST_F(FridgeTest, ArmGoalPositiveWindupTest) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+
+  while (fridge_.state() != Fridge::ZEROING_ARM) {
+    RunIteration();
+  }
+
+  // Kick it.
+  RunForTime(Time::InMS(50));
+  double orig_fridge_goal = fridge_.arm_goal_;
+  fridge_.arm_goal_ += 100.0;
+
+  RunIteration();
+  EXPECT_NEAR(orig_fridge_goal, fridge_.arm_goal_, 0.05);
+
+  RunIteration();
+
+  EXPECT_EQ(fridge_.arm_loop_->U(), fridge_.arm_loop_->U_uncapped());
+}
+
+// Tests that the elevator zeroing goals don't wind up too far.
+TEST_F(FridgeTest, ElevatorGoalNegativeWindupTest) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+
+  while (fridge_.state() != Fridge::ZEROING_ELEVATOR) {
+    RunIteration();
+  }
+
+  // Kick it.
+  RunForTime(Time::InMS(50));
+  double orig_fridge_goal = fridge_.elevator_goal_;
+  fridge_.elevator_goal_ -= 100.0;
+
+  RunIteration();
+  EXPECT_NEAR(orig_fridge_goal, fridge_.elevator_goal_, 0.05);
+
+  RunIteration();
+
+  EXPECT_EQ(fridge_.elevator_loop_->U(), fridge_.elevator_loop_->U_uncapped());
+}
+
+// Tests that the arm zeroing goals don't wind up too far.
+TEST_F(FridgeTest, ArmGoalNegativeWindupTest) {
+  fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
+
+  while (fridge_.state() != Fridge::ZEROING_ARM) {
+    RunIteration();
+  }
+
+  // Kick it.
+  RunForTime(Time::InMS(50));
+  double orig_fridge_goal = fridge_.arm_goal_;
+  fridge_.arm_goal_ -= 100.0;
+
+  RunIteration();
+  EXPECT_NEAR(orig_fridge_goal, fridge_.arm_goal_, 0.05);
+
+  RunIteration();
+
+  EXPECT_EQ(fridge_.arm_loop_->U(), fridge_.arm_loop_->U_uncapped());
+}
+
+// Phil:
 // TODO(austin): Check that we e-stop if encoder index pulse is not n revolutions away from last one. (got extra counts from noise, etc).
 // TODO(austin): Check that we e-stop if pot disagrees too much with encoder after we are zeroed.
 

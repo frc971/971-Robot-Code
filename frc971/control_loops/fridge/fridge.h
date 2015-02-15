@@ -12,6 +12,13 @@
 
 namespace frc971 {
 namespace control_loops {
+namespace testing {
+class FridgeTest_DisabledGoalTest_Test;
+class FridgeTest_ArmGoalPositiveWindupTest_Test;
+class FridgeTest_ElevatorGoalPositiveWindupTest_Test;
+class FridgeTest_ArmGoalNegativeWindupTest_Test;
+class FridgeTest_ElevatorGoalNegativeWindupTest_Test;
+}
 
 class CappedStateFeedbackLoop : public StateFeedbackLoop<4, 2, 2> {
  public:
@@ -47,6 +54,23 @@ class Fridge
   // these files to exist and they will be rewritten anyway
   //static constexpr double dt;
 
+  enum State {
+    // Waiting to receive data before doing anything.
+    UNINITIALIZED = 0,
+    // Estimating the starting location.
+    INITIALIZING = 1,
+    // Moving the elevator to find an index pulse.
+    ZEROING_ELEVATOR = 2,
+    // Moving the arm to find an index pulse.
+    ZEROING_ARM = 3,
+    // All good!
+    RUNNING = 4,
+    // Internal error caused the fridge to abort.
+    ESTOP = 5,
+  };
+
+  State state() const { return state_; }
+
  protected:
   void RunIteration(const control_loops::FridgeQueue::Goal *goal,
                     const control_loops::FridgeQueue::Position *position,
@@ -54,6 +78,12 @@ class Fridge
                     control_loops::FridgeQueue::Status *status) override;
 
  private:
+  friend class testing::FridgeTest_DisabledGoalTest_Test;
+  friend class testing::FridgeTest_ElevatorGoalPositiveWindupTest_Test;
+  friend class testing::FridgeTest_ArmGoalPositiveWindupTest_Test;
+  friend class testing::FridgeTest_ElevatorGoalNegativeWindupTest_Test;
+  friend class testing::FridgeTest_ArmGoalNegativeWindupTest_Test;
+
   // Sets state_ to the correct state given the current state of the zeroing
   // estimators.
   void UpdateZeroingState();
@@ -89,21 +119,6 @@ class Fridge
 
   // Corrects the Observer with the current position.
   void Correct();
-
-  enum State {
-    // Waiting to receive data before doing anything.
-    UNINITIALIZED = 0,
-    // Estimating the starting location.
-    INITIALIZING = 1,
-    // Moving the elevator to find an index pulse.
-    ZEROING_ELEVATOR = 2,
-    // Moving the arm to find an index pulse.
-    ZEROING_ARM = 3,
-    // All good!
-    RUNNING = 4,
-    // Internal error caused the fridge to abort.
-    ESTOP = 5,
-  };
 
   // The state feedback control loop or loops to talk to.
   ::std::unique_ptr<CappedStateFeedbackLoop> arm_loop_;

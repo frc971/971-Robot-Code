@@ -17,9 +17,9 @@ namespace control_loops {
 constexpr double Fridge::dt;
 
 namespace {
-constexpr double kZeroingVoltage = 1.0;
+constexpr double kZeroingVoltage = 5.0;
 constexpr double kElevatorZeroingVelocity = 0.1;
-constexpr double kArmZeroingVelocity = 0.1;
+constexpr double kArmZeroingVelocity = 0.2;
 }  // namespace
 
 
@@ -100,6 +100,8 @@ void Fridge::Correct() {
 }
 
 void Fridge::SetElevatorOffset(double left_offset, double right_offset) {
+  LOG(INFO, "Changing Elevator offset from %f, %f to %f, %f\n",
+      left_elevator_offset_, right_elevator_offset_, left_offset, right_offset);
   double left_doffset = left_offset - left_elevator_offset_;
   double right_doffset = right_offset - right_elevator_offset_;
 
@@ -119,6 +121,8 @@ void Fridge::SetElevatorOffset(double left_offset, double right_offset) {
 }
 
 void Fridge::SetArmOffset(double left_offset, double right_offset) {
+  LOG(INFO, "Changing Arm offset from %f, %f to %f, %f\n", left_arm_offset_,
+      right_arm_offset_, left_offset, right_offset);
   double left_doffset = left_offset - left_arm_offset_;
   double right_doffset = right_offset - right_arm_offset_;
 
@@ -231,6 +235,15 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
                           const control_loops::FridgeQueue::Position *position,
                           control_loops::FridgeQueue::Output *output,
                           control_loops::FridgeQueue::Status *status) {
+  if (WasReset()) {
+    LOG(ERROR, "WPILib reset, restarting\n");
+    left_elevator_estimator_.Reset();
+    right_elevator_estimator_.Reset();
+    left_arm_estimator_.Reset();
+    right_arm_estimator_.Reset();
+    state_ = UNINITIALIZED;
+  }
+
   // Get a reference to the constants struct since we use it so often in this
   // code.
   auto &values = constants::GetValues();
@@ -273,6 +286,10 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
       right_elevator_offset_ = -position->elevator.right.encoder;
       left_arm_offset_ = -position->arm.left.encoder;
       right_arm_offset_ = -position->arm.right.encoder;
+      LOG(INFO, "Initializing arm offsets to %f, %f\n", left_arm_offset_,
+          right_arm_offset_);
+      LOG(INFO, "Initializing elevator offsets to %f, %f\n",
+          left_elevator_offset_, right_elevator_offset_);
       Correct();
       state_ = INITIALIZING;
       disable = true;
@@ -293,8 +310,6 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
 
     case ZEROING_ELEVATOR:
       LOG(DEBUG, "Zeroing elevator\n");
-      elevator_goal_velocity = elevator_zeroing_velocity();
-      elevator_goal_ += elevator_goal_velocity * dt;
 
       // Update state_ to accurately represent the state of the zeroing
       // estimators.
@@ -304,13 +319,14 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
         SetElevatorOffset(left_elevator_estimator_.offset(),
                           right_elevator_estimator_.offset());
         LOG(DEBUG, "Zeroed the elevator!\n");
+      } else if (!disable) {
+        elevator_goal_velocity = elevator_zeroing_velocity();
+        elevator_goal_ += elevator_goal_velocity * dt;
       }
       break;
 
     case ZEROING_ARM:
       LOG(DEBUG, "Zeroing the arm\n");
-      arm_goal_velocity = arm_zeroing_velocity();
-      arm_goal_ += arm_goal_velocity * dt;
 
       // Update state_ to accurately represent the state of the zeroing
       // estimators.
@@ -319,6 +335,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
         SetArmOffset(left_arm_estimator_.offset(),
                      right_arm_estimator_.offset());
         LOG(DEBUG, "Zeroed the arm!\n");
+      } else if (!disable) {
+        arm_goal_velocity = arm_zeroing_velocity();
+        arm_goal_ += arm_goal_velocity * dt;
       }
       break;
 
@@ -348,10 +367,20 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
   // should run immediately after the SetArmOffset and SetElevatorOffset
   // functions to double-check that the hardware is in a sane state.
   if (::std::abs(left_arm() - right_arm()) >=
-          values.max_allowed_left_right_arm_difference ||
-      ::std::abs(left_elevator() - right_elevator()) >=
-          values.max_allowed_left_right_elevator_difference) {
-    LOG(ERROR, "The two sides went too far apart\n");
+      values.max_allowed_left_right_arm_difference) {
+    LOG(ERROR, "The arms are too far apart.  |%f - %f| > %f\n", left_arm(),
+        right_arm(), values.max_allowed_left_right_arm_difference);
+
+    // Indicate an ESTOP condition and stop the motors.
+    state_ = ESTOP;
+    disable = true;
+  }
+
+  if (::std::abs(left_elevator() - right_elevator()) >=
+      values.max_allowed_left_right_elevator_difference) {
+    LOG(ERROR, "The elevators are too far apart.  |%f - %f| > %f\n",
+        left_elevator(), right_elevator(),
+        values.max_allowed_left_right_elevator_difference);
 
     // Indicate an ESTOP condition and stop the motors.
     state_ = ESTOP;

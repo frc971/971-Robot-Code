@@ -5,6 +5,7 @@ import controls
 import polytope
 import polydrivetrain
 import numpy
+import math
 import sys
 import matplotlib
 from matplotlib import pylab
@@ -62,6 +63,11 @@ class Arm(control_loop.ControlLoop):
          [0, 0, -C1 * 2.0, -C3]])
 
     print 'Full speed is', C2 / C3 * 12.0
+
+    print 'Stall arm difference is', 12.0 * C2 / C1
+    print 'Stall arm difference first principles is', self.stall_torque * self.G / self.spring
+
+    print '5 degrees of arm error is', self.spring / self.r * (math.pi * 5.0 / 180.0)
 
     # Start with the unmodified input
     self.B_continuous = numpy.matrix(
