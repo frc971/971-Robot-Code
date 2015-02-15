@@ -207,6 +207,8 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
   void VerifyNearGoal() {
     fridge_queue_.goal.FetchLatest();
     fridge_queue_.status.FetchLatest();
+    EXPECT_TRUE(fridge_queue_.goal.get() != nullptr);
+    EXPECT_TRUE(fridge_queue_.status.get() != nullptr);
     EXPECT_NEAR(fridge_queue_.goal->angle, fridge_queue_.status->angle, 0.001);
     EXPECT_NEAR(fridge_queue_.goal->height, fridge_queue_.status->height,
                 0.001);
@@ -572,6 +574,14 @@ TEST_F(FridgeTest, ArmGoalNegativeWindupTest) {
 
   EXPECT_EQ(fridge_.arm_loop_->U(), fridge_.arm_loop_->U_uncapped());
 }
+
+// Tests that the loop zeroes when run for a while.
+TEST_F(FridgeTest, ZeroNoGoal) {
+  RunForTime(Time::InMS(4000));
+
+  EXPECT_EQ(Fridge::RUNNING, fridge_.state());
+}
+
 
 // Phil:
 // TODO(austin): Check that we e-stop if encoder index pulse is not n revolutions away from last one. (got extra counts from noise, etc).

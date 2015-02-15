@@ -56,15 +56,14 @@ CappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
 }
 
 Fridge::Fridge(control_loops::FridgeQueue *fridge)
-    : aos::controls::ControlLoop<control_loops::FridgeQueue>(fridge),
+    : aos::controls::ControlLoop<control_loops::FridgeQueue, false>(fridge),
       arm_loop_(new CappedStateFeedbackLoop(
           StateFeedbackLoop<4, 2, 2>(MakeArmLoop()))),
       elevator_loop_(new CappedStateFeedbackLoop(
           StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop()))),
       left_arm_estimator_(constants::GetValues().fridge.left_arm_zeroing),
       right_arm_estimator_(constants::GetValues().fridge.right_arm_zeroing),
-      left_elevator_estimator_(
-          constants::GetValues().fridge.left_elev_zeroing),
+      left_elevator_estimator_(constants::GetValues().fridge.left_elev_zeroing),
       right_elevator_estimator_(
           constants::GetValues().fridge.right_elev_zeroing) {}
 
@@ -231,7 +230,7 @@ double Fridge::arm_zeroing_velocity() {
   return arm_zeroing_velocity_;
 }
 
-void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
+void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
                           const control_loops::FridgeQueue::Position *position,
                           control_loops::FridgeQueue::Output *output,
                           control_loops::FridgeQueue::Status *status) {
@@ -343,14 +342,18 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
 
     case RUNNING:
       LOG(DEBUG, "Running!\n");
-      arm_goal_velocity = goal->angular_velocity;
-      elevator_goal_velocity = goal->velocity;
+      if (unsafe_goal) {
+        arm_goal_velocity = unsafe_goal->angular_velocity;
+        elevator_goal_velocity = unsafe_goal->velocity;
+      }
 
       // Update state_ to accurately represent the state of the zeroing
       // estimators.
       UpdateZeroingState();
-      arm_goal_ = goal->angle;
-      elevator_goal_ = goal->height;
+      if (unsafe_goal) {
+        arm_goal_ = unsafe_goal->angle;
+        elevator_goal_ = unsafe_goal->height;
+      }
 
       if (state_ != RUNNING && state_ != ESTOP) {
         state_ = UNINITIALIZED;
@@ -492,7 +495,14 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
     output->right_arm = arm_loop_->U(1, 0);
     output->left_elevator = elevator_loop_->U(0, 0);
     output->right_elevator = elevator_loop_->U(1, 0);
-    output->grabbers = goal->grabbers;
+    if (unsafe_goal) {
+      output->grabbers = unsafe_goal->grabbers;
+    } else {
+      output->grabbers.top_front = false;
+      output->grabbers.top_back = false;
+      output->grabbers.bottom_front = false;
+      output->grabbers.bottom_back = false;
+    }
   }
 
   // TODO(austin): Populate these fully.
@@ -500,8 +510,16 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *goal,
   status->done = false;
   status->angle = arm_loop_->X_hat(0, 0);
   status->height = elevator_loop_->X_hat(0, 0);
-  status->grabbers = goal->grabbers;
+  if (unsafe_goal) {
+    status->grabbers = unsafe_goal->grabbers;
+  } else {
+    status->grabbers.top_front = false;
+    status->grabbers.top_back = false;
+    status->grabbers.bottom_front = false;
+    status->grabbers.bottom_back = false;
+  }
   status->estopped = (state_ == ESTOP);
+  status->state = state_;
   last_state_ = state_;
 }
 
