@@ -10,7 +10,6 @@ ZeroingEstimator::ZeroingEstimator(
     const constants::Values::ZeroingConstants& constants) {
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
-  index_pulse_count_after_reset_ = 0;
   known_index_pos_ = constants.measured_index_position;
 
   start_pos_samples_.reserve(max_sample_count_);
@@ -24,6 +23,19 @@ void ZeroingEstimator::Reset() {
   start_pos_samples_.clear();
   zeroed_ = false;
   wait_for_index_pulse_ = true;
+  last_used_index_pulse_count_ = 0;
+}
+
+double ZeroingEstimator::CalculateStartPosition(double start_average,
+                                                double latched_encoder) const {
+  // We calculate an aproximation of the value of the last index position.
+  // Also account for index pulses not lining up with integer multiples of the
+  // index_diff.
+  double index_pos = start_average + latched_encoder - known_index_pos_;
+  // We round index_pos to the closest valid value of the index.
+  double accurate_index_pos = (round(index_pos / index_diff_)) * index_diff_;
+  // Now we reverse the first calculation to get the accurate start position.
+  return accurate_index_pos - latched_encoder + known_index_pos_;
 }
 
 void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
@@ -32,7 +44,7 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
   // reset and wait for that count to change before we consider ourselves
   // zeroed.
   if (wait_for_index_pulse_) {
-    index_pulse_count_after_reset_ = info.index_pulses;
+    last_used_index_pulse_count_ = info.index_pulses;
     wait_for_index_pulse_ = false;
   }
 
@@ -57,18 +69,15 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
   // If there are no index pulses to use or we don't have enough samples yet to
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
-  if (info.index_pulses == index_pulse_count_after_reset_ ||
-      offset_ratio_ready() < 1.0) {
+  if (!zeroed_ && (info.index_pulses == last_used_index_pulse_count_ ||
+                   offset_ratio_ready() < 1.0)) {
     start_pos_ = start_average;
-  } else {
-    // We calculate an aproximation of the value of the last index position.
-    // Also account for index pulses not lining up with integer multiples of
-    // the index_diff.
-    double index_pos = start_average + info.latched_encoder - known_index_pos_;
-    // We round index_pos to the closest valid value of the index.
-    double accurate_index_pos = (round(index_pos / index_diff_)) * index_diff_;
-    // Now we reverse the first calculation to get the accurate start position.
-    start_pos_ = accurate_index_pos - info.latched_encoder + known_index_pos_;
+  } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses) {
+    // Note the accurate start position and the current index pulse count so
+    // that we only run this logic once per index pulse. That should be more
+    // resilient to corrupted intermediate data.
+    start_pos_ = CalculateStartPosition(start_average, info.latched_encoder);
+    last_used_index_pulse_count_ = info.index_pulses;
 
     // Now that we have an accurate starting position we can consider ourselves
     // zeroed.

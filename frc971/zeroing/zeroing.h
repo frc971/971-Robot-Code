@@ -58,6 +58,11 @@ class ZeroingEstimator {
   }
 
  private:
+  // This function calculates the start position given the internal state and
+  // the provided `latched_encoder' value.
+  double CalculateStartPosition(double start_average,
+                                double latched_encoder) const;
+
   // The estimated position.
   double pos_;
   // The distance between two consecutive index positions.
@@ -77,12 +82,15 @@ class ZeroingEstimator {
   // account for the various ways the encoders get mounted into the robot.
   double known_index_pos_;
   // Flag for triggering logic that takes note of the current index pulse count
-  // after a reset. See `index_pulse_count_after_reset_'.
+  // after a reset. See `last_used_index_pulse_count_'.
   bool wait_for_index_pulse_;
   // After a reset we keep track of the index pulse count with this. Only after
   // the index pulse count changes (i.e. increments at least once or wraps
-  // around) will we consider the mechanism zeroed.
-  uint32_t index_pulse_count_after_reset_;
+  // around) will we consider the mechanism zeroed. We also use this to store
+  // the most recent `PotAndIndexPosition::index_pulses' value when the start
+  // position was calculated. It helps us calculate the start position only on
+  // index pulses to reject corrupted intermediate data.
+  uint32_t last_used_index_pulse_count_;
   // Marker to track whether we're fully zeroed yet or not.
   bool zeroed_;
 };
