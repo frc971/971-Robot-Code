@@ -40,7 +40,7 @@ class CappedStateFeedbackLoop : public StateFeedbackLoop<4, 2, 2> {
 };
 
 class Fridge
-    : public aos::controls::ControlLoop<control_loops::FridgeQueue> {
+    : public aos::controls::ControlLoop<control_loops::FridgeQueue, false> {
  public:
   explicit Fridge(
       control_loops::FridgeQueue *fridge_queue = &control_loops::fridge_queue);

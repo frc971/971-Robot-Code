@@ -60,6 +60,9 @@ queue_group FridgeQueue {
 
     // TODO(austin): Internal state.
     bool estopped;
+
+    // The internal state of the state machine.
+    int32_t state;
   };
 
   message Output {
