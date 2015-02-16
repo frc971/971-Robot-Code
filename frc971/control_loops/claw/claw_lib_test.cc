@@ -124,7 +124,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the loop does nothing when the goal is our lower limit.
 TEST_F(ClawTest, DoesNothing) {
-  const auto values = constants::GetValues();
+  const auto &values = constants::GetValues();
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
       .angle(values.claw.wrist.lower_limit)
       .Send());
@@ -148,7 +148,7 @@ TEST_F(ClawTest, ReachesGoal) {
 
 // Tests that it doesn't try to move past the physical range of the mechanism.
 TEST_F(ClawTest, RespectsRange) {
-  const auto values = constants::GetValues();
+  const auto &values = constants::GetValues();
   // Upper limit
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
       .angle(values.claw.wrist.upper_hard_limit + 5.0)

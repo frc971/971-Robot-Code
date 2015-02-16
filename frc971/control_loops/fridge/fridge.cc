@@ -245,7 +245,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
 
   // Get a reference to the constants struct since we use it so often in this
   // code.
-  auto &values = constants::GetValues();
+  const auto &values = constants::GetValues();
 
   // Bool to track if we should turn the motors on or not.
   bool disable = output == nullptr;

@@ -254,7 +254,7 @@ class SensorReader {
 
     dma_synchronizer_->RunIteration();
 
-    const auto values = constants::GetValues();
+    const auto &values = constants::GetValues();
 
     {
       auto fridge_message = fridge_queue.position.MakeMessage();

@@ -248,7 +248,7 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
 TEST_F(FridgeTest, DoesNothing) {
   // Set the goals to the starting values. This should theoretically guarantee
   // that the controller does nothing.
-  const constants::Values values = constants::GetValues();
+  const auto &values = constants::GetValues();
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
       .angle(0.0)
       .height(values.fridge.elevator.lower_limit)
@@ -263,7 +263,7 @@ TEST_F(FridgeTest, DoesNothing) {
 // Tests that the loop can reach a goal.
 TEST_F(FridgeTest, ReachesGoal) {
   // Set a reasonable goal.
-  const auto values = constants::GetValues();
+  const auto &values = constants::GetValues();
   const double soft_limit = values.fridge.elevator.lower_limit;
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
       .angle(M_PI / 4.0)
@@ -291,7 +291,7 @@ TEST_F(FridgeTest, RespectsRange) {
 
   // Check that we are near our soft limit.
   fridge_queue_.status.FetchLatest();
-  const auto values = constants::GetValues();
+  const auto &values = constants::GetValues();
   EXPECT_NEAR(values.fridge.elevator.lower_limit, fridge_queue_.status->height,
               0.001);
   EXPECT_NEAR(values.fridge.arm.upper_limit, fridge_queue_.status->angle,
