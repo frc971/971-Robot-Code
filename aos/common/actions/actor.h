@@ -152,8 +152,12 @@ void ActorBase<T>::Run() {
     // Wait for a request to come in before starting.
     WaitForActionRequest();
 
+    LOG_STRUCT(INFO, "running with goal", *action_q_->goal);
+
     // Perform the action once.
     uint32_t running_id = RunIteration();
+
+    LOG(INFO, "done running\n");
 
     // Don't start again until asked.
     WaitForStop(running_id);
