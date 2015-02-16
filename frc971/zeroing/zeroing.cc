@@ -24,6 +24,14 @@ void ZeroingEstimator::Reset() {
   zeroed_ = false;
   wait_for_index_pulse_ = true;
   last_used_index_pulse_count_ = 0;
+  error_ = false;
+}
+
+void ZeroingEstimator::TriggerError() {
+  if (!error_) {
+    LOG(ERROR, "Manually triggered zeroing error.\n");
+    error_ = true;
+  }
 }
 
 double ZeroingEstimator::CalculateStartPosition(double start_average,

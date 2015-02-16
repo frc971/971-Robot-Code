@@ -7,8 +7,6 @@
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/constants.h"
 
-// TODO(pschrader): Create an error API to flag faults/errors etc..
-//
 // TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
 // away from the last one (i.e. got extra counts from noise, etc..)
 //
@@ -32,6 +30,14 @@ class ZeroingEstimator {
 
   // Reset the internal logic so it needs to be re-zeroed.
   void Reset();
+
+  // Manually trigger an internal error. This is used for testing the error
+  // logic.
+  void TriggerError();
+
+  // Returns true if an error has occurred, false otherwise. This gets reset to
+  // false when the Reset() function is called.
+  bool error() const { return error_; }
 
   // Returns true if the logic considers the corresponding mechanism to be
   // zeroed. It return false otherwise. For example, right after a call to
@@ -93,6 +99,9 @@ class ZeroingEstimator {
   uint32_t last_used_index_pulse_count_;
   // Marker to track whether we're fully zeroed yet or not.
   bool zeroed_;
+  // Marker to track whether an error has occurred. This gets reset to false
+  // whenever Reset() is called.
+  bool error_;
 };
 
 }  // namespace zeroing
