@@ -550,9 +550,7 @@ void setFilterPeriod(int filter_index, uint32_t value, int32_t* status) {
     ::std::unique_lock<ReentrantMutex> sync(digitalDIOSemaphore);
     digitalSystem->writeFilterPeriodHdr(filter_index, value, status);
     if (*status == 0) {
-      printf("My error %d index %d period %d\n", *status, filter_index, value);
       digitalSystem->writeFilterPeriodMXP(filter_index, value, status);
-      printf("My error %d index %d period %d\n", *status, filter_index, value);
     }
   }
 }
@@ -575,10 +573,8 @@ uint32_t getFilterPeriod(int filter_index, int32_t* status) {
   {
     ::std::unique_lock<ReentrantMutex> sync(digitalDIOSemaphore);
     hdr_period = digitalSystem->readFilterPeriodHdr(filter_index, status);
-    printf("My error get %d index %d %d\n", *status, filter_index, hdr_period);
     if (*status == 0) {
       mxp_period = digitalSystem->readFilterPeriodMXP(filter_index, status);
-      printf("My error get %d index %d %d\n", *status, filter_index, mxp_period);
     }
   }
   if (hdr_period != mxp_period) {
