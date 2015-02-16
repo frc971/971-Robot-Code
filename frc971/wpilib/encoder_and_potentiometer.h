@@ -141,7 +141,7 @@ class DMAEncoderAndPotentiometer : public DMASampleHandlerInterface {
     dma->Add(encoder_.get());
     dma->Add(index_.get());
     dma->Add(potentiometer_.get());
-    dma->SetExternalTrigger(index_.get(), true, false);
+    dma->SetExternalTrigger(index_.get(), true, true);
   }
 
  private:
