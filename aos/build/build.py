@@ -144,7 +144,7 @@ def get_ip_base():
   if not os.access(FILENAME, os.R_OK):
     os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
     with open(FILENAME, 'w') as f:
-      f.write('10.9.71')
+      f.write('roboRIO-971.local')
   with open(FILENAME, 'r') as f:
     base = f.readline().strip()
   return base
@@ -157,7 +157,7 @@ def get_ip(device):
   elif device == 'robot':
     return base + '.2'
   elif device == 'roboRIO':
-    return base + '.2'
+    return base
   else:
     raise Exception('Unknown device %s to get an IP address for.' % device)
 
@@ -453,7 +453,8 @@ class PrimeProcessor(Processor):
                                      cwd=from_dir)
       to_download = subprocess.check_output(
           ('ssh', TARGET,
-           """rm -rf {TMPDIR} && mkdir -p {TMPDIR} && cd {TO_DIR} \\
+           """rm -rf {TMPDIR} && mkdir -p {TMPDIR} && \\
+             mkdir -p {TO_DIR} && cd {TO_DIR} \\
              && echo '{SUMS}' | {SUM} -c \\
              |& grep -F FAILED | sed 's/^\\(.*\\): FAILED.*$/\\1/g'""".
            format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR, SUMS=sums.decode('utf-8'),
