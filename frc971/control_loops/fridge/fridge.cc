@@ -7,6 +7,7 @@
 
 #include "frc971/control_loops/fridge/elevator_motor_plant.h"
 #include "frc971/control_loops/fridge/arm_motor_plant.h"
+#include "frc971/control_loops/voltage_cap/voltage_cap.h"
 #include "frc971/zeroing/zeroing.h"
 
 #include "frc971/constants.h"
@@ -17,26 +18,15 @@ namespace control_loops {
 constexpr double Fridge::dt;
 
 namespace {
-constexpr double kZeroingVoltage = 5.0;
-constexpr double kElevatorZeroingVelocity = 0.1;
-constexpr double kArmZeroingVelocity = 0.2;
+constexpr double kZeroingVoltage = 4.0;
+constexpr double kElevatorZeroingVelocity = 0.10;
+constexpr double kArmZeroingVelocity = 0.20;
 }  // namespace
 
 
 void CappedStateFeedbackLoop::CapU() {
-  // TODO(austin): Use Campbell's code.
-  if (mutable_U(0, 0) > max_voltage_) {
-    mutable_U(0, 0) = max_voltage_;
-  }
-  if (mutable_U(1, 0) > max_voltage_) {
-    mutable_U(1, 0) = max_voltage_;
-  }
-  if (mutable_U(0, 0) < -max_voltage_) {
-    mutable_U(0, 0) = -max_voltage_;
-  }
-  if (mutable_U(1, 0) < -max_voltage_) {
-    mutable_U(1, 0) = -max_voltage_;
-  }
+  VoltageCap(max_voltage_, U(0, 0), U(1, 0), &mutable_U(0, 0),
+             &mutable_U(1, 0));
 }
 
 Eigen::Matrix<double, 2, 1>

@@ -32,6 +32,7 @@
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
+        '<(DEPTH)/frc971/control_loops/voltage_cap/voltage_cap.gyp:voltage_cap',
       ],
       'export_dependent_settings': [
         'fridge_queue',
