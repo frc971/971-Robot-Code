@@ -69,9 +69,9 @@ double arm_translate(int32_t in) {
 }
 
 double arm_potentiometer_translate(double voltage) {
-  return voltage /
+  return voltage *
           constants::GetValues().arm_pot_ratio *
-          (5.0 /*volts*/ / 5.0 /*turns*/) *
+          (5.0 /*turns*/ / 5.0 /*volts*/) *
           (2 * M_PI /*radians*/);
 }
 
@@ -84,11 +84,11 @@ double elevator_translate(int32_t in) {
 }
 
 double elevator_potentiometer_translate(double voltage) {
-  return voltage /
+  return voltage *
           constants::GetValues().elev_pot_ratio *
           (2 * M_PI /*radians*/) *
           constants::GetValues().elev_distance_per_radian *
-          (5.0 /*volts*/ / 5.0 /*turns*/);
+          (5.0 /*turns*/ / 5.0 /*volts*/);
 }
 
 double claw_translate(int32_t in) {
@@ -99,9 +99,9 @@ double claw_translate(int32_t in) {
 }
 
 double claw_potentiometer_translate(double voltage) {
-  return voltage /
+  return voltage *
           constants::GetValues().claw_pot_ratio *
-          (5.0 /*volts*/ / 5.0 /*turns*/) *
+          (5.0 /*turns*/ / 5.0 /*volts*/) *
           (2 * M_PI /*radians*/);
 }
 
@@ -249,10 +249,15 @@ class SensorReader {
       new_state.Send();
     }
 
-    drivetrain_queue.position.MakeWithBuilder()
-        .right_encoder(drivetrain_translate(right_encoder_->GetRaw()))
-        .left_encoder(-drivetrain_translate(left_encoder_->GetRaw()))
-        .Send();
+    {
+      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      drivetrain_message->right_encoder =
+          drivetrain_translate(right_encoder_->GetRaw());
+      drivetrain_message->left_encoder =
+          -drivetrain_translate(left_encoder_->GetRaw());
+
+      drivetrain_message.Send();
+    }
 
     dma_synchronizer_->RunIteration();
 
