@@ -10,6 +10,7 @@
         '<(AOS)/linux_code/linux_code.gyp:configuration',
         '<(AOS)/common/common.gyp:once',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:string_to_num',
       ],
     },
     {

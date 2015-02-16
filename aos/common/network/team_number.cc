@@ -2,10 +2,14 @@
 
 #include <netinet/in.h>
 #include <inttypes.h>
+#include <unistd.h>
+
+#include <string>
 
 #include "aos/common/once.h"
 #include "aos/linux_code/configuration.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/util/string_to_num.h"
 
 namespace aos {
 namespace network {
@@ -13,12 +17,41 @@ namespace {
 
 uint16_t override_team;
 
+::std::string GetHostname() {
+  char buf[256];
+  buf[sizeof(buf) - 1] = '\0';
+  PCHECK(gethostname(buf, sizeof(buf) - 1));
+  return buf;
+}
+
+int ParseTeamNumber(const std::string &hostname, uint16_t *teamnumber) {
+  for (size_t i = 0; i < hostname.size(); i++) {
+    if (hostname[i] == '-') {
+      const std::string num_as_s = hostname.substr(i + 1);
+
+      int num;
+      if (!::aos::util::StringToNumber(num_as_s, &num)) {
+        return -1;
+      }
+      if (hostname.substr(0, i) == "roboRIO" &&
+          std::to_string(num) == num_as_s) {
+        *teamnumber = num;
+        return 0;
+      } else {
+        return -1;
+      }
+    }
+  }
+  return -1;
+}
+
 uint16_t *DoGetTeamNumber() {
   if (override_team != 0) return &override_team;
-  const in_addr &address = configuration::GetOwnIPAddress();
-  static uint16_t r =
-      (((address.s_addr & 0xFF00) >> 8) * 100) +
-      (((address.s_addr & 0xFF0000) >> 16) & 0xFF);
+  static uint16_t r;
+  int error = ParseTeamNumber(GetHostname(), &r);
+  if (error) {
+    LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
+  }
   LOG(INFO, "team number is %" PRIu16 "\n", r);
   return &r;
 }
