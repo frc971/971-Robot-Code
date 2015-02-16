@@ -47,9 +47,6 @@ queue_group FridgeQueue {
   message Status {
     // Are both the arm and elevator zeroed?
     bool zeroed;
-    // Are we zeroed and have reached our goal position on both the arm and
-    // elevator?
-    bool done;
     
     // Angle of the arm.
     double angle;
@@ -58,7 +55,7 @@ queue_group FridgeQueue {
     // state of the grabber pistons
     GrabberPistons grabbers;
 
-    // TODO(austin): Internal state.
+    // If true, we have aborted.
     bool estopped;
 
     // The internal state of the state machine.

@@ -1,14 +1,10 @@
 package aos.control_loops;
 
-interface IsDone {
-  bool done;
-};
-
 interface ControlLoop {
   queue goal;
   queue position;
   queue output;
-  queue IsDone status;
+  queue status;
 };
 
 message Goal {

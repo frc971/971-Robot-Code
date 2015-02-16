@@ -508,8 +508,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   }
 
   // TODO(austin): Populate these fully.
-  status->zeroed = false;
-  status->done = false;
+  status->zeroed = state_ == RUNNING;
   status->angle = arm_loop_->X_hat(0, 0);
   status->height = elevator_loop_->X_hat(0, 0);
   if (unsafe_goal) {
