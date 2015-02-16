@@ -237,40 +237,38 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
           // TODO(sensors): Get actual bounds before turning on robot.
-          {
-            // Claw values, in radians.
-            // 0 is level with the ground.
-            // Positive moves in the direction of positive encoder values.
-            {-0.05, M_PI / 2.0 + 0.1,
-             0.0, M_PI / 2.0},
+          {// Claw values, in radians.
+           // 0 is level with the ground.
+           // Positive moves in the direction of positive encoder values.
+           {-0.05, M_PI / 2.0 + 0.1, 0.0, M_PI / 2.0},
 
-            // Zeroing constants for wrist.
-            // TODO(sensors): Get actual offsets for these.
-            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.977913},
-            6.1663463999999992,
+           // Zeroing constants for wrist.
+           // TODO(sensors): Get actual offsets for these.
+           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.977913},
+           6.1663463999999992,
           },
 
-          {
-            // Elevator values, in meters.
-            // 0 is at the top of the elevator frame.
-            // Positive is down towards the drivebase.
-            {-0.00500, 0.679000,
-             0.010000, 0.650000},
+          {// Elevator values, in meters.
+           // 0 is at the top of the elevator frame.
+           // Positive is down towards the drivebase.
+           {-0.00500, 0.679000, 0.010000, 0.650000},
 
-            // Arm values, in radians.
-            // 0 is sticking straight out horizontally over the intake/front.
-            // Positive is rotating up and into the robot (towards the back).
-            {-M_PI/2 - 0.05, M_PI/2 + 0.05,
-             -M_PI/2, M_PI/2},
+           // Arm values, in radians.
+           // 0 is sticking straight out horizontally over the intake/front.
+           // Positive is rotating up and into the robot (towards the back).
+           {-M_PI / 2 - 0.05, M_PI / 2 + 0.05, -M_PI / 2, M_PI / 2},
 
-            // Elevator zeroing constants: left, right.
-            // TODO(sensors): Get actual offsets for these.
-            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.016041},
-            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.011367},
-            // Arm zeroing constants: left, right.
-            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.312677},
-            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.396278},
-            0.72069366666666679, -0.078959636363636357, -3.4952331578947375, 3.5263507647058816,
+           // Elevator zeroing constants: left, right.
+           // TODO(sensors): Get actual offsets for these.
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.016041 + 0.001290},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.011367 + 0.003216},
+           // Arm zeroing constants: left, right.
+           {kZeroingSampleSize, kArmEncoderIndexDifference, -0.312677},
+           {kZeroingSampleSize, kArmEncoderIndexDifference, -0.40855},
+           0.72069366666666679 - 0.026008,
+           -0.078959636363636357 - 0.024646,
+           -3.4952331578947375 + 0.011776,
+           3.5263507647058816 - 0.018921 + 0.006545,
           },
           // TODO(sensors): End "sensor" values.
 

@@ -45,7 +45,7 @@ class Arm(control_loop.ControlLoop):
     self.J = self.r * self.mass
 
     # Arm left/right spring constant (N*m / radian)
-    self.spring = 3000.0
+    self.spring = 400.0
 
     # State is [average position, average velocity,
     #           position difference/2, velocity difference/2]
@@ -90,8 +90,8 @@ class Arm(control_loop.ControlLoop):
 
     q_pos = 0.02
     q_vel = 0.300
-    q_pos_diff = 0.01
-    q_vel_diff = 0.15
+    q_pos_diff = 0.005
+    q_vel_diff = 0.13
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0)), 0.0, 0.0],
                            [0.0, 0.0, (1.0 / (q_pos_diff ** 2.0)), 0.0],
@@ -244,7 +244,7 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name for the arm."
   else:
-    arm = Arm("Arm")
+    arm = Arm("Arm", 2)
     loop_writer = control_loop.ControlLoopWriter("Arm", [arm])
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])

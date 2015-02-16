@@ -41,7 +41,7 @@ class Elevator(control_loop.ControlLoop):
     self.dt = 0.005
 
     # Elevator left/right spring constant (N/m)
-    self.spring = 3000.0
+    self.spring = 800.0
 
     # State is [average position, average velocity,
     #           position difference/2, velocity difference/2]
