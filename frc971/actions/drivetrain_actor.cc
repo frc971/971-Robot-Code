@@ -45,9 +45,7 @@ void DrivetrainActor::RunAction() {
                                     2.0);
 
   while (true) {
-    // wait until next 10ms tick
-    // TODO(sensors): update this time thing for some reason.
-    ::aos::time::PhasedLoop10MS(5000);
+    ::aos::time::PhasedLoopXMS(5, 2500);
 
     control_loops::drivetrain_queue.status.FetchLatest();
     if (control_loops::drivetrain_queue.status.get()) {

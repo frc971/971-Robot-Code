@@ -74,7 +74,7 @@ void DriveSpin(double radians) {
   const double side_offset = kRobotWidth * radians / 2.0;
 
   while (true) {
-    ::aos::time::PhasedLoop10MS(5000);  // wait until next 10ms tick
+    ::aos::time::PhasedLoopXMS(5, 2500);
     driveTrainState = profile.Update(side_offset, goal_velocity);
 
     if (::std::abs(driveTrainState(0, 0) - side_offset) < epsilon) break;
@@ -100,7 +100,7 @@ void DriveSpin(double radians) {
 void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
   while (true) {
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoop10MS(5000);
+    ::aos::time::PhasedLoopXMS(5, 2500);
     if (!action->Running() || ShouldExitAuto()) {
       return;
     }
