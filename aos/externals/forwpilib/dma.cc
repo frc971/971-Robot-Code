@@ -380,7 +380,7 @@ int32_t DMASample::GetRaw(Encoder *input) const {
     return -1;
   }
 
-  if (encoder->GetFPGAIndex() >= 4) {
+  if (input->GetFPGAIndex() >= 4) {
     wpi_setStaticErrorWithContext(dma_,
         NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
@@ -435,12 +435,12 @@ uint16_t DMASample::GetValue(AnalogInput *input) const {
 
   uint32_t dmaWord;
   uint32_t channel = input->GetChannel();
-  if (input->GetChannel() <= 3) {
+  if (channel <= 3) {
     dmaWord = read_buffer_[offset(kEnable_AI0_Low) + channel / 2];
   } else {
     dmaWord = read_buffer_[offset(kEnable_AI0_High) + (channel - 4) / 2];
   }
-  if (channel % 1) {
+  if (channel % 2) {
     return (dmaWord >> 16) & 0xffff;
   } else {
     return (dmaWord) & 0xffff;
