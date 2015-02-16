@@ -489,10 +489,10 @@ class FridgeWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::fridge_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_arm_talon_->Set(-queue->left_arm / 12.0);
-    right_arm_talon_->Set(queue->right_arm / 12.0);
-    left_elevator_talon_->Set(-queue->left_elevator / 12.0);
-    right_elevator_talon_->Set(queue->right_elevator / 12.0);
+    left_arm_talon_->Set(queue->left_arm / 12.0);
+    right_arm_talon_->Set(-queue->right_arm / 12.0);
+    left_elevator_talon_->Set(queue->left_elevator / 12.0);
+    right_elevator_talon_->Set(-queue->right_elevator / 12.0);
   }
 
   virtual void Stop() override {
