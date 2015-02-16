@@ -62,7 +62,7 @@ double drivetrain_translate(int32_t in) {
 }
 
 double arm_translate(int32_t in) {
-  return static_cast<double>(in) /
+  return -static_cast<double>(in) /
           (512.0 /*cpr*/ * 4.0 /*4x*/) *
           constants::GetValues().arm_encoder_ratio *
           (2 * M_PI /*radians*/);
@@ -84,7 +84,7 @@ double elevator_translate(int32_t in) {
 }
 
 double elevator_potentiometer_translate(double voltage) {
-  return voltage *
+  return -voltage *
           constants::GetValues().elev_pot_ratio *
           (2 * M_PI /*radians*/) *
           constants::GetValues().elev_distance_per_radian *
@@ -99,7 +99,7 @@ double claw_translate(int32_t in) {
 }
 
 double claw_potentiometer_translate(double voltage) {
-  return voltage *
+  return -voltage *
           constants::GetValues().claw_pot_ratio *
           (5.0 /*turns*/ / 5.0 /*volts*/) *
           (2 * M_PI /*radians*/);
@@ -267,19 +267,19 @@ class SensorReader {
       auto fridge_message = fridge_queue.position.MakeMessage();
       CopyPotAndIndexPosition(arm_left_encoder_, &fridge_message->arm.left,
                               arm_translate, arm_potentiometer_translate, false,
-                              values.fridge.left_elevator_potentiometer_offset);
+                              values.fridge.left_arm_potentiometer_offset);
       CopyPotAndIndexPosition(
           arm_right_encoder_, &fridge_message->arm.right, arm_translate,
           arm_potentiometer_translate, true,
-          values.fridge.right_elevator_potentiometer_offset);
+          values.fridge.right_arm_potentiometer_offset);
       CopyPotAndIndexPosition(
           elevator_left_encoder_, &fridge_message->elevator.left,
           elevator_translate, elevator_potentiometer_translate, false,
-          values.fridge.left_arm_potentiometer_offset);
+          values.fridge.left_elevator_potentiometer_offset);
       CopyPotAndIndexPosition(
           elevator_right_encoder_, &fridge_message->elevator.right,
           elevator_translate, elevator_potentiometer_translate, true,
-          values.fridge.right_arm_potentiometer_offset);
+          values.fridge.right_elevator_potentiometer_offset);
       fridge_message.Send();
     }
 
