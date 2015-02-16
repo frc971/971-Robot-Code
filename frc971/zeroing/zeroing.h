@@ -102,6 +102,12 @@ class ZeroingEstimator {
   // Marker to track whether an error has occurred. This gets reset to false
   // whenever Reset() is called.
   bool error_;
+  // Stores the position "start_pos" variable the first time the program
+  // is zeroed.
+  double first_start_pos_;
+  // Value between 0 and 1 which determines a fraction of the index_diff
+  // you want to use.
+  double allowable_encoder_error_;
 };
 
 // Populates an EstimatorState struct with information from the zeroing

@@ -20,6 +20,7 @@ using constants::Values;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
+static const double kIndexErrorFraction = 0.3;
 
 class ZeroingTest : public ::testing::Test {
  protected:
@@ -40,8 +41,8 @@ TEST_F(ZeroingTest, TestMovingAverageFilter) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -64,8 +65,8 @@ TEST_F(ZeroingTest, NotZeroedBeforeEnoughSamplesCollected) {
   double position = 3.6 * index_diff;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(position, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure that the zeroing code does not consider itself zeroed until we
   // collect a good amount of samples. In this case we're waiting until the
@@ -83,8 +84,8 @@ TEST_F(ZeroingTest, TestLotsOfMovement) {
   double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -116,8 +117,8 @@ TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -150,8 +151,8 @@ TEST_F(ZeroingTest, TestPercentage) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   for (unsigned int i = 0; i < kSampleSize / 2; i++) {
     MoveTo(&sim, &estimator, 3.5 * index_diff);
@@ -163,8 +164,8 @@ TEST_F(ZeroingTest, TestOffset) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   MoveTo(&sim, &estimator, 3.1 * index_diff);
 
@@ -179,8 +180,8 @@ TEST_F(ZeroingTest, WaitForIndexPulseAfterReset) {
   double index_diff = 0.6;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
   for (unsigned int i = 0; i < kSampleSize; i++) {
@@ -214,8 +215,8 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
   const double known_index_pos = 3.5 * index_diff;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.3 * index_diff, index_diff / 3.0, known_index_pos);
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, known_index_pos});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, known_index_pos, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
   for (unsigned int i = 0; i < kSampleSize; i++) {
@@ -239,8 +240,8 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
 
 TEST_F(ZeroingTest, BasicErrorAPITest) {
   const double index_diff = 1.0;
-  ZeroingEstimator estimator(
-      Values::ZeroingConstants{kSampleSize, index_diff, 0.0});
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(1.5 * index_diff, index_diff / 3.0, 0.0);
 
@@ -258,6 +259,38 @@ TEST_F(ZeroingTest, BasicErrorAPITest) {
   MoveTo(&sim, &estimator, 4.5 * index_diff);
   MoveTo(&sim, &estimator, 5.5 * index_diff);
   ASSERT_FALSE(estimator.error());
+}
+
+// I want to test that the the zeroing class can
+// detect an error when the starting position
+// changes too much. I do so by creating the
+// simulator at an 'X' positon, making sure
+// that the estimator is zeroed, and then
+// initializing the simulator at another
+// position. After making sure it's zeroed,
+// if the error() function returns true,
+// then, it works.
+TEST_F(ZeroingTest, TestOffsetError) {
+  const double index_diff = 0.8;
+  const double known_index_pos = 2 * index_diff;
+  int sample_size = 30;
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(10 * index_diff, index_diff / 3.0, known_index_pos);
+  ZeroingEstimator estimator(Values::ZeroingConstants{
+      sample_size, index_diff, known_index_pos, kIndexErrorFraction});
+
+  for (int i = 0; i < sample_size; i++) {
+    MoveTo(&sim, &estimator, 13 * index_diff);
+  }
+  MoveTo(&sim, &estimator, 8 * index_diff);
+
+  ASSERT_TRUE(estimator.zeroed());
+  ASSERT_FALSE(estimator.error());
+  sim.Initialize(9.0 * index_diff + 0.31 * index_diff, index_diff / 3.0,
+                 known_index_pos);
+  MoveTo(&sim, &estimator, 9 * index_diff);
+  ASSERT_TRUE(estimator.zeroed());
+  ASSERT_TRUE(estimator.error());
 }
 
 }  // namespace zeroing

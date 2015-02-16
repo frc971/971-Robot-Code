@@ -52,8 +52,7 @@ void Claw::Correct() {
 }
 
 void Claw::SetClawOffset(double offset) {
-  LOG(INFO, "Changing claw offset from %f to %f.\n",
-      claw_offset_, offset);
+  LOG(INFO, "Changing claw offset from %f to %f.\n", claw_offset_, offset);
   const double doffset = offset - claw_offset_;
 
   // Adjust the height. The derivative should not need to be updated since the
@@ -109,11 +108,10 @@ double Claw::claw_zeroing_velocity() {
   return claw_zeroing_velocity_;
 }
 
-void Claw::RunIteration(
-    const control_loops::ClawQueue::Goal *unsafe_goal,
-    const control_loops::ClawQueue::Position *position,
-    control_loops::ClawQueue::Output *output,
-    control_loops::ClawQueue::Status *status) {
+void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
+                        const control_loops::ClawQueue::Position *position,
+                        control_loops::ClawQueue::Output *output,
+                        control_loops::ClawQueue::Status *status) {
   const auto &values = constants::GetValues();
 
   if (WasReset()) {
@@ -168,8 +166,8 @@ void Claw::RunIteration(
         SetClawOffset(claw_estimator_.offset());
       } else if (!disable) {
         claw_goal_velocity = claw_zeroing_velocity();
-        claw_goal_ += claw_goal_velocity *
-            ::aos::controls::kLoopFrequency.ToSeconds();
+        claw_goal_ +=
+            claw_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
       }
       break;
 
@@ -226,8 +224,7 @@ void Claw::RunIteration(
       double deltaR = claw_loop_->UnsaturateOutputGoalChange();
 
       // Move the claw goal by the amount observed.
-      LOG(WARNING, "Moving claw goal by %f to handle saturation.\n",
-          deltaR);
+      LOG(WARNING, "Moving claw goal by %f to handle saturation.\n", deltaR);
       claw_goal_ += deltaR;
     }
   }
@@ -260,9 +257,11 @@ void Claw::RunIteration(
   status->goal_angle = claw_goal_;
 
   if (output) {
-    status->rollers_open = !output->rollers_closed &&
+    status->rollers_open =
+        !output->rollers_closed &&
         (Time::Now() - last_piston_edge_ >= values.claw.piston_switch_time);
-    status->rollers_closed = output->rollers_closed &&
+    status->rollers_closed =
+        output->rollers_closed &&
         (Time::Now() - last_piston_edge_ >= values.claw.piston_switch_time);
   } else {
     status->rollers_open = false;

@@ -63,6 +63,9 @@ struct Values {
     double index_difference;
     // The absolute position in scaled units of one of the index pulses.
     double measured_index_position;
+    // Value between 0 and 1 which determines a fraction of the index_diff
+    // you want to use.
+    double allowable_encoder_error;
   };
 
   // Defines a range of motion for a subsystem.

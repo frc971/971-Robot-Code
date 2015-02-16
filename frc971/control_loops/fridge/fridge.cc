@@ -23,7 +23,6 @@ constexpr double kElevatorSafeHeightVelocity = 0.2;
 constexpr double kArmZeroingVelocity = 0.20;
 }  // namespace
 
-
 template <int S>
 void CappedStateFeedbackLoop<S>::CapU() {
   VoltageCap(max_voltage_, this->U(0, 0), this->U(1, 0), &this->mutable_U(0, 0),
@@ -67,10 +66,9 @@ void Fridge::UpdateZeroingState() {
       right_arm_estimator_.offset_ratio_ready() < 1.0) {
     state_ = INITIALIZING;
   } else if (!left_elevator_estimator_.zeroed() ||
-      !right_elevator_estimator_.zeroed()) {
+             !right_elevator_estimator_.zeroed()) {
     state_ = ZEROING_ELEVATOR;
-  } else if (!left_arm_estimator_.zeroed() ||
-      !right_arm_estimator_.zeroed()) {
+  } else if (!left_arm_estimator_.zeroed() || !right_arm_estimator_.zeroed()) {
     state_ = ZEROING_ARM;
   } else {
     state_ = RUNNING;
@@ -330,7 +328,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       } else if (!disable) {
         elevator_goal_velocity = elevator_zeroing_velocity();
         elevator_goal_ += elevator_goal_velocity *
-            ::aos::controls::kLoopFrequency.ToSeconds();
+                          ::aos::controls::kLoopFrequency.ToSeconds();
       }
       break;
 
@@ -346,8 +344,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         LOG(DEBUG, "Zeroed the arm!\n");
       } else if (!disable) {
         arm_goal_velocity = arm_zeroing_velocity();
-        arm_goal_ += arm_goal_velocity *
-            ::aos::controls::kLoopFrequency.ToSeconds();
+        arm_goal_ +=
+            arm_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
       }
       break;
 
@@ -530,14 +528,13 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     status->grabbers.bottom_front = false;
     status->grabbers.bottom_back = false;
   }
-  zeroing::PopulateEstimatorState(left_arm_estimator_,
-                                  &status->left_arm_state);
+  zeroing::PopulateEstimatorState(left_arm_estimator_, &status->left_arm_state);
   zeroing::PopulateEstimatorState(right_arm_estimator_,
                                   &status->right_arm_state);
   zeroing::PopulateEstimatorState(left_elevator_estimator_,
-                         &status->left_elevator_state);
+                                  &status->left_elevator_state);
   zeroing::PopulateEstimatorState(right_elevator_estimator_,
-                         &status->right_elevator_state);
+                                  &status->right_elevator_state);
   status->estopped = (state_ == ESTOP);
   status->state = state_;
   last_state_ = state_;

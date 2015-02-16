@@ -37,8 +37,7 @@ class ClawCappedStateFeedbackLoop : public StateFeedbackLoop<2, 1, 1> {
   double max_voltage_;
 };
 
-class Claw
-    : public aos::controls::ControlLoop<control_loops::ClawQueue> {
+class Claw : public aos::controls::ControlLoop<control_loops::ClawQueue> {
  public:
   enum State {
     // Waiting to receive data before doing anything.
@@ -59,11 +58,10 @@ class Claw
       control_loops::ClawQueue *claw_queue = &control_loops::claw_queue);
 
  protected:
-  virtual void RunIteration(
-      const control_loops::ClawQueue::Goal *goal,
-      const control_loops::ClawQueue::Position *position,
-      control_loops::ClawQueue::Output *output,
-      control_loops::ClawQueue::Status *status);
+  virtual void RunIteration(const control_loops::ClawQueue::Goal *goal,
+                            const control_loops::ClawQueue::Position *position,
+                            control_loops::ClawQueue::Output *output,
+                            control_loops::ClawQueue::Status *status);
 
  private:
   friend class testing::ClawTest_DisabledGoal_Test;
@@ -112,5 +110,4 @@ class Claw
 }  // namespace control_loops
 }  // namespace frc971
 
-#endif // FRC971_CONTROL_LOOPS_CLAW_H_
-
+#endif  // FRC971_CONTROL_LOOPS_CLAW_H_
