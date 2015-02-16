@@ -187,10 +187,10 @@ double Fridge::elevator_zeroing_velocity() {
       elevator_zeroing_velocity_ = kElevatorZeroingVelocity;
     }
   } else if (elevator_zeroing_velocity_ > 0 &&
-             estimated_elevator() > average_elevator + 2 * pulse_width) {
+             estimated_elevator() > average_elevator + 1.1 * pulse_width) {
     elevator_zeroing_velocity_ = -kElevatorZeroingVelocity;
   } else if (elevator_zeroing_velocity_ < 0 &&
-             estimated_elevator() < average_elevator - 2 * pulse_width) {
+             estimated_elevator() < average_elevator - 1.1 * pulse_width) {
     elevator_zeroing_velocity_ = kElevatorZeroingVelocity;
   }
   return elevator_zeroing_velocity_;
@@ -211,14 +211,23 @@ double Fridge::arm_zeroing_velocity() {
       arm_zeroing_velocity_ = kArmZeroingVelocity;
     }
   } else if (arm_zeroing_velocity_ > 0.0 &&
-             estimated_arm() > average_arm + 2.0 * pulse_width) {
+             estimated_arm() > average_arm + 1.1 * pulse_width) {
     arm_zeroing_velocity_ = -kArmZeroingVelocity;
   } else if (arm_zeroing_velocity_ < 0.0 &&
-             estimated_arm() < average_arm - 2.0 * pulse_width) {
+             estimated_arm() < average_arm - 1.1 * pulse_width) {
     arm_zeroing_velocity_ = kArmZeroingVelocity;
   }
   return arm_zeroing_velocity_;
 }
+
+namespace {
+void PopulateEstimatorState(const zeroing::ZeroingEstimator &estimator,
+                            EstimatorState *state) {
+  state->error = estimator.error();
+  state->zeroed = estimator.zeroed();
+  state->position = estimator.position();
+}
+}  // namespace
 
 void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
                           const control_loops::FridgeQueue::Position *position,
@@ -509,6 +518,12 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     status->grabbers.bottom_front = false;
     status->grabbers.bottom_back = false;
   }
+  PopulateEstimatorState(left_arm_estimator_, &status->left_arm_state);
+  PopulateEstimatorState(right_arm_estimator_, &status->right_arm_state);
+  PopulateEstimatorState(left_elevator_estimator_,
+                         &status->left_elevator_state);
+  PopulateEstimatorState(right_elevator_estimator_,
+                         &status->right_elevator_state);
   status->estopped = (state_ == ESTOP);
   status->state = state_;
   last_state_ = state_;

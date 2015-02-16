@@ -12,6 +12,16 @@ struct GrabberPistons {
   bool bottom_back;
 };
 
+// The internal state of the zeroing estimator.
+struct EstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  bool error;
+  // If the joint has seen an index pulse and is zeroed.
+  bool zeroed;
+  // The estimated position of the joint.
+  double position;
+};
+
 queue_group FridgeQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -60,6 +70,11 @@ queue_group FridgeQueue {
 
     // The internal state of the state machine.
     int32_t state;
+
+    EstimatorState left_elevator_state;
+    EstimatorState right_elevator_state;
+    EstimatorState left_arm_state;
+    EstimatorState right_arm_state;
   };
 
   message Output {
