@@ -206,12 +206,13 @@ class SensorReader {
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(new DMASynchronizer(::std::move(dma)));
     dma_synchronizer_->Add(&arm_left_encoder_);
-    dma_synchronizer_->Add(&arm_right_encoder_);
     dma_synchronizer_->Add(&elevator_left_encoder_);
+    dma_synchronizer_->Add(&arm_right_encoder_);
     dma_synchronizer_->Add(&elevator_right_encoder_);
   }
 
   void operator()() {
+    LOG(INFO, "In sensor reader thread\n");
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
@@ -219,6 +220,7 @@ class SensorReader {
 
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
+    LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -504,8 +506,12 @@ class FridgeWriter : public LoopOutputHandler {
 
 class ClawWriter : public LoopOutputHandler {
  public:
-  void set_intake_talon(::std::unique_ptr<Talon> t) {
-    intake_talon_ = ::std::move(t);
+  void set_left_intake_talon(::std::unique_ptr<Talon> t) {
+    left_intake_talon_ = ::std::move(t);
+  }
+
+  void set_right_intake_talon(::std::unique_ptr<Talon> t) {
+    right_intake_talon_ = ::std::move(t);
   }
 
   void set_wrist_talon(::std::unique_ptr<Talon> t) {
@@ -520,17 +526,20 @@ class ClawWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon_->Set(queue->intake_voltage / 12.0);
+    left_intake_talon_->Set(queue->intake_voltage / 12.0);
+    right_intake_talon_->Set(queue->intake_voltage / 12.0);
     wrist_talon_->Set(queue->voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Claw output too old.\n");
-    intake_talon_->Disable();
+    left_intake_talon_->Disable();
+    right_intake_talon_->Disable();
     wrist_talon_->Disable();
   }
 
-  ::std::unique_ptr<Talon> intake_talon_;
+  ::std::unique_ptr<Talon> left_intake_talon_;
+  ::std::unique_ptr<Talon> right_intake_talon_;
   ::std::unique_ptr<Talon> wrist_talon_;
 };
 
@@ -543,38 +552,44 @@ std::unique_ptr<T> make_unique(U &&... u) {
 
 class WPILibRobot : public RobotBase {
  public:
+  ::std::unique_ptr<Encoder> encoder(int index) {
+    return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
+                                Encoder::k4X);
+  }
   virtual void StartCompetition() {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
     JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
+    // TODO(austin): Compressor needs to use a spike.
     ::std::unique_ptr<Compressor> compressor(new Compressor());
     compressor->SetClosedLoopControl(true);
 
     SensorReader reader;
-    // TODO(sensors): Replace all the 99s with real port numbers.
-    reader.set_arm_left_encoder(
-        make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_arm_left_index(make_unique<DigitalInput>(99));
-    reader.set_arm_left_potentiometer(make_unique<AnalogInput>(99));
-    reader.set_arm_right_encoder(
-        make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_arm_right_index(make_unique<DigitalInput>(99));
-    reader.set_arm_right_potentiometer(make_unique<AnalogInput>(99));
-    reader.set_elevator_left_encoder(
-        make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_elevator_left_index(make_unique<DigitalInput>(99));
-    reader.set_elevator_left_potentiometer(make_unique<AnalogInput>(99));
-    reader.set_elevator_right_encoder(
-        make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_elevator_right_index(make_unique<DigitalInput>(99));
-    reader.set_elevator_right_potentiometer(make_unique<AnalogInput>(99));
-    reader.set_wrist_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_wrist_index(make_unique<DigitalInput>(99));
-    reader.set_wrist_potentiometer(make_unique<AnalogInput>(99));
-    reader.set_left_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
-    reader.set_right_encoder(make_unique<Encoder>(99, 99, false, Encoder::k4X));
+    LOG(INFO, "Creating the reader\n");
+    reader.set_arm_left_encoder(encoder(1));
+    reader.set_arm_left_index(make_unique<DigitalInput>(1));
+    reader.set_arm_left_potentiometer(make_unique<AnalogInput>(1));
+
+    reader.set_arm_right_encoder(encoder(5));
+    reader.set_arm_right_index(make_unique<DigitalInput>(5));
+    reader.set_arm_right_potentiometer(make_unique<AnalogInput>(5));
+
+    reader.set_elevator_left_encoder(encoder(0));
+    reader.set_elevator_left_index(make_unique<DigitalInput>(0));
+    reader.set_elevator_left_potentiometer(make_unique<AnalogInput>(0));
+
+    reader.set_elevator_right_encoder(encoder(4));
+    reader.set_elevator_right_index(make_unique<DigitalInput>(4));
+    reader.set_elevator_right_potentiometer(make_unique<AnalogInput>(4));
+
+    reader.set_wrist_encoder(encoder(6));
+    reader.set_wrist_index(make_unique<DigitalInput>(6));
+    reader.set_wrist_potentiometer(make_unique<AnalogInput>(6));
+
+    reader.set_left_encoder(encoder(2));
+    reader.set_right_encoder(encoder(3));
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
@@ -582,39 +597,41 @@ class WPILibRobot : public RobotBase {
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_left_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(5)));
+        ::std::unique_ptr<Talon>(new Talon(8)));
     drivetrain_writer.set_right_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(2)));
+        ::std::unique_ptr<Talon>(new Talon(0)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     // TODO(sensors): Get real PWM output and relay numbers for the fridge and
     // claw.
     FridgeWriter fridge_writer;
     fridge_writer.set_left_arm_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+        ::std::unique_ptr<Talon>(new Talon(6)));
     fridge_writer.set_right_arm_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+        ::std::unique_ptr<Talon>(new Talon(2)));
     fridge_writer.set_left_elevator_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+        ::std::unique_ptr<Talon>(new Talon(7)));
     fridge_writer.set_right_elevator_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+        ::std::unique_ptr<Talon>(new Talon(1)));
     ::std::thread fridge_writer_thread(::std::ref(fridge_writer));
 
     ClawWriter claw_writer;
-    claw_writer.set_intake_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+    claw_writer.set_left_intake_talon(
+        ::std::unique_ptr<Talon>(new Talon(5)));
+    claw_writer.set_right_intake_talon(
+        ::std::unique_ptr<Talon>(new Talon(3)));
     claw_writer.set_wrist_talon(
-        ::std::unique_ptr<Talon>(new Talon(99)));
+        ::std::unique_ptr<Talon>(new Talon(4)));
     ::std::thread claw_writer_thread(::std::ref(claw_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_fridge_grabbers_top_front(pcm->MakeSolenoid(99));
-    solenoid_writer.set_fridge_grabbers_top_back(pcm->MakeSolenoid(99));
-    solenoid_writer.set_fridge_grabbers_bottom_front(pcm->MakeSolenoid(99));
-    solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(99));
-    solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(99));
+    solenoid_writer.set_fridge_grabbers_top_front(pcm->MakeSolenoid(1));
+    solenoid_writer.set_fridge_grabbers_top_back(pcm->MakeSolenoid(1));
+    solenoid_writer.set_fridge_grabbers_bottom_front(pcm->MakeSolenoid(2));
+    solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(3));
+    solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(0));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...

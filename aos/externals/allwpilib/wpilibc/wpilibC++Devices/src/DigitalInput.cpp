@@ -140,10 +140,6 @@ void DigitalGlitchFilter::Add(DigitalSource *input) {
 
   HALReport(HALUsageReporting::kResourceType_DigitalInput,
             input->GetChannelForRouting());
-
-  printf("Source filter %d is %d\n", input->GetChannelForRouting(),
-         getFilterSelect(input->m_digital_ports[input->GetChannelForRouting()],
-                         &status));
 }
 
 void DigitalGlitchFilter::Remove(DigitalSource *input) {

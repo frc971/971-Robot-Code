@@ -107,7 +107,7 @@ void GyroSender::operator()() {
       //   Some kind of indicator light?
       {
         message->angle = new_angle;
-        LOG_STRUCT(DEBUG, "collected", *message);
+        LOG_STRUCT(DEBUG, "collected while zeroing", *message);
       }
       zeroing_data[zeroing_index] = new_angle;
       ++zeroing_index;
