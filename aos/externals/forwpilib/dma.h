@@ -34,7 +34,7 @@ class DMASample {
   // Returns the {1, 2, or 4} X scaled value of the encoder in the sample.
   int32_t Get(Encoder *input) const;
   // Returns the raw 12-bit value from the ADC.
-  int16_t GetValue(AnalogInput *input) const;
+  uint16_t GetValue(AnalogInput *input) const;
   // Returns the scaled value of an analog input.
   float GetVoltage(AnalogInput *input) const;
 

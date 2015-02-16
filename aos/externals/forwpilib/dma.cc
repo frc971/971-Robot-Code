@@ -1,11 +1,14 @@
 #include "dma.h"
 
+#include <string.h>
+
 #include <algorithm>
 #include <type_traits>
 
 #include "DigitalSource.h"
 #include "AnalogInput.h"
 #include "Encoder.h"
+
 
 // Interface to the roboRIO FPGA's DMA features.
 
@@ -49,7 +52,9 @@ enum DMAOffsetConstants {
 DMA::DMA() {
   tRioStatusCode status = 0;
   tdma_config_ = tDMA::create(&status);
+  tdma_config_->writeConfig_ExternalClock(false, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  NiFpga_WriteU32(0x10000, 0x1832c, 0x0);
   if (status != 0) {
     return;
   }
@@ -79,7 +84,7 @@ void DMA::SetRate(uint32_t cycles) {
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 }
 
-void DMA::Add(Encoder * /*encoder*/) {
+void DMA::Add(Encoder *encoder) {
   tRioStatusCode status = 0;
 
   if (manager_) {
@@ -87,9 +92,11 @@ void DMA::Add(Encoder * /*encoder*/) {
         "DMA::Add() only works before DMA::Start()");
     return;
   }
-
-  fprintf(stderr, "DMA::Add(Encoder*) needs re-testing. aborting\n");
-  abort();
+  if (encoder->GetFPGAIndex() >= 4) {
+    wpi_setErrorWithContext(
+        NiFpga_Status_InvalidParameter,
+        "FPGA encoder index is not in the 4 that get logged.");
+  }
 
   // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
   tdma_config_->writeConfig_Enable_Encoders(true, &status);
@@ -118,10 +125,6 @@ void DMA::Add(AnalogInput *input) {
     return;
   }
 
-  fprintf(stderr, "DMA::Add(AnalogInput*) needs testing. aborting\n");
-  abort();
-
-  // TODO(brian): Figure out if this math is actually correct.
   if (input->GetChannel() <= 3) {
     tdma_config_->writeConfig_Enable_AI0_Low(true, &status);
   } else {
@@ -143,49 +146,62 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
       ::std::find(trigger_channels_.begin(), trigger_channels_.end(), false);
   if (index == trigger_channels_.end()) {
     wpi_setErrorWithContext(NiFpga_Status_InvalidParameter,
-        "DMA: No channels left");
+                            "DMA: No channels left");
     return;
   }
   *index = true;
 
   const int channel_index = index - trigger_channels_.begin();
+  /*
+  printf(
+      "Allocating trigger on index %d, routing module %d, routing channel %d, "
+      "is analog %d\n",
+      channel_index, input->GetModuleForRouting(),
+      input->GetChannelForRouting(), input->GetAnalogTriggerForRouting());
+  */
 
-  tdma_config_->writeConfig_ExternalClock(true, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
+  const bool is_external_clock =
+      tdma_config_->readConfig_ExternalClock(&status);
+  if (status == 0) {
+    if (!is_external_clock) {
+      tdma_config_->writeConfig_ExternalClock(true, &status);
+      wpi_setErrorWithContext(status, getHALErrorMessage(status));
+      if (status != 0) {
+        return;
+      }
+    }
+  } else {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
     return;
   }
+
+  nFPGA::nFRC_2015_1_0_A::tDMA::tExternalTriggers new_trigger;
+
+  new_trigger.FallingEdge = falling;
+  new_trigger.RisingEdge = rising;
+  new_trigger.ExternalClockSource_AnalogTrigger =
+      input->GetAnalogTriggerForRouting();
+  new_trigger.ExternalClockSource_AnalogTrigger = false;
+  new_trigger.ExternalClockSource_Module = input->GetModuleForRouting();
+  new_trigger.ExternalClockSource_Channel = input->GetChannelForRouting();
 
   // Configures the trigger to be external, not off the FPGA clock.
-  tdma_config_->writeExternalTriggers_ExternalClockSource_Channel(
-      channel_index, input->GetChannelForRouting(), &status);
+  /*
+  tdma_config_->writeExternalTriggers(channel_index, new_trigger, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
-    return;
-  }
+  */
 
-  tdma_config_->writeExternalTriggers_ExternalClockSource_Module(
-      channel_index, input->GetModuleForRouting(), &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
+  uint32_t current_triggers;
+  tRioStatusCode register_status = NiFpga_ReadU32(0x10000, 0x1832c, &current_triggers);
+  if (register_status != 0) {
+    wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
     return;
   }
-  tdma_config_->writeExternalTriggers_ExternalClockSource_AnalogTrigger(
-      channel_index, input->GetAnalogTriggerForRouting(), &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
-    return;
-  }
-  tdma_config_->writeExternalTriggers_RisingEdge(channel_index, rising,
-                                                 &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
-    return;
-  }
-  tdma_config_->writeExternalTriggers_FallingEdge(channel_index, falling,
-                                                  &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  if (status != 0) {
+  current_triggers = (current_triggers & ~(0xff << (channel_index * 8))) |
+                     (new_trigger.value << (channel_index * 8));
+  register_status = NiFpga_WriteU32(0x10000, 0x1832c, current_triggers);
+  if (register_status != 0) {
+    wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
     return;
   }
 }
@@ -203,7 +219,7 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   }
 
   sample->dma_ = this;
-  // memset(&sample->read_buffer_, 0, sizeof(read_buffer_));
+  // memset(&sample->read_buffer_, 0, sizeof(sample->read_buffer_));
   manager_->read(sample->read_buffer_, capture_size_, timeout_ms,
                  &remainingBytes, &status);
 
@@ -288,7 +304,25 @@ void DMA::Start(size_t queue_depth) {
     capture_size_ = accum_size + 1;
   }
 
-  manager_.reset(new nFPGA::tDMAManager(0, queue_depth * capture_size_, &status));
+  manager_.reset(
+      new nFPGA::tDMAManager(0, queue_depth * capture_size_, &status));
+
+  if (0) {
+    for (int i = 0; i < 4; ++i) {
+      tRioStatusCode status = 0;
+      auto x = tdma_config_->readExternalTriggers(i, &status);
+      printf(
+          "index %d, FallingEdge: %d, RisingEdge: %d, "
+          "ExternalClockSource_AnalogTrigger: %d, ExternalClockSource_Module: "
+          "%d, ExternalClockSource_Channel: %d\n",
+          i, x.FallingEdge, x.RisingEdge, x.ExternalClockSource_AnalogTrigger,
+          x.ExternalClockSource_Module, x.ExternalClockSource_Channel);
+      if (status != 0) {
+        wpi_setErrorWithContext(status, getHALErrorMessage(status));
+      }
+    }
+  }
+
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
   if (status != 0) {
     return;
@@ -309,6 +343,7 @@ void DMA::Start(size_t queue_depth) {
   if (status != 0) {
     return;
   }
+
 }
 
 static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
@@ -343,6 +378,12 @@ int32_t DMASample::GetRaw(Encoder *input) const {
         NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
     return -1;
+  }
+
+  if (encoder->GetFPGAIndex() >= 4) {
+    wpi_setStaticErrorWithContext(dma_,
+        NiFpga_Status_ResourceNotFound,
+        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
   }
 
   uint32_t dmaWord =
@@ -384,28 +425,32 @@ int32_t DMASample::Get(Encoder *input) const {
   return raw / input->GetEncodingScale();
 }
 
-int16_t DMASample::GetValue(AnalogInput *input) const {
+uint16_t DMASample::GetValue(AnalogInput *input) const {
   if (offset(kEnable_Encoders) == -1) {
     wpi_setStaticErrorWithContext(dma_,
         NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
-    return -1;
+    return 0xffff;
   }
 
   uint32_t dmaWord;
-  // TODO(brian): Figure out if this math is actually correct.
+  uint32_t channel = input->GetChannel();
   if (input->GetChannel() <= 3) {
-    dmaWord = read_buffer_[offset(kEnable_AI0_Low) + input->GetChannel()];
+    dmaWord = read_buffer_[offset(kEnable_AI0_Low) + channel / 2];
   } else {
-    dmaWord = read_buffer_[offset(kEnable_AI0_High) + input->GetChannel() - 4];
+    dmaWord = read_buffer_[offset(kEnable_AI0_High) + (channel - 4) / 2];
   }
-  // TODO(brian): Verify that this is correct.
+  if (channel % 1) {
+    return (dmaWord >> 16) & 0xffff;
+  } else {
+    return (dmaWord) & 0xffff;
+  }
   return static_cast<int16_t>(dmaWord);
 }
 
 float DMASample::GetVoltage(AnalogInput *input) const {
-  int16_t value = GetValue(input);
-  if (value == -1) return 0.0;
+  uint16_t value = GetValue(input);
+  if (value == 0xffff) return 0.0;
   uint32_t lsb_weight = input->GetLSBWeight();
   int32_t offset = input->GetOffset();
   float voltage = lsb_weight * 1.0e-9 * value - offset * 1.0e-9;
