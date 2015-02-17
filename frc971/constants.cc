@@ -55,6 +55,8 @@ const double kElevatorGearboxOutputRadianDistance =
     kElevatorGearboxOutputPulleyTeeth * kElevatorGearboxOutputPitch /
     (2.0 * M_PI);
 
+const double kArmZeroingHeight = 0.2;
+
 const double kMaxAllowedLeftRightArmDifference = 0.04;  // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
 
@@ -147,6 +149,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             0.0, 0.0, 0.0, 0.0,
+
+            kArmZeroingHeight,
           },
           // End "sensor" values.
 
@@ -214,6 +218,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
             0.0, 0.0, 0.0, 0.0,
+
+            kArmZeroingHeight,
           },
           // End "sensor" values.
 
@@ -280,6 +286,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            -0.078959636363636357 - 0.024646,
            -3.4952331578947375 + 0.011776,
            3.5263507647058816 - 0.018921 + 0.006545,
+
+           kArmZeroingHeight,
           },
           // TODO(sensors): End "sensor" values.
 

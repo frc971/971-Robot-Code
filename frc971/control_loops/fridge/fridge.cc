@@ -18,6 +18,8 @@ namespace control_loops {
 namespace {
 constexpr double kZeroingVoltage = 4.0;
 constexpr double kElevatorZeroingVelocity = 0.10;
+// What speed we move to our safe height at.
+constexpr double kElevatorSafeHeightVelocity = 0.2;
 constexpr double kArmZeroingVelocity = 0.20;
 }  // namespace
 
@@ -308,6 +310,20 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         SetElevatorOffset(left_elevator_estimator_.offset(),
                           right_elevator_estimator_.offset());
         LOG(DEBUG, "Zeroed the elevator!\n");
+
+        if (elevator() > values.fridge.arm_zeroing_height &&
+            state_ != INITIALIZING) {
+          // Move the elevator to a safe height before we start zeroing the arm,
+          // so that we don't crash anything.
+          LOG(DEBUG, "Moving elevator to safe height.\n");
+          elevator_goal_ += kElevatorSafeHeightVelocity *
+                            ::aos::controls::kLoopFrequency.ToSeconds();
+          elevator_goal_velocity = kElevatorSafeHeightVelocity;
+
+          state_ = ZEROING_ELEVATOR;
+          break;
+        }
+
       } else if (!disable) {
         elevator_goal_velocity = elevator_zeroing_velocity();
         elevator_goal_ += elevator_goal_velocity *

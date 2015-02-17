@@ -18,6 +18,7 @@ class FridgeTest_ArmGoalPositiveWindupTest_Test;
 class FridgeTest_ElevatorGoalPositiveWindupTest_Test;
 class FridgeTest_ArmGoalNegativeWindupTest_Test;
 class FridgeTest_ElevatorGoalNegativeWindupTest_Test;
+class FridgeTest_SafeArmZeroing_Test;
 }
 
 class CappedStateFeedbackLoop : public StateFeedbackLoop<4, 2, 2> {
@@ -74,6 +75,7 @@ class Fridge
   friend class testing::FridgeTest_ArmGoalPositiveWindupTest_Test;
   friend class testing::FridgeTest_ElevatorGoalNegativeWindupTest_Test;
   friend class testing::FridgeTest_ArmGoalNegativeWindupTest_Test;
+  friend class testing::FridgeTest_SafeArmZeroing_Test;
 
   // Sets state_ to the correct state given the current state of the zeroing
   // estimators.

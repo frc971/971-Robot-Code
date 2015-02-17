@@ -102,6 +102,9 @@ struct Values {
     double right_elevator_potentiometer_offset;
     double left_arm_potentiometer_offset;
     double right_arm_potentiometer_offset;
+
+    // How high the elevator has to be before we start zeroing the arm.
+    double arm_zeroing_height;
   };
   Fridge fridge;
 

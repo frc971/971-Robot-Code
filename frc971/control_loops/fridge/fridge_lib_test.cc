@@ -331,7 +331,8 @@ TEST_F(FridgeTest, LowerHardstopStartup) {
       constants::GetValues().fridge.arm.lower_hard_limit,
       constants::GetValues().fridge.arm.lower_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
-  RunForTime(Time::InMS(4000));
+  // We have to wait for it to put the elevator in a safe position as well.
+  RunForTime(Time::InMS(8000));
 
   VerifyNearGoal();
 }
@@ -582,6 +583,33 @@ TEST_F(FridgeTest, ZeroNoGoal) {
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
 }
 
+// Tests that if we start at the bottom, the elevator moves to a safe height
+// before zeroing the arm.
+TEST_F(FridgeTest, SafeArmZeroing) {
+  auto &values = constants::GetValues();
+  fridge_plant_.InitializeElevatorPosition(
+      values.fridge.elevator.lower_hard_limit);
+  fridge_plant_.InitializeArmPosition(M_PI / 4.0);
+
+  const auto start_time = Time::Now();
+  double last_arm_goal = fridge_.arm_goal_;
+  while (Time::Now() < start_time + Time::InMS(4000)) {
+    RunIteration();
+
+    if (fridge_.state() != Fridge::ZEROING_ELEVATOR) {
+      // Wait until we are zeroing the elevator.
+      continue;
+    }
+
+    fridge_queue_.status.FetchLatest();
+    ASSERT_TRUE(fridge_queue_.status.get() != nullptr);
+    if (fridge_queue_.status->height > values.fridge.arm_zeroing_height) {
+      // We had better not be trying to zero the arm...
+      EXPECT_EQ(last_arm_goal, fridge_.arm_goal_);
+      last_arm_goal = fridge_.arm_goal_;
+    }
+  }
+}
 
 // Phil:
 // TODO(austin): Check that we e-stop if encoder index pulse is not n revolutions away from last one. (got extra counts from noise, etc).
