@@ -249,6 +249,7 @@ void Claw::RunIteration(
   status->zeroed = state_ == RUNNING;
   status->estopped = state_ == ESTOP;
   status->state = state_;
+  zeroing::PopulateEstimatorState(claw_estimator_, &status->zeroing_state);
 
   status->angle = claw_loop_->X_hat(0, 0);
   if (output) {

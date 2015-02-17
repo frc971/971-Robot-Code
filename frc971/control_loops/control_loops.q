@@ -21,6 +21,16 @@ struct PotAndIndexPosition {
   uint32_t index_pulses;
 };
 
+// The internal state of a zeroing estimator.
+struct EstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  bool error;
+  // If the joint has seen an index pulse and is zeroed.
+  bool zeroed;
+  // The estimated position of the joint.
+  double position;
+};
+
 // A left/right pair of PotAndIndexPositions.
 struct PotAndIndexPair {
   PotAndIndexPosition left;

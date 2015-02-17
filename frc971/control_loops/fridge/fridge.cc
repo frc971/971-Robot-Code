@@ -218,15 +218,6 @@ double Fridge::arm_zeroing_velocity() {
   return arm_zeroing_velocity_;
 }
 
-namespace {
-void PopulateEstimatorState(const zeroing::ZeroingEstimator &estimator,
-                            EstimatorState *state) {
-  state->error = estimator.error();
-  state->zeroed = estimator.zeroed();
-  state->position = estimator.position();
-}
-}  // namespace
-
 void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
                           const control_loops::FridgeQueue::Position *position,
                           control_loops::FridgeQueue::Output *output,
@@ -518,11 +509,13 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     status->grabbers.bottom_front = false;
     status->grabbers.bottom_back = false;
   }
-  PopulateEstimatorState(left_arm_estimator_, &status->left_arm_state);
-  PopulateEstimatorState(right_arm_estimator_, &status->right_arm_state);
-  PopulateEstimatorState(left_elevator_estimator_,
+  zeroing::PopulateEstimatorState(left_arm_estimator_,
+                                  &status->left_arm_state);
+  zeroing::PopulateEstimatorState(right_arm_estimator_,
+                                  &status->right_arm_state);
+  zeroing::PopulateEstimatorState(left_elevator_estimator_,
                          &status->left_elevator_state);
-  PopulateEstimatorState(right_elevator_estimator_,
+  zeroing::PopulateEstimatorState(right_elevator_estimator_,
                          &status->right_elevator_state);
   status->estopped = (state_ == ESTOP);
   status->state = state_;
