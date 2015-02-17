@@ -105,6 +105,8 @@ struct Values {
 
     // How high the elevator has to be before we start zeroing the arm.
     double arm_zeroing_height;
+    // The height at which the fridge should hang out by default.
+    double normal_height;
   };
   Fridge fridge;
 

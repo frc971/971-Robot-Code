@@ -21,6 +21,7 @@
         '../../aos/common/actions/actions.gyp:action_test',
         '../actors/actors.gyp:drivetrain_action',
         '../actors/actors.gyp:fridge_profile_action',
+        '../actors/actors.gyp:score_action',
         '../actors/actors.gyp:fridge_profile_action_test',
       ],
       'copies': [
