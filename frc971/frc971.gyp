@@ -29,6 +29,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:log_interval',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
 
         '<(DEPTH)/frc971/queues/queues.gyp:gyro',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
@@ -36,7 +37,8 @@
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
-        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/actors/actors.gyp:fridge_profile_action_queue',
+        '<(DEPTH)/frc971/actors/actors.gyp:fridge_profile_action_lib',
       ],
     },
   ],

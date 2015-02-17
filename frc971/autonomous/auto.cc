@@ -60,7 +60,7 @@ void ResetDrivetrain() {
 void DriveSpin(double radians) {
   LOG(INFO, "going to spin %f\n", radians);
 
-  //TODO(sensors): update this time thing maybe?
+  // TODO(sensors): update this time thing maybe?
   ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
   ::Eigen::Matrix<double, 2, 1> driveTrainState;
   const double goal_velocity = 0.0;
@@ -107,19 +107,20 @@ void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
   }
 }
 
-::std::unique_ptr<aos::common::actions::TypedAction<
-    ::frc971::actors::DrivetrainActionQueueGroup>>
-SetDriveGoal(double distance, bool slow_acceleration,
-             double maximum_velocity = 1.7, double theta = 0) {
+::std::unique_ptr<::frc971::actors::DrivetrainAction> SetDriveGoal(
+    double distance, bool slow_acceleration, double maximum_velocity = 1.7,
+    double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
-  auto drivetrain_action = actors::MakeDrivetrainAction();
-  drivetrain_action->GetGoal()->left_initial_position = left_initial_position;
-  drivetrain_action->GetGoal()->right_initial_position = right_initial_position;
-  drivetrain_action->GetGoal()->y_offset = distance;
-  drivetrain_action->GetGoal()->theta_offset = theta;
-  drivetrain_action->GetGoal()->maximum_velocity = maximum_velocity;
-  drivetrain_action->GetGoal()->maximum_acceleration =
-      slow_acceleration ? 2.5 : 3.0;
+
+  ::frc971::actors::DrivetrainActionParams params;
+  params.left_initial_position = left_initial_position;
+  params.right_initial_position = right_initial_position;
+  params.y_offset = distance;
+  params.theta_offset = theta;
+  params.maximum_velocity = maximum_velocity;
+  params.maximum_acceleration = slow_acceleration ? 2.5 : 3.0;
+  auto drivetrain_action = actors::MakeDrivetrainAction(params);
+
   drivetrain_action->Start();
   left_initial_position +=
       distance - theta * constants::GetValues().turn_width / 2.0;

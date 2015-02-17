@@ -17,6 +17,8 @@
 #include "frc971/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
+#include "frc971/actors/fridge_profile_action.q.h"
+#include "frc971/actors/fridge_profile_actor.h"
 
 using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::drivetrain_queue;
@@ -31,6 +33,12 @@ namespace frc971 {
 namespace input {
 namespace joysticks {
 
+// preset motion limits
+static const double kArmDebugVelocity = 0.17;
+static const double kArmDebugAcceleration = 0.8;
+static const double kElevatorDebugVelocity = 0.2;
+static const double kElevatorDebugAcceleration = 2.2;
+
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
@@ -42,6 +50,12 @@ const ButtonLocation kArmUp(3, 8);
 const ButtonLocation kArmDown(3, 3);
 const ButtonLocation kClawUp(3, 7);
 const ButtonLocation kClawDown(3, 6);
+
+// TODO(ben): Real buttons for all of these.
+const ButtonLocation kArmPresetOne(99, 99);
+const ButtonLocation kArmPresetTwo(99, 99);
+const ButtonLocation kElevatorPresetOne(99, 99);
+const ButtonLocation kElevatorPresetTwo(99, 99);
 
 // Testing mode.
 const double kElevatorVelocity = 0.5;
@@ -160,16 +174,60 @@ class Reader : public ::aos::input::JoystickInput {
         claw_goal_ -= kClawVelocity * kJoystickDt;
       }
 
-      if (!fridge_queue.goal.MakeWithBuilder()
-          .height(elevator_goal_)
-          .angle(arm_goal_)
-          .Send()) {
-        LOG(ERROR, "Sending fridge goal failed.\n");
+      if (!action_queue_.Running()) {
+        if (!fridge_queue.goal.MakeWithBuilder()
+                 .height(elevator_goal_)
+                 .angle(arm_goal_)
+                 .Send()) {
+          LOG(ERROR, "Sending fridge goal failed.\n");
+        }
+        if (!claw_queue.goal.MakeWithBuilder().angle(claw_goal_).Send()) {
+          LOG(ERROR, "Sending claw goal failed.\n");
+        }
       }
-      if (!claw_queue.goal.MakeWithBuilder()
-          .angle(claw_goal_)
-          .Send()) {
-        LOG(ERROR, "Sending claw goal failed.\n");
+      if (data.IsPressed(kArmPresetOne) || data.IsPressed(kArmPresetTwo)) {
+        actors::FridgeProfileParams fridge_params;
+        fridge_params.arm_max_velocity = kArmDebugVelocity;
+        fridge_params.arm_max_acceleration = kArmDebugAcceleration;
+        if (data.IsPressed(kArmPresetOne)) {
+          LOG(INFO, "Preset asked for test arm position one position.\n");
+          fridge_params.arm_angle = M_PI / 4.0;
+          fridge_params.top_front_grabber = false;
+          fridge_params.top_back_grabber = false;
+          fridge_params.bottom_front_grabber = false;
+          fridge_params.bottom_back_grabber = false;
+          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
+        } else if (data.IsPressed(kArmPresetTwo)) {
+          LOG(INFO, "Preset asked for test arm position two position.\n");
+          fridge_params.arm_angle = -M_PI / 4.0;
+          fridge_params.top_front_grabber = true;
+          fridge_params.top_back_grabber = true;
+          fridge_params.bottom_front_grabber = true;
+          fridge_params.bottom_back_grabber = true;
+          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
+        }
+      } else if (data.IsPressed(kElevatorPresetOne) ||
+                 data.IsPressed(kElevatorPresetOne)) {
+        actors::FridgeProfileParams fridge_params;
+        fridge_params.elevator_max_velocity = kElevatorDebugVelocity;
+        fridge_params.elevator_max_acceleration = kElevatorDebugAcceleration;
+        if (data.IsPressed(kElevatorPresetOne)) {
+          LOG(INFO, "Preset asked for test elevator position one position.\n");
+          fridge_params.elevator_height = 0.5;
+          fridge_params.top_front_grabber = false;
+          fridge_params.top_back_grabber = false;
+          fridge_params.bottom_front_grabber = false;
+          fridge_params.bottom_back_grabber = false;
+          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
+        } else if (data.IsPressed(kElevatorPresetTwo)) {
+          LOG(INFO, "Preset asked for test elevator position two position.\n");
+          fridge_params.elevator_height = 1.2;
+          fridge_params.top_front_grabber = true;
+          fridge_params.top_back_grabber = true;
+          fridge_params.bottom_front_grabber = true;
+          fridge_params.bottom_back_grabber = true;
+          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
+        }
       }
     }
   }

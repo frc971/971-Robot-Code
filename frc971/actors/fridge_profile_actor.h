@@ -14,7 +14,7 @@ namespace actors {
 class FridgeProfileActor
     : public aos::common::actions::ActorBase<FridgeProfileActionQueueGroup> {
  public:
-  explicit FridgeProfileActor(FridgeProfileActionQueueGroup* s);
+  explicit FridgeProfileActor(FridgeProfileActionQueueGroup *s);
 
   // sets up profiles. Returns false if things have already been setup
   bool InitializeProfile(double angle_max_vel, double angle_max_accel,
@@ -22,23 +22,29 @@ class FridgeProfileActor
 
   // Takes a goal and computes the next step toward that goal. Returns false if
   // things are broken.
-  bool IterateProfile(double goal_angle, double goal_height, double* next_angle,
-                      double* next_height, double* next_angle_velocity,
-                      double* next_angle_accel);
+  bool IterateProfile(double goal_angle, double goal_height, double *next_angle,
+                      double *next_height, double *next_angle_velocity,
+                      double *next_angle_accel);
 
-  bool RunAction() override;
+  bool RunAction(const FridgeProfileParams &params) override;
+
+  // only for unit test
+  void SetTesting() { testing_ = true; }
 
  private:
-  ::std::unique_ptr<::aos::util::TrapezoidProfile> arm_profile_;
-  ::std::unique_ptr<::aos::util::TrapezoidProfile> elevator_profile_;
+  ::std::unique_ptr<aos::util::TrapezoidProfile> arm_profile_;
+  ::std::unique_ptr<aos::util::TrapezoidProfile> elevator_profile_;
   double arm_start_angle_ = 0.0;
   double elev_start_height_ = 0.0;
+  bool testing_ = false;
 };
 
-// Makes a new FridgeProfileActor action.
-::std::unique_ptr<aos::common::actions::TypedAction<FridgeProfileActionQueueGroup>>
-    MakeFridgeProfileAction();
+typedef aos::common::actions::TypedAction<FridgeProfileActionQueueGroup>
+    FridgeAction;
 
+// Makes a new FridgeProfileActor action.
+::std::unique_ptr<FridgeAction> MakeFridgeProfileAction(
+    const FridgeProfileParams &fridge_params);
 
 }  // namespace actors
 }  // namespace frc971

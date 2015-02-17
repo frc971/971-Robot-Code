@@ -17,31 +17,51 @@ namespace common {
 namespace actions {
 namespace testing {
 
+class TestActorIndex
+    : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
+ public:
+  explicit TestActorIndex(actions::TestActionQueueGroup *s)
+      : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(s) {}
+
+  bool RunAction(const uint32_t &new_index) override {
+    index = new_index;
+    return true;
+  }
+
+  uint32_t index = 0;
+};
+
+::std::unique_ptr<
+    aos::common::actions::TypedAction<actions::TestActionQueueGroup>>
+MakeTestActionIndex(uint32_t index) {
+  return ::std::unique_ptr<
+      aos::common::actions::TypedAction<actions::TestActionQueueGroup>>(
+      new aos::common::actions::TypedAction<actions::TestActionQueueGroup>(
+          &actions::test_action, index));
+}
+
 class TestActorNOP
     : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
  public:
-  explicit TestActorNOP(actions::TestActionQueueGroup* s)
+  explicit TestActorNOP(actions::TestActionQueueGroup *s)
       : actions::ActorBase<actions::TestActionQueueGroup>(s) {}
 
-  bool RunAction() { return true; }
+  bool RunAction(const uint32_t &) override { return true; }
 };
 
 ::std::unique_ptr<
     aos::common::actions::TypedAction<actions::TestActionQueueGroup>>
 MakeTestActionNOP() {
-  return ::std::unique_ptr<
-      aos::common::actions::TypedAction<actions::TestActionQueueGroup>>(
-      new aos::common::actions::TypedAction<actions::TestActionQueueGroup>(
-          &actions::test_action));
+  return MakeTestActionIndex(0);
 }
 
 class TestActorShouldCancel
     : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
  public:
-  explicit TestActorShouldCancel(actions::TestActionQueueGroup* s)
+  explicit TestActorShouldCancel(actions::TestActionQueueGroup *s)
       : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(s) {}
 
-  bool RunAction() {
+  bool RunAction(const uint32_t &) override {
     while (!ShouldCancel()) {
       LOG(FATAL, "NOT CANCELED!!\n");
     }
@@ -52,10 +72,25 @@ class TestActorShouldCancel
 ::std::unique_ptr<
     aos::common::actions::TypedAction<actions::TestActionQueueGroup>>
 MakeTestActionShouldCancel() {
+  return MakeTestActionIndex(0);
+}
+
+class TestActor2Nop
+    : public aos::common::actions::ActorBase<actions::TestAction2QueueGroup> {
+ public:
+  explicit TestActor2Nop(actions::TestAction2QueueGroup *s)
+      : actions::ActorBase<actions::TestAction2QueueGroup>(s) {}
+
+  bool RunAction(const actions::MyParams &) { return true; }
+};
+
+::std::unique_ptr<
+    aos::common::actions::TypedAction<actions::TestAction2QueueGroup>>
+MakeTestAction2NOP(const actions::MyParams &params) {
   return ::std::unique_ptr<
-      aos::common::actions::TypedAction<actions::TestActionQueueGroup>>(
-      new aos::common::actions::TypedAction<actions::TestActionQueueGroup>(
-          &actions::test_action));
+      aos::common::actions::TypedAction<actions::TestAction2QueueGroup>>(
+      new aos::common::actions::TypedAction<actions::TestAction2QueueGroup>(
+          &actions::test_action2, params));
 }
 
 class ActionTest : public ::testing::Test {
@@ -65,11 +100,15 @@ class ActionTest : public ::testing::Test {
     // test.
     actions::test_action.goal.Clear();
     actions::test_action.status.Clear();
+    actions::test_action2.goal.Clear();
+    actions::test_action2.status.Clear();
   }
 
   virtual ~ActionTest() {
     actions::test_action.goal.Clear();
     actions::test_action.status.Clear();
+    actions::test_action2.goal.Clear();
+    actions::test_action2.status.Clear();
   }
 
   // Bring up and down Core.
@@ -88,8 +127,8 @@ TEST_F(ActionTest, DoesNothing) {
 // Tests that the queues are properly configured for testing. Tests that queues
 // work exactly as used in the tests.
 TEST_F(ActionTest, QueueCheck) {
-  actions::TestActionQueueGroup* send_side = &actions::test_action;
-  actions::TestActionQueueGroup* recv_side = &actions::test_action;
+  actions::TestActionQueueGroup *send_side = &actions::test_action;
+  actions::TestActionQueueGroup *recv_side = &actions::test_action;
 
   send_side->goal.MakeMessage();
   send_side->goal.MakeWithBuilder().run(1).Send();
@@ -275,6 +314,76 @@ TEST_F(ActionTest, ActionQueueTwoActions) {
   nop_act.RunIteration();
   action_queue_.Tick();
   nop_act.WaitForStop(nop_act_id);
+
+  // Make sure it stopped.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
+// Tests that we do get an index with our goal
+TEST_F(ActionTest, ActionIndex) {
+  TestActorIndex idx_act(&actions::test_action);
+
+  // Tick an empty queue and make sure it was not running.
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+
+  // Enqueue action to post index.
+  action_queue_.EnqueueAction(MakeTestActionIndex(5));
+  EXPECT_TRUE(actions::test_action.goal.FetchLatest());
+  EXPECT_EQ(5u, actions::test_action.goal->params);
+  EXPECT_EQ(0u, idx_act.index);
+
+  idx_act.WaitForActionRequest();
+  action_queue_.Tick();
+
+  // Check the new action is the right one.
+  uint32_t test_id = 0;
+  EXPECT_TRUE(action_queue_.GetCurrentActionState(nullptr, nullptr, nullptr,
+                                                  nullptr, &test_id, nullptr));
+
+  // Run the next action so it can accomplish signal completion.
+  idx_act.RunIteration();
+  action_queue_.Tick();
+  idx_act.WaitForStop(test_id);
+  EXPECT_EQ(5u, idx_act.index);
+
+  // Enqueue action to post index.
+  action_queue_.EnqueueAction(MakeTestActionIndex(3));
+  EXPECT_TRUE(actions::test_action.goal.FetchLatest());
+  EXPECT_EQ(3u, actions::test_action.goal->params);
+
+  // Run the next action so it can accomplish signal completion.
+  idx_act.RunIteration();
+  action_queue_.Tick();
+  idx_act.WaitForStop(test_id);
+  EXPECT_EQ(3u, idx_act.index);
+}
+
+// Tests that an action with a structure params works.
+TEST_F(ActionTest, StructParamType) {
+  TestActor2Nop nop_act(&actions::test_action2);
+
+  // Tick an empty queue and make sure it was not running.
+  action_queue_.Tick();
+  EXPECT_FALSE(action_queue_.Running());
+
+  actions::MyParams p;
+  p.param1 = 5.0;
+  p.param2 = 7;
+
+  action_queue_.EnqueueAction(MakeTestAction2NOP(p));
+  nop_act.WaitForActionRequest();
+
+  // We started an action and it should be running.
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Tick it and make sure it is still running.
+  action_queue_.Tick();
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Run the action so it can signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
 
   // Make sure it stopped.
   EXPECT_FALSE(action_queue_.Running());

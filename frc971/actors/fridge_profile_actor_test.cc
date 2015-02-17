@@ -53,11 +53,12 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   double last_angle[2] = {0.0, 0.0};
   double last_height[2] = {0.0, 0.0};
   double angle_vel = 0, angle_accel = 0, height_vel = 0, height_accel = 0;
-  double next_angle = 0, next_height = 0, next_angle_vel = 0.0, next_height_vel = 0.0;
+  double next_angle = 0, next_height = 0, next_angle_vel = 0.0,
+         next_height_vel = 0.0;
 
   // Angle (0.250000, 0.250000, 0.25) Height (0.250000, 0.250000, 0.25)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(0.25, next_angle);
@@ -70,8 +71,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(0.25, height_accel);
 
   // Angle (1.000000, 0.750000, 0.50) Height (1.000000, 0.750000, 0.50)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(1.0, next_angle);
@@ -84,8 +85,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(0.50, height_accel);
 
   // Angle (2.000000, 1.000000, 0.25) Height (2.000000, 1.000000, 0.25)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(2.0, next_angle);
@@ -98,8 +99,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(0.25, height_accel);
 
   // Angle (3.000000, 1.000000, 0.00) Height (3.000000, 1.000000, 0.00)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(3.0, next_angle);
@@ -112,8 +113,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(0.0, height_accel);
 
   // Angle (4.000000, 1.000000, 0.00) Height (4.000000, 1.000000, 0.00)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(4.0, next_angle);
@@ -126,8 +127,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(0.0, height_accel);
 
   // Angle (4.750000, 0.750000, -0.25) Height (4.750000, 0.750000, -0.25)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(4.75, next_angle);
@@ -140,8 +141,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(-0.25, height_accel);
 
   // Angle (5.000000, 0.250000, -0.50) Height (5.000000, 0.250000, -0.50)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(5.0, next_angle);
@@ -154,8 +155,8 @@ TEST_F(FridgeProfileTest, ProfileValid) {
   EXPECT_EQ(-0.50, height_accel);
 
   // Angle (5.000000, 0.000000, -0.25) Height (5.000000, 0.000000, -0.25)
-  EXPECT_TRUE(
-      fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height, &next_angle_vel, &next_height_vel));
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
   GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
   GetVelAccel(next_height, last_height, &height_vel, &height_accel);
   EXPECT_EQ(5.0, next_angle);
@@ -190,13 +191,14 @@ TEST_F(FridgeProfileTest, ProfileChangeGoal) {
   double last_angle[2] = {0.0, 0.0};
   double last_height[2] = {0.0, 0.0};
   double angle_vel = 0, angle_accel = 0, height_vel = 0, height_accel = 0;
-  double next_angle = 0, next_height = 0, next_angle_vel = 0.0, next_height_vel = 0.0;
+  double next_angle = 0, next_height = 0, next_angle_vel = 0.0,
+         next_height_vel = 0.0;
 
-  for (int i=0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle,
                                               &next_height, &next_angle_vel,
                                               &next_height_vel));
-        GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
+    GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
     GetVelAccel(next_height, last_height, &height_vel, &height_accel);
     EXPECT_GE(1.0, angle_vel);
     EXPECT_GE(0.5, angle_accel);
@@ -206,11 +208,11 @@ TEST_F(FridgeProfileTest, ProfileChangeGoal) {
 
   EXPECT_EQ(5.0, next_angle);
 
-  for (int i=0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     EXPECT_TRUE(fridge_profile.IterateProfile(10.0, 10.0, &next_angle,
                                               &next_height, &next_angle_vel,
                                               &next_height_vel));
-        GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
+    GetVelAccel(next_angle, last_angle, &angle_vel, &angle_accel);
     GetVelAccel(next_height, last_height, &height_vel, &height_accel);
     EXPECT_GE(1.0, angle_vel);
     EXPECT_GE(0.5, angle_accel);
@@ -225,18 +227,21 @@ TEST_F(FridgeProfileTest, ProfileChangeGoal) {
 TEST_F(FridgeProfileTest, ProfileQueueValid) {
   FridgeProfileActor fridge_profile(&frc971::actors::fridge_profile_action);
 
+  FridgeProfileParams params;
+  params.arm_angle = 5.0;
+  params.arm_max_velocity = 200.0;
+  params.arm_max_acceleration = 20000.0;
+  params.elevator_height = 5.0;
+  params.elevator_max_velocity = 200.0;
+  params.elevator_max_acceleration = 20000.0;
+  params.top_front_grabber = true;
+  params.top_back_grabber = false;
+  params.bottom_front_grabber = true;
+  params.bottom_back_grabber = false;
+
   frc971::actors::fridge_profile_action.goal.MakeWithBuilder()
       .run(true)
-      .arm_angle(5.0)
-      .arm_max_velocity(200.0)
-      .arm_max_acceleration(20000.0)
-      .elevator_height(5.0)
-      .elevator_max_velocity(200.0)
-      .elevator_max_acceleration(20000.0)
-      .top_front_grabber(true)
-      .top_back_grabber(false)
-      .bottom_front_grabber(true)
-      .bottom_back_grabber(false)
+      .params(params)
       .Send();
 
   // tell it the fridge is zeroed
@@ -246,9 +251,11 @@ TEST_F(FridgeProfileTest, ProfileQueueValid) {
       .height(0.0)
       .Send();
 
+  fridge_profile.SetTesting();
+
   // do the action and it will post to the goal queue
   fridge_profile.WaitForActionRequest();
-  fridge_profile.RunAction();
+  fridge_profile.RunAction(params);
 
   // a= 0.250000, e= 0.250000, av= 100.000000, ev= 100.000000
   EXPECT_TRUE(control_loops::fridge_queue.goal.FetchNext());
@@ -308,6 +315,45 @@ TEST_F(FridgeProfileTest, ProfileQueueValid) {
 
   // that should be all
   EXPECT_FALSE(control_loops::fridge_queue.goal.FetchNext());
+}
+
+// Make sure that giving 0 velocity+acceleration makes it not move at all.
+TEST_F(FridgeProfileTest, ProfileNoVel) {
+  FridgeProfileActor fridge_profile(&frc971::actors::fridge_profile_action);
+
+  FridgeProfileParams params;
+  params.arm_angle = 5.0;
+  params.arm_max_velocity = 200.0;
+  params.arm_max_acceleration = 20000.0;
+  params.elevator_height = 5.0;
+  params.elevator_max_velocity = 0.0;
+  params.elevator_max_acceleration = 0.0;
+  params.top_front_grabber = true;
+  params.top_back_grabber = false;
+  params.bottom_front_grabber = true;
+  params.bottom_back_grabber = false;
+
+  frc971::actors::fridge_profile_action.goal.MakeWithBuilder()
+      .run(true)
+      .params(params)
+      .Send();
+
+  // tell it the fridge is zeroed
+  control_loops::fridge_queue.status.MakeWithBuilder()
+      .zeroed(true)
+      .angle(0.0)
+      .height(0.0)
+      .Send();
+
+  fridge_profile.SetTesting();
+
+  // do the action and it will post to the goal queue
+  fridge_profile.WaitForActionRequest();
+  fridge_profile.RunAction(params);
+
+  while (control_loops::fridge_queue.goal.FetchNext()) {
+    EXPECT_EQ(0.0, control_loops::fridge_queue.goal->height);
+  }
 }
 
 }  // namespace testing.

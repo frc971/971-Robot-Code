@@ -18,53 +18,76 @@ namespace frc971 {
 namespace actors {
 
 FridgeProfileActor::FridgeProfileActor(actors::FridgeProfileActionQueueGroup* s)
-    : aos::common::actions::ActorBase<actors::FridgeProfileActionQueueGroup>(s) {}
+    : aos::common::actions::ActorBase<actors::FridgeProfileActionQueueGroup>(
+          s) {}
 
 bool FridgeProfileActor::InitializeProfile(double angle_max_vel,
                                            double angle_max_accel,
                                            double height_max_vel,
                                            double height_max_accel) {
-  if (arm_profile_ != nullptr || elevator_profile_ != nullptr) {
-    return false;
+  // if they have no vel/accel they will not move
+  if (angle_max_vel != 0.0 && angle_max_accel != 0.0) {
+    // Initialize arm profile.
+    arm_profile_.reset(
+        new ::aos::util::TrapezoidProfile(::aos::time::Time::InMS(5)));
+    arm_profile_->set_maximum_velocity(angle_max_vel);
+    arm_profile_->set_maximum_acceleration(angle_max_accel);
+  } else {
+    arm_profile_.reset();
   }
-  // Initialize arm profile.
-  arm_profile_.reset(
-      new ::aos::util::TrapezoidProfile(::aos::time::Time::InMS(5)));
-  arm_profile_->set_maximum_velocity(angle_max_vel);
-  arm_profile_->set_maximum_acceleration(angle_max_accel);
 
-  // Initialize elevator profile.
-  elevator_profile_.reset(
-      new ::aos::util::TrapezoidProfile(::aos::time::Time::InMS(5)));
-  elevator_profile_->set_maximum_velocity(height_max_vel);
-  elevator_profile_->set_maximum_acceleration(height_max_accel);
+  // if they have no vel/accel they will not move
+  if (height_max_vel != 0.0 && height_max_accel != 0.0) {
+    // Initialize elevator profile.
+    elevator_profile_.reset(
+        new ::aos::util::TrapezoidProfile(::aos::time::Time::InMS(5)));
+    elevator_profile_->set_maximum_velocity(height_max_vel);
+    elevator_profile_->set_maximum_acceleration(height_max_accel);
+  } else {
+    elevator_profile_.reset();
+  }
+
   return true;
 }
 
 bool FridgeProfileActor::IterateProfile(double goal_angle, double goal_height,
-                                        double* next_angle,
-                                        double* next_height,
+                                        double* next_angle, double* next_height,
                                         double* next_angle_velocity,
                                         double* next_height_velocity) {
+  CHECK_NOTNULL(next_angle);
+  CHECK_NOTNULL(next_height);
+  CHECK_NOTNULL(next_angle_velocity);
+  CHECK_NOTNULL(next_height_velocity);
   ::Eigen::Matrix<double, 2, 1> goal_state;
 
-  goal_state = arm_profile_->Update(goal_angle, 0.0);
-  *next_angle = goal_state(0, 0);
-  *next_angle_velocity = goal_state(1, 0);
-  goal_state = elevator_profile_->Update(goal_height, 0.0);
-  *next_height = goal_state(0, 0);
-  *next_height_velocity = goal_state(1, 0);
+  if (!arm_profile_) {
+    *next_angle = 0.0;
+    *next_angle_velocity = 0.0;
+  } else {
+    goal_state = arm_profile_->Update(goal_angle, 0.0);
+    *next_angle = goal_state(0, 0);
+    *next_angle_velocity = goal_state(1, 0);
+  }
+
+  if (!elevator_profile_) {
+    *next_height = 0.0;
+    *next_height_velocity = 0.0;
+  } else {
+    goal_state = elevator_profile_->Update(goal_height, 0.0);
+    *next_height = goal_state(0, 0);
+    *next_height_velocity = goal_state(1, 0);
+  }
 
   return true;
 }
 
-bool FridgeProfileActor::RunAction() {
-  double goal_angle = action_q_->goal->arm_angle;
-  double goal_height = action_q_->goal->elevator_height;
-  bool top_front = action_q_->goal->top_front_grabber;
-  bool top_back = action_q_->goal->top_back_grabber;
-  bool bottom_front = action_q_->goal->bottom_front_grabber;
-  bool bottom_back = action_q_->goal->bottom_back_grabber;
+bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
+  double goal_angle = params.arm_angle;
+  double goal_height = params.elevator_height;
+  bool top_front = params.top_front_grabber;
+  bool top_back = params.top_back_grabber;
+  bool bottom_front = params.bottom_front_grabber;
+  bool bottom_back = params.bottom_back_grabber;
   LOG(INFO,
       "Fridge profile goal: arm (%f) elev (%f) with grabbers(%d,%d,%d,%d).\n",
       goal_angle, goal_height, top_front, top_back, bottom_front, bottom_back);
@@ -73,10 +96,9 @@ bool FridgeProfileActor::RunAction() {
   const double angle_epsilon = 0.01, height_epsilon = 0.01;
 
   // Initialize arm profile.
-  if(!InitializeProfile(action_q_->goal->arm_max_velocity,
-                   action_q_->goal->arm_max_acceleration,
-                   action_q_->goal->elevator_max_velocity,
-                   action_q_->goal->elevator_max_acceleration)) {
+  if (!InitializeProfile(params.arm_max_velocity, params.arm_max_acceleration,
+                         params.elevator_max_velocity,
+                         params.elevator_max_acceleration)) {
     return false;
   }
 
@@ -100,7 +122,7 @@ bool FridgeProfileActor::RunAction() {
     double delta_angle, delta_height;
     double angle_vel, height_vel;
     if (!IterateProfile(goal_angle, goal_height, &delta_angle, &delta_height,
-        &angle_vel, &height_vel)) {
+                        &angle_vel, &height_vel)) {
       return false;
     }
 
@@ -124,19 +146,23 @@ bool FridgeProfileActor::RunAction() {
     if (!control_loops::fridge_queue.status.get()) {
       return false;
     }
-    const double current_height = control_loops::fridge_queue.status->height;
-    const double current_angle = control_loops::fridge_queue.status->angle;
-    LOG_STRUCT(DEBUG, "Got fridge status",
-               *control_loops::fridge_queue.status);
+    double current_angle = control_loops::fridge_queue.status->angle;
+    double current_height = control_loops::fridge_queue.status->height;
+    LOG_STRUCT(DEBUG, "Got fridge status", *control_loops::fridge_queue.status);
 
-    if (::std::abs(arm_start_angle_ + delta_angle - goal_angle) <
-            angle_epsilon &&
-        ::std::abs(arm_start_angle_ + delta_angle - current_angle) <
-            angle_epsilon &&
-        ::std::abs(elev_start_height_ + delta_height - goal_height) <
-            height_epsilon &&
-        ::std::abs(elev_start_height_ + delta_height - current_height) <
-            height_epsilon) {
+    if (testing_) {
+      current_angle = goal_angle;
+      current_height = goal_height;
+    }
+
+    if ((!arm_profile_ || (::std::abs(arm_start_angle_ + delta_angle -
+                                      goal_angle) < angle_epsilon &&
+                           ::std::abs(arm_start_angle_ + delta_angle -
+                                      current_angle) < angle_epsilon)) &&
+        (!elevator_profile_ || (::std::abs(elev_start_height_ + delta_height -
+                                           goal_height) < height_epsilon &&
+                                ::std::abs(elev_start_height_ + delta_height -
+                                           current_height) < height_epsilon))) {
       break;
     }
   }
@@ -150,14 +176,10 @@ bool FridgeProfileActor::RunAction() {
   return true;
 }
 
-::std::unique_ptr<aos::common::actions::TypedAction<
-    ::frc971::actors::FridgeProfileActionQueueGroup>>
-MakeFridgeProfileAction() {
-  return ::std::unique_ptr<aos::common::actions::TypedAction<
-      ::frc971::actors::FridgeProfileActionQueueGroup>>(
-      new aos::common::actions::TypedAction<
-          ::frc971::actors::FridgeProfileActionQueueGroup>(
-          &::frc971::actors::fridge_profile_action));
+::std::unique_ptr<FridgeAction> MakeFridgeProfileAction(
+    const FridgeProfileParams& p) {
+  return ::std::unique_ptr<FridgeAction>(
+      new FridgeAction(&::frc971::actors::fridge_profile_action, p));
 }
 
 }  // namespace actors

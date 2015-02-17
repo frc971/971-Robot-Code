@@ -24,6 +24,9 @@ message Goal {
   // The unique value to put into status.running while running this instance or
   // 0 to cancel.
   uint32_t run;
+  // Default parameter.  The more useful thing to do would be to define your own
+  // goal type to change param to a useful structure.
+  double param;
 };
 
 interface ActionQueueGroup {

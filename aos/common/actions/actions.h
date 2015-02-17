@@ -44,13 +44,13 @@ class ActionQueue {
   bool Running();
 
   // Retrieves the internal state of the current action for testing.
-  // See comments on the private members of TypedAction<T> for details.
+  // See comments on the private members of TypedAction<T, S> for details.
   bool GetCurrentActionState(bool* has_started, bool* sent_started,
                              bool* sent_cancel, bool* interrupted,
                              uint32_t* run_value, uint32_t* old_run_value);
 
   // Retrieves the internal state of the next action for testing.
-  // See comments on the private members of TypedAction<T> for details.
+  // See comments on the private members of TypedAction<T, S> for details.
   bool GetNextActionState(bool* has_started, bool* sent_started,
                           bool* sent_cancel, bool* interrupted,
                           uint32_t* run_value, uint32_t* old_run_value);
@@ -76,7 +76,7 @@ class Action {
   void WaitUntilDone() { DoWaitUntilDone(); }
 
   // Retrieves the internal state of the action for testing.
-  // See comments on the private members of TypedAction<T> for details.
+  // See comments on the private members of TypedAction<T, S> for details.
   void GetState(bool* has_started, bool* sent_started, bool* sent_cancel,
                 bool* interrupted, uint32_t* run_value,
                 uint32_t* old_run_value) {
@@ -95,7 +95,7 @@ class Action {
   // Blocks until complete.
   virtual void DoWaitUntilDone() = 0;
   // For testing we will need to get the internal state.
-  // See comments on the private members of TypedAction<T> for details.
+  // See comments on the private members of TypedAction<T, S> for details.
   virtual void DoGetState(bool* has_started, bool* sent_started,
                           bool* sent_cancel, bool* interrupted,
                           uint32_t* run_value, uint32_t* old_run_value) = 0;
@@ -107,16 +107,19 @@ class TypedAction : public Action {
  public:
   // A convenient way to refer to the type of our goals.
   typedef typename std::remove_reference<decltype(
-      *(static_cast<T*>(NULL)->goal.MakeMessage().get()))>::type GoalType;
+      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
+  typedef typename std::remove_reference<
+      decltype(static_cast<GoalType*>(nullptr)->params)>::type ParamType;
 
-  TypedAction(T* queue_group)
+  TypedAction(T* queue_group, const ParamType &params)
       : queue_group_(queue_group),
         goal_(queue_group_->goal.MakeMessage()),
         // This adds 1 to the counter (atomically because it's potentially
         // shared across threads) and then bitwise-ORs the bottom of the PID to
         // differentiate it from other processes's values (ie a unique id).
         run_value_(run_counter_.fetch_add(1, ::std::memory_order_relaxed) |
-                   ((getpid() & 0xFFFF) << 16)) {
+                   ((getpid() & 0xFFFF) << 16)),
+        params_(params) {
     LOG(INFO, "Action %" PRIx32 " created on queue %s\n", run_value_,
         queue_group_->goal.name());
     // Clear out any old status messages from before now.
@@ -172,6 +175,9 @@ class TypedAction : public Action {
 
   // The value we're going to use for goal.run etc.
   const uint32_t run_value_;
+
+  // flag passed to action in order to have differing types
+  const ParamType params_;
 
   // The old value for running that we may have seen. If we see any value other
   // than this or run_value_, somebody else got in the way and we're done. 0 if
@@ -282,6 +288,7 @@ void TypedAction<T>::DoStart() {
   if (goal_) {
     LOG(INFO, "Starting action %" PRIx32 "\n", run_value_);
     goal_->run = run_value_;
+    goal_->params = params_;
     sent_started_ = true;
     if (!goal_.Send()) {
       LOG(ERROR, "sending goal for action %" PRIx32 " failed\n", run_value_);

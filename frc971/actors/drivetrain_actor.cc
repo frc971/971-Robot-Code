@@ -21,12 +21,12 @@ namespace actors {
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
 
-bool DrivetrainActor::RunAction() {
+bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   static const auto K = constants::GetValues().make_drivetrain_loop().K();
 
-  const double yoffset = action_q_->goal->y_offset;
+  const double yoffset = params.y_offset;
   const double turn_offset =
-      action_q_->goal->theta_offset * constants::GetValues().turn_width / 2.0;
+      params.theta_offset * constants::GetValues().turn_width / 2.0;
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
@@ -37,8 +37,8 @@ bool DrivetrainActor::RunAction() {
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;
 
-  profile.set_maximum_acceleration(action_q_->goal->maximum_acceleration);
-  profile.set_maximum_velocity(action_q_->goal->maximum_velocity);
+  profile.set_maximum_acceleration(params.maximum_acceleration);
+  profile.set_maximum_velocity(params.maximum_velocity);
   turn_profile.set_maximum_acceleration(
       10.0 * constants::GetValues().turn_width / 2.0);
   turn_profile.set_maximum_velocity(3.0 * constants::GetValues().turn_width /
@@ -112,13 +112,13 @@ bool DrivetrainActor::RunAction() {
     if (ShouldCancel()) return true;
 
     LOG(DEBUG, "Driving left to %f, right to %f\n",
-        left_goal_state(0, 0) + action_q_->goal->left_initial_position,
-        right_goal_state(0, 0) + action_q_->goal->right_initial_position);
+        left_goal_state(0, 0) + params.left_initial_position,
+        right_goal_state(0, 0) + params.right_initial_position);
     control_loops::drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
         //.highgear(false)
-        .left_goal(left_goal_state(0, 0) + action_q_->goal->left_initial_position)
-        .right_goal(right_goal_state(0, 0) + action_q_->goal->right_initial_position)
+        .left_goal(left_goal_state(0, 0) + params.left_initial_position)
+        .right_goal(right_goal_state(0, 0) + params.right_initial_position)
         .left_velocity_goal(left_goal_state(1, 0))
         .right_velocity_goal(right_goal_state(1, 0))
         .Send();
@@ -137,10 +137,10 @@ bool DrivetrainActor::RunAction() {
 
     const double left_error = ::std::abs(
         control_loops::drivetrain_queue.status->filtered_left_position -
-        (left_goal_state(0, 0) + action_q_->goal->left_initial_position));
+        (left_goal_state(0, 0) + params.left_initial_position));
     const double right_error = ::std::abs(
         control_loops::drivetrain_queue.status->filtered_right_position -
-        (right_goal_state(0, 0) + action_q_->goal->right_initial_position));
+        (right_goal_state(0, 0) + params.right_initial_position));
     const double velocity_error =
         ::std::abs(control_loops::drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
@@ -156,14 +156,10 @@ bool DrivetrainActor::RunAction() {
   return true;
 }
 
-::std::unique_ptr<aos::common::actions::TypedAction<
-    ::frc971::actors::DrivetrainActionQueueGroup>>
-MakeDrivetrainAction() {
-  return ::std::unique_ptr<aos::common::actions::TypedAction<
-      ::frc971::actors::DrivetrainActionQueueGroup>>(
-      new aos::common::actions::TypedAction<
-          ::frc971::actors::DrivetrainActionQueueGroup>(
-          &::frc971::actors::drivetrain_action));
+::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
+    const ::frc971::actors::DrivetrainActionParams& params) {
+  return ::std::unique_ptr<DrivetrainAction>(
+      new DrivetrainAction(&::frc971::actors::drivetrain_action, params));
 }
 
 }  // namespace actors

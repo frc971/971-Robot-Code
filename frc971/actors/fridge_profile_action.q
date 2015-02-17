@@ -2,21 +2,26 @@ package frc971.actors;
 
 import "aos/common/actions/actions.q";
 
+// Parameters to send with start.
+struct FridgeProfileParams {
+  double arm_angle;
+  double arm_max_velocity;
+  double arm_max_acceleration;
+  double elevator_height;
+  double elevator_max_velocity;
+  double elevator_max_acceleration;
+  bool top_front_grabber;
+  bool top_back_grabber;
+  bool bottom_front_grabber;
+  bool bottom_back_grabber;
+};
+
 queue_group FridgeProfileActionQueueGroup {
   implements aos.common.actions.ActionQueueGroup;
 
   message Goal {
     uint32_t run;
-    double arm_angle;
-    double arm_max_velocity;
-    double arm_max_acceleration;
-    double elevator_height;
-    double elevator_max_velocity;
-    double elevator_max_acceleration;
-    bool top_front_grabber;
-    bool top_back_grabber;
-    bool bottom_front_grabber;
-    bool bottom_back_grabber;
+    FridgeProfileParams params;
   };
 
   queue Goal goal;

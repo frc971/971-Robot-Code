@@ -15,12 +15,15 @@ class DrivetrainActor
  public:
   explicit DrivetrainActor(DrivetrainActionQueueGroup* s);
 
-  bool RunAction() override;
+  bool RunAction(const actors::DrivetrainActionParams &params) override;
 };
 
+typedef aos::common::actions::TypedAction<DrivetrainActionQueueGroup>
+    DrivetrainAction;
+
 // Makes a new DrivetrainActor action.
-::std::unique_ptr<aos::common::actions::TypedAction<DrivetrainActionQueueGroup>>
-    MakeDrivetrainAction();
+::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
+    const ::frc971::actors::DrivetrainActionParams& params);
 
 }  // namespace actors
 }  // namespace frc971

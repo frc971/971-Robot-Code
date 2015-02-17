@@ -51,6 +51,7 @@
         'drivetrain_action_lib',
       ],
     },
+
     {
       'target_name': 'fridge_profile_action_queue',
       'type': 'static_library',

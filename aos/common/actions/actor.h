@@ -17,12 +17,17 @@ namespace actions {
 template <class T>
 class ActorBase {
  public:
+  typedef typename std::remove_reference<decltype(
+      *(static_cast<T*>(nullptr)->goal.MakeMessage().get()))>::type GoalType;
+  typedef typename std::remove_reference<
+      decltype(static_cast<GoalType*>(nullptr)->params)>::type ParamType;
+
   ActorBase(T* acq) : action_q_(acq) {}
 
   // Will return true if finished or asked to cancel.
   // Will return false if it failed accomplish its goal
   // due to a problem with the system.
-  virtual bool RunAction() = 0;
+  virtual bool RunAction(const ParamType& params) = 0;
 
   // Runs action while enabled.
   void Run();
@@ -110,7 +115,7 @@ uint32_t ActorBase<T>::RunIteration() {
            .Send()) {
     LOG(ERROR, "Failed to send the status.\n");
   }
-  abort_ = !RunAction();
+  abort_ = !RunAction(action_q_->goal->params);
   LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
 
   // If we have a new one to run, we shouldn't say we're stopped in between.
