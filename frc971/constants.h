@@ -51,7 +51,6 @@ struct Values {
   double drivetrain_done_distance;
   double drivetrain_max_speed;
 
-
   // Superstructure Values /////
 
   struct ZeroingConstants {
