@@ -1,4 +1,4 @@
-package frc971.actions;
+package frc971.actors;
 
 import "aos/common/actions/actions.q";
 

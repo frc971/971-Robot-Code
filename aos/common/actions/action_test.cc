@@ -23,7 +23,7 @@ class TestActorNOP
   explicit TestActorNOP(actions::TestActionQueueGroup* s)
       : actions::ActorBase<actions::TestActionQueueGroup>(s) {}
 
-  void RunAction() { return; }
+  bool RunAction() { return true; }
 };
 
 ::std::unique_ptr<
@@ -41,11 +41,11 @@ class TestActorShouldCancel
   explicit TestActorShouldCancel(actions::TestActionQueueGroup* s)
       : aos::common::actions::ActorBase<actions::TestActionQueueGroup>(s) {}
 
-  void RunAction() {
+  bool RunAction() {
     while (!ShouldCancel()) {
       LOG(FATAL, "NOT CANCELED!!\n");
     }
-    return;
+    return true;
   }
 };
 

@@ -1,4 +1,4 @@
-#include "frc971/actions/drivetrain_actor.h"
+#include "frc971/actors/drivetrain_actor.h"
 
 #include <functional>
 #include <numeric>
@@ -11,17 +11,17 @@
 #include "aos/common/commonmath.h"
 #include "aos/common/time.h"
 
-#include "frc971/actions/drivetrain_actor.h"
+#include "frc971/actors/drivetrain_actor.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
-namespace actions {
+namespace actors {
 
-DrivetrainActor::DrivetrainActor(actions::DrivetrainActionQueueGroup* s)
-    : aos::common::actions::ActorBase<actions::DrivetrainActionQueueGroup>(s) {}
+DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
+    : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
 
-void DrivetrainActor::RunAction() {
+bool DrivetrainActor::RunAction() {
   static const auto K = constants::GetValues().make_drivetrain_loop().K();
 
   const double yoffset = action_q_->goal->y_offset;
@@ -94,7 +94,8 @@ void DrivetrainActor::RunAction() {
       }
     } else {
       // If we ever get here, that's bad and we should just give up
-      LOG(FATAL, "no drivetrain status!\n");
+      LOG(ERROR, "no drivetrain status!\n");
+      return false;
     }
 
     const auto drive_profile_goal_state =
@@ -107,7 +108,8 @@ void DrivetrainActor::RunAction() {
         ::std::abs(turn_profile_goal_state(0, 0) - turn_offset) < epsilon) {
       break;
     }
-    if (ShouldCancel()) return;
+
+    if (ShouldCancel()) return true;
 
     LOG(DEBUG, "Driving left to %f, right to %f\n",
         left_goal_state(0, 0) + action_q_->goal->left_initial_position,
@@ -121,16 +123,16 @@ void DrivetrainActor::RunAction() {
         .right_velocity_goal(right_goal_state(1, 0))
         .Send();
   }
-  if (ShouldCancel()) return;
+  if (ShouldCancel()) return true;
   control_loops::drivetrain_queue.status.FetchLatest();
   while (!control_loops::drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain status packet, trying to fetch again\n");
     control_loops::drivetrain_queue.status.FetchNextBlocking();
-    if (ShouldCancel()) return;
+    if (ShouldCancel()) return true;
   }
   while (true) {
-    if (ShouldCancel()) return;
+    if (ShouldCancel()) return true;
     const double kPositionThreshold = 0.05;
 
     const double left_error = ::std::abs(
@@ -151,17 +153,18 @@ void DrivetrainActor::RunAction() {
     control_loops::drivetrain_queue.status.FetchNextBlocking();
   }
   LOG(INFO, "Done moving\n");
+  return true;
 }
 
 ::std::unique_ptr<aos::common::actions::TypedAction<
-    ::frc971::actions::DrivetrainActionQueueGroup>>
+    ::frc971::actors::DrivetrainActionQueueGroup>>
 MakeDrivetrainAction() {
   return ::std::unique_ptr<aos::common::actions::TypedAction<
-      ::frc971::actions::DrivetrainActionQueueGroup>>(
+      ::frc971::actors::DrivetrainActionQueueGroup>>(
       new aos::common::actions::TypedAction<
-          ::frc971::actions::DrivetrainActionQueueGroup>(
-          &::frc971::actions::drivetrain_action));
+          ::frc971::actors::DrivetrainActionQueueGroup>(
+          &::frc971::actors::drivetrain_action));
 }
 
-}  // namespace actions
+}  // namespace actors
 }  // namespace frc971

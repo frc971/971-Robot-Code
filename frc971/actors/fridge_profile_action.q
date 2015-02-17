@@ -1,0 +1,26 @@
+package frc971.actors;
+
+import "aos/common/actions/actions.q";
+
+queue_group FridgeProfileActionQueueGroup {
+  implements aos.common.actions.ActionQueueGroup;
+
+  message Goal {
+    uint32_t run;
+    double arm_angle;
+    double arm_max_velocity;
+    double arm_max_acceleration;
+    double elevator_height;
+    double elevator_max_velocity;
+    double elevator_max_acceleration;
+    bool top_front_grabber;
+    bool top_back_grabber;
+    bool bottom_front_grabber;
+    bool bottom_back_grabber;
+  };
+
+  queue Goal goal;
+  queue aos.common.actions.Status status;
+};
+
+queue_group FridgeProfileActionQueueGroup fridge_profile_action;

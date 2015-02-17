@@ -19,7 +19,10 @@ class ActorBase {
  public:
   ActorBase(T* acq) : action_q_(acq) {}
 
-  virtual void RunAction() = 0;
+  // Will return true if finished or asked to cancel.
+  // Will return false if it failed accomplish its goal
+  // due to a problem with the system.
+  virtual bool RunAction() = 0;
 
   // Runs action while enabled.
   void Run();
@@ -87,6 +90,7 @@ void ActorBase<T>::WaitForActionRequest() {
       if (!action_q_->status.MakeWithBuilder()
                .running(0)
                .last_running(0)
+               .success(!abort_)
                .Send()) {
         LOG(ERROR, "Failed to send the status.\n");
       }
@@ -102,10 +106,11 @@ uint32_t ActorBase<T>::RunIteration() {
   if (!action_q_->status.MakeWithBuilder()
            .running(running_id)
            .last_running(0)
+           .success(!abort_)
            .Send()) {
     LOG(ERROR, "Failed to send the status.\n");
   }
-  RunAction();
+  abort_ = !RunAction();
   LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
 
   // If we have a new one to run, we shouldn't say we're stopped in between.
@@ -113,6 +118,7 @@ uint32_t ActorBase<T>::RunIteration() {
     if (!action_q_->status.MakeWithBuilder()
              .running(0)
              .last_running(running_id)
+             .success(!abort_)
              .Send()) {
       LOG(ERROR, "Failed to send the status.\n");
     } else {
@@ -142,7 +148,7 @@ void ActorBase<T>::Run() {
   // Make sure the last job is done and we have a signal.
   CheckInitialRunning();
 
-  if (!action_q_->status.MakeWithBuilder().running(0).last_running(0).Send()) {
+  if (!action_q_->status.MakeWithBuilder().running(0).last_running(0).success(!abort_).Send()) {
     LOG(ERROR, "Failed to send the status.\n");
   }
 
