@@ -449,8 +449,8 @@ class DrivetrainWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+    left_drivetrain_talon_->Set(queue->left_voltage / 12.0);
+    right_drivetrain_talon_->Set(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
