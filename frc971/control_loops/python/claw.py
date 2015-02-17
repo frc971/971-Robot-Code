@@ -64,24 +64,21 @@ class Claw(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    print self.A
-
     controlability = controls.ctrb(self.A, self.B);
-    print "Rank of augmented controlability matrix.", numpy.linalg.matrix_rank(controlability)
 
-    q_pos = 0.03
-    q_vel = 0.5
+    q_pos = 0.09
+    q_vel = 1.2
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
-    print self.K
 
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    print 'K', self.K
+    print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
 
-    self.rpl = 0.20
-    self.ipl = 0.05
+    self.rpl = 0.30
+    self.ipl = 0.10
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 

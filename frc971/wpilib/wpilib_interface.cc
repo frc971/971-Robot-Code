@@ -532,8 +532,8 @@ class ClawWriter : public LoopOutputHandler {
     auto &queue = ::frc971::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_intake_talon_->Set(queue->intake_voltage / 12.0);
-    right_intake_talon_->Set(queue->intake_voltage / 12.0);
-    wrist_talon_->Set(queue->voltage / 12.0);
+    right_intake_talon_->Set(-queue->intake_voltage / 12.0);
+    wrist_talon_->Set(-queue->voltage / 12.0);
   }
 
   virtual void Stop() override {

@@ -36,17 +36,17 @@ const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
 // TODO(danielp): Real buttons for all of these.
-const ButtonLocation kElevatorUp(99, 99);
-const ButtonLocation kElevatorDown(99, 99);
-const ButtonLocation kArmUp(99, 99);
-const ButtonLocation kArmDown(99, 99);
-const ButtonLocation kClawUp(99, 99);
-const ButtonLocation kClawDown(99, 99);
+const ButtonLocation kElevatorUp(3, 10);
+const ButtonLocation kElevatorDown(2, 6);
+const ButtonLocation kArmUp(3, 8);
+const ButtonLocation kArmDown(3, 3);
+const ButtonLocation kClawUp(3, 7);
+const ButtonLocation kClawDown(3, 6);
 
 // Testing mode.
-const double kElevatorVelocity = 0.1;
-const double kArmVelocity = 0.2;
-const double kClawVelocity = 0.2;
+const double kElevatorVelocity = 0.5;
+const double kArmVelocity = 0.5;
+const double kClawVelocity = 2.0;
 // TODO(danielp): Verify.
 const double kJoystickDt = 0.01;
 

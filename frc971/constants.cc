@@ -252,7 +252,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
            // Zeroing constants for wrist.
            // TODO(sensors): Get actual offsets for these.
-           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.977913},
+           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.973311},
            6.1663463999999992,
 
            kClawPistonSwitchTime,
