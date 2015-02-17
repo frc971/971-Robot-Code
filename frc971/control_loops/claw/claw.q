@@ -45,6 +45,7 @@ queue_group ClawQueue {
     bool estopped;
     // The internal state of the claw state machine.
     uint32_t state;
+    EstimatorState zeroing_state;
 
     // Angle of wrist joint.
     double angle;

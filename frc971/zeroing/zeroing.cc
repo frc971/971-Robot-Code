@@ -6,6 +6,13 @@
 namespace frc971 {
 namespace zeroing {
 
+void PopulateEstimatorState(const zeroing::ZeroingEstimator &estimator,
+                            EstimatorState *state) {
+  state->error = estimator.error();
+  state->zeroed = estimator.zeroed();
+  state->position = estimator.position();
+}
+
 ZeroingEstimator::ZeroingEstimator(
     const constants::Values::ZeroingConstants& constants) {
   index_diff_ = constants.index_difference;

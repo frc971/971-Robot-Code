@@ -104,6 +104,11 @@ class ZeroingEstimator {
   bool error_;
 };
 
+// Populates an EstimatorState struct with information from the zeroing
+// estimator.
+void PopulateEstimatorState(const ZeroingEstimator &estimator,
+                            EstimatorState *state);
+
 }  // namespace zeroing
 }  // namespace frc971
 
