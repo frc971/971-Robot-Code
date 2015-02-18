@@ -55,6 +55,11 @@ queue_group FridgeQueue {
     // state of the grabber pistons
     GrabberPistons grabbers;
 
+    // Goal angle of the arm.
+    double goal_angle;
+    // Goal height of the elevator.
+    double goal_height;
+
     // If true, we have aborted.
     bool estopped;
 
