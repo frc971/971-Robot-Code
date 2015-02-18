@@ -91,7 +91,6 @@ float CANTalon::Get()
       m_impl->GetSensorPosition(value);
       return value;
     case kPercentVbus:
-    case kFollower:
     default:
       m_impl->GetAppliedThrottle(value);
       return (float)value / 1023.0;
@@ -118,7 +117,7 @@ void CANTalon::Set(float value, uint8_t syncGroup)
   m_safetyHelper->Feed();
   if(m_controlEnabled) {
     m_setPoint = value;
-    CTR_Code status = CTR_OKAY;
+    CTR_Code status;
     switch(m_controlMode) {
       case CANSpeedController::kPercentVbus:
         {
@@ -144,9 +143,7 @@ void CANTalon::Set(float value, uint8_t syncGroup)
       case CANSpeedController::kPosition:
         status = m_impl->SetDemand(value);
         break;
-      // XXX: What about CANSpeedController::kCurrent?
       default:
-        status = CTR_InvalidParamValue;
         break;
     }
     if (status != CTR_OKAY) {
@@ -734,7 +731,7 @@ bool CANTalon::GetForwardLimitOK()
 {
 	int limSwit=0;
 	int softLim=0;
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	status = m_impl->GetFault_ForSoftLim(softLim);
 	if(status != CTR_OKAY) {
 		wpi_setErrorWithContext(status, getHALErrorMessage(status));
@@ -754,7 +751,7 @@ bool CANTalon::GetReverseLimitOK()
 {
 	int limSwit=0;
 	int softLim=0;
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	status = m_impl->GetFault_RevSoftLim(softLim);
 	if(status != CTR_OKAY) {
 		wpi_setErrorWithContext(status, getHALErrorMessage(status));
@@ -774,7 +771,7 @@ uint16_t CANTalon::GetFaults()
 {
 	uint16_t retval = 0;
 	int val;
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 
 	/* temperature */
 	val = 0;
@@ -824,7 +821,7 @@ uint16_t CANTalon::GetStickyFaults()
 {
 	uint16_t retval = 0;
 	int val;
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 
 	/* temperature */
 	val = 0;
@@ -966,7 +963,7 @@ void CANTalon::ClearIaccum()
  */
 void CANTalon::ConfigNeutralMode(NeutralMode mode)
 {
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	switch(mode){
 		default:
 		case kNeutralMode_Jumper: /* use default setting in flash based on webdash/BrakeCal button selection */
@@ -1036,7 +1033,7 @@ void CANTalon::DisableSoftPositionLimits()
  */
 void CANTalon::ConfigLimitMode(LimitMode mode)
 {
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	switch(mode){
 		case kLimitMode_SwitchInputsOnly: 	/** Only use switches for limits */
 			/* turn OFF both limits. SRX has individual enables and polarity for each limit switch.*/
@@ -1095,7 +1092,7 @@ void CANTalon::ConfigLimitMode(LimitMode mode)
  */
 void CANTalon::ConfigForwardLimit(double forwardLimitPosition)
 {
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	status = m_impl->SetForwardSoftLimit(forwardLimitPosition);
 	if(status != CTR_OKAY) {
 		wpi_setErrorWithContext(status, getHALErrorMessage(status));
@@ -1140,7 +1137,7 @@ void CANTalon::ConfigRevLimitSwitchNormallyOpen(bool normallyOpen)
  */
 void CANTalon::ConfigReverseLimit(double reverseLimitPosition)
 {
-	CTR_Code status = CTR_OKAY;
+	CTR_Code status;
 	status = m_impl->SetReverseSoftLimit(reverseLimitPosition);
 	if(status != CTR_OKAY) {
 		wpi_setErrorWithContext(status, getHALErrorMessage(status));

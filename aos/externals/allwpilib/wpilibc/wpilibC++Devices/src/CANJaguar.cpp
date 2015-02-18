@@ -13,7 +13,6 @@
 #include "WPIErrors.h"
 #include <cstdio>
 #include <cassert>
-#include <cstring>
 
 /* we are on ARM-LE now, not Freescale so no need to swap */
 #define swap16(x)	(x)
@@ -409,76 +408,66 @@ void CANJaguar::PIDWrite(float output)
 uint8_t CANJaguar::packPercentage(uint8_t *buffer, double value)
 {
 	int16_t intValue = (int16_t)(value * 32767.0);
-  int16_t swapped = swap16(intValue);
-  memcpy(buffer, &swapped, sizeof(int16_t));
+	*((int16_t*)buffer) = swap16(intValue);
 	return sizeof(int16_t);
 }
 
 uint8_t CANJaguar::packFXP8_8(uint8_t *buffer, double value)
 {
 	int16_t intValue = (int16_t)(value * 256.0);
-  int16_t swapped = swap16(intValue);
-  memcpy(buffer, &swapped, sizeof(int16_t));
+	*((int16_t*)buffer) = swap16(intValue);
 	return sizeof(int16_t);
 }
 
 uint8_t CANJaguar::packFXP16_16(uint8_t *buffer, double value)
 {
 	int32_t intValue = (int32_t)(value * 65536.0);
-  int32_t swapped = swap32(intValue);
-  memcpy(buffer, &swapped, sizeof(int32_t));
+	*((int32_t*)buffer) = swap32(intValue);
 	return sizeof(int32_t);
 }
 
 uint8_t CANJaguar::packint16_t(uint8_t *buffer, int16_t value)
 {
-  int16_t swapped = swap16(value);
-  memcpy(buffer, &swapped, sizeof(int16_t));
+	*((int16_t*)buffer) = swap16(value);
 	return sizeof(int16_t);
 }
 
 uint8_t CANJaguar::packint32_t(uint8_t *buffer, int32_t value)
 {
-  int32_t swapped = swap32(value);
-  memcpy(buffer, &swapped, sizeof(int32_t));
+	*((int32_t*)buffer) = swap32(value);
 	return sizeof(int32_t);
 }
 
 double CANJaguar::unpackPercentage(uint8_t *buffer)
 {
-	int16_t value;
-  memcpy(&value, buffer, sizeof(value));
+	int16_t value = *((int16_t*)buffer);
 	value = swap16(value);
 	return value / 32767.0;
 }
 
 double CANJaguar::unpackFXP8_8(uint8_t *buffer)
 {
-	int16_t value;
-  memcpy(&value, buffer, sizeof(value));
+	int16_t value = *((int16_t*)buffer);
 	value = swap16(value);
 	return value / 256.0;
 }
 
 double CANJaguar::unpackFXP16_16(uint8_t *buffer)
 {
-	int32_t value;
-  memcpy(&value, buffer, sizeof(value));
+	int32_t value = *((int32_t*)buffer);
 	value = swap32(value);
 	return value / 65536.0;
 }
 
 int16_t CANJaguar::unpackint16_t(uint8_t *buffer)
 {
-	int16_t value;
-  memcpy(&value, buffer, sizeof(value));
+	int16_t value = *((int16_t*)buffer);
 	return swap16(value);
 }
 
 int32_t CANJaguar::unpackint32_t(uint8_t *buffer)
 {
-	int32_t value;
-  memcpy(&value, buffer, sizeof(value));
+	int32_t value = *((int32_t*)buffer);
 	return swap32(value);
 }
 
@@ -768,10 +757,6 @@ void CANJaguar::verify()
 			message = LM_API_POS_PC;
 		else if(m_controlMode == kCurrent)
 			message = LM_API_ICTRL_PC;
-    else {
-		  wpi_setWPIErrorWithContext(IncompatibleMode, "PID constants only apply in Speed, Position, and Current mode");
-      return;
-    }
 
 		if(getMessage(message, CAN_MSGID_FULL_M, dataBuffer, &dataSize))
 		{
@@ -800,10 +785,6 @@ void CANJaguar::verify()
 			message = LM_API_POS_IC;
 		else if(m_controlMode == kCurrent)
 			message = LM_API_ICTRL_IC;
-    else {
-		  wpi_setWPIErrorWithContext(IncompatibleMode, "PID constants only apply in Speed, Position, and Current mode");
-      return;
-    }
 
 		if(getMessage(message, CAN_MSGID_FULL_M, dataBuffer, &dataSize))
 		{
@@ -832,10 +813,6 @@ void CANJaguar::verify()
 			message = LM_API_POS_DC;
 		else if(m_controlMode == kCurrent)
 			message = LM_API_ICTRL_DC;
-    else {
-		  wpi_setWPIErrorWithContext(IncompatibleMode, "PID constants only apply in Speed, Position, and Current mode");
-      return;
-    }
 
 		if(getMessage(message, CAN_MSGID_FULL_M, dataBuffer, &dataSize))
 		{

@@ -45,15 +45,11 @@ protected:
 			CTR_Code err;
 			T * operator -> ()
 			{
-        T *r;
-        memcpy(&r, &bytes, sizeof(r));
-        return r;
+				return (T *)bytes;
 			}
 			T & operator*()
 			{
-        T *r;
-        memcpy(&r, &bytes, sizeof(r));
-        return *r;
+				return *(T *)bytes;
 			}
 	};
 	UINT8 _deviceNumber;
@@ -69,7 +65,7 @@ protected:
 		txJobs_t::iterator i = _txJobs.find(arbId);
 		if(i != _txJobs.end()){
 			retval.arbId = i->second.arbId;
-      memcpy(&retval.toSend, &i->second.toSend, sizeof(retval.toSend));
+			retval.toSend = (T*)i->second.toSend;
 		}
 		return retval;
 	}

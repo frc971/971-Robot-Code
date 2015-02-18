@@ -107,7 +107,6 @@ Joystick::~Joystick()
 /**
  * Get the X value of the joystick.
  * This depends on the mapping of the joystick connected to the current port.
- * @param hand This parameter is ignored for the Joystick class and is only here to complete the GenericHID interface.
  */
 float Joystick::GetX(JoystickHand hand)
 {
@@ -117,7 +116,6 @@ float Joystick::GetX(JoystickHand hand)
 /**
  * Get the Y value of the joystick.
  * This depends on the mapping of the joystick connected to the current port.
- * @param hand This parameter is ignored for the Joystick class and is only here to complete the GenericHID interface.
  */
 float Joystick::GetY(JoystickHand hand)
 {
