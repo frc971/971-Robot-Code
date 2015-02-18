@@ -38,8 +38,9 @@
         '<@(header_dirs)'
       ],
       'cflags': [
-        '-Wno-error=unused-parameter',
-        '-Wno-error=switch-enum',
+        '-Wno-error',
+        '-fno-strict-aliasing',
+        '-O0',
       ],
       'sources': [
         '<!@(ls <(allwpilib)/wpilibc/wpilibC++/src/*.cpp)',

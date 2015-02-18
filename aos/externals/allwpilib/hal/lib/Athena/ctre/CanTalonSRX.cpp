@@ -304,18 +304,17 @@ void CanTalonSRX::ProcessStreamMessages()
 	for (i = 0; i < messagesRead; ++i) {
 		tCANStreamMessage * msg = _msgBuff + i;
 		if(msg->messageID == (PARAM_RESPONSE | GetDeviceNumber()) ){
-			TALON_Param_Response_t paramResp;
-      memcpy(&paramResp, msg->data, sizeof(paramResp));
+			TALON_Param_Response_t * paramResp = (TALON_Param_Response_t*)msg->data;
 			/* decode value */
-			int32_t val = paramResp.ParamValueH;
+			int32_t val = paramResp->ParamValueH;
 			val <<= 8;
-			val |=  paramResp.ParamValueMH;
+			val |=  paramResp->ParamValueMH;
 			val <<= 8;
-			val |=  paramResp.ParamValueML;
+			val |=  paramResp->ParamValueML;
 			val <<= 8;
-			val |=  paramResp.ParamValueL;
+			val |=  paramResp->ParamValueL;
 			/* save latest signal */
-			_sigs[paramResp.ParamEnum] = val;
+			_sigs[paramResp->ParamEnum] = val;
 		}else{
 			int brkpthere = 42;
 			++brkpthere;
