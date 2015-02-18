@@ -149,7 +149,7 @@ TEST_F(ClawTest, DoesNothing) {
       .angle(values.claw.wrist.lower_limit)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   // We should not have moved.
   VerifyNearGoal();
@@ -165,7 +165,7 @@ TEST_F(ClawTest, Zeroes) {
       .angle(M_PI / 4.0)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   ASSERT_TRUE(claw_queue_.status.FetchLatest());
   EXPECT_TRUE(claw_queue_.status->zeroed);
@@ -198,7 +198,7 @@ TEST_F(ClawTest, ReachesGoal) {
       .angle(M_PI / 4.0)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(6));
 
   VerifyNearGoal();
 }
@@ -211,7 +211,7 @@ TEST_F(ClawTest, RespectsRange) {
       .angle(values.claw.wrist.upper_hard_limit + 5.0)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   claw_queue_.status.FetchLatest();
   EXPECT_NEAR(values.claw.wrist.upper_limit,
@@ -238,7 +238,7 @@ TEST_F(ClawTest, LowerHardstopStartup) {
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
       .angle(M_PI / 4.0)
       .Send());
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   VerifyNearGoal();
 }
@@ -251,7 +251,7 @@ TEST_F(ClawTest, UpperHardstopStartup) {
       .angle(M_PI / 4.0)
       .Send());
   // Zeroing will take a long time here.
-  RunForTime(Time::InMS(12000));
+  RunForTime(Time::InSeconds(15));
 
   VerifyNearGoal();
 }
@@ -268,7 +268,7 @@ TEST_F(ClawTest, WpilibReset) {
       .angle(M_PI / 4.0)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
   VerifyNearGoal();
 
   SimulateSensorReset();
@@ -278,7 +278,7 @@ TEST_F(ClawTest, WpilibReset) {
 
   // Once again, it's going to take us awhile to rezero since we moved away from
   // our index pulse.
-  RunForTime(Time::InMS(10000));
+  RunForTime(Time::InSeconds(5));
   VerifyNearGoal();
 }
 

@@ -113,41 +113,40 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
-          // TODO(sensors): Get actual bounds before turning on robot.
           {// Claw values, in radians.
            // 0 is level with the ground.
            // Positive moves in the direction of positive encoder values.
-           {0.0000000000, 1.5700000000, 0.1000000000, 1.2000000000},
+           {-0.05, M_PI / 2.0 + 0.1, 0.0, M_PI / 2.0},
 
            // Zeroing constants for wrist.
-           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.35},
+           {kZeroingSampleSize, kClawEncoderIndexDifference,
+            0.9},
 
-           0.0,
+           6.308141,
            kClawPistonSwitchTime,
            kClawZeroingRange},
 
           {// Elevator values, in meters.
-           // TODO(austin): Fix this.  Positive is up.
-           // 0 is at the top of the elevator frame.
-           // Positive is down towards the drivebase.
-           {0.0000000000, 0.6790000000, 0.2000000000, 0.6000000000},
+           // 0 is the portion of the elevator carriage that Spencer removed
+           // lining up with the bolt.
+           // Positive is up.
+           {-0.005, 0.679000, 0.010000, 0.650000},
 
            // Arm values, in radians.
            // 0 is sticking straight out horizontally over the intake/front.
            // Positive is rotating up and into the robot (towards the back).
-           {-1.570000000, 1.5700000000, -1.200000000, 1.2000000000},
+           {-M_PI / 2 - 0.05, M_PI / 2 + 0.05, -M_PI / 2, M_PI / 2},
 
            // Elevator zeroing constants: left, right.
-           // TODO(sensors): Get actual offsets for these.
            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-           0.0,
-           0.0,
-           0.0,
-           0.0,
+           0.7,
+           -0.08,
+           -3.5 - 0.01 - -0.02,
+           3.5 - 0.17 - -0.15,
 
            kArmZeroingHeight,
            kElevatorNormalHeight,
