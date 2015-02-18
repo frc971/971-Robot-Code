@@ -36,6 +36,9 @@ struct Values {
   // The ratio from the pot shaft to the claw joint.
   double claw_pot_ratio;
 
+  // How tall a tote is in meters.
+  double tote_height;
+
   // The gear ratios from motor shafts to the drivetrain wheels for high and low
   // gear.
   double low_gear_ratio;
@@ -105,8 +108,6 @@ struct Values {
 
     // How high the elevator has to be before we start zeroing the arm.
     double arm_zeroing_height;
-    // The height at which the fridge should hang out by default.
-    double normal_height;
   };
   Fridge fridge;
 

@@ -1,0 +1,31 @@
+#ifndef FRC971_ACTORS_STACK_ACTOR_H_
+#define FRC971_ACTORS_STACK_ACTOR_H_
+
+#include <stdint.h>
+
+#include <memory>
+
+#include "aos/common/actions/actions.h"
+#include "aos/common/actions/actor.h"
+#include "frc971/actors/stack_action.q.h"
+
+namespace frc971 {
+namespace actors {
+
+class StackActor
+    : public aos::common::actions::ActorBase<StackActionQueueGroup> {
+ public:
+  explicit StackActor(StackActionQueueGroup *queues);
+
+  bool RunAction(const uint32_t&) override;
+};
+
+typedef aos::common::actions::TypedAction<StackActionQueueGroup> StackAction;
+
+// Makes a new stackActor action.
+::std::unique_ptr<StackAction> MakeStackAction();
+
+}  // namespace actors
+}  // namespace frc971
+
+#endif

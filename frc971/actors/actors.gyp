@@ -167,5 +167,51 @@
         'score_action_lib',
       ],
     },
+    {
+      'target_name': 'stack_action_queue',
+      'type': 'static_library',
+      'sources': ['stack_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'stack_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'stack_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_action_lib',
+        'stack_action_queue',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_action_queue',
+      ],
+    },
+    {
+      'target_name': 'stack_action',
+      'type': 'executable',
+      'sources': [
+        'stack_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_action_queue',
+        'stack_action_lib',
+      ],
+    },
   ],
 }

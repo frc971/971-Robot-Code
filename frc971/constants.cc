@@ -43,6 +43,8 @@ const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95,
                                                    2.95, 0.2,  0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95,
                                                   3.0,  0.2, 0.7};
+// TODO(danielp): Actually measure one of them...
+const double kToteHeight = 0.5;
 
 // Set by Daniel on 2/13/15.
 // Distance from the center of the left wheel to the center of the right wheel.
@@ -58,7 +60,6 @@ const double kElevatorGearboxOutputRadianDistance =
     (2.0 * M_PI);
 
 const double kArmZeroingHeight = 0.2;
-const double kElevatorNormalHeight = 0.1;
 
 const double kMaxAllowedLeftRightArmDifference = 0.04;       // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
@@ -100,6 +101,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kElevatorGearboxOutputRadianDistance,
           kClawEncoderRatio,
           kClawPotRatio,
+          kToteHeight,
           kLowGearRatio,
           kHighGearRatio,
           kCompLeftDriveShifter,
@@ -150,7 +152,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            0.0,
 
            kArmZeroingHeight,
-           kElevatorNormalHeight,
           },
           // End "sensor" values.
 
@@ -168,6 +169,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kElevatorGearboxOutputRadianDistance,
           kClawEncoderRatio,
           kClawPotRatio,
+          kToteHeight,
           kLowGearRatio,
           kHighGearRatio,
           kCompLeftDriveShifter,
@@ -219,7 +221,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.506927 - 0.170017 - -0.147970,
 
            kArmZeroingHeight,
-           kElevatorNormalHeight,
           },
           // End "sensor" values.
 
@@ -237,6 +238,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kElevatorGearboxOutputRadianDistance,
           kClawEncoderRatio,
           kClawPotRatio,
+          kToteHeight,
           kLowGearRatio,
           kHighGearRatio,
           kPracticeLeftDriveShifter,
@@ -289,7 +291,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.5263507647058816 - 0.018921 + 0.006545,
 
            kArmZeroingHeight,
-           kElevatorNormalHeight,
           },
           // TODO(sensors): End "sensor" values.
 
