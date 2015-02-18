@@ -27,19 +27,21 @@ const char *kArgsHelp = "[OPTION]... [FILE]\n"
     "FILE is \"aos_log-current\" by default.\n"
     "FILE can also be \"-\" to read from standard input.\n"
     "\n"
-    "  -n, --name NAME       only display entries from processes named NAME\n"
-    "  -l, --level LEVEL     "
+    "  -n, --name-prefix NAME  "
+    "only display entries from processes which share NAME as a prefix\n"
+    "  -N, --name NAME         only display entries from processes named NAME\n"
+    "  -l, --level LEVEL       "
       "only display log entries at least as important as LEVEL\n"
-    "  -p, --pid PID        only display log entries from process PID\n"
-    "  -f, --follow          "
+    "  -p, --pid PID           only display log entries from process PID\n"
+    "  -f, --follow            "
       "wait when the end of the file is reached (implies --end)\n"
-    "  -t, --terminate       stop when the end of file is reached (default)\n"
-    "  -b, --beginning       start at the beginning of the file (default)\n"
-    "  -e, --end             start at the end of the file\n"
-    "  -s, --skip NUMBER     skip NUMBER matching logs\n"
-    "  -m, --max NUMBER     only display up to NUMBER logs\n"
+    "  -t, --terminate         stop when the end of file is reached (default)\n"
+    "  -b, --beginning         start at the beginning of the file (default)\n"
+    "  -e, --end               start at the end of the file\n"
+    "  -s, --skip NUMBER       skip NUMBER matching logs\n"
+    "  -m, --max NUMBER        only display up to NUMBER logs\n"
     "  // -o, --format FORMAT  use FORMAT to display log entries\n"
-    "  -h, --help            display this help and exit\n"
+    "  -h, --help              display this help and exit\n"
     "\n"
     "LEVEL must be DEBUG, INFO, WARNING, ERROR, or FATAL.\n"
     "  It defaults to INFO.\n"
@@ -110,7 +112,7 @@ void PrintHelpAndExit() {
 }  // namespace
 
 int main(int argc, char **argv) {
-  const char *filter_name = NULL;
+  const char *filter_name = nullptr, *filter_exact_name = nullptr;
   size_t filter_length = 0;
   log_level filter_level = INFO;
   bool follow = false;
@@ -126,7 +128,8 @@ int main(int argc, char **argv) {
 
   while (true) {
     static struct option long_options[] = {
-      {"name", required_argument, NULL, 'n'},
+      {"name-prefix", required_argument, NULL, 'n'},
+      {"name", required_argument, NULL, 'N'},
       {"level", required_argument, NULL, 'l'},
       {"pid", required_argument, NULL, 'p'},
 
@@ -155,6 +158,12 @@ int main(int argc, char **argv) {
         abort();
       case 'n':
         filter_name = optarg;
+        filter_exact_name = nullptr;
+        filter_length = strlen(filter_name);
+        break;
+      case 'N':
+        filter_exact_name = optarg;
+        filter_name = nullptr;
         filter_length = strlen(filter_name);
         break;
       case 'l':
@@ -288,12 +297,22 @@ int main(int argc, char **argv) {
     }
 
     if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
-    if (filter_name != NULL) {
-      if (filter_length != msg->name_size) continue;
+
+    if (filter_name != nullptr) {
+      const size_t compare_length =
+          ::std::min<size_t>(filter_length, msg->name_size);
       if (memcmp(filter_name,
                  reinterpret_cast<const char *>(msg) + sizeof(*msg),
-                 filter_length) !=
-          0) {
+                 compare_length) != 0) {
+        continue;
+      }
+    }
+
+    if (filter_exact_name != nullptr) {
+      if (filter_length != msg->name_size) continue;
+      if (memcmp(filter_exact_name,
+                 reinterpret_cast<const char *>(msg) + sizeof(*msg),
+                 filter_length) != 0) {
         continue;
       }
     }
