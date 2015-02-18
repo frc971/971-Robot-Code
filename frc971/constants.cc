@@ -39,8 +39,10 @@ const double kHighGearRatio = kLowGearRatio;
 const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
 const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
 
-const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
-const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
+const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95,
+                                                   2.95, 0.2,  0.7};
+const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95,
+                                                  3.0,  0.2, 0.7};
 
 // Set by Daniel on 2/13/15.
 // Distance from the center of the left wheel to the center of the right wheel.
@@ -56,8 +58,9 @@ const double kElevatorGearboxOutputRadianDistance =
     (2.0 * M_PI);
 
 const double kArmZeroingHeight = 0.2;
+const double kElevatorNormalHeight = 0.1;
 
-const double kMaxAllowedLeftRightArmDifference = 0.04;  // radians
+const double kMaxAllowedLeftRightArmDifference = 0.04;       // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
 
 // Gearing ratios of the pots and encoders for the elevator and arm.
@@ -71,11 +74,10 @@ const double kClawEncoderRatio = 18.0 / 72.0;
 const double kClawPotRatio = 18.0 / 72.0;
 
 // Number of radians between each index pulse on the arm.
-const double kArmEncoderIndexDifference = 2.0 * M_PI *  kArmEncoderRatio;
+const double kArmEncoderIndexDifference = 2.0 * M_PI * kArmEncoderRatio;
 // Number of meters between each index pulse on the elevator.
 const double kElevatorEncoderIndexDifference =
-    kElevatorEncoderRatio *
-    2.0 * M_PI * // radians
+    kElevatorEncoderRatio * 2.0 * M_PI *  // radians
     kElevatorGearboxOutputRadianDistance;
 // Number of radians between index pulses on the claw.
 const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
@@ -112,45 +114,43 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
           // TODO(sensors): Get actual bounds before turning on robot.
-          {
-            // Claw values, in radians.
-            // 0 is level with the ground.
-            // Positive moves in the direction of positive encoder values.
-            {0.0000000000, 1.5700000000,
-             0.1000000000, 1.2000000000},
+          {// Claw values, in radians.
+           // 0 is level with the ground.
+           // Positive moves in the direction of positive encoder values.
+           {0.0000000000, 1.5700000000, 0.1000000000, 1.2000000000},
 
-            // Zeroing constants for wrist.
-            {kZeroingSampleSize, kClawEncoderIndexDifference, 0.35},
+           // Zeroing constants for wrist.
+           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.35},
 
-            0.0,
-            kClawPistonSwitchTime,
-            kClawZeroingRange
-          },
+           0.0,
+           kClawPistonSwitchTime,
+           kClawZeroingRange},
 
-          {
-            // Elevator values, in meters.
-            // TODO(austin): Fix this.  Positive is up.
-            // 0 is at the top of the elevator frame.
-            // Positive is down towards the drivebase.
-            {0.0000000000, 0.6790000000,
-             0.2000000000, 0.6000000000},
+          {// Elevator values, in meters.
+           // TODO(austin): Fix this.  Positive is up.
+           // 0 is at the top of the elevator frame.
+           // Positive is down towards the drivebase.
+           {0.0000000000, 0.6790000000, 0.2000000000, 0.6000000000},
 
-            // Arm values, in radians.
-            // 0 is sticking straight out horizontally over the intake/front.
-            // Positive is rotating up and into the robot (towards the back).
-            {-1.570000000, 1.5700000000,
-             -1.200000000, 1.2000000000},
+           // Arm values, in radians.
+           // 0 is sticking straight out horizontally over the intake/front.
+           // Positive is rotating up and into the robot (towards the back).
+           {-1.570000000, 1.5700000000, -1.200000000, 1.2000000000},
 
-            // Elevator zeroing constants: left, right.
-            // TODO(sensors): Get actual offsets for these.
-            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-            {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
-            // Arm zeroing constants: left, right.
-            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
-            0.0, 0.0, 0.0, 0.0,
+           // Elevator zeroing constants: left, right.
+           // TODO(sensors): Get actual offsets for these.
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.0},
+           // Arm zeroing constants: left, right.
+           {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+           {kZeroingSampleSize, kArmEncoderIndexDifference, 0.0},
+           0.0,
+           0.0,
+           0.0,
+           0.0,
 
-            kArmZeroingHeight,
+           kArmZeroingHeight,
+           kElevatorNormalHeight,
           },
           // End "sensor" values.
 
@@ -217,7 +217,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            -0.081354,
            -3.509611 - 0.007415 - -0.019081,
            3.506927 - 0.170017 - -0.147970,
-            kArmZeroingHeight,
+
+           kArmZeroingHeight,
+           kElevatorNormalHeight,
           },
           // End "sensor" values.
 
@@ -260,8 +262,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            6.1663463999999992,
 
            kClawPistonSwitchTime,
-           kClawZeroingRange
-          },
+           kClawZeroingRange},
 
           {// Elevator values, in meters.
            // 0 is at the top of the elevator frame.
@@ -275,8 +276,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
            // Elevator zeroing constants: left, right.
            // TODO(sensors): Get actual offsets for these.
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.016041 + 0.001290},
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.011367 + 0.003216},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference,
+            0.016041 + 0.001290},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference,
+            0.011367 + 0.003216},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.312677},
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.40855},
@@ -286,6 +289,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.5263507647058816 - 0.018921 + 0.006545,
 
            kArmZeroingHeight,
+           kElevatorNormalHeight,
           },
           // TODO(sensors): End "sensor" values.
 
