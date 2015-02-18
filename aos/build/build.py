@@ -423,9 +423,7 @@ class PrimeProcessor(Processor):
 
     def priority(self):
       r = 0
-      if self.compiler() == 'gcc':
-        r -= 100
-      elif self.compiler() == 'clang':
+      if self.compiler() == 'clang':
         r += 100
       if self.sanitizer() != 'none':
         r -= 50
@@ -514,7 +512,7 @@ class PrimeProcessor(Processor):
       return r
 
   ARCHITECTURES = ('arm', 'amd64')
-  COMPILERS = ('clang', 'gcc', 'gcc_frc')
+  COMPILERS = ('clang', 'gcc_frc')
   SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
   SANITIZER_TEST_WARNINGS = {
       'memory': (True,
@@ -660,9 +658,6 @@ class PrimeProcessor(Processor):
         packages.add('libcloog-isl3:amd64')
       if is_deploy:
         packages.add('openssh-client')
-      if platform.compiler() == 'gcc' and platform.architecture() == 'amd64':
-        packages.add('gcc-4.7')
-        packages.add('g++-4.7')
       elif platform.compiler() == 'gcc_frc' or platform.compiler() == 'clang_frc':
         packages.add('gcc-4.9-arm-frc-linux-gnueabi')
         packages.add('g++-4.9-arm-frc-linux-gnueabi')

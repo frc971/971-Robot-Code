@@ -68,12 +68,6 @@
           ['CXX', '<(ccache)<!(which clang++)'],
         ],
       },
-    ], ['PLATFORM=="linux-amd64-gcc"', {
-        'make_global_settings': [
-          ['CC', '<(ccache)<!(which gcc-4.7)'],
-          ['CXX', '<(ccache)<!(which g++-4.7)'],
-        ],
-      },
     ], ['PLATFORM=="linux-amd64-gcc_4.8"', {
         'make_global_settings': [
           ['CC', '<(ccache)/opt/clang-3.5/bin/gcc'],
