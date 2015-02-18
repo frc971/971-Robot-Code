@@ -311,7 +311,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
                           right_elevator_estimator_.offset());
         LOG(DEBUG, "Zeroed the elevator!\n");
 
-        if (elevator() > values.fridge.arm_zeroing_height &&
+        if (elevator() < values.fridge.arm_zeroing_height &&
             state_ != INITIALIZING) {
           // Move the elevator to a safe height before we start zeroing the arm,
           // so that we don't crash anything.
@@ -517,6 +517,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   status->zeroed = state_ == RUNNING;
   status->angle = arm_loop_->X_hat(0, 0);
   status->height = elevator_loop_->X_hat(0, 0);
+  status->goal_angle = arm_goal_;
+  status->goal_height = elevator_goal_;
   if (unsafe_goal) {
     status->grabbers = unsafe_goal->grabbers;
   } else {

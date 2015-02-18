@@ -346,7 +346,7 @@ TEST_F(FridgeTest, UpperHardstopStartup) {
       constants::GetValues().fridge.arm.upper_hard_limit,
       constants::GetValues().fridge.arm.upper_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InMS(5000));
 
   VerifyNearGoal();
 }
@@ -466,14 +466,14 @@ TEST_F(FridgeTest, ResetTest) {
       constants::GetValues().fridge.arm.upper_hard_limit,
       constants::GetValues().fridge.arm.upper_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InMS(5000));
 
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
   VerifyNearGoal();
   SimulateSensorReset();
   RunForTime(Time::InMS(100));
   EXPECT_NE(Fridge::RUNNING, fridge_.state());
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InMS(6000));
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
   VerifyNearGoal();
 }
@@ -487,7 +487,7 @@ TEST_F(FridgeTest, DisabledGoalTest) {
   EXPECT_EQ(0.0, fridge_.arm_goal_);
 
   // Now make sure they move correctly
-  RunForTime(Time::InMS(1000), true);
+  RunForTime(Time::InMS(4000), true);
   EXPECT_NE(0.0, fridge_.elevator_goal_);
   EXPECT_NE(0.0, fridge_.arm_goal_);
 }
