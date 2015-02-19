@@ -16,6 +16,7 @@
     'libevent_version': '2.0.21',
     'libcdd_version': '094g',
     'stm32flash_commit': '8399fbe1baf2b7d097746786458021d92895d71b',
+    'seasocks_version': '1.1.2',
 
     'allwpilib': '<(AOS)/externals/allwpilib',
     'forwpilib': '<(AOS)/externals/forwpilib',
@@ -181,6 +182,31 @@
       },
       'direct_dependent_settings': {
         'include_dirs': ['<(compiled_abs)/'],
+      },
+    },
+    {
+      'target_name': 'seasocks',
+      'type': 'static_library',
+      'sources': [
+        '<!@(find <(externals)/seasocks-<(seasocks_version)/src/main/c -name *.cpp)',
+      ],
+      'include_dirs': [
+        '<(AOS)/externals/seasocks',
+        '<(externals_abs)/seasocks-<(seasocks_version)/src/main/c',
+      ],
+      'cflags': [
+        '-Wno-unused-parameter',
+        '-Wno-format-nonliteral',
+        '-Wno-error=cast-align',
+        '-Wno-switch-enum',
+        '-Wno-cast-qual',
+        '-Wno-error=strict-aliasing',
+      ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '<(AOS)/externals/seasocks',
+          '<(externals)/seasocks-<(seasocks_version)/src/main/c',
+        ],
       },
     },
   ],
