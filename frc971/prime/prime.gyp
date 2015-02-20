@@ -22,6 +22,7 @@
         '../actors/actors.gyp:drivetrain_action',
         '../actors/actors.gyp:fridge_profile_action',
         '../actors/actors.gyp:score_action',
+        '../actors/actors.gyp:stack_action',
         '../actors/actors.gyp:fridge_profile_action_test',
       ],
       'copies': [

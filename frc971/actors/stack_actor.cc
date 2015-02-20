@@ -1,14 +1,11 @@
-#include "frc971/actors/score_actor.h"
-
 #include <math.h>
 
-#include "aos/common/logging/logging.h"
+#include "frc971/actors/stack_actor.h"
 #include "frc971/actors/fridge_profile_actor.h"
 #include "frc971/constants.h"
 
 namespace frc971 {
 namespace actors {
-
 namespace {
 
 // TODO(danielp): Real numbers!
@@ -19,19 +16,19 @@ constexpr double kArmMaxAccel = 0.25;
 
 }  // namespace
 
-ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
-    : aos::common::actions::ActorBase<ScoreActionQueueGroup>(queues) {}
+StackActor::StackActor(StackActionQueueGroup* queues)
+    : aos::common::actions::ActorBase<StackActionQueueGroup>(queues) {}
 
 namespace {
 
-void DoProfile(double height, double angle, bool grabbers) {
+void DoProfile(double height, bool grabbers) {
   FridgeProfileParams params;
 
   params.elevator_height = height;
   params.elevator_max_velocity = kElevatorMaxVelocity;
   params.elevator_max_acceleration = kElevatorMaxAccel;
 
-  params.arm_angle = angle;
+  params.arm_angle = M_PI / 2.0;
   params.arm_max_velocity = kArmMaxVelocity;
   params.arm_max_acceleration = kArmMaxAccel;
 
@@ -47,25 +44,23 @@ void DoProfile(double height, double angle, bool grabbers) {
 
 }  // namespace
 
-bool ScoreActor::RunAction(const ScoreParams& params) {
+bool StackActor::RunAction(const uint32_t&) {
   const auto& values = constants::GetValues();
+  const double bottom = values.fridge.elevator.lower_limit;
 
-  // We're going to move the elevator first so we don't crash the fridge into
-  // the ground.
-  DoProfile(values.fridge.arm_zeroing_height, M_PI / 2.0, true);
-  // Now move them both together.
-  DoProfile(params.height, M_PI, true);
-  // Release the totes.
-  DoProfile(values.fridge.arm_zeroing_height, M_PI / 2.0, false);
-  // Retract. Move back to our lowered position.
-  DoProfile(values.fridge.elevator.lower_limit, M_PI / 2.0, false);
+  // Set the current stack down on top of the bottom box.
+  DoProfile(bottom + values.tote_height, true);
+  // Move down to enclose bottom box.
+  DoProfile(bottom, false);
+  // Clamp.
+  DoProfile(bottom, true);
 
   return true;
 }
 
-::std::unique_ptr<ScoreAction> MakeScoreAction(const ScoreParams& params) {
-  return ::std::unique_ptr<ScoreAction>(
-      new ScoreAction(&::frc971::actors::score_action, params));
+::std::unique_ptr<StackAction> MakeStackAction() {
+  return ::std::unique_ptr<StackAction>(
+      new StackAction(&::frc971::actors::stack_action, 0));
 }
 
 }  // namespace actors
