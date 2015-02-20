@@ -246,6 +246,8 @@ class SensorReader {
       new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
       new_state->voltage_battery = ds_->GetBatteryVoltage();
 
+      LOG_STRUCT(DEBUG, "robot_state", *new_state);
+
       new_state.Send();
     }
 
