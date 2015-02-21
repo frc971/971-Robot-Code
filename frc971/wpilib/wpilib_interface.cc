@@ -38,6 +38,7 @@
 #include "DriverStation.h"
 #include "AnalogInput.h"
 #include "Compressor.h"
+#include "Relay.h"
 #include "RobotBase.h"
 #include "dma.h"
 #include "ControllerPower.h"
@@ -363,8 +364,16 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
       : pcm_(pcm),
-      fridge_(".frc971.control_loops.fridge.output"),
-      claw_(".frc971.control_loops.claw.output") {}
+        fridge_(".frc971.control_loops.fridge_queue.output"),
+        claw_(".frc971.control_loops.claw_queue.output") {}
+
+  void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
+    pressure_switch_ = ::std::move(pressure_switch);
+  }
+
+  void set_compressor_relay(::std::unique_ptr<Relay> compressor_relay) {
+    compressor_relay_ = ::std::move(compressor_relay);
+  }
 
   void set_fridge_grabbers_top_front(::std::unique_ptr<BufferedSolenoid> s) {
     fridge_grabbers_top_front_ = ::std::move(s);
@@ -410,8 +419,13 @@ class SolenoidWriter {
         claw_.FetchLatest();
         if (claw_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *claw_);
-          claw_pinchers_->Set(claw_->rollers_closed);
+          claw_pinchers_->Set(!claw_->rollers_closed);
         }
+      }
+      if (!pressure_switch_->Get()) {
+        compressor_relay_->Set(Relay::kForward);
+      } else {
+        compressor_relay_->Set(Relay::kOff);
       }
 
       pcm_->Flush();
@@ -427,6 +441,8 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_front_;
   ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_back_;
   ::std::unique_ptr<BufferedSolenoid> claw_pinchers_;
+  ::std::unique_ptr<DigitalSource> pressure_switch_;
+  ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::frc971::control_loops::FridgeQueue::Output> fridge_;
   ::aos::Queue<::frc971::control_loops::ClawQueue::Output> claw_;
@@ -571,8 +587,6 @@ class WPILibRobot : public RobotBase {
     JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
     // TODO(austin): Compressor needs to use a spike.
-    ::std::unique_ptr<Compressor> compressor(new Compressor());
-    compressor->SetClosedLoopControl(true);
 
     SensorReader reader;
     LOG(INFO, "Creating the reader\n");
@@ -635,11 +649,14 @@ class WPILibRobot : public RobotBase {
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_fridge_grabbers_top_front(pcm->MakeSolenoid(1));
-    solenoid_writer.set_fridge_grabbers_top_back(pcm->MakeSolenoid(1));
+    solenoid_writer.set_fridge_grabbers_top_front(pcm->MakeSolenoid(0));
+    solenoid_writer.set_fridge_grabbers_top_back(pcm->MakeSolenoid(0));
     solenoid_writer.set_fridge_grabbers_bottom_front(pcm->MakeSolenoid(2));
-    solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(3));
-    solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(0));
+    solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(1));
+    solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(4));
+
+    solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
+    solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
