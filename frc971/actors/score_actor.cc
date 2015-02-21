@@ -52,13 +52,13 @@ bool ScoreActor::RunAction(const ScoreParams& params) {
 
   // We're going to move the elevator first so we don't crash the fridge into
   // the ground.
-  DoProfile(values.fridge.arm_zeroing_height, M_PI / 2.0, true);
+  DoProfile(values.fridge.arm_zeroing_height, 0.0, true);
   // Now move them both together.
-  DoProfile(params.height, M_PI, true);
+  DoProfile(params.height, M_PI / 2.0, true);
   // Release the totes.
-  DoProfile(values.fridge.arm_zeroing_height, M_PI / 2.0, false);
+  DoProfile(values.fridge.arm_zeroing_height, 0.0, false);
   // Retract. Move back to our lowered position.
-  DoProfile(values.fridge.elevator.lower_limit, M_PI / 2.0, false);
+  DoProfile(values.fridge.elevator.lower_limit, 0.0, false);
 
   return true;
 }

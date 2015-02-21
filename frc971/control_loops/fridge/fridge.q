@@ -15,13 +15,14 @@ struct GrabberPistons {
 queue_group FridgeQueue {
   implements aos.control_loops.ControlLoop;
 
-  // All angles are in radians with 0 sticking straight out horizontally over
-  // the intake (the front). Rotating up and into the robot (towards the back
+  // All angles are in radians with 0 sticking straight up.
+  // Rotating up and into the robot (towards the back
   // where boxes are placed) is positive. Positive output voltage moves all
   // mechanisms in the direction with positive sensor values.
 
-  // Elevator heights are the vertical distance (in meters) from the top of the
-  // frame (at the front and back) to the axis of the bottom pivot of the arm.
+  // Elevator heights are the vertical distance (in meters) from a defined zero.
+  // In this case, zero is where the portion of the carriage that Spencer
+  // removed lines up with the bolt.
 
   message Goal {
     // Angle of the arm.
@@ -47,7 +48,7 @@ queue_group FridgeQueue {
   message Status {
     // Are both the arm and elevator zeroed?
     bool zeroed;
-    
+
     // Angle of the arm.
     double angle;
     // Height of the elevator.

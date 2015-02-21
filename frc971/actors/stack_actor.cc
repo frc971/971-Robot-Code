@@ -28,7 +28,7 @@ void DoProfile(double height, bool grabbers) {
   params.elevator_max_velocity = kElevatorMaxVelocity;
   params.elevator_max_acceleration = kElevatorMaxAccel;
 
-  params.arm_angle = M_PI / 2.0;
+  params.arm_angle = 0.0;
   params.arm_max_velocity = kArmMaxVelocity;
   params.arm_max_acceleration = kArmMaxAccel;
 
