@@ -196,7 +196,9 @@ class Queue {
   void FetchAnother();
 
   // Returns the age of the message.
-  const time::Time Age() const { return time::Time::Now() - queue_msg_->sent_time; }
+  const time::Time Age() const {
+    return time::Time::Now() - queue_msg_->sent_time;
+  }
 
   // Returns true if the latest value in the queue is newer than age mseconds.
   // DEPRECATED(brians): Use IsNewerThan(const time::Time&) instead.
