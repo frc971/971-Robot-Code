@@ -45,7 +45,7 @@ class Arm(control_loop.ControlLoop):
     self.J = self.r * self.mass
 
     # Arm left/right spring constant (N*m / radian)
-    self.spring = 400.0
+    self.spring = 100.0
 
     # State is [average position, average velocity,
     #           position difference/2, velocity difference/2]
