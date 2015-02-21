@@ -235,6 +235,7 @@ class SensorReader {
     {
       auto new_state = ::aos::robot_state.MakeMessage();
 
+      new_state->reader_pid = my_pid_;
       new_state->outputs_enabled = ds_->IsSysActive();
       new_state->browned_out = ds_->IsSysBrownedOut();
 
