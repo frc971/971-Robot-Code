@@ -33,11 +33,13 @@ namespace frc971 {
 namespace input {
 namespace joysticks {
 
+/*
 // preset motion limits
 static const double kArmDebugVelocity = 0.17;
 static const double kArmDebugAcceleration = 0.8;
 static const double kElevatorDebugVelocity = 0.2;
 static const double kElevatorDebugAcceleration = 2.2;
+*/
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
