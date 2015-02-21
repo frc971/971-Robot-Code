@@ -29,11 +29,13 @@ typedef struct aos_shm_core_t {
   // clock_gettime(CLOCK_REALTIME, &identifier) gets called to identify
   // this shared memory area
   struct timespec identifier;
-  // gets 0-initialized at the start (as part of shared memory) and
-  // the owner sets as soon as it finishes setting stuff up
+  // Gets 0-initialized at the start (as part of shared memory) and
+  // the owner sets as soon as it finishes setting stuff up.
   aos_condition creation_condition;
+
   struct aos_mutex msg_alloc_lock;
   void *msg_alloc;
+
   // A pointer to the head of the linked list of queues.
   // pointer points to a ::aos::Queue.
   aos_global_pointer queues;

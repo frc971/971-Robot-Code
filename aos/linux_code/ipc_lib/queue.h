@@ -37,7 +37,7 @@ class RawQueue {
   // queue_length is how many messages the queue will be able to hold
   // Will never return NULL.
   static RawQueue *Fetch(const char *name, size_t length, int hash,
-                      int queue_length);
+                         int queue_length);
   // Same as above, except sets up the returned queue so that it will put
   // messages on *recycle when they are freed (after they have been released by
   // all other readers/writers and are not in the queue).
@@ -52,9 +52,8 @@ class RawQueue {
   // put onto an undefined one of the recycle queues.
   // Will never return NULL.
   static RawQueue *Fetch(const char *name, size_t length, int hash,
-                      int queue_length,
-                      int recycle_hash, int recycle_queue_length,
-                      RawQueue **recycle);
+                         int queue_length, int recycle_hash,
+                         int recycle_queue_length, RawQueue **recycle);
 
   // Doesn't update the currently read index (the read messages in the queue or
   // the index). This means the returned message (and any others skipped with
