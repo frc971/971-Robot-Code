@@ -256,9 +256,9 @@ class SensorReader {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
-          drivetrain_translate(right_encoder_->GetRaw());
+          -drivetrain_translate(right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
-          -drivetrain_translate(left_encoder_->GetRaw());
+          drivetrain_translate(left_encoder_->GetRaw());
 
       drivetrain_message.Send();
     }
