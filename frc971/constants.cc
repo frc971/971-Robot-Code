@@ -32,7 +32,7 @@ const uint16_t kPracticeTeamNumber = 9971;
 // ///// Drivetrain Constants
 
 // These three constants were set by Daniel on 2/13/15.
-const double kDrivetrainEncoderRatio = 20.0 / 64.0;
+const double kDrivetrainEncoderRatio = 20.0 / 50.0;
 const double kLowGearRatio = kDrivetrainEncoderRatio * 20.0 / 50.0;
 const double kHighGearRatio = kLowGearRatio;
 
@@ -158,7 +158,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kMaxAllowedLeftRightElevatorDifference,
       };
       break;
-    case kCompTeamNumber:
+    case kPracticeTeamNumber:
       return new Values{
           kDrivetrainEncoderRatio,
           kArmEncoderRatio,
@@ -227,7 +227,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kMaxAllowedLeftRightElevatorDifference,
       };
       break;
-    case kPracticeTeamNumber:
+    case kCompTeamNumber:
       return new Values{
           kDrivetrainEncoderRatio,
           kArmEncoderRatio,
@@ -281,12 +281,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {kZeroingSampleSize, kElevatorEncoderIndexDifference,
             0.011367 + 0.003216},
            // Arm zeroing constants: left, right.
-           {kZeroingSampleSize, kArmEncoderIndexDifference, -0.312677},
-           {kZeroingSampleSize, kArmEncoderIndexDifference, -0.40855},
+           {kZeroingSampleSize, kArmEncoderIndexDifference, 0.060592},
+           {kZeroingSampleSize, kArmEncoderIndexDifference, 0.210155},
+
            0.72069366666666679 - 0.026008,
            -0.078959636363636357 - 0.024646,
-           -3.4952331578947375 + 0.011776,
-           3.5263507647058816 - 0.018921 + 0.006545,
+           -3.509611 - 0.007415 - -0.019081 - 0.029393 - -0.013585,
+           3.506927 - 0.170017 - -0.147970 - 0.005045 - -0.026504,
 
            kArmZeroingHeight,
            kElevatorNormalHeight,
