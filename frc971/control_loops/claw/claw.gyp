@@ -1,6 +1,21 @@
 {
   'targets': [
     {
+      'target_name': 'replay_claw',
+      'type': 'executable',
+      'variables': {
+        'no_rsync': 1,
+      },
+      'sources': [
+        'replay_claw.cc',
+      ],
+      'dependencies': [
+        'claw_queue',
+        '<(AOS)/common/controls/controls.gyp:replay_control_loop',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+    },
+    {
       'target_name': 'claw_queue',
       'type': 'static_library',
       'sources': ['claw.q'],

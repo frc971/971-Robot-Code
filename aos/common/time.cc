@@ -1,9 +1,13 @@
 #include "aos/common/time.h"
 
 #include <string.h>
+#include <inttypes.h>
+
+// We only use global_core from here, which is weak, so we don't really have a
+// dependency on it.
+#include "aos/linux_code/ipc_lib/shared_mem.h"
 
 #include "aos/common/logging/logging.h"
-#include <inttypes.h>
 #include "aos/common/mutex.h"
 
 namespace aos {
@@ -33,7 +37,11 @@ Time NowImpl(clockid_t clock) {
     PLOG(FATAL, "clock_gettime(%jd, %p) failed",
          static_cast<uintmax_t>(clock), &temp);
   }
-  return Time(temp);
+
+  const timespec offset = (global_core == nullptr)
+                              ? timespec{0, 0}
+                              : global_core->mem_struct->time_offset;
+  return Time(temp) + Time(offset);
 }
 
 }  // namespace
@@ -212,6 +220,13 @@ void SleepUntil(const Time &time, clockid_t clock) {
             " failed", static_cast<intmax_t>(clock), &converted);
     }
   }
+}
+
+void OffsetToNow(const Time &now) {
+  CHECK_NOTNULL(global_core);
+  global_core->mem_struct->time_offset.tv_nsec = 0;
+  global_core->mem_struct->time_offset.tv_sec = 0;
+  global_core->mem_struct->time_offset = (now - Time::Now()).ToTimespec();
 }
 
 }  // namespace time
