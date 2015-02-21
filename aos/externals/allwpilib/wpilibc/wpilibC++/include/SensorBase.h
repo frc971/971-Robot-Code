@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include "Base.h"
 
+class DigitalGlitchFilter;
+
 /**
  * Base class for all sensors.
  * Stores most recent status information as well as containing utility functions for checking
@@ -56,4 +58,6 @@ private:
 	DISALLOW_COPY_AND_ASSIGN(SensorBase);
 	static SensorBase *m_singletonList;
 	SensorBase *m_nextSingleton;
+
+  friend class DigitalGlitchFilter;
 };
