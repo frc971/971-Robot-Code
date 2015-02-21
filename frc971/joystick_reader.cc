@@ -45,11 +45,17 @@ const ButtonLocation kQuickTurn(1, 5);
 
 // TODO(danielp): Real buttons for all of these.
 const ButtonLocation kElevatorUp(3, 10);
-const ButtonLocation kElevatorDown(2, 6);
+const ButtonLocation kElevatorDown(3, 3);
 const ButtonLocation kArmUp(3, 8);
-const ButtonLocation kArmDown(3, 3);
+const ButtonLocation kArmDown(2, 6);
 const ButtonLocation kClawUp(3, 7);
 const ButtonLocation kClawDown(3, 6);
+const ButtonLocation kClawOpen(3, 11);
+const ButtonLocation kClawClosed(3, 5);
+const ButtonLocation kFridgeOpen(3, 1);
+const ButtonLocation kFridgeClosed(2, 11);
+const ButtonLocation kRollersIn(3, 4);
+const ButtonLocation kClawMiddle(3, 2);
 
 // TODO(ben): Real buttons for all of these.
 const ButtonLocation kArmPresetOne(99, 99);
@@ -108,6 +114,93 @@ class Reader : public ::aos::input::JoystickInput {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
+    }
+
+    if (data.PosEdge(kElevatorUp)) {
+      elevator_goal_ = 0.4;
+      arm_goal_ = 0.1;
+      claw_goal_ = 0.0;
+    }
+    if (data.PosEdge(kElevatorDown)) {
+      elevator_goal_ = 0.03;
+      arm_goal_ = 0.0;
+      claw_goal_ = 0.0;
+    }
+
+    if (data.PosEdge(kClawMiddle)) {
+      claw_goal_ = 0.9;
+    }
+
+    if (data.PosEdge(kClawClosed)) {
+      claw_rollers_closed_ = true;
+    }
+    if (data.PosEdge(kClawOpen)) {
+      claw_rollers_closed_ = false;
+    }
+
+    if (data.PosEdge(kFridgeClosed)) {
+      fridge_closed_ = true;
+    }
+    if (data.PosEdge(kFridgeOpen)) {
+      fridge_closed_ = false;
+    }
+
+    if (data.PosEdge(ControlBit::kEnabled)) {
+      // If we got enabled, wait for everything to zero.
+      LOG(INFO, "Waiting for zero.\n");
+      waiting_for_zero_ = true;
+    }
+
+    if (waiting_for_zero_) {
+      claw_queue.status.FetchLatest();
+      fridge_queue.status.FetchLatest();
+      if (!claw_queue.status.get()) {
+        LOG(ERROR, "Got no claw status packet.\n");
+        // Not safe to continue.
+        return;
+      }
+      if (!fridge_queue.status.get()) {
+        LOG(ERROR, "Got no fridge status packet.\n");
+        return;
+      }
+
+      if (claw_queue.status->zeroed && fridge_queue.status->zeroed) {
+        LOG(INFO, "Zeroed! Starting teleop mode.\n");
+        waiting_for_zero_ = false;
+
+        // Set the initial goals to where we are now.
+        elevator_goal_ = fridge_queue.status->goal_height;
+        arm_goal_ = fridge_queue.status->goal_angle;
+        claw_goal_ = claw_queue.status->angle;
+      } else {
+        return;
+      }
+    } else {
+      if (!action_queue_.Running()) {
+        auto new_fridge_goal = fridge_queue.goal.MakeMessage();
+        new_fridge_goal->height = elevator_goal_;
+        new_fridge_goal->angle = arm_goal_;
+        new_fridge_goal->angular_velocity = 0.0;
+        new_fridge_goal->velocity = 0.0;
+        new_fridge_goal->grabbers.top_front = fridge_closed_;
+        new_fridge_goal->grabbers.top_back = fridge_closed_;
+        new_fridge_goal->grabbers.bottom_front = fridge_closed_;
+        new_fridge_goal->grabbers.bottom_back = fridge_closed_;
+
+        if (!new_fridge_goal.Send()) {
+          LOG(ERROR, "Sending fridge goal failed.\n");
+        } else {
+          LOG(DEBUG, "sending goals: elevator: %f, arm: %f\n", elevator_goal_,
+              arm_goal_);
+        }
+        if (!claw_queue.goal.MakeWithBuilder()
+                 .angle(claw_goal_)
+                 .rollers_closed(claw_rollers_closed_)
+                 .intake(data.IsPressed(kRollersIn) ? 12.0 : 0.0)
+                 .Send()) {
+          LOG(ERROR, "Sending claw goal failed.\n");
+        }
+      }
     }
 
     action_queue_.Tick();
@@ -180,11 +273,15 @@ class Reader : public ::aos::input::JoystickInput {
                  .angle(arm_goal_)
                  .Send()) {
           LOG(ERROR, "Sending fridge goal failed.\n");
+        } else {
+          LOG(DEBUG, "sending goals: elevator: %f, arm: %f\n", elevator_goal_,
+              arm_goal_);
         }
         if (!claw_queue.goal.MakeWithBuilder().angle(claw_goal_).Send()) {
           LOG(ERROR, "Sending claw goal failed.\n");
         }
       }
+      /*
       if (data.IsPressed(kArmPresetOne) || data.IsPressed(kArmPresetTwo)) {
         actors::FridgeProfileParams fridge_params;
         fridge_params.arm_max_velocity = kArmDebugVelocity;
@@ -229,6 +326,7 @@ class Reader : public ::aos::input::JoystickInput {
           action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
         }
       }
+      */
     }
   }
 
@@ -246,12 +344,14 @@ class Reader : public ::aos::input::JoystickInput {
   bool was_running_;
 
   // Previous goals for systems.
-  double elevator_goal_ = 0.0;
+  double elevator_goal_ = 0.2;
   double arm_goal_ = 0.0;
   double claw_goal_ = 0.0;
+  bool claw_rollers_closed_ = false;
+  bool fridge_closed_ = false;
 
   // If we're waiting for the subsystems to zero.
-  bool waiting_for_zero_ = false;
+  bool waiting_for_zero_ = true;
 
   bool auto_running_ = false;
 
