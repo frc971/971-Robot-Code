@@ -25,7 +25,9 @@ namespace {
 RawQueue *queue = NULL;
 
 int dropped_messages = 0;
-int32_t dropped_start_seconds, dropped_start_nseconds;
+::aos::time::Time dropped_start, backoff_start;
+// Wait this long after dropping a message before even trying to write any more.
+constexpr ::aos::time::Time kDropBackoff = ::aos::time::Time::InSeconds(0.1);
 
 LogMessage *GetMessageOrDie() {
   LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
@@ -103,12 +105,20 @@ void Free(const LogMessage *msg) {
 }
 
 void Write(LogMessage *msg) {
-  if (__builtin_expect(dropped_messages > 0, 0)) {
+  if (__builtin_expect(dropped_messages > 0, false)) {
+    ::aos::time::Time message_time =
+        ::aos::time::Time(msg->seconds, msg->nseconds);
+    if (backoff_start - message_time < kDropBackoff) {
+      ++dropped_messages;
+      queue->FreeMessage(msg);
+      return;
+    }
+
     LogMessage *dropped_message = GetMessageOrDie();
     internal::FillInMessageVarargs(
         ERROR, dropped_message,
         "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
-        dropped_messages, dropped_start_seconds, dropped_start_nseconds);
+        dropped_messages, dropped_start.sec(), dropped_start.nsec());
     if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
       dropped_messages = 0;
     } else {
@@ -116,14 +126,15 @@ void Write(LogMessage *msg) {
       // to work and it would be confusing to have one log in the middle of a
       // string of failures get through.
       ++dropped_messages;
+      backoff_start = message_time;
       queue->FreeMessage(msg);
       return;
     }
   }
   if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
     if (dropped_messages == 0) {
-      dropped_start_seconds = msg->seconds;
-      dropped_start_nseconds = msg->nseconds;
+      dropped_start = backoff_start =
+          ::aos::time::Time(msg->seconds, msg->nseconds);
     }
     ++dropped_messages;
   }
