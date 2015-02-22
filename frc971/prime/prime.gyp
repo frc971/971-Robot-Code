@@ -26,6 +26,7 @@
         '../actors/actors.gyp:fridge_profile_action_test',
         '../actors/actors.gyp:claw_action',
         '../actors/actors.gyp:claw_action_test',
+        '../actors/actors.gyp:intake_action',
       ],
       'copies': [
         {

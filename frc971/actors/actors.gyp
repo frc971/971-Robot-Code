@@ -285,5 +285,54 @@
         'claw_action_lib',
       ],
     },
+    {
+      'target_name': 'intake_action_queue',
+      'type': 'static_library',
+      'sources': ['intake_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'intake_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'intake_actor.cc',
+      ],
+      'dependencies': [
+        'intake_action_queue',
+        'claw_action_lib',
+        'stack_action_lib',
+        'fridge_profile_action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'intake_action_queue',
+      ],
+    },
+    {
+      'target_name': 'intake_action',
+      'type': 'executable',
+      'sources': [
+        'intake_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'intake_action_queue',
+        'intake_action_lib',
+      ],
+    },
   ],
 }
