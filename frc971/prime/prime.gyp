@@ -20,13 +20,14 @@
         '../control_loops/voltage_cap/voltage_cap.gyp:voltage_cap_test',
         '../../aos/common/actions/actions.gyp:action_test',
         '../actors/actors.gyp:drivetrain_action',
+        '../actors/actors.gyp:claw_action',
         '../actors/actors.gyp:fridge_profile_action',
         '../actors/actors.gyp:score_action',
         '../actors/actors.gyp:stack_action',
-        '../actors/actors.gyp:fridge_profile_action_test',
-        '../actors/actors.gyp:claw_action',
-        '../actors/actors.gyp:claw_action_test',
         '../actors/actors.gyp:intake_action',
+        '../actors/actors.gyp:claw_action_test',
+        '../actors/actors.gyp:fridge_profile_action_test',
+        '../actors/actors.gyp:stack_action_test',
       ],
       'copies': [
         {

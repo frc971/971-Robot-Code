@@ -1,6 +1,8 @@
 #include <math.h>
 
 #include "aos/common/time.h"
+#include "aos/common/util/phased_loop.h"
+
 #include "frc971/actors/stack_actor.h"
 #include "frc971/actors/fridge_profile_actor.h"
 #include "frc971/constants.h"
@@ -20,9 +22,7 @@ static constexpr double kElevatorAcceleration = 2.2;
 StackActor::StackActor(StackActionQueueGroup *queues)
     : aos::common::actions::ActorBase<StackActionQueueGroup>(queues) {}
 
-namespace {
-
-void DoProfile(double height, double angle, bool grabbers) {
+void StackActor::DoProfile(double height, double angle, bool grabbers) {
   FridgeProfileParams params;
 
   params.elevator_height = height;
@@ -40,10 +40,15 @@ void DoProfile(double height, double angle, bool grabbers) {
 
   ::std::unique_ptr<FridgeAction> profile = MakeFridgeProfileAction(params);
   profile->Start();
-  profile->WaitUntilDone();
+  while (!profile->CheckIteration()) {
+    // wait until next Xms tick
+    ::aos::time::PhasedLoopXMS(5, 2500);
+    if (ShouldCancel()) {
+      profile->Cancel();
+      return;
+    }
+  }
 }
-
-}  // namespace
 
 bool StackActor::RunAction(const StackParams &params) {
   const auto &values = constants::GetValues();
@@ -51,8 +56,10 @@ bool StackActor::RunAction(const StackParams &params) {
 
   // Set the current stack down on top of the bottom box.
   DoProfile(0.45, 0.0, true);
+  if (ShouldCancel()) return true;
   // Move down to enclose bottom box.
   DoProfile(bottom + values.tote_height, 0.0, true);
+  if (ShouldCancel()) return true;
   // Clamp.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();

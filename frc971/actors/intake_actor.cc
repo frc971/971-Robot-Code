@@ -120,7 +120,9 @@ bool IntakeActor::RunAction(const IntakeParams &params) {
     MoveClaw(kHpIntakeAngle, 0.0);
 
     // Stack the new tote.
-    ::std::unique_ptr<StackAction> stack_action = MakeStackAction();
+    StackParams params;
+    params.claw_out_angle = M_PI / 4;
+    ::std::unique_ptr<StackAction> stack_action = MakeStackAction(params);
     stack_action->Start();
     stack_action->WaitUntilDone();
   }

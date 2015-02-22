@@ -17,6 +17,8 @@ class StackActor
  public:
   explicit StackActor(StackActionQueueGroup *queues);
 
+  void DoProfile(double height, double angle, bool grabbers);
+
   bool RunAction(const StackParams &params) override;
 };
 

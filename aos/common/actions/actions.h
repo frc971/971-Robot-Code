@@ -75,6 +75,10 @@ class Action {
   // Waits until the action has finished.
   void WaitUntilDone() { DoWaitUntilDone(); }
 
+  // Run all the checks for one iteration of waiting. Will return true when the
+  // action has completed, successfully or not. This is non-blocking.
+  bool CheckIteration() { return DoCheckIteration(false); }
+
   // Retrieves the internal state of the action for testing.
   // See comments on the private members of TypedAction<T, S> for details.
   void GetState(bool* has_started, bool* sent_started, bool* sent_cancel,
@@ -94,6 +98,8 @@ class Action {
   virtual void DoStart() = 0;
   // Blocks until complete.
   virtual void DoWaitUntilDone() = 0;
+  // Updates status for one cycle of waiting
+  virtual bool DoCheckIteration(bool blocking) = 0;
   // For testing we will need to get the internal state.
   // See comments on the private members of TypedAction<T, S> for details.
   virtual void DoGetState(bool* has_started, bool* sent_started,
@@ -140,6 +146,8 @@ class TypedAction : public Action {
   bool DoRunning() override;
 
   void DoWaitUntilDone() override;
+
+  bool DoCheckIteration(bool blocking);
 
   // Sets the started flag (also possibly the interrupted flag).
   void CheckStarted();
@@ -235,16 +243,31 @@ void TypedAction<T>::DoWaitUntilDone() {
   queue_group_->status.FetchNext();
   CheckInterrupted();
   while (true) {
-    if (interrupted_) return;
-    CheckStarted();
-    queue_group_->status.FetchNextBlocking();
-    CheckStarted();
-    CheckInterrupted();
-    if (has_started_ && (queue_group_->status.get() &&
-                         queue_group_->status->running != run_value_)) {
+    if (DoCheckIteration(true)) {
       return;
     }
   }
+}
+
+template <typename T>
+bool TypedAction<T>::DoCheckIteration(bool blocking) {
+  CHECK(sent_started_);
+  if (interrupted_) return true;
+  CheckStarted();
+  if (blocking) {
+    queue_group_->status.FetchAnother();
+  } else {
+    if (!queue_group_->status.FetchNext()) {
+      return false;
+    }
+  }
+  CheckStarted();
+  CheckInterrupted();
+  if (has_started_ && (queue_group_->status.get() &&
+                       queue_group_->status->running != run_value_)) {
+    return true;
+  }
+  return false;
 }
 
 template <typename T>

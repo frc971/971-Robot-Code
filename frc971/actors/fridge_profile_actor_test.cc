@@ -356,6 +356,47 @@ TEST_F(FridgeProfileTest, ProfileNoVel) {
   }
 }
 
+// Make sure that should cancel gets set by pushing to queue.
+TEST_F(FridgeProfileTest, ProfileShouldCancel) {
+  FridgeProfileActor fridge_profile(&frc971::actors::fridge_profile_action);
+  double next_angle = 0, next_height = 0, next_angle_vel = 0.0,
+         next_height_vel = 0.0;
+  FridgeProfileParams params;
+  params.arm_angle = 5.0;
+  params.arm_max_velocity = 200.0;
+  params.arm_max_acceleration = 20000.0;
+  frc971::actors::fridge_profile_action.goal.MakeWithBuilder()
+      .run(true)
+      .params(params)
+      .Send();
+
+  // tell it the fridge is zeroed
+  control_loops::fridge_queue.status.MakeWithBuilder()
+      .zeroed(true)
+      .angle(0.0)
+      .height(0.0)
+      .Send();
+
+  fridge_profile.SetTesting();
+
+  fridge_profile.WaitForActionRequest();
+
+  // Angle (0.250000, 0.250000, 0.25) Height (0.250000, 0.250000, 0.25)
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
+  EXPECT_FALSE(fridge_profile.ShouldCancel());
+  frc971::actors::fridge_profile_action.goal.MakeWithBuilder()
+      .run(false)
+      .params(params)
+      .Send();
+
+  EXPECT_TRUE(fridge_profile.ShouldCancel());
+
+  // Angle (0.250000, 0.250000, 0.25) Height (0.250000, 0.250000, 0.25)
+  EXPECT_TRUE(fridge_profile.IterateProfile(5.0, 5.0, &next_angle, &next_height,
+                                            &next_angle_vel, &next_height_vel));
+}
+
 }  // namespace testing.
 }  // namespace actors.
 }  // namespace frc971.

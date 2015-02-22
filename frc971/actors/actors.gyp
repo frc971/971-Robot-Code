@@ -183,6 +183,26 @@
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
+      'target_name': 'stack_action_test',
+      'type': 'executable',
+      'sources': [
+        'stack_actor_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:queue_testutils',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:team_number_test_environment',
+        'stack_action_queue',
+        'stack_action_lib',
+      ],
+    },
+    {
       'target_name': 'stack_action_lib',
       'type': 'static_library',
       'sources': [
@@ -192,6 +212,7 @@
         'fridge_profile_action_lib',
         'stack_action_queue',
         '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
