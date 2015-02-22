@@ -167,6 +167,9 @@
       '-Werror',
 
       '-ggdb3',
+      # Generate debugging info that gdb 7.4.1 can understand (Wheezy).
+      # TODO(Brian): Remove this once we upgrade to Jessie.
+      '-gdwarf-3',
     ],
     'cflags_c': [
       '-std=gnu99',
