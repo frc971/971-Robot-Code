@@ -1,0 +1,4 @@
+A list of environment variables useful for running the code on not-robots:
+  AOS_NO_REALTIME
+  AOS_SHM_NAME
+  AOS_TEAM_NUMBER

@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <string>
 
@@ -47,12 +48,23 @@ int ParseTeamNumber(const std::string &hostname, uint16_t *teamnumber) {
 
 uint16_t *DoGetTeamNumber() {
   if (override_team != 0) return &override_team;
+
   static uint16_t r;
-  int error = ParseTeamNumber(GetHostname(), &r);
-  if (error) {
-    LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
+
+  const char *override_number = getenv("AOS_TEAM_NUMBER");
+  if (override_number != nullptr) {
+    if (!::aos::util::StringToNumber(override_number, &r)) {
+      LOG(FATAL, "error parsing AOS_TEAM_NUMBER '%s'\n", override_number);
+    }
+    LOG(WARNING, "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n",
+        r);
+  } else {
+    int error = ParseTeamNumber(GetHostname(), &r);
+    if (error) {
+      LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
+    }
+    LOG(INFO, "team number is %" PRIu16 "\n", r);
   }
-  LOG(INFO, "team number is %" PRIu16 "\n", r);
   return &r;
 }
 

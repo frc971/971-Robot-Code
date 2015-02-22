@@ -59,12 +59,13 @@ void SetSoftRLimit(int resource, rlim64_t soft, bool set_for_root) {
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
   ::aos::logging::Init();
-  // Allow locking as much as we want into RAM.
-  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
   WriteCoreDumps();
 }
 
 void LockAllMemory() {
+  // Allow locking as much as we want into RAM.
+  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
+
   InitStart();
   if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
     PDie("%s-init: mlockall failed", program_invocation_short_name);
@@ -92,22 +93,25 @@ void LockAllMemory() {
   free(heap_data);
 }
 
-// Do the initialization code that is necessary for both realtime and
-// non-realtime processes.
-void DoInitNRT(aos_core_create create) {
-  InitStart();
-  aos_core_create_shared_mem(create);
-  logging::linux_code::Register();
-}
-
 const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
 
 }  // namespace
 
-void InitNRT() { DoInitNRT(aos_core_create::reference); }
-void InitCreate() { DoInitNRT(aos_core_create::create); }
+void InitNRT() {
+  InitStart();
+  aos_core_create_shared_mem(false, false);
+  logging::linux_code::Register();
+}
+
+void InitCreate() {
+  InitStart();
+  aos_core_create_shared_mem(true, false);
+  logging::linux_code::Register();
+}
+
 void Init(int relative_priority) {
-  if (getenv(kNoRealtimeEnvironmentVariable) == NULL) {  // if nobody set it
+  bool realtime = getenv(kNoRealtimeEnvironmentVariable) == nullptr;
+  if (realtime) {
     LockAllMemory();
 
     // Only let rt processes run for 3 seconds straight.
@@ -129,7 +133,9 @@ void Init(int relative_priority) {
     printf("no realtime for %s. see stderr\n", program_invocation_short_name);
   }
 
-  InitNRT();
+  InitStart();
+  aos_core_create_shared_mem(false, realtime);
+  logging::linux_code::Register();
 }
 
 void Cleanup() {
