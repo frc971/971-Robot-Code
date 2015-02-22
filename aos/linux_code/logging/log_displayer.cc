@@ -298,21 +298,23 @@ int main(int argc, char **argv) {
 
     if (::aos::logging::log_gt_important(filter_level, msg->level)) continue;
 
+    const char *position =
+        reinterpret_cast<const char *>(msg + 1);
+
     if (filter_name != nullptr) {
       const size_t compare_length =
           ::std::min<size_t>(filter_length, msg->name_size);
-      if (memcmp(filter_name,
-                 reinterpret_cast<const char *>(msg) + sizeof(*msg),
-                 compare_length) != 0) {
+      if (memcmp(filter_name, position, compare_length) != 0) {
         continue;
+      }
+      if (compare_length < msg->name_size) {
+        if (position[compare_length] != '.') continue;
       }
     }
 
     if (filter_exact_name != nullptr) {
       if (filter_length != msg->name_size) continue;
-      if (memcmp(filter_exact_name,
-                 reinterpret_cast<const char *>(msg) + sizeof(*msg),
-                 filter_length) != 0) {
+      if (memcmp(filter_exact_name, position, filter_length) != 0) {
         continue;
       }
     }
@@ -322,8 +324,8 @@ int main(int argc, char **argv) {
       return 0;
     }
 
-    const char *position =
-        reinterpret_cast<const char *>(msg + 1) + msg->name_size;
+    position += msg->name_size;
+
 #define BASE_ARGS                                                           \
   AOS_LOGGING_BASE_ARGS(                                                    \
       msg->name_size, reinterpret_cast<const char *>(msg + 1), msg->source, \
