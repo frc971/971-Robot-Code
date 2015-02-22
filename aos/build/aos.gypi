@@ -56,9 +56,9 @@
           ],
           'ldflags': [
             '<@(platflags)',
-            '-L', '/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.1',
-            #'-L', '<(arm-clang-sysroot)/other_lib/',
-            #'-nostartfiles',
+            '-L/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.1',
+            '-L<(arm-clang-symlinks)/more_libs',
+            '-B/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.1',
           ],
         },
       },
