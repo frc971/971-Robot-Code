@@ -3,6 +3,9 @@
     {
       'target_name': 'dump_rtprio',
       'type': 'executable',
+      'variables': {
+        'no_rsync': 1,
+      },
       'sources': [
         'dump_rtprio.cc',
       ],

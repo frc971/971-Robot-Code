@@ -9,6 +9,8 @@
     'EXTERNALS': '<(AOS)/build/externals.gyp',
 # The directory that gets rsynced to the target.
     'rsync_dir': '<(PRODUCT_DIR)/outputs',
+# The directory for executables that don't get rsynced to the target.
+    'other_outputs_dir': '<(PRODUCT_DIR)/other_outputs',
 # The directory that executables that depend on <(EXTERNALS):gtest get put into.
     'test_dir': '<(PRODUCT_DIR)/tests',
 
@@ -267,6 +269,9 @@
 # Default to putting outputs into rsync_dir.
       ['no_rsync==0 and _type!="static_library"', {
           'product_dir': '<(rsync_dir)',
+        },
+      ], ['no_rsync==1 and _type!="static_library"', {
+        'product_dir': '<(other_outputs_dir)',
         },
       ],
     ],
