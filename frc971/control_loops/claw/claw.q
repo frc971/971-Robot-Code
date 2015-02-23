@@ -49,6 +49,8 @@ queue_group ClawQueue {
 
     // Angle of wrist joint.
     double angle;
+    // Goal angle of wrist joint.
+    double goal_angle;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;

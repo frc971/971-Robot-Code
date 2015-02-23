@@ -13,7 +13,7 @@ namespace control_loops {
 
 using ::aos::time::Time;
 
-constexpr double kZeroingVoltage = 5.0;
+constexpr double kZeroingVoltage = 4.0;
 
 void ClawCappedStateFeedbackLoop::CapU() {
   mutable_U(0, 0) = ::std::min(mutable_U(0, 0), max_voltage_);
@@ -257,6 +257,7 @@ void Claw::RunIteration(
   } else {
     status->intake = 0;
   }
+  status->goal_angle = claw_goal_;
 
   if (output) {
     status->rollers_open = !output->rollers_closed &&
