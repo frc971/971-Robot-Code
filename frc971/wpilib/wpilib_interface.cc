@@ -408,10 +408,10 @@ class SolenoidWriter {
         fridge_.FetchLatest();
         if (fridge_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *fridge_);
-          fridge_grabbers_top_front_->Set(fridge_->grabbers.top_front);
-          fridge_grabbers_top_back_->Set(fridge_->grabbers.top_back);
-          fridge_grabbers_bottom_front_->Set(fridge_->grabbers.bottom_front);
-          fridge_grabbers_bottom_back_->Set(fridge_->grabbers.bottom_back);
+          fridge_grabbers_top_front_->Set(!fridge_->grabbers.top_front);
+          fridge_grabbers_top_back_->Set(!fridge_->grabbers.top_back);
+          fridge_grabbers_bottom_front_->Set(!fridge_->grabbers.bottom_front);
+          fridge_grabbers_bottom_back_->Set(!fridge_->grabbers.bottom_back);
         }
       }
 
@@ -419,7 +419,7 @@ class SolenoidWriter {
         claw_.FetchLatest();
         if (claw_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *claw_);
-          claw_pinchers_->Set(!claw_->rollers_closed);
+          claw_pinchers_->Set(claw_->rollers_closed);
         }
       }
       if (!pressure_switch_->Get()) {
