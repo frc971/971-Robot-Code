@@ -61,7 +61,7 @@ bool FridgeProfileActor::IterateProfile(double goal_angle, double goal_height,
   ::Eigen::Matrix<double, 2, 1> goal_state;
 
   if (!arm_profile_) {
-    *next_angle = 0.0;
+    *next_angle = arm_start_angle_;
     *next_angle_velocity = 0.0;
   } else {
     goal_state = arm_profile_->Update(goal_angle, 0.0);
@@ -70,7 +70,7 @@ bool FridgeProfileActor::IterateProfile(double goal_angle, double goal_height,
   }
 
   if (!elevator_profile_) {
-    *next_height = 0.0;
+    *next_height = elev_start_height_;
     *next_height_velocity = 0.0;
   } else {
     goal_state = elevator_profile_->Update(goal_height, 0.0);
@@ -82,8 +82,8 @@ bool FridgeProfileActor::IterateProfile(double goal_angle, double goal_height,
 }
 
 bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
-  double goal_angle = params.arm_angle;
-  double goal_height = params.elevator_height;
+  const double goal_angle = params.arm_angle;
+  const double goal_height = params.elevator_height;
   bool top_front = params.top_front_grabber;
   bool top_back = params.top_back_grabber;
   bool bottom_front = params.bottom_front_grabber;
@@ -93,7 +93,8 @@ bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
       goal_angle, goal_height, top_front, top_back, bottom_front, bottom_back);
 
   // defines finished
-  const double angle_epsilon = 0.01, height_epsilon = 0.01;
+  constexpr double kAngleEpsilon = 0.02, kHeightEpsilon = 0.015;
+  constexpr double kAngleProfileEpsilon = 0.0001, kHeightProfileEpsilon = 0.0001;
 
   // Initialize arm profile.
   if (!InitializeProfile(params.arm_max_velocity, params.arm_max_acceleration,
@@ -108,21 +109,34 @@ bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
       LOG(ERROR, "We are not running actions on an unzeroed fridge!\n");
       return false;
     }
-    arm_start_angle_ = control_loops::fridge_queue.status->angle;
-    elev_start_height_ = control_loops::fridge_queue.status->height;
+    arm_start_angle_ = control_loops::fridge_queue.status->goal_angle;
+    elev_start_height_ = control_loops::fridge_queue.status->goal_height;
   } else {
     LOG(ERROR, "No fridge status!\n");
     return false;
+  }
+
+  if (arm_profile_) {
+    Eigen::Matrix<double, 2, 1> arm_current;
+    arm_current.setZero();
+    arm_current << arm_start_angle_, 0.0;
+    arm_profile_->MoveCurrentState(arm_current);
+  }
+  if (elevator_profile_) {
+    Eigen::Matrix<double, 2, 1> elevator_current;
+    elevator_current.setZero();
+    elevator_current << elev_start_height_, 0.0;
+    elevator_profile_->MoveCurrentState(elevator_current);
   }
 
   while (true) {
     // wait until next Xms tick
     ::aos::time::PhasedLoopXMS(5, 2500);
 
-    double delta_angle, delta_height;
+    double current_goal_angle, current_goal_height;
     double angle_vel, height_vel;
-    if (!IterateProfile(goal_angle, goal_height, &delta_angle, &delta_height,
-                        &angle_vel, &height_vel)) {
+    if (!IterateProfile(goal_angle, goal_height, &current_goal_angle,
+                        &current_goal_height, &angle_vel, &height_vel)) {
       return false;
     }
 
@@ -130,14 +144,14 @@ bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
     if (ShouldCancel()) return true;
 
     auto message = control_loops::fridge_queue.goal.MakeMessage();
-    message->angle = arm_start_angle_ + delta_angle;
+    message->angle = current_goal_angle;
     message->angular_velocity = angle_vel;
-    message->height = elev_start_height_ + delta_height;
+    message->height = current_goal_height;
     message->velocity = height_vel;
     message->grabbers.top_front = top_front;
     message->grabbers.top_back = top_back;
-    message->grabbers.bottom_front = top_front;
-    message->grabbers.top_front = top_front;
+    message->grabbers.bottom_front = bottom_front;
+    message->grabbers.bottom_back = bottom_back;
 
     LOG_STRUCT(DEBUG, "Sending fridge goal", *message);
     message.Send();
@@ -155,15 +169,28 @@ bool FridgeProfileActor::RunAction(const FridgeProfileParams &params) {
       current_height = goal_height;
     }
 
-    if ((!arm_profile_ || (::std::abs(arm_start_angle_ + delta_angle -
-                                      goal_angle) < angle_epsilon &&
-                           ::std::abs(arm_start_angle_ + delta_angle -
-                                      current_angle) < angle_epsilon)) &&
-        (!elevator_profile_ || (::std::abs(elev_start_height_ + delta_height -
-                                           goal_height) < height_epsilon &&
-                                ::std::abs(elev_start_height_ + delta_height -
-                                           current_height) < height_epsilon))) {
+    const double arm_error = ::std::abs(current_goal_angle - current_angle);
+    const double profile_error_arm =
+        ::std::abs(current_goal_angle - goal_angle);
+
+    const double profile_error_elevator =
+        ::std::abs(current_goal_height - goal_height);
+    const double elevator_error =
+        ::std::abs(current_goal_height - current_height);
+
+    if ((!arm_profile_ || (arm_error < kAngleEpsilon &&
+                           profile_error_arm < kAngleProfileEpsilon)) &&
+        (!elevator_profile_ ||
+         (elevator_error < kHeightEpsilon &&
+          profile_error_elevator < kHeightProfileEpsilon))) {
       break;
+    } else {
+      ErrorToLog error_to_log;
+      error_to_log.arm_error = arm_error;
+      error_to_log.profile_error_arm = profile_error_arm;
+      error_to_log.profile_error_elevator = profile_error_elevator;
+      error_to_log.elevator_error = elevator_error;
+      LOG_STRUCT(DEBUG, "error", error_to_log);
     }
   }
 

@@ -16,6 +16,14 @@ struct FridgeProfileParams {
   bool bottom_back_grabber;
 };
 
+// Debug errors.
+struct ErrorToLog {
+  float arm_error;
+  float profile_error_arm;
+  float elevator_error;
+  float profile_error_elevator;
+};
+
 queue_group FridgeProfileActionQueueGroup {
   implements aos.common.actions.ActionQueueGroup;
 
