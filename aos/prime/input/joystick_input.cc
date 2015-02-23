@@ -14,8 +14,6 @@ void JoystickInput::Run() {
   while (true) {
     joystick_state.FetchAnother();
 
-    LOG_STRUCT(DEBUG, "sending", *joystick_state);
-
     data.Update(*joystick_state);
 
     {
