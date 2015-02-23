@@ -32,15 +32,11 @@ class ActionQueue {
   // Cancels all running actions.
   void CancelAllActions();
 
-  // Runs the next action when the current one is finished running and handles
-  // periodically updating various other information.
+  // Runs the next action when the current one is finished running and polls the
+  // running action state for use by Running.
   void Tick();
 
   // Returns true if any action is running or could be running.
-  // For a one cycle faster response, call Tick before running this.
-  // Daniel can think of at least one case (current_action_ is cancelled and
-  // there is no next_action_) in which calling this without running Tick()
-  // first would return a wrong answer.
   bool Running();
 
   // Retrieves the internal state of the current action for testing.
@@ -202,14 +198,17 @@ template <typename T>
 template <typename T>
 void TypedAction<T>::DoCancel() {
   if (!sent_started_) {
-    LOG(INFO, "Action %" PRIx32 " was never started\n", run_value_);
+    LOG(INFO, "Action %" PRIx32 " on queue %s was never started\n", run_value_,
+        queue_group_->goal.name());
   } else {
     if (interrupted_) {
-      LOG(INFO, "Action %" PRIx32 " was interrupted -> not cancelling\n",
-          run_value_);
+      LOG(INFO,
+          "Action %" PRIx32 " on queue %s was interrupted -> not cancelling\n",
+          run_value_, queue_group_->goal.name());
     } else {
       if (sent_cancel_) {
-        LOG(INFO, "Action %" PRIx32 " already cancelled\n", run_value_);
+        LOG(INFO, "Action %" PRIx32 " on queue %s already cancelled\n",
+            run_value_, queue_group_->goal.name());
       } else {
         LOG(INFO, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
             queue_group_->goal.name());
@@ -279,13 +278,14 @@ void TypedAction<T>::CheckStarted() {
          queue_group_->status->last_running == run_value_)) {
       // It's currently running our instance.
       has_started_ = true;
-      LOG(DEBUG, "Action %" PRIx32 " has been started\n", run_value_);
+      LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
+          run_value_, queue_group_->goal.name());
     } else if (queue_group_->status->running == old_run_value_) {
       // It's still running an old instance (or still doing nothing).
     } else {
-      LOG(WARNING,
-          "Action %" PRIx32 " interrupted by %" PRIx32 " before starting\n",
-          run_value_, queue_group_->status->running);
+      LOG(WARNING, "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
+                   " before starting\n",
+          run_value_, queue_group_->goal.name(), queue_group_->status->running);
       has_started_ = true;
       interrupted_ = true;
     }
@@ -299,9 +299,9 @@ void TypedAction<T>::CheckInterrupted() {
   if (!interrupted_ && has_started_ && queue_group_->status.get()) {
     if (queue_group_->status->running != 0 &&
         queue_group_->status->running != run_value_) {
-      LOG(WARNING,
-          "Action %" PRIx32 " interrupted by %" PRIx32 " after starting\n",
-          run_value_, queue_group_->status->running);
+      LOG(WARNING, "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
+                   " after starting\n",
+          run_value_, queue_group_->goal.name(), queue_group_->status->running);
     }
   }
 }
@@ -314,19 +314,22 @@ void TypedAction<T>::DoStart() {
     goal_->params = params_;
     sent_started_ = true;
     if (!goal_.Send()) {
-      LOG(ERROR, "sending goal for action %" PRIx32 " failed\n", run_value_);
+      LOG(ERROR, "sending goal for action %" PRIx32 " on queue %s failed\n",
+          run_value_, queue_group_->goal.name());
       // Don't wait to see a message with it.
       has_started_ = true;
     }
     queue_group_->status.FetchLatest();
     if (queue_group_->status.get() && queue_group_->status->running != 0) {
       old_run_value_ = queue_group_->status->running;
-      LOG(INFO, "Action %" PRIx32 " already running\n", old_run_value_);
+      LOG(INFO, "Action %" PRIx32 " on queue %s already running\n",
+          old_run_value_, queue_group_->goal.name());
     } else {
       old_run_value_ = 0;
     }
   } else {
-    LOG(WARNING, "Action %" PRIx32 " already started\n", run_value_);
+    LOG(WARNING, "Action %" PRIx32 " on queue %s already started\n", run_value_,
+        queue_group_->goal.name());
   }
 }
 
