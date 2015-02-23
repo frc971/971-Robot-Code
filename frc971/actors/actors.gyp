@@ -188,7 +188,53 @@
         'score_action_lib',
       ],
     },
-
+    {
+      'target_name': 'pickup_action_queue',
+      'type': 'static_library',
+      'sources': ['pickup_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'pickup_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'pickup_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_action_lib',
+        'pickup_action_queue',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'pickup_action_queue',
+      ],
+    },
+    {
+      'target_name': 'pickup_action',
+      'type': 'executable',
+      'sources': [
+        'pickup_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'pickup_action_queue',
+        'pickup_action_lib',
+      ],
+    },
     {
       'target_name': 'stack_action_queue',
       'type': 'static_library',
