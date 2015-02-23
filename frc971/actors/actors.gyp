@@ -194,6 +194,7 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_lib',

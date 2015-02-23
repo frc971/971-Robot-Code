@@ -17,13 +17,13 @@ class StackActor
  public:
   explicit StackActor(StackActionQueueGroup *queues);
 
-  bool RunAction(const uint32_t&) override;
+  bool RunAction(const StackParams &params) override;
 };
 
 typedef aos::common::actions::TypedAction<StackActionQueueGroup> StackAction;
 
 // Makes a new stackActor action.
-::std::unique_ptr<StackAction> MakeStackAction();
+::std::unique_ptr<StackAction> MakeStackAction(const StackParams &params);
 
 }  // namespace actors
 }  // namespace frc971
