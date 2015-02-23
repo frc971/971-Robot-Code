@@ -19,19 +19,18 @@ class TrapezoidProfile {
   // delta_time is how long between each call to Update.
   TrapezoidProfile(const time::Time &delta_time);
 
-  // Updates the state. The names of the arguments are pretty easy to figure
-  // out.
+  // Updates the state.
   const Eigen::Matrix<double, 2, 1> &Update(double goal_position,
                                             double goal_velocity);
+  // Useful for preventing windup etc.
+  void MoveCurrentState(const Eigen::Matrix<double, 2, 1> &current) {
+    output_ = current;
+  }
 
   // Useful for preventing windup etc.
-  void MoveGoal(double dx) {
-    output_(0, 0) += dx;
-  }
+  void MoveGoal(double dx) { output_(0, 0) += dx; }
 
-  void SetGoal(double x) {
-    output_(0, 0) = x;
-  }
+  void SetGoal(double x) { output_(0, 0) = x; }
 
   void set_maximum_acceleration(double maximum_acceleration) {
     maximum_acceleration_ = maximum_acceleration;
@@ -45,8 +44,7 @@ class TrapezoidProfile {
   // by acceleration over delta_time.
   void UpdateVals(double acceleration, double delta_time);
   // Calculates how long to go for each segment.
-  void CalculateTimes(double distance_to_target,
-                      double goal_velocity);
+  void CalculateTimes(double distance_to_target, double goal_velocity);
   // output_ is where it should go at time_.
   Eigen::Matrix<double, 2, 1> output_;
 
