@@ -17,8 +17,10 @@
 #include "frc971/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
-#include "frc971/actors/fridge_profile_action.q.h"
 #include "frc971/actors/fridge_profile_actor.h"
+#include "frc971/actors/pickup_actor.h"
+#include "frc971/actors/stack_actor.h"
+#include "frc971/actors/lift_actor.h"
 
 using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::drivetrain_queue;
@@ -33,13 +35,11 @@ namespace frc971 {
 namespace input {
 namespace joysticks {
 
-/*
 // preset motion limits
-static const double kArmDebugVelocity = 0.17;
-static const double kArmDebugAcceleration = 0.8;
-static const double kElevatorDebugVelocity = 0.2;
+static const double kArmDebugVelocity = 0.40;
+static const double kArmDebugAcceleration = 1.0;
+static const double kElevatorDebugVelocity = 0.5;
 static const double kElevatorDebugAcceleration = 2.2;
-*/
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
@@ -58,6 +58,10 @@ const ButtonLocation kFridgeOpen(3, 1);
 const ButtonLocation kFridgeClosed(2, 11);
 const ButtonLocation kRollersIn(3, 4);
 const ButtonLocation kClawMiddle(3, 2);
+const ButtonLocation kPickup(2, 10);
+const ButtonLocation kZero(2, 7);
+
+const ButtonLocation kStack(3, 9);
 
 // TODO(ben): Real buttons for all of these.
 const ButtonLocation kArmPresetOne(99, 99);
@@ -119,18 +123,62 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.PosEdge(kElevatorUp)) {
-      elevator_goal_ = 0.4;
-      arm_goal_ = 0.1;
+      actors::LiftParams params;
+      params.lift_height = 0.45;
+      params.lift_arm = 0.2;
+      action_queue_.EnqueueAction(actors::MakeLiftAction(params));
+
       claw_goal_ = 0.0;
+      if (!claw_queue.goal.MakeWithBuilder()
+               .angle(claw_goal_)
+               .rollers_closed(claw_rollers_closed_)
+               .intake(0.0)
+               .Send()) {
+        LOG(ERROR, "Sending claw goal failed.\n");
+      }
+    }
+    if (data.PosEdge(kStack)) {
+      actors::StackParams params;
+      params.claw_out_angle = 0.6;
+      action_queue_.EnqueueAction(actors::MakeStackAction(params));
+    }
+    if (data.PosEdge(kPickup)) {
+      actors::PickupParams params;
+      params.pickup_angle = 0.7;
+      params.suck_angle = 0.5;
+      params.suck_angle_finish = 0.4;
+      params.pickup_finish_angle = 0.87;
+      params.intake_time = 0.5;
+      params.intake_voltage = 12.0;
+      action_queue_.EnqueueAction(actors::MakePickupAction(params));
     }
     if (data.PosEdge(kElevatorDown)) {
-      elevator_goal_ = 0.03;
-      arm_goal_ = 0.0;
       claw_goal_ = 0.0;
+
+      actors::FridgeProfileParams fridge_params;
+      fridge_params.arm_max_velocity = kArmDebugVelocity;
+      fridge_params.arm_max_acceleration = kArmDebugAcceleration;
+      fridge_params.elevator_max_velocity = kElevatorDebugVelocity;
+      fridge_params.elevator_max_acceleration = kElevatorDebugAcceleration;
+
+      fridge_params.arm_angle = 0.0;
+      fridge_params.elevator_height = 0.035;
+
+      fridge_params.top_front_grabber = fridge_closed_;
+      fridge_params.top_back_grabber = fridge_closed_;
+      fridge_params.bottom_front_grabber = fridge_closed_;
+      fridge_params.bottom_back_grabber = fridge_closed_;
+      action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
     }
 
     if (data.PosEdge(kClawMiddle)) {
-      claw_goal_ = 0.9;
+      claw_goal_ = 0.8;
+    }
+
+    if (data.PosEdge(kZero)) {
+      elevator_goal_ = 0.0;
+      arm_goal_ = 0.0;
+      claw_goal_ = 0.0;
     }
 
     if (data.PosEdge(kClawClosed)) {
@@ -205,6 +253,24 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
 
+    if (action_queue_.Running()) {
+      // If we are running an action, update our goals to the current goals.
+      control_loops::fridge_queue.status.FetchLatest();
+      if (control_loops::fridge_queue.status.get()) {
+        arm_goal_ = control_loops::fridge_queue.status->goal_angle;
+        elevator_goal_ = control_loops::fridge_queue.status->goal_height;
+      } else {
+        LOG(ERROR, "No fridge status!\n");
+      }
+
+      // If we are running an action, update our goals to the current goals.
+      control_loops::claw_queue.status.FetchLatest();
+      if (control_loops::claw_queue.status.get()) {
+        claw_goal_ = control_loops::claw_queue.status->goal_angle;
+      } else {
+        LOG(ERROR, "No fridge status!\n");
+      }
+    }
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
   }

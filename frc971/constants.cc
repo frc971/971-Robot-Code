@@ -43,8 +43,7 @@ const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95,
                                                    2.95, 0.2,  0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95,
                                                   3.0,  0.2, 0.7};
-// TODO(danielp): Actually measure one of them...
-const double kToteHeight = 0.5;
+const double kToteHeight = 0.3;
 
 // Set by Daniel on 2/13/15.
 // Distance from the center of the left wheel to the center of the right wheel.
@@ -209,13 +208,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
            // Elevator zeroing constants: left, right.
            // TODO(sensors): Get actual offsets for these.
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.058672},
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.078646},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.066380},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.051888},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.324437},
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.064683},
-           0.722230,
-           -0.081354,
+           0.722230 - -0.000594,
+           -0.081354 - -0.000374,
            -3.509611 - 0.007415 - -0.019081,
            3.506927 - 0.170017 - -0.147970,
 
