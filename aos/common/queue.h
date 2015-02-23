@@ -191,8 +191,8 @@ class Queue {
   // fetched it.
   bool FetchLatest();
 
-  // Fetches another message from the queue. Blocks until there is one if the
-  // latest was already Fetched.
+  // Fetches the latest message from the queue, or blocks if we have already
+  // fetched it until another is avilable.
   void FetchAnother();
 
   // Returns the age of the message.
