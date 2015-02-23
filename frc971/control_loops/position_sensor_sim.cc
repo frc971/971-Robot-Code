@@ -29,15 +29,15 @@ namespace control_loops {
  *              index pulse
  */
 
-PositionSensorSimulator::PositionSensorSimulator(double index_diff)
-    : index_diff_(index_diff),
-      pot_noise_(0, 0.0) {
+PositionSensorSimulator::PositionSensorSimulator(double index_diff,
+                                                 unsigned int noise_seed)
+    : index_diff_(index_diff), pot_noise_(noise_seed, 0.0) {
   Initialize(0.0, 0.0);
 }
 
 void PositionSensorSimulator::Initialize(double start_position,
                                          double pot_noise_stddev,
-                                         double known_index_pos/* = 0*/) {
+                                         double known_index_pos /* = 0*/) {
   // We're going to make the index pulse we know "segment zero".
   cur_index_segment_ = floor((start_position - known_index_pos) / index_diff_);
   known_index_pos_ = known_index_pos;
@@ -51,8 +51,8 @@ void PositionSensorSimulator::Initialize(double start_position,
 void PositionSensorSimulator::MoveTo(double new_pos) {
   // Compute which index segment we're in. In other words, compute between
   // which two index pulses we are.
-  const int new_index_segment = floor((new_pos - known_index_pos_)
-      / index_diff_);
+  const int new_index_segment =
+      floor((new_pos - known_index_pos_) / index_diff_);
 
   if (new_index_segment < cur_index_segment_) {
     // We've crossed an index pulse in the negative direction. That means the

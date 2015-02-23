@@ -15,8 +15,10 @@ class PositionSensorSimulator {
   // index_diff: The interval between index pulses. This is measured in SI
   //             units. For example, if an index pulse hits every 5cm on the
   //             elevator, set this to 0.05.
+  // noise_seed: The seed to feed into the random number generator for the
+  //             potentiometer values.
   // TODO(danielp): Allow for starting with a non-zero encoder value.
-  PositionSensorSimulator(double index_diff);
+  PositionSensorSimulator(double index_diff, unsigned int noise_seed = 0);
 
   // Set new parameters for the sensors. This is useful for unit tests to change
   // the simulated sensors' behavior on the fly.
