@@ -24,10 +24,10 @@ constexpr double kAngleEpsilon = 0.01;
 
 }  // namespace
 
-ClawActor::ClawActor(actors::ClawActionQueueGroup* s)
+ClawActor::ClawActor(actors::ClawActionQueueGroup *s)
     : aos::common::actions::ActorBase<actors::ClawActionQueueGroup>(s) {}
 
-bool ClawActor::Iterate(const ClawParams& params) {
+bool ClawActor::Iterate(const ClawParams &params) {
   const double goal_angle = params.claw_angle;
   const double goal_velocity = params.claw_max_velocity;
 
@@ -54,15 +54,14 @@ bool ClawActor::Iterate(const ClawParams& params) {
   const double current_angle = control_loops::claw_queue.status->angle;
   LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
 
-  if (::std::abs(goal_angle - current_angle) <
-      kAngleEpsilon) {
+  if (::std::abs(goal_angle - current_angle) < kAngleEpsilon) {
     return true;
   }
 
   return false;
 }
 
-bool ClawActor::RunAction(const ClawParams& params) {
+bool ClawActor::RunAction(const ClawParams &params) {
   LOG(INFO, "Claw goal (angle, velocity): %f, %f\n", params.claw_angle,
       params.claw_max_velocity);
 
@@ -91,7 +90,7 @@ bool ClawActor::RunAction(const ClawParams& params) {
   return true;
 }
 
-::std::unique_ptr<ClawAction> MakeClawAction(const ClawParams& p) {
+::std::unique_ptr<ClawAction> MakeClawAction(const ClawParams &p) {
   return ::std::unique_ptr<ClawAction>(
       new ClawAction(&::frc971::actors::claw_action, p));
 }
