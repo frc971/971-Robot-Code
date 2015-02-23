@@ -90,9 +90,6 @@ void ControlLoop<T>::Iterate() {
     }
   }
 
-  // The 100ms is the result of using an oscilliscope to look at the PWM signal
-  // and output of a talon, and timing the delay between the last pulse and the
-  // talon turning off.
   const bool motors_off =
       (::aos::time::Time::Now() - last_pwm_sent_) >= kPwmDisableTime;
   if (motors_off) {
