@@ -1,4 +1,106 @@
 #!/usr/bin/python3
+import matplotlib
+from matplotlib import pylab
+
+class Dataset(object):
+  def __init__(self):
+    self.time = []
+    self.data = []
+
+  def Add(self, time, data):
+    self.time.append(time)
+    self.data.append(data)
+
+
+class Plotter(object):
+  def __init__(self):
+    self.signal = dict()
+
+  def Add(self, binary, struct_instance_name, *data_search_path):
+    """
+    Specifies a specific piece of data to plot
+
+    Args:
+      binary: str, The name of the executable that generated the log.
+      struct_instance_name: str, The name of the struct instance whose data
+                            contents should be plotted.
+      data_search_path: [str], The path into the struct of the exact piece of
+                        data to plot.
+
+    Returns:
+      None
+    """
+    self.signal[(binary, struct_instance_name, data_search_path)] = Dataset()
+
+  def HandleLine(self, line):
+    """
+    Parses a line from a log file and adds the data to the plot data.
+
+    Args:
+      line: str, The line from the log file to parse
+
+    Returns:
+      None
+    """
+    pline = ParseLine(line)
+    for key in self.signal:
+      value = self.signal[key]
+      binary = key[0]
+      struct_instance_name = key[1]
+      data_search_path = key[2]
+
+      # Make sure that we're looking at the right binary structure instance.
+      if binary == pline.name:
+        if pline.msg.startswith(struct_instance_name + ': '):
+          # Parse the structure and traverse it as specified in
+          # `data_search_path`. This lets the user access very deeply nested
+          # structures.
+          _, _, data = pline.ParseStruct()
+          for path in data_search_path:
+            data = data[path]
+
+          value.Add(pline.time, data)
+
+  def Plot(self):
+    """
+    Plots all the data after it's parsed.
+
+    This should only be called after `HandleFile` has been called so that there
+    is actual data to plot.
+    """
+    for key in self.signal:
+      value = self.signal[key]
+      pylab.plot(value.time, value.data, label=key[0] + ' ' + '.'.join(key[2]))
+    pylab.legend()
+    pylab.show()
+
+  def PlotFile(self, f):
+    """
+    Parses and plots all the data.
+
+    Args:
+      f: str, The filename of the log whose data to parse and plot.
+
+    Returns:
+      None
+    """
+    self.HandleFile(f)
+    self.Plot()
+
+  def HandleFile(self, f):
+    """
+    Parses the specified log file.
+
+    Args:
+      f: str, The filename of the log whose data to parse.
+
+    Returns:
+      None
+    """
+    with open(f, 'r') as fd:
+      for line in fd:
+        self.HandleLine(line)
+
 
 class LogEntry:
   """This class provides a way to parse log entries."""
