@@ -9,9 +9,9 @@ namespace control_loops {
 
 StateFeedbackPlantCoefficients<1, 1, 1> MakeCIMPlantCoefficients() {
   Eigen::Matrix<double, 1, 1> A;
-  A << 0.614537580221;
+  A << 0.783924473544;
   Eigen::Matrix<double, 1, 1> B;
-  B << 15.9657598852;
+  B << 8.94979586973;
   Eigen::Matrix<double, 1, 1> C;
   C << 1;
   Eigen::Matrix<double, 1, 1> D;
@@ -25,11 +25,11 @@ StateFeedbackPlantCoefficients<1, 1, 1> MakeCIMPlantCoefficients() {
 
 StateFeedbackController<1, 1, 1> MakeCIMController() {
   Eigen::Matrix<double, 1, 1> L;
-  L << 0.604537580221;
+  L << 0.773924473544;
   Eigen::Matrix<double, 1, 1> K;
-  K << 0.0378646293422;
+  K << 0.086473980503;
   Eigen::Matrix<double, 1, 1> A_inv;
-  A_inv << 1.62723978514;
+  A_inv << 1.2756330919;
   return StateFeedbackController<1, 1, 1>(L, K, A_inv, MakeCIMPlantCoefficients());
 }
 

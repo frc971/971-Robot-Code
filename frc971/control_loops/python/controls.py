@@ -11,6 +11,7 @@ __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
 import numpy
 import slycot
+import scipy.signal.cont2discrete
 
 class Error (Exception):
   """Base class for all control loop exceptions."""
@@ -85,26 +86,10 @@ def dplace(A, B, poles, alpha=1e-6):
 
 def c2d(A, B, dt):
   """Converts from continuous time state space representation to discrete time.
-     Evaluates e^(A dt) - I for the discrete time version of A, and
-     integral(e^(A t) * B, 0, dt).
      Returns (A, B).  C and D are unchanged."""
-  e, P = numpy.linalg.eig(A)
-  diag = numpy.matrix(numpy.eye(A.shape[0]), dtype=numpy.complex128)
-  diage = numpy.matrix(numpy.eye(A.shape[0]), dtype=numpy.complex128)
-  for eig, count in zip(e, range(0, A.shape[0])):
-    diag[count, count] = numpy.exp(eig * dt)
-    if abs(eig) < 1.0e-16:
-      diage[count, count] = dt
-    else:
-      diage[count, count] = (numpy.exp(eig * dt) - 1.0) / eig
 
-  ans_a = P * diag * numpy.linalg.inv(P)
-  ans_b = P * diage * numpy.linalg.inv(P) * B
-  if numpy.abs(ans_a.imag).sum() / numpy.abs(ans_a).sum() < 1e-6:
-    ans_a = ans_a.real
-  if numpy.abs(ans_b.imag).sum() / numpy.abs(ans_b).sum() < 1e-6:
-    ans_b = ans_b.real
-  return (ans_a, ans_b)
+  ans_a, ans_b, _, _, _ = scipy.signal.cont2discrete((A, B, None, None), dt)
+  return numpy.matrix(ans_a), numpy.matrix(ans_b)
 
 def ctrb(A, B):
   """Returns the controlability matrix.
