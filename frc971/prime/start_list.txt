@@ -6,3 +6,7 @@ auto
 claw
 fridge
 drivetrain_action
+score_action
+claw_action
+stack_action
+intake_action

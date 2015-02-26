@@ -2,8 +2,10 @@
 
 #include <math.h>
 
+#include "aos/common/controls/control_loop.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
+#include "aos/common/util/phased_loop.h"
 #include "frc971/actors/claw_actor.h"
 #include "frc971/constants.h"
 #include "frc971/actors/fridge_profile_actor.h"
@@ -75,18 +77,25 @@ namespace {
   return fridge_action;
 }
 
-// Put the systems into a reasonable configuration when we cancel.
-void Reset() {
-  const auto &values = constants::GetValues();
-
-  auto claw = MoveClaw(kHpIntakeAngle, 0.0);
-  auto fridge = MoveFridge(values.fridge.elevator.lower_limit);
-  claw->WaitUntilDone();
-  fridge->WaitUntilDone();
-  LOG(INFO, "Done resetting systems.\n");
-}
-
 }  // namespace
+
+void IntakeActor::WaitForSystems(FridgeAction *fridge, ClawAction *claw) {
+  while ((fridge && !fridge->CheckIteration()) ||
+         (claw && !claw->CheckIteration())) {
+    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+
+    if (ShouldCancel()) {
+      if (fridge) {
+        fridge->Cancel();
+      }
+      if (claw) {
+        claw->Cancel();
+      }
+      LOG(WARNING, "Cancelling fridge and claw.\n");
+      return;
+    }
+  }
+}
 
 bool IntakeActor::RunAction(const IntakeParams &params) {
   const auto &values = constants::GetValues();
@@ -95,36 +104,53 @@ bool IntakeActor::RunAction(const IntakeParams &params) {
     // Grab the tote.
     LOG(INFO, "Grabbing tote.\n");
 
-    // Move the fridge up to make space for the tote we're intaking.
-    auto fridge = MoveFridge(values.tote_height);
-    // Start intaking.
-    const double claw_angle = params.ground ? 0.0 : kClawIntakeVoltage;
-    auto claw = MoveClaw(claw_angle, kClawIntakeVoltage);
-    fridge->WaitUntilDone();
-    claw->WaitUntilDone();
+    {
+      // Move the fridge up to make space for the tote we're intaking.
+      auto fridge = MoveFridge(values.tote_height);
+
+      // Move the claw and start intaking.
+      const double claw_angle = params.ground ? 0.0 : kClawIntakeVoltage;
+      auto claw = MoveClaw(claw_angle, kClawIntakeVoltage);
+      WaitForSystems(fridge.get(), claw.get());
+      if (ShouldCancel()) return true;
+    }
   } else {
     // Send it back into the robot.
     LOG(INFO, "Spitting tote backwards.\n");
 
-    // Pull the claw up.
-    MoveClaw(kHpIntakeAngle, 0.0);
-    if (ShouldCancel()) {
-      LOG(INFO, "Cancelling.\n");
-      Reset();
-      return true;
+    {
+      // Pull the claw up.
+      auto claw = MoveClaw(kHpIntakeAngle, 0.0);
+      WaitForSystems(nullptr, claw.get());
+      if (ShouldCancel()) return true;
     }
 
-    // Spit backwards for awhile.
-    MoveClaw(kHpIntakeAngle, kClawBackSpitVoltage);
-    ::aos::time::SleepFor(kBackSpitTime);
-    MoveClaw(kHpIntakeAngle, 0.0);
+    {
+      // Spit backwards for awhile.
+      auto claw = MoveClaw(kHpIntakeAngle, kClawBackSpitVoltage);
+      WaitForSystems(nullptr, claw.get());
+      ::aos::time::SleepFor(kBackSpitTime);
+      MoveClaw(kHpIntakeAngle, 0.0);
+      WaitForSystems(nullptr, claw.get());
+      if (ShouldCancel()) return true;
+    }
 
-    // Stack the new tote.
-    StackParams params;
-    params.claw_out_angle = M_PI / 4;
-    ::std::unique_ptr<StackAction> stack_action = MakeStackAction(params);
-    stack_action->Start();
-    stack_action->WaitUntilDone();
+    {
+      // Stack the new tote.
+      StackParams params;
+      params.claw_out_angle = M_PI / 4;
+      ::std::unique_ptr<StackAction> stack_action = MakeStackAction(params);
+      stack_action->Start();
+      while (!stack_action->CheckIteration()) {
+        ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+                                   2500);
+        if (ShouldCancel()) {
+          stack_action->Cancel();
+          LOG(WARNING, "Cancelling stack action.\n");
+          return true;
+        }
+      }
+    }
   }
 
   LOG(INFO, "Done running intake action.\n");

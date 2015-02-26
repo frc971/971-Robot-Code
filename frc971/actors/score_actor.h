@@ -14,6 +14,14 @@ class ScoreActor
   explicit ScoreActor(ScoreActionQueueGroup *queues);
 
   bool RunAction(const ScoreParams &params) override;
+
+ private:
+  // Creates and runs a profile action for the fridge. Handles cancelling
+  // correctly.
+  // height: How high we want the fridge to go.
+  // angle: What angle we want the arm to be at.
+  // grabbers: Whether we want the grabbers deployed or not.
+  void DoProfile(double height, double angle, bool grabbers);
 };
 
 typedef aos::common::actions::TypedAction<ScoreActionQueueGroup> ScoreAction;

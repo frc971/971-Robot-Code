@@ -2,7 +2,9 @@
 
 #include <math.h>
 
+#include "aos/common/controls/control_loop.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/util/phased_loop.h"
 #include "frc971/actors/fridge_profile_actor.h"
 #include "frc971/constants.h"
 
@@ -22,9 +24,7 @@ constexpr double kArmMaxAccel = 0.25;
 ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
     : aos::common::actions::ActorBase<ScoreActionQueueGroup>(queues) {}
 
-namespace {
-
-void DoProfile(double height, double angle, bool grabbers) {
+void ScoreActor::DoProfile(double height, double angle, bool grabbers) {
   FridgeProfileParams params;
 
   params.elevator_height = height;
@@ -42,10 +42,15 @@ void DoProfile(double height, double angle, bool grabbers) {
 
   ::std::unique_ptr<FridgeAction> profile = MakeFridgeProfileAction(params);
   profile->Start();
-  profile->WaitUntilDone();
+  while (!profile->CheckIteration()) {
+    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    if (ShouldCancel()) {
+      LOG(WARNING, "Cancelling profile.\n");
+      profile->Cancel();
+      return;
+    }
+  }
 }
-
-}  // namespace
 
 bool ScoreActor::RunAction(const ScoreParams& params) {
   const auto& values = constants::GetValues();
@@ -53,12 +58,16 @@ bool ScoreActor::RunAction(const ScoreParams& params) {
   // We're going to move the elevator first so we don't crash the fridge into
   // the ground.
   DoProfile(values.fridge.arm_zeroing_height, 0.0, true);
+  if (ShouldCancel()) return true;
   // Now move them both together.
   DoProfile(params.height, M_PI / 2.0, true);
+  if (ShouldCancel()) return true;
   // Release the totes.
   DoProfile(values.fridge.arm_zeroing_height, 0.0, false);
+  if (ShouldCancel()) return true;
   // Retract. Move back to our lowered position.
   DoProfile(values.fridge.elevator.lower_limit, 0.0, false);
+  if (ShouldCancel()) return true;
 
   return true;
 }
