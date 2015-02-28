@@ -37,7 +37,7 @@ ptrdiff_t aos_core_get_mem_usage(void) {
 struct aos_core *global_core = NULL;
 
 // TODO(brians): madvise(2) it to put this shm in core dumps.
-void aos_core_create_shared_mem(enum aos_core_create to_create) {
+void aos_core_create_shared_mem(int create, int lock) {
   assert(global_core == NULL);
   static struct aos_core global_core_data;
   global_core = &global_core_data;
@@ -53,7 +53,7 @@ void aos_core_create_shared_mem(enum aos_core_create to_create) {
   }
 
   int shm;
-  if (to_create == create) {
+  if (create) {
     while (1) {
       printf("shared_mem: creating %s\n", global_core->shm_name);
       shm = shm_open(global_core->shm_name, O_RDWR | O_CREAT | O_EXCL, 0666);
@@ -82,12 +82,13 @@ void aos_core_create_shared_mem(enum aos_core_create to_create) {
       PLOG(FATAL, "fruncate(%d, 0x%zx) failed", shm, (size_t)SIZEOFSHMSEG);
     }
   }
-  void *shm_address = mmap(
-      (void *)SHM_START, SIZEOFSHMSEG, PROT_READ | PROT_WRITE,
-      MAP_SHARED | MAP_FIXED | MAP_LOCKED | MAP_POPULATE, shm, 0);
+  int flags = MAP_SHARED | MAP_FIXED;
+  if (lock) flags |= MAP_LOCKED | MAP_POPULATE;
+  void *shm_address = mmap((void *)SHM_START, SIZEOFSHMSEG,
+                           PROT_READ | PROT_WRITE, flags, shm, 0);
   if (shm_address == MAP_FAILED) {
-    PLOG(FATAL, "shared_mem: mmap(%p, 0x%zx, stuff, stuff, %d, 0) failed",
-         (void *)SHM_START, (size_t)SIZEOFSHMSEG, shm);
+    PLOG(FATAL, "shared_mem: mmap(%p, 0x%zx, stuff, %x, %d, 0) failed",
+         (void *)SHM_START, (size_t)SIZEOFSHMSEG, flags, shm);
   }
   printf("shared_mem: shm at: %p\n", shm_address);
   if (close(shm) == -1) {

@@ -44,10 +44,6 @@ typedef struct aos_shm_core_t {
   aos_global_pointer queue_types;
 } aos_shm_core;
 
-enum aos_core_create {
-  create,
-  reference
-};
 struct aos_core {
   // Non-0 if we "own" shared_mem and should shm_unlink(3) it when we're done.
   int owner;
@@ -71,7 +67,10 @@ ptrdiff_t aos_core_get_mem_usage(void);
 // before passing the memory to this function.
 void aos_core_use_address_as_shared_mem(void *address, size_t size);
 
-void aos_core_create_shared_mem(enum aos_core_create to_create);
+// create is true to remove any existing shm to create a fresh one or false to
+// fail if it does not already exist.
+// lock is true to lock shared memory into RAM or false to not.
+void aos_core_create_shared_mem(int create, int lock);
 void aos_core_free_shared_mem(void);
 
 // Returns whether or not the shared memory system is active.
