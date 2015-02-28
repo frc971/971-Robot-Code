@@ -39,6 +39,9 @@ class Message {
   // Writes the contents of the message to the provided buffer.
   size_t Print(char *buffer, int length) const;
 
+  // Compares two messages for equality, excluding their sent_time.
+  bool EqualsNoTime(const Message & /*other*/) const { return true; }
+
   static const MessageType *GetType();
 };
 
