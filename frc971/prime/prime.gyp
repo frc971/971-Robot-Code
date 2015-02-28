@@ -25,6 +25,7 @@
         '../actors/actors.gyp:score_action',
         '../actors/actors.gyp:score_action_test',
         '../actors/actors.gyp:stack_action',
+        '../actors/actors.gyp:lift_action',
         '../actors/actors.gyp:intake_action',
         '../actors/actors.gyp:intake_action_test',
         '../actors/actors.gyp:claw_action_test',
