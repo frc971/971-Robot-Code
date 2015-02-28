@@ -211,4 +211,10 @@ GPERFTOOLS_URL=https://googledrive.com/host/0B6NtGsLhIcf7MWxMMF9JdTN3UVk/gperfto
 	CPPFLAGS=\"-I ${LIBUNWIND_PREFIX}/include\" \
 	&& make && make install"
 
+# get and build seasocks
+SEASOCKS_VERSION=1.1.2
+SEASOCKS_DIR=${EXTERNALS}/seasocks-${SEASOCKS_VERSION}
+[ -d ${SEASOCKS_DIR} ] || git clone --branch v${SEASOCKS_VERSION} \
+  https://github.com/mattgodbolt/seasocks.git ${SEASOCKS_DIR}
+
 rm -rf ${TMPDIR}

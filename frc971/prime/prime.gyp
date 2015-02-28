@@ -17,6 +17,7 @@
         '../autonomous/autonomous.gyp:auto',
         '../frc971.gyp:joystick_reader',
         '../zeroing/zeroing.gyp:zeroing_test',
+        '../http_status/http_status.gyp:http_status',
         '../control_loops/voltage_cap/voltage_cap.gyp:voltage_cap_test',
         '../../aos/common/actions/actions.gyp:action_test',
         '../actors/actors.gyp:drivetrain_action',
