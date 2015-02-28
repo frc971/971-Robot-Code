@@ -148,6 +148,7 @@
         'score_action_queue',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_lib',
@@ -167,6 +168,27 @@
         'score_action_lib',
       ],
     },
+    {
+      'target_name': 'score_action_test',
+      'type': 'executable',
+      'sources': [
+        'score_actor_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/common.gyp:queue_testutils',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:team_number_test_environment',
+        'score_action_queue',
+        'score_action_lib',
+      ],
+    },
+
     {
       'target_name': 'stack_action_queue',
       'type': 'static_library',
@@ -337,10 +359,13 @@
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
       'export_dependent_settings': [
-        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'claw_action_lib',
+        'fridge_profile_action_lib',
         'intake_action_queue',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
       ],
     },
     {
@@ -352,6 +377,28 @@
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
         '<(AOS)/common/actions/actions.gyp:action_lib',
+        'intake_action_queue',
+        'intake_action_lib',
+      ],
+    },
+    {
+      'target_name': 'intake_action_test',
+      'type': 'executable',
+      'sources': [
+        'intake_actor_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(AOS)/common/common.gyp:queue_testutils',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(DEPTH)/frc971/control_loops/control_loops.gyp:team_number_test_environment',
         'intake_action_queue',
         'intake_action_lib',
       ],
