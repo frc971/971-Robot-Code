@@ -24,7 +24,7 @@
       'type': 'static_library',
       'sources': [
         'fridge.cc',
-        'arm_motor_plant.cc',
+        'integral_arm_plant.cc',
         'elevator_motor_plant.cc',
       ],
       'dependencies': [
@@ -45,6 +45,7 @@
       'type': 'executable',
       'sources': [
         'fridge_lib_test.cc',
+        'arm_motor_plant.cc',
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',

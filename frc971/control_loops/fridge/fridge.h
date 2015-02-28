@@ -6,8 +6,6 @@
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
-#include "frc971/control_loops/fridge/arm_motor_plant.h"
-#include "frc971/control_loops/fridge/elevator_motor_plant.h"
 #include "frc971/zeroing/zeroing.h"
 
 namespace frc971 {
@@ -19,15 +17,16 @@ class FridgeTest_ElevatorGoalPositiveWindupTest_Test;
 class FridgeTest_ArmGoalNegativeWindupTest_Test;
 class FridgeTest_ElevatorGoalNegativeWindupTest_Test;
 class FridgeTest_SafeArmZeroing_Test;
-}
+}  // namespace testing
 
-class CappedStateFeedbackLoop : public StateFeedbackLoop<4, 2, 2> {
+template<int S>
+class CappedStateFeedbackLoop : public StateFeedbackLoop<S, 2, 2> {
  public:
-  CappedStateFeedbackLoop(StateFeedbackLoop<4, 2, 2> &&loop)
-      : StateFeedbackLoop<4, 2, 2>(::std::move(loop)), max_voltage_(12.0) {}
+  CappedStateFeedbackLoop(StateFeedbackLoop<S, 2, 2> &&loop)
+      : StateFeedbackLoop<S, 2, 2>(::std::move(loop)), max_voltage_(12.0) {}
 
   void set_max_voltage(double max_voltage) {
-    max_voltage_ = ::std::max(-12.0, ::std::min(12.0, max_voltage));
+    max_voltage_ = ::std::max(0.0, ::std::min(12.0, max_voltage));
   }
 
   void CapU() override;
@@ -114,8 +113,8 @@ class Fridge
   void Correct();
 
   // The state feedback control loop or loops to talk to.
-  ::std::unique_ptr<CappedStateFeedbackLoop> arm_loop_;
-  ::std::unique_ptr<CappedStateFeedbackLoop> elevator_loop_;
+  ::std::unique_ptr<CappedStateFeedbackLoop<5>> arm_loop_;
+  ::std::unique_ptr<CappedStateFeedbackLoop<4>> elevator_loop_;
 
   zeroing::ZeroingEstimator left_arm_estimator_;
   zeroing::ZeroingEstimator right_arm_estimator_;

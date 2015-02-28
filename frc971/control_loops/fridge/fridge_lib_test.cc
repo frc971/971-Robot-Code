@@ -8,8 +8,11 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"
+#include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
+#include "frc971/control_loops/fridge/arm_motor_plant.h"
+#include "frc971/control_loops/fridge/elevator_motor_plant.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/team_number_test_environment.h"
@@ -116,13 +119,25 @@ class FridgeSimulation {
     position.Send();
   }
 
+  // Sets the difference between the commanded and applied power for the arm.
+  // This lets us test that the integrator for the arm works.
+  void set_arm_power_error(double arm_power_error) {
+    arm_power_error_ = arm_power_error;
+  }
   // Simulates for a single timestep.
   void Simulate() {
     EXPECT_TRUE(fridge_queue_.output.FetchLatest());
 
     // Feed voltages into physics simulation.
-    arm_plant_->mutable_U() << fridge_queue_.output->left_arm,
-        fridge_queue_.output->right_arm;
+    if (arm_power_error_ != 0.0) {
+      arm_plant_->mutable_U() << ::aos::Clip(
+          fridge_queue_.output->left_arm + arm_power_error_, -12, 12),
+          ::aos::Clip(fridge_queue_.output->right_arm + arm_power_error_, -12,
+                      12);
+    } else {
+      arm_plant_->mutable_U() << fridge_queue_.output->left_arm,
+          fridge_queue_.output->right_arm;
+    }
     elevator_plant_->mutable_U() << fridge_queue_.output->left_elevator,
         fridge_queue_.output->right_elevator;
 
@@ -189,6 +204,7 @@ class FridgeSimulation {
 
   double elevator_initial_difference_ = 0.0;
   double arm_initial_difference_ = 0.0;
+  double arm_power_error_ = 0.0;
 };
 
 class FridgeTest : public ::aos::testing::ControlLoopTest {
@@ -517,8 +533,11 @@ TEST_F(FridgeTest, ElevatorGoalPositiveWindupTest) {
 TEST_F(FridgeTest, ArmGoalPositiveWindupTest) {
   fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
 
+  int i = 0;
   while (fridge_.state() != Fridge::ZEROING_ARM) {
     RunIteration();
+    ++i;
+    ASSERT_LE(i, 10000);
   }
 
   // Kick it.
@@ -609,6 +628,20 @@ TEST_F(FridgeTest, SafeArmZeroing) {
       last_arm_goal = fridge_.arm_goal_;
     }
   }
+}
+
+// Tests that the arm integrator works.
+TEST_F(FridgeTest, ArmIntegratorTest) {
+  fridge_plant_.InitializeArmPosition(
+      (constants::GetValues().fridge.arm.lower_hard_limit +
+       constants::GetValues().fridge.arm.lower_hard_limit) /
+      2.0);
+  fridge_plant_.set_arm_power_error(1.0);
+  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+
+  RunForTime(Time::InMS(8000));
+
+  VerifyNearGoal();
 }
 
 // Phil:

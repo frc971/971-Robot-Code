@@ -6,7 +6,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/fridge/elevator_motor_plant.h"
-#include "frc971/control_loops/fridge/arm_motor_plant.h"
+#include "frc971/control_loops/fridge/integral_arm_plant.h"
 #include "frc971/control_loops/voltage_cap/voltage_cap.h"
 #include "frc971/zeroing/zeroing.h"
 
@@ -24,32 +24,35 @@ constexpr double kArmZeroingVelocity = 0.20;
 }  // namespace
 
 
-void CappedStateFeedbackLoop::CapU() {
-  VoltageCap(max_voltage_, U(0, 0), U(1, 0), &mutable_U(0, 0),
-             &mutable_U(1, 0));
+template <int S>
+void CappedStateFeedbackLoop<S>::CapU() {
+  VoltageCap(max_voltage_, this->U(0, 0), this->U(1, 0), &this->mutable_U(0, 0),
+             &this->mutable_U(1, 0));
 }
 
+template <int S>
 Eigen::Matrix<double, 2, 1>
-CappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
+CappedStateFeedbackLoop<S>::UnsaturateOutputGoalChange() {
   // Compute the K matrix used to compensate for position errors.
   Eigen::Matrix<double, 2, 2> Kp;
   Kp.setZero();
-  Kp.col(0) = K().col(0);
-  Kp.col(1) = K().col(2);
+  Kp.col(0) = this->K().col(0);
+  Kp.col(1) = this->K().col(2);
 
   Eigen::Matrix<double, 2, 2> Kp_inv = Kp.inverse();
 
   // Compute how much we need to change R in order to achieve the change in U
   // that was observed.
-  Eigen::Matrix<double, 2, 1> deltaR = -Kp_inv * (U_uncapped() - U());
+  Eigen::Matrix<double, 2, 1> deltaR =
+      -Kp_inv * (this->U_uncapped() - this->U());
   return deltaR;
 }
 
 Fridge::Fridge(control_loops::FridgeQueue *fridge)
     : aos::controls::ControlLoop<control_loops::FridgeQueue>(fridge),
-      arm_loop_(new CappedStateFeedbackLoop(
-          StateFeedbackLoop<4, 2, 2>(MakeArmLoop()))),
-      elevator_loop_(new CappedStateFeedbackLoop(
+      arm_loop_(new CappedStateFeedbackLoop<5>(
+          StateFeedbackLoop<5, 2, 2>(MakeIntegralArmLoop()))),
+      elevator_loop_(new CappedStateFeedbackLoop<4>(
           StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop()))),
       left_arm_estimator_(constants::GetValues().fridge.left_arm_zeroing),
       right_arm_estimator_(constants::GetValues().fridge.right_arm_zeroing),
@@ -461,7 +464,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   }
 
   // Set the goals.
-  arm_loop_->mutable_R() << arm_goal_, arm_goal_velocity, 0.0, 0.0;
+  arm_loop_->mutable_R() << arm_goal_, arm_goal_velocity, 0.0, 0.0, 0.0;
   elevator_loop_->mutable_R() << elevator_goal_, elevator_goal_velocity, 0.0,
       0.0;
 
