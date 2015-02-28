@@ -512,7 +512,7 @@ class PrimeProcessor(Processor):
       return r
 
   ARCHITECTURES = ('arm', 'amd64')
-  COMPILERS = ('clang', 'gcc_frc')
+  COMPILERS = ('clang', 'gcc_frc', 'clang_frc')
   SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
   SANITIZER_TEST_WARNINGS = {
       'memory': (True,
