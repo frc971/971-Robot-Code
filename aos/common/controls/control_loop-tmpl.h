@@ -38,11 +38,7 @@ void ControlLoop<T>::Iterate() {
 
   // Fetch the latest control loop goal. If there is no new
   // goal, we will just reuse the old one.
-  // If there is no goal, we haven't started up fully.  It isn't worth
-  // the added complexity for each loop implementation to handle that case.
   control_loop_->goal.FetchLatest();
-  // TODO(aschuh): Check the age here if we want the loop to stop on old
-  // goals.
   const GoalType *goal = control_loop_->goal.get();
   if (goal) {
     LOG_STRUCT(DEBUG, "goal", *goal);
