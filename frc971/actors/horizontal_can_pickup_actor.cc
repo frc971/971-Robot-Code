@@ -14,8 +14,6 @@ namespace actors {
 namespace {
 constexpr double kClawPickupVelocity = 3.00;
 constexpr double kClawPickupAcceleration = 4.0;
-constexpr double kClawMoveVelocity = 3.00;
-constexpr double kClawMoveAcceleration = 8.0;
 
 constexpr double kArmVelocity = 1.00;
 constexpr double kArmAcceleration = 1.6;
