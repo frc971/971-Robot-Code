@@ -5,6 +5,7 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/time.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
@@ -105,6 +106,8 @@ class Claw : public aos::controls::ControlLoop<control_loops::ClawQueue> {
 
   // Whether claw was closed last cycle.
   bool last_rollers_closed_ = false;
+
+  ::aos::util::TrapezoidProfile profile_;
 };
 
 }  // namespace control_loops

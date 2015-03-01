@@ -15,6 +15,10 @@ queue_group ClawQueue {
     double angle;
     // Angular velocity of wrist.
     double angular_velocity;
+    // Maximum profile velocity, or 0 for the default.
+    double max_velocity;
+    // Maximum profile acceleration, or 0 for the default.
+    double max_acceleration;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;
@@ -47,10 +51,14 @@ queue_group ClawQueue {
     uint32_t state;
     EstimatorState zeroing_state;
 
-    // Angle of wrist joint.
+    // Estimated angle of wrist joint.
     double angle;
+    // Estimated angular velocity of wrist.
+    double angular_velocity;
+
     // Goal angle of wrist joint.
     double goal_angle;
+    double goal_velocity;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;

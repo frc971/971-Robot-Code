@@ -7,6 +7,7 @@
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw_motor_plant.h"
+#include "aos/common/util/trapezoid_profile.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -33,7 +34,8 @@ Claw::Claw(control_loops::ClawQueue *claw)
     : aos::controls::ControlLoop<control_loops::ClawQueue>(claw),
       last_piston_edge_(Time::Now()),
       claw_loop_(new ClawCappedStateFeedbackLoop(MakeClawLoop())),
-      claw_estimator_(constants::GetValues().claw.zeroing) {}
+      claw_estimator_(constants::GetValues().claw.zeroing),
+      profile_(::aos::controls::kLoopFrequency) {}
 
 void Claw::UpdateZeroingState() {
   if (claw_estimator_.offset_ratio_ready() < 1.0) {
@@ -169,6 +171,14 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
         claw_goal_ +=
             claw_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
       }
+
+      // Clear the current profile state if we are zeroing.
+      {
+        Eigen::Matrix<double, 2, 1> current;
+        current.setZero();
+        current << claw_goal_, claw_goal_velocity;
+        profile_.MoveCurrentState(current);
+      }
       break;
 
     case RUNNING:
@@ -177,8 +187,25 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
       // Update state_.
       UpdateZeroingState();
       if (unsafe_goal) {
-        claw_goal_ = unsafe_goal->angle;
-        claw_goal_velocity = unsafe_goal->angular_velocity;
+        // Pick a set of sane defaults if none are specified.
+        if (unsafe_goal->max_velocity != 0.0) {
+          profile_.set_maximum_velocity(unsafe_goal->max_velocity);
+        } else {
+          profile_.set_maximum_velocity(2.5);
+        }
+        if (unsafe_goal->max_acceleration != 0.0) {
+          profile_.set_maximum_acceleration(unsafe_goal->max_acceleration);
+        } else {
+          profile_.set_maximum_acceleration(4.0);
+        }
+
+        const double unfiltered_goal = ::std::max(
+            ::std::min(unsafe_goal->angle, values.claw.wrist.upper_limit),
+            values.claw.wrist.lower_limit);
+        ::Eigen::Matrix<double, 2, 1> goal_state =
+            profile_.Update(unfiltered_goal, unsafe_goal->angular_velocity);
+        claw_goal_ = goal_state(0, 0);
+        claw_goal_velocity = goal_state(1, 0);
       }
 
       if (state_ != RUNNING && state_ != ESTOP) {
@@ -249,12 +276,15 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
   zeroing::PopulateEstimatorState(claw_estimator_, &status->zeroing_state);
 
   status->angle = claw_loop_->X_hat(0, 0);
+  status->angular_velocity = claw_loop_->X_hat(1, 0);
+
   if (output) {
     status->intake = output->intake_voltage;
   } else {
     status->intake = 0;
   }
   status->goal_angle = claw_goal_;
+  status->goal_velocity = claw_goal_velocity;
 
   if (output) {
     status->rollers_open =

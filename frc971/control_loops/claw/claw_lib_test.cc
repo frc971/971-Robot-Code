@@ -211,7 +211,7 @@ TEST_F(ClawTest, RespectsRange) {
       .angle(values.claw.wrist.upper_hard_limit + 5.0)
       .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(Time::InSeconds(7));
 
   claw_queue_.status.FetchLatest();
   EXPECT_NEAR(values.claw.wrist.upper_limit,
@@ -223,7 +223,7 @@ TEST_F(ClawTest, RespectsRange) {
       .angle(values.claw.wrist.lower_hard_limit - 5.0)
       .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InMS(6000));
 
   claw_queue_.status.FetchLatest();
   EXPECT_NEAR(values.claw.wrist.lower_limit,
@@ -312,7 +312,7 @@ TEST_F(ClawTest, GoalPositiveWindup) {
   claw_.claw_goal_ += 100.0;
 
   RunIteration();
-  EXPECT_NEAR(orig_claw_goal, claw_.claw_goal_, 0.05);
+  EXPECT_NEAR(orig_claw_goal, claw_.claw_goal_, 0.10);
 
   RunIteration();
 
@@ -335,7 +335,7 @@ TEST_F(ClawTest, GoalNegativeWindup) {
   claw_.claw_goal_ -= 100.0;
 
   RunIteration();
-  EXPECT_NEAR(orig_claw_goal, claw_.claw_goal_, 0.05);
+  EXPECT_NEAR(orig_claw_goal, claw_.claw_goal_, 0.10);
 
   RunIteration();
 
