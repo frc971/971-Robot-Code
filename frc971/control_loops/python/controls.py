@@ -119,3 +119,35 @@ def dlqr(A, B, Q, R):
 
   F = numpy.linalg.inv(R + B.T * P *B) * B.T * P * A
   return F
+
+def kalman(A, B, C, Q, R):
+  """Solves for the steady state kalman gain and covariance matricies.
+
+    Args:
+      A, B, C: SS matricies.
+      Q: The model uncertantity
+      R: The measurement uncertainty
+
+    Returns:
+      KalmanGain, Covariance.
+  """
+  P = Q
+
+  I = numpy.matrix(numpy.eye(P.shape[0]))
+  At = A.T
+  Ct = C.T
+  i = 0
+
+  while True:
+    last_P = P
+    P_prior = A * P * At + Q
+    S = C * P_prior * Ct + R
+    K = P_prior * Ct * numpy.linalg.inv(S)
+    P = (I - K * C) * P_prior
+
+    diff = P - last_P
+    i += 1
+    if numpy.linalg.norm(diff) / numpy.linalg.norm(P) < 1e-9:
+      break
+
+  return K, P
