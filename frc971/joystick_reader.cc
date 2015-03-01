@@ -157,12 +157,16 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kPickup)) {
       actors::PickupParams params;
-      params.pickup_angle = 0.7;
-      params.suck_angle = 0.5;
+      // Lift to here initially.
+      params.pickup_angle = 0.9;
+      // Start sucking here
+      params.suck_angle = 0.8;
+      // Go back down to here to finish sucking.
       params.suck_angle_finish = 0.4;
-      params.pickup_finish_angle = 0.87;
-      params.intake_time = 0.5;
-      params.intake_voltage = 12.0;
+      // Pack the box back in here.
+      params.pickup_finish_angle = 0.95;
+      params.intake_time = 0.8;
+      params.intake_voltage = 9.0;
       action_queue_.EnqueueAction(actors::MakePickupAction(params));
     }
     if (data.PosEdge(kElevatorDown)) {

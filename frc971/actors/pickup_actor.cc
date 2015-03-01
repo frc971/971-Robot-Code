@@ -12,15 +12,23 @@
 
 namespace frc971 {
 namespace actors {
+namespace {
+constexpr double kClawPickupVelocity = 3.00;
+constexpr double kClawPickupAcceleration = 4.0;
+constexpr double kClawMoveVelocity = 3.00;
+constexpr double kClawMoveAcceleration = 8.0;
+}  // namespace
 
 PickupActor::PickupActor(PickupActionQueueGroup* queues)
     : aos::common::actions::ActorBase<PickupActionQueueGroup>(queues) {}
 
 bool PickupActor::RunAction(const PickupParams& params) {
-  constexpr double kAngleEpsilon = 0.05;
+  constexpr double kAngleEpsilon = 0.10;
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
+    message->max_velocity = kClawPickupVelocity;
+    message->max_acceleration = kClawPickupAcceleration;
     message->angular_velocity = 0.0;
     message->intake = 0.0;
     message->rollers_closed = true;
@@ -43,6 +51,8 @@ bool PickupActor::RunAction(const PickupParams& params) {
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
+    message->max_velocity = kClawPickupVelocity;
+    message->max_acceleration = kClawPickupAcceleration;
     message->angular_velocity = 0.0;
     message->intake = params.intake_voltage;
     message->rollers_closed = true;
@@ -64,7 +74,9 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
-    message->angle = params.suck_angle;
+    message->angle = params.suck_angle_finish;
+    message->max_velocity = kClawMoveVelocity;
+    message->max_acceleration = kClawMoveAcceleration;
     message->angular_velocity = 0.0;
     message->intake = params.intake_voltage;
     message->rollers_closed = true;
@@ -83,6 +95,8 @@ bool PickupActor::RunAction(const PickupParams& params) {
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_finish_angle;
+    message->max_velocity = kClawMoveVelocity;
+    message->max_acceleration = kClawMoveAcceleration;
     message->angular_velocity = 0.0;
     message->intake = 0.0;
     message->rollers_closed = true;
