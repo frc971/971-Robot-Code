@@ -436,7 +436,7 @@ class PrimeProcessor(Processor):
     def deploy(self, dry_run):
       # Downloads code to the prime in a way that avoids clashing too badly with
       # starter (like the naive download everything one at a time).
-      if self.compiler().endswith('_frc'):
+      if self.architecture().endswith('_frc'):
         device = 'roboRIO'
       else:
         device = 'prime'
@@ -511,8 +511,8 @@ class PrimeProcessor(Processor):
 
       return r
 
-  ARCHITECTURES = ('arm', 'amd64')
-  COMPILERS = ('clang', 'gcc_frc', 'clang_frc')
+  ARCHITECTURES = ('arm_frc', 'amd64')
+  COMPILERS = ('clang', 'gcc')
   SANITIZERS = ('address', 'undefined', 'integer', 'memory', 'thread', 'none')
   SANITIZER_TEST_WARNINGS = {
       'memory': (True,
@@ -529,8 +529,7 @@ class PrimeProcessor(Processor):
     for architecture in PrimeProcessor.ARCHITECTURES:
       for compiler in PrimeProcessor.COMPILERS:
         for debug in [True, False]:
-          if ((architecture == 'arm' and not compiler.endswith('_frc')) or
-              (architecture == 'amd64' and compiler.endswith('_frc'))):
+          if architecture == 'amd64' and compiler == 'gcc':
             # We don't have a compiler to use here.
             continue
           platforms.append(
@@ -556,8 +555,8 @@ class PrimeProcessor(Processor):
         if warning[0]:
           default_platforms -= self.select_platforms(sanitizer=sanitizer)
     elif is_deploy:
-      default_platforms = self.select_platforms(architecture='arm',
-                                                compiler='gcc_frc',
+      default_platforms = self.select_platforms(architecture='arm_frc',
+                                                compiler='gcc',
                                                 debug=False)
     else:
       default_platforms = self.select_platforms(debug=False)
@@ -578,13 +577,8 @@ class PrimeProcessor(Processor):
       if platforms & pie_sanitizers:
         to_download.add(architecture + '-fPIE')
 
-      frc_platforms = self.select_platforms(architecture=architecture,
-                                            compiler='gcc_frc')
-      if platforms & frc_platforms:
-        to_download.add(architecture + '_frc')
-
       if platforms & (self.select_platforms(architecture=architecture) -
-                      pie_sanitizers - frc_platforms):
+                      pie_sanitizers):
         to_download.add(architecture)
 
     for download_target in to_download:
@@ -651,14 +645,13 @@ class PrimeProcessor(Processor):
     packages.add('clang-3.5')
     packages.add('clang-format-3.5')
     for platform in platforms:
-      if (platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8' or
-          platform.compiler() == 'clang_frc'):
+      if platform.compiler() == 'clang' or platform.compiler() == 'gcc_4.8':
         packages.add('clang-3.5')
       if platform.compiler() == 'gcc_4.8':
         packages.add('libcloog-isl3:amd64')
       if is_deploy:
         packages.add('openssh-client')
-      elif platform.compiler() == 'gcc_frc' or platform.compiler() == 'clang_frc':
+      elif platform.architecture == 'arm_frc':
         packages.add('gcc-4.9-arm-frc-linux-gnueabi')
         packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
@@ -933,7 +926,7 @@ Examples of specifying targets:
              '-DSANITIZER=%s' % platform.sanitizer(),
              '-DEXTERNALS_EXTRA=%s' %
              ('-fPIE' if platform.sanitizer() in PrimeProcessor.PIE_SANITIZERS
-              else ('_frc' if platform.compiler().endswith('_frc') else ''))) +
+              else '')) +
             processor.extra_gyp_flags() + (args.main_gyp,),
             stdin=subprocess.PIPE)
         gyp.communicate(("""
