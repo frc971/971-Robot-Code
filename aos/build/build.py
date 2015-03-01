@@ -137,56 +137,24 @@ def aos_path():
   """
   return os.path.join(os.path.dirname(__file__), '..')
 
-def get_ip_base():
-  """Retrieves the IP address base."""
+def get_ip():
+  """Retrieves the IP address to download code to."""
   FILENAME = os.path.normpath(os.path.join(aos_path(), '..',
-                                           'output', 'ip_base.txt'))
+                                           'output', 'ip_address.txt'))
   if not os.access(FILENAME, os.R_OK):
     os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
     with open(FILENAME, 'w') as f:
       f.write('roboRIO-971.local')
   with open(FILENAME, 'r') as f:
-    base = f.readline().strip()
-  return base
+    return f.readline().strip()
 
-def get_ip(device):
-  """Retrieves the IP address for a given device."""
-  base = get_ip_base()
-  if device == 'prime':
-    return base + '.179'
-  elif device == 'robot':
-    return base + '.2'
-  elif device == 'roboRIO':
-    return base
-  else:
-    raise Exception('Unknown device %s to get an IP address for.' % device)
+def get_temp_dir():
+  """Retrieves the temporary directory to use when downloading."""
+  return '/home/admin/tmp/aos_downloader'
 
-def get_user(device):
-  """Retrieves the user for a given device."""
-  if device == 'prime':
-    return 'driver'
-  elif device == 'roboRIO':
-    return 'admin'
-  else:
-    raise Exception('Unknown device %s to get a user for.' % device)
-
-def get_temp_dir(device):
-  """Retrieves the temporary download directory for a given device."""
-  if device == 'prime':
-    return '/tmp/aos_downloader'
-  elif device == 'roboRIO':
-    return '/home/admin/tmp/aos_downloader'
-  else:
-    raise Exception('Unknown device %s to get a temp_dir for.' % device)
-
-def get_target_dir(device):
-  """Retrieves the tempory deploy directory for a given device."""
-  if device == 'prime':
-    return '/home/driver/robot_code/bin'
-  elif device == 'roboRIO':
-    return '/home/admin/robot_code'
-  else:
-    raise Exception('Unknown device %s to get a temp_dir for.' % device)
+def get_target_dir():
+  """Retrieves the tempory deploy directory for downloading code."""
+  return '/home/admin/robot_code'
 
 def user_output(message):
   """Prints message to the user."""
@@ -434,16 +402,15 @@ class PrimeProcessor(Processor):
       return r
 
     def deploy(self, dry_run):
-      # Downloads code to the prime in a way that avoids clashing too badly with
-      # starter (like the naive download everything one at a time).
-      if self.architecture().endswith('_frc'):
-        device = 'roboRIO'
-      else:
-        device = 'prime'
+      """Downloads code to the prime in a way that avoids clashing too badly with
+      starter (like the naive download everything one at a time)."""
+      if not self.architecture().endswith('_frc'):
+        raise Exception("Don't know how to download code to a %s." %
+                        self.architecture())
       SUM = 'md5sum'
-      TARGET_DIR = get_target_dir(device)
-      TEMP_DIR = get_temp_dir(device)
-      TARGET = get_user(device) + '@' + get_ip(device)
+      TARGET_DIR = get_target_dir()
+      TEMP_DIR = get_temp_dir()
+      TARGET = 'admin@' + get_ip()
 
       from_dir = os.path.join(self.outdir(), 'outputs')
       sums = subprocess.check_output((SUM,) + tuple(os.listdir(from_dir)),
@@ -467,8 +434,7 @@ class PrimeProcessor(Processor):
           + (('%s:%s' % (TARGET, TEMP_DIR)),))
       if not dry_run:
         mv_cmd = ['mv {TMPDIR}/* {TO_DIR} ']
-        if device == 'roboRIO':
-          mv_cmd.append('&& chmod u+s {TO_DIR}/starter_exe ')
+        mv_cmd.append('&& chmod u+s {TO_DIR}/starter_exe ')
         mv_cmd.append('&& echo \'Done moving new executables into place\' ')
         mv_cmd.append('&& bash -c \'sync && sync && sync\'')
         subprocess.check_call(
