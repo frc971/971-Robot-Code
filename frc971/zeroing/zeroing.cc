@@ -6,8 +6,8 @@
 namespace frc971 {
 namespace zeroing {
 
-void PopulateEstimatorState(const zeroing::ZeroingEstimator &estimator,
-                            EstimatorState *state) {
+void PopulateEstimatorState(const zeroing::ZeroingEstimator& estimator,
+                            EstimatorState* state) {
   state->error = estimator.error();
   state->zeroed = estimator.zeroed();
   state->position = estimator.position();
@@ -18,9 +18,8 @@ ZeroingEstimator::ZeroingEstimator(
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
   known_index_pos_ = constants.measured_index_position;
-
+  allowable_encoder_error_ = constants.allowable_encoder_error;
   start_pos_samples_.reserve(max_sample_count_);
-
   Reset();
 }
 
@@ -31,6 +30,7 @@ void ZeroingEstimator::Reset() {
   zeroed_ = false;
   wait_for_index_pulse_ = true;
   last_used_index_pulse_count_ = 0;
+  first_start_pos_ = 0.0;
   error_ = false;
 }
 
@@ -93,10 +93,28 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
     // resilient to corrupted intermediate data.
     start_pos_ = CalculateStartPosition(start_average, info.latched_encoder);
     last_used_index_pulse_count_ = info.index_pulses;
+    // Save the first starting position.
+    if (!zeroed_) {
+      first_start_pos_ = start_pos_;
+      LOG(INFO, "latching start position %f\n", first_start_pos_);
+    }
 
     // Now that we have an accurate starting position we can consider ourselves
     // zeroed.
     zeroed_ = true;
+    // Throw an error if first_start_pos is bigger/smaller than
+    // allowable_encoder_error_ * index_diff +
+    // start_pos.
+    if (::std::abs(first_start_pos_ - start_pos_) >
+        allowable_encoder_error_ * index_diff_) {
+      if (!error_) {
+        LOG(ERROR,
+            "Encoder ticks out of range since last index pulse. first start "
+            "position: %f recent starting position: %f\n",
+            first_start_pos_, start_pos_);
+        error_ = true;
+      }
+    }
   }
 
   pos_ = start_pos_ + info.encoder;
