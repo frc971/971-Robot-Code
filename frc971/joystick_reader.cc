@@ -22,6 +22,7 @@
 #include "frc971/actors/stack_actor.h"
 #include "frc971/actors/lift_actor.h"
 #include "frc971/actors/can_pickup_actor.h"
+#include "frc971/actors/horizontal_can_pickup_actor.h"
 
 using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::drivetrain_queue;
@@ -48,6 +49,7 @@ const ButtonLocation kQuickTurn(1, 5);
 
 // TODO(danielp): Real buttons for all of these.
 const ButtonLocation kElevatorUp(3, 10);
+const ButtonLocation kElevatorCanUp(1, 1);
 const ButtonLocation kElevatorDown(3, 3);
 const ButtonLocation kArmUp(3, 8);
 const ButtonLocation kArmHighUp(1, 4);
@@ -57,9 +59,10 @@ const ButtonLocation kClawUp(3, 7);
 const ButtonLocation kClawDown(3, 6);
 const ButtonLocation kClawOpen(3, 11);
 const ButtonLocation kClawClosed(3, 5);
-const ButtonLocation kFridgeOpen(3, 1);
-const ButtonLocation kFridgeClosed(2, 11);
+const ButtonLocation kFridgeClosed(3, 1);
+const ButtonLocation kFridgeOpen(2, 11);
 const ButtonLocation kRollersIn(3, 4);
+const ButtonLocation kRollersOut(1, 9);
 const ButtonLocation kClawMiddle(3, 2);
 const ButtonLocation kPickup(2, 10);
 const ButtonLocation kZero(2, 7);
@@ -170,6 +173,22 @@ class Reader : public ::aos::input::JoystickInput {
       params.intake_voltage = 9.0;
       action_queue_.EnqueueAction(actors::MakePickupAction(params));
     }
+
+    if (data.PosEdge(kElevatorCanUp)) {
+      actors::HorizontalCanPickupParams params;
+      params.elevator_height = 0.3;
+      params.pickup_angle = 0.54;
+      params.suck_time = 0.05;
+      params.suck_power = 8.0;
+
+      params.claw_settle_time = 0.05;
+      params.claw_settle_power = 5.0;
+      params.claw_full_lift_angle = 1.35;
+      params.claw_end_angle = 0.5;
+      action_queue_.EnqueueAction(
+          actors::MakeHorizontalCanPickupAction(params));
+    }
+
     if (data.PosEdge(kElevatorDown)) {
       claw_goal_ = 0.0;
 
@@ -194,7 +213,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.PosEdge(kArmHighUp)) {
-      claw_goal_ = 1.6;
+      claw_goal_ = 1.3;
     }
 
     if (data.PosEdge(kZero)) {
@@ -229,20 +248,20 @@ class Reader : public ::aos::input::JoystickInput {
       waiting_for_zero_ = true;
     }
 
-    if (waiting_for_zero_) {
-      claw_queue.status.FetchLatest();
-      fridge_queue.status.FetchLatest();
-      if (!claw_queue.status.get()) {
-        LOG(ERROR, "Got no claw status packet.\n");
-        // Not safe to continue.
-        return;
-      }
-      if (!fridge_queue.status.get()) {
-        LOG(ERROR, "Got no fridge status packet.\n");
-        return;
-      }
+    claw_queue.status.FetchLatest();
+    fridge_queue.status.FetchLatest();
+    if (!claw_queue.status.get()) {
+      LOG(ERROR, "Got no claw status packet.\n");
+      // Not safe to continue.
+      return;
+    }
+    if (!fridge_queue.status.get()) {
+      LOG(ERROR, "Got no fridge status packet.\n");
+      return;
+    }
 
-      if (claw_queue.status->zeroed && fridge_queue.status->zeroed) {
+    if (claw_queue.status->zeroed && fridge_queue.status->zeroed) {
+      if (waiting_for_zero_) {
         LOG(INFO, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
 
@@ -250,10 +269,13 @@ class Reader : public ::aos::input::JoystickInput {
         elevator_goal_ = fridge_queue.status->goal_height;
         arm_goal_ = fridge_queue.status->goal_angle;
         claw_goal_ = claw_queue.status->angle;
-      } else {
-        return;
       }
     } else {
+      waiting_for_zero_ = true;
+      return;
+    }
+
+    if (!waiting_for_zero_) {
       if (!action_queue_.Running()) {
         auto new_fridge_goal = fridge_queue.goal.MakeMessage();
         new_fridge_goal->height = elevator_goal_;
@@ -274,7 +296,9 @@ class Reader : public ::aos::input::JoystickInput {
         if (!claw_queue.goal.MakeWithBuilder()
                  .angle(claw_goal_)
                  .rollers_closed(claw_rollers_closed_)
-                 .intake(data.IsPressed(kRollersIn) ? 12.0 : 0.0)
+                 .intake(data.IsPressed(kRollersIn)
+                             ? 12.0
+                             : (data.IsPressed(kRollersOut) ? -12.0 : 0.0))
                  .Send()) {
           LOG(ERROR, "Sending claw goal failed.\n");
         }

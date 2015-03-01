@@ -284,6 +284,55 @@
       ],
     },
     {
+      'target_name': 'horizontal_can_pickup_action_queue',
+      'type': 'static_library',
+      'sources': ['horizontal_can_pickup_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'horizontal_can_pickup_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'horizontal_can_pickup_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_action_lib',
+        'horizontal_can_pickup_action_queue',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'horizontal_can_pickup_action_queue',
+      ],
+    },
+    {
+      'target_name': 'horizontal_can_pickup_action',
+      'type': 'executable',
+      'sources': [
+        'horizontal_can_pickup_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'horizontal_can_pickup_action_queue',
+        'horizontal_can_pickup_action_lib',
+      ],
+    },
+    {
       'target_name': 'stack_action_queue',
       'type': 'static_library',
       'sources': ['stack_action.q'],

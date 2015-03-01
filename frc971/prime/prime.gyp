@@ -28,6 +28,7 @@
         '../actors/actors.gyp:pickup_action',
         '../actors/actors.gyp:stack_action',
         '../actors/actors.gyp:can_pickup_action',
+        '../actors/actors.gyp:horizontal_can_pickup_action',
         '../actors/actors.gyp:lift_action',
         '../actors/actors.gyp:intake_action',
         '../actors/actors.gyp:intake_action_test',
