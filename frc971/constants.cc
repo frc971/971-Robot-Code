@@ -82,7 +82,7 @@ const double kElevatorEncoderIndexDifference =
 // Number of radians between index pulses on the claw.
 const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
 
-const int kZeroingSampleSize = 20;
+const int kZeroingSampleSize = 200;
 
 // TODO(danielp): All these values might need to change.
 const double kClawPistonSwitchTime = 0.4;
@@ -206,9 +206,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {-M_PI / 2 - 0.05, M_PI / 2 + 0.05, -M_PI / 2, M_PI / 2},
 
            // Elevator zeroing constants: left, right.
-           // TODO(sensors): Get actual offsets for these.
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.066380, 0.3},
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.051888, 0.3},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.094297, 0.3},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.106393, 0.3},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.324437, 0.3},
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.064683, 0.3},
