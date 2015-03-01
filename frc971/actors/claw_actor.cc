@@ -20,27 +20,23 @@ namespace actors {
 namespace {
 
 // Defines finished.
-constexpr double kAngleEpsilon = 0.01;
+constexpr double kAngleEpsilon = 0.07;
 
 }  // namespace
 
 ClawActor::ClawActor(actors::ClawActionQueueGroup *s)
-    : aos::common::actions::ActorBase<actors::ClawActionQueueGroup>(s) {}
+    : aos::common::actions::ActorBase<actors::ClawActionQueueGroup>(s),
+      profile_(::aos::controls::kLoopFrequency) {}
 
 bool ClawActor::Iterate(const ClawParams &params) {
-  const double goal_angle = params.claw_angle;
-  const double goal_velocity = params.claw_max_velocity;
+  const double goal_angle = params.angle;
 
-  if (::std::abs(claw_start_angle_ + delta_angle_ - goal_angle) >
-      kAngleEpsilon) {
-    delta_angle_ += goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
-  } else {
-    delta_angle_ = goal_angle - claw_start_angle_;
-  }
+  ::Eigen::Matrix<double, 2, 1> goal_state =
+      profile_.Update(goal_angle, 0.0);
 
   auto message = control_loops::claw_queue.goal.MakeMessage();
-  message->angle = claw_start_angle_ + delta_angle_;
-  message->angular_velocity = goal_velocity;
+  message->angle = goal_state(0, 0);
+  message->angular_velocity = goal_state(1, 0);
   message->intake = params.intake_voltage;
   message->rollers_closed = params.rollers_closed;
 
@@ -54,7 +50,8 @@ bool ClawActor::Iterate(const ClawParams &params) {
   const double current_angle = control_loops::claw_queue.status->angle;
   LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
 
-  if (::std::abs(goal_angle - current_angle) < kAngleEpsilon) {
+  if (::std::abs(goal_angle - current_angle) < kAngleEpsilon &&
+      ::std::abs(goal_angle - goal_state(0, 0)) < 0.0000001) {
     return true;
   }
 
@@ -62,22 +59,28 @@ bool ClawActor::Iterate(const ClawParams &params) {
 }
 
 bool ClawActor::RunAction(const ClawParams &params) {
-  LOG(INFO, "Claw goal (angle, velocity): %f, %f\n", params.claw_angle,
-      params.claw_max_velocity);
-
   control_loops::claw_queue.status.FetchLatest();
   if (control_loops::claw_queue.status.get()) {
     if (!control_loops::claw_queue.status->zeroed) {
       LOG(ERROR, "We are not running actions on an unzeroed claw!\n");
       return false;
     }
-    claw_start_angle_ = control_loops::claw_queue.status->angle;
+    Eigen::Matrix<double, 2, 1> current;
+    current.setZero();
+    current << control_loops::claw_queue.status->goal_angle, 0.0;
+
+    // Re-initialize the profile to start where we currently are.
+    profile_.MoveCurrentState(current);
+
+    // Update the parameters.
+    profile_.set_maximum_velocity(params.max_velocity);
+    profile_.set_maximum_acceleration(params.max_acceleration);
+
   } else {
     LOG(ERROR, "No claw status!\n");
     return false;
   }
 
-  delta_angle_ = 0.0;
   while (!Iterate(params)) {
     // wait until next Xms tick
     ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);

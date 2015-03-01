@@ -3,8 +3,12 @@ package frc971.actors;
 import "aos/common/actions/actions.q";
 
 struct ClawParams {
-  double claw_angle;
-  double claw_max_velocity;
+  // Goal angle.
+  double angle;
+  // Maximum velocity during the motion.
+  double max_velocity;
+  // Maximum acceleration during the motion.
+  double max_acceleration;
   // Positive is sucking in, negative is spitting out.
   double intake_voltage;
   bool rollers_closed;

@@ -25,8 +25,7 @@ class ClawActor : public aos::common::actions::ActorBase<ClawActionQueueGroup> {
   // Returns true if it's reached its ultimate goal, false otherwise.
   bool Iterate(const ClawParams &params);
 
-  double delta_angle_ = 0.0;
-  double claw_start_angle_ = 0.0;
+  ::aos::util::TrapezoidProfile profile_;
 };
 
 typedef aos::common::actions::TypedAction<ClawActionQueueGroup> ClawAction;

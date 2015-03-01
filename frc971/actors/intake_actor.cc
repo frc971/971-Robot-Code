@@ -25,6 +25,7 @@ constexpr double kHpIntakeAngle = M_PI / 4.0;
 const Time kBackSpitTime = Time::InSeconds(0.5);
 
 constexpr double kClawVelocity = 1.0;
+constexpr double kClawAcceleration = 4.0;
 constexpr double kClawIntakeVoltage = 12.0;
 constexpr double kClawBackSpitVoltage = 12.0;
 constexpr double kElevatorVelocity = 0.3;
@@ -44,8 +45,9 @@ namespace {
 // intake_voltage: The voltage to run the intake rollers at.
 ::std::unique_ptr<ClawAction> MoveClaw(double angle, double intake_voltage) {
   ClawParams params;
-  params.claw_angle = angle;
-  params.claw_max_velocity = kClawVelocity;
+  params.angle = angle;
+  params.max_velocity = kClawVelocity;
+  params.max_acceleration = kClawAcceleration;
   params.intake_voltage = intake_voltage;
   params.rollers_closed = true;
 
