@@ -35,6 +35,30 @@ void LogFileAccessor::Sync() const {
   msync(current_, kPageSize, MS_ASYNC | MS_INVALIDATE);
 }
 
+void LogFileAccessor::SkipToLastSeekablePage() {
+  CHECK(definitely_use_mmap());
+
+  struct stat info;
+  if (fstat(fd_, &info) == -1) {
+    PLOG(FATAL, "fstat(%d, %p) failed", fd_, &info);
+  }
+
+  CHECK((info.st_size % kPageSize) == 0);
+  const auto last_readable_page_number = (info.st_size / kPageSize) - 1;
+  const auto last_seekable_page_number =
+      last_readable_page_number / kSeekPages * kSeekPages;
+  const off_t new_offset = last_seekable_page_number * kPageSize;
+  // We don't want to go backwards...
+  if (new_offset > offset_) {
+    Unmap(current_);
+    offset_ = new_offset;
+    MapNextPage();
+  }
+}
+
+// The only way to tell is using fstat, but we don't really want to be making a
+// syscall every single time somebody wants to know the answer, so it gets
+// cached in is_last_page_.
 bool LogFileAccessor::IsLastPage() {
   if (is_last_page_ != Maybe::kUnknown) {
     return is_last_page_ == Maybe::kYes;
@@ -116,6 +140,7 @@ const LogFileMessageHeader *LogFileReader::ReadNextMessage(bool wait) {
     r = static_cast<LogFileMessageHeader *>(
         static_cast<void *>(&current()[position()]));
     if (wait) {
+      CHECK(definitely_use_mmap());
       if (futex_wait(&r->marker) != 0) continue;
     }
     if (r->marker == 2) {
@@ -194,21 +219,43 @@ void LogFileReader::CheckCurrentPageReadable() {
 }
 
 LogFileMessageHeader *LogFileWriter::GetWritePosition(size_t message_size) {
-  if (position() + message_size + (kAlignment - (message_size % kAlignment)) +
-      sizeof(aos_futex) > kPageSize) {
-    char *const temp = current();
-    MapNextPage();
-    if (futex_set_value(static_cast<aos_futex *>(static_cast<void *>(
-                    &temp[position()])), 2) == -1) {
-      PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
-           &temp[position()]);
-    }
-    Unmap(temp);
-  }
+  if (NeedNewPageFor(message_size)) ForceNewPage();
   LogFileMessageHeader *const r = static_cast<LogFileMessageHeader *>(
       static_cast<void *>(&current()[position()]));
   IncrementPosition(message_size);
   return r;
+}
+
+// A number of seekable pages, not the actual file offset, is stored in *cookie.
+bool LogFileWriter::ShouldClearSeekableData(off_t *cookie,
+                                            size_t next_message_size) const {
+  off_t next_message_page = (offset() / kPageSize) - 1;
+  if (NeedNewPageFor(next_message_size)) {
+    ++next_message_page;
+  }
+  const off_t current_seekable_page = next_message_page / kSeekPages;
+  CHECK_LE(*cookie, current_seekable_page);
+  const bool r = *cookie != current_seekable_page;
+  *cookie = current_seekable_page;
+  return r;
+}
+
+bool LogFileWriter::NeedNewPageFor(size_t bytes) const {
+  return position() + bytes + (kAlignment - (bytes % kAlignment)) +
+             sizeof(aos_futex) >
+         kPageSize;
+}
+
+void LogFileWriter::ForceNewPage() {
+  char *const temp = current();
+  MapNextPage();
+  if (futex_set_value(
+          static_cast<aos_futex *>(static_cast<void *>(&temp[position()])),
+          2) == -1) {
+    PLOG(WARNING, "readers will hang because futex_set_value(%p, 2) failed",
+         &temp[position()]);
+  }
+  Unmap(temp);
 }
 
 }  // namespace linux_code

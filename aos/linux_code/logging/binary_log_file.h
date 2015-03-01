@@ -94,7 +94,16 @@ class LogFileAccessor {
   // Asynchronously syncs all open mappings.
   void Sync() const;
 
+  // Returns true iff we currently have the last page in the file mapped.
+  // This is fundamentally a racy question, so the return value may not be
+  // accurate by the time this method returns.
   bool IsLastPage();
+
+  // Skips to the last page which is an even multiple of kSeekPages.
+  // This is fundamentally racy, so it may not actually be on the very last
+  // possible multiple of kSeekPages when it returns, but it should be close.
+  // This will never move backwards.
+  void SkipToLastSeekablePage();
 
   size_t file_offset(const void *msg) {
     return offset() + (static_cast<const char *>(msg) - current());
@@ -109,6 +118,10 @@ class LogFileAccessor {
   // What to align messages to, copied into an actual constant.
   static const size_t kAlignment = MESSAGE_ALIGNMENT;
 #undef MESSAGE_ALIGNMENT
+  // Pages which are multiples of this from the beginning of a file start with
+  // no saved state (ie struct types). This allows seeking immediately to the
+  // largest currently written interval of this number when following.
+  static const size_t kSeekPages = 256;
 
   char *current() const { return current_; }
   size_t position() const { return position_; }
@@ -169,6 +182,22 @@ class LogFileWriter : public LogFileAccessor {
 
   // message_size should be the total number of bytes needed for the message.
   LogFileMessageHeader *GetWritePosition(size_t message_size);
+
+  // Returns true exactly once for each unique cookie on each page where cached
+  // data should be cleared.
+  // Call with a non-zero next_message_size to determine if cached data should
+  // be forgotten before writing a next_message_size-sized message.
+  // cookie should be initialized to 0.
+  bool ShouldClearSeekableData(off_t *cookie, size_t next_message_size) const;
+
+  // Forces a move to a new page for the next message.
+  // This is important when there is cacheable data that needs to be re-written
+  // before a message which will spill over onto the next page but the cacheable
+  // message being refreshed is smaller and won't get to a new page by itself.
+  void ForceNewPage();
+
+ private:
+  bool NeedNewPageFor(size_t bytes) const;
 };
 
 }  // namespace linux_code

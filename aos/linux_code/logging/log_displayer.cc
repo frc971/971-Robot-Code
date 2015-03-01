@@ -233,15 +233,19 @@ int main(int argc, char **argv) {
     }
   }
 
-  fprintf(stderr, "displaying down to level %s from file '%s'\n",
-      ::aos::logging::log_str(filter_level), filename);
-
   int fd;
   if (strcmp(filename, "-") == 0) {
+    if (skip_to_end) {
+      fputs("Can't skip to end of stdin!\n", stderr);
+      return EXIT_FAILURE;
+    }
     fd = STDIN_FILENO;
   } else {
     fd = open(filename, O_RDONLY);
   }
+
+  fprintf(stderr, "displaying down to level %s from file '%s'\n",
+      ::aos::logging::log_str(filter_level), filename);
 
   if (fd == -1) {
     PLOG(FATAL, "couldn't open file '%s' for reading", filename);
@@ -250,6 +254,7 @@ int main(int argc, char **argv) {
 
   if (skip_to_end) {
     fputs("skipping old logs...\n", stderr);
+    reader.SkipToLastSeekablePage();
   }
 
   const LogFileMessageHeader *msg;

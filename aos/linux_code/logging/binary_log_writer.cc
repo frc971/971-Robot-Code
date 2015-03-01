@@ -26,14 +26,14 @@ namespace logging {
 namespace linux_code {
 namespace {
 
-void CheckTypeWritten(uint32_t type_id, LogFileWriter &writer) {
-  static ::std::unordered_set<uint32_t> written_type_ids;
-  if (written_type_ids.count(type_id) > 0) return;
+void CheckTypeWritten(uint32_t type_id, LogFileWriter *writer,
+                      ::std::unordered_set<uint32_t> *written_type_ids) {
+  if (written_type_ids->count(type_id) > 0) return;
   if (MessageType::IsPrimitive(type_id)) return;
 
   const MessageType &type = type_cache::Get(type_id);
   for (int i = 0; i < type.number_fields; ++i) {
-    CheckTypeWritten(type.fields[i]->type, writer);
+    CheckTypeWritten(type.fields[i]->type, writer, written_type_ids);
   }
 
   char buffer[1024];
@@ -44,7 +44,7 @@ void CheckTypeWritten(uint32_t type_id, LogFileWriter &writer) {
     return;
   }
   LogFileMessageHeader *const output =
-      writer.GetWritePosition(sizeof(LogFileMessageHeader) + size);
+      writer->GetWritePosition(sizeof(LogFileMessageHeader) + size);
 
   output->time_sec = output->time_nsec = 0;
   output->source = getpid();
@@ -58,7 +58,7 @@ void CheckTypeWritten(uint32_t type_id, LogFileWriter &writer) {
   output->type = LogFileMessageHeader::MessageType::kStructType;
   futex_set(&output->marker);
 
-  written_type_ids.insert(type_id);
+  written_type_ids->insert(type_id);
 }
 
 void AllocateLogName(char **filename, const char *directory) {
@@ -198,6 +198,9 @@ int BinaryLogReaderMain() {
   }
   LogFileWriter writer(fd);
 
+  ::std::unordered_set<uint32_t> written_type_ids;
+  off_t clear_type_ids_cookie = 0;
+
   while (true) {
     const LogMessage *const msg = ReadNext();
     if (msg == NULL) continue;
@@ -208,7 +211,12 @@ int BinaryLogReaderMain() {
     if (msg->type == LogMessage::Type::kStruct) {
       output_length += sizeof(msg->structure.type_id) + sizeof(uint32_t) +
                        msg->structure.string_length;
-      CheckTypeWritten(msg->structure.type_id, writer);
+      if (writer.ShouldClearSeekableData(&clear_type_ids_cookie,
+                                         output_length)) {
+        writer.ForceNewPage();
+        written_type_ids.clear();
+      }
+      CheckTypeWritten(msg->structure.type_id, &writer, &written_type_ids);
     } else if (msg->type == LogMessage::Type::kMatrix) {
       output_length +=
           sizeof(msg->matrix.type) + sizeof(uint32_t) + sizeof(uint16_t) +
