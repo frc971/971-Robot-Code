@@ -213,8 +213,10 @@ GPERFTOOLS_URL=https://googledrive.com/host/0B6NtGsLhIcf7MWxMMF9JdTN3UVk/gperfto
 
 # get and build seasocks
 SEASOCKS_VERSION=1.1.2
-SEASOCKS_DIR=${EXTERNALS}/seasocks-${SEASOCKS_VERSION}
-[ -d ${SEASOCKS_DIR} ] || git clone --branch v${SEASOCKS_VERSION} \
-  https://github.com/mattgodbolt/seasocks.git ${SEASOCKS_DIR}
+SEASOCKS_PATCH=1
+SEASOCKS_DIR=${EXTERNALS}/seasocks-${SEASOCKS_VERSION}-p${SEASOCKS_PATCH}
+[ -d ${SEASOCKS_DIR} ] || ( git clone --branch v${SEASOCKS_VERSION} \
+  https://github.com/mattgodbolt/seasocks.git ${SEASOCKS_DIR} && \
+  patch -p1 -d ${SEASOCKS_DIR} < ${AOS}/externals/seasocks.patch )
 
 rm -rf ${TMPDIR}

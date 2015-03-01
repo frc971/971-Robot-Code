@@ -16,7 +16,7 @@
     'libevent_version': '2.0.21',
     'libcdd_version': '094g',
     'stm32flash_commit': '8399fbe1baf2b7d097746786458021d92895d71b',
-    'seasocks_version': '1.1.2',
+    'seasocks_version': '1.1.2-p1',
 
     'allwpilib': '<(AOS)/externals/allwpilib',
     'forwpilib': '<(AOS)/externals/forwpilib',
