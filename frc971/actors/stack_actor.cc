@@ -72,7 +72,9 @@ bool StackActor::RunAction(const StackParams &params) {
     message.Send();
   }
   DoProfile(bottom, -0.05, false);
+  if (ShouldCancel()) return true;
   DoProfile(bottom, 0.0, false);
+  if (ShouldCancel()) return true;
   aos::time::SleepFor(aos::time::Time::InMS(100));
 
   return true;
