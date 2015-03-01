@@ -66,8 +66,10 @@ class Claw(control_loop.ControlLoop):
 
     controlability = controls.ctrb(self.A, self.B);
 
-    q_pos = 0.09
-    q_vel = 1.2
+    print "Free speed is", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G
+
+    q_pos = 0.15
+    q_vel = 2.5
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 
@@ -81,6 +83,23 @@ class Claw(control_loop.ControlLoop):
     self.ipl = 0.10
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
+
+    print 'L is', self.L
+
+    q_pos = 0.018
+    q_vel = 0.05
+    self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0],
+                           [0.0, (q_vel ** 2.0)]])
+
+    r_volts = 0.1
+    self.R = numpy.matrix([[(r_volts ** 2.0)]])
+
+    self.KalmanGain, self.Q_steady = controls.kalman(
+        A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+
+    print 'Kal', self.KalmanGain
+    self.L = self.A * self.KalmanGain
+    print 'KalL is', self.L
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -164,11 +183,11 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01,
 
 
 def main(argv):
-  loaded_mass = 5
+  loaded_mass = 0
   #loaded_mass = 0
-  claw = Claw(mass=5 + loaded_mass)
-  claw_controller = Claw(mass=5 + 5)
-  observer_claw = Claw(mass=5 + 5)
+  claw = Claw(mass=4 + loaded_mass)
+  claw_controller = Claw(mass=5 + 0)
+  observer_claw = Claw(mass=5 + 0)
   #observer_claw = None
 
   # Test moving the claw with constant separation.

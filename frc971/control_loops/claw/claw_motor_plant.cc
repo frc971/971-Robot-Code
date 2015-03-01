@@ -25,9 +25,9 @@ StateFeedbackPlantCoefficients<2, 1, 1> MakeClawPlantCoefficients() {
 
 StateFeedbackController<2, 1, 1> MakeClawController() {
   Eigen::Matrix<double, 2, 1> L;
-  L << 1.33065249533, 84.5098852645;
+  L << 0.165471565307, 0.0290418032388;
   Eigen::Matrix<double, 1, 2> K;
-  K << 115.895112435, 8.54319939792;
+  K << 74.4310031124, 4.72251126222;
   Eigen::Matrix<double, 2, 2> A_inv;
   A_inv << 1.0, -0.00518405612386, 0.0, 1.07451492907;
   return StateFeedbackController<2, 1, 1>(L, K, A_inv, MakeClawPlantCoefficients());
