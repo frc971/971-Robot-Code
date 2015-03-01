@@ -374,7 +374,7 @@ TEST_F(FridgeTest, ArmFarApartEstop) {
   do {
     fridge_plant_.InitializeArmPosition(
         constants::GetValues().fridge.arm.lower_limit,
-        constants::GetValues().fridge.arm.lower_limit + 0.1);
+        constants::GetValues().fridge.arm.lower_limit + 0.2);
     SendMessages(true);
     fridge_plant_.SendPositionMessage();
     fridge_.Iterate();
