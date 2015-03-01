@@ -212,7 +212,7 @@ class ControlLoop(object):
 
   def Update(self, U):
     """Simulates one time step with the provided U."""
-   #U = numpy.clip(U, self.U_min, self.U_max)
+    #U = numpy.clip(U, self.U_min, self.U_max)
     self.X = self.A * self.X + self.B * U
     self.Y = self.C * self.X + self.D * U
 
