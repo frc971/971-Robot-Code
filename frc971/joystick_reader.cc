@@ -50,6 +50,7 @@ const ButtonLocation kQuickTurn(1, 5);
 const ButtonLocation kElevatorUp(3, 10);
 const ButtonLocation kElevatorDown(3, 3);
 const ButtonLocation kArmUp(3, 8);
+const ButtonLocation kArmHighUp(1, 4);
 const ButtonLocation kCanPickup(3, 8);
 const ButtonLocation kArmDown(2, 6);
 const ButtonLocation kClawUp(3, 7);
@@ -192,9 +193,19 @@ class Reader : public ::aos::input::JoystickInput {
       claw_goal_ = 0.8;
     }
 
+    if (data.PosEdge(kArmHighUp)) {
+      claw_goal_ = 1.6;
+    }
+
     if (data.PosEdge(kZero)) {
       elevator_goal_ = 0.0;
       arm_goal_ = 0.0;
+      claw_goal_ = 0.0;
+    }
+    if (data.PosEdge(kClawUp)) {
+      claw_goal_ = 0.6;
+    }
+    if (data.PosEdge(kClawDown)) {
       claw_goal_ = 0.0;
     }
 
