@@ -21,6 +21,7 @@
 #include "frc971/actors/pickup_actor.h"
 #include "frc971/actors/stack_actor.h"
 #include "frc971/actors/lift_actor.h"
+#include "frc971/actors/can_pickup_actor.h"
 
 using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::drivetrain_queue;
@@ -49,6 +50,7 @@ const ButtonLocation kQuickTurn(1, 5);
 const ButtonLocation kElevatorUp(3, 10);
 const ButtonLocation kElevatorDown(3, 3);
 const ButtonLocation kArmUp(3, 8);
+const ButtonLocation kCanPickup(3, 8);
 const ButtonLocation kArmDown(2, 6);
 const ButtonLocation kClawUp(3, 7);
 const ButtonLocation kClawDown(3, 6);
@@ -142,6 +144,17 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_out_angle = 0.6;
       action_queue_.EnqueueAction(actors::MakeStackAction(params));
     }
+
+    if (data.PosEdge(kCanPickup)) {
+      actors::CanPickupParams params;
+      params.pickup_angle = -0.93;
+      params.pickup_height = 0.265;
+      params.lift_height = 0.65;
+      params.end_height = 0.4;
+      params.end_angle = 0.0;
+      action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
+    }
+
     if (data.PosEdge(kPickup)) {
       actors::PickupParams params;
       params.pickup_angle = 0.7;

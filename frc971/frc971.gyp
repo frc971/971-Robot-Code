@@ -42,6 +42,7 @@
         '<(DEPTH)/frc971/actors/actors.gyp:stack_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:pickup_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:lift_action_lib',
+        '<(DEPTH)/frc971/actors/actors.gyp:can_pickup_action_lib',
       ],
     },
   ],
