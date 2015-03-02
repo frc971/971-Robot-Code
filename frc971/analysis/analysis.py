@@ -70,7 +70,8 @@ class Plotter(object):
     """
     for key in self.signal:
       value = self.signal[key]
-      pylab.plot(value.time, value.data, label=key[0] + ' ' + '.'.join(key[2]))
+      pylab.plot(value.time, value.data, label=key[0] + ' ' + key[1] + '.' + \
+          '.'.join(key[2]))
     pylab.legend()
     pylab.show()
 
