@@ -45,6 +45,7 @@
         '<(AOS)/common/libc/libc.gyp:aos_strerror_test',
         '<(AOS)/common/libc/libc.gyp:aos_strsignal_test',
         '<(AOS)/common/util/util.gyp:run_command_test',
+        '<(AOS)/common/util/util.gyp:kinematics_test',
       ],
     },
   ],
