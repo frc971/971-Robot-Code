@@ -108,7 +108,7 @@ void AllocateLogName(char **filename, const char *directory) {
          fileindex, directory, previous);
 }
 
-#ifdef AOS_COMPILER_gcc_frc
+#ifdef AOS_ARCHITECTURE_arm_frc
 bool FoundThumbDrive(const char *path) {
   FILE *mnt_fp = setmntent("/etc/mtab", "r");
   if (mnt_fp == nullptr) {
@@ -148,7 +148,7 @@ bool FindDevice(char *device, size_t device_size) {
 int BinaryLogReaderMain() {
   InitNRT();
 
-#ifdef AOS_COMPILER_gcc_frc
+#ifdef AOS_ARCHITECTURE_arm_frc
   char folder[128];
 
   {

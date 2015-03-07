@@ -24,13 +24,13 @@
     ],
   },
   'conditions': [
-    ['PLATFORM=="linux-arm-gcc_frc"', {
+    ['PLATFORM=="linux-arm_frc-gcc"', {
         'make_global_settings': [
           ['CC', '<(ccache)<!(which arm-frc-linux-gnueabi-gcc-4.9)'],
           ['CXX', '<(ccache)<!(which arm-frc-linux-gnueabi-g++-4.9)'],
         ],
       },
-    ], ['PLATFORM=="linux-arm-clang_frc"', {
+    ], ['PLATFORM=="linux-arm_frc-clang"', {
         'variables': {
           'arm-clang-symlinks': '<!(realpath -s <(AOS)/build/arm-clang-symlinks)',
           'arm-clang-sysroot': '<(arm-clang-symlinks)/sysroot',
@@ -140,6 +140,7 @@
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
       'AOS_COMPILER_<!(echo <(FULL_COMPILER) | sed \'s/\./_/g\')',
+      'AOS_ARCHITECTURE_<(ARCHITECTURE)',
       '_FILE_OFFSET_BITS=64',
     ],
     'ldflags': [
