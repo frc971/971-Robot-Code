@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/common/controls/control_loop.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/zeroing/zeroing.h"
@@ -112,6 +113,8 @@ class Fridge
   // Corrects the Observer with the current position.
   void Correct();
 
+  double UseUnlessZero(double target_value, double default_value);
+
   // The state feedback control loop or loops to talk to.
   ::std::unique_ptr<CappedStateFeedbackLoop<5>> arm_loop_;
   ::std::unique_ptr<CappedStateFeedbackLoop<4>> elevator_loop_;
@@ -140,6 +143,9 @@ class Fridge
   State last_state_ = UNINITIALIZED;
 
   control_loops::FridgeQueue::Position current_position_;
+
+  aos::util::TrapezoidProfile arm_profile_;
+  aos::util::TrapezoidProfile elevator_profile_;
 };
 
 }  // namespace control_loops

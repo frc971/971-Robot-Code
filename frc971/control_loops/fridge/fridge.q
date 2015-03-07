@@ -35,6 +35,16 @@ queue_group FridgeQueue {
     // Linear velocity of the elevator.
     double velocity;
 
+    // Maximum arm profile angular velocity or 0 for the default.
+    double max_angular_velocity;
+    // Maximum elevator profile velocity or 0 for the default.
+    double max_velocity;
+
+    // Maximum arm profile acceleration or 0 for the default.
+    double max_angular_acceleration;
+    // Maximum elevator profile acceleration or 0 for the default.
+    double max_acceleration;
+
     // TODO(austin): Do I need acceleration here too?
 
     GrabberPistons grabbers;
@@ -49,17 +59,23 @@ queue_group FridgeQueue {
     // Are both the arm and elevator zeroed?
     bool zeroed;
 
-    // Angle of the arm.
+    // Estimated angle of the arm.
     double angle;
-    // Height of the elevator.
+    // Estimated angular velocity of the arm.
+    double angular_velocity;
+    // Estimated height of the elevator.
     double height;
+    // Estimated velocity of the elvator.
+    double velocity;
     // state of the grabber pistons
     GrabberPistons grabbers;
 
     // Goal angle of the arm.
     double goal_angle;
+    double goal_angular_velocity;
     // Goal height of the elevator.
     double goal_height;
+    double goal_velocity;
 
     // If true, we have aborted.
     bool estopped;

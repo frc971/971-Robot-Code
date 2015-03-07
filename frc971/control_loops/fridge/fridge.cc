@@ -57,7 +57,9 @@ Fridge::Fridge(control_loops::FridgeQueue *fridge)
       right_arm_estimator_(constants::GetValues().fridge.right_arm_zeroing),
       left_elevator_estimator_(constants::GetValues().fridge.left_elev_zeroing),
       right_elevator_estimator_(
-          constants::GetValues().fridge.right_elev_zeroing) {}
+          constants::GetValues().fridge.right_elev_zeroing),
+      arm_profile_(::aos::controls::kLoopFrequency),
+      elevator_profile_(::aos::controls::kLoopFrequency) {}
 
 void Fridge::UpdateZeroingState() {
   if (left_elevator_estimator_.offset_ratio_ready() < 1.0 ||
@@ -197,6 +199,14 @@ double Fridge::elevator_zeroing_velocity() {
   return elevator_zeroing_velocity_;
 }
 
+double Fridge::UseUnlessZero(double target_value, double default_value) {
+  if (target_value != 0.0) {
+    return target_value;
+  } else {
+    return default_value;
+  }
+}
+
 double Fridge::arm_zeroing_velocity() {
   const double average_arm = (constants::GetValues().fridge.arm.lower_limit +
                               constants::GetValues().fridge.arm.upper_limit) /
@@ -330,6 +340,17 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         elevator_goal_ += elevator_goal_velocity *
                           ::aos::controls::kLoopFrequency.ToSeconds();
       }
+
+      // Bypass motion profiles while we are zeroing.
+      // This is also an important step right after the elevator is zeroed and
+      // we reach into the elevator's state matrix and change it based on the
+      // newly-obtained offset.
+      {
+        Eigen::Matrix<double, 2, 1> current;
+        current.setZero();
+        current << elevator_goal_, elevator_goal_velocity;
+        elevator_profile_.MoveCurrentState(current);
+      }
       break;
 
     case ZEROING_ARM:
@@ -347,22 +368,55 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         arm_goal_ +=
             arm_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
       }
+
+      // Bypass motion profiles while we are zeroing.
+      // This is also an important step right after the arm is zeroed and
+      // we reach into the arm's state matrix and change it based on the
+      // newly-obtained offset.
+      {
+        Eigen::Matrix<double, 2, 1> current;
+        current.setZero();
+        current << arm_goal_, arm_goal_velocity;
+        arm_profile_.MoveCurrentState(current);
+      }
       break;
 
     case RUNNING:
       LOG(DEBUG, "Running!\n");
       if (unsafe_goal) {
-        arm_goal_velocity = unsafe_goal->angular_velocity;
-        elevator_goal_velocity = unsafe_goal->velocity;
+        // Pick a set of sane arm defaults if none are specified.
+        arm_profile_.set_maximum_velocity(
+            UseUnlessZero(unsafe_goal->max_angular_velocity, 1.0));
+        arm_profile_.set_maximum_acceleration(
+            UseUnlessZero(unsafe_goal->max_angular_acceleration, 3.0));
+        elevator_profile_.set_maximum_velocity(
+            UseUnlessZero(unsafe_goal->max_velocity, 0.50));
+        elevator_profile_.set_maximum_acceleration(
+            UseUnlessZero(unsafe_goal->max_acceleration, 2.0));
+
+        // Use the profiles to limit the arm's movements.
+        const double unfiltered_arm_goal = ::std::max(
+            ::std::min(unsafe_goal->angle, values.fridge.arm.upper_limit),
+            values.fridge.arm.lower_limit);
+        ::Eigen::Matrix<double, 2, 1> arm_goal_state = arm_profile_.Update(
+            unfiltered_arm_goal, unsafe_goal->angular_velocity);
+        arm_goal_ = arm_goal_state(0, 0);
+        arm_goal_velocity = arm_goal_state(1, 0);
+
+        // Use the profiles to limit the elevator's movements.
+        const double unfiltered_elevator_goal = ::std::max(
+            ::std::min(unsafe_goal->height, values.fridge.elevator.upper_limit),
+            values.fridge.elevator.lower_limit);
+        ::Eigen::Matrix<double, 2, 1> elevator_goal_state =
+            elevator_profile_.Update(unfiltered_elevator_goal,
+                                     unsafe_goal->velocity);
+        elevator_goal_ = elevator_goal_state(0, 0);
+        elevator_goal_velocity = elevator_goal_state(1, 0);
       }
 
       // Update state_ to accurately represent the state of the zeroing
       // estimators.
       UpdateZeroingState();
-      if (unsafe_goal) {
-        arm_goal_ = unsafe_goal->angle;
-        elevator_goal_ = unsafe_goal->height;
-      }
 
       if (state_ != RUNNING && state_ != ESTOP) {
         state_ = UNINITIALIZED;
@@ -517,9 +571,13 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   // TODO(austin): Populate these fully.
   status->zeroed = state_ == RUNNING;
   status->angle = arm_loop_->X_hat(0, 0);
+  status->angular_velocity = arm_loop_->X_hat(1, 0);
   status->height = elevator_loop_->X_hat(0, 0);
+  status->velocity = elevator_loop_->X_hat(1, 0);
   status->goal_angle = arm_goal_;
+  status->goal_angular_velocity = arm_goal_velocity;
   status->goal_height = elevator_goal_;
+  status->goal_velocity = elevator_goal_velocity;
   if (unsafe_goal) {
     status->grabbers = unsafe_goal->grabbers;
   } else {
