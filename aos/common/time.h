@@ -242,6 +242,14 @@ void SleepFor(const Time &time, clockid_t clock = Time::kDefaultClock);
 // Sleeps until clock is at the time represented by time.
 void SleepUntil(const Time &time, clockid_t clock = Time::kDefaultClock);
 
+// Sets the global offset for all times so ::aos::time::Time::Now() will return
+// now.
+// There is no synchronization here, so this is only safe when only a single
+// task is running.
+// This is only allowed when the shared memory core infrastructure has been
+// initialized in this process.
+void OffsetToNow(const Time &now);
+
 // RAII class that freezes Time::Now() (to avoid making large numbers of
 // syscalls to find the real time).
 class TimeFreezer {

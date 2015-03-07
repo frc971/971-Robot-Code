@@ -2,6 +2,19 @@
   'targets': [
     # linux_* is dealt with by aos/build/aos.gyp:logging.
     {
+      'target_name': 'log_replay',
+      'type': 'static_library',
+      'sources': [
+        'log_replay.cc',
+      ],
+      'dependencies': [
+        'binary_log_file',
+        '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:queue',
+      ],
+    },
+    {
       'target_name': 'binary_log_writer',
       'type': 'executable',
       'sources': [

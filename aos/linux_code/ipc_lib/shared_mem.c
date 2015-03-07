@@ -20,7 +20,7 @@
 #define SIZEOFSHMSEG (4096 * 0x3000)
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
-  clock_gettime(CLOCK_REALTIME, &shm_core->identifier);
+  memset(&shm_core->time_offset, 0 , sizeof(shm_core->time_offset));
   memset(&shm_core->msg_alloc_lock, 0, sizeof(shm_core->msg_alloc_lock));
   shm_core->queues.pointer = NULL;
   memset(&shm_core->queues.lock, 0, sizeof(shm_core->queues.lock));

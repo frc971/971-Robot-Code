@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-extern struct aos_core *global_core;
+extern struct aos_core *global_core __attribute__((weak));
 
 // Where the shared memory segment starts in each process's address space.
 // Has to be the same in all of them so that stuff in shared memory
@@ -26,12 +26,16 @@ typedef struct aos_global_pointer_t {
 } aos_global_pointer;
 
 typedef struct aos_shm_core_t {
-  // clock_gettime(CLOCK_REALTIME, &identifier) gets called to identify
-  // this shared memory area
-  struct timespec identifier;
   // Gets 0-initialized at the start (as part of shared memory) and
   // the owner sets as soon as it finishes setting stuff up.
   aos_condition creation_condition;
+
+  // An offset from CLOCK_REALTIME to times for all the code.
+  // This is currently only set to non-zero by the log replay code.
+  // There is no synchronization on this to avoid the overhead because it is
+  // only updated with proper memory barriers when only a single task is
+  // running.
+  struct timespec time_offset;
 
   struct aos_mutex msg_alloc_lock;
   void *msg_alloc;

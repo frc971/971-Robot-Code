@@ -1,6 +1,27 @@
 {
   'targets': [
     {
+      'target_name': 'replay_control_loop',
+      'type': 'static_library',
+      'sources': [
+        #'replay_control_loop.h',
+      ],
+      'dependencies': [
+        '<(AOS)/common/common.gyp:queues',
+        'control_loop',
+        '<(AOS)/linux_code/logging/logging.gyp:log_replay',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/common.gyp:queues',
+        'control_loop',
+        '<(AOS)/linux_code/logging/logging.gyp:log_replay',
+        '<(AOS)/common/logging/logging.gyp:queue_logging',
+        '<(AOS)/common/common.gyp:time',
+      ],
+    },
+    {
       'target_name': 'control_loop_test',
       'type': 'static_library',
       'sources': [

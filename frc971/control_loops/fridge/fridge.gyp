@@ -1,6 +1,21 @@
 {
   'targets': [
     {
+      'target_name': 'replay_fridge',
+      'type': 'executable',
+      'variables': {
+        'no_rsync': 1,
+      },
+      'sources': [
+        'replay_fridge.cc',
+      ],
+      'dependencies': [
+        'fridge_queue',
+        '<(AOS)/common/controls/controls.gyp:replay_control_loop',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+    },
+    {
       'target_name': 'fridge_queue',
       'type': 'static_library',
       'sources': ['fridge.q'],
