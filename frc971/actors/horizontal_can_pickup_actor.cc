@@ -5,7 +5,7 @@
 #include "aos/common/util/phased_loop.h"
 
 #include "frc971/actors/horizontal_can_pickup_actor.h"
-#include "frc971/actors/fridge_profile_actor.h"
+#include "frc971/actors/fridge_profile_lib.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw.q.h"
 
@@ -15,10 +15,8 @@ namespace {
 constexpr double kClawPickupVelocity = 3.00;
 constexpr double kClawPickupAcceleration = 4.0;
 
-constexpr double kArmVelocity = 1.00;
-constexpr double kArmAcceleration = 1.6;
-constexpr double kElevatorVelocity = 0.6;
-constexpr double kElevatorAcceleration = 2.2;
+constexpr ProfileParams kArmMove{1.0, 1.6};
+constexpr ProfileParams kElevatorMove{0.6, 2.2};
 
 constexpr double kAngleEpsilon = 0.10;
 
@@ -26,43 +24,7 @@ constexpr double kAngleEpsilon = 0.10;
 
 HorizontalCanPickupActor::HorizontalCanPickupActor(
     HorizontalCanPickupActionQueueGroup *queues)
-    : aos::common::actions::ActorBase<HorizontalCanPickupActionQueueGroup>(
-          queues) {}
-
-void HorizontalCanPickupActor::DoProfile(double height, double angle,
-                                         bool grabbers) {
-  DoProfile(height, angle, grabbers, grabbers, grabbers);
-}
-
-void HorizontalCanPickupActor::DoProfile(double height, double angle,
-                                         bool top_grabbers, bool front_grabbers,
-                                         bool back_grabbers) {
-  FridgeProfileParams params;
-
-  params.elevator_height = height;
-  params.elevator_max_velocity = kElevatorVelocity;
-  params.elevator_max_acceleration = kElevatorAcceleration;
-
-  params.arm_angle = angle;
-  params.arm_max_velocity = kArmVelocity;
-  params.arm_max_acceleration = kArmAcceleration;
-
-  params.top_front_grabber = top_grabbers;
-  params.top_back_grabber = top_grabbers;
-  params.bottom_front_grabber = front_grabbers;
-  params.bottom_back_grabber = back_grabbers;
-
-  ::std::unique_ptr<FridgeAction> profile = MakeFridgeProfileAction(params);
-  profile->Start();
-  while (!profile->CheckIteration()) {
-    // wait until next Xms tick
-    ::aos::time::PhasedLoopXMS(5, 2500);
-    if (ShouldCancel()) {
-      profile->Cancel();
-      return;
-    }
-  }
-}
+    : FridgeActorBase<HorizontalCanPickupActionQueueGroup>(queues) {}
 
 bool HorizontalCanPickupActor::WaitOrCancel(::aos::time::Time duration) {
   ::aos::time::Time end_time = ::aos::time::Time::Now() + duration;
@@ -104,7 +66,8 @@ void HorizontalCanPickupActor::MoveArm(double angle, double intake_power) {
 bool HorizontalCanPickupActor::RunAction(
     const HorizontalCanPickupParams &params) {
   // Go around the can.
-  DoProfile(params.elevator_height, 0.0, false, false, true);
+  DoFridgeProfile(params.elevator_height, 0.0, kElevatorMove, kArmMove, false,
+                  false, true);
   if (ShouldCancel()) return true;
 
   MoveArm(params.pickup_angle, 0.0);
@@ -137,7 +100,9 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
 
-  DoProfile(params.elevator_height, 0.0, false, true, true);
+  DoFridgeProfile(params.elevator_height, 0.0, kElevatorMove, kArmMove, false,
+                  true, true);
+  if (ShouldCancel()) return true;
 
   MoveArm(params.claw_end_angle, 7.0);
 

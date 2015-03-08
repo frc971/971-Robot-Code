@@ -1,13 +1,11 @@
 #include "frc971/actors/pickup_actor.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/time.h"
-#include "frc971/actors/fridge_profile_actor.h"
-#include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw.q.h"
 
 namespace frc971 {

@@ -8,16 +8,14 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
 #include "frc971/actors/can_pickup_action.q.h"
+#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class CanPickupActor
-    : public aos::common::actions::ActorBase<CanPickupActionQueueGroup> {
+class CanPickupActor : public FridgeActorBase<CanPickupActionQueueGroup> {
  public:
   explicit CanPickupActor(CanPickupActionQueueGroup *queues);
-
-  void DoProfile(double height, double angle, bool grabbers);
 
   bool RunAction(const CanPickupParams &params) override;
 };

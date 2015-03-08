@@ -8,16 +8,14 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
 #include "frc971/actors/stack_action.q.h"
+#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class StackActor
-    : public aos::common::actions::ActorBase<StackActionQueueGroup> {
+class StackActor : public FridgeActorBase<StackActionQueueGroup> {
  public:
   explicit StackActor(StackActionQueueGroup *queues);
-
-  void DoProfile(double height, double angle, bool grabbers);
 
   bool RunAction(const StackParams &params) override;
 };

@@ -8,12 +8,13 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
 #include "frc971/actors/horizontal_can_pickup_action.q.h"
+#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class HorizontalCanPickupActor : public aos::common::actions::ActorBase<
-                                     HorizontalCanPickupActionQueueGroup> {
+class HorizontalCanPickupActor
+    : public FridgeActorBase<HorizontalCanPickupActionQueueGroup> {
  public:
   explicit HorizontalCanPickupActor(
       HorizontalCanPickupActionQueueGroup *queues);
@@ -21,10 +22,6 @@ class HorizontalCanPickupActor : public aos::common::actions::ActorBase<
   bool RunAction(const HorizontalCanPickupParams &params) override;
 
  private:
-  void DoProfile(double height, double angle, bool grabbers);
-  void DoProfile(double height, double angle, bool top_grabbers,
-                 bool front_grabbers, bool back_grabbers);
-
   // Waits until the duration has elapsed, or we are asked to cancel.
   // Returns false if we should cancel.
   bool WaitOrCancel(::aos::time::Time duration);

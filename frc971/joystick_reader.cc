@@ -17,7 +17,6 @@
 #include "frc971/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
-#include "frc971/actors/fridge_profile_actor.h"
 #include "frc971/actors/pickup_actor.h"
 #include "frc971/actors/stack_actor.h"
 #include "frc971/actors/lift_actor.h"
@@ -38,10 +37,8 @@ namespace input {
 namespace joysticks {
 
 // preset motion limits
-static const double kArmDebugVelocity = 0.40;
-static const double kArmDebugAcceleration = 1.0;
-static const double kElevatorDebugVelocity = 0.5;
-static const double kElevatorDebugAcceleration = 2.2;
+constexpr actors::ProfileParams kArmMove{1.00, 1.0};
+constexpr actors::ProfileParams kElevatorMove{1.00, 3.2};
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
@@ -191,21 +188,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kElevatorDown)) {
       claw_goal_ = 0.0;
-
-      actors::FridgeProfileParams fridge_params;
-      fridge_params.arm_max_velocity = kArmDebugVelocity;
-      fridge_params.arm_max_acceleration = kArmDebugAcceleration;
-      fridge_params.elevator_max_velocity = kElevatorDebugVelocity;
-      fridge_params.elevator_max_acceleration = kElevatorDebugAcceleration;
-
-      fridge_params.arm_angle = 0.0;
-      fridge_params.elevator_height = 0.035;
-
-      fridge_params.top_front_grabber = fridge_closed_;
-      fridge_params.top_back_grabber = fridge_closed_;
-      fridge_params.bottom_front_grabber = fridge_closed_;
-      fridge_params.bottom_back_grabber = fridge_closed_;
-      action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
+      arm_goal_ = 0.0;
+      elevator_goal_ = 0.035;
     }
 
     if (data.PosEdge(kClawMiddle)) {
@@ -278,10 +262,14 @@ class Reader : public ::aos::input::JoystickInput {
     if (!waiting_for_zero_) {
       if (!action_queue_.Running()) {
         auto new_fridge_goal = fridge_queue.goal.MakeMessage();
+        new_fridge_goal->max_velocity = elevator_params_.velocity;
+        new_fridge_goal->max_acceleration = elevator_params_.acceleration;
         new_fridge_goal->height = elevator_goal_;
+        new_fridge_goal->velocity = 0.0;
+        new_fridge_goal->max_angular_velocity = arm_params_.velocity;
+        new_fridge_goal->max_angular_acceleration = arm_params_.acceleration;
         new_fridge_goal->angle = arm_goal_;
         new_fridge_goal->angular_velocity = 0.0;
-        new_fridge_goal->velocity = 0.0;
         new_fridge_goal->grabbers.top_front = fridge_closed_;
         new_fridge_goal->grabbers.top_back = fridge_closed_;
         new_fridge_goal->grabbers.bottom_front = fridge_closed_;
@@ -469,6 +457,8 @@ class Reader : public ::aos::input::JoystickInput {
   double claw_goal_ = 0.0;
   bool claw_rollers_closed_ = false;
   bool fridge_closed_ = false;
+  actors::ProfileParams arm_params_ = kArmMove;
+  actors::ProfileParams elevator_params_ = kElevatorMove;
 
   // If we're waiting for the subsystems to zero.
   bool waiting_for_zero_ = true;

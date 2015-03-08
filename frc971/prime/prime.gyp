@@ -25,7 +25,6 @@
         '../../aos/common/actions/actions.gyp:action_test',
         '../actors/actors.gyp:drivetrain_action',
         '../actors/actors.gyp:claw_action',
-        '../actors/actors.gyp:fridge_profile_action',
         '../actors/actors.gyp:score_action',
         '../actors/actors.gyp:score_action_test',
         '../actors/actors.gyp:pickup_action',
@@ -33,10 +32,7 @@
         '../actors/actors.gyp:can_pickup_action',
         '../actors/actors.gyp:horizontal_can_pickup_action',
         '../actors/actors.gyp:lift_action',
-        '../actors/actors.gyp:intake_action',
-        '../actors/actors.gyp:intake_action_test',
         '../actors/actors.gyp:claw_action_test',
-        '../actors/actors.gyp:fridge_profile_action_test',
         '../actors/actors.gyp:stack_action_test',
       ],
       'copies': [

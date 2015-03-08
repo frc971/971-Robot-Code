@@ -4,12 +4,12 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
 #include "frc971/actors/score_action.q.h"
+#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class ScoreActor
-    : public aos::common::actions::ActorBase<ScoreActionQueueGroup> {
+class ScoreActor : public FridgeActorBase<ScoreActionQueueGroup> {
  public:
   explicit ScoreActor(ScoreActionQueueGroup *queues);
 

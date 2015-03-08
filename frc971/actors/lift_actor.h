@@ -8,11 +8,12 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
 #include "frc971/actors/lift_action.q.h"
+#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class LiftActor : public aos::common::actions::ActorBase<LiftActionQueueGroup> {
+class LiftActor : public FridgeActorBase<LiftActionQueueGroup> {
  public:
   explicit LiftActor(LiftActionQueueGroup *queues);
 
