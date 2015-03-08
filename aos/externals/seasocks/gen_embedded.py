@@ -13,7 +13,7 @@ import os, os.path, sys
 o = open('embedded.h', 'w')
 
 web = []
-for root, dirs, files in os.walk("./web", topdown=False):
+for root, dirs, files in os.walk("./www_defaults", topdown=False):
   for name in files:
     web.append(os.path.join(root, name))
   for name in dirs:

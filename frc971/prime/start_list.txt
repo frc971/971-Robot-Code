@@ -15,3 +15,4 @@ held_to_lift_action
 drivetrain
 auto
 drivetrain_action
+http_status

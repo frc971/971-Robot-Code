@@ -207,6 +207,12 @@
           '<(AOS)/externals/seasocks',
           '<(externals)/seasocks-<(seasocks_version)/src/main/c',
         ],
+        'cflags': [
+          # Since seasocks/WebSocket.h has functions implemented that don't use
+          # their parameters, the compilation of http_status would fail without
+          # the following exception.
+          '-Wno-unused-parameter',
+        ],
       },
     },
   ],

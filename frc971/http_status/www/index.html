@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Hello, world</title>
+<script type="text/javascript">
+var escapable =
+  /[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g;
+var ws;
+var intervalTime = 50;
+var safetyTimeout;
+var safetyIntervalTime = 10;
+var selected = 0;
+
+// Filter out junky JSON packets that will otherwise cause nasty decoding errors.
+function filterUnicode(quoted) {
+  escapable.lastIndex = 0;
+  if (!escapable.test(quoted)) return quoted;
+
+  return quoted.replace(escapable, function(a) {
+    return '';
+  });
+}
+
+// Change the current data index to plot on the graph.
+function changeSelected(select) {
+  selected = select;
+  document.getElementById("selected").innerHTML = "Selected: " + selected;
+}
+
+// Get a new JSON packet from the websocket on the robot.
+function refresh() {
+  ws.send(lastSampleID);
+  safetyTimeout = setTimeout(safetyRefresh, safetyIntervalTime);
+}
+
+function safetyRefresh(){
+  console.log("Safety timeout exceeded. Performing additional refresh...");
+  refresh();
+}
+
+window.onload = function() {
+  var dps = [];
+  var numDatas = 0;
+  var chart = new CanvasJS.Chart("chartContainer", {
+    title: {
+      text: "Live Data"
+    },
+    axisX: {
+      title: "Time (sec)"
+    },
+    axisY: {
+      title: "Units"
+    },
+    zoomEnabled: true,
+    panEnabled: true,
+    data: [{
+      color: 'rgba(119, 152, 191, 1.0)',
+      type: "scatter",
+      dataPoints: dps
+    }],
+  });
+
+  chart.render();
+
+  $(function() {
+    ws = new WebSocket('ws://' + document.location.host + '/ws');
+    run = true;
+    xVal = 1;
+    lastSampleID = -1;
+
+    // Socket created & first opened.
+    ws.onopen = function() {
+      run = true;
+      refresh();
+    };
+
+    // Socket disconnected.
+    ws.onclose = function() {
+      console.log('onclose');
+      run = false;
+      $('#message').text('Lost connection.');
+    };
+
+    // Received message over the socket, so parse and chart it.
+    ws.onmessage = function(message) {
+      console.log(message);
+      clearTimeout(safetyTimeout);
+      message = message.data;
+      //$('#data').html(message);
+      if(message.charAt(0) == "*"){
+        message = message.substring(1);
+        var names = message.split(",");
+        for (var i = numDatas; i < names.length; i++) {
+          $('#dataTable').append('<tr onClick="changeSelected(' + i +
+            ')"><td>' + names[i] + '</td><td></td></tr>');
+          numDatas++;
+        }
+        lastSampleID = 0;
+      }else{
+        var samples = message.split("$");
+        for(var x = 0;x < samples.length;x++){
+          var info = samples[x].split("%");
+          lastSampleID = info[0];
+
+          if(!(typeof info[2] === "undefined")){
+            var values = info[2].split(",");
+            for(var y = 0;y < values.length;y++){
+              if(!(typeof info[1] === "undefined"
+                    || typeof values[y] === "undefined")){
+                $('#dataTable').find('tr').eq(y).find('td').eq(1)
+                  .text(values[y]);
+                if(y == selected){
+                  dps.push({
+                    x: parseFloat(info[1]),
+                    y: parseFloat(values[y])
+                    });
+                  if(dps.length > 10000){
+                    dps.shift();
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        chart.render();
+      }
+
+      if(run){
+        setTimeout(refresh, intervalTime);
+      }
+    };
+
+    // Socket error, most likely due to a server-side error.
+    ws.onerror = function(error) {
+      console.log('onerror ' + error);
+      run = false;
+    };
+  });
+}
+</script>
+<script type="text/javascript" src='/lib/jquery-1.4.4.js'></script>
+<script type="text/javascript" src='/lib/canvasjs.min.js'></script>
+<script type="text/javascript" src='/lib/reconnecting-websocket.min.js'></script>
+</head>
+<body>
+<div style="width: 1200px;margin-left: auto;margin-right:auto">
+  <table id="dataTable" style="width: 200px;cell-spacing:0;cell-padding:0;
+    text-align:left">
+  </table>
+  <div id="chartContainer" style="height:600px; width:100%;"></div>
+  <div style="width: 1000px;float: right">
+    <p id="message" style="color: #FF0000"></p>
+    <p id="selected">Selected: 0</p>
+    <p id="data"></p>
+  </div>
+</div>
+</body>
+</html>
