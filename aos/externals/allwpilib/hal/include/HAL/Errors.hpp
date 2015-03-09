@@ -16,6 +16,7 @@
 #define NiFpga_Status_ResourceNotInitialized_MESSAGE "NIFPGA: Resource not initialized"
 #define NiFpga_Status_HardwareFault_MESSAGE "NIFPGA: Hardware Fault"
 #define NiFpga_Status_IrqTimeout_MESSAGE "NIFPGA: Interrupt timeout"
+#define NiFpga_Status_VersionMismatch_MESSAGE "NIFPGA: Version Mismatch"
 
 #define ERR_CANSessionMux_InvalidBuffer_MESSAGE "CAN: Invalid Buffer"
 #define ERR_CANSessionMux_MessageNotFound_MESSAGE "CAN: Message not found"

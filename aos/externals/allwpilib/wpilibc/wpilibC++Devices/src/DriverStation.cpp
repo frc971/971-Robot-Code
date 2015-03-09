@@ -139,6 +139,7 @@ void DriverStation::GetData()
 	for(uint8_t stick = 0; stick < 4; stick++) {
 		HALGetJoystickAxes(stick, &m_joystickAxes[stick]);
 		HALGetJoystickButtons(stick, &m_joystickButtons[stick]);
+	  HALGetJoystickPOVs(stick, &m_joystickPOVs[stick]);
 	}
 	giveSemaphore(m_newControlData);
 }
@@ -243,8 +244,8 @@ float DriverStation::GetStickAxis(uint32_t stick, uint32_t axis)
 	{
 		if (axis >= kMaxJoystickAxes)
 			wpi_setWPIError(BadJoystickAxis);
-		else
-			ReportJoystickUnpluggedError("WARNING: Joystick Axis missing, check if all controllers are plugged in\n");
+		//else
+			//ReportJoystickUnpluggedError("WARNING: Joystick Axis missing, check if all controllers are plugged in\n");
 		return 0.0f;
 	}
 
@@ -276,8 +277,8 @@ int DriverStation::GetStickPOV(uint32_t stick, uint32_t pov) {
 	{
 		if (pov >= kMaxJoystickPOVs)
 			wpi_setWPIError(BadJoystickAxis);
-		else
-			ReportJoystickUnpluggedError("WARNING: Joystick POV missing, check if all controllers are plugged in\n");
+		//else
+			//ReportJoystickUnpluggedError("WARNING: Joystick POV missing, check if all controllers are plugged in\n");
 		return 0;
 	}
 
@@ -318,12 +319,12 @@ bool DriverStation::GetStickButton(uint32_t stick, uint8_t button)
 	
 	if(button > m_joystickButtons[stick].count)
 	{
-		ReportJoystickUnpluggedError("WARNING: Joystick Button missing, check if all controllers are plugged in\n");
+		//ReportJoystickUnpluggedError("WARNING: Joystick Button missing, check if all controllers are plugged in\n");
 		return false;
 	}
 	if(button == 0)
 	{
-		ReportJoystickUnpluggedError("ERROR: Button indexes begin at 1 in WPILib for C++ and Java");
+		//ReportJoystickUnpluggedError("ERROR: Button indexes begin at 1 in WPILib for C++ and Java");
 		return false;
 	}
 	return ((0x1 << (button-1)) & m_joystickButtons[stick].buttons) !=0;

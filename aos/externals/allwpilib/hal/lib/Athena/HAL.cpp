@@ -54,9 +54,9 @@ const char* getHALErrorMessage(int32_t code)
 			return CTR_InvalidParamValue_MESSAGE;
 		case CTR_UnexpectedArbId:
 			return CTR_UnexpectedArbId_MESSAGE;
-                case CTR_TxFailed:
+		case CTR_TxFailed:
 			return CTR_TxFailed_MESSAGE;
-                case CTR_SigNotUpdated:
+		case CTR_SigNotUpdated:
 			return CTR_SigNotUpdated_MESSAGE;
 		case NiFpga_Status_FifoTimeout:
 			return NiFpga_Status_FifoTimeout_MESSAGE;
@@ -76,6 +76,8 @@ const char* getHALErrorMessage(int32_t code)
 			return NiFpga_Status_HardwareFault_MESSAGE;
 		case NiFpga_Status_IrqTimeout:
 			return NiFpga_Status_IrqTimeout_MESSAGE;
+		case NiFpga_Status_VersionMismatch:
+			return NiFpga_Status_VersionMismatch_MESSAGE;
 		case SAMPLE_RATE_TOO_HIGH:
 			return SAMPLE_RATE_TOO_HIGH_MESSAGE;
 		case VOLTAGE_OUT_OF_RANGE:
