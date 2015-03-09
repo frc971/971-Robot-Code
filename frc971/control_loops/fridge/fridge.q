@@ -70,10 +70,10 @@ queue_group FridgeQueue {
     // state of the grabber pistons
     GrabberPistons grabbers;
 
-    // Goal angle of the arm.
+    // Goal angle and velocity of the arm.
     double goal_angle;
     double goal_angular_velocity;
-    // Goal height of the elevator.
+    // Goal height and velocity of the elevator.
     double goal_height;
     double goal_velocity;
 

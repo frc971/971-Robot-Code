@@ -258,12 +258,17 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
 
   if (output) {
     output->voltage = claw_loop_->U(0, 0);
-    if (unsafe_goal) {
-      output->intake_voltage = unsafe_goal->intake;
-      output->rollers_closed = unsafe_goal->rollers_closed;
-    } else {
+    if (state_ != RUNNING) {
       output->intake_voltage = 0.0;
       output->rollers_closed = false;
+    } else {
+      if (unsafe_goal) {
+        output->intake_voltage = unsafe_goal->intake;
+        output->rollers_closed = unsafe_goal->rollers_closed;
+      } else {
+        output->intake_voltage = 0.0;
+        output->rollers_closed = false;
+      }
     }
     if (output->rollers_closed != last_rollers_closed_) {
       last_piston_edge_ = Time::Now();

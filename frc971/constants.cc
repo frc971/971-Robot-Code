@@ -130,7 +130,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            // 0 is the portion of the elevator carriage that Spencer removed
            // lining up with the bolt.
            // Positive is up.
-           {-0.005, 0.679000, 0.010000, 0.650000},
+           {-0.005, 0.689000, 0.010000, 0.680000},
 
            // Arm values, in radians.
            // 0 is sticking straight out horizontally over the intake/front.
@@ -198,7 +198,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            // 0 is the portion of the elevator carriage that Spencer removed
            // lining up with the bolt.
            // Positive is up.
-           {-0.00500, 0.679000, 0.010000, 0.650000},
+           {-0.00500, 0.689000, 0.010000, 0.680000},
 
            // Arm values, in radians.
            // 0 is sticking straight out horizontally over the intake/front.
@@ -265,7 +265,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           {// Elevator values, in meters.
            // 0 is at the top of the elevator frame.
            // Positive is down towards the drivebase.
-           {-0.00500, 0.679000, 0.010000, 0.650000},
+           {-0.00500, 0.689000, 0.010000, 0.680000},
 
            // Arm values, in radians.
            // 0 is sticking straight out horizontally over the intake/front.

@@ -62,9 +62,11 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
       'export_dependent_settings' : [
         '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
       ],
     },
@@ -282,9 +284,175 @@
       ],
     },
     {
+      'target_name': 'held_to_lift_action_queue',
+      'type': 'static_library',
+      'sources': ['held_to_lift_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'lift_action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'lift_action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'held_to_lift_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'held_to_lift_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_lib',
+        'held_to_lift_action_queue',
+        'lift_action_lib',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'held_to_lift_action_queue',
+        'fridge_profile_lib',
+      ],
+    },
+    {
+      'target_name': 'held_to_lift_action',
+      'type': 'executable',
+      'sources': [
+        'held_to_lift_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'held_to_lift_action_queue',
+        'held_to_lift_action_lib',
+      ],
+    },
+    {
+      'target_name': 'stack_and_hold_action_queue',
+      'type': 'static_library',
+      'sources': ['stack_and_hold_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_queue',
+        'lift_action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_queue',
+        'lift_action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'stack_and_hold_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'stack_and_hold_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_lib',
+        'stack_and_hold_action_queue',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_and_hold_action_queue',
+        'fridge_profile_lib',
+      ],
+    },
+    {
+      'target_name': 'stack_and_hold_action',
+      'type': 'executable',
+      'sources': [
+        'stack_and_hold_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_and_hold_action_queue',
+        'stack_and_hold_action_lib',
+      ],
+    },
+    {
+      'target_name': 'stack_and_lift_action_queue',
+      'type': 'static_library',
+      'sources': ['stack_and_lift_action.q'],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
+      'dependencies': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_queue',
+        'lift_action_queue',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_queue',
+        'lift_action_queue',
+      ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'stack_and_lift_action_lib',
+      'type': 'static_library',
+      'sources': [
+        'stack_and_lift_actor.cc',
+      ],
+      'dependencies': [
+        'fridge_profile_lib',
+        'stack_and_lift_action_queue',
+        'stack_action_lib',
+        'lift_action_lib',
+        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/common/util/util.gyp:phased_loop',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_and_lift_action_queue',
+        'fridge_profile_lib',
+      ],
+    },
+    {
+      'target_name': 'stack_and_lift_action',
+      'type': 'executable',
+      'sources': [
+        'stack_and_lift_actor_main.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/linux_code.gyp:init',
+        '<(AOS)/common/actions/actions.gyp:action_lib',
+        'stack_and_lift_action_queue',
+        'stack_and_lift_action_lib',
+      ],
+    },
+    {
       'target_name': 'stack_action_queue',
       'type': 'static_library',
-      'sources': ['stack_action.q'],
+      'sources': [
+        'stack_action.q',
+        'stack_action_params.q',
+      ],
       'variables': {
         'header_path': 'frc971/actors',
       },
@@ -353,7 +521,10 @@
     {
       'target_name': 'lift_action_queue',
       'type': 'static_library',
-      'sources': ['lift_action.q'],
+      'sources': [
+        'lift_action.q',
+        'lift_action_params.q',
+      ],
       'variables': {
         'header_path': 'frc971/actors',
       },

@@ -26,15 +26,6 @@ HorizontalCanPickupActor::HorizontalCanPickupActor(
     HorizontalCanPickupActionQueueGroup *queues)
     : FridgeActorBase<HorizontalCanPickupActionQueueGroup>(queues) {}
 
-bool HorizontalCanPickupActor::WaitOrCancel(::aos::time::Time duration) {
-  ::aos::time::Time end_time = ::aos::time::Time::Now() + duration;
-  while (::aos::time::Time::Now() <= end_time) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
-    if (ShouldCancel()) return false;
-  }
-  return true;
-}
-
 bool HorizontalCanPickupActor::WaitUntilNear(double angle) {
   while (true) {
     control_loops::claw_queue.status.FetchAnother();
@@ -110,6 +101,11 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
   MoveArm(params.claw_end_angle, 0.0);
+
+  if (ShouldCancel()) return true;
+
+  DoFridgeProfile(params.elevator_end_height, params.arm_end_angle,
+                  kElevatorMove, kArmMove, false, true, true);
 
   return true;
 }

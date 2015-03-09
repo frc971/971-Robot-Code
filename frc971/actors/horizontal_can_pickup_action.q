@@ -23,6 +23,10 @@ struct HorizontalCanPickupParams {
 
   // Angle to move the claw back down to.
   double claw_end_angle;
+
+  // The end arm and elevator position once we are done lifting.
+  double elevator_end_height;
+  double arm_end_angle;
 };
 
 queue_group HorizontalCanPickupActionQueueGroup {

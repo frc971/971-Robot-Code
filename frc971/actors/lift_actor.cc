@@ -16,11 +16,23 @@ LiftActor::LiftActor(LiftActionQueueGroup *queues)
     : FridgeActorBase<LiftActionQueueGroup>(queues) {}
 
 bool LiftActor::RunAction(const LiftParams &params) {
+  control_loops::fridge_queue.status.FetchLatest();
+  if (!control_loops::fridge_queue.status.get()) {
+    return false;
+  }
+
   // Lift the box straight up.
-  DoFridgeProfile(params.lift_height, 0.0, kElevatorMove, kArmMove, true);
+  DoFridgeProfile(params.lift_height, 0.0, kElevatorMove, kArmMove,
+                  control_loops::fridge_queue.status->grabbers.top_front,
+                  control_loops::fridge_queue.status->grabbers.bottom_front,
+                  control_loops::fridge_queue.status->grabbers.bottom_back);
+  if (ShouldCancel()) return true;
+
   // Move it back to the storage location.
   DoFridgeProfile(params.lift_height, params.lift_arm, kElevatorMove, kArmMove,
-                  true);
+                  control_loops::fridge_queue.status->grabbers.top_front,
+                  control_loops::fridge_queue.status->grabbers.bottom_front,
+                  control_loops::fridge_queue.status->grabbers.bottom_back);
 
   return true;
 }

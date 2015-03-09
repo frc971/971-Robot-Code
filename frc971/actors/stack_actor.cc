@@ -24,29 +24,41 @@ StackActor::StackActor(StackActionQueueGroup *queues)
 
 bool StackActor::RunAction(const StackParams &params) {
   const auto &values = constants::GetValues();
-  const double bottom = 0.020;
 
   // Set the current stack down on top of the bottom box.
-  DoFridgeProfile(0.39, 0.0, kSlowArmMove, kReallySlowElevatorMove, true);
+  DoFridgeProfile(params.over_box_before_place_height, 0.0, kSlowArmMove,
+                  kReallySlowElevatorMove, true);
   if (ShouldCancel()) return true;
   // Set down on the box.
-  DoFridgeProfile(bottom + values.tote_height, 0.0, kSlowArmMove,
+  DoFridgeProfile(params.bottom + values.tote_height, 0.0, kSlowArmMove,
                   kSlowElevatorMove, true);
   if (ShouldCancel()) return true;
   // Clamp.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
-    message->angle = params.claw_out_angle;
-    message->angular_velocity = 0.0;
-    message->intake = 0.0;
-    message->rollers_closed = true;
+    bool send_goal = true;
+    control_loops::claw_queue.status.FetchLatest();
+    if (control_loops::claw_queue.status.get()) {
+      if (control_loops::claw_queue.status->goal_angle <
+          params.claw_out_angle) {
+        send_goal = false;
+      }
+    }
+    if (send_goal) {
+      auto message = control_loops::claw_queue.goal.MakeMessage();
+      message->angle = params.claw_out_angle;
+      message->angular_velocity = 0.0;
+      message->intake = 0.0;
+      message->rollers_closed = true;
+      message->max_velocity = 6.0;
+      message->max_acceleration = 10.0;
 
-    LOG_STRUCT(DEBUG, "Sending claw goal", *message);
-    message.Send();
+      LOG_STRUCT(DEBUG, "Sending claw goal", *message);
+      message.Send();
+    }
   }
-  DoFridgeProfile(bottom, -0.05, kFastArmMove, kFastElevatorMove, false);
+  DoFridgeProfile(params.bottom, -0.05, kFastArmMove, kFastElevatorMove, false);
   if (ShouldCancel()) return true;
-  DoFridgeProfile(bottom, 0.0, kFastArmMove, kFastElevatorMove, false);
+  DoFridgeProfile(params.bottom, 0.0, kFastArmMove, kFastElevatorMove, false);
   if (ShouldCancel()) return true;
   aos::time::SleepFor(aos::time::Time::InMS(100));
 

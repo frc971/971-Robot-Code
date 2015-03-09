@@ -61,7 +61,8 @@ TEST_F(StackActionTest, StackCancel) {
   frc971::actors::stack_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
-  stack.RunAction(0);
+  StackParams s;
+  stack.RunAction(s);
 
   SUCCEED();
 }

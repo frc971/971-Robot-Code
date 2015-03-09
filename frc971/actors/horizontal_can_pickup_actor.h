@@ -22,10 +22,6 @@ class HorizontalCanPickupActor
   bool RunAction(const HorizontalCanPickupParams &params) override;
 
  private:
-  // Waits until the duration has elapsed, or we are asked to cancel.
-  // Returns false if we should cancel.
-  bool WaitOrCancel(::aos::time::Time duration);
-
   // Waits until we are near the angle.
   // Returns false if we should cancel.
   bool WaitUntilNear(double angle);

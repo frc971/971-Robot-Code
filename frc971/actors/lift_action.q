@@ -1,14 +1,7 @@
 package frc971.actors;
 
 import "aos/common/actions/actions.q";
-
-// Parameters to send with start.
-struct LiftParams {
-  // Lift height
-  double lift_height;
-  // Arm goal.
-  double lift_arm;
-};
+import "frc971/actors/lift_action_params.q";
 
 queue_group LiftActionQueueGroup {
   implements aos.common.actions.ActionQueueGroup;
