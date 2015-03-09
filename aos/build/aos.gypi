@@ -28,6 +28,7 @@
         'make_global_settings': [
           ['CC', '<(ccache)<!(which arm-frc-linux-gnueabi-gcc-4.9)'],
           ['CXX', '<(ccache)<!(which arm-frc-linux-gnueabi-g++-4.9)'],
+          ['LINK_wrapper', '<!(realpath -s <(AOS)/build/strip_debuglink) <!(which arm-frc-linux-gnueabi-objcopy)'],
         ],
       },
     ], ['PLATFORM=="linux-arm_frc-clang"', {
@@ -47,6 +48,7 @@
         'make_global_settings': [
           ['CC', '<(ccache)<(arm-clang-symlinks)/bin/clang'],
           ['CXX', '<(ccache)<(arm-clang-symlinks)/bin/clang++'],
+          ['LINK_wrapper', '<!(realpath -s <(AOS)/build/strip_debuglink) <!(which arm-frc-linux-gnueabi-objcopy)'],
         ],
         'target_defaults': {
           'cflags': [
@@ -197,37 +199,62 @@
           'defines': [
             'AOS_DEBUG=1',
           ],
-          'conditions': [['SANITIZER=="none"', {
-              'cflags': [
-                '-O0',
-              ],
-            }, {
-              'cflags': [
-                '-O1',
-              ],
-            }
-          ]],
+          'conditions': [
+            ['COMPILER!="clang"', {
+                'cflags': [
+                  '-Og',
+                ],
+              },
+            ], ['COMPILER=="clang" and SANITIZER=="none"', {
+                'cflags': [
+                  '-O0',
+                ],
+              },
+            ], ['COMPILER=="clang" and SANITIZER!="none"', {
+                'cflags': [
+                  '-O1',
+                ],
+              }
+            ]
+          ],
+          'cflags': [
+            '-fno-omit-frame-pointer',
+          ],
         }, { # 'DEBUG=="no"'
           'defines': [
             'AOS_DEBUG=0',
             '_FORTIFY_SOURCE=2',
           ],
-          'cflags': [
-            '-O3',
-            '-fomit-frame-pointer',
-          ],
-          'ldflags': [
-            '-O3',
-          ],
-          'conditions': [['ARCHITECTURE=="amd64"', {
+          'conditions': [
+            # TODO(Brian): Remove this special case once we get a new enough
+            # GCC here that it supports -Oz.
+            ['COMPILER=="gcc" and ARCHITECTURE=="arm_frc"', {
+                'cflags': [
+                  '-Os',
+                ],
+                'ldflags': [
+                  '-Os',
+                ],
+              }, {
+                'cflags': [
+                  '-Oz',
+                ],
+                'ldflags': [
+                  '-Oz',
+                ],
+              }
+            ], ['ARCHITECTURE=="amd64"', {
               'cflags': [
                 '-fstack-protector-all',
-              ],
-            }],
-          ]
+                ],
+              }
+            ],
+          ],
+          'cflags': [
+            '-fomit-frame-pointer',
+          ],
         }
-      ],
-      ['OS=="linux" and ARCHITECTURE=="arm" and COMPILER=="gcc" and DEBUG=="yes"', {
+      ], ['OS=="linux" and ARCHITECTURE=="arm" and COMPILER=="gcc" and DEBUG=="yes"', {
           'cflags': [
               # GCC doesn't like letting us use r7 (which is also the frame
               # pointer) to pass the syscall number to the kernel even when
