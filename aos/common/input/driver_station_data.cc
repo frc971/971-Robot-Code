@@ -19,6 +19,10 @@ bool GetButton(const ButtonLocation location,
       (1 << (location.number() - 1));
 }
 
+bool GetPOV(const POVLocation location, const JoystickState &values) {
+  return values.joysticks[location.joystick() - 1].pov == location.number();
+}
+
 bool GetControlBitValue(const ControlBit bit,
                         const JoystickState &values) {
   switch (bit) {
@@ -49,6 +53,18 @@ bool Data::PosEdge(const ButtonLocation location) const {
 bool Data::NegEdge(const ButtonLocation location) const {
   return GetButton(location, old_values_) &&
       !GetButton(location, current_values_);
+}
+
+bool Data::IsPressed(const POVLocation location) const {
+  return GetPOV(location, current_values_);
+}
+
+bool Data::PosEdge(const POVLocation location) const {
+  return !GetPOV(location, old_values_) && GetPOV(location, current_values_);
+}
+
+bool Data::NegEdge(const POVLocation location) const {
+  return GetPOV(location, old_values_) && !GetPOV(location, current_values_);
 }
 
 bool Data::GetControlBit(const ControlBit bit) const {

@@ -6,6 +6,9 @@ struct Joystick {
 
   // The 4 joystick axes.
   double[4] axis;
+
+  // The POV axis.
+  int32_t pov;
 };
 
 message JoystickState {

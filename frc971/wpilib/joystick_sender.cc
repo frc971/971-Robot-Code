@@ -36,6 +36,7 @@ void JoystickSender::operator()() {
       for (int j = 0; j < 4; ++j) {
         new_state->joysticks[i].axis[j] = ds->GetStickAxis(i, j);
       }
+      new_state->joysticks[i].pov = ds->GetStickPOV(i, 0);
     }
     LOG_STRUCT(DEBUG, "joystick_state", *new_state);
 

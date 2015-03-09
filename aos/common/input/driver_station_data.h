@@ -44,6 +44,15 @@ class ButtonLocation : public JoystickFeature {
   static const int kButtons = 12;
 };
 
+// Represents the direction of a POV on a joystick.
+// Use Data to actually get the value.
+// Safe for static initialization.
+class POVLocation : public JoystickFeature {
+ public:
+  POVLocation(int joystick, int number)
+      : JoystickFeature(joystick, number) {}
+};
+
 // Represents various bits of control information that the DS sends.
 // Use Data to actually get the value.
 enum class ControlBit {
@@ -71,6 +80,10 @@ class Data {
 
   // Updates the current information with a new set of values.
   void Update(const JoystickState &new_values);
+
+  bool IsPressed(POVLocation location) const;
+  bool PosEdge(POVLocation location) const;
+  bool NegEdge(POVLocation location) const;
 
   bool IsPressed(ButtonLocation location) const;
   bool PosEdge(ButtonLocation location) const;
