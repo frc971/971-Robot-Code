@@ -19,6 +19,9 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/actors/pickup_actor.h"
 #include "frc971/actors/stack_actor.h"
+#include "frc971/actors/stack_and_lift_actor.h"
+#include "frc971/actors/stack_and_hold_actor.h"
+#include "frc971/actors/held_to_lift_actor.h"
 #include "frc971/actors/lift_actor.h"
 #include "frc971/actors/can_pickup_actor.h"
 #include "frc971/actors/horizontal_can_pickup_actor.h"
@@ -29,12 +32,31 @@ using ::frc971::control_loops::fridge_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
+using ::aos::input::driver_station::POVLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
 
 namespace frc971 {
 namespace input {
 namespace joysticks {
+
+// Actions needed.
+
+// Human Player Station Intake Button
+// Claw open
+// Claw close
+// Claw down
+
+// Stack + Lift (together)
+// Place
+
+// Hold stack
+
+// Horizontal can pickup
+// Vertical can pickup
+
+// TODO(austin): Pull a lot of the constants below out up here so they can be
+// globally changed easier.
 
 // preset motion limits
 constexpr actors::ProfileParams kArmMove{1.00, 1.0};
@@ -44,40 +66,43 @@ const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
-// TODO(danielp): Real buttons for all of these.
-const ButtonLocation kElevatorUp(3, 10);
-const ButtonLocation kElevatorCanUp(1, 1);
-const ButtonLocation kElevatorDown(3, 3);
-const ButtonLocation kArmUp(3, 8);
-const ButtonLocation kArmHighUp(1, 4);
-const ButtonLocation kCanPickup(3, 8);
-const ButtonLocation kArmDown(2, 6);
-const ButtonLocation kClawUp(3, 7);
-const ButtonLocation kClawDown(3, 6);
-const ButtonLocation kClawOpen(3, 11);
-const ButtonLocation kClawClosed(3, 5);
-const ButtonLocation kFridgeClosed(3, 1);
-const ButtonLocation kFridgeOpen(2, 11);
-const ButtonLocation kRollersIn(3, 4);
-const ButtonLocation kRollersOut(1, 9);
-const ButtonLocation kClawMiddle(3, 2);
-const ButtonLocation kPickup(2, 10);
-const ButtonLocation kZero(2, 7);
+//const ButtonLocation kClawClosed(3, 5);
+//const ButtonLocation kFridgeClosed(3, 1);
 
-const ButtonLocation kStack(3, 9);
 
-// TODO(ben): Real buttons for all of these.
-const ButtonLocation kArmPresetOne(99, 99);
-const ButtonLocation kArmPresetTwo(99, 99);
-const ButtonLocation kElevatorPresetOne(99, 99);
-const ButtonLocation kElevatorPresetTwo(99, 99);
+const ButtonLocation kRollersIn(4, 5);
+const ButtonLocation kClawToggle(4, 1);
 
-// Testing mode.
-const double kElevatorVelocity = 0.5;
-const double kArmVelocity = 0.5;
-const double kClawVelocity = 2.0;
-// TODO(danielp): Verify.
-const double kJoystickDt = 0.01;
+const POVLocation kElevatorCanUp(3, 0);
+
+// POV stick 3, 180
+const POVLocation kCanPickup(4, 180);
+const ButtonLocation kToteChute(4, 6);
+const ButtonLocation kStackAndLift(4, 7);
+const ButtonLocation kStackAndHold(2, 5);
+
+// Pull in the 6th tote.
+const ButtonLocation kSixthTote(4, 10);
+
+const ButtonLocation kHeldToLift(4, 11);
+const ButtonLocation kPickup(4, 9);
+
+const ButtonLocation kStack(4, 2);
+
+// Move the fridge out with the stack in preparation for scoring.
+// PosEdge(4, 8)
+
+// Release the stack and retract back in.
+// PosEdge(4, 12)
+
+const POVLocation kFridgeOpen(4, 270);
+const ButtonLocation kSpit(4, 3);
+
+// Set stack down in the bot.
+// TODO(austin): Make this work.
+//const POVLocation kSetStackDownAndHold(4, 90);
+
+const double kClawTotePackAngle = 0.95;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -97,11 +122,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (!data.GetControlBit(ControlBit::kAutonomous)) {
       HandleDrivetrain(data);
-      if (data.GetControlBit(ControlBit::kTestMode)) {
-        HandleTest(data);
-      } else {
-        HandleTeleop(data);
-      }
+      HandleTeleop(data);
     }
   }
 
@@ -120,57 +141,32 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    double intake_power = 0.0;
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
     }
 
-    if (data.PosEdge(kElevatorUp)) {
-      actors::LiftParams params;
-      params.lift_height = 0.45;
-      params.lift_arm = 0.2;
-      action_queue_.EnqueueAction(actors::MakeLiftAction(params));
-
+    if (data.IsPressed(kRollersIn)) {
+      intake_power = 10.0;
       claw_goal_ = 0.0;
-      if (!claw_queue.goal.MakeWithBuilder()
-               .angle(claw_goal_)
-               .rollers_closed(claw_rollers_closed_)
-               .intake(0.0)
-               .Send()) {
-        LOG(ERROR, "Sending claw goal failed.\n");
-      }
     }
-    if (data.PosEdge(kStack)) {
-      actors::StackParams params;
-      params.claw_out_angle = 0.6;
-      action_queue_.EnqueueAction(actors::MakeStackAction(params));
+    if (data.IsPressed(kSpit)) {
+      intake_power = -12.0;
     }
 
-    if (data.PosEdge(kCanPickup)) {
-      actors::CanPickupParams params;
-      params.pickup_angle = -0.93;
-      params.pickup_height = 0.265;
-      params.lift_height = 0.65;
-      params.end_height = 0.4;
-      params.end_angle = 0.0;
-      action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
+    // Toggle button for the claw
+    if (data.PosEdge(kClawToggle)) {
+      claw_rollers_closed_ = !claw_rollers_closed_;
     }
 
-    if (data.PosEdge(kPickup)) {
-      actors::PickupParams params;
-      // Lift to here initially.
-      params.pickup_angle = 0.9;
-      // Start sucking here
-      params.suck_angle = 0.8;
-      // Go back down to here to finish sucking.
-      params.suck_angle_finish = 0.4;
-      // Pack the box back in here.
-      params.pickup_finish_angle = 0.95;
-      params.intake_time = 0.8;
-      params.intake_voltage = 9.0;
-      action_queue_.EnqueueAction(actors::MakePickupAction(params));
+    /*
+    if (data.IsPressed(kClawClosed)) {
+      claw_rollers_closed_ = true;
     }
+    */
 
+    // Horizontal can pickup.
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
       params.elevator_height = 0.3;
@@ -182,46 +178,120 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_settle_power = 5.0;
       params.claw_full_lift_angle = 1.35;
       params.claw_end_angle = 0.5;
+
+      params.elevator_end_height = 0.68;
+      params.arm_end_angle = 0.2;
       action_queue_.EnqueueAction(
           actors::MakeHorizontalCanPickupAction(params));
-    }
-
-    if (data.PosEdge(kElevatorDown)) {
-      claw_goal_ = 0.0;
-      arm_goal_ = 0.0;
-      elevator_goal_ = 0.035;
-    }
-
-    if (data.PosEdge(kClawMiddle)) {
-      claw_goal_ = 0.8;
-    }
-
-    if (data.PosEdge(kArmHighUp)) {
-      claw_goal_ = 1.3;
-    }
-
-    if (data.PosEdge(kZero)) {
-      elevator_goal_ = 0.0;
-      arm_goal_ = 0.0;
-      claw_goal_ = 0.0;
-    }
-    if (data.PosEdge(kClawUp)) {
-      claw_goal_ = 0.6;
-    }
-    if (data.PosEdge(kClawDown)) {
-      claw_goal_ = 0.0;
-    }
-
-    if (data.PosEdge(kClawClosed)) {
-      claw_rollers_closed_ = true;
-    }
-    if (data.PosEdge(kClawOpen)) {
-      claw_rollers_closed_ = false;
-    }
-
-    if (data.PosEdge(kFridgeClosed)) {
       fridge_closed_ = true;
     }
+
+    // -0.942503 arm, 0.374752 elevator
+    // Vertical can pickup.
+    if (data.PosEdge(kCanPickup)) {
+      actors::CanPickupParams params;
+      params.pickup_angle = -0.93;
+      params.pickup_height = 0.265;
+      params.lift_height = 0.65;
+      params.end_height = 0.68;
+      params.end_angle = 0.2;
+      action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
+      fridge_closed_ = true;
+    }
+
+    // Tote chute pull in when button is pressed, pack when done.
+    if (data.IsPressed(kToteChute)) {
+      claw_goal_ = 0.8;
+      intake_power = 7.0;
+    }
+    if (data.NegEdge(kToteChute)) {
+      claw_goal_ = kClawTotePackAngle;
+    }
+
+    if (data.PosEdge(kStackAndLift)) {
+      actors::StackAndLiftParams params;
+      params.stack_params.claw_out_angle = 0.6;
+      params.stack_params.bottom = 0.020;
+      params.stack_params.over_box_before_place_height = 0.39;
+
+      params.grab_after_stack = true;
+      params.clamp_pause_time = 0.1;
+      params.lift_params.lift_height = 0.45;
+      params.lift_params.lift_arm = 0.3;
+      params.grab_after_lift = true;
+      fridge_closed_ = true;
+
+      action_queue_.EnqueueAction(actors::MakeStackAndLiftAction(params));
+    }
+
+    if (data.PosEdge(kStackAndHold)) {
+      actors::StackAndHoldParams params;
+      params.bottom = 0.020;
+      params.over_box_before_place_height = 0.39;
+
+      params.arm_clearance = -0.05;
+      params.clamp_pause_time = 0.25;
+
+      params.hold_height = 0.68;
+
+      action_queue_.EnqueueAction(actors::MakeStackAndHoldAction(params));
+      fridge_closed_ = true;
+    }
+
+    // TODO(austin): Figure out what action needed to pull the 6th tote into the
+    // claw.
+
+    // Lower the fridge from holding the stack, grab the stack, and then lift.
+    if (data.PosEdge(kHeldToLift)) {
+      actors::HeldToLiftParams params;
+      params.arm_clearance = -0.05;
+      params.clamp_pause_time = 0.1;
+      params.bottom_height = 0.020;
+      params.claw_out_angle = 0.6;
+      params.lift_params.lift_height = 0.45;
+      params.lift_params.lift_arm = 0.3;
+      fridge_closed_ = true;
+
+      action_queue_.EnqueueAction(actors::MakeHeldToLiftAction(params));
+    }
+
+    // Pick up a tote from the ground and put it in the bottom of the bot.
+    if (data.PosEdge(kPickup)) {
+      actors::PickupParams params;
+      // Lift to here initially.
+      params.pickup_angle = 0.9;
+      // Start sucking here
+      params.suck_angle = 0.8;
+      // Go back down to here to finish sucking.
+      params.suck_angle_finish = 0.4;
+      // Pack the box back in here.
+      params.pickup_finish_angle = kClawTotePackAngle;
+      params.intake_time = 0.8;
+      params.intake_voltage = 7.0;
+      action_queue_.EnqueueAction(actors::MakePickupAction(params));
+    }
+
+    // Place stack on a tote in the tray, and grab it.
+    if (data.PosEdge(kStack)) {
+      actors::StackParams params;
+      params.claw_out_angle = 0.6;
+      params.bottom = 0.020;
+      params.over_box_before_place_height = 0.39;
+      action_queue_.EnqueueAction(actors::MakeStackAction(params));
+      claw_rollers_closed_ = true;
+    }
+
+    // TODO(austin): Set down?
+
+    // TODO(austin): Score!
+
+    // TODO(austin): Release.
+
+    // Unknown actions...
+
+    //if (data.PosEdge(kFridgeClosed)) {
+      //fridge_closed_ = true;
+    //}
     if (data.PosEdge(kFridgeOpen)) {
       fridge_closed_ = false;
     }
@@ -284,9 +354,7 @@ class Reader : public ::aos::input::JoystickInput {
         if (!claw_queue.goal.MakeWithBuilder()
                  .angle(claw_goal_)
                  .rollers_closed(claw_rollers_closed_)
-                 .intake(data.IsPressed(kRollersIn)
-                             ? 12.0
-                             : (data.IsPressed(kRollersOut) ? -12.0 : 0.0))
+                 .intake(intake_power)
                  .Send()) {
           LOG(ERROR, "Sending claw goal failed.\n");
         }
@@ -313,129 +381,6 @@ class Reader : public ::aos::input::JoystickInput {
     }
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
-  }
-
-  void HandleTest(const ::aos::input::driver_station::Data &data) {
-    if (action_queue_.Running()) {
-      // We don't really want any actions running.
-      LOG(DEBUG, "Cancelling actions for test mode.\n");
-      action_queue_.CancelAllActions();
-    }
-
-    if (data.GetControlBit(ControlBit::kEnabled)) {
-      if (data.PosEdge(ControlBit::kEnabled)) {
-        // If we got enabled, wait for everything to zero.
-        LOG(INFO, "Waiting for zero.\n");
-        waiting_for_zero_ = true;
-      }
-      if (waiting_for_zero_) {
-        claw_queue.status.FetchLatest();
-        fridge_queue.status.FetchLatest();
-        if (!claw_queue.status.get()) {
-          LOG(ERROR, "Got no claw status packet.\n");
-          // Not safe to continue.
-          return;
-        }
-        if (!fridge_queue.status.get()) {
-          LOG(ERROR, "Got no fridge status packet.\n");
-          return;
-        }
-
-        if (claw_queue.status->zeroed && fridge_queue.status->zeroed) {
-          LOG(INFO, "Zeroed! Starting test mode.\n");
-          waiting_for_zero_ = false;
-
-          // Set the initial goals to where we are now.
-          elevator_goal_ = fridge_queue.status->height;
-          arm_goal_ = fridge_queue.status->angle;
-          claw_goal_ = claw_queue.status->angle;
-        } else {
-          return;
-        }
-      }
-
-      // These buttons move a subsystem up or down for as long as they are
-      // pressed, at low velocity.
-      if (data.IsPressed(kElevatorUp)) {
-        elevator_goal_ += kElevatorVelocity * kJoystickDt;
-      }
-      if (data.IsPressed(kElevatorDown)) {
-        elevator_goal_ -= kElevatorVelocity * kJoystickDt;
-      }
-      if (data.IsPressed(kArmUp)) {
-        arm_goal_ += kArmVelocity * kJoystickDt;
-      }
-      if (data.IsPressed(kArmDown)) {
-        arm_goal_ -= kArmVelocity * kJoystickDt;
-      }
-      if (data.IsPressed(kClawUp)) {
-        claw_goal_ += kClawVelocity * kJoystickDt;
-      }
-      if (data.IsPressed(kClawDown)) {
-        claw_goal_ -= kClawVelocity * kJoystickDt;
-      }
-
-      if (!action_queue_.Running()) {
-        if (!fridge_queue.goal.MakeWithBuilder()
-                 .height(elevator_goal_)
-                 .angle(arm_goal_)
-                 .Send()) {
-          LOG(ERROR, "Sending fridge goal failed.\n");
-        } else {
-          LOG(DEBUG, "sending goals: elevator: %f, arm: %f\n", elevator_goal_,
-              arm_goal_);
-        }
-        if (!claw_queue.goal.MakeWithBuilder().angle(claw_goal_).Send()) {
-          LOG(ERROR, "Sending claw goal failed.\n");
-        }
-      }
-      /*
-      if (data.IsPressed(kArmPresetOne) || data.IsPressed(kArmPresetTwo)) {
-        actors::FridgeProfileParams fridge_params;
-        fridge_params.arm_max_velocity = kArmDebugVelocity;
-        fridge_params.arm_max_acceleration = kArmDebugAcceleration;
-        if (data.IsPressed(kArmPresetOne)) {
-          LOG(INFO, "Preset asked for test arm position one position.\n");
-          fridge_params.arm_angle = M_PI / 4.0;
-          fridge_params.top_front_grabber = false;
-          fridge_params.top_back_grabber = false;
-          fridge_params.bottom_front_grabber = false;
-          fridge_params.bottom_back_grabber = false;
-          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
-        } else if (data.IsPressed(kArmPresetTwo)) {
-          LOG(INFO, "Preset asked for test arm position two position.\n");
-          fridge_params.arm_angle = -M_PI / 4.0;
-          fridge_params.top_front_grabber = true;
-          fridge_params.top_back_grabber = true;
-          fridge_params.bottom_front_grabber = true;
-          fridge_params.bottom_back_grabber = true;
-          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
-        }
-      } else if (data.IsPressed(kElevatorPresetOne) ||
-                 data.IsPressed(kElevatorPresetOne)) {
-        actors::FridgeProfileParams fridge_params;
-        fridge_params.elevator_max_velocity = kElevatorDebugVelocity;
-        fridge_params.elevator_max_acceleration = kElevatorDebugAcceleration;
-        if (data.IsPressed(kElevatorPresetOne)) {
-          LOG(INFO, "Preset asked for test elevator position one position.\n");
-          fridge_params.elevator_height = 0.5;
-          fridge_params.top_front_grabber = false;
-          fridge_params.top_back_grabber = false;
-          fridge_params.bottom_front_grabber = false;
-          fridge_params.bottom_back_grabber = false;
-          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
-        } else if (data.IsPressed(kElevatorPresetTwo)) {
-          LOG(INFO, "Preset asked for test elevator position two position.\n");
-          fridge_params.elevator_height = 1.2;
-          fridge_params.top_front_grabber = true;
-          fridge_params.top_back_grabber = true;
-          fridge_params.bottom_front_grabber = true;
-          fridge_params.bottom_back_grabber = true;
-          action_queue_.EnqueueAction(MakeFridgeProfileAction(fridge_params));
-        }
-      }
-      */
-    }
   }
 
  private:
