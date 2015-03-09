@@ -1,6 +1,26 @@
 {
   'targets': [
     {
+      'target_name': 'binaries',
+      'type': 'none',
+      'dependencies': [
+        'drivetrain_action',
+        'claw_action',
+        'score_action',
+        'score_action_test',
+        'pickup_action',
+        'stack_action',
+        'stack_and_lift_action',
+        'stack_and_hold_action',
+        'held_to_lift_action',
+        'can_pickup_action',
+        'horizontal_can_pickup_action',
+        'lift_action',
+        'claw_action_test',
+        'stack_action_test',
+      ],
+    },
+    {
       'target_name': 'drivetrain_action_queue',
       'type': 'static_library',
       'sources': ['drivetrain_action.q'],
