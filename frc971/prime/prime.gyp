@@ -44,7 +44,7 @@
         },
       ],
       'conditions': [
-        ['ARCHITECTURE=="arm"', {
+        ['ARCHITECTURE=="arm_frc"', {
           'dependencies': [
             '../wpilib/wpilib.gyp:wpilib_interface',
           ],
