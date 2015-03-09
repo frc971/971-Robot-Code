@@ -45,9 +45,9 @@ void aos_core_create_shared_mem(int create, int lock) {
   {
     char *shm_name = getenv("AOS_SHM_NAME");
     if (shm_name == NULL) {
-      printf("AOS_SHM_NAME not defined, using " AOS_SHM_NAME "\n");
       global_core->shm_name = AOS_SHM_NAME;
     } else {
+      printf("AOS_SHM_NAME defined, using %s\n", shm_name);
       global_core->shm_name = shm_name;
     }
   }
@@ -55,7 +55,6 @@ void aos_core_create_shared_mem(int create, int lock) {
   int shm;
   if (create) {
     while (1) {
-      printf("shared_mem: creating %s\n", global_core->shm_name);
       shm = shm_open(global_core->shm_name, O_RDWR | O_CREAT | O_EXCL, 0666);
       global_core->owner = 1;
       if (shm == -1 && errno == EEXIST) {
@@ -69,7 +68,6 @@ void aos_core_create_shared_mem(int create, int lock) {
       }
     }
   } else {
-    printf("shared_mem: not creating\n");
     shm = shm_open(global_core->shm_name, O_RDWR, 0);
     global_core->owner = 0;
   }
@@ -90,7 +88,12 @@ void aos_core_create_shared_mem(int create, int lock) {
     PLOG(FATAL, "shared_mem: mmap(%p, 0x%zx, stuff, %x, %d, 0) failed",
          (void *)SHM_START, (size_t)SIZEOFSHMSEG, flags, shm);
   }
-  printf("shared_mem: shm at: %p\n", shm_address);
+  if (create) {
+    printf("shared_mem: creating %s, shm at: %p\n", global_core->shm_name,
+           shm_address);
+  } else {
+    printf("shared_mem: not creating, shm at: %p\n", shm_address);
+  }
   if (close(shm) == -1) {
     PLOG(WARNING, "close(%d(=shm) failed", shm);
   }
