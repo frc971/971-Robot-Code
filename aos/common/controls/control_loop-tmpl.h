@@ -75,9 +75,10 @@ void ControlLoop<T>::Iterate() {
     } else if (::aos::joystick_state->enabled) {
       LOG(WARNING, "outputs disabled while enabled\n");
     }
-  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs) &&
-             ::aos::joystick_state->enabled) {
-    outputs_enabled = true;
+  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
+    if (::aos::joystick_state->enabled) {
+      outputs_enabled = true;
+    }
   } else {
     if (::aos::joystick_state.get()) {
       LOG_INTERVAL(driver_station_old_);
