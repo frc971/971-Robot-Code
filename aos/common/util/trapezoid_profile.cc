@@ -117,6 +117,11 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
 
   CHECK_GT(top_velocity, -maximum_velocity_);
 
+  if (output_(1) > maximum_velocity_) {
+    constant_time_ = 0;
+    acceleration_time_ = 0;
+  }
+
   deceleration_time_ = (goal_velocity - top_velocity) /
       deceleration_;
 }

@@ -58,6 +58,28 @@ TEST_F(TrapezoidProfileTest, ReachesGoal) {
   EXPECT_TRUE(At(3, 0));
 }
 
+// Tests that decresing the maximum velocity in the middle when it is already
+// moving faster than the new max is handled correctly.
+TEST_F(TrapezoidProfileTest, ContinousUnderVelChange) {
+  profile_.set_maximum_velocity(1.75);
+  RunIteration(12.0, 0);
+  double last_pos = position()(0);
+  double last_vel = 1.75;
+  for (int i = 0; i < 1600; ++i) {
+    if (i == 400) {
+      profile_.set_maximum_velocity(0.75);
+    }
+    RunIteration(12.0, 0);
+    if (i >= 400) {
+      EXPECT_TRUE(::std::abs(last_pos - position()(0)) <= 1.75 * 0.01);
+      EXPECT_NEAR(last_vel, ::std::abs(last_pos - position()(0)), 0.0001);
+    }
+    last_vel = ::std::abs(last_pos - position()(0));
+    last_pos = position()(0);
+  }
+  EXPECT_TRUE(At(12.0, 0));
+}
+
 // There is some somewhat tricky code for dealing with going backwards.
 TEST_F(TrapezoidProfileTest, Backwards) {
   for (int i = 0; i < 400; ++i) {
