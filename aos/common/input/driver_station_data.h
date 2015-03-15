@@ -85,6 +85,10 @@ class Data {
   bool PosEdge(POVLocation location) const;
   bool NegEdge(POVLocation location) const;
 
+  // Returns the current and previous "values" for the POV.
+  int32_t GetPOV(int joystick) const;
+  int32_t GetOldPOV(int joystick) const;
+
   bool IsPressed(ButtonLocation location) const;
   bool PosEdge(ButtonLocation location) const;
   bool NegEdge(ButtonLocation location) const;
