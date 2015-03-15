@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import matplotlib
 from matplotlib import pylab
+from matplotlib.font_manager import FontProperties
 
 class Dataset(object):
   def __init__(self):
@@ -61,7 +62,7 @@ class Plotter(object):
 
           value.Add(pline.time, data)
 
-  def Plot(self):
+  def Plot(self, no_binary_in_legend):
     """
     Plots all the data after it's parsed.
 
@@ -70,12 +71,23 @@ class Plotter(object):
     """
     for key in self.signal:
       value = self.signal[key]
-      pylab.plot(value.time, value.data, label=key[0] + ' ' + key[1] + '.' + \
-          '.'.join(key[2]))
-    pylab.legend()
+
+      # Create a legend label using the binary name (optional), the structure
+      # name and the data search path.
+      label = key[1] + '.' + '.'.join(key[2])
+      if not no_binary_in_legend:
+        label = key[0] + ' ' + label
+
+      pylab.plot(value.time, value.data, label=label)
+
+    # Set legend font size to small and move it to the top center.
+    fontP = FontProperties()
+    fontP.set_size('small')
+    pylab.legend(bbox_to_anchor=(0.5, 1.05), prop=fontP)
+
     pylab.show()
 
-  def PlotFile(self, f):
+  def PlotFile(self, f, no_binary_in_legend=False):
     """
     Parses and plots all the data.
 
@@ -86,7 +98,7 @@ class Plotter(object):
       None
     """
     self.HandleFile(f)
-    self.Plot()
+    self.Plot(no_binary_in_legend)
 
   def HandleFile(self, f):
     """
