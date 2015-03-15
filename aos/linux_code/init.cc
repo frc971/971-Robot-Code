@@ -87,7 +87,7 @@ void LockAllMemory() {
   // Not 0 because linux might optimize that to a 0-filled page.
   memset(data, 1, sizeof(data));
 
-  static const size_t kHeapPreallocSize = 1024 * 1024 * 2;
+  static const size_t kHeapPreallocSize = 512 * 1024;
   char *const heap_data = static_cast<char *>(malloc(kHeapPreallocSize));
   memset(heap_data, 1, kHeapPreallocSize);
   free(heap_data);
