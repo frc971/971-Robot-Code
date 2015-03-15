@@ -30,6 +30,10 @@ void JoystickInput::Run() {
             LOG(INFO, "NegEdge(%d, %d)\n", joystick, button);
           }
         }
+        if (data.GetPOV(joystick) != data.GetOldPOV(joystick)) {
+          LOG(INFO, "POV %d %d->%d\n", joystick, data.GetOldPOV(joystick),
+              data.GetPOV(joystick));
+        }
       }
     }
     {
