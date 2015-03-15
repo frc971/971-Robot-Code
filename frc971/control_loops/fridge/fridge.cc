@@ -19,7 +19,7 @@ namespace {
 constexpr double kZeroingVoltage = 4.0;
 constexpr double kElevatorZeroingVelocity = 0.10;
 // What speed we move to our safe height at.
-constexpr double kElevatorSafeHeightVelocity = 0.2;
+constexpr double kElevatorSafeHeightVelocity = 0.3;
 constexpr double kArmZeroingVelocity = 0.20;
 }  // namespace
 
@@ -146,11 +146,10 @@ double Fridge::estimated_elevator() {
 }
 
 double Fridge::estimated_left_arm() {
-  return current_position_.elevator.left.encoder + left_arm_estimator_.offset();
+  return current_position_.arm.left.encoder + left_arm_estimator_.offset();
 }
 double Fridge::estimated_right_arm() {
-  return current_position_.elevator.right.encoder +
-         right_arm_estimator_.offset();
+  return current_position_.arm.right.encoder + right_arm_estimator_.offset();
 }
 double Fridge::estimated_arm() {
   return (estimated_left_arm() + estimated_right_arm()) / 2.0;
@@ -224,8 +223,7 @@ double Fridge::arm_zeroing_velocity() {
   } else if (arm_zeroing_velocity_ > 0.0 &&
              estimated_arm() > average_arm + 1.1 * pulse_width) {
     arm_zeroing_velocity_ = -kArmZeroingVelocity;
-  } else if (arm_zeroing_velocity_ < 0.0 &&
-             estimated_arm() < average_arm - 1.1 * pulse_width) {
+  } else if (arm_zeroing_velocity_ < 0.0 && estimated_arm() < average_arm) {
     arm_zeroing_velocity_ = kArmZeroingVelocity;
   }
   return arm_zeroing_velocity_;
