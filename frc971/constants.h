@@ -111,6 +111,10 @@ struct Values {
 
     // How high the elevator has to be before we start zeroing the arm.
     double arm_zeroing_height;
+
+    // The length of the arm, from the axis of the bottom pivot to the axis of
+    // the top pivot.
+    double arm_length;
   };
   Fridge fridge;
 

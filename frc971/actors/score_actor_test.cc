@@ -39,17 +39,17 @@ class ScoreActionTest : public ::testing::Test {
 
 // Tests that cancel stops not only the score action, but also the underlying
 // profile action.
-TEST_F(ScoreActionTest, ScoreCancel) {
+TEST_F(ScoreActionTest, PlaceTheStackCancel) {
   ScoreActor score(&frc971::actors::score_action);
 
   frc971::actors::score_action.goal.MakeWithBuilder().run(true).Send();
 
   // Tell it the fridge is zeroed.
-  control_loops::fridge_queue.status.MakeWithBuilder()
-      .zeroed(true)
-      .angle(0.0)
-      .height(0.0)
-      .Send();
+  ASSERT_TRUE(control_loops::fridge_queue.status.MakeWithBuilder()
+                  .zeroed(true)
+                  .angle(0.0)
+                  .height(0.0)
+                  .Send());
 
   // do the action and it will post to the goal queue
   score.WaitForActionRequest();
@@ -59,7 +59,37 @@ TEST_F(ScoreActionTest, ScoreCancel) {
   frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
-  const ScoreParams params = {0.75};
+  bool place_the_stack = true;
+  const ScoreParams params = {0.75, place_the_stack};
+  score.RunAction(params);
+
+  SUCCEED();
+}
+
+// Tests that cancel stops not only the score action, but also the underlying
+// profile action.
+TEST_F(ScoreActionTest, MoveStackIntoPositionCancel) {
+  ScoreActor score(&frc971::actors::score_action);
+
+  frc971::actors::score_action.goal.MakeWithBuilder().run(true).Send();
+
+  // Tell it the fridge is zeroed.
+  ASSERT_TRUE(control_loops::fridge_queue.status.MakeWithBuilder()
+                  .zeroed(true)
+                  .angle(0.0)
+                  .height(0.0)
+                  .Send());
+
+  // do the action and it will post to the goal queue
+  score.WaitForActionRequest();
+
+  // the action has started, so now cancel it and it should cancel
+  // the underlying profile
+  frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
+
+  // let the action start running, if we return from this call it has worked.
+  bool place_the_stack = false;
+  const ScoreParams params = {0.75, place_the_stack};
   score.RunAction(params);
 
   SUCCEED();

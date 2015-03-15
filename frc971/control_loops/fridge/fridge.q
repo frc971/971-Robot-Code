@@ -24,7 +24,18 @@ queue_group FridgeQueue {
   // In this case, zero is where the portion of the carriage that Spencer
   // removed lines up with the bolt.
 
+  // X/Y positions are distances (in meters) the fridge is away from its origin
+  // position. Origin is considered at a height of zero and an angle of zero.
+  // Positive X positions are towards the front of the robot and negative X is
+  // towards the back of the robot (which is where we score).
+  // Y is positive going up and negative when it goes below the origin.
+
   message Goal {
+    // Profile type.
+    // Set to 0 for angle/height profiling.
+    // Set to 1 for x/y profiling.
+    int32_t profiling_type;
+
     // Angle of the arm.
     double angle;
     // Height of the elevator.
@@ -44,6 +55,26 @@ queue_group FridgeQueue {
     double max_angular_acceleration;
     // Maximum elevator profile acceleration or 0 for the default.
     double max_acceleration;
+
+    // X position of the fridge.
+    double x;
+    // Y position of the fridge.
+    double y;
+
+    // Velocity of the x position of the fridge.
+    double x_velocity;
+    // Velocity of the y position of the fridge.
+    double y_velocity;
+
+    // Maximum x profile velocity or 0 for the default.
+    double max_x_velocity;
+    // Maximum y profile velocity or 0 for the default.
+    double max_y_velocity;
+
+    // Maximum x profile acceleration or 0 for the default.
+    double max_x_acceleration;
+    // Maximum y profile acceleration or 0 for the default.
+    double max_y_acceleration;
 
     // TODO(austin): Do I need acceleration here too?
 

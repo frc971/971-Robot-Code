@@ -8,6 +8,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/zeroing/zeroing.h"
+#include "aos/common/util/kinematics.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -59,6 +60,13 @@ class Fridge
     RUNNING = 4,
     // Internal error caused the fridge to abort.
     ESTOP = 5,
+  };
+
+  enum class ProfilingType : int32_t {
+    // Use angle/height to specify the fridge goal.
+    ANGLE_HEIGHT_PROFILING = 0,
+    // Use x/y co-ordinates to specify the fridge goal.
+    X_Y_PROFILING = 1,
   };
 
   State state() const { return state_; }
@@ -139,13 +147,22 @@ class Fridge
   double elevator_goal_ = 0.0;
   double arm_goal_ = 0.0;
 
+  double arm_goal_velocity_ = 0.0;
+  double elevator_goal_velocity_ = 0.0;
+
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;
 
   control_loops::FridgeQueue::Position current_position_;
 
+  ProfilingType last_profiling_type_;
+  aos::util::ElevatorArmKinematics kinematics_;
+
   aos::util::TrapezoidProfile arm_profile_;
   aos::util::TrapezoidProfile elevator_profile_;
+
+  aos::util::TrapezoidProfile x_profile_;
+  aos::util::TrapezoidProfile y_profile_;
 };
 
 }  // namespace control_loops
