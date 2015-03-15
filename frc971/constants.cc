@@ -206,13 +206,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {-M_PI / 2 - 0.05, M_PI / 2 + 0.05, -M_PI / 2, M_PI / 2},
 
            // Elevator zeroing constants: left, right.
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.094297, 0.3},
-           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.106393, 0.3},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.088984, 0.3},
+           {kZeroingSampleSize, kElevatorEncoderIndexDifference, 0.104557, 0.3},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.324437, 0.3},
            {kZeroingSampleSize, kArmEncoderIndexDifference, -0.064683, 0.3},
-           0.722230 - -0.000594,
-           -0.081354 - -0.000374,
+           0.722230 - -0.000594 - -0.026183,
+           -0.081354 - -0.000374 - -0.024793,
            -3.509611 - 0.007415 - -0.019081,
            3.506927 - 0.170017 - -0.147970,
 
