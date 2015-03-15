@@ -10,6 +10,7 @@
 #include "aos/common/time.h"
 #include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loop_test.h"
+#include "aos/common/util/kinematics.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/fridge/arm_motor_plant.h"
 #include "frc971/control_loops/fridge/elevator_motor_plant.h"
@@ -216,7 +217,12 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
                       ".frc971.control_loops.fridge_queue.output",
                       ".frc971.control_loops.fridge_queue.status"),
         fridge_(&fridge_queue_),
-        fridge_plant_() {
+        fridge_plant_(),
+        kinematics_(constants::GetValues().fridge.arm_length,
+                    constants::GetValues().fridge.elevator.upper_limit,
+                    constants::GetValues().fridge.elevator.lower_limit,
+                    constants::GetValues().fridge.arm.upper_limit,
+                    constants::GetValues().fridge.arm.lower_limit) {
     set_team_id(kTeamNumber);
   }
 
@@ -225,9 +231,21 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
     fridge_queue_.status.FetchLatest();
     EXPECT_TRUE(fridge_queue_.goal.get() != nullptr);
     EXPECT_TRUE(fridge_queue_.status.get() != nullptr);
-    EXPECT_NEAR(fridge_queue_.goal->angle, fridge_queue_.status->angle, 0.001);
-    EXPECT_NEAR(fridge_queue_.goal->height, fridge_queue_.status->height,
-                0.001);
+    if (fridge_queue_.goal->profiling_type == 0) {
+      EXPECT_NEAR(fridge_queue_.goal->angle, fridge_queue_.status->angle,
+                  0.001);
+      EXPECT_NEAR(fridge_queue_.goal->height, fridge_queue_.status->height,
+                  0.001);
+    } else if (fridge_queue_.goal->profiling_type == 1) {
+      aos::util::ElevatorArmKinematics::KinematicResult x_y_status;
+      kinematics_.ForwardKinematic(fridge_queue_.status->height,
+                                   fridge_queue_.status->angle, 0.0, 0.0, &x_y_status);
+      EXPECT_NEAR(fridge_queue_.goal->x, x_y_status.fridge_x, 0.001);
+      EXPECT_NEAR(fridge_queue_.goal->y, x_y_status.fridge_h, 0.001);
+    } else {
+      // Unhandled profiling type.
+      EXPECT_TRUE(false);
+    }
   }
 
   // Runs one iteration of the whole simulation and checks that separation
@@ -258,6 +276,8 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
   // Create a control loop and simulation.
   Fridge fridge_;
   FridgeSimulation fridge_plant_;
+
+  aos::util::ElevatorArmKinematics kinematics_;
 };
 
 // Tests that the loop does nothing when the goal is zero.
@@ -266,12 +286,35 @@ TEST_F(FridgeTest, DoesNothing) {
   // that the controller does nothing.
   const auto &values = constants::GetValues();
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
-      .angle(0.0)
-      .height(values.fridge.elevator.lower_limit)
-      .Send());
+                  .angle(0.0)
+                  .height(values.fridge.elevator.lower_limit)
+                  .Send());
 
   // Run a few iterations.
   RunForTime(Time::InMS(5000));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop can reach a goal.
+TEST_F(FridgeTest, ReachesXYGoal) {
+  // Set a reasonable goal.
+  const auto &values = constants::GetValues();
+  const double soft_limit = values.fridge.elevator.lower_limit;
+  const double height = soft_limit + 0.4;
+  const double angle = M_PI / 6.0;
+
+  aos::util::ElevatorArmKinematics::KinematicResult x_y_goals;
+  kinematics_.ForwardKinematic(height, angle, 0.0, 0.0, &x_y_goals);
+
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+                  .profiling_type(1)
+                  .x(x_y_goals.fridge_x)
+                  .y(x_y_goals.fridge_h)
+                  .Send());
+
+  // Give it a lot of time to get there.
+  RunForTime(Time::InMS(4000));
 
   VerifyNearGoal();
 }
@@ -282,9 +325,9 @@ TEST_F(FridgeTest, ReachesGoal) {
   const auto &values = constants::GetValues();
   const double soft_limit = values.fridge.elevator.lower_limit;
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .height(soft_limit + 0.2)
-      .Send());
+                  .angle(M_PI / 4.0)
+                  .height(soft_limit + 0.2)
+                  .Send());
 
   // Give it a lot of time to get there.
   RunForTime(Time::InMS(4000));
@@ -298,10 +341,8 @@ TEST_F(FridgeTest, RespectsRange) {
   // Put the arm up to get it out of the way.
   // We're going to send the elevator to -5, which should be significantly too
   // low.
-  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
-      .angle(M_PI)
-      .height(-5.0)
-      .Send());
+  ASSERT_TRUE(
+      fridge_queue_.goal.MakeWithBuilder().angle(M_PI).height(-5.0).Send());
 
   RunForTime(Time::InMS(4000));
 
@@ -315,10 +356,8 @@ TEST_F(FridgeTest, RespectsRange) {
 
   // Put the arm down to get it out of the way.
   // We're going to give the elevator some ridiculously high goal.
-  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
-      .angle(-M_PI)
-      .height(50.0)
-      .Send());
+  ASSERT_TRUE(
+      fridge_queue_.goal.MakeWithBuilder().angle(-M_PI).height(50.0).Send());
 
   RunForTime(Time::InMS(4000));
 
@@ -645,9 +684,10 @@ TEST_F(FridgeTest, ArmIntegratorTest) {
 }
 
 // Phil:
-// TODO(austin): Check that we e-stop if encoder index pulse is not n revolutions away from last one. (got extra counts from noise, etc).
-// TODO(austin): Check that we e-stop if pot disagrees too much with encoder after we are zeroed.
-
+// TODO(austin): Check that we e-stop if encoder index pulse is not n
+// revolutions away from last one. (got extra counts from noise, etc).
+// TODO(austin): Check that we e-stop if pot disagrees too much with encoder
+// after we are zeroed.
 
 }  // namespace testing
 }  // namespace control_loops

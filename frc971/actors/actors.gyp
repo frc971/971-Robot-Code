@@ -110,16 +110,18 @@
         'score_actor.cc',
       ],
       'dependencies': [
-        'fridge_profile_lib',
         'score_action_queue',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(DEPTH)/frc971/frc971.gyp:constants',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
+        '<(EXTERNALS):eigen',
       ],
       'export_dependent_settings': [
-        'fridge_profile_lib',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         'score_action_queue',
+        '<(EXTERNALS):eigen',
       ],
     },
     {

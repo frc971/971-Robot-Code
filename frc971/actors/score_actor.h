@@ -3,25 +3,28 @@
 
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actor.h"
+#include "aos/common/util/kinematics.h"
 #include "frc971/actors/score_action.q.h"
-#include "frc971/actors/fridge_profile_lib.h"
 
 namespace frc971 {
 namespace actors {
 
-class ScoreActor : public FridgeActorBase<ScoreActionQueueGroup> {
+class ScoreActor
+    : public ::aos::common::actions::ActorBase<ScoreActionQueueGroup> {
  public:
   explicit ScoreActor(ScoreActionQueueGroup *queues);
 
   bool RunAction(const ScoreParams &params) override;
 
  private:
-  // Creates and runs a profile action for the fridge. Handles cancelling
-  // correctly.
-  // height: How high we want the fridge to go.
-  // angle: What angle we want the arm to be at.
-  // grabbers: Whether we want the grabbers deployed or not.
-  void DoProfile(double height, double angle, bool grabbers);
+
+  ::aos::util::ElevatorArmKinematics kinematics_;
+  bool NearGoal(double x, double y);
+  bool PlaceTheStack(const ScoreParams &params);
+  bool MoveStackIntoPosition(const ScoreParams &params);
+  bool SendGoal(double x, double y, bool grabbers_enabled);
+  double CurrentHeight();
+  double CurrentX();
 };
 
 typedef aos::common::actions::TypedAction<ScoreActionQueueGroup> ScoreAction;

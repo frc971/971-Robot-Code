@@ -58,8 +58,16 @@ Fridge::Fridge(control_loops::FridgeQueue *fridge)
       left_elevator_estimator_(constants::GetValues().fridge.left_elev_zeroing),
       right_elevator_estimator_(
           constants::GetValues().fridge.right_elev_zeroing),
+      last_profiling_type_(ProfilingType::ANGLE_HEIGHT_PROFILING),
+      kinematics_(constants::GetValues().fridge.arm_length,
+                  constants::GetValues().fridge.elevator.upper_limit,
+                  constants::GetValues().fridge.elevator.lower_limit,
+                  constants::GetValues().fridge.arm.upper_limit,
+                  constants::GetValues().fridge.arm.lower_limit),
       arm_profile_(::aos::controls::kLoopFrequency),
-      elevator_profile_(::aos::controls::kLoopFrequency) {}
+      elevator_profile_(::aos::controls::kLoopFrequency),
+      x_profile_(::aos::controls::kLoopFrequency),
+      y_profile_(::aos::controls::kLoopFrequency) {}
 
 void Fridge::UpdateZeroingState() {
   if (left_elevator_estimator_.offset_ratio_ready() < 1.0 ||
@@ -250,8 +258,6 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
 
   // Bool to track if we should turn the motors on or not.
   bool disable = output == nullptr;
-  double elevator_goal_velocity = 0.0;
-  double arm_goal_velocity = 0.0;
 
   // Save the current position so it can be used easily in the class.
   current_position_ = *position;
@@ -329,15 +335,15 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
           LOG(DEBUG, "Moving elevator to safe height.\n");
           elevator_goal_ += kElevatorSafeHeightVelocity *
                             ::aos::controls::kLoopFrequency.ToSeconds();
-          elevator_goal_velocity = kElevatorSafeHeightVelocity;
+          elevator_goal_velocity_ = kElevatorSafeHeightVelocity;
 
           state_ = ZEROING_ELEVATOR;
           break;
         }
 
       } else if (!disable) {
-        elevator_goal_velocity = elevator_zeroing_velocity();
-        elevator_goal_ += elevator_goal_velocity *
+        elevator_goal_velocity_ = elevator_zeroing_velocity();
+        elevator_goal_ += elevator_goal_velocity_ *
                           ::aos::controls::kLoopFrequency.ToSeconds();
       }
 
@@ -348,7 +354,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       {
         Eigen::Matrix<double, 2, 1> current;
         current.setZero();
-        current << elevator_goal_, elevator_goal_velocity;
+        current << elevator_goal_, elevator_goal_velocity_;
         elevator_profile_.MoveCurrentState(current);
       }
       break;
@@ -364,9 +370,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
                      right_arm_estimator_.offset());
         LOG(DEBUG, "Zeroed the arm!\n");
       } else if (!disable) {
-        arm_goal_velocity = arm_zeroing_velocity();
+        arm_goal_velocity_ = arm_zeroing_velocity();
         arm_goal_ +=
-            arm_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
+            arm_goal_velocity_ * ::aos::controls::kLoopFrequency.ToSeconds();
       }
 
       // Bypass motion profiles while we are zeroing.
@@ -376,7 +382,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       {
         Eigen::Matrix<double, 2, 1> current;
         current.setZero();
-        current << arm_goal_, arm_goal_velocity;
+        current << arm_goal_, arm_goal_velocity_;
         arm_profile_.MoveCurrentState(current);
       }
       break;
@@ -384,34 +390,106 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     case RUNNING:
       LOG(DEBUG, "Running!\n");
       if (unsafe_goal) {
-        // Pick a set of sane arm defaults if none are specified.
-        arm_profile_.set_maximum_velocity(
-            UseUnlessZero(unsafe_goal->max_angular_velocity, 1.0));
-        arm_profile_.set_maximum_acceleration(
-            UseUnlessZero(unsafe_goal->max_angular_acceleration, 3.0));
-        elevator_profile_.set_maximum_velocity(
-            UseUnlessZero(unsafe_goal->max_velocity, 0.50));
-        elevator_profile_.set_maximum_acceleration(
-            UseUnlessZero(unsafe_goal->max_acceleration, 2.0));
+        // Handle the case where we switch between the types of profiling.
+        ProfilingType new_profiling_type =
+            static_cast<ProfilingType>(unsafe_goal->profiling_type);
 
-        // Use the profiles to limit the arm's movements.
-        const double unfiltered_arm_goal = ::std::max(
-            ::std::min(unsafe_goal->angle, values.fridge.arm.upper_limit),
-            values.fridge.arm.lower_limit);
-        ::Eigen::Matrix<double, 2, 1> arm_goal_state = arm_profile_.Update(
-            unfiltered_arm_goal, unsafe_goal->angular_velocity);
-        arm_goal_ = arm_goal_state(0, 0);
-        arm_goal_velocity = arm_goal_state(1, 0);
+        if (last_profiling_type_ != new_profiling_type) {
+          // Reset the height/angle profiles.
+          Eigen::Matrix<double, 2, 1> current;
+          current.setZero();
+          current << arm_goal_, arm_goal_velocity_;
+          arm_profile_.MoveCurrentState(current);
+          current << elevator_goal_, elevator_goal_velocity_;
+          elevator_profile_.MoveCurrentState(current);
 
-        // Use the profiles to limit the elevator's movements.
-        const double unfiltered_elevator_goal = ::std::max(
-            ::std::min(unsafe_goal->height, values.fridge.elevator.upper_limit),
-            values.fridge.elevator.lower_limit);
-        ::Eigen::Matrix<double, 2, 1> elevator_goal_state =
-            elevator_profile_.Update(unfiltered_elevator_goal,
-                                     unsafe_goal->velocity);
-        elevator_goal_ = elevator_goal_state(0, 0);
-        elevator_goal_velocity = elevator_goal_state(1, 0);
+          // Reset the x/y profiles.
+          aos::util::ElevatorArmKinematics::KinematicResult x_y_result;
+          kinematics_.ForwardKinematic(elevator_goal_, arm_goal_,
+                                       elevator_goal_velocity_,
+                                       arm_goal_velocity_, &x_y_result);
+          current << x_y_result.fridge_x, x_y_result.fridge_x_velocity;
+          x_profile_.MoveCurrentState(current);
+          current << x_y_result.fridge_h, x_y_result.fridge_h_velocity;
+          y_profile_.MoveCurrentState(current);
+
+          last_profiling_type_ = new_profiling_type;
+        }
+
+        if (new_profiling_type == ProfilingType::ANGLE_HEIGHT_PROFILING) {
+          // Pick a set of sane arm defaults if none are specified.
+          arm_profile_.set_maximum_velocity(
+              UseUnlessZero(unsafe_goal->max_angular_velocity, 1.0));
+          arm_profile_.set_maximum_acceleration(
+              UseUnlessZero(unsafe_goal->max_angular_acceleration, 3.0));
+          elevator_profile_.set_maximum_velocity(
+              UseUnlessZero(unsafe_goal->max_velocity, 0.50));
+          elevator_profile_.set_maximum_acceleration(
+              UseUnlessZero(unsafe_goal->max_acceleration, 2.0));
+
+          // Use the profiles to limit the arm's movements.
+          const double unfiltered_arm_goal = ::std::max(
+              ::std::min(unsafe_goal->angle, values.fridge.arm.upper_limit),
+              values.fridge.arm.lower_limit);
+          ::Eigen::Matrix<double, 2, 1> arm_goal_state = arm_profile_.Update(
+              unfiltered_arm_goal, unsafe_goal->angular_velocity);
+          arm_goal_ = arm_goal_state(0, 0);
+          arm_goal_velocity_ = arm_goal_state(1, 0);
+
+          // Use the profiles to limit the elevator's movements.
+          const double unfiltered_elevator_goal =
+              ::std::max(::std::min(unsafe_goal->height,
+                                    values.fridge.elevator.upper_limit),
+                         values.fridge.elevator.lower_limit);
+          ::Eigen::Matrix<double, 2, 1> elevator_goal_state =
+              elevator_profile_.Update(unfiltered_elevator_goal,
+                                       unsafe_goal->velocity);
+          elevator_goal_ = elevator_goal_state(0, 0);
+          elevator_goal_velocity_ = elevator_goal_state(1, 0);
+        } else if (new_profiling_type == ProfilingType::X_Y_PROFILING) {
+          // Use x/y profiling
+          aos::util::ElevatorArmKinematics::KinematicResult kinematic_result;
+
+          x_profile_.set_maximum_velocity(
+              UseUnlessZero(unsafe_goal->max_x_velocity, 0.5));
+          x_profile_.set_maximum_acceleration(
+              UseUnlessZero(unsafe_goal->max_x_acceleration, 2.0));
+          y_profile_.set_maximum_velocity(
+              UseUnlessZero(unsafe_goal->max_y_velocity, 0.50));
+          y_profile_.set_maximum_acceleration(
+              UseUnlessZero(unsafe_goal->max_y_acceleration, 2.0));
+
+          // Limit the goals before we update the profiles.
+          kinematics_.InverseKinematic(
+              unsafe_goal->x, unsafe_goal->y, unsafe_goal->x_velocity,
+              unsafe_goal->y_velocity, &kinematic_result);
+
+          // Use the profiles to limit the x movements.
+          ::Eigen::Matrix<double, 2, 1> x_goal_state = x_profile_.Update(
+              kinematic_result.fridge_x, kinematic_result.fridge_x_velocity);
+
+          // Use the profiles to limit the y movements.
+          ::Eigen::Matrix<double, 2, 1> y_goal_state = y_profile_.Update(
+              kinematic_result.fridge_h, kinematic_result.fridge_h_velocity);
+
+          // Convert x/y goal states into arm/elevator goals.
+          // The inverse kinematics functions automatically perform range
+          // checking and adjust the results so that they're always valid.
+          kinematics_.InverseKinematic(x_goal_state(0, 0), y_goal_state(0, 0),
+                                       x_goal_state(1, 0), y_goal_state(1, 0),
+                                       &kinematic_result);
+
+          // Store the appropriate inverse kinematic results in the
+          // arm/elevator goals.
+          arm_goal_ = kinematic_result.arm_angle;
+          arm_goal_velocity_ = kinematic_result.arm_velocity;
+
+          elevator_goal_ = kinematic_result.elevator_height;
+          elevator_goal_velocity_ = kinematic_result.arm_velocity;
+        } else {
+          LOG(ERROR, "Unknown profiling_type: %d\n",
+              unsafe_goal->profiling_type);
+        }
       }
 
       // Update state_ to accurately represent the state of the zeroing
@@ -516,8 +594,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   }
 
   // Set the goals.
-  arm_loop_->mutable_R() << arm_goal_, arm_goal_velocity, 0.0, 0.0, 0.0;
-  elevator_loop_->mutable_R() << elevator_goal_, elevator_goal_velocity, 0.0,
+  arm_loop_->mutable_R() << arm_goal_, arm_goal_velocity_, 0.0, 0.0, 0.0;
+  elevator_loop_->mutable_R() << elevator_goal_, elevator_goal_velocity_, 0.0,
       0.0;
 
   const double max_voltage = state_ == RUNNING ? 12.0 : kZeroingVoltage;
@@ -575,9 +653,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
   status->height = elevator_loop_->X_hat(0, 0);
   status->velocity = elevator_loop_->X_hat(1, 0);
   status->goal_angle = arm_goal_;
-  status->goal_angular_velocity = arm_goal_velocity;
+  status->goal_angular_velocity = arm_goal_velocity_;
   status->goal_height = elevator_goal_;
-  status->goal_velocity = elevator_goal_velocity;
+  status->goal_velocity = elevator_goal_velocity_;
   if (unsafe_goal) {
     status->grabbers = unsafe_goal->grabbers;
   } else {

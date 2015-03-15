@@ -121,6 +121,9 @@ const double kClawEncoderIndexDifference = 2.0 * M_PI * kClawEncoderRatio;
 
 const int kZeroingSampleSize = 200;
 
+// The length of the arm.
+const double kArmLength = 0.7366;
+
 // TODO(danielp): All these values might need to change.
 const double kClawPistonSwitchTime = 0.4;
 const double kClawZeroingRange = 0.3;
@@ -186,6 +189,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.5 - 0.17 - -0.15,
 
            kArmZeroingHeight,
+           kArmLength,
           },
           // End "sensor" values.
 
@@ -255,6 +259,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.506927 - 0.170017 - -0.147970,
 
            kArmZeroingHeight,
+           kArmLength,
           },
           // End "sensor" values.
 
@@ -326,6 +331,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            3.506927 - 0.170017 - -0.147970 - 0.005045 - -0.026504,
 
            kArmZeroingHeight,
+           kArmLength,
           },
           // TODO(sensors): End "sensor" values.
 
