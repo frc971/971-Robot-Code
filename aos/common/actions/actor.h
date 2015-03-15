@@ -80,8 +80,10 @@ bool ActorBase<T>::CheckInitialRunning() {
         LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
       }
     }
+    LOG(DEBUG, "Done waiting, goal\n");
     return true;
   }
+  LOG(DEBUG, "Done waiting, no goal\n");
   return false;
 }
 
@@ -115,6 +117,7 @@ uint32_t ActorBase<T>::RunIteration() {
            .Send()) {
     LOG(ERROR, "Failed to send the status.\n");
   }
+  LOG_STRUCT(INFO, "goal", *action_q_->goal);
   abort_ = !RunAction(action_q_->goal->params);
   LOG(INFO, "Done with action %" PRIx32 "\n", running_id);
 
@@ -151,13 +154,17 @@ template <class T>
 void ActorBase<T>::Run() {
 
   // Make sure the last job is done and we have a signal.
-  CheckInitialRunning();
-
-  if (!action_q_->status.MakeWithBuilder().running(0).last_running(0).success(!abort_).Send()) {
-    LOG(ERROR, "Failed to send the status.\n");
+  if (CheckInitialRunning()) {
+    LOG(DEBUG, "action %" PRIx32 " was stopped\n", action_q_->goal->run);
   }
 
-  LOG(DEBUG, "action %" PRIx32 " was stopped\n", action_q_->goal->run);
+  if (!action_q_->status.MakeWithBuilder()
+           .running(0)
+           .last_running(0)
+           .success(!abort_)
+           .Send()) {
+    LOG(ERROR, "Failed to send the status.\n");
+  }
 
   while (true) {
     // Wait for a request to come in before starting.
