@@ -49,6 +49,8 @@ def main():
       help='The file from which to read logs and plot.')
   arg_parser.add_argument('--plot-defs', action='store', type=str, \
       help='Read the items to plot from this file.')
+  arg_parser.add_argument('--no-binary', '-n', action='store_true', \
+      help='Don\'t print the binary name in the legend.')
 
   args = arg_parser.parse_args(sys.argv[1:])
 
@@ -72,7 +74,7 @@ def main():
     p.Add('fridge', 'output', 'left_elevator')
     p.Add('fridge', 'output', 'right_elevator')
 
-  p.PlotFile(args.log_file)
+  p.PlotFile(args.log_file, args.no_binary)
 
 if __name__ == '__main__':
   main()
