@@ -8,7 +8,7 @@
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kArmMove{0.6, 2.0};
+constexpr ProfileParams kArmMove{0.6, 1.0};
 constexpr ProfileParams kElevatorMove{0.9, 3.0};
 }  // namespace
 
@@ -21,19 +21,43 @@ bool LiftActor::RunAction(const LiftParams &params) {
     return false;
   }
 
-  // Lift the box straight up.
-  DoFridgeProfile(params.lift_height, 0.0, kElevatorMove, kArmMove,
-                  control_loops::fridge_queue.status->grabbers.top_front,
-                  control_loops::fridge_queue.status->grabbers.bottom_front,
-                  control_loops::fridge_queue.status->grabbers.bottom_back);
-  if (ShouldCancel()) return true;
+  double goal_height = params.lift_height;
+  double goal_angle = 0.0;
 
-  // Move it back to the storage location.
-  DoFridgeProfile(params.lift_height, params.lift_arm, kElevatorMove, kArmMove,
-                  control_loops::fridge_queue.status->grabbers.top_front,
-                  control_loops::fridge_queue.status->grabbers.bottom_front,
-                  control_loops::fridge_queue.status->grabbers.bottom_back);
 
+  if (!StartFridgeProfile(
+          params.lift_height, 0.0, kElevatorMove, kArmMove,
+          control_loops::fridge_queue.status->grabbers.top_front,
+          control_loops::fridge_queue.status->grabbers.bottom_front,
+          control_loops::fridge_queue.status->grabbers.bottom_back)) {
+    return true;
+  }
+
+  bool has_started_back = false;
+  while (true) {
+    if (control_loops::fridge_queue.status->goal_height > 0.1) {
+      if (!has_started_back) {
+        if (!StartFridgeProfile(
+                params.lift_height, params.lift_arm, kElevatorMove, kArmMove,
+                control_loops::fridge_queue.status->grabbers.top_front,
+                control_loops::fridge_queue.status->grabbers.bottom_front,
+                control_loops::fridge_queue.status->grabbers.bottom_back)) {
+          return true;
+        }
+        goal_angle = params.lift_arm;
+        has_started_back = true;
+      }
+    }
+
+    ProfileStatus status = IterateProfile(
+        goal_height, goal_angle, kElevatorMove, kArmMove,
+        control_loops::fridge_queue.status->grabbers.top_front,
+        control_loops::fridge_queue.status->grabbers.bottom_front,
+        control_loops::fridge_queue.status->grabbers.bottom_back);
+    if (status == DONE || status == CANCELED) {
+      return true;
+    }
+  }
   return true;
 }
 
