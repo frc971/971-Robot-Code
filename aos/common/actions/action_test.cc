@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include <memory>
+#include <thread>
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
@@ -124,13 +125,48 @@ TEST_F(ActionTest, DoesNothing) {
   EXPECT_FALSE(action_queue_.Running());
 }
 
+// Tests that starting with an old run message in the goal queue actually works.
+// This used to result in the client hanging, waiting for a response to its
+// cancel message.
+TEST_F(ActionTest, StartWithOldGoal) {
+  ASSERT_TRUE(actions::test_action.goal.MakeWithBuilder().run(971).Send());
+
+  TestActorNOP nop_act(&actions::test_action);
+
+  ASSERT_FALSE(actions::test_action.status.FetchLatest());
+  ::std::thread init_thread([&nop_act]() { nop_act.Initialize(); });
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.01));
+  ASSERT_TRUE(actions::test_action.goal.MakeWithBuilder().run(1).Send());
+  init_thread.join();
+  ASSERT_TRUE(actions::test_action.status.FetchLatest());
+  EXPECT_EQ(0u, actions::test_action.status->running);
+  EXPECT_EQ(0u, actions::test_action.status->last_running);
+
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  nop_act.WaitForActionRequest();
+
+  // We started an action and it should be running.
+  EXPECT_TRUE(action_queue_.Running());
+
+  action_queue_.CancelAllActions();
+  action_queue_.Tick();
+
+  EXPECT_TRUE(action_queue_.Running());
+
+  // Run the action so it can signal completion.
+  nop_act.RunIteration();
+  action_queue_.Tick();
+
+  // Make sure it stopped.
+  EXPECT_FALSE(action_queue_.Running());
+}
+
 // Tests that the queues are properly configured for testing. Tests that queues
 // work exactly as used in the tests.
 TEST_F(ActionTest, QueueCheck) {
   actions::TestActionQueueGroup *send_side = &actions::test_action;
   actions::TestActionQueueGroup *recv_side = &actions::test_action;
 
-  send_side->goal.MakeMessage();
   send_side->goal.MakeWithBuilder().run(1).Send();
 
   EXPECT_TRUE(recv_side->goal.FetchLatest());
@@ -141,7 +177,6 @@ TEST_F(ActionTest, QueueCheck) {
   EXPECT_TRUE(recv_side->goal.FetchLatest());
   EXPECT_FALSE(recv_side->goal->run);
 
-  send_side->status.MakeMessage();
   send_side->status.MakeWithBuilder().running(5).last_running(6).Send();
 
   EXPECT_TRUE(recv_side->status.FetchLatest());

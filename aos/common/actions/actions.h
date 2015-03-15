@@ -280,8 +280,9 @@ void TypedAction<T>::CheckStarted() {
       has_started_ = true;
       LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
           run_value_, queue_group_->goal.name());
-    } else if (queue_group_->status->running == old_run_value_) {
-      // It's still running an old instance (or still doing nothing).
+    } else if (old_run_value_ != 0 &&
+               queue_group_->status->running == old_run_value_) {
+      LOG(DEBUG, "still running old instance %" PRIx32 "\n", old_run_value_);
     } else {
       LOG(WARNING, "Action %" PRIx32 " on queue %s interrupted by %" PRIx32
                    " before starting\n",

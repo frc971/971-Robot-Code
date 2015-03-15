@@ -32,6 +32,9 @@ class ActorBase {
   // Runs action while enabled.
   void Run();
 
+  // Gets ready to run actions.
+  void Initialize();
+
   // Checks if an action was initially running when the thread started.
   bool CheckInitialRunning();
 
@@ -152,19 +155,7 @@ void ActorBase<T>::WaitForStop(uint32_t running_id) {
 
 template <class T>
 void ActorBase<T>::Run() {
-
-  // Make sure the last job is done and we have a signal.
-  if (CheckInitialRunning()) {
-    LOG(DEBUG, "action %" PRIx32 " was stopped\n", action_q_->goal->run);
-  }
-
-  if (!action_q_->status.MakeWithBuilder()
-           .running(0)
-           .last_running(0)
-           .success(!abort_)
-           .Send()) {
-    LOG(ERROR, "Failed to send the status.\n");
-  }
+  Initialize();
 
   while (true) {
     // Wait for a request to come in before starting.
@@ -180,6 +171,22 @@ void ActorBase<T>::Run() {
     // Don't start again until asked.
     WaitForStop(running_id);
     LOG(DEBUG, "action %" PRIx32 " was stopped\n", running_id);
+  }
+}
+
+template <class T>
+void ActorBase<T>::Initialize() {
+  // Make sure the last job is done and we have a signal.
+  if (CheckInitialRunning()) {
+    LOG(DEBUG, "action %" PRIx32 " was stopped\n", action_q_->goal->run);
+  }
+
+  if (!action_q_->status.MakeWithBuilder()
+           .running(0)
+           .last_running(0)
+           .success(!abort_)
+           .Send()) {
+    LOG(ERROR, "Failed to send the status.\n");
   }
 }
 
