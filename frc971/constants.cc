@@ -63,6 +63,43 @@ const double kArmZeroingHeight = 0.2;
 const double kMaxAllowedLeftRightArmDifference = 0.04;       // radians
 const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
 
+const Values::ClawGeometry kClawGeometry{
+    // Horizontal distance from the center of the grabber to the end.
+    0.5 * 18.0 * 0.0254,
+    // Vertical distance from the arm rotation center to the bottom of
+    // the
+    // grabber.  Distance measured with arm vertical (theta = 0).
+    5.1 * 0.0254,
+    // Vertical separation of the claw and arm rotation centers with the
+    // elevator at 0.0 and the arm angle set to zero.
+    10.5 * 0.0254,
+    // Horizontal separation of the claw and arm rotation centers with
+    // the
+    // elevator at 0.0 and the arm angle set to zero.
+    6.5 * 0.0254,
+    // Distance between the center of the claw to the top of the claw.
+    // 2.75 inches would work most of the time.  Using 3.5 inches because
+    // of the
+    // pnumatics fitting on the piston.
+    3.5 * 0.0254,
+    // The grabber is safe at any height if it is behind this location.
+    // The location of the grabber is used here and not the location of
+    // the end
+    // of the grabber.  The grabber location is (0, 0) when the elevator
+    // is at 0
+    // and the arm angle is 0.
+    (18.0 - 0.3) * 0.0254,
+    // The grabber is safe at any x if it is above this location.
+    // The location of the grabber is used here and not the location of
+    // the end
+    // of the grabber.  The grabber location is (0, 0) when the elevator
+    // is at 0
+    // and the arm angle is 0.
+    // The "-5.4" is the location of the bottom of the grabber when
+    // the elevator is at the bottom (-0.3 inches) and arm angle is 0.
+    -8.0 * 0.0254,
+};
+
 // Gearing ratios of the pots and encoders for the elevator and arm.
 // Ratio is output shaft rotations per encoder/pot rotation
 // Checked by Daniel on 2/13/15.
@@ -154,6 +191,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           kMaxAllowedLeftRightArmDifference,
           kMaxAllowedLeftRightElevatorDifference,
+          kClawGeometry,
       };
       break;
     case kPracticeTeamNumber:
@@ -222,6 +260,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           kMaxAllowedLeftRightArmDifference,
           kMaxAllowedLeftRightElevatorDifference,
+          kClawGeometry,
       };
       break;
     case kCompTeamNumber:
@@ -292,6 +331,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           kMaxAllowedLeftRightArmDifference,
           kMaxAllowedLeftRightElevatorDifference,
+          kClawGeometry,
       };
       break;
     default:
