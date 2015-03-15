@@ -129,16 +129,18 @@
       'type': 'static_library',
       'sources': [
         '<(externals)/gtest-<(gtest_version)/src/gtest-all.cc',
-            '<(externals)/gtest-<(gtest_version)/fused-src/gtest/gtest_main.cc',
+        '<(AOS)/externals/gtest/gtest_main.cc',
       ],
       'include_dirs': [
         '<(externals)/gtest-<(gtest_version)',
       ],
       'dependencies': [
         'gtest_prod',
+        '<(AOS)/common/common.gyp:queue_testutils',
       ],
       'export_dependent_settings': [
         'gtest_prod',
+        '<(AOS)/common/common.gyp:queue_testutils',
       ],
       'cflags!': ['-Werror'],
       'direct_dependent_settings': {

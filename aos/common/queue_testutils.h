@@ -35,6 +35,16 @@ void EnableTestLogging();
 // being run.
 void PreventExit();
 
+// Redirect the messages enabled by EnableTestLogging() function to a file.
+// By default the messages are printed to standard output.
+void SetLogFileName(const char* filename);
+
+// Force the messages to be printed as they are handled by the logging
+// framework. This can be useful for tests that hang where no messages would
+// otherwise be printed. This is also useful for tests that do pass, but where
+// we want to use graphing tools to verify what's happening.
+void ForcePrintLogsDuringTests();
+
 }  // namespace testing
 }  // namespace common
 }  // namespace aos

@@ -20,7 +20,6 @@
       'dependencies': [
         '<(AOS)/build/aos.gyp:logging',
         'once',
-        '<(EXTERNALS):gtest',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
       ],
       'export_dependent_settings': [

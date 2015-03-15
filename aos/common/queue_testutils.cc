@@ -41,22 +41,41 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
     }
   }
 
+  void SetOutputFile(const char *filename) {
+    if (strcmp("-", filename) != 0) {
+      FILE *newfile = fopen(filename, "w");
+
+      if (newfile) {
+        output_file_ = newfile;
+      }
+    }
+  }
+
+  void PrintMessagesAsTheyComeIn() { print_as_messages_come_in_ = true; }
+
  private:
   TestLogImplementation() {}
+  ~TestLogImplementation() {
+    if (output_file_ != stdout) {
+      fclose(output_file_);
+    }
+  }
 
   static TestLogImplementation *CreateInstance() {
     return new TestLogImplementation();
   }
 
   virtual void HandleMessage(const LogMessage &message) override {
-    if (message.level == FATAL) {
-      logging::internal::PrintMessage(stdout, message);
+    if (message.level == FATAL || print_as_messages_come_in_) {
+      logging::internal::PrintMessage(output_file_, message);
     }
 
     messages_.push_back(message);
   }
 
   ::std::vector<LogMessage> messages_;
+  bool print_as_messages_come_in_ = false;
+  FILE *output_file_ = stdout;
 };
 
 class MyTestEventListener : public ::testing::EmptyTestEventListener {
@@ -65,13 +84,8 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
   }
   virtual void OnTestEnd(const ::testing::TestInfo &test_info) {
     if (test_info.result()->Failed()) {
-      printf("Test %s failed. Printing out all log messages.\n",
+      printf("Test %s failed. Use '--print-logs' to see all log messages.\n",
              test_info.name());
-      fputs("\tThis will include already printed WARNING and up messages.\n",
-            stdout);
-      fputs("\tIt will also include duplicates of all gtest failures.\n",
-            stdout);
-      TestLogImplementation::GetInstance()->PrintAllMessages();
     }
   }
 
@@ -143,6 +157,14 @@ void EnableTestLogging() {
 
 void PreventExit() {
   CHECK_EQ(atexit(TerminateExitHandler), 0);
+}
+
+void SetLogFileName(const char* filename) {
+  TestLogImplementation::GetInstance()->SetOutputFile(filename);
+}
+
+void ForcePrintLogsDuringTests() {
+  TestLogImplementation::GetInstance()->PrintMessagesAsTheyComeIn();
 }
 
 }  // namespace testing
