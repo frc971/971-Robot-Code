@@ -36,6 +36,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                           ProfileParams arm_parameters, bool top_grabbers,
                           bool front_grabbers, bool back_grabbers) {
     auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+    new_fridge_goal->profiling_type = 0;
     new_fridge_goal->max_velocity = elevator_parameters.velocity;
     new_fridge_goal->max_acceleration = elevator_parameters.acceleration;
     new_fridge_goal->height = height;
@@ -68,6 +69,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
       should_cancel = true;
       LOG(INFO, "Canceling fridge movement\n");
       auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+      new_fridge_goal->profiling_type = 0;
       new_fridge_goal->max_velocity = elevator_parameters.velocity;
       new_fridge_goal->max_acceleration = elevator_parameters.acceleration;
       new_fridge_goal->height =
