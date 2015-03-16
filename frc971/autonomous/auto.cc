@@ -12,11 +12,20 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/actors/drivetrain_actor.h"
+#include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/actors/pickup_actor.h"
+#include "frc971/actors/stack_actor.h"
 
 using ::aos::time::Time;
+using ::frc971::control_loops::claw_queue;
 
 namespace frc971 {
 namespace autonomous {
+
+constexpr double kClawAutoVelocity = 3.00;
+constexpr double kClawAutoAcceleration = 6.0;
+constexpr double kAngleEpsilon = 0.10;
+double kClawTotePackAngle = 0.95;
 
 namespace time = ::aos::time;
 
@@ -142,14 +151,107 @@ void InitializeEncoders() {
       control_loops::drivetrain_queue.status->filtered_right_position;
 }
 
+void SetClawState(double angle, double intake_voltage, double rollers_closed) {
+  auto message = control_loops::claw_queue.goal.MakeMessage();
+  message->angle = angle;
+  message->max_velocity = kClawAutoVelocity;
+  message->max_acceleration = kClawAutoAcceleration;
+  message->angular_velocity = 0.0;
+  message->intake = intake_voltage;
+  message->rollers_closed = rollers_closed;
+
+  LOG_STRUCT(DEBUG, "Sending claw goal", *message);
+  message.Send();
+
+  while (true) {
+    control_loops::claw_queue.status.FetchAnother();
+    const double current_angle = control_loops::claw_queue.status->angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+
+    // I believe all we can care about here is the angle. Other values will
+    // either be set or not, but there is nothing we can do about it. If it
+    // never gets there we do not care, auto is over for us.
+    if (::std::abs(current_angle - angle) < kAngleEpsilon) {
+      break;
+    }
+  }
+}
+
 void HandleAuto() {
   ::aos::time::Time start_time = ::aos::time::Time::Now();
   LOG(INFO, "Handling auto mode at %f\n", start_time.ToSeconds());
+  ::std::unique_ptr<::frc971::actors::DrivetrainAction> drive;
+  ::std::unique_ptr<::frc971::actors::PickupAction> pickup;
+  ::std::unique_ptr<::frc971::actors::StackAction> stack;
+  // TODO(austin): Score!
+  //::std::unique_ptr<ScoreAction> score;
 
   ResetDrivetrain();
 
   if (ShouldExitAuto()) return;
   InitializeEncoders();
+
+  if (true) {
+    // basic can push out of the way
+    SetClawState(0.0, -7.0, true);
+    drive = SetDriveGoal(1.0, false);
+    WaitUntilDoneOrCanceled(drive.get());
+    SetClawState(0.0, 0.0, true);
+  }
+
+  if (ShouldExitAuto()) return;
+
+  if (false) {
+    // drive up to the next tote
+    drive = SetDriveGoal(1.0, false);
+    WaitUntilDoneOrCanceled(drive.get());
+    if (ShouldExitAuto()) return;
+
+    // suck in the tote
+    SetClawState(0.0, 7.0, true);
+    drive = SetDriveGoal(0.2, false);
+    WaitUntilDoneOrCanceled(drive.get());
+    SetClawState(0.0, 0.0, true);
+    if (ShouldExitAuto()) return;
+
+    // now pick it up
+    {
+      actors::PickupParams params;
+      // Lift to here initially.
+      params.pickup_angle = 0.9;
+      // Start sucking here
+      params.suck_angle = 0.8;
+      // Go back down to here to finish sucking.
+      params.suck_angle_finish = 0.4;
+      // Pack the box back in here.
+      params.pickup_finish_angle = kClawTotePackAngle;
+      params.intake_time = 0.8;
+      params.intake_voltage = 7.0;
+      pickup = actors::MakePickupAction(params);
+      WaitUntilDoneOrCanceled(pickup.get());
+    }
+    if (ShouldExitAuto()) return;
+
+    // we should have the tote, now stack it
+    {
+      actors::StackParams params;
+      params.claw_out_angle = 0.6;
+      params.bottom = 0.020;
+      params.over_box_before_place_height = 0.39;
+      stack = actors::MakeStackAction(params);
+      WaitUntilDoneOrCanceled(stack.get());
+    }
+    if (ShouldExitAuto()) return;
+
+    // turn 90
+    DriveSpin(M_PI / 4.0);
+    if (ShouldExitAuto()) return;
+
+    // place the new stack
+    // TODO(austin): Score!
+    // score = MakeScoreAction(score_params);
+    // WaitUntilDoneOrCanceled(score.get());
+  }
 }
 
 }  // namespace autonomous
