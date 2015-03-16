@@ -241,21 +241,21 @@ class PolyDrivetrain {
   // Stall Torque in N m
   static constexpr double kStallTorque = 2.42;
   // Stall Current in Amps
-  static constexpr double kStallCurrent = 133;
+  static constexpr double kStallCurrent = 133.0;
   // Free Speed in RPM. Used number from last year.
   static constexpr double kFreeSpeed = 4650.0;
   // Free Current in Amps
   static constexpr double kFreeCurrent = 2.7;
   // Moment of inertia of the drivetrain in kg m^2
   // Just borrowed from last year.
-  static constexpr double J = 6.4;
+  static constexpr double J = 10;
   // Mass of the robot, in kg.
   static constexpr double m = 68;
   // Radius of the robot, in meters (from last year).
-  static constexpr double rb = 0.617998644 / 2.0;
-  static constexpr double kWheelRadius = 0.04445;
+  static constexpr double rb = 0.9603 / 2.0;
+  static constexpr double kWheelRadius = 0.0515938;
   // Resistance of the motor, divided by the number of motors.
-  static constexpr double kR = (12.0 / kStallCurrent / 4 + 0.03) / (0.93 * 0.93);
+  static constexpr double kR = (12.0 / kStallCurrent / 2 + 0.03) / (0.93 * 0.93);
   // Motor velocity constant
   static constexpr double Kv =
       ((kFreeSpeed / 60.0 * 2.0 * M_PI) / (12.0 - kR * kFreeCurrent));
@@ -322,11 +322,13 @@ class PolyDrivetrain {
   }
 
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear) {
-    const double kWheelNonLinearity = 0.3;
+    const double kWheelNonLinearity = 0.5;
     // Apply a sin function that's scaled to make it feel better.
     const double angular_range = M_PI_2 * kWheelNonLinearity;
+
     wheel_ = sin(angular_range * wheel) / sin(angular_range);
     wheel_ = sin(angular_range * wheel_) / sin(angular_range);
+    wheel_ *= 2.3;
     quickturn_ = quickturn;
 
     static const double kThrottleDeadband = 0.05;
@@ -481,9 +483,10 @@ class PolyDrivetrain {
 
     const double adjusted_ff_voltage = ::aos::Clip(
         throttle * 12.0 * min_FF_sum / high_min_FF_sum, -12.0, 12.0);
-    return ((adjusted_ff_voltage +
-             ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) / 2.0) /
-            (ttrust_ * min_K_sum + min_FF_sum));
+    return (adjusted_ff_voltage +
+            ttrust_ * min_K_sum * (loop_->X_hat(0, 0) + loop_->X_hat(1, 0)) /
+                2.0) /
+           (ttrust_ * min_K_sum + min_FF_sum);
   }
 
   double MaxVelocity() {
@@ -580,6 +583,7 @@ class PolyDrivetrain {
       }
       const double left_velocity = fvel - steering_velocity;
       const double right_velocity = fvel + steering_velocity;
+      LOG(DEBUG, "l=%f r=%f\n", left_velocity, right_velocity);
 
       // Integrate velocity to get the position.
       // This position is used to get integral control.

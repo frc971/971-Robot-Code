@@ -56,14 +56,14 @@ class Drivetrain(control_loop.ControlLoop):
     # Stall Torque in N m
     self.stall_torque = 2.42
     # Stall Current in Amps
-    self.stall_current = 133
+    self.stall_current = 133.0
     # Free Speed in RPM. Used number from last year.
     self.free_speed = 4650.0
     # Free Current in Amps
     self.free_current = 2.7
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
-    self.J = 4.5
+    self.J = 10
     # Mass of the robot, in kg.
     self.m = 68
     # Radius of the robot, in meters (from last year).
@@ -71,7 +71,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the wheels, in meters.
     self.r = .0515938
     # Resistance of the motor, divided by the number of motors.
-    self.R = 12.0 / self.stall_current / 4
+    self.R = 12.0 / self.stall_current / 2
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (12.0 - self.R * self.free_current))

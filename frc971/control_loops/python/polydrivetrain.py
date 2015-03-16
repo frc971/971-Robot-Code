@@ -177,7 +177,7 @@ class VelocityDrivetrain(object):
     # ttrust is the comprimise between having full throttle negative inertia,
     # and having no throttle negative inertia.  A value of 0 is full throttle
     # inertia.  A value of 1 is no throttle negative inertia.
-    self.ttrust = 1.0
+    self.ttrust = 1.1
 
     self.left_gear = VelocityDrivetrain.LOW
     self.right_gear = VelocityDrivetrain.LOW
@@ -302,26 +302,30 @@ class VelocityDrivetrain(object):
     # This is the same as sending the most torque down to the floor at the
     # wheel.
 
-    self.left_gear = self.ComputeGear(self.X[0, 0], should_print=True,
-                                      current_gear=self.left_gear,
-                                      gear_name="left")
-    self.right_gear = self.ComputeGear(self.X[1, 0], should_print=True,
-                                       current_gear=self.right_gear,
-                                       gear_name="right")
-    if self.IsInGear(self.left_gear):
-      self.left_cim.X[0, 0] = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
+    self.left_gear = self.right_gear = True
+    if False:
+      self.left_gear = self.ComputeGear(self.X[0, 0], should_print=True,
+                                        current_gear=self.left_gear,
+                                        gear_name="left")
+      self.right_gear = self.ComputeGear(self.X[1, 0], should_print=True,
+                                         current_gear=self.right_gear,
+                                         gear_name="right")
+      if self.IsInGear(self.left_gear):
+        self.left_cim.X[0, 0] = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
 
-    if self.IsInGear(self.right_gear):
-      self.right_cim.X[0, 0] = self.MotorRPM(self.right_shifter_position, self.X[0, 0])
+      if self.IsInGear(self.right_gear):
+        self.right_cim.X[0, 0] = self.MotorRPM(self.right_shifter_position, self.X[0, 0])
 
-    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+    steering *= 2.3
+    if True or self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
       # Filter the throttle to provide a nicer response.
       fvel = self.FilterVelocity(throttle)
 
       # Constant radius means that angualar_velocity / linear_velocity = constant.
       # Compute the left and right velocities.
-      left_velocity = fvel - steering * numpy.abs(fvel)
-      right_velocity = fvel + steering * numpy.abs(fvel)
+      steering_velocity = numpy.abs(fvel) * steering
+      left_velocity = fvel - steering_velocity
+      right_velocity = fvel + steering_velocity
 
       # Write this constraint in the form of K * R = w
       # angular velocity / linear velocity = constant
@@ -379,7 +383,7 @@ class VelocityDrivetrain(object):
 
     # TODO(austin): Model the robot as not accelerating when you shift...
     # This hack only works when you shift at the same time.
-    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+    if True or self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
       self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
 
     self.left_gear, self.left_shifter_position = self.SimShifter(
@@ -441,13 +445,13 @@ def main(argv):
   else:
     print "Right is low"
 
-  for t in numpy.arange(0, 4.0, vdrivetrain.dt):
-    if t < 1.0:
-      vdrivetrain.Update(throttle=1.00, steering=0.0)
+  for t in numpy.arange(0, 1.7, vdrivetrain.dt):
+    if t < 0.5:
+      vdrivetrain.Update(throttle=0.00, steering=1.0)
     elif t < 1.2:
-      vdrivetrain.Update(throttle=1.00, steering=0.0)
+      vdrivetrain.Update(throttle=0.5, steering=1.0)
     else:
-      vdrivetrain.Update(throttle=1.00, steering=0.0)
+      vdrivetrain.Update(throttle=0.00, steering=1.0)
     t_plot.append(t)
     vl_plot.append(vdrivetrain.X[0, 0])
     vr_plot.append(vdrivetrain.X[1, 0])
@@ -474,10 +478,10 @@ def main(argv):
     cim_velocity_plot.append(cim.X[0, 0])
     cim_voltage_plot.append(U[0, 0] * 10)
     cim_time.append(t)
-  #pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
-  #pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
-  #pylab.legend()
-  #pylab.show()
+  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
+  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
+  pylab.legend()
+  pylab.show()
 
   # TODO(austin):
   # Shifting compensation.
