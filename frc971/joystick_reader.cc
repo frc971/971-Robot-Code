@@ -334,6 +334,7 @@ class Reader : public ::aos::input::JoystickInput {
         auto new_fridge_goal = fridge_queue.goal.MakeMessage();
         new_fridge_goal->max_velocity = elevator_params_.velocity;
         new_fridge_goal->max_acceleration = elevator_params_.acceleration;
+        new_fridge_goal->profiling_type = 0;
         new_fridge_goal->height = elevator_goal_;
         new_fridge_goal->velocity = 0.0;
         new_fridge_goal->max_angular_velocity = arm_params_.velocity;
