@@ -14,13 +14,18 @@ namespace frc971 {
 namespace actors {
 
 namespace {
-const double kUpperMoveHeight = 0.2;
-const double kBeginHorizontalMoveHeight = 0.04;
-const double kHorizontalMoveTarget = -0.6;
-const double kClearedStopperDistance = 0.2;
-const double kAboveFloorHeight = 0.1;
-const double kPlaceHeight = -0.05;
+const double kUpperMoveHeight = 0.14;
+const double kBeginHorizontalMoveHeight = 0.13;
+
+const double kHorizontalMoveTarget = -0.7;
+
+const double kPlaceHeight = -0.10;
 const double kHomeReturnHeight = 0.1;
+
+const double kMaxXVelocity = 0.45;
+const double kMaxYVelocity = 0.20;
+const double kMaxXAcceleration = 0.5;
+const double kMaxYAcceleration = 0.5;
 }  // namespace
 
 ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
@@ -32,7 +37,6 @@ ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
                   constants::GetValues().fridge.arm.lower_limit) {}
 
 bool ScoreActor::RunAction(const ScoreParams& params) {
-  // TODO(pschrader): Break these into completely separate actions.
   if (params.place_the_stack) {
     return PlaceTheStack(params);
   } else {
@@ -41,8 +45,6 @@ bool ScoreActor::RunAction(const ScoreParams& params) {
 }
 
 bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
-  // TODO(pschrader): Assuming right now we start at 0, 0.
-
   // Move the fridge up a little bit.
   if (!SendGoal(0.0, kUpperMoveHeight, true)) {
     LOG(ERROR, "Sending fridge message failed.\n");
@@ -55,14 +57,14 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
       return true;
     }
 
-    // Once we're above a certain height we can start moving backwards.
-    if (CurrentHeight() > kBeginHorizontalMoveHeight) {
+    // Move on when it is clear of the tote knobs.
+    if (CurrentGoalHeight() > kBeginHorizontalMoveHeight) {
       break;
     }
   }
 
-  // Move the fridge over.
-  if (!SendGoal(kHorizontalMoveTarget, kUpperMoveHeight, true)) {
+  // Move the fridge out.
+  if (!SendGoal(kHorizontalMoveTarget, kBeginHorizontalMoveHeight, true)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -73,26 +75,7 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
       return true;
     }
 
-    // Once we've cleared the tote stopper, then we can start moving down.
-    if (CurrentX() > kClearedStopperDistance) {
-      break;
-    }
-  }
-
-  // Once we're a bit out, start moving the fridge down.
-  if (!SendGoal(kHorizontalMoveTarget, kAboveFloorHeight, true)) {
-    LOG(ERROR, "Sending fridge message failed.\n");
-    return false;
-  }
-
-  while (true) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
-    if (ShouldCancel()) {
-      return true;
-    }
-
-    // Wait until we get to just the right height.
-    if (NearGoal(kHorizontalMoveTarget, kAboveFloorHeight)) {
+    if (NearGoal(kHorizontalMoveTarget, kUpperMoveHeight)) {
       break;
     }
   }
@@ -115,7 +98,6 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
       return true;
     }
 
-    // Once we're on the ground, move on to releasing the grabber.
     if (NearGoal(kHorizontalMoveTarget, kPlaceHeight)) {
       break;
     }
@@ -153,7 +135,6 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
 
 double ScoreActor::CurrentHeight() {
   fridge_queue.status.FetchLatest();
-
   if (!fridge_queue.status.get()) {
     LOG(ERROR, "Reading from fridge status queue failed.\n");
     return false;
@@ -166,9 +147,23 @@ double ScoreActor::CurrentHeight() {
   return results.fridge_h;
 }
 
+double ScoreActor::CurrentGoalHeight() {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
+    LOG(ERROR, "Reading from fridge status queue failed.\n");
+    return 0.0;
+  }
+
+  ::aos::util::ElevatorArmKinematics::KinematicResult results;
+  kinematics_.ForwardKinematic(fridge_queue.status->goal_height,
+                               fridge_queue.status->goal_angle, 0.0, 0.0,
+                               &results);
+
+  return results.fridge_h;
+}
+
 double ScoreActor::CurrentX() {
   fridge_queue.status.FetchLatest();
-
   if (!fridge_queue.status.get()) {
     LOG(ERROR, "Reading from fridge status queue failed.\n");
     return false;
@@ -183,21 +178,18 @@ double ScoreActor::CurrentX() {
 
 bool ScoreActor::SendGoal(double x, double y, bool grabbers_enabled) {
   auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
-
-  // new_fridge_goal->max_velocity = elevator_parameters.velocity;
-  // new_fridge_goal->max_acceleration = elevator_parameters.acceleration;
   new_fridge_goal->x = x;
   new_fridge_goal->y = y;
   new_fridge_goal->profiling_type = 1;
-  // new_fridge_goal->velocity = velocity;
-  // new_fridge_goal->max_angular_velocity = arm_parameters.velocity;
-  // new_fridge_goal->max_angular_acceleration = arm_parameters.acceleration;
-  // new_fridge_goal->angle = angle;
   new_fridge_goal->angular_velocity = 0.0;
   new_fridge_goal->grabbers.top_front = grabbers_enabled;
   new_fridge_goal->grabbers.top_back = grabbers_enabled;
   new_fridge_goal->grabbers.bottom_front = grabbers_enabled;
   new_fridge_goal->grabbers.bottom_back = grabbers_enabled;
+  new_fridge_goal->max_x_velocity = kMaxXVelocity;
+  new_fridge_goal->max_y_velocity = kMaxYVelocity;
+  new_fridge_goal->max_x_acceleration = kMaxXAcceleration;
+  new_fridge_goal->max_y_acceleration = kMaxYAcceleration;
 
   return new_fridge_goal.Send();
 }
