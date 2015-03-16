@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     };
     int option_index = 0;
 
-    const int c = getopt_long(argc, argv, "n:l:p:fts:m:o:h",
+    const int c = getopt_long(argc, argv, "N:n:l:p:fts:m:o:h",
                     long_options, &option_index);
     if (c == -1) { // if we're at the end
       break;
