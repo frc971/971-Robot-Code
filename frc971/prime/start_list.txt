@@ -1,6 +1,7 @@
 can_pickup_action
 joystick_reader
 pickup_action
+score_action
 stack_action
 wpilib_interface
 binary_log_writer
@@ -11,3 +12,4 @@ lift_action
 stack_and_lift_action
 stack_and_hold_action
 held_to_lift_action
+drivetrain

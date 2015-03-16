@@ -24,6 +24,7 @@ class ScoreActor
   bool MoveStackIntoPosition(const ScoreParams &params);
   bool SendGoal(double x, double y, bool grabbers_enabled);
   double CurrentHeight();
+  double CurrentGoalHeight();
   double CurrentX();
 };
 
