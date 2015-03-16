@@ -13,11 +13,13 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/actors/drivetrain_actor.h"
 #include "frc971/control_loops/claw/claw.q.h"
+#include "frc971/control_loops/fridge/fridge.q.h"
 #include "frc971/actors/pickup_actor.h"
 #include "frc971/actors/stack_actor.h"
 
 using ::aos::time::Time;
 using ::frc971::control_loops::claw_queue;
+using ::frc971::control_loops::fridge_queue;
 
 namespace frc971 {
 namespace autonomous {
@@ -117,7 +119,7 @@ void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
 }
 
 ::std::unique_ptr<::frc971::actors::DrivetrainAction> SetDriveGoal(
-    double distance, bool slow_acceleration, double maximum_velocity = 1.7,
+    double distance, bool slow_acceleration, double maximum_velocity = 0.7,
     double theta = 0) {
   LOG(INFO, "Driving to %f\n", distance);
 
@@ -127,7 +129,7 @@ void WaitUntilDoneOrCanceled(aos::common::actions::Action *action) {
   params.y_offset = distance;
   params.theta_offset = theta;
   params.maximum_velocity = maximum_velocity;
-  params.maximum_acceleration = slow_acceleration ? 2.5 : 3.0;
+  params.maximum_acceleration = slow_acceleration ? 0.3 : 0.2;
   auto drivetrain_action = actors::MakeDrivetrainAction(params);
 
   drivetrain_action->Start();
@@ -191,13 +193,58 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
   InitializeEncoders();
 
-  if (true) {
-    // basic can push out of the way
-    SetClawState(0.0, -7.0, true);
-    drive = SetDriveGoal(1.0, false);
-    WaitUntilDoneOrCanceled(drive.get());
-    SetClawState(0.0, 0.0, true);
+  {
+    auto new_fridge_goal = fridge_queue.goal.MakeMessage();
+    new_fridge_goal->max_velocity = 0.0;
+    new_fridge_goal->max_acceleration = 0.0;
+    new_fridge_goal->profiling_type = 0;
+    new_fridge_goal->height = 0.3;
+    new_fridge_goal->velocity = 0.0;
+    new_fridge_goal->max_angular_velocity = 0.0;
+    new_fridge_goal->max_angular_acceleration = 0.0;
+    new_fridge_goal->angle = 0.0;
+    new_fridge_goal->angular_velocity = 0.0;
+    new_fridge_goal->grabbers.top_front = true;
+    new_fridge_goal->grabbers.top_back = true;
+    new_fridge_goal->grabbers.bottom_front = true;
+    new_fridge_goal->grabbers.bottom_back = true;
+
+    if (!new_fridge_goal.Send()) {
+      LOG(ERROR, "Sending fridge goal failed.\n");
+      return;
+    }
   }
+
+  // Pick up the tote.
+  SetClawState(0.0, 7.0, true);
+  if (ShouldExitAuto()) return;
+  time::SleepFor(time::Time::InSeconds(0.1));
+  if (ShouldExitAuto()) return;
+
+  // now pick it up
+  {
+    actors::PickupParams params;
+    // Lift to here initially.
+    params.pickup_angle = 0.9;
+    // Start sucking here
+    params.suck_angle = 0.8;
+    // Go back down to here to finish sucking.
+    params.suck_angle_finish = 0.4;
+    // Pack the box back in here.
+    params.pickup_finish_angle = kClawTotePackAngle;
+    params.intake_time = 0.8;
+    params.intake_voltage = 7.0;
+    pickup = actors::MakePickupAction(params);
+    pickup->Start();
+    WaitUntilDoneOrCanceled(pickup.get());
+  }
+  if (ShouldExitAuto()) return;
+
+  drive = SetDriveGoal(1.0, false);
+  WaitUntilDoneOrCanceled(drive.get());
+
+  SetClawState(0.0, 0.0, true);
+  return;
 
   if (ShouldExitAuto()) return;
 
@@ -214,23 +261,6 @@ void HandleAuto() {
     SetClawState(0.0, 0.0, true);
     if (ShouldExitAuto()) return;
 
-    // now pick it up
-    {
-      actors::PickupParams params;
-      // Lift to here initially.
-      params.pickup_angle = 0.9;
-      // Start sucking here
-      params.suck_angle = 0.8;
-      // Go back down to here to finish sucking.
-      params.suck_angle_finish = 0.4;
-      // Pack the box back in here.
-      params.pickup_finish_angle = kClawTotePackAngle;
-      params.intake_time = 0.8;
-      params.intake_voltage = 7.0;
-      pickup = actors::MakePickupAction(params);
-      WaitUntilDoneOrCanceled(pickup.get());
-    }
-    if (ShouldExitAuto()) return;
 
     // we should have the tote, now stack it
     {

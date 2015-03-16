@@ -27,6 +27,7 @@
         '<(DEPTH)/frc971/actors/actors.gyp:drivetrain_action_lib',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(DEPTH)/frc971/control_loops/claw/claw.gyp:claw_queue',
+        '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(DEPTH)/frc971/actors/actors.gyp:stack_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:pickup_action_lib',
       ],

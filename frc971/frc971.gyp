@@ -44,6 +44,7 @@
         '<(DEPTH)/frc971/actors/actors.gyp:lift_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:held_to_lift_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:can_pickup_action_lib',
+        '<(DEPTH)/frc971/actors/actors.gyp:score_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:horizontal_can_pickup_action_lib',
         '<(DEPTH)/frc971/actors/actors.gyp:fridge_profile_lib',
       ],

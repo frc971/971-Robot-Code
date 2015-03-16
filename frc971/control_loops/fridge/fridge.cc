@@ -234,6 +234,9 @@ double Fridge::arm_zeroing_velocity() {
   } else if (arm_zeroing_velocity_ < 0.0 && estimated_arm() < average_arm) {
     arm_zeroing_velocity_ = kArmZeroingVelocity;
   }
+
+  LOG(INFO, "current %f, avg %f, velocity %f\n", estimated_arm(), average_arm,
+      arm_zeroing_velocity_);
   return arm_zeroing_velocity_;
 }
 
@@ -514,7 +517,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         right_arm(), values.max_allowed_left_right_arm_difference);
 
     // Indicate an ESTOP condition and stop the motors.
-    state_ = ESTOP;
+    if (output) {
+      state_ = ESTOP;
+    }
     disable = true;
   }
 
@@ -525,7 +530,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         values.max_allowed_left_right_elevator_difference);
 
     // Indicate an ESTOP condition and stop the motors.
-    state_ = ESTOP;
+    if (output) {
+      state_ = ESTOP;
+    }
     disable = true;
   }
 
@@ -563,7 +570,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       LOG(ERROR, "Left arm at %f out of bounds [%f, %f], ESTOPing\n",
           left_arm(), values.fridge.arm.lower_hard_limit,
           values.fridge.arm.upper_hard_limit);
-      state_ = ESTOP;
+      if (output) {
+        state_ = ESTOP;
+      }
     }
 
     if (right_arm() >= values.fridge.arm.upper_hard_limit ||
@@ -571,23 +580,27 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       LOG(ERROR, "Right arm at %f out of bounds [%f, %f], ESTOPing\n",
           right_arm(), values.fridge.arm.lower_hard_limit,
           values.fridge.arm.upper_hard_limit);
-      state_ = ESTOP;
+      if (output) {
+        state_ = ESTOP;
+      }
     }
 
-    if (left_elevator() >= values.fridge.elevator.upper_hard_limit ||
-        left_elevator() <= values.fridge.elevator.lower_hard_limit) {
+    if (left_elevator() >= values.fridge.elevator.upper_hard_limit) {
       LOG(ERROR, "Left elevator at %f out of bounds [%f, %f], ESTOPing\n",
           left_elevator(), values.fridge.elevator.lower_hard_limit,
           values.fridge.elevator.upper_hard_limit);
-      state_ = ESTOP;
+      if (output) {
+        state_ = ESTOP;
+      }
     }
 
-    if (right_elevator() >= values.fridge.elevator.upper_hard_limit ||
-        right_elevator() <= values.fridge.elevator.lower_hard_limit) {
+    if (right_elevator() >= values.fridge.elevator.upper_hard_limit) {
       LOG(ERROR, "Right elevator at %f out of bounds [%f, %f], ESTOPing\n",
           right_elevator(), values.fridge.elevator.lower_hard_limit,
           values.fridge.elevator.upper_hard_limit);
-      state_ = ESTOP;
+      if (output) {
+        state_ = ESTOP;
+      }
     }
   }
 

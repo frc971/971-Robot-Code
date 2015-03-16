@@ -60,8 +60,8 @@ const double kElevatorGearboxOutputRadianDistance =
 
 const double kArmZeroingHeight = 0.2;
 
-const double kMaxAllowedLeftRightArmDifference = 0.04;       // radians
-const double kMaxAllowedLeftRightElevatorDifference = 0.01;  // meters
+const double kMaxAllowedLeftRightArmDifference = 0.12;  // radians
+const double kMaxAllowedLeftRightElevatorDifference = 0.04;  // meters
 
 const Values::ClawGeometry kClawGeometry{
     // Horizontal distance from the center of the grabber to the end.

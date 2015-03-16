@@ -19,6 +19,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "frc971/actors/pickup_actor.h"
 #include "frc971/actors/stack_actor.h"
+#include "frc971/actors/score_actor.h"
 #include "frc971/actors/stack_and_lift_actor.h"
 #include "frc971/actors/stack_and_hold_actor.h"
 #include "frc971/actors/held_to_lift_actor.h"
@@ -73,16 +74,17 @@ const ButtonLocation kQuickTurn(1, 5);
 const ButtonLocation kRollersIn(4, 5);
 const ButtonLocation kClawToggle(4, 1);
 
-const POVLocation kElevatorCanUp(3, 0);
+const POVLocation kElevatorCanUp(4, 0);
 
 // POV stick 3, 180
 const POVLocation kCanPickup(4, 180);
 const ButtonLocation kToteChute(4, 6);
 const ButtonLocation kStackAndLift(4, 7);
-const ButtonLocation kStackAndHold(2, 5);
+const ButtonLocation kStackAndHold(3, 5);
 
 // Pull in the 6th tote.
-const ButtonLocation kSixthTote(4, 10);
+//const ButtonLocation kSixthTote(4, 10);
+const ButtonLocation kCanUp(4, 10);
 
 const ButtonLocation kHeldToLift(4, 11);
 const ButtonLocation kPickup(4, 9);
@@ -90,19 +92,19 @@ const ButtonLocation kPickup(4, 9);
 const ButtonLocation kStack(4, 2);
 
 // Move the fridge out with the stack in preparation for scoring.
-// PosEdge(4, 8)
+const ButtonLocation kScore(4, 8);
 
 // Release the stack and retract back in.
-// PosEdge(4, 12)
+const ButtonLocation kRetractFromScore(4, 12);
 
-const POVLocation kFridgeOpen(4, 270);
+const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
 
 // Set stack down in the bot.
-// TODO(austin): Make this work.
-//const POVLocation kSetStackDownAndHold(4, 90);
+const POVLocation kSetStackDownAndHold(4, 90);
 
 const double kClawTotePackAngle = 0.95;
+const double kArmRaiseLowerClearance = -0.08;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -169,9 +171,9 @@ class Reader : public ::aos::input::JoystickInput {
     // Horizontal can pickup.
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
-      params.elevator_height = 0.3;
-      params.pickup_angle = 0.54;
-      params.suck_time = 0.05;
+      params.elevator_height = 0.4;
+      params.pickup_angle = 0.40;
+      params.suck_time = 0.08;
       params.suck_power = 8.0;
 
       params.claw_settle_time = 0.05;
@@ -179,8 +181,9 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_full_lift_angle = 1.35;
       params.claw_end_angle = 0.5;
 
-      params.elevator_end_height = 0.68;
-      params.arm_end_angle = 0.2;
+      // End low so we don't drop it.
+      params.elevator_end_height = 0.3;
+      params.arm_end_angle = 0.0;
       action_queue_.EnqueueAction(
           actors::MakeHorizontalCanPickupAction(params));
       fridge_closed_ = true;
@@ -193,8 +196,9 @@ class Reader : public ::aos::input::JoystickInput {
       params.pickup_angle = -0.93;
       params.pickup_height = 0.265;
       params.lift_height = 0.65;
-      params.end_height = 0.68;
-      params.end_angle = 0.2;
+      // End low so the can is supported.
+      params.end_height = 0.3;
+      params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
       fridge_closed_ = true;
     }
@@ -213,6 +217,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.stack_params.claw_out_angle = 0.6;
       params.stack_params.bottom = 0.020;
       params.stack_params.over_box_before_place_height = 0.39;
+      params.stack_params.arm_clearance = kArmRaiseLowerClearance;
 
       params.grab_after_stack = true;
       params.clamp_pause_time = 0.1;
@@ -224,15 +229,25 @@ class Reader : public ::aos::input::JoystickInput {
       action_queue_.EnqueueAction(actors::MakeStackAndLiftAction(params));
     }
 
-    if (data.PosEdge(kStackAndHold)) {
+    if (data.PosEdge(kStackAndHold) || data.PosEdge(kSetStackDownAndHold)) {
       actors::StackAndHoldParams params;
       params.bottom = 0.020;
       params.over_box_before_place_height = 0.39;
 
-      params.arm_clearance = -0.05;
+      params.arm_clearance = kArmRaiseLowerClearance;
       params.clamp_pause_time = 0.25;
+      params.claw_clamp_angle = kClawTotePackAngle;
 
       params.hold_height = 0.68;
+      params.claw_out_angle = 0.6;
+
+      if (data.PosEdge(kSetStackDownAndHold)) {
+        params.place_not_stack = true;
+        params.clamp_pause_time = 0.1;
+        //params.claw_clamp_angle = kClawTotePackAngle - 0.5;
+      } else {
+        params.place_not_stack = false;
+      }
 
       action_queue_.EnqueueAction(actors::MakeStackAndHoldAction(params));
       fridge_closed_ = true;
@@ -244,8 +259,9 @@ class Reader : public ::aos::input::JoystickInput {
     // Lower the fridge from holding the stack, grab the stack, and then lift.
     if (data.PosEdge(kHeldToLift)) {
       actors::HeldToLiftParams params;
-      params.arm_clearance = -0.05;
+      params.arm_clearance = kArmRaiseLowerClearance;
       params.clamp_pause_time = 0.1;
+      params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
       params.claw_out_angle = 0.6;
       params.lift_params.lift_height = 0.45;
@@ -253,6 +269,16 @@ class Reader : public ::aos::input::JoystickInput {
       fridge_closed_ = true;
 
       action_queue_.EnqueueAction(actors::MakeHeldToLiftAction(params));
+    }
+
+    // Lift the can up.
+    if (data.PosEdge(kCanUp)) {
+      actors::LiftParams params;
+      params.lift_height = 0.68;
+      params.lift_arm = 0.3;
+      fridge_closed_ = true;
+
+      action_queue_.EnqueueAction(actors::MakeLiftAction(params));
     }
 
     // Pick up a tote from the ground and put it in the bottom of the bot.
@@ -276,24 +302,29 @@ class Reader : public ::aos::input::JoystickInput {
       actors::StackParams params;
       params.claw_out_angle = 0.6;
       params.bottom = 0.020;
+      params.only_place = false;
+      params.arm_clearance = kArmRaiseLowerClearance;
       params.over_box_before_place_height = 0.39;
       action_queue_.EnqueueAction(actors::MakeStackAction(params));
       claw_rollers_closed_ = true;
+      fridge_closed_ = true;
     }
 
-    // TODO(austin): Set down?
+    if (data.PosEdge(kScore)) {
+      actors::ScoreParams params;
+      params.place_the_stack = false;
+      action_queue_.EnqueueAction(actors::MakeScoreAction(params));
+    }
 
-    // TODO(austin): Score!
-
-    // TODO(austin): Release.
-
-    // Unknown actions...
-
-    //if (data.PosEdge(kFridgeClosed)) {
-      //fridge_closed_ = true;
-    //}
-    if (data.PosEdge(kFridgeOpen)) {
+    if (data.PosEdge(kRetractFromScore)) {
+      actors::ScoreParams params;
+      params.place_the_stack = true;
+      action_queue_.EnqueueAction(actors::MakeScoreAction(params));
       fridge_closed_ = false;
+    }
+
+    if (data.PosEdge(kFridgeToggle)) {
+      fridge_closed_ = !fridge_closed_;
     }
 
     if (data.PosEdge(ControlBit::kEnabled)) {
@@ -355,6 +386,8 @@ class Reader : public ::aos::input::JoystickInput {
         if (!claw_queue.goal.MakeWithBuilder()
                  .angle(claw_goal_)
                  .rollers_closed(claw_rollers_closed_)
+                 .max_velocity(4.0)
+                 .max_acceleration(6.0)
                  .intake(intake_power)
                  .Send()) {
           LOG(ERROR, "Sending claw goal failed.\n");
