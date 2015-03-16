@@ -384,6 +384,7 @@
       'dependencies': [
         'fridge_profile_lib',
         'stack_and_hold_action_queue',
+        'stack_action_lib',
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/actions/actions.gyp:action_lib',

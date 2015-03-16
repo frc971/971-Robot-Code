@@ -11,10 +11,9 @@
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kReallySlowArmMove{0.75, 0.75};
+constexpr ProfileParams kArmWithStackMove{1.75, 0.60};
 constexpr ProfileParams kSlowArmMove{1.3, 1.4};
 constexpr ProfileParams kSlowElevatorMove{0.5, 3.0};
-constexpr ProfileParams kReallySlowElevatorMove{0.10, 1.0};
 
 constexpr ProfileParams kFastArmMove{0.8, 4.0};
 constexpr ProfileParams kFastElevatorMove{1.2, 5.0};
@@ -26,16 +25,33 @@ StackActor::StackActor(StackActionQueueGroup *queues)
 bool StackActor::RunAction(const StackParams &params) {
   const auto &values = constants::GetValues();
 
+  control_loops::fridge_queue.status.FetchLatest();
+  if (!control_loops::fridge_queue.status.get()) {
+    LOG(ERROR, "Got no fridge status packet.\n");
+    return false;
+  }
+
+  // If we are really high, probably have a can.  Move over before down.
+  if (control_loops::fridge_queue.status->goal_height >
+      params.over_box_before_place_height + 0.1) {
+    // Set the current stack down on top of the bottom box.
+    DoFridgeProfile(control_loops::fridge_queue.status->goal_height, 0.0,
+                    kSlowElevatorMove, kArmWithStackMove, true);
+    if (ShouldCancel()) return true;
+  }
+
   // Set the current stack down on top of the bottom box.
   DoFridgeProfile(params.over_box_before_place_height, 0.0, kSlowElevatorMove,
-                  kReallySlowArmMove, true);
+                  kArmWithStackMove, true);
   if (ShouldCancel()) return true;
   // Set down on the box.
   DoFridgeProfile(params.bottom + values.tote_height, 0.0, kSlowElevatorMove,
                   kSlowArmMove, true);
   if (ShouldCancel()) return true;
+
   // Clamp.
-  {
+  if (!params.only_place) {
+    // Move the claw out of the way only if we are supposed to pick up.
     bool send_goal = true;
     control_loops::claw_queue.status.FetchLatest();
     if (control_loops::claw_queue.status.get()) {
@@ -57,7 +73,20 @@ bool StackActor::RunAction(const StackParams &params) {
       message.Send();
     }
   }
-  DoFridgeProfile(params.bottom, -0.05, kFastElevatorMove, kFastArmMove, false);
+
+  if (params.only_place) {
+    DoFridgeProfile(params.bottom + values.tote_height, 0.0, kFastElevatorMove,
+                    kFastArmMove, false);
+    // Finish early if we aren't supposed to grab.
+    return true;
+  }
+
+  DoFridgeProfile(params.bottom + values.tote_height, params.arm_clearance,
+                  kFastElevatorMove, kFastArmMove, false);
+
+  if (ShouldCancel()) return true;
+  DoFridgeProfile(params.bottom, params.arm_clearance, kFastElevatorMove,
+                  kFastArmMove, false);
   if (ShouldCancel()) return true;
   DoFridgeProfile(params.bottom, 0.0, kFastElevatorMove, kFastArmMove, false);
   if (ShouldCancel()) return true;

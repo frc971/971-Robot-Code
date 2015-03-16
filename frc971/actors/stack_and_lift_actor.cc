@@ -19,8 +19,10 @@ StackAndLiftActor::StackAndLiftActor(StackAndLiftActionQueueGroup *queues)
 
 bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
   {
+    StackParams stack_params = params.stack_params;
+    stack_params.only_place = false;
     ::std::unique_ptr<StackAction> stack_action =
-        MakeStackAction(params.stack_params);
+        MakeStackAction(stack_params);
     stack_action->Start();
     while (stack_action->Running()) {
       ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),

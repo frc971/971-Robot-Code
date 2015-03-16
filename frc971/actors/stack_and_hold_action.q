@@ -5,12 +5,18 @@ import "frc971/actors/stack_action_params.q";
 
 // Parameters to send with start.
 struct StackAndHoldParams {
+  // If true, there is no tote on the tray, and we should place instead.
+  bool place_not_stack;
+
   double claw_out_angle;
   // The height just above the box to move before lowering.
   double over_box_before_place_height;
 
   // Bottom position.
   double bottom;
+
+  // If we are placing, clamp the stack with the claw.
+  double claw_clamp_angle;
 
   // Amount to wait to release.
   double clamp_pause_time;

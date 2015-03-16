@@ -12,6 +12,8 @@ struct HeldToLiftParams {
   double arm_clearance;
   // End height.
   double bottom_height;
+  // Amount to wait for the elevator to settle before lifting.
+  double before_lift_settle_time;
   // Amount to wait to clamp.
   double clamp_pause_time;
 
