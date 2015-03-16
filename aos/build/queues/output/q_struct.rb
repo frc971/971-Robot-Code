@@ -85,8 +85,11 @@ class Target::MessageStructElement < Target::Node
     @members.each do |elem|
       if elem.respond_to? :create_EqualsNoTime
         member_func.suite << "if (!other.#{elem.name}.EqualsNoTime(#{elem.name})) return false;"
+      elsif elem.respond_to?(:length) && elem.member_type.respond_to?(:create_EqualsNoTime)
+        0.upto(elem.length - 1) do |i|
+          member_func.suite << "if (!other.#{elem.name}[#{i}].EqualsNoTime(#{elem.name}[#{i}])) return false;"
+        end
       else
-        puts elem.class.to_s + ' ' + elem.name.to_s
         member_func.suite << "if (other.#{elem.name} != #{elem.name}) return false;"
       end
     end
