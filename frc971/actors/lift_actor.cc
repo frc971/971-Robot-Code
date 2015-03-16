@@ -24,7 +24,6 @@ bool LiftActor::RunAction(const LiftParams &params) {
   double goal_height = params.lift_height;
   double goal_angle = 0.0;
 
-
   if (!StartFridgeProfile(
           params.lift_height, 0.0, kElevatorMove, kArmMove,
           control_loops::fridge_queue.status->grabbers.top_front,
