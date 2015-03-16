@@ -77,6 +77,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
           (control_loops::fridge_queue.status->goal_velocity *
            ::std::abs(control_loops::fridge_queue.status->goal_velocity)) /
               (2.0 * new_fridge_goal->max_acceleration);
+      height = new_fridge_goal->height;
       new_fridge_goal->velocity = 0.0;
       new_fridge_goal->max_angular_velocity = arm_parameters.velocity;
       new_fridge_goal->max_angular_acceleration = arm_parameters.acceleration;
@@ -86,6 +87,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
            ::std::abs(
                control_loops::fridge_queue.status->goal_angular_velocity)) /
               (2.0 * new_fridge_goal->max_angular_acceleration);
+      angle = new_fridge_goal->angle;
       new_fridge_goal->angular_velocity = 0.0;
       new_fridge_goal->grabbers.top_front = top_grabbers;
       new_fridge_goal->grabbers.top_back = top_grabbers;
