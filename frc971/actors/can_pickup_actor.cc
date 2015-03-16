@@ -18,6 +18,20 @@ CanPickupActor::CanPickupActor(CanPickupActionQueueGroup *queues)
     : FridgeActorBase<CanPickupActionQueueGroup>(queues) {}
 
 bool CanPickupActor::RunAction(const CanPickupParams &params) {
+  // Make sure the claw is down.
+  {
+    auto message = control_loops::claw_queue.goal.MakeMessage();
+    message->angle = 0.0;
+    message->angular_velocity = 0.0;
+    message->intake = 0.0;
+    message->rollers_closed = true;
+    message->max_velocity = 6.0;
+    message->max_acceleration = 10.0;
+
+    LOG_STRUCT(DEBUG, "Sending claw down goal", *message);
+    message.Send();
+  }
+
   // Go around the can.
   DoFridgeProfile(params.pickup_height, params.pickup_angle, kElevatorMove,
                   kArmMove, false);
