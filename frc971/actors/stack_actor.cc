@@ -11,7 +11,8 @@
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kSlowArmMove{0.8, 1.4};
+constexpr ProfileParams kReallySlowArmMove{0.75, 0.75};
+constexpr ProfileParams kSlowArmMove{1.3, 1.4};
 constexpr ProfileParams kSlowElevatorMove{0.5, 3.0};
 constexpr ProfileParams kReallySlowElevatorMove{0.10, 1.0};
 
@@ -26,12 +27,12 @@ bool StackActor::RunAction(const StackParams &params) {
   const auto &values = constants::GetValues();
 
   // Set the current stack down on top of the bottom box.
-  DoFridgeProfile(params.over_box_before_place_height, 0.0, kSlowArmMove,
-                  kReallySlowElevatorMove, true);
+  DoFridgeProfile(params.over_box_before_place_height, 0.0, kSlowElevatorMove,
+                  kReallySlowArmMove, true);
   if (ShouldCancel()) return true;
   // Set down on the box.
-  DoFridgeProfile(params.bottom + values.tote_height, 0.0, kSlowArmMove,
-                  kSlowElevatorMove, true);
+  DoFridgeProfile(params.bottom + values.tote_height, 0.0, kSlowElevatorMove,
+                  kSlowArmMove, true);
   if (ShouldCancel()) return true;
   // Clamp.
   {
@@ -56,11 +57,11 @@ bool StackActor::RunAction(const StackParams &params) {
       message.Send();
     }
   }
-  DoFridgeProfile(params.bottom, -0.05, kFastArmMove, kFastElevatorMove, false);
+  DoFridgeProfile(params.bottom, -0.05, kFastElevatorMove, kFastArmMove, false);
   if (ShouldCancel()) return true;
-  DoFridgeProfile(params.bottom, 0.0, kFastArmMove, kFastElevatorMove, false);
+  DoFridgeProfile(params.bottom, 0.0, kFastElevatorMove, kFastArmMove, false);
   if (ShouldCancel()) return true;
-  aos::time::SleepFor(aos::time::Time::InMS(100));
+  aos::time::SleepFor(aos::time::Time::InMS(200));
 
   return true;
 }
