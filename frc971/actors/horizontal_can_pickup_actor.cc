@@ -13,10 +13,13 @@ namespace frc971 {
 namespace actors {
 namespace {
 constexpr double kClawPickupVelocity = 3.00;
-constexpr double kClawPickupAcceleration = 4.0;
+constexpr double kClawPickupAcceleration = 2.0;
 
 constexpr ProfileParams kArmMove{1.0, 1.6};
 constexpr ProfileParams kElevatorMove{0.6, 2.2};
+
+constexpr ProfileParams kFastArmMove{2.0, 3.0};
+constexpr ProfileParams kFastElevatorMove{1.0, 3.0};
 
 constexpr double kAngleEpsilon = 0.10;
 
@@ -57,9 +60,10 @@ void HorizontalCanPickupActor::MoveArm(double angle, double intake_power) {
 bool HorizontalCanPickupActor::RunAction(
     const HorizontalCanPickupParams &params) {
   // Go around the can.
-  DoFridgeProfile(params.elevator_height, 0.0, kElevatorMove, kArmMove, false,
-                  false, true);
-  if (ShouldCancel()) return true;
+  if (!StartFridgeProfile(params.elevator_height, 0.0, kFastElevatorMove,
+                          kFastArmMove, false, false, true)) {
+    return true;
+  }
 
   MoveArm(params.pickup_angle, 0.0);
 
@@ -83,6 +87,17 @@ bool HorizontalCanPickupActor::RunAction(
 
   if (!WaitOrCancel(aos::time::Time::InSeconds(params.claw_settle_time))) {
     return true;
+  }
+
+  while (true) {
+    ProfileStatus status =
+        IterateProfile(params.elevator_height, 0.0, kFastElevatorMove,
+                       kFastArmMove, false, false, true);
+    if (status == DONE) {
+      break;
+    } else if (status == CANCELED) {
+      return true;
+    }
   }
 
   MoveArm(params.claw_full_lift_angle, 0.0);

@@ -49,22 +49,40 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
       message.Send();
     }
   }
-  // Lift the box straight up.
-  DoFridgeProfile(params.bottom_height, params.arm_clearance, kFastElevatorMove,
-                  kFastArmMove, false);
-  if (ShouldCancel()) return true;
 
-  // Move it back to the storage location.
-  DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, false);
-  if (ShouldCancel()) return true;
+  control_loops::fridge_queue.status.FetchLatest();
+  if (!control_loops::fridge_queue.status.get()) {
+    return false;
+  }
 
-  // Clamp
-  DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, true);
-  if (ShouldCancel()) return true;
+  if (control_loops::fridge_queue.status->goal_height != params.bottom_height ||
+      control_loops::fridge_queue.status->goal_angle != 0.0) {
+    // Lower with the fridge clamps open and move it forwards slightly to clear.
+    DoFridgeProfile(control_loops::fridge_queue.status->goal_height,
+                    params.arm_clearance, kFastElevatorMove, kFastArmMove,
+                    false);
+    if (ShouldCancel()) return true;
 
+    DoFridgeProfile(params.bottom_height, params.arm_clearance,
+                    kFastElevatorMove, kFastArmMove, false);
+    if (ShouldCancel()) return true;
 
-  if (!WaitOrCancel(aos::time::Time::InSeconds(params.clamp_pause_time))) {
-    return true;
+    // Move it back to the storage location.
+    DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, false);
+    if (ShouldCancel()) return true;
+
+    if (!WaitOrCancel(
+            aos::time::Time::InSeconds(params.before_lift_settle_time))) {
+      return true;
+    }
+
+    // Clamp
+    DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, true);
+    if (ShouldCancel()) return true;
+
+    if (!WaitOrCancel(aos::time::Time::InSeconds(params.clamp_pause_time))) {
+      return true;
+    }
   }
 
   {
