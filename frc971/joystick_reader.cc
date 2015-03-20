@@ -93,13 +93,12 @@ const ButtonLocation kStack(4, 2);
 
 // Move the fridge out with the stack in preparation for scoring.
 const ButtonLocation kScore(4, 8);
-// Release the stack and retract back in.
-const ButtonLocation kRetractFromScore(4, 12);
-
 const ButtonLocation kCoopTop(3, 8);
 const ButtonLocation kCoopTopRetract(3, 7);
 const ButtonLocation kCoopBottom(3, 6);
 const ButtonLocation kCoopBottomRetract(3, 9);
+
+const ButtonLocation kRetractFromScore(4, 12);
 
 const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
@@ -114,9 +113,9 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() : was_running_(false) {}
 
-  static actors::ScoreParams MakeScoreParams(bool place_the_stack) {
+  static actors::ScoreParams MakeScoreParams() {
     actors::ScoreParams r;
-    r.place_the_stack = place_the_stack;
+    r.move_the_stack = r.place_the_stack = true;
     r.upper_move_height = 0.14;
     r.begin_horizontal_move_height = 0.13;
     r.horizontal_move_target = -0.7;
@@ -127,6 +126,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   static actors::ScoreParams MakeCoopTopParams(bool place_the_stack) {
     actors::ScoreParams r;
+    r.move_the_stack = !place_the_stack;
     r.place_the_stack = place_the_stack;
     r.upper_move_height = 0.52;
     r.begin_horizontal_move_height = 0.5;
@@ -138,6 +138,7 @@ class Reader : public ::aos::input::JoystickInput {
 
   static actors::ScoreParams MakeCoopBottomParams(bool place_the_stack) {
     actors::ScoreParams r;
+    r.move_the_stack = !place_the_stack;
     r.place_the_stack = place_the_stack;
     r.upper_move_height = 0.17;
     r.begin_horizontal_move_height = 0.16;
@@ -349,11 +350,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kScore)) {
       action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeScoreParams(false)));
-    }
-    if (data.PosEdge(kRetractFromScore)) {
-      action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeScoreParams(true)));
+          actors::MakeScoreAction(MakeScoreParams()));
       fridge_closed_ = false;
     }
 
