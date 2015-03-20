@@ -4,6 +4,7 @@
 #include "frc971/actors/lift_actor.h"
 #include "frc971/constants.h"
 #include "frc971/actors/fridge_profile_lib.h"
+#include "frc971/control_loops/claw/claw.q.h"
 
 namespace frc971 {
 namespace actors {
@@ -45,6 +46,18 @@ bool LiftActor::RunAction(const LiftParams &params) {
         }
         goal_angle = params.lift_arm;
         has_started_back = true;
+        if (params.pack_claw) {
+          auto message = control_loops::claw_queue.goal.MakeMessage();
+          message->angle = params.pack_claw_angle;
+          message->angular_velocity = 0.0;
+          message->intake = 0.0;
+          message->rollers_closed = true;
+          message->max_velocity = 6.0;
+          message->max_acceleration = 10.0;
+
+          LOG_STRUCT(DEBUG, "Sending claw goal", *message);
+          message.Send();
+        }
       }
     }
 

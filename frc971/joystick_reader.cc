@@ -110,6 +110,11 @@ const POVLocation kSetStackDownAndHold(4, 90);
 const double kClawTotePackAngle = 0.95;
 const double kArmRaiseLowerClearance = -0.08;
 
+// Used to be 0.45.
+const double kStackUpHeight = 0.55;
+// Used to be 0.3.
+const double kStackUpArm = 0.1;
+
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() : was_running_(false) {}
@@ -258,8 +263,8 @@ class Reader : public ::aos::input::JoystickInput {
 
       params.grab_after_stack = true;
       params.clamp_pause_time = 0.1;
-      params.lift_params.lift_height = 0.45;
-      params.lift_params.lift_arm = 0.3;
+      params.lift_params.lift_height = kStackUpHeight;
+      params.lift_params.lift_arm = kStackUpArm;
       params.grab_after_lift = true;
       fridge_closed_ = true;
 
@@ -301,8 +306,8 @@ class Reader : public ::aos::input::JoystickInput {
       params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
       params.claw_out_angle = 0.6;
-      params.lift_params.lift_height = 0.45;
-      params.lift_params.lift_arm = 0.3;
+      params.lift_params.lift_height = kStackUpHeight;
+      params.lift_params.lift_arm = kStackUpArm;
       fridge_closed_ = true;
 
       action_queue_.EnqueueAction(actors::MakeHeldToLiftAction(params));
@@ -313,6 +318,8 @@ class Reader : public ::aos::input::JoystickInput {
       actors::LiftParams params;
       params.lift_height = 0.68;
       params.lift_arm = 0.3;
+      params.pack_claw = false;
+      params.pack_claw_angle = 0;
       fridge_closed_ = true;
 
       action_queue_.EnqueueAction(actors::MakeLiftAction(params));
