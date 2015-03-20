@@ -58,15 +58,13 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
     return true;
   }
 
-  enum ProfileStatus { RUNNING, DONE, CANCELING, CANCELED };
+  enum ProfileStatus { RUNNING, DONE, CANCELED };
 
   ProfileStatus IterateProfile(double height, double angle,
                                ProfileParams elevator_parameters,
                                ProfileParams arm_parameters, bool top_grabbers,
                                bool front_grabbers, bool back_grabbers) {
-    bool should_cancel = false;
     if (this->ShouldCancel()) {
-      should_cancel = true;
       LOG(INFO, "Canceling fridge movement\n");
       auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
       new_fridge_goal->profiling_type = 0;
@@ -96,8 +94,8 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
 
       if (!new_fridge_goal.Send()) {
         LOG(ERROR, "Failed to send fridge goal\n");
-        return CANCELED;
       }
+      return CANCELED;
     }
     control_loops::fridge_queue.status.FetchAnother();
 
@@ -118,10 +116,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
         ::std::abs(control_loops::fridge_queue.status->goal_velocity) <
             kProfileError) {
       LOG(INFO, "Profile done.\n");
-      if (should_cancel) {
-        LOG(INFO, "Canceling.\n");
-        return CANCELED;
-      } else if (::std::abs(control_loops::fridge_queue.status->angle - angle) <
+      if (::std::abs(control_loops::fridge_queue.status->angle - angle) <
                      kAngleEpsilon &&
                  ::std::abs(control_loops::fridge_queue.status->height -
                             height) < kHeightEpsilon) {
@@ -130,11 +125,7 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
       }
     }
 
-    if (should_cancel) {
-      return CANCELING;
-    } else {
-      return RUNNING;
-    }
+    return RUNNING;
   }
 
   void DoFridgeProfile(double height, double angle,
