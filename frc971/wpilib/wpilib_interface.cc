@@ -422,13 +422,16 @@ class SolenoidWriter {
           claw_pinchers_->Set(claw_->rollers_closed);
         }
       }
-      if (!pressure_switch_->Get()) {
+      const bool compressor_on = !pressure_switch_->Get();
+      LOG(DEBUG, "compressor_on=%s\n", compressor_on ? "T" : "f");
+      if (compressor_on) {
         compressor_relay_->Set(Relay::kForward);
       } else {
         compressor_relay_->Set(Relay::kOff);
       }
 
       pcm_->Flush();
+      LOG(DEBUG, "retrieved solenoids 0x%" PRIx8"\n", pcm_->GetAll());
     }
   }
 
