@@ -108,6 +108,7 @@ const POVLocation kSetStackDownAndHold(4, 90);
 
 const double kClawTotePackAngle = 0.95;
 const double kArmRaiseLowerClearance = -0.08;
+const double kClawStackClearance = 0.55;
 
 const double kStackUpHeight = 0.55;
 const double kStackUpArm = 0.1;
@@ -261,7 +262,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kStackAndLift)) {
       actors::StackAndLiftParams params;
-      params.stack_params.claw_out_angle = 0.6;
+      params.stack_params.claw_out_angle = kClawStackClearance;
       params.stack_params.bottom = 0.020;
       params.stack_params.over_box_before_place_height = 0.39;
       params.stack_params.arm_clearance = kArmRaiseLowerClearance;
@@ -286,7 +287,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_clamp_angle = kClawTotePackAngle;
 
       params.hold_height = 0.68;
-      params.claw_out_angle = 0.6;
+      params.claw_out_angle = kClawStackClearance;
 
       if (data.PosEdge(kSetStackDownAndHold)) {
         params.place_not_stack = true;
@@ -310,7 +311,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.clamp_pause_time = 0.1;
       params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
-      params.claw_out_angle = 0.6;
+      params.claw_out_angle = kClawStackClearance;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
       fridge_closed_ = true;
@@ -349,7 +350,7 @@ class Reader : public ::aos::input::JoystickInput {
     // Place stack on a tote in the tray, and grab it.
     if (data.PosEdge(kStack)) {
       actors::StackParams params;
-      params.claw_out_angle = 0.6;
+      params.claw_out_angle = kClawStackClearance;
       params.bottom = 0.020;
       params.only_place = false;
       params.arm_clearance = kArmRaiseLowerClearance;
