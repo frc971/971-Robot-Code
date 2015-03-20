@@ -397,6 +397,14 @@ class SolenoidWriter {
     claw_pinchers_ = ::std::move(s);
   }
 
+  void set_grabber_latch_release(::std::unique_ptr<BufferedSolenoid> s) {
+    grabber_latch_release_ = ::std::move(s);
+  }
+
+  void set_grabber_fold_up(::std::unique_ptr<BufferedSolenoid> s) {
+    grabber_fold_up_ = ::std::move(s);
+  }
+
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(30);
@@ -422,6 +430,13 @@ class SolenoidWriter {
           claw_pinchers_->Set(claw_->rollers_closed);
         }
       }
+
+      ::aos::joystick_state.FetchLatest();
+      grabber_latch_release_->Set(::aos::joystick_state.get() != nullptr &&
+                                  ::aos::joystick_state->autonomous);
+      grabber_fold_up_->Set(::aos::joystick_state.get() != nullptr &&
+                            ::aos::joystick_state->joysticks[1].buttons & 1);
+
       const bool compressor_on = !pressure_switch_->Get();
       LOG(DEBUG, "compressor_on=%s\n", compressor_on ? "T" : "f");
       if (compressor_on) {
@@ -444,6 +459,8 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_front_;
   ::std::unique_ptr<BufferedSolenoid> fridge_grabbers_bottom_back_;
   ::std::unique_ptr<BufferedSolenoid> claw_pinchers_;
+  ::std::unique_ptr<BufferedSolenoid> grabber_latch_release_;
+  ::std::unique_ptr<BufferedSolenoid> grabber_fold_up_;
   ::std::unique_ptr<DigitalSource> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
@@ -657,6 +674,8 @@ class WPILibRobot : public RobotBase {
     solenoid_writer.set_fridge_grabbers_bottom_front(pcm->MakeSolenoid(2));
     solenoid_writer.set_fridge_grabbers_bottom_back(pcm->MakeSolenoid(1));
     solenoid_writer.set_claw_pinchers(pcm->MakeSolenoid(4));
+    solenoid_writer.set_grabber_latch_release(pcm->MakeSolenoid(7));
+    solenoid_writer.set_grabber_fold_up(pcm->MakeSolenoid(5));
 
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
