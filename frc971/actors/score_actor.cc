@@ -12,20 +12,13 @@ using ::frc971::control_loops::fridge_queue;
 
 namespace frc971 {
 namespace actors {
-
 namespace {
-const double kUpperMoveHeight = 0.14;
-const double kBeginHorizontalMoveHeight = 0.13;
-
-const double kHorizontalMoveTarget = -0.7;
-
-const double kPlaceHeight = -0.10;
-const double kHomeReturnHeight = 0.1;
 
 const double kMaxXVelocity = 0.45;
 const double kMaxYVelocity = 0.20;
 const double kMaxXAcceleration = 0.5;
 const double kMaxYAcceleration = 0.5;
+
 }  // namespace
 
 ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
@@ -44,9 +37,9 @@ bool ScoreActor::RunAction(const ScoreParams& params) {
   }
 }
 
-bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
+bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
   // Move the fridge up a little bit.
-  if (!SendGoal(0.0, kUpperMoveHeight, true)) {
+  if (!SendGoal(0.0, params.upper_move_height, true)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -58,13 +51,14 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
     }
 
     // Move on when it is clear of the tote knobs.
-    if (CurrentGoalHeight() > kBeginHorizontalMoveHeight) {
+    if (CurrentGoalHeight() > params.begin_horizontal_move_height) {
       break;
     }
   }
 
   // Move the fridge out.
-  if (!SendGoal(kHorizontalMoveTarget, kBeginHorizontalMoveHeight, true)) {
+  if (!SendGoal(params.horizontal_move_target,
+                params.begin_horizontal_move_height, true)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -75,7 +69,8 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
       return true;
     }
 
-    if (NearGoal(kHorizontalMoveTarget, kBeginHorizontalMoveHeight)) {
+    if (NearGoal(params.horizontal_move_target,
+                 params.begin_horizontal_move_height)) {
       LOG(INFO, "reached goal\n");
       break;
     }
@@ -86,9 +81,9 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
   return true;
 }
 
-bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
+bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
   // Once the fridge is way out, put it on the ground.
-  if (!SendGoal(kHorizontalMoveTarget, kPlaceHeight, true)) {
+  if (!SendGoal(params.horizontal_move_target, params.place_height, true)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -99,7 +94,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
       return true;
     }
 
-    if (NearGoal(kHorizontalMoveTarget, kPlaceHeight)) {
+    if (NearGoal(params.horizontal_move_target, params.place_height)) {
       break;
     }
   }
@@ -107,7 +102,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
   if (ShouldCancel()) return true;
 
   // Release the grabbers.
-  if (!SendGoal(kHorizontalMoveTarget, kPlaceHeight, false)) {
+  if (!SendGoal(params.horizontal_move_target, params.place_height, false)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -115,7 +110,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
   if (ShouldCancel()) return true;
 
   // Go back to the home position.
-  if (!SendGoal(0.0, kHomeReturnHeight, false)) {
+  if (!SendGoal(0.0, params.home_return_height, false)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -126,7 +121,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& /*params*/) {
       return true;
     }
 
-    if (NearGoal(0.0, kHomeReturnHeight)) {
+    if (NearGoal(0.0, params.home_return_height)) {
       break;
     }
   }

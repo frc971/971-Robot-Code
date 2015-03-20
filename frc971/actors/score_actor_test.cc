@@ -59,8 +59,7 @@ TEST_F(ScoreActionTest, PlaceTheStackCancel) {
   frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
-  bool place_the_stack = true;
-  const ScoreParams params = {0.75, place_the_stack};
+  const ScoreParams params = {true, 0.14, 0.13, -0.7, -0.10, 0.1};
   score.RunAction(params);
 
   SUCCEED();
@@ -88,8 +87,7 @@ TEST_F(ScoreActionTest, MoveStackIntoPositionCancel) {
   frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
-  bool place_the_stack = false;
-  const ScoreParams params = {0.75, place_the_stack};
+  const ScoreParams params = {false, 0.14, 0.13, -0.7, -0.10, 0.1};
   score.RunAction(params);
 
   SUCCEED();

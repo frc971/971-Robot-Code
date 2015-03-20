@@ -4,10 +4,15 @@ import "aos/common/actions/actions.q";
 
 // Parameters to send with start.
 struct ScoreParams {
-  // Height for the upper fridge pivot to be when we're scoring.
-  double height;
   // If false, then extend. Otherwise, place the stack and retract.
   bool place_the_stack;
+
+  // TODO(Brian): Comments (by somebody who knows what these all mean).
+  double upper_move_height;
+  double begin_horizontal_move_height;
+  double horizontal_move_target;
+  double place_height;
+  double home_return_height;
 };
 
 queue_group ScoreActionQueueGroup {

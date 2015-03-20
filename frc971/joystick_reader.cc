@@ -93,9 +93,13 @@ const ButtonLocation kStack(4, 2);
 
 // Move the fridge out with the stack in preparation for scoring.
 const ButtonLocation kScore(4, 8);
-
 // Release the stack and retract back in.
 const ButtonLocation kRetractFromScore(4, 12);
+
+const ButtonLocation kCoopTop(3, 8);
+const ButtonLocation kCoopTopRetract(3, 7);
+const ButtonLocation kCoopBottom(3, 6);
+const ButtonLocation kCoopBottomRetract(3, 9);
 
 const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
@@ -109,6 +113,39 @@ const double kArmRaiseLowerClearance = -0.08;
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() : was_running_(false) {}
+
+  static actors::ScoreParams MakeScoreParams(bool place_the_stack) {
+    actors::ScoreParams r;
+    r.place_the_stack = place_the_stack;
+    r.upper_move_height = 0.14;
+    r.begin_horizontal_move_height = 0.13;
+    r.horizontal_move_target = -0.7;
+    r.place_height = -0.10;
+    r.home_return_height = 0.1;
+    return r;
+  }
+
+  static actors::ScoreParams MakeCoopTopParams(bool place_the_stack) {
+    actors::ScoreParams r;
+    r.place_the_stack = place_the_stack;
+    r.upper_move_height = 0.52;
+    r.begin_horizontal_move_height = 0.5;
+    r.horizontal_move_target = -0.48;
+    r.place_height = 0.39;
+    r.home_return_height = 0.1;
+    return r;
+  }
+
+  static actors::ScoreParams MakeCoopBottomParams(bool place_the_stack) {
+    actors::ScoreParams r;
+    r.place_the_stack = place_the_stack;
+    r.upper_move_height = 0.17;
+    r.begin_horizontal_move_height = 0.16;
+    r.horizontal_move_target = -0.7;
+    r.place_height = 0.0;
+    r.home_return_height = 0.1;
+    return r;
+  }
 
   virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
     bool last_auto_running = auto_running_;
@@ -311,15 +348,32 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.PosEdge(kScore)) {
-      actors::ScoreParams params;
-      params.place_the_stack = false;
-      action_queue_.EnqueueAction(actors::MakeScoreAction(params));
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeScoreParams(false)));
+    }
+    if (data.PosEdge(kRetractFromScore)) {
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeScoreParams(true)));
+      fridge_closed_ = false;
     }
 
-    if (data.PosEdge(kRetractFromScore)) {
-      actors::ScoreParams params;
-      params.place_the_stack = true;
-      action_queue_.EnqueueAction(actors::MakeScoreAction(params));
+    if (data.PosEdge(kCoopTop)) {
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeCoopTopParams(false)));
+    }
+    if (data.PosEdge(kCoopTopRetract)) {
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeCoopTopParams(true)));
+      fridge_closed_ = false;
+    }
+
+    if (data.PosEdge(kCoopBottom)) {
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeCoopBottomParams(false)));
+    }
+    if (data.PosEdge(kCoopBottomRetract)) {
+      action_queue_.EnqueueAction(
+          actors::MakeScoreAction(MakeCoopBottomParams(true)));
       fridge_closed_ = false;
     }
 
