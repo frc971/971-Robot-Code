@@ -193,6 +193,8 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
   InitializeEncoders();
 
+  return;
+
   {
     auto new_fridge_goal = fridge_queue.goal.MakeMessage();
     new_fridge_goal->max_velocity = 0.0;
