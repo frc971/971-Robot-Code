@@ -18,6 +18,17 @@ StackAndLiftActor::StackAndLiftActor(StackAndLiftActionQueueGroup *queues)
     : FridgeActorBase<StackAndLiftActionQueueGroup>(queues) {}
 
 bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
+  control_loops::claw_queue.goal.FetchLatest();
+  double claw_goal_start;
+  bool have_claw_goal_start;
+  if (control_loops::claw_queue.goal.get()) {
+    claw_goal_start = control_loops::claw_queue.goal->angle;
+    have_claw_goal_start = true;
+  } else {
+    claw_goal_start = 0;
+    have_claw_goal_start = false;
+  }
+
   {
     StackParams stack_params = params.stack_params;
     stack_params.only_place = false;
@@ -58,8 +69,10 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
   }
 
   {
-    ::std::unique_ptr<LiftAction> lift_action =
-        MakeLiftAction(params.lift_params);
+    auto lift_params = params.lift_params;
+    lift_params.pack_claw = have_claw_goal_start;
+    lift_params.pack_claw_angle = claw_goal_start;
+    ::std::unique_ptr<LiftAction> lift_action = MakeLiftAction(lift_params);
     lift_action->Start();
     while (lift_action->Running()) {
       ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
