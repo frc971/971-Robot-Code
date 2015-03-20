@@ -93,6 +93,11 @@ void Queue<T>::FetchAnother() {
 }
 
 template <class T>
+void Queue<T>::FetchAnotherNext() {
+  if (!FetchNext()) FetchNextBlocking();
+}
+
+template <class T>
 ScopedMessagePtr<T> Queue<T>::MakeMessage() {
   Init();
   return ScopedMessagePtr<T>(queue_, MakeRawMessage());

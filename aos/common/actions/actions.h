@@ -11,6 +11,7 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue.h"
+#include "aos/common/logging/queue_logging.h"
 
 namespace aos {
 namespace common {
@@ -126,6 +127,7 @@ class TypedAction : public Action {
         queue_group_->goal.name());
     // Clear out any old status messages from before now.
     queue_group_->status.FetchLatest();
+    LOG_STRUCT(DEBUG, "have status", *queue_group_->status);
   }
 
   virtual ~TypedAction() {
@@ -225,8 +227,12 @@ bool TypedAction<T>::DoRunning() {
   if (has_started_) {
     queue_group_->status.FetchNext();
     CheckInterrupted();
-  } else if (queue_group_->status.FetchLatest()) {
+  } else if (queue_group_->status.FetchNext()) {
+    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
     CheckStarted();
+    if (has_started_) CheckInterrupted();
+  } else {
+    LOG(DEBUG, "not started and no new status\n");
   }
   if (interrupted_) return false;
   // We've asked it to start but haven't gotten confirmation that it's started
@@ -240,6 +246,7 @@ template <typename T>
 void TypedAction<T>::DoWaitUntilDone() {
   CHECK(sent_started_);
   queue_group_->status.FetchNext();
+  LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
   CheckInterrupted();
   while (true) {
     if (DoCheckIteration(true)) {
@@ -254,11 +261,13 @@ bool TypedAction<T>::DoCheckIteration(bool blocking) {
   if (interrupted_) return true;
   CheckStarted();
   if (blocking) {
-    queue_group_->status.FetchAnother();
+    queue_group_->status.FetchAnotherNext();
+    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
   } else {
     if (!queue_group_->status.FetchNext()) {
       return false;
     }
+    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
   }
   CheckStarted();
   CheckInterrupted();
@@ -278,7 +287,7 @@ void TypedAction<T>::CheckStarted() {
          queue_group_->status->last_running == run_value_)) {
       // It's currently running our instance.
       has_started_ = true;
-      LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
+      LOG(INFO, "Action %" PRIx32 " on queue %s has been started\n",
           run_value_, queue_group_->goal.name());
     } else if (old_run_value_ != 0 &&
                queue_group_->status->running == old_run_value_) {
@@ -320,7 +329,8 @@ void TypedAction<T>::DoStart() {
       // Don't wait to see a message with it.
       has_started_ = true;
     }
-    queue_group_->status.FetchLatest();
+    queue_group_->status.FetchNext();
+    LOG_STRUCT(DEBUG, "got status", *queue_group_->status);
     if (queue_group_->status.get() && queue_group_->status->running != 0) {
       old_run_value_ = queue_group_->status->running;
       LOG(INFO, "Action %" PRIx32 " on queue %s already running\n",

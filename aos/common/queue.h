@@ -198,6 +198,10 @@ class Queue {
   // fetched it until another is avilable.
   void FetchAnother();
 
+  // Fetches the next message from the queue, or blocks for it if we have
+  // already fetched all available messages.
+  void FetchAnotherNext();
+
   // Returns the age of the message.
   const time::Time Age() const {
     return time::Time::Now() - queue_msg_->sent_time;
