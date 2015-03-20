@@ -300,8 +300,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
            // Zeroing constants for wrist.
            // TODO(sensors): Get actual offsets for these.
-           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.973311, 0.3},
-           6.1663463999999992,
+           {kZeroingSampleSize, kClawEncoderIndexDifference, 0.952602, 0.3},
+           6.1663463999999992 + 0.015241,
 
            kClawPistonSwitchTime,
            kClawZeroingRange},
@@ -317,16 +317,18 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {-M_PI / 2 - 0.05, M_PI / 2 + 0.05, -M_PI / 2, M_PI / 2},
 
            // Elevator zeroing constants: left, right.
+           // These are the encoder offsets.
            // TODO(sensors): Get actual offsets for these.
            {kZeroingSampleSize, kElevatorEncoderIndexDifference,
-            0.016041 + 0.001290, 0.3},
+            0.240286 - 0.007969 - 0.025, 0.3},
            {kZeroingSampleSize, kElevatorEncoderIndexDifference,
-            0.011367 + 0.003216, 0.3},
+            0.234583 - 0.000143, 0.3},
            // Arm zeroing constants: left, right.
            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.060592, 0.3},
            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.210155, 0.3},
-           0.72069366666666679 - 0.026008,
-           -0.078959636363636357 - 0.024646,
+           // These are the potentiometer offsets.
+           0.72069366666666679 - 0.026008 - 0.024948 + 0.025,
+           -0.078959636363636357 - 0.024646  - 0.020260,
            -3.509611 - 0.007415 - -0.019081 - 0.029393 - -0.013585,
            3.506927 - 0.170017 - -0.147970 - 0.005045 - -0.026504,
 
