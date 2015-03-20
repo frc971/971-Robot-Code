@@ -4,7 +4,9 @@ import "aos/common/actions/actions.q";
 
 // Parameters to send with start.
 struct ScoreParams {
-  // If false, then extend. Otherwise, place the stack and retract.
+  // If true, move the stack first.
+  bool move_the_stack;
+  // If true, place the stack (possibly after moving it).
   bool place_the_stack;
 
   // TODO(Brian): Comments (by somebody who knows what these all mean).

@@ -30,11 +30,19 @@ ScoreActor::ScoreActor(ScoreActionQueueGroup* queues)
                   constants::GetValues().fridge.arm.lower_limit) {}
 
 bool ScoreActor::RunAction(const ScoreParams& params) {
-  if (params.place_the_stack) {
-    return PlaceTheStack(params);
-  } else {
-    return MoveStackIntoPosition(params);
+  if (params.move_the_stack) {
+    LOG(INFO, "moving stack\n");
+    if (!MoveStackIntoPosition(params)) return false;
+    LOG(INFO, "done moving stack\n");
+    if (ShouldCancel()) return true;
   }
+  if (params.place_the_stack) {
+    LOG(INFO, "placing stack\n");
+    if (!PlaceTheStack(params)) return false;
+    LOG(INFO, "done placing stack\n");
+    if (ShouldCancel()) return true;
+  }
+  return true;
 }
 
 bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {

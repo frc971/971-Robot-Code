@@ -114,9 +114,9 @@ class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() : was_running_(false) {}
 
-  static actors::ScoreParams MakeScoreParams(bool place_the_stack) {
+  static actors::ScoreParams MakeScoreParams() {
     actors::ScoreParams r;
-    r.place_the_stack = place_the_stack;
+    r.move_the_stack = r.place_the_stack = true;
     r.upper_move_height = 0.14;
     r.begin_horizontal_move_height = 0.13;
     r.horizontal_move_target = -0.7;
@@ -125,9 +125,9 @@ class Reader : public ::aos::input::JoystickInput {
     return r;
   }
 
-  static actors::ScoreParams MakeCoopTopParams(bool place_the_stack) {
+  static actors::ScoreParams MakeCoopTopParams() {
     actors::ScoreParams r;
-    r.place_the_stack = place_the_stack;
+    r.move_the_stack = r.place_the_stack = true;
     r.upper_move_height = 0.52;
     r.begin_horizontal_move_height = 0.5;
     r.horizontal_move_target = -0.48;
@@ -136,9 +136,9 @@ class Reader : public ::aos::input::JoystickInput {
     return r;
   }
 
-  static actors::ScoreParams MakeCoopBottomParams(bool place_the_stack) {
+  static actors::ScoreParams MakeCoopBottomParams() {
     actors::ScoreParams r;
-    r.place_the_stack = place_the_stack;
+    r.move_the_stack = r.place_the_stack = true;
     r.upper_move_height = 0.17;
     r.begin_horizontal_move_height = 0.16;
     r.horizontal_move_target = -0.7;
@@ -349,31 +349,19 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kScore)) {
       action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeScoreParams(false)));
-    }
-    if (data.PosEdge(kRetractFromScore)) {
-      action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeScoreParams(true)));
+          actors::MakeScoreAction(MakeScoreParams()));
       fridge_closed_ = false;
     }
 
     if (data.PosEdge(kCoopTop)) {
       action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeCoopTopParams(false)));
-    }
-    if (data.PosEdge(kCoopTopRetract)) {
-      action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeCoopTopParams(true)));
+          actors::MakeScoreAction(MakeCoopTopParams()));
       fridge_closed_ = false;
     }
 
     if (data.PosEdge(kCoopBottom)) {
       action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeCoopBottomParams(false)));
-    }
-    if (data.PosEdge(kCoopBottomRetract)) {
-      action_queue_.EnqueueAction(
-          actors::MakeScoreAction(MakeCoopBottomParams(true)));
+          actors::MakeScoreAction(MakeCoopBottomParams()));
       fridge_closed_ = false;
     }
 
