@@ -31,7 +31,19 @@
         'interrupt_edge_counting',
         'encoder_and_potentiometer',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
+        'logging_queue',
       ],
+    },
+    {
+      'target_name': 'logging_queue',
+      'type': 'static_library',
+      'sources': [
+        'logging.q',
+      ],
+      'variables': {
+        'header_path': 'frc971/wpilib',
+      },
+      'includes': [ '../../aos/build/queues.gypi' ],
     },
     {
       'target_name': 'encoder_and_potentiometer',

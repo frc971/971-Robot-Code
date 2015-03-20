@@ -32,6 +32,7 @@
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/logging.q.h"
 
 #include "Encoder.h"
 #include "Talon.h"
@@ -422,13 +423,23 @@ class SolenoidWriter {
           claw_pinchers_->Set(claw_->rollers_closed);
         }
       }
-      if (!pressure_switch_->Get()) {
-        compressor_relay_->Set(Relay::kForward);
-      } else {
-        compressor_relay_->Set(Relay::kOff);
-      }
 
-      pcm_->Flush();
+      {
+        PneumaticsToLog to_log;
+        {
+          const bool compressor_on = !pressure_switch_->Get();
+          to_log.compressor_on = compressor_on;
+          if (compressor_on) {
+            compressor_relay_->Set(Relay::kForward);
+          } else {
+            compressor_relay_->Set(Relay::kOff);
+          }
+        }
+
+        pcm_->Flush();
+        to_log.read_solenoids = pcm_->GetAll();
+        LOG_STRUCT(DEBUG, "pneumatics info", to_log);
+      }
     }
   }
 
