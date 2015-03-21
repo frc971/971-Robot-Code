@@ -22,7 +22,9 @@ class ScoreActor
   bool NearGoal(double x, double y);
   bool PlaceTheStack(const ScoreParams &params);
   bool MoveStackIntoPosition(const ScoreParams &params);
-  bool SendGoal(double x, double y, bool grabbers_enabled);
+  bool SendGoal(double x, double y, bool grabbers_enabled,
+                double max_x_velocity, double max_y_velocity,
+                double max_x_acceleration, double max_y_acceleration);
   double CurrentHeight();
   double CurrentGoalHeight();
   double CurrentX();
