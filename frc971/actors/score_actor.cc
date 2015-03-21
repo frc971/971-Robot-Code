@@ -77,7 +77,9 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
       return true;
     }
 
-    if (NearGoal(params.horizontal_move_target, params.upper_move_height)) {
+    if (NearGoal(params.horizontal_move_target,
+                 params.begin_horizontal_move_height)) {
+                        LOG(INFO, "reached goal\n");
       break;
     }
   }
