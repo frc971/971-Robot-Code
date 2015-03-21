@@ -159,7 +159,7 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
       break;
 
     case ZEROING:
-      LOG(INFO, "Zeroing.\n");
+      LOG(DEBUG, "Zeroing.\n");
 
       // Update state_.
       UpdateZeroingState();
