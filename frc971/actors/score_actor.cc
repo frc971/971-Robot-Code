@@ -75,7 +75,8 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& /*params*/) {
       return true;
     }
 
-    if (NearGoal(kHorizontalMoveTarget, kUpperMoveHeight)) {
+    if (NearGoal(kHorizontalMoveTarget, kBeginHorizontalMoveHeight)) {
+      LOG(INFO, "reached goal\n");
       break;
     }
   }
