@@ -60,8 +60,8 @@ namespace joysticks {
 // globally changed easier.
 
 // preset motion limits
-constexpr actors::ProfileParams kArmMove{1.00, 1.0};
-constexpr actors::ProfileParams kElevatorMove{1.00, 3.2};
+constexpr actors::ProfileParams kArmMove{0.5, 1.0};
+constexpr actors::ProfileParams kElevatorMove{0.3, 1.0};
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
@@ -99,7 +99,8 @@ const ButtonLocation kRetractFromScore(4, 12);
 const ButtonLocation kCoopTop(3, 8);
 const ButtonLocation kCoopTopRetract(3, 7);
 const ButtonLocation kCoopBottom(3, 6);
-const ButtonLocation kCoopBottomRetract(3, 9);
+
+const ButtonLocation kCanReset(3, 9);
 
 const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
@@ -244,6 +245,12 @@ class Reader : public ::aos::input::JoystickInput {
       params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
       fridge_closed_ = true;
+    }
+
+    if (data.PosEdge(kCanReset)) {
+      action_queue_.CancelAllActions();
+      elevator_goal_ = 0.3;
+      arm_goal_ = 0.0;
     }
 
     // Tote chute pull in when button is pressed, pack when done.
