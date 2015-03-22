@@ -117,8 +117,10 @@
         '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(EXTERNALS):eigen',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
       'export_dependent_settings': [
+        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         'score_action_queue',
         '<(EXTERNALS):eigen',

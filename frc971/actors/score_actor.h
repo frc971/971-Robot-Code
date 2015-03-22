@@ -5,6 +5,8 @@
 #include "aos/common/actions/actor.h"
 #include "aos/common/util/kinematics.h"
 #include "frc971/actors/score_action.q.h"
+#include "aos/common/util/phased_loop.h"
+#include "aos/common/controls/control_loop.h"
 
 namespace frc971 {
 namespace actors {
@@ -17,6 +19,15 @@ class ScoreActor
   bool RunAction(const ScoreParams &params) override;
 
  private:
+  bool WaitOrCancel(::aos::time::Time duration) {
+    ::aos::time::Time end_time = ::aos::time::Time::Now() + duration;
+    while (::aos::time::Time::Now() <= end_time) {
+      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+                                 2500);
+      if (this->ShouldCancel()) return false;
+    }
+    return true;
+  }
 
   ::aos::util::ElevatorArmKinematics kinematics_;
   bool NearGoal(double x, double y);

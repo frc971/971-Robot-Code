@@ -123,7 +123,14 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
     }
   }
 
-  if (ShouldCancel()) return true;
+  // Release and give the grabers a chance to get out of the way.
+  if (!SendGoal(params.horizontal_move_target, params.place_height, false,
+                kFastMaxXVelocity, kFastMaxYVelocity, kMaxXAcceleration,
+                kMaxYAcceleration)) {
+    LOG(ERROR, "Sending fridge message failed.\n");
+    return false;
+  }
+  if (!WaitOrCancel(::aos::time::Time::InSeconds(0.1))) return true;
 
   // Release the grabbers.
   if (!SendGoal(params.horizontal_move_target, params.place_height, false,
