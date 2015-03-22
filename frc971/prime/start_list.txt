@@ -13,3 +13,4 @@ stack_and_lift_action
 stack_and_hold_action
 held_to_lift_action
 drivetrain
+auto

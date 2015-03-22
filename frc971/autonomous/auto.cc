@@ -20,6 +20,7 @@
 using ::aos::time::Time;
 using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::fridge_queue;
+using ::frc971::control_loops::drivetrain_queue;
 
 namespace frc971 {
 namespace autonomous {
@@ -192,6 +193,26 @@ void HandleAuto() {
 
   if (ShouldExitAuto()) return;
   InitializeEncoders();
+
+  time::SleepFor(time::Time::InSeconds(0.55));
+
+  if (!drivetrain_queue.goal.MakeWithBuilder()
+           .steering(0)
+           .throttle(0.5)
+           .quickturn(false)
+           .control_loop_driving(false)
+           .Send()) {
+    LOG(WARNING, "sending stick values failed\n");
+  }
+  time::SleepFor(time::Time::InSeconds(1.0));
+  if (!drivetrain_queue.goal.MakeWithBuilder()
+           .steering(0)
+           .throttle(0)
+           .quickturn(false)
+           .control_loop_driving(false)
+           .Send()) {
+    LOG(WARNING, "sending stick values failed\n");
+  }
 
   return;
 
