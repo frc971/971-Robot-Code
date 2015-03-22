@@ -3,7 +3,6 @@
 
 #include <cmath>
 
-#include "aos/common/controls/control_loop.h"
 #include "aos/common/actions/actor.h"
 #include "aos/common/util/phased_loop.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
@@ -145,16 +144,6 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
         return;
       }
     }
-  }
-
-  bool WaitOrCancel(::aos::time::Time duration) {
-    ::aos::time::Time end_time = ::aos::time::Time::Now() + duration;
-    while (::aos::time::Time::Now() <= end_time) {
-      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
-                                 2500);
-      if (this->ShouldCancel()) return false;
-    }
-    return true;
   }
 };
 

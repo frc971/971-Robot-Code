@@ -9,6 +9,8 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/time.h"
+#include "aos/common/controls/control_loop.h"
+#include "aos/common/util/phased_loop.h"
 
 namespace aos {
 namespace common {
@@ -48,8 +50,8 @@ class ActorBase {
   void WaitForStop(uint32_t running_id);
 
   // Will run until the done condition is met or times out.
-  // Will return false if successful and true if the action was canceled or
-  // failed or end_time was reached before it succeeded.
+  // Will return false if successful or end_time is reached and true if the
+  // action was canceled or failed.
   // Done condition are defined as functions that return true when done and have
   // some sort of blocking statement (such as FetchNextBlocking) to throttle
   // spin rate.
@@ -57,6 +59,18 @@ class ActorBase {
   // never time out.
   bool WaitUntil(::std::function<bool(void)> done_condition,
                  const ::aos::time::Time& end_time = ::aos::time::Time(0, 0));
+
+  // Waits for a certain amount of time from when this method is called.
+  // Returns false if the action was canceled or failed, and true if the wait
+  // succeeded.
+  bool WaitOrCancel(const ::aos::time::Time& duration) {
+    return !WaitUntil([]() {
+                        ::aos::time::PhasedLoopXMS(
+                            ::aos::controls::kLoopFrequency.ToMSec(), 2500);
+                        return false;
+                      },
+                      ::aos::time::Time::Now() + duration);
+  }
 
   // Returns true if the action should be canceled.
   bool ShouldCancel();
@@ -201,8 +215,8 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
     }
     if (end_time != ::aos::time::Time(0, 0) &&
         ::aos::time::Time::Now() >= end_time) {
-      LOG(INFO, "WaitUntil timed out\n");
-      return true;
+      LOG(DEBUG, "WaitUntil timed out\n");
+      return false;
     }
   }
   if (ShouldCancel() || abort_) {

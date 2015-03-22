@@ -76,15 +76,13 @@
         'fridge_profile_lib.cc',
       ],
       'dependencies' : [
-        '<(AOS)/common/common.gyp:time',
-        '<(AOS)/build/aos.gyp:logging',
+        '<(AOS)/build/aos.gyp:logging_interface',
         '<(AOS)/common/actions/actions.gyp:action_lib',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
-        '<(AOS)/common/controls/controls.gyp:control_loop',
       ],
       'export_dependent_settings' : [
+        '<(AOS)/build/aos.gyp:logging_interface',
         '<(AOS)/common/actions/actions.gyp:action_lib',
-        '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/fridge/fridge.gyp:fridge_queue',
       ],
     },

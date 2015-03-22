@@ -11,13 +11,17 @@
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
-        '<(AOS)/common/common.gyp:time'
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(AOS)/common/util/util.gyp:phased_loop',
       ],
       'export_dependent_settings': [
         '<(AOS)/build/aos.gyp:logging',
         '<(AOS)/common/common.gyp:queues',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
-        '<(AOS)/common/common.gyp:time'
+        '<(AOS)/common/common.gyp:time',
+        '<(AOS)/common/controls/controls.gyp:control_loop',
+        '<(AOS)/common/util/util.gyp:phased_loop',
       ],
     },
     {
