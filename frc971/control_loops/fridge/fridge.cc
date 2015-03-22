@@ -234,6 +234,9 @@ double Fridge::arm_zeroing_velocity() {
   } else if (arm_zeroing_velocity_ < 0.0 && estimated_arm() < average_arm) {
     arm_zeroing_velocity_ = kArmZeroingVelocity;
   }
+
+  LOG(INFO, "current %f, avg %f, velocity %f\n", estimated_arm(), average_arm,
+      arm_zeroing_velocity_);
   return arm_zeroing_velocity_;
 }
 

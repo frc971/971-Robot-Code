@@ -54,7 +54,7 @@ DMA::DMA() {
   tdma_config_ = tDMA::create(&status);
   tdma_config_->writeConfig_ExternalClock(false, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  NiFpga_WriteU32(0x10000, 0x1832c, 0x0);
+  //NiFpga_WriteU32(0x10000, 0x1832c, 0x0);
   if (status != 0) {
     return;
   }
@@ -185,8 +185,8 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.ExternalClockSource_Module = input->GetModuleForRouting();
   new_trigger.ExternalClockSource_Channel = input->GetChannelForRouting();
 
-  // Configures the trigger to be external, not off the FPGA clock.
   /*
+  // Configures the trigger to be external, not off the FPGA clock.
   tdma_config_->writeExternalTriggers(channel_index, new_trigger, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
   */
@@ -204,6 +204,21 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
     wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
     return;
   }
+
+    for (int i = 0; i < 4; ++i) {
+      tRioStatusCode status = 0;
+      auto x = tdma_config_->readExternalTriggers(i, &status);
+      printf(
+          "index %d, FallingEdge: %d, RisingEdge: %d, "
+          "ExternalClockSource_AnalogTrigger: %d, ExternalClockSource_Module: "
+          "%d, ExternalClockSource_Channel: %d\n",
+          i, x.FallingEdge, x.RisingEdge, x.ExternalClockSource_AnalogTrigger,
+          x.ExternalClockSource_Module, x.ExternalClockSource_Channel);
+      if (status != 0) {
+        wpi_setErrorWithContext(status, getHALErrorMessage(status));
+      }
+    }
+
 }
 
 DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
