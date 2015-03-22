@@ -27,7 +27,7 @@ namespace testing {
 // position.
 class FridgeSimulation {
  public:
-  static constexpr double kNoiseScalar = 1.0;
+  static constexpr double kNoiseScalar = 0.1;
   // Constructs a simulation.
   FridgeSimulation()
       : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
