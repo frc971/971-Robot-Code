@@ -288,10 +288,14 @@ TEST_F(FridgeTest, DoesNothing) {
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
                   .angle(0.0)
                   .height(values.fridge.elevator.lower_limit)
+                  .max_velocity(20)
+                  .max_acceleration(20)
+                  .max_angular_velocity(20)
+                  .max_angular_acceleration(20)
                   .Send());
 
   // Run a few iterations.
-  RunForTime(Time::InMS(5000));
+  RunForTime(Time::InSeconds(5));
 
   VerifyNearGoal();
 }
@@ -311,10 +315,14 @@ TEST_F(FridgeTest, ReachesXYGoal) {
                   .profiling_type(1)
                   .x(x_y_goals.fridge_x)
                   .y(x_y_goals.fridge_h)
+                  .max_x_velocity(20)
+                  .max_y_velocity(20)
+                  .max_x_acceleration(20)
+                  .max_y_acceleration(20)
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   VerifyNearGoal();
 }
@@ -326,11 +334,15 @@ TEST_F(FridgeTest, ReachesGoal) {
   const double soft_limit = values.fridge.elevator.lower_limit;
   ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
                   .angle(M_PI / 4.0)
-                  .height(soft_limit + 0.2)
+                  .height(soft_limit + 0.5)
+                  .max_velocity(20)
+                  .max_acceleration(20)
+                  .max_angular_velocity(20)
+                  .max_angular_acceleration(20)
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   VerifyNearGoal();
 }
@@ -341,10 +353,16 @@ TEST_F(FridgeTest, RespectsRange) {
   // Put the arm up to get it out of the way.
   // We're going to send the elevator to -5, which should be significantly too
   // low.
-  ASSERT_TRUE(
-      fridge_queue_.goal.MakeWithBuilder().angle(M_PI).height(-5.0).Send());
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+                  .angle(M_PI)
+                  .height(-5.0)
+                  .max_velocity(20)
+                  .max_acceleration(20)
+                  .max_angular_velocity(20)
+                  .max_angular_acceleration(20)
+                  .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(10));
 
   // Check that we are near our soft limit.
   fridge_queue_.status.FetchLatest();
@@ -356,10 +374,16 @@ TEST_F(FridgeTest, RespectsRange) {
 
   // Put the arm down to get it out of the way.
   // We're going to give the elevator some ridiculously high goal.
-  ASSERT_TRUE(
-      fridge_queue_.goal.MakeWithBuilder().angle(-M_PI).height(50.0).Send());
+  ASSERT_TRUE(fridge_queue_.goal.MakeWithBuilder()
+                  .angle(-M_PI)
+                  .height(50.0)
+                  .max_velocity(20)
+                  .max_acceleration(20)
+                  .max_angular_velocity(20)
+                  .max_angular_acceleration(20)
+                  .Send());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(10));
 
   // Check that we are near our soft limit.
   fridge_queue_.status.FetchLatest();
@@ -371,8 +395,15 @@ TEST_F(FridgeTest, RespectsRange) {
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(FridgeTest, ZeroTest) {
-  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.5).Send();
-  RunForTime(Time::InMS(4000));
+  fridge_queue_.goal.MakeWithBuilder()
+      .angle(0.0)
+      .height(0.5)
+      .max_velocity(20)
+      .max_acceleration(20)
+      .max_angular_velocity(20)
+      .max_angular_acceleration(20)
+      .Send();
+  RunForTime(Time::InSeconds(5));
 
   VerifyNearGoal();
 }
@@ -471,7 +502,12 @@ TEST_F(FridgeTest, ElevatorFarApartEstop) {
 // Tests that starting with an initial elevator difference converges back to 0
 // error when zeroed.
 TEST_F(FridgeTest, ElevatorFixError) {
-  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+  fridge_queue_.goal.MakeWithBuilder()
+      .angle(0.0)
+      .height(0.2)
+      .max_velocity(20)
+      .max_acceleration(20)
+      .Send();
 
   do {
     fridge_plant_.InitializeElevatorPosition(
@@ -487,14 +523,19 @@ TEST_F(FridgeTest, ElevatorFixError) {
 
   EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
   VerifyNearGoal();
 }
 
 // Tests that starting with an initial arm difference converges back to 0
 // error when zeroed.
 TEST_F(FridgeTest, ArmFixError) {
-  fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
+  fridge_queue_.goal.MakeWithBuilder()
+      .angle(0.0)
+      .height(0.2)
+      .max_angular_velocity(20)
+      .max_angular_acceleration(20)
+      .Send();
 
   do {
     fridge_plant_.InitializeArmPosition(0.0, 0.02);
@@ -508,7 +549,7 @@ TEST_F(FridgeTest, ArmFixError) {
 
   EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
 
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
   VerifyNearGoal();
 }
 
@@ -636,7 +677,7 @@ TEST_F(FridgeTest, ArmGoalNegativeWindupTest) {
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(FridgeTest, ZeroNoGoal) {
-  RunForTime(Time::InMS(4000));
+  RunForTime(Time::InSeconds(5));
 
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
 }
