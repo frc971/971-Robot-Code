@@ -312,11 +312,11 @@
       },
       'dependencies': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'lift_action_queue',
+        'lift_action_params',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'lift_action_queue',
+        'lift_action_params',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -365,13 +365,11 @@
       },
       'dependencies': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'stack_action_queue',
-        'lift_action_queue',
+        'stack_action_params',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'stack_action_queue',
-        'lift_action_queue',
+        'stack_action_params',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -420,13 +418,13 @@
       },
       'dependencies': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'stack_action_queue',
-        'lift_action_queue',
+        'stack_action_params',
+        'lift_action_params',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
-        'stack_action_queue',
-        'lift_action_queue',
+        'stack_action_params',
+        'lift_action_params',
       ],
       'includes': ['../../aos/build/queues.gypi'],
     },
@@ -468,21 +466,41 @@
       ],
     },
     {
+      # This is a wrapper target to avoid adding the directory with a stale
+      # stack_action_params.q.h to the compiler's include path.
       'target_name': 'stack_action_queue',
+      'type': 'none',
+      'dependencies': ['stack_action_queue_real'],
+      'export_dependent_settings': ['stack_action_queue_real'],
+    },
+    {
+      'target_name': 'stack_action_queue_real',
       'type': 'static_library',
       'sources': [
         'stack_action.q',
-        'stack_action_params.q',
       ],
       'variables': {
         'header_path': 'frc971/actors',
       },
       'dependencies': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_params',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
+        'stack_action_params',
       ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'stack_action_params',
+      'type': 'static_library',
+      'sources': [
+        'stack_action_params.q',
+      ],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
@@ -540,21 +558,41 @@
       ],
     },
     {
+      # This is a wrapper target to avoid adding the directory with a stale
+      # lift_action_params.q.h to the compiler's include path.
       'target_name': 'lift_action_queue',
+      'type': 'none',
+      'dependencies': ['lift_action_queue_real'],
+      'export_dependent_settings': ['lift_action_queue_real'],
+    },
+    {
+      'target_name': 'lift_action_queue_real',
       'type': 'static_library',
       'sources': [
         'lift_action.q',
-        'lift_action_params.q',
       ],
       'variables': {
         'header_path': 'frc971/actors',
       },
       'dependencies': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
+        'lift_action_params',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/actions/actions.gyp:action_queue',
+        'lift_action_params',
       ],
+      'includes': ['../../aos/build/queues.gypi'],
+    },
+    {
+      'target_name': 'lift_action_params',
+      'type': 'static_library',
+      'sources': [
+        'lift_action_params.q',
+      ],
+      'variables': {
+        'header_path': 'frc971/actors',
+      },
       'includes': ['../../aos/build/queues.gypi'],
     },
     {
