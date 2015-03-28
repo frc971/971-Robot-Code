@@ -23,6 +23,9 @@ StackAndHoldActor::StackAndHoldActor(StackAndHoldActionQueueGroup *queues)
     : FridgeActorBase<StackAndHoldActionQueueGroup>(queues) {}
 
 bool StackAndHoldActor::RunAction(const StackAndHoldParams &params) {
+  // TODO(ben)): this action is no longer used (source Cameron) and my be broken
+  // by the stack action having the grabbers closed at the end for the fangs. So
+  // here I am disabling it until further information is provided.
   if (params.place_not_stack) {
     // Move the arm out of the way.
     {

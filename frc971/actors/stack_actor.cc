@@ -75,20 +75,25 @@ bool StackActor::RunAction(const StackParams &params) {
   }
 
   if (params.only_place) {
+    // open grabber for place only
     DoFridgeProfile(params.bottom + values.tote_height, 0.0, kFastElevatorMove,
                     kFastArmMove, false);
     // Finish early if we aren't supposed to grab.
     return true;
   }
 
-  DoFridgeProfile(params.bottom + values.tote_height, params.arm_clearance,
+  // TODO(ben): I'm not sure why this liitle jog is here. we are removing it for
+  // the fangs, but I want to keep the code here so austin can explain.
+  /*DoFridgeProfile(params.bottom + values.tote_height, params.arm_clearance,
                   kFastElevatorMove, kFastArmMove, false);
 
   if (ShouldCancel()) return true;
   DoFridgeProfile(params.bottom, params.arm_clearance, kFastElevatorMove,
-                  kFastArmMove, false);
+                  kFastArmMove, false);*/
   if (ShouldCancel()) return true;
-  DoFridgeProfile(params.bottom, 0.0, kFastElevatorMove, kFastArmMove, false);
+  // grab can (if in fang mode the grabber stays closed)
+  DoFridgeProfile(params.bottom, 0.0, kFastElevatorMove, kFastArmMove, false,
+                  true, true);
   if (ShouldCancel()) return true;
   aos::time::SleepFor(aos::time::Time::InMS(200));
 
