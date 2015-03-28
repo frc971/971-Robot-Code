@@ -18,6 +18,7 @@ CanPickupActor::CanPickupActor(CanPickupActionQueueGroup *queues)
     : FridgeActorBase<CanPickupActionQueueGroup>(queues) {}
 
 bool CanPickupActor::RunAction(const CanPickupParams &params) {
+  return true;
   // Make sure the claw is down.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();

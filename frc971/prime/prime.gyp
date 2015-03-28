@@ -1,6 +1,17 @@
 {
   'targets': [
     {
+      'target_name': 'test_joystick',
+      'type': 'executable',
+      'sources': [
+        'test_joystick.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/common/messages/messages.gyp:robot_state',
+        '<(AOS)/linux_code/linux_code.gyp:init',
+      ],
+    },
+    {
       'target_name': 'All',
       'type': 'none',
       'dependencies': [
