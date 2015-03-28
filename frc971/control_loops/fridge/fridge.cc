@@ -335,12 +335,11 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
             elevator_goal_ += kElevatorSafeHeightVelocity *
                               ::aos::controls::kLoopFrequency.ToSeconds();
             elevator_goal_velocity_ = kElevatorSafeHeightVelocity;
+            state_ = ZEROING_ELEVATOR;
           } else {
             // We want it stopped at whatever height it's currently set to.
             elevator_goal_velocity_ = 0;
           }
-
-          state_ = ZEROING_ELEVATOR;
           break;
         }
 
@@ -365,7 +364,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     case ZEROING_ARM:
       LOG(DEBUG, "Zeroing the arm\n");
 
-      if (elevator() < values.fridge.arm_zeroing_height) {
+      if (elevator() < values.fridge.arm_zeroing_height - 0.10 ||
+          elevator_goal_ < values.fridge.arm_zeroing_height) {
         LOG(INFO,
             "Going back to ZEROING_ELEVATOR until it gets high enough to "
             "safely zero the arm\n");
