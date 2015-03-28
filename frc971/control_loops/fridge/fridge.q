@@ -108,6 +108,20 @@ queue_group FridgeQueue {
     double goal_height;
     double goal_velocity;
 
+    // Estimated X/Y position of the fridge.
+    // These are translated directly from the height/angle statuses.
+    double x;
+    double y;
+    double x_velocity;
+    double y_velocity;
+
+    // X/Y goals of the fridge.
+    // These are translated directly from the height/angle goals.
+    double goal_x;
+    double goal_y;
+    double goal_x_velocity;
+    double goal_y_velocity;
+
     // If true, we have aborted.
     bool estopped;
 

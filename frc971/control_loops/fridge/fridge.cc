@@ -669,14 +669,35 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
 
   // TODO(austin): Populate these fully.
   status->zeroed = state_ == RUNNING;
+
   status->angle = arm_loop_->X_hat(0, 0);
   status->angular_velocity = arm_loop_->X_hat(1, 0);
   status->height = elevator_loop_->X_hat(0, 0);
   status->velocity = elevator_loop_->X_hat(1, 0);
+
   status->goal_angle = arm_goal_;
   status->goal_angular_velocity = arm_goal_velocity_;
   status->goal_height = elevator_goal_;
   status->goal_velocity = elevator_goal_velocity_;
+
+  // Populate the same status, but in X/Y co-ordinates.
+  aos::util::ElevatorArmKinematics::KinematicResult x_y_status;
+  kinematics_.ForwardKinematic(status->height, status->angle,
+                               status->velocity, status->angular_velocity,
+                               &x_y_status);
+  status->x = x_y_status.fridge_x;
+  status->y = x_y_status.fridge_h;
+  status->x_velocity = x_y_status.fridge_x_velocity;
+  status->y_velocity = x_y_status.fridge_h_velocity;
+
+  kinematics_.ForwardKinematic(status->goal_height, status->goal_angle,
+                               status->goal_velocity, status->goal_angular_velocity,
+                               &x_y_status);
+  status->goal_x = x_y_status.fridge_x;
+  status->goal_y = x_y_status.fridge_h;
+  status->goal_x_velocity = x_y_status.fridge_x_velocity;
+  status->goal_y_velocity = x_y_status.fridge_h_velocity;
+
   if (unsafe_goal) {
     status->grabbers = unsafe_goal->grabbers;
   } else {
