@@ -96,9 +96,9 @@ const ButtonLocation kScore(4, 8);
 const ButtonLocation kCoopTop(3, 8);
 const ButtonLocation kCoopTopRetract(3, 7);
 const ButtonLocation kCoopBottom(3, 6);
-const ButtonLocation kCoopBottomRetract(3, 9);
+const ButtonLocation kCoopBottomRetract(4, 12);
 
-const ButtonLocation kCanReset(4, 12);
+const ButtonLocation kCanReset(3, 9);
 
 const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
