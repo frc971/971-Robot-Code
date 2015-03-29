@@ -409,7 +409,7 @@ void AddShm(uint32_t type_id) {
         current = current->next;
       }
     }
-    char buffer[512];
+    char buffer[768];
     ssize_t size = cached.type.Serialize(buffer, sizeof(buffer));
     if (size == -1) {
       LOG(FATAL, "type %s is too big to fit into %zd bytes\n",
