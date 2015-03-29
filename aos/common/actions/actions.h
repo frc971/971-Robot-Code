@@ -225,7 +225,10 @@ void TypedAction<T>::DoCancel() {
 
 template <typename T>
 bool TypedAction<T>::DoRunning() {
-  if (!sent_started_) return false;
+  if (!sent_started_) {
+    LOG(DEBUG, "haven't sent start message yet\n");
+    return false;
+  }
   if (has_started_) {
     queue_group_->status.FetchNext();
     CheckInterrupted();

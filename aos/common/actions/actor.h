@@ -88,13 +88,13 @@ bool ActorBase<T>::CheckInitialRunning() {
   LOG(DEBUG, "Waiting for input to start\n");
 
   if (action_q_->goal.FetchLatest()) {
-    LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
     const uint32_t initially_running = action_q_->goal->run;
     if (initially_running != 0) {
       while (action_q_->goal->run == initially_running) {
         LOG(INFO, "run is still %" PRIx32 "\n", initially_running);
         action_q_->goal.FetchNextBlocking();
-        LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+        LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
       }
     }
     LOG(DEBUG, "Done waiting, goal\n");
@@ -109,7 +109,7 @@ void ActorBase<T>::WaitForActionRequest() {
   while (action_q_->goal.get() == nullptr || !action_q_->goal->run) {
     LOG(INFO, "Waiting for an action request.\n");
     action_q_->goal.FetchNextBlocking();
-    LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
     if (!action_q_->goal->run) {
       if (!action_q_->status.MakeWithBuilder()
                .running(0)
@@ -163,7 +163,7 @@ void ActorBase<T>::WaitForStop(uint32_t running_id) {
     LOG(INFO, "Waiting for the action (%" PRIx32 ") to be stopped.\n",
         running_id);
     action_q_->goal.FetchNextBlocking();
-    LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
   }
 }
 
@@ -231,7 +231,7 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
 template <class T>
 bool ActorBase<T>::ShouldCancel() {
   if (action_q_->goal.FetchNext()) {
-    LOG_STRUCT(DEBUG, "goal queue ", *action_q_->goal);
+    LOG_STRUCT(DEBUG, "goal queue", *action_q_->goal);
   }
   bool ans = !action_q_->goal->run;
   if (ans) {
