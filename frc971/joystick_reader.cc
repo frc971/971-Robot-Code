@@ -123,8 +123,10 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.14;
     r.begin_horizontal_move_height = 0.13;
     r.horizontal_move_target = -0.7;
+    r.horizontal_start_lowering = -0.65;
+    r.home_lift_horizontal_start_position = -0.60;
     r.place_height = -0.10;
-    r.home_return_height = 0.1;
+    r.home_return_height = 0.05;
     return r;
   }
 
@@ -135,6 +137,8 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.52;
     r.begin_horizontal_move_height = 0.5;
     r.horizontal_move_target = -0.48;
+    r.horizontal_start_lowering = r.horizontal_move_target;
+    r.home_lift_horizontal_start_position = -0.3;
     r.place_height = 0.39;
     r.home_return_height = 0.1;
     return r;
@@ -147,6 +151,8 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.17;
     r.begin_horizontal_move_height = 0.16;
     r.horizontal_move_target = -0.7;
+    r.horizontal_start_lowering = r.horizontal_move_target;
+    r.home_lift_horizontal_start_position = -0.3;
     r.place_height = 0.0;
     r.home_return_height = 0.1;
     return r;

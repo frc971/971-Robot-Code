@@ -13,7 +13,9 @@ struct ScoreParams {
   double upper_move_height;
   double begin_horizontal_move_height;
   double horizontal_move_target;
+  double horizontal_start_lowering;
   double place_height;
+  double home_lift_horizontal_start_position;
   double home_return_height;
 };
 
