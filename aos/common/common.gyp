@@ -21,6 +21,7 @@
         '<(AOS)/build/aos.gyp:logging',
         'once',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
+        'mutex',
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
@@ -244,11 +245,9 @@
       'dependencies': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
         '<(AOS)/build/aos.gyp:logging_interface',
-        'die',
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
-        'die',
       ],
     },
     {
@@ -263,6 +262,18 @@
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+      ],
+    },
+    {
+      'target_name': 'queue_testutils_test',
+      'type': 'executable',
+      'sources': [
+        'queue_testutils_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        'queue_testutils',
+        '<(AOS)/build/aos.gyp:logging',
       ],
     },
     {
