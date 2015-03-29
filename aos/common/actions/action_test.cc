@@ -10,6 +10,7 @@
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actions.q.h"
 #include "aos/common/actions/test_action.q.h"
+#include "aos/common/event.h"
 
 using ::aos::time::Time;
 
@@ -424,7 +425,58 @@ TEST_F(ActionTest, StructParamType) {
   EXPECT_FALSE(action_queue_.Running());
 }
 
-}  // namespace testing.
-}  // namespace actions.
-}  // namespace common.
-}  // namespace aos.
+// Tests that cancelling an action before the message confirming it started is
+// received works.
+// Situations like this used to lock the action queue up waiting for an action
+// to report that it successfully cancelled.
+// This situation is kind of a race condition, but it happens very consistently
+// when hitting buttons while the robot is in teleop-disabled. To hit the race
+// condition consistently in the test, there are a couple of Events inserted in
+// between various things running.
+TEST_F(ActionTest, CancelBeforeStart) {
+  Event thread_ready, ready_to_start, ready_to_stop;
+  ::std::thread action_thread(
+      [this, &thread_ready, &ready_to_start, &ready_to_stop]() {
+        TestActorNOP nop_act(&actions::test_action);
+        nop_act.Initialize();
+        thread_ready.Set();
+        ready_to_start.Wait();
+        nop_act.WaitForActionRequest();
+        LOG(DEBUG, "got a request to run\n");
+        const uint32_t running_id = nop_act.RunIteration();
+        LOG(DEBUG, "waiting for %" PRIx32 " to be stopped\n", running_id);
+        ready_to_stop.Set();
+        nop_act.WaitForStop(running_id);
+      });
+
+  action_queue_.CancelAllActions();
+  EXPECT_FALSE(action_queue_.Running());
+  thread_ready.Wait();
+  LOG(DEBUG, "starting action\n");
+  action_queue_.EnqueueAction(MakeTestActionNOP());
+  action_queue_.Tick();
+  action_queue_.CancelAllActions();
+  ready_to_start.Set();
+  LOG(DEBUG, "started action\n");
+  EXPECT_TRUE(action_queue_.Running());
+  ready_to_stop.Wait();
+  EXPECT_TRUE(action_queue_.Running());
+  LOG(DEBUG, "action is ready to stop\n");
+
+  action_queue_.Tick();
+  action_queue_.CancelAllActions();
+  EXPECT_FALSE(action_queue_.Running());
+  action_queue_.Tick();
+  action_queue_.CancelAllActions();
+  ASSERT_FALSE(action_queue_.Running());
+  action_thread.join();
+
+  action_queue_.Tick();
+  action_queue_.CancelAllActions();
+  ASSERT_FALSE(action_queue_.Running());
+}
+
+}  // namespace testing
+}  // namespace actions
+}  // namespace common
+}  // namespace aos
