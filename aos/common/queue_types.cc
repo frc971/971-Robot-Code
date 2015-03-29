@@ -18,6 +18,7 @@ ssize_t MessageType::Serialize(char *buffer, size_t max_bytes) const {
   uint16_t fields_size = 0;
   for (int i = 0; i < number_fields; ++i) {
     fields_size += sizeof(fields[i]->type);
+    fields_size += sizeof(fields[i]->length);
     fields_size += sizeof(uint16_t);
     fields_size += fields[i]->name.size();
   }
