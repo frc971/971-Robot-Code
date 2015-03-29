@@ -14,11 +14,11 @@ queue_group ClawQueue {
     // Angle of wrist joint.
     double angle;
     // Angular velocity of wrist.
-    double angular_velocity;
+    float angular_velocity;
     // Maximum profile velocity, or 0 for the default.
-    double max_velocity;
+    float max_velocity;
     // Maximum profile acceleration, or 0 for the default.
-    double max_acceleration;
+    float max_acceleration;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;
@@ -54,11 +54,11 @@ queue_group ClawQueue {
     // Estimated angle of wrist joint.
     double angle;
     // Estimated angular velocity of wrist.
-    double angular_velocity;
+    float angular_velocity;
 
     // Goal angle of wrist joint.
     double goal_angle;
-    double goal_velocity;
+    float goal_velocity;
     // Voltage of intake rollers. Positive means sucking in, negative means
     // spitting out.
     double intake;
