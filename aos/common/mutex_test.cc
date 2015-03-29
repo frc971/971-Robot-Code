@@ -4,6 +4,8 @@
 #include <math.h>
 #include <pthread.h>
 
+#include <thread>
+
 #include "gtest/gtest.h"
 
 #include "aos/linux_code/ipc_lib/aos_sync.h"
@@ -143,6 +145,24 @@ TEST_F(MutexTest, ThreadSanitizerContended) {
     c.WaitUntilDone();
   }
   EXPECT_EQ(2, counter);
+}
+
+// Verifiers that ThreadSanitizer understands how a mutex works.
+// For some reason this used to fail when the other tests didn't...
+TEST_F(MutexTest, ThreadSanitizerMutexLocker) {
+  int counter = 0;
+  ::std::thread thread([&counter, this]() {
+    for (int i = 0; i < 1000; ++i) {
+      MutexLocker locker(&test_mutex);
+      ++counter;
+    }
+  });
+  for (int i = 0; i < 1000; ++i) {
+    MutexLocker locker(&test_mutex);
+    --counter;
+  }
+  thread.join();
+  EXPECT_EQ(0, counter);
 }
 
 // Verifies that ThreadSanitizer understands that an uncontended mutex

@@ -155,21 +155,10 @@ inline int sys_futex_unlock_pi(aos_futex *addr1) {
 }
 
 // Returns true if it succeeds and false if it fails.
-// This is the same as __sync_bool_compare_and_swap, except it fixes that being
-// broken under tsan.
+// This is the same as __sync_bool_compare_and_swap, except it provides an easy
+// place to switch implementations and/or work around bugs.
 inline bool compare_and_swap(aos_futex *f, uint32_t before, uint32_t after) {
-#ifdef AOS_SANITIZER_thread
-  // TODO(brians): Figure out how exactly tsan breaks this and fix it + make
-  // sure our workaround actually works.
-  // This workaround is unsafe in the general case, but does not change the
-  // effect in our specific case if the primitive works correctly (and seems to
-  // still do the right thing even when tsan's version falsely reports failing).
-  if (__atomic_load_n(f, __ATOMIC_SEQ_CST) == after) return false;
-  if (__sync_bool_compare_and_swap(f, before, after)) return true;
-  return __atomic_load_n(f, __ATOMIC_SEQ_CST) == after;
-#else
   return __sync_bool_compare_and_swap(f, before, after);
-#endif
 }
 
 pid_t do_get_tid() {
@@ -266,6 +255,11 @@ inline int mutex_do_get(aos_mutex *m, bool signals_fail,
       break;
     }
   }
+
+#ifdef AOS_SANITIZER_thread
+  // Help tsan figure out that we're synchronizing on this.
+  __sync_fetch_and_add(&m->futex, 0);
+#endif
 
   return 0;
 }
