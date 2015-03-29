@@ -252,6 +252,20 @@
       ],
     },
     {
+      'target_name': 'event',
+      'type': 'static_library',
+      'sources': [
+        '<(AOS)/linux_code/ipc_lib/event.cc',
+      ],
+      'dependencies': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        '<(AOS)/build/aos.gyp:logging_interface',
+      ],
+      'export_dependent_settings': [
+        '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+      ],
+    },
+    {
       'target_name': 'mutex_test',
       'type': 'executable',
       'sources': [
@@ -266,6 +280,19 @@
         '<(AOS)/common/util/util.gyp:thread',
         '<(AOS)/common/common.gyp:time',
         'queue_testutils',
+      ],
+    },
+    {
+      'target_name': 'event_test',
+      'type': 'executable',
+      'sources': [
+        'event_test.cc',
+      ],
+      'dependencies': [
+        '<(EXTERNALS):gtest',
+        'event',
+        'queue_testutils',
+        'time',
       ],
     },
     {
