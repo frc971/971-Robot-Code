@@ -235,10 +235,13 @@ class Reader : public ::aos::input::JoystickInput {
     // Vertical can pickup.
     if (data.PosEdge(kCanPickup)) {
       actors::CanPickupParams params;
-      params.pickup_angle = -0.93;
-      params.pickup_height = 0.265;
-      params.lift_height = 0.65;
+      params.pickup_x = 0.6;
+      params.pickup_y = 0.1;
+      params.lift_height = 0.2;
+      params.pickup_goal_before_move_height = 0.3;
+      params.start_lowering_x = 0.1;
       // End low so the can is supported.
+      params.before_place_height = 0.4;
       params.end_height = 0.3;
       params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));

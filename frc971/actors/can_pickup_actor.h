@@ -18,6 +18,10 @@ class CanPickupActor : public FridgeActorBase<CanPickupActionQueueGroup> {
   explicit CanPickupActor(CanPickupActionQueueGroup *queues);
 
   bool RunAction(const CanPickupParams &params) override;
+
+ private:
+  double CurrentGoalHeight();
+  double CurrentGoalX();
 };
 
 typedef aos::common::actions::TypedAction<CanPickupActionQueueGroup>

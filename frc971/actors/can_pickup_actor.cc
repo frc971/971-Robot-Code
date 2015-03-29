@@ -7,15 +7,40 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/claw/claw.q.h"
 
+using ::frc971::control_loops::fridge_queue;
+
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kArmMove{1.0, 1.6};
-constexpr ProfileParams kElevatorMove{0.6, 2.2};
+constexpr ProfileParams kHorizontalMove{1.1, 2.5};
+constexpr ProfileParams kVerticalMove{0.3, 2.0};
+constexpr ProfileParams kFastHorizontalMove{1.25, 5.0};
+constexpr ProfileParams kFastVerticalMove{0.40, 2.0};
+constexpr ProfileParams kPureVerticalMove{1.20, 5.0};
 }  // namespace
 
 CanPickupActor::CanPickupActor(CanPickupActionQueueGroup *queues)
     : FridgeActorBase<CanPickupActionQueueGroup>(queues) {}
+
+double CanPickupActor::CurrentGoalX() {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
+    LOG(ERROR, "Reading from fridge status queue failed.\n");
+    return 0.0;
+  }
+
+  return fridge_queue.status->goal_x;
+}
+
+double CanPickupActor::CurrentGoalHeight() {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
+    LOG(ERROR, "Reading from fridge status queue failed.\n");
+    return 0.0;
+  }
+
+  return fridge_queue.status->goal_y;
+}
 
 bool CanPickupActor::RunAction(const CanPickupParams &params) {
   // Make sure the claw is down.
@@ -33,23 +58,43 @@ bool CanPickupActor::RunAction(const CanPickupParams &params) {
   }
 
   // Go around the can.
-  DoFridgeProfile(params.pickup_height, params.pickup_angle, kElevatorMove,
-                  kArmMove, false);
+  DoFridgeXYProfile(params.pickup_x, params.pickup_y, kFastHorizontalMove,
+                    kFastVerticalMove, true, false, false);
   if (ShouldCancel()) return true;
 
-  // Lift and grab.
-  DoFridgeProfile(params.lift_height, params.pickup_angle, kElevatorMove,
-                  kArmMove, true);
+  if (!StartFridgeXYProfile(
+          params.pickup_x, params.pickup_goal_before_move_height,
+          kHorizontalMove, kPureVerticalMove, true, true, true)) {
+    return false;
+  }
+
+  bool above_claw = false;
+  while (true) {
+    if (CurrentGoalHeight() > params.lift_height && !above_claw) {
+      if (!StartFridgeXYProfile(0.0, params.before_place_height,
+                                kHorizontalMove, kVerticalMove, true, true,
+                                true)) {
+        return false;
+      }
+      above_claw = true;
+    }
+    if (CurrentGoalX() < params.start_lowering_x) {
+      // Getting close, start lowering.
+      LOG(DEBUG, "Starting to lower the can onto the tray.\n");
+      break;
+    }
+    ProfileStatus status =
+        IterateXYProfile(0.0, params.before_place_height, kHorizontalMove,
+                         kVerticalMove, true, true, true);
+    if (status == DONE || status == CANCELED) {
+      break;
+    }
+  }
   if (ShouldCancel()) return true;
 
-  // Pull it back in.
-  DoFridgeProfile(params.lift_height, params.end_angle, kElevatorMove, kArmMove,
-                  true);
-  if (ShouldCancel()) return true;
-
-  // Pull it back in.
-  DoFridgeProfile(params.end_height, params.end_angle, kElevatorMove, kArmMove,
-                  true);
+  // Lower it.
+  DoFridgeXYProfile(0.0, params.end_height, kHorizontalMove, kPureVerticalMove,
+                    true);
   if (ShouldCancel()) return true;
 
   return true;
