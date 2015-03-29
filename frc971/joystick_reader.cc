@@ -412,9 +412,9 @@ class Reader : public ::aos::input::JoystickInput {
         waiting_for_zero_ = false;
 
         // Set the initial goals to where we are now.
-        elevator_goal_ = fridge_queue.status->goal_height;
-        arm_goal_ = fridge_queue.status->goal_angle;
-        claw_goal_ = claw_queue.status->angle;
+        elevator_goal_ = 0.3;
+        arm_goal_ = 0.0;
+        claw_goal_ = 0.6;
       }
     } else {
       waiting_for_zero_ = true;
