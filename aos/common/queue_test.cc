@@ -273,6 +273,21 @@ TEST_F(MessageTest, SetNow) {
   EXPECT_LE(msg.sent_time - Time::Now(), Time::InMS(20));
 }
 
+// Tests that EqualsNoTime works.
+TEST_F(MessageTest, EqualsNoTime) {
+  msg.test_bool = true;
+  msg.test_int = 971;
+  TestingMessage other;
+  other.test_int = 971;
+  EXPECT_FALSE(other.EqualsNoTime(msg));
+  EXPECT_FALSE(msg.EqualsNoTime(other));
+  other.test_bool = true;
+  EXPECT_TRUE(other.EqualsNoTime(msg));
+  EXPECT_TRUE(msg.EqualsNoTime(other));
+  msg.SetTimeToNow();
+  EXPECT_TRUE(msg.EqualsNoTime(other));
+}
+
 }  // namespace testing
 }  // namespace common
 }  // namespace aos

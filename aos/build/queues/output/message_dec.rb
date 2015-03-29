@@ -115,6 +115,10 @@ class Target::StructBase < Target::Node
     @members.each do |elem|
       if elem.respond_to? :create_EqualsNoTime
         member_func.suite << "if (!other.#{elem.name}.EqualsNoTime(#{elem.name})) return false;"
+      elsif elem.respond_to?(:length) && elem.member_type.respond_to?(:create_EqualsNoTime)
+        0.upto(elem.length - 1) do |i|
+          member_func.suite << "if (!other.#{elem.name}[#{i}].EqualsNoTime(#{elem.name}[#{i}])) return false;"
+        end
       else
         member_func.suite << "if (other.#{elem.name} != #{elem.name}) return false;"
       end
@@ -228,6 +232,7 @@ class Target::MessageDec < Target::StructBase
     create_DoGetType(type_class, cpp_tree)
     create_DefaultConstructor(type_class, cpp_tree)
     create_InOrderConstructor(type_class, cpp_tree)
+    create_EqualsNoTime(type_class, cpp_tree)
 
     b_namespace = cpp_tree.get(b_loc = self.class.builder_loc(@loc))
 
@@ -366,6 +371,9 @@ class Target::MessageArrayElement < Target::Node
   end
   def type()
     return "::std::array< #{@type.type()}, #{@length}>"
+  end
+  def member_type()
+    return @type
   end
   def simpleStr()
     return "#{@type.type} #{@name}[#{@length}]"
