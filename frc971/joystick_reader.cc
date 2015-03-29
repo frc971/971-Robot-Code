@@ -400,15 +400,13 @@ class Reader : public ::aos::input::JoystickInput {
     fridge_queue.status.FetchLatest();
     if (!claw_queue.status.get()) {
       LOG(ERROR, "Got no claw status packet.\n");
-      // Not safe to continue.
-      return;
     }
     if (!fridge_queue.status.get()) {
       LOG(ERROR, "Got no fridge status packet.\n");
-      return;
     }
 
-    if (claw_queue.status->zeroed && fridge_queue.status->zeroed) {
+    if (claw_queue.status.get() && fridge_queue.status.get() &&
+        claw_queue.status->zeroed && fridge_queue.status->zeroed) {
       if (waiting_for_zero_) {
         LOG(INFO, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
@@ -420,7 +418,6 @@ class Reader : public ::aos::input::JoystickInput {
       }
     } else {
       waiting_for_zero_ = true;
-      return;
     }
 
     if (!waiting_for_zero_) {
@@ -473,7 +470,7 @@ class Reader : public ::aos::input::JoystickInput {
       if (control_loops::claw_queue.status.get()) {
         claw_goal_ = control_loops::claw_queue.status->goal_angle;
       } else {
-        LOG(ERROR, "No fridge status!\n");
+        LOG(ERROR, "No claw status!\n");
       }
     }
     action_queue_.Tick();

@@ -65,6 +65,11 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                                bool front_grabbers, bool back_grabbers) {
     if (this->ShouldCancel()) {
       LOG(INFO, "Canceling fridge movement\n");
+      if (!control_loops::fridge_queue.status.get()) {
+        LOG(WARNING, "no fridge status so can't really cancel\n");
+        return CANCELED;
+      }
+
       auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
       new_fridge_goal->profiling_type = 0;
       new_fridge_goal->max_velocity = elevator_parameters.velocity;
