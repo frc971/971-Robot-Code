@@ -129,7 +129,13 @@ void ControlLoopReplayer<T>::DoProcessFile() {
 
     // Send out the position message (after adjusting the time offset) so the
     // loop will run right now.
-    CHECK(position_.have_new_message());
+    if (!position_.have_new_message()) {
+      LOG(WARNING, "don't have a new position this cycle -> skipping\n");
+      status_.clear_new_message();
+      position_.clear_new_message();
+      output_.clear_new_message();
+      continue;
+    }
     ::aos::time::OffsetToNow(position_.saved_message().sent_time);
     {
       auto position_message = loop_group_->position.MakeMessage();
