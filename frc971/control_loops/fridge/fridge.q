@@ -42,19 +42,19 @@ queue_group FridgeQueue {
     double height;
 
     // Angular velocity of the arm.
-    double angular_velocity;
+    float angular_velocity;
     // Linear velocity of the elevator.
-    double velocity;
+    float velocity;
 
     // Maximum arm profile angular velocity or 0 for the default.
-    double max_angular_velocity;
+    float max_angular_velocity;
     // Maximum elevator profile velocity or 0 for the default.
-    double max_velocity;
+    float max_velocity;
 
     // Maximum arm profile acceleration or 0 for the default.
-    double max_angular_acceleration;
+    float max_angular_acceleration;
     // Maximum elevator profile acceleration or 0 for the default.
-    double max_acceleration;
+    float max_acceleration;
 
     // X position of the fridge.
     double x;
@@ -62,19 +62,19 @@ queue_group FridgeQueue {
     double y;
 
     // Velocity of the x position of the fridge.
-    double x_velocity;
+    float x_velocity;
     // Velocity of the y position of the fridge.
-    double y_velocity;
+    float y_velocity;
 
     // Maximum x profile velocity or 0 for the default.
-    double max_x_velocity;
+    float max_x_velocity;
     // Maximum y profile velocity or 0 for the default.
-    double max_y_velocity;
+    float max_y_velocity;
 
     // Maximum x profile acceleration or 0 for the default.
-    double max_x_acceleration;
+    float max_x_acceleration;
     // Maximum y profile acceleration or 0 for the default.
-    double max_y_acceleration;
+    float max_y_acceleration;
 
     // TODO(austin): Do I need acceleration here too?
 
@@ -93,34 +93,34 @@ queue_group FridgeQueue {
     // Estimated angle of the arm.
     double angle;
     // Estimated angular velocity of the arm.
-    double angular_velocity;
+    float angular_velocity;
     // Estimated height of the elevator.
     double height;
     // Estimated velocity of the elvator.
-    double velocity;
+    float velocity;
     // state of the grabber pistons
     GrabberPistons grabbers;
 
     // Goal angle and velocity of the arm.
     double goal_angle;
-    double goal_angular_velocity;
+    float goal_angular_velocity;
     // Goal height and velocity of the elevator.
     double goal_height;
-    double goal_velocity;
+    float goal_velocity;
 
     // Estimated X/Y position of the fridge.
     // These are translated directly from the height/angle statuses.
     double x;
     double y;
-    double x_velocity;
-    double y_velocity;
+    float x_velocity;
+    float y_velocity;
 
     // X/Y goals of the fridge.
     // These are translated directly from the height/angle goals.
     double goal_x;
     double goal_y;
-    double goal_x_velocity;
-    double goal_y_velocity;
+    float goal_x_velocity;
+    float goal_y_velocity;
 
     // If true, we have aborted.
     bool estopped;
