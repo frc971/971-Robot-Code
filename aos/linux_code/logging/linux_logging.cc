@@ -108,7 +108,7 @@ void Write(LogMessage *msg) {
   if (__builtin_expect(dropped_messages > 0, false)) {
     ::aos::time::Time message_time =
         ::aos::time::Time(msg->seconds, msg->nseconds);
-    if (backoff_start - message_time < kDropBackoff) {
+    if (message_time - backoff_start < kDropBackoff) {
       ++dropped_messages;
       queue->FreeMessage(msg);
       return;
