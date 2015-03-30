@@ -442,7 +442,7 @@ class PrimeProcessor(Processor):
              ''.join(mv_cmd).format(TMPDIR=TEMP_DIR, TO_DIR=TARGET_DIR)))
 
     def build_env(self):
-      OTHER_SYSROOT = '/usr/lib/llvm-3.5'
+      OTHER_SYSROOT = '/usr/lib/llvm-3.5/'
       SYMBOLIZER_PATH = OTHER_SYSROOT + 'bin/llvm-symbolizer'
       r = {}
       if self.compiler() == 'clang' or self.compiler() == 'gcc_4.8':
