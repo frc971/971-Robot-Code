@@ -63,7 +63,8 @@
         '<(AOS)/common/logging/logging.gyp:queue_logging',
         '<(AOS)/common/common.gyp:queues',
         '<(AOS)/common/common.gyp:time',
-        'action_queue'
+        'action_queue',
+        '<(AOS)/common/common.gyp:event',
       ],
     },
   ],
