@@ -136,11 +136,9 @@
       ],
       'dependencies': [
         'gtest_prod',
-        '<(AOS)/common/common.gyp:queue_testutils',
       ],
       'export_dependent_settings': [
         'gtest_prod',
-        '<(AOS)/common/common.gyp:queue_testutils',
       ],
       'cflags!': ['-Werror'],
       'direct_dependent_settings': {
