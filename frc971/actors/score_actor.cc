@@ -16,7 +16,7 @@ namespace actors {
 namespace {
 
 const double kSlowMaxXVelocity = 0.80;
-const double kSlowMaxYVelocity = 0.30;
+const double kSlowMaxYVelocity = 0.40;
 const double kFastMaxXVelocity = 0.80;
 const double kFastMaxYVelocity = 0.30;
 const double kReallyFastMaxXVelocity = 1.0;
@@ -24,8 +24,10 @@ const double kReallyFastMaxYVelocity = 0.6;
 
 const double kMaxXAcceleration = 0.5;
 const double kMaxYAcceleration = 0.7;
-const double kFastMaxXAcceleration = 1.2;
-const double kFastMaxYAcceleration = 1.2;
+const double kLiftYAcceleration = 2.0;
+const double kLowerYAcceleration = 2.0;
+const double kFastMaxXAcceleration = 1.5;
+const double kFastMaxYAcceleration = 1.5;
 const double kSlowMaxXAcceleration = 0.3;
 const double kSlowMaxYAcceleration = 0.5;
 
@@ -58,7 +60,7 @@ bool ScoreActor::RunAction(const ScoreParams& params) {
 bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
   // Move the fridge up a little bit.
   if (!SendGoal(0.0, params.upper_move_height, true, kSlowMaxXVelocity,
-                kSlowMaxYVelocity, kMaxXAcceleration, kMaxYAcceleration)) {
+                kSlowMaxYVelocity, kMaxXAcceleration, kLiftYAcceleration)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -120,7 +122,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
   // Once the fridge is way out, put it on the ground.
   if (!SendGoal(params.horizontal_move_target, params.place_height, true,
                 kFastMaxXVelocity, kFastMaxYVelocity, kMaxXAcceleration,
-                kMaxYAcceleration)) {
+                kLowerYAcceleration)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
@@ -139,21 +141,11 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
   // Release and give the grabers a chance to get out of the way.
   if (!SendGoal(params.horizontal_move_target, params.place_height, false,
                 kFastMaxXVelocity, kFastMaxYVelocity, kMaxXAcceleration,
-                kMaxYAcceleration)) {
+                kLowerYAcceleration)) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
   if (!WaitOrCancel(::aos::time::Time::InSeconds(0.1))) return true;
-
-  // Release the grabbers.
-  if (!SendGoal(params.horizontal_move_target, params.place_height, false,
-                kFastMaxXVelocity, kFastMaxYVelocity, kMaxXAcceleration,
-                kMaxYAcceleration)) {
-    LOG(ERROR, "Sending fridge message failed.\n");
-    return false;
-  }
-
-  if (ShouldCancel()) return true;
 
   // Go back to the home position.
   if (!SendGoal(0.0, params.place_height, false, kReallyFastMaxXVelocity,
