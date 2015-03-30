@@ -231,7 +231,6 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
         claw_position() <= values.claw.wrist.lower_hard_limit) {
       LOG(ERROR, "Claw at %f out of bounds [%f, %f].\n", claw_position(),
           values.claw.wrist.lower_limit, values.claw.wrist.upper_limit);
-      state_ = ESTOP;
     }
   }
 
