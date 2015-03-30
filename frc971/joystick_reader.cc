@@ -71,7 +71,9 @@ const ButtonLocation kQuickTurn(1, 5);
 //const ButtonLocation kFridgeClosed(3, 1);
 
 
-const ButtonLocation kRollersIn(4, 5);
+const ButtonLocation kStackAndHold(3, 5);
+const ButtonLocation kRollersIn(3, 2);
+const ButtonLocation kHorizontalCanRollersIn(4, 5);
 const ButtonLocation kClawToggle(4, 1);
 
 const POVLocation kElevatorCanUp(4, 0);
@@ -80,7 +82,6 @@ const POVLocation kElevatorCanUp(4, 0);
 const POVLocation kCanPickup(4, 180);
 const ButtonLocation kToteChute(4, 6);
 const ButtonLocation kStackAndLift(4, 7);
-const ButtonLocation kStackAndHold(3, 5);
 
 // Pull in the 6th tote.
 //const ButtonLocation kSixthTote(4, 10);
@@ -109,6 +110,7 @@ const POVLocation kSetStackDownAndHold(4, 90);
 const double kClawTotePackAngle = 0.90;
 const double kArmRaiseLowerClearance = -0.08;
 const double kClawStackClearance = 0.55;
+const double kHorizontalCanClawAngle = 0.12;
 
 const double kStackUpHeight = 0.60;
 const double kStackUpArm = 0.0;
@@ -139,7 +141,7 @@ class Reader : public ::aos::input::JoystickInput {
     r.horizontal_move_target = -0.48;
     r.horizontal_start_lowering = r.horizontal_move_target;
     r.home_lift_horizontal_start_position = -0.3;
-    r.place_height = 0.39;
+    r.place_height = 0.35;
     r.home_return_height = 0.1;
     return r;
   }
@@ -201,8 +203,13 @@ class Reader : public ::aos::input::JoystickInput {
       intake_power = 10.0;
       claw_goal_ = 0.0;
     }
+    if (data.IsPressed(kHorizontalCanRollersIn)) {
+      intake_power = 10.0;
+      claw_goal_ = kHorizontalCanClawAngle;
+    }
     if (data.IsPressed(kSpit)) {
       intake_power = -12.0;
+      action_queue_.CancelAllActions();
     }
 
     // Toggle button for the claw
@@ -220,9 +227,9 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
       params.elevator_height = 0.3;
-      params.pickup_angle = 0.40;
-      params.suck_time = 0.08;
-      params.suck_power = 8.0;
+      params.pickup_angle = 0.60 + kHorizontalCanClawAngle;
+      params.suck_time = 0.10;
+      params.suck_power = 10.0;
 
       params.claw_settle_time = 0.05;
       params.claw_settle_power = 5.0;
@@ -262,7 +269,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     // Tote chute pull in when button is pressed, pack when done.
     if (data.IsPressed(kToteChute)) {
-      claw_goal_ = 0.8;
+      claw_goal_ = 0.75;
       intake_power = 7.0;
     }
     if (data.NegEdge(kToteChute)) {
@@ -455,7 +462,7 @@ class Reader : public ::aos::input::JoystickInput {
         if (!claw_queue.goal.MakeWithBuilder()
                  .angle(claw_goal_)
                  .rollers_closed(claw_rollers_closed_)
-                 .max_velocity(4.0)
+                 .max_velocity(5.0)
                  .max_acceleration(6.0)
                  .intake(intake_power)
                  .Send()) {
