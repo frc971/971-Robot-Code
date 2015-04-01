@@ -411,6 +411,10 @@ int futex_wait_timeout(aos_futex *m, const struct timespec *timeout) {
       return -1;
     }
   }
+#ifdef AOS_SANITIZER_thread
+  // Help tsan figure out that we're synchronizing on this.
+  __sync_add_and_fetch(m, 0);
+#endif
   return 0;
 }
 

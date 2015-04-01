@@ -34,8 +34,9 @@ TEST_F(EventTest, Basic) {
 // Tests that tsan understands that events establish a happens-before
 // relationship.
 TEST_F(EventTest, ThreadSanitizer) {
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 3000; ++i) {
     int variable = 0;
+    test_event.Clear();
     ::std::thread thread([this, &variable]() {
       test_event.Wait();
       --variable;
@@ -50,12 +51,16 @@ TEST_F(EventTest, ThreadSanitizer) {
 // Tests that an event blocks correctly.
 TEST_F(EventTest, Blocks) {
   time::Time start_time, finish_time;
-  ::std::thread thread([this, &start_time, &finish_time]() {
+  // Without this, it sometimes manages to fail under tsan.
+  Event started;
+  ::std::thread thread([this, &start_time, &finish_time, &started]() {
     start_time = time::Time::Now();
+    started.Set();
     test_event.Wait();
     finish_time = time::Time::Now();
   });
   static const time::Time kWaitTime = time::Time::InSeconds(0.05);
+  started.Wait();
   time::SleepFor(kWaitTime);
   test_event.Set();
   thread.join();

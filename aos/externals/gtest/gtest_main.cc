@@ -2,7 +2,18 @@
 #include <getopt.h>
 
 #include "gtest/gtest.h"
-#include "aos/common/queue_testutils.h"
+
+namespace aos {
+namespace common {
+namespace testing {
+
+// Actually declared/defined in aos/common/queue_testutils.
+void SetLogFileName(const char* filename) __attribute__((weak));
+void ForcePrintLogsDuringTests() __attribute__((weak));
+
+}  // namespace testing
+}  // namespace common
+}  // namespace aos
 
 GTEST_API_ int main(int argc, char **argv) {
   static const struct option long_options[] = {
@@ -36,11 +47,15 @@ GTEST_API_ int main(int argc, char **argv) {
         break;
 
       case 'p':
-        aos::common::testing::ForcePrintLogsDuringTests();
+        if (::aos::common::testing::ForcePrintLogsDuringTests) {
+          ::aos::common::testing::ForcePrintLogsDuringTests();
+        }
         break;
 
       case 'o':
-        aos::common::testing::SetLogFileName(optarg);
+        if (::aos::common::testing::SetLogFileName) {
+          ::aos::common::testing::SetLogFileName(optarg);
+        }
         break;
 
       case '?':
