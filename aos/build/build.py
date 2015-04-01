@@ -670,6 +670,7 @@ Arguments:
                            Defaults to everything.
   extra_flag...            Extra flags associated with the targets.
                            --gtest_*: Arguments to pass on to tests.
+                           --print_logs, --log_file=*: More test arguments.
 
 Specifying targets:
  Targets are combinations of architecture, compiler, and debug flags. Which
@@ -755,12 +756,13 @@ Examples of specifying targets:
       continue
     if arg == '-h' or arg == '--help':
       print_help(0)
-    if re.match('^--gtest_.*$', arg):
+    if (re.match('^--gtest_.*$', arg) or arg == '--print-logs' or
+        re.match('^--log_file=.*$', arg)):
       if args.action_name == 'tests':
         args.extra_flags.append(arg)
         continue
       else:
-        print_help(1, '--gtest_* is only valid for tests')
+        print_help(1, '%s is only valid for tests' % arg)
     if args.platform:
       args.targets.append(arg)
     else:
