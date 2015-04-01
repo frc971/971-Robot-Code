@@ -86,12 +86,12 @@ class Claw(control_loop.ControlLoop):
 
     print 'L is', self.L
 
-    q_pos = 0.018
-    q_vel = 0.05
+    q_pos = 0.05
+    q_vel = 2.65
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0],
                            [0.0, (q_vel ** 2.0)]])
 
-    r_volts = 0.1
+    r_volts = 0.025
     self.R = numpy.matrix([[(r_volts ** 2.0)]])
 
     self.KalmanGain, self.Q_steady = controls.kalman(
