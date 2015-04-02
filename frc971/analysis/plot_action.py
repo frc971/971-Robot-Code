@@ -24,6 +24,14 @@ def ReadPlotDefinitions(filename):
 
   Lines are ignored if they start with a hash mark (i.e. '#').
 
+  Lines that end with a "-b X" where X is a number then it designates that line
+  as plotting a boolean value. X is the value plotted when the boolean is true.
+  When the boolean is false then the values is plotted as zero. For example,
+  the following boolean value is drawn to toggle between 2.0 and 0 when the
+  boolean is True and False, respectively:
+
+    fridge status zeroed -b 2.0
+
   Args:
     filename: The name of the file to read the definitions from.
 
@@ -47,7 +55,7 @@ def main():
   arg_parser = argparse.ArgumentParser(description='Log Plotter')
   arg_parser.add_argument('log_file', metavar='LOG_FILE', type=str, \
       help='The file from which to read logs and plot.')
-  arg_parser.add_argument('--plot-defs', action='store', type=str, \
+  arg_parser.add_argument('--plot-defs', '-p', action='store', type=str, \
       help='Read the items to plot from this file.')
   arg_parser.add_argument('--no-binary', '-n', action='store_true', \
       help='Don\'t print the binary name in the legend.')

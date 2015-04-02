@@ -49,6 +49,14 @@ class Plotter(object):
       binary = key[0]
       struct_instance_name = key[1]
       data_search_path = key[2]
+      boolean_multiplier = None
+
+      # If the plot definition line ends with a "-b X" where X is a number then
+      # that number gets drawn when the value is True. Zero gets drawn when the
+      # value is False.
+      if len(data_search_path) >= 2 and data_search_path[-2] == '-b':
+        boolean_multiplier = float(data_search_path[-1])
+        data_search_path = data_search_path[:-2]
 
       # Make sure that we're looking at the right binary structure instance.
       if binary == pline.name:
@@ -60,7 +68,13 @@ class Plotter(object):
           for path in data_search_path:
             data = data[path]
 
-          value.Add(pline.time, data)
+          if boolean_multiplier is not None:
+            if data == 'T':
+              value.Add(pline.time, boolean_multiplier)
+            else:
+              value.Add(pline.time, 0)
+          else:
+            value.Add(pline.time, data)
 
   def Plot(self, no_binary_in_legend):
     """
