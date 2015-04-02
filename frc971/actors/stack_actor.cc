@@ -11,12 +11,13 @@
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kArmWithStackMove{1.75, 0.60};
+constexpr ProfileParams kArmWithStackMove{1.75, 4.20};
 constexpr ProfileParams kSlowArmMove{1.3, 1.4};
-constexpr ProfileParams kSlowElevatorMove{0.5, 3.0};
+constexpr ProfileParams kSlowElevatorMove{1.0, 3.0};
 
 constexpr ProfileParams kFastArmMove{0.8, 4.0};
 constexpr ProfileParams kFastElevatorMove{1.2, 5.0};
+constexpr ProfileParams kReallyFastElevatorMove{1.2, 6.0};
 }  // namespace
 
 StackActor::StackActor(StackActionQueueGroup *queues)
@@ -41,10 +42,6 @@ bool StackActor::RunAction(const StackParams &params) {
   }
 
   // Set the current stack down on top of the bottom box.
-  DoFridgeProfile(params.over_box_before_place_height, 0.0, kSlowElevatorMove,
-                  kArmWithStackMove, true);
-  if (ShouldCancel()) return true;
-  // Set down on the box.
   DoFridgeProfile(params.bottom + values.tote_height, 0.0, kSlowElevatorMove,
                   kSlowArmMove, true);
   if (ShouldCancel()) return true;
@@ -82,20 +79,10 @@ bool StackActor::RunAction(const StackParams &params) {
     return true;
   }
 
-  // TODO(ben): I'm not sure why this liitle jog is here. we are removing it for
-  // the fangs, but I want to keep the code here so austin can explain.
-  /*DoFridgeProfile(params.bottom + values.tote_height, params.arm_clearance,
-                  kFastElevatorMove, kFastArmMove, false);
-
-  if (ShouldCancel()) return true;
-  DoFridgeProfile(params.bottom, params.arm_clearance, kFastElevatorMove,
-                  kFastArmMove, false);*/
   if (ShouldCancel()) return true;
   // grab can (if in fang mode the grabber stays closed)
-  DoFridgeProfile(params.bottom, 0.0, kFastElevatorMove, kFastArmMove, false,
+  DoFridgeProfile(params.bottom, 0.0, kReallyFastElevatorMove, kFastArmMove, true,
                   true, true);
-  if (ShouldCancel()) return true;
-  aos::time::SleepFor(aos::time::Time::InMS(200));
 
   return true;
 }

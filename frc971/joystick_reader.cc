@@ -71,7 +71,9 @@ const ButtonLocation kQuickTurn(1, 5);
 //const ButtonLocation kFridgeClosed(3, 1);
 
 
-const ButtonLocation kRollersIn(4, 5);
+const ButtonLocation kStackAndHold(3, 5);
+const ButtonLocation kRollersIn(3, 2);
+const ButtonLocation kHorizontalCanRollersIn(4, 5);
 const ButtonLocation kClawToggle(4, 1);
 
 const POVLocation kElevatorCanUp(4, 0);
@@ -80,7 +82,6 @@ const POVLocation kElevatorCanUp(4, 0);
 const POVLocation kCanPickup(4, 180);
 const ButtonLocation kToteChute(4, 6);
 const ButtonLocation kStackAndLift(4, 7);
-const ButtonLocation kStackAndHold(3, 5);
 
 // Pull in the 6th tote.
 //const ButtonLocation kSixthTote(4, 10);
@@ -106,12 +107,13 @@ const ButtonLocation kSpit(4, 3);
 // Set stack down in the bot.
 const POVLocation kSetStackDownAndHold(4, 90);
 
-const double kClawTotePackAngle = 0.95;
+const double kClawTotePackAngle = 0.90;
 const double kArmRaiseLowerClearance = -0.08;
 const double kClawStackClearance = 0.55;
+const double kHorizontalCanClawAngle = 0.12;
 
-const double kStackUpHeight = 0.55;
-const double kStackUpArm = 0.1;
+const double kStackUpHeight = 0.60;
+const double kStackUpArm = 0.0;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -123,8 +125,10 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.14;
     r.begin_horizontal_move_height = 0.13;
     r.horizontal_move_target = -0.7;
+    r.horizontal_start_lowering = -0.65;
+    r.home_lift_horizontal_start_position = -0.60;
     r.place_height = -0.10;
-    r.home_return_height = 0.1;
+    r.home_return_height = 0.05;
     return r;
   }
 
@@ -135,7 +139,9 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.52;
     r.begin_horizontal_move_height = 0.5;
     r.horizontal_move_target = -0.48;
-    r.place_height = 0.39;
+    r.horizontal_start_lowering = r.horizontal_move_target;
+    r.home_lift_horizontal_start_position = -0.3;
+    r.place_height = 0.35;
     r.home_return_height = 0.1;
     return r;
   }
@@ -147,6 +153,8 @@ class Reader : public ::aos::input::JoystickInput {
     r.upper_move_height = 0.17;
     r.begin_horizontal_move_height = 0.16;
     r.horizontal_move_target = -0.7;
+    r.horizontal_start_lowering = r.horizontal_move_target;
+    r.home_lift_horizontal_start_position = -0.3;
     r.place_height = 0.0;
     r.home_return_height = 0.1;
     return r;
@@ -195,8 +203,13 @@ class Reader : public ::aos::input::JoystickInput {
       intake_power = 10.0;
       claw_goal_ = 0.0;
     }
+    if (data.IsPressed(kHorizontalCanRollersIn)) {
+      intake_power = 10.0;
+      claw_goal_ = kHorizontalCanClawAngle;
+    }
     if (data.IsPressed(kSpit)) {
       intake_power = -12.0;
+      action_queue_.CancelAllActions();
     }
 
     // Toggle button for the claw
@@ -214,9 +227,9 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
       params.elevator_height = 0.3;
-      params.pickup_angle = 0.40;
-      params.suck_time = 0.08;
-      params.suck_power = 8.0;
+      params.pickup_angle = 0.60 + kHorizontalCanClawAngle;
+      params.suck_time = 0.10;
+      params.suck_power = 10.0;
 
       params.claw_settle_time = 0.05;
       params.claw_settle_power = 5.0;
@@ -235,10 +248,13 @@ class Reader : public ::aos::input::JoystickInput {
     // Vertical can pickup.
     if (data.PosEdge(kCanPickup)) {
       actors::CanPickupParams params;
-      params.pickup_angle = -0.93;
-      params.pickup_height = 0.265;
-      params.lift_height = 0.65;
+      params.pickup_x = 0.6;
+      params.pickup_y = 0.1;
+      params.lift_height = 0.2;
+      params.pickup_goal_before_move_height = 0.3;
+      params.start_lowering_x = 0.1;
       // End low so the can is supported.
+      params.before_place_height = 0.4;
       params.end_height = 0.3;
       params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
@@ -253,7 +269,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     // Tote chute pull in when button is pressed, pack when done.
     if (data.IsPressed(kToteChute)) {
-      claw_goal_ = 0.8;
+      claw_goal_ = 0.75;
       intake_power = 7.0;
     }
     if (data.NegEdge(kToteChute)) {
@@ -262,13 +278,13 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kStackAndLift)) {
       actors::StackAndLiftParams params;
-      params.stack_params.claw_out_angle = kClawStackClearance;
+      params.stack_params.claw_out_angle = kClawTotePackAngle;
       params.stack_params.bottom = 0.020;
       params.stack_params.over_box_before_place_height = 0.39;
       params.stack_params.arm_clearance = kArmRaiseLowerClearance;
 
       params.grab_after_stack = true;
-      params.clamp_pause_time = 0.1;
+      params.clamp_pause_time = 0.0;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
       params.grab_after_lift = true;
@@ -287,7 +303,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_clamp_angle = kClawTotePackAngle;
 
       params.hold_height = 0.68;
-      params.claw_out_angle = kClawStackClearance;
+      params.claw_out_angle = kClawTotePackAngle;
 
       if (data.PosEdge(kSetStackDownAndHold)) {
         params.place_not_stack = true;
@@ -307,11 +323,11 @@ class Reader : public ::aos::input::JoystickInput {
     // Lower the fridge from holding the stack, grab the stack, and then lift.
     if (data.PosEdge(kHeldToLift)) {
       actors::HeldToLiftParams params;
-      params.arm_clearance = kArmRaiseLowerClearance;
+      params.arm_clearance = kClawStackClearance;
       params.clamp_pause_time = 0.1;
       params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
-      params.claw_out_angle = kClawStackClearance;
+      params.claw_out_angle = kClawTotePackAngle;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
       fridge_closed_ = true;
@@ -350,7 +366,7 @@ class Reader : public ::aos::input::JoystickInput {
     // Place stack on a tote in the tray, and grab it.
     if (data.PosEdge(kStack)) {
       actors::StackParams params;
-      params.claw_out_angle = kClawStackClearance;
+      params.claw_out_angle = kClawTotePackAngle;
       params.bottom = 0.020;
       params.only_place = false;
       params.arm_clearance = kArmRaiseLowerClearance;
@@ -412,9 +428,9 @@ class Reader : public ::aos::input::JoystickInput {
         waiting_for_zero_ = false;
 
         // Set the initial goals to where we are now.
-        elevator_goal_ = fridge_queue.status->goal_height;
-        arm_goal_ = fridge_queue.status->goal_angle;
-        claw_goal_ = claw_queue.status->angle;
+        elevator_goal_ = 0.3;
+        arm_goal_ = 0.0;
+        claw_goal_ = 0.6;
       }
     } else {
       waiting_for_zero_ = true;
@@ -446,7 +462,7 @@ class Reader : public ::aos::input::JoystickInput {
         if (!claw_queue.goal.MakeWithBuilder()
                  .angle(claw_goal_)
                  .rollers_closed(claw_rollers_closed_)
-                 .max_velocity(4.0)
+                 .max_velocity(5.0)
                  .max_acceleration(6.0)
                  .intake(intake_power)
                  .Send()) {

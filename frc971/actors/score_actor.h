@@ -20,6 +20,7 @@ class ScoreActor
 
   ::aos::util::ElevatorArmKinematics kinematics_;
   bool NearGoal(double x, double y);
+  bool NearHorizontalGoal(double x);
   bool PlaceTheStack(const ScoreParams &params);
   bool MoveStackIntoPosition(const ScoreParams &params);
   bool SendGoal(double x, double y, bool grabbers_enabled,
@@ -28,6 +29,7 @@ class ScoreActor
   double CurrentHeight();
   double CurrentGoalHeight();
   double CurrentX();
+  double CurrentGoalX();
 };
 
 typedef aos::common::actions::TypedAction<ScoreActionQueueGroup> ScoreAction;

@@ -12,8 +12,9 @@
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr double kClawPickupVelocity = 3.00;
-constexpr double kClawPickupAcceleration = 2.0;
+constexpr ProfileParams kClawPickup{3.0, 2.0};
+constexpr ProfileParams kClawBackDown{7.0, 10.0};
+constexpr ProfileParams kClawInitialLift{7.0, 8.0};
 
 constexpr ProfileParams kArmMove{1.0, 1.6};
 constexpr ProfileParams kElevatorMove{0.6, 2.2};
@@ -22,12 +23,26 @@ constexpr ProfileParams kFastArmMove{2.0, 3.0};
 constexpr ProfileParams kFastElevatorMove{1.0, 3.0};
 
 constexpr double kAngleEpsilon = 0.10;
+constexpr double kGoalAngleEpsilon = 0.01;
 
 }  // namespace
 
 HorizontalCanPickupActor::HorizontalCanPickupActor(
     HorizontalCanPickupActionQueueGroup *queues)
     : FridgeActorBase<HorizontalCanPickupActionQueueGroup>(queues) {}
+
+bool HorizontalCanPickupActor::WaitUntilGoalNear(double angle) {
+  while (true) {
+    control_loops::claw_queue.status.FetchAnother();
+    if (ShouldCancel()) return false;
+    const double goal_angle = control_loops::claw_queue.status->goal_angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+
+    if (::std::abs(goal_angle - angle) < kGoalAngleEpsilon) {
+      return true;
+    }
+  }
+}
 
 bool HorizontalCanPickupActor::WaitUntilNear(double angle) {
   while (true) {
@@ -41,20 +56,22 @@ bool HorizontalCanPickupActor::WaitUntilNear(double angle) {
     }
   }
 }
-
 void HorizontalCanPickupActor::MoveArm(double angle, double intake_power) {
-  {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
-    message->angle = angle;
-    message->max_velocity = kClawPickupVelocity;
-    message->max_acceleration = kClawPickupAcceleration;
-    message->angular_velocity = 0.0;
-    message->intake = intake_power;
-    message->rollers_closed = true;
+  MoveArm(angle, intake_power, kClawPickup);
+}
 
-    LOG_STRUCT(DEBUG, "Sending claw goal", *message);
-    message.Send();
-  }
+void HorizontalCanPickupActor::MoveArm(double angle, double intake_power,
+                                       const ProfileParams profile_params) {
+  auto message = control_loops::claw_queue.goal.MakeMessage();
+  message->angle = angle;
+  message->max_velocity = profile_params.velocity;
+  message->max_acceleration = profile_params.acceleration;
+  message->angular_velocity = 0.0;
+  message->intake = intake_power;
+  message->rollers_closed = true;
+
+  LOG_STRUCT(DEBUG, "Sending claw goal", *message);
+  message.Send();
 }
 
 bool HorizontalCanPickupActor::RunAction(
@@ -65,7 +82,7 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
 
-  MoveArm(params.pickup_angle, 0.0);
+  MoveArm(params.pickup_angle, 0.0, kClawInitialLift);
 
   if (!WaitUntilNear(params.pickup_angle)) {
     return true;
@@ -77,9 +94,9 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
 
-  MoveArm(0.0, 0.0);
+  MoveArm(0.0, 0.0, kClawBackDown);
 
-  if (!WaitUntilNear(0.0)) {
+  if (!WaitUntilGoalNear(0.0)) {
     return true;
   }
 

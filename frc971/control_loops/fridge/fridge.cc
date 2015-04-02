@@ -340,9 +340,7 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
             // We want it stopped at whatever height it's currently set to.
             elevator_goal_velocity_ = 0;
           }
-          break;
         }
-
       } else if (!disable) {
         elevator_goal_velocity_ = elevator_zeroing_velocity();
         elevator_goal_ += elevator_goal_velocity_ *

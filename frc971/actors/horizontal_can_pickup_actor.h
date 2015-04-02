@@ -25,8 +25,11 @@ class HorizontalCanPickupActor
   // Waits until we are near the angle.
   // Returns false if we should cancel.
   bool WaitUntilNear(double angle);
+  bool WaitUntilGoalNear(double angle);
 
   void MoveArm(double angle, double intake_power);
+  void MoveArm(double angle, double intake_power,
+               const ProfileParams profile_params);
 };
 
 typedef aos::common::actions::TypedAction<HorizontalCanPickupActionQueueGroup>
