@@ -78,6 +78,37 @@ TEST_F(QueueTest, SendWithBuilder) {
   EXPECT_EQ(true, my_test_queue.IsNewerThanMS(10000));
 }
 
+// Tests that multiple queue instances don't break each other.
+TEST_F(QueueTest, MultipleQueues) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  EXPECT_TRUE(my_test_queue.get());
+
+  {
+    ::aos::Queue<TestingMessage> my_other_test_queue(
+        ".aos.common.testing.queue_name");
+    my_other_test_queue.MakeMessage();
+    EXPECT_FALSE(my_other_test_queue.FetchLatest());
+    EXPECT_FALSE(my_test_queue.FetchLatest());
+  }
+
+  EXPECT_TRUE(my_test_queue.get());
+}
+
+// Tests that using a queue from multiple threads works correctly.
+TEST_F(QueueTest, MultipleThreads) {
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
+  ASSERT_TRUE(my_test_queue.FetchLatest());
+  my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x254).Send();
+  EXPECT_EQ(0x971, my_test_queue->test_int);
+
+  ::aos::util::FunctionThread::RunInOtherThread([this]() {
+    ASSERT_TRUE(my_test_queue.FetchLatest());
+    EXPECT_EQ(0x254, my_test_queue->test_int);
+  });
+  EXPECT_EQ(0x254, my_test_queue->test_int);
+}
+
 // Makes sure that MakeWithBuilder zeros the message initially.
 // This might randomly succeed sometimes, but it will fail with asan if it
 // doesn't.
