@@ -2,11 +2,10 @@
 
 #include <signal.h>
 
-#include "aos/linux_code/thread_local.h"
 #include "aos/common/logging/logging.h"
 
 const char *aos_strsignal(int signal) {
-  static AOS_THREAD_LOCAL char buffer[512];
+  static thread_local char buffer[512];
 
   if (signal >= SIGRTMIN && signal <= SIGRTMAX) {
     CHECK(snprintf(buffer, sizeof(buffer), "Real-time signal %d",

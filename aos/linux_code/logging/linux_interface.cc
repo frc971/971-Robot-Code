@@ -3,7 +3,6 @@
 #include <sys/prctl.h>
 
 #include "aos/linux_code/complex_thread_local.h"
-#include "aos/linux_code/thread_local.h"
 #include "aos/common/die.h"
 
 namespace aos {
@@ -47,7 +46,7 @@ namespace {
 // reason for doing this instead of just deleting them is that tsan (at least)
 // doesn't like it when pthread_atfork handlers do complicated stuff and it's
 // not a great idea anyways.
-AOS_THREAD_LOCAL bool delete_current_context(false);
+thread_local bool delete_current_context(false);
 
 }  // namespace
 

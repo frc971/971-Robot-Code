@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "aos/common/logging/logging.h"
-#include "aos/linux_code/thread_local.h"
 #include "aos/common/once.h"
 #include "aos/common/macros.h"
 
@@ -182,7 +181,7 @@ void check_cached_tid(pid_t tid) {
 
 // Starts off at 0 in each new thread (because that's what it gets initialized
 // to in most of them or it gets to reset to 0 after a fork by atfork_child()).
-AOS_THREAD_LOCAL pid_t my_tid = 0;
+thread_local pid_t my_tid = 0;
 
 // Gets called before the fork(2) wrapper function returns in the child.
 void atfork_child() {
