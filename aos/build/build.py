@@ -445,8 +445,6 @@ class PrimeProcessor(Processor):
       OTHER_SYSROOT = '/usr/lib/llvm-3.5/'
       SYMBOLIZER_PATH = OTHER_SYSROOT + 'bin/llvm-symbolizer'
       r = {}
-      if self.compiler() == 'clang' or self.compiler() == 'gcc_4.8':
-        r['LD_LIBRARY_PATH'] = OTHER_SYSROOT + 'lib'
       if self.sanitizer() == 'address':
         r['ASAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
         r['ASAN_OPTIONS'] = \
@@ -663,6 +661,7 @@ Arguments:
                            clean: Remove all the built output.
                            tests: Build and then run tests.
                            deploy: Build and then download.
+                           environment: Dump the environment for building.
   platform                 What variants of the code to build.
                            Defaults to something reasonable.
                            See below for details.
@@ -740,7 +739,7 @@ Examples of specifying targets:
     print_help(1, 'Not enough arguments')
   args.processor = sys.argv.pop(0)
   args.main_gyp = sys.argv.pop(0)
-  VALID_ACTIONS = ['build', 'clean', 'deploy', 'tests']
+  VALID_ACTIONS = ['build', 'clean', 'deploy', 'tests', 'environment']
   while sys.argv:
     arg = sys.argv.pop(0)
     if arg == '-j' or arg == '--jobs':
@@ -874,6 +873,11 @@ Examples of specifying targets:
     user_output('Building %s (%d/%d)...' % (platform, num, len(platforms)))
     if args.action_name == 'clean':
       shutil.rmtree(platform.outdir(), onerror=handle_clean_error)
+    elif args.action_name == 'environment':
+      user_output('Environment for building <<END')
+      for name, value in env(platform).items():
+        print('%s=%s' % (name, value))
+      print('END')
     else:
       if need_to_run_gyp(platform):
         user_output('Running gyp...')
