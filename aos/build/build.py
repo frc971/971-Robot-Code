@@ -455,6 +455,11 @@ class PrimeProcessor(Processor):
         r['MSAN_SYMBOLIZER_PATH'] = SYMBOLIZER_PATH
       elif self.sanitizer() == 'thread':
         r['TSAN_OPTIONS'] = 'external_symbolizer_path=' + SYMBOLIZER_PATH
+        # This is apparently the default for newer versions, which disagrees
+        # with documentation, so just turn it on explicitly.
+        r['TSAN_OPTIONS'] += ':detect_deadlocks=1'
+        # Print more useful stacks for mutex locking order problems.
+        r['TSAN_OPTIONS'] += ':second_deadlock_stack=1'
 
       r['CCACHE_COMPRESS'] = 'yes'
       r['CCACHE_DIR'] = os.path.abspath(os.path.join(aos_path(), '..', 'output',
