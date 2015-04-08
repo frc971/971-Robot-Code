@@ -96,6 +96,7 @@ cc_library(
   ],
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
+    ':time',
   ],
 )
 

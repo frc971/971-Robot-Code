@@ -1,6 +1,8 @@
 #ifndef AOS_COMMON_EVENT_H_
 #define AOS_COMMON_EVENT_H_
 
+#include "aos/common/time.h"
+
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
@@ -36,6 +38,11 @@ class Event {
 
   // Waits for the event to be set. Returns immediately if it is already set.
   void Wait();
+
+  // Waits for the event to be set or until timeout has elapsed. Returns
+  // immediately if it is already set.
+  // Returns true if the event was Set or false if the timeout expired.
+  bool WaitTimeout(const ::aos::time::Time &timeout);
 
   // Wakes up all Wait()ers and sets the event (atomically).
   void Set();
