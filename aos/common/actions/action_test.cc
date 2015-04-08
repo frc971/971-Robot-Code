@@ -136,7 +136,7 @@ TEST_F(ActionTest, StartWithOldGoal) {
 
   ASSERT_FALSE(actions::test_action.status.FetchLatest());
   ::std::thread init_thread([&nop_act]() { nop_act.Initialize(); });
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.01));
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
   ASSERT_TRUE(actions::test_action.goal.MakeWithBuilder().run(1).Send());
   init_thread.join();
   ASSERT_TRUE(actions::test_action.status.FetchLatest());
