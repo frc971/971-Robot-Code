@@ -39,21 +39,21 @@ typedef MutexTest IPCRecursiveMutexLockerTest;
 
 TEST_F(MutexTest, TryLock) {
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+  EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
 
   test_mutex_.Unlock();
 }
 
 TEST_F(MutexTest, Lock) {
   ASSERT_FALSE(test_mutex_.Lock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+  EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
 
   test_mutex_.Unlock();
 }
 
 TEST_F(MutexTest, Unlock) {
   ASSERT_FALSE(test_mutex_.Lock());
-  EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+  EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
   test_mutex_.Unlock();
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
 
@@ -215,7 +215,7 @@ TEST_F(MutexTest, MultiThreadedLock) {
 TEST_F(MutexLockerTest, Basic) {
   {
     aos::MutexLocker locker(&test_mutex_);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
   }
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
 
@@ -225,7 +225,7 @@ TEST_F(MutexLockerTest, Basic) {
 TEST_F(IPCMutexLockerTest, Basic) {
   {
     aos::IPCMutexLocker locker(&test_mutex_);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
     EXPECT_FALSE(locker.owner_died());
   }
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
@@ -243,7 +243,7 @@ TEST_F(IPCMutexLockerDeathTest, NoCheckOwnerDied) {
 TEST_F(IPCRecursiveMutexLockerTest, Basic) {
   {
     aos::IPCRecursiveMutexLocker locker(&test_mutex_);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
     EXPECT_FALSE(locker.owner_died());
   }
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());
@@ -255,13 +255,13 @@ TEST_F(IPCRecursiveMutexLockerTest, Basic) {
 TEST_F(IPCRecursiveMutexLockerTest, RecursiveLock) {
   {
     aos::IPCRecursiveMutexLocker locker(&test_mutex_);
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
     {
       aos::IPCRecursiveMutexLocker locker(&test_mutex_);
-      EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+      EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
       EXPECT_FALSE(locker.owner_died());
     }
-    EXPECT_EQ(Mutex::State::kUnlocked, test_mutex_.TryLock());
+    EXPECT_EQ(Mutex::State::kLockFailed, test_mutex_.TryLock());
     EXPECT_FALSE(locker.owner_died());
   }
   EXPECT_EQ(Mutex::State::kLocked, test_mutex_.TryLock());

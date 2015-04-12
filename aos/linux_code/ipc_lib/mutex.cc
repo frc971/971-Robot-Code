@@ -44,7 +44,7 @@ Mutex::State Mutex::TryLock() {
     case 0:
       return State::kLocked;
     case 4:
-      return State::kUnlocked;
+      return State::kLockFailed;
     default:
       LOG(FATAL, "mutex_trylock(%p(=%" PRIu32 ")) failed with %d\n",
           &impl_, impl_.futex, ret);

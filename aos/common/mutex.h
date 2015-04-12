@@ -20,8 +20,12 @@ class Condition;
 // Otherwise, the destructor will LOG(FATAL).
 class Mutex {
  public:
+  // States that signify the result of TryLock.
   enum class State {
-    kLocked, kUnlocked
+    // The mutex was acquired successfully.
+    kLocked,
+    // TryLock tried to grab the mutex and failed.
+    kLockFailed
   };
 
   // Creates an unlocked mutex.

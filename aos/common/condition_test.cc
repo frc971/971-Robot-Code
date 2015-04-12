@@ -307,7 +307,7 @@ TEST_F(ConditionTest, Relocking) {
   Settle();
   shared_->condition.Signal();
   EXPECT_FALSE(child.Hung());
-  EXPECT_EQ(Mutex::State::kUnlocked, shared_->mutex.TryLock());
+  EXPECT_EQ(Mutex::State::kLockFailed, shared_->mutex.TryLock());
 }
 
 // Tests that Signal() stops exactly 1 Wait()er.
