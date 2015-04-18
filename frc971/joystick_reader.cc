@@ -323,11 +323,11 @@ class Reader : public ::aos::input::JoystickInput {
     // Lower the fridge from holding the stack, grab the stack, and then lift.
     if (data.PosEdge(kHeldToLift)) {
       actors::HeldToLiftParams params;
-      params.arm_clearance = kClawStackClearance;
+      params.arm_clearance = kArmRaiseLowerClearance;
       params.clamp_pause_time = 0.1;
       params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
-      params.claw_out_angle = kClawTotePackAngle;
+      params.claw_out_angle = kClawStackClearance;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
       fridge_closed_ = true;
