@@ -269,8 +269,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     // Tote chute pull in when button is pressed, pack when done.
     if (data.IsPressed(kToteChute)) {
-      claw_goal_ = 0.75;
-      intake_power = 7.0;
+      claw_goal_ = 0.8;
+      intake_power = 6.0;
     }
     if (data.NegEdge(kToteChute)) {
       claw_goal_ = kClawTotePackAngle;
