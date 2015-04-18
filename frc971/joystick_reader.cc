@@ -269,8 +269,8 @@ class Reader : public ::aos::input::JoystickInput {
 
     // Tote chute pull in when button is pressed, pack when done.
     if (data.IsPressed(kToteChute)) {
-      claw_goal_ = 0.75;
-      intake_power = 7.0;
+      claw_goal_ = 0.8;
+      intake_power = 6.0;
     }
     if (data.NegEdge(kToteChute)) {
       claw_goal_ = kClawTotePackAngle;
@@ -323,11 +323,11 @@ class Reader : public ::aos::input::JoystickInput {
     // Lower the fridge from holding the stack, grab the stack, and then lift.
     if (data.PosEdge(kHeldToLift)) {
       actors::HeldToLiftParams params;
-      params.arm_clearance = kClawStackClearance;
+      params.arm_clearance = kArmRaiseLowerClearance;
       params.clamp_pause_time = 0.1;
       params.before_lift_settle_time = 0.1;
       params.bottom_height = 0.020;
-      params.claw_out_angle = kClawTotePackAngle;
+      params.claw_out_angle = kClawStackClearance;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
       fridge_closed_ = true;
