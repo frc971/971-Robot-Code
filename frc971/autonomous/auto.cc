@@ -194,7 +194,7 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
   InitializeEncoders();
 
-  time::SleepFor(time::Time::InSeconds(0.55));
+  time::SleepFor(time::Time::InSeconds(0.45));
 
   if (!drivetrain_queue.goal.MakeWithBuilder()
            .steering(0)
