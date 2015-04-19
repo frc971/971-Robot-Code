@@ -350,6 +350,9 @@ class Reader : public ::aos::input::JoystickInput {
     // Pick up a tote from the ground and put it in the bottom of the bot.
     if (data.PosEdge(kPickup)) {
       actors::PickupParams params;
+      // TODO(austin): These parameters are coppied into auto right now, need
+      // to dedup...
+
       // Lift to here initially.
       params.pickup_angle = 0.9;
       // Start sucking here

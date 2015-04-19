@@ -13,8 +13,10 @@ namespace actors {
 namespace {
 constexpr double kClawPickupVelocity = 3.00;
 constexpr double kClawPickupAcceleration = 4.0;
-constexpr double kClawMoveVelocity = 3.00;
-constexpr double kClawMoveAcceleration = 8.0;
+constexpr double kClawMoveDownVelocity = 7.00;
+constexpr double kClawMoveDownAcceleration = 15.0;
+constexpr double kClawMoveUpVelocity = 8.0;
+constexpr double kClawMoveUpAcceleration = 20.0;
 }  // namespace
 
 PickupActor::PickupActor(PickupActionQueueGroup* queues)
@@ -22,6 +24,7 @@ PickupActor::PickupActor(PickupActionQueueGroup* queues)
 
 bool PickupActor::RunAction(const PickupParams& params) {
   constexpr double kAngleEpsilon = 0.10;
+  // Start lifting the tote.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
@@ -46,6 +49,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
     }
   }
 
+  // Once above params.suck_angle, start sucking while lifting.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
@@ -70,11 +74,12 @@ bool PickupActor::RunAction(const PickupParams& params) {
     }
   }
 
+  // Now that we have reached the upper height, come back down while intaking.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.suck_angle_finish;
-    message->max_velocity = kClawMoveVelocity;
-    message->max_acceleration = kClawMoveAcceleration;
+    message->max_velocity = kClawMoveDownVelocity;
+    message->max_acceleration = kClawMoveDownAcceleration;
     message->angular_velocity = 0.0;
     message->intake = params.intake_voltage;
     message->rollers_closed = true;
@@ -83,6 +88,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
     message.Send();
   }
 
+  // Pull in for params.intake_time.
   ::aos::time::Time end_time =
       ::aos::time::Time::Now() + aos::time::Time::InSeconds(params.intake_time);
   while ( ::aos::time::Time::Now() <= end_time) {
@@ -90,13 +96,14 @@ bool PickupActor::RunAction(const PickupParams& params) {
     if (ShouldCancel()) return true;
   }
 
+  // Lift the claw back up to pack the box back in.
   {
     auto message = control_loops::claw_queue.goal.MakeMessage();
     message->angle = params.pickup_finish_angle;
-    message->max_velocity = kClawMoveVelocity;
-    message->max_acceleration = kClawMoveAcceleration;
+    message->max_velocity = kClawMoveUpVelocity;
+    message->max_acceleration = kClawMoveUpAcceleration;
     message->angular_velocity = 0.0;
-    message->intake = 0.0;
+    message->intake = params.intake_voltage;
     message->rollers_closed = true;
 
     LOG_STRUCT(DEBUG, "Sending claw goal", *message);
@@ -114,6 +121,21 @@ bool PickupActor::RunAction(const PickupParams& params) {
       break;
     }
   }
+
+  // Stop the motors...
+  {
+    auto message = control_loops::claw_queue.goal.MakeMessage();
+    message->angle = params.pickup_finish_angle;
+    message->max_velocity = kClawMoveUpVelocity;
+    message->max_acceleration = kClawMoveUpAcceleration;
+    message->angular_velocity = 0.0;
+    message->intake = 0.0;
+    message->rollers_closed = true;
+
+    LOG_STRUCT(DEBUG, "Sending claw goal", *message);
+    message.Send();
+  }
+
 
   return true;
 }
