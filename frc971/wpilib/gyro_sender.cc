@@ -108,6 +108,8 @@ void GyroSender::operator()() {
       {
         message->angle = new_angle;
         LOG_STRUCT(DEBUG, "collected while zeroing", *message);
+        message->angle = 0.0;
+        message.Send();
       }
       zeroing_data[zeroing_index] = new_angle;
       ++zeroing_index;
