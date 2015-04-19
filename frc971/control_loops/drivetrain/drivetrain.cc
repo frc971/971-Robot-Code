@@ -55,8 +55,17 @@ class DrivetrainMotorsSS {
       const Eigen::Matrix<double, 4, 1> error = R() - X_hat();
 
       if (::std::abs(U(0, 0)) > 12.0 || ::std::abs(U(1, 0)) > 12.0) {
+        mutable_U() =
+            U() * 12.0 / ::std::max(::std::abs(U(0, 0)), ::std::abs(U(1, 0)));
+        LOG_MATRIX(DEBUG, "U is now", U());
+        // TODO(Austin): Figure out why the polytope stuff wasn't working and
+        // remove this hack.
         output_was_capped_ = true;
+        return;
+
         LOG_MATRIX(DEBUG, "U at start", U());
+        LOG_MATRIX(DEBUG, "R at start", R());
+        LOG_MATRIX(DEBUG, "Xhat at start", X_hat());
 
         Eigen::Matrix<double, 2, 2> position_K;
         position_K << K(0, 0), K(0, 2),
