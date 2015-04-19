@@ -56,7 +56,8 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
         profile.SetGoal(
-            (status.filtered_left_position + status.filtered_right_position) /
+            (status.filtered_left_position + status.filtered_right_position -
+             params.left_initial_position - params.right_initial_position) /
             2.0);
       } else {
         static const double divisor = K(0, 0) + K(0, 2);
@@ -81,6 +82,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         } else if (dx_left != 0 && dx_right != 0 &&
                    ::aos::sign(dx_left) != ::aos::sign(dx_right)) {
           // Both saturating in opposite directions. Don't do anything.
+          LOG(DEBUG, "Saturating opposite ways, not adjusting\n");
           dx = 0;
         } else if (::std::abs(dx_left) > ::std::abs(dx_right)) {
           dx = dx_left;
