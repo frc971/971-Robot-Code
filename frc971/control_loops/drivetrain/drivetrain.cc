@@ -166,7 +166,6 @@ class DrivetrainMotorsSS {
     // Decay the offset quickly because this gyro is great.
     const double offset =
         (right - left - gyro * constants::GetValues().turn_width) / 2.0;
-    // TODO(brians): filtered_offset_ = offset first time around.
     filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
     gyro_ = gyro;
     SetRawPosition(left, right);
@@ -756,6 +755,9 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
     status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
     status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();
+
+    status->filtered_left_velocity = dt_closedloop.loop().X_hat(1, 0);
+    status->filtered_right_velocity = dt_closedloop.loop().X_hat(3, 0);
     status->output_was_capped = dt_closedloop.OutputWasCapped();
     status->uncapped_left_voltage = dt_closedloop.loop().U_uncapped(0, 0);
     status->uncapped_right_voltage = dt_closedloop.loop().U_uncapped(1, 0);

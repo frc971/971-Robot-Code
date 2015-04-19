@@ -52,6 +52,8 @@ queue_group DrivetrainQueue {
     double robot_speed;
     double filtered_left_position;
     double filtered_right_position;
+    double filtered_left_velocity;
+    double filtered_right_velocity;
 
     double uncapped_left_voltage;
     double uncapped_right_voltage;
