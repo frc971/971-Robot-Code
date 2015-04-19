@@ -39,10 +39,11 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   profile.set_maximum_acceleration(params.maximum_acceleration);
   profile.set_maximum_velocity(params.maximum_velocity);
-  turn_profile.set_maximum_acceleration(
-      10.0 * constants::GetValues().turn_width / 2.0);
-  turn_profile.set_maximum_velocity(3.0 * constants::GetValues().turn_width /
-                                    2.0);
+  turn_profile.set_maximum_acceleration(params.maximum_turn_acceleration *
+                                        constants::GetValues().turn_width /
+                                        2.0);
+  turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
+                                    constants::GetValues().turn_width / 2.0);
 
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);
