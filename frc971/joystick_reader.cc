@@ -227,7 +227,10 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
       params.elevator_height = 0.3;
-      params.pickup_angle = 0.60 + kHorizontalCanClawAngle;
+      params.pickup_angle = 0.80 + kHorizontalCanClawAngle;
+      params.spit_time = 0.01;
+      params.spit_power = -8.0;
+
       params.suck_time = 0.10;
       params.suck_power = 10.0;
 

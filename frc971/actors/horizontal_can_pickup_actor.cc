@@ -82,6 +82,14 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
 
+  control_loops::claw_queue.status.FetchAnother();
+
+  MoveArm(control_loops::claw_queue.status->angle, params.spit_power);
+
+  if (!WaitOrCancel(aos::time::Time::InSeconds(params.spit_time))) {
+    return true;
+  }
+
   MoveArm(params.pickup_angle, 0.0, kClawInitialLift);
 
   if (!WaitUntilNear(params.pickup_angle)) {

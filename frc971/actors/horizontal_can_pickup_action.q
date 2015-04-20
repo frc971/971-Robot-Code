@@ -10,6 +10,10 @@ struct HorizontalCanPickupParams {
   // Angle to move the claw to when placing the base of the can on the robot.
   double pickup_angle;
 
+  // Time and power to spit the can out before lifting.
+  double spit_time;
+  double spit_power;
+
   // Time and power to pull the can in when lifted.
   double suck_time;
   double suck_power;
