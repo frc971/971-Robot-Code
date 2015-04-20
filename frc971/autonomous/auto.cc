@@ -130,8 +130,10 @@ void WaitUntilNear(double distance) {
 
 const ProfileParams kFastDrive = {2.0, 3.5};
 const ProfileParams kFastKnockDrive = {2.0, 3.0};
-const ProfileParams kStackingDrive = {2.0, 1.5};
+const ProfileParams kStackingSecondDrive = {2.0, 1.5};
 const ProfileParams kFastTurn = {3.0, 10.0};
+const ProfileParams kStackingFirstTurn = {1.0, 1.0};
+const ProfileParams kStackingSecondTurn = {2.0, 6.0};
 const ProfileParams kComboTurn = {1.2, 8.0};
 const ProfileParams kRaceTurn = {4.0, 10.0};
 const ProfileParams kRaceDrive = {2.0, 2.0};
@@ -312,6 +314,18 @@ void HandleAuto() {
   ::std::unique_ptr<::frc971::actors::StackAction> stack;
   ::std::unique_ptr<::frc971::actors::HeldToLiftAction> lift;
 
+  actors::PickupParams pickup_params;
+  // Lift to here initially.
+  pickup_params.pickup_angle = 0.9;
+  // Start sucking here
+  pickup_params.suck_angle = 0.8;
+  // Go back down to here to finish sucking.
+  pickup_params.suck_angle_finish = 0.4;
+  // Pack the box back in here.
+  pickup_params.pickup_finish_angle = kClawTotePackAngle;
+  pickup_params.intake_time = 0.70;
+  pickup_params.intake_voltage = 7.0;
+
   if (ShouldExitAuto()) return;
   InitializeEncoders();
   ResetDrivetrain();
@@ -324,33 +338,21 @@ void HandleAuto() {
 
   LOG(INFO, "Lowering claw into position.\n");
   SetClawState(0.0, 2.0, false, kInstantaneousClaw);
+
   LOG(INFO, "Sucking in tote.\n");
-  SetClawState(0.0, 5.0, true, kInstantaneousClaw);
+  SetClawState(0.0, 6.0, true, kInstantaneousClaw);
 
   time::SleepFor(time::Time::InSeconds(0.7));
   LOG(INFO, "Done sucking in tote\n");
 
   // Now pick it up
-  {
-    actors::PickupParams params;
-    // Lift to here initially.
-    params.pickup_angle = 0.9;
-    // Start sucking here
-    params.suck_angle = 0.8;
-    // Go back down to here to finish sucking.
-    params.suck_angle_finish = 0.4;
-    // Pack the box back in here.
-    params.pickup_finish_angle = kClawTotePackAngle;
-    params.intake_time = 0.60;
-    params.intake_voltage = 6.5;
-    pickup = actors::MakePickupAction(params);
-    pickup->Start();
-  }
+  pickup = actors::MakePickupAction(pickup_params);
+  pickup->Start();
 
   time::SleepFor(time::Time::InSeconds(0.9));
   // Start turning.
   LOG(INFO, "Turning in place\n");
-  drive = SetDriveGoal(0.0, kFastDrive, -0.18);
+  drive = SetDriveGoal(0.0, kFastDrive, -0.23, kStackingFirstTurn);
 
   WaitUntilDoneOrCanceled(::std::move(drive));
   if (ShouldExitAuto()) return;
@@ -388,7 +390,7 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
 
   LOG(INFO, "Knocking the can over\n");
-  drive = SetDriveGoal(0.40, kFastKnockDrive, 1.00, kComboTurn);
+  drive = SetDriveGoal(0.40, kFastKnockDrive, 1.05, kComboTurn);
   WaitUntilDoneOrCanceled(::std::move(drive));
   if (ShouldExitAuto()) return;
   {
@@ -416,14 +418,19 @@ void HandleAuto() {
   drive = SetDriveGoal(1.05, kFastDrive);
 
   // Wait until we are almost at the tote, and then start intaking.
-  WaitUntilNear(0.20);
+  WaitUntilNear(0.35);
 
   SetClawState(0.0, 6.0, true, kFastClaw);
   WaitUntilDoneOrCanceled(::std::move(drive));
   if (ShouldExitAuto()) return;
 
   if (ShouldExitAuto()) return;
-  time::SleepFor(time::Time::InSeconds(0.3));
+  time::SleepFor(time::Time::InSeconds(0.30));
+  if (ShouldExitAuto()) return;
+
+  SetClawStateNoWait(0.0, 4.0, true, kFastClaw);
+  if (ShouldExitAuto()) return;
+  time::SleepFor(time::Time::InSeconds(0.10));
 
   WaitUntilDoneOrCanceled(::std::move(lift));
   if (ShouldExitAuto()) return;
@@ -433,28 +440,15 @@ void HandleAuto() {
   if (ShouldExitAuto()) return;
 
   // Now pick it up
-  {
-    actors::PickupParams params;
-    // Lift to here initially.
-    params.pickup_angle = 0.9;
-    // Start sucking here
-    params.suck_angle = 0.8;
-    // Go back down to here to finish sucking.
-    params.suck_angle_finish = 0.4;
-    // Pack the box back in here.
-    params.pickup_finish_angle = kClawTotePackAngle;
-    params.intake_time = 0.60;
-    params.intake_voltage = 6.5;
-    pickup = actors::MakePickupAction(params);
-    pickup->Start();
-  }
+  pickup = actors::MakePickupAction(pickup_params);
+  pickup->Start();
 
-  time::SleepFor(time::Time::InSeconds(0.9));
+  time::SleepFor(time::Time::InSeconds(1.0));
   if (ShouldExitAuto()) return;
 
   // Start turning.
   LOG(INFO, "Turning in place\n");
-  drive = SetDriveGoal(0.65, kStackingDrive, -0.45);
+  drive = SetDriveGoal(0.0, kStackingSecondDrive, -0.40, kStackingSecondTurn);
 
   WaitUntilDoneOrCanceled(::std::move(pickup));
   if (ShouldExitAuto()) return;
@@ -473,10 +467,12 @@ void HandleAuto() {
     stack->Start();
   }
 
-  WaitUntilDoneOrCanceled(::std::move(stack));
-  if (ShouldExitAuto()) return;
-
   WaitUntilDoneOrCanceled(::std::move(drive));
+  if (ShouldExitAuto()) return;
+  LOG(INFO, "Driving next to the can.\n");
+  drive = SetDriveGoal(0.65, kStackingSecondDrive);
+
+  WaitUntilDoneOrCanceled(::std::move(stack));
   if (ShouldExitAuto()) return;
 
   // Lower the claw to knock the tote.
@@ -489,8 +485,11 @@ void HandleAuto() {
   time::SleepFor(time::Time::InSeconds(0.1));
   if (ShouldExitAuto()) return;
 
+  WaitUntilDoneOrCanceled(::std::move(drive));
+  if (ShouldExitAuto()) return;
+
   LOG(INFO, "Knocking the can over\n");
-  drive = SetDriveGoal(0.40, kFastKnockDrive, 1.10, kComboTurn);
+  drive = SetDriveGoal(0.40, kFastKnockDrive, 1.05, kComboTurn);
   WaitUntilDoneOrCanceled(::std::move(drive));
   if (ShouldExitAuto()) return;
 
@@ -543,8 +542,6 @@ void HandleAuto() {
   SetClawState(0.0, 0.0, false, kFastClaw);
 
   if (ShouldExitAuto()) return;
-  WaitForFridge();
-  if (ShouldExitAuto()) return;
 
   WaitUntilDoneOrCanceled(::std::move(drive));
   if (ShouldExitAuto()) return;
@@ -552,6 +549,9 @@ void HandleAuto() {
   LOG(INFO, "Backing away to let the stack ago\n");
   drive = SetDriveGoal(-0.1, kRaceBackupDrive);
   WaitUntilDoneOrCanceled(::std::move(drive));
+
+  WaitForFridge();
+  if (ShouldExitAuto()) return;
 }
 
 }  // namespace autonomous
