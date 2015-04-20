@@ -400,6 +400,7 @@ void HandleAuto() {
     params.claw_out_angle = kClawStackClearance;
     params.lift_params.lift_height = kStackUpHeight;
     params.lift_params.lift_arm = kStackUpArm;
+    params.lift_params.second_lift = false;
 
     lift = actors::MakeHeldToLiftAction(params);
     lift->Start();

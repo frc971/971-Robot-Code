@@ -11,6 +11,7 @@ namespace actors {
 namespace {
 constexpr ProfileParams kArmMove{0.6, 1.0};
 constexpr ProfileParams kElevatorMove{0.9, 3.0};
+constexpr ProfileParams kElevatorFixMove{0.9, 2.0};
 }  // namespace
 
 LiftActor::LiftActor(LiftActionQueueGroup *queues)
@@ -24,6 +25,15 @@ bool LiftActor::RunAction(const LiftParams &params) {
 
   double goal_height = params.lift_height;
   double goal_angle = 0.0;
+
+  if (params.second_lift) {
+    DoFridgeProfile(params.intermediate_lift_height, 0.0, kElevatorFixMove,
+                    kArmMove,
+                    control_loops::fridge_queue.status->grabbers.top_front,
+                    control_loops::fridge_queue.status->grabbers.bottom_front,
+                    control_loops::fridge_queue.status->grabbers.bottom_back);
+    if (ShouldCancel()) return true;
+  }
 
   if (!StartFridgeProfile(
           params.lift_height, 0.0, kElevatorMove, kArmMove,
