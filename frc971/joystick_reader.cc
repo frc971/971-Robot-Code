@@ -240,7 +240,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_end_angle = 0.5;
 
       // End low so we don't drop it.
-      params.elevator_end_height = 0.3;
+      params.elevator_end_height = 0.28;
       params.arm_end_angle = 0.0;
       action_queue_.EnqueueAction(
           actors::MakeHorizontalCanPickupAction(params));
@@ -253,12 +253,12 @@ class Reader : public ::aos::input::JoystickInput {
       actors::CanPickupParams params;
       params.pickup_x = 0.6;
       params.pickup_y = 0.1;
-      params.lift_height = 0.2;
+      params.lift_height = 0.25;
       params.pickup_goal_before_move_height = 0.3;
       params.start_lowering_x = 0.1;
       // End low so the can is supported.
       params.before_place_height = 0.4;
-      params.end_height = 0.3;
+      params.end_height = 0.28;
       params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
       fridge_closed_ = true;
@@ -266,7 +266,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kCanReset)) {
       action_queue_.CancelAllActions();
-      elevator_goal_ = 0.3;
+      elevator_goal_ = 0.28;
       arm_goal_ = 0.0;
     }
 
