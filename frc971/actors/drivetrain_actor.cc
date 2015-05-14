@@ -30,19 +30,19 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
-  // TODO(sensors): update this time thing for some reason.
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
-  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(10));
+  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(5));
+  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(5));
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;
 
   profile.set_maximum_acceleration(params.maximum_acceleration);
   profile.set_maximum_velocity(params.maximum_velocity);
-  turn_profile.set_maximum_acceleration(
-      10.0 * constants::GetValues().turn_width / 2.0);
-  turn_profile.set_maximum_velocity(3.0 * constants::GetValues().turn_width /
-                                    2.0);
+  turn_profile.set_maximum_acceleration(params.maximum_turn_acceleration *
+                                        constants::GetValues().turn_width /
+                                        2.0);
+  turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
+                                    constants::GetValues().turn_width / 2.0);
 
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);
@@ -56,7 +56,8 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
         profile.SetGoal(
-            (status.filtered_left_position + status.filtered_right_position) /
+            (status.filtered_left_position + status.filtered_right_position -
+             params.left_initial_position - params.right_initial_position) /
             2.0);
       } else {
         static const double divisor = K(0, 0) + K(0, 2);
@@ -81,6 +82,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         } else if (dx_left != 0 && dx_right != 0 &&
                    ::aos::sign(dx_left) != ::aos::sign(dx_right)) {
           // Both saturating in opposite directions. Don't do anything.
+          LOG(DEBUG, "Saturating opposite ways, not adjusting\n");
           dx = 0;
         } else if (::std::abs(dx_left) > ::std::abs(dx_right)) {
           dx = dx_left;

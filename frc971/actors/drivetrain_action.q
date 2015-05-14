@@ -10,6 +10,8 @@ struct DrivetrainActionParams {
   double theta_offset;
   double maximum_velocity;
   double maximum_acceleration;
+  double maximum_turn_velocity;
+  double maximum_turn_acceleration;
 };
 
 queue_group DrivetrainActionQueueGroup {

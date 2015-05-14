@@ -227,7 +227,10 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kElevatorCanUp)) {
       actors::HorizontalCanPickupParams params;
       params.elevator_height = 0.3;
-      params.pickup_angle = 0.60 + kHorizontalCanClawAngle;
+      params.pickup_angle = 0.80 + kHorizontalCanClawAngle;
+      params.spit_time = 0.01;
+      params.spit_power = -8.0;
+
       params.suck_time = 0.10;
       params.suck_power = 10.0;
 
@@ -237,7 +240,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_end_angle = 0.5;
 
       // End low so we don't drop it.
-      params.elevator_end_height = 0.3;
+      params.elevator_end_height = 0.28;
       params.arm_end_angle = 0.0;
       action_queue_.EnqueueAction(
           actors::MakeHorizontalCanPickupAction(params));
@@ -250,12 +253,12 @@ class Reader : public ::aos::input::JoystickInput {
       actors::CanPickupParams params;
       params.pickup_x = 0.6;
       params.pickup_y = 0.1;
-      params.lift_height = 0.2;
+      params.lift_height = 0.25;
       params.pickup_goal_before_move_height = 0.3;
       params.start_lowering_x = 0.1;
       // End low so the can is supported.
       params.before_place_height = 0.4;
-      params.end_height = 0.3;
+      params.end_height = 0.28;
       params.end_angle = 0.0;
       action_queue_.EnqueueAction(actors::MakeCanPickupAction(params));
       fridge_closed_ = true;
@@ -263,7 +266,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.PosEdge(kCanReset)) {
       action_queue_.CancelAllActions();
-      elevator_goal_ = 0.3;
+      elevator_goal_ = 0.28;
       arm_goal_ = 0.0;
     }
 
@@ -287,6 +290,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.clamp_pause_time = 0.0;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
+      params.lift_params.second_lift = false;
       params.grab_after_lift = true;
       fridge_closed_ = true;
 
@@ -330,6 +334,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.claw_out_angle = kClawStackClearance;
       params.lift_params.lift_height = kStackUpHeight;
       params.lift_params.lift_arm = kStackUpArm;
+      params.lift_params.second_lift = false;
       fridge_closed_ = true;
 
       action_queue_.EnqueueAction(actors::MakeHeldToLiftAction(params));
@@ -342,6 +347,8 @@ class Reader : public ::aos::input::JoystickInput {
       params.lift_arm = 0.3;
       params.pack_claw = false;
       params.pack_claw_angle = 0;
+      params.intermediate_lift_height = 0.37;
+      params.second_lift = true;
       fridge_closed_ = true;
 
       action_queue_.EnqueueAction(actors::MakeLiftAction(params));

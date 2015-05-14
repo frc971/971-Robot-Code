@@ -12,7 +12,7 @@ using ::frc971::control_loops::fridge_queue;
 namespace frc971 {
 namespace actors {
 namespace {
-constexpr ProfileParams kHorizontalMove{1.1, 2.5};
+constexpr ProfileParams kHorizontalMove{1.1, 1.8};
 constexpr ProfileParams kVerticalMove{0.3, 2.0};
 constexpr ProfileParams kFastHorizontalMove{1.25, 5.0};
 constexpr ProfileParams kFastVerticalMove{0.40, 2.0};
@@ -66,6 +66,18 @@ bool CanPickupActor::RunAction(const CanPickupParams &params) {
           params.pickup_x, params.pickup_goal_before_move_height,
           kHorizontalMove, kPureVerticalMove, true, true, true)) {
     return false;
+  }
+  {
+    auto message = control_loops::claw_queue.goal.MakeMessage();
+    message->angle = 0.0;
+    message->angular_velocity = 0.0;
+    message->intake = 0.0;
+    message->rollers_closed = false;
+    message->max_velocity = 6.0;
+    message->max_acceleration = 10.0;
+
+    LOG_STRUCT(DEBUG, "Sending claw down goal", *message);
+    message.Send();
   }
 
   bool above_claw = false;

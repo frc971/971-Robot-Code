@@ -12,11 +12,11 @@ namespace frc971 {
 namespace actors {
 namespace {
 constexpr double kClawPickupVelocity = 3.00;
-constexpr double kClawPickupAcceleration = 4.0;
+constexpr double kClawPickupAcceleration = 3.5;
 constexpr double kClawMoveDownVelocity = 7.00;
 constexpr double kClawMoveDownAcceleration = 15.0;
 constexpr double kClawMoveUpVelocity = 8.0;
-constexpr double kClawMoveUpAcceleration = 20.0;
+constexpr double kClawMoveUpAcceleration = 25.0;
 }  // namespace
 
 PickupActor::PickupActor(PickupActionQueueGroup* queues)
