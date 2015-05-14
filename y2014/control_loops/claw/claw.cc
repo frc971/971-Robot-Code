@@ -503,12 +503,10 @@ void ClawMotor::ChangeBottomOffset(double doffset) {
 }
 
 void ClawLimitedLoop::ChangeTopOffset(double doffset) {
-  mutable_Y()(1, 0) += doffset;
   mutable_X_hat()(1, 0) += doffset;
   LOG(INFO, "Changing top offset by %f\n", doffset);
 }
 void ClawLimitedLoop::ChangeBottomOffset(double doffset) {
-  mutable_Y()(0, 0) += doffset;
   mutable_X_hat()(0, 0) += doffset;
   mutable_X_hat()(1, 0) -= doffset;
   LOG(INFO, "Changing bottom offset by %f\n", doffset);

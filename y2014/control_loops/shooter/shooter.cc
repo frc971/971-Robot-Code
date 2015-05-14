@@ -91,10 +91,6 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   offset_ = known_position - encoder_val;
   double doffset = offset_ - previous_offset;
   mutable_X_hat(0, 0) += doffset;
-  // Offset our measurements because the offset is baked into them.
-  // This is safe because if we got here, it means position != nullptr, which
-  // means we already set Y to something and it won't just get overwritten.
-  mutable_Y(0, 0) += doffset;
   // Offset the goal so we don't move.
   mutable_R(0, 0) += doffset;
   if (controller_index() == 0) {
