@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is a modified version of the gen_embedded script included in the
 # scripts directory of seasocks (version 1.1.2). It has been modified to
@@ -10,7 +10,14 @@
 
 import os, os.path, sys
 
-o = open('embedded.h', 'w')
+output = sys.argv[1]
+assert output[0] == '"'
+assert output[-1] == '"'
+output = output[1:-1]
+
+if not os.path.exists(os.path.dirname(output)):
+  os.makedirs(os.path.dirname(output))
+o = open(output, 'w')
 
 web = []
 for root, dirs, files in os.walk("./www_defaults", topdown=False):
