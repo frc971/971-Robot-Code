@@ -102,8 +102,8 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
                                absolute_position(), previous_offset, offset_));
 }
 
-ShooterMotor::ShooterMotor(control_loops::ShooterGroup *my_shooter)
-    : aos::controls::ControlLoop<control_loops::ShooterGroup>(my_shooter),
+ShooterMotor::ShooterMotor(control_loops::ShooterQueue *my_shooter)
+    : aos::controls::ControlLoop<control_loops::ShooterQueue>(my_shooter),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       loading_problem_end_time_(0, 0),
@@ -153,7 +153,7 @@ double ShooterMotor::PositionToPower(double position) {
 }
 
 void ShooterMotor::CheckCalibrations(
-    const control_loops::ShooterGroup::Position *position) {
+    const control_loops::ShooterQueue::Position *position) {
   CHECK_NOTNULL(position);
   const frc971::constants::Values &values = constants::GetValues();
 
@@ -202,10 +202,10 @@ void ShooterMotor::CheckCalibrations(
 
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
-    const control_loops::ShooterGroup::Goal *goal,
-    const control_loops::ShooterGroup::Position *position,
-    control_loops::ShooterGroup::Output *output,
-    control_loops::ShooterGroup::Status *status) {
+    const control_loops::ShooterQueue::Goal *goal,
+    const control_loops::ShooterQueue::Position *position,
+    control_loops::ShooterQueue::Output *output,
+    control_loops::ShooterQueue::Status *status) {
   constexpr double dt = 0.01;
 
   if (goal && ::std::isnan(goal->shot_power)) {

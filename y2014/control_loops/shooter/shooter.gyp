@@ -16,7 +16,7 @@
       ],
     },
     {
-      'target_name': 'shooter_loop',
+      'target_name': 'shooter_queue',
       'type': 'static_library',
       'sources': ['shooter.q'],
       'variables': {
@@ -41,14 +41,14 @@
         'unaugmented_shooter_motor_plant.cc',
       ],
       'dependencies': [
-        'shooter_loop',
+        'shooter_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/y2014/y2014.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [
-        'shooter_loop',
+        'shooter_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
       ],
@@ -61,7 +61,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'shooter_loop',
+        'shooter_queue',
         'shooter_lib',
         '<(AOS)/common/controls/controls.gyp:control_loop_test',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',

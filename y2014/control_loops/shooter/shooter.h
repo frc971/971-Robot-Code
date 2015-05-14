@@ -121,17 +121,17 @@ const Time kShotEndTimeout = Time::InSeconds(0.2);
 const Time kPrepareFireEndTime = Time::InMS(40);
 
 class ShooterMotor
-    : public aos::controls::ControlLoop<control_loops::ShooterGroup> {
+    : public aos::controls::ControlLoop<control_loops::ShooterQueue> {
  public:
-  explicit ShooterMotor(control_loops::ShooterGroup *my_shooter =
-                            &control_loops::shooter_queue_group);
+  explicit ShooterMotor(control_loops::ShooterQueue *my_shooter =
+                            &control_loops::shooter_queue);
 
   // True if the goal was moved to avoid goal windup.
   bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
   double PositionToPower(double position);
-  void CheckCalibrations(const control_loops::ShooterGroup::Position *position);
+  void CheckCalibrations(const control_loops::ShooterQueue::Position *position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -152,9 +152,9 @@ class ShooterMotor
 
  protected:
   virtual void RunIteration(
-      const ShooterGroup::Goal *goal,
-      const control_loops::ShooterGroup::Position *position,
-      ShooterGroup::Output *output, ShooterGroup::Status *status);
+      const ShooterQueue::Goal *goal,
+      const control_loops::ShooterQueue::Position *position,
+      ShooterQueue::Output *output, ShooterQueue::Status *status);
 
  private:
   // We have to override this to keep the pistons in the correct positions.
@@ -176,7 +176,7 @@ class ShooterMotor
     load_timeout_ = Time::Now() + kLoadTimeout;
   }
 
-  control_loops::ShooterGroup::Position last_position_;
+  control_loops::ShooterQueue::Position last_position_;
 
   ZeroedStateFeedbackLoop shooter_;
 

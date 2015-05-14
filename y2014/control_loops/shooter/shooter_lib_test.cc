@@ -40,12 +40,12 @@ class ShooterSimulation {
         plunger_latched_(false),
         brake_piston_state_(true),
         brake_delay_count_(0),
-        shooter_queue_group_(
-            ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
-            ".frc971.control_loops.shooter_queue_group.goal",
-            ".frc971.control_loops.shooter_queue_group.position",
-            ".frc971.control_loops.shooter_queue_group.output",
-            ".frc971.control_loops.shooter_queue_group.status") {
+        shooter_queue_(
+            ".frc971.control_loops.shooter_queue", 0xcbf22ba9,
+            ".frc971.control_loops.shooter_queue.goal",
+            ".frc971.control_loops.shooter_queue.position",
+            ".frc971.control_loops.shooter_queue.output",
+            ".frc971.control_loops.shooter_queue.status") {
     Reinitialize(initial_position);
   }
 
@@ -82,7 +82,7 @@ class ShooterSimulation {
 
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
-  void SetPhysicalSensors(control_loops::ShooterGroup::Position *position) {
+  void SetPhysicalSensors(control_loops::ShooterQueue::Position *position) {
     const frc971::constants::Values &values = constants::GetValues();
 
    	position->position = GetPosition();
@@ -115,7 +115,7 @@ class ShooterSimulation {
       PosedgeOnlyCountedHallEffectStruct *sensor,
       const PosedgeOnlyCountedHallEffectStruct &last_sensor,
       const constants::Values::AnglePair &limits,
-      const control_loops::ShooterGroup::Position &last_position) {
+      const control_loops::ShooterQueue::Position &last_position) {
     sensor->posedge_count = last_sensor.posedge_count;
     sensor->negedge_count = last_sensor.negedge_count;
 
@@ -150,8 +150,8 @@ class ShooterSimulation {
   void SendPositionMessage(bool use_passed, bool plunger_in,
                            bool latch_in, bool brake_in) {
     const frc971::constants::Values &values = constants::GetValues();
-    ::aos::ScopedMessagePtr<control_loops::ShooterGroup::Position> position =
-        shooter_queue_group_.position.MakeMessage();
+    ::aos::ScopedMessagePtr<control_loops::ShooterQueue::Position> position =
+        shooter_queue_.position.MakeMessage();
 
     if (use_passed) {
       plunger_latched_ = latch_in && plunger_in;
@@ -180,22 +180,22 @@ class ShooterSimulation {
   // Simulates the claw moving for one timestep.
   void Simulate() {
     last_plant_position_ = GetAbsolutePosition();
-    EXPECT_TRUE(shooter_queue_group_.output.FetchLatest());
-    if (shooter_queue_group_.output->latch_piston && !latch_piston_state_ &&
+    EXPECT_TRUE(shooter_queue_.output.FetchLatest());
+    if (shooter_queue_.output->latch_piston && !latch_piston_state_ &&
         latch_delay_count_ <= 0) {
       ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = 6;
-    } else if (!shooter_queue_group_.output->latch_piston &&
+    } else if (!shooter_queue_.output->latch_piston &&
                latch_piston_state_ && latch_delay_count_ >= 0) {
       ASSERT_EQ(0, latch_delay_count_) << "The test doesn't support that.";
       latch_delay_count_ = -6;
     }
 
-    if (shooter_queue_group_.output->brake_piston && !brake_piston_state_ &&
+    if (shooter_queue_.output->brake_piston && !brake_piston_state_ &&
         brake_delay_count_ <= 0) {
       ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = 5;
-    } else if (!shooter_queue_group_.output->brake_piston &&
+    } else if (!shooter_queue_.output->brake_piston &&
                brake_piston_state_ && brake_delay_count_ >= 0) {
       ASSERT_EQ(0, brake_delay_count_) << "The test doesn't support that.";
       brake_delay_count_ = -5;
@@ -221,7 +221,7 @@ class ShooterSimulation {
                                    shooter_plant_->D() * shooter_plant_->U();
     } else {
       shooter_plant_->mutable_U() << last_voltage_;
-      //shooter_plant_->U << shooter_queue_group_.output->voltage;
+      //shooter_plant_->U << shooter_queue_.output->voltage;
       shooter_plant_->Update();
     }
     LOG(DEBUG, "Plant index is %d\n", shooter_plant_->plant_index());
@@ -258,7 +258,7 @@ class ShooterSimulation {
     EXPECT_LE(constants::GetValues().shooter.lower_hard_limit,
               GetAbsolutePosition());
 
-    last_voltage_ = shooter_queue_group_.output->voltage;
+    last_voltage_ = shooter_queue_.output->voltage;
     ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
   }
 
@@ -279,11 +279,11 @@ class ShooterSimulation {
   int brake_delay_count_;
 
  private:
-  ShooterGroup shooter_queue_group_;
+  ShooterQueue shooter_queue_;
   double initial_position_;
   double last_voltage_;
 
-  control_loops::ShooterGroup::Position last_position_message_;
+  control_loops::ShooterQueue::Position last_position_message_;
   double last_plant_position_;
 };
 
@@ -293,7 +293,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ShooterGroup shooter_queue_group_;
+  ShooterQueue shooter_queue_;
 
   // Create a loop and simulation plant.
   ShooterMotor shooter_motor_;
@@ -304,21 +304,21 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   }
 
   ShooterTest()
-      : shooter_queue_group_(
-            ".frc971.control_loops.shooter_queue_group", 0xcbf22ba9,
-            ".frc971.control_loops.shooter_queue_group.goal",
-            ".frc971.control_loops.shooter_queue_group.position",
-            ".frc971.control_loops.shooter_queue_group.output",
-            ".frc971.control_loops.shooter_queue_group.status"),
-        shooter_motor_(&shooter_queue_group_),
+      : shooter_queue_(
+            ".frc971.control_loops.shooter_queue", 0xcbf22ba9,
+            ".frc971.control_loops.shooter_queue.goal",
+            ".frc971.control_loops.shooter_queue.position",
+            ".frc971.control_loops.shooter_queue.output",
+            ".frc971.control_loops.shooter_queue.status"),
+        shooter_motor_(&shooter_queue_),
         shooter_motor_plant_(0.2) {
   }
 
   void VerifyNearGoal() {
-    shooter_queue_group_.goal.FetchLatest();
-    shooter_queue_group_.position.FetchLatest();
+    shooter_queue_.goal.FetchLatest();
+    shooter_queue_.position.FetchLatest();
     double pos = shooter_motor_plant_.GetAbsolutePosition();
-    EXPECT_NEAR(shooter_queue_group_.goal->shot_power, pos, 1e-4);
+    EXPECT_NEAR(shooter_queue_.goal->shot_power, pos, 1e-4);
   }
 };
 
@@ -355,7 +355,7 @@ TEST_F(ShooterTest, InversePowerConversion) {
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, GoesToValue) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 200; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -365,14 +365,14 @@ TEST_F(ShooterTest, GoesToValue) {
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, Fire) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 120; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -380,7 +380,7 @@ TEST_F(ShooterTest, Fire) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder()
+  shooter_queue_.goal.MakeWithBuilder()
       .shot_power(35.0)
       .shot_requested(true)
       .Send();
@@ -393,7 +393,7 @@ TEST_F(ShooterTest, Fire) {
     SimulateTimestep(true);
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
-        shooter_queue_group_.goal.MakeWithBuilder()
+        shooter_queue_.goal.MakeWithBuilder()
             .shot_power(17.0)
             .shot_requested(false)
             .Send();
@@ -404,7 +404,7 @@ TEST_F(ShooterTest, Fire) {
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   EXPECT_TRUE(hit_fire);
@@ -412,7 +412,7 @@ TEST_F(ShooterTest, Fire) {
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, FireLong) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -420,7 +420,7 @@ TEST_F(ShooterTest, FireLong) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder().shot_requested(true).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_requested(true).Send();
 
   bool hit_fire = false;
   for (int i = 0; i < 400; ++i) {
@@ -430,7 +430,7 @@ TEST_F(ShooterTest, FireLong) {
     SimulateTimestep(true);
     if (shooter_motor_.state() == ShooterMotor::STATE_FIRE) {
       if (!hit_fire) {
-        shooter_queue_group_.goal.MakeWithBuilder()
+        shooter_queue_.goal.MakeWithBuilder()
             .shot_requested(false)
             .Send();
       }
@@ -439,7 +439,7 @@ TEST_F(ShooterTest, FireLong) {
   }
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
-  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power), pos, 0.05);
+  EXPECT_NEAR(shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power), pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   EXPECT_TRUE(hit_fire);
 }
@@ -447,7 +447,7 @@ TEST_F(ShooterTest, FireLong) {
 // Verifies that it doesn't try to go out too far if you give it a ridicilous
 // power.
 TEST_F(ShooterTest, LoadTooFar) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(500.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(500.0).Send();
   for (int i = 0; i < 160; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -462,7 +462,7 @@ TEST_F(ShooterTest, LoadTooFar) {
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, MoveGoal) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -470,7 +470,7 @@ TEST_F(ShooterTest, MoveGoal) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(14.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(14.0).Send();
 
   for (int i = 0; i < 100; ++i) {
     shooter_motor_plant_.SendPositionMessage();
@@ -481,14 +481,14 @@ TEST_F(ShooterTest, MoveGoal) {
 
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
 
 TEST_F(ShooterTest, Unload) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -496,7 +496,7 @@ TEST_F(ShooterTest, Unload) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+  shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
   for (int i = 0;
        i < 800 && shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD;
@@ -514,7 +514,7 @@ TEST_F(ShooterTest, Unload) {
 
 // Tests that it rezeros while unloading.
 TEST_F(ShooterTest, RezeroWhileUnloading) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -531,7 +531,7 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
     SimulateTimestep(true);
   }
 
-  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+  shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
   for (int i = 0;
        i < 800 && shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD;
@@ -549,7 +549,7 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupNegative) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -557,7 +557,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+  shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
   int kicked_delay = 20;
   int capped_goal_count = 0;
@@ -589,7 +589,7 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
 
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupPositive) {
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 150; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -597,7 +597,7 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
     SimulateTimestep(true);
   }
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
-  shooter_queue_group_.goal.MakeWithBuilder().unload_requested(true).Send();
+  shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
   int kicked_delay = 20;
   int capped_goal_count = 0;
@@ -634,7 +634,7 @@ double HallEffectMiddle(constants::Values::AnglePair pair) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, StartsOnDistal) {
   Reinitialize(HallEffectMiddle(constants::GetValues().shooter.pusher_distal));
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 200; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -644,7 +644,7 @@ TEST_F(ShooterTest, StartsOnDistal) {
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
@@ -654,7 +654,7 @@ TEST_F(ShooterTest, StartsOnDistal) {
 TEST_F(ShooterTest, StartsOnProximal) {
   Reinitialize(
       HallEffectMiddle(constants::GetValues().shooter.pusher_proximal));
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(70.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
   for (int i = 0; i < 300; ++i) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -664,7 +664,7 @@ TEST_F(ShooterTest, StartsOnProximal) {
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
@@ -683,7 +683,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
 	//		latch, brake, plunger_back, start_pos);
   bool initialized = false;
   Reinitialize(start_pos);
-  shooter_queue_group_.goal.MakeWithBuilder().shot_power(120.0).Send();
+  shooter_queue_.goal.MakeWithBuilder().shot_power(120.0).Send();
   for (int i = 0; i < 200; ++i) {
     shooter_motor_plant_.SendPositionMessage(!initialized, plunger_back, latch, brake);
     initialized = true;
@@ -694,7 +694,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
   double pos = shooter_motor_plant_.GetAbsolutePosition();
   EXPECT_NEAR(
-      shooter_motor_.PowerToPosition(shooter_queue_group_.goal->shot_power),
+      shooter_motor_.PowerToPosition(shooter_queue_.goal->shot_power),
       pos, 0.05);
   ASSERT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }

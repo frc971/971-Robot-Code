@@ -16,7 +16,7 @@ struct HalfClawPosition {
 };
 
 // All angles here are 0 vertical, positive "up" (aka backwards).
-queue_group ClawGroup {
+queue_group ClawQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
@@ -67,7 +67,7 @@ queue_group ClawGroup {
   queue Status status;
 };
 
-queue_group ClawGroup claw_queue_group;
+queue_group ClawQueue claw_queue;
 
 struct ClawPositionToLog {
 	double top;

@@ -364,8 +364,8 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   return false;
 }
 
-ClawMotor::ClawMotor(control_loops::ClawGroup *my_claw)
-    : aos::controls::ControlLoop<control_loops::ClawGroup>(my_claw),
+ClawMotor::ClawMotor(control_loops::ClawQueue *my_claw)
+    : aos::controls::ControlLoop<control_loops::ClawQueue>(my_claw),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -609,10 +609,10 @@ bool ClawMotor::is_ready() const {
 bool ClawMotor::is_zeroing() const { return !is_ready(); }
 
 // Positive angle is up, and positive power is up.
-void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
-                             const control_loops::ClawGroup::Position *position,
-                             control_loops::ClawGroup::Output *output,
-                             control_loops::ClawGroup::Status *status) {
+void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
+                             const control_loops::ClawQueue::Position *position,
+                             control_loops::ClawQueue::Output *output,
+                             control_loops::ClawQueue::Status *status) {
   constexpr double dt = 0.01;
 
   // Disable the motors now so that all early returns will return with the

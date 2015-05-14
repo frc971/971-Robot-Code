@@ -9,9 +9,9 @@
       'dependencies': [
         'auto_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
-        '<(DEPTH)/y2014/control_loops/drivetrain/drivetrain.gyp:drivetrain_loop',
-        '<(DEPTH)/y2014/control_loops/shooter/shooter.gyp:shooter_loop',
-        '<(DEPTH)/y2014/control_loops/claw/claw.gyp:claw_loop',
+        '<(DEPTH)/y2014/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
+        '<(DEPTH)/y2014/control_loops/shooter/shooter.gyp:shooter_queue',
+        '<(DEPTH)/y2014/control_loops/claw/claw.gyp:claw_queue',
         '<(DEPTH)/y2014/y2014.gyp:constants',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:phased_loop',

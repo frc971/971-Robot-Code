@@ -153,17 +153,17 @@ class ClawSensors {
 };
 
 int Main() {
-  control_loops::claw_queue_group.position.FetchNextBlocking();
+  control_loops::claw_queue.position.FetchNextBlocking();
 
   const double top_start_position =
-      control_loops::claw_queue_group.position->top.position;
+      control_loops::claw_queue.position->top.position;
   const double bottom_start_position =
-      control_loops::claw_queue_group.position->bottom.position;
+      control_loops::claw_queue.position->bottom.position;
 
   ClawSensors top(top_start_position,
-                  control_loops::claw_queue_group.position->top);
+                  control_loops::claw_queue.position->top);
   ClawSensors bottom(bottom_start_position,
-                     control_loops::claw_queue_group.position->bottom);
+                     control_loops::claw_queue.position->bottom);
 
   Claws limits;
 
@@ -217,28 +217,28 @@ int Main() {
   limits.start_fine_tune_pos = -0.2;
   limits.max_zeroing_voltage = 4.0;
 
-  control_loops::ClawGroup::Position last_position =
-      *control_loops::claw_queue_group.position;
+  control_loops::ClawQueue::Position last_position =
+      *control_loops::claw_queue.position;
 
   while (true) {
-    control_loops::claw_queue_group.position.FetchNextBlocking();
+    control_loops::claw_queue.position.FetchNextBlocking();
     bool print = false;
-    if (top.GetPositionOfEdge(control_loops::claw_queue_group.position->top,
+    if (top.GetPositionOfEdge(control_loops::claw_queue.position->top,
                               &limits.upper_claw)) {
       print = true;
       printf("Got an edge on the upper claw\n");
     }
     if (bottom.GetPositionOfEdge(
-            control_loops::claw_queue_group.position->bottom,
+            control_loops::claw_queue.position->bottom,
             &limits.lower_claw)) {
       print = true;
       printf("Got an edge on the lower claw\n");
     }
     const double top_position =
-        control_loops::claw_queue_group.position->top.position -
+        control_loops::claw_queue.position->top.position -
         top_start_position;
     const double bottom_position =
-        control_loops::claw_queue_group.position->bottom.position -
+        control_loops::claw_queue.position->bottom.position -
         bottom_start_position;
     const double separation = top_position - bottom_position;
     if (separation > limits.claw_max_separation) {
@@ -300,7 +300,7 @@ int Main() {
       printf("}\n");
     }
 
-    last_position = *control_loops::claw_queue_group.position;
+    last_position = *control_loops::claw_queue.position;
   }
   return 0;
 }

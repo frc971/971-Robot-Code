@@ -166,24 +166,24 @@ void WaitUntilClawDone() {
     // Poll the running bit and auto done bits.
     // TODO(sensors): Fix this time.
     ::aos::time::PhasedLoop10MS(5000);
-    control_loops::claw_queue_group.status.FetchLatest();
-    control_loops::claw_queue_group.goal.FetchLatest();
+    control_loops::claw_queue.status.FetchLatest();
+    control_loops::claw_queue.goal.FetchLatest();
     if (ShouldExitAuto()) {
       return;
     }
-    if (control_loops::claw_queue_group.status.get() == nullptr ||
-        control_loops::claw_queue_group.goal.get() == nullptr) {
+    if (control_loops::claw_queue.status.get() == nullptr ||
+        control_loops::claw_queue.goal.get() == nullptr) {
       continue;
     }
     bool ans =
-        control_loops::claw_queue_group.status->zeroed &&
-        (::std::abs(control_loops::claw_queue_group.status->bottom_velocity) <
+        control_loops::claw_queue.status->zeroed &&
+        (::std::abs(control_loops::claw_queue.status->bottom_velocity) <
          1.0) &&
-        (::std::abs(control_loops::claw_queue_group.status->bottom -
-                    control_loops::claw_queue_group.goal->bottom_angle) <
+        (::std::abs(control_loops::claw_queue.status->bottom -
+                    control_loops::claw_queue.goal->bottom_angle) <
          0.10) &&
-        (::std::abs(control_loops::claw_queue_group.status->separation -
-                    control_loops::claw_queue_group.goal->separation_angle) <
+        (::std::abs(control_loops::claw_queue.status->separation -
+                    control_loops::claw_queue.goal->separation_angle) <
          0.4);
     if (ans) {
       return;

@@ -182,10 +182,10 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
       const constants::Values::Claws::Claw &claw_values);
 };
 
-class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawGroup> {
+class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawQueue> {
  public:
-  explicit ClawMotor(control_loops::ClawGroup *my_claw =
-                         &control_loops::claw_queue_group);
+  explicit ClawMotor(control_loops::ClawQueue *my_claw =
+                         &control_loops::claw_queue);
 
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }
@@ -215,10 +215,10 @@ class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawGroup> {
   CalibrationMode mode() const { return mode_; }
 
  protected:
-  virtual void RunIteration(const control_loops::ClawGroup::Goal *goal,
-                            const control_loops::ClawGroup::Position *position,
-                            control_loops::ClawGroup::Output *output,
-                            control_loops::ClawGroup::Status *status);
+  virtual void RunIteration(const control_loops::ClawQueue::Goal *goal,
+                            const control_loops::ClawQueue::Position *position,
+                            control_loops::ClawQueue::Output *output,
+                            control_loops::ClawQueue::Status *status);
 
   double top_absolute_position() const {
     return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);

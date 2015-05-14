@@ -16,7 +16,7 @@
       ],
     },
     {
-      'target_name': 'claw_loop',
+      'target_name': 'claw_queue',
       'type': 'static_library',
       'sources': ['claw.q'],
       'variables': {
@@ -40,7 +40,7 @@
         'claw_motor_plant.cc',
       ],
       'dependencies': [
-        'claw_loop',
+        'claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/y2014/y2014.gyp:constants',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
@@ -50,7 +50,7 @@
         '<(AOS)/common/logging/logging.gyp:matrix_logging',
       ],
       'export_dependent_settings': [
-        'claw_loop',
+        'claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/controls/controls.gyp:polytope',
@@ -65,7 +65,7 @@
       ],
       'dependencies': [
         '<(EXTERNALS):gtest',
-        'claw_loop',
+        'claw_queue',
         'claw_lib',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(AOS)/common/controls/controls.gyp:control_loop_test',
@@ -79,7 +79,7 @@
       ],
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
-        'claw_loop',
+        'claw_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/y2014/y2014.gyp:constants',
       ],

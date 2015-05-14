@@ -573,11 +573,11 @@ class ShooterWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::shooter_queue_group.output.FetchAnother();
+    ::frc971::control_loops::shooter_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::shooter_queue_group.output;
+    auto &queue = ::frc971::control_loops::shooter_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     shooter_talon_->Set(queue->voltage / 12.0);
   }
@@ -618,11 +618,11 @@ class ClawWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::claw_queue_group.output.FetchAnother();
+    ::frc971::control_loops::claw_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::claw_queue_group.output;
+    auto &queue = ::frc971::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     intake1_talon_->Set(queue->intake_voltage / 12.0);
     intake2_talon_->Set(queue->intake_voltage / 12.0);

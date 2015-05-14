@@ -3,7 +3,7 @@ package frc971.control_loops;
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
-queue_group ShooterGroup {
+queue_group ShooterQueue {
   implements aos.control_loops.ControlLoop;
 
   message Output {
@@ -57,7 +57,7 @@ queue_group ShooterGroup {
   queue Status status;
 };
 
-queue_group ShooterGroup shooter_queue_group;
+queue_group ShooterQueue shooter_queue;
 
 struct ShooterStateToLog {
 	double absolute_position;
