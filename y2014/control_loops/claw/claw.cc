@@ -211,8 +211,6 @@ ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
       name_(name),
       motor_(motor),
       zeroing_state_(UNKNOWN_POSITION),
-      posedge_value_(0.0),
-      negedge_value_(0.0),
       encoder_(0.0),
       last_encoder_(0.0) {}
 
@@ -234,18 +232,52 @@ void ZeroedStateFeedbackLoop::SetPositionValues(const HalfClawPosition &claw) {
         ::std::min(min_hall_effect_off_angle_, claw.position);
     max_hall_effect_off_angle_ =
         ::std::max(max_hall_effect_off_angle_, claw.position);
-  } else if (any_sensor_triggered && !any_triggered_last_) {
-    // Saw a posedge on the hall effect.  Reset the limits.
-    min_hall_effect_on_angle_ = ::std::min(claw.posedge_value, claw.position);
-    max_hall_effect_on_angle_ = ::std::max(claw.posedge_value, claw.position);
-  } else if (!any_sensor_triggered && any_triggered_last_) {
-    // Saw a negedge on the hall effect.  Reset the limits.
-    min_hall_effect_off_angle_ = ::std::min(claw.negedge_value, claw.position);
-    max_hall_effect_off_angle_ = ::std::max(claw.negedge_value, claw.position);
   }
 
-  posedge_value_ = claw.posedge_value;
-  negedge_value_ = claw.negedge_value;
+  if (front_.is_posedge()) {
+    // Saw a posedge on the hall effect.  Reset the limits.
+    min_hall_effect_on_angle_ =
+        ::std::min(claw.front.posedge_value, claw.position);
+    max_hall_effect_on_angle_ =
+        ::std::max(claw.front.posedge_value, claw.position);
+  }
+  if (calibration_.is_posedge()) {
+    // Saw a posedge on the hall effect.  Reset the limits.
+    min_hall_effect_on_angle_ =
+        ::std::min(claw.calibration.posedge_value, claw.position);
+    max_hall_effect_on_angle_ =
+        ::std::max(claw.calibration.posedge_value, claw.position);
+  }
+  if (back_.is_posedge()) {
+    // Saw a posedge on the hall effect.  Reset the limits.
+    min_hall_effect_on_angle_ =
+        ::std::min(claw.back.posedge_value, claw.position);
+    max_hall_effect_on_angle_ =
+        ::std::max(claw.back.posedge_value, claw.position);
+  }
+
+  if (front_.is_negedge()) {
+    // Saw a negedge on the hall effect.  Reset the limits.
+    min_hall_effect_off_angle_ =
+        ::std::min(claw.front.negedge_value, claw.position);
+    max_hall_effect_off_angle_ =
+        ::std::max(claw.front.negedge_value, claw.position);
+  }
+  if (calibration_.is_negedge()) {
+    // Saw a negedge on the hall effect.  Reset the limits.
+    min_hall_effect_off_angle_ =
+        ::std::min(claw.calibration.negedge_value, claw.position);
+    max_hall_effect_off_angle_ =
+        ::std::max(claw.calibration.negedge_value, claw.position);
+  }
+  if (back_.is_negedge()) {
+    // Saw a negedge on the hall effect.  Reset the limits.
+    min_hall_effect_off_angle_ =
+        ::std::min(claw.back.negedge_value, claw.position);
+    max_hall_effect_off_angle_ =
+        ::std::max(claw.back.negedge_value, claw.position);
+  }
+
   last_encoder_ = encoder_;
   if (front().value() || calibration().value() || back().value()) {
     last_on_encoder_ = encoder_;
@@ -399,18 +431,18 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     } else {
       const double average_last_encoder =
           (min_hall_effect_off_angle_ + max_hall_effect_off_angle_) / 2.0;
-      if (posedge_value_ < average_last_encoder) {
+      if (this_sensor.posedge_value() < average_last_encoder) {
         *edge_angle = angles.upper_decreasing_angle;
         LOG(INFO, "%s Posedge upper of %s -> %f posedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, posedge_value_,
+            name_, hall_effect_name, *edge_angle, this_sensor.posedge_value(),
             average_last_encoder);
       } else {
         *edge_angle = angles.lower_angle;
         LOG(INFO, "%s Posedge lower of %s -> %f posedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, posedge_value_,
+            name_, hall_effect_name, *edge_angle, this_sensor.posedge_value(),
             average_last_encoder);
       }
-      *edge_encoder = posedge_value_;
+      *edge_encoder = this_sensor.posedge_value();
       found_edge = true;
     }
   }
@@ -421,18 +453,18 @@ bool ZeroedStateFeedbackLoop::DoGetPositionOfEdge(
     } else {
       const double average_last_encoder =
           (min_hall_effect_on_angle_ + max_hall_effect_on_angle_) / 2.0;
-      if (negedge_value_ > average_last_encoder) {
+      if (this_sensor.negedge_value() > average_last_encoder) {
         *edge_angle = angles.upper_angle;
         LOG(INFO, "%s Negedge upper of %s -> %f negedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, negedge_value_,
+            name_, hall_effect_name, *edge_angle, this_sensor.negedge_value(),
             average_last_encoder);
       } else {
         *edge_angle = angles.lower_decreasing_angle;
         LOG(INFO, "%s Negedge lower of %s -> %f negedge: %f avg_encoder: %f\n",
-            name_, hall_effect_name, *edge_angle, negedge_value_,
+            name_, hall_effect_name, *edge_angle, this_sensor.negedge_value(),
             average_last_encoder);
       }
-      *edge_encoder = negedge_value_;
+      *edge_encoder = this_sensor.negedge_value();
       found_edge = true;
     }
   }
@@ -716,7 +748,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                             bottom_claw_.back())) {
           // do calibration
           bottom_claw_.SetCalibration(
-              position->bottom.posedge_value,
+              position->bottom.calibration.posedge_value,
               values.claw.lower_claw.calibration.lower_angle);
           bottom_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
           // calibrated so we are done fine tuning bottom
@@ -772,7 +804,7 @@ void ClawMotor::RunIteration(const control_loops::ClawGroup::Goal *goal,
                                          top_claw_.front(), top_claw_.back())) {
           // do calibration
           top_claw_.SetCalibration(
-              position->top.posedge_value,
+              position->top.calibration.posedge_value,
               values.claw.upper_claw.calibration.lower_angle);
           top_claw_.set_zeroing_state(ZeroedStateFeedbackLoop::CALIBRATED);
           // calibrated so we are done fine tuning top

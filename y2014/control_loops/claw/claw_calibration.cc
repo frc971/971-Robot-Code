@@ -28,38 +28,42 @@ class Sensor {
     bool print = false;
 
     if (hall_effect.posedge_count != last_posedge_count_) {
-      const double avg_off_position = (last_off_min_position_ + last_off_max_position_) / 2.0;
-      if (claw_position.posedge_value < avg_off_position) {
+      const double avg_off_position =
+          (last_off_min_position_ + last_off_max_position_) / 2.0;
+      if (hall_effect.posedge_value < avg_off_position) {
         printf("Posedge upper current %f posedge %f avg_off %f [%f, %f]\n",
-               claw_position.position, claw_position.posedge_value,
+               claw_position.position, hall_effect.posedge_value,
                avg_off_position, last_off_min_position_,
                last_off_max_position_);
-        limits->upper_decreasing_angle = claw_position.posedge_value - start_position_;
+        limits->upper_decreasing_angle =
+            hall_effect.posedge_value - start_position_;
       } else {
         printf("Posedge lower current %f posedge %f avg_off %f [%f, %f]\n",
-               claw_position.position, claw_position.posedge_value,
+               claw_position.position, hall_effect.posedge_value,
                avg_off_position, last_off_min_position_,
                last_off_max_position_);
         limits->lower_angle =
-            claw_position.posedge_value - start_position_;
+            hall_effect.posedge_value - start_position_;
       }
       print = true;
     }
     if (hall_effect.negedge_count != last_negedge_count_) {
-      const double avg_on_position = (last_on_min_position_ + last_on_max_position_) / 2.0;
-      if (claw_position.negedge_value > avg_on_position) {
+      const double avg_on_position =
+          (last_on_min_position_ + last_on_max_position_) / 2.0;
+      if (hall_effect.negedge_value > avg_on_position) {
         printf("Negedge upper current %f negedge %f last_on %f [%f, %f]\n",
-               claw_position.position, claw_position.negedge_value,
+               claw_position.position, hall_effect.negedge_value,
                avg_on_position, last_on_min_position_,
                last_on_max_position_);
         limits->upper_angle =
-            claw_position.negedge_value - start_position_;
+            hall_effect.negedge_value - start_position_;
       } else {
         printf("Negedge lower current %f negedge %f last_on %f [%f, %f]\n",
-               claw_position.position, claw_position.negedge_value,
+               claw_position.position, hall_effect.negedge_value,
                avg_on_position, last_on_min_position_,
                last_on_max_position_);
-        limits->lower_decreasing_angle = claw_position.negedge_value - start_position_;
+        limits->lower_decreasing_angle =
+            hall_effect.negedge_value - start_position_;
       }
       print = true;
     }
@@ -75,7 +79,8 @@ class Sensor {
       }
     } else {
       if (last_hall_effect_.current) {
-        last_off_min_position_ = last_off_max_position_ = claw_position.position;
+        last_off_min_position_ = last_off_max_position_ =
+            claw_position.position;
       } else {
         last_off_min_position_ =
             ::std::min(claw_position.position, last_off_min_position_);

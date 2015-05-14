@@ -129,8 +129,6 @@ class ZeroedStateFeedbackLoop {
   HallEffectTracker front_, calibration_, back_;
 
   JointZeroingState zeroing_state_;
-  double posedge_value_;
-  double negedge_value_;
   double min_hall_effect_on_angle_;
   double max_hall_effect_on_angle_;
   double min_hall_effect_off_angle_;

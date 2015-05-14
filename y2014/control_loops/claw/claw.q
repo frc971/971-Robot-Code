@@ -13,13 +13,6 @@ struct HalfClawPosition {
   HallEffectStruct calibration;
   // The hall effect at the back limit.
   HallEffectStruct back;
-
-  // The encoder value at the last posedge of any of the claw hall effect
-  // sensors (front, calibration, or back).
-  double posedge_value;
-  // The encoder value at the last negedge of any of the claw hall effect
-  // sensors (front, calibration, or back).
-  double negedge_value;
 };
 
 // All angles here are 0 vertical, positive "up" (aka backwards).

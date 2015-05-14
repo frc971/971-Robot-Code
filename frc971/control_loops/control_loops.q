@@ -42,6 +42,8 @@ struct HallEffectStruct {
   bool current;
   int32_t posedge_count;
   int32_t negedge_count;
+  double posedge_value;
+  double negedge_value;
 };
 
 // Records the positions for a mechanism with edge-capturing sensors on it.

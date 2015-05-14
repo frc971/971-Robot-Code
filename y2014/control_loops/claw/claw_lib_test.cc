@@ -127,8 +127,6 @@ class ClawMotorSimulation {
   void UpdateHallEffect(double angle,
                         double last_angle,
                         double initial_position,
-                        double *posedge_value,
-                        double *negedge_value,
                         HallEffectStruct *position,
                         const HallEffectStruct &last_position,
                         const constants::Values::Claws::AnglePair &pair,
@@ -139,11 +137,11 @@ class ClawMotorSimulation {
       if (last_angle < pair.lower_angle) {
         LOG(DEBUG, "%s: Positive lower edge on %s hall effect\n", claw_name,
             hall_effect_name);
-        *posedge_value = pair.lower_angle - initial_position;
+        position->posedge_value = pair.lower_angle - initial_position;
       } else {
         LOG(DEBUG, "%s: Positive upper edge on %s hall effect\n", claw_name,
             hall_effect_name);
-        *posedge_value = pair.upper_angle - initial_position;
+        position->posedge_value = pair.upper_angle - initial_position;
       }
     }
     if (!position->current && last_position.current) {
@@ -152,11 +150,11 @@ class ClawMotorSimulation {
       if (angle < pair.lower_angle) {
         LOG(DEBUG, "%s: Negative lower edge on %s hall effect\n", claw_name,
             hall_effect_name);
-        *negedge_value = pair.lower_angle - initial_position;
+        position->negedge_value = pair.lower_angle - initial_position;
       } else {
         LOG(DEBUG, "%s: Negative upper edge on %s hall effect\n", claw_name,
             hall_effect_name);
-        *negedge_value = pair.upper_angle - initial_position;
+        position->negedge_value = pair.upper_angle - initial_position;
       }
     }
   }
@@ -168,20 +166,17 @@ class ClawMotorSimulation {
       const char *claw_name) {
     UpdateHallEffect(position->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->posedge_value,
-                     &position->negedge_value, &position->front,
-                     last_position.front, claw.front, claw_name, "front");
+                     initial_position, &position->front, last_position.front,
+                     claw.front, claw_name, "front");
     UpdateHallEffect(position->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->posedge_value,
-                     &position->negedge_value, &position->calibration,
+                     initial_position, &position->calibration,
                      last_position.calibration, claw.calibration, claw_name,
                      "calibration");
     UpdateHallEffect(position->position + initial_position,
                      last_position.position + initial_position,
-                     initial_position, &position->posedge_value,
-                     &position->negedge_value, &position->back,
-                     last_position.back, claw.back, claw_name, "back");
+                     initial_position, &position->back, last_position.back,
+                     claw.back, claw_name, "back");
   }
 
   // Sends out the position queue messages.
