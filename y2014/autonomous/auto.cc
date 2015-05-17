@@ -7,17 +7,19 @@
 #include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/actions/actions.h"
 
 #include "frc971/autonomous/auto.q.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
-#include "frc971/actions/action_client.h"
-#include "frc971/actions/shoot_action.h"
-#include "frc971/actions/drivetrain_action.h"
-#include "frc971/queues/other_sensors.q.h"
+#include "y2014/actors/shoot_actor.h"
+#include "y2014/actors/drivetrain_actor.h"
+#include "y2014/queues/auto_mode.q.h"
+
 #include "y2014/queues/hot_goal.q.h"
+#include "y2014/queues/profile_params.q.h"
 
 using ::aos::time::Time;
 
@@ -71,7 +73,7 @@ void WaitUntilDoneOrCanceled(
   }
   while (true) {
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoopXMS(5, 2500);
+    ::aos::time::PhasedLoopXMS(10, 5000);
     if (!action->Running() || ShouldExitAuto()) {
       return;
     }
@@ -94,6 +96,64 @@ void StepDrive(double distance, double theta) {
   right_initial_position = right_goal;
 }
 
+void PositionClawVertically(double intake_power = 0.0, double centering_power = 0.0) {
+  if (!control_loops::claw_queue.goal.MakeWithBuilder()
+           .bottom_angle(0.0)
+           .separation_angle(0.0)
+           .intake(intake_power)
+           .centering(centering_power)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+  }
+}
+
+void PositionClawBackIntake() {
+  if (!control_loops::claw_queue.goal.MakeWithBuilder()
+           .bottom_angle(-2.273474)
+           .separation_angle(0.0)
+           .intake(12.0)
+           .centering(12.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+  }
+}
+
+void PositionClawUpClosed() {
+  // Move the claw to where we're going to shoot from but keep it closed until
+  // it gets there.
+  if (!control_loops::claw_queue.goal.MakeWithBuilder()
+           .bottom_angle(0.86)
+           .separation_angle(0.0)
+           .intake(4.0)
+           .centering(1.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+  }
+}
+
+void PositionClawForShot() {
+  if (!control_loops::claw_queue.goal.MakeWithBuilder()
+           .bottom_angle(0.86)
+           .separation_angle(0.10)
+           .intake(4.0)
+           .centering(1.0)
+           .Send()) {
+    LOG(WARNING, "sending claw goal failed\n");
+  }
+}
+
+void SetShotPower(double power) {
+  LOG(INFO, "Setting shot power to %f\n", power);
+  if (!control_loops::shooter_queue.goal.MakeWithBuilder()
+           .shot_power(power)
+           .shot_requested(false)
+           .unload_requested(false)
+           .load_requested(false)
+           .Send()) {
+    LOG(WARNING, "sending shooter goal failed\n");
+  }
+}
+
 void WaitUntilNear(double distance) {
   while (true) {
     if (ShouldExitAuto()) return;
@@ -112,16 +172,11 @@ void WaitUntilNear(double distance) {
   }
 }
 
-const ProfileParams kFastDrive = {2.0, 3.5};
-const ProfileParams kFastKnockDrive = {2.0, 3.0};
-const ProfileParams kStackingSecondDrive = {2.0, 1.5};
+const ProfileParams kFastDrive = {3.0, 2.5};
+const ProfileParams kSlowDrive = {2.5, 2.5};
+const ProfileParams kFastWithBallDrive = {3.0, 2.0};
+const ProfileParams kSlowWithBallDrive = {2.5, 2.0};
 const ProfileParams kFastTurn = {3.0, 10.0};
-const ProfileParams kStackingFirstTurn = {1.0, 1.0};
-const ProfileParams kStackingSecondTurn = {2.0, 6.0};
-const ProfileParams kComboTurn = {1.2, 8.0};
-const ProfileParams kRaceTurn = {4.0, 10.0};
-const ProfileParams kRaceDrive = {2.0, 2.0};
-const ProfileParams kRaceBackupDrive = {2.0, 5.0};
 
 ::std::unique_ptr<::frc971::actors::DrivetrainAction> SetDriveGoal(
     double distance, const ProfileParams drive_params, double theta = 0,
@@ -148,9 +203,9 @@ const ProfileParams kRaceBackupDrive = {2.0, 5.0};
 
 void Shoot() {
   // Shoot.
-  auto shoot_action = actions::MakeShootAction();
+  auto shoot_action = actors::MakeShootAction();
   shoot_action->Start();
-  WaitUntilDoneOrCanceled(shoot_action.get());
+  WaitUntilDoneOrCanceled(::std::move(shoot_action));
 }
 
 void InitializeEncoders() {
@@ -164,8 +219,7 @@ void InitializeEncoders() {
 void WaitUntilClawDone() {
   while (true) {
     // Poll the running bit and auto done bits.
-    // TODO(sensors): Fix this time.
-    ::aos::time::PhasedLoop10MS(5000);
+    ::aos::time::PhasedLoopXMS(10, 5000);
     control_loops::claw_queue.status.FetchLatest();
     control_loops::claw_queue.goal.FetchLatest();
     if (ShouldExitAuto()) {
@@ -311,7 +365,11 @@ void HandleAuto() {
   }
   LOG(INFO, "running auto %" PRIu8 "\n", static_cast<uint8_t>(auto_version));
 
-  const bool drive_slow_acceleration = auto_version == AutoVersion::kStraight;
+  const ProfileParams &drive_params =
+      (auto_version == AutoVersion::kStraight) ? kFastDrive : kSlowDrive;
+  const ProfileParams &drive_with_ball_params =
+      (auto_version == AutoVersion::kStraight) ? kFastWithBallDrive
+                                               : kSlowWithBallDrive;
 
   HotGoalDecoder hot_goal_decoder;
   // True for left, false for right.
@@ -338,12 +396,11 @@ void HandleAuto() {
   {
     if (ShouldExitAuto()) return;
     // Drive to the goal.
-    auto drivetrain_action = SetDriveGoal(-kShootDistance,
-                                          drive_slow_acceleration, 2.5);
+    auto drivetrain_action = SetDriveGoal(-kShootDistance, drive_params);
     time::SleepFor(time::Time::InSeconds(0.75));
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
   }
 
@@ -363,10 +420,9 @@ void HandleAuto() {
   }
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action =
-        SetDriveGoal(0, drive_slow_acceleration, 2,
-                     first_shot_left ? kTurnAngle : -kTurnAngle);
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    auto drivetrain_action = SetDriveGoal(
+        0, drive_with_ball_params, first_shot_left ? kTurnAngle : -kTurnAngle);
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
     do {
@@ -389,10 +445,9 @@ void HandleAuto() {
 
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action =
-        SetDriveGoal(0, drive_slow_acceleration, 2,
-                     first_shot_left ? -kTurnAngle : kTurnAngle);
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    auto drivetrain_action = SetDriveGoal(
+        0, drive_with_ball_params, first_shot_left ? -kTurnAngle : kTurnAngle);
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
     LOG(INFO, "auto done at %f\n",
@@ -408,10 +463,9 @@ void HandleAuto() {
         (::aos::time::Time::Now() - start_time).ToSeconds());
     PositionClawBackIntake();
     auto drivetrain_action =
-        SetDriveGoal(kShootDistance + kPickupDistance,
-                     drive_slow_acceleration, 2.5);
+        SetDriveGoal(kShootDistance + kPickupDistance, drive_params);
     LOG(INFO, "Waiting until drivetrain is finished\n");
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
     LOG(INFO, "Wait for the claw at %f\n",
         (::aos::time::Time::Now() - start_time).ToSeconds());
@@ -424,8 +478,7 @@ void HandleAuto() {
     LOG(INFO, "Driving back at %f\n",
         (::aos::time::Time::Now() - start_time).ToSeconds());
     auto drivetrain_action =
-        SetDriveGoal(-(kShootDistance + kPickupDistance),
-                     drive_slow_acceleration, 2.5);
+        SetDriveGoal(-(kShootDistance + kPickupDistance), drive_params);
     time::SleepFor(time::Time::InSeconds(0.3));
     hot_goal_decoder.ResetCounts();
     if (ShouldExitAuto()) return;
@@ -434,7 +487,7 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
     WaitUntilClawDone();
     if (ShouldExitAuto()) return;
@@ -454,10 +507,9 @@ void HandleAuto() {
   }
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
-    auto drivetrain_action =
-        SetDriveGoal(0, drive_slow_acceleration, 2,
-                     second_shot_left ? kTurnAngle : -kTurnAngle);
-    WaitUntilDoneOrCanceled(drivetrain_action.get());
+    auto drivetrain_action = SetDriveGoal(
+        0, drive_params, second_shot_left ? kTurnAngle : -kTurnAngle);
+    WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kStraight) {
     time::SleepFor(time::Time::InSeconds(0.4));
