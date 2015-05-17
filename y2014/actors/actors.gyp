@@ -102,9 +102,8 @@
       ],
       'dependencies': [
         '<(AOS)/linux_code/linux_code.gyp:init',
-        '<(AOS)/common/actions/actions.gyp:action_lib',
-        'drivetrain_action_queue',
         'drivetrain_action_lib',
+        'drivetrain_action_queue',
       ],
     },
   ],
