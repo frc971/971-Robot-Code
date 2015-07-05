@@ -20,6 +20,7 @@
         '<(AOS)/linux_code/linux_code.gyp:complex_thread_local_test',
         '<(AOS)/common/common.gyp:stl_mutex_test',
         '<(AOS)/linux_code/linux_code.gyp:dump_rtprio',
+        '<(AOS)/common/actions/actions.gyp:action_test',
       ],
     },
     {
