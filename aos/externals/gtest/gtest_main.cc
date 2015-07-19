@@ -29,7 +29,7 @@ GTEST_API_ int main(int argc, char **argv) {
   // line switches etc. So after calling InitGoogleTest() we can parse our own
   // command line options.
   while (true) {
-    int c = getopt_long(argc, argv, "po:", long_options, nullptr);
+    int c = getopt_long(argc, argv, "pho:", long_options, nullptr);
 
     if (c == -1) {
       break;
