@@ -26,7 +26,7 @@ message Goal {
   uint32_t run;
   // Default parameter.  The more useful thing to do would be to define your own
   // goal type to change param to a useful structure.
-  double param;
+  double params;
 };
 
 interface ActionQueueGroup {
