@@ -1,7 +1,3 @@
-#include "seasocks/PageHandler.h"
-#include "seasocks/PrintfLogger.h"
-#include "seasocks/StringUtil.h"
-
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -10,15 +6,15 @@
 #include <atomic>
 #include <vector>
 
+#include "seasocks/PageHandler.h"
+#include "seasocks/PrintfLogger.h"
+#include "seasocks/StringUtil.h"
+#include "seasocks/WebSocket.h"
+
 #include "aos/linux_code/init.h"
 #include "aos/common/time.h"
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/mutex.h"
-
-#include "frc971/control_loops/claw/claw.q.h"
-#include "frc971/control_loops/fridge/fridge.q.h"
-
-#include "frc971/http_status/embedded.h"
 
 namespace frc971 {
 namespace http_status {

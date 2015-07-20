@@ -1,12 +1,12 @@
-#include "seasocks/PrintfLogger.h"
-#include "seasocks/WebSocket.h"
-#include "seasocks/Server.h"
+#include "frc971/http_status/http_status.h"
 
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include "seasocks/Server.h"
 
 #include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
@@ -17,7 +17,7 @@
 #include "frc971/control_loops/claw/claw.q.h"
 #include "frc971/control_loops/fridge/fridge.q.h"
 
-#include "frc971/http_status/http_status.h"
+#include "frc971/http_status/embedded.h"
 
 namespace frc971 {
 namespace http_status {

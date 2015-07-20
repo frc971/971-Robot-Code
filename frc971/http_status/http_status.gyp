@@ -11,12 +11,13 @@
           'action_name': 'http_status_gen_embedded',
           'inputs': [
             '<!@(find ./www_defaults)',
+            '<(AOS)/externals/seasocks/gen_embedded.py',
           ],
           'outputs': [
-            '<(SHARED_INTERMEDIATE_DIR)/http_status/embedded.h',
+            '<(SHARED_INTERMEDIATE_DIR)/http_status/frc971/http_status/embedded.h',
           ],
           'action': [
-            'python', '<(AOS)/externals/seasocks/gen_embedded.py', 'http_status', '<(_outputs)',
+            'python', '<(AOS)/externals/seasocks/gen_embedded.py', '<(_outputs)',
           ],
         },
       ],
