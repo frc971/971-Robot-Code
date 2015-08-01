@@ -106,11 +106,7 @@ class Target::StructBase < Target::Node
     member_func = CPP::MemberFunc.new(type_class,"bool","EqualsNoTime")
     member_func.const = true
     type_class.add_member(member_func)
-    if @members.empty?
-      member_func.args << "const #{type_class.name} &/*other*/"
-    else
-      member_func.args << "const #{type_class.name} &other"
-    end
+    member_func.args << "const #{type_class.name} &other"
     member_func.suite << "if (!#{type_class.parent_class}::EqualsNoTime(other)) return false;" if type_class.parent_class
     @members.each do |elem|
       if elem.respond_to? :create_EqualsNoTime
