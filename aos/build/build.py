@@ -356,10 +356,11 @@ class PrimeProcessor(Processor):
   """A Processor subclass for building prime code."""
 
   class Platform(Processor.Platform):
-    def __init__(self, architecture, compiler, debug, sanitizer):
+    def __init__(self, architecture, folder, compiler, debug, sanitizer):
       super(PrimeProcessor.Platform, self).__init__()
 
       self.__architecture = architecture
+      self.__folder = folder
       self.__compiler = compiler
       self.__debug = debug
       self.__sanitizer = sanitizer
@@ -370,8 +371,10 @@ class PrimeProcessor(Processor):
           % (self.architecture(), self.compiler(), self.debug(),
              self.sanitizer())
     def __str__(self):
-      return '%s-%s%s-%s' % (self.architecture(), self.compiler(),
-                             '-debug' if self.debug() else '', self.sanitizer())
+      return '%s-%s-%s%s-%s' % (self.architecture(), self.folder(),
+                                self.compiler(),
+                                '-debug' if self.debug() else '',
+                                self.sanitizer())
 
     def os(self):
       return 'linux'
@@ -379,6 +382,8 @@ class PrimeProcessor(Processor):
       return '%s-%s-%s' % (self.os(), self.architecture(), self.compiler())
     def architecture(self):
       return self.__architecture
+    def folder(self):
+      return self.__folder
     def compiler(self):
       return self.__compiler
     def sanitizer(self):
@@ -491,8 +496,10 @@ class PrimeProcessor(Processor):
   }
   PIE_SANITIZERS = ('memory', 'thread')
 
-  def __init__(self, is_test, is_deploy):
+  def __init__(self, folder, is_test, is_deploy):
     super(PrimeProcessor, self).__init__()
+
+    self.__folder = folder
 
     platforms = []
     for architecture in PrimeProcessor.ARCHITECTURES:
@@ -502,7 +509,7 @@ class PrimeProcessor(Processor):
             # We don't have a compiler to use here.
             continue
           platforms.append(
-              self.Platform(architecture, compiler, debug, 'none'))
+              self.Platform(architecture, folder, compiler, debug, 'none'))
     for sanitizer in PrimeProcessor.SANITIZERS:
       for compiler in ('clang',):
         if compiler == 'gcc_4.8' and (sanitizer == 'undefined' or
@@ -514,7 +521,7 @@ class PrimeProcessor(Processor):
           # We already added sanitizer == 'none' above.
           continue
         platforms.append(
-            self.Platform('amd64', compiler, True, sanitizer))
+            self.Platform('amd64', folder, compiler, True, sanitizer))
     self.__platforms = frozenset(platforms)
 
     if is_test:
@@ -531,6 +538,8 @@ class PrimeProcessor(Processor):
       default_platforms = self.select_platforms(debug=False)
     self.__default_platforms = frozenset(default_platforms)
 
+  def folder(self):
+    return self.__folder
   def platforms(self):
     return self.__platforms
   def default_platforms(self):
@@ -599,6 +608,8 @@ class PrimeProcessor(Processor):
         sanitizer = part
       elif part == 'all':
         architecture = compiler = debug = sanitizer = None
+      elif part == self.folder():
+        pass
       else:
         raise Processor.UnknownPlatform(
             '"%s" not recognized as a platform string component.' % part)
@@ -625,15 +636,6 @@ class PrimeProcessor(Processor):
         packages.add('g++-4.9-arm-frc-linux-gnueabi')
 
     self.do_check_installed(tuple(packages))
-
-class Bot3PrimeProcessor(PrimeProcessor):
-  """A very simple subclass of PrimeProcessor whose main function is to allow
-  the building of third robot targets in separate directories from those of
-  the main robot."""
-  class Platform(PrimeProcessor.Platform):
-    def __str__(self):
-      return 'bot3-%s' % (super(Bot3PrimeProcessor.Platform, self).__str__())
-
 
 def strsignal(num):
   # It ends up with SIGIOT instead otherwise, which is weird.
@@ -743,6 +745,7 @@ Examples of specifying targets:
   if len(sys.argv) < 2:
     print_help(1, 'Not enough arguments')
   args.processor = sys.argv.pop(0)
+  args.folder = sys.argv.pop(0)
   args.main_gyp = sys.argv.pop(0)
   VALID_ACTIONS = ['build', 'clean', 'deploy', 'tests', 'environment']
   while sys.argv:
@@ -773,11 +776,9 @@ Examples of specifying targets:
       args.platform = arg
 
   if args.processor == 'prime':
-    processor = PrimeProcessor(args.action_name == 'tests',
+    processor = PrimeProcessor(args.folder,
+                               args.action_name == 'tests',
                                args.action_name == 'deploy')
-  elif args.processor == 'bot3_prime':
-    processor = Bot3PrimeProcessor(args.action_name == 'tests',
-                                   args.action_name == 'deploy')
   else:
     print_help(1, message='Unknown processor "%s".' % args.processor)
 

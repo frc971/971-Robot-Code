@@ -55,7 +55,6 @@
       ],
       'dependencies': [
         'drivetrain_queue',
-        '<(DEPTH)/frc971/frc971.gyp:constants',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/controls/controls.gyp:polytope',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',

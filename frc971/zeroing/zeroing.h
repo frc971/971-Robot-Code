@@ -23,7 +23,7 @@ namespace zeroing {
 // the pot and the indices.
 class ZeroingEstimator {
  public:
-  ZeroingEstimator(const constants::Values::ZeroingConstants &constants);
+  ZeroingEstimator(const constants::ZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
   void UpdateEstimate(const PotAndIndexPosition &info);

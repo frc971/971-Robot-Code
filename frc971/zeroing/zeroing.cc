@@ -1,6 +1,6 @@
 #include "frc971/zeroing/zeroing.h"
 
-#include <math.h>
+#include <cmath>
 #include <vector>
 
 namespace frc971 {
@@ -14,7 +14,7 @@ void PopulateEstimatorState(const zeroing::ZeroingEstimator& estimator,
 }
 
 ZeroingEstimator::ZeroingEstimator(
-    const constants::Values::ZeroingConstants& constants) {
+    const constants::ZeroingConstants& constants) {
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
   known_index_pos_ = constants.measured_index_position;
