@@ -5,7 +5,7 @@
 namespace frc971 {
 namespace wpilib {
 
-bool DMAEdgeCounter::ExtractValue(const DMASample &sample) {
+bool DMAEdgeCounter::ExtractValue(const DMASample &sample) const {
   if (inverted_) {
     return !sample.Get(input_);
   } else {
