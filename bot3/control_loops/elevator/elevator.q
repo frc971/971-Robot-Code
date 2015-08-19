@@ -23,10 +23,10 @@ queue_group ElevatorQueue {
   };
 
   message Position {
-    // bottom hall effect sensor.
-    bool bottom_hall_effect;
-    // encoders used for zeroing.
     double encoder;
+
+    // bottom hall effect sensor for zeroing purposes.
+    bool bottom_hall_effect;
   };
 
   message Status {
@@ -51,7 +51,13 @@ queue_group ElevatorQueue {
   };
 
   message Output {
+    // Voltage for the active elevator.
     double elevator;
+
+    // Toggle for the passive elevator that supports the stack in the robot.
+    // True means support the stack, false means release the support from the
+    // stack.
+    bool passive_support;
   };
 
   queue Goal goal;

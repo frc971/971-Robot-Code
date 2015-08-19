@@ -19,6 +19,8 @@
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/elevator/elevator.q.h"
+#include "bot3/control_loops/intake/intake.q.h"
 
 #include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -26,11 +28,10 @@
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/dma_edge_counting.h"
-#include "frc971/wpilib/interrupt_edge_counting.h"
-#include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/logging.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain.h"
+#include "bot3/control_loops/elevator/elevator.h"
+#include "bot3/control_loops/intake/intake.h"
 
 #include "Encoder.h"
 #include "Talon.h"
@@ -48,31 +49,36 @@
 
 using ::aos::util::SimpleLogInterval;
 using ::bot3::control_loops::drivetrain_queue;
-using ::frc971::wpilib::DMAEncoderAndPotentiometer;
-using ::frc971::PotAndIndexPosition;
-using ::frc971::wpilib::InterruptEncoderAndPotentiometer;
-using ::frc971::wpilib::DMASynchronizer;
+using ::bot3::control_loops::elevator_queue;
+using ::bot3::control_loops::intake_queue;
 using ::frc971::wpilib::BufferedPcm;
+using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::LoopOutputHandler;
 using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::GyroSender;
+using ::frc971::wpilib::HallEffect;
 
 namespace bot3 {
 namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) /
-         (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
          ::bot3::control_loops::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
-// TODO(comran): Check/update the values below for the bot3.
+double elevator_translate(int32_t in) {
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         ::bot3::control_loops::kElevEncoderRatio * (2 * M_PI /*radians*/) *
+         ::bot3::control_loops::kElevGearboxOutputRadianDistance;
+}
+
 static const double kMaximumEncoderPulsesPerSecond =
-    19500.0 /* free speed RPM */ * 12.0 / 56.0 /* belt reduction */ /
-    60.0 /* seconds / minute */ * 256.0 /* CPR */ *
+    4650.0 /* free speed RPM */ * 18.0 / 48.0 /* belt reduction */ /
+    60.0 /* seconds / minute */ * 512.0 /* CPR */ *
     4.0 /* index pulse = 1/4 cycle */;
 
+// Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader {
  public:
   SensorReader() {
@@ -82,6 +88,7 @@ class SensorReader {
         static_cast<int>(1 / 4.0 / kMaximumEncoderPulsesPerSecond * 1e9 + 0.5));
   }
 
+  // Drivetrain setters.
   void set_left_encoder(::std::unique_ptr<Encoder> left_encoder) {
     left_encoder_ = ::std::move(left_encoder);
   }
@@ -90,11 +97,14 @@ class SensorReader {
     right_encoder_ = ::std::move(right_encoder);
   }
 
-  // All of the DMA-related set_* calls must be made before this, and it doesn't
-  // hurt to do all of them.
-  // TODO(comran): Do we still need dma?
-  void set_dma(::std::unique_ptr<DMA> dma) {
-    dma_synchronizer_.reset(new DMASynchronizer(::std::move(dma)));
+  // Elevator setters.
+  void set_elevator_encoder(::std::unique_ptr<Encoder> encoder) {
+    filter_.Add(encoder.get());
+    elevator_encoder_ = ::std::move(encoder);
+  }
+
+  void set_elevator_zeroing_hall_effect(::std::unique_ptr<HallEffect> hall) {
+    zeroing_hall_effect_ = ::std::move(hall);
   }
 
   void operator()() {
@@ -104,7 +114,6 @@ class SensorReader {
     my_pid_ = getpid();
     ds_ = DriverStation::GetInstance();
 
-    dma_synchronizer_->Start();
     LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
@@ -115,6 +124,7 @@ class SensorReader {
   }
 
   void RunIteration() {
+    // General
     {
       auto new_state = ::aos::robot_state.MakeMessage();
 
@@ -135,6 +145,7 @@ class SensorReader {
       new_state.Send();
     }
 
+    // Drivetrain
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
@@ -145,7 +156,17 @@ class SensorReader {
       drivetrain_message.Send();
     }
 
-    dma_synchronizer_->RunIteration();
+    // Elevator
+    {
+      // Update control loop positions.
+      auto elevator_message = elevator_queue.position.MakeMessage();
+      elevator_message->encoder =
+          elevator_translate(elevator_encoder_->GetRaw());
+      elevator_message->bottom_hall_effect =
+          zeroing_hall_effect_->Get();
+
+      elevator_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
@@ -157,60 +178,18 @@ class SensorReader {
   int32_t my_pid_;
   DriverStation *ds_;
 
-  void CopyPotAndIndexPosition(
-      const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double potentiometer_offset) {
-    const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.polled_potentiometer_voltage()) +
-                    potentiometer_offset;
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->latched_pot =
-        multiplier *
-            potentiometer_translate(encoder.last_potentiometer_voltage()) +
-        potentiometer_offset;
-    position->index_pulses = encoder.index_posedge_count();
-  }
-
-  void CopyPotAndIndexPosition(
-      const InterruptEncoderAndPotentiometer &encoder,
-      PotAndIndexPosition *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double potentiometer_offset) {
-    const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.encoder()->GetRaw());
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.potentiometer()->GetVoltage()) +
-                    potentiometer_offset;
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->latched_pot =
-        multiplier *
-            potentiometer_translate(encoder.last_potentiometer_voltage()) +
-        potentiometer_offset;
-    position->index_pulses = encoder.index_posedge_count();
-  }
-
-  ::std::unique_ptr<DMASynchronizer> dma_synchronizer_;
-
-  ::std::unique_ptr<Encoder> left_encoder_;
-  ::std::unique_ptr<Encoder> right_encoder_;
+  ::std::unique_ptr<Encoder> left_encoder_, right_encoder_, elevator_encoder_;
+  ::std::unique_ptr<HallEffect> zeroing_hall_effect_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter filter_;
 };
 
+// Writes out our pneumatic outputs.
 class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
-      : pcm_(pcm) {}
+      : pcm_(pcm), elevator_(".bot3.control_loops.elevator_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -220,6 +199,11 @@ class SolenoidWriter {
     compressor_relay_ = ::std::move(compressor_relay);
   }
 
+  void set_elevator_passive_support(
+      ::std::unique_ptr<BufferedSolenoid> elevator_passive_support) {
+    elevator_passive_support_ = ::std::move(elevator_passive_support);
+  }
+
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(30);
@@ -227,11 +211,21 @@ class SolenoidWriter {
     while (run_) {
       ::aos::time::PhasedLoopXMS(20, 1000);
 
-      ::aos::joystick_state.FetchLatest();
+      // Elevator
+      {
+        elevator_.FetchLatest();
+        if (elevator_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *elevator_);
+          elevator_passive_support_->Set(elevator_->passive_support);
+        }
+      }
 
+      // Compressor
+      ::aos::joystick_state.FetchLatest();
       {
         ::frc971::wpilib::PneumaticsToLog to_log;
         {
+          // Refill if pneumatic pressure goes too low.
           const bool compressor_on = !pressure_switch_->Get();
           to_log.compressor_on = compressor_on;
           if (compressor_on) {
@@ -252,12 +246,18 @@ class SolenoidWriter {
 
  private:
   const ::std::unique_ptr<BufferedPcm> &pcm_;
+
+  ::std::unique_ptr<BufferedSolenoid> elevator_passive_support_;
+
   ::std::unique_ptr<DigitalSource> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
+
+  ::aos::Queue<::bot3::control_loops::ElevatorQueue::Output> elevator_;
 
   ::std::atomic<bool> run_{true};
 };
 
+// Writes out drivetrain voltages.
 class DrivetrainWriter : public LoopOutputHandler {
  public:
   void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
@@ -290,6 +290,58 @@ class DrivetrainWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> right_drivetrain_talon_;
 };
 
+// Writes out elevator voltages.
+class ElevatorWriter : public LoopOutputHandler {
+ public:
+  void set_elevator_talon(::std::unique_ptr<Talon> t) {
+    elevator_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::bot3::control_loops::elevator_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::bot3::control_loops::elevator_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    elevator_talon_->Set(queue->elevator / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Elevator output too old.\n");
+    elevator_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> elevator_talon_;
+};
+
+// Writes out intake voltages.
+class IntakeWriter : public LoopOutputHandler {
+ public:
+  void set_intake_talon(::std::unique_ptr<Talon> t) {
+    intake_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::bot3::control_loops::intake_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::bot3::control_loops::intake_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    intake_talon_->Set(queue->intake / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Intake output too old.\n");
+    intake_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> intake_talon_;
+};
+
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
 // have support.
 template <class T, class... U>
@@ -313,10 +365,14 @@ class WPILibRobot : public RobotBase {
     SensorReader reader;
     LOG(INFO, "Creating the reader\n");
 
-    // TODO(comran): Find talon/encoder numbers.
+    // TODO(comran): Find talon/encoder numbers...
+    reader.set_elevator_encoder(encoder(4));
+    reader.set_elevator_zeroing_hall_effect(
+        make_unique<HallEffect>(6));
+
     reader.set_left_encoder(encoder(2));
     reader.set_right_encoder(encoder(3));
-    reader.set_dma(make_unique<DMA>());
+
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
@@ -328,12 +384,19 @@ class WPILibRobot : public RobotBase {
         ::std::unique_ptr<Talon>(new Talon(0)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
+    ElevatorWriter elevator_writer;
+    elevator_writer.set_elevator_talon(::std::unique_ptr<Talon>(new Talon(5)));
+
+    IntakeWriter intake_writer;
+    intake_writer.set_intake_talon(::std::unique_ptr<Talon>(new Talon(9)));
+
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
+    // TODO(comran): Find talon/encoder numbers ^^^
 
     // Wait forever. Not much else to do...
     PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
@@ -358,6 +421,5 @@ class WPILibRobot : public RobotBase {
 
 }  // namespace wpilib
 }  // namespace bot3
-
 
 START_ROBOT_CLASS(::bot3::wpilib::WPILibRobot);
