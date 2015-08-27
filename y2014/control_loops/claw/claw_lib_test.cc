@@ -405,26 +405,6 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
   VerifyNearGoal();
 }
 
-// Tests that missing positions are correctly handled.
-TEST_P(ZeroingClawTest, HandleMissingPosition) {
-  claw_motor_plant_.Reinitialize(GetParam().first, GetParam().second);
-
-  claw_queue.goal.MakeWithBuilder()
-      .bottom_angle(0.1)
-      .separation_angle(0.2)
-      .Send();
-  for (int i = 0; i < 700; ++i) {
-    if (i % 23) {
-      claw_motor_plant_.SendPositionMessage();
-    }
-    claw_motor_.Iterate();
-    claw_motor_plant_.Simulate();
-
-    SimulateTimestep(true);
-  }
-  VerifyNearGoal();
-}
-
 INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
                         ::testing::Values(::std::make_pair(0.04, 0.02),
                                           ::std::make_pair(0.2, 0.1),
