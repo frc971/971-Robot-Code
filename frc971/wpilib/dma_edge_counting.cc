@@ -6,29 +6,24 @@ namespace frc971 {
 namespace wpilib {
 
 bool DMAEdgeCounter::ExtractValue(const DMASample &sample) const {
-  if (inverted_) {
-    return !sample.Get(input_);
-  } else {
-    return sample.Get(input_);
-  }
+  return sample.Get(input_);
 }
 
 void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
-  if (!have_prev_sample_) {
-    have_prev_sample_ = true;
-  } else {
-    if (!ExtractValue(prev_sample_) && ExtractValue(sample)) {
-      pos_edge_count_++;
-      pos_edge_time_ = sample.GetTimestamp();
-      pos_last_encoder_ = sample.GetRaw(encoder_);
-    } else if (ExtractValue(prev_sample_) && !ExtractValue(sample)) {
-      neg_edge_count_++;
-      neg_edge_time_ = sample.GetTimestamp();
-      neg_last_encoder_ = sample.GetRaw(encoder_);
-    }
-  }
-
+  const bool previous_value =
+      have_prev_sample_ ? ExtractValue(prev_sample_) : polled_value_;
+  have_prev_sample_ = true;
   prev_sample_ = sample;
+
+  if (!previous_value && ExtractValue(sample)) {
+    pos_edge_count_++;
+    pos_edge_time_ = sample.GetTimestamp();
+    pos_last_encoder_ = sample.GetRaw(encoder_);
+  } else if (previous_value && !ExtractValue(sample)) {
+    neg_edge_count_++;
+    neg_edge_time_ = sample.GetTimestamp();
+    neg_last_encoder_ = sample.GetRaw(encoder_);
+  }
 }
 
 void DMASynchronizer::CheckDMA() {
