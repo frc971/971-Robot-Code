@@ -22,6 +22,7 @@
 #include "y2015/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/control_loops/fridge/fridge.q.h"
 #include "y2015/control_loops/claw/claw.q.h"
+#include "y2015/autonomous/auto.q.h"
 
 #include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -477,6 +478,33 @@ class SolenoidWriter {
   ::std::atomic<bool> run_{true};
 };
 
+class CanWriter : public LoopOutputHandler {
+ public:
+  CanWriter() : LoopOutputHandler(::aos::time::Time::InSeconds(0.10)) {}
+
+  void set_can_talon(::std::unique_ptr<Talon> t) {
+    can_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::autonomous::can_control.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::autonomous::can_control;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    can_talon_->Set(queue->can_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Can output too old\n");
+    can_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> can_talon_;
+};
+
 class DrivetrainWriter : public LoopOutputHandler {
  public:
   void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
@@ -651,6 +679,10 @@ class WPILibRobot : public RobotBase {
         ::std::unique_ptr<Talon>(new Talon(0)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
+    CanWriter can_writer;
+    can_writer.set_can_talon(::std::unique_ptr<Talon>(new Talon(9)));
+    ::std::thread can_writer_thread(::std::ref(can_writer));
+
     // TODO(sensors): Get real PWM output and relay numbers for the fridge and
     // claw.
     FridgeWriter fridge_writer;
@@ -702,6 +734,8 @@ class WPILibRobot : public RobotBase {
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
+    can_writer.Quit();
+    can_writer_thread.join();
     solenoid_writer.Quit();
     solenoid_thread.join();
 

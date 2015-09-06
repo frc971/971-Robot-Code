@@ -9,6 +9,7 @@
 #include "aos/common/logging/queue_logging.h"
 
 #include "frc971/autonomous/auto.q.h"
+#include "y2015/autonomous/auto.q.h"
 #include "y2015/constants.h"
 #include "y2015/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/actors/drivetrain_actor.h"
@@ -306,9 +307,7 @@ void SetClawState(double angle, double intake_voltage, double rollers_closed,
   }
 }
 
-void HandleAuto() {
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
-  LOG(INFO, "Starting auto mode at %f\n", start_time.ToSeconds());
+void TripleCanAuto() {
   ::std::unique_ptr<::frc971::actors::DrivetrainAction> drive;
   ::std::unique_ptr<::frc971::actors::PickupAction> pickup;
   ::std::unique_ptr<::frc971::actors::StackAction> stack;
@@ -552,6 +551,57 @@ void HandleAuto() {
 
   WaitForFridge();
   if (ShouldExitAuto()) return;
+}
+
+void GrabberForTime(double voltage, double wait_time) {
+  ::aos::time::Time now = ::aos::time::Time::Now();
+  ::aos::time::Time end_time = now + time::Time::InSeconds(wait_time);
+  LOG(INFO, "Starting to grab at %f for %f seconds\n", voltage, wait_time);
+  while (true) {
+    autonomous::can_control.MakeWithBuilder().can_voltage(voltage).Send();
+    // Poll the running bit and auto done bits.
+    if (ShouldExitAuto()) {
+      return;
+    }
+    if (::aos::time::Time::Now() > end_time) {
+      LOG(INFO, "Done grabbing\n");
+      return;
+    }
+    ::aos::time::PhasedLoopXMS(5, 2500);
+  }
+}
+
+void CanGrabberAuto() {
+  ResetDrivetrain();
+  GrabberForTime(12.0, 0.18);
+  if (ShouldExitAuto()) return;
+
+  //GrabberForTime(4.0, 0.10);
+  if (ShouldExitAuto()) return;
+  InitializeEncoders();
+  ResetDrivetrain();
+  if (ShouldExitAuto()) return;
+  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+      .control_loop_driving(true)
+      //.highgear(false)
+      .steering(0.0)
+      .throttle(0.0)
+      .left_goal(left_initial_position + 1.5)
+      .left_velocity_goal(0)
+      .right_goal(right_initial_position + 1.5)
+      .right_velocity_goal(0)
+      .Send();
+  GrabberForTime(12.0, 0.02);
+
+  GrabberForTime(4.0, 14.0);
+  if (ShouldExitAuto()) return;
+}
+
+void HandleAuto() {
+  ::aos::time::Time start_time = ::aos::time::Time::Now();
+  LOG(INFO, "Starting auto mode at %f\n", start_time.ToSeconds());
+  //TripleCanAuto();
+  CanGrabberAuto();
 }
 
 }  // namespace autonomous

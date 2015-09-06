@@ -17,6 +17,7 @@
 #include "y2015/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
+#include "y2015/autonomous/auto.q.h"
 #include "y2015/actors/pickup_actor.h"
 #include "y2015/actors/stack_actor.h"
 #include "y2015/actors/score_actor.h"
@@ -100,6 +101,8 @@ const ButtonLocation kCoopBottom(3, 6);
 const ButtonLocation kCoopBottomRetract(4, 12);
 
 const ButtonLocation kCanReset(3, 9);
+const ButtonLocation kCanGrabberLift(2, 1);
+const ButtonLocation kFastCanGrabberLift(2, 3);
 
 const POVLocation kFridgeToggle(4, 270);
 const ButtonLocation kSpit(4, 3);
@@ -198,6 +201,11 @@ class Reader : public ::aos::input::JoystickInput {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
     }
+    if (data.IsPressed(kCanGrabberLift)) {
+      autonomous::can_control.MakeWithBuilder().can_voltage(-4).Send();
+    } else if (data.IsPressed(kFastCanGrabberLift)) {
+      autonomous::can_control.MakeWithBuilder().can_voltage(-12).Send();
+    }
 
     if (data.IsPressed(kRollersIn)) {
       intake_power = 10.0;
@@ -231,7 +239,7 @@ class Reader : public ::aos::input::JoystickInput {
       params.spit_time = 0.01;
       params.spit_power = -8.0;
 
-      params.suck_time = 0.10;
+      params.suck_time = 0.040;
       params.suck_power = 10.0;
 
       params.claw_settle_time = 0.05;

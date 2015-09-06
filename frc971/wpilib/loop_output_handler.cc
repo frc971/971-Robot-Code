@@ -11,9 +11,8 @@
 namespace frc971 {
 namespace wpilib {
 
-constexpr ::aos::time::Time LoopOutputHandler::kStopTimeout;
-
-LoopOutputHandler::LoopOutputHandler() : watchdog_(this) {}
+LoopOutputHandler::LoopOutputHandler(const ::aos::time::Time &timeout)
+    : watchdog_(this, timeout) {}
 
 void LoopOutputHandler::operator()() {
   ::aos::SetCurrentThreadName("OutputHandler");
@@ -44,8 +43,10 @@ void LoopOutputHandler::operator()() {
   watchdog_thread.join();
 }
 
-LoopOutputHandler::Watchdog::Watchdog(LoopOutputHandler *handler)
+LoopOutputHandler::Watchdog::Watchdog(LoopOutputHandler *handler,
+                                      const ::aos::time::Time &timeout)
     : handler_(handler),
+      timeout_(timeout),
       timerfd_(timerfd_create(::aos::time::Time::kDefaultClock, 0)) {
   if (timerfd_.get() == -1) {
     PLOG(FATAL, "timerfd_create(Time::kDefaultClock, 0)");
@@ -64,7 +65,7 @@ void LoopOutputHandler::Watchdog::operator()() {
 
 void LoopOutputHandler::Watchdog::Reset() {
   itimerspec value = itimerspec();
-  value.it_value = kStopTimeout.ToTimespec();
+  value.it_value = timeout_.ToTimespec();
   PCHECK(timerfd_settime(timerfd_.get(), 0, &value, nullptr));
 }
 

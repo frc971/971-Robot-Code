@@ -22,6 +22,7 @@
         '<(DEPTH)/y2015/actors/actors.gyp:stack_action_lib',
         '<(DEPTH)/y2015/actors/actors.gyp:held_to_lift_action_lib',
         '<(DEPTH)/y2015/actors/actors.gyp:pickup_action_lib',
+        ':auto_queue',
       ],
       'export_dependent_settings': [
         '<(AOS)/common/controls/controls.gyp:control_loop',
@@ -38,6 +39,15 @@
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
         'auto_lib',
       ],
+    },
+    {
+      'target_name': 'auto_queue',
+      'type': 'static_library',
+      'sources': ['auto.q'],
+      'variables': {
+        'header_path': 'y2015/autonomous',
+      },
+      'includes': ['../../aos/build/queues.gypi'],
     },
   ],
 }

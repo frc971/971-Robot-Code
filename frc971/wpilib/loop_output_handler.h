@@ -20,7 +20,8 @@ namespace wpilib {
 // loops writing values until Quit() is called.
 class LoopOutputHandler {
  public:
-  LoopOutputHandler();
+  LoopOutputHandler(
+      const ::aos::time::Time &timeout = ::aos::time::Time::InSeconds(0.10));
 
   void Quit() { run_ = false; }
 
@@ -52,7 +53,7 @@ class LoopOutputHandler {
   // LoopOutputHandler whenever the timerfd expires.
   class Watchdog {
    public:
-    Watchdog(LoopOutputHandler *handler);
+    Watchdog(LoopOutputHandler *handler, const ::aos::time::Time &timeout);
 
     void operator()();
 
@@ -63,13 +64,12 @@ class LoopOutputHandler {
    private:
     LoopOutputHandler *const handler_;
 
+    const ::aos::time::Time timeout_;
+
     ::aos::ScopedFD timerfd_;
 
     ::std::atomic<bool> run_{true};
   };
-
-  static constexpr ::aos::time::Time kStopTimeout =
-      ::aos::time::Time::InSeconds(0.02);
 
   Watchdog watchdog_;
 

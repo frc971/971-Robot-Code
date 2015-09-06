@@ -15,6 +15,7 @@
         '<(DEPTH)/y2015/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/y2015/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(DEPTH)/y2015/control_loops/claw/claw.gyp:claw_queue',
+        '<(DEPTH)/y2015/autonomous/autonomous.gyp:auto_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(AOS)/common/util/util.gyp:log_interval',
         '<(AOS)/common/common.gyp:time',

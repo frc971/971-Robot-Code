@@ -36,6 +36,7 @@
         '<(DEPTH)/y2015/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/y2015/control_loops/fridge/fridge.gyp:fridge_queue',
         '<(DEPTH)/y2015/y2015.gyp:constants',
+        '<(DEPTH)/y2015/autonomous/autonomous.gyp:auto_queue',
         '<(DEPTH)/frc971/autonomous/autonomous.gyp:auto_queue',
         '<(DEPTH)/y2015/actors/actors.gyp:stack_action_lib',
         '<(DEPTH)/y2015/actors/actors.gyp:stack_and_lift_action_lib',
