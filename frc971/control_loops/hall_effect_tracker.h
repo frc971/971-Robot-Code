@@ -7,7 +7,6 @@
 
 namespace frc971 {
 
-// TODO(brians): Have a Reset() for when the cape resets.
 // TODO(aschuh): Can we filter for 2 cycles instead of just 1?
 class HallEffectTracker {
  public:
@@ -22,10 +21,17 @@ class HallEffectTracker {
 
   bool value() const { return value_; }
   bool last_value() const { return last_value_; }
+  bool is_posedge() const { return value() && !last_value(); }
+  bool is_negedge() const { return !value() && last_value(); }
+
+  double posedge_value() const { return posedge_value_; }
+  double negedge_value() const { return negedge_value_; }
 
   void Update(const HallEffectStruct &position) {
     last_value_ = value_;
     value_ = position.current;
+    posedge_value_ = position.posedge_value;
+    negedge_value_ = position.negedge_value;
     posedges_.update(position.posedge_count);
     negedges_.update(position.negedge_count);
   }
@@ -35,6 +41,8 @@ class HallEffectTracker {
     negedges_.Reset(position.negedge_count);
     value_ = position.current;
     last_value_ = position.current;
+    posedge_value_ = position.posedge_value;
+    negedge_value_ = position.negedge_value;
   }
 
  private:
@@ -55,8 +63,11 @@ class HallEffectTracker {
     int32_t count_ = 0;
     int32_t previous_count_ = 0;
   } posedges_, negedges_;
+
   bool value_ = false;
   bool last_value_ = false;
+
+  double posedge_value_ = 0, negedge_value_ = 0;
 };
 
 }  // namespace frc971

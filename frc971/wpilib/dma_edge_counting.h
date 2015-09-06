@@ -46,34 +46,34 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
   DMAEdgeCounter(Encoder *encoder, HallEffect *input)
       : encoder_(encoder), input_(input), inverted_(true) {}
 
-  virtual void UpdateFromSample(const DMASample &sample) override;
-  virtual void UpdatePolledValue() override {
-    polled_value_ = input_->Get();
-    polled_encoder_ = encoder_->GetRaw();
-  }
-  virtual void PollFromSample(const DMASample &sample) override {
-    polled_value_ = ExtractValue(sample);
-    polled_encoder_ = sample.GetRaw(encoder_);
-  }
-  virtual void AddToDMA(DMA *dma) override {
-    dma->Add(encoder_);
-    dma->Add(input_);
-  }
-
-  int positive_count() { return pos_edge_count_; }
-  int negative_count() { return neg_edge_count_; }
-  int last_positive_encoder_value() { return pos_last_encoder_; }
-  int last_negative_encoder_value() { return neg_last_encoder_; }
+  int positive_count() const { return pos_edge_count_; }
+  int negative_count() const { return neg_edge_count_; }
+  int last_positive_encoder_value() const { return pos_last_encoder_; }
+  int last_negative_encoder_value() const { return neg_last_encoder_; }
 
   // Returns the value of the sensor in the last-read DMA sample.
-  bool last_value() { return ExtractValue(prev_sample_); }
+  bool last_value() const { return ExtractValue(prev_sample_); }
   // Returns the most recent polled value of the sensor.
   bool polled_value() const { return polled_value_; }
   // Returns the most recent polled reading from the encoder.
   int polled_encoder() const { return polled_encoder_; }
 
  private:
-  bool ExtractValue(const DMASample &sample);
+  void UpdateFromSample(const DMASample &sample) override;
+  void UpdatePolledValue() override {
+    polled_value_ = input_->Get();
+    polled_encoder_ = encoder_->GetRaw();
+  }
+  void PollFromSample(const DMASample &sample) override {
+    polled_value_ = ExtractValue(sample);
+    polled_encoder_ = sample.GetRaw(encoder_);
+  }
+  void AddToDMA(DMA *dma) override {
+    dma->Add(encoder_);
+    dma->Add(input_);
+  }
+
+  bool ExtractValue(const DMASample &sample) const;
 
   Encoder *const encoder_;
   DigitalSource *const input_;
@@ -98,6 +98,36 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
   int polled_encoder_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(DMAEdgeCounter);
+};
+
+// Reads a hall effect in sync with DMA samples.
+class DMADigitalReader : public DMASampleHandlerInterface {
+ public:
+  DMADigitalReader(DigitalSource *input) : input_(input), inverted_(false) {}
+  DMADigitalReader(HallEffect *input) : input_(input), inverted_(true) {}
+
+  bool value() const { return value_; }
+
+ private:
+  void UpdateFromSample(const DMASample & /*sample*/) override {}
+  void UpdatePolledValue() override { value_ = input_->Get(); }
+  void PollFromSample(const DMASample &sample) override {
+    if (inverted_) {
+      value_ = !sample.Get(input_);
+    } else {
+      value_ = sample.Get(input_);
+    }
+  }
+  void AddToDMA(DMA *dma) override {
+    dma->Add(input_);
+  }
+
+  DigitalSource *const input_;
+  const bool inverted_;
+
+  bool value_;
+
+  DISALLOW_COPY_AND_ASSIGN(DMADigitalReader);
 };
 
 // This class handles updating the sampled data on multiple

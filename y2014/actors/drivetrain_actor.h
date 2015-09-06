@@ -1,0 +1,32 @@
+#ifndef Y2014_ACTIONS_DRIVETRAIN_ACTION_H_
+#define Y2014_ACTIONS_DRIVETRAIN_ACTION_H_
+
+#include <memory>
+
+#include "aos/common/actions/actor.h"
+#include "aos/common/actions/actions.h"
+
+#include "y2014/actors/drivetrain_action.q.h"
+
+namespace frc971 {
+namespace actors {
+
+class DrivetrainActor
+    : public ::aos::common::actions::ActorBase<DrivetrainActionQueueGroup> {
+ public:
+  explicit DrivetrainActor(DrivetrainActionQueueGroup* s);
+
+  bool RunAction(const actors::DrivetrainActionParams &params) override;
+};
+
+typedef ::aos::common::actions::TypedAction<DrivetrainActionQueueGroup>
+    DrivetrainAction;
+
+// Makes a new DrivetrainActor action.
+::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
+    const ::frc971::actors::DrivetrainActionParams& params);
+
+}  // namespace actors
+}  // namespace frc971
+
+#endif

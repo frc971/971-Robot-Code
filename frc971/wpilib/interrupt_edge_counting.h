@@ -153,6 +153,23 @@ class EdgeCounter : public InterruptHandler {
   DISALLOW_COPY_AND_ASSIGN(EdgeCounter);
 };
 
+// Synchronizes reading an encoder with interrupt handling.
+class InterruptSynchronizedEncoder : public InterruptHandler {
+ public:
+  InterruptSynchronizedEncoder(Encoder *encoder) : encoder_(encoder) {}
+
+  int32_t get() const { return output_; }
+
+ private:
+  void GatherPolledValue() override { shadow_ = encoder_->GetRaw(); }
+  void CommitValue() override { output_ = shadow_; }
+  void operator()() override {}
+
+  Encoder *const encoder_;
+
+  int32_t shadow_, output_;
+};
+
 // Synchronizes interrupts with poll-based sampling on multiple
 // InterruptHandlers.
 //
@@ -167,10 +184,10 @@ class InterruptSynchronizer {
   InterruptSynchronizer(int interrupt_priority)
       : interrupt_priority_(interrupt_priority) {}
 
-  void Add(::std::unique_ptr<InterruptHandler> handler) {
+  void Add(InterruptHandler *handler) {
     handler->set_mutex(&mutex_);
     handler->set_priority(interrupt_priority_);
-    handlers_.emplace_back(::std::move(handler));
+    handlers_.emplace_back(handler);
   }
 
   void Start() {
@@ -206,7 +223,7 @@ class InterruptSynchronizer {
   // The mutex used to synchronize all the sampling.
   ::aos::stl_mutex mutex_;
 
-  ::std::vector<::std::unique_ptr<InterruptHandler>> handlers_;
+  ::std::vector<InterruptHandler *> handlers_;
 
   DISALLOW_COPY_AND_ASSIGN(InterruptSynchronizer);
 };
