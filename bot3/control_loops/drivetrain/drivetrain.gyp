@@ -86,6 +86,7 @@
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop',
         '<(DEPTH)/frc971/queues/queues.gyp:gyro',
         '<(AOS)/common/common.gyp:queues',
+        '<(AOS)/common/network/network.gyp:team_number',
       ],
     },
     {
