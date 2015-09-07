@@ -1,0 +1,36 @@
+package(default_visibility = ['//visibility:public'])
+
+cc_binary(
+  name = 'wpilib_interface',
+  srcs = [
+    'wpilib_interface.cc',
+  ],
+  deps = [
+    '//aos/linux_code:init',
+    '//aos/common:stl_mutex',
+    '//aos/common/logging',
+    '//third_party/WPILib',
+    '//y2014:constants',
+    '//y2014/queues:auto_mode',
+    '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//y2014/control_loops/shooter:shooter_queue',
+    '//y2014/control_loops/claw:claw_queue',
+    '//aos/common/controls:control_loop',
+    '//aos/common/util:log_interval',
+    '//aos/common:time',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
+    '//aos/common/util:phased_loop',
+    '//aos/common/messages:robot_state',
+    '//frc971/wpilib:hall_effect',
+    '//frc971/wpilib:joystick_sender',
+    '//frc971/wpilib:loop_output_handler',
+    '//frc971/wpilib:buffered_pcm',
+    '//frc971/wpilib:gyro_sender',
+    '//frc971/wpilib:dma_edge_counting',
+    '//frc971/wpilib:interrupt_edge_counting',
+    '//frc971/wpilib:encoder_and_potentiometer',
+    '//frc971/control_loops:queues',
+    '//frc971/wpilib:logging_queue',
+  ],
+)

@@ -1,0 +1,78 @@
+package(default_visibility = ['//visibility:public'])
+
+load('aos/build/queues', 'queue_library')
+
+cc_binary(
+  name = 'replay_claw',
+  srcs = [
+    'replay_claw.cc',
+  ],
+  deps = [
+    ':claw_queue',
+    '//aos/common/controls:replay_control_loop',
+    '//aos/linux_code:init',
+  ],
+)
+
+queue_library(
+  name = 'claw_queue',
+  srcs = [
+    'claw.q',
+  ],
+)
+
+cc_library(
+  name = 'claw_lib',
+  srcs = [
+    'claw.cc',
+    'claw_motor_plant.cc',
+  ],
+  deps = [
+    ':claw_queue',
+    '//aos/common/controls:control_loop',
+    '//y2014:constants',
+    '//frc971/control_loops:state_feedback_loop',
+    '//aos/common/controls:polytope',
+    '//frc971/control_loops:coerce_goal',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/logging:matrix_logging',
+  ],
+)
+
+cc_binary(
+  name = 'claw_lib_test',
+  srcs = [
+    'claw_lib_test.cc',
+  ],
+  deps = [
+    '//third_party/gtest',
+    ':claw_queue',
+    ':claw_lib',
+    '//frc971/control_loops:state_feedback_loop',
+    '//aos/common/controls:control_loop_test',
+  ],
+)
+
+cc_binary(
+  name = 'claw_calibration',
+  srcs = [
+    'claw_calibration.cc',
+  ],
+  deps = [
+    '//aos/linux_code:init',
+    ':claw_queue',
+    '//aos/common/controls:control_loop',
+    '//y2014:constants',
+  ],
+)
+
+cc_binary(
+  name = 'claw',
+  srcs = [
+    'claw_main.cc',
+  ],
+  deps = [
+    '//aos/linux_code:init',
+    ':claw_lib',
+  ],
+)
