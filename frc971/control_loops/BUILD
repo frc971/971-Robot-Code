@@ -1,0 +1,100 @@
+package(default_visibility = ['//visibility:public'])
+
+load('/aos/build/queues', 'queue_library')
+
+cc_library(
+  name = 'team_number_test_environment',
+  srcs = [
+    'team_number_test_environment.cc',
+  ],
+  hdrs = [
+    'team_number_test_environment.h',
+  ],
+  deps = [
+    '//aos/common/network:team_number',
+    '//third_party/gtest',
+  ],
+)
+
+cc_test(
+  name = 'state_feedback_loop_test',
+  srcs = [
+    'state_feedback_loop_test.cc',
+  ],
+  deps = [
+    ':state_feedback_loop',
+    '//third_party/gtest',
+  ],
+)
+
+cc_library(
+  name = 'hall_effect_tracker',
+  deps = [
+    ':queues',
+  ],
+)
+
+queue_library(
+  name = 'queues',
+  srcs = [
+    'control_loops.q',
+  ],
+)
+
+cc_test(
+  name = 'position_sensor_sim_test',
+  srcs = [
+    'position_sensor_sim_test.cc',
+  ],
+  deps = [
+    ':queues',
+    ':position_sensor_sim',
+    '//third_party/gtest',
+    '//aos/common/logging',
+  ],
+)
+
+cc_library(
+  name = 'position_sensor_sim',
+  srcs = [
+    'position_sensor_sim.cc',
+  ],
+  hdrs = [
+    'position_sensor_sim.h',
+  ],
+  deps = [
+    ':queues',
+    ':gaussian_noise',
+  ],
+)
+
+cc_library(
+  name = 'gaussian_noise',
+  srcs = [
+    'gaussian_noise.cc',
+  ],
+  hdrs = [
+    'gaussian_noise.h',
+  ],
+)
+
+cc_library(
+  name = 'coerce_goal',
+  srcs = [
+    'coerce_goal.cc',
+  ],
+  hdrs = [
+    'coerce_goal.h',
+  ],
+  deps = [
+    '//third_party/eigen',
+    '//aos/common/controls:polytope',
+  ],
+)
+
+cc_library(
+  name = 'state_feedback_loop',
+  deps = [
+    '//third_party/eigen',
+  ],
+)

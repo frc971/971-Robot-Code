@@ -19,6 +19,10 @@ queue_library(
   srcs = [
     'claw.q',
   ],
+  deps = [
+    '//aos/common/controls:control_loop_queues',
+    '//frc971/control_loops:queues',
+  ],
 )
 
 cc_library(
@@ -26,6 +30,10 @@ cc_library(
   srcs = [
     'claw.cc',
     'claw_motor_plant.cc',
+  ],
+  hdrs = [
+    'claw.h',
+    'claw_motor_plant.h',
   ],
   deps = [
     ':claw_queue',
@@ -39,7 +47,7 @@ cc_library(
   ],
 )
 
-cc_binary(
+cc_test(
   name = 'claw_lib_test',
   srcs = [
     'claw_lib_test.cc',

@@ -1,0 +1,148 @@
+package(default_visibility = ['//visibility:public'])
+
+cc_library(
+  name = 'run_command',
+  srcs = [
+    'run_command.cc',
+  ],
+  hdrs = [
+    'run_command.h',
+  ],
+  deps = [
+    '//aos/common/logging:logging_interface',
+  ],
+)
+
+cc_test(
+  name = 'run_command_test',
+  srcs = [
+    'run_command_test.cc',
+  ],
+  deps = [
+    ':run_command',
+    '//third_party/gtest',
+    '//aos/common/logging',
+    ':thread',
+  ],
+)
+
+cc_library(
+  name = 'death_test_log_implementation',
+  deps = [
+    '//aos/common/logging',
+  ],
+)
+
+cc_library(
+  name = 'inet_addr',
+  srcs = [
+    'inet_addr.cc',
+  ],
+  hdrs = [
+    'inet_addr.h',
+  ],
+)
+
+cc_library(
+  name = 'phased_loop',
+  srcs = [
+    'phased_loop.cc',
+  ],
+  hdrs = [
+    'phased_loop.h',
+  ],
+  deps = [
+    '//aos/common/logging',
+    '//aos/common:time',
+  ],
+)
+
+cc_library(
+  name = 'log_interval',
+  deps = [
+    '//aos/common:time',
+    '//aos/common/logging',
+  ],
+)
+
+cc_library(
+  name = 'string_to_num',
+)
+
+cc_test(
+  name = 'string_to_num_test',
+  srcs = [
+    'string_to_num_test.cc',
+  ],
+  deps = [
+    ':string_to_num',
+    '//third_party/gtest',
+  ],
+)
+
+cc_library(
+  name = 'thread',
+  srcs = [
+    'thread.cc',
+  ],
+  hdrs = [
+    'thread.h',
+  ],
+)
+
+cc_library(
+  name = 'trapezoid_profile',
+  srcs = [
+    'trapezoid_profile.cc',
+  ],
+  hdrs = [
+    'trapezoid_profile.h',
+  ],
+  deps = [
+    '//third_party/eigen',
+    '//aos/common:time',
+    '//aos/common/logging',
+  ],
+)
+
+cc_test(
+  name = 'trapezoid_profile_test',
+  srcs = [
+    'trapezoid_profile_test.cc',
+  ],
+  deps = [
+    ':trapezoid_profile',
+    '//third_party/gtest',
+  ],
+)
+
+cc_library(
+  name = 'wrapping_counter',
+  srcs = [
+    'wrapping_counter.cc',
+  ],
+  hdrs = [
+    'wrapping_counter.h',
+  ],
+)
+
+cc_test(
+  name = 'wrapping_counter_test',
+  srcs = [
+    'wrapping_counter_test.cc',
+  ],
+  deps = [
+    ':wrapping_counter',
+    '//third_party/gtest',
+  ],
+)
+
+cc_test(
+  name = 'options_test',
+  srcs = [
+    'options_test.cc',
+  ],
+  deps = [
+    '//third_party/gtest',
+  ],
+)

@@ -4,7 +4,7 @@
       'target_name': 'test_queue',
       'type': 'static_library',
       'sources': [
-        '<(AOS)/common/test_queue.q',
+        'test_queue.q',
       ],
       'variables': {
         'header_path': 'aos/common',

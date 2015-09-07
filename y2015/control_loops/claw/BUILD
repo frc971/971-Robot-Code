@@ -3,21 +3,21 @@ package(default_visibility = ['//visibility:public'])
 load('/aos/build/queues', 'queue_library')
 
 cc_binary(
-  name = 'replay_shooter',
+  name = 'replay_claw',
   srcs = [
-    'replay_shooter.cc',
+    'replay_claw.cc',
   ],
   deps = [
-    ':shooter_queue',
+    ':claw_queue',
     '//aos/common/controls:replay_control_loop',
     '//aos/linux_code:init',
   ],
 )
 
 queue_library(
-  name = 'shooter_queue',
+  name = 'claw_queue',
   srcs = [
-    'shooter.q',
+    'claw.q',
   ],
   deps = [
     '//aos/common/controls:control_loop_queues',
@@ -26,47 +26,49 @@ queue_library(
 )
 
 cc_library(
-  name = 'shooter_lib',
+  name = 'claw_lib',
   srcs = [
-    'shooter.cc',
-    'shooter_motor_plant.cc',
-    'unaugmented_shooter_motor_plant.cc',
+    'claw.cc',
+    'claw_motor_plant.cc',
   ],
   hdrs = [
-    'shooter.h',
-    'shooter_motor_plant.h',
-    'unaugmented_shooter_motor_plant.h',
+    'claw.h',
+    'claw_motor_plant.h',
   ],
   deps = [
-    ':shooter_queue',
+    ':claw_queue',
     '//aos/common/controls:control_loop',
-    '//y2014:constants',
+    '//aos/common:time',
+    '//aos/common/util:trapezoid_profile',
+    '//y2015:constants',
     '//frc971/control_loops:state_feedback_loop',
-    '//aos/common/logging:queue_logging',
+    '//frc971/zeroing:zeroing',
   ],
 )
 
 cc_test(
-  name = 'shooter_lib_test',
+  name = 'claw_lib_test',
   srcs = [
-    'shooter_lib_test.cc',
+    'claw_lib_test.cc',
   ],
   deps = [
     '//third_party/gtest',
-    ':shooter_queue',
-    ':shooter_lib',
-    '//aos/common/controls:control_loop_test',
+    ':claw_lib',
     '//frc971/control_loops:state_feedback_loop',
+    '//aos/common/controls:control_loop_test',
+    '//aos/common:time',
+    '//frc971/control_loops:position_sensor_sim',
+    '//frc971/control_loops:team_number_test_environment',
   ],
 )
 
 cc_binary(
-  name = 'shooter',
+  name = 'claw',
   srcs = [
-    'shooter_main.cc',
+    'claw_main.cc',
   ],
   deps = [
     '//aos/linux_code:init',
-    ':shooter_lib',
+    ':claw_lib',
   ],
 )

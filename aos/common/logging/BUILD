@@ -1,27 +1,43 @@
 package(default_visibility = ['//visibility:public'])
 
-cc_library(
-  name = 'logging_interface',
+cc_test(
+  name = 'logging_impl_test',
   srcs = [
-    'logging_interface.cc',
+    'logging_impl_test.cc',
   ],
   deps = [
-    '//aos/linux_code/logging:linux_interface',
-    '//aos/common:die',
-    '//aos/common/libc:aos_strerror',
+    '//third_party/gtest',
+    '//aos/common/logging',
   ],
 )
 
 cc_library(
-  name = 'logging',
+  name = 'queue_logging',
   srcs = [
-    'logging_impl.cc',
+    'queue_logging.cc',
+  ],
+  hdrs = [
+    'queue_logging.h',
   ],
   deps = [
-    '//aos/linux_code/logging:linux_logging',
-    '//aos/common:time',
-    '//aos/common:once',
-    ':logging_interface',
+    '//aos/common/logging',
+    '//aos/common:die',
     '//aos/common:queue_types',
+  ],
+)
+
+cc_library(
+  name = 'matrix_logging',
+  srcs = [
+    'matrix_logging.cc',
+  ],
+  hdrs = [
+    'matrix_logging.h',
+  ],
+  deps = [
+    '//aos/common/logging',
+    '//aos/common:die',
+    '//aos/common:queue_types',
+    '//third_party/eigen',
   ],
 )
