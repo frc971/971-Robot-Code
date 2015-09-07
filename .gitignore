@@ -1,0 +1,15 @@
+*.swp
+/.fig
+/.tests-pass
+/.tests-pass-valgrind
+/Makefile
+/autom4te.cache
+/bin
+/config.log
+/config.status
+/configure
+/obj
+/tags
+/.gmock
+.gdb_history
+gdb.txt
