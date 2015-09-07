@@ -1,3 +1,4 @@
+# Converted to bazel
 # This file has all of the aos targets.
 {
   'targets': [
