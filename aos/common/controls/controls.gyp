@@ -57,7 +57,7 @@
     {
       'target_name': 'control_loop_queues',
       'type': 'static_library',
-      'sources': [ '<(AOS)/common/controls/control_loops.q' ],
+      'sources': [ 'control_loops.q' ],
       'variables': {
         'header_path': 'aos/common/controls',
       },

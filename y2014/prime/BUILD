@@ -3,7 +3,7 @@ package(default_visibility = ['//visibility:public'])
 filegroup(
   name = 'All',
   srcs = [
-    '//frc971:All',
+    '//aos:prime_binaries',
     '//y2014/control_loops/drivetrain:drivetrain',
     '//y2014/control_loops/drivetrain:drivetrain_lib_test',
     '//y2014/control_loops/drivetrain:replay_drivetrain',

@@ -15,12 +15,18 @@ queue_library(
   srcs = [
     'shoot_action.q',
   ],
+  deps = [
+    '//aos/common/actions:action_queue',
+  ],
 )
 
 cc_library(
   name = 'shoot_action_lib',
   srcs = [
     'shoot_actor.cc',
+  ],
+  hdrs = [
+    'shoot_actor.h',
   ],
   deps = [
     ':shoot_action_queue',
@@ -51,12 +57,18 @@ queue_library(
   srcs = [
     'drivetrain_action.q',
   ],
+  deps = [
+    '//aos/common/actions:action_queue',
+  ],
 )
 
 cc_library(
   name = 'drivetrain_action_lib',
   srcs = [
     'drivetrain_actor.cc',
+  ],
+  hdrs = [
+    'drivetrain_actor.h',
   ],
   deps = [
     ':drivetrain_action_queue',

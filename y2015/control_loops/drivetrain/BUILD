@@ -52,7 +52,7 @@ cc_library(
   deps = [
     ':drivetrain_queue',
     '//aos/common/controls:control_loop',
-    '//y2014:constants',
+    '//y2015:constants',
     '//aos/common/controls:polytope',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:coerce_goal',
