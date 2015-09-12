@@ -259,15 +259,24 @@ def main(argv):
   scenario_plotter.Plot()
 
   # Write the generated constants out to a file.
-  if len(argv) != 3:
-    print "Expected .h file name and .cc file name for the Elevator."
+  if len(argv) != 5:
+    print "Expected .h file name and .cc file name for the Elevator and integral elevator."
   else:
     elevator = Elevator("Elevator")
-    loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator])
+    loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator],
+                                                 namespaces=['bot3', 'control_loops'])
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:
       loop_writer.Write(argv[1], argv[2])
+
+    integral_elevator = IntegralElevator("IntegralElevator")
+    integral_loop_writer = control_loop.ControlLoopWriter("IntegralElevator", [integral_elevator],
+                                                          namespaces=['bot3', 'control_loops'])
+    if argv[3][-3:] == '.cc':
+      integral_loop_writer.Write(argv[4], argv[3])
+    else:
+      integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

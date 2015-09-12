@@ -232,7 +232,8 @@ def main(argv):
   else:
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
-                       drivetrain_high_low, drivetrain_high_high])
+                       drivetrain_high_low, drivetrain_high_high],
+        namespaces=['bot3', 'control_loops'])
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
     else:
