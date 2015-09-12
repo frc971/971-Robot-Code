@@ -31,9 +31,10 @@ constexpr double kToteHeight = 0.3;
 // TODO(comran): Get actual constants for the ones below.
 // Gearing
 
-constexpr double kElevEncoderRatio = 14.0 / 84.0;
-const int kElevGearboxOutputPulleyTeeth = 32;      // 32 teeth
-constexpr double kElevGearboxOutputPitch = 0.005;  // 5 mm/tooth
+constexpr double kElevEncoderRatio = 18.0 / 48.0;
+const int kElevGearboxOutputPulleyTeeth = 22;
+// 25 pitch chain.
+constexpr double kElevGearboxOutputPitch = 0.25 * 0.0254;
 
 constexpr double kElevGearboxOutputRadianDistance =
     kElevGearboxOutputPulleyTeeth * kElevGearboxOutputPitch / (2.0 * M_PI);

@@ -16,11 +16,11 @@ namespace control_loops {
 
 // Constants
 // TODO(comran): Get actual constants.
-constexpr double kDrivetrainTurnWidth = 0.5;
+constexpr double kDrivetrainTurnWidth = 0.63;
 constexpr double kDrivetrainDoneDistance = 0.02;
-constexpr double kDrivetrainEncoderRatio = 20.0 / 50.0;
+constexpr double kDrivetrainEncoderRatio = 18.0 / 44.0;
 constexpr double kDrivetrainHighGearRatio =
-    kDrivetrainEncoderRatio * 20.0 / 50.0;
+    kDrivetrainEncoderRatio * 18.0 / 60.0;
 constexpr double kDrivetrainLowGearRatio = kDrivetrainHighGearRatio;
 const bool kDrivetrainClutchTransmission = false;
 const ::frc971::constants::ShifterHallEffect kDrivetrainRightShifter{
