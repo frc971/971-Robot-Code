@@ -189,7 +189,9 @@ class SensorReader {
 class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
-      : pcm_(pcm), elevator_(".bot3.control_loops.elevator_queue.output") {}
+      : pcm_(pcm),
+        elevator_(".bot3.control_loops.elevator_queue.output"),
+        intake_(".bot3.control_loops.intake_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -202,6 +204,15 @@ class SolenoidWriter {
   void set_elevator_passive_support(
       ::std::unique_ptr<BufferedSolenoid> elevator_passive_support) {
     elevator_passive_support_ = ::std::move(elevator_passive_support);
+  }
+
+  void set_elevator_can_support(
+      ::std::unique_ptr<BufferedSolenoid> elevator_can_support) {
+    elevator_can_support_ = ::std::move(elevator_can_support);
+  }
+
+  void set_intake_claw(::std::unique_ptr<BufferedSolenoid> intake_claw) {
+    intake_claw_ = ::std::move(intake_claw);
   }
 
   void operator()() {
@@ -217,6 +228,16 @@ class SolenoidWriter {
         if (elevator_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *elevator_);
           elevator_passive_support_->Set(elevator_->passive_support);
+          elevator_can_support_->Set(elevator_->passive_support);
+        }
+      }
+
+      // Intake
+      {
+        intake_.FetchLatest();
+        if (intake_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *intake_);
+          intake_claw_->Set(intake_->claw_closed);
         }
       }
 
@@ -248,11 +269,14 @@ class SolenoidWriter {
   const ::std::unique_ptr<BufferedPcm> &pcm_;
 
   ::std::unique_ptr<BufferedSolenoid> elevator_passive_support_;
+  ::std::unique_ptr<BufferedSolenoid> elevator_can_support_;
+  ::std::unique_ptr<BufferedSolenoid> intake_claw_;
 
   ::std::unique_ptr<DigitalSource> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::bot3::control_loops::ElevatorQueue::Output> elevator_;
+  ::aos::Queue<::bot3::control_loops::IntakeQueue::Output> intake_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -395,6 +419,10 @@ class WPILibRobot : public RobotBase {
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
+    // TODO (jasmine): Find solenoid numbers
+    solenoid_writer.set_elevator_passive_support(pcm->MakeSolenoid(0));
+    solenoid_writer.set_elevator_can_support(pcm->MakeSolenoid(1));
+    solenoid_writer.set_intake_claw(pcm->MakeSolenoid(2));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
     // TODO(comran): Find talon/encoder numbers ^^^
 

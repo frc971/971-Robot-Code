@@ -7,13 +7,18 @@ queue_group IntakeQueue {
 
   message Goal {
     // Positive = suck, negative = spit, zero = stationary.
-    int16_t movement;
+    double movement;
+
+    bool claw_closed;
   };
 
   message Position {};
 
   message Output {
+    // Positive or negative, depending on whether we're sucking or spitting.
     double intake;
+
+    bool claw_closed;
   };
 
   message Status {};
