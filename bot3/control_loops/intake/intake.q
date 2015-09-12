@@ -6,7 +6,7 @@ queue_group IntakeQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
-    // Positive = suck, negative = spit, zero = stationary.
+    // Units: volts
     double movement;
 
     bool claw_closed;
