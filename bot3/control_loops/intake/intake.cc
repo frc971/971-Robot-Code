@@ -19,16 +19,18 @@ void Intake::RunIteration(
 
     const int16_t intake_movement = goal->movement;
 
-    if (intake_movement > 0) {
+    if (intake_movement > 0.0) {
       // Suck.
       output->intake = kIntakeVoltageFullPower;
-    } else if (intake_movement < 0) {
+    } else if (intake_movement < 0.0) {
       // Spit.
       output->intake = -kIntakeVoltageFullPower;
     } else {
       // Stationary.
       output->intake = 0.0;
     }
+
+    output->claw_closed = goal->claw_closed;
   }
 }
 

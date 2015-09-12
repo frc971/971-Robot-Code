@@ -237,6 +237,10 @@ void Elevator::RunIteration(
 
   if (output) {
     output->elevator = loop_->U(0, 0);
+    if(unsafe_goal) {
+      output->passive_support = unsafe_goal->passive_support;
+      output->can_support = unsafe_goal->can_support;
+    }
   }
 
   status->zeroed = state_ == RUNNING;

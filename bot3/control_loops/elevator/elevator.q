@@ -20,6 +20,13 @@ queue_group ElevatorQueue {
 
     // Maximum elevator profile acceleration or 0 for the default.
     float max_acceleration;
+
+    // Whether the passive elevator is supporting the stack/can; true means it
+    // is supporting; false means it is not.
+    bool passive_support;
+    // Whether the can support is restraining the can; true means it
+    // is supporting; false means it is not.
+    bool can_support;
   };
 
   message Position {
@@ -58,6 +65,9 @@ queue_group ElevatorQueue {
     // True means support the stack, false means release the support from the
     // stack.
     bool passive_support;
+    // Toggle for the that supports the can in the robot.
+    // True means support the can, false means release the can.
+    bool can_support;
   };
 
   queue Goal goal;
