@@ -11,11 +11,16 @@
 #include "aos/common/time.h"
 #include "aos/common/actions/actions.h"
 
-#include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro.q.h"
 #include "bot3/autonomous/auto.q.h"
+#include "bot3/control_loops/elevator/elevator.h"
+#include "bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "bot3/control_loops/elevator/elevator.q.h"
+#include "bot3/control_loops/intake/intake.q.h"
 
 using ::bot3::control_loops::drivetrain_queue;
+using ::bot3::control_loops::elevator_queue;
+using ::bot3::control_loops::intake_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -27,11 +32,39 @@ namespace bot3 {
 namespace input {
 namespace joysticks {
 
+struct ProfileParams {
+  double velocity;
+  double acceleration;
+};
+
+// Preset motion limits.
+constexpr ProfileParams kElevatorMove{0.3, 1.0};
+
+// Joystick & button addresses.
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
-// TODO(comran): Figure out the actions we need.
+// essential
+const ButtonLocation kMoveToteHeight(4, 9);
+const ButtonLocation kOpenIntake(3, 8);
+const ButtonLocation kCloseIntake(3, 6);
+const ButtonLocation kOpenCanRestraint(4, 5);
+const ButtonLocation kCloseCanRestraint(4, 1);
+const POVLocation kOpenPassiveSupport(4, 0);
+const POVLocation kClosePassiveSupport(4, 180);
+
+const ButtonLocation kIntakeIn(3, 7);
+const ButtonLocation kIntakeOut(4, 12);
+
+const ButtonLocation kAutoStack(4, 7);
+const ButtonLocation kManualStack(4, 6);
+
+const ButtonLocation kCarry(4, 10);
+const ButtonLocation kSetDown(3, 9);
+const ButtonLocation kSkyscraper(4, 11);
+
+const ButtonLocation kScoreBegin(4, 8);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -70,42 +103,143 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    double intake_goal = 0;
+
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
+      intake_closed_ = false;
+      can_restraint_open_ = true;
+      passive_support_open_ = true;
     }
 
-    // TODO(comran): Run stuff when buttons are pushed.
+    // Buttons for intaking.
+    if (data.IsPressed(kIntakeIn)) {
+      intake_goal = 10.0;
+    } else if (data.IsPressed(kIntakeOut)) {
+      intake_goal = -10.0;
 
-    // TODO(comran): If it cannot get a status from the superstructure...
-    /*
-    if (!superstructure_queue.status.get()) {
-      LOG(ERROR, "Got no superstructure status packet.\n");
+      action_queue_.CancelAllActions();
     }
-    */
+    // TODO(Adam): Implement essential actors/goals.
+    if (data.PosEdge(kMoveToteHeight)) {
+      // TODO(adams): Find correct values for height, velocity, and acceleration.
+      elevator_goal_ = 0.45;
+      elevator_params_ = {1.0, 5.0};
+      action_queue_.CancelAllActions();
+    }
 
-    // TODO(comran): If everything looks good, start teleop.
-    /*if (superstructure_queue.status.get() && superstructure_queue.status->zeroed) {
+    if (data.PosEdge(kOpenIntake)) {
+      intake_closed_ = false;
+    }
+
+    if (data.PosEdge(kCloseIntake)) {
+      intake_closed_ = true;
+    }
+
+    if (data.PosEdge(kOpenCanRestraint)) {
+      can_restraint_open_ = true;
+    }
+
+    if (data.PosEdge(kCloseCanRestraint)) {
+      can_restraint_open_ = false;
+    }
+
+    if (data.PosEdge(kOpenPassiveSupport)) {
+      passive_support_open_ = true;
+    }
+
+    if (data.PosEdge(kClosePassiveSupport)) {
+      passive_support_open_ = false;
+    }
+
+
+    // Buttons for elevator.
+
+    if (data.PosEdge(kCarry)) {
+      // TODO(comran): Get actual height/velocity/acceleration values.
+      elevator_goal_ = 0.180;
+      elevator_params_ = {1.0, 2.0};
+      action_queue_.CancelAllActions();
+    }
+
+    if (data.PosEdge(kSetDown)) {
+      // TODO(comran): Get actual height/velocity/acceleration values.
+      elevator_goal_ = 0.030;
+      elevator_params_ = {1.0, 5.0};
+      action_queue_.CancelAllActions();
+    }
+
+    if (data.PosEdge(kSkyscraper)) {
+      // TODO(comran): Get actual height/velocity/acceleration values.
+      elevator_goal_ = 1.0;
+      elevator_params_ = {0.8, 0.5};
+    }
+
+    if (data.PosEdge(kScoreBegin)) {
+      // TODO(comran): Get actual height/velocity/acceleration values.
+      elevator_goal_ = 0.0;
+      elevator_params_ = {1.0, 1.5};
+    }
+
+    if (data.PosEdge(ControlBit::kEnabled)) {
+      // If we got enabled, wait for everything to zero.
+      LOG(INFO, "Waiting for zero.\n");
+      waiting_for_zero_ = true;
+    }
+
+    elevator_queue.status.FetchLatest();
+    if (!elevator_queue.status.get()) {
+      LOG(ERROR, "Got no elevator status packet.\n");
+    }
+
+    if (elevator_queue.status.get() && elevator_queue.status->zeroed) {
       if (waiting_for_zero_) {
         LOG(INFO, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
 
         // Set the initial goals to where we are now.
-        superstructure_goal_ = 0.0;
+        elevator_goal_ = elevator_queue.status->goal_height;
       }
     } else {
       waiting_for_zero_ = true;
-    }*/
+    }
 
+    // Send our goals if everything looks OK.
     if (!waiting_for_zero_) {
       if (!action_queue_.Running()) {
-        // TODO(comran): Send some goals.
+        // Send our elevator goals, with limits set in the profile params.
+        auto new_elevator_goal = elevator_queue.goal.MakeMessage();
+        new_elevator_goal->max_velocity = elevator_params_.velocity;
+        new_elevator_goal->max_acceleration = elevator_params_.acceleration;
+        new_elevator_goal->height = elevator_goal_;
+        new_elevator_goal->velocity = 0.0;
+        new_elevator_goal->passive_support = passive_support_open_;
+        new_elevator_goal->can_support = can_restraint_open_;
+
+        if (new_elevator_goal.Send()) {
+          LOG(DEBUG, "sending goals: elevator: %f\n", elevator_goal_);
+        } else {
+          LOG(ERROR, "Sending elevator goal failed.\n");
+        }
       }
     }
 
+    // Send our intake goals.
+    if (!intake_queue.goal.MakeWithBuilder().movement(intake_goal)
+            .claw_closed(intake_closed_).Send()) {
+      LOG(ERROR, "Sending intake goal failed.\n");
+    }
+
+    // If an action is running, use the action's goals for the profiled
+    // superstructure subsystems & bypass others.
     if (action_queue_.Running()) {
-      // If we are running an action, update our goals to the current goals.
-      // TODO(comran): Do this for each superstructure queue.
+      control_loops::elevator_queue.status.FetchLatest();
+      if (control_loops::elevator_queue.status.get()) {
+        elevator_goal_ = control_loops::elevator_queue.status->goal_height;
+      } else {
+        LOG(ERROR, "No elevator status!\n");
+      }
     }
     action_queue_.Tick();
     was_running_ = action_queue_.Running();
@@ -124,10 +258,20 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool was_running_;
 
+  double elevator_goal_ = 0.2;
+
+  ProfileParams elevator_params_ = kElevatorMove;
+
   // If we're waiting for the subsystems to zero.
   bool waiting_for_zero_ = true;
 
   bool auto_running_ = false;
+
+  bool intake_closed_ = false;
+
+  bool can_restraint_open_ = false;
+
+  bool passive_support_open_ = false;
 
   ::aos::common::actions::ActionQueue action_queue_;
 
