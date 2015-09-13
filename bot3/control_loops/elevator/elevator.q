@@ -53,6 +53,9 @@ queue_group ElevatorQueue {
     double goal_height;
     float goal_velocity;
 
+    // True if there is a tote inside the elevator.
+    bool has_tote;
+
     // If true, we have aborted.
     bool estopped;
 

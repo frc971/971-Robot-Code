@@ -253,6 +253,7 @@ void Elevator::RunIteration(
 
   status->estopped = (state_ == ESTOP);
   status->state = state_;
+  status->has_tote = position->has_tote;
 }
 
 void GlitchFilter::Update(bool hall_effect, double encoder) {

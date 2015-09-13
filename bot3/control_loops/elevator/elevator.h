@@ -38,9 +38,9 @@ constexpr double kElevGearboxOutputRadianDistance =
     kElevGearboxOutputPulleyTeeth * kElevGearboxOutputPitch / (2.0 * M_PI);
 
 // Limits
-constexpr double kElevLowerHardLimit = 0.000;
+constexpr double kElevLowerHardLimit = -0.010;
 constexpr double kElevUpperHardLimit = 1.387;
-constexpr double kElevLowerLimit = 0.020;
+constexpr double kElevLowerLimit = 0.010;
 constexpr double kElevUpperLimit = 1.350;
 
 // Zeroing
