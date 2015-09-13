@@ -1,4 +1,5 @@
 load('/tools/build_rules/ruby', 'ruby_binary')
+load('/aos/build/queues', 'queue_library')
 
 cc_test(
   name = 'gflags_build_test',
@@ -29,6 +30,24 @@ sh_test(
   ],
   data = [
     ':ruby_binary',
+  ],
+  size = 'small',
+)
+
+queue_library(
+  name = 'queue_library',
+  srcs = [
+    'queue.q',
+  ],
+)
+
+cc_test(
+  name = 'queue_build_test',
+  srcs = [
+    'queue.cc',
+  ],
+  deps = [
+    ':queue_library',
   ],
   size = 'small',
 )
