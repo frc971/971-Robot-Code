@@ -117,15 +117,12 @@ cc_test(
 
 cc_library(
   name = 'gtest_prod',
-  deps = [
-    '//third_party/gtest_prod',
-  ],
 )
 
 cc_library(
   name = 'once',
   deps = [
-    '//third_party/gtest_prod',
+    ':gtest_prod',
   ],
 )
 
