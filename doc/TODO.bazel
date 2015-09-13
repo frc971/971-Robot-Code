@@ -4,12 +4,9 @@
 
 //y2015:http_status needs to be finished.
 
-//aos/common:queue_types needs to be finished.
-
 Actually write //aos:prime_binaries.
   Contents come from aos/build/aos_all.gyp.
 
 //aos/linux_code/starter needs to copy starter.sh.
 
-//aos/common:{condition,mutex,event} need their actual targets moved to
-  //aos/linux_code/ipc_lib where they belong and everything expects them.
+Need to get tcmalloc hooked in.

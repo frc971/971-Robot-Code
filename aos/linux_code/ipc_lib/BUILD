@@ -103,3 +103,37 @@ cc_library(
     ':queue',
   ],
 )
+
+cc_library(
+  name = 'condition',
+  srcs = [
+    'condition.cc',
+  ],
+  deps = [
+    ':mutex',
+    ':aos_sync',
+    '//aos/common/logging:logging_interface',
+  ],
+)
+
+cc_library(
+  name = 'mutex',
+  srcs = [
+    'mutex.cc',
+  ],
+  deps = [
+    ':aos_sync',
+    '//aos/common/logging:logging_interface',
+  ],
+)
+
+cc_library(
+  name = 'event',
+  srcs = [
+    'event.cc',
+  ],
+  deps = [
+    ':aos_sync',
+    '//aos/common/logging:logging_interface',
+  ],
+)

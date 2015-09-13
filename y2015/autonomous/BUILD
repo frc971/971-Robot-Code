@@ -1,5 +1,7 @@
 package(default_visibility = ['//visibility:public'])
 
+load('/aos/build/queues', 'queue_library')
+
 cc_library(
   name = 'auto_lib',
   srcs = [
@@ -24,6 +26,7 @@ cc_library(
     '//y2015/actors:stack_action_lib',
     '//y2015/actors:held_to_lift_action_lib',
     '//y2015/actors:pickup_action_lib',
+    ':auto_queue',
   ],
 )
 
@@ -36,5 +39,12 @@ cc_binary(
     '//aos/linux_code:init',
     '//frc971/autonomous:auto_queue',
     ':auto_lib',
+  ],
+)
+
+queue_library(
+  name = 'auto_queue',
+  srcs = [
+    'auto.q',
   ],
 )

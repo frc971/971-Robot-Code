@@ -21,7 +21,7 @@ cc_library(
     '//aos/common/logging',
     ':once',
     '//aos/linux_code/ipc_lib:shared_mem',
-    ':mutex',
+    '//aos/linux_code/ipc_lib:mutex',
   ],
 )
 
@@ -35,14 +35,32 @@ cc_library(
   ],
   deps = [
     '//aos/common/logging:logging_interface',
-    ':mutex',
+    '//aos/linux_code/ipc_lib:mutex',
   ],
+)
+
+genrule(
+  name = 'gen_queue_primitives',
+  visibility = ['//visibility:private'],
+  tools = ['//aos/build/queues:queue_primitives'],
+  outs = ['queue_primitives.h'],
+  cmd = '$(location //aos/build/queues:queue_primitives) $@',
+)
+
+genrule(
+  name = 'gen_print_field',
+  visibility = ['//visibility:private'],
+  tools = ['//aos/build/queues:print_field'],
+  outs = ['print_field.cc'],
+  cmd = '$(location //aos/build/queues:print_field) $@',
 )
 
 cc_library(
   name = 'queue_types',
   srcs = [
     'queue_types.cc',
+    ':gen_queue_primitives',
+    ':gen_print_field',
   ],
   hdrs = [
     'queue_types.h',
@@ -51,7 +69,7 @@ cc_library(
     '//aos/common/logging:logging_interface',
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:core_lib',
-    ':mutex',
+    '//aos/linux_code/ipc_lib:mutex',
     ':time',
   ],
 )
@@ -182,7 +200,7 @@ cc_test(
   ],
   deps = [
     '//third_party/gtest',
-    ':mutex',
+    '//aos/linux_code/ipc_lib:mutex',
     ':die',
     '//aos/common/logging',
     '//aos/common/util:death_test_log_implementation',
@@ -215,13 +233,12 @@ cc_test(
     ':condition',
     '//aos/common/util:thread',
     ':time',
-    ':mutex',
+    '//aos/linux_code/ipc_lib:mutex',
     '//aos/common/logging',
     ':queue_testutils',
     '//aos/linux_code/ipc_lib:core_lib',
     '//aos/linux_code/ipc_lib:aos_sync',
     ':die',
-    '//aos/common/util:thread',
   ],
 )
 

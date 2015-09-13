@@ -184,11 +184,15 @@ class CcBuildTarget(BuildTarget):
     self.__tags.append(tag)
 
   def attrs(self):
+    unique_deps = []
+    for dep in self.__deps:
+      if dep not in unique_deps:
+        unique_deps.append(dep)
     r = super(CcBuildTarget, self).attrs();
     r['srcs'] = self.__srcs
     r['hdrs'] = self.__hdrs
     r['tags'] = self.__tags
-    r['deps'] = self.__deps
+    r['deps'] = unique_deps
     return r
 
 '''Represents a filegroup target.'''

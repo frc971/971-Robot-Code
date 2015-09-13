@@ -70,3 +70,27 @@ cc_library(
     '//aos/common/logging',
   ],
 )
+
+cc_library(
+  name = 'linux_interface',
+  visibility = ['//aos/common/logging:__pkg__'],
+  srcs = [
+    'linux_interface.cc',
+  ],
+  deps = [
+    '//aos/linux_code:complex_thread_local',
+    '//aos/common:die',
+  ],
+)
+
+cc_library(
+  name = 'linux_logging',
+  visibility = ['//aos/common/logging:__pkg__'],
+  srcs = [
+    'linux_logging.cc',
+  ],
+  deps = [
+    '//aos/linux_code/ipc_lib:queue',
+    '//aos/common:time',
+  ],
+)
