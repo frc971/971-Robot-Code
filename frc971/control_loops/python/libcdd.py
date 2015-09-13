@@ -20,7 +20,7 @@ ctypes.pythonapi.PyFile_AsFile.restype = ctypes.POINTER(FILE)
 # Unfortunately, the library was compiled with C++ even though it has a lot of C
 # code in it, so all the symbol names are mangled.  Ug.
 libcdd = ctypes.cdll.LoadLibrary('libcdd.so')
-libcdd._Z23dd_set_global_constantsv()
+libcdd.dd_set_global_constants()
 
 # The variable type mytype that libcdd defines (double[1])
 # See http://docs.python.org/2/library/ctypes.html#arrays for the documentation
@@ -49,31 +49,31 @@ class dd_matrixdata(ctypes.Structure):
   ]
 
 # Define the input and output types for a bunch of libcdd functions.
-libcdd._Z15dd_CreateMatrixll.restype = ctypes.POINTER(dd_matrixdata)
-libcdd._Z9ddd_get_dPd.argtypes = [mytype]
-libcdd._Z9ddd_get_dPd.restype = ctypes.c_double
+libcdd.dd_CreateMatrix.restype = ctypes.POINTER(dd_matrixdata)
+libcdd.ddd_get_d.argtypes = [mytype]
+libcdd.ddd_get_d.restype = ctypes.c_double
 
-libcdd._Z17dd_CopyGeneratorsP16dd_polyhedradata.argtypes = [
+libcdd.dd_CopyGenerators.argtypes = [
     ctypes.POINTER(dd_polyhedradata)
 ]
-libcdd._Z17dd_CopyGeneratorsP16dd_polyhedradata.restype = ctypes.POINTER(dd_matrixdata)
+libcdd.dd_CopyGenerators.restype = ctypes.POINTER(dd_matrixdata)
 
-libcdd._Z16dd_DDMatrix2PolyP13dd_matrixdataP12dd_ErrorType.argtypes = [
+libcdd.dd_DDMatrix2Poly.argtypes = [
     ctypes.POINTER(dd_matrixdata),
     ctypes.POINTER(ctypes.c_int)
 ]
-libcdd._Z16dd_DDMatrix2PolyP13dd_matrixdataP12dd_ErrorType.restype = (
+libcdd.dd_DDMatrix2Poly.restype = (
   ctypes.POINTER(dd_polyhedradata))
 
-libcdd._Z13dd_FreeMatrixP13dd_matrixdata.argtypes = [
+libcdd.dd_FreeMatrix.argtypes = [
     ctypes.POINTER(dd_matrixdata)
 ]
 
-libcdd._Z16dd_FreePolyhedraP16dd_polyhedradata.argtypes = [
+libcdd.dd_FreePolyhedra.argtypes = [
   ctypes.POINTER(dd_polyhedradata)
 ]
 
-libcdd._Z9ddd_set_dPdd.argtypes = [
+libcdd.ddd_set_d.argtypes = [
   mytype,
   ctypes.c_double
 ]
@@ -86,43 +86,38 @@ DD_NO_ERRORS = 17
 
 
 def dd_CreateMatrix(rows, cols):
-  return libcdd._Z15dd_CreateMatrixll(
-      ctypes.c_long(rows),
-      ctypes.c_long(cols))
+  return libcdd.dd_CreateMatrix(ctypes.c_long(rows), ctypes.c_long(cols))
 
 
 def dd_set_d(mytype_address, double_value):
-  libcdd._Z9ddd_set_dPdd(mytype_address,
-      ctypes.c_double(double_value))
+  libcdd.ddd_set_d(mytype_address, ctypes.c_double(double_value))
 
 
 def dd_CopyGenerators(polyhedraptr):
-  return libcdd._Z17dd_CopyGeneratorsP16dd_polyhedradata(polyhedraptr)
+  return libcdd.dd_CopyGenerators(polyhedraptr)
 
 
 def dd_get_d(mytype_address):
-  return libcdd._Z9ddd_get_dPd(mytype_address)
+  return libcdd.ddd_get_d(mytype_address)
 
 
 def dd_FreeMatrix(matrixptr):
-  libcdd._Z13dd_FreeMatrixP13dd_matrixdata(matrixptr)
+  libcdd.dd_FreeMatrix(matrixptr)
 
 
 def dd_FreePolyhedra(polyhedraptr):
-  libcdd._Z16dd_FreePolyhedraP16dd_polyhedradata(polyhedraptr)
+  libcdd.dd_FreePolyhedra(polyhedraptr)
 
 
 def dd_DDMatrix2Poly(matrixptr):
   error = ctypes.c_int()
-  polyhedraptr = libcdd._Z16dd_DDMatrix2PolyP13dd_matrixdataP12dd_ErrorType(
-      matrixptr,
-      ctypes.byref(error))
+  polyhedraptr = libcdd.dd_DDMatrix2Poly(matrixptr, ctypes.byref(error))
 
   # Return None on error.
   # The error values are enums, so they aren't exposed.
   if error.value != DD_NO_ERRORS:
     # Dump out the errors to stderr
-    libcdd._Z21dd_WriteErrorMessagesP8_IO_FILE12dd_ErrorType(
+    libcdd.dd_WriteErrorMessages(
         ctypes.pythonapi.PyFile_AsFile(ctypes.py_object(sys.stdout)),
         error)
     dd_FreePolyhedra(polyhedraptr)
