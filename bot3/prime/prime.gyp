@@ -4,7 +4,7 @@
       'target_name': 'All',
       'type': 'none',
       'dependencies': [
-        '<(AOS)/build/aos_all.gyp:Prime',
+        '../../frc971/frc971.gyp:All',
 
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:state_feedback_loop_test',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:position_sensor_sim_test',
