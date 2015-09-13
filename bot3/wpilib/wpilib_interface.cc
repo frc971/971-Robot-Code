@@ -317,8 +317,11 @@ class DrivetrainWriter : public LoopOutputHandler {
 // Writes out elevator voltages.
 class ElevatorWriter : public LoopOutputHandler {
  public:
-  void set_elevator_talon(::std::unique_ptr<Talon> t) {
-    elevator_talon_ = ::std::move(t);
+  void set_elevator_talon1(::std::unique_ptr<Talon> t) {
+    elevator_talon1_ = ::std::move(t);
+  }
+  void set_elevator_talon2(::std::unique_ptr<Talon> t) {
+    elevator_talon2_ = ::std::move(t);
   }
 
  private:
@@ -329,23 +332,30 @@ class ElevatorWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::bot3::control_loops::elevator_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    elevator_talon_->Set(queue->elevator / 12.0);
+    elevator_talon1_->Set(queue->elevator / 12.0);
+    elevator_talon2_->Set(queue->elevator / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Elevator output too old.\n");
-    elevator_talon_->Disable();
+    elevator_talon1_->Disable();
+    elevator_talon2_->Disable();
   }
 
-  ::std::unique_ptr<Talon> elevator_talon_;
+  ::std::unique_ptr<Talon> elevator_talon1_;
+  ::std::unique_ptr<Talon> elevator_talon2_;
 };
 
 // Writes out intake voltages.
 class IntakeWriter : public LoopOutputHandler {
  public:
-  void set_intake_talon(::std::unique_ptr<Talon> t) {
-    intake_talon_ = ::std::move(t);
+  void set_intake_talon1(::std::unique_ptr<Talon> t) {
+    intake_talon1_ = ::std::move(t);
   }
+  void set_intake_talon2(::std::unique_ptr<Talon> t) {
+    intake_talon2_ = ::std::move(t);
+  }
+
 
  private:
   virtual void Read() override {
@@ -355,15 +365,18 @@ class IntakeWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::bot3::control_loops::intake_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon_->Set(queue->intake / 12.0);
+    intake_talon1_->Set(queue->intake / 12.0);
+    intake_talon2_->Set(queue->intake / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Intake output too old.\n");
-    intake_talon_->Disable();
+    intake_talon1_->Disable();
+    intake_talon2_->Disable();
   }
 
-  ::std::unique_ptr<Talon> intake_talon_;
+  ::std::unique_ptr<Talon> intake_talon1_;
+  ::std::unique_ptr<Talon> intake_talon2_;
 };
 
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
@@ -389,13 +402,12 @@ class WPILibRobot : public RobotBase {
     SensorReader reader;
     LOG(INFO, "Creating the reader\n");
 
-    // TODO(comran): Find talon/encoder numbers...
-    reader.set_elevator_encoder(encoder(4));
+    reader.set_elevator_encoder(encoder(6));
     reader.set_elevator_zeroing_hall_effect(
         make_unique<HallEffect>(6));
 
-    reader.set_left_encoder(encoder(2));
-    reader.set_right_encoder(encoder(3));
+    reader.set_left_encoder(encoder(0));
+    reader.set_right_encoder(encoder(1));
 
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
@@ -403,16 +415,18 @@ class WPILibRobot : public RobotBase {
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_left_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(8)));
-    drivetrain_writer.set_right_drivetrain_talon(
         ::std::unique_ptr<Talon>(new Talon(0)));
+    drivetrain_writer.set_right_drivetrain_talon(
+        ::std::unique_ptr<Talon>(new Talon(7)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     ElevatorWriter elevator_writer;
-    elevator_writer.set_elevator_talon(::std::unique_ptr<Talon>(new Talon(5)));
+    elevator_writer.set_elevator_talon1(::std::unique_ptr<Talon>(new Talon(1)));
+    elevator_writer.set_elevator_talon2(::std::unique_ptr<Talon>(new Talon(6)));
 
     IntakeWriter intake_writer;
-    intake_writer.set_intake_talon(::std::unique_ptr<Talon>(new Talon(9)));
+    intake_writer.set_intake_talon1(::std::unique_ptr<Talon>(new Talon(2)));
+    intake_writer.set_intake_talon2(::std::unique_ptr<Talon>(new Talon(5)));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
