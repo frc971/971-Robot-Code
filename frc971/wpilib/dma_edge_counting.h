@@ -42,9 +42,7 @@ class DMASampleHandlerInterface {
 class DMAEdgeCounter : public DMASampleHandlerInterface {
  public:
   DMAEdgeCounter(Encoder *encoder, DigitalSource *input)
-      : encoder_(encoder), input_(input), inverted_(false) {}
-  DMAEdgeCounter(Encoder *encoder, HallEffect *input)
-      : encoder_(encoder), input_(input), inverted_(true) {}
+      : encoder_(encoder), input_(input) {}
 
   int positive_count() const { return pos_edge_count_; }
   int negative_count() const { return neg_edge_count_; }
@@ -71,13 +69,13 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
   void AddToDMA(DMA *dma) override {
     dma->Add(encoder_);
     dma->Add(input_);
+    dma->SetExternalTrigger(input_, true, true);
   }
 
   bool ExtractValue(const DMASample &sample) const;
 
   Encoder *const encoder_;
   DigitalSource *const input_;
-  const bool inverted_;
 
   // The last DMA reading we got.
   DMASample prev_sample_;
@@ -103,8 +101,7 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 // Reads a hall effect in sync with DMA samples.
 class DMADigitalReader : public DMASampleHandlerInterface {
  public:
-  DMADigitalReader(DigitalSource *input) : input_(input), inverted_(false) {}
-  DMADigitalReader(HallEffect *input) : input_(input), inverted_(true) {}
+  DMADigitalReader(DigitalSource *input) : input_(input) {}
 
   bool value() const { return value_; }
 
@@ -112,18 +109,13 @@ class DMADigitalReader : public DMASampleHandlerInterface {
   void UpdateFromSample(const DMASample & /*sample*/) override {}
   void UpdatePolledValue() override { value_ = input_->Get(); }
   void PollFromSample(const DMASample &sample) override {
-    if (inverted_) {
-      value_ = !sample.Get(input_);
-    } else {
-      value_ = sample.Get(input_);
-    }
+    value_ = sample.Get(input_);
   }
   void AddToDMA(DMA *dma) override {
     dma->Add(input_);
   }
 
   DigitalSource *const input_;
-  const bool inverted_;
 
   bool value_;
 

@@ -56,6 +56,10 @@ using ::frc971::control_loops::shooter_queue;
 namespace frc971 {
 namespace wpilib {
 
+// TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
+// DMA stuff and then removing the * 2.0 in *_translate.
+// The low bit is direction.
+
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
 // have support.
 template <class T, class... U>
@@ -64,10 +68,10 @@ std::unique_ptr<T> make_unique(U &&... u) {
 }
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) /
+  return -static_cast<double>(in) /
          (256.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::GetValues().drivetrain_encoder_ratio *
-         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0;
 }
 
 float hall_translate(const constants::ShifterHallEffect &k, float in_low,
@@ -88,9 +92,9 @@ float hall_translate(const constants::ShifterHallEffect &k, float in_low,
 }
 
 double claw_translate(int32_t in) {
-  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) /
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*quad*/) /
          (18.0 / 48.0 /*encoder gears*/) / (12.0 / 60.0 /*chain reduction*/) *
-         (M_PI / 180.0);
+         (M_PI / 180.0) * 2.0;
 }
 
 double shooter_translate(int32_t in) {
@@ -404,11 +408,15 @@ class SensorReader {
 
   void CopyShooterPosedgeCounts(const DMAEdgeCounter *counter,
                                 PosedgeOnlyCountedHallEffectStruct *output) {
+    // TODO(Brian): Remove HallEffect so current will get inverted too like
+    // everything else.
     output->current = counter->polled_value();
-    output->posedge_count = counter->positive_count();
-    output->negedge_count = counter->negative_count();
+    // These are inverted because the hall effects give logical false when
+    // there's a magnet in front of them.
+    output->posedge_count = counter->negative_count();
+    output->negedge_count = counter->positive_count();
     output->posedge_value =
-        shooter_translate(counter->last_positive_encoder_value());
+        shooter_translate(counter->last_negative_encoder_value());
   }
 
   int32_t my_pid_;
@@ -497,6 +505,7 @@ class SolenoidWriter {
 
       {
         PneumaticsToLog to_log;
+#if 0
         {
           const bool compressor_on = !pressure_switch_->Get();
           to_log.compressor_on = compressor_on;
@@ -506,6 +515,9 @@ class SolenoidWriter {
             compressor_relay_->Set(Relay::kOff);
           }
         }
+#else
+        to_log.compressor_on = false;
+#endif
 
         pcm_->Flush();
         to_log.read_solenoids = pcm_->GetAll();
@@ -551,8 +563,8 @@ class DrivetrainWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(-queue->right_voltage / 12.0);
+    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
+    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
@@ -667,6 +679,10 @@ class WPILibRobot : public RobotBase {
     SensorReader reader;
     LOG(INFO, "Creating the reader\n");
 
+    // Create this first to make sure it ends up in one of the lower-numbered
+    // FPGA slots so we can use it with DMA.
+    auto shooter_encoder_temp = make_encoder(2);
+
     reader.set_auto_selector_analog(make_unique<AnalogInput>(4));
 
     reader.set_drivetrain_left_encoder(make_encoder(0));
@@ -681,12 +697,12 @@ class WPILibRobot : public RobotBase {
     reader.set_top_claw_calibration_hall(make_unique<HallEffect>(3));  // R3
     reader.set_top_claw_back_hall(make_unique<HallEffect>(5));  // R1
 
-    reader.set_bottom_claw_encoder(make_encoder(5));
+    reader.set_bottom_claw_encoder(make_encoder(4));
     reader.set_bottom_claw_front_hall(make_unique<HallEffect>(1));  // L2
     reader.set_bottom_claw_calibration_hall(make_unique<HallEffect>(0));  // L3
     reader.set_bottom_claw_back_hall(make_unique<HallEffect>(2));  // L1
 
-    reader.set_shooter_encoder(make_encoder(2));
+    reader.set_shooter_encoder(::std::move(shooter_encoder_temp));
     reader.set_shooter_proximal(make_unique<HallEffect>(6));  // S1
     reader.set_shooter_distal(make_unique<HallEffect>(7));  // S2
     reader.set_shooter_plunger(make_unique<HallEffect>(8));  // S3
@@ -726,8 +742,12 @@ class WPILibRobot : public RobotBase {
     solenoid_writer.set_shooter_latch(pcm->MakeSolenoid(5));
     solenoid_writer.set_shooter_brake(pcm->MakeSolenoid(4));
 
+    // TODO(Brian): Re-enable this once we move the compressor back to a spike
+    // etc.
+#if 0
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
+#endif
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
