@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/load.rb'
+require_relative 'load.rb'
 
 require 'fileutils'
 

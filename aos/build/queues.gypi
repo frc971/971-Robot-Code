@@ -21,13 +21,10 @@
 # example of how this should work
 {
   'variables': {
-    #'header_path': '>!(python -c "import os.path; print os.path.relpath(\'<(RULE_INPUT_PATH)\', \'<(DEPTH)\')")',
     'prefix_dir': '<(SHARED_INTERMEDIATE_DIR)/<!(echo <(header_path) | sed "s/[^A-Za-z0-9]/_/g")',
     'out_dir': '<(prefix_dir)/<(_target_name)/<(header_path)',
-    'gen_namespace%': '>!(echo >(header_path) | sed "s:\([^/]*\).*:\\1:g")',
     'output_h': '<(out_dir)/<(RULE_INPUT_ROOT).q.h',
     'output_cc': '<(out_dir)/<(RULE_INPUT_ROOT).q.cc',
-    'output_main': '<(out_dir)/<(RULE_INPUT_ROOT)_main.cc',
     'no_rsync': 1,
     'aos_q_dependent_paths%': [],
   },
