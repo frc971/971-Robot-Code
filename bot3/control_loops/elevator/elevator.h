@@ -28,27 +28,24 @@ constexpr double kZeroingSlowVelocity = 0.01;
 // Game pieces
 constexpr double kToteHeight = 0.3;
 
-// TODO(comran): Get actual constants for the ones below.
 // Gearing
-
 constexpr double kElevEncoderRatio = 18.0 / 48.0;
+constexpr double kElevChainReduction = 16.0 / 22.0;
 const int kElevGearboxOutputPulleyTeeth = 22;
-// 25 pitch chain.
-constexpr double kElevGearboxOutputPitch = 0.25 * 0.0254;
+constexpr double kElevGearboxOutputPitch = 0.25 * 0.0254; // 25 pitch chain.
 
 constexpr double kElevGearboxOutputRadianDistance =
     kElevGearboxOutputPulleyTeeth * kElevGearboxOutputPitch / (2.0 * M_PI);
 
 // Limits
-constexpr double kElevLowerHardLimit = -0.005;
-constexpr double kElevUpperHardLimit = 0.720000;
-constexpr double kElevLowerLimit = 0.010000;
-constexpr double kElevUpperLimit = 0.680000;
+constexpr double kElevLowerHardLimit = 0.000;
+constexpr double kElevUpperHardLimit = 1.387;
+constexpr double kElevLowerLimit = 0.020;
+constexpr double kElevUpperLimit = 1.350;
 
 // Zeroing
 namespace {
-// TODO(Adam): Find the actual value of the hall effect position.
-constexpr double kHallEffectPosition = 0.01;
+constexpr double kHallEffectPosition = 0.025;
 }  // namespace
 // End constants
 

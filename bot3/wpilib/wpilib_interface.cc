@@ -62,7 +62,7 @@ namespace bot3 {
 namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
-  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+  return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          ::bot3::control_loops::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
@@ -70,6 +70,7 @@ double drivetrain_translate(int32_t in) {
 double elevator_translate(int32_t in) {
   return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
          ::bot3::control_loops::kElevEncoderRatio * (2 * M_PI /*radians*/) *
+         ::bot3::control_loops::kElevChainReduction *
          ::bot3::control_loops::kElevGearboxOutputRadianDistance;
 }
 
