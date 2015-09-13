@@ -108,6 +108,10 @@ class SensorReader {
     zeroing_hall_effect_ = ::std::move(hall);
   }
 
+  void set_elevator_tote_sensor(::std::unique_ptr<AnalogInput> tote_sensor) {
+    tote_sensor_ = ::std::move(tote_sensor);
+  }
+
   void operator()() {
     LOG(INFO, "In sensor reader thread\n");
     ::aos::SetCurrentThreadName("SensorReader");
@@ -165,6 +169,7 @@ class SensorReader {
           elevator_translate(elevator_encoder_->GetRaw());
       elevator_message->bottom_hall_effect =
           zeroing_hall_effect_->Get();
+      elevator_message->has_tote = tote_sensor_->GetVoltage() > 2.5;
 
       elevator_message.Send();
     }
@@ -187,6 +192,7 @@ class SensorReader {
 
   ::std::unique_ptr<Encoder> left_encoder_, right_encoder_, elevator_encoder_;
   ::std::unique_ptr<HallEffect> zeroing_hall_effect_;
+  ::std::unique_ptr<AnalogInput> tote_sensor_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter filter_;
@@ -415,6 +421,7 @@ class WPILibRobot : public RobotBase {
 
     reader.set_left_encoder(encoder(0));
     reader.set_right_encoder(encoder(1));
+    reader.set_elevator_tote_sensor(make_unique<AnalogInput>(0));
 
     ::std::thread reader_thread(::std::ref(reader));
     GyroSender gyro_sender;
@@ -442,12 +449,10 @@ class WPILibRobot : public RobotBase {
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
-    // TODO (jasmine): Find solenoid numbers
     solenoid_writer.set_elevator_passive_support(pcm->MakeSolenoid(0));
     solenoid_writer.set_elevator_can_support(pcm->MakeSolenoid(1));
     solenoid_writer.set_intake_claw(pcm->MakeSolenoid(2));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
-    // TODO(comran): Find talon/encoder numbers ^^^
 
     // Wait forever. Not much else to do...
     PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));

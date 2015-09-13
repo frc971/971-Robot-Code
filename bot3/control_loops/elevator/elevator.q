@@ -34,6 +34,9 @@ queue_group ElevatorQueue {
 
     // bottom hall effect sensor for zeroing purposes.
     bool bottom_hall_effect;
+
+    // True if there is a tote inside the elevator.
+    bool has_tote;
   };
 
   message Status {
