@@ -13,7 +13,6 @@ void Intake::RunIteration(
     const control_loops::IntakeQueue::Position * /*position*/,
     control_loops::IntakeQueue::Output *output,
     control_loops::IntakeQueue::Status * /*status*/) {
-
   if (output != nullptr) {
     output->Zero();
 

@@ -168,6 +168,12 @@ class SensorReader {
 
       elevator_message.Send();
     }
+
+    // Intake
+    {
+      auto intake_message = intake_queue.position.MakeMessage();
+      intake_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
@@ -228,8 +234,8 @@ class SolenoidWriter {
         elevator_.FetchLatest();
         if (elevator_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *elevator_);
-          elevator_passive_support_->Set(elevator_->passive_support);
-          elevator_can_support_->Set(elevator_->passive_support);
+          elevator_passive_support_->Set(!elevator_->passive_support);
+          elevator_can_support_->Set(!elevator_->can_support);
         }
       }
 
@@ -334,7 +340,7 @@ class ElevatorWriter : public LoopOutputHandler {
     auto &queue = ::bot3::control_loops::elevator_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     elevator_talon1_->Set(queue->elevator / 12.0);
-    elevator_talon2_->Set(queue->elevator / 12.0);
+    elevator_talon2_->Set(-queue->elevator / 12.0);
   }
 
   virtual void Stop() override {
@@ -367,7 +373,7 @@ class IntakeWriter : public LoopOutputHandler {
     auto &queue = ::bot3::control_loops::intake_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     intake_talon1_->Set(queue->intake / 12.0);
-    intake_talon2_->Set(queue->intake / 12.0);
+    intake_talon2_->Set(-queue->intake / 12.0);
   }
 
   virtual void Stop() override {
@@ -424,10 +430,12 @@ class WPILibRobot : public RobotBase {
     ElevatorWriter elevator_writer;
     elevator_writer.set_elevator_talon1(::std::unique_ptr<Talon>(new Talon(1)));
     elevator_writer.set_elevator_talon2(::std::unique_ptr<Talon>(new Talon(6)));
+    ::std::thread elevator_writer_thread(::std::ref(elevator_writer));
 
     IntakeWriter intake_writer;
     intake_writer.set_intake_talon1(::std::unique_ptr<Talon>(new Talon(2)));
     intake_writer.set_intake_talon2(::std::unique_ptr<Talon>(new Talon(5)));
+    ::std::thread intake_writer_thread(::std::ref(intake_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
@@ -455,6 +463,13 @@ class WPILibRobot : public RobotBase {
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
+
+    elevator_writer.Quit();
+    elevator_writer_thread.join();
+
+    intake_writer.Quit();
+    intake_writer_thread.join();
+
     solenoid_writer.Quit();
     solenoid_thread.join();
 
