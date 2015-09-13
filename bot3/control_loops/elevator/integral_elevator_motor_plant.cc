@@ -9,9 +9,9 @@ namespace control_loops {
 
 StateFeedbackPlantCoefficients<3, 1, 1> MakeIntegralElevatorPlantCoefficients() {
   Eigen::Matrix<double, 3, 3> A;
-  A << 1.0, 0.00329835431624, 0.000238685884904, 0.0, 0.407009515002, 0.0831773970353, 0.0, 0.0, 1.0;
+  A << 1.0, 0.00457884608813, 5.90742803242e-05, 0.0, 0.836406580139, 0.0229468687616, 0.0, 0.0, 1.0;
   Eigen::Matrix<double, 3, 1> B;
-  B << 0.000238685884904, 0.0831773970353, 0.0;
+  B << 5.90742803242e-05, 0.0229468687616, 0.0;
   Eigen::Matrix<double, 1, 3> C;
   C << 1.0, 0.0, 0.0;
   Eigen::Matrix<double, 1, 1> D;
@@ -25,11 +25,11 @@ StateFeedbackPlantCoefficients<3, 1, 1> MakeIntegralElevatorPlantCoefficients() 
 
 StateFeedbackController<3, 1, 1> MakeIntegralElevatorController() {
   Eigen::Matrix<double, 3, 1> L;
-  L << 0.819604251485, 7.84671425417, 56.221891957;
+  L << 0.897632535808, 18.4574278406, 53.6443529697;
   Eigen::Matrix<double, 1, 3> K;
-  K << 327.58799433, 4.77067036522, 1.0;
+  K << 597.919635715, 17.5389953523, 1.0;
   Eigen::Matrix<double, 3, 3> A_inv;
-  A_inv << 1.0, -0.00810387520358, 0.000435373360429, 0.0, 2.4569450176, -0.204362291223, 0.0, 0.0, 1.0;
+  A_inv << 1.0, -0.0054744261904, 6.65466590119e-05, 0.0, 1.19559078533, -0.0274350648434, 0.0, 0.0, 1.0;
   return StateFeedbackController<3, 1, 1>(L, K, A_inv, MakeIntegralElevatorPlantCoefficients());
 }
 

@@ -125,7 +125,7 @@ class IntegralElevator(Elevator):
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous, self.dt)
 
     q_pos = 0.08
-    q_vel = 0.40
+    q_vel = 4.00
     q_voltage = 6.0
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
@@ -262,7 +262,8 @@ def main(argv):
   if len(argv) != 5:
     print "Expected .h file name and .cc file name for the Elevator and integral elevator."
   else:
-    elevator = Elevator("Elevator")
+    design_mass = 4*totemass + loaded_mass
+    elevator = Elevator("Elevator", mass=design_mass)
     loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator],
                                                  namespaces=['bot3', 'control_loops'])
     if argv[1][-3:] == '.cc':
@@ -270,7 +271,7 @@ def main(argv):
     else:
       loop_writer.Write(argv[1], argv[2])
 
-    integral_elevator = IntegralElevator("IntegralElevator")
+    integral_elevator = IntegralElevator("IntegralElevator", mass=design_mass)
     integral_loop_writer = control_loop.ControlLoopWriter("IntegralElevator", [integral_elevator],
                                                           namespaces=['bot3', 'control_loops'])
     if argv[3][-3:] == '.cc':
