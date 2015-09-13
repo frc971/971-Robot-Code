@@ -173,7 +173,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kSkyscraper)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 1.0;
-      elevator_params_ = {0.8, 0.5};
+      elevator_params_ = {1.0, 5.0};
     }
 
     if (data.PosEdge(kScoreBegin)) {
