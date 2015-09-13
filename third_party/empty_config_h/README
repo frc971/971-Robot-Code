@@ -1,0 +1,4 @@
+This is a folder with an empty config.h file for external projects to #include.
+We #define everything relevant to each individual project using -D flags for
+each one, but files still want to #include "config.h". To allow that, add
+'-Ithird_party/empty_config_h' to copts.
