@@ -42,7 +42,7 @@ constexpr ProfileParams kElevatorMove{0.3, 1.0};
 constexpr ProfileParams kFastElevatorMove{1.0, 5.0};
 
 // Preset goals for autostacking
-constexpr double kOneToteHeight{0.45};
+constexpr double kOneToteHeight{0.46};
 constexpr double kCarryHeight{0.180};
 constexpr double kGroundHeight{0.030};
 
