@@ -243,11 +243,11 @@ class PolyDrivetrain {
   // Mass of the robot, in kg.
   static constexpr double m = 68;
   // Radius of the robot, in meters (from last year).
-  static constexpr double rb = 0.9603 / 2.0;
+  static constexpr double rb = 0.66675 / 2.0;
   static constexpr double kWheelRadius = 0.0515938;
   // Resistance of the motor, divided by the number of motors.
   static constexpr double kR =
-      (12.0 / kStallCurrent / 2 + 0.03) / (0.93 * 0.93);
+      (12.0 / kStallCurrent / 4 + 0.03) / (0.93 * 0.93);
   // Motor velocity constant
   static constexpr double Kv =
       ((kFreeSpeed / 60.0 * 2.0 * M_PI) / (12.0 - kR * kFreeCurrent));
@@ -318,10 +318,12 @@ class PolyDrivetrain {
     // Apply a sin function that's scaled to make it feel better.
     const double angular_range = M_PI_2 * kWheelNonLinearity;
 
+    quickturn_ = quickturn;
     wheel_ = sin(angular_range * wheel) / sin(angular_range);
     wheel_ = sin(angular_range * wheel_) / sin(angular_range);
-    wheel_ *= 2.3;
-    quickturn_ = quickturn;
+    if (!quickturn_) {
+      wheel_ *= 1.5;
+    }
 
     static const double kThrottleDeadband = 0.05;
     if (::std::abs(throttle) < kThrottleDeadband) {

@@ -63,7 +63,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.free_current = 2.7
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
-    self.J = 8
+    self.J = 10
     # Mass of the robot, in kg.
     self.m = 68
     # Radius of the robot, in meters (from last year).
