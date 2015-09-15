@@ -17,7 +17,7 @@
         '../control_loops/elevator/elevator.gyp:elevator',
         '../control_loops/elevator/elevator.gyp:elevator_lib_test',
         #'../control_loops/elevator/elevator.gyp:replay_elevator',
-        #'../autonomous/autonomous.gyp:auto_bot3',
+        '../autonomous/autonomous.gyp:auto_bot3',
         '../actors/actors.gyp:binaries',
       ],
       'copies': [
