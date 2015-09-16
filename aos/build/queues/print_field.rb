@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/load.rb'
+require_relative 'load.rb'
 
 # TODO(brians): Special-case Time too and float/double if we can find a good way to do it.
 GenericTypeNames = ['float', 'double', 'char', '::aos::time::Time']
