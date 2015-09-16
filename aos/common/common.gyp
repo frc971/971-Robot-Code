@@ -167,21 +167,15 @@
     {
       'target_name': 'gtest_prod',
       'type': 'static_library',
-      'dependencies': [
-        '<(EXTERNALS):gtest_prod',
-      ],
-      'export_dependent_settings': [
-        '<(EXTERNALS):gtest_prod',
-      ],
     },
     {
       'target_name': 'once',
       'type': 'static_library',
       'dependencies': [
-        '<(EXTERNALS):gtest_prod',
+        ':gtest_prod',
       ],
       'export_dependent_settings': [
-        '<(EXTERNALS):gtest_prod',
+        ':gtest_prod',
       ],
     },
     {
