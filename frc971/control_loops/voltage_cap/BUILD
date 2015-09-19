@@ -17,7 +17,7 @@ cc_test(
   ],
   deps = [
     ':voltage_cap',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
   ],
 )

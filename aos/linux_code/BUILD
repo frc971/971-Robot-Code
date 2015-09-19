@@ -32,7 +32,7 @@ cc_test(
   ],
   deps = [
     ':complex_thread_local',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common/util:thread',
     '//aos/common/logging',
   ],

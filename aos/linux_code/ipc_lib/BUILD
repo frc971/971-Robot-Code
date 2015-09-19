@@ -64,7 +64,7 @@ cc_test(
     'raw_queue_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':queue',
     '//aos/common/logging',
     ':core_lib',
@@ -85,7 +85,7 @@ cc_test(
     'manual',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:time',
     '//aos/common:queue_testutils',
     '//aos/linux_code/ipc_lib:mutex',

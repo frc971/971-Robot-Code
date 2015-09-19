@@ -4,8 +4,6 @@ cc_binary(
   name = 'http_status',
   srcs = [
     'http_status.cc',
-  ],
-  hdrs = [
     'http_status.h',
   ],
   deps = [

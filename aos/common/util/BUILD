@@ -20,7 +20,7 @@ cc_test(
   ],
   deps = [
     ':run_command',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common/logging',
     ':thread',
   ],
@@ -76,7 +76,7 @@ cc_test(
   ],
   deps = [
     ':string_to_num',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -112,7 +112,7 @@ cc_test(
   ],
   deps = [
     ':trapezoid_profile',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -133,7 +133,7 @@ cc_test(
   ],
   deps = [
     ':wrapping_counter',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -143,6 +143,6 @@ cc_test(
     'options_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )

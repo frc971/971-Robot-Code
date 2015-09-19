@@ -45,7 +45,7 @@ cc_test(
     'action_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':action_lib',
     ':test_action_queue',
     '//aos/common:queue_testutils',

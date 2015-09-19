@@ -12,7 +12,7 @@ cc_library(
   ],
   deps = [
     '//aos/common/network:team_number',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -23,7 +23,7 @@ cc_test(
   ],
   deps = [
     ':state_feedback_loop',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -49,7 +49,7 @@ cc_test(
   deps = [
     ':queues',
     ':position_sensor_sim',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common/logging',
   ],
 )

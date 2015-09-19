@@ -52,7 +52,7 @@ cc_test(
     'shooter_lib_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':shooter_queue',
     ':shooter_lib',
     '//aos/common/controls:control_loop_test',

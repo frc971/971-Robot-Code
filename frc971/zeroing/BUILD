@@ -1,5 +1,14 @@
 package(default_visibility = ['//visibility:public'])
 
+load('/aos/build/queues', 'queue_library')
+
+queue_library(
+  name = 'zeroing_queue',
+  srcs = [
+    'zeroing_queue.q',
+  ],
+)
+
 cc_library(
   name = 'zeroing',
   srcs = [
@@ -19,7 +28,7 @@ cc_test(
     'zeroing_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
     ':zeroing',
     '//aos/common/util:thread',

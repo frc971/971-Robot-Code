@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "aos/queue_primitives.h"
+#include "aos/common/queue_primitives.h"
 
 namespace aos {
 namespace logging {

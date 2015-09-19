@@ -14,7 +14,7 @@ cc_test(
     'kinematics_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
     '//aos/common/logging',
     '//frc971/control_loops:team_number_test_environment',

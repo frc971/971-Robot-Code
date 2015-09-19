@@ -69,7 +69,7 @@ cc_test(
     'drivetrain_lib_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':drivetrain_queue',
     ':drivetrain_lib',
     '//aos/common/controls:control_loop_test',

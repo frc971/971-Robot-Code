@@ -128,7 +128,7 @@ cc_test(
     'score_actor_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
     '//aos/common/logging:queue_logging',
     '//aos/common:queues',
@@ -405,15 +405,8 @@ cc_binary(
   ],
 )
 
-filegroup(
-  name = 'stack_action_queue',
-  srcs = [
-    ':stack_action_queue_real',
-  ],
-)
-
 queue_library(
-  name = 'stack_action_queue_real',
+  name = 'stack_action_queue',
   srcs = [
     'stack_action.q',
   ],
@@ -436,7 +429,7 @@ cc_test(
     'stack_actor_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
     '//aos/common/logging:queue_logging',
     '//aos/common:queues',
@@ -482,15 +475,8 @@ cc_binary(
   ],
 )
 
-filegroup(
-  name = 'lift_action_queue',
-  srcs = [
-    ':lift_action_queue_real',
-  ],
-)
-
 queue_library(
-  name = 'lift_action_queue_real',
+  name = 'lift_action_queue',
   srcs = [
     'lift_action.q',
   ],

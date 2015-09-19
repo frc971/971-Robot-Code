@@ -24,7 +24,7 @@ cc_library(
   deps = [
     '//aos/common:time',
     '//aos/common/messages:robot_state',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common:queue_testutils',
   ],
 )
@@ -33,7 +33,7 @@ cc_library(
   name = 'polytope',
   deps = [
     '//third_party/eigen',
-    '//third_party/libcdd',
+    '//third_party/cddlib',
   ],
 )
 

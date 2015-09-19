@@ -8,7 +8,7 @@
 
 #include "aos/common/test_queue.q.h"
 #include "aos/common/byteorder.h"
-#include "aos/queue_primitives.h"
+#include "aos/common/queue_primitives.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/queue_testutils.h"
 

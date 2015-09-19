@@ -18,7 +18,7 @@ cc_library(
     'encoder_and_potentiometer.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     ':dma_edge_counting',
     '//aos/linux_code:init',
     '//aos/common/logging',
@@ -35,7 +35,7 @@ cc_library(
     'dma_edge_counting.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     '//aos/common/logging',
     ':hall_effect',
   ],
@@ -50,7 +50,7 @@ cc_library(
     'interrupt_edge_counting.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     '//aos/common/logging',
     '//aos/common:stl_mutex',
     '//aos/common:time',
@@ -69,7 +69,7 @@ cc_library(
     'buffered_pcm.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     '//aos/common/logging',
   ],
 )
@@ -83,7 +83,7 @@ cc_library(
     'gyro_interface.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     '//aos/common/logging',
   ],
 )
@@ -134,7 +134,7 @@ cc_library(
     'joystick_sender.h',
   ],
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
     '//aos/common/messages:robot_state',
     '//aos/linux_code:init',
     '//aos/common/network:team_number',
@@ -145,6 +145,6 @@ cc_library(
 cc_library(
   name = 'hall_effect',
   deps = [
-    '//third_party/WPILib',
+    '//aos/externals:wpilib',
   ],
 )

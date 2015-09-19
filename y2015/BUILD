@@ -14,6 +14,7 @@ cc_library(
     '//aos/common/network:team_number',
     '//frc971/control_loops:state_feedback_loop',
     '//y2015/control_loops/drivetrain:polydrivetrain_plants',
+    '//y2015/autonomous:auto_queue',
   ],
 )
 
@@ -34,7 +35,6 @@ cc_binary(
     '//y2015/control_loops/drivetrain:drivetrain_queue',
     '//y2015/control_loops/fridge:fridge_queue',
     '//y2015:constants',
-    '//y2015/autonomous:auto_queue',
     '//frc971/autonomous:auto_queue',
     '//y2015/actors:stack_action_lib',
     '//y2015/actors:stack_and_lift_action_lib',

@@ -44,7 +44,7 @@
       'type': 'static_library',
       'variables': {
         'print_field_cc': '<(SHARED_INTERMEDIATE_DIR)/print_field.cc',
-        'queue_primitives_h': '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives/aos/queue_primitives.h',
+        'queue_primitives_h': '<(SHARED_INTERMEDIATE_DIR)/aos_queue_primitives/aos/common/queue_primitives.h',
       },
       'sources': [
         'queue_types.cc',

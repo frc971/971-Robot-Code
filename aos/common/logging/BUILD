@@ -6,7 +6,7 @@ cc_test(
     'logging_impl_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common/logging',
   ],
 )
@@ -35,6 +35,7 @@ cc_library(
     'matrix_logging.h',
   ],
   deps = [
+    '//aos/common:generated_queue_headers',
     '//aos/common/logging',
     '//aos/common:die',
     '//aos/common:queue_types',
@@ -58,7 +59,6 @@ cc_library(
   name = 'logging',
   srcs = [
     'logging_impl.cc',
-    'linux_logging.cc',
   ],
   deps = [
     '//aos/linux_code/logging:linux_logging',

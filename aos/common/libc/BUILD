@@ -20,7 +20,7 @@ cc_test(
   ],
   deps = [
     ':aos_strsignal',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/common/logging',
   ],
 )
@@ -42,7 +42,7 @@ cc_test(
   ],
   deps = [
     ':dirname',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -63,6 +63,6 @@ cc_test(
   ],
   deps = [
     ':aos_strerror',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )

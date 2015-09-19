@@ -22,7 +22,7 @@ queue_library(
   deps = [
     '//aos/common/controls:control_loop_queues',
     '//frc971/control_loops:queues',
-    '//frc971/zeroing:zeroing',
+    '//frc971/zeroing:zeroing_queue',
   ],
 )
 
@@ -45,6 +45,7 @@ cc_library(
     '//y2015:constants',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops/voltage_cap:voltage_cap',
+    '//frc971/zeroing',
   ],
 )
 
@@ -53,18 +54,17 @@ cc_test(
   srcs = [
     'fridge_lib_test.cc',
     'arm_motor_plant.cc',
-  ],
-  hdrs = [
     'arm_motor_plant.h',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':fridge_lib',
     '//frc971/control_loops:state_feedback_loop',
     '//aos/common/controls:control_loop_test',
     '//aos/common:time',
     '//frc971/control_loops:position_sensor_sim',
     '//frc971/control_loops:team_number_test_environment',
+    '//y2015/util:kinematics',
   ],
 )
 

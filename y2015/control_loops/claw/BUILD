@@ -52,7 +52,7 @@ cc_test(
     'claw_lib_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':claw_lib',
     '//frc971/control_loops:state_feedback_loop',
     '//aos/common/controls:control_loop_test',

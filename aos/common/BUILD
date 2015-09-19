@@ -18,6 +18,7 @@ cc_library(
     'queue_testutils.h',
   ],
   deps = [
+    '//aos/testing:googletest',
     '//aos/common/logging',
     ':once',
     '//aos/linux_code/ipc_lib:shared_mem',
@@ -56,16 +57,24 @@ genrule(
 )
 
 cc_library(
+  name = 'generated_queue_headers',
+  visibility = ['//aos/common/logging:__pkg__'],
+  hdrs = [
+    ':gen_queue_primitives',
+  ],
+)
+
+cc_library(
   name = 'queue_types',
   srcs = [
     'queue_types.cc',
-    ':gen_queue_primitives',
     ':gen_print_field',
   ],
   hdrs = [
     'queue_types.h',
   ],
   deps = [
+    ':generated_queue_headers',
     '//aos/common/logging:logging_interface',
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:core_lib',
@@ -81,7 +90,7 @@ cc_test(
   ],
   deps = [
     ':queue_types',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':test_queue',
     '//aos/common/logging',
     ':queue_testutils',
@@ -115,7 +124,7 @@ cc_test(
     'queue_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':queue_testutils',
     ':test_queue',
     '//aos/common/util:thread',
@@ -129,7 +138,7 @@ cc_test(
     'type_traits_test.cpp',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
   ],
 )
 
@@ -150,7 +159,7 @@ cc_test(
     'once_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':once',
   ],
 )
@@ -161,7 +170,7 @@ cc_test(
     'time_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':time',
     '//aos/common/logging',
     '//aos/common/util:death_test_log_implementation',
@@ -187,7 +196,7 @@ cc_test(
     'queue_testutils_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':queue_testutils',
     '//aos/common/logging',
   ],
@@ -199,7 +208,7 @@ cc_test(
     'mutex_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     '//aos/linux_code/ipc_lib:mutex',
     ':die',
     '//aos/common/logging',
@@ -216,8 +225,8 @@ cc_test(
     'event_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
-    ':event',
+    '//aos/testing:googletest',
+    '//aos/linux_code/ipc_lib:event',
     ':queue_testutils',
     ':time',
   ],
@@ -229,8 +238,8 @@ cc_test(
     'condition_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
-    ':condition',
+    '//aos/testing:googletest',
+    '//aos/linux_code/ipc_lib:condition',
     '//aos/common/util:thread',
     ':time',
     '//aos/linux_code/ipc_lib:mutex',
@@ -248,7 +257,7 @@ cc_test(
     'die_test.cc',
   ],
   deps = [
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':die',
   ],
 )
@@ -268,7 +277,7 @@ cc_test(
   ],
   deps = [
     ':stl_mutex',
-    '//third_party/gtest',
+    '//aos/testing:googletest',
     ':queue_testutils',
     '//aos/common/util:thread',
     ':die',

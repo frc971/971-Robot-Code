@@ -6,8 +6,6 @@ cc_binary(
     'OpenCVWorkTask.cpp',
     'CameraProcessor.cpp',
     'JPEGRoutines.cpp',
-  ],
-  hdrs = [
     'OpenCVWorkTask.h',
     'CameraProcessor.h',
     'JPEGRoutines.h',
@@ -28,8 +26,6 @@ cc_binary(
   srcs = [
     'GoalMaster.cpp',
     'SensorProcessor.cpp',
-  ],
-  hdrs = [
     'SensorProcessor.h',
   ],
   deps = [
