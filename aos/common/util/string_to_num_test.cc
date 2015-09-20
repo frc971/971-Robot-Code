@@ -40,7 +40,7 @@ TEST(StringToNumTest, OverflowTest) {
 
 TEST(StringToNumTest, FloatingPointTest) {
   double result;
-  ASSERT_TRUE(StringToNumber<double>(::std::string("3.1415927")));
+  ASSERT_TRUE(StringToNumber<double>(::std::string("3.1415927"), &result));
   EXPECT_EQ(result, 3.1415927);
 }
 
