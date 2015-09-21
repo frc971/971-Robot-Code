@@ -26,6 +26,7 @@
         '<(DEPTH)/frc971/wpilib/wpilib.gyp:gyro_sender',
         '<(DEPTH)/frc971/control_loops/control_loops.gyp:queues',
         '<(DEPTH)/frc971/wpilib/wpilib.gyp:logging_queue',
+        '<(DEPTH)/bot3/autonomous/autonomous.gyp:auto_queue',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_lib',
         '<(DEPTH)/bot3/control_loops/elevator/elevator.gyp:elevator_lib',
         '<(DEPTH)/bot3/control_loops/intake/intake.gyp:intake_lib',

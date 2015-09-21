@@ -19,11 +19,11 @@
         'auto_queue',
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
+        '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_lib',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
         '<(AOS)/build/aos.gyp:logging',
-        #'<(DEPTH)/frc971/actors/actors.gyp:drivetrain_action_lib',
         '<(AOS)/common/logging/logging.gyp:queue_logging',
       ],
       'export_dependent_settings': [

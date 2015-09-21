@@ -21,6 +21,7 @@
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/elevator/elevator.q.h"
 #include "bot3/control_loops/intake/intake.q.h"
+#include "bot3/autonomous/auto.q.h"
 
 #include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
@@ -167,8 +168,7 @@ class SensorReader {
       auto elevator_message = elevator_queue.position.MakeMessage();
       elevator_message->encoder =
           elevator_translate(elevator_encoder_->GetRaw());
-      elevator_message->bottom_hall_effect =
-          zeroing_hall_effect_->Get();
+      elevator_message->bottom_hall_effect = zeroing_hall_effect_->Get();
       elevator_message->has_tote = tote_sensor_->GetVoltage() > 2.5;
 
       elevator_message.Send();
@@ -369,7 +369,6 @@ class IntakeWriter : public LoopOutputHandler {
     intake_talon2_ = ::std::move(t);
   }
 
-
  private:
   virtual void Read() override {
     ::bot3::control_loops::intake_queue.output.FetchAnother();
@@ -390,6 +389,40 @@ class IntakeWriter : public LoopOutputHandler {
 
   ::std::unique_ptr<Talon> intake_talon1_;
   ::std::unique_ptr<Talon> intake_talon2_;
+};
+
+// Writes out can grabber voltages.
+class CanGrabberWriter : public LoopOutputHandler {
+ public:
+  CanGrabberWriter() : LoopOutputHandler(::aos::time::Time::InSeconds(0.05)) {}
+
+  void set_can_grabber_talon1(::std::unique_ptr<Talon> t) {
+    can_grabber_talon1_ = ::std::move(t);
+  }
+
+  void set_can_grabber_talon2(::std::unique_ptr<Talon> t) {
+    can_grabber_talon2_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::bot3::autonomous::can_grabber_control.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::bot3::autonomous::can_grabber_control;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    can_grabber_talon1_->Set(queue->can_grabber_voltage / 12.0);
+    can_grabber_talon2_->Set(-queue->can_grabber_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Can grabber output too old\n");
+    can_grabber_talon1_->Disable();
+    can_grabber_talon2_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> can_grabber_talon1_, can_grabber_talon2_;
 };
 
 // TODO(brian): Replace this with ::std::make_unique once all our toolchains
@@ -416,8 +449,7 @@ class WPILibRobot : public RobotBase {
     LOG(INFO, "Creating the reader\n");
 
     reader.set_elevator_encoder(encoder(6));
-    reader.set_elevator_zeroing_hall_effect(
-        make_unique<HallEffect>(6));
+    reader.set_elevator_zeroing_hall_effect(make_unique<HallEffect>(6));
 
     reader.set_left_encoder(encoder(0));
     reader.set_right_encoder(encoder(1));
@@ -443,6 +475,13 @@ class WPILibRobot : public RobotBase {
     intake_writer.set_intake_talon1(::std::unique_ptr<Talon>(new Talon(2)));
     intake_writer.set_intake_talon2(::std::unique_ptr<Talon>(new Talon(5)));
     ::std::thread intake_writer_thread(::std::ref(intake_writer));
+
+    CanGrabberWriter can_grabber_writer;
+    can_grabber_writer.set_can_grabber_talon1(
+        ::std::unique_ptr<Talon>(new Talon(3)));
+    can_grabber_writer.set_can_grabber_talon2(
+        ::std::unique_ptr<Talon>(new Talon(4)));
+    ::std::thread can_grabber_writer_thread(::std::ref(can_grabber_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
@@ -474,6 +513,9 @@ class WPILibRobot : public RobotBase {
 
     intake_writer.Quit();
     intake_writer_thread.join();
+
+    can_grabber_writer.Quit();
+    can_grabber_writer_thread.join();
 
     solenoid_writer.Quit();
     solenoid_thread.join();

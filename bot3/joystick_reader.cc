@@ -72,6 +72,9 @@ const ButtonLocation kSkyscraper(4, 11);
 
 const ButtonLocation kScoreBegin(4, 8);
 
+const ButtonLocation kCanGrabberLift(2, 1);
+const ButtonLocation kFastCanGrabberLift(2, 3);
+
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader() : was_running_(false) {}
@@ -230,7 +233,6 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     // Buttons for elevator.
-
     if (data.PosEdge(kCarry)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 0.180;
@@ -259,6 +261,15 @@ class Reader : public ::aos::input::JoystickInput {
       can_restraint_open_ = true;
       passive_support_open_ = true;
       tote_count_ = 0;
+    }
+
+    // Buttons for can grabber.
+    if (data.IsPressed(kCanGrabberLift)) {
+      ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
+        .can_grabber_voltage(-4).Send();
+    } else if (data.IsPressed(kFastCanGrabberLift)) {
+      ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
+        .can_grabber_voltage(-12).Send();
     }
 
     // Send our goals if everything looks OK.
