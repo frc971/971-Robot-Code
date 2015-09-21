@@ -22,6 +22,7 @@
         'once',
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
         'mutex',
+        '<(EXTERNALS):gtest',
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:shared_mem',
