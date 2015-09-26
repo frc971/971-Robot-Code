@@ -129,7 +129,7 @@
       'type': 'static_library',
       'sources': [
         '<(externals)/gtest-<(gtest_version)/src/gtest-all.cc',
-        '<(AOS)/externals/gtest/gtest_main.cc',
+        '<(AOS)/testing/gtest_main.cc',
       ],
       'include_dirs': [
         '<(externals)/gtest-<(gtest_version)',
