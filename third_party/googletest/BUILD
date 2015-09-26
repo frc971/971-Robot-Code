@@ -10,6 +10,7 @@ licenses(["notice"])
 
 cc_library(
     name = "googletest",
+    visibility = ["//visibility:public"],
     srcs = glob([
     	"googletest/src/gtest.cc",
     	"googletest/src/gtest-death-test.cc",
@@ -40,7 +41,19 @@ cc_library(
 )
 
 cc_library(
+  name = "googletest_main",
+  visibility = ["//visibility:public"],
+  srcs = [
+    "googletest/src/gtest_main.cc",
+  ],
+  deps = [
+    ":googletest",
+  ],
+)
+
+cc_library(
 	name = "googlemock",
+    visibility = ["//visibility:public"],
     srcs = glob([
         "googlemock/src/gmock-cardinalities.cc",
         "googlemock/src/gmock.cc",
@@ -154,8 +167,8 @@ cc_test(
 	name = "googletest_sample1_test",
 	srcs = ["googletest/samples/sample1_unittest.cc"],
 	deps = [
+	    ":googletest_main",
 	    ":googletest_sample_libs",
-	    ":googletest",
 	],
 )
 
@@ -163,7 +176,7 @@ cc_test(
 	name = "googletest_sample2_test",
 	srcs = ["googletest/samples/sample2_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -172,7 +185,7 @@ cc_test(
 	name = "googletest_sample3_test",
 	srcs = ["googletest/samples/sample3_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -181,7 +194,7 @@ cc_test(
 	name = "googletest_sample4_test",
 	srcs = ["googletest/samples/sample4_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -190,7 +203,7 @@ cc_test(
 	name = "googletest_sample5_test",
 	srcs = ["googletest/samples/sample5_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -199,7 +212,7 @@ cc_test(
 	name = "googletest_sample6_test",
 	srcs = ["googletest/samples/sample6_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -208,7 +221,7 @@ cc_test(
 	name = "googletest_sample7_test",
 	srcs = ["googletest/samples/sample7_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -217,7 +230,7 @@ cc_test(
 	name = "googletest_sample8_test",
 	srcs = ["googletest/samples/sample8_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -226,7 +239,7 @@ cc_test(
 	name = "googletest_sample9_test",
 	srcs = ["googletest/samples/sample9_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -235,7 +248,7 @@ cc_test(
 	name = "googletest_sample10_test",
 	srcs = ["googletest/samples/sample10_unittest.cc"],
 	deps = [
-	    ":googletest",
+	    ":googletest_main",
 	    ":googletest_sample_libs",
 	],
 )
@@ -250,7 +263,7 @@ cc_library(
         "googletest/test/production.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -260,7 +273,7 @@ cc_test(
         "googletest/test/gtest-filepath_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -270,7 +283,7 @@ cc_test(
         "googletest/test/gtest-linked_ptr_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -280,7 +293,7 @@ cc_test(
         "googletest/test/gtest-message_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -294,7 +307,7 @@ cc_test(
         "googletest/test/gtest-options_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )"""
 
@@ -304,7 +317,7 @@ cc_test(
         "googletest/test/gtest-port_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -314,7 +327,7 @@ cc_test(
         "googletest/test/gtest_pred_impl_unittest.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -328,7 +341,7 @@ cc_test(
         "googletest/include",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
         ":gtest_production",
     ],
 )
@@ -339,7 +352,7 @@ cc_test(
         "googletest/test/gtest-test-part_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -349,7 +362,7 @@ cc_test(
         "googletest/test/gtest-typed-test_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -359,7 +372,7 @@ cc_test(
         "googletest/test/gtest-typed-test2_test.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -369,7 +382,7 @@ cc_test(
         "googletest/test/gtest_unittest.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -379,7 +392,7 @@ cc_test(
         "googletest/test/production.cc",
     ],
     deps = [
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -394,7 +407,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -405,7 +418,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -416,7 +429,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -427,7 +440,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -438,7 +451,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -449,7 +462,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -460,7 +473,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -471,7 +484,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -484,7 +497,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )"""
 
@@ -496,7 +509,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -507,7 +520,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -518,7 +531,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -529,7 +542,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -540,7 +553,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -553,7 +566,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )"""
 
@@ -564,7 +577,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -575,7 +588,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -586,7 +599,7 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
 
@@ -597,6 +610,6 @@ cc_test(
     ],
     deps = [
         ":googlemock",
-        ":googletest",
+        ":googletest_main",
     ],
 )
