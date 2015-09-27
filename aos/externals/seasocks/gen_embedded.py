@@ -10,23 +10,21 @@
 
 import os, os.path, sys
 
-output = sys.argv[1]
-assert output[0] == '"'
-assert output[-1] == '"'
-output = output[1:-1]
+output = sys.argv[1].replace('"', '')
 
 if not os.path.exists(os.path.dirname(output)):
   os.makedirs(os.path.dirname(output))
-o = open(output, 'w')
 
-web = []
-for root, dirs, files in os.walk("./www_defaults", topdown=False):
-  for name in files:
-    web.append(os.path.join(root, name))
-  for name in dirs:
-    web.append(os.path.join(root, name))
+if len(sys.argv) >= 3:
+  web = sys.argv[2:]
+else:
+  web = []
+  for root, dirs, files in os.walk("./www_defaults", topdown=False):
+    for name in files + dirs:
+      web.append(os.path.join(root, name))
 
-o.write("""
+with open(output, 'w') as o:
+  o.write("""
 #include "internal/Embedded.h"
 
 #include <string>
@@ -37,13 +35,14 @@ namespace {
 std::unordered_map<std::string, EmbeddedContent> embedded = {
 """)
 
-for f in web:
-  bytes = open(f, 'rb').read()
-  o.write('{"/%s", {' % os.path.basename(f))
-  o.write('"' + "".join(['\\x%02x' % ord(x) for x in bytes]) + '"')
-  o.write(',%d }},' % len(bytes))
+  for f in web:
+    with open(f, 'rb') as file:
+      bytes = file.read()
+    o.write('{"/%s", {' % os.path.basename(f))
+    o.write('"' + "".join(['\\x%02x' % ord(x) for x in bytes]) + '"')
+    o.write(',%d }},' % len(bytes))
 
-o.write("""
+  o.write("""
 };
 
 } // namespace
@@ -56,5 +55,3 @@ const EmbeddedContent* findEmbeddedContent(const std::string& name) {
   return &found->second;
 }
 """)
-
-o.close()
