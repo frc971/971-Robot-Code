@@ -20,6 +20,7 @@
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_lib',
+        '<(DEPTH)/bot3/actors/actors.gyp:drivetrain_action_lib',
         '<(DEPTH)/bot3/control_loops/elevator/elevator.gyp:elevator_queue',
         '<(DEPTH)/bot3/control_loops/intake/intake.gyp:intake_queue',
         '<(AOS)/common/common.gyp:time',
