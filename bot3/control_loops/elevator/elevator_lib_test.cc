@@ -21,6 +21,7 @@ namespace bot3 {
 namespace control_loops {
 namespace testing {
 
+
 // TODO(comran+adam): Check these over with Austin, Ben, Brian, and others to
 // make sure we didn't forget anything -- especially the zeroing tests!!!
 
@@ -79,6 +80,8 @@ class ElevatorSimulator {
 
   void MoveTo(double position) { position_sim_.MoveTo(position); }
 
+  double GetVoltage() const { return plant_->U()(0,0); }
+
  private:
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> plant_;
 
@@ -114,7 +117,6 @@ class ElevatorTest : public ::aos::testing::ControlLoopTest {
   // Runs one iteration of the whole simulation.
   void RunIteration(bool enabled = true) {
     SendMessages(enabled);
-
     plant_.SendPositionMessage();
     elevator_.Iterate();
     plant_.Simulate();
@@ -539,6 +541,58 @@ TEST(GlitchFilterTest, NegedgeDetect) {
   EXPECT_FALSE(filter.negedge());
   EXPECT_EQ(0.5, filter.negedge_value());
 }
+
+// Motion Profile Tests
+
+
+// Makes sure low Accel. and TopSpeed don't output high voltage
+TEST_F(ElevatorTest, VeryLowMotionVeryLowVolt) {
+  while (elevator_.state() != Elevator::RUNNING) {
+    RunIteration();
+  }
+
+  // Height guarantees it's not the current position
+  queue_.goal.MakeWithBuilder()
+      .height(kElevUpperLimit)
+      .max_velocity(1)
+      .max_acceleration(1)
+      .Send();
+
+  // Checks voltage is not crazy
+  // Runs for enough time to move to position
+  const auto start_time = Time::Now();
+  const Time run_for = Time::InSeconds(5);
+  // Acceptable range for voltage
+  double voltage_range = 5.5;
+  while (Time::Now() < start_time + run_for) {
+    RunIteration(true);
+    EXPECT_NEAR(0.0, plant_.GetVoltage(), voltage_range);
+  }
+}
+
+// Makes sure low Accel. and TopSpeed don't output high voltage
+TEST_F(ElevatorTest, LowMotionLowVolt) {
+  while (elevator_.state() != Elevator::RUNNING) {
+    RunIteration();
+  }
+
+  // Height guarantees it's not the current position
+  queue_.goal.MakeWithBuilder()
+      .height(kElevUpperLimit)
+      .max_velocity(2)
+      .max_acceleration(2)
+      .Send();
+
+  // Checks voltage is not crazy
+  // Runs for enough time to move to position
+  const auto start_time = Time::Now();
+  const Time run_for = Time::InSeconds(5);
+  // Acceptable range for voltage
+  double voltage_range = 7.5;
+  while (Time::Now() < start_time + run_for) {
+    RunIteration(true);
+    EXPECT_NEAR(0.0, plant_.GetVoltage(), voltage_range);
+  }
 
 }  // namespace testing
 }  // namespace control_loops
