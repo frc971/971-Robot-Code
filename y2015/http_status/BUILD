@@ -1,12 +1,19 @@
-package(default_visibility = ['//visibility:public'])
+load('/aos/externals/seasocks/gen_embedded', 'gen_embedded')
+
+gen_embedded(
+  name = 'gen_embedded',
+  srcs = glob(['www_defaults/**/*']),
+)
 
 cc_binary(
   name = 'http_status',
+  visibility = ['//visibility:public'],
   srcs = [
     'http_status.cc',
     'http_status.h',
   ],
   deps = [
+    ':gen_embedded',
     '//aos/linux_code:init',
     '//aos/common/logging',
     '//third_party/seasocks',
