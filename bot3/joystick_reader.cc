@@ -256,7 +256,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kScoreBegin)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
-      elevator_goal_ = 0.030;
+      elevator_goal_ = 0.005;
       elevator_params_ = {1.0, 5.0};
       intake_closed_ = false;
       can_restraint_open_ = true;
