@@ -11,9 +11,13 @@
 #include "bot3/autonomous/auto.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/drivetrain/drivetrain.h"
+#include "bot3/control_loops/elevator/elevator.q.h"
+#include "bot3/control_loops/intake/intake.q.h"
 
 using ::aos::time::Time;
 using ::bot3::control_loops::drivetrain_queue;
+using ::bot3::control_loops::intake_queue;
+using ::bot3::control_loops::elevator_queue;
 
 namespace bot3 {
 namespace autonomous {
@@ -64,8 +68,7 @@ void GrabberForTime(double voltage, double wait_time) {
 
   while (true) {
     autonomous::can_grabber_control.MakeWithBuilder()
-      .can_grabber_voltage(voltage)
-      .Send();
+        .can_grabber_voltage(voltage).can_grabbers(false).Send();
 
     // Poll the running bit and auto done bits.
     if (ShouldExitAuto()) {
@@ -84,20 +87,44 @@ void CanGrabberAuto() {
   ResetDrivetrain();
 
   // Launch can grabbers.
-  GrabberForTime(12.0, 0.26);
+  //GrabberForTime(12.0, 0.26);
+  GrabberForTime(6.0, 0.40);
   if (ShouldExitAuto()) return;
   InitializeEncoders();
   ResetDrivetrain();
   if (ShouldExitAuto()) return;
+  // Send our intake goals.
+  if (!intake_queue.goal.MakeWithBuilder().movement(0.0).claw_closed(true)
+          .Send()) {
+    LOG(ERROR, "Sending intake goal failed.\n");
+  }
+  {
+    auto new_elevator_goal = elevator_queue.goal.MakeMessage();
+    new_elevator_goal->max_velocity = 0.0;
+    new_elevator_goal->max_acceleration = 0.0;
+    new_elevator_goal->height = 0.030;
+    new_elevator_goal->velocity = 0.0;
+    new_elevator_goal->passive_support = true;
+    new_elevator_goal->can_support = false;
+
+    if (new_elevator_goal.Send()) {
+      LOG(DEBUG, "sending goals: elevator: %f\n", 0.03);
+    } else {
+      LOG(ERROR, "Sending elevator goal failed.\n");
+    }
+  }
+
+  const double kMoveBackDistance = 1.75;
+  //const double kMoveBackDistance = 0.0;
 
   // Drive backwards, and pulse the can grabbers again to tip the cans.
   control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .steering(0.0)
       .throttle(0.0)
-      .left_goal(left_initial_position + 1.75)
+      .left_goal(left_initial_position + kMoveBackDistance)
       .left_velocity_goal(0)
-      .right_goal(right_initial_position + 1.75)
+      .right_goal(right_initial_position + kMoveBackDistance)
       .right_velocity_goal(0)
       .Send();
   GrabberForTime(12.0, 0.02);

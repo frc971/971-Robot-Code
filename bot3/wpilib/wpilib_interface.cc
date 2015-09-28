@@ -201,10 +201,11 @@ class SensorReader {
 // Writes out our pneumatic outputs.
 class SolenoidWriter {
  public:
-  SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
+  SolenoidWriter(const ::std::unique_ptr< ::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         elevator_(".bot3.control_loops.elevator_queue.output"),
-        intake_(".bot3.control_loops.intake_queue.output") {}
+        intake_(".bot3.control_loops.intake_queue.output"),
+        can_grabber_control_(".bot3.autonomous.can_grabber_control") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -217,6 +218,10 @@ class SolenoidWriter {
   void set_elevator_passive_support(
       ::std::unique_ptr<BufferedSolenoid> elevator_passive_support) {
     elevator_passive_support_ = ::std::move(elevator_passive_support);
+  }
+
+  void set_can_grabber(::std::unique_ptr<BufferedSolenoid> can_grabber) {
+    can_grabber_ = ::std::move(can_grabber);
   }
 
   void set_elevator_can_support(
@@ -234,6 +239,15 @@ class SolenoidWriter {
 
     while (run_) {
       ::aos::time::PhasedLoopXMS(20, 1000);
+
+      // Can Grabber
+      {
+        can_grabber_control_.FetchLatest();
+        if (can_grabber_control_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *can_grabber_control_);
+          can_grabber_->Set(can_grabber_control_->can_grabbers);
+        }
+      }
 
       // Elevator
       {
@@ -284,12 +298,14 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> elevator_passive_support_;
   ::std::unique_ptr<BufferedSolenoid> elevator_can_support_;
   ::std::unique_ptr<BufferedSolenoid> intake_claw_;
+  ::std::unique_ptr<BufferedSolenoid> can_grabber_;
 
   ::std::unique_ptr<DigitalSource> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::bot3::control_loops::ElevatorQueue::Output> elevator_;
   ::aos::Queue<::bot3::control_loops::IntakeQueue::Output> intake_;
+  ::aos::Queue<::bot3::autonomous::CanGrabberControl> can_grabber_control_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -491,6 +507,7 @@ class WPILibRobot : public RobotBase {
     solenoid_writer.set_elevator_passive_support(pcm->MakeSolenoid(0));
     solenoid_writer.set_elevator_can_support(pcm->MakeSolenoid(1));
     solenoid_writer.set_intake_claw(pcm->MakeSolenoid(2));
+    solenoid_writer.set_can_grabber(pcm->MakeSolenoid(3));
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...

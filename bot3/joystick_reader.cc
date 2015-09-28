@@ -74,6 +74,7 @@ const ButtonLocation kScoreBegin(4, 8);
 
 const ButtonLocation kCanGrabberLift(2, 1);
 const ButtonLocation kFastCanGrabberLift(2, 3);
+const ButtonLocation kCanGrabberLower(2, 2);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -89,6 +90,9 @@ class Reader : public ::aos::input::JoystickInput {
       } else {
         StopAuto();
       }
+      intake_closed_ = true;
+      can_restraint_open_ = false;
+      passive_support_open_ = true;
     }
 
     if (!data.GetControlBit(ControlBit::kAutonomous)) {
@@ -116,9 +120,6 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
-      intake_closed_ = false;
-      can_restraint_open_ = true;
-      passive_support_open_ = true;
       LOG(DEBUG, "Canceling\n");
     }
 
@@ -208,52 +209,52 @@ class Reader : public ::aos::input::JoystickInput {
       action_queue_.CancelAllActions();
     }
 
-    if (data.PosEdge(kOpenIntake)) {
+    if (data.IsPressed(kOpenIntake)) {
       intake_closed_ = false;
     }
 
-    if (data.PosEdge(kCloseIntake)) {
+    if (data.IsPressed(kCloseIntake)) {
       intake_closed_ = true;
     }
 
-    if (data.PosEdge(kOpenCanRestraint)) {
+    if (data.IsPressed(kOpenCanRestraint)) {
       can_restraint_open_ = true;
     }
 
-    if (data.PosEdge(kCloseCanRestraint)) {
+    if (data.IsPressed(kCloseCanRestraint)) {
       can_restraint_open_ = false;
     }
 
-    if (data.PosEdge(kOpenPassiveSupport)) {
+    if (data.IsPressed(kOpenPassiveSupport)) {
       passive_support_open_ = true;
     }
 
-    if (data.PosEdge(kClosePassiveSupport)) {
+    if (data.IsPressed(kClosePassiveSupport)) {
       passive_support_open_ = false;
     }
 
     // Buttons for elevator.
-    if (data.PosEdge(kCarry)) {
+    if (data.IsPressed(kCarry)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 0.180;
       elevator_params_ = {1.0, 2.0};
       action_queue_.CancelAllActions();
     }
 
-    if (data.PosEdge(kSetDown)) {
+    if (data.IsPressed(kSetDown)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 0.005;
       elevator_params_ = {1.0, 5.0};
       action_queue_.CancelAllActions();
     }
 
-    if (data.PosEdge(kSkyscraper)) {
+    if (data.IsPressed(kSkyscraper)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 1.0;
       elevator_params_ = {1.0, 5.0};
     }
 
-    if (data.PosEdge(kScoreBegin)) {
+    if (data.IsPressed(kScoreBegin)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
       elevator_goal_ = 0.030;
       elevator_params_ = {1.0, 5.0};
@@ -266,10 +267,13 @@ class Reader : public ::aos::input::JoystickInput {
     // Buttons for can grabber.
     if (data.IsPressed(kCanGrabberLift)) {
       ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
-        .can_grabber_voltage(-4).Send();
+          .can_grabber_voltage(-4).can_grabbers(false).Send();
     } else if (data.IsPressed(kFastCanGrabberLift)) {
       ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
-        .can_grabber_voltage(-12).Send();
+          .can_grabber_voltage(-12).can_grabbers(false).Send();
+    } else if (data.IsPressed(kCanGrabberLower)) {
+      ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
+          .can_grabber_voltage(4).can_grabbers(true).Send();
     }
 
     // Send our goals if everything looks OK.

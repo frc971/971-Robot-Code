@@ -20,6 +20,8 @@
         '<(AOS)/common/controls/controls.gyp:control_loop',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_queue',
         '<(DEPTH)/bot3/control_loops/drivetrain/drivetrain.gyp:drivetrain_lib',
+        '<(DEPTH)/bot3/control_loops/elevator/elevator.gyp:elevator_queue',
+        '<(DEPTH)/bot3/control_loops/intake/intake.gyp:intake_queue',
         '<(AOS)/common/common.gyp:time',
         '<(AOS)/common/util/util.gyp:phased_loop',
         '<(AOS)/common/util/util.gyp:trapezoid_profile',
