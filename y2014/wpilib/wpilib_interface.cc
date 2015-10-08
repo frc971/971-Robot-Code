@@ -505,7 +505,6 @@ class SolenoidWriter {
 
       {
         PneumaticsToLog to_log;
-#if 0
         {
           const bool compressor_on = !pressure_switch_->Get();
           to_log.compressor_on = compressor_on;
@@ -515,9 +514,6 @@ class SolenoidWriter {
             compressor_relay_->Set(Relay::kOff);
           }
         }
-#else
-        to_log.compressor_on = false;
-#endif
 
         pcm_->Flush();
         to_log.read_solenoids = pcm_->GetAll();
@@ -742,12 +738,8 @@ class WPILibRobot : public RobotBase {
     solenoid_writer.set_shooter_latch(pcm->MakeSolenoid(5));
     solenoid_writer.set_shooter_brake(pcm->MakeSolenoid(4));
 
-    // TODO(Brian): Re-enable this once we move the compressor back to a spike
-    // etc.
-#if 0
-    solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(9));
+    solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(25));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
-#endif
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
