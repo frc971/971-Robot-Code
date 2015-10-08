@@ -72,9 +72,9 @@ const ButtonLocation kSkyscraper(4, 11);
 
 const ButtonLocation kScoreBegin(4, 8);
 
-const ButtonLocation kCanGrabberLift(2, 1);
+const ButtonLocation kCanGrabberLift(3, 2);
 const ButtonLocation kFastCanGrabberLift(2, 3);
-const ButtonLocation kCanGrabberLower(2, 2);
+const ButtonLocation kCanGrabberLower(3, 5);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -256,7 +256,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kScoreBegin)) {
       // TODO(comran): Get actual height/velocity/acceleration values.
-      elevator_goal_ = 0.030;
+      elevator_goal_ = 0.005;
       elevator_params_ = {1.0, 5.0};
       intake_closed_ = false;
       can_restraint_open_ = true;
@@ -267,13 +267,21 @@ class Reader : public ::aos::input::JoystickInput {
     // Buttons for can grabber.
     if (data.IsPressed(kCanGrabberLift)) {
       ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
-          .can_grabber_voltage(-4).can_grabbers(false).Send();
+          .can_grabber_voltage(-3).can_grabbers(false).Send();
     } else if (data.IsPressed(kFastCanGrabberLift)) {
       ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
           .can_grabber_voltage(-12).can_grabbers(false).Send();
     } else if (data.IsPressed(kCanGrabberLower)) {
-      ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
-          .can_grabber_voltage(4).can_grabbers(true).Send();
+      if (grab_delay_ > 5) {
+        ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
+            .can_grabber_voltage(2).can_grabbers(true).Send();
+      } else {
+        ::bot3::autonomous::can_grabber_control.MakeWithBuilder()
+            .can_grabber_voltage(0).can_grabbers(true).Send();
+      }
+      ++grab_delay_;
+    } else {
+      grab_delay_ = 0;
     }
 
     // Send our goals if everything looks OK.
@@ -361,6 +369,7 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
                                      "no drivetrain status");
+  int grab_delay_ = 0;
 };
 
 }  // namespace joysticks

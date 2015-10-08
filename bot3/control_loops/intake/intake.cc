@@ -16,8 +16,13 @@ void Intake::RunIteration(
   if (output != nullptr) {
     output->Zero();
 
-    output->intake = goal->movement;
-    output->claw_closed = goal->claw_closed;
+    if (goal != nullptr) {
+      output->intake = goal->movement;
+      output->claw_closed = goal->claw_closed;
+    } else {
+      output->intake = 0.0;
+      output->claw_closed = false;
+    }
   }
 }
 
