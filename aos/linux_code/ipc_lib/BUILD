@@ -55,6 +55,7 @@ cc_library(
     '//aos/linux_code/ipc_lib:mutex',
     ':core_lib',
     '//aos/common/logging:logging_interface',
+    '//external:librt',
   ],
 )
 

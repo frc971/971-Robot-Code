@@ -31,6 +31,9 @@ cc_library(
 
 cc_library(
   name = 'polytope',
+  hdrs = [
+    'polytope.h',
+  ],
   deps = [
     '//third_party/eigen',
     '//third_party/cddlib',

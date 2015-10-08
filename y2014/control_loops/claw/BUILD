@@ -44,6 +44,7 @@ cc_library(
     '//frc971/control_loops:coerce_goal',
     '//aos/common/logging:queue_logging',
     '//aos/common/logging:matrix_logging',
+    '//external:libm',
   ],
 )
 
