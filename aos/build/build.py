@@ -711,10 +711,10 @@ Examples of specifying targets:
  build all of the arm targets that use clang: "clang-arm" or "arm-clang"
 """.format(
     name=exec_name,
-    all_platforms=str_platforms(PrimeProcessor(False, False).platforms()),
-    deploy_platforms=str_platforms(PrimeProcessor(False, True).default_platforms()),
-    test_platforms=str_platforms(PrimeProcessor(True, False).default_platforms()),
-    default_platforms=str_platforms(PrimeProcessor(False, False).default_platforms()),
+    all_platforms=str_platforms(PrimeProcessor('folder', False, False).platforms()),
+    deploy_platforms=str_platforms(PrimeProcessor('folder', False, True).default_platforms()),
+    test_platforms=str_platforms(PrimeProcessor('folder', True, False).default_platforms()),
+    default_platforms=str_platforms(PrimeProcessor('folder', False, False).default_platforms()),
     ))
     if exit_status is not None:
       sys.exit(exit_status)
