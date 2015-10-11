@@ -17,13 +17,11 @@
 #include "aos/linux_code/logging/linux_logging.h"
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 
-#ifdef TCMALLOC
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
-extern double FLAGS_tcmalloc_release_rate;
+extern double FLAGS_tcmalloc_release_rate __attribute__((weak));
 }
 using FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead::
     FLAGS_tcmalloc_release_rate;
-#endif
 
 namespace aos {
 namespace logging {
@@ -76,10 +74,10 @@ void LockAllMemory() {
   // Don't use mmap for large malloc chunks.
   CHECK_EQ(1, mallopt(M_MMAP_MAX, 0));
 
-#ifdef TCMALLOC
-  // Tell tcmalloc not to return memory.
-  FLAGS_tcmalloc_release_rate = 0.0;
-#endif
+  if (&FLAGS_tcmalloc_release_rate) {
+    // Tell tcmalloc not to return memory.
+    FLAGS_tcmalloc_release_rate = 0.0;
+  }
 
   // Forces the memory pages for all the stack space that we're ever going to
   // use to be loaded into memory (so it can be locked there).

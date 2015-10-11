@@ -105,9 +105,6 @@
           '<!(readlink -f <(AOS)/../output/compiled-<(ARCHITECTURE)<(EXTERNALS_EXTRA)/gperftools-2.3-prefix/lib/libtcmalloc.a)',
           '<!(readlink -f <(AOS)/../output/compiled-<(ARCHITECTURE)<(EXTERNALS_EXTRA)/libunwind-1.1-prefix/lib/libunwind.a)',
         ],
-        'defines': [
-          'TCMALLOC',
-        ],
       },
     ], ['EXTERNALS_EXTRA=="-fPIE"', {
         'target_defaults': {
@@ -141,7 +138,6 @@
       '__STDC_FORMAT_MACROS',
       '__STDC_CONSTANT_MACROS',
       '__STDC_LIMIT_MACROS',
-      'AOS_COMPILER_<!(echo <(FULL_COMPILER) | sed \'s/\./_/g\')',
       'AOS_ARCHITECTURE_<(ARCHITECTURE)',
       '_FILE_OFFSET_BITS=64',
     ],
