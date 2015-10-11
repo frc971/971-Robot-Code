@@ -68,7 +68,7 @@ void dd_SetInputFile(FILE **f,dd_DataFileType inputfile,dd_ErrorType *Error)
 
 void dd_SetWriteFileName(dd_DataFileType inputfile, dd_DataFileType outfile, char cflag, dd_RepresentationType rep)
 {
-  char *extension;
+  const char *extension;
   dd_DataFileType ifilehead="";
   int i,dotpos;
   
@@ -1931,7 +1931,7 @@ dd_MatrixPtr dd_CopyInequalities(dd_PolyhedraPtr poly)
 /****************************************************************************************/
 /*  rational number (a/b) read is taken from Vinci by Benno Bueeler and Andreas Enge    */
 /****************************************************************************************/
-void dd_sread_rational_value (const char *s, mytype value)
+void dd_sread_rational_value (char *s, mytype value)
    /* reads a rational value from the specified string "s" and assigns it to "value"    */
    
 {

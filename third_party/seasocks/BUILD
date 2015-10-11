@@ -10,4 +10,12 @@ cc_library(
     'src/main/internal/**/*',
   ]),
   includes = ['src/main/c'],
+  copts = [
+    # TODO(Brian): Don't apply this to all of the code...
+    '-Wno-cast-align',
+
+    '-Wno-switch-enum',
+    '-Wno-format-nonliteral',
+    '-Wno-unused-parameter',
+  ],
 )

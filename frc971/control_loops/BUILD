@@ -65,6 +65,7 @@ cc_library(
   deps = [
     ':queues',
     ':gaussian_noise',
+    '//external:libm',
   ],
 )
 
@@ -75,6 +76,9 @@ cc_library(
   ],
   hdrs = [
     'gaussian_noise.h',
+  ],
+  deps = [
+    '//external:libm',
   ],
 )
 

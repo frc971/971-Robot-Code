@@ -18,6 +18,10 @@ common_copts = [
   '-DGFLAGS_IS_A_DLL=0',
   '-DGFLAGS_DLL_DECL=',
   '-DGFLAGS_DLL_DEFINE_FLAG=',
+
+  '-Wno-format-nonliteral',
+  '-Wno-unused-local-typedef',
+  '-Wno-sign-compare',
 ]
 
 cc_library(
@@ -35,6 +39,9 @@ cc_library(
   hdrs = [
     'include/gflags/gflags.h',
     'include/gflags/gflags_completions.h',
+  ],
+  deps = [
+    '//external:libpthread',
   ],
   copts = common_copts,
   includes = [ 'include' ],

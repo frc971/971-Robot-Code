@@ -250,7 +250,7 @@ evtag_marshal(struct evbuffer *evbuf, ev_uint32_t tag,
 {
 	evtag_encode_tag(evbuf, tag);
 	evtag_encode_int(evbuf, len);
-	evbuffer_add(evbuf, (void *)data, len);
+	evbuffer_add(evbuf, (const void *)data, len);
 }
 
 void

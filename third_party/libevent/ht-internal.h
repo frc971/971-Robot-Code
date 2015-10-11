@@ -137,7 +137,7 @@ ht_string_hash(const char *s)
   /* Helper: returns a pointer to the right location in the table       \
    * 'head' to find or insert the element 'elm'. */                     \
   static inline struct type **                                          \
-  _##name##_HT_FIND_P(struct name *head, struct type *elm)              \
+  _##name##_HT_FIND_P(const struct name *head, struct type *elm)        \
   {                                                                     \
     struct type **p;                                                    \
     if (!head->hth_table)                                               \
@@ -156,7 +156,7 @@ ht_string_hash(const char *s)
   name##_HT_FIND(const struct name *head, struct type *elm)             \
   {                                                                     \
     struct type **p;                                                    \
-    struct name *h = (struct name *) head;                              \
+    const struct name *h = (const struct name *) head;                  \
     _HT_SET_HASH(elm, field, hashfn);                                   \
     p = _##name##_HT_FIND_P(h, elm);                                    \
     return p ? *p : NULL;                                               \

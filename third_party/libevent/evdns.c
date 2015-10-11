@@ -2471,7 +2471,7 @@ _evdns_nameserver_add_impl(struct evdns_base *base, const struct sockaddr *addre
 	ASSERT_LOCKED(base);
 	if (server) {
 		do {
-			if (!evutil_sockaddr_cmp((struct sockaddr*)&server->address, address, 1)) return 3;
+			if (!evutil_sockaddr_cmp((const struct sockaddr*)&server->address, address, 1)) return 3;
 			server = server->next;
 		} while (server != started_at);
 	}

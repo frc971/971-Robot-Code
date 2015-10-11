@@ -18,4 +18,11 @@ cc_library(
   hdrs = [
     'lib-src/cdd.h',
   ],
+  copts = [
+    '-Wno-sometimes-uninitialized',
+    '-Wno-unused-parameter',
+    '-Wno-switch-enum',
+    '-Wno-empty-body',
+    '-Wno-sign-compare',
+  ],
 )

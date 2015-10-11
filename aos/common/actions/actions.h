@@ -147,7 +147,7 @@ class TypedAction : public Action {
 
   void DoWaitUntilDone() override;
 
-  bool DoCheckIteration(bool blocking);
+  bool DoCheckIteration(bool blocking) override;
 
   // Sets the started flag (also possibly the interrupted flag).
   void CheckStarted();

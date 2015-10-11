@@ -225,7 +225,7 @@ dd_boolean dd_DoubleDescription2(dd_PolyhedraPtr, dd_RowOrderType, dd_ErrorType 
 
 void dd_FreeDDMemory0(dd_ConePtr);
 void dd_fread_rational_value (FILE *f, mytype value);
-void dd_sread_rational_value (const char *s, mytype value);
+void dd_sread_rational_value (char *s, mytype value);
 void dd_AddNewHalfspace1(dd_ConePtr, dd_rowrange);
 void dd_AddNewHalfspace2(dd_ConePtr, dd_rowrange);
 void dd_AddRay(dd_ConePtr, mytype *);

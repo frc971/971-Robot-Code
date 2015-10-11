@@ -1680,7 +1680,7 @@ evbuffer_prepend(struct evbuffer *buf, const void *data, size_t datlen)
 		} else if (chain->misalign) {
 			/* we can only fit some of the data. */
 			memcpy(chain->buffer,
-			    (char*)data + datlen - chain->misalign,
+			    (const char*)data + datlen - chain->misalign,
 			    (size_t)chain->misalign);
 			chain->off += (size_t)chain->misalign;
 			buf->total_len += (size_t)chain->misalign;
@@ -2749,7 +2749,7 @@ evbuffer_add_reference(struct evbuffer *outbuf,
 	if (!chain)
 		return (-1);
 	chain->flags |= EVBUFFER_REFERENCE | EVBUFFER_IMMUTABLE;
-	chain->buffer = (u_char *)data;
+	chain->buffer = (const u_char *)data;
 	chain->buffer_len = datlen;
 	chain->off = datlen;
 

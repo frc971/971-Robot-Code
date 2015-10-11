@@ -48,5 +48,15 @@ cc_library(
   copts = [
     '-Ithird_party/libevent/compat',
     '-Ithird_party/libevent/include',
+
+    # TODO(Brian): Fix the places in the code it uses char* as an intermediate
+    # type while doing offsetof stuff.
+    '-Wno-cast-align',
+
+    '-Wno-unused-parameter',
+    '-Wno-format-nonliteral',
+    '-Wno-cast-qual',
+    '-Wno-incompatible-pointer-types-discards-qualifiers',
+    '-Wno-unused-function',
   ],
 )
