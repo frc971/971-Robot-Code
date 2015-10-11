@@ -1,0 +1,262 @@
+major_version: "local"
+minor_version: ""
+default_target_cpu: "same_as_host"
+
+default_toolchain {
+  cpu: "k8"
+  toolchain_identifier: "local_linux"
+}
+
+default_toolchain {
+  cpu: "armeabi-v7a"
+  toolchain_identifier: "stub_armeabi-v7a"
+}
+
+
+toolchain {
+  abi_version: "armeabi-v7a"
+  abi_libc_version: "armeabi-v7a"
+  builtin_sysroot: ""
+  compiler: "compiler"
+  host_system_name: "armeabi-v7a"
+  needsPic: true
+  supports_gold_linker: false
+  supports_incremental_linker: false
+  supports_fission: false
+  supports_interface_shared_objects: false
+  supports_normalizing_ar: false
+  supports_start_end_lib: false
+  supports_thin_archives: false
+  target_libc: "armeabi-v7a"
+  target_cpu: "armeabi-v7a"
+  target_system_name: "armeabi-v7a"
+  toolchain_identifier: "stub_armeabi-v7a"
+
+  tool_path { name: "ar" path: "/bin/false" }
+  tool_path { name: "compat-ld" path: "/bin/false" }
+  tool_path { name: "cpp" path: "/bin/false" }
+  tool_path { name: "dwp" path: "/bin/false" }
+  tool_path { name: "gcc" path: "/bin/false" }
+  tool_path { name: "gcov" path: "/bin/false" }
+  tool_path { name: "ld" path: "/bin/false" }
+
+  tool_path { name: "nm" path: "/bin/false" }
+  tool_path { name: "objcopy" path: "/bin/false" }
+  tool_path { name: "objdump" path: "/bin/false" }
+  tool_path { name: "strip" path: "/bin/false" }
+}
+
+toolchain {
+  abi_version: "local"
+  abi_libc_version: "local"
+  builtin_sysroot: ""
+  compiler: "compiler"
+  host_system_name: "local"
+  needsPic: true
+  supports_gold_linker: false
+  supports_incremental_linker: false
+  supports_fission: false
+  supports_interface_shared_objects: false
+  supports_normalizing_ar: false
+  supports_start_end_lib: false
+  supports_thin_archives: false
+  target_libc: "local"
+  target_cpu: "local"
+  target_system_name: "local"
+  toolchain_identifier: "local_linux"
+
+  tool_path { name: "ar" path: "/usr/bin/ar" }
+  tool_path { name: "compat-ld" path: "/usr/bin/ld" }
+  tool_path { name: "cpp" path: "/usr/bin/cpp" }
+  tool_path { name: "dwp" path: "/usr/bin/dwp" }
+  tool_path { name: "gcc" path: "/usr/bin/clang-3.6" }
+  tool_path { name: "gcov" path: "/usr/bin/gcov" }
+  # C(++) compiles invoke the compiler (as that is the one knowing where
+  # to find libraries), but we provide LD so other rules can invoke the linker.
+  tool_path { name: "ld" path: "/usr/bin/ld" }
+  tool_path { name: "nm" path: "/usr/bin/nm" }
+  tool_path { name: "objcopy" path: "/usr/bin/objcopy" }
+  objcopy_embed_flag: "-I"
+  objcopy_embed_flag: "binary"
+  tool_path { name: "objdump" path: "/usr/bin/objdump" }
+  tool_path { name: "strip" path: "/usr/bin/strip" }
+
+  # TODO(bazel-team): In theory, the path here ought to exactly match the path
+  # used by gcc. That works because bazel currently doesn't track files at
+  # absolute locations and has no remote execution, yet. However, this will need
+  # to be fixed, maybe with auto-detection?
+  cxx_builtin_include_directory: "/usr/lib/gcc/"
+  cxx_builtin_include_directory: "/usr/local/include"
+  cxx_builtin_include_directory: "/usr/include"
+
+  linker_flag: "-lstdc++"
+  linker_flag: "-B/usr/bin/"
+
+  feature {
+    name: "opt"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=0"
+      }
+    }
+  }
+
+  feature {
+    name: "dbg"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=1"
+      }
+    }
+  }
+
+  feature {
+    name: "fastbuild"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=0"
+      }
+    }
+  }
+
+  feature {
+    name: "all_modes"
+    flag_set {
+      action: "c-compile"
+      flag_group {
+        flag: "-std=gnu99"
+      }
+    }
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-std=gnu++11"
+      }
+	  flag_group {
+        # We always want to compile with -pthread semantics.
+	    flag: "-pthread"
+	  }
+    }
+  }
+
+  # Anticipated future default.
+  # This makes GCC and Clang do what we want when called through symlinks.
+  unfiltered_cxx_flag: "-no-canonical-prefixes"
+  linker_flag: "-no-canonical-prefixes"
+
+  # Things that the code wants defined.
+  compiler_flag: "-D__STDC_FORMAT_MACROS"
+  compiler_flag: "-D__STDC_CONSTANT_MACROS"
+  compiler_flag: "-D__STDC_LIMIT_MACROS"
+  compiler_flag: "-D_FILE_OFFSET_BITS=64"
+  # TODO(Brian): Rename this or something.
+  #compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
+
+  linker_flag: "-fuse-ld=gold"
+
+  # Temporary escape hatch for the Gyp->Bazel conversion.
+  # TODO(Brian): Remove this.
+  compiler_flag: "-DAOS_BAZEL"
+
+  # Make C++ compilation deterministic. Use linkstamping instead of these
+  # compiler symbols.
+  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+
+  # Security hardening on by default.
+  # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+  # We need to undef it before redefining it as some distributions now have
+  # it enabled by default.
+  compiler_flag: "-U_FORTIFY_SOURCE"
+  compiler_flag: "-D_FORTIFY_SOURCE=1"
+  compiler_flag: "-fstack-protector"
+  compiler_flag: "-fPIE"
+  linker_flag: "-pie"
+  linker_flag: "-Wl,-z,relro,-z,now"
+
+  # Pretty much everything needs this, including parts of the glibc STL...
+  linker_flag: "-lm"
+
+  # Enable coloring even if there's no attached terminal. Bazel removes the
+  # escape sequences if --nocolor is specified.
+  compiler_flag: "-fcolor-diagnostics"
+
+  compiler_flag: "-Wall"
+  compiler_flag: "-Wextra"
+  compiler_flag: "-Wswitch-enum"
+  compiler_flag: "-Wpointer-arith"
+  compiler_flag: "-Wstrict-aliasing=2"
+  compiler_flag: "-Wcast-qual"
+  compiler_flag: "-Wcast-align"
+  compiler_flag: "-Wwrite-strings"
+  compiler_flag: "-Wtype-limits"
+  compiler_flag: "-Wsign-compare"
+  compiler_flag: "-Wformat=2"
+  compiler_flag: "-Werror"
+
+  # Keep stack frames for debugging, even in opt mode.
+  compiler_flag: "-fno-omit-frame-pointer"
+
+  # Don't use temp files while compiling.
+  compiler_flag: "-pipe"
+
+  # Have GCC return the exit code from ld.
+  #linker_flag: "-pass-exit-codes"
+
+  # Stamp the binary with a unique identifier.
+  linker_flag: "-Wl,--build-id=md5"
+  linker_flag: "-Wl,--hash-style=gnu"
+  linker_flag: "-Wl,--warn-execstack"
+  linker_flag: "-Wl,--detect-odr-violations"
+
+  compilation_mode_flags {
+    mode: DBG
+    # Enable debug symbols.
+    compiler_flag: "-ggdb3"
+  }
+  compilation_mode_flags {
+    mode: OPT
+
+    # No debug symbols.
+    # Maybe we should enable https://gcc.gnu.org/wiki/DebugFission for opt or
+    # even generally? However, that can't happen here, as it requires special
+    # handling in Bazel.
+    compiler_flag: "-g0"
+
+    compiler_flag: "-Oz"
+
+    # Disable assertions
+    compiler_flag: "-DNDEBUG"
+
+    # Removal of unused code and data at link time (can this increase binary size in some cases?).
+    compiler_flag: "-ffunction-sections"
+    compiler_flag: "-fdata-sections"
+    linker_flag: "-Wl,--gc-sections"
+  }
+}
