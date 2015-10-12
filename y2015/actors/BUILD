@@ -7,7 +7,6 @@ filegroup(
   srcs = [
     ':drivetrain_action',
     ':score_action',
-    ':score_action_test',
     ':pickup_action',
     ':stack_action',
     ':stack_and_lift_action',
@@ -16,7 +15,6 @@ filegroup(
     ':can_pickup_action',
     ':horizontal_can_pickup_action',
     ':lift_action',
-    ':stack_action_test',
   ],
 )
 

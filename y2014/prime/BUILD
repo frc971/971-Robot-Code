@@ -7,19 +7,13 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
     '//y2014/control_loops/drivetrain:drivetrain',
-    '//y2014/control_loops/drivetrain:drivetrain_lib_test',
-    '//y2014/control_loops/drivetrain:replay_drivetrain',
     '//y2014/control_loops/claw:claw',
-    '//y2014/control_loops/claw:claw_calibration',
-    '//y2014/control_loops/claw:claw_lib_test',
-    '//y2014/control_loops/claw:replay_claw',
     '//y2014/control_loops/shooter:shooter',
-    '//y2014/control_loops/shooter:shooter_lib_test',
-    '//y2014/control_loops/shooter:replay_shooter',
     '//y2014/autonomous:auto',
     '//y2014:joystick_reader',
     '//y2014/actors:binaries',
     ':hot_goal_reader',
+    ':start_list.txt',
   ],
 )
 

@@ -1,12 +1,4 @@
 //y2014/prime:All needs to conditionally have //y2014/wpilib:wpilib_interface.
-//y2014/prime:All needs to copy start_list.txt.
   y2015 too
-
-//y2015:http_status needs to be finished.
-
-Actually write //aos:prime_binaries.
-  Contents come from aos/build/aos_all.gyp.
-
-//aos/linux_code/starter needs to copy starter.sh.
 
 Need to get tcmalloc hooked in.

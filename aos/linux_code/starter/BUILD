@@ -1,4 +1,12 @@
-package(default_visibility = ['//visibility:public'])
+# This target is everything which should get deployed to the robot.
+filegroup(
+  name = 'starter',
+  visibility = ['//visibility:public'],
+  srcs = [
+    'starter_exe',
+    'starter.sh',
+  ],
+)
 
 cc_binary(
   name = 'starter_exe',
