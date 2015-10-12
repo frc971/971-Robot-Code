@@ -164,7 +164,6 @@ toolchain {
       action: "c++-header-parsing"
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
-      flag_group {
 	  flag_group {
         # We always want to compile with -pthread semantics.
 	    flag: "-pthread"
