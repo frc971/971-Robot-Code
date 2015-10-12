@@ -1,25 +1,37 @@
 package(default_visibility = ['//visibility:public'])
 
+config_setting(
+  name = "roborio",
+  values = {
+    "cpu": "roborio",
+  }
+)
+
 cc_library(
   name = 'librt',
-  srcs = [ 'lib/x86_64-linux-gnu/librt.so' ],
+  srcs = select({
+    ":roborio": ['arm-frc-linux-gnueabi/usr/lib/librt.so'],
+    "//conditions:default": ['lib/x86_64-linux-gnu/librt.so'],
+  }),
 )
 
 cc_library(
   name = 'libdl',
-  srcs = [ 'lib/x86_64-linux-gnu/libdl.so' ],
+  srcs = select({
+    ":roborio": ['arm-frc-linux-gnueabi/usr/lib/libdl.so'],
+    "//conditions:default": ['lib/x86_64-linux-gnu/libdl.so'],
+  }),
 )
 
 cc_library(
   name = 'libm',
-  srcs = [ 'lib/x86_64-linux-gnu/libm.so' ],
+  srcs = select({
+    ":roborio": ['arm-frc-linux-gnueabi/usr/lib/libm.so'],
+    "//conditions:default": ['lib/x86_64-linux-gnu/libm.so'],
+  }),
 )
 
 cc_library(
   name = 'libpthread',
-  srcs = [ 'lib/x86_64-linux-gnu/libpthread.so' ],
-  linkopts = [
-    '-pthread',
-  ],
 )
 

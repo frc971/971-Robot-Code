@@ -19,10 +19,13 @@ cc_library(
   ]) + [
     'forwpilib/dma.cc',
   ],
+  copts = [
+    '-Wno-error',
+  ],
   hdrs = glob([d + '/*.h' for d in _header_dirs]),
   includes = _header_dirs,
   linkopts = [
-    '-Lallwpilib/ni-libraries',
+    '-Laos/externals/allwpilib/ni-libraries',
     '-lpthread',
     '-lFRC_NetworkCommunication',
     '-lRoboRIO_FRC_ChipObject',

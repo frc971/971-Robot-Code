@@ -2749,7 +2749,7 @@ evbuffer_add_reference(struct evbuffer *outbuf,
 	if (!chain)
 		return (-1);
 	chain->flags |= EVBUFFER_REFERENCE | EVBUFFER_IMMUTABLE;
-	chain->buffer = (const u_char *)data;
+	chain->buffer = (u_char *)data;
 	chain->buffer_len = datlen;
 	chain->off = datlen;
 

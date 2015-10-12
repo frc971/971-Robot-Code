@@ -325,6 +325,9 @@ cc_test(
     deps = [
         ":googletest_main",
     ],
+    copts = [
+        "-Wno-empty-body",
+    ]
 )
 
 cc_test(
@@ -390,6 +393,10 @@ cc_test(
     deps = [
         ":googletest_main",
     ],
+    copts = [
+        "-Wno-empty-body",
+        "-Wno-missing-field-initializers",
+    ]
 )
 
 cc_test(
