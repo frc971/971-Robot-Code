@@ -20,8 +20,9 @@ common_copts = [
   '-DGFLAGS_DLL_DEFINE_FLAG=',
 
   '-Wno-format-nonliteral',
-  '-Wno-unused-local-typedef',
+  '-Wno-unused-local-typedefs',
   '-Wno-sign-compare',
+  '-Wno-missing-field-initializers',
 ]
 
 cc_library(

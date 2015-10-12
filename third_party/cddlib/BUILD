@@ -1,5 +1,7 @@
 licenses(['notice'])
 
+load('/tools/build_rules/select', 'compiler_select')
+
 cc_library(
   name = 'cddlib',
   visibility = ['//visibility:public'],
@@ -24,5 +26,8 @@ cc_library(
     '-Wno-switch-enum',
     '-Wno-empty-body',
     '-Wno-sign-compare',
-  ],
+  ] + compiler_select({
+      'gcc': ['-Wno-unused-but-set-variable'],
+      'clang': []
+  }),
 )

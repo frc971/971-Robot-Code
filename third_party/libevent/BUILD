@@ -1,5 +1,7 @@
 licenses(['notice'])
 
+load('/tools/build_rules/select', 'compiler_select')
+
 cc_library(
   name = 'libevent',
   visibility = ['//visibility:public'],
@@ -56,7 +58,9 @@ cc_library(
     '-Wno-unused-parameter',
     '-Wno-format-nonliteral',
     '-Wno-cast-qual',
-    '-Wno-incompatible-pointer-types-discards-qualifiers',
     '-Wno-unused-function',
-  ],
+  ] + compiler_select({
+      'gcc': [],
+      'clang': ['-Wno-incompatible-pointer-types-discards-qualifiers']
+  }),
 )

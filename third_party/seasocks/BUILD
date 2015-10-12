@@ -13,6 +13,7 @@ cc_library(
   copts = [
     # TODO(Brian): Don't apply this to all of the code...
     '-Wno-cast-align',
+    '-Wno-cast-qual',
 
     '-Wno-switch-enum',
     '-Wno-format-nonliteral',
