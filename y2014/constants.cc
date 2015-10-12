@@ -39,8 +39,8 @@ const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
 const double kPracticeLowGearRatio = kCompLowGearRatio;
 const double kPracticeHighGearRatio = kCompHighGearRatio;
 
-const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
-const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
+const ShifterHallEffect kCompRightDriveShifter{2.9, 4.31, 4.32, 3.3, 0.2, 0.7};
+const ShifterHallEffect kCompLeftDriveShifter{3.19, 4.33, 4.1, 3.02, 0.2, 0.7};
 
 const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
 const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
