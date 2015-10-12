@@ -1,7 +1,9 @@
 package(default_visibility = ['//visibility:public'])
 
-filegroup(
-  name = 'All',
+load('/aos/prime/downloader/downloader', 'aos_downloader')
+
+aos_downloader(
+  name = 'download',
   srcs = [
     '//aos:prime_binaries',
     '//y2014/control_loops/drivetrain:drivetrain',
