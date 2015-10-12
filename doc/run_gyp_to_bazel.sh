@@ -15,11 +15,11 @@ run_for_folder() {
     echo Need to manually convert {} >&2' \;
 }
 
-run_for_folder bot3
-
 # Manual work on the other folders has started, so we don't want this script to
 # automatically overwrite that work.
 exit 0
+
+run_for_folder bot3
 
 run_for_folder aos
 run_for_folder frc971

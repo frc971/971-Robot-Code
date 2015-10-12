@@ -593,6 +593,7 @@ TEST_F(ElevatorTest, LowMotionLowVolt) {
     RunIteration(true);
     EXPECT_NEAR(0.0, plant_.GetVoltage(), voltage_range);
   }
+}
 
 }  // namespace testing
 }  // namespace control_loops
