@@ -2,15 +2,46 @@
 # macro. Everything before the first -- is a hard-coded list of files to
 # download.
 
+from __future__ import print_function
+
 import sys
 import subprocess
+import re
+import os
 
 def main(argv):
   srcs = argv[:argv.index('--')]
   args = argv[argv.index('--') + 1:]
 
-  # TODO(Brian): Actually do something useful...
-  subprocess.check_call(['echo', 'scp'] + srcs + ['%s:/tmp' % args[0]])
+  ROBORIO_TARGET_DIR = '/home/admin/robot_code'
+  ROBORIO_USER = 'admin'
+
+  target_dir = ROBORIO_TARGET_DIR
+  user = ROBORIO_USER
+  destination = args[-1]
+
+  result = re.match('(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?', destination)
+  if not result:
+    print('Not sure how to parse destination "%s"!' % destination,
+          file=sys.stderr)
+    return 1
+  if result.group(1):
+    user = result.group(1)
+  hostname = result.group(2)
+  if result.group(3):
+    target_dir = result.group(3)
+
+  ssh_target = '%s@%s' % (user, hostname)
+
+  subprocess.check_call(
+      ['rsync', '-z', '--copy-links'] + srcs +
+      ['%s:%s' % (ssh_target, target_dir)])
+  subprocess.check_call(
+      ('ssh', ssh_target, '&&'.join([
+          'chmod u+s %s/starter_exe' % target_dir,
+          'echo \'Done moving new executables into place\'',
+          'bash -c \'sync && sync && sync\'',
+        ])))
 
 if __name__ == '__main__':
   main(sys.argv)

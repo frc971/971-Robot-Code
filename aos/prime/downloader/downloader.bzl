@@ -4,6 +4,7 @@ def _aos_downloader_impl(ctx):
     executable = True,
     content = '\n'.join([
       '#!/bin/bash',
+      'cd "${BASH_SOURCE[@]}.runfiles"',
       'exec %s %s -- %s "$@"' % (ctx.executable._downloader.short_path,
                                  ' '.join([src.short_path for src in ctx.files.srcs]),
                                  ctx.attr.default_target),
