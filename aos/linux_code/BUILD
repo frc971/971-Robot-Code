@@ -22,7 +22,7 @@ cc_library(
   deps = [
     '//aos/common:once',
     '//aos/common:die',
-    '//external:libpthread',
+    '//debian:libpthread',
   ],
 )
 

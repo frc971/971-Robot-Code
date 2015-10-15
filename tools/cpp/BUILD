@@ -30,6 +30,8 @@ filegroup(
         ":cc-compiler-local",
         ":cc-compiler-k8",
         ":cc-compiler-roborio",
+        '@arm-frc-linux-gnueabi-repo//:compiler_components',
+        ':roborio-compiler-files',
     ],
 )
 
@@ -75,16 +77,39 @@ cc_toolchain(
     supports_param_files = 0,
 )
 
+filegroup(
+  name = 'roborio-compiler-files',
+  srcs = [
+    '//tools/cpp/arm-frc-linux-gnueabi:tool-wrappers',
+    '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
+  ],
+)
+
+filegroup(
+  name = 'roborio_linker_files',
+  srcs = [
+    '//tools/cpp/arm-frc-linux-gnueabi:ld',
+    '//tools/cpp/arm-frc-linux-gnueabi:ar',
+  ],
+)
+filegroup(
+  name = 'roborio_compiler_files',
+  srcs = [
+    '//tools/cpp/arm-frc-linux-gnueabi:gcc',
+    '//tools/cpp/arm-frc-linux-gnueabi:ld',
+  ],
+)
+
 cc_toolchain(
     name = "cc-compiler-roborio",
-    all_files = ":empty",
-    compiler_files = ":empty",
-    cpu = "local",
-    dwp_files = ":empty",
+    all_files = ":roborio-compiler-files",
+    compiler_files = ':roborio_compiler_files',
+    cpu = "roborio",
+    dwp_files = ':empty',
     dynamic_runtime_libs = [":empty"],
-    linker_files = ":empty",
-    objcopy_files = ":empty",
+    linker_files = ":roborio_linker_files",
+    objcopy_files = '//tools/cpp/arm-frc-linux-gnueabi:objcopy',
     static_runtime_libs = [":empty"],
-    strip_files = ":empty",
+    strip_files = '//tools/cpp/arm-frc-linux-gnueabi:strip',
     supports_param_files = 0,
 )

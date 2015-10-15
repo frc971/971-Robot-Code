@@ -5,7 +5,7 @@ cc_library(
   deps = [
     '//third_party/eigen',
     '//y2015:constants',
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 
