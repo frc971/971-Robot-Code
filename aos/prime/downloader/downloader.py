@@ -10,7 +10,7 @@ import re
 import os
 
 def main(argv):
-  srcs = argv[:argv.index('--')]
+  srcs = argv[1:argv.index('--')]
   args = argv[argv.index('--') + 1:]
 
   ROBORIO_TARGET_DIR = '/home/admin/robot_code'
@@ -34,7 +34,7 @@ def main(argv):
   ssh_target = '%s@%s' % (user, hostname)
 
   subprocess.check_call(
-      ['rsync', '-z', '--copy-links'] + srcs +
+      ['rsync', '-v', '-z', '--copy-links'] + srcs +
       ['%s:%s' % (ssh_target, target_dir)])
   subprocess.check_call(
       ('ssh', ssh_target, '&&'.join([
