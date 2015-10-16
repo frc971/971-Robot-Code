@@ -104,7 +104,7 @@ cc_library(
     '//y2015:constants',
     '//y2015/control_loops/fridge:fridge_queue',
     '//third_party/eigen',
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 

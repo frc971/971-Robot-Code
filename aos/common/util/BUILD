@@ -102,7 +102,7 @@ cc_library(
     '//third_party/eigen',
     '//aos/common:time',
     '//aos/common/logging',
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 

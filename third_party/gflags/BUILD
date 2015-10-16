@@ -42,7 +42,7 @@ cc_library(
     'include/gflags/gflags_completions.h',
   ],
   deps = [
-    '//external:libpthread',
+    '//debian:libpthread',
   ],
   copts = common_copts,
   includes = [ 'include' ],

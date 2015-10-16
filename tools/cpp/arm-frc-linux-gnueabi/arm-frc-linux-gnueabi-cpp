@@ -1,0 +1,5 @@
+#!/bin/bash --norc
+
+exec -a arm-frc-linux-gnueabi-cpp \
+	"${BAZEL_OUTPUT_ROOT}external/arm-frc-linux-gnueabi-repo/usr/bin/arm-frc-linux-gnueabi-cpp" \
+	"$@"

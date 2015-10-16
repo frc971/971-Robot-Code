@@ -65,7 +65,7 @@ cc_library(
   deps = [
     ':queues',
     ':gaussian_noise',
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 
@@ -78,7 +78,7 @@ cc_library(
     'gaussian_noise.h',
   ],
   deps = [
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 
@@ -93,7 +93,7 @@ cc_library(
   deps = [
     '//third_party/eigen',
     '//aos/common/controls:polytope',
-    '//external:libm',
+    '//debian:libm',
   ],
 )
 

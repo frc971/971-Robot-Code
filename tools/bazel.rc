@@ -1,8 +1,8 @@
 # TODO(Brian): Figure out how we're going to distribute Bazel so everybody
 # doesn't need to hand-edit this file or use a .bazelrc...
-build --package_path %workspace%:/home/brian/bazel/base_workspace
-fetch --package_path %workspace%:/home/brian/bazel/base_workspace
-query --package_path %workspace%:/home/brian/bazel/base_workspace
+build --package_path %workspace%:%workspace%/opt_bazel_base_workspace
+fetch --package_path %workspace%:%workspace%/opt_bazel_base_workspace
+query --package_path %workspace%:%workspace%/opt_bazel_base_workspace
 
 # Complain about missing headers in the dependencies of C++ code instead of just
 # working with it.
