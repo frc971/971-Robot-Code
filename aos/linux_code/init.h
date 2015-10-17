@@ -35,6 +35,8 @@ void SetCurrentThreadRealtimePriority(int priority);
 // name can have a maximum of 16 characters.
 void SetCurrentThreadName(const ::std::string &name);
 
+void LockAllMemory();
+
 }  // namespace aos
 
 #endif  // AOS_LINUX_CODE_INIT_H_

@@ -60,6 +60,10 @@ void InitStart() {
   WriteCoreDumps();
 }
 
+const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
+
+}  // namespace
+
 void LockAllMemory() {
   // Allow locking as much as we want into RAM.
   SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, false);
@@ -90,10 +94,6 @@ void LockAllMemory() {
   memset(heap_data, 1, kHeapPreallocSize);
   free(heap_data);
 }
-
-const char *const kNoRealtimeEnvironmentVariable = "AOS_NO_REALTIME";
-
-}  // namespace
 
 void InitNRT() {
   InitStart();
