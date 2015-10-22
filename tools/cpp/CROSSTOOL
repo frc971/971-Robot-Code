@@ -90,9 +90,14 @@ toolchain {
   # used by gcc. That works because bazel currently doesn't track files at
   # absolute locations and has no remote execution, yet. However, this will need
   # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "/usr/lib/gcc/"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/usr/include"
+  cxx_builtin_include_directory: '/usr/include/c++/4.9'
+  cxx_builtin_include_directory: '/usr/include/x86_64-linux-gnu/c++/4.9'
+  cxx_builtin_include_directory: '/usr/include/c++/4.9/backward'
+  cxx_builtin_include_directory: '/usr/local/include'
+  cxx_builtin_include_directory: '/usr/lib/llvm-3.6/lib/clang/3.6.2/include'
+  cxx_builtin_include_directory: '/usr/include/x86_64-linux-gnu'
+  cxx_builtin_include_directory: '/usr/include'
+  cxx_builtin_include_directory: '/usr/lib/clang/3.6.2/include/'
 
   linker_flag: "-lstdc++"
   linker_flag: "-B/usr/bin/"
