@@ -38,13 +38,15 @@ cc_library(
   deps = [
     ':claw_queue',
     '//aos/common/controls:control_loop',
-    '//y2014:constants',
-    '//frc971/control_loops:state_feedback_loop',
     '//aos/common/controls:polytope',
-    '//frc971/control_loops:coerce_goal',
     '//aos/common/logging:queue_logging',
     '//aos/common/logging:matrix_logging',
+    '//aos/common:math',
     '//debian:libm',
+    '//frc971/control_loops:state_feedback_loop',
+    '//frc971/control_loops:coerce_goal',
+    '//frc971/control_loops:hall_effect_tracker',
+    '//y2014:constants',
   ],
 )
 

@@ -313,13 +313,41 @@ toolchain {
   tool_path { name: "objdump" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-objdump" }
   tool_path { name: "strip" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-strip" }
 
+  compiler_flag: "--sysroot=external/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi"
+  compiler_flag: "-nostdinc"
+  compiler_flag: "-isystem"
+  compiler_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include",
+  compiler_flag: "-isystem"
+  compiler_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed"
+  compiler_flag: "-isystem"
+  compiler_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/usr/include"
+
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/arm-frc-linux-gnueabi"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/backward"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include"
+  cxx_flag: "-isystem"
+  cxx_flag: "tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/usr/include"
+
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
   # used by gcc. That works because bazel currently doesn't track files at
   # absolute locations and has no remote execution, yet. However, this will need
   # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "/usr/lib/gcc/"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/usr/include"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/arm-frc-linux-gnueabi"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include/c++/4.9.3/backward"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/lib/x86_64-linux-gnu/gcc/arm-frc-linux-gnueabi/4.9.3/include-fixed"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/include"
+  cxx_builtin_include_directory: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-repo/usr/arm-frc-linux-gnueabi/usr/include"
 
   linker_flag: "-lstdc++"
   #linker_flag: "-B/usr/bin/"

@@ -11,6 +11,7 @@ cc_library(
   deps = [
     '//aos/common/logging:logging_interface',
     '//aos/common:once',
+    '//aos/common:macros',
   ],
 )
 
@@ -24,7 +25,7 @@ cc_library(
   ],
   deps = [
     ':aos_sync',
-    ':shared_mem',
+    ':shared_mem_types',
   ],
 )
 
@@ -38,7 +39,22 @@ cc_library(
   ],
   deps = [
     ':aos_sync',
+    ':core_lib',
+    ':shared_mem_types',
     '//aos/common/logging:logging_interface',
+    '//debian:librt',
+  ],
+)
+
+cc_library(
+  # TODO(Brian): This should be shared_mem{,.h}, and the other one should be
+  # shared_mem_init{,.cc,.h}.
+  name = 'shared_mem_types',
+  hdrs = [
+    'shared_mem_types.h',
+  ],
+  deps = [
+    ':aos_sync',
   ],
 )
 
@@ -54,8 +70,10 @@ cc_library(
     '//aos/linux_code/ipc_lib:condition',
     '//aos/linux_code/ipc_lib:mutex',
     ':core_lib',
+    ':shared_mem',
     '//aos/common/logging:logging_interface',
     '//debian:librt',
+    '//aos/common/util:options',
   ],
 )
 
@@ -112,6 +130,7 @@ cc_library(
   ],
   deps = [
     ':mutex',
+    '//aos/common:condition',
     ':aos_sync',
     '//aos/common/logging:logging_interface',
   ],
@@ -125,6 +144,8 @@ cc_library(
   deps = [
     ':aos_sync',
     '//aos/common/logging:logging_interface',
+    '//aos/common:type_traits',
+    '//aos/common:mutex',
   ],
 )
 
@@ -136,5 +157,6 @@ cc_library(
   deps = [
     ':aos_sync',
     '//aos/common/logging:logging_interface',
+    '//aos/common:event',
   ],
 )

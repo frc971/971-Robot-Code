@@ -19,6 +19,7 @@ cc_library(
   ],
   deps = [
     '//frc971/control_loops:queues',
+    '//frc971:constants',
   ],
 )
 

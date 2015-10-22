@@ -17,6 +17,10 @@
 #include "aos/common/type_traits.h"
 #include "aos/common/mutex.h"
 #include "aos/common/macros.h"
+#include "aos/common/logging/sizes.h"
+#include "aos/common/logging/logging_interface.h"
+#include "aos/common/logging/context.h"
+#include "aos/common/once.h"
 
 namespace aos {
 
@@ -58,7 +62,7 @@ struct LogMessage {
   uint16_t sequence;
   Type type;
   log_level level;
-  char name[100];
+  char name[LOG_MESSAGE_NAME_LEN];
   union {
     char message[LOG_MESSAGE_LEN];
     struct {
@@ -125,78 +129,6 @@ void DoLogStruct(log_level, const ::std::string &, const T &);
 template <class T>
 void DoLogMatrix(log_level, const ::std::string &, const T &);
 
-// Represents a system that can actually take log messages and do something
-// useful with them.
-// All of the code (transitively too!) in the DoLog here can make
-// normal LOG and LOG_DYNAMIC calls but can NOT call LOG_CORK/LOG_UNCORK. These
-// calls will not result in DoLog recursing. However, implementations must be
-// safe to call from multiple threads/tasks at the same time. Also, any other
-// overriden methods may end up logging through a given implementation's DoLog.
-class LogImplementation {
- public:
-  LogImplementation() : next_(NULL) {}
-
-  // The one that this one's implementation logs to.
-  // NULL means that there is no next one.
-  LogImplementation *next() { return next_; }
-  // Virtual in case a subclass wants to perform checks. There will be a valid
-  // logger other than this one available while this is called.
-  virtual void set_next(LogImplementation *next) { next_ = next; }
-
- private:
-  // Actually logs the given message. Implementations should somehow create a
-  // LogMessage and then call internal::FillInMessage.
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) = 0;
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)))
-  void DoLogVariadic(log_level level, const char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    DoLog(level, format, ap);
-    va_end(ap);
-  }
-
-  // Logs the contents of an auto-generated structure. The implementation here
-  // just converts it to a string with PrintMessage and then calls DoLog with
-  // that, however some implementations can be a lot more efficient than that.
-  // size and type are the result of calling Size() and Type() on the type of
-  // the message.
-  // serialize will call Serialize on the message.
-  virtual void LogStruct(log_level level, const ::std::string &message,
-                         size_t size, const MessageType *type,
-                         const ::std::function<size_t(char *)> &serialize);
-  // Similiar to LogStruct, except for matrixes.
-  // type_id is the type of the elements of the matrix.
-  // data points to rows*cols*type_id.Size() bytes of data in row-major order.
-  virtual void LogMatrix(log_level level, const ::std::string &message,
-                         uint32_t type_id, int rows, int cols,
-                         const void *data);
-
-  // These functions call similar methods on the "current" LogImplementation or
-  // Die if they can't find one.
-  // levels is how many LogImplementations to not use off the stack.
-  static void DoVLog(log_level, const char *format, va_list ap, int levels)
-      __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
-  // This one is implemented in queue_logging.cc.
-  static void DoLogStruct(log_level level, const ::std::string &message,
-                          size_t size, const MessageType *type,
-                          const ::std::function<size_t(char *)> &serialize,
-                          int levels);
-  // This one is implemented in matrix_logging.cc.
-  static void DoLogMatrix(log_level level, const ::std::string &message,
-                          uint32_t type_id, int rows, int cols,
-                          const void *data, int levels);
-
-  // Friends so that they can access the static Do* functions.
-  friend void VLog(log_level, const char *, va_list);
-  friend void LogNext(log_level, const char *, ...);
-  template <class T>
-  friend void DoLogStruct(log_level, const ::std::string &, const T &);
-  template <class T>
-  friend void DoLogMatrix(log_level, const ::std::string &, const T &);
-
-  LogImplementation *next_;
-};
 
 // Implements all of the DoLog* methods in terms of a (pure virtual in this
 // class) HandleMessage method that takes a pointer to the message.
@@ -251,64 +183,6 @@ void Cleanup();
 // This is where all of the code that is only used by actual LogImplementations
 // goes.
 namespace internal {
-
-extern ::std::atomic<LogImplementation *> global_top_implementation;
-
-// An separate instance of this class is accessible from each task/thread.
-// NOTE: It will get deleted in the child of a fork.
-//
-// Get() and Delete() are implemented in the platform-specific interface.cc
-// file.
-struct Context {
-  Context();
-
-  // Gets the Context object for this task/thread. Will create one the first
-  // time it is called.
-  //
-  // The implementation for each platform will lazily instantiate a new instance
-  // and then initialize name the first time.
-  // IMPORTANT: The implementation of this can not use logging.
-  static Context *Get();
-  // Deletes the Context object for this task/thread so that the next Get() is
-  // called it will create a new one.
-  // It is valid to call this when Get() has never been called.
-  // This also gets called after a fork(2) in the new process, where it should
-  // still work to clean up any state.
-  static void Delete();
-
-  // Which one to log to right now.
-  // Will be NULL if there is no logging implementation to use right now.
-  LogImplementation *implementation;
-
-  // A name representing this task/(process and thread).
-  char name[sizeof(LogMessage::name)];
-  size_t name_size;
-
-  // What to assign LogMessage::source to in this task/thread.
-  pid_t source;
-
-  // The sequence value to send out with the next message.
-  uint16_t sequence;
-
-  // Contains all of the information related to implementing LOG_CORK and
-  // LOG_UNCORK.
-  struct {
-    char message[LOG_MESSAGE_LEN];
-    int line_min, line_max;
-    // Sets the data up to record a new series of corked logs.
-    void Reset() {
-      message[0] = '\0';  // make strlen of it 0
-      line_min = INT_MAX;
-      line_max = -1;
-      function = NULL;
-    }
-    // The function that the calls are in.
-    // REMEMBER: While the compiler/linker will probably optimize all of the
-    // identical strings to point to the same data, it might not, so using == to
-    // compare this with another value is a bad idea.
-    const char *function;
-  } cork_data;
-};
 
 // Fills in all the parts of message according to the given inputs (with type
 // kStruct).

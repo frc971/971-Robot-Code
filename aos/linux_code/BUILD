@@ -12,6 +12,14 @@ cc_binary(
 )
 
 cc_library(
+  name = 'queue',
+  visibility = ['//aos/common:__pkg__'],
+  hdrs = [
+    'queue-tmpl.h',
+  ],
+)
+
+cc_library(
   name = 'complex_thread_local',
   srcs = [
     'complex_thread_local.cc',
@@ -50,7 +58,7 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/common:die',
-    '//aos/common/logging',
+    '//aos/linux_code/logging:linux_logging',
   ],
 )
 
@@ -65,6 +73,7 @@ cc_library(
   deps = [
     '//aos/common:once',
     '//aos/common/logging',
+    '//aos/common:unique_malloc_ptr',
   ],
 )
 

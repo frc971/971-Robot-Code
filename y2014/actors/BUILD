@@ -74,6 +74,7 @@ cc_library(
     ':drivetrain_action_queue',
     '//y2014:constants',
     '//aos/common:time',
+    '//aos/common:math',
     '//aos/common/util:phased_loop',
     '//aos/common/logging',
     '//aos/common/actions:action_lib',

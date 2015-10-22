@@ -1,6 +1,10 @@
-#include "aos/linux_code/logging/linux_logging.h"
+#include "aos/common/logging/context.h"
 
+#include <string>
+#include <string.h>
 #include <sys/prctl.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "aos/linux_code/complex_thread_local.h"
 #include "aos/common/die.h"

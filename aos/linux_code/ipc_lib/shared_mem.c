@@ -12,6 +12,7 @@
 
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 
 // the path for the shared memory segment. see shm_open(3) for restrictions
 #define AOS_SHM_NAME "/aos_shared_mem"

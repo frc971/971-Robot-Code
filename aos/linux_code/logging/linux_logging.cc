@@ -13,7 +13,7 @@
 #include <algorithm>
 
 #include "aos/common/die.h"
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging_interface.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/time.h"
 

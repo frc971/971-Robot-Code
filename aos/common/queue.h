@@ -3,7 +3,6 @@
 
 #include <assert.h>
 
-#include "aos/common/time.h"
 #include "aos/common/macros.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/time.h"

@@ -46,6 +46,7 @@ cc_library(
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops/voltage_cap:voltage_cap',
     '//frc971/zeroing',
+    '//y2015/util:kinematics',
   ],
 )
 
@@ -62,6 +63,7 @@ cc_test(
     '//frc971/control_loops:state_feedback_loop',
     '//aos/common/controls:control_loop_test',
     '//aos/common:time',
+    '//aos/common:math',
     '//frc971/control_loops:position_sensor_sim',
     '//frc971/control_loops:team_number_test_environment',
     '//y2015/util:kinematics',

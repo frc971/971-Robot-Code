@@ -40,6 +40,7 @@ cc_library(
     ':drivetrain_action_queue',
     '//y2015:constants',
     '//aos/common:time',
+    '//aos/common:math',
     '//aos/common/util:phased_loop',
     '//aos/common/logging',
     '//aos/common/actions:action_lib',
@@ -105,6 +106,7 @@ cc_library(
     '//y2015/control_loops/fridge:fridge_queue',
     '//third_party/eigen',
     '//debian:libm',
+    '//y2015/util:kinematics',
   ],
 )
 
@@ -435,6 +437,7 @@ cc_test(
     '//aos/common:time',
     '//aos/linux_code:init',
     '//aos/common/actions:action_lib',
+    '//aos/common/controls:control_loop_test',
     '//y2015/control_loops/fridge:fridge_queue',
     '//frc971/control_loops:team_number_test_environment',
     ':stack_action_queue',

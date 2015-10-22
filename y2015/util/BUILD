@@ -2,6 +2,9 @@ package(default_visibility = ['//visibility:public'])
 
 cc_library(
   name = 'kinematics',
+  hdrs = [
+    'kinematics.h',
+  ],
   deps = [
     '//third_party/eigen',
     '//y2015:constants',

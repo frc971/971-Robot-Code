@@ -4,6 +4,9 @@ load('/aos/build/queues', 'queue_library')
 
 cc_library(
   name = 'replay_control_loop',
+  hdrs = [
+    'replay_control_loop.h',
+  ],
   deps = [
     '//aos/common:queues',
     ':control_loop',
@@ -51,6 +54,7 @@ cc_library(
   name = 'control_loop',
   srcs = [
     'control_loop.cc',
+    'control_loop-tmpl.h',
   ],
   hdrs = [
     'control_loop.h',

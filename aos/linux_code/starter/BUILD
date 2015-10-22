@@ -21,5 +21,6 @@ cc_binary(
     '//aos/common:time',
     '//aos/common/libc:aos_strsignal',
     '//aos/common/util:run_command',
+    '//aos/common:unique_malloc_ptr',
   ],
 )

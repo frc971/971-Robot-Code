@@ -8,7 +8,6 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"
-#include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "bot3/control_loops/position_sensor_sim.h"
 #include "bot3/control_loops/elevator/elevator_motor_plant.h"

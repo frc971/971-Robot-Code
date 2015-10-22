@@ -54,6 +54,7 @@ cc_library(
     '//aos/common/controls:control_loop',
     '//y2014:constants',
     '//aos/common/controls:polytope',
+    '//aos/common:math',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:coerce_goal',
     '//frc971/queues:gyro',

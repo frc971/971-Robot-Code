@@ -5,7 +5,6 @@
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
-#include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "bot3/control_loops/intake/intake.q.h"
 
