@@ -28,6 +28,9 @@ cc_test(
 
 cc_library(
   name = 'death_test_log_implementation',
+  hdrs = [
+    'death_test_log_implementation.h',
+  ],
   deps = [
     '//aos/common/logging',
   ],
@@ -40,6 +43,10 @@ cc_library(
   ],
   hdrs = [
     'inet_addr.h',
+  ],
+  deps = [
+    '//aos/common:byteorder',
+    '//aos/common:network_port',
   ],
 )
 
@@ -59,6 +66,9 @@ cc_library(
 
 cc_library(
   name = 'log_interval',
+  hdrs = [
+    'log_interval.h',
+  ],
   deps = [
     '//aos/common:time',
     '//aos/common/logging',
@@ -67,6 +77,9 @@ cc_library(
 
 cc_library(
   name = 'string_to_num',
+  hdrs = [
+    'string_to_num.h',
+  ],
 )
 
 cc_test(
@@ -87,6 +100,10 @@ cc_library(
   ],
   hdrs = [
     'thread.h',
+  ],
+  deps = [
+    '//aos/common:macros',
+    '//aos/common/logging:logging_interface',
   ],
 )
 
@@ -138,12 +155,20 @@ cc_test(
   ],
 )
 
+cc_library(
+  name = 'options',
+  hdrs = [
+    'options.h',
+  ],
+)
+
 cc_test(
   name = 'options_test',
   srcs = [
     'options_test.cc',
   ],
   deps = [
+    ':options',
     '//aos/testing:googletest',
   ],
 )

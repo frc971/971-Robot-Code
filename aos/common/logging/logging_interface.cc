@@ -1,11 +1,14 @@
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging_interface.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <type_traits>
+#include <functional>
 
 #include "aos/common/die.h"
+#include "aos/common/logging/context.h"
 
 // This file only contains the code necessary to link (ie no implementations).
 // See logging_impl.h for why this is necessary.
@@ -13,14 +16,6 @@
 namespace aos {
 namespace logging {
 namespace internal {
-
-::std::atomic<LogImplementation *> global_top_implementation(NULL);
-
-Context::Context()
-    : implementation(global_top_implementation.load()),
-      sequence(0) {
-  cork_data.Reset();
-}
 
 size_t ExecuteFormat(char *output, size_t output_size, const char *format,
                      va_list ap) {

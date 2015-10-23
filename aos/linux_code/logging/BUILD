@@ -55,6 +55,7 @@ cc_binary(
     ':binary_log_file',
     '//aos/common:queue_types',
     '//aos/linux_code:configuration',
+    '//aos/common/util:string_to_num',
   ],
 )
 
@@ -80,17 +81,25 @@ cc_library(
   deps = [
     '//aos/linux_code:complex_thread_local',
     '//aos/common:die',
+    '//aos/common/logging:context',
   ],
 )
 
 cc_library(
   name = 'linux_logging',
-  visibility = ['//aos/common/logging:__pkg__'],
+  visibility = [
+    '//aos/common/logging:__pkg__',
+    '//aos/linux_code:__subpackages__'
+  ],
+  hdrs = [
+    'linux_logging.h',
+  ],
   srcs = [
     'linux_logging.cc',
   ],
   deps = [
     '//aos/linux_code/ipc_lib:queue',
     '//aos/common:time',
+    '//aos/common/logging:logging',
   ],
 )

@@ -43,6 +43,7 @@ cc_library(
   ],
   deps = [
     '//debian:libpthread',
+    '//third_party/empty_config_h',
   ],
   copts = common_copts,
   includes = [ 'include' ],

@@ -29,6 +29,9 @@ cc_test(
 
 cc_library(
   name = 'hall_effect_tracker',
+  hdrs = [
+    'hall_effect_tracker.h',
+  ],
   deps = [
     ':queues',
   ],
@@ -99,7 +102,12 @@ cc_library(
 
 cc_library(
   name = 'state_feedback_loop',
+  hdrs = [
+    'state_feedback_loop.h',
+  ],
   deps = [
     '//third_party/eigen',
+    '//aos/common/logging',
+    '//aos/common:macros',
   ],
 )

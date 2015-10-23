@@ -144,6 +144,9 @@ cc_library(
 
 cc_library(
   name = 'hall_effect',
+  hdrs = [
+    'hall_effect.h',
+  ],
   deps = [
     '//aos/externals:wpilib',
   ],

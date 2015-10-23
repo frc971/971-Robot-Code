@@ -33,9 +33,6 @@ DECL_LEVEL(LOG_UNKNOWN, 5); /* unknown logging level */
 DECL_LEVELS;
 #undef DECL_LEVEL
 
-// Not static const size_t for C code.
-#define LOG_MESSAGE_LEN 400
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -10,6 +10,13 @@ queue_library(
 )
 
 cc_library(
+  name = 'math',
+  hdrs = [
+    'commonmath.h',
+  ],
+)
+
+cc_library(
   name = 'queue_testutils',
   srcs = [
     'queue_testutils.cc',
@@ -18,11 +25,26 @@ cc_library(
     'queue_testutils.h',
   ],
   deps = [
+    ':once',
+    ':queues',
     '//aos/testing:googletest',
     '//aos/common/logging',
-    ':once',
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:mutex',
+  ],
+)
+
+cc_library(
+  name = 'macros',
+  hdrs = [
+    'macros.h',
+  ],
+)
+
+cc_library(
+  name = 'type_traits',
+  hdrs = [
+    'type_traits.h',
   ],
 )
 
@@ -37,6 +59,8 @@ cc_library(
   deps = [
     '//aos/common/logging:logging_interface',
     '//aos/linux_code/ipc_lib:mutex',
+    ':macros',
+    '//aos/linux_code/ipc_lib:shared_mem',
   ],
 )
 
@@ -65,21 +89,40 @@ cc_library(
 )
 
 cc_library(
+  name = 'event',
+  hdrs = [
+    'event.h',
+  ],
+  deps = [
+    '//aos/linux_code/ipc_lib:aos_sync',
+  ],
+)
+
+cc_library(
+  name = 'unique_malloc_ptr',
+  hdrs = [
+    'unique_malloc_ptr.h',
+  ],
+)
+
+cc_library(
   name = 'queue_types',
   srcs = [
     'queue_types.cc',
     ':gen_print_field',
+    'print_field_helpers.h',
   ],
   hdrs = [
     'queue_types.h',
   ],
   deps = [
     ':generated_queue_headers',
-    '//aos/common/logging:logging_interface',
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:core_lib',
     '//aos/linux_code/ipc_lib:mutex',
+    '//aos/common/logging:logging_printf_formats',
     ':time',
+    ':byteorder'
   ],
 )
 
@@ -98,6 +141,20 @@ cc_test(
 )
 
 cc_library(
+  name = 'network_port',
+  hdrs = [
+    'network_port.h',
+  ],
+)
+
+cc_library(
+  name = 'byteorder',
+  hdrs = [
+    'byteorder.h',
+  ],
+)
+
+cc_library(
   name = 'queues',
   srcs = [
     'queue.cc',
@@ -108,11 +165,17 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:queue',
     ':time',
+    ':macros',
+    '//aos/linux_code:queue',
+    ':byteorder',
   ],
 )
 
 cc_library(
   name = 'scoped_fd',
+  hdrs = [
+    'scoped_fd.h',
+  ],
   deps = [
     '//aos/common/logging',
   ],
@@ -139,17 +202,28 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
+    ':type_traits',
   ],
 )
 
 cc_library(
   name = 'gtest_prod',
+  hdrs = [
+    'gtest_prod.h',
+  ],
 )
 
 cc_library(
   name = 'once',
+  hdrs = [
+    'once.h',
+  ],
+  srcs = [
+    'once-tmpl.h',
+  ],
   deps = [
     ':gtest_prod',
+    ':type_traits',
   ],
 )
 
@@ -186,6 +260,7 @@ cc_library(
     'die.h',
   ],
   deps = [
+    ':macros',
     '//aos/common/libc:aos_strerror',
   ],
 )
@@ -232,6 +307,13 @@ cc_test(
   ],
 )
 
+cc_library(
+  name = 'condition',
+  hdrs = [
+    'condition.h',
+  ],
+)
+
 cc_test(
   name = 'condition_test',
   srcs = [
@@ -264,9 +346,23 @@ cc_test(
 
 cc_library(
   name = 'stl_mutex',
+  hdrs = [
+    'stl_mutex.h',
+  ],
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
     '//aos/common/logging',
+  ],
+)
+
+cc_library(
+  name = 'mutex',
+  hdrs = [
+    'mutex.h',
+  ],
+  deps = [
+    '//aos/linux_code/ipc_lib:aos_sync',
+    ':die',
   ],
 )
 

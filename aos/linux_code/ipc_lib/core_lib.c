@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "aos/linux_code/ipc_lib/shared_mem.h"
+#include "aos/linux_code/ipc_lib/shared_mem_types.h"
 
 static uint8_t aos_8max(uint8_t l, uint8_t r) {
   return (l > r) ? l : r;

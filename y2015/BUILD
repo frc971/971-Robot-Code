@@ -13,6 +13,8 @@ cc_library(
     '//aos/common:once',
     '//aos/common/network:team_number',
     '//frc971/control_loops:state_feedback_loop',
+    '//frc971:shifter_hall_effect',
+    '//frc971:constants',
     '//y2015/control_loops/drivetrain:polydrivetrain_plants',
     '//y2015/autonomous:auto_queue',
   ],
