@@ -38,7 +38,8 @@ Time NowImpl(clockid_t clock) {
          static_cast<uintmax_t>(clock), &temp);
   }
 
-  const timespec offset = (global_core == nullptr)
+  const timespec offset = (&global_core == nullptr || global_core == nullptr ||
+                           global_core->mem_struct == nullptr)
                               ? timespec{0, 0}
                               : global_core->mem_struct->time_offset;
   return Time(temp) + Time(offset);
@@ -223,7 +224,9 @@ void SleepUntil(const Time &time, clockid_t clock) {
 }
 
 void OffsetToNow(const Time &now) {
+  CHECK_NOTNULL(&global_core);
   CHECK_NOTNULL(global_core);
+  CHECK_NOTNULL(global_core->mem_struct);
   global_core->mem_struct->time_offset.tv_nsec = 0;
   global_core->mem_struct->time_offset.tv_sec = 0;
   global_core->mem_struct->time_offset = (now - Time::Now()).ToTimespec();
