@@ -102,6 +102,7 @@ template <class T>
 T *Queue<T>::MakeRawMessage() {
   T *ret = static_cast<T *>(queue_->GetMessage());
   assert(ret != NULL);
+  ret->Zero();
   return ret;
 }
 
@@ -109,7 +110,6 @@ template <class T>
 aos::MessageBuilder<T> Queue<T>::MakeWithBuilder() {
   Init();
   T *const ret = MakeRawMessage();
-  ret->Zero();
   return aos::MessageBuilder<T>(queue_, ret);
 }
 
