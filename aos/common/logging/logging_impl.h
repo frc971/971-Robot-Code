@@ -106,18 +106,6 @@ static inline log_level str_log(const char *str) {
   return LOG_UNKNOWN;
 }
 
-// Takes a message and logs it. It will set everything up and then call DoLog
-// for the current LogImplementation.
-void VLog(log_level level, const char *format, va_list ap)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
-// Adds to the saved up message.
-void VCork(int line, const char *function, const char *format, va_list ap)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
-// Actually logs the saved up message.
-void VUnCork(int line, const char *function, log_level level, const char *file,
-             const char *format, va_list ap)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 0)));
-
 // Will call VLog with the given arguments for the next logger in the chain.
 void LogNext(log_level level, const char *format, ...)
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
@@ -216,18 +204,6 @@ static inline void FillInMessageVarargs(log_level level, LogMessage *message,
 
 // Prints message to output.
 void PrintMessage(FILE *output, const LogMessage &message);
-
-// Prints format (with ap) into output and correctly deals with the result
-// being too long etc.
-size_t ExecuteFormat(char *output, size_t output_size, const char *format,
-                     va_list ap)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
-
-// Runs the given function with the current LogImplementation (handles switching
-// it out while running function etc).
-// levels is how many LogImplementations to not use off the stack.
-void RunWithCurrentImplementation(
-    int levels, ::std::function<void(LogImplementation *)> function);
 
 }  // namespace internal
 }  // namespace logging

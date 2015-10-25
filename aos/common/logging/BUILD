@@ -71,14 +71,11 @@ cc_library(
   srcs = [
     'logging_interface.cc',
   ],
-  copts = [
-    # TODO(austin): This is wrong.
-    '-Wno-error=format-nonliteral'
-  ],
   deps = [
     '//aos/common:die',
     '//aos/common/libc:aos_strerror',
     '//aos/linux_code/logging:linux_interface',
+    '//aos/common:macros',
   ],
 )
 
