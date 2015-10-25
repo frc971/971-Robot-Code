@@ -16,6 +16,7 @@
         ['OS=="linux"', {
           'sources': [
             '<(AOS)/linux_code/logging/linux_interface.cc',
+            '<(AOS)/common/logging/context.cc',
           ],
           'dependencies': [
             '<(AOS)/linux_code/linux_code.gyp:complex_thread_local',
