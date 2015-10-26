@@ -54,6 +54,6 @@ cc_test(
     '//aos/common:queues',
     '//aos/common:time',
     ':action_queue',
-    '//aos/linux_code/ipc_lib:event',
+    '//aos/common:event',
   ],
 )

@@ -89,12 +89,22 @@ cc_library(
 )
 
 cc_library(
-  name = 'event',
+  name = 'real_event',
+  visibility = ['//aos/linux_code/ipc_lib:__pkg__'],
   hdrs = [
     'event.h',
   ],
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
+  ],
+)
+
+cc_library(
+  # Use this one!
+  # TODO(Brian): Remove this mess...
+  name = 'event',
+  deps = [
+    '//aos/linux_code/ipc_lib:event',
   ],
 )
 
@@ -301,16 +311,26 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/linux_code/ipc_lib:event',
+    ':event',
     ':queue_testutils',
     ':time',
   ],
 )
 
 cc_library(
-  name = 'condition',
+  name = 'real_condition',
+  visibility = ['//aos/linux_code/ipc_lib:__pkg__'],
   hdrs = [
     'condition.h',
+  ],
+)
+
+cc_library(
+  # Use this one!
+  # TODO(Brian): Remove this mess...
+  name = 'condition',
+  deps = [
+    '//aos/linux_code/ipc_lib:condition',
   ],
 )
 
@@ -321,7 +341,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/linux_code/ipc_lib:condition',
+    ':condition',
     '//aos/common/util:thread',
     ':time',
     '//aos/linux_code/ipc_lib:mutex',

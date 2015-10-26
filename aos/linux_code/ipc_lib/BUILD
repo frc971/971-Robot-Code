@@ -125,12 +125,13 @@ cc_library(
 
 cc_library(
   name = 'condition',
+  visibility = ['//aos/common:__pkg__'],
   srcs = [
     'condition.cc',
   ],
   deps = [
     ':mutex',
-    '//aos/common:condition',
+    '//aos/common:real_condition',
     ':aos_sync',
     '//aos/common/logging:logging_interface',
   ],
@@ -151,12 +152,13 @@ cc_library(
 
 cc_library(
   name = 'event',
+  visibility = ['//aos/common:__pkg__'],
   srcs = [
     'event.cc',
   ],
   deps = [
     ':aos_sync',
     '//aos/common/logging:logging_interface',
-    '//aos/common:event',
+    '//aos/common:real_event',
   ],
 )
