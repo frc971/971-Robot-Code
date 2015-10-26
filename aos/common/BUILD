@@ -399,3 +399,27 @@ cc_test(
     ':die',
   ],
 )
+
+cc_library(
+  name = 'transaction',
+  hdrs = [
+    'transaction.h',
+  ],
+  deps = [
+    '//aos/common/logging:logging_interface',
+    '//aos/common/util:compiler_memory_barrier',
+  ],
+)
+
+cc_test(
+  name = 'transaction_test',
+  srcs = [
+    'transaction_test.cc',
+  ],
+  deps = [
+    ':transaction',
+    '//aos/testing:googletest',
+    '//aos/common/logging',
+    '//aos/common/util:death_test_log_implementation',
+  ],
+)
