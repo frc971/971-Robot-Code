@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "aos/common/logging/logging.h"
+#include "aos/common/macros.h"
 
 namespace aos {
 
@@ -16,6 +17,18 @@ struct MessageType;
 
 namespace aos {
 namespace logging {
+
+// Takes a message and logs it. It will set everything up and then call DoLog
+// for the current LogImplementation.
+void VLog(log_level level, const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
+// Adds to the saved up message.
+void VCork(int line, const char *function, const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
+// Actually logs the saved up message.
+void VUnCork(int line, const char *function, log_level level, const char *file,
+             const char *format, va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 0)));
 
 // Represents a system that can actually take log messages and do something
 // useful with them.
@@ -90,6 +103,21 @@ class LogImplementation {
   LogImplementation *next_;
 };
 
+namespace internal {
+
+// Prints format (with ap) into output and correctly deals with the result
+// being too long etc.
+size_t ExecuteFormat(char *output, size_t output_size, const char *format,
+                     va_list ap)
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
+
+// Runs the given function with the current LogImplementation (handles switching
+// it out while running function etc).
+// levels is how many LogImplementations to not use off the stack.
+void RunWithCurrentImplementation(
+    int levels, ::std::function<void(LogImplementation *)> function);
+
+}  // namespace internal
 }  // namespace logging
 }  // namespace aos
 
