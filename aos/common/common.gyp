@@ -253,10 +253,12 @@
       ],
       'dependencies': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        'time',
         '<(AOS)/build/aos.gyp:logging_interface',
       ],
       'export_dependent_settings': [
         '<(AOS)/linux_code/ipc_lib/ipc_lib.gyp:aos_sync',
+        'time',
       ],
     },
     {
