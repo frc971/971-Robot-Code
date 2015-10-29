@@ -91,13 +91,14 @@ void GyroSender::operator()() {
       continue;
     }
 
-    const double new_angle =
-        gyro_.ExtractAngle(result) / static_cast<double>(kReadingRate);
+    const double angle_rate = gyro_.ExtractAngle(result);
+    const double new_angle = angle_rate / static_cast<double>(kReadingRate);
     auto message = ::frc971::sensors::gyro_reading.MakeMessage();
     if (zeroed) {
       angle += new_angle;
       angle += zero_offset;
       message->angle = angle;
+      message->velocity = angle_rate + zero_offset * kReadingRate;
       LOG_STRUCT(DEBUG, "sending", *message);
       message.Send();
     } else {
@@ -107,8 +108,10 @@ void GyroSender::operator()() {
       //   Some kind of indicator light?
       {
         message->angle = new_angle;
+        message->velocity = angle_rate;
         LOG_STRUCT(DEBUG, "collected while zeroing", *message);
         message->angle = 0.0;
+        message->velocity = 0.0;
         message.Send();
       }
       zeroing_data[zeroing_index] = new_angle;

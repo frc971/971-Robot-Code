@@ -27,7 +27,7 @@ class GyroInterface {
   // Returns all of the error bits in the "footer" from value.
   uint8_t ExtractErrors(uint32_t value) { return (value >> 1) & 0x7F; }
 
-  // Returns the anglular rate contained in value.
+  // Returns the anglular rate contained in value in radians/sec.
   double ExtractAngle(uint32_t value);
 
   // Performs a transaction with the gyro.
