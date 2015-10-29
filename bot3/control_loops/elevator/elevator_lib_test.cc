@@ -228,7 +228,7 @@ TEST_F(ElevatorTest, LowerHardstopStartup) {
 TEST_F(ElevatorTest, UpperHardstopStartup) {
   plant_.InitializePosition(kElevUpperHardLimit);
   queue_.goal.MakeWithBuilder().height(0.4).Send();
-  RunForTime(Time::InMS(20000));
+  RunForTime(Time::InMS(30000));
 
   VerifyNearGoal();
 }
@@ -553,8 +553,8 @@ TEST_F(ElevatorTest, VeryLowMotionVeryLowVolt) {
   // Height guarantees it's not the current position
   queue_.goal.MakeWithBuilder()
       .height(kElevUpperLimit)
-      .max_velocity(1)
-      .max_acceleration(1)
+      .max_velocity(0.2)
+      .max_acceleration(0.2)
       .Send();
 
   // Checks voltage is not crazy
@@ -578,8 +578,8 @@ TEST_F(ElevatorTest, LowMotionLowVolt) {
   // Height guarantees it's not the current position
   queue_.goal.MakeWithBuilder()
       .height(kElevUpperLimit)
-      .max_velocity(2)
-      .max_acceleration(2)
+      .max_velocity(0.5)
+      .max_acceleration(0.5)
       .Send();
 
   // Checks voltage is not crazy
