@@ -231,7 +231,7 @@ toolchain {
   compiler_flag: "-Wextra"
   compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
-  compiler_flag: "-Wstrict-aliasing=2"
+  compiler_flag: "-Wstrict-aliasing"
   compiler_flag: "-Wcast-qual"
   compiler_flag: "-Wcast-align"
   compiler_flag: "-Wwrite-strings"
@@ -488,7 +488,7 @@ toolchain {
   compiler_flag: "-Wextra"
   compiler_flag: "-Wswitch-enum"
   compiler_flag: "-Wpointer-arith"
-  compiler_flag: "-Wstrict-aliasing=2"
+  compiler_flag: "-Wstrict-aliasing"
   compiler_flag: "-Wcast-qual"
   compiler_flag: "-Wcast-align"
   compiler_flag: "-Wwrite-strings"
@@ -527,7 +527,7 @@ toolchain {
     # handling in Bazel.
     compiler_flag: "-g0"
 
-    compiler_flag: "-Oz"
+    compiler_flag: "-O2"
 
     # Disable assertions
     compiler_flag: "-DNDEBUG"
