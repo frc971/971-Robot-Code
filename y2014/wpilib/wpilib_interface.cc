@@ -152,17 +152,17 @@ class SensorReader {
     top_reader_.set_encoder(::std::move(encoder));
   }
 
-  void set_top_claw_front_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_top_claw_front_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     top_reader_.set_front_hall(::std::move(hall));
   }
 
-  void set_top_claw_calibration_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_top_claw_calibration_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     top_reader_.set_calibration_hall(::std::move(hall));
   }
 
-  void set_top_claw_back_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_top_claw_back_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     top_reader_.set_back_hall(::std::move(hall));
   }
@@ -172,17 +172,17 @@ class SensorReader {
     bottom_reader_.set_encoder(::std::move(encoder));
   }
 
-  void set_bottom_claw_front_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_bottom_claw_front_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     bottom_reader_.set_front_hall(::std::move(hall));
   }
 
-  void set_bottom_claw_calibration_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_bottom_claw_calibration_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     bottom_reader_.set_calibration_hall(::std::move(hall));
   }
 
-  void set_bottom_claw_back_hall(::std::unique_ptr<DigitalSource> hall) {
+  void set_bottom_claw_back_hall(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     bottom_reader_.set_back_hall(::std::move(hall));
   }
@@ -192,24 +192,24 @@ class SensorReader {
     shooter_encoder_ = ::std::move(encoder);
   }
 
-  void set_shooter_proximal(::std::unique_ptr<DigitalSource> hall) {
+  void set_shooter_proximal(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     shooter_proximal_ = ::std::move(hall);
   }
 
-  void set_shooter_distal(::std::unique_ptr<DigitalSource> hall) {
+  void set_shooter_distal(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     shooter_distal_ = ::std::move(hall);
   }
 
-  void set_shooter_plunger(::std::unique_ptr<DigitalSource> hall) {
+  void set_shooter_plunger(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     shooter_plunger_ = ::std::move(hall);
     shooter_plunger_reader_ =
         make_unique<DMADigitalReader>(shooter_plunger_.get());
   }
 
-  void set_shooter_latch(::std::unique_ptr<DigitalSource> hall) {
+  void set_shooter_latch(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     shooter_latch_ = ::std::move(hall);
     shooter_latch_reader_ = make_unique<DMADigitalReader>(shooter_latch_.get());
@@ -330,16 +330,16 @@ class SensorReader {
       encoder_ = ::std::move(encoder);
     }
 
-    void set_front_hall(::std::unique_ptr<DigitalSource> front_hall) {
+    void set_front_hall(::std::unique_ptr<DigitalInput> front_hall) {
       front_hall_ = ::std::move(front_hall);
     }
 
     void set_calibration_hall(
-        ::std::unique_ptr<DigitalSource> calibration_hall) {
+        ::std::unique_ptr<DigitalInput> calibration_hall) {
       calibration_hall_ = ::std::move(calibration_hall);
     }
 
-    void set_back_hall(::std::unique_ptr<DigitalSource> back_hall) {
+    void set_back_hall(::std::unique_ptr<DigitalInput> back_hall) {
       back_hall_ = ::std::move(back_hall);
     }
 
@@ -396,9 +396,9 @@ class SensorReader {
     ::std::unique_ptr<InterruptSynchronizedEncoder> synchronized_encoder_;
 
     ::std::unique_ptr<Encoder> encoder_;
-    ::std::unique_ptr<DigitalSource> front_hall_;
-    ::std::unique_ptr<DigitalSource> calibration_hall_;
-    ::std::unique_ptr<DigitalSource> back_hall_;
+    ::std::unique_ptr<DigitalInput> front_hall_;
+    ::std::unique_ptr<DigitalInput> calibration_hall_;
+    ::std::unique_ptr<DigitalInput> back_hall_;
 
     const bool reversed_;
   };
@@ -436,8 +436,8 @@ class SensorReader {
   HalfClawReader top_reader_{false}, bottom_reader_{true};
 
   ::std::unique_ptr<Encoder> shooter_encoder_;
-  ::std::unique_ptr<DigitalSource> shooter_proximal_, shooter_distal_;
-  ::std::unique_ptr<DigitalSource> shooter_plunger_, shooter_latch_;
+  ::std::unique_ptr<DigitalInput> shooter_proximal_, shooter_distal_;
+  ::std::unique_ptr<DigitalInput> shooter_plunger_, shooter_latch_;
   ::std::unique_ptr<DMAEdgeCounter> shooter_proximal_counter_,
       shooter_distal_counter_;
   ::std::unique_ptr<DMADigitalReader> shooter_plunger_reader_,
@@ -454,7 +454,7 @@ class SolenoidWriter {
         shooter_(".frc971.control_loops.shooter_queue.output"),
         drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
 
-  void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
+  void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
   }
 
@@ -532,7 +532,7 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> shooter_latch_;
   ::std::unique_ptr<BufferedSolenoid> shooter_brake_;
 
-  ::std::unique_ptr<DigitalSource> pressure_switch_;
+  ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::frc971::control_loops::ShooterQueue::Output> shooter_;

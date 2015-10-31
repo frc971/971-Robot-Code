@@ -8,7 +8,7 @@
 
 #include "frc971/wpilib/hall_effect.h"
 
-#include "DigitalSource.h"
+#include "DigitalInput.h"
 #include "Encoder.h"
 #include "AnalogInput.h"
 #include "Utility.h"
@@ -41,7 +41,7 @@ class DMASampleHandlerInterface {
 // corresponding to those edges.
 class DMAEdgeCounter : public DMASampleHandlerInterface {
  public:
-  DMAEdgeCounter(Encoder *encoder, DigitalSource *input)
+  DMAEdgeCounter(Encoder *encoder, DigitalInput *input)
       : encoder_(encoder), input_(input) {}
 
   int positive_count() const { return pos_edge_count_; }
@@ -75,7 +75,7 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
   bool ExtractValue(const DMASample &sample) const;
 
   Encoder *const encoder_;
-  DigitalSource *const input_;
+  DigitalInput *const input_;
 
   // The last DMA reading we got.
   DMASample prev_sample_;
@@ -101,7 +101,7 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 // Reads a hall effect in sync with DMA samples.
 class DMADigitalReader : public DMASampleHandlerInterface {
  public:
-  DMADigitalReader(DigitalSource *input) : input_(input) {}
+  DMADigitalReader(DigitalInput *input) : input_(input) {}
 
   bool value() const { return value_; }
 
@@ -115,7 +115,7 @@ class DMADigitalReader : public DMASampleHandlerInterface {
     dma->Add(input_);
   }
 
-  DigitalSource *const input_;
+  DigitalInput *const input_;
 
   bool value_;
 

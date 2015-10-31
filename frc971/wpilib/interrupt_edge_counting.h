@@ -9,7 +9,7 @@
 #include "aos/common/stl_mutex.h"
 #include "aos/common/macros.h"
 
-#include "DigitalSource.h"
+#include "DigitalInput.h"
 #include "Encoder.h"
 #include "AnalogInput.h"
 #include "Utility.h"
@@ -109,7 +109,7 @@ class InterruptHandler {
 // input.
 class EdgeCounter : public InterruptHandler {
  public:
-  EdgeCounter(Encoder *encoder, DigitalSource *input)
+  EdgeCounter(Encoder *encoder, DigitalInput *input)
       : encoder_(encoder), input_(input) {}
 
   // Returns the current interrupt edge counts and encoder values.
@@ -140,7 +140,7 @@ class EdgeCounter : public InterruptHandler {
   void operator()() override;
 
   Encoder *encoder_;
-  DigitalSource *input_;
+  DigitalInput *input_;
 
   // The following variables represent the current "shadow" state.
   bool current_value_ = false;
