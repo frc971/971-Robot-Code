@@ -46,7 +46,7 @@ cc_toolchain(
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
-    supports_param_files = 0,
+    supports_param_files = 1,
 )
 
 cc_toolchain(
@@ -60,7 +60,7 @@ cc_toolchain(
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
-    supports_param_files = 0,
+    supports_param_files = 1,
 )
 
 cc_toolchain(
@@ -74,7 +74,7 @@ cc_toolchain(
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
-    supports_param_files = 0,
+    supports_param_files = 1,
 )
 
 filegroup(
@@ -111,5 +111,5 @@ cc_toolchain(
     objcopy_files = '//tools/cpp/arm-frc-linux-gnueabi:objcopy',
     static_runtime_libs = [":empty"],
     strip_files = '//tools/cpp/arm-frc-linux-gnueabi:strip',
-    supports_param_files = 0,
+    supports_param_files = 1,
 )
