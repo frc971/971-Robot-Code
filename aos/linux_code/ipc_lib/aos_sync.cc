@@ -1,4 +1,5 @@
 #if !AOS_DEBUG
+#undef NDEBUG
 #define NDEBUG
 #endif
 

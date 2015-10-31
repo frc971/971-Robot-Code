@@ -26,6 +26,7 @@ cc_library(
     '-Wno-switch-enum',
     '-Wno-empty-body',
     '-Wno-sign-compare',
+    '-Wno-unused-result',
   ] + compiler_select({
       'gcc': ['-Wno-unused-but-set-variable'],
       'clang': []

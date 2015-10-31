@@ -24,7 +24,11 @@ char *aos_strerror_handle_result(int /*error*/, char *ret, char * /*buffer*/) {
 __attribute__((unused))
 char *aos_strerror_handle_result(int error, int ret, char *buffer) {
   if (ret != 0) {
-    const int r = snprintf(buffer, kBufferSize, "Unknown error %d", error);
+#ifndef NDEBUG
+    // assert doesn't use the return value when building optimized.
+    const int r =
+#endif
+        snprintf(buffer, kBufferSize, "Unknown error %d", error);
     assert(r > 0);
   }
   return buffer;
