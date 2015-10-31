@@ -4,11 +4,6 @@ build --package_path %workspace%:%workspace%/opt_bazel_base_workspace
 fetch --package_path %workspace%:%workspace%/opt_bazel_base_workspace
 query --package_path %workspace%:%workspace%/opt_bazel_base_workspace
 
-# Complain about missing headers in the dependencies of C++ code instead of just
-# working with it.
-# TODO(Brian): Fix Bazel so this actually does something again...
-build --hdrs_check=strict
-
 build --crosstool_top=//tools/cpp:toolchain
 
 # Show paths to a few more than just 1 target.
