@@ -2,6 +2,7 @@
 #define FRC971_WPILIB_HALL_EFFECT_H_
 
 #include "DigitalInput.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {

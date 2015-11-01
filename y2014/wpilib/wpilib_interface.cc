@@ -7,6 +7,20 @@
 #include <mutex>
 #include <functional>
 
+#include "Encoder.h"
+#include "Talon.h"
+#include "DriverStation.h"
+#include "AnalogInput.h"
+#include "Compressor.h"
+#include "Relay.h"
+#include "RobotBase.h"
+#include "dma.h"
+#include "ControllerPower.h"
+#ifndef WPILIB2015
+#include "DigitalGlitchFilter.h"
+#endif
+#undef ERROR
+
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/time.h"
@@ -34,16 +48,6 @@
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/logging.q.h"
-
-#include "Encoder.h"
-#include "Talon.h"
-#include "DriverStation.h"
-#include "AnalogInput.h"
-#include "Compressor.h"
-#include "Relay.h"
-#include "RobotBase.h"
-#include "dma.h"
-#include "ControllerPower.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -235,7 +239,12 @@ class SensorReader {
     LOG(INFO, "In sensor reader thread\n");
 
     my_pid_ = getpid();
-    ds_ = DriverStation::GetInstance();
+    ds_ =
+#ifdef WPILIB2015
+        DriverStation::GetInstance();
+#else
+        &DriverStation::GetInstance();
+#endif
 
     top_reader_.Start();
     bottom_reader_.Start();
