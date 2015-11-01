@@ -8,7 +8,7 @@ _header_dirs = [
 ]
 
 cc_library(
-  name = 'wpilib',
+  name = 'wpilib_2015',
   visibility = ['//visibility:public'],
   srcs = glob([
     'allwpilib/wpilibc/wpilibC++/src/*.cpp',
@@ -34,5 +34,16 @@ cc_library(
     '-lNiRioSrv',
     '-lspi',
     '-li2c',
+  ],
+  defines = [
+    'WPILIB2015=1',
+  ],
+)
+
+cc_library(
+  name = 'wpilib',
+  visibility = ['//visibility:public'],
+  deps = [
+    ':wpilib_2015',
   ],
 )
