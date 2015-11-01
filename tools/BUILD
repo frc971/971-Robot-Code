@@ -1,5 +1,7 @@
 package(default_visibility = ['//visibility:public'])
 
+exports_files(['test_sharding_compliant'])
+
 # Don't use these directly! Use //tools/build_rules/select.bzl instead.
 config_setting(
   name = 'compiler_clang',

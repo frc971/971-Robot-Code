@@ -1,0 +1,1 @@
+This is a file used to indicate to Bazel that tests can be sharded.
