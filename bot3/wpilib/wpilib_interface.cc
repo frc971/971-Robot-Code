@@ -23,7 +23,6 @@
 #include "bot3/control_loops/intake/intake.q.h"
 #include "bot3/autonomous/auto.q.h"
 
-#include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -57,7 +56,6 @@ using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::LoopOutputHandler;
 using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::GyroSender;
-using ::frc971::wpilib::HallEffect;
 
 namespace bot3 {
 namespace wpilib {
@@ -105,7 +103,7 @@ class SensorReader {
     elevator_encoder_ = ::std::move(encoder);
   }
 
-  void set_elevator_zeroing_hall_effect(::std::unique_ptr<HallEffect> hall) {
+  void set_elevator_zeroing_hall_effect(::std::unique_ptr<DigitalInput> hall) {
     zeroing_hall_effect_ = ::std::move(hall);
   }
 
@@ -168,7 +166,7 @@ class SensorReader {
       auto elevator_message = elevator_queue.position.MakeMessage();
       elevator_message->encoder =
           elevator_translate(elevator_encoder_->GetRaw());
-      elevator_message->bottom_hall_effect = zeroing_hall_effect_->Get();
+      elevator_message->bottom_hall_effect = !zeroing_hall_effect_->Get();
       elevator_message->has_tote = tote_sensor_->GetVoltage() > 2.5;
 
       elevator_message.Send();
@@ -191,7 +189,7 @@ class SensorReader {
   DriverStation *ds_;
 
   ::std::unique_ptr<Encoder> left_encoder_, right_encoder_, elevator_encoder_;
-  ::std::unique_ptr<HallEffect> zeroing_hall_effect_;
+  ::std::unique_ptr<DigitalInput> zeroing_hall_effect_;
   ::std::unique_ptr<AnalogInput> tote_sensor_;
 
   ::std::atomic<bool> run_{true};
@@ -207,7 +205,7 @@ class SolenoidWriter {
         intake_(".bot3.control_loops.intake_queue.output"),
         can_grabber_control_(".bot3.autonomous.can_grabber_control") {}
 
-  void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
+  void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
   }
 
@@ -300,7 +298,7 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> intake_claw_;
   ::std::unique_ptr<BufferedSolenoid> can_grabber_;
 
-  ::std::unique_ptr<DigitalSource> pressure_switch_;
+  ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::bot3::control_loops::ElevatorQueue::Output> elevator_;
@@ -465,7 +463,7 @@ class WPILibRobot : public RobotBase {
     LOG(INFO, "Creating the reader\n");
 
     reader.set_elevator_encoder(encoder(6));
-    reader.set_elevator_zeroing_hall_effect(make_unique<HallEffect>(6));
+    reader.set_elevator_zeroing_hall_effect(make_unique<DigitalInput>(6));
 
     reader.set_left_encoder(encoder(0));
     reader.set_right_encoder(encoder(1));
