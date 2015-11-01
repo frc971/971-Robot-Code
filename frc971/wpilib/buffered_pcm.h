@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "SolenoidBase.h"
+#undef ERROR
 
 #include "frc971/wpilib/buffered_solenoid.h"
 

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "SPI.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {
