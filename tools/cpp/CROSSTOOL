@@ -153,6 +153,8 @@ toolchain {
   feature {
     name: "all_modes"
     flag_set {
+      action: "preprocess-assemble"
+      action: "assemble"
       action: "c-compile"
       flag_group {
         flag: "-std=gnu99"
@@ -164,7 +166,7 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       flag_group {
-        flag: "-std=gnu++11"
+        flag: "-std=gnu++1y"
       }
     }
     flag_set {
@@ -266,7 +268,7 @@ toolchain {
     # handling in Bazel.
     compiler_flag: "-g0"
 
-    compiler_flag: "-Oz"
+    compiler_flag: "-O2"
 
     # Disable assertions
     compiler_flag: "-DNDEBUG"
@@ -452,7 +454,7 @@ toolchain {
   compiler_flag: "-D__STDC_LIMIT_MACROS"
   compiler_flag: "-D_FILE_OFFSET_BITS=64"
   # TODO(Brian): Rename this or something.
-  #compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
+  compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
 
   #linker_flag: "-fuse-ld=gold"
 
