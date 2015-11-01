@@ -116,7 +116,12 @@ class SensorReader {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ = DriverStation::GetInstance();
+    ds_ =
+#ifdef WPILIB2015
+        DriverStation::GetInstance();
+#else
+        &DriverStation::GetInstance();
+#endif
 
     LOG(INFO, "Things are now started\n");
 

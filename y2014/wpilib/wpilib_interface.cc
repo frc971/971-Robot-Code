@@ -235,7 +235,12 @@ class SensorReader {
     LOG(INFO, "In sensor reader thread\n");
 
     my_pid_ = getpid();
-    ds_ = DriverStation::GetInstance();
+    ds_ =
+#ifdef WPILIB2015
+        DriverStation::GetInstance();
+#else
+        &DriverStation::GetInstance();
+#endif
 
     top_reader_.Start();
     bottom_reader_.Start();

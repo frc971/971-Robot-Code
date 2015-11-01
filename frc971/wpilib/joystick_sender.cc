@@ -12,7 +12,12 @@ namespace frc971 {
 namespace wpilib {
 
 void JoystickSender::operator()() {
-  DriverStation *ds = DriverStation::GetInstance();
+  DriverStation *ds =
+#ifdef WPILIB2015
+      DriverStation::GetInstance();
+#else
+      &DriverStation::GetInstance();
+#endif
   ::aos::SetCurrentThreadName("DSReader");
   uint16_t team_id = ::aos::network::GetTeamNumber();
 

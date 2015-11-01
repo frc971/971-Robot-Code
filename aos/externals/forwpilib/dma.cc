@@ -175,7 +175,7 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
     return;
   }
 
-  nFPGA::nFRC_2015_1_0_A::tDMA::tExternalTriggers new_trigger;
+  nFPGA::nRoboRIO_FPGANamespace::tDMA::tExternalTriggers new_trigger;
 
   new_trigger.FallingEdge = falling;
   new_trigger.RisingEdge = rising;

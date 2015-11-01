@@ -127,7 +127,7 @@ class SensorReader {
     arm_left_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_arm_left_index(::std::unique_ptr<DigitalSource> index) {
+  void set_arm_left_index(::std::unique_ptr<DigitalInput> index) {
     filter_.Add(index.get());
     arm_left_encoder_.set_index(::std::move(index));
   }
@@ -142,7 +142,7 @@ class SensorReader {
     arm_right_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_arm_right_index(::std::unique_ptr<DigitalSource> index) {
+  void set_arm_right_index(::std::unique_ptr<DigitalInput> index) {
     filter_.Add(index.get());
     arm_right_encoder_.set_index(::std::move(index));
   }
@@ -157,7 +157,7 @@ class SensorReader {
     elevator_left_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_elevator_left_index(::std::unique_ptr<DigitalSource> index) {
+  void set_elevator_left_index(::std::unique_ptr<DigitalInput> index) {
     filter_.Add(index.get());
     elevator_left_encoder_.set_index(::std::move(index));
   }
@@ -172,7 +172,7 @@ class SensorReader {
     elevator_right_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_elevator_right_index(::std::unique_ptr<DigitalSource> index) {
+  void set_elevator_right_index(::std::unique_ptr<DigitalInput> index) {
     filter_.Add(index.get());
     elevator_right_encoder_.set_index(::std::move(index));
   }
@@ -187,7 +187,7 @@ class SensorReader {
     wrist_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_wrist_index(::std::unique_ptr<DigitalSource> index) {
+  void set_wrist_index(::std::unique_ptr<DigitalInput> index) {
     filter_.Add(index.get());
     wrist_encoder_.set_index(::std::move(index));
   }
@@ -219,7 +219,12 @@ class SensorReader {
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
-    ds_ = DriverStation::GetInstance();
+    ds_ =
+#ifdef WPILIB2015
+        DriverStation::GetInstance();
+#else
+        &DriverStation::GetInstance();
+#endif
 
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
@@ -369,7 +374,7 @@ class SolenoidWriter {
         fridge_(".frc971.control_loops.fridge_queue.output"),
         claw_(".frc971.control_loops.claw_queue.output") {}
 
-  void set_pressure_switch(::std::unique_ptr<DigitalSource> pressure_switch) {
+  void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
   }
 
@@ -469,7 +474,7 @@ class SolenoidWriter {
   ::std::unique_ptr<BufferedSolenoid> claw_pinchers_;
   ::std::unique_ptr<BufferedSolenoid> grabber_latch_release_;
   ::std::unique_ptr<BufferedSolenoid> grabber_fold_up_;
-  ::std::unique_ptr<DigitalSource> pressure_switch_;
+  ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::frc971::control_loops::FridgeQueue::Output> fridge_;

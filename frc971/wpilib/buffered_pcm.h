@@ -29,7 +29,9 @@ class BufferedPcm : public SolenoidBase {
 
  private:
   // WPILib declares this pure virtual and then never calls it...
+#ifdef WPILIB2015
   virtual void InitSolenoid() override {}
+#endif
 
   void Set(int number, bool value);
 
