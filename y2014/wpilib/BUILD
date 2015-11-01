@@ -22,7 +22,6 @@ cc_binary(
     '//aos/common/messages:robot_state',
     '//aos/common/util:phased_loop',
     '//aos/common/util:wrapping_counter',
-    '//frc971/wpilib:hall_effect',
     '//frc971/wpilib:joystick_sender',
     '//frc971/wpilib:loop_output_handler',
     '//frc971/wpilib:buffered_pcm',

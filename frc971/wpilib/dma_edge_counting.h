@@ -6,13 +6,12 @@
 
 #include "aos/common/macros.h"
 
-#include "frc971/wpilib/hall_effect.h"
-
 #include "DigitalInput.h"
 #include "Encoder.h"
 #include "AnalogInput.h"
 #include "Utility.h"
 #include "dma.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {

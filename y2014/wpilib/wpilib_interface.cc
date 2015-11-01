@@ -38,7 +38,6 @@
 #include "y2014/constants.h"
 #include "y2014/queues/auto_mode.q.h"
 
-#include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -309,8 +308,8 @@ class SensorReader {
     {
       auto shooter_message = shooter_queue.position.MakeMessage();
       shooter_message->position = shooter_translate(shooter_encoder_->GetRaw());
-      shooter_message->plunger = shooter_plunger_reader_->value();
-      shooter_message->latch = shooter_latch_reader_->value();
+      shooter_message->plunger = !shooter_plunger_reader_->value();
+      shooter_message->latch = !shooter_latch_reader_->value();
       CopyShooterPosedgeCounts(shooter_proximal_counter_.get(),
                                &shooter_message->pusher_proximal);
       CopyShooterPosedgeCounts(shooter_distal_counter_.get(),
@@ -388,12 +387,12 @@ class SensorReader {
     void CopyPosition(const EdgeCounter *counter, HallEffectStruct *out) {
       const double multiplier = reversed_ ? -1.0 : 1.0;
 
-      out->current = counter->polled_value();
-      out->posedge_count = counter->positive_interrupt_count();
-      out->negedge_count = counter->negative_interrupt_count();
-      out->posedge_value =
-          multiplier * claw_translate(counter->last_positive_encoder_value());
+      out->current = !counter->polled_value();
+      out->posedge_count = counter->negative_interrupt_count();
+      out->negedge_count = counter->positive_interrupt_count();
       out->negedge_value =
+          multiplier * claw_translate(counter->last_positive_encoder_value());
+      out->posedge_value =
           multiplier * claw_translate(counter->last_negative_encoder_value());
     }
 
@@ -417,9 +416,7 @@ class SensorReader {
 
   void CopyShooterPosedgeCounts(const DMAEdgeCounter *counter,
                                 PosedgeOnlyCountedHallEffectStruct *output) {
-    // TODO(Brian): Remove HallEffect so current will get inverted too like
-    // everything else.
-    output->current = counter->polled_value();
+    output->current = !counter->polled_value();
     // These are inverted because the hall effects give logical false when
     // there's a magnet in front of them.
     output->posedge_count = counter->negative_count();
@@ -698,20 +695,20 @@ class WPILibRobot : public RobotBase {
     reader.set_low_right_drive_hall(make_unique<AnalogInput>(3));
 
     reader.set_top_claw_encoder(make_encoder(3));
-    reader.set_top_claw_front_hall(make_unique<HallEffect>(4));  // R2
-    reader.set_top_claw_calibration_hall(make_unique<HallEffect>(3));  // R3
-    reader.set_top_claw_back_hall(make_unique<HallEffect>(5));  // R1
+    reader.set_top_claw_front_hall(make_unique<DigitalInput>(4));  // R2
+    reader.set_top_claw_calibration_hall(make_unique<DigitalInput>(3));  // R3
+    reader.set_top_claw_back_hall(make_unique<DigitalInput>(5));  // R1
 
     reader.set_bottom_claw_encoder(make_encoder(4));
-    reader.set_bottom_claw_front_hall(make_unique<HallEffect>(1));  // L2
-    reader.set_bottom_claw_calibration_hall(make_unique<HallEffect>(0));  // L3
-    reader.set_bottom_claw_back_hall(make_unique<HallEffect>(2));  // L1
+    reader.set_bottom_claw_front_hall(make_unique<DigitalInput>(1));  // L2
+    reader.set_bottom_claw_calibration_hall(make_unique<DigitalInput>(0));  // L3
+    reader.set_bottom_claw_back_hall(make_unique<DigitalInput>(2));  // L1
 
     reader.set_shooter_encoder(::std::move(shooter_encoder_temp));
-    reader.set_shooter_proximal(make_unique<HallEffect>(6));  // S1
-    reader.set_shooter_distal(make_unique<HallEffect>(7));  // S2
-    reader.set_shooter_plunger(make_unique<HallEffect>(8));  // S3
-    reader.set_shooter_latch(make_unique<HallEffect>(9));  // S4
+    reader.set_shooter_proximal(make_unique<DigitalInput>(6));  // S1
+    reader.set_shooter_distal(make_unique<DigitalInput>(7));  // S2
+    reader.set_shooter_plunger(make_unique<DigitalInput>(8));  // S3
+    reader.set_shooter_latch(make_unique<DigitalInput>(9));  // S4
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));

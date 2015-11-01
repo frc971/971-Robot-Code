@@ -37,7 +37,6 @@ cc_library(
   deps = [
     '//aos/externals:wpilib',
     '//aos/common/logging',
-    ':hall_effect',
   ],
 )
 
@@ -139,15 +138,5 @@ cc_library(
     '//aos/linux_code:init',
     '//aos/common/network:team_number',
     '//aos/common/logging:queue_logging',
-  ],
-)
-
-cc_library(
-  name = 'hall_effect',
-  hdrs = [
-    'hall_effect.h',
-  ],
-  deps = [
-    '//aos/externals:wpilib',
   ],
 )

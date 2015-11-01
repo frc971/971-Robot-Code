@@ -38,7 +38,6 @@
 #include "y2015/control_loops/claw/claw.q.h"
 #include "y2015/autonomous/auto.q.h"
 
-#include "frc971/wpilib/hall_effect.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/buffered_solenoid.h"
