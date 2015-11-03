@@ -2,6 +2,8 @@
 #
 # Updates the arm controllers (for both robots).
 
+export PYTHONPATH=../../frc971/control_loops/python
+
 cd $(dirname $0)
 
 ./python/arm.py fridge/arm_motor_plant.cc \

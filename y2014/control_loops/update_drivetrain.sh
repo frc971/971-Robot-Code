@@ -2,6 +2,8 @@
 #
 # Updates the drivetrain controllers (for both robots).
 
+export PYTHONPATH=../../frc971/control_loops/python
+
 cd $(dirname $0)
 
 ./python/drivetrain.py drivetrain/drivetrain_dog_motor_plant.h \
