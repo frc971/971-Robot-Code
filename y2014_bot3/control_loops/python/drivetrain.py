@@ -56,30 +56,33 @@ class Drivetrain(control_loop.ControlLoop):
     # Stall Torque in N m
     self.stall_torque = 2.42
     # Stall Current in Amps
-    self.stall_current = 133
+    self.stall_current = 133.0
     # Free Speed in RPM. Used number from last year.
     self.free_speed = 4650.0
     # Free Current in Amps
     self.free_current = 2.7
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
-    self.J = 4.5
+    self.J = 10
     # Mass of the robot, in kg.
-    self.m = 60
+    self.m = 68
     # Radius of the robot, in meters (from last year).
-    self.rb = 0.7112 / 2.0
+    self.rb = 0.9603 / 2.0
     # Radius of the wheels, in meters.
-    self.r = .04445
+    self.r = 0.0508
     # Resistance of the motor, divided by the number of motors.
-    self.R = 12.0 / self.stall_current / 4
+    self.R = 12.0 / self.stall_current / 2
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
                (12.0 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 14.0 / 60.0 * 17.0 / 50.0
-    self.G_high = 30.0 / 44.0 * 17.0 / 50.0
+    self.G_const = 18.0 / 44.0 * 18.0 / 60.0
+
+    self.G_low = self.G_const
+    self.G_high = self.G_const
+
     if left_low:
       self.Gl = self.G_low
     else:
@@ -88,8 +91,9 @@ class Drivetrain(control_loop.ControlLoop):
       self.Gr = self.G_low
     else:
       self.Gr = self.G_high
+
     # Control loop time step
-    self.dt = 0.01
+    self.dt = 0.005
 
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.
@@ -223,13 +227,13 @@ def main(argv):
   drivetrain_high_low = Drivetrain(name="DrivetrainHighLow", left_low=False, right_low=True)
   drivetrain_high_high = Drivetrain(name="DrivetrainHighHigh", left_low=False, right_low=False)
 
-  if len(argv) != 3:
+  if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
                        drivetrain_high_low, drivetrain_high_high],
-        namespaces = ["bot3", "control_loops"])
+        namespaces=['y2014_bot3', 'control_loops'])
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
     else:

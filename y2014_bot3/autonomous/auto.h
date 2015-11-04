@@ -1,12 +1,12 @@
-#ifndef BOT3_AUTONOMOUS_AUTO_H_
-#define BOT3_AUTONOMOUS_AUTO_H_
+#ifndef Y2014_BOT3_AUTONOMOUS_AUTO_H_
+#define Y2014_BOT3_AUTONOMOUS_AUTO_H_
 
-namespace bot3 {
+namespace y2014_bot3 {
 namespace autonomous {
 
 void HandleAuto();
 
 }  // namespace autonomous
-}  // namespace bot3
+}  // namespace y2014_bot3
 
-#endif  // BOT3_AUTONOMOUS_AUTO_H_
+#endif  // Y2014_BOT3_AUTONOMOUS_AUTO_H_

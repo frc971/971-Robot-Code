@@ -8,15 +8,14 @@
 #include "aos/common/controls/polytope.h"
 #include "aos/common/controls/control_loop_test.h"
 
-#include "bot3/control_loops/drivetrain/drivetrain.q.h"
-#include "bot3/control_loops/drivetrain/drivetrain.h"
-#include "bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "frc971/queues/other_sensors.q.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "frc971/queues/gyro.q.h"
 
-
-namespace bot3 {
+namespace y2014_bot3 {
 namespace control_loops {
 namespace testing {
 
@@ -49,11 +48,11 @@ class DrivetrainSimulation {
   DrivetrainSimulation()
       : drivetrain_plant_(
             new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
-        my_drivetrain_loop_(".frc971.control_loops.drivetrain",
-                       0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
-                       ".frc971.control_loops.drivetrain.position",
-                       ".frc971.control_loops.drivetrain.output",
-                       ".frc971.control_loops.drivetrain.status") {
+        my_drivetrain_queue_(".y2014_bot3.control_loops.drivetrain",
+                       0x8a8dde77, ".y2014_bot3.control_loops.drivetrain.goal",
+                       ".y2014_bot3.control_loops.drivetrain.position",
+                       ".y2014_bot3.control_loops.drivetrain.output",
+                       ".y2014_bot3.control_loops.drivetrain.status") {
     Reinitialize();
   }
 
@@ -76,8 +75,8 @@ class DrivetrainSimulation {
     const double left_encoder = GetLeftPosition();
     const double right_encoder = GetRightPosition();
 
-    ::aos::ScopedMessagePtr<control_loops::Drivetrain::Position> position =
-        my_drivetrain_loop_.position.MakeMessage();
+    ::aos::ScopedMessagePtr<control_loops::DrivetrainQueue::Position> position =
+        my_drivetrain_queue_.position.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
     position.Send();
@@ -87,15 +86,15 @@ class DrivetrainSimulation {
   void Simulate() {
     last_left_position_ = drivetrain_plant_->Y(0, 0);
     last_right_position_ = drivetrain_plant_->Y(1, 0);
-    EXPECT_TRUE(my_drivetrain_loop_.output.FetchLatest());
-    drivetrain_plant_->mutable_U() << my_drivetrain_loop_.output->left_voltage,
-        my_drivetrain_loop_.output->right_voltage;
+    EXPECT_TRUE(my_drivetrain_queue_.output.FetchLatest());
+    drivetrain_plant_->mutable_U() << my_drivetrain_queue_.output->left_voltage,
+        my_drivetrain_queue_.output->right_voltage;
     drivetrain_plant_->Update();
   }
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
  private:
-  Drivetrain my_drivetrain_loop_;
+  DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
   double last_right_position_;
 };
@@ -105,30 +104,30 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  Drivetrain my_drivetrain_loop_;
+  DrivetrainQueue my_drivetrain_queue_;
 
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
-  DrivetrainTest() : my_drivetrain_loop_(".frc971.control_loops.drivetrain",
+  DrivetrainTest() : my_drivetrain_queue_(".y2014_bot3.control_loops.drivetrain",
                                0x8a8dde77,
-                               ".frc971.control_loops.drivetrain.goal",
-                               ".frc971.control_loops.drivetrain.position",
-                               ".frc971.control_loops.drivetrain.output",
-                               ".frc971.control_loops.drivetrain.status"),
-                drivetrain_motor_(&my_drivetrain_loop_),
+                               ".y2014_bot3.control_loops.drivetrain.goal",
+                               ".y2014_bot3.control_loops.drivetrain.position",
+                               ".y2014_bot3.control_loops.drivetrain.output",
+                               ".y2014_bot3.control_loops.drivetrain.status"),
+                drivetrain_motor_(&my_drivetrain_queue_),
                 drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();
   }
 
   void VerifyNearGoal() {
-    my_drivetrain_loop_.goal.FetchLatest();
-    my_drivetrain_loop_.position.FetchLatest();
-    EXPECT_NEAR(my_drivetrain_loop_.goal->left_goal,
+    my_drivetrain_queue_.goal.FetchLatest();
+    my_drivetrain_queue_.position.FetchLatest();
+    EXPECT_NEAR(my_drivetrain_queue_.goal->left_goal,
                 drivetrain_motor_plant_.GetLeftPosition(),
                 1e-2);
-    EXPECT_NEAR(my_drivetrain_loop_.goal->right_goal,
+    EXPECT_NEAR(my_drivetrain_queue_.goal->right_goal,
                 drivetrain_motor_plant_.GetRightPosition(),
                 1e-2);
   }
@@ -140,7 +139,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
       .left_goal(-1.0)
       .right_goal(1.0).Send();
   for (int i = 0; i < 200; ++i) {
@@ -154,7 +153,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 
 // Tests that it survives disabling.
 TEST_F(DrivetrainTest, SurvivesDisabling) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
       .left_goal(-1.0)
       .right_goal(1.0).Send();
   for (int i = 0; i < 500; ++i) {
@@ -170,21 +169,24 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
   VerifyNearGoal();
 }
 
-// Tests surviving bad positions.
-TEST_F(DrivetrainTest, SurvivesBadPosition) {
-  my_drivetrain_loop_.goal.MakeWithBuilder().control_loop_driving(true)
-      .left_goal(-1.0)
-      .right_goal(1.0).Send();
-  for (int i = 0; i < 500; ++i) {
-    if (i > 20 && i < 200) {
-    } else {
-      drivetrain_motor_plant_.SendPositionMessage();
-    }
+// Tests that never having a goal doesn't break.
+TEST_F(DrivetrainTest, NoGoalStart) {
+  for (int i = 0; i < 20; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
+  }
+}
+
+// Tests that never having a goal, but having driver's station messages, doesn't
+// break.
+TEST_F(DrivetrainTest, NoGoalWithRobotState) {
+  for (int i = 0; i < 20; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();
     SimulateTimestep(true);
   }
-  VerifyNearGoal();
 }
 
 ::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
@@ -291,4 +293,4 @@ TEST_F(CoerceGoalTest, PerpendicularLine) {
 
 }  // namespace testing
 }  // namespace control_loops
-}  // namespace bot3
+}  // namespace y2014_bot3

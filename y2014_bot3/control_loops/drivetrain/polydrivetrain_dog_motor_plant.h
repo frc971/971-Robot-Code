@@ -1,9 +1,9 @@
-#ifndef BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_
-#define BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_
+#ifndef Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_
+#define Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace bot3 {
+namespace y2014_bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<2, 2, 2> MakeVelocityDrivetrainLowLowPlantCoefficients();
@@ -27,6 +27,6 @@ StateFeedbackPlant<2, 2, 2> MakeVelocityDrivetrainPlant();
 StateFeedbackLoop<2, 2, 2> MakeVelocityDrivetrainLoop();
 
 }  // namespace control_loops
-}  // namespace bot3
+}  // namespace y2014_bot3
 
-#endif  // BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_
+#endif  // Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_DOG_MOTOR_PLANT_H_

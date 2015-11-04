@@ -1,8 +1,9 @@
-package bot3.control_loops;
+package y2014_bot3.control_loops;
 
 import "aos/common/controls/control_loops.q";
+import "frc971/control_loops/control_loops.q";
 
-queue_group Rollers {
+queue_group RollersQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
@@ -37,4 +38,4 @@ queue_group Rollers {
   queue Status status;
 };
 
-queue_group Rollers rollers;
+queue_group RollersQueue rollers_queue;

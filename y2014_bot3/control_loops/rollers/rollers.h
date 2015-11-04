@@ -1,33 +1,29 @@
-#ifndef BOT3_CONTROL_LOOPS_ROLLERS_H_
-#define BOT3_CONTROL_LOOPS_ROLLERS_H_
+#ifndef Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
+#define Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
 
 #include "aos/common/controls/control_loop.h"
-#include "bot3/control_loops/rollers/rollers.q.h"
 
-namespace bot3 {
+#include "y2014_bot3/control_loops/rollers/rollers.q.h"
+
+namespace y2014_bot3 {
 namespace control_loops {
 
-class RollersLoop
-  : public aos::controls::ControlLoop<control_loops::Rollers,
-      false, false, true> {
+class Rollers : public aos::controls::ControlLoop<control_loops::RollersQueue> {
  public:
   // Constructs a control loops which can take a rollers or defaults to the
-  // rollers at ::bot3::control_loops::rollers.
-  explicit RollersLoop(
-      control_loops::Rollers *my_rollers = &control_loops::rollers)
-      : aos::controls::ControlLoop<control_loops::Rollers, false, false, true>(
-          my_rollers) {}
+  // rollers at ::2014_bot3::control_loops::rollers.
+  explicit Rollers(control_loops::RollersQueue *rollers_queue =
+                       &control_loops::rollers_queue);
 
  protected:
   // Executes one cycle of the control loop.
-  virtual void RunIteration(
-      const control_loops::Rollers::Goal *goal,
-      const control_loops::Rollers::Position *position,
-      control_loops::Rollers::Output *output,
-      control_loops::Rollers::Status *status);
+  void RunIteration(const control_loops::RollersQueue::Goal *goal,
+                    const control_loops::RollersQueue::Position *position,
+                    control_loops::RollersQueue::Output *output,
+                    control_loops::RollersQueue::Status *status) override;
 };
 
 }  // namespace control_loops
-}  // namespace bot3
+}  // namespace y2014_bot3
 
-#endif  // BOT3_CONTROL_LOOPS_ROLLERS_H_
+#endif  // Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_

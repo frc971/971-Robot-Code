@@ -1,17 +1,17 @@
-#include "frc971/control_loops/drivetrain/polydrivetrain_cim_plant.h"
+#include "y2014_bot3/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 
 #include <vector>
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
+namespace y2014_bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<1, 1, 1> MakeCIMPlantCoefficients() {
   Eigen::Matrix<double, 1, 1> A;
-  A << 0.614537580221;
+  A << 0.783924473544;
   Eigen::Matrix<double, 1, 1> B;
-  B << 15.9657598852;
+  B << 8.94979586973;
   Eigen::Matrix<double, 1, 1> C;
   C << 1;
   Eigen::Matrix<double, 1, 1> D;
@@ -25,23 +25,25 @@ StateFeedbackPlantCoefficients<1, 1, 1> MakeCIMPlantCoefficients() {
 
 StateFeedbackController<1, 1, 1> MakeCIMController() {
   Eigen::Matrix<double, 1, 1> L;
-  L << 0.604537580221;
+  L << 0.773924473544;
   Eigen::Matrix<double, 1, 1> K;
-  K << 0.0378646293422;
-  return StateFeedbackController<1, 1, 1>(L, K, MakeCIMPlantCoefficients());
+  K << 0.086473980503;
+  Eigen::Matrix<double, 1, 1> A_inv;
+  A_inv << 1.2756330919;
+  return StateFeedbackController<1, 1, 1>(L, K, A_inv, MakeCIMPlantCoefficients());
 }
 
 StateFeedbackPlant<1, 1, 1> MakeCIMPlant() {
-  ::std::vector<StateFeedbackPlantCoefficients<1, 1, 1> *> plants(1);
-  plants[0] = new StateFeedbackPlantCoefficients<1, 1, 1>(MakeCIMPlantCoefficients());
-  return StateFeedbackPlant<1, 1, 1>(plants);
+  ::std::vector< ::std::unique_ptr<StateFeedbackPlantCoefficients<1, 1, 1>>> plants(1);
+  plants[0] = ::std::unique_ptr<StateFeedbackPlantCoefficients<1, 1, 1>>(new StateFeedbackPlantCoefficients<1, 1, 1>(MakeCIMPlantCoefficients()));
+  return StateFeedbackPlant<1, 1, 1>(&plants);
 }
 
 StateFeedbackLoop<1, 1, 1> MakeCIMLoop() {
-  ::std::vector<StateFeedbackController<1, 1, 1> *> controllers(1);
-  controllers[0] = new StateFeedbackController<1, 1, 1>(MakeCIMController());
-  return StateFeedbackLoop<1, 1, 1>(controllers);
+  ::std::vector< ::std::unique_ptr<StateFeedbackController<1, 1, 1>>> controllers(1);
+  controllers[0] = ::std::unique_ptr<StateFeedbackController<1, 1, 1>>(new StateFeedbackController<1, 1, 1>(MakeCIMController()));
+  return StateFeedbackLoop<1, 1, 1>(&controllers);
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014_bot3

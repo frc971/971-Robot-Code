@@ -1,14 +1,6 @@
-package bot3.control_loops;
+package y2014_bot3.control_loops;
 
 import "aos/common/controls/control_loops.q";
-
-struct GearLogging {
-  int8_t controller_index;
-  bool left_loop_high;
-  bool right_loop_high;
-  int8_t left_state;
-  int8_t right_state;
-};
 
 struct CIMLogging {
   bool left_in_gear;
@@ -19,7 +11,7 @@ struct CIMLogging {
   double right_velocity;
 };
 
-queue_group Drivetrain {
+queue_group DrivetrainQueue {
   implements aos.control_loops.ControlLoop;
 
   message Goal {
@@ -37,9 +29,6 @@ queue_group Drivetrain {
   message Position {
     double left_encoder;
     double right_encoder;
-    double left_shifter_position;
-    double right_shifter_position;
-    double battery_voltage;
   };
 
   message Output {
@@ -53,6 +42,8 @@ queue_group Drivetrain {
     double robot_speed;
     double filtered_left_position;
     double filtered_right_position;
+    double filtered_left_velocity;
+    double filtered_right_velocity;
 
     double uncapped_left_voltage;
     double uncapped_right_voltage;
@@ -67,4 +58,4 @@ queue_group Drivetrain {
   queue Status status;
 };
 
-queue_group Drivetrain drivetrain;
+queue_group DrivetrainQueue drivetrain_queue;

@@ -1,10 +1,6 @@
+joystick_reader_y2014_bot3
+wpilib_interface_y2014_bot3
 binary_log_writer
-motor_writer
-joystick_reader
-drivetrain
-drivetrain_action
-auto
-sensor_receiver
-joystick_proxy
+drivetrain_y2014_bot3
 rollers
-auto
+auto_y2014_bot3

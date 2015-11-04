@@ -1,9 +1,9 @@
-#ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
-#define FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
+#ifndef Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
+#define Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
+namespace y2014_bot3 {
 namespace control_loops {
 
 StateFeedbackPlantCoefficients<1, 1, 1> MakeCIMPlantCoefficients();
@@ -15,6 +15,6 @@ StateFeedbackPlant<1, 1, 1> MakeCIMPlant();
 StateFeedbackLoop<1, 1, 1> MakeCIMLoop();
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014_bot3
 
-#endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
+#endif  // Y2014_BOT3_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_CIM_PLANT_H_
