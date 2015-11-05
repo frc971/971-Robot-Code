@@ -1,7 +1,7 @@
 new_local_repository(
   name = 'usr_repo',
   path = '/usr',
-  build_file = 'debian/BUILD.usr',
+  build_file = 'debian/usr.BUILD',
 )
 
 # TODO(brian): Make these point to something which isn't hard-coded to come off
