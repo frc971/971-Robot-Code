@@ -10,6 +10,7 @@ aos_downloader(
     '//y2014/control_loops/claw:claw',
     '//y2014/control_loops/shooter:shooter',
     '//y2014/autonomous:auto',
+    '//y2014/wpilib:wpilib_interface',
     '//y2014:joystick_reader',
     '//y2014/actors:binaries',
     ':hot_goal_reader',

@@ -22,7 +22,11 @@ void BufferedPcm::Set(int number, bool value) {
 
 void BufferedPcm::Flush() {
   LOG(DEBUG, "sending solenoids 0x%" PRIx8 "\n", values_);
+#ifdef WPILIB2015
   SolenoidBase::Set(values_, 0xFF);
+#else
+  SolenoidBase::Set(values_, 0xFF, m_moduleNumber);
+#endif
 }
 
 }  // namespace wpilib
