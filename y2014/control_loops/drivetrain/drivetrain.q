@@ -39,6 +39,10 @@ queue_group DrivetrainQueue {
     double right_encoder;
     double left_shifter_position;
     double right_shifter_position;
+    double low_left_hall;
+    double high_left_hall;
+    double low_right_hall;
+    double high_right_hall;
   };
 
   message Output {

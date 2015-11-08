@@ -289,12 +289,19 @@ class SensorReader {
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
+
+      drivetrain_message->low_left_hall = low_left_drive_hall_->GetVoltage();
+      drivetrain_message->high_left_hall = high_left_drive_hall_->GetVoltage();
       drivetrain_message->left_shifter_position =
-          hall_translate(values.left_drive, low_left_drive_hall_->GetVoltage(),
-                         high_left_drive_hall_->GetVoltage());
-      drivetrain_message->right_shifter_position = hall_translate(
-          values.right_drive, low_right_drive_hall_->GetVoltage(),
-          high_right_drive_hall_->GetVoltage());
+          hall_translate(values.left_drive, drivetrain_message->low_left_hall,
+                         drivetrain_message->high_left_hall);
+
+      drivetrain_message->low_right_hall = low_right_drive_hall_->GetVoltage();
+      drivetrain_message->high_right_hall =
+          high_right_drive_hall_->GetVoltage();
+      drivetrain_message->right_shifter_position =
+          hall_translate(values.right_drive, drivetrain_message->low_right_hall,
+                         drivetrain_message->high_right_hall);
 
       drivetrain_message.Send();
     }
