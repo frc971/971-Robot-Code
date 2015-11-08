@@ -90,7 +90,7 @@ class Drivetrain(control_loop.ControlLoop):
       self.Gr = self.G_high
 
     # Control loop time step
-    self.dt = 0.005
+    self.dt = 0.010
 
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.

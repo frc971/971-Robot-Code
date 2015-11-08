@@ -30,8 +30,8 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(5));
-  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(5));
+  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
+  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(10));
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;
@@ -118,7 +118,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         right_goal_state(0, 0) + params.right_initial_position);
     control_loops::drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
-        //.highgear(false)
+        .highgear(true)
         .left_goal(left_goal_state(0, 0) + params.left_initial_position)
         .right_goal(right_goal_state(0, 0) + params.right_initial_position)
         .left_velocity_goal(left_goal_state(1, 0))

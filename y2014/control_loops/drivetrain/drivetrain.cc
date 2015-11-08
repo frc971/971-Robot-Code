@@ -154,8 +154,8 @@ class DrivetrainMotorsSS {
         right_goal_(0.0),
         raw_left_(0.0),
         raw_right_(0.0) {
-    // Low gear on both.
-    loop_->set_controller_index(0);
+    // High gear on both.
+    loop_->set_controller_index(3);
   }
 
   void SetGoal(double left, double left_velocity, double right,
@@ -219,8 +219,8 @@ class DrivetrainMotorsSS {
     if (output) {
       output->left_voltage = loop_->U(0, 0);
       output->right_voltage = loop_->U(1, 0);
-      output->left_high = false;
-      output->right_high = false;
+      output->left_high = true;
+      output->right_high = true;
     }
   }
 

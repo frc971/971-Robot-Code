@@ -74,7 +74,7 @@ double drivetrain_translate(int32_t in) {
   return -static_cast<double>(in) /
          (256.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::GetValues().drivetrain_encoder_ratio *
-         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0;
+         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
 float hall_translate(const constants::ShifterHallEffect &k, float in_low,
@@ -511,8 +511,8 @@ class SolenoidWriter {
         drivetrain_.FetchLatest();
         if (drivetrain_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          drivetrain_left_->Set(drivetrain_->left_high);
-          drivetrain_right_->Set(drivetrain_->right_high);
+          drivetrain_left_->Set(!drivetrain_->left_high);
+          drivetrain_right_->Set(!drivetrain_->right_high);
         }
       }
 

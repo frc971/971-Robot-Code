@@ -43,6 +43,7 @@ void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
   control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
+      .highgear(true)
       .left_goal(left_initial_position)
       .left_velocity_goal(0)
       .right_goal(right_initial_position)
@@ -55,7 +56,7 @@ void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
   control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
-      .highgear(false)
+      .highgear(true)
       .steering(0.0)
       .throttle(0.0)
       .left_goal(left_initial_position)
@@ -87,6 +88,7 @@ void StepDrive(double distance, double theta) {
                        theta * constants::GetValues().turn_width / 2.0);
   control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
+      .highgear(true)
       .left_goal(left_goal)
       .right_goal(right_goal)
       .left_velocity_goal(0.0)
