@@ -24,15 +24,35 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_drivetrain',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014/control_loops/python:drivetrain) $(OUTS)',
+  tools = [
+    '//y2014/control_loops/python:drivetrain',
+  ],
+  tags = [
+    'local',
+  ],
+  outs = [
+    'drivetrain_dog_motor_plant.h',
+    'drivetrain_dog_motor_plant.cc',
+    'kalman_drivetrain_motor_plant.h',
+    'kalman_drivetrain_motor_plant.cc',
+  ],
+)
+
 cc_library(
   name = 'polydrivetrain_plants',
   srcs = [
     'polydrivetrain_dog_motor_plant.cc',
     'drivetrain_dog_motor_plant.cc',
+    'kalman_drivetrain_motor_plant.cc',
   ],
   hdrs = [
     'polydrivetrain_dog_motor_plant.h',
     'drivetrain_dog_motor_plant.h',
+    'kalman_drivetrain_motor_plant.h',
   ],
   deps = [
     '//frc971/control_loops:state_feedback_loop',

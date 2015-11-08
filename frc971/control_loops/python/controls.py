@@ -131,23 +131,13 @@ def kalman(A, B, C, Q, R):
     Returns:
       KalmanGain, Covariance.
   """
-  P = Q
+  I = numpy.matrix(numpy.eye(Q.shape[0]))
+  Z = numpy.matrix(numpy.zeros(Q.shape[0]))
 
-  I = numpy.matrix(numpy.eye(P.shape[0]))
-  At = A.T
-  Ct = C.T
-  i = 0
-
-  while True:
-    last_P = P
-    P_prior = A * P * At + Q
-    S = C * P_prior * Ct + R
-    K = P_prior * Ct * numpy.linalg.inv(S)
-    P = (I - K * C) * P_prior
-
-    diff = P - last_P
-    i += 1
-    if numpy.linalg.norm(diff) / numpy.linalg.norm(P) < 1e-9:
-      break
+  # Compute the steady state covariance matrix.
+  P_prior = scipy.linalg.solve_discrete_are(A.T, C.T, Q, R)
+  S = C * P_prior * C.T + R
+  K = numpy.linalg.lstsq(S.T, (P_prior * C.T).T)[0].T
+  P = (I - K * C) * P_prior
 
   return K, P

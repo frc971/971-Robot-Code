@@ -1,5 +1,6 @@
 import controls
 import numpy
+import os
 
 class Constant(object):
   def __init__ (self, name, formatt, value):
@@ -52,14 +53,14 @@ class ControlLoopWriter(object):
     return self._namespaces[0]
 
   def _HeaderGuard(self, header_file):
-    return (self._TopDirectory().upper() + '_CONTROL_LOOPS_' +
-            header_file.upper().replace('.', '_').replace('/', '_') +
-            '_')
+    return ('_'.join([namespace.upper() for namespace in self._namespaces]) +
+            os.path.basename(header_file).upper()
+                .replace('.', '_').replace('/', '_') + '_')
 
   def Write(self, header_file, cc_file):
     """Writes the loops to the specified files."""
     self.WriteHeader(header_file)
-    self.WriteCC(header_file, cc_file)
+    self.WriteCC(os.path.basename(header_file), cc_file)
 
   def _GenericType(self, typename):
     """Returns a loop template using typename for the type."""
@@ -121,8 +122,8 @@ class ControlLoopWriter(object):
   def WriteCC(self, header_file_name, cc_file):
     """Writes the cc file to the file named cc_file."""
     with open(cc_file, 'w') as fd:
-      fd.write('#include \"%s/control_loops/%s\"\n' %
-               (self._TopDirectory(), header_file_name))
+      fd.write('#include \"%s/%s\"\n' %
+               (os.path.join(*self._namespaces), header_file_name))
       fd.write('\n')
       fd.write('#include <vector>\n')
       fd.write('\n')

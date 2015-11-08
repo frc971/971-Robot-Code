@@ -20,6 +20,8 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+using ::y2014::control_loops::drivetrain::MakeDrivetrainPlant;
+
 class Environment : public ::testing::Environment {
  public:
   virtual ~Environment() {}
