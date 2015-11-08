@@ -34,7 +34,7 @@ def main(argv):
   ssh_target = '%s@%s' % (user, hostname)
 
   subprocess.check_call(
-      ['rsync', '-v', '-z', '--copy-links'] + srcs +
+      ['rsync', '-c', '-v', '-z', '--copy-links'] + srcs +
       ['%s:%s' % (ssh_target, target_dir)])
   subprocess.check_call(
       ('ssh', ssh_target, '&&'.join([
