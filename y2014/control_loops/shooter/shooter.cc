@@ -530,10 +530,11 @@ void ShooterMotor::RunIteration(
       // If we have moved any amount since the start and the shooter has now
       // been still for a couple cycles, the shot finished.
       // Also move on if it times out.
-      if ((::std::abs(firing_starting_position_ -
-                      shooter_.absolute_position()) > 0.0005 &&
-           cycles_not_moved_ > 3) ||
-          Time::Now() > shot_end_time_) {
+      if (((::std::abs(firing_starting_position_ -
+                       shooter_.absolute_position()) > 0.0005 &&
+            cycles_not_moved_ > 3) ||
+           Time::Now() > shot_end_time_) &&
+          ::aos::robot_state->voltage_battery > 10.5) {
         state_ = STATE_REQUEST_LOAD;
         ++shot_count_;
       }
