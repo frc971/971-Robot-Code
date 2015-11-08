@@ -25,6 +25,24 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_shooter',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014/control_loops/python:shooter) $(OUTS)',
+  tools = [
+    '//y2014/control_loops/python:shooter',
+  ],
+  tags = [
+    'local',
+  ],
+  outs = [
+    'shooter_motor_plant.cc',
+    'shooter_motor_plant.h',
+    'unaugmented_shooter_motor_plant.cc',
+    'unaugmented_shooter_motor_plant.h',
+  ],
+)
+
 cc_library(
   name = 'shooter_lib',
   srcs = [

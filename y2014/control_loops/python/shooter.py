@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import control_loop
+from frc971.control_loops.python import control_loop
+import argparse
 import numpy
 import sys
 from matplotlib import pylab
@@ -178,13 +179,25 @@ def ClipDeltaU(shooter, old_voltage, delta_u):
   return new_u - old_u
 
 def main(argv):
+  parser = argparse.ArgumentParser(description='Calculate shooter.')
+  parser.add_argument('--plot', action='store_true', default=False, help='If true, plot')
+  parser.add_argument('shootercc')
+  parser.add_argument('shooterh')
+  parser.add_argument('unaugmented_shootercc')
+  parser.add_argument('unaugmented_shooterh')
+
+  args = parser.parse_args(argv[1:])
+
   # Simulate the response of the system to a goal.
   sprung_shooter = SprungShooterDeltaU()
   raw_sprung_shooter = SprungShooter()
   close_loop_x = []
   close_loop_u = []
   goal_position = -0.3
-  R = numpy.matrix([[goal_position], [0.0], [-sprung_shooter.A[1, 0] / sprung_shooter.A[1, 2] * goal_position]])
+  R = numpy.matrix([[goal_position],
+                    [0.0],
+                    [-sprung_shooter.A[1, 0] / sprung_shooter.A[1, 2] *
+                         goal_position]])
   voltage = numpy.matrix([[0.0]])
   for _ in xrange(500):
     U = sprung_shooter.K * (R - sprung_shooter.X_hat)
@@ -196,9 +209,10 @@ def main(argv):
     close_loop_x.append(raw_sprung_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])
 
-  pylab.plot(range(500), close_loop_x)
-  pylab.plot(range(500), close_loop_u)
-  pylab.show()
+  if args.plot:
+    pylab.plot(range(500), close_loop_x)
+    pylab.plot(range(500), close_loop_u)
+    pylab.show()
 
   shooter = ShooterDeltaU()
   raw_shooter = Shooter()
@@ -217,38 +231,33 @@ def main(argv):
     close_loop_x.append(raw_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])
 
-  pylab.plot(range(500), close_loop_x)
-  pylab.plot(range(500), close_loop_u)
-  pylab.show()
+  if args.plot:
+    pylab.plot(range(500), close_loop_x)
+    pylab.plot(range(500), close_loop_u)
+    pylab.show()
 
   # Write the generated constants out to a file.
-  if len(argv) != 5:
-    print "Expected .h file name and .cc file name for"
-    print "both the plant and unaugmented plant"
-  else:
-    unaug_sprung_shooter = SprungShooter("RawSprungShooter")
-    unaug_shooter = Shooter("RawShooter")
-    unaug_loop_writer = control_loop.ControlLoopWriter("RawShooter",
-                                                       [unaug_sprung_shooter,
-                                                        unaug_shooter])
-    if argv[3][-3:] == '.cc':
-      unaug_loop_writer.Write(argv[4], argv[3])
-    else:
-      unaug_loop_writer.Write(argv[3], argv[4])
+  unaug_sprung_shooter = SprungShooter("RawSprungShooter")
+  unaug_shooter = Shooter("RawShooter")
+  namespaces = ['y2014', 'control_loops', 'shooter']
+  unaug_loop_writer = control_loop.ControlLoopWriter("RawShooter",
+                                                     [unaug_sprung_shooter,
+                                                      unaug_shooter],
+                                                     namespaces=namespaces)
+  unaug_loop_writer.Write(args.unaugmented_shooterh,
+                          args.unaugmented_shootercc)
 
-    sprung_shooter = SprungShooterDeltaU()
-    shooter = ShooterDeltaU()
-    loop_writer = control_loop.ControlLoopWriter("Shooter", [sprung_shooter,
-                                                             shooter])
+  sprung_shooter = SprungShooterDeltaU()
+  shooter = ShooterDeltaU()
+  loop_writer = control_loop.ControlLoopWriter("Shooter",
+                                               [sprung_shooter, shooter],
+                                               namespaces=namespaces)
 
-    loop_writer.AddConstant(control_loop.Constant("kMaxExtension", "%f",
+  loop_writer.AddConstant(control_loop.Constant("kMaxExtension", "%f",
                                                   sprung_shooter.max_extension))
-    loop_writer.AddConstant(control_loop.Constant("kSpringConstant", "%f",
+  loop_writer.AddConstant(control_loop.Constant("kSpringConstant", "%f",
                                                   sprung_shooter.Ks))
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+  loop_writer.Write(args.shooterh, args.shootercc)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

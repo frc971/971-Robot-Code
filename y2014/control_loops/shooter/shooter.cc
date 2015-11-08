@@ -15,6 +15,9 @@
 namespace frc971 {
 namespace control_loops {
 
+using ::y2014::control_loops::shooter::kSpringConstant;
+using ::y2014::control_loops::shooter::kMaxExtension;
+using ::y2014::control_loops::shooter::MakeShooterLoop;
 using ::aos::time::Time;
 
 void ZeroedStateFeedbackLoop::CapU() {

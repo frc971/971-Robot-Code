@@ -16,6 +16,9 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+using ::y2014::control_loops::shooter::kMaxExtension;
+using ::y2014::control_loops::shooter::MakeRawShooterPlant;
+
 static const int kTestTeam = 1;
 
 class TeamNumberEnvironment : public ::testing::Environment {

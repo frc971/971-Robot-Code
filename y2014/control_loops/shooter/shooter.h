@@ -102,7 +102,8 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  private:
   // The offset between what is '0' (0 rate on the spring) and the 0 (all the
   // way cocked).
-  constexpr static double kPositionOffset = kMaxExtension;
+  constexpr static double kPositionOffset =
+      ::y2014::control_loops::shooter::kMaxExtension;
   // The accumulated voltage to apply to the motor.
   double voltage_;
   double last_voltage_;
