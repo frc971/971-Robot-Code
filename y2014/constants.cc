@@ -64,7 +64,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompRightDriveShifter,
           false,
           0.5,
-          control_loops::MakeVelocityDrivetrainLoop,
+          ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           0.02, // drivetrain done delta
           5.0, // drivetrain max speed
@@ -102,7 +102,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompRightDriveShifter,
           false,
           kRobotWidth,
-          control_loops::MakeVelocityDrivetrainLoop,
+          ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           0.02, // drivetrain done delta
           5.0, // drivetrain max speed
@@ -149,7 +149,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kPracticeRightDriveShifter,
           false,
           kRobotWidth,
-          control_loops::MakeVelocityDrivetrainLoop,
+          ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           0.02, // drivetrain done delta
           5.0, // drivetrain max speed

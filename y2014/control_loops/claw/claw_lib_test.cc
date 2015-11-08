@@ -285,7 +285,7 @@ TEST_F(ClawTest, HandlesNAN) {
       .bottom_angle(::std::nan(""))
       .separation_angle(::std::nan(""))
       .Send();
-  for (int i = 0; i < 500; ++i) {
+  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5)) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -299,7 +299,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
       .bottom_angle(0.1)
       .separation_angle(0.2)
       .Send();
-  for (int i = 0; i < 500; ++i) {
+  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5)) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -397,7 +397,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
       .bottom_angle(0.1)
       .separation_angle(0.2)
       .Send();
-  for (int i = 0; i < 700; ++i) {
+  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(7)) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -508,14 +508,15 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
 
 class WindupClawTest : public ClawTest {
  protected:
-  void TestWindup(ClawMotor::CalibrationMode mode, int start_time, double offset) {
+  void TestWindup(ClawMotor::CalibrationMode mode, ::aos::time::Time start_time, double offset) {
     int capped_count = 0;
     const frc971::constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
-    for (int i = 0; i < 700; ++i) {
+    while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(7)) {
       claw_motor_plant_.SendPositionMessage();
-      if (i >= start_time && mode == claw_motor_.mode() && !kicked) {
+      if (::aos::time::Time::Now() >= start_time &&
+          mode == claw_motor_.mode() && !kicked) {
         EXPECT_EQ(mode, claw_motor_.mode());
         // Move the zeroing position far away and verify that it gets moved
         // back.
@@ -574,7 +575,8 @@ TEST_F(WindupClawTest, NoWindupPositive) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, 971.0);
+  TestWindup(ClawMotor::UNKNOWN_LOCATION, ::aos::time::Time::InSeconds(1.0),
+             971.0);
 
   VerifyNearGoal();
 }
@@ -587,7 +589,8 @@ TEST_F(WindupClawTest, NoWindupNegative) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::UNKNOWN_LOCATION, 100, -971.0);
+  TestWindup(ClawMotor::UNKNOWN_LOCATION, ::aos::time::Time::InSeconds(1.0),
+             -971.0);
 
   VerifyNearGoal();
 }
@@ -600,7 +603,8 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::FINE_TUNE_BOTTOM, 200, -971.0);
+  TestWindup(ClawMotor::FINE_TUNE_BOTTOM, ::aos::time::Time::InSeconds(2.0),
+             -971.0);
 
   VerifyNearGoal();
 }

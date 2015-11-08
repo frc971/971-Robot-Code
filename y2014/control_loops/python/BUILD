@@ -10,8 +10,19 @@ py_binary(
   ],
 )
 
-py_library(
+py_binary(
   name = 'polydrivetrain',
+  srcs = [
+    'polydrivetrain.py',
+    'drivetrain.py',
+  ],
+  deps = [
+    '//frc971/control_loops/python:controls',
+  ],
+)
+
+py_library(
+  name = 'polydrivetrain_lib',
   srcs = [
     'polydrivetrain.py',
     'drivetrain.py',
@@ -27,7 +38,7 @@ py_binary(
     'claw.py',
   ],
   deps = [
-    ':polydrivetrain',
+    ':polydrivetrain_lib',
     '//frc971/control_loops/python:controls',
   ]
 )

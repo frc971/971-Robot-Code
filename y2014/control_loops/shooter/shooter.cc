@@ -17,6 +17,7 @@ namespace control_loops {
 
 using ::y2014::control_loops::shooter::kSpringConstant;
 using ::y2014::control_loops::shooter::kMaxExtension;
+using ::y2014::control_loops::shooter::kDt;
 using ::y2014::control_loops::shooter::MakeShooterLoop;
 using ::aos::time::Time;
 
@@ -209,8 +210,6 @@ void ShooterMotor::RunIteration(
     const control_loops::ShooterQueue::Position *position,
     control_loops::ShooterQueue::Output *output,
     control_loops::ShooterQueue::Status *status) {
-  constexpr double dt = 0.01;
-
   if (goal && ::std::isnan(goal->shot_power)) {
 	  state_ = STATE_ESTOP;
     LOG(ERROR, "Estopping because got a shot power of NAN.\n");
@@ -345,7 +344,7 @@ void ShooterMotor::RunIteration(
 
       if (!disabled) {
         shooter_.SetGoalPosition(
-            shooter_.goal_position() + values.shooter.zeroing_speed * dt,
+            shooter_.goal_position() + values.shooter.zeroing_speed * kDt,
             values.shooter.zeroing_speed);
       }
       cap_goal = true;
@@ -610,7 +609,7 @@ void ShooterMotor::RunIteration(
         shooter_.SetGoalPosition(
             ::std::min(
                 values.shooter.upper_limit,
-                shooter_.goal_position() + values.shooter.unload_speed * dt),
+                shooter_.goal_position() + values.shooter.unload_speed * kDt),
             values.shooter.unload_speed);
       }
 

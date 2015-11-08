@@ -15,8 +15,8 @@
 #include "y2014/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/control_loops/drivetrain/polydrivetrain_cim_plant.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/shifter_hall_effect.h"
 
@@ -28,6 +28,8 @@ using frc971::sensors::gyro_reading;
 
 namespace frc971 {
 namespace control_loops {
+
+using ::y2014::control_loops::drivetrain::kDt;
 
 class DrivetrainMotorsSS {
  public:
@@ -286,7 +288,7 @@ class PolyDrivetrain {
         throttle_(0.0),
         quickturn_(false),
         stale_count_(0),
-        position_time_delta_(0.01),
+        position_time_delta_(kDt),
         left_gear_(LOW),
         right_gear_(LOW),
         counter_(0) {
@@ -410,7 +412,7 @@ class PolyDrivetrain {
     } else {
       last_position_ = position_;
       position_ = *position;
-      position_time_delta_ = (stale_count_ + 1) * 0.01;
+      position_time_delta_ = (stale_count_ + 1) * kDt;
       stale_count_ = 0;
     }
 

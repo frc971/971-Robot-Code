@@ -42,6 +42,24 @@ genrule(
   ],
 )
 
+genrule(
+  name = 'genrule_polydrivetrain',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014/control_loops/python:polydrivetrain) $(OUTS)',
+  tools = [
+    '//y2014/control_loops/python:polydrivetrain',
+  ],
+  tags = [
+    'local',
+  ],
+  outs = [
+    'polydrivetrain_dog_motor_plant.h',
+    'polydrivetrain_dog_motor_plant.cc',
+    'polydrivetrain_cim_plant.h',
+    'polydrivetrain_cim_plant.cc',
+  ],
+)
+
 cc_library(
   name = 'polydrivetrain_plants',
   srcs = [
@@ -63,11 +81,9 @@ cc_library(
   name = 'drivetrain_lib',
   srcs = [
     'drivetrain.cc',
-    'polydrivetrain_cim_plant.cc',
   ],
   hdrs = [
     'drivetrain.h',
-    'polydrivetrain_cim_plant.h',
   ],
   deps = [
     ':drivetrain_queue',

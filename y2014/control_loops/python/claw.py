@@ -484,6 +484,8 @@ def main(argv):
                                                  namespaces=namespaces)
     loop_writer.AddConstant(control_loop.Constant("kClawMomentOfInertiaRatio",
       "%f", claw.J_top / claw.J_bottom))
+    loop_writer.AddConstant(control_loop.Constant("kDt", "%f",
+          claw.dt))
     if argv[1][-3:] == '.cc':
       loop_writer.Write(argv[2], argv[1])
     else:

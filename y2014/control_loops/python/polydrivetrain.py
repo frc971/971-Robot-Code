@@ -397,14 +397,16 @@ class VelocityDrivetrain(object):
 def main(argv):
   vdrivetrain = VelocityDrivetrain()
 
-  if len(argv) != 7:
+  if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
+    namespaces = ['y2014', 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
                        vdrivetrain.drivetrain_low_high,
                        vdrivetrain.drivetrain_high_low,
-                       vdrivetrain.drivetrain_high_high])
+                       vdrivetrain.drivetrain_high_high],
+                       namespaces=namespaces)
 
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
@@ -414,10 +416,10 @@ def main(argv):
     cim_writer = control_loop.ControlLoopWriter(
         "CIM", [drivetrain.CIM()])
 
-    if argv[5][-3:] == '.cc':
-      cim_writer.Write(argv[6], argv[5])
+    if argv[3][-3:] == '.cc':
+      cim_writer.Write(argv[4], argv[3])
     else:
-      cim_writer.Write(argv[5], argv[6])
+      cim_writer.Write(argv[3], argv[4])
     return
 
   vl_plot = []

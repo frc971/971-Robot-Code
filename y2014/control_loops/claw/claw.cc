@@ -47,6 +47,8 @@
 namespace frc971 {
 namespace control_loops {
 
+using ::y2014::control_loops::claw::kDt;
+
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
 const double kRezeroThreshold = 0.07;
@@ -613,8 +615,6 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
                              const control_loops::ClawQueue::Position *position,
                              control_loops::ClawQueue::Output *output,
                              control_loops::ClawQueue::Status *status) {
-  constexpr double dt = 0.01;
-
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
   if (output) {
@@ -716,7 +716,7 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
           doing_calibration_fine_tune_ = true;
-          bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
+          bottom_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
           top_claw_velocity_ = bottom_claw_velocity_ =
               values.claw.claw_zeroing_speed;
           LOG(DEBUG, "Ready to fine tune the bottom\n");
@@ -729,7 +729,7 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
         }
       } else {
         mode_ = FINE_TUNE_BOTTOM;
-        bottom_claw_goal_ += values.claw.claw_zeroing_speed * dt;
+        bottom_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             values.claw.claw_zeroing_speed;
         if (top_claw_.front_or_back_triggered() ||
@@ -773,7 +773,7 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
                        values.claw.start_fine_tune_pos) <
             values.claw.claw_unimportant_epsilon) {
           doing_calibration_fine_tune_ = true;
-          top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
+          top_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
           top_claw_velocity_ = bottom_claw_velocity_ =
               values.claw.claw_zeroing_speed;
           LOG(DEBUG, "Ready to fine tune the top\n");
@@ -786,7 +786,7 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
         }
       } else {
         mode_ = FINE_TUNE_TOP;
-        top_claw_goal_ += values.claw.claw_zeroing_speed * dt;
+        top_claw_goal_ += values.claw.claw_zeroing_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             values.claw.claw_zeroing_speed;
         if (top_claw_.front_or_back_triggered() ||
@@ -841,8 +841,8 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
       if (enabled) {
         // Time to slowly move back up to find any position to narrow down the
         // zero.
-        top_claw_goal_ += values.claw.claw_zeroing_off_speed * dt;
-        bottom_claw_goal_ += values.claw.claw_zeroing_off_speed * dt;
+        top_claw_goal_ += values.claw.claw_zeroing_off_speed * kDt;
+        bottom_claw_goal_ += values.claw.claw_zeroing_off_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             values.claw.claw_zeroing_off_speed;
         LOG(DEBUG, "Bottom is known.\n");
@@ -851,8 +851,8 @@ void ClawMotor::RunIteration(const control_loops::ClawQueue::Goal *goal,
       // We don't know where either claw is.  Slowly start moving down to find
       // any hall effect.
       if (enabled) {
-        top_claw_goal_ -= values.claw.claw_zeroing_off_speed * dt;
-        bottom_claw_goal_ -= values.claw.claw_zeroing_off_speed * dt;
+        top_claw_goal_ -= values.claw.claw_zeroing_off_speed * kDt;
+        bottom_claw_goal_ -= values.claw.claw_zeroing_off_speed * kDt;
         top_claw_velocity_ = bottom_claw_velocity_ =
             -values.claw.claw_zeroing_off_speed;
         LOG(DEBUG, "Both are unknown.\n");
