@@ -17,6 +17,8 @@ namespace frc971 {
 namespace control_loops {
 namespace testing {
 
+using ::y2014::control_loops::claw::MakeClawPlant;
+
 typedef enum {
 	TOP_CLAW = 0,
 	BOTTOM_CLAW,

@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
-import polytope
-import polydrivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
+from frc971.control_loops.python import polytope
+from y2014.control_loops.python import polydrivetrain
 import numpy
 import sys
 from matplotlib import pylab
@@ -478,8 +478,10 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name for the claw."
   else:
+    namespaces = ['y2014', 'control_loops', 'claw']
     claw = Claw("Claw")
-    loop_writer = control_loop.ControlLoopWriter("Claw", [claw])
+    loop_writer = control_loop.ControlLoopWriter("Claw", [claw],
+                                                 namespaces=namespaces)
     loop_writer.AddConstant(control_loop.Constant("kClawMomentOfInertiaRatio",
       "%f", claw.J_top / claw.J_bottom))
     if argv[1][-3:] == '.cc':

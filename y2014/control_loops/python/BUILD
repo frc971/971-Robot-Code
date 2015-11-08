@@ -7,5 +7,27 @@ py_binary(
   ],
   deps = [
     '//frc971/control_loops/python:controls',
+  ],
+)
+
+py_library(
+  name = 'polydrivetrain',
+  srcs = [
+    'polydrivetrain.py',
+    'drivetrain.py',
+  ],
+  deps = [
+    '//frc971/control_loops/python:controls',
+  ],
+)
+
+py_binary(
+  name = 'claw',
+  srcs = [
+    'claw.py',
+  ],
+  deps = [
+    ':polydrivetrain',
+    '//frc971/control_loops/python:controls',
   ]
 )

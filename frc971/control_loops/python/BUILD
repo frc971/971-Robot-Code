@@ -5,5 +5,7 @@ py_library(
   srcs = [
     'control_loop.py',
     'controls.py',
+    'polytope.py',
+    'libcdd.py',
   ],
 )

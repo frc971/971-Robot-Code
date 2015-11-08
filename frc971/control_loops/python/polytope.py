@@ -10,7 +10,7 @@ are matricies.  It also provides convenient methods to find all the verticies.
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
 
-import libcdd
+from frc971.control_loops.python import libcdd
 import numpy
 import string
 import sys

@@ -25,6 +25,22 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_claw',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014/control_loops/python:claw) $(OUTS)',
+  tools = [
+    '//y2014/control_loops/python:claw',
+  ],
+  tags = [
+    'local',
+  ],
+  outs = [
+    'claw_motor_plant.h',
+    'claw_motor_plant.cc',
+  ],
+)
+
 cc_library(
   name = 'claw_lib',
   srcs = [

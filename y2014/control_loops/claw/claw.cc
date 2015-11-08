@@ -372,7 +372,7 @@ ClawMotor::ClawMotor(control_loops::ClawQueue *my_claw)
       has_bottom_claw_goal_(false),
       bottom_claw_goal_(0.0),
       bottom_claw_(this),
-      claw_(MakeClawLoop()),
+      claw_(::y2014::control_loops::claw::MakeClawLoop()),
       was_enabled_(false),
       doing_calibration_fine_tune_(false),
       capped_goal_(false),

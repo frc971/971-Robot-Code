@@ -28,7 +28,7 @@ class CIM(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Control loop time step
-    self.dt = 0.005
+    self.dt = 0.010
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(

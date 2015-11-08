@@ -2,10 +2,10 @@
 
 import numpy
 import sys
-import polytope
-import drivetrain
-import control_loop
-import controls
+from frc971.control_loops.python import polytope
+from y2014.control_loops.python import drivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
 from matplotlib import pylab
 
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
