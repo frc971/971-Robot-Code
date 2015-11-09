@@ -49,6 +49,10 @@ queue_group ShooterQueue {
     // What we think the current position of the hard stop on the shooter is, in
     // shot power (Joules).
     double hard_stop_power;
+
+    double absolute_position;
+    double absolute_velocity;
+    uint32_t state;
   };
 
   queue Goal goal;

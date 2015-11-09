@@ -33,7 +33,7 @@ class Claw(control_loop.ControlLoop):
     # Gear ratio
     self.G = 14.0 / 48.0 * 18.0 / 32.0 * 18.0 / 66.0 * 12.0 / 60.0
     # Control loop time step
-    self.dt = 0.01
+    self.dt = 0.005
 
     # State is [bottom position, bottom velocity, top - bottom position,
     #           top - bottom velocity]
@@ -95,8 +95,10 @@ class Claw(control_loop.ControlLoop):
     self.A_diff, self.B_diff = controls.c2d(
         self.A_diff_cont, self.B_diff_cont, self.dt)
 
-    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom, [.75 + 0.1j, .75 - 0.1j])
-    self.K_diff = controls.dplace(self.A_diff, self.B_diff, [.75 + 0.1j, .75 - 0.1j])
+    self.K_bottom = controls.dplace(self.A_bottom, self.B_bottom,
+                                    [0.87 + 0.05j, 0.87 - 0.05j])
+    self.K_diff = controls.dplace(self.A_diff, self.B_diff,
+                                  [0.85 + 0.05j, 0.85 - 0.05j])
 
     print "K_diff", self.K_diff
     print "K_bottom", self.K_bottom
@@ -144,8 +146,8 @@ class Claw(control_loop.ControlLoop):
     print "eigenvalues"
     print numpy.linalg.eig(F)[0]
 
-    self.rpl = .05
-    self.ipl = 0.010
+    self.rpl = .09
+    self.ipl = 0.030
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl,

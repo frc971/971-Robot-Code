@@ -5,6 +5,7 @@
 
 #include "aos/common/actions/actor.h"
 #include "aos/common/actions/actions.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 #include "y2014/actors/drivetrain_action.q.h"
 
@@ -17,6 +18,9 @@ class DrivetrainActor
   explicit DrivetrainActor(DrivetrainActionQueueGroup* s);
 
   bool RunAction(const actors::DrivetrainActionParams &params) override;
+
+ private:
+  StateFeedbackLoop<4, 2, 2> loop_;
 };
 
 typedef ::aos::common::actions::TypedAction<DrivetrainActionQueueGroup>

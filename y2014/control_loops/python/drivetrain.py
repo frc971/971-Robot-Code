@@ -28,7 +28,7 @@ class CIM(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Control loop time step
-    self.dt = 0.010
+    self.dt = 0.005
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(
@@ -90,7 +90,7 @@ class Drivetrain(control_loop.ControlLoop):
       self.Gr = self.G_high
 
     # Control loop time step
-    self.dt = 0.010
+    self.dt = 0.005
 
     # These describe the way that a given side of a robot will be influenced
     # by the other side. Units of 1 / kg.
@@ -128,7 +128,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.lp, self.hp, self.lp])
     #print self.K
-    q_pos = 0.07
+    q_pos = 0.12
     q_vel = 1.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0)), 0.0, 0.0],
@@ -140,8 +140,9 @@ class Drivetrain(control_loop.ControlLoop):
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
     #print self.A
     #print self.B
-    #print self.K
-    #print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    print "DT K", name
+    print self.K
+    print numpy.linalg.eig(self.A - self.B * self.K)[0]
 
     self.hlp = 0.3
     self.llp = 0.4

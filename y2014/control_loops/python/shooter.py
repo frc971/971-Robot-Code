@@ -38,7 +38,7 @@ class SprungShooter(control_loop.ControlLoop):
     self.G = 10.0 / 40.0 * 20.0 / 54.0 * 24.0 / 54.0 * 20.0 / 84.0 * 16.0 * (3.0 / 8.0) / (2.0 * numpy.pi) * 0.0254
 
     # Control loop time step
-    self.dt = 0.01
+    self.dt = 0.005
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(

@@ -252,7 +252,7 @@ class SensorReader {
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
-      ::aos::time::PhasedLoopXMS(10, 9000);
+      ::aos::time::PhasedLoopXMS(5, 4000);
       RunIteration();
     }
 

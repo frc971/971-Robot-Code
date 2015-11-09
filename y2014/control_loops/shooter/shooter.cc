@@ -42,7 +42,7 @@ void ZeroedStateFeedbackLoop::CapU() {
   voltage_ = std::max(-max_voltage_, voltage_);
   mutable_U(0, 0) = voltage_ - old_voltage;
 
-  LOG_STRUCT(DEBUG, "output", ShooterVoltageToLog(X_hat(2, 0), voltage_));
+  LOG_STRUCT(DEBUG, "shooter_output", ShooterVoltageToLog(X_hat(2, 0), voltage_));
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
@@ -402,8 +402,11 @@ void ShooterMotor::RunIteration(
       }
       if (load_timeout_ < Time::Now()) {
         if (position) {
-          if (!position->pusher_distal.current ||
-              !position->pusher_proximal.current) {
+          // If none of the sensors is triggered, estop.
+          // Otherwise, trigger anyways if it has been 0.5 seconds more.
+          if (!(position->pusher_distal.current ||
+                position->pusher_proximal.current) ||
+              (load_timeout_ + Time::InSeconds(0.5) < Time::Now()) {
             state_ = STATE_ESTOP;
             LOG(ERROR, "Estopping because took too long to load.\n");
           }
@@ -534,7 +537,7 @@ void ShooterMotor::RunIteration(
       // Also move on if it times out.
       if (((::std::abs(firing_starting_position_ -
                        shooter_.absolute_position()) > 0.0005 &&
-            cycles_not_moved_ > 3) ||
+            cycles_not_moved_ > 6) ||
            Time::Now() > shot_end_time_) &&
           ::aos::robot_state->voltage_battery > 10.5) {
         state_ = STATE_REQUEST_LOAD;
@@ -678,6 +681,10 @@ void ShooterMotor::RunIteration(
     last_distal_current_ = position->pusher_distal.current;
     last_proximal_current_ = position->pusher_proximal.current;
   }
+
+  status->absolute_position = shooter_.absolute_position();
+  status->absolute_velocity = shooter_.absolute_velocity();
+  status->state = state_;
 
   status->shots = shot_count_;
 }

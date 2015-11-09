@@ -19,10 +19,13 @@ namespace frc971 {
 namespace actors {
 
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
-    : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
+    : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s),
+      loop_(constants::GetValues().make_drivetrain_loop()) {
+  loop_.set_controller_index(3);
+}
 
 bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
-  static const auto K = constants::GetValues().make_drivetrain_loop().K();
+  static const auto K = loop_.K();
 
   const double yoffset = params.y_offset;
   const double turn_offset =
@@ -30,8 +33,8 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
-  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(10));
+  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(5));
+  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(5));
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;
@@ -45,7 +48,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
                                     constants::GetValues().turn_width / 2.0);
 
   while (true) {
-    ::aos::time::PhasedLoopXMS(10, 5000);
+    ::aos::time::PhasedLoopXMS(5, 2500);
 
     control_loops::drivetrain_queue.status.FetchLatest();
     if (control_loops::drivetrain_queue.status.get()) {

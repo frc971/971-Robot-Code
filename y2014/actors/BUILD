@@ -82,6 +82,7 @@ cc_library(
     '//third_party/eigen',
     '//aos/common/util:trapezoid_profile',
     '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops:state_feedback_loop',
   ],
 )
 
