@@ -406,7 +406,7 @@ void ShooterMotor::RunIteration(
           // Otherwise, trigger anyways if it has been 0.5 seconds more.
           if (!(position->pusher_distal.current ||
                 position->pusher_proximal.current) ||
-              (load_timeout_ + Time::InSeconds(0.5) < Time::Now()) {
+              (load_timeout_ + Time::InSeconds(0.5) < Time::Now())) {
             state_ = STATE_ESTOP;
             LOG(ERROR, "Estopping because took too long to load.\n");
           }
