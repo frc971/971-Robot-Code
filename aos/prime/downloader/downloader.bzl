@@ -1,4 +1,5 @@
 def _aos_downloader_impl(ctx):
+  all_files = ctx.files.srcs + ctx.files.start_srcs
   ctx.file_action(
     output = ctx.outputs.executable,
     executable = True,
@@ -6,14 +7,19 @@ def _aos_downloader_impl(ctx):
       '#!/bin/bash',
       'cd "${BASH_SOURCE[@]}.runfiles"',
       'exec %s %s -- %s "$@"' % (ctx.executable._downloader.short_path,
-                                 ' '.join([src.short_path for src in ctx.files.srcs]),
+                                 ' '.join([src.short_path for src in all_files]),
                                  ctx.attr.default_target),
     ]),
   )
 
+  ctx.file_action(
+    output = ctx.outputs._startlist,
+    content = '\n'.join([f.basename for f in ctx.files.start_srcs]) + '\n',
+  )
+
   return struct(
     runfiles = ctx.runfiles(
-      files = ctx.files.srcs + ctx.files._downloader,
+      files = all_files + ctx.files._downloader + [ctx.outputs._startlist],
       collect_data = True,
       collect_default = True,
     ),
@@ -37,6 +43,10 @@ aos_downloader = rule(
       cfg = HOST_CFG,
       default = Label('//aos/prime/downloader'),
     ),
+    'start_srcs': attr.label_list(
+      mandatory = True,
+      allow_files = True,
+    ),
     'srcs': attr.label_list(
       mandatory = True,
       allow_files = True,
@@ -46,4 +56,7 @@ aos_downloader = rule(
     ),
   },
   executable = True,
+  outputs = {
+    '_startlist': '%{name}.start_list.dir/start_list.txt',
+  },
 )

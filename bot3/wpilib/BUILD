@@ -1,7 +1,7 @@
 package(default_visibility = ['//visibility:public'])
 
 cc_binary(
-  name = 'wpilib_interface_bot3',
+  name = 'wpilib_interface',
   srcs = [
     'wpilib_interface.cc',
   ],

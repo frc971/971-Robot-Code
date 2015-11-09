@@ -1,8 +1,0 @@
-joystick_reader_bot3
-wpilib_interface_bot3
-binary_log_writer
-drivetrain_bot3
-drivetrain_action_bot3
-intake
-elevator
-auto_bot3

@@ -4,8 +4,7 @@ load('/aos/prime/downloader/downloader', 'aos_downloader')
 
 aos_downloader(
   name = 'download',
-  srcs = [
-    '//aos:prime_binaries',
+  start_srcs = [
     '//y2014/control_loops/drivetrain:drivetrain',
     '//y2014/control_loops/claw:claw',
     '//y2014/control_loops/shooter:shooter',
@@ -14,7 +13,10 @@ aos_downloader(
     '//y2014:joystick_reader',
     '//y2014/actors:binaries',
     ':hot_goal_reader',
-    ':start_list.txt',
+    '//aos:prime_start_binaries',
+  ],
+  srcs = [
+    '//aos:prime_binaries',
   ],
 )
 
