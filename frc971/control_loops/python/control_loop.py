@@ -8,8 +8,8 @@ class Constant(object):
     self.formatt = formatt
     self.value = value
     self.formatToType = {}
-    self.formatToType['%f'] = "double";
-    self.formatToType['%d'] = "int";
+    self.formatToType['%f'] = "double"
+    self.formatToType['%d'] = "int"
   def __str__ (self):
     return str("\nstatic constexpr %s %s = "+ self.formatt +";\n") % \
         (self.formatToType[self.formatt], self.name, self.value)

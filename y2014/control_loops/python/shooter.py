@@ -208,7 +208,7 @@ def main(argv):
     U = ClipDeltaU(sprung_shooter, voltage, U)
     sprung_shooter.Y = raw_sprung_shooter.Y + 0.01
     sprung_shooter.UpdateObserver(U)
-    voltage += U;
+    voltage += U
     raw_sprung_shooter.Update(voltage)
     close_loop_x.append(raw_sprung_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])
@@ -230,7 +230,7 @@ def main(argv):
     U = ClipDeltaU(shooter, voltage, U)
     shooter.Y = raw_shooter.Y + 0.01
     shooter.UpdateObserver(U)
-    voltage += U;
+    voltage += U
     raw_shooter.Update(voltage)
     close_loop_x.append(raw_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])

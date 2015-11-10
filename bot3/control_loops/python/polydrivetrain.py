@@ -110,8 +110,8 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     self.B_continuous = numpy.matrix(
         [[self._drivetrain.B_continuous[1, 0], self._drivetrain.B_continuous[1, 1]],
          [self._drivetrain.B_continuous[3, 0], self._drivetrain.B_continuous[3, 1]]])
-    self.C = numpy.matrix(numpy.eye(2));
-    self.D = numpy.matrix(numpy.zeros((2, 2)));
+    self.C = numpy.matrix(numpy.eye(2))
+    self.D = numpy.matrix(numpy.zeros((2, 2)))
 
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
                                                self.B_continuous, self.dt)

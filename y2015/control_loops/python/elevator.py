@@ -77,7 +77,7 @@ class Elevator(control_loop.ControlLoop):
 
     print self.A
 
-    controlability = controls.ctrb(self.A, self.B);
+    controlability = controls.ctrb(self.A, self.B)
     print "Rank of augmented controlability matrix.", numpy.linalg.matrix_rank(
         controlability)
 

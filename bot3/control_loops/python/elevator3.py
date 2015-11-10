@@ -62,7 +62,7 @@ class Elevator(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    controlability = controls.ctrb(self.A, self.B);
+    controlability = controls.ctrb(self.A, self.B)
 
     q_pos = 0.015
     q_vel = 0.5

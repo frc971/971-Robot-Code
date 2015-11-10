@@ -85,7 +85,7 @@ class Arm(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    controlability = controls.ctrb(self.A, self.B);
+    controlability = controls.ctrb(self.A, self.B)
     print 'Rank of augmented controlability matrix.', numpy.linalg.matrix_rank(
         controlability)
 
@@ -171,10 +171,10 @@ class IntegralArm(Arm):
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
 
     self.K_unaugmented = self.K
-    self.K = numpy.matrix(numpy.zeros((2, 5)));
+    self.K = numpy.matrix(numpy.zeros((2, 5)))
     self.K[0:2, 0:4] = self.K_unaugmented
-    self.K[0, 4] = 1;
-    self.K[1, 4] = 1;
+    self.K[0, 4] = 1
+    self.K[1, 4] = 1
     print 'Kal', self.KalmanGain
     self.L = self.A * self.KalmanGain
 
