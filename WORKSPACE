@@ -4,6 +4,18 @@ new_local_repository(
   build_file = 'debian/usr.BUILD',
 )
 
+new_git_repository(
+  name = 'slycot_repo',
+  remote = 'https://github.com/avventi/Slycot.git',
+  build_file = 'debian/slycot.BUILD',
+  commit = '5af5f283cb23cbe23c4dfea4d5e56071bdbd6e70',
+)
+
+bind(
+  name = 'slycot',
+  actual = '@slycot_repo//:slycot',
+)
+
 # TODO(brian): Make these point to something which isn't hard-coded to come off
 # the host system...
 bind(

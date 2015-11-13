@@ -8,4 +8,7 @@ py_library(
     'polytope.py',
     'libcdd.py',
   ],
+  deps = [
+    '//external:slycot',
+  ],
 )
