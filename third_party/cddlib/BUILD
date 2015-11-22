@@ -32,3 +32,10 @@ cc_library(
       'clang': []
   }),
 )
+cc_binary(
+  name = '_cddlib.so',
+  deps = [':cddlib'],
+  linkshared = True,
+  visibility = ['//visibility:public'],
+  linkstatic = False,
+)
