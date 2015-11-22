@@ -10,10 +10,13 @@ void LogImplementation::DoLogStruct(
     log_level level, const ::std::string &message, size_t size,
     const MessageType *type, const ::std::function<size_t(char *)> &serialize,
     int levels) {
-  internal::RunWithCurrentImplementation(
-      levels, [&](LogImplementation * implementation) {
-    implementation->LogStruct(level, message, size, type, serialize);
-  });
+
+  {
+    auto fn = [&](LogImplementation *implementation) {
+      implementation->LogStruct(level, message, size, type, serialize);
+    };
+    internal::RunWithCurrentImplementation(levels, ::std::ref(fn));
+  }
 
   if (level == FATAL) {
     char serialized[1024];
