@@ -11,4 +11,7 @@ py_library(
   deps = [
     '//external:slycot',
   ],
+  data = [
+    '//third_party/cddlib:_cddlib.so',
+  ],
 )
