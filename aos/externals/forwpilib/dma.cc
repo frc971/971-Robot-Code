@@ -54,7 +54,9 @@ DMA::DMA() {
   tdma_config_ = tDMA::create(&status);
   tdma_config_->writeConfig_ExternalClock(false, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
+#ifdef WPILIB2015
   NiFpga_WriteU32(0x10000, 0x1832c, 0x0);
+#endif
   if (status != 0) {
     return;
   }
@@ -151,14 +153,7 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   }
   *index = true;
 
-  const int channel_index = index - trigger_channels_.begin();
-  /*
-  printf(
-      "Allocating trigger on index %d, routing module %d, routing channel %d, "
-      "is analog %d\n",
-      channel_index, input->GetModuleForRouting(),
-      input->GetChannelForRouting(), input->GetAnalogTriggerForRouting());
-  */
+  const int channel_index = ::std::distance(trigger_channels_.begin(), index);
 
   const bool is_external_clock =
       tdma_config_->readConfig_ExternalClock(&status);
@@ -185,14 +180,14 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.ExternalClockSource_Module = input->GetModuleForRouting();
   new_trigger.ExternalClockSource_Channel = input->GetChannelForRouting();
 
-  // Configures the trigger to be external, not off the FPGA clock.
-  /*
+// Configures the trigger to be external, not off the FPGA clock.
+#ifndef WPILIB2015
   tdma_config_->writeExternalTriggers(channel_index, new_trigger, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
-  */
-
+#else
   uint32_t current_triggers;
-  tRioStatusCode register_status = NiFpga_ReadU32(0x10000, 0x1832c, &current_triggers);
+  tRioStatusCode register_status =
+      NiFpga_ReadU32(0x10000, 0x1832c, &current_triggers);
   if (register_status != 0) {
     wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
     return;
@@ -204,6 +199,7 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
     wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
     return;
   }
+#endif
 }
 
 DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
@@ -219,29 +215,11 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   }
 
   sample->dma_ = this;
-  // memset(&sample->read_buffer_, 0, sizeof(sample->read_buffer_));
   manager_->read(sample->read_buffer_, capture_size_, timeout_ms,
                  &remainingBytes, &status);
 
-  if (0) { // DEBUG
-    printf("buf[] = ");
-    for (size_t i = 0;
-         i < sizeof(sample->read_buffer_) / sizeof(sample->read_buffer_[0]);
-         ++i) {
-      if (i != 0) {
-        printf(" ");
-      }
-      printf("0x%.8x", sample->read_buffer_[i]);
-    }
-    printf("\n");
-  }
-
   // TODO(jerry): Do this only if status == 0?
   *remaining_out = remainingBytes / capture_size_;
-
-  if (0) { // DEBUG
-    printf("Remaining samples = %d\n", *remaining_out);
-  }
 
   // TODO(austin): Check that *remainingBytes % capture_size_ == 0 and deal
   // with it if it isn't.  Probably meant that we overflowed?
@@ -306,22 +284,6 @@ void DMA::Start(size_t queue_depth) {
 
   manager_.reset(
       new nFPGA::tDMAManager(0, queue_depth * capture_size_, &status));
-
-  if (0) {
-    for (int i = 0; i < 4; ++i) {
-      tRioStatusCode status = 0;
-      auto x = tdma_config_->readExternalTriggers(i, &status);
-      printf(
-          "index %d, FallingEdge: %d, RisingEdge: %d, "
-          "ExternalClockSource_AnalogTrigger: %d, ExternalClockSource_Module: "
-          "%d, ExternalClockSource_Channel: %d\n",
-          i, x.FallingEdge, x.RisingEdge, x.ExternalClockSource_AnalogTrigger,
-          x.ExternalClockSource_Module, x.ExternalClockSource_Channel);
-      if (status != 0) {
-        wpi_setErrorWithContext(status, getHALErrorMessage(status));
-      }
-    }
-  }
 
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
   if (status != 0) {
@@ -394,31 +356,14 @@ int32_t DMASample::GetRaw(Encoder *input) const {
       read_buffer_[offset(kEnable_Encoders) + input->GetFPGAIndex()];
   int32_t result = 0;
 
-  if (1) {
-    // Extract the 31-bit signed tEncoder::tOutput Value using a struct with the
-    // reverse packed field order of tOutput. This gets Value from the high
-    // order 31 bits of output on little-endian ARM using gcc. This works
-    // even though C/C++ doesn't guarantee bitfield order.
-    t1Output output;
+  // Extract the 31-bit signed tEncoder::tOutput Value using a struct with the
+  // reverse packed field order of tOutput. This gets Value from the high
+  // order 31 bits of output on little-endian ARM using gcc. This works
+  // even though C/C++ doesn't guarantee bitfield order.
+  t1Output output;
 
-    output.value = dmaWord;
-    result = output.Value;
-  } else if (1) {
-    // Extract the 31-bit signed tEncoder::tOutput Value using right-shift.
-    // This works even though C/C++ doesn't guarantee whether signed >> does
-    // arithmetic or logical shift. (dmaWord / 2) would fix that but it rounds.
-    result = static_cast<int32_t>(dmaWord) >> 1;
-  }
-#if 0  // This approach was recommended but it doesn't return the right value.
-  else {
-    // Byte-reverse the DMA word (big-endian value from the FPGA) then extract
-    // the 31-bit tEncoder::tOutput. This does not return the right Value.
-    tEncoder::tOutput encoderData;
-
-    encoderData.value = __builtin_bswap32(dmaWord);
-    result = encoderData.Value;
-  }
-#endif
+  output.value = dmaWord;
+  result = output.Value;
 
   return result;
 }
