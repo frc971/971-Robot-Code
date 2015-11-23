@@ -1,5 +1,5 @@
 def _aos_downloader_impl(ctx):
-  all_files = ctx.files.srcs + ctx.files.start_srcs
+  all_files = ctx.files.srcs + ctx.files.start_srcs + [ctx.outputs._startlist]
   ctx.file_action(
     output = ctx.outputs.executable,
     executable = True,
