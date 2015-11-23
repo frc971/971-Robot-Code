@@ -350,8 +350,12 @@ static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
 
 ssize_t DMASample::offset(int index) const { return dma_->channel_offsets_[index]; }
 
+uint32_t DMASample::GetTime() const {
+  return read_buffer_[dma_->capture_size_ - 1];
+}
+
 double DMASample::GetTimestamp() const {
-  return static_cast<double>(read_buffer_[dma_->capture_size_ - 1]) * 0.000001;
+  return static_cast<double>(GetTime()) * 0.000001;
 }
 
 bool DMASample::Get(DigitalSource *input) const {

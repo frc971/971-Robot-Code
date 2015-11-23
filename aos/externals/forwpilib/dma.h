@@ -22,8 +22,10 @@ class DMASample {
  public:
   DMASample() = default;
 
-  // Returns the FPGA timestamp of the sample.
+  // Returns the FPGA timestamp of the sample in seconds.
   double GetTimestamp() const;
+  // Returns the FPGA timestamp of the sample in microseconds.
+  uint32_t GetTime() const;
 
   // All Get methods either return the requested value, or set the Error.
 
