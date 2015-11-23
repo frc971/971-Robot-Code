@@ -121,6 +121,30 @@ class DMADigitalReader : public DMASampleHandlerInterface {
   DISALLOW_COPY_AND_ASSIGN(DMADigitalReader);
 };
 
+// Reads an analog sensor in sync with DMA samples.
+class DMAAnalogReader : public DMASampleHandlerInterface {
+ public:
+  DMAAnalogReader(AnalogInput *input) : input_(input) {}
+
+  double value() const { return value_; }
+
+ private:
+  void UpdateFromSample(const DMASample & /*sample*/) override {}
+  void UpdatePolledValue() override { value_ = input_->GetVoltage(); }
+  void PollFromSample(const DMASample &sample) override {
+    value_ = sample.GetVoltage(input_);
+  }
+  void AddToDMA(DMA *dma) override {
+    dma->Add(input_);
+  }
+
+  AnalogInput *const input_;
+
+  double value_;
+
+  DISALLOW_COPY_AND_ASSIGN(DMAAnalogReader);
+};
+
 // This class handles updating the sampled data on multiple
 // DMASampleHandlerInterfaces. The caller should create an instance and then
 // periodically call RunIteration, retrieving whatever data from the
