@@ -22,7 +22,7 @@ def _single_fortran_object_impl(ctx):
       filtered_cmd.append(flag)
 
   ctx.action(
-    inputs = [ctx.file.src],
+    inputs = [ctx.file.src] + ctx.files._cc_toolchain,
     outputs = [ctx.outputs.pic_o],
     mnemonic = "Fortran",
     executable = ctx.fragments.cpp.compiler_executable,
@@ -45,6 +45,11 @@ _single_fortran_object = rule(
   attrs = {
     'src': attr.label(single_file=True, allow_files=FileType(['.f'])),
     'cc_libs': attr.label_list(providers=['cc']),
+    # TODO(Brian): Replace this with something more fine-grained from the
+    # configuration fragment or something.
+    '_cc_toolchain': attr.label(
+      default = Label('//tools/cpp:toolchain'),
+    ),
   },
   outputs = _define_fortran_output,
   fragments = [
@@ -62,9 +67,11 @@ def fortran_library(name, srcs, deps = [], visibility = None):
   pic_o_files = []
   for src in srcs:
     pic_o_file = src[:-2] + '.pic.o'
-    _single_fortran_object(name=name + '_' + pic_o_file,
-                           src=src,
-                           visibility=['//visibility:private'])
+    _single_fortran_object(
+      name = name + '_' + pic_o_file,
+      src = src,
+      visibility = ['//visibility:private'],
+    )
     pic_o_files.append(pic_o_file)
 
   native.cc_library(

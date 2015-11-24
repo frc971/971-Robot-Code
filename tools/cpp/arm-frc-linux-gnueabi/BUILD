@@ -17,6 +17,14 @@ filegroup(
 )
 
 filegroup(
+  name = 'as',
+  srcs = [
+    '@arm-frc-linux-gnueabi-repo//:as',
+    'arm-frc-linux-gnueabi-as',
+  ],
+)
+
+filegroup(
   name = 'ld',
   srcs = [
     '@arm-frc-linux-gnueabi-repo//:ld',
@@ -61,6 +69,7 @@ filegroup(
   srcs = [
     ':gcc',
     ':ar',
+    ':as',
     ':ld',
     ':nm',
     ':objcopy',

@@ -368,6 +368,7 @@ cc_test(
 cc_test(
     name = "googletest_gtest_typed_test_test",
     srcs = [
+        "googletest/test/gtest-typed-test_test.h",
         "googletest/test/gtest-typed-test_test.cc",
     ],
     deps = [
@@ -378,6 +379,7 @@ cc_test(
 cc_test(
     name = "googletest_gtest_typed_test2_test",
     srcs = [
+        "googletest/test/gtest-typed-test_test.h",
         "googletest/test/gtest-typed-test2_test.cc",
     ],
     deps = [
@@ -402,6 +404,7 @@ cc_test(
 cc_test(
     name = "googletest_gtest_production_test",
     srcs = [
+        "googletest/test/production.h",
         "googletest/test/production.cc",
     ],
     deps = [
@@ -534,6 +537,7 @@ cc_test(
 cc_test(
     name = "googlemock_gmock_link2_test",
     srcs = [
+        "googlemock/test/gmock_link_test.h",
         "googlemock/test/gmock_link2_test.cc",
     ],
     deps = [

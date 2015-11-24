@@ -81,6 +81,7 @@ filegroup(
   name = 'roborio-compiler-files',
   srcs = [
     '//tools/cpp/arm-frc-linux-gnueabi:tool-wrappers',
+    '//tools/cpp/arm-frc-linux-gnueabi:as',
     '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
   ],
 )
@@ -90,6 +91,8 @@ filegroup(
   srcs = [
     '//tools/cpp/arm-frc-linux-gnueabi:ld',
     '//tools/cpp/arm-frc-linux-gnueabi:ar',
+    '//tools/cpp/arm-frc-linux-gnueabi:gcc',
+    '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
   ],
 )
 filegroup(

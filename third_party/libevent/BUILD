@@ -33,12 +33,14 @@ cc_library(
 
     'evthread_pthread.c',
 
-    'include/event2/event-config.h',
-
     #'compat/sys/queue.h',
   ] + glob([
     '*-internal.h',
+    'include/event2/*.h',
   ]),
+  textual_hdrs = [
+    'arc4random.c',
+  ],
   hdrs = [
     'event.h',
     'evhttp.h',

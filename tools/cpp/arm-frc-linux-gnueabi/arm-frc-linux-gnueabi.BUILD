@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
   name = 'gcc',
   srcs = [
-    'usr/bin/arm-frc-linux-gnueabi-gcc-4.9',
+    'usr/bin/arm-frc-linux-gnueabi-gcc',
   ],
 )
 
@@ -11,6 +11,13 @@ filegroup(
   name = 'ar',
   srcs = [
     'usr/bin/arm-frc-linux-gnueabi-ar',
+  ],
+)
+
+filegroup(
+  name = 'as',
+  srcs = [
+    'usr/bin/arm-frc-linux-gnueabi-as',
   ],
 )
 
@@ -55,6 +62,8 @@ filegroup(
     'usr/bin/**/*',
     'usr/include/**/*',
     'usr/lib/**/*',
+    'usr/arm-frc-linux-gnueabi/**/*',
+    'usr/lib/x86_64-linux-gnu/gcc/**/*',
   ]),
 )
 
@@ -63,6 +72,7 @@ filegroup(
   srcs = [
     ':gcc',
     ':ar',
+    ':as',
     ':ld',
     ':nm',
     ':objcopy',
