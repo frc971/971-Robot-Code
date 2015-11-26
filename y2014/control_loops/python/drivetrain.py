@@ -4,6 +4,7 @@ from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
 import sys
+import argparse
 from matplotlib import pylab
 
 
@@ -129,7 +130,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.hp = 0.65
     self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.lp, self.hp, self.lp])
-    #print self.K
+
     q_pos = 0.12
     q_vel = 1.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
@@ -140,8 +141,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
-    #print self.A
-    #print self.B
+
     print "DT K", name
     print self.K
     print numpy.linalg.eig(self.A - self.B * self.K)[0]
@@ -215,6 +215,15 @@ class KFDrivetrain(Drivetrain):
 
 
 def main(argv):
+  parser = argparse.ArgumentParser(description='Calculate drivetrain.')
+  parser.add_argument('--plot', action='store_true', default=False, help='If true, plot')
+  parser.add_argument('drivetrainh')
+  parser.add_argument('drivetraincc')
+  parser.add_argument('kalman_drivetrainh')
+  parser.add_argument('kalman_drivetraincc')
+
+  args = parser.parse_args(argv[1:])
+
   # Simulate the response of the system to a step input.
   drivetrain = Drivetrain()
   simulated_left = []
@@ -224,9 +233,10 @@ def main(argv):
     simulated_left.append(drivetrain.X[0, 0])
     simulated_right.append(drivetrain.X[2, 0])
 
-  #pylab.plot(range(100), simulated_left)
-  #pylab.plot(range(100), simulated_right)
-  #pylab.show()
+  if args.plot:
+    pylab.plot(range(100), simulated_left)
+    pylab.plot(range(100), simulated_right)
+    pylab.show()
 
   # Simulate forwards motion.
   drivetrain = Drivetrain()
@@ -241,9 +251,10 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  #pylab.plot(range(100), close_loop_left)
-  #pylab.plot(range(100), close_loop_right)
-  #pylab.show()
+  if args.plot:
+    pylab.plot(range(100), close_loop_left)
+    pylab.plot(range(100), close_loop_right)
+    pylab.show()
 
   # Try turning in place
   drivetrain = Drivetrain()
@@ -258,9 +269,10 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  #pylab.plot(range(100), close_loop_left)
-  #pylab.plot(range(100), close_loop_right)
-  #pylab.show()
+  if args.plot:
+    pylab.plot(range(100), close_loop_left)
+    pylab.plot(range(100), close_loop_right)
+    pylab.show()
 
   # Try turning just one side.
   drivetrain = Drivetrain()
@@ -275,20 +287,29 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  #pylab.plot(range(100), close_loop_left)
-  #pylab.plot(range(100), close_loop_right)
-  #pylab.show()
+  if args.plot:
+    pylab.plot(range(100), close_loop_left)
+    pylab.plot(range(100), close_loop_right)
+    pylab.show()
 
   # Write the generated constants out to a file.
-  drivetrain_low_low = Drivetrain(name="DrivetrainLowLow", left_low=True, right_low=True)
-  drivetrain_low_high = Drivetrain(name="DrivetrainLowHigh", left_low=True, right_low=False)
-  drivetrain_high_low = Drivetrain(name="DrivetrainHighLow", left_low=False, right_low=True)
-  drivetrain_high_high = Drivetrain(name="DrivetrainHighHigh", left_low=False, right_low=False)
+  drivetrain_low_low = Drivetrain(
+      name="DrivetrainLowLow", left_low=True, right_low=True)
+  drivetrain_low_high = Drivetrain(
+      name="DrivetrainLowHigh", left_low=True, right_low=False)
+  drivetrain_high_low = Drivetrain(
+      name="DrivetrainHighLow", left_low=False, right_low=True)
+  drivetrain_high_high = Drivetrain(
+      name="DrivetrainHighHigh", left_low=False, right_low=False)
 
-  kf_drivetrain_low_low = KFDrivetrain(name="KFDrivetrainLowLow", left_low=True, right_low=True)
-  kf_drivetrain_low_high = KFDrivetrain(name="KFDrivetrainLowHigh", left_low=True, right_low=False)
-  kf_drivetrain_high_low = KFDrivetrain(name="KFDrivetrainHighLow", left_low=False, right_low=True)
-  kf_drivetrain_high_high = KFDrivetrain(name="KFDrivetrainHighHigh", left_low=False, right_low=False)
+  kf_drivetrain_low_low = KFDrivetrain(
+      name="KFDrivetrainLowLow", left_low=True, right_low=True)
+  kf_drivetrain_low_high = KFDrivetrain(
+      name="KFDrivetrainLowHigh", left_low=True, right_low=False)
+  kf_drivetrain_high_low = KFDrivetrain(
+      name="KFDrivetrainHighLow", left_low=False, right_low=True)
+  kf_drivetrain_high_high = KFDrivetrain(
+      name="KFDrivetrainHighHigh", left_low=False, right_low=False)
 
   if len(argv) != 5:
     print "Expected .h file name and .cc file name"
@@ -323,19 +344,13 @@ def main(argv):
     dog_loop_writer.AddConstant(control_loop.Constant("kT", "%f",
           drivetrain_low_low.Kt))
 
-    if argv[1][-3:] == '.cc':
-      dog_loop_writer.Write(argv[2], argv[1])
-    else:
-      dog_loop_writer.Write(argv[1], argv[2])
+    dog_loop_writer.Write(args.drivetrainh, args.drivetraincc)
 
     kf_loop_writer = control_loop.ControlLoopWriter(
         "KFDrivetrain", [kf_drivetrain_low_low, kf_drivetrain_low_high,
                        kf_drivetrain_high_low, kf_drivetrain_high_high],
         namespaces = namespaces)
-    if argv[3][-3:] == '.cc':
-      kf_loop_writer.Write(argv[4], argv[3])
-    else:
-      kf_loop_writer.Write(argv[3], argv[4])
+    kf_loop_writer.Write(args.kalman_drivetrainh, args.kalman_drivetraincc)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
