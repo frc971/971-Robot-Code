@@ -36,6 +36,9 @@
 #ifdef HAVE_SYS_PRCTL
 # include <sys/prctl.h>
 #endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include "base/thread_lister.h"
 #include "base/linuxthreads.h"
 /* Include other thread listers here that define THREADS macro

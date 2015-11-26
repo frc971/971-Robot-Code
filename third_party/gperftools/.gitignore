@@ -107,7 +107,7 @@
 /src/base/.dirstamp
 /src/config.h
 /src/config.h.in
-/src/gperftools/tcmalloc.h
+#/src/gperftools/tcmalloc.h
 /src/stamp-h1
 /src/stamp-h1
 /src/tests/.deps

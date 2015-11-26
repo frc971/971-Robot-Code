@@ -160,7 +160,7 @@ const char* GetenvBeforeMain(const char* name) {
   const char* p = envbuf;
   while (*p != '\0') {    // will happen at the \0\0 that terminates the buffer
     // proc file has the format NAME=value\0NAME=value\0NAME=value\0...
-    const char* endp = (char*)memchr(p, '\0', sizeof(envbuf) - (p - envbuf));
+    const char* endp = (const char*)memchr(p, '\0', sizeof(envbuf) - (p - envbuf));
     if (endp == NULL)            // this entry isn't NUL terminated
       return NULL;
     else if (!memcmp(p, name, namelen) && p[namelen] == '=')    // it's a match
