@@ -11,6 +11,7 @@ cc_binary(
     ':drivetrain_queue',
     '//aos/common/controls:replay_control_loop',
     '//aos/linux_code:init',
+    '//frc971/queues:gyro',
   ],
 )
 

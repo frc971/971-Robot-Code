@@ -52,6 +52,13 @@ class ControlLoopReplayer {
     replayer_.AddDirectQueueSender(process_name, "goal", loop_group_->goal);
   }
 
+  template <class QT>
+  void AddDirectQueueSender(const ::std::string &process_name,
+                            const ::std::string &log_message,
+                            const ::aos::Queue<QT> &queue) {
+    replayer_.AddDirectQueueSender<QT>(process_name, log_message, queue);
+  }
+
   // Replays messages from a file.
   // filename can be straight from the command line; all sanity checking etc is
   // handled by this function.
