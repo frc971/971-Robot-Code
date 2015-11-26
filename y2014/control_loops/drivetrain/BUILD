@@ -79,6 +79,28 @@ cc_library(
 )
 
 cc_library(
+  name = 'polydrivetrain',
+  srcs = [
+    'polydrivetrain.cc',
+  ],
+  hdrs = [
+    'polydrivetrain.h',
+  ],
+  deps = [
+    ':drivetrain_queue',
+    '//y2014:constants',
+    '//aos/common/controls:polytope',
+    '//aos/common:math',
+    '//aos/common/messages:robot_state',
+    '//frc971/control_loops:state_feedback_loop',
+    '//frc971/control_loops:coerce_goal',
+    '//aos/common/util:log_interval',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/logging:matrix_logging',
+  ],
+)
+
+cc_library(
   name = 'drivetrain_lib',
   srcs = [
     'drivetrain.cc',
@@ -88,9 +110,9 @@ cc_library(
   ],
   deps = [
     ':drivetrain_queue',
+    ':polydrivetrain',
     '//aos/common/controls:control_loop',
     '//y2014:constants',
-    '//aos/common/controls:polytope',
     '//aos/common:math',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:coerce_goal',

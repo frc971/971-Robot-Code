@@ -21,10 +21,10 @@ class CIM(control_loop.ControlLoop):
     # Moment of inertia of the CIM in kg m^2
     self.J = 0.0001
     # Resistance of the motor, divided by 2 to account for the 2 motors
-    self.R = 12.0 / self.stall_current
+    self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
-              (12.0 - self.R * self.free_current))
+              (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Control loop time step
@@ -32,9 +32,9 @@ class CIM(control_loop.ControlLoop):
 
     # State feedback matrices
     self.A_continuous = numpy.matrix(
-        [[-self.Kt / self.Kv / (self.J * self.R)]])
+        [[-self.Kt / self.Kv / (self.J * self.resistance)]])
     self.B_continuous = numpy.matrix(
-        [[self.Kt / (self.J * self.R)]])
+        [[self.Kt / (self.J * self.resistance)]])
     self.C = numpy.matrix([[1]])
     self.D = numpy.matrix([[0]])
 
@@ -53,14 +53,16 @@ class CIM(control_loop.ControlLoop):
 class Drivetrain(control_loop.ControlLoop):
   def __init__(self, name="Drivetrain", left_low=True, right_low=True):
     super(Drivetrain, self).__init__(name)
+    # Number of motors per side
+    self.num_motors = 2
     # Stall Torque in N m
-    self.stall_torque = 2.42
+    self.stall_torque = 2.42 * self.num_motors
     # Stall Current in Amps
-    self.stall_current = 133.0
+    self.stall_current = 133.0 * self.num_motors
     # Free Speed in RPM. Used number from last year.
     self.free_speed = 4650.0
     # Free Current in Amps
-    self.free_current = 2.7
+    self.free_current = 2.7 * self.num_motors
     # Moment of inertia of the drivetrain in kg m^2
     # Just borrowed from last year.
     self.J = 4.5
@@ -71,10 +73,10 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the wheels, in meters.
     self.r = .04445
     # Resistance of the motor, divided by the number of motors.
-    self.R = 12.0 / self.stall_current / 2
+    self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
     self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
-               (12.0 - self.R * self.free_current))
+               (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
@@ -97,10 +99,10 @@ class Drivetrain(control_loop.ControlLoop):
     self.msp = 1.0 / self.m + self.rb * self.rb / self.J
     self.msn = 1.0 / self.m - self.rb * self.rb / self.J
     # The calculations which we will need for A and B.
-    self.tcl = -self.Kt / self.Kv / (self.Gl * self.Gl * self.R * self.r * self.r)
-    self.tcr = -self.Kt / self.Kv / (self.Gr * self.Gr * self.R * self.r * self.r)
-    self.mpl = self.Kt / (self.Gl * self.R * self.r)
-    self.mpr = self.Kt / (self.Gr * self.R * self.r)
+    self.tcl = -self.Kt / self.Kv / (self.Gl * self.Gl * self.resistance * self.r * self.r)
+    self.tcr = -self.Kt / self.Kv / (self.Gr * self.Gr * self.resistance * self.r * self.r)
+    self.mpl = self.Kt / (self.Gl * self.resistance * self.r)
+    self.mpr = self.Kt / (self.Gr * self.resistance * self.r)
 
     # State feedback matrices
     # X will be of the format
@@ -298,6 +300,29 @@ def main(argv):
         namespaces = namespaces)
     dog_loop_writer.AddConstant(control_loop.Constant("kDt", "%f",
           drivetrain_low_low.dt))
+    dog_loop_writer.AddConstant(control_loop.Constant("kStallTorque", "%f",
+          drivetrain_low_low.stall_torque))
+    dog_loop_writer.AddConstant(control_loop.Constant("kStallCurrent", "%f",
+          drivetrain_low_low.stall_current))
+    dog_loop_writer.AddConstant(control_loop.Constant("kFreeSpeedRPM", "%f",
+          drivetrain_low_low.free_speed))
+    dog_loop_writer.AddConstant(control_loop.Constant("kFreeCurrent", "%f",
+          drivetrain_low_low.free_current))
+    dog_loop_writer.AddConstant(control_loop.Constant("kJ", "%f",
+          drivetrain_low_low.J))
+    dog_loop_writer.AddConstant(control_loop.Constant("kMass", "%f",
+          drivetrain_low_low.m))
+    dog_loop_writer.AddConstant(control_loop.Constant("kRobotRadius", "%f",
+          drivetrain_low_low.rb))
+    dog_loop_writer.AddConstant(control_loop.Constant("kWheelRadius", "%f",
+          drivetrain_low_low.r))
+    dog_loop_writer.AddConstant(control_loop.Constant("kR", "%f",
+          drivetrain_low_low.resistance))
+    dog_loop_writer.AddConstant(control_loop.Constant("kV", "%f",
+          drivetrain_low_low.Kv))
+    dog_loop_writer.AddConstant(control_loop.Constant("kT", "%f",
+          drivetrain_low_low.Kt))
+
     if argv[1][-3:] == '.cc':
       dog_loop_writer.Write(argv[2], argv[1])
     else:
