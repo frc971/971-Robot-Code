@@ -7,6 +7,8 @@
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/controls/polytope.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014/control_loops/drivetrain/polydrivetrain.h"
+#include "y2014/control_loops/drivetrain/ssdrivetrain.h"
 #include "aos/common/util/log_interval.h"
 
 namespace frc971 {
@@ -35,6 +37,9 @@ class DrivetrainLoop
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   SimpleLogInterval no_position_ = SimpleLogInterval(
       ::aos::time::Time::InSeconds(0.25), WARNING, "no position");
+
+  PolyDrivetrain dt_openloop_;
+  DrivetrainMotorsSS dt_closedloop_;
 };
 
 }  // namespace control_loops
