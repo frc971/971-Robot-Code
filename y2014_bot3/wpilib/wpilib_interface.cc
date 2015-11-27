@@ -17,6 +17,7 @@
 #include "dma.h"
 #include "ControllerPower.h"
 #include "DigitalInput.h"
+#undef ERROR
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
@@ -81,7 +82,12 @@ class SensorReader {
     LOG(INFO, "In sensor reader thread\n");
 
     my_pid_ = getpid();
-    ds_ = DriverStation::GetInstance();
+    ds_ =
+#ifdef WPILIB2015
+        DriverStation::GetInstance();
+#else
+        &DriverStation::GetInstance();
+#endif
 
     LOG(INFO, "Things are now started\n");
 
