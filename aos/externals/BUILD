@@ -36,6 +36,8 @@ cc_library(
   ],
   copts = [
     '-Wno-error',
+    '-Wno-unused-parameter',
+    '-Wno-switch-enum',
   ],
   hdrs = glob([d + '/**/*.h' for d in _header_dirs] + [d + '/**/*.hpp' for d in _header_dirs]),
   includes = _header_dirs,
