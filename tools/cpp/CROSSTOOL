@@ -200,10 +200,6 @@ toolchain {
 
   linker_flag: "-fuse-ld=gold"
 
-  # Temporary escape hatch for the Gyp->Bazel conversion.
-  # TODO(Brian): Remove this.
-  compiler_flag: "-DAOS_BAZEL"
-
   # Make C++ compilation deterministic. Use linkstamping instead of these
   # compiler symbols.
   unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
@@ -451,10 +447,6 @@ toolchain {
   compiler_flag: "-DAOS_ARCHITECTURE_arm_frc"
 
   #linker_flag: "-fuse-ld=gold"
-
-  # Temporary escape hatch for the Gyp->Bazel conversion.
-  # TODO(Brian): Remove this.
-  compiler_flag: "-DAOS_BAZEL"
 
   # Make C++ compilation deterministic. Use linkstamping instead of these
   # compiler symbols.
