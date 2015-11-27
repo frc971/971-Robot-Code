@@ -9,6 +9,32 @@ build --strip=never
 # Use the malloc we want.
 build --custom_malloc=//tools/cpp:malloc
 
+build:asan --copt -fsanitize=address
+build:asan --linkopt -fsanitize=address --linkopt -ldl
+build:asan --platform_suffix=-asan
+build:asan --test_env ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
+build:asan --test_env ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_odr_violation=2:allow_user_segv_handler=1
+
+build:tsan --copt -fsanitize=thread --copt -DAOS_SANITIZER_thread
+build:tsan --linkopt -fsanitize=thread
+build:tsan --platform_suffix=-tsan
+build:tsan --test_env TSAN_OPTIONS=external_symbolizer_path=/usr/bin/llvm-symbolizer-3.6:detect_deadlocks=1:second_deadlock_stack=1
+
+build:isan --copt -fsanitize=integer
+build:isan --linkopt -fsanitize=integer
+build:isan --platform_suffix=-isan
+build:isan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
+
+build:ubsan --copt -fsanitize=undefined
+build:ubsan --linkopt -fsanitize=undefined
+build:ubsan --platform_suffix=-ubsan
+build:ubsan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
+
+build:msan --copt -fsanitize=memory
+build:msan --linkopt -fsanitize=memory
+build:msan --platform_suffix=-msan
+build:msan --test_env MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
+
 # Show paths to a few more than just 1 target.
 build --show_result 15
 # Dump the output of the failing test to stdout.

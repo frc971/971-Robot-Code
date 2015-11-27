@@ -1,10 +1,17 @@
 package(default_visibility = ['//visibility:public'])
 
 cc_library(
+  name = 'empty_main',
+  srcs = [ 'empty_main.c' ],
+)
+
+cc_library(
   name = 'malloc',
-  deps = [
-    '//third_party/gperftools:tcmalloc',
-  ],
+  deps = select({
+    '//tools:has_asan': [],
+    '//tools:has_tsan': [],
+    '//conditions:default': ['//third_party/gperftools:tcmalloc'],
+  }),
 )
 
 cc_library(
