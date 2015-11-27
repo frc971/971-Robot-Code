@@ -6,6 +6,8 @@ py_binary(
     'drivetrain.py',
   ],
   deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
     '//frc971/control_loops/python:controls',
   ],
 )
@@ -18,6 +20,8 @@ py_binary(
   ],
   deps = [
     '//frc971/control_loops/python:controls',
+    '//external:python-gflags',
+    '//external:python-glog',
   ],
 )
 

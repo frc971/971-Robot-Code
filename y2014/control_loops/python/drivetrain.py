@@ -7,6 +7,12 @@ import sys
 import argparse
 from matplotlib import pylab
 
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 class CIM(control_loop.ControlLoop):
   def __init__(self):
@@ -142,9 +148,9 @@ class Drivetrain(control_loop.ControlLoop):
                            [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    print "DT K", name
-    print self.K
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('DT K %s', name)
+    glog.debug(str(self.K))
+    glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.hlp = 0.3
     self.llp = 0.4
@@ -215,14 +221,7 @@ class KFDrivetrain(Drivetrain):
 
 
 def main(argv):
-  parser = argparse.ArgumentParser(description='Calculate drivetrain.')
-  parser.add_argument('--plot', action='store_true', default=False, help='If true, plot')
-  parser.add_argument('drivetrainh')
-  parser.add_argument('drivetraincc')
-  parser.add_argument('kalman_drivetrainh')
-  parser.add_argument('kalman_drivetraincc')
-
-  args = parser.parse_args(argv[1:])
+  argv = FLAGS(argv)
 
   # Simulate the response of the system to a step input.
   drivetrain = Drivetrain()
@@ -233,7 +232,7 @@ def main(argv):
     simulated_left.append(drivetrain.X[0, 0])
     simulated_right.append(drivetrain.X[2, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(100), simulated_left)
     pylab.plot(range(100), simulated_right)
     pylab.show()
@@ -251,7 +250,7 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(100), close_loop_left)
     pylab.plot(range(100), close_loop_right)
     pylab.show()
@@ -269,7 +268,7 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(100), close_loop_left)
     pylab.plot(range(100), close_loop_right)
     pylab.show()
@@ -287,7 +286,7 @@ def main(argv):
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(100), close_loop_left)
     pylab.plot(range(100), close_loop_right)
     pylab.show()
@@ -344,13 +343,13 @@ def main(argv):
     dog_loop_writer.AddConstant(control_loop.Constant("kT", "%f",
           drivetrain_low_low.Kt))
 
-    dog_loop_writer.Write(args.drivetrainh, args.drivetraincc)
+    dog_loop_writer.Write(argv[1], argv[2])
 
     kf_loop_writer = control_loop.ControlLoopWriter(
         "KFDrivetrain", [kf_drivetrain_low_low, kf_drivetrain_low_high,
-                       kf_drivetrain_high_low, kf_drivetrain_high_high],
+                         kf_drivetrain_high_low, kf_drivetrain_high_high],
         namespaces = namespaces)
-    kf_loop_writer.Write(args.kalman_drivetrainh, args.kalman_drivetraincc)
+    kf_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
