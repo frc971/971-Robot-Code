@@ -7,7 +7,7 @@ def _single_fortran_object_impl(ctx):
 
   cmd = toolchain_cflags + ['-c', ctx.file.src.path, '-o', ctx.outputs.pic_o.path]
   filtered_cmd = []
-  # Strip out the C/C++ specific flags.
+  # Strip out the C/C++/Clang specific flags.
   exclude_flags = ['-fcolor-diagnostics',
                    '-Wswitch-enum',
                    '-Wpointer-arith',
@@ -18,7 +18,8 @@ def _single_fortran_object_impl(ctx):
                    '-Werror',
                    '-Wextra',
                    '-Wno-builtin-macro-redefined',
-                   '-D__has_feature(x)=0']
+                   '-D__has_feature(x)=0',
+                   '-fmacro-backtrace-limit=0']
 
   for flag in cmd:
     if flag not in exclude_flags:

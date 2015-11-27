@@ -6,6 +6,8 @@
 # build targets here, the libraries are independent of their location in
 # a more straightforward way.
 
+load('/tools/build_rules/empty_main', 'empty_main_if_asan')
+
 licenses(["notice"])
 
 cc_library(
@@ -252,7 +254,7 @@ cc_test(
 
 cc_test(
 	name = "googletest_sample10_test",
-	srcs = ["googletest/samples/sample10_unittest.cc"],
+	srcs = empty_main_if_asan(["googletest/samples/sample10_unittest.cc"]),
 	deps = [
 	    ":googletest_main",
 	    ":googletest_sample_libs",

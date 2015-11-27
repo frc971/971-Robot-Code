@@ -1,6 +1,6 @@
 licenses(['notice'])
 
-load('/tools/build_rules/select', 'compiler_select', 'address_size_select', 'cpu_select')
+load('/tools/build_rules/select', 'compiler_select', 'address_size_select')
 
 cc_library(
   name = 'libevent',
@@ -158,11 +158,6 @@ cc_library(
       '_EVENT_SIZEOF_SIZE_T=8',
       '_EVENT_SIZEOF_VOID_P=8',
     ],
-  }) + cpu_select({
-    'amd64': [
-      '_EVENT_HAVE_TAILQFOREACH=1',
-    ],
-    'roborio': [],
   }),
 
   copts = [
