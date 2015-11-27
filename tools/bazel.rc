@@ -3,6 +3,9 @@ build --crosstool_top=//tools/cpp:toolchain
 # Don't switch HOST compilers.
 build --host_crosstool_top=//tools/cpp:toolchain
 
+# Always include debug information in the non-.stripped binaries.
+build --strip=never
+
 # Show paths to a few more than just 1 target.
 build --show_result 15
 # Dump the output of the failing test to stdout.

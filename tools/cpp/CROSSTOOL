@@ -262,12 +262,6 @@ toolchain {
   compilation_mode_flags {
     mode: OPT
 
-    # No debug symbols.
-    # Maybe we should enable https://gcc.gnu.org/wiki/DebugFission for opt or
-    # even generally? However, that can't happen here, as it requires special
-    # handling in Bazel.
-    compiler_flag: "-g0"
-
     compiler_flag: "-O2"
 
     # Disable assertions
@@ -522,12 +516,6 @@ toolchain {
   }
   compilation_mode_flags {
     mode: OPT
-
-    # No debug symbols.
-    # Maybe we should enable https://gcc.gnu.org/wiki/DebugFission for opt or
-    # even generally? However, that can't happen here, as it requires special
-    # handling in Bazel.
-    compiler_flag: "-g0"
 
     compiler_flag: "-O2"
 
