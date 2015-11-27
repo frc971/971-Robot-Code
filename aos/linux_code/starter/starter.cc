@@ -27,11 +27,7 @@
 #include <memory>
 #include <set>
 
-#ifdef AOS_BAZEL
 #include "third_party/libevent/event.h"
-#else
-#include <event2/event.h>
-#endif
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/logging_impl.h"
