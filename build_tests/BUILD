@@ -51,3 +51,21 @@ cc_test(
   ],
   size = 'small',
 )
+
+cc_binary(
+  name = 'tcmalloc_build_test_binary',
+  srcs = [
+    'tcmalloc.cc',
+  ],
+)
+
+sh_test(
+  name = 'tcmalloc_build_test',
+  srcs = [
+    'tcmalloc_test.sh',
+  ],
+  data = [
+    ':tcmalloc_build_test_binary',
+  ],
+  size = 'small',
+)
