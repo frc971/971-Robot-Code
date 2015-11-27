@@ -131,6 +131,9 @@ toolchain {
       flag_group {
         flag: "-DAOS_DEBUG=1"
       }
+      flag_group {
+        flag: "-fno-omit-frame-pointer"
+      }
     }
   }
 
@@ -224,6 +227,8 @@ toolchain {
   # Enable coloring even if there's no attached terminal. Bazel removes the
   # escape sequences if --nocolor is specified.
   compiler_flag: "-fcolor-diagnostics"
+  compiler_flag: "-fmessage-length=80"
+  compiler_flag: "-fmacro-backtrace-limit=0"
 
   compiler_flag: "-Wall"
   compiler_flag: "-Wextra"
@@ -373,6 +378,9 @@ toolchain {
       flag_group {
         flag: "-DAOS_DEBUG=1"
       }
+      flag_group {
+        flag: "-fno-omit-frame-pointer"
+      }
     }
   }
 
@@ -395,15 +403,9 @@ toolchain {
   feature {
     name: "all_modes"
     flag_set {
-      action: "c-compile"
-      flag_group {
-        flag: "-std=gnu99"
-      }
-    }
-    flag_set {
       action: "preprocess-assemble"
       action: "assemble"
-      action: "c++-link"
+      action: "c-compile"
       flag_group {
         flag: "-std=gnu99"
       }
@@ -432,6 +434,10 @@ toolchain {
       }
     }
   }
+
+  compiler_flag: "-mfpu=neon"
+  # TODO(brians): See if it will run with this enabled.
+  #compiler_flag: "-mhwdiv=arm,thumb"
 
   # Anticipated future default.
   # This makes GCC and Clang do what we want when called through symlinks.
@@ -484,6 +490,7 @@ toolchain {
   compiler_flag: "-Wsign-compare"
   compiler_flag: "-Wformat=2"
   compiler_flag: "-Werror"
+  compiler_flag: "-Wunused-local-typedefs"
 
   # Keep stack frames for debugging, even in opt mode.
   compiler_flag: "-fno-omit-frame-pointer"

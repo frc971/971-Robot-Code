@@ -25,13 +25,16 @@ build:isan --linkopt -fsanitize=integer
 build:isan --platform_suffix=-isan
 build:isan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
 
-build:ubsan --copt -fsanitize=undefined
+build:ubsan --copt -fsanitize=undefined --copt -fno-sanitize-recover
+# Bad alignment is just slow on x86 and traps on ARM, so we'll find
+# it other ways, and some x86 code does it on purpose.
+build:ubsan --copt -fno-sanitize=alignment
 build:ubsan --linkopt -fsanitize=undefined
 build:ubsan --platform_suffix=-ubsan
 build:ubsan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
 
-build:msan --copt -fsanitize=memory
-build:msan --linkopt -fsanitize=memory
+build:msan --copt -fsanitize=memory --copt -fsanitize-memory-track-origins
+build:msan --linkopt -fsanitize=memory --ldopt -fsanitize-memory-track-origins
 build:msan --platform_suffix=-msan
 build:msan --test_env MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
 
