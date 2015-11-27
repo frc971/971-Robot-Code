@@ -1,7 +1,9 @@
 def _single_fortran_object_impl(ctx):
   toolchain_cflags = (ctx.fragments.cpp.compiler_options([]) +
       ctx.fragments.cpp.c_options +
-      ctx.fragments.cpp.unfiltered_compiler_options([]) + ['-fPIC'])
+      ctx.fragments.cpp.unfiltered_compiler_options([]) +
+      ['-fPIC', '-Wno-maybe-uninitialized', '-Wno-unused-dummy-argument',
+       '-Wno-conversion', '-Wno-unused-variable'])
 
   cmd = toolchain_cflags + ['-c', ctx.file.src.path, '-o', ctx.outputs.pic_o.path]
   filtered_cmd = []
@@ -14,6 +16,7 @@ def _single_fortran_object_impl(ctx):
                    '-Wsign-compare',
                    '-Wformat=2',
                    '-Werror',
+                   '-Wextra',
                    '-Wno-builtin-macro-redefined',
                    '-D__has_feature(x)=0']
 
