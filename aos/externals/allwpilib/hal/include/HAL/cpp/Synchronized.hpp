@@ -57,13 +57,17 @@ class ReentrantMutex {
  private:
   // Do the equivalent of setting PTHREAD_PRIO_INHERIT and
   // PTHREAD_MUTEX_RECURSIVE_NP.
+#ifndef __PTHREAD_SPINS
+// This is what it should be for old pthreads which doesn't know about lock
+// elision at all.
+#define __PTHREAD_SPINS 0
+#endif
 #if __WORDSIZE == 64
-  #error "Should work, but need to run test case to verify"
   pthread_mutex_t mutex_ = {
-      {0, 0, 0, 0, 0x20 | PTHREAD_MUTEX_RECURSIVE_NP, 0, {0, 0}}};
+      {0, 0, 0, 0, 0x20 | PTHREAD_MUTEX_RECURSIVE_NP, __PTHREAD_SPINS, {0, 0}}};
 #else
   pthread_mutex_t mutex_ = {
-      {0, 0, 0, 0x20 | PTHREAD_MUTEX_RECURSIVE_NP, 0, {0}}};
+      {0, 0, 0, 0x20 | PTHREAD_MUTEX_RECURSIVE_NP, 0, {__PTHREAD_SPINS}}};
 #endif
 };
 
@@ -103,10 +107,9 @@ class Mutex {
  private:
   // Do the equivalent of setting PTHREAD_PRIO_INHERIT.
 #if __WORDSIZE == 64
-  #error "Should work, but need to run test case to verify"
-  pthread_mutex_t mutex_ = { { 0, 0, 0, 0, 0x20, 0, { 0, 0 } } };
+  pthread_mutex_t mutex_ = {{0, 0, 0, 0, 0x20, __PTHREAD_SPINS, {0, 0}}};
 #else
-  pthread_mutex_t mutex_ = { { 0, 0, 0, 0x20, 0, { 0 } } };
+  pthread_mutex_t mutex_ = {{0, 0, 0, 0x20, 0, {__PTHREAD_SPINS}}};
 #endif
 };
 
