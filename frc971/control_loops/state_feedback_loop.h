@@ -385,11 +385,11 @@ class StateFeedbackLoop {
       CapU();
     }
 
-    UpdateObserver();
+    UpdateObserver(U_);
   }
 
-  void UpdateObserver() {
-    X_hat_ = A() * X_hat() + B() * U();
+  void UpdateObserver(const Eigen::Matrix<double, number_of_inputs, 1> &new_u) {
+    X_hat_ = A() * X_hat() + B() * new_u;
   }
 
   // Sets the current controller to be index, clamped to be within range.

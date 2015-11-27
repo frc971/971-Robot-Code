@@ -157,7 +157,7 @@ void DrivetrainMotorsSS::Update(bool stop_motors, bool enable_control_loop) {
       loop_->mutable_U().setZero();
       loop_->mutable_U_uncapped().setZero();
     }
-    loop_->UpdateObserver();
+    loop_->UpdateObserver(loop_->U());
   }
   ::Eigen::Matrix<double, 4, 1> E = loop_->R() - loop_->X_hat();
   LOG_MATRIX(DEBUG, "E", E);
