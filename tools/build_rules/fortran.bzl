@@ -22,7 +22,8 @@ def _single_fortran_object_impl(ctx):
                    '-fmacro-backtrace-limit=0']
 
   for flag in cmd:
-    if flag not in exclude_flags:
+    if flag not in exclude_flags and not (flag.startswith('-fsanitize') or
+                                          flag.startswith('-fno-sanitize')):
       filtered_cmd.append(flag)
 
   ctx.action(

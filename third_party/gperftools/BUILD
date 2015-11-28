@@ -231,7 +231,7 @@ cc_test(
     ':tcmalloc',
   ],
   copts = common_copts,
-  size = 'small',
+  size = 'medium',
 )
 
 cc_test(
