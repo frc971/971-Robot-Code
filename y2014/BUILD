@@ -1,9 +1,8 @@
-package(default_visibility = ['//visibility:public'])
-
 load('/aos/downloader/downloader', 'aos_downloader')
 
 cc_library(
   name = 'constants',
+  visibility = ['//visibility:public'],
   srcs = [
     'constants.cc',
   ],
