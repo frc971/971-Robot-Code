@@ -32,9 +32,6 @@ genrule(
   tools = [
     '//y2014/control_loops/python:shooter',
   ],
-  tags = [
-    'local',
-  ],
   outs = [
     'shooter_motor_plant.cc',
     'shooter_motor_plant.h',
