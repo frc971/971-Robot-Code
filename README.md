@@ -36,9 +36,10 @@ apt-get install python bazel ruby clang-format-3.5 clang-3.6
 Some useful Bazel commands:
   * Build and test everything (on the host system):
 ```console
-bazel test //...
+bazel test //... -- $(cat NO_BUILD_AMD64)
+bazel build --cpu=roborio //... -- $(cat NO_BUILD_ROBORIO)
 ```
-    This currently requires adding `-//{y2014,y2015,bot3,frc971}/wpilib/... -//aos/externals:wpilib` to avoid trying to build WPILib to work.
+    The NO_BUILD_{AMD64,ROBORIO} files contain lists of the targets which are intentionally not built for the various CPUs.
   * Build the code for a specific robot:
 ```console
 bazel build --cpu=roborio --compilation_mode=opt //y2015/...
