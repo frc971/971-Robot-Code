@@ -179,3 +179,25 @@ cc_library(
     'compiler_memory_barrier.h',
   ],
 )
+
+cc_library(
+  name = 'linked_list',
+  hdrs = [
+    'linked_list.h',
+  ],
+  deps = [
+    '//aos/common:transaction',
+  ],
+)
+
+cc_test(
+  name = 'linked_list_test',
+  srcs = [
+    'linked_list_test.cc',
+  ],
+  deps = [
+    ':linked_list',
+    '//aos/testing:googletest',
+    '//aos/common/logging',
+  ],
+)
