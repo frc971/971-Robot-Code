@@ -32,9 +32,6 @@ genrule(
   tools = [
     '//y2014/control_loops/python:drivetrain',
   ],
-  tags = [
-    'local',
-  ],
   outs = [
     'drivetrain_dog_motor_plant.h',
     'drivetrain_dog_motor_plant.cc',
@@ -49,9 +46,6 @@ genrule(
   cmd = '$(location //y2014/control_loops/python:polydrivetrain) $(OUTS)',
   tools = [
     '//y2014/control_loops/python:polydrivetrain',
-  ],
-  tags = [
-    'local',
   ],
   outs = [
     'polydrivetrain_dog_motor_plant.h',
