@@ -53,7 +53,7 @@ class ControlLoopWriter(object):
     return self._namespaces[0]
 
   def _HeaderGuard(self, header_file):
-    return ('_'.join([namespace.upper() for namespace in self._namespaces]) +
+    return ('_'.join([namespace.upper() for namespace in self._namespaces]) + '_' +
             os.path.basename(header_file).upper()
                 .replace('.', '_').replace('/', '_') + '_')
 
