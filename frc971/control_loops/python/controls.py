@@ -12,6 +12,7 @@ __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 import numpy
 import slycot
 import scipy.signal.cont2discrete
+import glog
 
 class Error (Exception):
   """Base class for all control loop exceptions."""
@@ -94,7 +95,7 @@ def c2d(A, B, dt):
 def ctrb(A, B):
   """Returns the controlability matrix.
 
-    This matrix must have full rank for all the states to be controlable.
+    This matrix must have full rank for all the states to be controllable.
   """
   n = A.shape[0]
   output = B
@@ -133,9 +134,16 @@ def kalman(A, B, C, Q, R):
   """
   I = numpy.matrix(numpy.eye(Q.shape[0]))
   Z = numpy.matrix(numpy.zeros(Q.shape[0]))
+  n = A.shape[0]
+  m = C.shape[0]
+
+  controllability_rank = numpy.linalg.matrix_rank(ctrb(A.T, C.T))
+  if controlability_rank != n:
+    glog.warning('Observability of %d != %d, unobservable state',
+                 controlability_rank, n)
 
   # Compute the steady state covariance matrix.
-  P_prior = scipy.linalg.solve_discrete_are(A.T, C.T, Q, R)
+  P_prior, rcond, w, S, T = slycot.sb02od(n=n, m=m, A=A.T, B=C.T, Q=Q, R=R, dico='D')
   S = C * P_prior * C.T + R
   K = numpy.linalg.lstsq(S.T, (P_prior * C.T).T)[0].T
   P = (I - K * C) * P_prior
