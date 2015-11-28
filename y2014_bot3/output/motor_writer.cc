@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "aos/prime/output/motor_output.h"
+#include "aos/output/motor_output.h"
 #include "aos/common/logging/logging.h"
 #include "aos/linux_code/init.h"
 #include "aos/common/util/log_interval.h"

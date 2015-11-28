@@ -1,6 +1,6 @@
 package(default_visibility = ['//visibility:public'])
 
-load('/aos/prime/downloader/downloader', 'aos_downloader')
+load('/aos/downloader/downloader', 'aos_downloader')
 
 aos_downloader(
   name = 'download',

@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "aos/linux_code/init.h"
-#include "aos/prime/input/joystick_input.h"
+#include "aos/input/joystick_input.h"
 #include "aos/common/input/driver_station_data.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/util/log_interval.h"

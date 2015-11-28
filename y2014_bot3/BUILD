@@ -6,7 +6,7 @@ cc_binary(
     'joystick_reader.cc',
   ],
   deps = [
-    '//aos/prime/input:joystick_input',
+    '//aos/input:joystick_input',
     '//aos/linux_code:init',
     '//aos/common/logging',
     '//aos/common:time',

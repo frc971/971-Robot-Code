@@ -41,7 +41,7 @@ aos_downloader = rule(
     '_downloader': attr.label(
       executable = True,
       cfg = HOST_CFG,
-      default = Label('//aos/prime/downloader'),
+      default = Label('//aos/downloader'),
     ),
     'start_srcs': attr.label_list(
       mandatory = True,

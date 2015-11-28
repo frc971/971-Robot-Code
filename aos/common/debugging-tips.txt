@@ -23,7 +23,7 @@ Check starter_exe's log messages. They might mention that it is constantly dying
 [Control Loop(s) Not Working]
 Are robot_state messages going out? An aos::JoystickInput (often
   joystick_reader) should be sending them.
-  Also, kFakeJoysticks in aos/prime/input/joystick_reader.cc has to be set to
+  Also, kFakeJoysticks in aos/input/joystick_reader.cc has to be set to
     false in order for anything to get output.
 Is it being fed goal messages?
 Is it getting position messages?

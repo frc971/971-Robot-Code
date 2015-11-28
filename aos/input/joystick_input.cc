@@ -1,4 +1,4 @@
-#include "aos/prime/input/joystick_input.h"
+#include "aos/input/joystick_input.h"
 
 #include <string.h>
 

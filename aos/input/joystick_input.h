@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_
-#define AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_
+#ifndef AOS_INPUT_JOYSTICK_INPUT_H_
+#define AOS_INPUT_JOYSTICK_INPUT_H_
 
 #include "aos/common/input/driver_station_data.h"
 
@@ -29,4 +29,4 @@ class JoystickProxy {
 }  // namespace input
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_INPUT_JOYSTICKS_INPUT_H_
+#endif  // AOS_INPUT_JOYSTICK_INPUT_H_

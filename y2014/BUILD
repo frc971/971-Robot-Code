@@ -1,6 +1,6 @@
 package(default_visibility = ['//visibility:public'])
 
-load('/aos/prime/downloader/downloader', 'aos_downloader')
+load('/aos/downloader/downloader', 'aos_downloader')
 
 cc_library(
   name = 'constants',
@@ -27,7 +27,7 @@ cc_binary(
   ],
   deps = [
     ':constants',
-    '//aos/prime/input:joystick_input',
+    '//aos/input:joystick_input',
     '//aos/linux_code:init',
     '//aos/common/logging',
     '//aos/common:time',
