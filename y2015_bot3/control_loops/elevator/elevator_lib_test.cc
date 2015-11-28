@@ -27,7 +27,7 @@ namespace testing {
 class ElevatorSimulator {
  public:
   ElevatorSimulator()
-      : plant_(new StateFeedbackPlant<2, 1, 1>(MakeElevatorPlant())),
+      : plant_(new StateFeedbackPlant<2, 1, 1>(elevator::MakeElevatorPlant())),
         position_sim_(),
         queue_(".y2015_bot3.control_loops.elevator_queue", 0xca8daa3b,
                ".y2015_bot3.control_loops.elevator_queue.goal",

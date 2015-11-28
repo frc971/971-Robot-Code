@@ -1,11 +1,19 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
 import numpy
 import sys
 import matplotlib
 from matplotlib import pylab
+
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+
 
 class Elevator(control_loop.ControlLoop):
   def __init__(self, name="Elevator", mass=None):
@@ -72,15 +80,13 @@ class Elevator(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    print 'K', self.K
-    print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.info('K %s', str(self.K))
+    glog.info('Poles are %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = 0.30
     self.ipl = 0.10
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
-
-    #    print 'L is', self.L
 
     q_pos = 0.05
     q_vel = 2.65
@@ -93,9 +99,8 @@ class Elevator(control_loop.ControlLoop):
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
-    #    print 'Kal', self.KalmanGain
     self.L = self.A * self.KalmanGain
-    print 'KalL is', self.L
+    glog.info('KalL is %s', str(self.L))
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -212,7 +217,7 @@ class ScenarioPlotter(object):
 #        print "Time: ", self.t[-1]
 #        break
 
-    print "Time: ", self.t[-1]
+    glog.debug('Time: %f', self.t[-1])
 
 
   def Plot(self):
@@ -232,6 +237,8 @@ class ScenarioPlotter(object):
 
 
 def main(argv):
+  argv = FLAGS(argv)
+
   loaded_mass = 7+4.0
   #loaded_mass = 0
   #observer_elevator = None
@@ -248,7 +255,7 @@ def main(argv):
 
   for i in xrange(0, 7):
     elevator = Elevator(mass=i*totemass + loaded_mass)
-    print 'Actual poles are', numpy.linalg.eig(elevator.A - elevator.B * elevator_controller.K[0, 0:2])[0]
+    glog.info('Actual poles are %s', str(numpy.linalg.eig(elevator.A - elevator.B * elevator_controller.K[0, 0:2])[0]))
 
     elevator.X = initial_X
     scenario_plotter.run_test(elevator, goal=up_R, controller_elevator=elevator_controller,
@@ -256,28 +263,23 @@ def main(argv):
     scenario_plotter.run_test(elevator, goal=down_R, controller_elevator=elevator_controller,
                               observer_elevator=observer_elevator, iterations=200)
 
-  scenario_plotter.Plot()
+  if FLAGS.plot:
+    scenario_plotter.Plot()
 
   # Write the generated constants out to a file.
   if len(argv) != 5:
-    print "Expected .h file name and .cc file name for the Elevator and integral elevator."
+    glog.fatal('Expected .h file name and .cc file name for the Elevator and integral elevator.')
   else:
     design_mass = 4*totemass + loaded_mass
     elevator = Elevator("Elevator", mass=design_mass)
     loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator],
-                                                 namespaces=['y2015_bot3', 'control_loops'])
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+                                                 namespaces=['y2015_bot3', 'control_loops', 'elevator'])
+    loop_writer.Write(argv[1], argv[2])
 
     integral_elevator = IntegralElevator("IntegralElevator", mass=design_mass)
     integral_loop_writer = control_loop.ControlLoopWriter("IntegralElevator", [integral_elevator],
-                                                          namespaces=['y2015_bot3', 'control_loops'])
-    if argv[3][-3:] == '.cc':
-      integral_loop_writer.Write(argv[4], argv[3])
-    else:
-      integral_loop_writer.Write(argv[3], argv[4])
+                                                          namespaces=['y2015_bot3', 'control_loops', 'elevator'])
+    integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

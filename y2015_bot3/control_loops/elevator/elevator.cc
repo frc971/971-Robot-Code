@@ -26,7 +26,8 @@ double SimpleCappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
 
 Elevator::Elevator(control_loops::ElevatorQueue *elevator)
     : aos::controls::ControlLoop<control_loops::ElevatorQueue>(elevator),
-      loop_(new SimpleCappedStateFeedbackLoop(MakeIntegralElevatorLoop())),
+      loop_(new SimpleCappedStateFeedbackLoop(
+          elevator::MakeIntegralElevatorLoop())),
       profile_(::aos::controls::kLoopFrequency) {}
 
 bool Elevator::CheckZeroed() {

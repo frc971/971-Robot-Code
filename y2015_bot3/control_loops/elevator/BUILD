@@ -13,6 +13,21 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_elevator3',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2015_bot3/control_loops/python:elevator3) $(OUTS)',
+  tools = [
+    '//y2015_bot3/control_loops/python:elevator3',
+  ],
+  outs = [
+    'elevator_motor_plant.h',
+    'elevator_motor_plant.cc',
+    'integral_elevator_motor_plant.h',
+    'integral_elevator_motor_plant.cc',
+  ],
+)
+
 cc_library(
   name = 'elevator_lib',
   srcs = [
