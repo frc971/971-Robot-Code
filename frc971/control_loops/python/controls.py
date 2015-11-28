@@ -93,7 +93,7 @@ def c2d(A, B, dt):
   return numpy.matrix(ans_a), numpy.matrix(ans_b)
 
 def ctrb(A, B):
-  """Returns the controlability matrix.
+  """Returns the controllability matrix.
 
     This matrix must have full rank for all the states to be controllable.
   """
@@ -138,9 +138,9 @@ def kalman(A, B, C, Q, R):
   m = C.shape[0]
 
   controllability_rank = numpy.linalg.matrix_rank(ctrb(A.T, C.T))
-  if controlability_rank != n:
+  if controllability_rank != n:
     glog.warning('Observability of %d != %d, unobservable state',
-                 controlability_rank, n)
+                 controllability_rank, n)
 
   # Compute the steady state covariance matrix.
   P_prior, rcond, w, S, T = slycot.sb02od(n=n, m=m, A=A.T, B=C.T, Q=Q, R=R, dico='D')

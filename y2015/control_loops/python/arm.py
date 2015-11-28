@@ -85,9 +85,9 @@ class Arm(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    controlability = controls.ctrb(self.A, self.B)
-    print 'Rank of augmented controlability matrix.', numpy.linalg.matrix_rank(
-        controlability)
+    controllability = controls.ctrb(self.A, self.B)
+    print 'Rank of augmented controllability matrix.', numpy.linalg.matrix_rank(
+        controllability)
 
     q_pos = 0.02
     q_vel = 0.300

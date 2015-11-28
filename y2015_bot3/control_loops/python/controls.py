@@ -92,9 +92,9 @@ def c2d(A, B, dt):
   return numpy.matrix(ans_a), numpy.matrix(ans_b)
 
 def ctrb(A, B):
-  """Returns the controlability matrix.
+  """Returns the controllability matrix.
 
-    This matrix must have full rank for all the states to be controlable.
+    This matrix must have full rank for all the states to be controllable.
   """
   n = A.shape[0]
   output = B

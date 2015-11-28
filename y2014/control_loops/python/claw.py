@@ -235,9 +235,9 @@ class ClawDeltaU(Claw):
     self.K = numpy.matrix([[50.0, 0.0, 10.0, 0.0, 1.0],
                            [50.0, 0.0, 10.0, 0.0, 1.0]])
 
-    controlability = controls.ctrb(self.A, self.B)
-    glog.debug('Rank of augmented controlability matrix: %d',
-              numpy.linalg.matrix_rank(controlability))
+    controllability = controls.ctrb(self.A, self.B)
+    glog.debug('Rank of augmented controllability matrix: %d',
+              numpy.linalg.matrix_rank(controllability))
 
     glog.debug('K')
     glog.debug(str(self.K))

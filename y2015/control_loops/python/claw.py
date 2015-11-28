@@ -64,7 +64,7 @@ class Claw(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    controlability = controls.ctrb(self.A, self.B)
+    controllability = controls.ctrb(self.A, self.B)
 
     print "Free speed is", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G
 
