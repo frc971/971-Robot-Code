@@ -45,5 +45,5 @@ bazel build --cpu=roborio --compilation_mode=opt //y2015/...
 ```
   * Download code to a robot:
 ```console
-bazel run --cpu=roborio --compilation_mode=opt //y2015/prime:download roboRIO-971.local
+bazel run --cpu=roborio --compilation_mode=opt //y2015:download roboRIO-971.local
 ```
