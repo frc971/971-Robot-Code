@@ -3,7 +3,7 @@ def _single_fortran_object_impl(ctx):
       ctx.fragments.cpp.c_options +
       ctx.fragments.cpp.unfiltered_compiler_options([]) +
       ['-fPIC', '-Wno-maybe-uninitialized', '-Wno-unused-dummy-argument',
-       '-Wno-conversion', '-Wno-unused-variable'])
+       '-Wno-conversion', '-Wno-unused-variable', '-Wno-character-truncation'])
 
   cmd = toolchain_cflags + ['-c', ctx.file.src.path, '-o', ctx.outputs.pic_o.path]
   filtered_cmd = []
