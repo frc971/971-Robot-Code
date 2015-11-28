@@ -9,6 +9,7 @@ py_library(
     'libcdd.py',
   ],
   deps = [
+    '//external:python-glog',
     '//external:slycot',
   ],
   data = [
