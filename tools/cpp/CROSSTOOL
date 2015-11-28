@@ -255,11 +255,9 @@ toolchain {
   linker_flag: "-Wl,--warn-execstack"
   linker_flag: "-Wl,--detect-odr-violations"
 
-  compilation_mode_flags {
-    mode: DBG
-    # Enable debug symbols.
-    compiler_flag: "-ggdb3"
-  }
+  # Enable debug symbols.
+  compiler_flag: "-ggdb3"
+
   compilation_mode_flags {
     mode: OPT
 
@@ -508,11 +506,9 @@ toolchain {
   #linker_flag: "-Wl,--warn-execstack"
   #linker_flag: "-Wl,--detect-odr-violations"
 
-  compilation_mode_flags {
-    mode: DBG
-    # Enable debug symbols.
-    compiler_flag: "-ggdb3"
-  }
+  # Enable debug symbols.
+  compiler_flag: "-ggdb3"
+
   compilation_mode_flags {
     mode: OPT
 
