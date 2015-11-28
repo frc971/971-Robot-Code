@@ -1,13 +1,20 @@
 #!/usr/bin/python
 
-from frc971.control_loops.python import control_loop
+import gflags
+import glog
 import argparse
 import numpy
 import sys
 from matplotlib import pylab
 
+from frc971.control_loops.python import control_loop
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+
 class SprungShooter(control_loop.ControlLoop):
-  def __init__(self, name="RawSprungShooter", verbose=False):
+  def __init__(self, name="RawSprungShooter"):
     super(SprungShooter, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = .4982
@@ -68,7 +75,7 @@ class SprungShooter(control_loop.ControlLoop):
 
 
 class Shooter(SprungShooter):
-  def __init__(self, name="RawShooter", verbose=False):
+  def __init__(self, name="RawShooter"):
     super(Shooter, self).__init__(name)
 
     # State feedback matrices
@@ -96,7 +103,7 @@ class Shooter(SprungShooter):
 
 
 class SprungShooterDeltaU(SprungShooter):
-  def __init__(self, name="SprungShooter", verbose=False):
+  def __init__(self, name="SprungShooter"):
     super(SprungShooterDeltaU, self).__init__(name)
     A_unaugmented = self.A
     B_unaugmented = self.B
@@ -116,19 +123,17 @@ class SprungShooterDeltaU(SprungShooter):
 
     self.PlaceControllerPoles([0.50, 0.35, 0.80])
 
-    if verbose:
-      print "K"
-      print self.K
-      print "Placed controller poles are"
-      print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('K')
+    glog.debug(str(self.K))
+    glog.debug('Placed controller poles are')
+    glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl, 0.90])
-    if verbose:
-      print "Placed observer poles are"
-      print numpy.linalg.eig(self.A - self.L * self.C)[0]
+    glog.debug('Placed observer poles are')
+    glog.debug(str(numpy.linalg.eig(self.A - self.L * self.C)[0]))
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
@@ -137,7 +142,7 @@ class SprungShooterDeltaU(SprungShooter):
 
 
 class ShooterDeltaU(Shooter):
-  def __init__(self, name="Shooter", verbose=False):
+  def __init__(self, name="Shooter"):
     super(ShooterDeltaU, self).__init__(name)
     A_unaugmented = self.A
     B_unaugmented = self.B
@@ -157,19 +162,17 @@ class ShooterDeltaU(Shooter):
 
     self.PlaceControllerPoles([0.55, 0.45, 0.80])
 
-    if verbose:
-      print "K"
-      print self.K
-      print "Placed controller poles are"
-      print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('K')
+    glog.debug(str(self.K))
+    glog.debug('Placed controller poles are')
+    glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = .05
     self.ipl = 0.008
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl, 0.90])
-    if verbose:
-      print "Placed observer poles are"
-      print numpy.linalg.eig(self.A - self.L * self.C)[0]
+    glog.debug('Placed observer poles are')
+    glog.debug(str(numpy.linalg.eig(self.A - self.L * self.C)[0]))
 
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
@@ -183,18 +186,11 @@ def ClipDeltaU(shooter, old_voltage, delta_u):
   return new_u - old_u
 
 def main(argv):
-  parser = argparse.ArgumentParser(description='Calculate shooter.')
-  parser.add_argument('--plot', action='store_true', default=False, help='If true, plot')
-  parser.add_argument('shootercc')
-  parser.add_argument('shooterh')
-  parser.add_argument('unaugmented_shootercc')
-  parser.add_argument('unaugmented_shooterh')
-
-  args = parser.parse_args(argv[1:])
+  argv = FLAGS(argv)
 
   # Simulate the response of the system to a goal.
-  sprung_shooter = SprungShooterDeltaU(verbose=args.plot)
-  raw_sprung_shooter = SprungShooter(verbose=args.plot)
+  sprung_shooter = SprungShooterDeltaU()
+  raw_sprung_shooter = SprungShooter()
   close_loop_x = []
   close_loop_u = []
   goal_position = -0.3
@@ -213,13 +209,13 @@ def main(argv):
     close_loop_x.append(raw_sprung_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(500), close_loop_x)
     pylab.plot(range(500), close_loop_u)
     pylab.show()
 
-  shooter = ShooterDeltaU(verbose=args.plot)
-  raw_shooter = Shooter(verbose=args.plot)
+  shooter = ShooterDeltaU()
+  raw_shooter = Shooter()
   close_loop_x = []
   close_loop_u = []
   goal_position = -0.3
@@ -235,24 +231,23 @@ def main(argv):
     close_loop_x.append(raw_shooter.X[0, 0] * 10)
     close_loop_u.append(voltage[0, 0])
 
-  if args.plot:
+  if FLAGS.plot:
     pylab.plot(range(500), close_loop_x)
     pylab.plot(range(500), close_loop_u)
     pylab.show()
 
   # Write the generated constants out to a file.
-  unaug_sprung_shooter = SprungShooter("RawSprungShooter", verbose=args.plot)
-  unaug_shooter = Shooter("RawShooter", verbose=args.plot)
+  unaug_sprung_shooter = SprungShooter("RawSprungShooter")
+  unaug_shooter = Shooter("RawShooter")
   namespaces = ['y2014', 'control_loops', 'shooter']
   unaug_loop_writer = control_loop.ControlLoopWriter("RawShooter",
                                                      [unaug_sprung_shooter,
                                                       unaug_shooter],
                                                      namespaces=namespaces)
-  unaug_loop_writer.Write(args.unaugmented_shooterh,
-                          args.unaugmented_shootercc)
+  unaug_loop_writer.Write(argv[4], argv[3])
 
-  sprung_shooter = SprungShooterDeltaU(verbose=args.plot)
-  shooter = ShooterDeltaU(verbose=args.plot)
+  sprung_shooter = SprungShooterDeltaU()
+  shooter = ShooterDeltaU()
   loop_writer = control_loop.ControlLoopWriter("Shooter",
                                                [sprung_shooter, shooter],
                                                namespaces=namespaces)
@@ -263,7 +258,7 @@ def main(argv):
                                                   sprung_shooter.Ks))
   loop_writer.AddConstant(control_loop.Constant("kDt", "%f",
                                                 sprung_shooter.dt))
-  loop_writer.Write(args.shooterh, args.shootercc)
+  loop_writer.Write(argv[2], argv[1])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

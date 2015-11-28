@@ -8,8 +8,17 @@ from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 from matplotlib import pylab
 
+import gflags
+import glog
+
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
+FLAGS = gflags.FLAGS
+
+try:
+  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+except gflags.DuplicateFlagError:
+  pass
 
 def CoerceGoal(region, K, w, R):
   """Intersects a line with a region, and finds the closest point to R.
@@ -250,16 +259,16 @@ class VelocityDrivetrain(object):
     #goal_gear_is_high = True
 
     if not self.IsInGear(current_gear):
-      print gear_name, 'Not in gear.'
+      glog.debug('%s Not in gear.', gear_name)
       return current_gear
     else:
       is_high = current_gear is VelocityDrivetrain.HIGH
       if is_high != goal_gear_is_high:
         if goal_gear_is_high:
-          print gear_name, 'Shifting up.'
+          glog.debug('%s Shifting up.', gear_name)
           return VelocityDrivetrain.SHIFTING_UP
         else:
-          print gear_name, 'Shifting down.'
+          glog.debug('%s Shifting down.', gear_name)
           return VelocityDrivetrain.SHIFTING_DOWN
       else:
         return current_gear
@@ -361,7 +370,7 @@ class VelocityDrivetrain(object):
       FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
       self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R - self.X) + FF_volts
     else:
-      print 'Not all in gear'
+      glog.debug('Not all in gear')
       if not self.IsInGear(self.left_gear) and not self.IsInGear(self.right_gear):
         # TODO(austin): Use battery volts here.
         R_left = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
@@ -390,15 +399,19 @@ class VelocityDrivetrain(object):
     self.right_gear, self.right_shifter_position = self.SimShifter(
         self.right_gear, self.right_shifter_position)
 
-    print "U is", self.U[0, 0], self.U[1, 0]
-    print "Left shifter", self.left_gear, self.left_shifter_position, "Right shifter", self.right_gear, self.right_shifter_position
+    glog.debug('U is %s %s', str(self.U[0, 0]), str(self.U[1, 0]))
+    glog.debug('Left shifter %s %d Right shifter %s %d',
+               self.left_gear, self.left_shifter_position,
+               self.right_gear, self.right_shifter_position)
 
 
 def main(argv):
+  argv = FLAGS(argv)
+
   vdrivetrain = VelocityDrivetrain()
 
   if len(argv) != 5:
-    print "Expected .h file name and .cc file name"
+    glog.fatal('Expected .h file name and .cc file name')
   else:
     namespaces = ['y2014', 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
@@ -408,18 +421,12 @@ def main(argv):
                        vdrivetrain.drivetrain_high_high],
                        namespaces=namespaces)
 
-    if argv[1][-3:] == '.cc':
-      dog_loop_writer.Write(argv[2], argv[1])
-    else:
-      dog_loop_writer.Write(argv[1], argv[2])
+    dog_loop_writer.Write(argv[1], argv[2])
 
     cim_writer = control_loop.ControlLoopWriter(
         "CIM", [drivetrain.CIM()])
 
-    if argv[3][-3:] == '.cc':
-      cim_writer.Write(argv[4], argv[3])
-    else:
-      cim_writer.Write(argv[3], argv[4])
+    cim_writer.Write(argv[3], argv[4])
     return
 
   vl_plot = []
@@ -435,16 +442,16 @@ def main(argv):
   vdrivetrain.left_gear = VelocityDrivetrain.LOW
   vdrivetrain.right_gear = VelocityDrivetrain.LOW
 
-  print "K is", vdrivetrain.CurrentDrivetrain().K
+  glog.debug('K is %s', str(vdrivetrain.CurrentDrivetrain().K))
 
   if vdrivetrain.left_gear is VelocityDrivetrain.HIGH:
-    print "Left is high"
+    glog.debug('Left is high')
   else:
-    print "Left is low"
+    glog.debug('Left is low')
   if vdrivetrain.right_gear is VelocityDrivetrain.HIGH:
-    print "Right is high"
+    glog.debug('Right is high')
   else:
-    print "Right is low"
+    glog.debug('Right is low')
 
   for t in numpy.arange(0, 1.7, vdrivetrain.dt):
     if t < 0.5:

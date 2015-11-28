@@ -7,6 +7,15 @@ from y2014.control_loops.python import polydrivetrain
 import numpy
 import sys
 from matplotlib import pylab
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
+try:
+  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+except gflags.DuplicateFlagError:
+  pass
 
 class Claw(control_loop.ControlLoop):
   def __init__(self, name="RawClaw"):
@@ -72,7 +81,7 @@ class Claw(control_loop.ControlLoop):
          [self.motor_feedforward_bottom, 0],
          [-self.motor_feedforward_bottom, self.motor_feedforward_difference]])
 
-    print "Cont X_ss", self.motor_feedforward / -self.common_motor_constant
+    glog.debug('Cont X_ss %f', self.motor_feedforward / -self.common_motor_constant)
 
     self.B_bottom_cont = numpy.matrix(
         [[0],
@@ -100,13 +109,13 @@ class Claw(control_loop.ControlLoop):
     self.K_diff = controls.dplace(self.A_diff, self.B_diff,
                                   [0.85 + 0.05j, 0.85 - 0.05j])
 
-    print "K_diff", self.K_diff
-    print "K_bottom", self.K_bottom
+    glog.debug('K_diff %s', str(self.K_diff))
+    glog.debug('K_bottom %s', str(self.K_bottom))
 
-    print "A"
-    print self.A
-    print "B"
-    print self.B
+    glog.debug('A')
+    glog.debug(self.A)
+    glog.debug('B')
+    glog.debug(self.B)
 
     
     self.Q = numpy.matrix([[(1.0 / (0.10 ** 2.0)), 0.0, 0.0, 0.0],
@@ -127,24 +136,24 @@ class Claw(control_loop.ControlLoop):
     lstsq_A = numpy.identity(2)
     lstsq_A[0, :] = self.B[1, :]
     lstsq_A[1, :] = self.B[3, :]
-    print "System of Equations coefficients:"
-    print lstsq_A
-    print "det", numpy.linalg.det(lstsq_A)
+    glog.debug('System of Equations coefficients:')
+    glog.debug(str(lstsq_A))
+    glog.debug('det %s', str(numpy.linalg.det(lstsq_A)))
 
     out_x = numpy.linalg.lstsq(
                          lstsq_A,
                          numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]))[0]
     self.K[1, 2] = -lstsq_A[0, 0] * (self.K[0, 2] - out_x[0]) / lstsq_A[0, 1] + out_x[1]
 
-    print "K unaugmented"
-    print self.K
-    print "B * K unaugmented"
-    print self.B * self.K
+    glog.debug('K unaugmented')
+    glog.debug(str(self.K))
+    glog.debug('B * K unaugmented')
+    glog.debug(str(self.B * self.K))
     F = self.A - self.B * self.K
-    print "A - B * K unaugmented"
-    print F
-    print "eigenvalues"
-    print numpy.linalg.eig(F)[0]
+    glog.debug('A - B * K unaugmented')
+    glog.debug(str(F))
+    glog.debug('eigenvalues')
+    glog.debug(str(numpy.linalg.eig(F)[0]))
 
     self.rpl = .09
     self.ipl = 0.030
@@ -180,7 +189,7 @@ class Claw(control_loop.ControlLoop):
     X_ss[0, 0] = A[0, 2] * X_ss[2, 0] + B[0, 0] * U[0, 0]
     X_ss[1, 0] = A[1, 2] * X_ss[2, 0] + A[1, 3] * X_ss[3, 0] + B[1, 0] * U[0, 0] + B[1, 1] * U[1, 0]
 
-    print "X_ss", X_ss
+    glog.debug('X_ss %s', str(X_ss))
 
     self.InitializeState()
 
@@ -225,17 +234,17 @@ class ClawDeltaU(Claw):
 
     self.K = numpy.matrix([[50.0, 0.0, 10.0, 0.0, 1.0],
                            [50.0, 0.0, 10.0, 0.0, 1.0]])
-    #self.K = numpy.matrix([[50.0, -100.0, 0, -10, 0],
-    #                       [50.0,  100.0, 0, 10, 0]])
 
     controlability = controls.ctrb(self.A, self.B)
-    print "Rank of augmented controlability matrix.", numpy.linalg.matrix_rank(controlability)
+    glog.debug('Rank of augmented controlability matrix: %d',
+              numpy.linalg.matrix_rank(controlability))
 
-    print "K"
-    print self.K
-    print "Placed controller poles are"
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
-    print [numpy.abs(x) for x in numpy.linalg.eig(self.A - self.B * self.K)[0]]
+    glog.debug('K')
+    glog.debug(str(self.K))
+    glog.debug('Placed controller poles are')
+    glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+    glog.debug(str([numpy.abs(x) for x in
+                       numpy.linalg.eig(self.A - self.B * self.K)[0]]))
 
     self.rpl = .05
     self.ipl = 0.008
@@ -355,7 +364,7 @@ def ScaleU(claw, U, K, error):
 
   return numpy.matrix([[bottom_u], [top_u]])
 
-def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False, iterations=200):
+def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=True, iterations=200):
   """Runs the claw plant on a given claw (claw) with an initial condition (initial_X) and goal (goal).
 
     The tests themselves are not terribly sophisticated; I just test for 
@@ -396,8 +405,8 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False,
 
     if claw.X[1, 0] > upper_bound or claw.X[1, 0] < lower_bound:
       tests_passed = False
-      print "Claw separation was", claw.X[1, 0]
-      print "Should have been between", lower_bound, "and", upper_bound
+      glog.info('Claw separation was %f', claw.X[1, 0])
+      glog.info("Should have been between", lower_bound, "and", upper_bound)
 
     if claw.hard_pos_limits and \
       (claw.X[0, 0] > claw.hard_pos_limits[1] or
@@ -405,9 +414,9 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False,
           claw.X[0, 0] + claw.X[1, 0] > claw.hard_pos_limits[1] or
           claw.X[0, 0] + claw.X[1, 0] < claw.hard_pos_limits[0]):
       tests_passed = False
-      print "Claws at %f and %f" % (claw.X[0, 0], claw.X[0, 0] + claw.X[1, 0])
-      print "Both should be in %s, definitely %s" % \
-          (claw.pos_limits, claw.hard_pos_limits)
+      glog.info('Claws at %f and %f', claw.X[0, 0], claw.X[0, 0] + claw.X[1, 0])
+      glog.info("Both should be in %s, definitely %s",
+                claw.pos_limits, claw.hard_pos_limits)
 
     t.append(i * claw.dt)
     x_bottom.append(claw.X[0, 0] * 10.0)
@@ -428,70 +437,69 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01, show_graph=False,
   # Test to make sure that we are near the goal.
   if numpy.max(abs(claw.X - goal)) > 1e-4:
     tests_passed = False
-    print "X was", claw.X, "Expected", goal
+    glog.error('X was %s Expected %s', str(claw.X), str(goal))
 
   return tests_passed
 
 def main(argv):
+  argv = FLAGS(argv)
+
   claw = Claw()
+  if FLAGS.plot:
+    # Test moving the claw with constant separation.
+    initial_X = numpy.matrix([[-1.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[1.0], [0.0], [0.0], [0.0]])
+    run_test(claw, initial_X, R)
 
-  # Test moving the claw with constant separation.
-  initial_X = numpy.matrix([[-1.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[1.0], [0.0], [0.0], [0.0]])
-  run_test(claw, initial_X, R)
+    # Test just changing separation.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[0.0], [1.0], [0.0], [0.0]])
+    run_test(claw, initial_X, R)
 
-  # Test just changing separation.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[0.0], [1.0], [0.0], [0.0]])
-  run_test(claw, initial_X, R)
+    # Test changing both separation and position at once.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
+    run_test(claw, initial_X, R)
 
-  # Test changing both separation and position at once.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[1.0], [1.0], [0.0], [0.0]])
-  run_test(claw, initial_X, R)
+    # Test a small separation error and a large position one.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[2.0], [0.05], [0.0], [0.0]])
+    run_test(claw, initial_X, R)
 
-  # Test a small separation error and a large position one.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[2.0], [0.05], [0.0], [0.0]])
-  run_test(claw, initial_X, R)
+    # Test a small separation error and a large position one.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[-0.5], [1.0], [0.0], [0.0]])
+    run_test(claw, initial_X, R)
 
-  # Test a small separation error and a large position one.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[-0.5], [1.0], [0.0], [0.0]])
-  run_test(claw, initial_X, R)
+    # Test opening with the top claw at the limit.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[-1.5], [1.5], [0.0], [0.0]])
+    claw.hard_pos_limits = (-1.6, 0.1)
+    claw.pos_limits = (-1.5, 0.0)
+    run_test(claw, initial_X, R)
+    claw.pos_limits = None
 
-  # Test opening with the top claw at the limit.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[-1.5], [1.5], [0.0], [0.0]])
-  claw.hard_pos_limits = (-1.6, 0.1)
-  claw.pos_limits = (-1.5, 0.0)
-  run_test(claw, initial_X, R)
-  claw.pos_limits = None
-
-  # Test opening with the bottom claw at the limit.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[0], [1.5], [0.0], [0.0]])
-  claw.hard_pos_limits = (-0.1, 1.6)
-  claw.pos_limits = (0.0, 1.6)
-  run_test(claw, initial_X, R)
-  claw.pos_limits = None
+    # Test opening with the bottom claw at the limit.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[0], [1.5], [0.0], [0.0]])
+    claw.hard_pos_limits = (-0.1, 1.6)
+    claw.pos_limits = (0.0, 1.6)
+    run_test(claw, initial_X, R)
+    claw.pos_limits = None
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
-    print "Expected .h file name and .cc file name for the claw."
+    glog.fatal('Expected .h file name and .cc file name for the claw.')
   else:
     namespaces = ['y2014', 'control_loops', 'claw']
-    claw = Claw("Claw")
-    loop_writer = control_loop.ControlLoopWriter("Claw", [claw],
+    claw = Claw('Claw')
+    loop_writer = control_loop.ControlLoopWriter('Claw', [claw],
                                                  namespaces=namespaces)
-    loop_writer.AddConstant(control_loop.Constant("kClawMomentOfInertiaRatio",
-      "%f", claw.J_top / claw.J_bottom))
-    loop_writer.AddConstant(control_loop.Constant("kDt", "%f",
+    loop_writer.AddConstant(control_loop.Constant('kClawMomentOfInertiaRatio',
+      '%f', claw.J_top / claw.J_bottom))
+    loop_writer.AddConstant(control_loop.Constant('kDt', '%f',
           claw.dt))
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+    loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
