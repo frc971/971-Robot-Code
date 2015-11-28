@@ -30,8 +30,11 @@ def _aos_downloader_impl(ctx):
 
 Running this with `bazel run` will actually download everything.
 
+This also generates a start_list.txt file with the names of binaries to start.
+
 Attrs:
   srcs: The files to download. They currently all get shoved into one folder.
+  start_srcs: Like srcs, except they also get put into start_list.txt.
   default_target: The default host to download to. If not specified, defaults to
                   roboRIO-971.local.
 '''
