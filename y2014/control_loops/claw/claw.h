@@ -12,7 +12,7 @@
 #include "y2014/control_loops/claw/claw_motor_plant.h"
 #include "frc971/control_loops/hall_effect_tracker.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
 namespace testing {
 class WindupClawTest;
@@ -77,15 +77,15 @@ class ZeroedStateFeedbackLoop {
   }
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
-  void SetPositionValues(const HalfClawPosition &claw);
+  void SetPositionValues(const ::frc971::control_loops::HalfClawPosition &claw);
 
-  void Reset(const HalfClawPosition &claw);
+  void Reset(const ::frc971::control_loops::HalfClawPosition &claw);
 
   double absolute_position() const { return encoder() + offset(); }
 
-  const HallEffectTracker &front() const { return front_; }
-  const HallEffectTracker &calibration() const { return calibration_; }
-  const HallEffectTracker &back() const { return back_; }
+  const ::frc971::HallEffectTracker &front() const { return front_; }
+  const ::frc971::HallEffectTracker &calibration() const { return calibration_; }
+  const ::frc971::HallEffectTracker &back() const { return back_; }
 
   bool any_hall_effect_changed() const {
     return front().either_count_changed() ||
@@ -109,13 +109,13 @@ class ZeroedStateFeedbackLoop {
   bool GetPositionOfEdge(const constants::Values::Claws::Claw &claw,
                          double *edge_encoder, double *edge_angle);
 
-  bool SawFilteredPosedge(const HallEffectTracker &this_sensor,
-                          const HallEffectTracker &sensorA,
-                          const HallEffectTracker &sensorB);
+  bool SawFilteredPosedge(const ::frc971::HallEffectTracker &this_sensor,
+                          const ::frc971::HallEffectTracker &sensorA,
+                          const ::frc971::HallEffectTracker &sensorB);
 
-  bool SawFilteredNegedge(const HallEffectTracker &this_sensor,
-                          const HallEffectTracker &sensorA,
-                          const HallEffectTracker &sensorB);
+  bool SawFilteredNegedge(const ::frc971::HallEffectTracker &this_sensor,
+                          const ::frc971::HallEffectTracker &sensorA,
+                          const ::frc971::HallEffectTracker &sensorB);
 
 #undef COUNT_SETTER_GETTER
 
@@ -126,7 +126,7 @@ class ZeroedStateFeedbackLoop {
 
   ClawMotor *motor_;
 
-  HallEffectTracker front_, calibration_, back_;
+  ::frc971::HallEffectTracker front_, calibration_, back_;
 
   JointZeroingState zeroing_state_;
   double min_hall_effect_on_angle_;
@@ -139,16 +139,16 @@ class ZeroedStateFeedbackLoop {
   double last_off_encoder_;
   bool any_triggered_last_;
 
-  const HallEffectTracker* posedge_filter_ = nullptr;
-  const HallEffectTracker* negedge_filter_ = nullptr;
+  const ::frc971::HallEffectTracker* posedge_filter_ = nullptr;
+  const ::frc971::HallEffectTracker* negedge_filter_ = nullptr;
 
  private:
   // Does the edges of 1 sensor for GetPositionOfEdge.
   bool DoGetPositionOfEdge(const constants::Values::Claws::AnglePair &angles,
                            double *edge_encoder, double *edge_angle,
-                           const HallEffectTracker &sensor,
-                           const HallEffectTracker &sensorA,
-                           const HallEffectTracker &sensorB,
+                           const ::frc971::HallEffectTracker &sensor,
+                           const ::frc971::HallEffectTracker &sensorA,
+                           const ::frc971::HallEffectTracker &sensorB,
                            const char *hall_effect_name);
 };
 
@@ -182,10 +182,11 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
       const constants::Values::Claws::Claw &claw_values);
 };
 
-class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawQueue> {
+class ClawMotor
+    : public aos::controls::ControlLoop<::frc971::control_loops::ClawQueue> {
  public:
-  explicit ClawMotor(control_loops::ClawQueue *my_claw =
-                         &control_loops::claw_queue);
+  explicit ClawMotor(::frc971::control_loops::ClawQueue *my_claw =
+                         &::frc971::control_loops::claw_queue);
 
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }
@@ -215,10 +216,11 @@ class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawQueue> {
   CalibrationMode mode() const { return mode_; }
 
  protected:
-  virtual void RunIteration(const control_loops::ClawQueue::Goal *goal,
-                            const control_loops::ClawQueue::Position *position,
-                            control_loops::ClawQueue::Output *output,
-                            control_loops::ClawQueue::Status *status);
+  virtual void RunIteration(
+      const ::frc971::control_loops::ClawQueue::Goal *goal,
+      const ::frc971::control_loops::ClawQueue::Position *position,
+      ::frc971::control_loops::ClawQueue::Output *output,
+      ::frc971::control_loops::ClawQueue::Status *status);
 
   double top_absolute_position() const {
     return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);
@@ -257,9 +259,9 @@ class ClawMotor : public aos::controls::ControlLoop<control_loops::ClawQueue> {
 // Modifies the bottom and top goal such that they are within the limits and
 // their separation isn't too much or little.
 void LimitClawGoal(double *bottom_goal, double *top_goal,
-                   const frc971::constants::Values &values);
+                   const constants::Values &values);
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
 
 #endif  // Y2014_CONTROL_LOOPS_CLAW_CLAW_H_

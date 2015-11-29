@@ -4,9 +4,10 @@
 #include "aos/linux_code/init.h"
 #include "y2014/constants.h"
 
-namespace frc971 {
+namespace y2014 {
 
 typedef constants::Values::Claws Claws;
+using ::frc971::HallEffectStruct;
 
 class Sensor {
  public:
@@ -23,7 +24,7 @@ class Sensor {
   }
 
   bool DoGetPositionOfEdge(
-      const control_loops::HalfClawPosition &claw_position,
+      const ::frc971::control_loops::HalfClawPosition &claw_position,
       const HallEffectStruct &hall_effect, Claws::AnglePair *limits) {
     bool print = false;
 
@@ -109,16 +110,17 @@ class Sensor {
 
 class ClawSensors {
  public:
-  ClawSensors(const double start_position,
-              const control_loops::HalfClawPosition &initial_claw_position)
+  ClawSensors(
+      const double start_position,
+      const ::frc971::control_loops::HalfClawPosition &initial_claw_position)
       : start_position_(start_position),
         front_(start_position, initial_claw_position.front),
         calibration_(start_position, initial_claw_position.calibration),
         back_(start_position, initial_claw_position.back) {}
 
-  bool GetPositionOfEdge(const control_loops::HalfClawPosition &claw_position,
-                         Claws::Claw *claw) {
-
+  bool GetPositionOfEdge(
+      const ::frc971::control_loops::HalfClawPosition &claw_position,
+      Claws::Claw *claw) {
     bool print = false;
     if (front_.DoGetPositionOfEdge(claw_position,
                                    claw_position.front, &claw->front)) {
@@ -153,17 +155,17 @@ class ClawSensors {
 };
 
 int Main() {
-  control_loops::claw_queue.position.FetchNextBlocking();
+  ::frc971::control_loops::claw_queue.position.FetchNextBlocking();
 
   const double top_start_position =
-      control_loops::claw_queue.position->top.position;
+      ::frc971::control_loops::claw_queue.position->top.position;
   const double bottom_start_position =
-      control_loops::claw_queue.position->bottom.position;
+      ::frc971::control_loops::claw_queue.position->bottom.position;
 
   ClawSensors top(top_start_position,
-                  control_loops::claw_queue.position->top);
+                  ::frc971::control_loops::claw_queue.position->top);
   ClawSensors bottom(bottom_start_position,
-                     control_loops::claw_queue.position->bottom);
+                     ::frc971::control_loops::claw_queue.position->bottom);
 
   Claws limits;
 
@@ -217,28 +219,28 @@ int Main() {
   limits.start_fine_tune_pos = -0.2;
   limits.max_zeroing_voltage = 4.0;
 
-  control_loops::ClawQueue::Position last_position =
-      *control_loops::claw_queue.position;
+  ::frc971::control_loops::ClawQueue::Position last_position =
+      *::frc971::control_loops::claw_queue.position;
 
   while (true) {
-    control_loops::claw_queue.position.FetchNextBlocking();
+    ::frc971::control_loops::claw_queue.position.FetchNextBlocking();
     bool print = false;
-    if (top.GetPositionOfEdge(control_loops::claw_queue.position->top,
+    if (top.GetPositionOfEdge(::frc971::control_loops::claw_queue.position->top,
                               &limits.upper_claw)) {
       print = true;
       printf("Got an edge on the upper claw\n");
     }
     if (bottom.GetPositionOfEdge(
-            control_loops::claw_queue.position->bottom,
+            ::frc971::control_loops::claw_queue.position->bottom,
             &limits.lower_claw)) {
       print = true;
       printf("Got an edge on the lower claw\n");
     }
     const double top_position =
-        control_loops::claw_queue.position->top.position -
+        ::frc971::control_loops::claw_queue.position->top.position -
         top_start_position;
     const double bottom_position =
-        control_loops::claw_queue.position->bottom.position -
+        ::frc971::control_loops::claw_queue.position->bottom.position -
         bottom_start_position;
     const double separation = top_position - bottom_position;
     if (separation > limits.claw_max_separation) {
@@ -300,16 +302,16 @@ int Main() {
       printf("}\n");
     }
 
-    last_position = *control_loops::claw_queue.position;
+    last_position = *::frc971::control_loops::claw_queue.position;
   }
   return 0;
 }
 
-}  // namespace frc971
+}  // namespace y2014
 
 int main() {
   ::aos::Init();
-  int returnvalue = ::frc971::Main();
+  int returnvalue = ::y2014::Main();
   ::aos::Cleanup();
   return returnvalue;
 }

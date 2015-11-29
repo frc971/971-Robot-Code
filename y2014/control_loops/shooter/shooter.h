@@ -11,7 +11,7 @@
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
 namespace testing {
 class ShooterTest_UnloadWindupPositive_Test;
@@ -122,17 +122,18 @@ const Time kShotEndTimeout = Time::InSeconds(0.2);
 const Time kPrepareFireEndTime = Time::InMS(40);
 
 class ShooterMotor
-    : public aos::controls::ControlLoop<control_loops::ShooterQueue> {
+    : public aos::controls::ControlLoop<::frc971::control_loops::ShooterQueue> {
  public:
-  explicit ShooterMotor(control_loops::ShooterQueue *my_shooter =
-                            &control_loops::shooter_queue);
+  explicit ShooterMotor(::frc971::control_loops::ShooterQueue *my_shooter =
+                            &::frc971::control_loops::shooter_queue);
 
   // True if the goal was moved to avoid goal windup.
   bool capped_goal() const { return shooter_.capped_goal(); }
 
   double PowerToPosition(double power);
   double PositionToPower(double position);
-  void CheckCalibrations(const control_loops::ShooterQueue::Position *position);
+  void CheckCalibrations(
+      const ::frc971::control_loops::ShooterQueue::Position *position);
 
   typedef enum {
     STATE_INITIALIZE = 0,
@@ -153,9 +154,10 @@ class ShooterMotor
 
  protected:
   virtual void RunIteration(
-      const ShooterQueue::Goal *goal,
-      const control_loops::ShooterQueue::Position *position,
-      ShooterQueue::Output *output, ShooterQueue::Status *status);
+      const ::frc971::control_loops::ShooterQueue::Goal *goal,
+      const ::frc971::control_loops::ShooterQueue::Position *position,
+      ::frc971::control_loops::ShooterQueue::Output *output,
+      ::frc971::control_loops::ShooterQueue::Status *status);
 
  private:
   // We have to override this to keep the pistons in the correct positions.
@@ -177,7 +179,7 @@ class ShooterMotor
     load_timeout_ = Time::Now() + kLoadTimeout;
   }
 
-  control_loops::ShooterQueue::Position last_position_;
+  ::frc971::control_loops::ShooterQueue::Position last_position_;
 
   ZeroedStateFeedbackLoop shooter_;
 
@@ -220,6 +222,6 @@ class ShooterMotor
 };
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
 
 #endif  // Y2014_CONTROL_LOOPS_shooter_shooter_H_

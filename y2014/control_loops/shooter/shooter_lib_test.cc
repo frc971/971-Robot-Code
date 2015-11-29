@@ -12,7 +12,7 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
 namespace testing {
 
@@ -85,8 +85,9 @@ class ShooterSimulation {
 
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
-  void SetPhysicalSensors(control_loops::ShooterQueue::Position *position) {
-    const frc971::constants::Values &values = constants::GetValues();
+  void SetPhysicalSensors(
+      ::frc971::control_loops::ShooterQueue::Position *position) {
+    const constants::Values &values = constants::GetValues();
 
    	position->position = GetPosition();
 
@@ -115,10 +116,10 @@ class ShooterSimulation {
   }
 
   void UpdateEffectEdge(
-      PosedgeOnlyCountedHallEffectStruct *sensor,
-      const PosedgeOnlyCountedHallEffectStruct &last_sensor,
+      ::frc971::PosedgeOnlyCountedHallEffectStruct *sensor,
+      const ::frc971::PosedgeOnlyCountedHallEffectStruct &last_sensor,
       const constants::Values::AnglePair &limits,
-      const control_loops::ShooterQueue::Position &last_position) {
+      const ::frc971::control_loops::ShooterQueue::Position &last_position) {
     sensor->posedge_count = last_sensor.posedge_count;
     sensor->negedge_count = last_sensor.negedge_count;
 
@@ -152,9 +153,9 @@ class ShooterSimulation {
   // it into a state using the passed values
   void SendPositionMessage(bool use_passed, bool plunger_in,
                            bool latch_in, bool brake_in) {
-    const frc971::constants::Values &values = constants::GetValues();
-    ::aos::ScopedMessagePtr<control_loops::ShooterQueue::Position> position =
-        shooter_queue_.position.MakeMessage();
+    const constants::Values &values = constants::GetValues();
+    ::aos::ScopedMessagePtr<::frc971::control_loops::ShooterQueue::Position>
+        position = shooter_queue_.position.MakeMessage();
 
     if (use_passed) {
       plunger_latched_ = latch_in && plunger_in;
@@ -282,11 +283,11 @@ class ShooterSimulation {
   int brake_delay_count_;
 
  private:
-  ShooterQueue shooter_queue_;
+  ::frc971::control_loops::ShooterQueue shooter_queue_;
   double initial_position_;
   double last_voltage_;
 
-  control_loops::ShooterQueue::Position last_position_message_;
+  ::frc971::control_loops::ShooterQueue::Position last_position_message_;
   double last_plant_position_;
 };
 
@@ -296,7 +297,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ShooterQueue shooter_queue_;
+  ::frc971::control_loops::ShooterQueue shooter_queue_;
 
   // Create a loop and simulation plant.
   ShooterMotor shooter_motor_;
@@ -326,7 +327,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
 };
 
 TEST_F(ShooterTest, PowerConversion) {
-  const frc971::constants::Values &values = constants::GetValues();
+  const constants::Values &values = constants::GetValues();
   // test a couple of values return the right thing
   EXPECT_NEAR(0.254001, shooter_motor_.PowerToPosition(140.0), 0.00001);
   EXPECT_NEAR(0.00058, shooter_motor_.PowerToPosition(0.53), 0.00001);
@@ -719,4 +720,4 @@ INSTANTIATE_TEST_CASE_P(
 
 }  // namespace testing
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014

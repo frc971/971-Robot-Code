@@ -12,7 +12,7 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
 
 using ::y2014::control_loops::shooter::kSpringConstant;
@@ -42,7 +42,9 @@ void ZeroedStateFeedbackLoop::CapU() {
   voltage_ = std::max(-max_voltage_, voltage_);
   mutable_U(0, 0) = voltage_ - old_voltage;
 
-  LOG_STRUCT(DEBUG, "shooter_output", ShooterVoltageToLog(X_hat(2, 0), voltage_));
+  LOG_STRUCT(
+      DEBUG, "shooter_output",
+      ::frc971::control_loops::ShooterVoltageToLog(X_hat(2, 0), voltage_));
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
@@ -61,7 +63,8 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
+    LOG_STRUCT(DEBUG, "to prevent windup",
+               ::frc971::control_loops::ShooterMovingGoal(dx));
   } else if (uncapped_voltage() < -max_voltage_) {
     double dx;
     if (controller_index() == 0) {
@@ -74,7 +77,8 @@ void ZeroedStateFeedbackLoop::CapGoal() {
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;
-    LOG_STRUCT(DEBUG, "to prevent windup", ShooterMovingGoal(dx));
+    LOG_STRUCT(DEBUG, "to prevent windup",
+               ::frc971::control_loops::ShooterMovingGoal(dx));
   } else {
     capped_goal_ = false;
   }
@@ -100,14 +104,15 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   if (controller_index() == 0) {
     mutable_R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
   }
-  LOG_STRUCT(
-      DEBUG, "sensor edge (fake?)",
-      ShooterChangeCalibration(encoder_val, known_position, old_position,
-                               absolute_position(), previous_offset, offset_));
+  LOG_STRUCT(DEBUG, "sensor edge (fake?)",
+             ::frc971::control_loops::ShooterChangeCalibration(
+                 encoder_val, known_position, old_position, absolute_position(),
+                 previous_offset, offset_));
 }
 
-ShooterMotor::ShooterMotor(control_loops::ShooterQueue *my_shooter)
-    : aos::controls::ControlLoop<control_loops::ShooterQueue>(my_shooter),
+ShooterMotor::ShooterMotor(::frc971::control_loops::ShooterQueue *my_shooter)
+    : aos::controls::ControlLoop<::frc971::control_loops::ShooterQueue>(
+          my_shooter),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       loading_problem_end_time_(0, 0),
@@ -124,16 +129,18 @@ ShooterMotor::ShooterMotor(control_loops::ShooterQueue *my_shooter)
       last_proximal_current_(true) {}
 
 double ShooterMotor::PowerToPosition(double power) {
-  const frc971::constants::Values &values = constants::GetValues();
+  const constants::Values &values = constants::GetValues();
   double maxpower = 0.5 * kSpringConstant *
                     (kMaxExtension * kMaxExtension -
                      (kMaxExtension - values.shooter.upper_limit) *
                          (kMaxExtension - values.shooter.upper_limit));
   if (power < 0) {
-    LOG_STRUCT(WARNING, "negative power", PowerAdjustment(power, 0));
+    LOG_STRUCT(WARNING, "negative power",
+               ::frc971::control_loops::PowerAdjustment(power, 0));
     power = 0;
   } else if (power > maxpower) {
-    LOG_STRUCT(WARNING, "power too high", PowerAdjustment(power, maxpower));
+    LOG_STRUCT(WARNING, "power too high",
+               ::frc971::control_loops::PowerAdjustment(power, maxpower));
     power = maxpower;
   }
 
@@ -157,9 +164,9 @@ double ShooterMotor::PositionToPower(double position) {
 }
 
 void ShooterMotor::CheckCalibrations(
-    const control_loops::ShooterQueue::Position *position) {
+    const ::frc971::control_loops::ShooterQueue::Position *position) {
   CHECK_NOTNULL(position);
-  const frc971::constants::Values &values = constants::GetValues();
+  const constants::Values &values = constants::GetValues();
 
   // TODO(austin): Validate that this is the right edge.
   // If we see a posedge on any of the hall effects,
@@ -206,10 +213,10 @@ void ShooterMotor::CheckCalibrations(
 
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
-    const control_loops::ShooterQueue::Goal *goal,
-    const control_loops::ShooterQueue::Position *position,
-    control_loops::ShooterQueue::Output *output,
-    control_loops::ShooterQueue::Status *status) {
+    const ::frc971::control_loops::ShooterQueue::Goal *goal,
+    const ::frc971::control_loops::ShooterQueue::Position *position,
+    ::frc971::control_loops::ShooterQueue::Output *output,
+    ::frc971::control_loops::ShooterQueue::Status *status) {
   if (goal && ::std::isnan(goal->shot_power)) {
 	  state_ = STATE_ESTOP;
     LOG(ERROR, "Estopping because got a shot power of NAN.\n");
@@ -236,7 +243,7 @@ void ShooterMotor::RunIteration(
   // motors disabled.
   if (output) output->voltage = 0;
 
-  const frc971::constants::Values &values = constants::GetValues();
+  const constants::Values &values = constants::GetValues();
 
   // Don't even let the control loops run.
   bool shooter_loop_disable = false;
@@ -641,8 +648,8 @@ void ShooterMotor::RunIteration(
 
   if (!shooter_loop_disable) {
     LOG_STRUCT(DEBUG, "running the loop",
-               ShooterStatusToLog(shooter_.goal_position(),
-                                  shooter_.absolute_position()));
+               ::frc971::control_loops::ShooterStatusToLog(
+                   shooter_.goal_position(), shooter_.absolute_position()));
     if (!cap_goal) {
       shooter_.set_max_voltage(12.0);
     }
@@ -668,7 +675,7 @@ void ShooterMotor::RunIteration(
 
   if (position) {
     LOG_STRUCT(DEBUG, "internal state",
-               ShooterStateToLog(
+               ::frc971::control_loops::ShooterStateToLog(
                    shooter_.absolute_position(), shooter_.absolute_velocity(),
                    state_, position->latch, position->pusher_proximal.current,
                    position->pusher_distal.current, position->plunger,
@@ -698,4 +705,4 @@ void ShooterMotor::ZeroOutputs() {
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014

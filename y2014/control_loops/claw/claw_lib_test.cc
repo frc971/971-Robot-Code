@@ -13,11 +13,13 @@
 #include "gtest/gtest.h"
 
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
 namespace testing {
 
 using ::y2014::control_loops::claw::MakeClawPlant;
+using ::frc971::HallEffectStruct;
+using ::frc971::control_loops::HalfClawPosition;
 
 typedef enum {
 	TOP_CLAW = 0,
@@ -100,7 +102,7 @@ class ClawMotorSimulation {
 
   void SetClawHallEffects(double pos,
                           const constants::Values::Claws::Claw &claw,
-                          control_loops::HalfClawPosition *half_claw) {
+                          HalfClawPosition *half_claw) {
     SetHallEffect(pos, claw.front, &half_claw->front);
     SetHallEffect(pos, claw.calibration, &half_claw->calibration);
     SetHallEffect(pos, claw.back, &half_claw->back);
@@ -108,7 +110,8 @@ class ClawMotorSimulation {
 
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
-  void SetPhysicalSensors(control_loops::ClawQueue::Position *position) {
+  void SetPhysicalSensors(
+      ::frc971::control_loops::ClawQueue::Position *position) {
     position->top.position = GetPosition(TOP_CLAW);
     position->bottom.position = GetPosition(BOTTOM_CLAW);
 
@@ -117,7 +120,7 @@ class ClawMotorSimulation {
     LOG(DEBUG, "Physical claws are at {top: %f, bottom: %f}\n", pos[TOP_CLAW],
         pos[BOTTOM_CLAW]);
 
-    const frc971::constants::Values& values = constants::GetValues();
+    const constants::Values& values = constants::GetValues();
 
     // Signal that each hall effect sensor has been triggered if it is within
     // the correct range.
@@ -162,8 +165,8 @@ class ClawMotorSimulation {
   }
 
   void UpdateClawHallEffects(
-      control_loops::HalfClawPosition *position,
-      const control_loops::HalfClawPosition &last_position,
+      HalfClawPosition *position,
+      const HalfClawPosition &last_position,
       const constants::Values::Claws::Claw &claw, double initial_position,
       const char *claw_name) {
     UpdateHallEffect(position->position + initial_position,
@@ -183,15 +186,15 @@ class ClawMotorSimulation {
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<control_loops::ClawQueue::Position> position =
-        claw_queue.position.MakeMessage();
+    ::aos::ScopedMessagePtr<::frc971::control_loops::ClawQueue::Position>
+        position = claw_queue.position.MakeMessage();
 
     // Initialize all the counters to their previous values.
     *position = last_position_;
 
     SetPhysicalSensors(position.get());
 
-    const frc971::constants::Values& values = constants::GetValues();
+    const constants::Values& values = constants::GetValues();
 
     UpdateClawHallEffects(&position->top, last_position_.top,
                           values.claw.upper_claw, initial_position_[TOP_CLAW],
@@ -208,7 +211,7 @@ class ClawMotorSimulation {
 
   // Simulates the claw moving for one timestep.
   void Simulate() {
-    const frc971::constants::Values& v = constants::GetValues();
+    const constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue.output.FetchLatest());
 
     claw_plant_->mutable_U() << claw_queue.output->bottom_claw_voltage,
@@ -236,10 +239,10 @@ class ClawMotorSimulation {
     initial_position_[type] = initial_position;
   }
 
-  ClawQueue claw_queue;
+  ::frc971::control_loops::ClawQueue claw_queue;
   double initial_position_[CLAW_COUNT];
 
-  control_loops::ClawQueue::Position last_position_;
+  ::frc971::control_loops::ClawQueue::Position last_position_;
 };
 
 
@@ -248,7 +251,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ClawQueue claw_queue;
+  ::frc971::control_loops::ClawQueue claw_queue;
 
   // Create a loop and simulation plant.
   ClawMotor claw_motor_;
@@ -310,7 +313,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
 
 // Tests that the wrist zeros correctly and goes to a position.
 TEST_F(ClawTest, LimitClawGoal) {
-  frc971::constants::Values values;
+  constants::Values values;
   values.claw.claw_min_separation = -2.0;
   values.claw.claw_max_separation = 1.0;
   values.claw.soft_min_separation = -2.0;
@@ -510,7 +513,7 @@ class WindupClawTest : public ClawTest {
  protected:
   void TestWindup(ClawMotor::CalibrationMode mode, ::aos::time::Time start_time, double offset) {
     int capped_count = 0;
-    const frc971::constants::Values& values = constants::GetValues();
+    const constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
     while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(7)) {
@@ -611,4 +614,4 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
 
 }  // namespace testing
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
