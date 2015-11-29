@@ -22,7 +22,7 @@ cc_library(
     ':dma_edge_counting',
     '//aos/linux_code:init',
     '//aos/common/logging',
-    '//aos/linux_code/ipc_lib:mutex',
+    '//aos/common:mutex',
   ],
 )
 
