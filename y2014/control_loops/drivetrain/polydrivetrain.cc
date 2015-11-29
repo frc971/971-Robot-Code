@@ -15,10 +15,13 @@
 
 #define HAVE_SHIFTERS 1
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
+namespace drivetrain {
 
-using ::y2014::control_loops::drivetrain::kDt;
+using ::frc971::control_loops::GearLogging;
+using ::frc971::control_loops::CIMLogging;
+using ::frc971::control_loops::CoerceGoal;
 
 PolyDrivetrain::PolyDrivetrain()
     : U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
@@ -154,7 +157,8 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
     }
   }
 }
-void PolyDrivetrain::SetPosition(const DrivetrainQueue::Position *position) {
+void PolyDrivetrain::SetPosition(
+    const ::frc971::control_loops::DrivetrainQueue::Position *position) {
   const auto &values = constants::GetValues();
   if (position == NULL) {
     ++stale_count_;
@@ -397,7 +401,8 @@ void PolyDrivetrain::Update() {
   }
 }
 
-void PolyDrivetrain::SendMotors(DrivetrainQueue::Output *output) {
+void PolyDrivetrain::SendMotors(
+    ::frc971::control_loops::DrivetrainQueue::Output *output) {
   if (output != NULL) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
@@ -415,5 +420,6 @@ constexpr double PolyDrivetrain::kR;
 constexpr double PolyDrivetrain::Kv;
 constexpr double PolyDrivetrain::Kt;
 
+}  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014

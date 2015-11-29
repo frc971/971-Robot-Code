@@ -24,13 +24,15 @@
 
 using frc971::sensors::gyro_reading;
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
+namespace drivetrain {
 
-void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
-                                  const DrivetrainQueue::Position *position,
-                                  DrivetrainQueue::Output *output,
-                                  DrivetrainQueue::Status *status) {
+void DrivetrainLoop::RunIteration(
+    const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
+    const ::frc971::control_loops::DrivetrainQueue::Position *position,
+    ::frc971::control_loops::DrivetrainQueue::Output *output,
+    ::frc971::control_loops::DrivetrainQueue::Status *status) {
   bool bad_pos = false;
   if (position == nullptr) {
     LOG_INTERVAL(no_position_);
@@ -110,5 +112,6 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
   }
 }
 
+}  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
