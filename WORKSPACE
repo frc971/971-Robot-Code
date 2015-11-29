@@ -16,28 +16,6 @@ bind(
   actual = '@slycot_repo//:slycot',
 )
 
-# TODO(brian): Make these point to something which isn't hard-coded to come off
-# the host system...
-bind(
-  name = 'librt',
-  actual = '@usr_repo//:librt',
-)
-
-bind(
-  name = 'libdl',
-  actual = '@usr_repo//:libdl',
-)
-
-bind(
-  name = 'libm',
-  actual = '@usr_repo//:libm',
-)
-
-bind(
-  name = 'libpthread',
-  actual = '@usr_repo//:libpthread',
-)
-
 new_http_archive(
   name = 'arm-frc-linux-gnueabi-repo',
   build_file = 'tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi.BUILD',
