@@ -10,8 +10,9 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
+namespace drivetrain {
 
 class DrivetrainMotorsSS {
  public:
@@ -58,7 +59,8 @@ class DrivetrainMotorsSS {
     return loop_->output_was_capped();
   }
 
-  void SendMotors(DrivetrainQueue::Output *output) const;
+  void SendMotors(
+      ::frc971::control_loops::DrivetrainQueue::Output *output) const;
 
   const LimitedDrivetrainLoop &loop() const { return *loop_; }
 
@@ -73,7 +75,8 @@ class DrivetrainMotorsSS {
   double raw_right_;
 };
 
+}  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
 
 #endif  // Y2014_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_

@@ -16,8 +16,9 @@
 #include "frc971/queues/gyro.q.h"
 
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
+namespace drivetrain {
 namespace testing {
 
 using ::y2014::control_loops::drivetrain::MakeDrivetrainPlant;
@@ -78,8 +79,8 @@ class DrivetrainSimulation {
     const double left_encoder = GetLeftPosition();
     const double right_encoder = GetRightPosition();
 
-    ::aos::ScopedMessagePtr<control_loops::DrivetrainQueue::Position> position =
-        my_drivetrain_queue_.position.MakeMessage();
+    ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Position>
+        position = my_drivetrain_queue_.position.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
     position.Send();
@@ -97,7 +98,7 @@ class DrivetrainSimulation {
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
  private:
-  DrivetrainQueue my_drivetrain_queue_;
+  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
   double last_right_position_;
 };
@@ -107,7 +108,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  DrivetrainQueue my_drivetrain_queue_;
+  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
 
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
@@ -295,5 +296,6 @@ TEST_F(CoerceGoalTest, PerpendicularLine) {
 }
 
 }  // namespace testing
+}  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014

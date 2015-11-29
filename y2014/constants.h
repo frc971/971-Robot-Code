@@ -6,8 +6,10 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/shifter_hall_effect.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace constants {
+
+using ::frc971::constants::ShifterHallEffect;
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
@@ -140,6 +142,6 @@ const Values &GetValues();
 const Values &GetValuesForTeam(uint16_t team_number);
 
 }  // namespace constants
-}  // namespace frc971
+}  // namespace y2014
 
 #endif  // Y2014_CONSTANTS_H_

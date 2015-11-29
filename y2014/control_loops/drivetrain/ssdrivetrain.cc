@@ -9,8 +9,11 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace control_loops {
+namespace drivetrain {
+
+using ::frc971::control_loops::DoCoerceGoal;
 
 DrivetrainMotorsSS::LimitedDrivetrainLoop::LimitedDrivetrainLoop(
     StateFeedbackLoop<4, 2, 2> &&loop)
@@ -168,7 +171,8 @@ double DrivetrainMotorsSS::GetEstimatedRobotSpeed() const {
   return (loop_->X_hat(1, 0) + loop_->X_hat(3, 0)) / 2;
 }
 
-void DrivetrainMotorsSS::SendMotors(DrivetrainQueue::Output *output) const {
+void DrivetrainMotorsSS::SendMotors(
+    ::frc971::control_loops::DrivetrainQueue::Output *output) const {
   if (output) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
@@ -177,5 +181,6 @@ void DrivetrainMotorsSS::SendMotors(DrivetrainQueue::Output *output) const {
   }
 }
 
+}  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2014
