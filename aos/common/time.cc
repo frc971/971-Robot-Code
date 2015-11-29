@@ -47,6 +47,14 @@ Time NowImpl(clockid_t clock) {
 
 }  // namespace
 
+const int32_t Time::kNSecInSec;
+const int32_t Time::kNSecInMSec;
+const int32_t Time::kNSecInUSec;
+const int32_t Time::kMSecInSec;
+const int32_t Time::kUSecInSec;
+
+const Time Time::kZero{0, 0};
+
 void Time::EnableMockTime(const Time &now) {
   MutexLocker time_mutex_locker(&time_mutex);
   mock_time_enabled = true;

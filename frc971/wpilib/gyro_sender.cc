@@ -41,8 +41,13 @@ void GyroSender::operator()() {
   bool have_zeroing_data = false;
   double zero_offset = 0;
 
+  ::aos::time::PhasedLoop phased_loop(
+      ::aos::time::Time::FromRate(kReadingRate));
+  // How many timesteps the next reading represents.
+  int number_readings = 0;
+
   while (run_) {
-    ::aos::time::PhasedLoopXMS(1000 / kReadingRate, 0);
+    number_readings += phased_loop.SleepUntilNext();
 
     const uint32_t result = gyro_.GetReading();
     if (result == 0) {
@@ -95,8 +100,7 @@ void GyroSender::operator()() {
     const double new_angle = angle_rate / static_cast<double>(kReadingRate);
     auto message = ::frc971::sensors::gyro_reading.MakeMessage();
     if (zeroed) {
-      angle += new_angle;
-      angle += zero_offset;
+      angle += (new_angle + zero_offset) * number_readings;
       message->angle = angle;
       message->velocity = angle_rate + zero_offset * kReadingRate;
       LOG_STRUCT(DEBUG, "sending", *message);
@@ -134,6 +138,7 @@ void GyroSender::operator()() {
         zeroed = true;
       }
     }
+    number_readings = 0;
   }
 }
 
