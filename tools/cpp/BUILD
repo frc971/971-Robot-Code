@@ -40,13 +40,25 @@ filegroup(
     ':cc-compiler-roborio',
     '@arm-frc-linux-gnueabi-repo//:compiler_components',
     ':roborio-compiler-files',
+    ':flags_compiler_inputs',
+  ],
+)
+
+# Compiler inputs given by --copt etc in //tools:bazel.rc.
+filegroup(
+  name = 'flags_compiler_inputs',
+  # TODO(Brian): Change this to a select which only has the right files under
+  # the right configurations once that works.
+  srcs = [
+    'asan-blacklist',
+    'ubsan-blacklist',
   ],
 )
 
 cc_toolchain(
   name = 'cc-compiler-k8',
-  all_files = ':empty',
-  compiler_files = ':empty',
+  all_files = ':flags_compiler_inputs',
+  compiler_files = ':flags_compiler_inputs',
   cpu = 'local',
   dwp_files = ':empty',
   dynamic_runtime_libs = [':empty'],
@@ -63,6 +75,7 @@ filegroup(
     '//tools/cpp/arm-frc-linux-gnueabi:tool-wrappers',
     '//tools/cpp/arm-frc-linux-gnueabi:as',
     '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
+    ':flags_compiler_inputs',
   ],
 )
 

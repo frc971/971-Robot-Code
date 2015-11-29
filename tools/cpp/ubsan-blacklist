@@ -1,0 +1,10 @@
+# Known bug in here (operators for std::_Ios_Fmtflags) with
+# invalid enum values in the libstdc++ implementation.
+# TODO(Brian): Remove this once the bug gets fixed.
+fun:_ZSt*St13_Ios_FmtflagsS_
+
+# Known bug in libstdc++'s ::std::map::end...
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=60734
+# TODO(Brian): Remove this once the bug gets fixed.
+fun:_ZNSt8_Rb_tree*endEv
+fun:*Rb_tree_iterator*

@@ -14,6 +14,7 @@ build:asan --linkopt -fsanitize=address --linkopt -ldl
 build:asan --platform_suffix=-asan
 build:asan --test_env ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
 build:asan --test_env ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_odr_violation=2:allow_user_segv_handler=1
+build:asan --copt -fsanitize-blacklist=tools/cpp/asan-blacklist
 
 build:tsan --copt -fsanitize=thread --copt -DAOS_SANITIZER_thread
 build:tsan --linkopt -fsanitize=thread
@@ -30,11 +31,14 @@ build:ubsan --copt -fsanitize=undefined --copt -fno-sanitize-recover
 # it other ways, and some x86 code does it on purpose.
 build:ubsan --copt -fno-sanitize=alignment
 build:ubsan --linkopt -fsanitize=undefined
+# TOOD(Brian): Remove this once Clang adds it itself like it should.
+build:ubsan --linkopt /usr/lib/llvm-3.6/lib/clang/3.6.2/lib/linux/libclang_rt.ubsan_cxx-x86_64.a
 build:ubsan --platform_suffix=-ubsan
-build:ubsan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
+build:ubsan --test_env UBSAN_OPTIONS=external_symbolizer_path=/usr/bin/llvm-symbolizer-3.6:color=always:print_stacktrace=1
+build:ubsan --copt -fsanitize-blacklist=tools/cpp/ubsan-blacklist
 
 build:msan --copt -fsanitize=memory --copt -fsanitize-memory-track-origins
-build:msan --linkopt -fsanitize=memory --ldopt -fsanitize-memory-track-origins
+build:msan --linkopt -fsanitize=memory --linkopt -fsanitize-memory-track-origins
 build:msan --platform_suffix=-msan
 build:msan --test_env MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
 
