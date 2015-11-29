@@ -188,6 +188,30 @@ TEST(TimeTest, InMS) {
   Time t2 = Time::InMS(-254971);
   EXPECT_EQ(-255, t2.sec());
   EXPECT_EQ(Time::kNSecInSec - 971000000, t2.nsec());
+
+  Time t3 = Time::InMS(-1000);
+  EXPECT_EQ(-1, t3.sec());
+  EXPECT_EQ(0, t3.nsec());
+
+  Time t4 = Time::InMS(1000);
+  EXPECT_EQ(1, t4.sec());
+  EXPECT_EQ(0, t4.nsec());
+
+  Time t5 = Time::InMS(1001);
+  EXPECT_EQ(1, t5.sec());
+  EXPECT_EQ(Time::kNSecInMSec, t5.nsec());
+
+  Time t6 = Time::InMS(-1001);
+  EXPECT_EQ(-2, t6.sec());
+  EXPECT_EQ(Time::kNSecInSec - Time::kNSecInMSec, t6.nsec());
+
+  Time t7 = Time::InMS(-999);
+  EXPECT_EQ(-1, t7.sec());
+  EXPECT_EQ(Time::kNSecInMSec, t7.nsec());
+
+  Time t8 = Time::InMS(999);
+  EXPECT_EQ(0, t8.sec());
+  EXPECT_EQ(Time::kNSecInSec - Time::kNSecInMSec, t8.nsec());
 }
 
 TEST(TimeTest, ToMSec) {
@@ -226,6 +250,10 @@ TEST(TimeTest, Abs) {
             MACRO_DARG(Time(-254, Time::kNSecInSec * 0.7).abs()));
   EXPECT_EQ(MACRO_DARG(-Time(-971, 973).ToNSec()),
             MACRO_DARG(Time(970, Time::kNSecInSec - 973).ToNSec()));
+}
+
+TEST(TimeTest, FromRate) {
+  EXPECT_EQ(MACRO_DARG(Time(0, Time::kNSecInSec / 100)), Time::FromRate(100));
 }
 
 }  // namespace testing

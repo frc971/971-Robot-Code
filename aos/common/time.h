@@ -44,6 +44,9 @@ struct Time {
   static const int32_t kNSecInUSec = 1000;
   static const int32_t kMSecInSec = 1000;
   static const int32_t kUSecInSec = 1000000;
+
+  static const Time kZero;
+
   constexpr Time(int32_t sec = 0, int32_t nsec = 0)
       : sec_(sec), nsec_(CheckConstexpr(nsec)) {
   }
@@ -96,27 +99,36 @@ struct Time {
 
   // Constructs a time representing microseconds.
   static constexpr Time InNS(int64_t nseconds) {
-    return (nseconds < 0) ?
-        Time(nseconds / static_cast<int64_t>(kNSecInSec) - 1,
-             (nseconds % kNSecInSec) + kNSecInSec) :
-        Time(nseconds / static_cast<int64_t>(kNSecInSec),
-             nseconds % kNSecInSec);
+    return (nseconds < 0)
+               ? Time((nseconds - 1) / static_cast<int64_t>(kNSecInSec) - 1,
+                      (((nseconds - 1) % kNSecInSec) + 1) + kNSecInSec)
+               : Time(nseconds / static_cast<int64_t>(kNSecInSec),
+                      nseconds % kNSecInSec);
   }
 
   // Constructs a time representing microseconds.
   static constexpr Time InUS(int useconds) {
-    return (useconds < 0) ?
-        Time(useconds / kUSecInSec - 1,
-             (useconds % kUSecInSec) * kNSecInUSec + kNSecInSec) :
-      Time(useconds / kUSecInSec, (useconds % kUSecInSec) * kNSecInUSec);
+    return (useconds < 0)
+               ? Time((useconds + 1) / kUSecInSec - 1,
+                      (((useconds + 1) % kUSecInSec) - 1) * kNSecInUSec +
+                          kNSecInSec)
+               : Time(useconds / kUSecInSec,
+                      (useconds % kUSecInSec) * kNSecInUSec);
   }
 
   // Constructs a time representing mseconds.
   static constexpr Time InMS(int mseconds) {
-    return (mseconds < 0) ?
-        Time(mseconds / kMSecInSec - 1,
-             (mseconds % kMSecInSec) * kNSecInMSec + kNSecInSec) :
-        Time(mseconds / kMSecInSec, (mseconds % kMSecInSec) * kNSecInMSec);
+    return (mseconds < 0)
+               ? Time((mseconds + 1) / kMSecInSec - 1,
+                      (((mseconds + 1) % kMSecInSec) - 1) * kNSecInMSec +
+                          kNSecInSec)
+               : Time(mseconds / kMSecInSec,
+                      (mseconds % kMSecInSec) * kNSecInMSec);
+  }
+
+  // Construct a time representing the period of hertz.
+  static constexpr Time FromRate(int hertz) {
+    return Time(0, kNSecInSec / hertz);
   }
 
   // Checks whether or not this time is within amount nanoseconds of other.
