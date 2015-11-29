@@ -16,21 +16,21 @@ class PolyDrivetrain {
  public:
   enum Gear { HIGH, LOW, SHIFTING_UP, SHIFTING_DOWN };
   // Stall Torque in N m
-  static constexpr double kStallTorque = kStallTorque;
+  static constexpr double kStallTorque = drivetrain::kStallTorque;
   // Stall Current in Amps
-  static constexpr double kStallCurrent = kStallCurrent;
+  static constexpr double kStallCurrent = drivetrain::kStallCurrent;
   // Free Speed in RPM. Used number from last year.
-  static constexpr double kFreeSpeed = kFreeSpeedRPM;
+  static constexpr double kFreeSpeed = drivetrain::kFreeSpeedRPM;
   // Free Current in Amps
-  static constexpr double kFreeCurrent = kFreeCurrent;
-  static constexpr double kWheelRadius = kWheelRadius;
+  static constexpr double kFreeCurrent = drivetrain::kFreeCurrent;
+  static constexpr double kWheelRadius = drivetrain::kWheelRadius;
   // Resistance of the motor, divided by the number of motors per side.
-  static constexpr double kR = kR;
+  static constexpr double kR = drivetrain::kR;
   // Motor velocity constant
-  static constexpr double Kv = kV;
+  static constexpr double Kv = drivetrain::kV;
 
   // Torque constant
-  static constexpr double Kt = kT;
+  static constexpr double Kt = drivetrain::kT;
 
   PolyDrivetrain();
 
