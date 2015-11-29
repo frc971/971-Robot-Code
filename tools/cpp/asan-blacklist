@@ -1,0 +1,4 @@
+# Ignore issues with initialization order for gflags mutexes.
+# They (at least try to) work around any issues with complicated stuff explained
+# in a comment at the top of //third_party/gflags/src/mutex.h.
+type:gflags_mutex_namespace::Mutex=init
