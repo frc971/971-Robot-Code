@@ -30,7 +30,7 @@ cc_library(
     '//aos/testing:googletest',
     '//aos/common/logging',
     '//aos/linux_code/ipc_lib:shared_mem',
-    '//aos/linux_code/ipc_lib:mutex',
+    ':mutex',
   ],
 )
 
@@ -58,7 +58,7 @@ cc_library(
   ],
   deps = [
     '//aos/common/logging:logging_interface',
-    '//aos/linux_code/ipc_lib:mutex',
+    ':mutex',
     ':macros',
     '//aos/linux_code/ipc_lib:shared_mem',
   ],
@@ -89,23 +89,17 @@ cc_library(
 )
 
 cc_library(
-  name = 'real_event',
-  visibility = ['//aos/linux_code/ipc_lib:__pkg__'],
+  name = 'event',
   hdrs = [
     'event.h',
+  ],
+  srcs = [
+    'event.cc',
   ],
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
     ':time',
-  ],
-)
-
-cc_library(
-  # Use this one!
-  # TODO(Brian): Remove this mess...
-  name = 'event',
-  deps = [
-    '//aos/linux_code/ipc_lib:event',
+    '//aos/common/logging:logging_interface',
   ],
 )
 
@@ -130,7 +124,7 @@ cc_library(
     ':generated_queue_headers',
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:core_lib',
-    '//aos/linux_code/ipc_lib:mutex',
+    ':mutex',
     '//aos/common/logging:logging_printf_formats',
     ':time',
     ':byteorder'
@@ -295,7 +289,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/linux_code/ipc_lib:mutex',
+    ':mutex',
     ':die',
     '//aos/common/logging',
     '//aos/common/util:death_test_log_implementation',
@@ -319,19 +313,17 @@ cc_test(
 )
 
 cc_library(
-  name = 'real_condition',
-  visibility = ['//aos/linux_code/ipc_lib:__pkg__'],
+  name = 'condition',
   hdrs = [
     'condition.h',
   ],
-)
-
-cc_library(
-  # Use this one!
-  # TODO(Brian): Remove this mess...
-  name = 'condition',
+  srcs = [
+    'condition.cc',
+  ],
   deps = [
-    '//aos/linux_code/ipc_lib:condition',
+    ':mutex',
+    '//aos/linux_code/ipc_lib:aos_sync',
+    '//aos/common/logging:logging_interface',
   ],
 )
 
@@ -345,7 +337,7 @@ cc_test(
     ':condition',
     '//aos/common/util:thread',
     ':time',
-    '//aos/linux_code/ipc_lib:mutex',
+    ':mutex',
     '//aos/common/logging',
     ':queue_testutils',
     '//aos/linux_code/ipc_lib:core_lib',
@@ -381,9 +373,14 @@ cc_library(
   hdrs = [
     'mutex.h',
   ],
+  srcs = [
+    'mutex.cc',
+  ],
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
     ':die',
+    '//aos/common/logging:logging_interface',
+    ':type_traits',
   ],
 )
 

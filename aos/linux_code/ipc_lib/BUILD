@@ -67,8 +67,8 @@ cc_library(
     'queue.h',
   ],
   deps = [
-    '//aos/linux_code/ipc_lib:condition',
-    '//aos/linux_code/ipc_lib:mutex',
+    '//aos/common:condition',
+    '//aos/common:mutex',
     ':core_lib',
     ':shared_mem',
     '//aos/common/logging:logging_interface',
@@ -107,7 +107,7 @@ cc_test(
     '//aos/testing:googletest',
     '//aos/common:time',
     '//aos/common:queue_testutils',
-    '//aos/linux_code/ipc_lib:mutex',
+    '//aos/common:mutex',
     ':core_lib',
     '//aos/common:die',
     '//aos/common/libc:dirname',
@@ -120,45 +120,5 @@ cc_library(
   name = 'scoped_message_ptr',
   deps = [
     ':queue',
-  ],
-)
-
-cc_library(
-  name = 'condition',
-  visibility = ['//aos/common:__pkg__'],
-  srcs = [
-    'condition.cc',
-  ],
-  deps = [
-    ':mutex',
-    '//aos/common:real_condition',
-    ':aos_sync',
-    '//aos/common/logging:logging_interface',
-  ],
-)
-
-cc_library(
-  name = 'mutex',
-  srcs = [
-    'mutex.cc',
-  ],
-  deps = [
-    ':aos_sync',
-    '//aos/common/logging:logging_interface',
-    '//aos/common:type_traits',
-    '//aos/common:mutex',
-  ],
-)
-
-cc_library(
-  name = 'event',
-  visibility = ['//aos/common:__pkg__'],
-  srcs = [
-    'event.cc',
-  ],
-  deps = [
-    ':aos_sync',
-    '//aos/common/logging:logging_interface',
-    '//aos/common:real_event',
   ],
 )
