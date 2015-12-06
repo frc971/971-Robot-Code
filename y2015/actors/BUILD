@@ -73,7 +73,7 @@ cc_library(
     'fridge_profile_lib.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
     '//aos/common/actions:action_lib',
     '//y2015/control_loops/fridge:fridge_queue',
   ],

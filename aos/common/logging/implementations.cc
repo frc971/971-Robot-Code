@@ -1,35 +1,36 @@
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/implementations.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
 
+#include <algorithm>
+
+#include "aos/common/die.h"
 #include "aos/common/once.h"
 #include "aos/common/time.h"
 #include "aos/common/queue_types.h"
-#include "aos/common/logging/logging_printf_formats.h"
+#include "aos/common/logging/printf_formats.h"
+#include "aos/linux_code/ipc_lib/queue.h"
 
 namespace aos {
 namespace logging {
 namespace {
 
-using internal::Context;
-using internal::global_top_implementation;
-
 // The root LogImplementation. It only logs to stderr/stdout.
 // Some of the things specified in the LogImplementation documentation doesn't
 // apply here (mostly the parts about being able to use LOG) because this is the
 // root one.
-class RootLogImplementation : public LogImplementation {
+class RootLogImplementation : public SimpleLogImplementation {
  public:
   void have_other_implementation() { only_implementation_ = false; }
 
  private:
-  virtual void set_next(LogImplementation *) {
+  void set_next(LogImplementation *) override {
     LOG(FATAL, "can't have a next logger from here\n");
   }
 
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) {
+  void DoLog(log_level level, const char *format, va_list ap) override {
     LogMessage message;
     internal::FillInMessage(level, format, ap, &message);
     internal::PrintMessage(stderr, message);
@@ -49,14 +50,14 @@ void SetGlobalImplementation(LogImplementation *implementation) {
     abort();
   }
 
-  Context *context = Context::Get();
+  internal::Context *context = internal::Context::Get();
 
   context->implementation = implementation;
-  global_top_implementation.store(implementation);
+  internal::global_top_implementation.store(implementation);
 }
 
 void NewContext() {
-  Context::Delete();
+  internal::Context::Delete();
 }
 
 void *DoInit() {
@@ -215,7 +216,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
 
 }  // namespace internal
 
-void LogImplementation::LogStruct(
+void SimpleLogImplementation::LogStruct(
     log_level level, const ::std::string &message, size_t size,
     const MessageType *type, const ::std::function<size_t(char *)> &serialize) {
   char serialized[1024];
@@ -236,7 +237,7 @@ void LogImplementation::LogStruct(
                 static_cast<int>(sizeof(printed) - printed_bytes), printed);
 }
 
-void LogImplementation::LogMatrix(
+void SimpleLogImplementation::LogMatrix(
     log_level level, const ::std::string &message, uint32_t type_id,
     int rows, int cols, const void *data) {
   char serialized[1024];
@@ -290,15 +291,8 @@ void StreamLogImplementation::HandleMessage(const LogMessage &message) {
   internal::PrintMessage(stream_, message);
 }
 
-void LogNext(log_level level, const char *format, ...) {
-  va_list ap;
-  va_start(ap, format);
-  LogImplementation::DoVLog(level, format, ap, 2);
-  va_end(ap);
-}
-
 void AddImplementation(LogImplementation *implementation) {
-  Context *context = Context::Get();
+  internal::Context *context = internal::Context::Get();
 
   if (implementation->next() != NULL) {
     LOG(FATAL, "%p already has a next implementation, but it's not"
@@ -319,11 +313,109 @@ void Init() {
 }
 
 void Load() {
-  Context::Get();
+  internal::Context::Get();
 }
 
 void Cleanup() {
-  Context::Delete();
+  internal::Context::Delete();
+}
+
+namespace {
+
+RawQueue *queue = NULL;
+
+int dropped_messages = 0;
+::aos::time::Time dropped_start, backoff_start;
+// Wait this long after dropping a message before even trying to write any more.
+constexpr ::aos::time::Time kDropBackoff = ::aos::time::Time::InSeconds(0.1);
+
+LogMessage *GetMessageOrDie() {
+  LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
+  if (message == NULL) {
+    LOG(FATAL, "%p->GetMessage() failed\n", queue);
+  } else {
+    return message;
+  }
+}
+
+void Write(LogMessage *msg) {
+  if (__builtin_expect(dropped_messages > 0, false)) {
+    ::aos::time::Time message_time =
+        ::aos::time::Time(msg->seconds, msg->nseconds);
+    if (message_time - backoff_start < kDropBackoff) {
+      ++dropped_messages;
+      queue->FreeMessage(msg);
+      return;
+    }
+
+    LogMessage *dropped_message = GetMessageOrDie();
+    internal::FillInMessageVarargs(
+        ERROR, dropped_message,
+        "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
+        dropped_messages, dropped_start.sec(), dropped_start.nsec());
+    if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
+      dropped_messages = 0;
+    } else {
+      // Don't even bother trying to write this message because it's not likely
+      // to work and it would be confusing to have one log in the middle of a
+      // string of failures get through.
+      ++dropped_messages;
+      backoff_start = message_time;
+      queue->FreeMessage(msg);
+      return;
+    }
+  }
+  if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
+    if (dropped_messages == 0) {
+      dropped_start = backoff_start =
+          ::aos::time::Time(msg->seconds, msg->nseconds);
+    }
+    ++dropped_messages;
+  }
+}
+
+class LinuxQueueLogImplementation : public LogImplementation {
+  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
+  void DoLog(log_level level, const char *format, va_list ap) override {
+    LogMessage *message = GetMessageOrDie();
+    internal::FillInMessage(level, format, ap, message);
+    Write(message);
+  }
+
+  void LogStruct(log_level level, const ::std::string &message_string,
+                 size_t size, const MessageType *type,
+                 const ::std::function<size_t(char *)> &serialize) override {
+    LogMessage *message = GetMessageOrDie();
+    internal::FillInMessageStructure(level, message_string, size, type,
+                                     serialize, message);
+    Write(message);
+  }
+
+  void LogMatrix(log_level level, const ::std::string &message_string,
+                 uint32_t type_id, int rows, int cols,
+                 const void *data) override {
+    LogMessage *message = GetMessageOrDie();
+    internal::FillInMessageMatrix(level, message_string, type_id, rows, cols,
+                                  data, message);
+    Write(message);
+  }
+};
+
+}  // namespace
+
+RawQueue *GetLoggingQueue() {
+  return RawQueue::Fetch("LoggingQueue", sizeof(LogMessage), 1323, 40000);
+}
+
+void RegisterQueueImplementation() {
+  Init();
+
+  queue = GetLoggingQueue();
+  if (queue == NULL) {
+    Die("logging: couldn't fetch queue\n");
+  }
+
+  AddImplementation(new LinuxQueueLogImplementation());
 }
 
 }  // namespace logging

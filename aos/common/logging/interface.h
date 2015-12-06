@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_LOGGING_LOGGING_INTERFACE_H_
-#define AOS_COMMON_LOGGING_LOGGING_INTERFACE_H_
+#ifndef AOS_COMMON_LOGGING_INTERFACE_H_
+#define AOS_COMMON_LOGGING_INTERFACE_H_
 
 #include <stdarg.h>
 
@@ -9,14 +9,26 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
 
+// This file has the non-C-compatible parts of the logging client interface.
+
 namespace aos {
 
 struct MessageType;
 
-}  // namespace aos
-
-namespace aos {
 namespace logging {
+namespace internal {
+
+// Defined in queue_logging.cc.
+void DoLogStruct(log_level level, const ::std::string &message, size_t size,
+                 const MessageType *type,
+                 const ::std::function<size_t(char *)> &serialize, int levels);
+
+// Defined in matrix_logging.cc.
+void DoLogMatrix(log_level level, const ::std::string &message,
+                 uint32_t type_id, int rows, int cols, const void *data,
+                 int levels);
+
+}  // namespace internal
 
 // Takes a message and logs it. It will set everything up and then call DoLog
 // for the current LogImplementation.
@@ -48,7 +60,7 @@ class LogImplementation {
   // logger other than this one available while this is called.
   virtual void set_next(LogImplementation *next) { next_ = next; }
 
- private:
+ protected:
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
@@ -61,44 +73,36 @@ class LogImplementation {
     va_end(ap);
   }
 
-  // Logs the contents of an auto-generated structure. The implementation here
-  // just converts it to a string with PrintMessage and then calls DoLog with
-  // that, however some implementations can be a lot more efficient than that.
+  // Logs the contents of an auto-generated structure.
   // size and type are the result of calling Size() and Type() on the type of
   // the message.
   // serialize will call Serialize on the message.
   virtual void LogStruct(log_level level, const ::std::string &message,
                          size_t size, const MessageType *type,
-                         const ::std::function<size_t(char *)> &serialize);
+                         const ::std::function<size_t(char *)> &serialize) = 0;
   // Similiar to LogStruct, except for matrixes.
   // type_id is the type of the elements of the matrix.
   // data points to rows*cols*type_id.Size() bytes of data in row-major order.
   virtual void LogMatrix(log_level level, const ::std::string &message,
                          uint32_t type_id, int rows, int cols,
-                         const void *data);
+                         const void *data) = 0;
 
+ private:
   // These functions call similar methods on the "current" LogImplementation or
   // Die if they can't find one.
   // levels is how many LogImplementations to not use off the stack.
   static void DoVLog(log_level, const char *format, va_list ap, int levels)
       __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 0)));
-  // This one is implemented in queue_logging.cc.
-  static void DoLogStruct(log_level level, const ::std::string &message,
-                          size_t size, const MessageType *type,
-                          const ::std::function<size_t(char *)> &serialize,
-                          int levels);
-  // This one is implemented in matrix_logging.cc.
-  static void DoLogMatrix(log_level level, const ::std::string &message,
-                          uint32_t type_id, int rows, int cols,
-                          const void *data, int levels);
 
-  // Friends so that they can access the static Do* functions.
   friend void VLog(log_level, const char *, va_list);
-  friend void LogNext(log_level, const char *, ...);
-  template <class T>
-  friend void DoLogStruct(log_level, const ::std::string &, const T &);
-  template <class T>
-  friend void DoLogMatrix(log_level, const ::std::string &, const T &);
+  friend void internal::DoLogStruct(
+      log_level level, const ::std::string &message, size_t size,
+      const MessageType *type, const ::std::function<size_t(char *)> &serialize,
+      int levels);
+  friend void internal::DoLogMatrix(log_level level,
+                                    const ::std::string &message,
+                                    uint32_t type_id, int rows, int cols,
+                                    const void *data, int levels);
 
   LogImplementation *next_;
 };
@@ -121,4 +125,4 @@ void RunWithCurrentImplementation(
 }  // namespace logging
 }  // namespace aos
 
-#endif  // AOS_COMMON_LOGGING_LOGGING_INTERFACE_H_
+#endif  // AOS_COMMON_LOGGING_INTERFACE_H_

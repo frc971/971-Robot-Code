@@ -1,4 +1,4 @@
-#include "aos/common/logging/log_replay.h"
+#include "aos/common/logging/replay.h"
 
 namespace aos {
 namespace logging {

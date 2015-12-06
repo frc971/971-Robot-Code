@@ -17,7 +17,7 @@ WriteIffChanged.open(ARGV[0]) do |output|
 #include "aos/common/byteorder.h"
 #include "aos/common/time.h"
 #include "aos/common/print_field_helpers.h"
-#include "aos/common/logging/logging_printf_formats.h"
+#include "aos/common/logging/printf_formats.h"
 
 namespace aos {
 

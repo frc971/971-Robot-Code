@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_LOGGING_LOG_REPLAY_H_
-#define AOS_COMMON_LOGGING_LOG_REPLAY_H_
+#ifndef AOS_COMMON_LOGGING_REPLAY_H_
+#define AOS_COMMON_LOGGING_REPLAY_H_
 
 #include <unordered_map>
 #include <string>
@@ -161,4 +161,4 @@ class LogReplayer {
 }  // namespace logging
 }  // namespace aos
 
-#endif  // AOS_COMMON_LOGGING_LOG_REPLAY_H_
+#endif  // AOS_COMMON_LOGGING_REPLAY_H_

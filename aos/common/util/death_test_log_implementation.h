@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/implementations.h"
 
 namespace aos {
 namespace util {

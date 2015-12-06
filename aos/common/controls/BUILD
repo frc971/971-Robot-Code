@@ -10,7 +10,7 @@ cc_library(
   deps = [
     '//aos/common:queues',
     ':control_loop',
-    '//aos/common/logging:log_replay',
+    '//aos/common/logging:replay',
     '//aos/common/logging:queue_logging',
     '//aos/common:time',
   ],

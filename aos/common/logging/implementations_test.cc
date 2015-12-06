@@ -4,9 +4,9 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/implementations.h"
 #include "aos/common/time.h"
-#include "aos/common/logging/logging_printf_formats.h"
+#include "aos/common/logging/printf_formats.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -16,9 +16,9 @@ namespace aos {
 namespace logging {
 namespace testing {
 
-class TestLogImplementation : public LogImplementation {
+class TestLogImplementation : public SimpleLogImplementation {
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) {
+  void DoLog(log_level level, const char *format, va_list ap) override {
     internal::FillInMessage(level, format, ap, &message_);
 
     if (level == FATAL) {
@@ -83,7 +83,7 @@ class LoggingTest : public ::testing::Test {
   }
 
  private:
-  virtual void SetUp() {
+  void SetUp() override {
     static bool first = true;
     if (first) {
       first = false;
@@ -94,7 +94,7 @@ class LoggingTest : public ::testing::Test {
 
     log_implementation->reset_used();
   }
-  virtual void TearDown() {
+  void TearDown() override {
     Cleanup();
   }
 
@@ -128,7 +128,7 @@ TEST_F(LoggingTest, Cork) {
   static const int end_line = __LINE__;
   LOG_UNCORK(WARNING, "last part %d\n", 5);
   std::stringstream expected;
-  expected << "logging_impl_test.cc: ";
+  expected << "implementations_test.cc: ";
   expected << (begin_line + 1);
   expected << "-";
   expected << (end_line + 1);

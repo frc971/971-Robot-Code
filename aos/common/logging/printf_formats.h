@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_LOGGING_LOGGING_PRINTF_FORMATS_H_
-#define AOS_COMMON_LOGGING_LOGGING_PRINTF_FORMATS_H_
+#ifndef AOS_COMMON_LOGGING_PRINTF_FORMATS_H_
+#define AOS_COMMON_LOGGING_PRINTF_FORMATS_H_
 
 #include "aos/common/macros.h"
 
@@ -7,7 +7,7 @@
 // times and log messages.
 // They are all split out as macros because there are 2 things that want to
 // print using the same format: log_displayer and PrintMessage in
-// logging_impl.cc.
+// implementations.cc.
 
 #define AOS_TIME_FORMAT \
   "%010" PRId32 ".%0" STRINGIFY(AOS_TIME_NSECONDS_DIGITS) PRId32 "s"
@@ -27,4 +27,4 @@
 #define AOS_TIME_NSECONDS_DIGITS 6
 #define AOS_TIME_NSECONDS_DENOMINATOR 1000
 
-#endif  // AOS_COMMON_LOGGING_LOGGING_PRINTF_FORMATS_H_
+#endif  // AOS_COMMON_LOGGING_PRINTF_FORMATS_H_

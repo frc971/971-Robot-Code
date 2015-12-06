@@ -30,7 +30,7 @@
 #include "third_party/libevent/event.h"
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/implementations.h"
 #include "aos/linux_code/init.h"
 #include "aos/common/unique_malloc_ptr.h"
 #include "aos/common/time.h"

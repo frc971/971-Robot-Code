@@ -17,6 +17,7 @@ cc_binary(
     '//aos/linux_code:init',
     '//third_party/libevent',
     '//aos/common/logging',
+    '//aos/common/logging:implementations',
     '//aos/common:once',
     '//aos/common:time',
     '//aos/common/libc:aos_strsignal',

@@ -9,7 +9,7 @@ cc_library(
     'aos_strsignal.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
   ],
 )
 

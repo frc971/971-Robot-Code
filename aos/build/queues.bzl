@@ -102,7 +102,7 @@ def queue_library(name, srcs, deps = [],
       '//aos/common:once',
       '//aos/common:queues',
       '//aos/common:queue_types',
-      '//aos/common/logging:logging_printf_formats',
+      '//aos/common/logging:printf_formats',
     ],
     visibility = visibility,
   )
