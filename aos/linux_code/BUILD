@@ -58,7 +58,7 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/common:die',
-    '//aos/linux_code/logging:linux_logging',
+    '//aos/common/logging:linux_logging',
   ],
 )
 

@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 
-#include "aos/linux_code/logging/linux_logging.h"
+#include "aos/common/logging/linux_logging.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/logging/logging_impl.h"

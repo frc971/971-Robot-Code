@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_LOGGING_LOGGING_H_
-#define AOS_LINUX_CODE_LOGGING_LOGGING_H_
+#ifndef AOS_COMMON_LOGGING_LINUX_LOGGING_H_
+#define AOS_COMMON_LOGGING_LINUX_LOGGING_H_
 
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/util/options.h"
@@ -31,4 +31,4 @@ void Write(LogMessage *msg);
 }  // namespace logging
 }  // namespace aos
 
-#endif
+#endif  // AOS_COMMON_LOGGING_LINUX_LOGGING_H_

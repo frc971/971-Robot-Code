@@ -14,8 +14,8 @@
 #include <map>
 #include <unordered_set>
 
-#include "aos/linux_code/logging/linux_logging.h"
-#include "aos/linux_code/logging/binary_log_file.h"
+#include "aos/common/logging/linux_logging.h"
+#include "aos/common/logging/binary_log_file.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/configuration.h"
 #include "aos/common/queue_types.h"
