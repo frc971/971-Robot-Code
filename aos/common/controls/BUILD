@@ -28,7 +28,7 @@ cc_library(
     '//aos/common:time',
     '//aos/common/messages:robot_state',
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
   ],
 )
 

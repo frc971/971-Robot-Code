@@ -84,10 +84,11 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
+    '//aos/testing:prevent_exit',
     ':queue',
     '//aos/common/logging',
     ':core_lib',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/common:time',
     '//aos/common:die',
     '//aos/common/util:thread',
@@ -106,7 +107,7 @@ cc_test(
   deps = [
     '//aos/testing:googletest',
     '//aos/common:time',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/common:mutex',
     ':core_lib',
     '//aos/common:die',

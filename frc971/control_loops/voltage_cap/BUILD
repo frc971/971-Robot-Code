@@ -18,6 +18,6 @@ cc_test(
   deps = [
     ':voltage_cap',
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
   ],
 )

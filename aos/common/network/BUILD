@@ -44,7 +44,6 @@ cc_test(
   deps = [
     ':team_number',
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
   ],
 )
 

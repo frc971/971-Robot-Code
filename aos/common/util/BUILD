@@ -61,7 +61,6 @@ cc_library(
   deps = [
     '//aos/common/logging',
     '//aos/common:time',
-    '//aos/common:queue_testutils',
   ],
 )
 
@@ -211,5 +210,6 @@ cc_test(
   deps = [
     ':phased_loop',
     '//aos/testing:googletest',
+    '//aos/testing:test_logging',
   ],
 )

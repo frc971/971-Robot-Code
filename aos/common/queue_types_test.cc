@@ -10,7 +10,7 @@
 #include "aos/common/byteorder.h"
 #include "aos/common/queue_primitives.h"
 #include "aos/common/logging/logging.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 
 using ::aos::common::testing::Structure;
 using ::aos::common::testing::MessageWithStructure;
@@ -30,7 +30,7 @@ static const MessageType kTestType1(5, 0x1234, "TestType1",
 class QueueTypesTest : public ::testing::Test {
  public:
   QueueTypesTest() {
-    ::aos::common::testing::EnableTestLogging();
+    ::aos::testing::EnableTestLogging();
   }
 
   ::testing::AssertionResult Equal(const MessageType &l, const MessageType &r) {

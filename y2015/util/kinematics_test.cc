@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 #include "y2015/util/kinematics.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 
@@ -25,7 +25,7 @@ class KinematicsTest : public ::testing::Test {
         upper_angle_limit_(M_PI / 2.0) {}
 
   void SetUp() {
-      ::aos::common::testing::EnableTestLogging();
+      ::aos::testing::EnableTestLogging();
       kinematics_ = ElevatorArmKinematics(arm_length_, upper_height_limit_, lower_height_limit_,
                     upper_angle_limit_, lower_angle_limit_);
   }

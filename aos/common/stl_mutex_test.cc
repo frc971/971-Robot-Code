@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 #include "aos/common/util/thread.h"
 #include "aos/common/die.h"
 
@@ -12,7 +12,7 @@ namespace testing {
 class StlMutexDeathTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    ::aos::common::testing::EnableTestLogging();
+    ::aos::testing::EnableTestLogging();
     SetDieTestMode(true);
   }
 };

@@ -9,7 +9,6 @@
 #include <string>
 
 #include "aos/common/time.h"
-#include "aos/common/queue_testutils.h"
 #include "aos/common/type_traits.h"
 #include "aos/common/mutex.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
@@ -17,6 +16,7 @@
 #include "aos/common/libc/dirname.h"
 #include "aos/common/libc/aos_strsignal.h"
 #include "aos/common/logging/logging.h"
+#include "aos/testing/test_shm.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
 // while and makes sure that they don't fail. It also captures the stdout and
@@ -210,7 +210,7 @@ int Main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  ::aos::common::testing::GlobalCoreInstance global_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 
   Shared *shared = static_cast<Shared *>(shm_malloc(sizeof(Shared)));
   new (shared) Shared(time::Time::Now() + kTestTime);

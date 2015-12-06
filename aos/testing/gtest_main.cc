@@ -4,15 +4,13 @@
 #include "gtest/gtest.h"
 
 namespace aos {
-namespace common {
 namespace testing {
 
-// Actually declared/defined in aos/common/queue_testutils.
+// Actually declared/defined in //aos/testing:test_logging.
 void SetLogFileName(const char* filename) __attribute__((weak));
 void ForcePrintLogsDuringTests() __attribute__((weak));
 
 }  // namespace testing
-}  // namespace common
 }  // namespace aos
 
 GTEST_API_ int main(int argc, char **argv) {
@@ -47,14 +45,14 @@ GTEST_API_ int main(int argc, char **argv) {
         break;
 
       case 'p':
-        if (::aos::common::testing::ForcePrintLogsDuringTests) {
-          ::aos::common::testing::ForcePrintLogsDuringTests();
+        if (::aos::testing::ForcePrintLogsDuringTests) {
+          ::aos::testing::ForcePrintLogsDuringTests();
         }
         break;
 
       case 'o':
-        if (::aos::common::testing::SetLogFileName) {
-          ::aos::common::testing::SetLogFileName(optarg);
+        if (::aos::testing::SetLogFileName) {
+          ::aos::testing::SetLogFileName(optarg);
         }
         break;
 

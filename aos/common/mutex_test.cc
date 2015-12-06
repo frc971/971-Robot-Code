@@ -13,7 +13,7 @@
 #include "aos/common/util/death_test_log_implementation.h"
 #include "aos/common/util/thread.h"
 #include "aos/common/time.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 
 namespace aos {
@@ -25,7 +25,7 @@ class MutexTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    ::aos::common::testing::EnableTestLogging();
+    ::aos::testing::EnableTestLogging();
     SetDieTestMode(true);
   }
 };

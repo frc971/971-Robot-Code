@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 #include "frc971/zeroing/zeroing.h"
 #include "frc971/control_loops/control_loops.q.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_shm.h"
 #include "aos/common/util/thread.h"
 #include "aos/common/die.h"
 #include "frc971/control_loops/position_sensor_sim.h"
@@ -34,7 +34,7 @@ class ZeroingTest : public ::testing::Test {
     estimator->UpdateEstimate(sensor_values_);
   }
 
-  aos::common::testing::GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 };
 
 TEST_F(ZeroingTest, TestMovingAverageFilter) {

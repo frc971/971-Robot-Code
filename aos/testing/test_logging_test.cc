@@ -1,4 +1,4 @@
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 
 #include <thread>
 
@@ -7,7 +7,6 @@
 #include "aos/common/logging/logging.h"
 
 namespace aos {
-namespace common {
 namespace testing {
 
 // Tests logging from multiple threads.
@@ -27,5 +26,4 @@ TEST(QueueTestutilsTest, MultithreadedLog) {
 }
 
 }  // namespace testing
-}  // namespace common
 }  // namespace aos
