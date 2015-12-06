@@ -19,6 +19,7 @@
 #include "DigitalGlitchFilter.h"
 #endif
 #include "DigitalInput.h"
+#include "PowerDistributionPanel.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -128,6 +129,7 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
+    pdp_.reset(new PowerDistributionPanel());
 
     LOG(INFO, "Things are now started\n");
 
@@ -139,7 +141,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_.get());
 
     // Drivetrain
     {
@@ -179,6 +181,7 @@ class SensorReader {
 
   int32_t my_pid_;
   DriverStation *ds_;
+  ::std::unique_ptr<PowerDistributionPanel> pdp_;
 
   ::std::unique_ptr<Encoder> left_encoder_, right_encoder_, elevator_encoder_;
   ::std::unique_ptr<DigitalInput> zeroing_hall_effect_;
