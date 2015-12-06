@@ -108,6 +108,22 @@ cc_library(
 )
 
 cc_library(
+  name = 'lpd8806',
+  srcs = [
+    'LPD8806.cc',
+  ],
+  hdrs = [
+    'LPD8806.h',
+  ],
+  deps = [
+    '//aos/common:mutex',
+    '//aos/externals:wpilib',
+    '//frc971/queues:gyro',
+    '//aos/common:time',
+  ],
+)
+
+cc_library(
   name = 'loop_output_handler',
   srcs = [
     'loop_output_handler.cc',
