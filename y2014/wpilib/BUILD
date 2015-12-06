@@ -31,5 +31,6 @@ cc_binary(
     '//frc971/wpilib:encoder_and_potentiometer',
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',
+    '//frc971/wpilib:wpilib_interface',
   ],
 )

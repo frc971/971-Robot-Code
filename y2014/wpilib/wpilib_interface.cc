@@ -15,7 +15,6 @@
 #include "Relay.h"
 #include "RobotBase.h"
 #include "dma.h"
-#include "ControllerPower.h"
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
 #endif
@@ -32,6 +31,7 @@
 #include "aos/common/messages/robot_state.q.h"
 
 #include "frc971/shifter_hall_effect.h"
+
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
@@ -47,6 +47,7 @@
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/wpilib_interface.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -261,25 +262,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    {
-      auto new_state = ::aos::robot_state.MakeMessage();
-
-      new_state->reader_pid = my_pid_;
-      new_state->outputs_enabled = ds_->IsSysActive();
-      new_state->browned_out = ds_->IsSysBrownedOut();
-
-      new_state->is_3v3_active = ControllerPower::GetEnabled3V3();
-      new_state->is_5v_active = ControllerPower::GetEnabled5V();
-      new_state->voltage_3v3 = ControllerPower::GetVoltage3V3();
-      new_state->voltage_5v = ControllerPower::GetVoltage5V();
-
-      new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
-      new_state->voltage_battery = ds_->GetBatteryVoltage();
-
-      LOG_STRUCT(DEBUG, "robot_state", *new_state);
-
-      new_state.Send();
-    }
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
 
     const auto &values = constants::GetValues();
 

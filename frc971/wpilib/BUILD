@@ -140,3 +140,18 @@ cc_library(
     '//aos/common/logging:queue_logging',
   ],
 )
+
+cc_library(
+  name = 'wpilib_interface',
+  srcs = [
+    'wpilib_interface.cc',
+  ],
+  hdrs = [
+    'wpilib_interface.h',
+  ],
+  deps = [
+    '//aos/common/messages:robot_state',
+    '//aos/externals:wpilib',
+    '//aos/common/logging:queue_logging',
+  ],
+)

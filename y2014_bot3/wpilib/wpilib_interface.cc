@@ -15,7 +15,6 @@
 #include "Relay.h"
 #include "RobotBase.h"
 #include "dma.h"
-#include "ControllerPower.h"
 #include "DigitalInput.h"
 #undef ERROR
 
@@ -32,6 +31,8 @@
 #include "y2014_bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 #include "y2014_bot3/autonomous/auto.q.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain.h"
+#include "y2014_bot3/control_loops/rollers/rollers.h"
 
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
@@ -39,8 +40,7 @@
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/logging.q.h"
-#include "y2014_bot3/control_loops/drivetrain/drivetrain.h"
-#include "y2014_bot3/control_loops/rollers/rollers.h"
+#include "frc971/wpilib/wpilib_interface.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -99,26 +99,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    // General
-    {
-      auto new_state = ::aos::robot_state.MakeMessage();
-
-      new_state->reader_pid = my_pid_;
-      new_state->outputs_enabled = ds_->IsSysActive();
-      new_state->browned_out = ds_->IsSysBrownedOut();
-
-      new_state->is_3v3_active = ControllerPower::GetEnabled3V3();
-      new_state->is_5v_active = ControllerPower::GetEnabled5V();
-      new_state->voltage_3v3 = ControllerPower::GetVoltage3V3();
-      new_state->voltage_5v = ControllerPower::GetVoltage5V();
-
-      new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
-      new_state->voltage_battery = ds_->GetBatteryVoltage();
-
-      LOG_STRUCT(DEBUG, "robot_state", *new_state);
-
-      new_state.Send();
-    }
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
 
     // Drivetrain
     {
