@@ -1,5 +1,5 @@
-#ifndef AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
-#define AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
+#ifndef AOS_COMMON_LOGGING_BINARY_LOG_FILE_H_
+#define AOS_COMMON_LOGGING_BINARY_LOG_FILE_H_
 
 #include <sys/types.h>
 #include <stddef.h>
@@ -204,4 +204,4 @@ class LogFileWriter : public LogFileAccessor {
 }  // namespace logging
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_LOGGING_BINARY_LOG_FILE_H_
+#endif  // AOS_COMMON_LOGGING_BINARY_LOG_FILE_H_

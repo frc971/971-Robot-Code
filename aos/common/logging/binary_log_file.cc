@@ -1,4 +1,4 @@
-#include "aos/linux_code/logging/binary_log_file.h"
+#include "aos/common/logging/binary_log_file.h"
 
 #include <stdio.h>
 #include <string.h>

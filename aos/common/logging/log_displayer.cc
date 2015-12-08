@@ -12,7 +12,7 @@
 #include <string>
 
 #include "aos/linux_code/configuration.h"
-#include "aos/linux_code/logging/binary_log_file.h"
+#include "aos/common/logging/binary_log_file.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/logging/logging_impl.h"
 #include "aos/common/logging/logging_printf_formats.h"

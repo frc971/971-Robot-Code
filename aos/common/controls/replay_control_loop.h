@@ -5,7 +5,7 @@
 
 #include "aos/common/queue.h"
 #include "aos/common/controls/control_loop.h"
-#include "aos/linux_code/logging/log_replay.h"
+#include "aos/common/logging/log_replay.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/time.h"
 #include "aos/common/macros.h"

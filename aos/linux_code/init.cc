@@ -14,7 +14,7 @@
 #include <malloc.h>
 
 #include "aos/common/die.h"
-#include "aos/linux_code/logging/linux_logging.h"
+#include "aos/common/logging/linux_logging.h"
 #include "aos/linux_code/ipc_lib/shared_mem.h"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
@@ -27,7 +27,7 @@ namespace aos {
 namespace logging {
 namespace internal {
 
-// Implemented in aos/linux_code/logging/linux_interface.cc.
+// Implemented in aos/common/logging/linux_interface.cc.
 void ReloadThreadName();
 
 }  // namespace internal

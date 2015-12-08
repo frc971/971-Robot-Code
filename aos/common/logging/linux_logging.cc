@@ -1,4 +1,4 @@
-#include "aos/linux_code/logging/linux_logging.h"
+#include "aos/common/logging/linux_logging.h"
 
 #include <stdarg.h>
 #include <stdio.h>

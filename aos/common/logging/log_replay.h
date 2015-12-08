@@ -1,12 +1,12 @@
-#ifndef AOS_LINUX_CODE_LOGGING_LOG_REPLAY_H_
-#define AOS_LINUX_CODE_LOGGING_LOG_REPLAY_H_
+#ifndef AOS_COMMON_LOGGING_LOG_REPLAY_H_
+#define AOS_COMMON_LOGGING_LOG_REPLAY_H_
 
 #include <unordered_map>
 #include <string>
 #include <functional>
 #include <memory>
 
-#include "aos/linux_code/logging/binary_log_file.h"
+#include "aos/common/logging/binary_log_file.h"
 #include "aos/common/queue.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
@@ -161,4 +161,4 @@ class LogReplayer {
 }  // namespace logging
 }  // namespace aos
 
-#endif  // AOS_LINUX_CODE_LOGGING_LOG_REPLAY_H_
+#endif  // AOS_COMMON_LOGGING_LOG_REPLAY_H_
