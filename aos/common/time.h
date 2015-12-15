@@ -47,7 +47,7 @@ struct Time {
 
   static const Time kZero;
 
-  constexpr Time(int32_t sec = 0, int32_t nsec = 0)
+  explicit constexpr Time(int32_t sec = 0, int32_t nsec = 0)
       : sec_(sec), nsec_(CheckConstexpr(nsec)) {
   }
   #ifndef SWIG

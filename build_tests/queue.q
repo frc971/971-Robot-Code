@@ -1,5 +1,5 @@
 package build_tests;
 
-struct TestStruct {
+message TestMessage {
   int32_t field;
 };

@@ -163,7 +163,7 @@ class Queue {
  public:
   typedef T Message;
 
-  Queue(const char *queue_name)
+  explicit Queue(const char *queue_name)
       : queue_name_(queue_name), queue_(NULL), queue_msg_(NULL, NULL) {
     static_assert(shm_ok<T>::value,
                   "The provided message type can't be put in shmem.");

@@ -2,8 +2,8 @@
 #define AOS_COMMON_MUTEX_H_
 
 #include "aos/common/macros.h"
-#include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
 
 namespace aos {
 
