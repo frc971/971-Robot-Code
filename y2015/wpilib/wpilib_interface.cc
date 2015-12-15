@@ -18,6 +18,7 @@
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
 #endif
+#include "PowerDistributionPanel.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -229,6 +230,7 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
+    pdp_.reset(new PowerDistributionPanel());
 
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
@@ -244,7 +246,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_.get());
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -297,6 +299,7 @@ class SensorReader {
 
   int32_t my_pid_;
   DriverStation *ds_;
+  ::std::unique_ptr<PowerDistributionPanel> pdp_;
 
   void CopyPotAndIndexPosition(
       const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,

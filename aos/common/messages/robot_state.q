@@ -59,6 +59,12 @@ message RobotState {
   // From the DriverStation object, aka what FMS sees and what shows up on the
   // actual driver's station.
   double voltage_battery;
+
+  // From the PDP directly.
+  double pdp_voltage;
+  double pdp_temperature;
+  double pdp_power;
+  double[16] pdp_currents;
 };
 
 // Messages are sent out on this queue along with reading sensors. It contains
