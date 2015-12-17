@@ -1,0 +1,22 @@
+apply plugin: 'cpp'
+apply plugin: 'maven-publish'
+
+evaluationDependsOn(':hal')
+
+ext.shared = 'shared'
+ext.athena = 'Athena'
+ext.simulation = 'simluation'
+
+// Attempts to execute the doxygen command. If there is no exception, doxygen exists, so return true. If there's
+// an IOException, it doesn't exist, so return false
+boolean checkDoxygen() {
+    try {
+        'doxygen'.execute()
+        true
+    } catch (IOException e) {
+        false
+    }
+}
+
+apply from: 'athena.gradle'
+apply from: 'simulation.gradle'

@@ -1,0 +1,7 @@
+include 'hal',
+        'wpilibc',
+        'wpilibcIntegrationTests',
+        'wpilibj',
+        'wpilibjIntegrationTests',
+        'simulation:JavaGazebo',
+        'simulation:SimDS'

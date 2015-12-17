@@ -1,0 +1,46 @@
+def enableSimulation = hasProperty('enableSimulation')
+
+if (!hasProperty('repo')) {
+    ext.repo = 'development'
+}
+
+def repoBaseUrl = "http://first.wpi.edu/FRC/roborio/maven/${repo}"
+def publishUrl = "${System.getProperty('user.home')}/releases/maven/${repo}"
+
+allprojects {
+    ext.enableSimulation = enableSimulation
+    ext.repo = repo
+
+    repositories {
+        mavenCentral()
+        maven {
+            url publishUrl
+        }
+        mavenLocal()
+        maven {
+            url repoBaseUrl
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+
+    ext.armBuild = true
+
+    // Disables doclint in java 8.
+    if (JavaVersion.current().isJava8Compatible()) {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+
+    ext.setupWpilibRepo = { publishing ->
+        publishing.repositories.maven {
+            url = "${System.getProperty('user.home')}/releases/maven/${repo}"
+        }
+    }
+}
+
+apply from: 'cppSettings.gradle'
