@@ -7,6 +7,7 @@ cc_binary(
   ],
   deps = [
     '//aos/common/logging',
+    '//aos/common/logging:implementations',
     '//aos/common:time',
   ],
 )
@@ -58,7 +59,7 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/common:die',
-    '//aos/common/logging:linux_logging',
+    '//aos/common/logging:implementations',
   ],
 )
 

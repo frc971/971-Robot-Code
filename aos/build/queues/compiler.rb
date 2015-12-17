@@ -107,7 +107,7 @@ def build(filename,globals_template)
   cpp_tree.add_cc_include("<inttypes.h>")
   cpp_tree.add_cc_include("aos/common/queue_types.h".inspect)
   cpp_tree.add_cc_include("aos/common/once.h".inspect)
-  cpp_tree.add_cc_include("aos/common/logging/logging_printf_formats.h".inspect)
+  cpp_tree.add_cc_include("aos/common/logging/printf_formats.h".inspect)
   cpp_tree.add_cc_using("::aos::to_network")
   cpp_tree.add_cc_using("::aos::to_host")
 

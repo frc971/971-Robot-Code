@@ -10,10 +10,10 @@
 #include <fcntl.h>
 #include <inttypes.h>
 
-#include "aos/common/logging/linux_logging.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/ipc_lib/queue.h"
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/logging/implementations.h"
 #include "aos/common/time.h"
 
 namespace aos {
@@ -24,17 +24,20 @@ namespace {
 int LogStreamerMain() {
   InitNRT();
 
+  RawQueue *queue = GetLoggingQueue();
+
   const time::Time now = time::Time::Now();
   printf("starting at %" PRId32 "s%" PRId32 "ns-----------------------------\n",
          now.sec(), now.nsec());
 
   while (true) {
-    const LogMessage *const msg = ReadNext();
+    const LogMessage *const msg =
+        static_cast<const LogMessage *>(queue->ReadMessage(RawQueue::kBlock));
     if (msg == NULL) continue;
 
     internal::PrintMessage(stdout, *msg);
 
-    logging::linux_code::Free(msg);
+    queue->FreeMessage(msg);
   }
 
   Cleanup();

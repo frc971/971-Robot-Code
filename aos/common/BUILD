@@ -28,7 +28,7 @@ cc_library(
     ':once',
     ':queues',
     '//aos/testing:googletest',
-    '//aos/common/logging',
+    '//aos/common/logging:implementations',
     '//aos/linux_code/ipc_lib:shared_mem',
     ':mutex',
   ],
@@ -57,7 +57,7 @@ cc_library(
     'time.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging:logging',
     ':mutex',
     ':macros',
     '//aos/linux_code/ipc_lib:shared_mem',
@@ -99,7 +99,7 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
     ':time',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging:logging',
   ],
 )
 
@@ -125,7 +125,7 @@ cc_library(
     '//aos/linux_code/ipc_lib:shared_mem',
     '//aos/linux_code/ipc_lib:core_lib',
     ':mutex',
-    '//aos/common/logging:logging_printf_formats',
+    '//aos/common/logging:printf_formats',
     ':time',
     ':byteorder'
   ],
@@ -323,7 +323,7 @@ cc_library(
   deps = [
     ':mutex',
     '//aos/linux_code/ipc_lib:aos_sync',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging:logging',
   ],
 )
 
@@ -379,7 +379,7 @@ cc_library(
   deps = [
     '//aos/linux_code/ipc_lib:aos_sync',
     ':die',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging:logging',
     ':type_traits',
   ],
 )
@@ -404,7 +404,7 @@ cc_library(
     'transaction.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging:logging',
     '//aos/common/util:compiler_memory_barrier',
   ],
 )

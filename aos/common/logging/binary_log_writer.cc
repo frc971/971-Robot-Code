@@ -14,10 +14,11 @@
 #include <map>
 #include <unordered_set>
 
-#include "aos/common/logging/linux_logging.h"
+#include "aos/common/logging/implementations.h"
 #include "aos/common/logging/binary_log_file.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/configuration.h"
+#include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/die.h"
 
@@ -198,11 +199,14 @@ int BinaryLogReaderMain() {
   }
   LogFileWriter writer(fd);
 
+  RawQueue *queue = GetLoggingQueue();
+
   ::std::unordered_set<uint32_t> written_type_ids;
   off_t clear_type_ids_cookie = 0;
 
   while (true) {
-    const LogMessage *const msg = ReadNext();
+    const LogMessage *const msg =
+        static_cast<const LogMessage *>(queue->ReadMessage(RawQueue::kBlock));
     if (msg == NULL) continue;
 
     const size_t raw_output_length =
@@ -294,7 +298,7 @@ int BinaryLogReaderMain() {
 
     futex_set(&output->marker);
 
-    logging::linux_code::Free(msg);
+    queue->FreeMessage(msg);
   }
 
   Cleanup();

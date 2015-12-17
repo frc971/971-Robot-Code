@@ -1,18 +1,21 @@
 #include "aos/common/logging/matrix_logging.h"
 
 #include "aos/common/queue_types.h"
+#include "aos/common/logging/sizes.h"
 
 namespace aos {
 namespace logging {
+namespace internal {
 
-void LogImplementation::DoLogMatrix(log_level level,
-                                    const ::std::string &message,
-                                    uint32_t type_id, int rows, int cols,
-                                    const void *data, int levels) {
-  internal::RunWithCurrentImplementation(
-      levels, [&](LogImplementation * implementation) {
-    implementation->LogMatrix(level, message, type_id, rows, cols, data);
-  });
+void DoLogMatrix(log_level level, const ::std::string &message,
+                 uint32_t type_id, int rows, int cols, const void *data,
+                 int levels) {
+  {
+    auto fn = [&](LogImplementation *implementation) {
+      implementation->LogMatrix(level, message, type_id, rows, cols, data);
+    };
+    RunWithCurrentImplementation(levels, ::std::ref(fn));
+  }
 
   if (level == FATAL) {
     char serialized[1024];
@@ -31,5 +34,6 @@ void LogImplementation::DoLogMatrix(log_level level,
   }
 }
 
+}  // namespace internal
 }  // namespace logging
 }  // namespace aos

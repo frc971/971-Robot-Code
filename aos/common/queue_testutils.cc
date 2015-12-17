@@ -8,7 +8,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/common/queue.h"
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/implementations.h"
 #include "aos/common/once.h"
 #include "aos/common/mutex.h"
 

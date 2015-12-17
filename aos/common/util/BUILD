@@ -9,7 +9,7 @@ cc_library(
     'run_command.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
   ],
 )
 
@@ -32,7 +32,7 @@ cc_library(
     'death_test_log_implementation.h',
   ],
   deps = [
-    '//aos/common/logging',
+    '//aos/common/logging:implementations',
   ],
 )
 
@@ -104,7 +104,7 @@ cc_library(
   ],
   deps = [
     '//aos/common:macros',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
   ],
 )
 

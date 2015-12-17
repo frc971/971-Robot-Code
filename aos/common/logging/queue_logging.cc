@@ -1,21 +1,21 @@
 #include "aos/common/logging/queue_logging.h"
 
-#include "aos/common/logging/logging_impl.h"
+#include "aos/common/logging/interface.h"
+#include "aos/common/logging/sizes.h"
 #include "aos/common/queue_types.h"
 
 namespace aos {
 namespace logging {
+namespace internal {
 
-void LogImplementation::DoLogStruct(
-    log_level level, const ::std::string &message, size_t size,
-    const MessageType *type, const ::std::function<size_t(char *)> &serialize,
-    int levels) {
-
+void DoLogStruct(log_level level, const ::std::string &message, size_t size,
+                 const MessageType *type,
+                 const ::std::function<size_t(char *)> &serialize, int levels) {
   {
     auto fn = [&](LogImplementation *implementation) {
       implementation->LogStruct(level, message, size, type, serialize);
     };
-    internal::RunWithCurrentImplementation(levels, ::std::ref(fn));
+    RunWithCurrentImplementation(levels, ::std::ref(fn));
   }
 
   if (level == FATAL) {
@@ -34,5 +34,6 @@ void LogImplementation::DoLogStruct(
   }
 }
 
+}  // namespace internal
 }  // namespace logging
 }  // namespace aos

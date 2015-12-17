@@ -9,7 +9,7 @@ cc_library(
     'aos_sync.h',
   ],
   deps = [
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
     '//aos/common:once',
     '//aos/common:macros',
   ],
@@ -41,7 +41,7 @@ cc_library(
     ':aos_sync',
     ':core_lib',
     ':shared_mem_types',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
     '//debian:librt',
   ],
 )
@@ -71,7 +71,7 @@ cc_library(
     '//aos/common:mutex',
     ':core_lib',
     ':shared_mem',
-    '//aos/common/logging:logging_interface',
+    '//aos/common/logging',
     '//debian:librt',
     '//aos/common/util:options',
   ],

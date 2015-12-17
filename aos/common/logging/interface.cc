@@ -1,4 +1,4 @@
-#include "aos/common/logging/logging_interface.h"
+#include "aos/common/logging/interface.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -9,9 +9,6 @@
 
 #include "aos/common/die.h"
 #include "aos/common/logging/context.h"
-
-// This file only contains the code necessary to link (ie no implementations).
-// See logging_impl.h for why this is necessary.
 
 namespace aos {
 namespace logging {

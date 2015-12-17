@@ -1,5 +1,5 @@
-#ifndef AOS_COMMON_LOGGING_LOGGING_IMPL_H_
-#define AOS_COMMON_LOGGING_LOGGING_IMPL_H_
+#ifndef AOS_COMMON_LOGGING_IMPLEMENTATIONS_H_
+#define AOS_COMMON_LOGGING_IMPLEMENTATIONS_H_
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -18,25 +18,18 @@
 #include "aos/common/mutex.h"
 #include "aos/common/macros.h"
 #include "aos/common/logging/sizes.h"
-#include "aos/common/logging/logging_interface.h"
+#include "aos/common/logging/interface.h"
 #include "aos/common/logging/context.h"
 #include "aos/common/once.h"
 
 namespace aos {
 
 struct MessageType;
+class RawQueue;
 
 }  // namespace aos
 
-// This file has all of the logging implementation. It can't be #included by C
-// code like logging.h can.
-// It is useful for the rest of the logging implementation and other C++ code
-// that needs to do special things with logging.
-//
-// It is implemented in logging_impl.cc and logging_interface.cc. They are
-// separate so that code used by logging_impl.cc can link in
-// logging_interface.cc to use logging without creating a circular dependency.
-// However, any executables with such code still need logging_impl.cc linked in.
+// This file has various concrete LogImplementations.
 
 namespace aos {
 namespace logging {
@@ -44,9 +37,9 @@ namespace logging {
 // Unless explicitly stated otherwise, format must always be a string constant,
 // args are printf-style arguments for format, and ap is a va_list of args.
 // The validity of format and args together will be checked at compile time
-// using a gcc function attribute.
+// using a function attribute.
 
-// The struct that the code uses for making logging calls.
+// Contains all of the information about a given logging call.
 struct LogMessage {
   enum class Type : uint8_t {
     kString, kStruct, kMatrix
@@ -106,31 +99,30 @@ static inline log_level str_log(const char *str) {
   return LOG_UNKNOWN;
 }
 
-// Will call VLog with the given arguments for the next logger in the chain.
-void LogNext(log_level level, const char *format, ...)
-  __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
-
-// Takes a structure and log it.
-template <class T>
-void DoLogStruct(log_level, const ::std::string &, const T &);
-// Takes a matrix and logs it.
-template <class T>
-void DoLogMatrix(log_level, const ::std::string &, const T &);
-
+// A LogImplementation where LogStruct and LogMatrix just create a string with
+// PrintMessage and then forward on to DoLog.
+class SimpleLogImplementation : public LogImplementation {
+ private:
+  void LogStruct(log_level level, const ::std::string &message, size_t size,
+                 const MessageType *type,
+                 const ::std::function<size_t(char *)> &serialize) override;
+  void LogMatrix(log_level level, const ::std::string &message,
+                 uint32_t type_id, int rows, int cols,
+                 const void *data) override;
+};
 
 // Implements all of the DoLog* methods in terms of a (pure virtual in this
 // class) HandleMessage method that takes a pointer to the message.
 class HandleMessageLogImplementation : public LogImplementation {
- public:
+ private:
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
-  virtual void DoLog(log_level level, const char *format, va_list ap) override;
-  virtual void LogStruct(log_level level, const ::std::string &message_string,
-                         size_t size, const MessageType *type,
-                         const ::std::function<size_t(char *)> &serialize)
-      override;
-  virtual void LogMatrix(log_level level, const ::std::string &message_string,
-                         uint32_t type_id, int rows, int cols, const void *data)
-      override;
+  void DoLog(log_level level, const char *format, va_list ap) override;
+  void LogStruct(log_level level, const ::std::string &message_string,
+                 size_t size, const MessageType *type,
+                 const ::std::function<size_t(char *)> &serialize) override;
+  void LogMatrix(log_level level, const ::std::string &message_string,
+                 uint32_t type_id, int rows, int cols,
+                 const void *data) override;
 
   virtual void HandleMessage(const LogMessage &message) = 0;
 };
@@ -141,7 +133,7 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
   StreamLogImplementation(FILE *stream);
 
  private:
-  virtual void HandleMessage(const LogMessage &message) override;
+  void HandleMessage(const LogMessage &message) override;
 
   FILE *const stream_;
 };
@@ -163,10 +155,21 @@ void Init();
 // Forces all of the state that is usually lazily created when first needed to
 // be created when called. Cleanup() will delete it.
 void Load();
+
 // Resets all information in this task/thread to its initial state.
 // NOTE: This is not the opposite of Init(). The state that this deletes is
 // lazily created when needed. It is actually the opposite of Load().
 void Cleanup();
+
+// Returns a queue which deals with LogMessage-sized messages.
+// The caller takes ownership.
+RawQueue *GetLoggingQueue();
+
+// Calls AddImplementation to register the standard linux logging implementation
+// which sends the messages through a queue. This implementation relies on
+// another process(es) to read the log messages that it puts into the queue.
+// This function is usually called by aos::Init*.
+void RegisterQueueImplementation();
 
 // This is where all of the code that is only used by actual LogImplementations
 // goes.
@@ -209,4 +212,4 @@ void PrintMessage(FILE *output, const LogMessage &message);
 }  // namespace logging
 }  // namespace aos
 
-#endif  // AOS_COMMON_LOGGING_LOGGING_IMPL_H_
+#endif  // AOS_COMMON_LOGGING_IMPLEMENTATIONS_H_
