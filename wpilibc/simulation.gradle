@@ -1,0 +1,23 @@
+publishing {
+    publications {
+        wpilibcSim(MavenPublication) {
+            artifact wpilibcSimZip
+            groupId 'edu.wpi.first.wpilibc.simulation'
+            artifactId 'WPILibCSim'
+            version '0.1.0'
+        }
+    }
+}
+
+task wpilibcSimZip(type: Zip) {
+    description 'Creates the include zip file for wpilibc'
+    group 'WPILib'
+    baseName 'WPILibCSim'
+    destinationDir = project.buildDir
+    into 'sim/include'
+    from "${simulation}/include"
+    from "${shared}/include"
+    from '../build/simulation/gz_msgs/generated'
+    from netTablesInclude
+    from '../hal/include'
+}
