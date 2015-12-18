@@ -13,6 +13,7 @@ cc_library(
     '//aos/common/logging',
     '//aos/common:once',
     '//aos/common/network:team_number',
+    '//aos/common:mutex',
     '//frc971/control_loops:state_feedback_loop',
     '//y2014/control_loops/drivetrain:polydrivetrain_plants',
     '//frc971:shifter_hall_effect',
