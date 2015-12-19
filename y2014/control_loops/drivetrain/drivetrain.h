@@ -22,11 +22,7 @@ class DrivetrainLoop
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(
       ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
-          &::frc971::control_loops::drivetrain_queue)
-      : aos::controls::ControlLoop<control_loops::DrivetrainQueue>(
-            my_drivetrain) {
-    ::aos::controls::HPolytope<0>::Init();
-  }
+          &::frc971::control_loops::drivetrain_queue);
 
  protected:
   // Executes one cycle of the control loop.
@@ -39,9 +35,17 @@ class DrivetrainLoop
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   SimpleLogInterval no_position_ = SimpleLogInterval(
       ::aos::time::Time::InSeconds(0.25), WARNING, "no position");
+  double last_gyro_heading_ = 0.0;
+  double last_gyro_rate_ = 0.0;
 
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
+  StateFeedbackLoop<7, 2, 3> kf_;
+
+  double last_left_voltage_ = 0;
+  double last_right_voltage_ = 0;
+
+  double integrated_kf_heading_ = 0;
 };
 
 }  // namespace drivetrain

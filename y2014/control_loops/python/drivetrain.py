@@ -63,20 +63,19 @@ class Drivetrain(control_loop.ControlLoop):
     # Number of motors per side
     self.num_motors = 2
     # Stall Torque in N m
-    self.stall_torque = 2.42 * self.num_motors
+    self.stall_torque = 2.42 * self.num_motors * 0.60
     # Stall Current in Amps
     self.stall_current = 133.0 * self.num_motors
     # Free Speed in RPM. Used number from last year.
-    self.free_speed = 4650.0
+    self.free_speed = 5500.0
     # Free Current in Amps
-    self.free_current = 2.7 * self.num_motors
+    self.free_current = 4.7 * self.num_motors
     # Moment of inertia of the drivetrain in kg m^2
-    # Just borrowed from last year.
-    self.J = 4.5
+    self.J = 2.8
     # Mass of the robot, in kg.
     self.m = 68
     # Radius of the robot, in meters (from last year).
-    self.rb = 0.617998644 / 2.0
+    self.rb = 0.647998644 / 2.0
     # Radius of the wheels, in meters.
     self.r = .04445
     # Resistance of the motor, divided by the number of motors.
@@ -132,11 +131,6 @@ class Drivetrain(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    # Poles from last year.
-    self.hp = 0.65
-    self.lp = 0.83
-    self.PlaceControllerPoles([self.hp, self.lp, self.hp, self.lp])
-
     q_pos = 0.12
     q_vel = 1.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
@@ -179,22 +173,24 @@ class KFDrivetrain(Drivetrain):
     self.A_continuous[0:4,0:4] = self.unaugmented_A_continuous
     self.A_continuous[0:4,4:6] = self.unaugmented_B_continuous
     self.B_continuous[0:4,0:2] = self.unaugmented_B_continuous
+    self.A_continuous[0,6] = 1
+    self.A_continuous[2,6] = -1
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, self.rb],
-                           [0, 0, 1, 0, 0, 0, -self.rb],
-                           [0, -2.0 / self.rb, 0, 2.0 / self.rb, 0, 0, 0]])
+    self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0],
+                           [0, -0.5 / self.rb, 0, 0.5 / self.rb, 0, 0, 0]])
 
     self.D = numpy.matrix([[0, 0],
                            [0, 0],
                            [0, 0]])
 
-    q_pos = 0.08
-    q_vel = 0.40
-    q_voltage = 6.0
-    q_gyro = 0.1
+    q_pos = 0.05
+    q_vel = 1.00
+    q_voltage = 10.0
+    q_encoder_uncertainty = 2.00
 
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -202,10 +198,10 @@ class KFDrivetrain(Drivetrain):
                            [0.0, 0.0, 0.0, (q_vel ** 2.0), 0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0, 0.0, (q_voltage ** 2.0), 0.0, 0.0],
                            [0.0, 0.0, 0.0, 0.0, 0.0, (q_voltage ** 2.0), 0.0],
-                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, (q_gyro ** 2.0)]])
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, (q_encoder_uncertainty ** 2.0)]])
 
-    r_pos = 0.05
-    r_gyro = 0.001
+    r_pos =  0.0001
+    r_gyro = 0.000001
     self.R = numpy.matrix([[(r_pos ** 2.0), 0.0, 0.0],
                            [0.0, (r_pos ** 2.0), 0.0],
                            [0.0, 0.0, (r_gyro ** 2.0)]])

@@ -13,6 +13,7 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2014/control_loops/drivetrain/polydrivetrain.h"
 #include "y2014/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/queues/gyro.q.h"
@@ -27,6 +28,14 @@ using frc971::sensors::gyro_reading;
 namespace y2014 {
 namespace control_loops {
 namespace drivetrain {
+
+DrivetrainLoop::DrivetrainLoop(
+    ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
+    : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
+          my_drivetrain),
+      kf_(::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop()) {
+  ::aos::controls::HPolytope<0>::Init();
+}
 
 void DrivetrainLoop::RunIteration(
     const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
@@ -69,6 +78,8 @@ void DrivetrainLoop::RunIteration(
       LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
       dt_closedloop_.SetPosition(left_encoder, right_encoder,
                                  gyro_reading->angle);
+      last_gyro_heading_ = gyro_reading->angle;
+      last_gyro_rate_ = gyro_reading->velocity;
     } else {
       dt_closedloop_.SetRawPosition(left_encoder, right_encoder);
     }
@@ -110,6 +121,42 @@ void DrivetrainLoop::RunIteration(
     status->uncapped_left_voltage = dt_closedloop_.loop().U_uncapped(0, 0);
     status->uncapped_right_voltage = dt_closedloop_.loop().U_uncapped(1, 0);
   }
+
+
+  double left_voltage = 0.0;
+  double right_voltage = 0.0;
+  if (output) {
+    left_voltage = output->left_voltage;
+    right_voltage = output->right_voltage;
+  }
+
+  const double scalar = ::aos::robot_state->voltage_battery / 12.0;
+
+  left_voltage *= scalar;
+  right_voltage *= scalar;
+
+  kf_.set_controller_index(dt_openloop_.controller_index());
+
+  Eigen::Matrix<double, 3, 1> Y;
+  Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
+  kf_.Correct(Y);
+  integrated_kf_heading_ +=
+      kDt * (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) / (kRobotRadius * 2.0);
+
+  // To validate, look at the following:
+
+  // Observed - dx/dt velocity for left, right.
+
+  // Angular velocity error compared to the gyro
+  // Gyro heading vs left-right
+  // Voltage error.
+
+  Eigen::Matrix<double, 2, 1> U;
+  U << last_left_voltage_, last_right_voltage_;
+  last_left_voltage_ = left_voltage;
+  last_right_voltage_ = right_voltage;
+
+  kf_.UpdateObserver(U);
 }
 
 }  // namespace drivetrain

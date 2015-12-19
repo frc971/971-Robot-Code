@@ -51,6 +51,9 @@ class DrivetrainMotorsSS {
     return loop_->X_hat(0, 0);
   }
 
+  double left_velocity() const { return loop_->X_hat(1, 0); }
+  double right_velocity() const { return loop_->X_hat(3, 0); }
+
   double GetEstimatedRightEncoder() const {
     return loop_->X_hat(2, 0);
   }
