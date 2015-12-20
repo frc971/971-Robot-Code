@@ -35,3 +35,16 @@ cc_library(
     '//aos/linux_code:configuration',
   ],
 )
+
+cc_test(
+  name = 'team_number_test',
+  srcs = [
+    'team_number_test.cc',
+  ],
+  deps = [
+    ':team_number',
+    '//aos/testing:googletest',
+    '//aos/common:queue_testutils',
+  ],
+)
+
