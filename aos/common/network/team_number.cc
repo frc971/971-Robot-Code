@@ -14,21 +14,14 @@
 
 namespace aos {
 namespace network {
-namespace {
-
-uint16_t override_team;
-
-::std::string GetHostname() {
-  char buf[256];
-  buf[sizeof(buf) - 1] = '\0';
-  PCHECK(gethostname(buf, sizeof(buf) - 1));
-  return buf;
-}
-
+namespace internal {
 int ParseTeamNumber(const std::string &hostname, uint16_t *teamnumber) {
   for (size_t i = 0; i < hostname.size(); i++) {
     if (hostname[i] == '-') {
-      const std::string num_as_s = hostname.substr(i + 1);
+      const std::string num_as_s =
+          hostname[hostname.size() - 1] == 'C'
+              ? hostname.substr(i + 1, hostname.size() - 5 - i)
+              : hostname.substr(i + 1);
 
       int num;
       if (!::aos::util::StringToNumber(num_as_s, &num)) {
@@ -45,6 +38,18 @@ int ParseTeamNumber(const std::string &hostname, uint16_t *teamnumber) {
   }
   return -1;
 }
+}  // namespace internal
+
+namespace {
+
+uint16_t override_team;
+
+::std::string GetHostname() {
+  char buf[256];
+  buf[sizeof(buf) - 1] = '\0';
+  PCHECK(gethostname(buf, sizeof(buf) - 1));
+  return buf;
+}
 
 uint16_t *DoGetTeamNumber() {
   if (override_team != 0) return &override_team;
@@ -59,7 +64,7 @@ uint16_t *DoGetTeamNumber() {
     LOG(WARNING, "team number overridden by AOS_TEAM_NUMBER to %" PRIu16 "\n",
         r);
   } else {
-    int error = ParseTeamNumber(GetHostname(), &r);
+    int error = internal::ParseTeamNumber(GetHostname(), &r);
     if (error) {
       LOG(FATAL, "Invalid hostname %s\n", GetHostname().c_str());
     }
