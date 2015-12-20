@@ -3,7 +3,7 @@ package(default_visibility = ['//visibility:public'])
 load('/aos/build/queues', 'queue_library')
 
 cc_binary(
-  name = 'replay_drivetrain_y2014_bot3',
+  name = 'replay_drivetrain',
   srcs = [
     'replay_drivetrain.cc',
   ],
@@ -83,7 +83,7 @@ cc_test(
 )
 
 cc_binary(
-  name = 'drivetrain_y2014_bot3',
+  name = 'drivetrain',
   srcs = [
     'drivetrain_main.cc',
   ],

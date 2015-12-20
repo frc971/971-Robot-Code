@@ -32,7 +32,7 @@ cc_library(
 )
 
 cc_binary(
-  name = 'auto_y2014_bot3',
+  name = 'auto',
   srcs = [
     'auto_main.cc',
   ],
