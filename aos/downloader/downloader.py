@@ -9,6 +9,19 @@ import subprocess
 import re
 import os
 
+def install(ssh_target, pkg):
+  """Installs a package from NI on the ssh target."""
+  print('Installing', pkg)
+  PKG_URL = 'http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/' + pkg
+  subprocess.check_call(['wget', PKG_URL, '-O', pkg])
+  try:
+    subprocess.check_call(['scp', pkg, ssh_target + ':/tmp/' + pkg])
+    subprocess.check_call(['ssh', ssh_target, 'opkg', 'install', '/tmp/' + pkg])
+    subprocess.check_call(['ssh', ssh_target, 'rm', '/tmp/' + pkg])
+  finally:
+    subprocess.check_call(['rm', pkg])
+
+
 def main(argv):
   srcs = argv[1:argv.index('--')]
   args = argv[argv.index('--') + 1:]
@@ -33,9 +46,20 @@ def main(argv):
 
   ssh_target = '%s@%s' % (user, hostname)
 
-  subprocess.check_call(
-      ['rsync', '-c', '-v', '-z', '--copy-links'] + srcs +
-      ['%s:%s' % (ssh_target, target_dir)])
+  rsync_cmd = (['rsync', '-c', '-v', '-z', '--copy-links'] + srcs +
+               ['%s:%s' % (ssh_target, target_dir)])
+  try:
+    subprocess.check_call(rsync_cmd)
+  except subprocess.CalledProcessError as e:
+    if e.returncode == 127:
+      print('Unconfigured roboRIO, installing rsync.')
+      install(ssh_target, 'libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk')
+      install(ssh_target, 'libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk')
+      install(ssh_target, 'rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk')
+      subprocess.check_call(rsync_cmd)
+    else:
+      raise e
+
   subprocess.check_call(
       ('ssh', ssh_target, '&&'.join([
           'chmod u+s %s/starter_exe' % target_dir,
