@@ -60,9 +60,9 @@ class IntakeTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
+  void RunForTime(double run_for, bool enabled = true) {
     const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
+    while (Time::Now() < start_time + Time::InSeconds(run_for)) {
       RunIteration(enabled);
     }
   }
