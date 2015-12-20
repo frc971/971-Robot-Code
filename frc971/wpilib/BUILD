@@ -84,6 +84,7 @@ cc_library(
   deps = [
     '//aos/externals:wpilib',
     '//aos/common/logging',
+    '//aos/common:time',
   ],
 )
 
