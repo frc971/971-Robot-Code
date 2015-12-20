@@ -9,7 +9,7 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace actors {
 namespace {
 
@@ -44,7 +44,7 @@ ShootActor::ShootActor(actors::ShootActionQueueGroup* s)
     : ::aos::common::actions::ActorBase<actors::ShootActionQueueGroup>(s) {}
 
 double ShootActor::SpeedToAngleOffset(double speed) {
-  const frc971::constants::Values& values = frc971::constants::GetValues();
+  const constants::Values& values = constants::GetValues();
   // scale speed to a [0.0-1.0] on something close to the max
   return (speed / values.drivetrain_max_speed) * kOffsetRadians;
 }
@@ -171,8 +171,8 @@ bool ShootActor::DoneShot() {
 
 ::std::unique_ptr<ShootAction> MakeShootAction() {
   return ::std::unique_ptr<ShootAction>(
-      new ShootAction(&::frc971::actors::shoot_action, 0.0));
+      new ShootAction(&::y2014::actors::shoot_action, 0.0));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2014

@@ -77,9 +77,9 @@ class ZeroedStateFeedbackLoop {
   }
   JointZeroingState zeroing_state() const { return zeroing_state_; }
 
-  void SetPositionValues(const ::frc971::control_loops::HalfClawPosition &claw);
+  void SetPositionValues(const ::y2014::control_loops::HalfClawPosition &claw);
 
-  void Reset(const ::frc971::control_loops::HalfClawPosition &claw);
+  void Reset(const ::y2014::control_loops::HalfClawPosition &claw);
 
   double absolute_position() const { return encoder() + offset(); }
 
@@ -183,10 +183,10 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 };
 
 class ClawMotor
-    : public aos::controls::ControlLoop<::frc971::control_loops::ClawQueue> {
+    : public aos::controls::ControlLoop<::y2014::control_loops::ClawQueue> {
  public:
-  explicit ClawMotor(::frc971::control_loops::ClawQueue *my_claw =
-                         &::frc971::control_loops::claw_queue);
+  explicit ClawMotor(::y2014::control_loops::ClawQueue *my_claw =
+                         &::y2014::control_loops::claw_queue);
 
   // True if the state machine is ready.
   bool capped_goal() const { return capped_goal_; }
@@ -217,10 +217,10 @@ class ClawMotor
 
  protected:
   virtual void RunIteration(
-      const ::frc971::control_loops::ClawQueue::Goal *goal,
-      const ::frc971::control_loops::ClawQueue::Position *position,
-      ::frc971::control_loops::ClawQueue::Output *output,
-      ::frc971::control_loops::ClawQueue::Status *status);
+      const ::y2014::control_loops::ClawQueue::Goal *goal,
+      const ::y2014::control_loops::ClawQueue::Position *position,
+      ::y2014::control_loops::ClawQueue::Output *output,
+      ::y2014::control_loops::ClawQueue::Status *status);
 
   double top_absolute_position() const {
     return claw_.X_hat(1, 0) + claw_.X_hat(0, 0);

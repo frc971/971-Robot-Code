@@ -1,4 +1,4 @@
-package frc971.control_loops;
+package y2014.control_loops;
 
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
@@ -31,9 +31,9 @@ queue_group ShooterQueue {
     // plunger is all the way back and latched.
     bool plunger;
     // Gets triggered when the pusher is all the way back.
-    PosedgeOnlyCountedHallEffectStruct pusher_distal;
+    .frc971.PosedgeOnlyCountedHallEffectStruct pusher_distal;
     // Triggers just before pusher_distal.
-    PosedgeOnlyCountedHallEffectStruct pusher_proximal;
+    .frc971.PosedgeOnlyCountedHallEffectStruct pusher_proximal;
     // Triggers when the latch engages.
     bool latch;
   };

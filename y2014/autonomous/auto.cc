@@ -23,7 +23,7 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2014 {
 namespace autonomous {
 
 namespace time = ::aos::time;
@@ -180,12 +180,12 @@ const ProfileParams kFastWithBallDrive = {3.0, 2.0};
 const ProfileParams kSlowWithBallDrive = {2.5, 2.0};
 const ProfileParams kFastTurn = {3.0, 10.0};
 
-::std::unique_ptr<::frc971::actors::DrivetrainAction> SetDriveGoal(
+::std::unique_ptr<::y2014::actors::DrivetrainAction> SetDriveGoal(
     double distance, const ProfileParams drive_params, double theta = 0,
     const ProfileParams &turn_params = kFastTurn) {
   LOG(INFO, "Driving to %f\n", distance);
 
-  ::frc971::actors::DrivetrainActionParams params;
+  ::y2014::actors::DrivetrainActionParams params;
   params.left_initial_position = left_initial_position;
   params.right_initial_position = right_initial_position;
   params.y_offset = distance;
@@ -328,7 +328,7 @@ class HotGoalDecoder {
  private:
   static const uint64_t kThreshold = 5;
 
-  ::frc971::HotGoal start_counts_;
+  ::y2014::HotGoal start_counts_;
   bool start_counts_valid_;
 };
 
@@ -348,17 +348,17 @@ void HandleAuto() {
   LOG(INFO, "Handling auto mode\n");
 
   AutoVersion auto_version;
-  ::frc971::sensors::auto_mode.FetchLatest();
-  if (!::frc971::sensors::auto_mode.get()) {
+  ::y2014::sensors::auto_mode.FetchLatest();
+  if (!::y2014::sensors::auto_mode.get()) {
     LOG(WARNING, "not sure which auto mode to use\n");
     auto_version = AutoVersion::kStraight;
   } else {
     static const double kSelectorMin = 0.2, kSelectorMax = 4.4;
 
     const double kSelectorStep = (kSelectorMax - kSelectorMin) / 3.0;
-    if (::frc971::sensors::auto_mode->voltage < kSelectorStep + kSelectorMin) {
+    if (::y2014::sensors::auto_mode->voltage < kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kSingleHot;
-    } else if (::frc971::sensors::auto_mode->voltage <
+    } else if (::y2014::sensors::auto_mode->voltage <
                2 * kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kStraight;
     } else {
@@ -529,4 +529,4 @@ void HandleAuto() {
 }
 
 }  // namespace autonomous
-}  // namespace frc971
+}  // namespace y2014

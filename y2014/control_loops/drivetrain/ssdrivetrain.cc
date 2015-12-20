@@ -172,7 +172,7 @@ double DrivetrainMotorsSS::GetEstimatedRobotSpeed() const {
 }
 
 void DrivetrainMotorsSS::SendMotors(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) const {
+    ::y2014::control_loops::DrivetrainQueue::Output *output) const {
   if (output) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);

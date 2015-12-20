@@ -19,7 +19,7 @@ namespace testing {
 
 using ::y2014::control_loops::claw::MakeClawPlant;
 using ::frc971::HallEffectStruct;
-using ::frc971::control_loops::HalfClawPosition;
+using ::y2014::control_loops::HalfClawPosition;
 
 typedef enum {
 	TOP_CLAW = 0,
@@ -111,7 +111,7 @@ class ClawMotorSimulation {
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
   void SetPhysicalSensors(
-      ::frc971::control_loops::ClawQueue::Position *position) {
+      ::y2014::control_loops::ClawQueue::Position *position) {
     position->top.position = GetPosition(TOP_CLAW);
     position->bottom.position = GetPosition(BOTTOM_CLAW);
 
@@ -186,7 +186,7 @@ class ClawMotorSimulation {
 
   // Sends out the position queue messages.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<::frc971::control_loops::ClawQueue::Position>
+    ::aos::ScopedMessagePtr<::y2014::control_loops::ClawQueue::Position>
         position = claw_queue.position.MakeMessage();
 
     // Initialize all the counters to their previous values.
@@ -239,10 +239,10 @@ class ClawMotorSimulation {
     initial_position_[type] = initial_position;
   }
 
-  ::frc971::control_loops::ClawQueue claw_queue;
+  ::y2014::control_loops::ClawQueue claw_queue;
   double initial_position_[CLAW_COUNT];
 
-  ::frc971::control_loops::ClawQueue::Position last_position_;
+  ::y2014::control_loops::ClawQueue::Position last_position_;
 };
 
 
@@ -251,7 +251,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ::frc971::control_loops::ClawQueue claw_queue;
+  ::y2014::control_loops::ClawQueue claw_queue;
 
   // Create a loop and simulation plant.
   ClawMotor claw_motor_;

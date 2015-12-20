@@ -19,8 +19,8 @@ namespace y2014 {
 namespace control_loops {
 namespace drivetrain {
 
-using ::frc971::control_loops::GearLogging;
-using ::frc971::control_loops::CIMLogging;
+using ::y2014::control_loops::GearLogging;
+using ::y2014::control_loops::CIMLogging;
 using ::frc971::control_loops::CoerceGoal;
 
 PolyDrivetrain::PolyDrivetrain()
@@ -158,7 +158,7 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
   }
 }
 void PolyDrivetrain::SetPosition(
-    const ::frc971::control_loops::DrivetrainQueue::Position *position) {
+    const ::y2014::control_loops::DrivetrainQueue::Position *position) {
   const auto &values = constants::GetValues();
   if (position == NULL) {
     ++stale_count_;
@@ -402,7 +402,7 @@ void PolyDrivetrain::Update() {
 }
 
 void PolyDrivetrain::SendMotors(
-    ::frc971::control_loops::DrivetrainQueue::Output *output) {
+    ::y2014::control_loops::DrivetrainQueue::Output *output) {
   if (output != NULL) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);

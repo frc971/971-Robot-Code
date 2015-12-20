@@ -9,7 +9,7 @@ using ::aos::time::Time;
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init();
 
-  frc971::actors::ShootActor shoot(&::frc971::actors::shoot_action);
+  ::y2014::actors::ShootActor shoot(&::y2014::actors::shoot_action);
   shoot.Run();
 
   ::aos::Cleanup();

@@ -79,7 +79,7 @@ class DrivetrainSimulation {
     const double left_encoder = GetLeftPosition();
     const double right_encoder = GetRightPosition();
 
-    ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Position>
+    ::aos::ScopedMessagePtr<::y2014::control_loops::DrivetrainQueue::Position>
         position = my_drivetrain_queue_.position.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
@@ -98,7 +98,7 @@ class DrivetrainSimulation {
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
  private:
-  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
+  ::y2014::control_loops::DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
   double last_right_position_;
 };
@@ -108,7 +108,7 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
+  ::y2014::control_loops::DrivetrainQueue my_drivetrain_queue_;
 
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;

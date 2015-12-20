@@ -9,8 +9,8 @@ using ::aos::time::Time;
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init();
 
-  frc971::actors::DrivetrainActor drivetrain(
-      &::frc971::actors::drivetrain_action);
+  ::y2014::actors::DrivetrainActor drivetrain(
+      &::y2014::actors::drivetrain_action);
   drivetrain.Run();
 
   ::aos::Cleanup();

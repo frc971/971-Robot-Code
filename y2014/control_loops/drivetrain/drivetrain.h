@@ -15,22 +15,22 @@ namespace y2014 {
 namespace control_loops {
 namespace drivetrain {
 
-class DrivetrainLoop
-    : public aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue> {
+class DrivetrainLoop : public aos::controls::ControlLoop<
+                           ::y2014::control_loops::DrivetrainQueue> {
  public:
   // Constructs a control loop which can take a Drivetrain or defaults to the
-  // drivetrain at frc971::control_loops::drivetrain
+  // drivetrain at y2014::control_loops::drivetrain
   explicit DrivetrainLoop(
-      ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
-          &::frc971::control_loops::drivetrain_queue);
+      ::y2014::control_loops::DrivetrainQueue *my_drivetrain =
+          &::y2014::control_loops::drivetrain_queue);
 
  protected:
   // Executes one cycle of the control loop.
   virtual void RunIteration(
-      const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
-      const ::frc971::control_loops::DrivetrainQueue::Position *position,
-      ::frc971::control_loops::DrivetrainQueue::Output *output,
-      ::frc971::control_loops::DrivetrainQueue::Status *status);
+      const ::y2014::control_loops::DrivetrainQueue::Goal *goal,
+      const ::y2014::control_loops::DrivetrainQueue::Position *position,
+      ::y2014::control_loops::DrivetrainQueue::Output *output,
+      ::y2014::control_loops::DrivetrainQueue::Status *status);
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   SimpleLogInterval no_position_ = SimpleLogInterval(

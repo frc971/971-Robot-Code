@@ -1,4 +1,4 @@
-package frc971.control_loops;
+package y2014.control_loops;
 
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
@@ -8,11 +8,11 @@ struct HalfClawPosition {
   double position;
 
   // The hall effect sensor at the front limit.
-  HallEffectStruct front;
+  .frc971.HallEffectStruct front;
   // The hall effect sensor in the middle to use for real calibration.
-  HallEffectStruct calibration;
+  .frc971.HallEffectStruct calibration;
   // The hall effect at the back limit.
-  HallEffectStruct back;
+  .frc971.HallEffectStruct back;
 };
 
 // All angles here are 0 vertical, positive "up" (aka backwards).

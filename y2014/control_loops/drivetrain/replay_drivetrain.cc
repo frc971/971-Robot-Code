@@ -15,8 +15,8 @@ int main(int argc, char **argv) {
 
   ::aos::InitNRT();
 
-  ::aos::controls::ControlLoopReplayer<::frc971::control_loops::DrivetrainQueue>
-      replayer(&::frc971::control_loops::drivetrain_queue, "drivetrain");
+  ::aos::controls::ControlLoopReplayer<::y2014::control_loops::DrivetrainQueue>
+      replayer(&::y2014::control_loops::drivetrain_queue, "drivetrain");
 
   replayer.AddDirectQueueSender("wpilib_interface.Gyro", "sending",
                                 ::frc971::sensors::gyro_reading);

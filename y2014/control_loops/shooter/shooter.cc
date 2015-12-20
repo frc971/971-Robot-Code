@@ -44,7 +44,7 @@ void ZeroedStateFeedbackLoop::CapU() {
 
   LOG_STRUCT(
       DEBUG, "shooter_output",
-      ::frc971::control_loops::ShooterVoltageToLog(X_hat(2, 0), voltage_));
+      ::y2014::control_loops::ShooterVoltageToLog(X_hat(2, 0), voltage_));
 
   last_voltage_ = voltage_;
   capped_goal_ = false;
@@ -64,7 +64,7 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup",
-               ::frc971::control_loops::ShooterMovingGoal(dx));
+               ::y2014::control_loops::ShooterMovingGoal(dx));
   } else if (uncapped_voltage() < -max_voltage_) {
     double dx;
     if (controller_index() == 0) {
@@ -78,7 +78,7 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     }
     capped_goal_ = true;
     LOG_STRUCT(DEBUG, "to prevent windup",
-               ::frc971::control_loops::ShooterMovingGoal(dx));
+               ::y2014::control_loops::ShooterMovingGoal(dx));
   } else {
     capped_goal_ = false;
   }
@@ -105,13 +105,13 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
     mutable_R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
   }
   LOG_STRUCT(DEBUG, "sensor edge (fake?)",
-             ::frc971::control_loops::ShooterChangeCalibration(
+             ::y2014::control_loops::ShooterChangeCalibration(
                  encoder_val, known_position, old_position, absolute_position(),
                  previous_offset, offset_));
 }
 
-ShooterMotor::ShooterMotor(::frc971::control_loops::ShooterQueue *my_shooter)
-    : aos::controls::ControlLoop<::frc971::control_loops::ShooterQueue>(
+ShooterMotor::ShooterMotor(::y2014::control_loops::ShooterQueue *my_shooter)
+    : aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue>(
           my_shooter),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
@@ -136,11 +136,11 @@ double ShooterMotor::PowerToPosition(double power) {
                          (kMaxExtension - values.shooter.upper_limit));
   if (power < 0) {
     LOG_STRUCT(WARNING, "negative power",
-               ::frc971::control_loops::PowerAdjustment(power, 0));
+               ::y2014::control_loops::PowerAdjustment(power, 0));
     power = 0;
   } else if (power > maxpower) {
     LOG_STRUCT(WARNING, "power too high",
-               ::frc971::control_loops::PowerAdjustment(power, maxpower));
+               ::y2014::control_loops::PowerAdjustment(power, maxpower));
     power = maxpower;
   }
 
@@ -164,7 +164,7 @@ double ShooterMotor::PositionToPower(double position) {
 }
 
 void ShooterMotor::CheckCalibrations(
-    const ::frc971::control_loops::ShooterQueue::Position *position) {
+    const ::y2014::control_loops::ShooterQueue::Position *position) {
   CHECK_NOTNULL(position);
   const constants::Values &values = constants::GetValues();
 
@@ -213,10 +213,10 @@ void ShooterMotor::CheckCalibrations(
 
 // Positive is out, and positive power is out.
 void ShooterMotor::RunIteration(
-    const ::frc971::control_loops::ShooterQueue::Goal *goal,
-    const ::frc971::control_loops::ShooterQueue::Position *position,
-    ::frc971::control_loops::ShooterQueue::Output *output,
-    ::frc971::control_loops::ShooterQueue::Status *status) {
+    const ::y2014::control_loops::ShooterQueue::Goal *goal,
+    const ::y2014::control_loops::ShooterQueue::Position *position,
+    ::y2014::control_loops::ShooterQueue::Output *output,
+    ::y2014::control_loops::ShooterQueue::Status *status) {
   if (goal && ::std::isnan(goal->shot_power)) {
 	  state_ = STATE_ESTOP;
     LOG(ERROR, "Estopping because got a shot power of NAN.\n");
@@ -648,7 +648,7 @@ void ShooterMotor::RunIteration(
 
   if (!shooter_loop_disable) {
     LOG_STRUCT(DEBUG, "running the loop",
-               ::frc971::control_loops::ShooterStatusToLog(
+               ::y2014::control_loops::ShooterStatusToLog(
                    shooter_.goal_position(), shooter_.absolute_position()));
     if (!cap_goal) {
       shooter_.set_max_voltage(12.0);
@@ -675,7 +675,7 @@ void ShooterMotor::RunIteration(
 
   if (position) {
     LOG_STRUCT(DEBUG, "internal state",
-               ::frc971::control_loops::ShooterStateToLog(
+               ::y2014::control_loops::ShooterStateToLog(
                    shooter_.absolute_position(), shooter_.absolute_velocity(),
                    state_, position->latch, position->pusher_proximal.current,
                    position->pusher_distal.current, position->plunger,
