@@ -30,18 +30,18 @@ namespace control_loops {
 namespace drivetrain {
 
 DrivetrainLoop::DrivetrainLoop(
-    ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
-    : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
+    ::y2014::control_loops::DrivetrainQueue *my_drivetrain)
+    : aos::controls::ControlLoop<::y2014::control_loops::DrivetrainQueue>(
           my_drivetrain),
       kf_(::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop()) {
   ::aos::controls::HPolytope<0>::Init();
 }
 
 void DrivetrainLoop::RunIteration(
-    const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
-    const ::frc971::control_loops::DrivetrainQueue::Position *position,
-    ::frc971::control_loops::DrivetrainQueue::Output *output,
-    ::frc971::control_loops::DrivetrainQueue::Status *status) {
+    const ::y2014::control_loops::DrivetrainQueue::Goal *goal,
+    const ::y2014::control_loops::DrivetrainQueue::Position *position,
+    ::y2014::control_loops::DrivetrainQueue::Output *output,
+    ::y2014::control_loops::DrivetrainQueue::Status *status) {
   bool bad_pos = false;
   if (position == nullptr) {
     LOG_INTERVAL(no_position_);

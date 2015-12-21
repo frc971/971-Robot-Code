@@ -1,4 +1,4 @@
-package frc971.sensors;
+package y2014.sensors;
 
 message AutoMode {
 	double voltage;

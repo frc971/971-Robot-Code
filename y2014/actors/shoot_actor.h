@@ -8,7 +8,7 @@
 
 #include "y2014/actors/shoot_action.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace actors {
 
 class ShootActor
@@ -47,6 +47,6 @@ typedef ::aos::common::actions::TypedAction<actors::ShootActionQueueGroup>
 ::std::unique_ptr<ShootAction> MakeShootAction();
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2014
 
 #endif  // Y2014_ACTORS_SHOOT_ACTOR_H_

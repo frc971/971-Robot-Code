@@ -47,7 +47,7 @@ class PolyDrivetrain {
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear);
 
   void SetPosition(
-      const ::frc971::control_loops::DrivetrainQueue::Position *position);
+      const ::y2014::control_loops::DrivetrainQueue::Position *position);
 
   double FilterVelocity(double throttle);
 
@@ -55,7 +55,7 @@ class PolyDrivetrain {
 
   void Update();
 
-  void SendMotors(::frc971::control_loops::DrivetrainQueue::Output *output);
+  void SendMotors(::y2014::control_loops::DrivetrainQueue::Output *output);
 
  private:
   const ::aos::controls::HPolytope<2> U_Poly_;
@@ -70,8 +70,8 @@ class PolyDrivetrain {
   double position_time_delta_;
   Gear left_gear_;
   Gear right_gear_;
-  ::frc971::control_loops::DrivetrainQueue::Position last_position_;
-  ::frc971::control_loops::DrivetrainQueue::Position position_;
+  ::y2014::control_loops::DrivetrainQueue::Position last_position_;
+  ::y2014::control_loops::DrivetrainQueue::Position position_;
   int counter_;
 };
 

@@ -9,7 +9,7 @@
 
 #include "y2014/actors/drivetrain_action.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace actors {
 
 class DrivetrainActor
@@ -28,9 +28,9 @@ typedef ::aos::common::actions::TypedAction<DrivetrainActionQueueGroup>
 
 // Makes a new DrivetrainActor action.
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::frc971::actors::DrivetrainActionParams& params);
+    const ::y2014::actors::DrivetrainActionParams& params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2014
 
 #endif

@@ -15,7 +15,7 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/drivetrain/drivetrain.q.h"
 
-namespace frc971 {
+namespace y2014 {
 namespace actors {
 
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
@@ -162,10 +162,10 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 }
 
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::frc971::actors::DrivetrainActionParams& params) {
+    const ::y2014::actors::DrivetrainActionParams& params) {
   return ::std::unique_ptr<DrivetrainAction>(
-      new DrivetrainAction(&::frc971::actors::drivetrain_action, params));
+      new DrivetrainAction(&::y2014::actors::drivetrain_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2014

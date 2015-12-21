@@ -25,7 +25,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
     }
     LOG(INFO, "Starting auto mode\n");
     ::aos::time::Time start_time = ::aos::time::Time::Now();
-    ::frc971::autonomous::HandleAuto();
+    ::y2014::autonomous::HandleAuto();
 
     ::aos::time::Time elapsed_time = ::aos::time::Time::Now() - start_time;
     LOG(INFO, "Auto mode exited in %f, waiting for it to finish.\n",

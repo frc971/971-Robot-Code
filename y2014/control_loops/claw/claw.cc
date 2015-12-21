@@ -50,7 +50,7 @@ namespace control_loops {
 using ::frc971::HallEffectTracker;
 using ::y2014::control_loops::claw::kDt;
 using ::frc971::control_loops::DoCoerceGoal;
-using ::frc971::control_loops::ClawPositionToLog;
+using ::y2014::control_loops::ClawPositionToLog;
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
@@ -220,7 +220,7 @@ ZeroedStateFeedbackLoop::ZeroedStateFeedbackLoop(const char *name,
       last_encoder_(0.0) {}
 
 void ZeroedStateFeedbackLoop::SetPositionValues(
-    const ::frc971::control_loops::HalfClawPosition &claw) {
+    const ::y2014::control_loops::HalfClawPosition &claw) {
   front_.Update(claw.front);
   calibration_.Update(claw.calibration);
   back_.Update(claw.back);
@@ -295,7 +295,7 @@ void ZeroedStateFeedbackLoop::SetPositionValues(
 }
 
 void ZeroedStateFeedbackLoop::Reset(
-    const ::frc971::control_loops::HalfClawPosition &claw) {
+    const ::y2014::control_loops::HalfClawPosition &claw) {
   set_zeroing_state(ZeroedStateFeedbackLoop::UNKNOWN_POSITION);
 
   front_.Reset(claw.front);
@@ -371,8 +371,8 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
   return false;
 }
 
-ClawMotor::ClawMotor(::frc971::control_loops::ClawQueue *my_claw)
-    : aos::controls::ControlLoop<::frc971::control_loops::ClawQueue>(my_claw),
+ClawMotor::ClawMotor(::y2014::control_loops::ClawQueue *my_claw)
+    : aos::controls::ControlLoop<::y2014::control_loops::ClawQueue>(my_claw),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -617,10 +617,10 @@ bool ClawMotor::is_zeroing() const { return !is_ready(); }
 
 // Positive angle is up, and positive power is up.
 void ClawMotor::RunIteration(
-    const ::frc971::control_loops::ClawQueue::Goal *goal,
-    const ::frc971::control_loops::ClawQueue::Position *position,
-    ::frc971::control_loops::ClawQueue::Output *output,
-    ::frc971::control_loops::ClawQueue::Status *status) {
+    const ::y2014::control_loops::ClawQueue::Goal *goal,
+    const ::y2014::control_loops::ClawQueue::Position *position,
+    ::y2014::control_loops::ClawQueue::Output *output,
+    ::y2014::control_loops::ClawQueue::Status *status) {
   // Disable the motors now so that all early returns will return with the
   // motors disabled.
   if (output) {

@@ -291,12 +291,12 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
   status->goal_velocity = claw_goal_velocity;
 
   if (output) {
-    status->rollers_open =
-        !output->rollers_closed &&
-        (Time::Now() - last_piston_edge_ >= values.claw.piston_switch_time);
-    status->rollers_closed =
-        output->rollers_closed &&
-        (Time::Now() - last_piston_edge_ >= values.claw.piston_switch_time);
+    status->rollers_open = !output->rollers_closed &&
+                           ((Time::Now() - last_piston_edge_).ToSeconds() >=
+                            values.claw.piston_switch_time);
+    status->rollers_closed = output->rollers_closed &&
+                             ((Time::Now() - last_piston_edge_).ToSeconds() >=
+                              values.claw.piston_switch_time);
   } else {
     status->rollers_open = false;
     status->rollers_closed = false;

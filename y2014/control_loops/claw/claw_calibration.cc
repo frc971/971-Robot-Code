@@ -24,7 +24,7 @@ class Sensor {
   }
 
   bool DoGetPositionOfEdge(
-      const ::frc971::control_loops::HalfClawPosition &claw_position,
+      const ::y2014::control_loops::HalfClawPosition &claw_position,
       const HallEffectStruct &hall_effect, Claws::AnglePair *limits) {
     bool print = false;
 
@@ -112,14 +112,14 @@ class ClawSensors {
  public:
   ClawSensors(
       const double start_position,
-      const ::frc971::control_loops::HalfClawPosition &initial_claw_position)
+      const ::y2014::control_loops::HalfClawPosition &initial_claw_position)
       : start_position_(start_position),
         front_(start_position, initial_claw_position.front),
         calibration_(start_position, initial_claw_position.calibration),
         back_(start_position, initial_claw_position.back) {}
 
   bool GetPositionOfEdge(
-      const ::frc971::control_loops::HalfClawPosition &claw_position,
+      const ::y2014::control_loops::HalfClawPosition &claw_position,
       Claws::Claw *claw) {
     bool print = false;
     if (front_.DoGetPositionOfEdge(claw_position,
@@ -155,17 +155,17 @@ class ClawSensors {
 };
 
 int Main() {
-  ::frc971::control_loops::claw_queue.position.FetchNextBlocking();
+  ::y2014::control_loops::claw_queue.position.FetchNextBlocking();
 
   const double top_start_position =
-      ::frc971::control_loops::claw_queue.position->top.position;
+      ::y2014::control_loops::claw_queue.position->top.position;
   const double bottom_start_position =
-      ::frc971::control_loops::claw_queue.position->bottom.position;
+      ::y2014::control_loops::claw_queue.position->bottom.position;
 
   ClawSensors top(top_start_position,
-                  ::frc971::control_loops::claw_queue.position->top);
+                  ::y2014::control_loops::claw_queue.position->top);
   ClawSensors bottom(bottom_start_position,
-                     ::frc971::control_loops::claw_queue.position->bottom);
+                     ::y2014::control_loops::claw_queue.position->bottom);
 
   Claws limits;
 
@@ -219,28 +219,28 @@ int Main() {
   limits.start_fine_tune_pos = -0.2;
   limits.max_zeroing_voltage = 4.0;
 
-  ::frc971::control_loops::ClawQueue::Position last_position =
-      *::frc971::control_loops::claw_queue.position;
+  ::y2014::control_loops::ClawQueue::Position last_position =
+      *::y2014::control_loops::claw_queue.position;
 
   while (true) {
-    ::frc971::control_loops::claw_queue.position.FetchNextBlocking();
+    ::y2014::control_loops::claw_queue.position.FetchNextBlocking();
     bool print = false;
-    if (top.GetPositionOfEdge(::frc971::control_loops::claw_queue.position->top,
+    if (top.GetPositionOfEdge(::y2014::control_loops::claw_queue.position->top,
                               &limits.upper_claw)) {
       print = true;
       printf("Got an edge on the upper claw\n");
     }
     if (bottom.GetPositionOfEdge(
-            ::frc971::control_loops::claw_queue.position->bottom,
+            ::y2014::control_loops::claw_queue.position->bottom,
             &limits.lower_claw)) {
       print = true;
       printf("Got an edge on the lower claw\n");
     }
     const double top_position =
-        ::frc971::control_loops::claw_queue.position->top.position -
+        ::y2014::control_loops::claw_queue.position->top.position -
         top_start_position;
     const double bottom_position =
-        ::frc971::control_loops::claw_queue.position->bottom.position -
+        ::y2014::control_loops::claw_queue.position->bottom.position -
         bottom_start_position;
     const double separation = top_position - bottom_position;
     if (separation > limits.claw_max_separation) {
@@ -302,7 +302,7 @@ int Main() {
       printf("}\n");
     }
 
-    last_position = *::frc971::control_loops::claw_queue.position;
+    last_position = *::y2014::control_loops::claw_queue.position;
   }
   return 0;
 }

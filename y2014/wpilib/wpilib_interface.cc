@@ -54,11 +54,11 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::frc971::control_loops::drivetrain_queue;
-using ::frc971::control_loops::claw_queue;
-using ::frc971::control_loops::shooter_queue;
+using ::y2014::control_loops::drivetrain_queue;
+using ::y2014::control_loops::claw_queue;
+using ::y2014::control_loops::shooter_queue;
 
-namespace frc971 {
+namespace y2014 {
 namespace wpilib {
 
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
@@ -211,24 +211,26 @@ class SensorReader {
     hall_filter_.Add(hall.get());
     shooter_plunger_ = ::std::move(hall);
     shooter_plunger_reader_ =
-        make_unique<DMADigitalReader>(shooter_plunger_.get());
+        make_unique<::frc971::wpilib::DMADigitalReader>(shooter_plunger_.get());
   }
 
   void set_shooter_latch(::std::unique_ptr<DigitalInput> hall) {
     hall_filter_.Add(hall.get());
     shooter_latch_ = ::std::move(hall);
-    shooter_latch_reader_ = make_unique<DMADigitalReader>(shooter_latch_.get());
+    shooter_latch_reader_ =
+        make_unique<::frc971::wpilib::DMADigitalReader>(shooter_latch_.get());
   }
 
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
   void set_dma(::std::unique_ptr<DMA> dma) {
-    shooter_proximal_counter_ = make_unique<DMAEdgeCounter>(
+    shooter_proximal_counter_ = make_unique<::frc971::wpilib::DMAEdgeCounter>(
         shooter_encoder_.get(), shooter_proximal_.get());
-    shooter_distal_counter_ = make_unique<DMAEdgeCounter>(
+    shooter_distal_counter_ = make_unique<::frc971::wpilib::DMAEdgeCounter>(
         shooter_encoder_.get(), shooter_distal_.get());
 
-    dma_synchronizer_.reset(new DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_.reset(
+        new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
     dma_synchronizer_->Add(shooter_proximal_counter_.get());
     dma_synchronizer_->Add(shooter_distal_counter_.get());
     dma_synchronizer_->Add(shooter_plunger_reader_.get());
@@ -291,7 +293,7 @@ class SensorReader {
       drivetrain_message.Send();
     }
 
-    ::frc971::sensors::auto_mode.MakeWithBuilder()
+    ::y2014::sensors::auto_mode.MakeWithBuilder()
         .voltage(auto_selector_analog_->GetVoltage())
         .Send();
 
@@ -344,17 +346,18 @@ class SensorReader {
     }
 
     void Start() {
-      front_counter_ =
-          make_unique<EdgeCounter>(encoder_.get(), front_hall_.get());
+      front_counter_ = make_unique<::frc971::wpilib::EdgeCounter>(
+          encoder_.get(), front_hall_.get());
       synchronizer_.Add(front_counter_.get());
-      calibration_counter_ =
-          make_unique<EdgeCounter>(encoder_.get(), calibration_hall_.get());
+      calibration_counter_ = make_unique<::frc971::wpilib::EdgeCounter>(
+          encoder_.get(), calibration_hall_.get());
       synchronizer_.Add(calibration_counter_.get());
-      back_counter_ =
-          make_unique<EdgeCounter>(encoder_.get(), back_hall_.get());
+      back_counter_ = make_unique<::frc971::wpilib::EdgeCounter>(
+          encoder_.get(), back_hall_.get());
       synchronizer_.Add(back_counter_.get());
       synchronized_encoder_ =
-          make_unique<InterruptSynchronizedEncoder>(encoder_.get());
+          make_unique<::frc971::wpilib::InterruptSynchronizedEncoder>(
+              encoder_.get());
       synchronizer_.Add(synchronized_encoder_.get());
 
       synchronizer_.Start();
@@ -376,7 +379,8 @@ class SensorReader {
     }
 
    private:
-    void CopyPosition(const EdgeCounter *counter, HallEffectStruct *out) {
+    void CopyPosition(const ::frc971::wpilib::EdgeCounter *counter,
+                      ::frc971::HallEffectStruct *out) {
       const double multiplier = reversed_ ? -1.0 : 1.0;
 
       out->current = !counter->polled_value();
@@ -388,12 +392,13 @@ class SensorReader {
           multiplier * claw_translate(counter->last_negative_encoder_value());
     }
 
-    InterruptSynchronizer synchronizer_{kInterruptPriority};
+    ::frc971::wpilib::InterruptSynchronizer synchronizer_{kInterruptPriority};
 
-    ::std::unique_ptr<EdgeCounter> front_counter_;
-    ::std::unique_ptr<EdgeCounter> calibration_counter_;
-    ::std::unique_ptr<EdgeCounter> back_counter_;
-    ::std::unique_ptr<InterruptSynchronizedEncoder> synchronized_encoder_;
+    ::std::unique_ptr<::frc971::wpilib::EdgeCounter> front_counter_;
+    ::std::unique_ptr<::frc971::wpilib::EdgeCounter> calibration_counter_;
+    ::std::unique_ptr<::frc971::wpilib::EdgeCounter> back_counter_;
+    ::std::unique_ptr<::frc971::wpilib::InterruptSynchronizedEncoder>
+        synchronized_encoder_;
 
     ::std::unique_ptr<Encoder> encoder_;
     ::std::unique_ptr<DigitalInput> front_hall_;
@@ -406,8 +411,9 @@ class SensorReader {
   static const int kPriority = 30;
   static const int kInterruptPriority = 55;
 
-  void CopyShooterPosedgeCounts(const DMAEdgeCounter *counter,
-                                PosedgeOnlyCountedHallEffectStruct *output) {
+  void CopyShooterPosedgeCounts(
+      const ::frc971::wpilib::DMAEdgeCounter *counter,
+      ::frc971::PosedgeOnlyCountedHallEffectStruct *output) {
     output->current = !counter->polled_value();
     // These are inverted because the hall effects give logical false when
     // there's a magnet in front of them.
@@ -421,7 +427,7 @@ class SensorReader {
   DriverStation *ds_;
   ::std::unique_ptr<PowerDistributionPanel> pdp_;
 
-  ::std::unique_ptr<DMASynchronizer> dma_synchronizer_;
+  ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   ::std::unique_ptr<AnalogInput> auto_selector_analog_;
 
@@ -437,9 +443,9 @@ class SensorReader {
   ::std::unique_ptr<Encoder> shooter_encoder_;
   ::std::unique_ptr<DigitalInput> shooter_proximal_, shooter_distal_;
   ::std::unique_ptr<DigitalInput> shooter_plunger_, shooter_latch_;
-  ::std::unique_ptr<DMAEdgeCounter> shooter_proximal_counter_,
+  ::std::unique_ptr<::frc971::wpilib::DMAEdgeCounter> shooter_proximal_counter_,
       shooter_distal_counter_;
-  ::std::unique_ptr<DMADigitalReader> shooter_plunger_reader_,
+  ::std::unique_ptr<::frc971::wpilib::DMADigitalReader> shooter_plunger_reader_,
       shooter_latch_reader_;
 
   ::std::atomic<bool> run_{true};
@@ -448,7 +454,7 @@ class SensorReader {
 
 class SolenoidWriter {
  public:
-  SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
+  SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         shooter_(".frc971.control_loops.shooter_queue.output"),
         drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
@@ -461,19 +467,23 @@ class SolenoidWriter {
     compressor_relay_ = ::std::move(compressor_relay);
   }
 
-  void set_drivetrain_left(::std::unique_ptr<BufferedSolenoid> s) {
+  void set_drivetrain_left(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     drivetrain_left_ = ::std::move(s);
   }
 
-  void set_drivetrain_right(::std::unique_ptr<BufferedSolenoid> s) {
+  void set_drivetrain_right(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     drivetrain_right_ = ::std::move(s);
   }
 
-  void set_shooter_latch(::std::unique_ptr<BufferedSolenoid> s) {
+  void set_shooter_latch(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     shooter_latch_ = ::std::move(s);
   }
 
-  void set_shooter_brake(::std::unique_ptr<BufferedSolenoid> s) {
+  void set_shooter_brake(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     shooter_brake_ = ::std::move(s);
   }
 
@@ -503,7 +513,7 @@ class SolenoidWriter {
       }
 
       {
-        PneumaticsToLog to_log;
+        ::frc971::wpilib::PneumaticsToLog to_log;
         {
           const bool compressor_on = !pressure_switch_->Get();
           to_log.compressor_on = compressor_on;
@@ -524,23 +534,23 @@ class SolenoidWriter {
   void Quit() { run_ = false; }
 
  private:
-  const ::std::unique_ptr<BufferedPcm> &pcm_;
+  const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
-  ::std::unique_ptr<BufferedSolenoid> drivetrain_left_;
-  ::std::unique_ptr<BufferedSolenoid> drivetrain_right_;
-  ::std::unique_ptr<BufferedSolenoid> shooter_latch_;
-  ::std::unique_ptr<BufferedSolenoid> shooter_brake_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_right_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> shooter_latch_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> shooter_brake_;
 
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
-  ::aos::Queue<::frc971::control_loops::ShooterQueue::Output> shooter_;
-  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::y2014::control_loops::ShooterQueue::Output> shooter_;
+  ::aos::Queue<::y2014::control_loops::DrivetrainQueue::Output> drivetrain_;
 
   ::std::atomic<bool> run_{true};
 };
 
-class DrivetrainWriter : public LoopOutputHandler {
+class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
     left_drivetrain_talon_ = ::std::move(t);
@@ -552,11 +562,11 @@ class DrivetrainWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
+    ::y2014::control_loops::drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
+    auto &queue = ::y2014::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
@@ -572,7 +582,7 @@ class DrivetrainWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> right_drivetrain_talon_;
 };
 
-class ShooterWriter : public LoopOutputHandler {
+class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_shooter_talon(::std::unique_ptr<Talon> t) {
     shooter_talon_ = ::std::move(t);
@@ -580,11 +590,11 @@ class ShooterWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::shooter_queue.output.FetchAnother();
+    ::y2014::control_loops::shooter_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::shooter_queue.output;
+    auto &queue = ::y2014::control_loops::shooter_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     shooter_talon_->Set(queue->voltage / 12.0);
   }
@@ -597,7 +607,7 @@ class ShooterWriter : public LoopOutputHandler {
   ::std::unique_ptr<Talon> shooter_talon_;
 };
 
-class ClawWriter : public LoopOutputHandler {
+class ClawWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_top_claw_talon(::std::unique_ptr<Talon> t) {
     top_claw_talon_ = ::std::move(t);
@@ -625,11 +635,11 @@ class ClawWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::claw_queue.output.FetchAnother();
+    ::y2014::control_loops::claw_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::claw_queue.output;
+    auto &queue = ::y2014::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     intake1_talon_->Set(queue->intake_voltage / 12.0);
     intake2_talon_->Set(queue->intake_voltage / 12.0);
@@ -668,7 +678,7 @@ class WPILibRobot : public RobotBase {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
-    JoystickSender joystick_sender;
+    ::frc971::wpilib::JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     SensorReader reader;
@@ -706,7 +716,7 @@ class WPILibRobot : public RobotBase {
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
-    GyroSender gyro_sender;
+    ::frc971::wpilib::GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     DrivetrainWriter drivetrain_writer;
@@ -716,7 +726,7 @@ class WPILibRobot : public RobotBase {
         ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
-    ::frc971::wpilib::ClawWriter claw_writer;
+    ::y2014::wpilib::ClawWriter claw_writer;
     claw_writer.set_top_claw_talon(::std::unique_ptr<Talon>(new Talon(1)));
     claw_writer.set_bottom_claw_talon(::std::unique_ptr<Talon>(new Talon(0)));
     claw_writer.set_left_tusk_talon(::std::unique_ptr<Talon>(new Talon(4)));
@@ -725,7 +735,7 @@ class WPILibRobot : public RobotBase {
     claw_writer.set_intake2_talon(::std::unique_ptr<Talon>(new Talon(8)));
     ::std::thread claw_writer_thread(::std::ref(claw_writer));
 
-    ::frc971::wpilib::ShooterWriter shooter_writer;
+    ::y2014::wpilib::ShooterWriter shooter_writer;
     shooter_writer.set_shooter_talon(::std::unique_ptr<Talon>(new Talon(6)));
     ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
 
@@ -767,7 +777,7 @@ class WPILibRobot : public RobotBase {
 };
 
 }  // namespace wpilib
-}  // namespace frc971
+}  // namespace y2014
 
 
-START_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);
+START_ROBOT_CLASS(::y2014::wpilib::WPILibRobot);

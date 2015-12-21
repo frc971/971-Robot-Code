@@ -63,7 +63,7 @@ class DrivetrainMotorsSS {
   }
 
   void SendMotors(
-      ::frc971::control_loops::DrivetrainQueue::Output *output) const;
+      ::y2014::control_loops::DrivetrainQueue::Output *output) const;
 
   const LimitedDrivetrainLoop &loop() const { return *loop_; }
 

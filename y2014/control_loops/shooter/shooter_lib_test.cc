@@ -86,7 +86,7 @@ class ShooterSimulation {
   // Sets the values of the physical sensors that can be directly observed
   // (encoder, hall effect).
   void SetPhysicalSensors(
-      ::frc971::control_loops::ShooterQueue::Position *position) {
+      ::y2014::control_loops::ShooterQueue::Position *position) {
     const constants::Values &values = constants::GetValues();
 
    	position->position = GetPosition();
@@ -119,7 +119,7 @@ class ShooterSimulation {
       ::frc971::PosedgeOnlyCountedHallEffectStruct *sensor,
       const ::frc971::PosedgeOnlyCountedHallEffectStruct &last_sensor,
       const constants::Values::AnglePair &limits,
-      const ::frc971::control_loops::ShooterQueue::Position &last_position) {
+      const ::y2014::control_loops::ShooterQueue::Position &last_position) {
     sensor->posedge_count = last_sensor.posedge_count;
     sensor->negedge_count = last_sensor.negedge_count;
 
@@ -154,7 +154,7 @@ class ShooterSimulation {
   void SendPositionMessage(bool use_passed, bool plunger_in,
                            bool latch_in, bool brake_in) {
     const constants::Values &values = constants::GetValues();
-    ::aos::ScopedMessagePtr<::frc971::control_loops::ShooterQueue::Position>
+    ::aos::ScopedMessagePtr<::y2014::control_loops::ShooterQueue::Position>
         position = shooter_queue_.position.MakeMessage();
 
     if (use_passed) {
@@ -283,11 +283,11 @@ class ShooterSimulation {
   int brake_delay_count_;
 
  private:
-  ::frc971::control_loops::ShooterQueue shooter_queue_;
+  ::y2014::control_loops::ShooterQueue shooter_queue_;
   double initial_position_;
   double last_voltage_;
 
-  ::frc971::control_loops::ShooterQueue::Position last_position_message_;
+  ::y2014::control_loops::ShooterQueue::Position last_position_message_;
   double last_plant_position_;
 };
 
@@ -297,7 +297,7 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ::frc971::control_loops::ShooterQueue shooter_queue_;
+  ::y2014::control_loops::ShooterQueue shooter_queue_;
 
   // Create a loop and simulation plant.
   ShooterMotor shooter_motor_;

@@ -19,7 +19,7 @@
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/actors/shoot_actor.h"
 
-using ::frc971::control_loops::drivetrain_queue;
+using ::y2014::control_loops::drivetrain_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -28,7 +28,7 @@ using ::aos::input::driver_station::ControlBit;
 
 #define OLD_DS 0
 
-namespace frc971 {
+namespace y2014 {
 namespace input {
 namespace joysticks {
 
@@ -482,7 +482,7 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   double SpeedToAngleOffset(double speed) {
-    const frc971::constants::Values &values = frc971::constants::GetValues();
+    const ::y2014::constants::Values &values = ::y2014::constants::GetValues();
     // scale speed to a [0.0-1.0] on something close to the max
     // TODO(austin): Change the scale factor for different shots.
     return (speed / values.drivetrain_max_speed) * velocity_compensation_;
@@ -509,7 +509,7 @@ class Reader : public ::aos::input::JoystickInput {
   bool moving_for_shot_ = false;
 
   bool auto_running_ = false;
-  
+
   ::aos::common::actions::ActionQueue action_queue_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
@@ -519,11 +519,11 @@ class Reader : public ::aos::input::JoystickInput {
 
 }  // namespace joysticks
 }  // namespace input
-}  // namespace frc971
+}  // namespace y2014
 
 int main() {
   ::aos::Init();
-  ::frc971::input::joysticks::Reader reader;
+  ::y2014::input::joysticks::Reader reader;
   reader.Run();
   ::aos::Cleanup();
 }

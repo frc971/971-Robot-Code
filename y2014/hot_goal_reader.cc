@@ -17,11 +17,11 @@ int main() {
   ::aos::InitNRT();
 
   uint64_t left_count, right_count;
-  ::frc971::hot_goal.FetchLatest();
-  if (::frc971::hot_goal.get()) {
-    LOG_STRUCT(DEBUG, "starting with", *::frc971::hot_goal);
-    left_count = ::frc971::hot_goal->left_count;
-    right_count = ::frc971::hot_goal->left_count;
+  ::y2014::hot_goal.FetchLatest();
+  if (::y2014::hot_goal.get()) {
+    LOG_STRUCT(DEBUG, "starting with", *::y2014::hot_goal);
+    left_count = ::y2014::hot_goal->left_count;
+    right_count = ::y2014::hot_goal->left_count;
   } else {
     LOG(DEBUG, "no starting message\n");
     left_count = right_count = 0;
@@ -85,7 +85,7 @@ int main() {
           }
           if (data & 0x01) ++right_count;
           if (data & 0x02) ++left_count;
-          auto message = ::frc971::hot_goal.MakeMessage();
+          auto message = ::y2014::hot_goal.MakeMessage();
           message->left_count = left_count;
           message->right_count = right_count;
           LOG_STRUCT(DEBUG, "sending", *message);
