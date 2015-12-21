@@ -25,8 +25,13 @@ typedef union {
 
 static const uint32_t kNumHeaders = 10;
 
-static constexpr ssize_t kChannelSize[18] = {2, 2, 4, 4, 2, 2, 4, 4, 3,
-                                             3, 2, 1, 4, 4, 4, 4, 4, 4};
+#ifdef WPILIB2015
+static constexpr ssize_t kChannelSize[18] = {2, 2, 4, 4, 2, 2, 4, 4, 3, 3,
+                                             2, 1, 4, 4, 4, 4, 4, 4};
+#else
+static constexpr ssize_t kChannelSize[20] = {2, 2, 4, 4, 2, 2, 4, 4, 3, 3,
+                                             2, 1, 4, 4, 4, 4, 4, 4, 4, 4};
+#endif
 
 enum DMAOffsetConstants {
   kEnable_AI0_Low = 0,
@@ -45,8 +50,15 @@ enum DMAOffsetConstants {
   kEnable_Counters_High = 13,
   kEnable_CounterTimers_Low = 14,
   kEnable_CounterTimers_High = 15,
+#ifdef WPILIB2015
   kEnable_Encoders = 16,
   kEnable_EncoderTimers = 17,
+#else
+  kEnable_Encoders_Low = 16,
+  kEnable_Encoders_High = 17,
+  kEnable_EncoderTimers_Low = 18,
+  kEnable_EncoderTimers_High = 19,
+#endif
 };
 
 DMA::DMA() {
@@ -94,14 +106,33 @@ void DMA::Add(Encoder *encoder) {
         "DMA::Add() only works before DMA::Start()");
     return;
   }
-  if (encoder->GetFPGAIndex() >= 4) {
+  const int index = encoder->GetFPGAIndex();
+
+#ifdef WPILIB2015
+  if (index < 4) {
+    // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
+    tdma_config_->writeConfig_Enable_Encoders(true, &status);
+  } else {
     wpi_setErrorWithContext(
         NiFpga_Status_InvalidParameter,
         "FPGA encoder index is not in the 4 that get logged.");
+    return;
   }
+#else
+  if (index < 4) {
+    // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
+    tdma_config_->writeConfig_Enable_Encoders_Low(true, &status);
+  } else if (index < 8) {
+    // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
+    tdma_config_->writeConfig_Enable_Encoders_High(true, &status);
+  } else {
+    wpi_setErrorWithContext(
+        NiFpga_Status_InvalidParameter,
+        "FPGA encoder index is not in the 4 that get logged.");
+    return;
+  }
+#endif
 
-  // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
-  tdma_config_->writeConfig_Enable_Encoders(true, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 }
 
@@ -174,16 +205,27 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
 
   new_trigger.FallingEdge = falling;
   new_trigger.RisingEdge = rising;
-  new_trigger.ExternalClockSource_AnalogTrigger =
-      input->GetAnalogTriggerForRouting();
   new_trigger.ExternalClockSource_AnalogTrigger = false;
-  new_trigger.ExternalClockSource_Module = input->GetModuleForRouting();
-  new_trigger.ExternalClockSource_Channel = input->GetChannelForRouting();
+  unsigned char module = 0;
+  unsigned char channel = input->GetChannelForRouting();
+  if (channel >= kNumHeaders) {
+    module = 1;
+    channel -= kNumHeaders;
+  } else {
+    module = 0;
+  }
+
+  new_trigger.ExternalClockSource_Module = module;
+  new_trigger.ExternalClockSource_Channel = channel;
 
 // Configures the trigger to be external, not off the FPGA clock.
 #ifndef WPILIB2015
-  tdma_config_->writeExternalTriggers(channel_index, new_trigger, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  tdma_config_->writeExternalTriggers(channel_index / 4, channel_index % 4,
+                                      new_trigger, &status);
+  if (status != 0) {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+    return;
+  }
 #else
   uint32_t current_triggers;
   tRioStatusCode register_status =
@@ -276,8 +318,15 @@ void DMA::Start(size_t queue_depth) {
     SET_SIZE(Enable_Counters_High);
     SET_SIZE(Enable_CounterTimers_Low);
     SET_SIZE(Enable_CounterTimers_High);
+#ifdef WPILIB2015
     SET_SIZE(Enable_Encoders);
     SET_SIZE(Enable_EncoderTimers);
+#else
+    SET_SIZE(Enable_Encoders_Low);
+    SET_SIZE(Enable_Encoders_High);
+    SET_SIZE(Enable_EncoderTimers_Low);
+    SET_SIZE(Enable_EncoderTimers_High);
+#endif
 #undef SET_SIZE
     capture_size_ = accum_size + 1;
   }
@@ -322,14 +371,13 @@ double DMASample::GetTimestamp() const {
 
 bool DMASample::Get(DigitalSource *input) const {
   if (offset(kEnable_DI) == -1) {
-    wpi_setStaticErrorWithContext(dma_,
-        NiFpga_Status_ResourceNotFound,
+    wpi_setStaticErrorWithContext(
+        dma_, NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
     return false;
   }
   if (input->GetChannelForRouting() < kNumHeaders) {
-    return (read_buffer_[offset(kEnable_DI)] >>
-            input->GetChannelForRouting()) &
+    return (read_buffer_[offset(kEnable_DI)] >> input->GetChannelForRouting()) &
            0x1;
   } else {
     return (read_buffer_[offset(kEnable_DI)] >>
@@ -339,21 +387,41 @@ bool DMASample::Get(DigitalSource *input) const {
 }
 
 int32_t DMASample::GetRaw(Encoder *input) const {
-  if (offset(kEnable_Encoders) == -1) {
-    wpi_setStaticErrorWithContext(dma_,
-        NiFpga_Status_ResourceNotFound,
+  int index = input->GetFPGAIndex();
+  uint32_t dmaWord = 0;
+#ifdef WPILIB2015
+  if (index >= 4 || offset(kEnable_Encoders) == -1) {
+    wpi_setStaticErrorWithContext(
+        dma_, NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
     return -1;
   }
-
-  if (input->GetFPGAIndex() >= 4) {
-    wpi_setStaticErrorWithContext(dma_,
-        NiFpga_Status_ResourceNotFound,
+  dmaWord = read_buffer_[offset(kEnable_Encoders) + index];
+#else
+  if (index < 4) {
+    if (offset(kEnable_Encoders_Low) == -1) {
+      wpi_setStaticErrorWithContext(
+          dma_, NiFpga_Status_ResourceNotFound,
+          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+      return -1;
+    }
+    dmaWord = read_buffer_[offset(kEnable_Encoders_Low) + index];
+  } else if (index < 8) {
+    if (offset(kEnable_Encoders_High) == -1) {
+      wpi_setStaticErrorWithContext(
+          dma_, NiFpga_Status_ResourceNotFound,
+          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+      return -1;
+    }
+    dmaWord = read_buffer_[offset(kEnable_Encoders_High) + (index - 4)];
+  } else {
+    wpi_setStaticErrorWithContext(
+        dma_, NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+    return 0;
   }
+#endif
 
-  uint32_t dmaWord =
-      read_buffer_[offset(kEnable_Encoders) + input->GetFPGAIndex()];
   int32_t result = 0;
 
   // Extract the 31-bit signed tEncoder::tOutput Value using a struct with the
@@ -375,24 +443,34 @@ int32_t DMASample::Get(Encoder *input) const {
 }
 
 uint16_t DMASample::GetValue(AnalogInput *input) const {
-  if (offset(kEnable_Encoders) == -1) {
-    wpi_setStaticErrorWithContext(dma_,
-        NiFpga_Status_ResourceNotFound,
+  uint32_t channel = input->GetChannel();
+  uint32_t dmaWord;
+  if (channel < 4) {
+    if (offset(kEnable_AI0_Low) == -1) {
+      wpi_setStaticErrorWithContext(
+          dma_, NiFpga_Status_ResourceNotFound,
+          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+      return 0xffff;
+    }
+    dmaWord = read_buffer_[offset(kEnable_AI0_Low) + channel / 2];
+  } else if (channel < 8) {
+    if (offset(kEnable_AI0_High) == -1) {
+      wpi_setStaticErrorWithContext(
+          dma_, NiFpga_Status_ResourceNotFound,
+          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+      return 0xffff;
+    }
+    dmaWord = read_buffer_[offset(kEnable_AI0_High) + (channel - 4) / 2];
+  } else {
+    wpi_setStaticErrorWithContext(
+        dma_, NiFpga_Status_ResourceNotFound,
         getHALErrorMessage(NiFpga_Status_ResourceNotFound));
     return 0xffff;
-  }
-
-  uint32_t dmaWord;
-  uint32_t channel = input->GetChannel();
-  if (channel <= 3) {
-    dmaWord = read_buffer_[offset(kEnable_AI0_Low) + channel / 2];
-  } else {
-    dmaWord = read_buffer_[offset(kEnable_AI0_High) + (channel - 4) / 2];
   }
   if (channel % 2) {
     return (dmaWord >> 16) & 0xffff;
   } else {
-    return (dmaWord) & 0xffff;
+    return dmaWord & 0xffff;
   }
   return static_cast<int16_t>(dmaWord);
 }

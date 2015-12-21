@@ -61,9 +61,11 @@ class DMA : public ErrorBase {
   virtual ~DMA();
 
   // Sets whether or not DMA is paused.
+  // If not specified, the default is false.
   void SetPause(bool pause);
 
   // Sets the number of triggers that need to occur before a sample is saved.
+  // If not specified, the default is 1.
   void SetRate(uint32_t cycles);
 
   // Adds the input signal to the state to snapshot on the trigger event.
@@ -110,14 +112,23 @@ class DMA : public ErrorBase {
 
   // The offsets into the sample structure for each DMA type, or -1 if it isn't
   // in the set of values.
+#ifdef WPILIB2015
   ssize_t channel_offsets_[18];
+#else
+  ssize_t channel_offsets_[20];
+#endif
 
   // The size of the data to read to get a sample.
   size_t capture_size_ = 0;
   tDMA::tConfig tconfig_;
   tDMA *tdma_config_;
 
+#ifndef WPILIB2015
+  ::std::array<bool, 8> trigger_channels_ = {
+      {false, false, false, false, false, false, false, false}};
+#else
   ::std::array<bool, 4> trigger_channels_ = {{false, false, false, false}};
+#endif
 };
 
 #endif  // _DMA_H_
