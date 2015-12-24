@@ -122,3 +122,20 @@ cc_library(
     ':queue',
   ],
 )
+
+cc_binary(
+  name = 'ipc_comparison',
+  srcs = [
+    'ipc_comparison.cc',
+  ],
+  deps = [
+    '//aos/common:mutex',
+    '//aos/common:event',
+    '//aos/common:condition',
+    '//third_party/gflags',
+    '//aos/common/logging',
+    '//aos/common/logging:implementations',
+    '//aos/linux_code:init',
+    ':queue',
+  ],
+)
