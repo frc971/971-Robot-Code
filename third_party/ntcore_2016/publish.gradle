@@ -1,0 +1,51 @@
+import org.gradle.internal.os.OperatingSystem
+
+apply plugin: 'maven-publish'
+
+// We change what repo we publish to depending on whether this is a development, beta, stable, or full
+// release. This is set up in the main gradle file.
+publishing {
+    publications {
+        def nat = project('native')
+        def arm = project('arm')
+        if (!project.hasProperty('skipJava')) {
+            java(MavenPublication) {
+                artifact nat.jar
+                artifact arm.jar
+                artifact nat.networktablesJavaSource
+                artifact nat.networktablesJavadoc
+
+                if (project.hasProperty('makeDesktop')) {
+                    artifact nat.jar, {
+                        classifier = 'desktop'
+                    }
+                }
+
+                groupId 'edu.wpi.first.wpilib.networktables.java'
+                artifactId 'NetworkTables'
+                version '3.0.0-SNAPSHOT'
+            }
+        }
+        cpp(MavenPublication) {
+            artifact nat.ntcoreZip
+            artifact arm.ntcoreZip
+            artifact ntcoreSourceZip
+
+            if (project.hasProperty('makeDesktop')) {
+                artifact nat.ntcoreZip, {
+                    classifier = 'desktop'
+                }
+            }
+
+            groupId 'edu.wpi.first.wpilib.networktables.cpp'
+            artifactId 'NetworkTables'
+            version '3.0.0-SNAPSHOT'
+        }
+    }
+
+    repositories {
+        maven {
+            url "${System.getProperty('user.home')}/releases/maven/${project.repo}"
+        }
+    }
+}
