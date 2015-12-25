@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 #include "aos/common/time.h"
 
 namespace aos {
@@ -16,7 +16,7 @@ class EventTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    ::aos::common::testing::EnableTestLogging();
+    ::aos::testing::EnableTestLogging();
   }
 };
 

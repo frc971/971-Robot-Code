@@ -12,18 +12,18 @@
 
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/type_traits.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_shm.h"
 #include "aos/common/time.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/die.h"
 #include "aos/common/util/thread.h"
 #include "aos/common/util/options.h"
 #include "aos/common/util/death_test_log_implementation.h"
+#include "aos/testing/prevent_exit.h"
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
 using ::testing::AssertionFailure;
-using ::aos::common::testing::GlobalCoreInstance;
 
 namespace aos {
 namespace testing {
@@ -178,7 +178,7 @@ class RawQueueTest : public ::testing::Test {
               kForkSleep.sec(), kForkSleep.nsec());
           time::SleepFor(kForkSleep);
         }
-        ::aos::common::testing::PreventExit();
+        ::aos::testing::PreventExit();
         function(arg);
         CHECK_NE(-1, futex_set(done));
         exit(EXIT_SUCCESS);
@@ -319,7 +319,7 @@ class RawQueueTest : public ::testing::Test {
   }
 
  private:
-  GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 };
 
 char *RawQueueTest::fatal_failure;

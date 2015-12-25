@@ -3,7 +3,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_shm.h"
 #include "aos/common/time.h"
 
 namespace aos {
@@ -52,7 +52,7 @@ class ControlLoopTest : public ::testing::Test {
   ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
 
-  ::aos::common::testing::GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 };
 
 }  // namespace testing

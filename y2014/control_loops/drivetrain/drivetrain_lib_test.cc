@@ -4,7 +4,6 @@
 
 #include "gtest/gtest.h"
 #include "aos/common/network/team_number.h"
-#include "aos/common/queue_testutils.h"
 #include "aos/common/controls/polytope.h"
 #include "aos/common/controls/control_loop_test.h"
 

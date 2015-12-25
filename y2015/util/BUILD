@@ -19,7 +19,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_logging',
     '//aos/common/logging',
     '//frc971/control_loops:team_number_test_environment',
     ':kinematics',

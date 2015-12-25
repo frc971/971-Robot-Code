@@ -48,7 +48,7 @@ cc_test(
     '//aos/testing:googletest',
     ':action_lib',
     ':test_action_queue',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
     '//aos/common:queues',

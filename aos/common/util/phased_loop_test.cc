@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_logging.h"
 
 namespace aos {
 namespace time {
@@ -11,7 +11,7 @@ namespace testing {
 class PhasedLoopTest : public ::testing::Test {
  protected:
   PhasedLoopTest() {
-    ::aos::common::testing::EnableTestLogging();
+    ::aos::testing::EnableTestLogging();
   }
 };
 

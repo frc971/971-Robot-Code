@@ -30,7 +30,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     ':zeroing',
     '//aos/common/util:thread',
     '//aos/common:die',

@@ -130,7 +130,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/common/logging:queue_logging',
     '//aos/common:queues',
     '//aos/common:time',
@@ -431,7 +431,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    '//aos/common:queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/common/logging:queue_logging',
     '//aos/common:queues',
     '//aos/common:time',

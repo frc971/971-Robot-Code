@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_shm.h"
 #include "aos/common/actions/actor.h"
 #include "y2015/actors/score_action.q.h"
 #include "y2015/actors/score_actor.h"
@@ -34,7 +34,7 @@ class ScoreActionTest : public ::testing::Test {
   }
 
   // Bring up and down Core.
-  ::aos::common::testing::GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 };
 
 // Tests that cancel stops not only the score action, but also the underlying

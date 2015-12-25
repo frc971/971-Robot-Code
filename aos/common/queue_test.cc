@@ -3,10 +3,11 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+
 #include "aos/common/test_queue.q.h"
-#include "aos/common/queue_testutils.h"
 #include "aos/common/util/thread.h"
 #include "aos/common/die.h"
+#include "aos/testing/test_shm.h"
 
 using ::aos::time::Time;
 
@@ -20,7 +21,7 @@ class QueueTest : public ::testing::Test {
     SetDieTestMode(true);
   }
 
-  GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
@@ -210,17 +211,19 @@ TEST_F(QueueTest, Age) {
 
 class GroupTest : public ::testing::Test {
  protected:
-  GlobalCoreInstance my_core;
-  // Create a new instance of the test group so that it invalidates the queue
-  // that it points to.  Otherwise, we will have a pointer to shared memory that
-  // is no longer valid.
-  TwoQueues my_test_queuegroup;
-
   GroupTest()
       : my_test_queuegroup(".aos.common.testing.test_queuegroup",
                            0x20561114,
                            ".aos.common.testing.test_queuegroup.first",
                            ".aos.common.testing.test_queuegroup.second") {}
+
+  // Create a new instance of the test group so that it invalidates the queue
+  // that it points to.  Otherwise, we will have a pointer to shared memory that
+  // is no longer valid.
+  TwoQueues my_test_queuegroup;
+
+ private:
+  ::aos::testing::TestSharedMemory my_shm_;
 };
 
 // Tests that the hash gets preserved.

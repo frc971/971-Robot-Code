@@ -17,24 +17,6 @@ cc_library(
 )
 
 cc_library(
-  name = 'queue_testutils',
-  srcs = [
-    'queue_testutils.cc',
-  ],
-  hdrs = [
-    'queue_testutils.h',
-  ],
-  deps = [
-    ':once',
-    ':queues',
-    '//aos/testing:googletest',
-    '//aos/common/logging:implementations',
-    '//aos/linux_code/ipc_lib:shared_mem',
-    ':mutex',
-  ],
-)
-
-cc_library(
   name = 'macros',
   hdrs = [
     'macros.h',
@@ -141,7 +123,7 @@ cc_test(
     '//aos/testing:googletest',
     ':test_queue',
     '//aos/common/logging',
-    ':queue_testutils',
+    '//aos/testing:test_logging',
   ],
 )
 
@@ -193,7 +175,7 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
-    ':queue_testutils',
+    '//aos/testing:test_shm',
     ':test_queue',
     '//aos/common/util:thread',
     ':die',
@@ -271,18 +253,6 @@ cc_library(
 )
 
 cc_test(
-  name = 'queue_testutils_test',
-  srcs = [
-    'queue_testutils_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    ':queue_testutils',
-    '//aos/common/logging',
-  ],
-)
-
-cc_test(
   name = 'mutex_test',
   srcs = [
     'mutex_test.cc',
@@ -295,7 +265,7 @@ cc_test(
     '//aos/common/util:death_test_log_implementation',
     '//aos/common/util:thread',
     '//aos/common:time',
-    ':queue_testutils',
+    '//aos/testing:test_logging',
   ],
 )
 
@@ -307,7 +277,7 @@ cc_test(
   deps = [
     '//aos/testing:googletest',
     ':event',
-    ':queue_testutils',
+    '//aos/testing:test_logging',
     ':time',
   ],
 )
@@ -334,12 +304,13 @@ cc_test(
   ],
   deps = [
     '//aos/testing:googletest',
+    '//aos/testing:prevent_exit',
     ':condition',
     '//aos/common/util:thread',
     ':time',
     ':mutex',
     '//aos/common/logging',
-    ':queue_testutils',
+    '//aos/testing:test_shm',
     '//aos/linux_code/ipc_lib:core_lib',
     '//aos/linux_code/ipc_lib:aos_sync',
     ':die',
@@ -392,7 +363,7 @@ cc_test(
   deps = [
     ':stl_mutex',
     '//aos/testing:googletest',
-    ':queue_testutils',
+    '//aos/testing:test_logging',
     '//aos/common/util:thread',
     ':die',
   ],

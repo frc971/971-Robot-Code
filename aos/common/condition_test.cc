@@ -10,7 +10,7 @@
 
 #include "aos/common/time.h"
 #include "aos/common/mutex.h"
-#include "aos/common/queue_testutils.h"
+#include "aos/testing/test_shm.h"
 #include "aos/common/type_traits.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/common/logging/logging.h"
@@ -18,9 +18,9 @@
 #include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
 #include "aos/common/util/thread.h"
+#include "aos/testing/prevent_exit.h"
 
 using ::aos::time::Time;
-using ::aos::common::testing::GlobalCoreInstance;
 
 namespace aos {
 namespace testing {
@@ -37,7 +37,7 @@ class ConditionTestCommon : public ::testing::Test {
   DISALLOW_COPY_AND_ASSIGN(ConditionTestCommon);
 };
 
-// Some simple tests that don't rely on a GlobalCoreInstance to help with
+// Some simple tests that don't rely on a TestSharedMemory to help with
 // debugging problems that cause tests using that to just completely lock up.
 class SimpleConditionTest : public ConditionTestCommon {
  public:
@@ -93,7 +93,7 @@ class ConditionTest : public ConditionTestCommon {
     shared_->~Shared();
   }
 
-  GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
 
   Shared *const shared_;
 
@@ -136,7 +136,7 @@ class ConditionTestProcess {
 
     child_ = fork();
     if (child_ == 0) {  // in child
-      ::aos::common::testing::PreventExit();
+      ::aos::testing::PreventExit();
       Run();
       exit(EXIT_SUCCESS);
     } else {  // in parent

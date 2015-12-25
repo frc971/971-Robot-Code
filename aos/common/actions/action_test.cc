@@ -4,13 +4,14 @@
 #include <thread>
 
 #include "gtest/gtest.h"
+
 #include "aos/common/queue.h"
-#include "aos/common/queue_testutils.h"
 #include "aos/common/actions/actor.h"
 #include "aos/common/actions/actions.h"
 #include "aos/common/actions/actions.q.h"
 #include "aos/common/actions/test_action.q.h"
 #include "aos/common/event.h"
+#include "aos/testing/test_shm.h"
 
 using ::aos::time::Time;
 
@@ -98,8 +99,6 @@ MakeTestAction2NOP(const actions::MyParams &params) {
 class ActionTest : public ::testing::Test {
  protected:
   ActionTest() {
-    // Flush the robot state queue so we can use clean shared memory for this.
-    // test.
     actions::test_action.goal.Clear();
     actions::test_action.status.Clear();
     actions::test_action2.goal.Clear();
@@ -114,7 +113,7 @@ class ActionTest : public ::testing::Test {
   }
 
   // Bring up and down Core.
-  ::aos::common::testing::GlobalCoreInstance my_core;
+  ::aos::testing::TestSharedMemory my_shm_;
   ::aos::common::actions::ActionQueue action_queue_;
 };
 
