@@ -1,5 +1,4 @@
 _header_dirs = [
-  'forwpilib',
   'allwpilib/wpilibc/wpilibC++/include',
   'allwpilib/wpilibc/wpilibC++Devices/include',
   'allwpilib/hal/include',
@@ -22,7 +21,6 @@ cc_library(
     'allwpilib/wpilibc/wpilibC++Devices/include/NetworkCommunication/FRCComm.h',
   ]) + [
     'allwpilib/hal/lib/Athena/NetworkCommunication/FRCComm.h',
-    'forwpilib/dma.cc',
     'allwpilib/ni-libraries/libFRC_NetworkCommunication.so.1.5.0',
     'allwpilib/ni-libraries/libRoboRIO_FRC_ChipObject.so.1.2.0',
     'allwpilib/ni-libraries/libNiFpgaLv.so.14.0.0',
@@ -51,5 +49,15 @@ cc_library(
   visibility = ['//visibility:public'],
   deps = [
     ':wpilib_2015',
+    #'//third_party/allwpilib_2016:wpilib',
+  ],
+  includes = [
+    'forwpilib',
+  ],
+  hdrs = [
+    'forwpilib/dma.h',
+  ],
+  srcs = [
+    'forwpilib/dma.cc',
   ],
 )

@@ -7,6 +7,7 @@
 #include "aos/common/mutex.h"
 
 #include "SPI.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {

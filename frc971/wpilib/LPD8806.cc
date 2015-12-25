@@ -3,6 +3,7 @@
 #include "frc971/queues/gyro.q.h"
 
 #include "SPI.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {

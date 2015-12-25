@@ -47,3 +47,16 @@ bind(
   name = 'python-glog',
   actual = '@python-glog-repo//:glog',
 )
+
+new_http_archive(
+  name = 'allwpilib_ni-libraries_repo',
+  build_file = 'debian/ni-libraries.BUILD',
+  sha256 = '821687afbee2d7531fb3e47d8d58ac10005695e59685be3ac3aa00b3179faf52',
+  url = 'http://frc971.org/Build-Dependencies/allwpilib_ni-libraries_20749ed.tar.gz',
+  strip_prefix = 'ni-libraries',
+)
+
+bind(
+  name = 'ni-libraries',
+  actual = '@allwpilib_ni-libraries_repo//:ni-libraries',
+)

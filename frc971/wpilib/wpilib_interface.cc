@@ -1,10 +1,11 @@
 #include "frc971/wpilib/wpilib_interface.h"
 
-#include "DriverStation.h"
-#include "ControllerPower.h"
-
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
+
+#include "DriverStation.h"
+#include "ControllerPower.h"
+#undef ERROR
 
 namespace frc971 {
 namespace wpilib {
