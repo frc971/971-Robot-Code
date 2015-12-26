@@ -4,6 +4,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #include "aos/common/time.h"
 #include "aos/common/logging/queue_logging.h"
