@@ -146,11 +146,21 @@ void WriteCoreDumps() {
 }
 
 void SetCurrentThreadRealtimePriority(int priority) {
+  // Make sure we will only be allowed to run for 3 seconds straight.
+  SetSoftRLimit(RLIMIT_RTTIME, 3000000, true);
+
   struct sched_param param;
   param.sched_priority = priority;
   if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
     PLOG(FATAL, "sched_setscheduler(0, SCHED_FIFO, %d) failed", priority);
   }
+}
+
+void PinCurrentThreadToCPU(int number) {
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(number, &cpuset);
+  PRCHECK(pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset));
 }
 
 void SetCurrentThreadName(const ::std::string &name) {

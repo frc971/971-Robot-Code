@@ -30,6 +30,9 @@ void WriteCoreDumps();
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
 
+// Pins the current thread to CPU #number.
+void PinCurrentThreadToCPU(int number);
+
 // Sets the name of the current thread.
 // This will displayed by `top -H`, dump_rtprio, and show up in logs.
 // name can have a maximum of 16 characters.
