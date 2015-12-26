@@ -79,6 +79,12 @@ double drivetrain_translate(int32_t in) {
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
+double drivetrain_velocity_translate(double in) {
+  return (1.0 / in) / 256.0 /*cpr*/ *
+         constants::GetValues().drivetrain_encoder_ratio *
+         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
+}
+
 float hall_translate(const constants::ShifterHallEffect &k, float in_low,
                      float in_high) {
   const float low_ratio =
@@ -130,10 +136,12 @@ class SensorReader {
 
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
     drivetrain_left_encoder_ = ::std::move(encoder);
+    drivetrain_left_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
     drivetrain_right_encoder_ = ::std::move(encoder);
+    drivetrain_right_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_high_left_drive_hall(::std::unique_ptr<AnalogInput> analog) {
@@ -276,6 +284,10 @@ class SensorReader {
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
+      drivetrain_message->left_speed =
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
+      drivetrain_message->right_speed =
+          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
 
       drivetrain_message->low_left_hall = low_left_drive_hall_->GetVoltage();
       drivetrain_message->high_left_hall = high_left_drive_hall_->GetVoltage();
