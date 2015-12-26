@@ -11,7 +11,7 @@
 
 #include "frc971/autonomous/auto.q.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
 #include "y2014/actors/shoot_actor.h"
@@ -41,7 +41,7 @@ bool ShouldExitAuto() {
 
 void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .highgear(true)
       .left_goal(left_initial_position)
@@ -54,7 +54,7 @@ void StopDrivetrain() {
 
 void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       .highgear(true)
       .steering(0.0)
@@ -86,7 +86,7 @@ void StepDrive(double distance, double theta) {
                       theta * constants::GetValues().turn_width / 2.0);
   double right_goal = (right_initial_position + distance +
                        theta * constants::GetValues().turn_width / 2.0);
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .highgear(true)
       .left_goal(left_goal)
@@ -159,13 +159,13 @@ void SetShotPower(double power) {
 void WaitUntilNear(double distance) {
   while (true) {
     if (ShouldExitAuto()) return;
-    control_loops::drivetrain_queue.status.FetchAnother();
+    ::frc971::control_loops::drivetrain_queue.status.FetchAnother();
     double left_error = ::std::abs(
         left_initial_position -
-        control_loops::drivetrain_queue.status->filtered_left_position);
+        ::frc971::control_loops::drivetrain_queue.status->filtered_left_position);
     double right_error = ::std::abs(
         right_initial_position -
-        control_loops::drivetrain_queue.status->filtered_right_position);
+        ::frc971::control_loops::drivetrain_queue.status->filtered_right_position);
     const double kPositionThreshold = 0.05 + distance;
     if (right_error < kPositionThreshold && left_error < kPositionThreshold) {
       LOG(INFO, "At the goal\n");
@@ -211,11 +211,11 @@ void Shoot() {
 }
 
 void InitializeEncoders() {
-  control_loops::drivetrain_queue.status.FetchAnother();
+  ::frc971::control_loops::drivetrain_queue.status.FetchAnother();
   left_initial_position =
-      control_loops::drivetrain_queue.status->filtered_left_position;
+      ::frc971::control_loops::drivetrain_queue.status->filtered_left_position;
   right_initial_position =
-      control_loops::drivetrain_queue.status->filtered_right_position;
+      ::frc971::control_loops::drivetrain_queue.status->filtered_right_position;
 }
 
 void WaitUntilClawDone() {

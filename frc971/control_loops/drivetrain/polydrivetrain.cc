@@ -1,4 +1,4 @@
-#include "y2014/control_loops/drivetrain/polydrivetrain.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain.h"
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/controls/polytope.h"
@@ -9,22 +9,19 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
-#define HAVE_SHIFTERS 1
-
-namespace y2014 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-using ::y2014::control_loops::GearLogging;
-using ::y2014::control_loops::CIMLogging;
+using ::frc971::control_loops::GearLogging;
+using ::frc971::control_loops::CIMLogging;
 using ::frc971::control_loops::CoerceGoal;
 
-PolyDrivetrain::PolyDrivetrain(StateFeedbackLoop<7, 2, 3> *kf)
-    : kf_(kf),
+PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config)
+    : kf_(dt_config.make_kf_drivetrain_loop()),
       U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                /*[*/ -1, 0 /*]*/,
                /*[*/ 0, 1 /*]*/,
@@ -33,17 +30,17 @@ PolyDrivetrain::PolyDrivetrain(StateFeedbackLoop<7, 2, 3> *kf)
                /*[*/ 12 /*]*/,
                /*[*/ 12 /*]*/,
                /*[*/ 12 /*]]*/).finished()),
-      loop_(new StateFeedbackLoop<2, 2, 2>(
-          constants::GetValues().make_v_drivetrain_loop())),
+      loop_(new StateFeedbackLoop<2, 2, 2>(dt_config.make_v_drivetrain_loop())),
       ttrust_(1.1),
       wheel_(0.0),
       throttle_(0.0),
       quickturn_(false),
       stale_count_(0),
-      position_time_delta_(kDt),
+      position_time_delta_(dt_config.dt),
       left_gear_(LOW),
       right_gear_(LOW),
-      counter_(0) {
+      counter_(0),
+      dt_config_(dt_config) {
   last_position_.Zero();
   position_.Zero();
 }
@@ -55,19 +52,22 @@ double PolyDrivetrain::MotorSpeed(
       (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
 
   if (shifter_position > avg_hall_effect) {
-    return velocity / constants::GetValues().high_gear_ratio / kWheelRadius;
+    return velocity / dt_config_.high_gear_ratio / dt_config_.wheel_radius;
   } else {
-    return velocity / constants::GetValues().low_gear_ratio / kWheelRadius;
+    return velocity / dt_config_.low_gear_ratio / dt_config_.wheel_radius;
   }
 }
 
-PolyDrivetrain::Gear PolyDrivetrain::UpdateSingleGear(
-    Gear requested_gear, Gear current_gear) {
+PolyDrivetrain::Gear PolyDrivetrain::UpdateSingleGear(Gear requested_gear,
+                                                      Gear current_gear) {
   const Gear shift_up =
-      constants::GetValues().clutch_transmission ? HIGH : SHIFTING_UP;
+      (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
+          ? SHIFTING_UP
+          : HIGH;
   const Gear shift_down =
-      constants::GetValues().clutch_transmission ? LOW : SHIFTING_DOWN;
-
+      (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
+          ? SHIFTING_DOWN
+          : LOW;
   if (current_gear != requested_gear) {
     if (IsInGear(current_gear)) {
       if (requested_gear == HIGH) {
@@ -101,6 +101,16 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
   // Apply a sin function that's scaled to make it feel better.
   const double angular_range = M_PI_2 * kWheelNonLinearity;
 
+  if (dt_config_.shifter_type == ShifterType::SIMPLE_SHIFTER) {
+    // Force the right controller for simple shifters since we assume that
+    // gear switching is instantaneous.
+    if (highgear) {
+      loop_->set_controller_index(3);
+    } else {
+      loop_->set_controller_index(0);
+    }
+  }
+
   wheel_ = sin(angular_range * wheel) / sin(angular_range);
   wheel_ = sin(angular_range * wheel_) / sin(angular_range);
   quickturn_ = quickturn;
@@ -118,24 +128,25 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
 }
 
 void PolyDrivetrain::SetPosition(
-    const ::y2014::control_loops::DrivetrainQueue::Position *position) {
+    const ::frc971::control_loops::DrivetrainQueue::Position *position) {
   if (position == NULL) {
     ++stale_count_;
   } else {
     last_position_ = position_;
     position_ = *position;
-    position_time_delta_ = (stale_count_ + 1) * kDt;
+    position_time_delta_ = (stale_count_ + 1) * dt_config_.dt;
     stale_count_ = 0;
   }
 
-  if (position) {
-    const auto &values = constants::GetValues();
+  if (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER && position) {
     GearLogging gear_logging;
     // Switch to the correct controller.
     const double left_middle_shifter_position =
-        (values.left_drive.clear_high + values.left_drive.clear_low) / 2.0;
+        (dt_config_.left_drive.clear_high + dt_config_.left_drive.clear_low) /
+        2.0;
     const double right_middle_shifter_position =
-        (values.right_drive.clear_high + values.right_drive.clear_low) / 2.0;
+        (dt_config_.right_drive.clear_high + dt_config_.right_drive.clear_low) /
+        2.0;
 
     if (position->left_shifter_position < left_middle_shifter_position ||
         left_gear_ == LOW) {
@@ -162,19 +173,19 @@ void PolyDrivetrain::SetPosition(
       }
     }
 
-    if (position->left_shifter_position > values.left_drive.clear_high &&
+    if (position->left_shifter_position > dt_config_.left_drive.clear_high &&
         left_gear_ == SHIFTING_UP) {
       left_gear_ = HIGH;
     }
-    if (position->left_shifter_position < values.left_drive.clear_low &&
+    if (position->left_shifter_position < dt_config_.left_drive.clear_low &&
         left_gear_ == SHIFTING_DOWN) {
       left_gear_ = LOW;
     }
-    if (position->right_shifter_position > values.right_drive.clear_high &&
+    if (position->right_shifter_position > dt_config_.right_drive.clear_high &&
         right_gear_ == SHIFTING_UP) {
       right_gear_ = HIGH;
     }
-    if (position->right_shifter_position < values.right_drive.clear_low &&
+    if (position->right_shifter_position < dt_config_.right_drive.clear_low &&
         right_gear_ == SHIFTING_DOWN) {
       right_gear_ = LOW;
     }
@@ -233,48 +244,12 @@ double PolyDrivetrain::MaxVelocity() {
 }
 
 void PolyDrivetrain::Update() {
-  loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(1, 0);
-  loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(3, 0);
+  loop_->mutable_X_hat()(0, 0) = kf_.X_hat()(1, 0);
+  loop_->mutable_X_hat()(1, 0) = kf_.X_hat()(3, 0);
 
-  const auto &values = constants::GetValues();
   // TODO(austin): Observer for the current velocity instead of difference
   // calculations.
   ++counter_;
-  const double current_left_velocity =
-      (position_.left_encoder - last_position_.left_encoder) /
-      position_time_delta_;
-  const double current_right_velocity =
-      (position_.right_encoder - last_position_.right_encoder) /
-      position_time_delta_;
-  const double left_motor_speed =
-      MotorSpeed(values.left_drive, position_.left_shifter_position,
-                 current_left_velocity);
-  const double right_motor_speed =
-      MotorSpeed(values.right_drive, position_.right_shifter_position,
-                 current_right_velocity);
-
-  {
-    CIMLogging logging;
-
-    // Reset the CIM model to the current conditions to be ready for when we
-    // shift.
-    if (IsInGear(left_gear_)) {
-      logging.left_in_gear = true;
-    } else {
-      logging.left_in_gear = false;
-    }
-    logging.left_motor_speed = left_motor_speed;
-    logging.left_velocity = current_left_velocity;
-    if (IsInGear(right_gear_)) {
-      logging.right_in_gear = true;
-    } else {
-      logging.right_in_gear = false;
-    }
-    logging.right_motor_speed = right_motor_speed;
-    logging.right_velocity = current_right_velocity;
-
-    LOG_STRUCT(DEBUG, "currently", logging);
-  }
 
   if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
     // FF * X = U (steady state)
@@ -328,6 +303,42 @@ void PolyDrivetrain::Update() {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
     }
   } else {
+    const double current_left_velocity =
+        (position_.left_encoder - last_position_.left_encoder) /
+        position_time_delta_;
+    const double current_right_velocity =
+        (position_.right_encoder - last_position_.right_encoder) /
+        position_time_delta_;
+    const double left_motor_speed =
+        MotorSpeed(dt_config_.left_drive, position_.left_shifter_position,
+                   current_left_velocity);
+    const double right_motor_speed =
+        MotorSpeed(dt_config_.right_drive, position_.right_shifter_position,
+                   current_right_velocity);
+
+    {
+      CIMLogging logging;
+
+      // Reset the CIM model to the current conditions to be ready for when we
+      // shift.
+      if (IsInGear(left_gear_)) {
+        logging.left_in_gear = true;
+      } else {
+        logging.left_in_gear = false;
+      }
+      logging.left_motor_speed = left_motor_speed;
+      logging.left_velocity = current_left_velocity;
+      if (IsInGear(right_gear_)) {
+        logging.right_in_gear = true;
+      } else {
+        logging.right_in_gear = false;
+      }
+      logging.right_motor_speed = right_motor_speed;
+      logging.right_velocity = current_right_velocity;
+
+      LOG_STRUCT(DEBUG, "currently", logging);
+    }
+
     // Any motor is not in gear.  Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;
     ::Eigen::Matrix<double, 1, 1> R_right;
@@ -338,16 +349,17 @@ void PolyDrivetrain::Update() {
         (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
 
     loop_->mutable_U(0, 0) = ::aos::Clip(
-        (R_left / Kv)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle), -12.0, 12.0);
-    loop_->mutable_U(1, 0) =
-        ::aos::Clip((R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
-                    -12.0, 12.0);
+        (R_left / dt_config_.v)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),
+        -12.0, 12.0);
+    loop_->mutable_U(1, 0) = ::aos::Clip(
+        (R_right / dt_config_.v)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
+        -12.0, 12.0);
     loop_->mutable_U() *= 12.0 / ::aos::robot_state->voltage_battery;
   }
 }
 
 void PolyDrivetrain::SendMotors(
-    ::y2014::control_loops::DrivetrainQueue::Output *output) {
+    ::frc971::control_loops::DrivetrainQueue::Output *output) {
   if (output != NULL) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
@@ -356,15 +368,6 @@ void PolyDrivetrain::SendMotors(
   }
 }
 
-constexpr double PolyDrivetrain::kStallTorque;
-constexpr double PolyDrivetrain::kStallCurrent;
-constexpr double PolyDrivetrain::kFreeSpeed;
-constexpr double PolyDrivetrain::kFreeCurrent;
-constexpr double PolyDrivetrain::kWheelRadius;
-constexpr double PolyDrivetrain::kR;
-constexpr double PolyDrivetrain::Kv;
-constexpr double PolyDrivetrain::Kt;
-
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace frc971

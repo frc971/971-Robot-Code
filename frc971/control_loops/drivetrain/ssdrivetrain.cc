@@ -1,4 +1,4 @@
-#include "y2014/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 
 #include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
@@ -6,10 +6,10 @@
 
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
-namespace y2014 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
@@ -113,15 +113,16 @@ void DrivetrainMotorsSS::LimitedDrivetrainLoop::CapU() {
   }
 }
 
-DrivetrainMotorsSS::DrivetrainMotorsSS()
-    : loop_(new LimitedDrivetrainLoop(
-          constants::GetValues().make_drivetrain_loop())),
+DrivetrainMotorsSS::DrivetrainMotorsSS(const DrivetrainConfig &dt_config)
+    : loop_(
+          new LimitedDrivetrainLoop(dt_config.make_drivetrain_loop())),
       filtered_offset_(0.0),
       gyro_(0.0),
       left_goal_(0.0),
       right_goal_(0.0),
       raw_left_(0.0),
-      raw_right_(0.0) {
+      raw_right_(0.0),
+      dt_config_(dt_config) {
   // High gear on both.
   loop_->set_controller_index(3);
 }
@@ -142,7 +143,7 @@ void DrivetrainMotorsSS::SetRawPosition(double left, double right) {
 void DrivetrainMotorsSS::SetPosition(double left, double right, double gyro) {
   // Decay the offset quickly because this gyro is great.
   const double offset =
-      (right - left - gyro * constants::GetValues().turn_width) / 2.0;
+      (right - left - gyro * dt_config_.turn_width) / 2.0;
   filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
   gyro_ = gyro;
   SetRawPosition(left, right);
@@ -173,7 +174,7 @@ double DrivetrainMotorsSS::GetEstimatedRobotSpeed() const {
 }
 
 void DrivetrainMotorsSS::SendMotors(
-    ::y2014::control_loops::DrivetrainQueue::Output *output) const {
+    ::frc971::control_loops::DrivetrainQueue::Output *output) const {
   if (output) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
@@ -184,4 +185,4 @@ void DrivetrainMotorsSS::SendMotors(
 
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace frc971

@@ -7,20 +7,52 @@
 #include "aos/common/controls/polytope.h"
 #include "aos/common/controls/control_loop_test.h"
 
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014/control_loops/drivetrain/drivetrain.h"
+#include "y2014/constants.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "frc971/queues/gyro.q.h"
 
-
-namespace y2014 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 namespace testing {
 
 using ::y2014::control_loops::drivetrain::MakeDrivetrainPlant;
+
+// TODO(Comran): Make one that doesn't depend on the actual values for a
+// specific robot.
+const DrivetrainConfig kDrivetrainConfig {
+    ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
+
+    ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
+    ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+    ::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop,
+
+    ::y2014::control_loops::drivetrain::kDt,
+    ::y2014::control_loops::drivetrain::kStallTorque,
+    ::y2014::control_loops::drivetrain::kStallCurrent,
+    ::y2014::control_loops::drivetrain::kFreeSpeedRPM,
+    ::y2014::control_loops::drivetrain::kFreeCurrent,
+    ::y2014::control_loops::drivetrain::kJ,
+    ::y2014::control_loops::drivetrain::kMass,
+    ::y2014::control_loops::drivetrain::kRobotRadius,
+    ::y2014::control_loops::drivetrain::kWheelRadius,
+    ::y2014::control_loops::drivetrain::kR,
+    ::y2014::control_loops::drivetrain::kV,
+    ::y2014::control_loops::drivetrain::kT,
+
+    ::y2014::constants::GetValuesForTeam(971).turn_width,
+    ::y2014::constants::GetValuesForTeam(971).high_gear_ratio,
+    ::y2014::constants::GetValuesForTeam(971).low_gear_ratio,
+    ::y2014::constants::GetValuesForTeam(971).left_drive,
+    ::y2014::constants::GetValuesForTeam(971).right_drive
+};
 
 class Environment : public ::testing::Environment {
  public:
@@ -51,11 +83,11 @@ class DrivetrainSimulation {
   DrivetrainSimulation()
       : drivetrain_plant_(
             new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".y2014.control_loops.drivetrain",
-                       0x8a8dde77, ".y2014.control_loops.drivetrain.goal",
-                       ".y2014.control_loops.drivetrain.position",
-                       ".y2014.control_loops.drivetrain.output",
-                       ".y2014.control_loops.drivetrain.status") {
+        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
+                       0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
+                       ".frc971.control_loops.drivetrain.position",
+                       ".frc971.control_loops.drivetrain.output",
+                       ".frc971.control_loops.drivetrain.status") {
     Reinitialize();
   }
 
@@ -78,7 +110,7 @@ class DrivetrainSimulation {
     const double left_encoder = GetLeftPosition();
     const double right_encoder = GetRightPosition();
 
-    ::aos::ScopedMessagePtr<::y2014::control_loops::DrivetrainQueue::Position>
+    ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Position>
         position = my_drivetrain_queue_.position.MakeMessage();
     position->left_encoder = left_encoder;
     position->right_encoder = right_encoder;
@@ -97,7 +129,7 @@ class DrivetrainSimulation {
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
  private:
-  ::y2014::control_loops::DrivetrainQueue my_drivetrain_queue_;
+  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
   double last_right_position_;
 };
@@ -107,19 +139,19 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory that
   // is no longer valid.
-  ::y2014::control_loops::DrivetrainQueue my_drivetrain_queue_;
+  ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
 
   // Create a loop and simulation plant.
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
-  DrivetrainTest() : my_drivetrain_queue_(".y2014.control_loops.drivetrain",
+  DrivetrainTest() : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
                                0x8a8dde77,
-                               ".y2014.control_loops.drivetrain.goal",
-                               ".y2014.control_loops.drivetrain.position",
-                               ".y2014.control_loops.drivetrain.output",
-                               ".y2014.control_loops.drivetrain.status"),
-                drivetrain_motor_(&my_drivetrain_queue_),
+                               ".frc971.control_loops.drivetrain.goal",
+                               ".frc971.control_loops.drivetrain.position",
+                               ".frc971.control_loops.drivetrain.output",
+                               ".frc971.control_loops.drivetrain.status"),
+                drivetrain_motor_(kDrivetrainConfig, &my_drivetrain_queue_),
                 drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();
   }
@@ -297,4 +329,4 @@ TEST_F(CoerceGoalTest, PerpendicularLine) {
 }  // namespace testing
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace frc971

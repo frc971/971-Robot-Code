@@ -1,5 +1,5 @@
-#ifndef Y2014_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
-#define Y2014_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
+#ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
+#define FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
 
 #include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
@@ -7,10 +7,10 @@
 
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
-namespace y2014 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
@@ -32,7 +32,7 @@ class DrivetrainMotorsSS {
     bool output_was_capped_ = false;;
   };
 
-  DrivetrainMotorsSS();
+  DrivetrainMotorsSS(const DrivetrainConfig &dt_config);
 
   void SetGoal(double left, double left_velocity, double right,
                double right_velocity);
@@ -63,7 +63,7 @@ class DrivetrainMotorsSS {
   }
 
   void SendMotors(
-      ::y2014::control_loops::DrivetrainQueue::Output *output) const;
+      ::frc971::control_loops::DrivetrainQueue::Output *output) const;
 
   const LimitedDrivetrainLoop &loop() const { return *loop_; }
 
@@ -76,10 +76,12 @@ class DrivetrainMotorsSS {
   double right_goal_;
   double raw_left_;
   double raw_right_;
+
+  const DrivetrainConfig dt_config_;
 };
 
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace frc971
 
-#endif  // Y2014_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
+#endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_

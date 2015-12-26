@@ -7,7 +7,7 @@
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace y2014 {
 namespace actors {

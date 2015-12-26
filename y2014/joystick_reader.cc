@@ -11,7 +11,7 @@
 #include "aos/common/time.h"
 #include "aos/common/actions/actions.h"
 
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
@@ -19,7 +19,7 @@
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/actors/shoot_actor.h"
 
-using ::y2014::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::frc971::sensors::gyro_reading;
 
 using ::aos::input::driver_station::ButtonLocation;
@@ -427,11 +427,11 @@ class Reader : public ::aos::input::JoystickInput {
         velocity_compensation_ = 0.0;
       }
 
-      control_loops::drivetrain_queue.status.FetchLatest();
+      ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
       double goal_angle = goal_angle_;
-      if (control_loops::drivetrain_queue.status.get()) {
+      if (::frc971::control_loops::drivetrain_queue.status.get()) {
         goal_angle += SpeedToAngleOffset(
-            control_loops::drivetrain_queue.status->robot_speed);
+            ::frc971::control_loops::drivetrain_queue.status->robot_speed);
       } else {
         LOG_INTERVAL(no_drivetrain_status_);
       }

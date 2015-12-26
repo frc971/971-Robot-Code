@@ -1,4 +1,4 @@
-#include "y2014/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
 
 #include <stdio.h>
 #include <sched.h>
@@ -10,39 +10,34 @@
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/logging/matrix_logging.h"
 
-#include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2014/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
-#include "y2014/control_loops/drivetrain/polydrivetrain.h"
-#include "y2014/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/polydrivetrain.h"
+#include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/shifter_hall_effect.h"
 
-// A consistent way to mark code that goes away without shifters. It's still
-// here because we will have shifters again in the future.
-#define HAVE_SHIFTERS 1
-
 using frc971::sensors::gyro_reading;
 
-namespace y2014 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
 DrivetrainLoop::DrivetrainLoop(
-    ::y2014::control_loops::DrivetrainQueue *my_drivetrain)
-    : aos::controls::ControlLoop<::y2014::control_loops::DrivetrainQueue>(
+    const DrivetrainConfig &dt_config,
+    ::frc971::control_loops::DrivetrainQueue *my_drivetrain)
+    : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
           my_drivetrain),
-      kf_(::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop()),
-      dt_openloop_(&kf_) {
+      dt_config_(dt_config),
+      kf_(dt_config_.make_kf_drivetrain_loop()) {
   ::aos::controls::HPolytope<0>::Init();
 }
 
 void DrivetrainLoop::RunIteration(
-    const ::y2014::control_loops::DrivetrainQueue::Goal *goal,
-    const ::y2014::control_loops::DrivetrainQueue::Position *position,
-    ::y2014::control_loops::DrivetrainQueue::Output *output,
-    ::y2014::control_loops::DrivetrainQueue::Status *status) {
+    const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
+    const ::frc971::control_loops::DrivetrainQueue::Position *position,
+    ::frc971::control_loops::DrivetrainQueue::Output *output,
+    ::frc971::control_loops::DrivetrainQueue::Status *status) {
   bool bad_pos = false;
   if (position == nullptr) {
     LOG_INTERVAL(no_position_);
@@ -56,8 +51,9 @@ void DrivetrainLoop::RunIteration(
     Eigen::Matrix<double, 3, 1> Y;
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
     kf_.Correct(Y);
-    integrated_kf_heading_ +=
-        kDt * (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) / (kRobotRadius * 2.0);
+    integrated_kf_heading_ += dt_config_.dt *
+                              (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) /
+                              (dt_config_.robot_radius * 2.0);
   }
 
   bool control_loop_driving = false;
@@ -65,9 +61,7 @@ void DrivetrainLoop::RunIteration(
     double wheel = goal->steering;
     double throttle = goal->throttle;
     bool quickturn = goal->quickturn;
-#if HAVE_SHIFTERS
     bool highgear = goal->highgear;
-#endif
 
     control_loop_driving = goal->control_loop_driving;
     double left_goal = goal->left_goal;
@@ -75,11 +69,7 @@ void DrivetrainLoop::RunIteration(
 
     dt_closedloop_.SetGoal(left_goal, goal->left_velocity_goal, right_goal,
                            goal->right_velocity_goal);
-#if HAVE_SHIFTERS
     dt_openloop_.SetGoal(wheel, throttle, quickturn, highgear);
-#else
-    dt_openloop_.SetGoal(wheel, throttle, quickturn, false);
-#endif
   }
 
   if (!bad_pos) {
@@ -123,7 +113,6 @@ void DrivetrainLoop::RunIteration(
     status->uncapped_right_voltage = dt_closedloop_.loop().U_uncapped(1, 0);
   }
 
-
   double left_voltage = 0.0;
   double right_voltage = 0.0;
   if (output) {
@@ -154,4 +143,4 @@ void DrivetrainLoop::RunIteration(
 
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace frc971
