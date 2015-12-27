@@ -44,6 +44,7 @@ cc_library(
   ],
   copts = [
     '-Wno-error',
+    '-Wno-parentheses-equality',
   ],
   includes = [
     'lib/python3/dist-packages/numpy/f2py/src/',
