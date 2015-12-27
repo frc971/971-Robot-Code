@@ -220,7 +220,6 @@ class SensorReader {
   }
 
   void operator()() {
-    LOG(INFO, "In sensor reader thread\n");
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
@@ -234,7 +233,6 @@ class SensorReader {
 
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
-    LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -638,7 +636,6 @@ class WPILibRobot : public RobotBase {
     // TODO(austin): Compressor needs to use a spike.
 
     SensorReader reader;
-    LOG(INFO, "Creating the reader\n");
     reader.set_arm_left_encoder(encoder(1));
     reader.set_arm_left_index(make_unique<DigitalInput>(1));
     reader.set_arm_left_potentiometer(make_unique<AnalogInput>(1));

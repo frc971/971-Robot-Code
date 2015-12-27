@@ -239,7 +239,6 @@ class SensorReader {
 
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
-    LOG(INFO, "In sensor reader thread\n");
 
     my_pid_ = getpid();
     ds_ =
@@ -253,7 +252,6 @@ class SensorReader {
     top_reader_.Start();
     bottom_reader_.Start();
     dma_synchronizer_->Start();
-    LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -682,7 +680,6 @@ class WPILibRobot : public RobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     SensorReader reader;
-    LOG(INFO, "Creating the reader\n");
 
     // Create this first to make sure it ends up in one of the lower-numbered
     // FPGA slots so we can use it with DMA.
