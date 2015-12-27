@@ -15,8 +15,8 @@ LoopOutputHandler::LoopOutputHandler(const ::aos::time::Time &timeout)
     : watchdog_(this, timeout) {}
 
 void LoopOutputHandler::operator()() {
-  ::aos::SetCurrentThreadName("OutputHandler");
   ::std::thread watchdog_thread(::std::ref(watchdog_));
+  ::aos::SetCurrentThreadName("OutputHandler");
 
   ::aos::SetCurrentThreadRealtimePriority(30);
   while (run_) {
@@ -51,11 +51,11 @@ LoopOutputHandler::Watchdog::Watchdog(LoopOutputHandler *handler,
   if (timerfd_.get() == -1) {
     PLOG(FATAL, "timerfd_create(Time::kDefaultClock, 0)");
   }
-  ::aos::SetCurrentThreadRealtimePriority(35);
-  ::aos::SetCurrentThreadName("OutputWatchdog");
 }
 
 void LoopOutputHandler::Watchdog::operator()() {
+  ::aos::SetCurrentThreadRealtimePriority(35);
+  ::aos::SetCurrentThreadName("OutputWatchdog");
   uint8_t buf[8];
   while (run_) {
     PCHECK(read(timerfd_.get(), buf, sizeof(buf)));

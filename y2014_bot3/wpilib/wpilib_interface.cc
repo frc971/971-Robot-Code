@@ -80,7 +80,6 @@ class SensorReader {
 
   void operator()() {
     ::aos::SetCurrentThreadName("SensorReader");
-    LOG(INFO, "In sensor reader thread\n");
 
     my_pid_ = getpid();
     ds_ =
@@ -90,8 +89,6 @@ class SensorReader {
         &DriverStation::GetInstance();
 #endif
     pdp_.reset(new PowerDistributionPanel());
-
-    LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -339,7 +336,6 @@ class WPILibRobot : public RobotBase {
 
     // Sensors
     SensorReader reader;
-    LOG(INFO, "Creating the reader\n");
     reader.set_drivetrain_left_encoder(make_encoder(4));
     reader.set_drivetrain_right_encoder(make_encoder(5));
 

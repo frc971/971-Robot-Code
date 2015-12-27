@@ -119,7 +119,6 @@ class SensorReader {
   }
 
   void operator()() {
-    LOG(INFO, "In sensor reader thread\n");
     ::aos::SetCurrentThreadName("SensorReader");
 
     my_pid_ = getpid();
@@ -130,8 +129,6 @@ class SensorReader {
         &DriverStation::GetInstance();
 #endif
     pdp_.reset(new PowerDistributionPanel());
-
-    LOG(INFO, "Things are now started\n");
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -455,7 +452,6 @@ class WPILibRobot : public RobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
     SensorReader reader;
-    LOG(INFO, "Creating the reader\n");
 
     reader.set_elevator_encoder(encoder(6));
     reader.set_elevator_zeroing_hall_effect(make_unique<DigitalInput>(6));
