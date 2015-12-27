@@ -15,14 +15,22 @@ int main(int argc, char **argv) {
 
   ::aos::InitNRT();
 
-  ::aos::controls::ControlLoopReplayer<::y2014::control_loops::DrivetrainQueue>
-      replayer(&::y2014::control_loops::drivetrain_queue, "drivetrain");
+  {
+    ::aos::controls::ControlLoopReplayer<
+        ::y2014::control_loops::DrivetrainQueue>
+        replayer(&::y2014::control_loops::drivetrain_queue, "drivetrain");
 
-  replayer.AddDirectQueueSender("wpilib_interface.Gyro", "sending",
-                                ::frc971::sensors::gyro_reading);
-  for (int i = 1; i < argc; ++i) {
-    replayer.ProcessFile(argv[i]);
+    replayer.AddDirectQueueSender("wpilib_interface.Gyro", "sending",
+                                  ::frc971::sensors::gyro_reading);
+    for (int i = 1; i < argc; ++i) {
+      replayer.ProcessFile(argv[i]);
+    }
   }
+  ::frc971::sensors::gyro_reading.Clear();
+  ::y2014::control_loops::drivetrain_queue.goal.Clear();
+  ::y2014::control_loops::drivetrain_queue.status.Clear();
+  ::y2014::control_loops::drivetrain_queue.position.Clear();
+  ::y2014::control_loops::drivetrain_queue.output.Clear();
 
   ::aos::Cleanup();
 }
