@@ -17,7 +17,6 @@ namespace control_loops {
 // Constants
 // TODO(comran): Get actual constants.
 constexpr double kDrivetrainTurnWidth = 0.63;
-constexpr double kDrivetrainDoneDistance = 0.02;
 constexpr double kDrivetrainEncoderRatio = 18.0 / 44.0;
 constexpr double kDrivetrainHighGearRatio =
     kDrivetrainEncoderRatio * 18.0 / 60.0;

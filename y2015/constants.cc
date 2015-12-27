@@ -149,7 +149,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.5,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
@@ -217,7 +216,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
@@ -287,7 +285,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kRobotWidth,
           control_loops::MakeVelocityDrivetrainLoop,
           control_loops::MakeDrivetrainLoop,
-          0.02,  // drivetrain done delta
           5.0,   // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,

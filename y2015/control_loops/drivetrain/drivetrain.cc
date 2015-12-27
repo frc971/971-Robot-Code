@@ -751,16 +751,6 @@ void DrivetrainLoop::RunIteration(const DrivetrainQueue::Goal *goal,
 
   // set the output status of the control loop state
   if (status) {
-    bool done = false;
-    if (goal) {
-      done = ((::std::abs(goal->left_goal -
-                          dt_closedloop.GetEstimatedLeftEncoder()) <
-               constants::GetValues().drivetrain_done_distance) &&
-              (::std::abs(goal->right_goal -
-                          dt_closedloop.GetEstimatedRightEncoder()) <
-               constants::GetValues().drivetrain_done_distance));
-    }
-    status->is_done = done;
     status->robot_speed = dt_closedloop.GetEstimatedRobotSpeed();
     status->filtered_left_position = dt_closedloop.GetEstimatedLeftEncoder();
     status->filtered_right_position = dt_closedloop.GetEstimatedRightEncoder();

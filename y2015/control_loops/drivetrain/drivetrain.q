@@ -58,8 +58,6 @@ queue_group DrivetrainQueue {
     double uncapped_left_voltage;
     double uncapped_right_voltage;
     bool output_was_capped;
-
-    bool is_done;
   };
 
   queue Goal goal;

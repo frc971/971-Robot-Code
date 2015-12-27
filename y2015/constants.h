@@ -53,7 +53,6 @@ struct Values {
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
-  double drivetrain_done_distance;
   double drivetrain_max_speed;
 
   // Superstructure Values /////
