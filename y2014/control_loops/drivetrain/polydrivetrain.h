@@ -38,11 +38,18 @@ class PolyDrivetrain {
 
   static bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
+  // Computes the speed of the motor given the hall effect position and the
+  // speed of the robot.
   static double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
                            double shifter_position, double velocity);
 
-  Gear ComputeGear(const constants::ShifterHallEffect &hall_effect,
-                   double velocity, Gear current);
+  // Computes the states of the shifters for the left and right drivetrain sides
+  // given a requested state.
+  void UpdateGears(Gear requested_gear);
+
+  // Computes the next state of a shifter given the current state and the
+  // requested state.
+  static Gear UpdateSingleGear(Gear requested_gear, Gear current_gear);
 
   void SetGoal(double wheel, double throttle, bool quickturn, bool highgear);
 

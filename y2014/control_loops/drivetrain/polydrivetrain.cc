@@ -50,7 +50,6 @@ PolyDrivetrain::PolyDrivetrain()
 double PolyDrivetrain::MotorSpeed(
     const constants::ShifterHallEffect &hall_effect, double shifter_position,
     double velocity) {
-  // TODO(austin): G_high, G_low and kWheelRadius
   const double avg_hall_effect =
       (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
 
@@ -61,24 +60,38 @@ double PolyDrivetrain::MotorSpeed(
   }
 }
 
-PolyDrivetrain::Gear PolyDrivetrain::ComputeGear(
-    const constants::ShifterHallEffect &hall_effect, double velocity,
-    Gear current) {
-  const double low_omega = MotorSpeed(hall_effect, 0.0, ::std::abs(velocity));
-  const double high_omega = MotorSpeed(hall_effect, 1.0, ::std::abs(velocity));
+PolyDrivetrain::Gear PolyDrivetrain::UpdateSingleGear(
+    Gear requested_gear, Gear current_gear) {
+  const Gear shift_up =
+      constants::GetValues().clutch_transmission ? HIGH : SHIFTING_UP;
+  const Gear shift_down =
+      constants::GetValues().clutch_transmission ? LOW : SHIFTING_DOWN;
 
-  double high_torque = ((12.0 - high_omega / Kv) * Kt / kR);
-  double low_torque = ((12.0 - low_omega / Kv) * Kt / kR);
-  double high_power = high_torque * high_omega;
-  double low_power = low_torque * low_omega;
-
-  // TODO(aschuh): Do this right!
-  if ((current == HIGH || high_power > low_power + 160) &&
-      ::std::abs(velocity) > 0.14) {
-    return HIGH;
-  } else {
-    return LOW;
+  if (current_gear != requested_gear) {
+    if (IsInGear(current_gear)) {
+      if (requested_gear == HIGH) {
+        if (current_gear != HIGH) {
+          current_gear = shift_up;
+        }
+      } else {
+        if (current_gear != LOW) {
+          current_gear = shift_down;
+        }
+      }
+    } else {
+      if (requested_gear == HIGH && current_gear == SHIFTING_DOWN) {
+        current_gear = SHIFTING_UP;
+      } else if (requested_gear == LOW && current_gear == SHIFTING_UP) {
+        current_gear = SHIFTING_DOWN;
+      }
+    }
   }
+  return current_gear;
+}
+
+void PolyDrivetrain::UpdateGears(Gear requested_gear) {
+  left_gear_ = UpdateSingleGear(requested_gear, left_gear_);
+  right_gear_ = UpdateSingleGear(requested_gear, right_gear_);
 }
 
 void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
@@ -100,66 +113,11 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
         throttle);
   }
 
-  // TODO(austin): Fix the upshift logic to include states.
-  Gear requested_gear;
-  if (false) {
-    const auto &values = constants::GetValues();
-    const double current_left_velocity =
-        (position_.left_encoder - last_position_.left_encoder) /
-        position_time_delta_;
-    const double current_right_velocity =
-        (position_.right_encoder - last_position_.right_encoder) /
-        position_time_delta_;
-
-    Gear left_requested =
-        ComputeGear(values.left_drive, current_left_velocity, left_gear_);
-    Gear right_requested =
-        ComputeGear(values.right_drive, current_right_velocity, right_gear_);
-    requested_gear =
-        (left_requested == HIGH || right_requested == HIGH) ? HIGH : LOW;
-  } else {
-    requested_gear = highgear ? HIGH : LOW;
-  }
-
-  const Gear shift_up =
-      constants::GetValues().clutch_transmission ? HIGH : SHIFTING_UP;
-  const Gear shift_down =
-      constants::GetValues().clutch_transmission ? LOW : SHIFTING_DOWN;
-
-  if (left_gear_ != requested_gear) {
-    if (IsInGear(left_gear_)) {
-      if (requested_gear == HIGH) {
-        left_gear_ = shift_up;
-      } else {
-        left_gear_ = shift_down;
-      }
-    } else {
-      if (requested_gear == HIGH && left_gear_ == SHIFTING_DOWN) {
-        left_gear_ = SHIFTING_UP;
-      } else if (requested_gear == LOW && left_gear_ == SHIFTING_UP) {
-        left_gear_ = SHIFTING_DOWN;
-      }
-    }
-  }
-  if (right_gear_ != requested_gear) {
-    if (IsInGear(right_gear_)) {
-      if (requested_gear == HIGH) {
-        right_gear_ = shift_up;
-      } else {
-        right_gear_ = shift_down;
-      }
-    } else {
-      if (requested_gear == HIGH && right_gear_ == SHIFTING_DOWN) {
-        right_gear_ = SHIFTING_UP;
-      } else if (requested_gear == LOW && right_gear_ == SHIFTING_UP) {
-        right_gear_ = SHIFTING_DOWN;
-      }
-    }
-  }
+  UpdateGears(highgear ? HIGH : LOW);
 }
+
 void PolyDrivetrain::SetPosition(
     const ::y2014::control_loops::DrivetrainQueue::Position *position) {
-  const auto &values = constants::GetValues();
   if (position == NULL) {
     ++stale_count_;
   } else {
@@ -169,8 +127,8 @@ void PolyDrivetrain::SetPosition(
     stale_count_ = 0;
   }
 
-#if HAVE_SHIFTERS
   if (position) {
+    const auto &values = constants::GetValues();
     GearLogging gear_logging;
     // Switch to the correct controller.
     const double left_middle_shifter_position =
@@ -224,9 +182,6 @@ void PolyDrivetrain::SetPosition(
     gear_logging.right_state = right_gear_;
     LOG_STRUCT(DEBUG, "state", gear_logging);
   }
-#else
-  (void)values;
-#endif
 }
 
 double PolyDrivetrain::FilterVelocity(double throttle) {
@@ -281,7 +236,6 @@ void PolyDrivetrain::Update() {
   // TODO(austin): Observer for the current velocity instead of difference
   // calculations.
   ++counter_;
-#if HAVE_SHIFTERS
   const double current_left_velocity =
       (position_.left_encoder - last_position_.left_encoder) /
       position_time_delta_;
@@ -317,14 +271,8 @@ void PolyDrivetrain::Update() {
 
     LOG_STRUCT(DEBUG, "currently", logging);
   }
-#else
-  (void)values;
-#endif
 
-#if HAVE_SHIFTERS
-  if (IsInGear(left_gear_) && IsInGear(right_gear_))
-#endif
-  {
+  if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
     // FF * X = U (steady state)
     const Eigen::Matrix<double, 2, 2> FF =
         loop_->B().inverse() *
@@ -380,7 +328,6 @@ void PolyDrivetrain::Update() {
     // TODO(austin): Feed back?
     loop_->mutable_X_hat() =
         loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
-#if HAVE_SHIFTERS
   } else {
     // Any motor is not in gear.  Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;
@@ -397,7 +344,6 @@ void PolyDrivetrain::Update() {
         ::aos::Clip((R_right / Kv)(0, 0) + (IsInGear(right_gear_) ? 0 : wiggle),
                     -12.0, 12.0);
     loop_->mutable_U() *= 12.0 / ::aos::robot_state->voltage_battery;
-#endif
   }
 }
 
