@@ -122,18 +122,6 @@ float DriverStation::GetBatteryVoltage() const {
 }
 
 /**
- * Reports errors related to unplugged joysticks
- * Throttles the errors so that they don't overwhelm the DS
- */
-void DriverStation::ReportJoystickUnpluggedError(std::string message) {
-  double currentTime = Timer::GetFPGATimestamp();
-  if (currentTime > m_nextMessageTime) {
-    ReportError(message);
-    m_nextMessageTime = currentTime + JOYSTICK_UNPLUGGED_MESSAGE_INTERVAL;
-  }
-}
-
-/**
  * Returns the number of axes on a given joystick port
  *
  * @param stick The joystick port number
@@ -254,10 +242,6 @@ float DriverStation::GetStickAxis(uint32_t stick, uint32_t axis) {
   if (axis >= m_joystickAxes[stick].count) {
     if (axis >= kMaxJoystickAxes)
       wpi_setWPIError(BadJoystickAxis);
-    else
-      ReportJoystickUnpluggedError(
-          "WARNING: Joystick Axis missing, check if all controllers are "
-          "plugged in\n");
     return 0.0f;
   }
 
@@ -284,10 +268,6 @@ int DriverStation::GetStickPOV(uint32_t stick, uint32_t pov) {
   if (pov >= m_joystickPOVs[stick].count) {
     if (pov >= kMaxJoystickPOVs)
       wpi_setWPIError(BadJoystickAxis);
-    else
-      ReportJoystickUnpluggedError(
-          "WARNING: Joystick POV missing, check if all controllers are plugged "
-          "in\n");
     return -1;
   }
 
@@ -323,14 +303,9 @@ bool DriverStation::GetStickButton(uint32_t stick, uint8_t button) {
   }
 
   if (button > m_joystickButtons[stick].count) {
-    ReportJoystickUnpluggedError(
-        "WARNING: Joystick Button missing, check if all controllers are "
-        "plugged in\n");
     return false;
   }
   if (button == 0) {
-    ReportJoystickUnpluggedError(
-        "ERROR: Button indexes begin at 1 in WPILib for C++ and Java");
     return false;
   }
   return ((0x1 << (button - 1)) & m_joystickButtons[stick].buttons) != 0;
