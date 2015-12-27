@@ -94,7 +94,6 @@ class DriverStation : public SensorBase, public RobotStateInterface {
 
  private:
   static DriverStation *m_instance;
-  void ReportJoystickUnpluggedError(std::string message);
   void Run();
 
   HALJoystickAxes m_joystickAxes[kJoystickPorts];
@@ -112,5 +111,4 @@ class DriverStation : public SensorBase, public RobotStateInterface {
   bool m_userInAutonomous = false;
   bool m_userInTeleop = false;
   bool m_userInTest = false;
-  double m_nextMessageTime = 0;
 };
