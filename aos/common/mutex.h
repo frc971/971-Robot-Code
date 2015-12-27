@@ -25,7 +25,9 @@ class Mutex {
     // The mutex was acquired successfully.
     kLocked,
     // TryLock tried to grab the mutex and failed.
-    kLockFailed
+    kLockFailed,
+    // The previous owner of the mutex died.
+    kOwnerDied,
   };
 
   // Creates an unlocked mutex.
@@ -37,7 +39,7 @@ class Mutex {
   ~Mutex();
 
   // Locks the mutex. If it fails, it calls LOG(FATAL).
-  // Returns false.
+  // Returns true if the previous owner died instead of unlocking nicely.
   bool Lock() __attribute__((warn_unused_result));
   // Unlocks the mutex. Fails like Lock.
   // Multiple unlocking is undefined.

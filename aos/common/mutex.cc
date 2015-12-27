@@ -28,6 +28,8 @@ bool Mutex::Lock() {
   const int ret = mutex_grab(&impl_);
   if (ret == 0) {
     return false;
+  } else if (ret == 1) {
+    return true;
   } else {
     LOG(FATAL, "mutex_grab(%p(=%" PRIu32 ")) failed with %d\n",
         &impl_, impl_.futex, ret);
@@ -43,6 +45,8 @@ Mutex::State Mutex::TryLock() {
   switch (ret) {
     case 0:
       return State::kLocked;
+    case 1:
+      return State::kOwnerDied;
     case 4:
       return State::kLockFailed;
     default:

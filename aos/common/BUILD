@@ -266,6 +266,7 @@ cc_test(
     '//aos/common/util:thread',
     '//aos/common:time',
     '//aos/testing:test_logging',
+    '//aos/testing:test_shm',
   ],
 )
 

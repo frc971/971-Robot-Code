@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,17 +27,44 @@ typedef aos_futex aos_condition;
 
 // For use with the mutex_ functions.
 // futex must be initialized to 0.
+// No initialization is necessary for next and previous.
+// Under ThreadSanitizer, pthread_mutex_init must be initialized to false.
 // The recommended way to initialize one of these is by memset(3)ing the whole
 // thing to 0 or using C++ () initialization to avoid depending on the
 // implementation.
 struct aos_mutex {
+  // 2 links to get O(1) adds and removes.
+  // This is &next of another element.
+  // next (might) have stuff |ed into it to indicate PI futexes and might also
+  // have an offset (see SetRobustListOffset); previous is an actual pointer
+  // without any of that.
+  // next has to stay the first element of this structure.
+  uintptr_t next;
+  struct aos_mutex *previous;
   aos_futex futex;
+#ifdef AOS_SANITIZER_thread
+  // Internal pthread mutex which is kept in sync with the actual mutex so tsan
+  // can understand what's happening and help catch bugs.
+  pthread_mutex_t pthread_mutex;
+#ifndef __cplusplus
+  // TODO(brian): Remove this once the stupid C code is gone...
+#define bool uint8_t
+#endif
+  bool pthread_mutex_init;
+#ifndef __cplusplus
+#undef bool
+#endif
+#endif
 };
 
 // The mutex_ functions are designed to be used as mutexes. A mutex can only be
-// unlocked from the same task which originally locked it.
+// unlocked from the same task which originally locked it. Also, if a task dies
+// while holding a mutex, the next person who locks it will be notified. After a
+// fork(2), any mutexes held will be held ONLY in the parent process. Attempting
+// to unlock them from the child will give errors.
+// Priority inheritance (aka priority inversion protection) is enabled.
 
-// All of these return 2 if
+// All of these return 1 if the previous owner died with it held, 2 if
 // interrupted by a signal, 3 if timed out, or 4 if an optional lock fails. Some
 // of them (obviously) can never return some of those values.
 //
@@ -113,7 +141,7 @@ int futex_unset(aos_futex *m);
 // this function returns.
 // NOTE: The relocking of m is not atomic with stopping the actual wait and
 // other process(es) may lock (+unlock) the mutex first.
-// Returns 0.
+// Returns 0 on success or 1 if the previous owner died.
 int condition_wait(aos_condition *c, struct aos_mutex *m)
     __attribute__((warn_unused_result));
 // If any other processes are condition_waiting on c, wake 1 of them. Does not
@@ -126,6 +154,32 @@ void condition_broadcast(aos_condition *c, struct aos_mutex *m);
 
 #ifdef __cplusplus
 }
+
+namespace aos {
+namespace linux_code {
+namespace ipc_lib {
+
+typedef void (*FutexAccessorObserver)(void *address, bool write);
+
+// Set functions which get called before and after all futex operations.
+void SetFutexAccessorObservers(FutexAccessorObserver before,
+                               FutexAccessorObserver after);
+
+// Set the offset to use for putting addresses into the robust list.
+// This is necessary to work around a kernel bug where it hangs when trying to
+// deal with a futex on the robust list when its memory has been changed to
+// read-only.
+void SetRobustListOffset(ptrdiff_t offset);
+
+// Returns true if there are any mutexes still locked by this task.
+// This is mainly useful for verifying tests don't mess up other ones by leaving
+// now-freed but still locked mutexes around.
+bool HaveLockedMutexes();
+
+}  // namespace ipc_lib
+}  // namespace linux_code
+}  // namespace aos
+
 #endif  // __cplusplus
 
 #endif  // AOS_LINUX_CODE_IPC_LIB_SYNC_H_
