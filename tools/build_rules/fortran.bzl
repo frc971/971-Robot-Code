@@ -18,6 +18,7 @@ def _single_fortran_object_impl(ctx):
                    '-Werror',
                    '-Wextra',
                    '-Wno-builtin-macro-redefined',
+                   '-Wunused-local-typedefs',
                    '-D__has_feature(x)=0',
                    '-fmacro-backtrace-limit=0']
 
