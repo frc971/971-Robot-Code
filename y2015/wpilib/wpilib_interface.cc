@@ -69,6 +69,12 @@ double drivetrain_translate(int32_t in) {
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
+double drivetrain_velocity_translate(double in) {
+  return (1.0 / in) / 256.0 /*cpr*/ *
+         constants::GetValues().drivetrain_encoder_ratio *
+         (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
+}
+
 double arm_translate(int32_t in) {
   return -static_cast<double>(in) /
           (512.0 /*cpr*/ * 4.0 /*4x*/) *
@@ -203,10 +209,12 @@ class SensorReader {
 
   void set_left_encoder(::std::unique_ptr<Encoder> left_encoder) {
     left_encoder_ = ::std::move(left_encoder);
+    left_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_right_encoder(::std::unique_ptr<Encoder> right_encoder) {
     right_encoder_ = ::std::move(right_encoder);
+    right_encoder_->SetMaxPeriod(0.005);
   }
 
   // All of the DMA-related set_* calls must be made before this, and it doesn't
@@ -252,6 +260,10 @@ class SensorReader {
           -drivetrain_translate(right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
           drivetrain_translate(left_encoder_->GetRaw());
+      drivetrain_message->left_speed =
+          drivetrain_velocity_translate(left_encoder_->GetPeriod());
+      drivetrain_message->right_speed =
+          drivetrain_velocity_translate(right_encoder_->GetPeriod());
 
       drivetrain_message.Send();
     }
