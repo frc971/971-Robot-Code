@@ -727,6 +727,14 @@ void Main() {
   signal(SIGTERM, KillChildrenSignalHandler);
   signal(SIGBUS, KillChildrenSignalHandler);
   signal(SIGXCPU, KillChildrenSignalHandler);
+
+#ifdef AOS_ARCHITECTURE_arm_frc
+  // Just allow overcommit memory like usual. Various processes map memory they
+  // will never use, and the roboRIO doesn't have enough RAM to handle it.
+  // This is in here instead of starter.sh because starter.sh doesn't run with
+  // permissions on a roboRIO.
+  CHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
+#endif
   
   libevent_base = EventBaseUniquePtr(event_base_new());
 
