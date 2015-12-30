@@ -19,7 +19,6 @@
 #include "DigitalGlitchFilter.h"
 #endif
 #include "DigitalInput.h"
-#include "PowerDistributionPanel.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -49,6 +48,7 @@
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/pdp_fetcher.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -94,7 +94,8 @@ static const double kMaximumEncoderPulsesPerSecond =
 // Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::frc971::wpilib::PDPFetcher *pdp_fetcher)
+      : pdp_fetcher_(pdp_fetcher) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     filter_.SetPeriodNanoSeconds(
@@ -136,7 +137,6 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
-    pdp_.reset(new PowerDistributionPanel());
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -146,7 +146,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_.get());
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_fetcher_);
 
     // Drivetrain
     {
@@ -190,7 +190,7 @@ class SensorReader {
 
   int32_t my_pid_;
   DriverStation *ds_;
-  ::std::unique_ptr<PowerDistributionPanel> pdp_;
+  ::frc971::wpilib::PDPFetcher *const pdp_fetcher_;
 
   ::std::unique_ptr<Encoder> left_encoder_, right_encoder_, elevator_encoder_;
   ::std::unique_ptr<DigitalInput> zeroing_hall_effect_;
@@ -463,7 +463,9 @@ class WPILibRobot : public RobotBase {
     JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
-    SensorReader reader;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
+    SensorReader reader(&pdp_fetcher);
 
     reader.set_elevator_encoder(encoder(6));
     reader.set_elevator_zeroing_hall_effect(make_unique<DigitalInput>(6));
@@ -518,6 +520,8 @@ class WPILibRobot : public RobotBase {
 
     joystick_sender.Quit();
     joystick_thread.join();
+    pdp_fetcher.Quit();
+    pdp_fetcher_thread.join();
     reader.Quit();
     reader_thread.join();
     gyro_sender.Quit();

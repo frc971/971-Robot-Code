@@ -33,5 +33,6 @@ cc_binary(
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',
     '//frc971/wpilib:wpilib_interface',
+    '//frc971/wpilib:pdp_fetcher',
   ],
 )

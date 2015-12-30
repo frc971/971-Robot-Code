@@ -18,7 +18,6 @@
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
 #endif
-#include "PowerDistributionPanel.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -49,6 +48,7 @@
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/pdp_fetcher.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -126,7 +126,8 @@ static const double kMaximumEncoderPulsesPerSecond =
 
 class SensorReader {
  public:
-  SensorReader() {
+  SensorReader(::frc971::wpilib::PDPFetcher *pdp_fetcher)
+      : pdp_fetcher_(pdp_fetcher) {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     filter_.SetPeriodNanoSeconds(
@@ -237,7 +238,6 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
-    pdp_.reset(new PowerDistributionPanel());
 
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
@@ -252,7 +252,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_.get());
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_fetcher_);
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
@@ -309,7 +309,7 @@ class SensorReader {
 
   int32_t my_pid_;
   DriverStation *ds_;
-  ::std::unique_ptr<PowerDistributionPanel> pdp_;
+  ::frc971::wpilib::PDPFetcher *const pdp_fetcher_;
 
   void CopyPotAndIndexPosition(
       const DMAEncoderAndPotentiometer &encoder, PotAndIndexPosition *position,
@@ -647,7 +647,10 @@ class WPILibRobot : public RobotBase {
     ::std::thread joystick_thread(::std::ref(joystick_sender));
     // TODO(austin): Compressor needs to use a spike.
 
-    SensorReader reader;
+    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
+
+    SensorReader reader(&pdp_fetcher);
     reader.set_arm_left_encoder(encoder(1));
     reader.set_arm_left_index(make_unique<DigitalInput>(1));
     reader.set_arm_left_potentiometer(make_unique<AnalogInput>(1));
@@ -730,6 +733,8 @@ class WPILibRobot : public RobotBase {
 
     joystick_sender.Quit();
     joystick_thread.join();
+    pdp_fetcher.Quit();
+    pdp_fetcher_thread.join();
     reader.Quit();
     reader_thread.join();
     gyro_sender.Quit();

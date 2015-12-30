@@ -170,5 +170,22 @@ cc_library(
     '//aos/common/messages:robot_state',
     '//aos/externals:wpilib',
     '//aos/common/logging:queue_logging',
+    ':pdp_fetcher',
+  ],
+)
+
+cc_library(
+  name = 'pdp_fetcher',
+  srcs = [
+    'pdp_fetcher.cc',
+  ],
+  hdrs = [
+    'pdp_fetcher.h',
+  ],
+  deps = [
+    '//aos/common/messages:robot_state',
+    '//aos/externals:wpilib',
+    '//aos/common/logging:queue_logging',
+    '//aos/linux_code:init',
   ],
 )

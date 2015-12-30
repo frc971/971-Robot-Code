@@ -25,6 +25,7 @@ cc_binary(
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',
     '//frc971/wpilib:wpilib_interface',
+    '//frc971/wpilib:pdp_fetcher',
     '//y2014_bot3/autonomous:auto_queue',
     '//y2014_bot3/control_loops/drivetrain:drivetrain_lib',
     '//y2014_bot3/control_loops/rollers:rollers_lib',

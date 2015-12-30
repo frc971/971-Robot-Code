@@ -16,7 +16,6 @@
 #include "RobotBase.h"
 #include "dma.h"
 #include "DigitalInput.h"
-#include "PowerDistributionPanel.h"
 #undef ERROR
 
 #include "aos/common/logging/logging.h"
@@ -42,6 +41,7 @@
 #include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/pdp_fetcher.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -74,7 +74,8 @@ double drivetrain_velocity_translate(double in) {
 // Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader {
  public:
-  SensorReader() {}
+  SensorReader(::frc971::wpilib::PDPFetcher *pdp_fetcher)
+      : pdp_fetcher_(pdp_fetcher) {}
 
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
     drivetrain_left_encoder_ = ::std::move(encoder);
@@ -96,7 +97,6 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
-    pdp_.reset(new PowerDistributionPanel());
 
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
@@ -106,7 +106,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_.get());
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_fetcher_);
 
     // Drivetrain
     {
@@ -138,7 +138,7 @@ class SensorReader {
 
   int32_t my_pid_;
   DriverStation *ds_;
-  ::std::unique_ptr<PowerDistributionPanel> pdp_;
+  ::frc971::wpilib::PDPFetcher *const pdp_fetcher_;
 
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
   ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
@@ -343,11 +343,14 @@ class WPILibRobot : public RobotBase {
     JoystickSender joystick_sender;
     ::std::thread joystick_thread(::std::ref(joystick_sender));
 
+    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
+
     //TODO(comran): IO ports are placeholders at the moment, so match them to
     // the robot before turning on.
 
     // Sensors
-    SensorReader reader;
+    SensorReader reader(&pdp_fetcher);
     reader.set_drivetrain_left_encoder(make_encoder(4));
     reader.set_drivetrain_right_encoder(make_encoder(5));
 
@@ -393,6 +396,8 @@ class WPILibRobot : public RobotBase {
 
     joystick_sender.Quit();
     joystick_thread.join();
+    pdp_fetcher.Quit();
+    pdp_fetcher_thread.join();
     reader.Quit();
     reader_thread.join();
     gyro_sender.Quit();

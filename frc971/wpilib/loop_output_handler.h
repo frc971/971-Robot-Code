@@ -1,11 +1,11 @@
 #ifndef FRC971_WPILIB_LOOP_OUTPUT_HANDLER_H_
 #define FRC971_WPILIB_LOOP_OUTPUT_HANDLER_H_
 
+#include <atomic>
+
 #include "aos/common/scoped_fd.h"
 #include "aos/common/time.h"
 #include "aos/common/util/log_interval.h"
-
-#include <atomic>
 
 namespace frc971 {
 namespace wpilib {
