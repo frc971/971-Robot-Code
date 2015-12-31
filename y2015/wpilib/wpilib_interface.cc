@@ -13,7 +13,7 @@
 #include "AnalogInput.h"
 #include "Compressor.h"
 #include "Relay.h"
-#include "RobotBase.h"
+#include "frc971/wpilib/wpilib_robot_base.h"
 #include "dma.h"
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
@@ -633,13 +633,13 @@ std::unique_ptr<T> make_unique(U &&... u) {
   return std::unique_ptr<T>(new T(std::forward<U>(u)...));
 }
 
-class WPILibRobot : public RobotBase {
+class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<Encoder> encoder(int index) {
     return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
                                 Encoder::k4X);
   }
-  virtual void StartCompetition() {
+  virtual void Run() {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
@@ -750,4 +750,4 @@ class WPILibRobot : public RobotBase {
 }  // namespace frc971
 
 
-START_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);

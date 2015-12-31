@@ -24,6 +24,7 @@ cc_binary(
     '//frc971/wpilib:gyro_sender',
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',
+    '//frc971/wpilib:wpilib_robot_base',
     '//frc971/wpilib:wpilib_interface',
     '//y2014_bot3/autonomous:auto_queue',
     '//y2014_bot3/control_loops/drivetrain:drivetrain_lib',

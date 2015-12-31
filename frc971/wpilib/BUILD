@@ -172,3 +172,13 @@ cc_library(
     '//aos/common/logging:queue_logging',
   ],
 )
+
+cc_library(
+  name = 'wpilib_robot_base',
+  hdrs = [
+    'wpilib_robot_base.h',
+  ],
+  deps = [
+    '//aos/externals:wpilib',
+  ],
+)

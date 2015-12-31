@@ -22,6 +22,7 @@ cc_binary(
     '//frc971/wpilib:loop_output_handler',
     '//frc971/wpilib:buffered_pcm',
     '//frc971/wpilib:gyro_sender',
+    '//frc971/wpilib:wpilib_robot_base',
     '//frc971/wpilib:wpilib_interface',
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',

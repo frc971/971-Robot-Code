@@ -13,7 +13,7 @@
 #include "AnalogInput.h"
 #include "Compressor.h"
 #include "Relay.h"
-#include "RobotBase.h"
+#include "frc971/wpilib/wpilib_robot_base.h"
 #include "dma.h"
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
@@ -677,14 +677,14 @@ class ClawWriter : public ::frc971::wpilib::LoopOutputHandler {
   ::std::unique_ptr<Talon> intake2_talon_;
 };
 
-class WPILibRobot : public RobotBase {
+class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<Encoder> make_encoder(int index) {
     return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
                                 Encoder::k4X);
   }
 
-  virtual void StartCompetition() {
+  void Run() override {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
@@ -789,4 +789,4 @@ class WPILibRobot : public RobotBase {
 }  // namespace y2014
 
 
-START_ROBOT_CLASS(::y2014::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::y2014::wpilib::WPILibRobot);
