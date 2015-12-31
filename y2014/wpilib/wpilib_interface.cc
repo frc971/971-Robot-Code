@@ -261,9 +261,17 @@ class SensorReader {
     bottom_reader_.Start();
     dma_synchronizer_->Start();
 
+    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
+                                        ::aos::time::Time::InMS(4));
+
     ::aos::SetCurrentThreadRealtimePriority(kPriority);
     while (run_) {
-      ::aos::time::PhasedLoopXMS(5, 4000);
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+        }
+      }
       RunIteration();
     }
 
