@@ -44,11 +44,11 @@ class ShooterSimulation {
         brake_piston_state_(true),
         brake_delay_count_(0),
         shooter_queue_(
-            ".frc971.control_loops.shooter_queue", 0xcbf22ba9,
-            ".frc971.control_loops.shooter_queue.goal",
-            ".frc971.control_loops.shooter_queue.position",
-            ".frc971.control_loops.shooter_queue.output",
-            ".frc971.control_loops.shooter_queue.status") {
+            ".y2014.control_loops.shooter_queue", 0xcbf22ba9,
+            ".y2014.control_loops.shooter_queue.goal",
+            ".y2014.control_loops.shooter_queue.position",
+            ".y2014.control_loops.shooter_queue.output",
+            ".y2014.control_loops.shooter_queue.status") {
     Reinitialize(initial_position);
   }
 
@@ -309,11 +309,11 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
 
   ShooterTest()
       : shooter_queue_(
-            ".frc971.control_loops.shooter_queue", 0xcbf22ba9,
-            ".frc971.control_loops.shooter_queue.goal",
-            ".frc971.control_loops.shooter_queue.position",
-            ".frc971.control_loops.shooter_queue.output",
-            ".frc971.control_loops.shooter_queue.status"),
+            ".y2014.control_loops.shooter_queue", 0xcbf22ba9,
+            ".y2014.control_loops.shooter_queue.goal",
+            ".y2014.control_loops.shooter_queue.position",
+            ".y2014.control_loops.shooter_queue.output",
+            ".y2014.control_loops.shooter_queue.status"),
         shooter_motor_(&shooter_queue_),
         shooter_motor_plant_(0.2) {
   }

@@ -46,11 +46,11 @@ class ClawMotorSimulation {
   ClawMotorSimulation(double initial_top_position,
                       double initial_bottom_position)
       : claw_plant_(new StateFeedbackPlant<4, 2, 2>(MakeClawPlant())),
-        claw_queue(".frc971.control_loops.claw_queue", 0x9f1a99dd,
-                   ".frc971.control_loops.claw_queue.goal",
-                   ".frc971.control_loops.claw_queue.position",
-                   ".frc971.control_loops.claw_queue.output",
-                   ".frc971.control_loops.claw_queue.status") {
+        claw_queue(".y2014.control_loops.claw_queue", 0x9f1a99dd,
+                   ".y2014.control_loops.claw_queue.goal",
+                   ".y2014.control_loops.claw_queue.position",
+                   ".y2014.control_loops.claw_queue.output",
+                   ".y2014.control_loops.claw_queue.status") {
     Reinitialize(initial_top_position, initial_bottom_position);
   }
 
@@ -262,11 +262,11 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   double min_separation_;
 
   ClawTest()
-      : claw_queue(".frc971.control_loops.claw_queue", 0x9f1a99dd,
-                   ".frc971.control_loops.claw_queue.goal",
-                   ".frc971.control_loops.claw_queue.position",
-                   ".frc971.control_loops.claw_queue.output",
-                   ".frc971.control_loops.claw_queue.status"),
+      : claw_queue(".y2014.control_loops.claw_queue", 0x9f1a99dd,
+                   ".y2014.control_loops.claw_queue.goal",
+                   ".y2014.control_loops.claw_queue.position",
+                   ".y2014.control_loops.claw_queue.output",
+                   ".y2014.control_loops.claw_queue.status"),
         claw_motor_(&claw_queue),
         claw_motor_plant_(0.4, 0.2),
         min_separation_(constants::GetValues().claw.claw_min_separation) {}

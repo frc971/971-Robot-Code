@@ -51,11 +51,11 @@ class DrivetrainSimulation {
   DrivetrainSimulation()
       : drivetrain_plant_(
             new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
-                       0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
-                       ".frc971.control_loops.drivetrain.position",
-                       ".frc971.control_loops.drivetrain.output",
-                       ".frc971.control_loops.drivetrain.status") {
+        my_drivetrain_queue_(".y2014.control_loops.drivetrain",
+                       0x8a8dde77, ".y2014.control_loops.drivetrain.goal",
+                       ".y2014.control_loops.drivetrain.position",
+                       ".y2014.control_loops.drivetrain.output",
+                       ".y2014.control_loops.drivetrain.status") {
     Reinitialize();
   }
 
@@ -113,12 +113,12 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
-  DrivetrainTest() : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
+  DrivetrainTest() : my_drivetrain_queue_(".y2014.control_loops.drivetrain",
                                0x8a8dde77,
-                               ".frc971.control_loops.drivetrain.goal",
-                               ".frc971.control_loops.drivetrain.position",
-                               ".frc971.control_loops.drivetrain.output",
-                               ".frc971.control_loops.drivetrain.status"),
+                               ".y2014.control_loops.drivetrain.goal",
+                               ".y2014.control_loops.drivetrain.position",
+                               ".y2014.control_loops.drivetrain.output",
+                               ".y2014.control_loops.drivetrain.status"),
                 drivetrain_motor_(&my_drivetrain_queue_),
                 drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();

@@ -474,8 +474,8 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        shooter_(".frc971.control_loops.shooter_queue.output"),
-        drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
+        shooter_(".y2014.control_loops.shooter_queue.output"),
+        drivetrain_(".y2014.control_loops.drivetrain_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
