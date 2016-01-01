@@ -28,7 +28,9 @@ void SendRobotState(int32_t my_pid, DriverStation *ds,
   new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
   new_state->voltage_battery = ds->GetBatteryVoltage();
 
-  pdp_fetcher->GetValues(&new_state->pdp);
+  if (pdp_fetcher) {
+    pdp_fetcher->GetValues(&new_state->pdp);
+  }
 
   LOG_STRUCT(DEBUG, "robot_state", *new_state);
 
