@@ -189,3 +189,13 @@ cc_library(
     '//aos/linux_code:init',
   ],
 )
+
+cc_library(
+  name = 'wpilib_robot_base',
+  hdrs = [
+    'wpilib_robot_base.h',
+  ],
+  deps = [
+    '//aos/externals:wpilib',
+  ],
+)
