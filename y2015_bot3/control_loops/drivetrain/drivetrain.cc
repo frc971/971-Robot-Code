@@ -143,7 +143,7 @@ class DrivetrainMotorsSS {
 
   DrivetrainMotorsSS()
       : loop_(new LimitedDrivetrainLoop(
-            ::y2015_bot3::control_loops::MakeDrivetrainLoop())),
+            ::y2015_bot3::control_loops::drivetrain::MakeDrivetrainLoop())),
         filtered_offset_(0.0),
         gyro_(0.0),
         left_goal_(0.0),

@@ -46,7 +46,7 @@ class DrivetrainSimulation {
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
       : drivetrain_plant_(
-            new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
+            new StateFeedbackPlant<4, 2, 2>(drivetrain::MakeDrivetrainPlant())),
         my_drivetrain_queue_(".y2014_bot3.control_loops.drivetrain",
                        0x8a8dde77, ".y2014_bot3.control_loops.drivetrain.goal",
                        ".y2014_bot3.control_loops.drivetrain.position",
