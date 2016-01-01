@@ -99,12 +99,14 @@ void InitNRT() {
   InitStart();
   aos_core_create_shared_mem(false, false);
   logging::RegisterQueueImplementation();
+  LOG(INFO, "%s initialized non-realtime\n", program_invocation_short_name);
 }
 
 void InitCreate() {
   InitStart();
   aos_core_create_shared_mem(true, false);
   logging::RegisterQueueImplementation();
+  LOG(INFO, "%s created shm\n", program_invocation_short_name);
 }
 
 void Init(int relative_priority) {
@@ -134,6 +136,7 @@ void Init(int relative_priority) {
   InitStart();
   aos_core_create_shared_mem(false, realtime);
   logging::RegisterQueueImplementation();
+  LOG(INFO, "%s initialized realtime\n", program_invocation_short_name);
 }
 
 void Cleanup() {
