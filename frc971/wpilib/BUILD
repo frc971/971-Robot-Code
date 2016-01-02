@@ -187,6 +187,7 @@ cc_library(
     '//aos/externals:wpilib',
     '//aos/common/logging:queue_logging',
     '//aos/linux_code:init',
+    '//aos/common/util:phased_loop',
   ],
 )
 

@@ -2,6 +2,7 @@
 
 #include "aos/common/logging/queue_logging.h"
 #include "aos/linux_code/init.h"
+#include "aos/common/util/phased_loop.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -17,10 +18,17 @@ void PDPFetcher::GetValues(::aos::PDPValues *pdp_values) {
 
 void PDPFetcher::operator()() {
   ::aos::SetCurrentThreadName("PDPFetcher");
-  // Something in WPILib blocks for long periods of time in here, so it's not
-  // actually a busy loop like it looks. It seems to somehow be related to
-  // joystick packets.
+
+  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
+                                      ::aos::time::Time::InMS(4));
+
   while (true) {
+    {
+      const int iterations = phased_loop.SleepUntilNext();
+      if (iterations != 1) {
+        LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
+      }
+    }
     {
       const double voltage = pdp_->GetVoltage();
       ::aos::MutexLocker locker(&values_lock_);
