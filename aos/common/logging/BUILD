@@ -52,6 +52,7 @@ cc_binary(
     '//aos/common:die',
     ':binary_log_file',
     '//aos/common:queue_types',
+    '//aos/common:time',
   ],
 )
 

@@ -21,6 +21,7 @@
 #include "aos/linux_code/ipc_lib/queue.h"
 #include "aos/common/queue_types.h"
 #include "aos/common/die.h"
+#include "aos/common/time.h"
 
 namespace aos {
 namespace logging {
@@ -206,8 +207,16 @@ int BinaryLogReaderMain() {
 
   while (true) {
     const LogMessage *const msg =
-        static_cast<const LogMessage *>(queue->ReadMessage(RawQueue::kBlock));
-    if (msg == NULL) continue;
+        static_cast<const LogMessage *>(queue->ReadMessage(RawQueue::kNonBlock));
+    if (msg == NULL) {
+      // If we've emptied the queue, then wait for a bit before starting to read
+      // again so the queue can buffer up some logs. This avoids lots of context
+      // switches and mutex contention which happens if we're constantly reading
+      // new messages as they come in.
+      static constexpr auto kSleepTime = ::aos::time::Time::InSeconds(0.1);
+      ::aos::time::SleepFor(kSleepTime);
+      continue;
+    }
 
     const size_t raw_output_length =
         sizeof(LogFileMessageHeader) + msg->name_length + msg->message_length;

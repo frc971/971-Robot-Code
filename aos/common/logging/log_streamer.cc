@@ -31,13 +31,15 @@ int LogStreamerMain() {
          now.sec(), now.nsec());
 
   while (true) {
-    const LogMessage *const msg =
-        static_cast<const LogMessage *>(queue->ReadMessage(RawQueue::kBlock));
-    if (msg == NULL) continue;
+    const LogMessage *const msg = static_cast<const LogMessage *>(
+        queue->ReadMessage(RawQueue::kNonBlock));
+    if (msg == NULL) {
+      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+    } else {
+      internal::PrintMessage(stdout, *msg);
 
-    internal::PrintMessage(stdout, *msg);
-
-    queue->FreeMessage(msg);
+      queue->FreeMessage(msg);
+    }
   }
 
   Cleanup();
