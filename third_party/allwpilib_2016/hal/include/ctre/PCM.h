@@ -15,6 +15,7 @@ public:
      * @Param 	-	en			- 	Enable / Disable identified solenoid
      */
     CTR_Code 	SetSolenoid(unsigned char idx, bool en);
+    CTR_Code 	SetSolenoids(unsigned char idx, unsigned char en);
 
     /* Enables PCM Closed Loop Control of Compressor via pressure switch
      * @Return	-	CTR_Code	-	Error code (if any) for setting solenoid

@@ -66,6 +66,12 @@ void setSolenoid(void* solenoid_port_pointer, bool value, int32_t *status) {
 	*status = port->module->SetSolenoid(port->pin, value);
 }
 
+void setSolenoids(void* solenoid_port_pointer, uint8_t value, int32_t *status) {
+	solenoid_port_t* port = (solenoid_port_t*) solenoid_port_pointer;
+
+	*status = port->module->SetSolenoids(port->pin, value);
+}
+
 int getPCMSolenoidBlackList(void* solenoid_port_pointer, int32_t *status){
 	solenoid_port_t* port = (solenoid_port_t*) solenoid_port_pointer;
 	UINT8 value;

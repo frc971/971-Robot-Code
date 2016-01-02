@@ -35,10 +35,14 @@ SolenoidBase::SolenoidBase(uint8_t moduleNumber)
  */
 void SolenoidBase::Set(uint8_t value, uint8_t mask, int module) {
   int32_t status = 0;
-  for (int i = 0; i < m_maxPorts; i++) {
-    uint8_t local_mask = 1 << i;
-    if (mask & local_mask)
-      setSolenoid(m_ports[module][i], value & local_mask, &status);
+  if (mask == 0xFF) {
+    setSolenoids(m_ports[module][0], value, &status);
+  } else {
+    for (int i = 0; i < m_maxPorts; i++) {
+      uint8_t local_mask = 1 << i;
+      if (mask & local_mask)
+        setSolenoid(m_ports[module][i], value & local_mask, &status);
+    }
   }
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 }

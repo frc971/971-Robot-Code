@@ -140,6 +140,19 @@ CTR_Code PCM::SetSolenoid(unsigned char idx, bool en)
 	FlushTx(toFill);
 	return CTR_OKAY;
 }
+CTR_Code PCM::SetSolenoids(unsigned char idx, unsigned char en)
+{
+	CtreCanNode::txTask<PcmControl_t> toFill = GetTx<PcmControl_t>(CONTROL_1 | GetDeviceNumber());
+	if(toFill.IsEmpty())return CTR_UnexpectedArbId;
+  for (int i = 0; i < 8; ++i) {
+	  if (en & (1 << i))
+		  toFill->solenoidBits |= (1ul << (i));
+	  else
+		  toFill->solenoidBits &= ~(1ul << (i));
+  }
+	FlushTx(toFill);
+	return CTR_OKAY;
+}
 
 /* Clears PCM sticky faults (indicators of past faults
  *
