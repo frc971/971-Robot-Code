@@ -302,10 +302,12 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
   if (kWriteDebug) {
     printf("queue: %p->WriteMessage(%p, %x)\n", this, msg, options.printable());
   }
+
+  bool signal_readable;
+
   {
     IPCMutexLocker locker(&data_lock_);
     CHECK(!locker.owner_died());
-    bool writable_waited = false;
 
     int new_end;
     while (true) {
@@ -331,32 +333,25 @@ bool RawQueue::DoWriteMessage(void *msg, Options<RawQueue> options) {
           printf("queue: going to wait for writable_ of %p\n", this);
         }
         CHECK(!writable_.Wait());
-        writable_waited = true;
       }
     }
     data_[data_end_] = msg;
     ++messages_;
     data_end_ = new_end;
 
-    if (readable_waiting_) {
-      if (kWriteDebug) {
-        printf("queue: broadcasting to readable_ of %p\n", this);
-      }
-      readable_waiting_ = false;
-      readable_.Broadcast();
-    } else if (kWriteDebug) {
-      printf("queue: skipping broadcast to readable_ of %p\n", this);
-    }
-
-    // If we got a signal on writable_ here and it's still writable, then we
-    // need to signal the next person in line (if any).
-    if (writable_waited && is_writable()) {
-      if (kWriteDebug) {
-        printf("queue: resignalling writable_ of %p\n", this);
-      }
-      writable_.Signal();
-    }
+    signal_readable = readable_waiting_;
+    readable_waiting_ = false;
   }
+
+  if (signal_readable) {
+    if (kWriteDebug) {
+      printf("queue: broadcasting to readable_ of %p\n", this);
+    }
+    readable_.Broadcast();
+  } else if (kWriteDebug) {
+    printf("queue: skipping broadcast to readable_ of %p\n", this);
+  }
+
   if (kWriteDebug) {
     printf("queue: write returning true on queue %p\n", this);
   }
@@ -369,7 +364,7 @@ inline void RawQueue::ReadCommonEnd() {
       printf("queue: %ssignalling writable_ of %p\n",
              writable_start_ ? "not " : "", this);
     }
-    if (!writable_start_) writable_.Signal();
+    if (!writable_start_) writable_.Broadcast();
   }
 }
 
