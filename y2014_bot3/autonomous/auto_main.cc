@@ -9,7 +9,7 @@
 using ::aos::time::Time;
 
 int main(int /*argc*/, char * /*argv*/[]) {
-  ::aos::Init();
+  ::aos::Init(-1);
 
   LOG(INFO, "Auto main started.\n");
   ::y2014_bot3::autonomous::autonomous.FetchLatest();

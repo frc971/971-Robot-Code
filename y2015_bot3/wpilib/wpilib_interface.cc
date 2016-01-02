@@ -138,9 +138,17 @@ class SensorReader {
         &DriverStation::GetInstance();
 #endif
 
-    ::aos::SetCurrentThreadRealtimePriority(kPriority);
+    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
+                                        ::aos::time::Time::InMS(4));
+
+    ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
-      ::aos::time::PhasedLoopXMS(5, 4000);
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+        }
+      }
       RunIteration();
     }
   }
@@ -185,9 +193,6 @@ class SensorReader {
   void Quit() { run_ = false; }
 
  private:
-  static const int kPriority = 30;
-  static const int kInterruptPriority = 55;
-
   int32_t my_pid_;
   DriverStation *ds_;
   ::frc971::wpilib::PDPFetcher *const pdp_fetcher_;
@@ -237,10 +242,18 @@ class SolenoidWriter {
 
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(30);
+    ::aos::SetCurrentThreadRealtimePriority(27);
+
+    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
+                                        ::aos::time::Time::InMS(1));
 
     while (run_) {
-      ::aos::time::PhasedLoopXMS(20, 1000);
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+        }
+      }
 
       // Can Grabber
       {
@@ -514,7 +527,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
-    PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
+    while (true) {
+      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
+      if (r != 0) {
+        PLOG(WARNING, "infinite select failed");
+      } else {
+        PLOG(WARNING, "infinite select succeeded??\n");
+      }
+    }
 
     LOG(ERROR, "Exiting WPILibRobot\n");
 

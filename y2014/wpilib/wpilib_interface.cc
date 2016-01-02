@@ -264,7 +264,7 @@ class SensorReader {
     ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                         ::aos::time::Time::InMS(4));
 
-    ::aos::SetCurrentThreadRealtimePriority(kPriority);
+    ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
       {
         const int iterations = phased_loop.SleepUntilNext();
@@ -410,7 +410,7 @@ class SensorReader {
           multiplier * claw_translate(counter->last_negative_encoder_value());
     }
 
-    ::frc971::wpilib::InterruptSynchronizer synchronizer_{kInterruptPriority};
+    ::frc971::wpilib::InterruptSynchronizer synchronizer_{55};
 
     ::std::unique_ptr<::frc971::wpilib::EdgeCounter> front_counter_;
     ::std::unique_ptr<::frc971::wpilib::EdgeCounter> calibration_counter_;
@@ -425,9 +425,6 @@ class SensorReader {
 
     const bool reversed_;
   };
-
-  static const int kPriority = 30;
-  static const int kInterruptPriority = 55;
 
   void CopyShooterPosedgeCounts(
       const ::frc971::wpilib::DMAEdgeCounter *counter,
@@ -507,10 +504,18 @@ class SolenoidWriter {
 
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(30);
+    ::aos::SetCurrentThreadRealtimePriority(27);
+
+    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
+                                        ::aos::time::Time::InMS(1));
 
     while (run_) {
-      ::aos::time::PhasedLoopXMS(20, 1000);
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+        }
+      }
 
       {
         shooter_.FetchLatest();
@@ -771,7 +776,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
-    PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
+    while (true) {
+      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
+      if (r != 0) {
+        PLOG(WARNING, "infinite select failed");
+      } else {
+        PLOG(WARNING, "infinite select succeeded??\n");
+      }
+    }
 
     LOG(ERROR, "Exiting WPILibRobot\n");
 

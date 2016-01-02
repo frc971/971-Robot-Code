@@ -550,7 +550,7 @@ class Reader : public ::aos::input::JoystickInput {
 }  // namespace frc971
 
 int main() {
-  ::aos::Init();
+  ::aos::Init(-1);
   ::frc971::input::joysticks::Reader reader;
   reader.Run();
   ::aos::Cleanup();

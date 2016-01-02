@@ -51,9 +51,9 @@ aos_downloader(
     '//y2014/control_loops/claw:claw',
     '//y2014/control_loops/shooter:shooter',
     '//y2014/autonomous:auto',
-    '//y2014/wpilib:wpilib_interface',
     '//y2014/actors:binaries',
     '//aos:prime_start_binaries',
+    '//y2014/wpilib:wpilib_interface',
   ],
   srcs = [
     '//aos:prime_binaries',

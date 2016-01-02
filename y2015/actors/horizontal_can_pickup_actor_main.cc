@@ -5,7 +5,7 @@
 #include "y2015/actors/horizontal_can_pickup_actor.h"
 
 int main(int /*argc*/, char* /*argv*/ []) {
-  ::aos::Init();
+  ::aos::Init(-1);
 
   ::frc971::actors::HorizontalCanPickupActor horizontal_can_pickup(
       &::frc971::actors::horizontal_can_pickup_action);

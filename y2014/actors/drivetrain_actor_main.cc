@@ -7,7 +7,7 @@
 using ::aos::time::Time;
 
 int main(int /*argc*/, char * /*argv*/[]) {
-  ::aos::Init();
+  ::aos::Init(-1);
 
   ::y2014::actors::DrivetrainActor drivetrain(
       &::y2014::actors::drivetrain_action);

@@ -522,7 +522,7 @@ class Reader : public ::aos::input::JoystickInput {
 }  // namespace y2014
 
 int main() {
-  ::aos::Init();
+  ::aos::Init(-1);
   ::y2014::input::joysticks::Reader reader;
   reader.Run();
   ::aos::Cleanup();

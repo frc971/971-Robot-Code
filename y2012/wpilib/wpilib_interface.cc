@@ -13,7 +13,7 @@
 #include "AnalogInput.h"
 #include "Compressor.h"
 #include "Relay.h"
-#include "SampleRobot.h"
+#include "frc971/wpilib/wpilib_robot_base.h"
 #include "dma.h"
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
@@ -103,10 +103,11 @@ class SensorReader {
 #else
         &DriverStation::GetInstance();
 #endif
+
     ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                         ::aos::time::Time::InMS(4));
 
-    ::aos::SetCurrentThreadRealtimePriority(kPriority);
+    ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
       {
         const int iterations = phased_loop.SleepUntilNext();
@@ -141,9 +142,6 @@ class SensorReader {
   void Quit() { run_ = false; }
 
  private:
-  static const int kPriority = 30;
-  static const int kInterruptPriority = 55;
-
   int32_t my_pid_;
   DriverStation *ds_;
 
@@ -183,10 +181,18 @@ class SolenoidWriter {
 
   void operator()() {
     ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(30);
+    ::aos::SetCurrentThreadRealtimePriority(27);
+
+    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
+                                        ::aos::time::Time::InMS(1));
 
     while (run_) {
-      ::aos::time::PhasedLoopXMS(20, 1000);
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(DEBUG, "Solenoids skipped %d iterations\n", iterations - 1);
+        }
+      }
 
       {
         accessories_.FetchLatest();
@@ -297,14 +303,14 @@ class AccessoriesWriter : public ::frc971::wpilib::LoopOutputHandler {
   ::std::unique_ptr<Talon> talon1_, talon2_;
 };
 
-class WPILibRobot : public SampleRobot {
+class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<Encoder> make_encoder(int index) {
     return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
                                 Encoder::k4X);
   }
 
-  virtual void RobotMain() {
+  void Run() override {
     ::aos::InitNRT();
     ::aos::SetCurrentThreadName("StartCompetition");
 
@@ -342,7 +348,14 @@ class WPILibRobot : public SampleRobot {
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
-    PCHECK(select(0, nullptr, nullptr, nullptr, nullptr));
+    while (true) {
+      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
+      if (r != 0) {
+        PLOG(WARNING, "infinite select failed");
+      } else {
+        PLOG(WARNING, "infinite select succeeded??\n");
+      }
+    }
 
     LOG(ERROR, "Exiting WPILibRobot\n");
 
@@ -364,4 +377,4 @@ class WPILibRobot : public SampleRobot {
 }  // namespace y2012
 
 
-START_ROBOT_CLASS(::y2012::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::y2012::wpilib::WPILibRobot);
