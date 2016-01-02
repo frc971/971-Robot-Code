@@ -1,5 +1,7 @@
 #include "aos/common/time.h"
 
+#include <atomic>
+
 #include <string.h>
 #include <inttypes.h>
 
@@ -21,7 +23,7 @@ namespace {
 // anyways.  If there is a race condition setting or clearing whether time is
 // enabled or not, it will still be a race condition if current_mock_time is
 // also set atomically with enabled.
-bool mock_time_enabled = false;
+::std::atomic<bool> mock_time_enabled{false};
 // Mutex to make time reads and writes thread safe.
 Mutex time_mutex;
 // Current time when time is mocked.
@@ -86,8 +88,8 @@ void Time::IncrementMockTime(const Time &amount) {
 
 Time Time::Now(clockid_t clock) {
   {
-    MutexLocker time_mutex_locker(&time_mutex);
-    if (mock_time_enabled) {
+    if (mock_time_enabled.load(::std::memory_order_relaxed)) {
+      MutexLocker time_mutex_locker(&time_mutex);
       return current_mock_time;
     }
   }
