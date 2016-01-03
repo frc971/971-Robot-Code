@@ -3,8 +3,6 @@
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/queue_logging.h"
 
-#include "frc971/wpilib/pdp_fetcher.h"
-
 #include "DriverStation.h"
 #include "ControllerPower.h"
 #undef ERROR
@@ -12,8 +10,7 @@
 namespace frc971 {
 namespace wpilib {
 
-void SendRobotState(int32_t my_pid, DriverStation *ds,
-                    PDPFetcher *pdp_fetcher) {
+void SendRobotState(int32_t my_pid, DriverStation *ds) {
   auto new_state = ::aos::robot_state.MakeMessage();
 
   new_state->reader_pid = my_pid;
@@ -27,10 +24,6 @@ void SendRobotState(int32_t my_pid, DriverStation *ds,
 
   new_state->voltage_roborio_in = ControllerPower::GetInputVoltage();
   new_state->voltage_battery = ds->GetBatteryVoltage();
-
-  if (pdp_fetcher) {
-    pdp_fetcher->GetValues(&new_state->pdp);
-  }
 
   LOG_STRUCT(DEBUG, "robot_state", *new_state);
 

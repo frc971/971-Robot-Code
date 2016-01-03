@@ -120,7 +120,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_, nullptr);
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
 
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();

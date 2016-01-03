@@ -74,8 +74,7 @@ double drivetrain_velocity_translate(double in) {
 // Reads in our inputs. (sensors, voltages, etc.)
 class SensorReader {
  public:
-  SensorReader(::frc971::wpilib::PDPFetcher *pdp_fetcher)
-      : pdp_fetcher_(pdp_fetcher) {}
+  SensorReader() {}
 
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
     drivetrain_left_encoder_ = ::std::move(encoder);
@@ -114,7 +113,7 @@ class SensorReader {
   }
 
   void RunIteration() {
-    ::frc971::wpilib::SendRobotState(my_pid_, ds_, pdp_fetcher_);
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
 
     // Drivetrain
     {
@@ -143,7 +142,6 @@ class SensorReader {
  private:
   int32_t my_pid_;
   DriverStation *ds_;
-  ::frc971::wpilib::PDPFetcher *const pdp_fetcher_;
 
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
   ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
@@ -364,7 +362,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // the robot before turning on.
 
     // Sensors
-    SensorReader reader(&pdp_fetcher);
+    SensorReader reader;
     reader.set_drivetrain_left_encoder(make_encoder(4));
     reader.set_drivetrain_right_encoder(make_encoder(5));
 

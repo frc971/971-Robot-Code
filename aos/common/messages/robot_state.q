@@ -33,14 +33,6 @@ message JoystickState {
 // joystick code hasn't died.
 queue JoystickState joystick_state;
 
-// Values retrieved from the PDP.
-struct PDPValues {
-  double voltage;
-  double temperature;
-  double power;
-  double[16] currents;
-};
-
 message RobotState {
   // The PID of the process reading sensors.
   // This is here so control loops can tell when it changes.
@@ -67,8 +59,6 @@ message RobotState {
   // From the DriverStation object, aka what FMS sees and what shows up on the
   // actual driver's station.
   double voltage_battery;
-
-  PDPValues pdp;
 };
 
 // Messages are sent out on this queue along with reading sensors. It contains
