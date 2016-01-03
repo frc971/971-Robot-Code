@@ -30,7 +30,7 @@ Steps to set up a computer to build the code:
 	 and put them in `/etc/apt/sources.list.d/`.
   1. Install the required packages:
 ```console
-apt-get install python bazel ruby clang-format-3.5 clang-3.6
+apt-get install python libpython-dev bazel ruby clang-format-3.5 clang-3.6 gfortran libblas-dev liblapack-dev python-scipy python-matplotlib
 ```
   2. Allow Bazel's sandboxing to work
 
