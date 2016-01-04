@@ -92,7 +92,8 @@ void DrivetrainMotorsSS::LimitedDrivetrainLoop::CapU() {
         adjusted_pos_error = adjusted_pos_error_h;
       } else {
         if (is_inside_h) {
-          if (adjusted_pos_error_h.norm() > adjusted_pos_error_45.norm()) {
+          if (adjusted_pos_error_h.norm() > adjusted_pos_error_45.norm() ||
+              adjusted_pos_error_45.norm() > intersection.norm()) {
             adjusted_pos_error = adjusted_pos_error_h;
           } else {
             adjusted_pos_error = adjusted_pos_error_45;
