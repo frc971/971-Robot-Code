@@ -38,9 +38,9 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   double last_gyro_heading_ = 0.0;
   double last_gyro_rate_ = 0.0;
 
+  StateFeedbackLoop<7, 2, 3> kf_;
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
-  StateFeedbackLoop<7, 2, 3> kf_;
 
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;

@@ -33,7 +33,8 @@ DrivetrainLoop::DrivetrainLoop(
     ::y2014::control_loops::DrivetrainQueue *my_drivetrain)
     : aos::controls::ControlLoop<::y2014::control_loops::DrivetrainQueue>(
           my_drivetrain),
-      kf_(::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop()) {
+      kf_(::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop()),
+      dt_openloop_(&kf_) {
   ::aos::controls::HPolytope<0>::Init();
 }
 
@@ -48,6 +49,16 @@ void DrivetrainLoop::RunIteration(
     bad_pos = true;
   }
   no_position_.Print();
+
+  kf_.set_controller_index(dt_openloop_.controller_index());
+
+  {
+    Eigen::Matrix<double, 3, 1> Y;
+    Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
+    kf_.Correct(Y);
+    integrated_kf_heading_ +=
+        kDt * (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) / (kRobotRadius * 2.0);
+  }
 
   bool control_loop_driving = false;
   if (goal) {
@@ -124,14 +135,6 @@ void DrivetrainLoop::RunIteration(
 
   left_voltage *= scalar;
   right_voltage *= scalar;
-
-  kf_.set_controller_index(dt_openloop_.controller_index());
-
-  Eigen::Matrix<double, 3, 1> Y;
-  Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
-  kf_.Correct(Y);
-  integrated_kf_heading_ +=
-      kDt * (kf_.X_hat(3, 0) - kf_.X_hat(1, 0)) / (kRobotRadius * 2.0);
 
   // To validate, look at the following:
 

@@ -23,8 +23,9 @@ using ::y2014::control_loops::GearLogging;
 using ::y2014::control_loops::CIMLogging;
 using ::frc971::control_loops::CoerceGoal;
 
-PolyDrivetrain::PolyDrivetrain()
-    : U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
+PolyDrivetrain::PolyDrivetrain(StateFeedbackLoop<7, 2, 3> *kf)
+    : kf_(kf),
+      U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                /*[*/ -1, 0 /*]*/,
                /*[*/ 0, 1 /*]*/,
                /*[*/ 0, -1 /*]]*/).finished(),

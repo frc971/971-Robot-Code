@@ -32,7 +32,7 @@ class PolyDrivetrain {
   // Torque constant
   static constexpr double Kt = drivetrain::kT;
 
-  PolyDrivetrain();
+  PolyDrivetrain(StateFeedbackLoop<7, 2, 3> *kf);
 
   int controller_index() const { return loop_->controller_index(); }
 
@@ -65,6 +65,7 @@ class PolyDrivetrain {
   void SendMotors(::y2014::control_loops::DrivetrainQueue::Output *output);
 
  private:
+  StateFeedbackLoop<7, 2, 3> *kf_;
   const ::aos::controls::HPolytope<2> U_Poly_;
 
   ::std::unique_ptr<StateFeedbackLoop<2, 2, 2>> loop_;
