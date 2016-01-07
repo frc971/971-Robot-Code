@@ -233,6 +233,9 @@ double PolyDrivetrain::MaxVelocity() {
 }
 
 void PolyDrivetrain::Update() {
+  loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(1, 0);
+  loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(3, 0);
+
   const auto &values = constants::GetValues();
   // TODO(austin): Observer for the current velocity instead of difference
   // calculations.
@@ -324,11 +327,6 @@ void PolyDrivetrain::Update() {
     for (int i = 0; i < 2; i++) {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
     }
-
-    // TODO(austin): Model this better.
-    // TODO(austin): Feed back?
-    loop_->mutable_X_hat() =
-        loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
   } else {
     // Any motor is not in gear.  Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;

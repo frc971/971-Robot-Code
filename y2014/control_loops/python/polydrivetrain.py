@@ -128,7 +128,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.PlaceControllerPoles([0.8, 0.8])
+    self.PlaceControllerPoles([0.7, 0.7])
     self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
