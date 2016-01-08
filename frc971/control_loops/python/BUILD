@@ -16,3 +16,13 @@ py_library(
     '//third_party/cddlib:_cddlib.so',
   ],
 )
+
+py_test(
+  name = 'polytope_test',
+  srcs = [
+    'polytope_test.py',
+  ],
+  deps = [
+    ':controls',
+  ],
+)

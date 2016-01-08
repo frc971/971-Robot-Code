@@ -2,8 +2,9 @@
 
 import numpy
 from numpy.testing import *
-import polytope
 import unittest
+
+import frc971.control_loops.python.polytope as polytope
 
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
