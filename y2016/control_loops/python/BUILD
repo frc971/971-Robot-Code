@@ -37,3 +37,15 @@ py_library(
     '//frc971/control_loops/python:controls',
   ],
 )
+
+py_binary(
+  name = 'shooter',
+  srcs = [
+    'shooter.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
