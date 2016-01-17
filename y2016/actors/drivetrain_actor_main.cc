@@ -1,16 +1,16 @@
 #include <stdio.h>
 
 #include "aos/linux_code/init.h"
-#include "y2014/actors/drivetrain_action.q.h"
-#include "y2014/actors/drivetrain_actor.h"
+#include "y2016/actors/drivetrain_action.q.h"
+#include "y2016/actors/drivetrain_actor.h"
 
 using ::aos::time::Time;
 
-int main(int /*argc*/, char * /*argv*/[]) {
+int main(int /*argc*/, char* /*argv*/ []) {
   ::aos::Init(-1);
 
-  ::y2014::actors::DrivetrainActor drivetrain(
-      &::y2014::actors::drivetrain_action);
+  ::y2016::actors::DrivetrainActor drivetrain(
+      &::y2016::actors::drivetrain_action);
   drivetrain.Run();
 
   ::aos::Cleanup();

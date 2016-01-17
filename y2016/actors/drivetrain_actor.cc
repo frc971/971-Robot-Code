@@ -1,4 +1,4 @@
-#include "y2014/actors/drivetrain_actor.h"
+#include "y2016/actors/drivetrain_actor.h"
 
 #include <functional>
 #include <numeric>
@@ -11,14 +11,14 @@
 #include "aos/common/commonmath.h"
 #include "aos/common/time.h"
 
-#include "y2014/actors/drivetrain_actor.h"
-#include "y2014/constants.h"
+#include "y2016/actors/drivetrain_actor.h"
+#include "y2016/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
-namespace y2014 {
+namespace y2016 {
 namespace actors {
 
-DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
+DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup *s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s),
       loop_(constants::GetValues().make_drivetrain_loop()) {
   loop_.set_controller_index(3);
@@ -52,7 +52,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
     ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
     if (::frc971::control_loops::drivetrain_queue.status.get()) {
-      const auto& status = *::frc971::control_loops::drivetrain_queue.status;
+      const auto &status = *::frc971::control_loops::drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) > 24) {
         LOG(DEBUG, "spinning in place\n");
@@ -65,6 +65,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
       } else {
         static const double divisor = K(0, 0) + K(0, 2);
         double dx_left, dx_right;
+
         if (status.uncapped_left_voltage > 12.0) {
           dx_left = (status.uncapped_left_voltage - 12.0) / divisor;
         } else if (status.uncapped_left_voltage < -12.0) {
@@ -72,6 +73,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         } else {
           dx_left = 0;
         }
+
         if (status.uncapped_right_voltage > 12.0) {
           dx_right = (status.uncapped_right_voltage - 12.0) / divisor;
         } else if (status.uncapped_right_voltage < -12.0) {
@@ -79,7 +81,9 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         } else {
           dx_right = 0;
         }
+
         double dx;
+
         if (dx_left == 0 && dx_right == 0) {
           dx = 0;
         } else if (dx_left != 0 && dx_right != 0 &&
@@ -92,6 +96,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         } else {
           dx = dx_right;
         }
+
         if (dx != 0) {
           LOG(DEBUG, "adjusting goal by %f\n", dx);
           profile.MoveGoal(-dx);
@@ -130,24 +135,28 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   }
   if (ShouldCancel()) return true;
   ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+
   while (!::frc971::control_loops::drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain status packet, trying to fetch again\n");
     ::frc971::control_loops::drivetrain_queue.status.FetchNextBlocking();
     if (ShouldCancel()) return true;
   }
+
   while (true) {
     if (ShouldCancel()) return true;
     const double kPositionThreshold = 0.05;
 
-    const double left_error = ::std::abs(
-        ::frc971::control_loops::drivetrain_queue.status->filtered_left_position -
-        (left_goal_state(0, 0) + params.left_initial_position));
-    const double right_error = ::std::abs(
-        ::frc971::control_loops::drivetrain_queue.status->filtered_right_position -
-        (right_goal_state(0, 0) + params.right_initial_position));
-    const double velocity_error =
-        ::std::abs(::frc971::control_loops::drivetrain_queue.status->robot_speed);
+    const double left_error =
+        ::std::abs(::frc971::control_loops::drivetrain_queue.status
+                       ->filtered_left_position -
+                   (left_goal_state(0, 0) + params.left_initial_position));
+    const double right_error =
+        ::std::abs(::frc971::control_loops::drivetrain_queue.status
+                       ->filtered_right_position -
+                   (right_goal_state(0, 0) + params.right_initial_position));
+    const double velocity_error = ::std::abs(
+        ::frc971::control_loops::drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
         velocity_error < 0.2) {
       break;
@@ -157,15 +166,16 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
     }
     ::frc971::control_loops::drivetrain_queue.status.FetchNextBlocking();
   }
+
   LOG(INFO, "Done moving\n");
   return true;
 }
 
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::y2014::actors::DrivetrainActionParams& params) {
+    const ::y2016::actors::DrivetrainActionParams &params) {
   return ::std::unique_ptr<DrivetrainAction>(
-      new DrivetrainAction(&::y2014::actors::drivetrain_action, params));
+      new DrivetrainAction(&::y2016::actors::drivetrain_action, params));
 }
 
 }  // namespace actors
-}  // namespace y2014
+}  // namespace y2016

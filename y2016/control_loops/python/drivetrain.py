@@ -14,6 +14,8 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
+#TODO(constants): All of the constants need to be updated for 2016.
+
 class CIM(control_loop.ControlLoop):
   def __init__(self):
     super(CIM, self).__init__("CIM")
@@ -309,7 +311,7 @@ def main(argv):
   if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
-    namespaces = ['y2014', 'control_loops', 'drivetrain']
+    namespaces = ['y2016', 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
                        drivetrain_high_low, drivetrain_high_high],

@@ -3,7 +3,7 @@
 import numpy
 import sys
 from frc971.control_loops.python import polytope
-from y2014.control_loops.python import drivetrain
+from y2016.control_loops.python import drivetrain
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 from matplotlib import pylab
@@ -413,7 +413,7 @@ def main(argv):
   if len(argv) != 5:
     glog.fatal('Expected .h file name and .cc file name')
   else:
-    namespaces = ['y2014', 'control_loops', 'drivetrain']
+    namespaces = ['y2016', 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
                        vdrivetrain.drivetrain_low_high,
