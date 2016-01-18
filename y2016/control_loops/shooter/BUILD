@@ -51,9 +51,6 @@ cc_library(
     ':shooter_queue',
     ':shooter_plants',
     '//aos/common/controls:control_loop',
-    '//aos/common/util:log_interval',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/logging:matrix_logging',
   ],
 )
 

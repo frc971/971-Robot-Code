@@ -6,26 +6,40 @@ import "frc971/control_loops/control_loops.q";
 queue_group ShooterQueue {
   implements aos.control_loops.ControlLoop;
 
-  message Goal {
-    // Goal velocity in rad/sec
-    double velocity;
-  };
+  // All angles are in radians, and angular velocities are in rad/sec. For all
+  // angular velocities, positive is shooting the ball out of the robot.
 
-  message Status {
-    // True if the shooter is up to speed.
-    bool ready;
-    // The average velocity over the last 0.1 seconds.
-    double average_velocity;
+  message Goal {
+    // Angular velocity goals in rad/sec.
+    double angular_velocity_left;
+    double angular_velocity_right;
   };
 
   message Position {
-    // The angle of the shooter wheel measured in rad/sec.
-    double position;
+    // Wheel angle in rad/sec.
+    double theta_left;
+    double theta_right;
+  };
+
+  message Status {
+    bool ready_left;
+    bool ready_right;
+    // Is the shooter ready to shoot?
+    bool ready_both;
+
+    // Average angular velocities over dt * kHistoryLength.
+    double avg_angular_velocity_left;
+    double avg_angular_velocity_right;
+  };
+
+  message Output {
+    double voltage_left;
+    double voltage_right;
   };
 
   queue Goal goal;
   queue Position position;
-  queue aos.control_loops.Output output;
+  queue Output output;
   queue Status status;
 };
 

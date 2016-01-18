@@ -12,42 +12,58 @@
 namespace y2016 {
 namespace control_loops {
 
-class Shooter
-    : public ::aos::controls::ControlLoop<control_loops::ShooterQueue> {
+namespace {
+// TODO(constants): Update.
+const double kTolerance = 10.0;
+const double kMaxSpeed = 10000.0 * (2.0 * M_PI) / 60.0 * 15.0 / 34.0;
+const double kAngularVelocityWeightScalar = 0.35;
+}  // namespace
+
+struct ShooterStatus {
+  double avg_angular_velocity;
+  bool ready;
+};
+
+class ShooterSide {
  public:
-  explicit Shooter(
-      control_loops::ShooterQueue *my_shooter = &control_loops::shooter_queue);
+  ShooterSide();
 
-  // Control loop time step.
-  static const double dt;
-
-  // Maximum speed of the shooter wheel which the encoder is rated for in
-  // rad/sec.
-  static const double kMaxSpeed;
-
- protected:
-  virtual void RunIteration(
-      const control_loops::ShooterQueue::Goal *goal,
-      const control_loops::ShooterQueue::Position *position,
-      ::aos::control_loops::Output *output,
-      control_loops::ShooterQueue::Status *status);
+  void SetGoal(double angular_velocity_goal);
+  void EstimatePositionTimestep();
+  void SetPosition(double current_position);
+  const ShooterStatus GetStatus();
+  double GetOutput();
+  void UpdateLoop(bool output_is_null);
 
  private:
-  // The state feedback control loop to talk to.
   ::std::unique_ptr<StateFeedbackLoop<2, 1, 1>> loop_;
 
-  // History array and stuff for determining average velocity and whether
-  // we are ready to shoot.
+  double current_position_ = 0.0;
+  double position_goal_ = 0.0;
+  double angular_velocity_goal_ = 0.0;
+
+  // History array for calculating a filtered angular velocity.
   static const int kHistoryLength = 5;
   double history_[kHistoryLength];
   ptrdiff_t history_position_;
-  double average_velocity_;
 
-  double position_goal_;
-  double last_position_;
+  DISALLOW_COPY_AND_ASSIGN(ShooterSide);
+};
 
-  // For making sure it keeps spinning if we're shooting.
-  double last_velocity_goal_;
+class Shooter
+    : public ::aos::controls::ControlLoop<control_loops::ShooterQueue> {
+ public:
+  explicit Shooter(control_loops::ShooterQueue *shooter_queue =
+                       &control_loops::shooter_queue);
+
+ protected:
+  void RunIteration(const control_loops::ShooterQueue::Goal *goal,
+                    const control_loops::ShooterQueue::Position *position,
+                    control_loops::ShooterQueue::Output *output,
+                    control_loops::ShooterQueue::Status *status) override;
+
+ private:
+  ShooterSide left_, right_;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };

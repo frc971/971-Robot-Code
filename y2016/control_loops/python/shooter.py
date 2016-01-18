@@ -31,6 +31,7 @@ class Shooter(control_loop.ControlLoop):
     self.dt = 0.005
 
     # State feedback matrices
+    # [position, angular velocity]
     self.A_continuous = numpy.matrix(
         [[0, 1],
          [0, -self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
