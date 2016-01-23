@@ -13,6 +13,74 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_intake',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2016/control_loops/python:intake) $(OUTS)',
+  tools = [
+    '//y2016/control_loops/python:intake',
+  ],
+  outs = [
+    'intake_plant.h',
+    'intake_plant.cc',
+    'integral_intake_plant.h',
+    'integral_intake_plant.cc',
+  ],
+)
+
+genrule(
+  name = 'genrule_shoulder',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2016/control_loops/python:shoulder) $(OUTS)',
+  tools = [
+    '//y2016/control_loops/python:shoulder',
+  ],
+  outs = [
+    'shoulder_plant.h',
+    'shoulder_plant.cc',
+    'integral_shoulder_plant.h',
+    'integral_shoulder_plant.cc',
+  ],
+)
+
+genrule(
+  name = 'genrule_wrist',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2016/control_loops/python:wrist) $(OUTS)',
+  tools = [
+    '//y2016/control_loops/python:wrist',
+  ],
+  outs = [
+    'wrist_plant.h',
+    'wrist_plant.cc',
+    'integral_wrist_plant.h',
+    'integral_wrist_plant.cc',
+  ],
+)
+
+cc_library(
+  name = 'superstructure_plants',
+  srcs = [
+    'intake_plant.cc',
+    'shoulder_plant.cc',
+    'wrist_plant.cc',
+    'integral_intake_plant.cc',
+    'integral_shoulder_plant.cc',
+    'integral_wrist_plant.cc',
+  ],
+  hdrs = [
+    'intake_plant.h',
+    'shoulder_plant.h',
+    'wrist_plant.h',
+    'integral_intake_plant.h',
+    'integral_shoulder_plant.h',
+    'integral_wrist_plant.h',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
 cc_library(
   name = 'superstructure_lib',
   srcs = [

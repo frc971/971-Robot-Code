@@ -39,11 +39,38 @@ py_library(
 )
 
 py_binary(
-  name = 'shooter',
+  name = 'intake',
   srcs = [
-    'shooter.py',
+    'intake.py',
   ],
   deps = [
+    ':polydrivetrain_lib',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'shoulder',
+  srcs = [
+    'shoulder.py',
+  ],
+  deps = [
+    ':polydrivetrain_lib',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'wrist',
+  srcs = [
+    'wrist.py',
+  ],
+  deps = [
+    ':polydrivetrain_lib',
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
