@@ -23,6 +23,17 @@ new_http_archive(
   url = 'http://frc971.org/Build-Dependencies/arm-frc-linux-gnueabi_4.9.3.tar.gz',
 )
 
+# Recompressed version of the one downloaded from Linaro at
+# <https://releases.linaro.org/15.05/components/toolchain/binaries/arm-linux-gnueabihf/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf.tar.xz>,
+# with workarounds for <https://github.com/bazelbuild/bazel/issues/574> and the
+# top-level folder stripped off.
+new_http_archive(
+  name = 'linaro_linux_gcc_4.9_repo',
+  build_file = 'compilers/linaro_linux_gcc_4.9.BUILD',
+  sha256 = '25e97bcb0af4fd7cd626d5bb1b303c7d2cb13acf2474e335e3d431d1a53fbb52',
+  url = 'http://frc971.org/Build-Dependencies/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf.tar.gz',
+)
+
 new_git_repository(
   name = 'python-gflags-repo',
   remote = 'https://github.com/gflags/python-gflags.git',

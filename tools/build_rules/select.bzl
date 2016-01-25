@@ -3,18 +3,27 @@
 # quickly find issues where something new isn't handled.
 # It will also make adding ORs when it makes sense easy to do nicely.
 
-all_cpus = ['amd64', 'roborio']
+all_cpus = ['amd64', 'roborio', 'armhf']
 '''All of the CPUs we know about.'''
 
 '''A select wrapper for CPU architectures.
 
 Args:
   values: A mapping from architecture names (as strings) to other things.
-          Currently amd64 and roborio are recognized.
+          Currently amd64, roborio, and armhf are recognized.
           'else' is also allowed as a default.
+          'arm' is allowed instead of roborio and armhf.
 Returns a select which evaluates to the correct element of values.
 '''
 def cpu_select(values):
+  if 'arm' in values:
+    new_values = {}
+    for cpu in values:
+      if cpu != 'arm':
+        new_values[cpu] = values[cpu]
+    new_values['armhf'] = values['arm']
+    new_values['roborio'] = values['arm']
+    values = new_values
   for cpu in all_cpus:
     if cpu not in values:
       if 'else' in values:
@@ -27,6 +36,7 @@ def cpu_select(values):
   return select({
     '//tools:cpu_k8': values['amd64'],
     '//tools:cpu_roborio': values['roborio'],
+    '//tools:cpu_armhf': values['armhf'],
   })
 
 '''A select wrapper for address space sizes.

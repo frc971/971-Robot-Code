@@ -17,6 +17,10 @@ default_toolchain {
   toolchain_identifier: "stub_armeabi-v7a"
 }
 
+default_toolchain {
+  cpu: "armhf-debian"
+  toolchain_identifier: "clang_linux_armhf"
+}
 
 toolchain {
   abi_version: "armeabi-v7a"
@@ -97,7 +101,7 @@ toolchain {
   cxx_builtin_include_directory: '/usr/lib/llvm-3.6/lib/clang/3.6.2/include'
   cxx_builtin_include_directory: '/usr/include/x86_64-linux-gnu'
   cxx_builtin_include_directory: '/usr/include'
-  cxx_builtin_include_directory: '/usr/lib/clang/3.6.2/include/'
+  cxx_builtin_include_directory: '/usr/lib/clang/3.6.2/include'
 
   linker_flag: "-lstdc++"
   linker_flag: "-B/usr/bin/"
@@ -499,6 +503,256 @@ toolchain {
 
   # Have GCC return the exit code from ld.
   linker_flag: "-pass-exit-codes"
+
+  # Stamp the binary with a unique identifier.
+  linker_flag: "-Wl,--build-id=md5"
+  linker_flag: "-Wl,--hash-style=gnu"
+  #linker_flag: "-Wl,--warn-execstack"
+  #linker_flag: "-Wl,--detect-odr-violations"
+
+  # Enable debug symbols.
+  compiler_flag: "-ggdb3"
+
+  compilation_mode_flags {
+    mode: OPT
+
+    compiler_flag: "-O2"
+
+    # Disable assertions
+    compiler_flag: "-DNDEBUG"
+    compiler_flag: "-D_FORTIFY_SOURCE=1"
+
+    # Removal of unused code and data at link time (can this increase binary size in some cases?).
+    compiler_flag: "-ffunction-sections"
+    compiler_flag: "-fdata-sections"
+    linker_flag: "-Wl,--gc-sections"
+  }
+}
+
+toolchain {
+  abi_version: "clang_3.6"
+  abi_libc_version: "glibc_2.19"
+  builtin_sysroot: ""
+  compiler: "clang"
+  host_system_name: "roborio"
+  needsPic: true
+  supports_gold_linker: false
+  supports_incremental_linker: false
+  supports_fission: false
+  supports_interface_shared_objects: false
+  supports_normalizing_ar: true
+  supports_start_end_lib: false
+  supports_thin_archives: true
+  target_libc: "glibc_2.19"
+  target_cpu: "armhf-debian"
+  target_system_name: "arm_a15"
+  toolchain_identifier: "clang_linux_armhf"
+
+  tool_path { name: "ar" path: "linaro_linux_gcc/arm-linux-gnueabihf-ar" }
+  tool_path { name: "compat-ld" path: "linaro_linux_gcc/arm-linux-gnueabihf-ld" }
+  tool_path { name: "cpp" path: "linaro_linux_gcc/clang_bin/clang" }
+  tool_path { name: "dwp" path: "linaro_linux_gcc/arm-linux-gnueabihf-dwp" }
+  tool_path { name: "gcc" path: "linaro_linux_gcc/clang_bin/clang" }
+  tool_path { name: "gcov" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-gcov-4.9" }
+  # C(++) compiles invoke the compiler (as that is the one knowing where
+  # to find libraries), but we provide LD so other rules can invoke the linker.
+  tool_path { name: "ld" path: "linaro_linux_gcc/arm-linux-gnueabihf-ld" }
+  tool_path { name: "nm" path: "linaro_linux_gcc/arm-linux-gnueabihf-nm" }
+  tool_path { name: "objcopy" path: "linaro_linux_gcc/arm-linux-gnueabihf-objcopy" }
+  objcopy_embed_flag: "-I"
+  objcopy_embed_flag: "binary"
+  tool_path { name: "objdump" path: "linaro_linux_gcc/arm-linux-gnueabihf-objdump" }
+  tool_path { name: "strip" path: "linaro_linux_gcc/arm-linux-gnueabihf-strip" }
+
+  compiler_flag: "-target"
+  compiler_flag: "armv7a-arm-linux-gnueabif"
+  compiler_flag: "--sysroot=external/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/libc"
+  compiler_flag: "-mfloat-abi=hard"
+  compiler_flag: "-mfpu=vfpv3-d16"
+
+  compiler_flag: "-nostdinc"
+  compiler_flag: "-isystem"
+  compiler_flag: "/usr/lib/clang/3.6/include"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_4.9_repo/lib/gcc/arm-linux-gnueabihf/4.9.3/include"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/libc/usr/include"
+  compiler_flag: "-isystem"
+  compiler_flag: "external/linaro_linux_gcc_4.9_repo/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed"
+  cxx_flag: "-isystem"
+  cxx_flag: "external/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/include/c++/4.9.3/arm-linux-gnueabihf"
+  cxx_flag: "-isystem"
+  cxx_flag: "external/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/include/c++/4.9.3"
+  cxx_flag: "-isystem"
+  cxx_flag: "external/linaro_linux_gcc_4.9_repo/include/c++/4.9.3/arm-linux-gnueabihf"
+  cxx_flag: "-isystem"
+  cxx_flag: "external/linaro_linux_gcc_4.9_repo/include/c++/4.9.3"
+
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/libc/usr/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/libc/usr/lib/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//include)%/c++/4.9.3"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/libc/lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//lib/gcc/arm-linux-gnueabihf/4.9.3/include-fixed)%"
+  cxx_builtin_include_directory: "%package(@linaro_linux_gcc_4.9_repo//arm-linux-gnueabihf/include)%/c++/4.9.3"
+  cxx_builtin_include_directory: '/usr/lib/clang/3.6/include'
+
+  linker_flag: "-target"
+  linker_flag: "armv7a-arm-linux-gnueabif"
+  linker_flag: "--sysroot=external/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/libc"
+  linker_flag: "-lstdc++"
+  linker_flag: "-Ltools/cpp/linaro_linux_gcc/clang_more_libs"
+  linker_flag: "-Lexternal/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/lib"
+  linker_flag: "-Lexternal/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/libc/lib"
+  linker_flag: "-Lexternal/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/libc/usr/lib"
+  linker_flag: "-Bexternal/linaro_linux_gcc_4.9_repo/arm-linux-gnueabihf/bin"
+  linker_flag: "-Wl,--dynamic-linker=/lib/ld-linux-armhf.so.3"
+
+  feature {
+    name: "opt"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=0"
+      }
+    }
+  }
+
+  feature {
+    name: "dbg"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=1"
+      }
+      flag_group {
+        flag: "-fno-omit-frame-pointer"
+      }
+    }
+  }
+
+  feature {
+    name: "fastbuild"
+    implies: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-DAOS_DEBUG=0"
+      }
+    }
+  }
+
+  feature {
+    name: "all_modes"
+    flag_set {
+      action: "preprocess-assemble"
+      action: "assemble"
+      action: "c-compile"
+      flag_group {
+        flag: "-std=gnu99"
+      }
+    }
+    flag_set {
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      flag_group {
+        flag: "-std=gnu++1y"
+      }
+    }
+    flag_set {
+      action: "preprocess-assemble"
+      action: "assemble"
+      action: "c++-link"
+      action: "c++-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "c++-module-compile"
+      action: "c-compile"
+      flag_group {
+        # We always want to compile with -pthread semantics.
+        flag: "-pthread"
+      }
+    }
+  }
+
+  # Anticipated future default.
+  # This makes GCC and Clang do what we want when called through symlinks.
+  unfiltered_cxx_flag: "-no-canonical-prefixes"
+  linker_flag: "-no-canonical-prefixes"
+
+  # Things that the code wants defined.
+  compiler_flag: "-D__STDC_FORMAT_MACROS"
+  compiler_flag: "-D__STDC_CONSTANT_MACROS"
+  compiler_flag: "-D__STDC_LIMIT_MACROS"
+  compiler_flag: "-D_FILE_OFFSET_BITS=64"
+  # TODO(Brian): Rename this or something.
+  compiler_flag: "-DAOS_ARCHITECTURE_armhf"
+
+  # Make C++ compilation deterministic. Use linkstamping instead of these
+  # compiler symbols.
+  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+
+  # Security hardening on by default.
+  # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+  # We need to undef it before redefining it as some distributions now have
+  # it enabled by default.
+  compiler_flag: "-U_FORTIFY_SOURCE"
+  compiler_flag: "-fstack-protector"
+  compiler_flag: "-fPIE"
+  linker_flag: "-pie"
+  linker_flag: "-Wl,-z,relro,-z,now"
+
+  # Pretty much everything needs this, including parts of the glibc STL...
+  linker_flag: "-lm"
+
+  # Enable coloring even if there's no attached terminal. Bazel removes the
+  # escape sequences if --nocolor is specified.
+  compiler_flag: "-fdiagnostics-color=always"
+
+  compiler_flag: "-Wall"
+  compiler_flag: "-Wextra"
+  compiler_flag: "-Wswitch-enum"
+  compiler_flag: "-Wpointer-arith"
+  compiler_flag: "-Wstrict-aliasing"
+  compiler_flag: "-Wcast-qual"
+  compiler_flag: "-Wcast-align"
+  compiler_flag: "-Wwrite-strings"
+  compiler_flag: "-Wtype-limits"
+  compiler_flag: "-Wsign-compare"
+  compiler_flag: "-Wformat=2"
+  compiler_flag: "-Werror"
+  compiler_flag: "-Wunused-local-typedefs"
+
+  # Keep stack frames for debugging, even in opt mode.
+  compiler_flag: "-fno-omit-frame-pointer"
+
+  # Don't use temp files while compiling.
+  compiler_flag: "-pipe"
 
   # Stamp the binary with a unique identifier.
   linker_flag: "-Wl,--build-id=md5"
