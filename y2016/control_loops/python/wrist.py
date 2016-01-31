@@ -19,22 +19,17 @@ except gflags.DuplicateFlagError:
   pass
 
 class Wrist(control_loop.ControlLoop):
-  def __init__(self, name="Wrist", mass=None):
+  def __init__(self, name="Wrist"):
     super(Wrist, self).__init__(name)
     # TODO(constants): Update all of these & retune poles.
     # Stall Torque in N m
-    self.stall_torque = 0.476
+    self.stall_torque = 0.71
     # Stall Current in Amps
-    self.stall_current = 80.730
+    self.stall_current = 134
     # Free Speed in RPM
-    self.free_speed = 13906.0
+    self.free_speed = 18730
     # Free Current in Amps
-    self.free_current = 5.820
-    # Mass of the wrist
-    if mass is None:
-      self.mass = 5.0
-    else:
-      self.mass = mass
+    self.free_current = 0.7
 
     # Resistance of the motor
     self.R = 12.0 / self.stall_current
@@ -44,11 +39,9 @@ class Wrist(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratio
-    self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 14.0) * (72.0 / 18.0)
-    # Wrist length
-    self.r = 18 * 0.0254
+    self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 18.0) * (48.0 / 16.0)
 
-    self.J = self.r * self.mass
+    self.J = 0.15
 
     # Control loop time step
     self.dt = 0.005
@@ -76,10 +69,8 @@ class Wrist(control_loop.ControlLoop):
 
     controllability = controls.ctrb(self.A, self.B)
 
-    print "Free speed is", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G
-
-    q_pos = 0.15
-    q_vel = 2.5
+    q_pos = 0.20
+    q_vel = 8.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 
@@ -88,13 +79,6 @@ class Wrist(control_loop.ControlLoop):
 
     print 'K', self.K
     print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
-
-    self.rpl = 0.30
-    self.ipl = 0.10
-    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl])
-
-    print 'L is', self.L
 
     q_pos = 0.05
     q_vel = 2.65
@@ -119,8 +103,8 @@ class Wrist(control_loop.ControlLoop):
     self.InitializeState()
 
 class IntegralWrist(Wrist):
-  def __init__(self, name="IntegralWrist", mass=None):
-    super(IntegralWrist, self).__init__(name=name, mass=mass)
+  def __init__(self, name="IntegralWrist"):
+    super(IntegralWrist, self).__init__(name=name)
 
     self.A_continuous_unaugmented = self.A_continuous
     self.B_continuous_unaugmented = self.B_continuous
@@ -140,7 +124,7 @@ class IntegralWrist(Wrist):
 
     q_pos = 0.08
     q_vel = 4.00
-    q_voltage = 6.0
+    q_voltage = 1.5
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])
@@ -158,6 +142,7 @@ class IntegralWrist(Wrist):
     self.K[0, 2] = 1
 
     self.InitializeState()
+
 class ScenarioPlotter(object):
   def __init__(self):
     # Various lists for graphing things.
@@ -167,6 +152,7 @@ class ScenarioPlotter(object):
     self.a = []
     self.x_hat = []
     self.u = []
+    self.offset = []
 
   def run_test(self, wrist, goal, iterations=200, controller_wrist=None,
              observer_wrist=None):
@@ -220,8 +206,9 @@ class ScenarioPlotter(object):
       if observer_wrist is not None:
         observer_wrist.Y = wrist.Y
         observer_wrist.CorrectObserver(U)
+        self.offset.append(observer_wrist.X_hat[2, 0])
 
-      wrist.Update(U)
+      wrist.Update(U + 2.0)
 
       if observer_wrist is not None:
         observer_wrist.PredictObserver(U)
@@ -239,25 +226,24 @@ class ScenarioPlotter(object):
 
     pylab.subplot(3, 1, 2)
     pylab.plot(self.t, self.u, label='u')
+    pylab.plot(self.t, self.offset, label='voltage_offset')
+    pylab.legend()
 
     pylab.subplot(3, 1, 3)
     pylab.plot(self.t, self.a, label='a')
-
     pylab.legend()
+
     pylab.show()
 
 
 def main(argv):
   argv = FLAGS(argv)
 
-  base_mass = 4
-  load_mass = 0
-
   scenario_plotter = ScenarioPlotter()
 
-  wrist = Wrist(mass=base_mass + load_mass)
-  wrist_controller = IntegralWrist(mass=base_mass + load_mass)
-  observer_wrist = IntegralWrist(mass=base_mass + load_mass)
+  wrist = Wrist()
+  wrist_controller = IntegralWrist()
+  observer_wrist = IntegralWrist()
 
   # Test moving the wrist with constant separation.
   initial_X = numpy.matrix([[0.0], [0.0]])
@@ -278,9 +264,9 @@ def main(argv):
                                                  namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
 
-    integral_wrist = IntegralWrist("IntegralWrist", mass=base_mass + load_mass)
+    integral_wrist = IntegralWrist("IntegralWrist")
     integral_loop_writer = control_loop.ControlLoopWriter("IntegralWrist", [integral_wrist],
-                                                          namespaces=['y2016', 'control_loops', 'superstructure'])
+                                                          namespaces=namespaces)
     integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
