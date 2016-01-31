@@ -27,9 +27,15 @@ class DrivetrainMotorsSS {
    private:
     void CapU() override;
 
-    const ::aos::controls::HPolytope<2> U_Poly_;
-    Eigen::Matrix<double, 2, 2> T, T_inverse;
-    bool output_was_capped_ = false;;
+    // Reprsents +/- full power on each motor in U-space, aka the square from
+    // (-12, -12) to (12, 12).
+    const ::aos::controls::HPolytope<2> U_poly_;
+
+    // multiplying by T converts [left_error, right_error] to
+    // [left_right_error_difference, total_distance_error].
+    Eigen::Matrix<double, 2, 2> T_, T_inverse_;
+
+    bool output_was_capped_ = false;
   };
 
   DrivetrainMotorsSS(const DrivetrainConfig &dt_config);
