@@ -40,6 +40,22 @@ cc_library(
   deps = [
     '//third_party/eigen',
     '//third_party/cddlib',
+    '//aos/common/logging',
+    '//aos/common/logging:matrix_logging',
+  ],
+)
+
+cc_test(
+  name = 'polytope_test',
+  srcs = [
+    'polytope_test.cc',
+  ],
+  deps = [
+    ':polytope',
+    '//aos/testing:googletest',
+    '//third_party/eigen',
+    '//third_party/googletest:googlemock',
+    '//aos/testing:test_logging',
   ],
 )
 
