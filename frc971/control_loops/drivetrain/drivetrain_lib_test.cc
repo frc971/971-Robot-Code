@@ -224,6 +224,48 @@ TEST_F(DrivetrainTest, NoGoalWithRobotState) {
   }
 }
 
+// Tests that the robot successfully drives straight forward.
+// This used to not work due to a U-capping bug.
+TEST_F(DrivetrainTest, DriveStraightForward) {
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .control_loop_driving(true)
+      .left_goal(4.0)
+      .right_goal(4.0)
+      .Send();
+  for (int i = 0; i < 500; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
+    SimulateTimestep(true);
+    ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
+    EXPECT_FLOAT_EQ(my_drivetrain_queue_.output->left_voltage,
+                    my_drivetrain_queue_.output->right_voltage);
+    EXPECT_GT(my_drivetrain_queue_.output->left_voltage, -3);
+    EXPECT_GT(my_drivetrain_queue_.output->right_voltage, -3);
+  }
+  VerifyNearGoal();
+}
+
+// Tests that the robot successfully drives close to straight.
+// This used to fail in simulation due to libcdd issues with U-capping.
+TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .control_loop_driving(true)
+      .left_goal(4.0)
+      .right_goal(3.9)
+      .Send();
+  for (int i = 0; i < 500; ++i) {
+    drivetrain_motor_plant_.SendPositionMessage();
+    drivetrain_motor_.Iterate();
+    drivetrain_motor_plant_.Simulate();
+    SimulateTimestep(true);
+    ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
+    EXPECT_GT(my_drivetrain_queue_.output->left_voltage, -3);
+    EXPECT_GT(my_drivetrain_queue_.output->right_voltage, -3);
+  }
+  VerifyNearGoal();
+}
+
 ::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
                                       double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;
