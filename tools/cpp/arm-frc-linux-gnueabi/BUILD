@@ -3,7 +3,7 @@ package(default_visibility = ['//tools/cpp:__pkg__'])
 filegroup(
   name = 'gcc',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:gcc',
+    '@arm_frc_linux_gnueabi_repo//:gcc',
     'arm-frc-linux-gnueabi-gcc',
   ],
 )
@@ -11,7 +11,7 @@ filegroup(
 filegroup(
   name = 'ar',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:ar',
+    '@arm_frc_linux_gnueabi_repo//:ar',
     'arm-frc-linux-gnueabi-ar',
   ],
 )
@@ -19,7 +19,7 @@ filegroup(
 filegroup(
   name = 'as',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:as',
+    '@arm_frc_linux_gnueabi_repo//:as',
     'arm-frc-linux-gnueabi-as',
   ],
 )
@@ -27,7 +27,7 @@ filegroup(
 filegroup(
   name = 'ld',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:ld',
+    '@arm_frc_linux_gnueabi_repo//:ld',
     'arm-frc-linux-gnueabi-ld',
   ],
 )
@@ -35,7 +35,7 @@ filegroup(
 filegroup(
   name = 'nm',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:nm',
+    '@arm_frc_linux_gnueabi_repo//:nm',
     'arm-frc-linux-gnueabi-nm',
   ],
 )
@@ -43,7 +43,7 @@ filegroup(
 filegroup(
   name = 'objcopy',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:objcopy',
+    '@arm_frc_linux_gnueabi_repo//:objcopy',
     'arm-frc-linux-gnueabi-objcopy',
   ],
 )
@@ -51,7 +51,7 @@ filegroup(
 filegroup(
   name = 'objdump',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:objdump',
+    '@arm_frc_linux_gnueabi_repo//:objdump',
     'arm-frc-linux-gnueabi-objdump',
   ],
 )
@@ -59,7 +59,7 @@ filegroup(
 filegroup(
   name = 'strip',
   srcs = [
-    '@arm-frc-linux-gnueabi-repo//:strip',
+    '@arm_frc_linux_gnueabi_repo//:strip',
     'arm-frc-linux-gnueabi-strip',
   ],
 )

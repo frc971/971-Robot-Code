@@ -1,5 +1,5 @@
 #!/bin/bash --norc
 
 exec \
-	"${BAZEL_OUTPUT_ROOT}external/arm-frc-linux-gnueabi-repo/usr/bin/arm-frc-linux-gnueabi-gcc" \
+	"${BAZEL_OUTPUT_ROOT}external/arm_frc_linux_gnueabi_repo/usr/bin/arm-frc-linux-gnueabi-gcc" \
 	"$@"

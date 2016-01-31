@@ -38,7 +38,7 @@ filegroup(
   srcs = [
     ':cc-compiler-k8',
     ':cc-compiler-roborio',
-    '@arm-frc-linux-gnueabi-repo//:compiler_components',
+    '@arm_frc_linux_gnueabi_repo//:compiler_components',
     ':roborio-compiler-files',
     ':flags_compiler_inputs',
   ],
@@ -74,7 +74,7 @@ filegroup(
   srcs = [
     '//tools/cpp/arm-frc-linux-gnueabi:tool-wrappers',
     '//tools/cpp/arm-frc-linux-gnueabi:as',
-    '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
+    '@arm_frc_linux_gnueabi_repo//:compiler_pieces',
     ':flags_compiler_inputs',
   ],
 )
@@ -85,7 +85,7 @@ filegroup(
     '//tools/cpp/arm-frc-linux-gnueabi:ld',
     '//tools/cpp/arm-frc-linux-gnueabi:ar',
     '//tools/cpp/arm-frc-linux-gnueabi:gcc',
-    '@arm-frc-linux-gnueabi-repo//:compiler_pieces',
+    '@arm_frc_linux_gnueabi_repo//:compiler_pieces',
   ],
 )
 filegroup(
