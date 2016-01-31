@@ -1,4 +1,4 @@
-package(default_visibility = ['//debian:__pkg__'])
+package(default_visibility = ['@//debian:__pkg__'])
 
 cc_library(
   name = 'librt',
