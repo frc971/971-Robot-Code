@@ -32,7 +32,7 @@
 
 #include "frc971/shifter_hall_effect.h"
 
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/control_loops/claw/claw.q.h"
 #include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/constants.h"
@@ -54,7 +54,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::y2014::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2014::control_loops::claw_queue;
 using ::y2014::control_loops::shooter_queue;
 
@@ -470,7 +470,7 @@ class SolenoidWriter {
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         shooter_(".y2014.control_loops.shooter_queue.output"),
-        drivetrain_(".y2014.control_loops.drivetrain_queue.output") {}
+        drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -566,7 +566,7 @@ class SolenoidWriter {
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::y2014::control_loops::ShooterQueue::Output> shooter_;
-  ::aos::Queue<::y2014::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -583,11 +583,11 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::y2014::control_loops::drivetrain_queue.output.FetchAnother();
+    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::y2014::control_loops::drivetrain_queue.output;
+    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(queue->right_voltage / 12.0);

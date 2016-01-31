@@ -12,7 +12,7 @@ cc_binary(
     '//aos/externals:wpilib',
     '//y2014:constants',
     '//y2014/queues:auto_mode',
-    '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2014/control_loops/shooter:shooter_queue',
     '//y2014/control_loops/claw:claw_queue',
     '//aos/common/controls:control_loop',

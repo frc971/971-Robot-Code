@@ -13,7 +13,7 @@
 
 #include "y2014/actors/drivetrain_actor.h"
 #include "y2014/constants.h"
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace y2014 {
 namespace actors {
@@ -50,9 +50,9 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);
 
-    control_loops::drivetrain_queue.status.FetchLatest();
-    if (control_loops::drivetrain_queue.status.get()) {
-      const auto& status = *control_loops::drivetrain_queue.status;
+    ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+    if (::frc971::control_loops::drivetrain_queue.status.get()) {
+      const auto& status = *::frc971::control_loops::drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) > 24) {
         LOG(DEBUG, "spinning in place\n");
@@ -119,7 +119,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
     LOG(DEBUG, "Driving left to %f, right to %f\n",
         left_goal_state(0, 0) + params.left_initial_position,
         right_goal_state(0, 0) + params.right_initial_position);
-    control_loops::drivetrain_queue.goal.MakeWithBuilder()
+    ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
         .highgear(true)
         .left_goal(left_goal_state(0, 0) + params.left_initial_position)
@@ -129,11 +129,11 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         .Send();
   }
   if (ShouldCancel()) return true;
-  control_loops::drivetrain_queue.status.FetchLatest();
-  while (!control_loops::drivetrain_queue.status.get()) {
+  ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
+  while (!::frc971::control_loops::drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain status packet, trying to fetch again\n");
-    control_loops::drivetrain_queue.status.FetchNextBlocking();
+    ::frc971::control_loops::drivetrain_queue.status.FetchNextBlocking();
     if (ShouldCancel()) return true;
   }
   while (true) {
@@ -141,13 +141,13 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
     const double kPositionThreshold = 0.05;
 
     const double left_error = ::std::abs(
-        control_loops::drivetrain_queue.status->filtered_left_position -
+        ::frc971::control_loops::drivetrain_queue.status->filtered_left_position -
         (left_goal_state(0, 0) + params.left_initial_position));
     const double right_error = ::std::abs(
-        control_loops::drivetrain_queue.status->filtered_right_position -
+        ::frc971::control_loops::drivetrain_queue.status->filtered_right_position -
         (right_goal_state(0, 0) + params.right_initial_position));
     const double velocity_error =
-        ::std::abs(control_loops::drivetrain_queue.status->robot_speed);
+        ::std::abs(::frc971::control_loops::drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
         velocity_error < 0.2) {
       break;
@@ -155,7 +155,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
       LOG(DEBUG, "Drivetrain error is %f, %f, %f\n", left_error, right_error,
           velocity_error);
     }
-    control_loops::drivetrain_queue.status.FetchNextBlocking();
+    ::frc971::control_loops::drivetrain_queue.status.FetchNextBlocking();
   }
   LOG(INFO, "Done moving\n");
   return true;

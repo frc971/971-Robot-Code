@@ -1,7 +1,7 @@
 #include "aos/common/controls/replay_control_loop.h"
 #include "aos/linux_code/init.h"
 
-#include "y2014/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/queues/gyro.q.h"
 
 // Reads one or more log files and sends out all the queue messages (in the
@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
 
   {
     ::aos::controls::ControlLoopReplayer<
-        ::y2014::control_loops::DrivetrainQueue>
-        replayer(&::y2014::control_loops::drivetrain_queue, "drivetrain");
+        ::frc971::control_loops::DrivetrainQueue>
+        replayer(&::frc971::control_loops::drivetrain_queue, "drivetrain");
 
     replayer.AddDirectQueueSender("wpilib_interface.Gyro", "sending",
                                   ::frc971::sensors::gyro_reading);
@@ -27,10 +27,10 @@ int main(int argc, char **argv) {
     }
   }
   ::frc971::sensors::gyro_reading.Clear();
-  ::y2014::control_loops::drivetrain_queue.goal.Clear();
-  ::y2014::control_loops::drivetrain_queue.status.Clear();
-  ::y2014::control_loops::drivetrain_queue.position.Clear();
-  ::y2014::control_loops::drivetrain_queue.output.Clear();
+  ::frc971::control_loops::drivetrain_queue.goal.Clear();
+  ::frc971::control_loops::drivetrain_queue.status.Clear();
+  ::frc971::control_loops::drivetrain_queue.position.Clear();
+  ::frc971::control_loops::drivetrain_queue.output.Clear();
 
   ::aos::Cleanup();
 }

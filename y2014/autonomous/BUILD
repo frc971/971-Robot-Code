@@ -11,7 +11,7 @@ cc_library(
   deps = [
     '//frc971/autonomous:auto_queue',
     '//aos/common/controls:control_loop',
-    '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2014/control_loops/shooter:shooter_queue',
     '//y2014/control_loops/claw:claw_queue',
     '//y2014:constants',

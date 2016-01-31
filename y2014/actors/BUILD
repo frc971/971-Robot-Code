@@ -35,7 +35,7 @@ cc_library(
     '//aos/common/logging',
     '//y2014/control_loops/shooter:shooter_queue',
     '//y2014/control_loops/claw:claw_queue',
-    '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2014:constants',
   ],
 )
@@ -81,7 +81,7 @@ cc_library(
     '//aos/common/logging:queue_logging',
     '//third_party/eigen',
     '//aos/common/util:trapezoid_profile',
-    '//y2014/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops:state_feedback_loop',
   ],
 )
