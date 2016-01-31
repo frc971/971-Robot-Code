@@ -1,5 +1,5 @@
-#ifndef Y2014_ACTIONS_DRIVETRAIN_ACTION_H_
-#define Y2014_ACTIONS_DRIVETRAIN_ACTION_H_
+#ifndef Y2016_ACTORS_DRIVETRAIN_ACTOR_H_
+#define Y2016_ACTORS_DRIVETRAIN_ACTOR_H_
 
 #include <memory>
 
@@ -7,15 +7,15 @@
 #include "aos/common/actions/actions.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-#include "y2014/actors/drivetrain_action.q.h"
+#include "y2016/actors/drivetrain_action.q.h"
 
-namespace y2014 {
+namespace y2016 {
 namespace actors {
 
 class DrivetrainActor
     : public ::aos::common::actions::ActorBase<DrivetrainActionQueueGroup> {
  public:
-  explicit DrivetrainActor(DrivetrainActionQueueGroup* s);
+  explicit DrivetrainActor(DrivetrainActionQueueGroup *s);
 
   bool RunAction(const actors::DrivetrainActionParams &params) override;
 
@@ -28,9 +28,9 @@ typedef ::aos::common::actions::TypedAction<DrivetrainActionQueueGroup>
 
 // Makes a new DrivetrainActor action.
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::y2014::actors::DrivetrainActionParams& params);
+    const ::y2016::actors::DrivetrainActionParams &params);
 
 }  // namespace actors
-}  // namespace y2014
+}  // namespace y2016
 
 #endif

@@ -1,16 +1,16 @@
-#ifndef Y2014_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_
-#define Y2014_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_
+#ifndef Y2016_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_
+#define Y2016_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_
 
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
 using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
-namespace y2014 {
+namespace y2016 {
 namespace control_loops {
 
 const DrivetrainConfig &GetDrivetrainConfig();
 
 }  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2016
 
-#endif  // Y2014_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_
+#endif  // Y2016_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_BASE_H_

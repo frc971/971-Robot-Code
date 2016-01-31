@@ -5,9 +5,9 @@ load('/aos/build/queues', 'queue_library')
 genrule(
   name = 'genrule_drivetrain',
   visibility = ['//visibility:private'],
-  cmd = '$(location //y2014/control_loops/python:drivetrain) $(OUTS)',
+  cmd = '$(location //y2016/control_loops/python:drivetrain) $(OUTS)',
   tools = [
-    '//y2014/control_loops/python:drivetrain',
+    '//y2016/control_loops/python:drivetrain',
   ],
   outs = [
     'drivetrain_dog_motor_plant.h',
@@ -20,9 +20,9 @@ genrule(
 genrule(
   name = 'genrule_polydrivetrain',
   visibility = ['//visibility:private'],
-  cmd = '$(location //y2014/control_loops/python:polydrivetrain) $(OUTS)',
+  cmd = '$(location //y2016/control_loops/python:polydrivetrain) $(OUTS)',
   tools = [
-    '//y2014/control_loops/python:polydrivetrain',
+    '//y2016/control_loops/python:polydrivetrain',
   ],
   outs = [
     'polydrivetrain_dog_motor_plant.h',
@@ -59,8 +59,8 @@ cc_library(
   ],
   deps = [
     ':polydrivetrain_plants',
-    '//y2014:constants',
     '//frc971/control_loops/drivetrain:drivetrain_config',
+    '//y2016:constants',
   ],
 )
 

@@ -1,4 +1,4 @@
-package(default_visibility = ['//y2014:__subpackages__'])
+package(default_visibility = ['//y2016:__subpackages__'])
 
 py_binary(
   name = 'drivetrain',
@@ -36,29 +36,4 @@ py_library(
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
   ],
-)
-
-py_binary(
-  name = 'claw',
-  srcs = [
-    'claw.py',
-  ],
-  deps = [
-    ':polydrivetrain_lib',
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ]
-)
-
-py_binary(
-  name = 'shooter',
-  srcs = [
-    'shooter.py',
-  ],
-  deps = [
-    '//external:python-gflags',
-    '//external:python-glog',
-    '//frc971/control_loops/python:controls',
-  ]
 )
