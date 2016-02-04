@@ -1,5 +1,12 @@
 package(default_visibility = ['//visibility:public'])
 
+py_library(
+  name = 'py_trapezoid_profile',
+  srcs = [
+    'trapezoid_profile.py',
+  ],
+)
+
 cc_library(
   name = 'run_command',
   srcs = [

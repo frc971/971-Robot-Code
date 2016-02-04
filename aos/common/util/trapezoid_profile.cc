@@ -66,8 +66,7 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
   } else if (distance_to_target < 0) {
     // Recurse with everything inverted.
     output_(1) *= -1;
-    CalculateTimes(-distance_to_target,
-                   -goal_velocity);
+    CalculateTimes(-distance_to_target, -goal_velocity);
     output_(1) *= -1;
     acceleration_ *= -1;
     deceleration_ *= -1;
@@ -76,8 +75,9 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
 
   constant_time_ = 0;
   acceleration_ = maximum_acceleration_;
-  double maximum_acceleration_velocity = distance_to_target * 2 *
-      std::abs(acceleration_) + output_(1) * output_(1);
+  double maximum_acceleration_velocity =
+      distance_to_target * 2 * std::abs(acceleration_) +
+      output_(1) * output_(1);
   if (maximum_acceleration_velocity > 0) {
     maximum_acceleration_velocity = sqrt(maximum_acceleration_velocity);
   } else {
