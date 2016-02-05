@@ -220,6 +220,7 @@ class KFDrivetrain(Drivetrain):
 
 def main(argv):
   argv = FLAGS(argv)
+  glog.init()
 
   # Simulate the response of the system to a step input.
   drivetrain = Drivetrain()
