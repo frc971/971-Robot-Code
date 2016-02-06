@@ -21,6 +21,9 @@ queue_group ShooterQueue {
   message Goal {
     // Angular velocity goals in radians/second.
     double angular_velocity;
+
+    bool clamp_open; // True to release our clamp on the ball.
+    bool push_to_shooter;  // True to push the ball into the shooter.
   };
 
   message Position {
@@ -44,6 +47,10 @@ queue_group ShooterQueue {
     // Voltage in volts of the left and right shooter motors.
     double voltage_left;
     double voltage_right;
+
+    // See comments on the identical fields in Goal for details.
+    bool clamp_open;
+    bool push_to_shooter;
   };
 
   queue Goal goal;

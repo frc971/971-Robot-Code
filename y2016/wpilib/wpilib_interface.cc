@@ -32,6 +32,7 @@
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
@@ -346,7 +347,8 @@ class SensorReader {
   ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
 
   ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
-  ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_, shoulder_encoder_, wrist_encoder_;
+  ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_,
+      shoulder_encoder_, wrist_encoder_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter encoder_filter_, hall_filter_;
@@ -356,7 +358,8 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        drivetrain_(".frc971.control_loops.drivetrain_queue.output") {}
+        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
+        shooter_(".y2016.control_loops.shooter_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -374,6 +377,16 @@ class SolenoidWriter {
   void set_drivetrain_right(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     drivetrain_right_ = ::std::move(s);
+  }
+
+  void set_shooter_clamp(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    shooter_clamp_ = ::std::move(s);
+  }
+
+  void set_shooter_pusher(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    shooter_pusher_ = ::std::move(s);
   }
 
   void operator()() {
@@ -397,6 +410,15 @@ class SolenoidWriter {
           LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
           drivetrain_left_->Set(!drivetrain_->left_high);
           drivetrain_right_->Set(!drivetrain_->right_high);
+        }
+      }
+
+      {
+        shooter_.FetchLatest();
+        if (shooter_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+          shooter_clamp_->Set(shooter_->clamp_open);
+          shooter_pusher_->Set(shooter_->push_to_shooter);
         }
       }
 
@@ -425,12 +447,12 @@ class SolenoidWriter {
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
-      drivetrain_right_;
-
+      drivetrain_right_, shooter_clamp_, shooter_pusher_;
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::y2016::control_loops::ShooterQueue::Output> shooter_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -608,6 +630,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(6));
     solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(7));
+    solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(6));
+    solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(7));
 
     solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(25));
     solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
