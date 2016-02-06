@@ -56,11 +56,10 @@ py_binary(
     'intake.py',
   ],
   deps = [
-    ':polydrivetrain_lib',
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
-  ]
+  ],
 )
 
 py_binary(
@@ -69,11 +68,11 @@ py_binary(
     'shoulder.py',
   ],
   deps = [
-    ':polydrivetrain_lib',
+    '//aos/common/util:py_trapezoid_profile',
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
-  ]
+  ],
 )
 
 py_binary(
@@ -82,9 +81,64 @@ py_binary(
     'wrist.py',
   ],
   deps = [
-    ':polydrivetrain_lib',
+    '//aos/common/util:py_trapezoid_profile',
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',
-  ]
+  ],
+)
+
+py_library(
+  name = 'wrist_lib',
+  srcs = [
+    'wrist.py',
+  ],
+  deps = [
+    '//aos/common/util:py_trapezoid_profile',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+)
+
+py_library(
+  name = 'shoulder_lib',
+  srcs = [
+    'shoulder.py',
+  ],
+  deps = [
+    '//aos/common/util:py_trapezoid_profile',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+)
+
+py_library(
+  name = 'arm_lib',
+  srcs = [
+    'arm.py',
+  ],
+  deps = [
+    ':wrist_lib',
+    ':shoulder_lib',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+    '//aos/common/util:py_trapezoid_profile',
+  ],
+)
+py_binary(
+  name = 'arm',
+  srcs = [
+    'arm.py',
+  ],
+  deps = [
+    ':wrist_lib',
+    ':shoulder_lib',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+    '//aos/common/util:py_trapezoid_profile',
+  ],
 )

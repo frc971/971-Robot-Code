@@ -2,8 +2,6 @@
 
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
-from frc971.control_loops.python import polytope
-from y2016.control_loops.python import polydrivetrain
 import numpy
 import sys
 import matplotlib
@@ -77,8 +75,8 @@ class Wrist(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    print 'K', self.K
-    print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('Poles are %s for %s',
+               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]), self._name)
 
     q_pos = 0.05
     q_vel = 2.65
@@ -91,14 +89,14 @@ class Wrist(control_loop.ControlLoop):
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
-    print 'Kal', self.KalmanGain
     self.L = self.A * self.KalmanGain
-    print 'KalL is', self.L
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
     self.U_max = numpy.matrix([[12.0]])
     self.U_min = numpy.matrix([[-12.0]])
+
+    self.Kff = controls.TwoStateFeedForwards(self.B, self.Q)
 
     self.InitializeState()
 
@@ -140,6 +138,9 @@ class IntegralWrist(Wrist):
     self.K = numpy.matrix(numpy.zeros((1, 3)))
     self.K[0, 0:2] = self.K_unaugmented
     self.K[0, 2] = 1
+    self.Kff_unaugmented = self.Kff
+    self.Kff = numpy.matrix(numpy.zeros((1, 3)))
+    self.Kff[0, 0:2] = self.Kff_unaugmented
 
     self.InitializeState()
 
@@ -260,13 +261,13 @@ def main(argv):
   else:
     namespaces = ['y2016', 'control_loops', 'superstructure']
     wrist = Wrist("Wrist")
-    loop_writer = control_loop.ControlLoopWriter('Wrist', [wrist],
-                                                 namespaces=namespaces)
+    loop_writer = control_loop.ControlLoopWriter(
+        'Wrist', [wrist], namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
 
-    integral_wrist = IntegralWrist("IntegralWrist")
-    integral_loop_writer = control_loop.ControlLoopWriter("IntegralWrist", [integral_wrist],
-                                                          namespaces=namespaces)
+    integral_wrist = IntegralWrist('IntegralWrist')
+    integral_loop_writer = control_loop.ControlLoopWriter(
+        'IntegralWrist', [integral_wrist], namespaces=namespaces)
     integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':

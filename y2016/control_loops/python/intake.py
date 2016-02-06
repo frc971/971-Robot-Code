@@ -2,8 +2,6 @@
 
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
-from frc971.control_loops.python import polytope
-from y2016.control_loops.python import polydrivetrain
 import numpy
 import sys
 import matplotlib
@@ -69,7 +67,7 @@ class Intake(control_loop.ControlLoop):
 
     controllability = controls.ctrb(self.A, self.B)
 
-    print "Free speed is", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G
+    glog.debug("Free speed is %f", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G)
 
     q_pos = 0.20
     q_vel = 5.5
@@ -79,15 +77,16 @@ class Intake(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    print 'K', self.K
-    print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('K %s', repr(self.K))
+    glog.debug('Poles are %s',
+              repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = 0.30
     self.ipl = 0.10
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 
-    print 'L is', self.L
+    glog.debug('L is %s', repr(self.L))
 
     q_pos = 0.05
     q_vel = 2.65
@@ -100,9 +99,9 @@ class Intake(control_loop.ControlLoop):
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
-    print 'Kal', self.KalmanGain
+    glog.debug('Kal %s', repr(self.KalmanGain))
     self.L = self.A * self.KalmanGain
-    print 'KalL is', self.L
+    glog.debug('KalL is %s', repr(self.L))
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -247,6 +246,7 @@ class ScenarioPlotter(object):
 
 def main(argv):
   argv = FLAGS(argv)
+  glog.init()
 
   scenario_plotter = ScenarioPlotter()
 
