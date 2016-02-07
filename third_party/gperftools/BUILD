@@ -97,7 +97,7 @@ common_copts = [
     '-DPRIuS=\\"lu\\"',
     '-DPRIxS=\\"lx\\"',
   ],
-  'roborio': [
+  'arm': [
     '-DPC_FROM_UCONTEXT=uc_mcontext.arm_pc',
     '-DPRIdS=\\"d\\"',
     '-DPRIuS=\\"u\\"',

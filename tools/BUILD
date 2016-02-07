@@ -20,10 +20,18 @@ config_setting(
   values = {'cpu': 'roborio'},
 )
 config_setting(
+  name = 'cpu_armhf',
+  values = {'cpu': 'armhf-debian'},
+)
+config_setting(
   name = 'has_asan',
   values = {'copt': '-fsanitize=address'},
 )
 config_setting(
   name = 'has_tsan',
   values = {'copt': '-fsanitize=thread'},
+)
+config_setting(
+  name = 'has_ubsan',
+  values = {'copt': '-fsanitize=undefined'},
 )
