@@ -16,6 +16,7 @@ cc_library(
     '//aos/common:mutex',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971:shifter_hall_effect',
+    '//frc971:constants',
     '//y2016/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )

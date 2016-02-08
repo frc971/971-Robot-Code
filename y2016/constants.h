@@ -3,13 +3,15 @@
 
 #include <stdint.h>
 
-#include "frc971/shifter_hall_effect.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/shifter_hall_effect.h"
+#include "frc971/constants.h"
 
 namespace y2016 {
 namespace constants {
 
 using ::frc971::constants::ShifterHallEffect;
+using ::frc971::constants::ZeroingConstants;
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
@@ -35,6 +37,33 @@ struct Values {
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
 
   double drivetrain_max_speed;
+
+  // Defines a range of motion for a subsystem.
+  // These are all absolute positions in scaled units.
+  struct Range {
+    double lower_hard;
+    double upper_hard;
+    double lower;
+    double upper;
+  };
+
+  struct Intake {
+    Range limits;
+    ZeroingConstants zeroing;
+  };
+  Intake intake;
+
+  struct Shoulder {
+    Range limits;
+    ZeroingConstants zeroing;
+  };
+  Shoulder shoulder;
+
+  struct Wrist {
+    Range limits;
+    ZeroingConstants zeroing;
+  };
+  Wrist wrist;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

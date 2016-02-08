@@ -5,11 +5,208 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "aos/common/util/trapezoid_profile.h"
 
+#include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 
 namespace y2016 {
 namespace control_loops {
+namespace superstructure {
+namespace testing {
+class SuperstructureTest_DisabledGoalTest_Test;
+}  // namespace testing
+
+using ::frc971::PotAndIndexPosition;
+using ::frc971::EstimatorState;
+
+class SimpleCappedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
+ public:
+  SimpleCappedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> &&loop)
+      : StateFeedbackLoop<3, 1, 1>(::std::move(loop)), max_voltage_(12.0) {}
+
+  void set_max_voltage(double max_voltage) {
+    max_voltage_ = ::std::max(0.0, ::std::min(12.0, max_voltage));
+  }
+
+  void CapU() override;
+
+ private:
+  double max_voltage_;
+};
+
+class DoubleCappedStateFeedbackLoop : public StateFeedbackLoop<6, 2, 2> {
+ public:
+  DoubleCappedStateFeedbackLoop(StateFeedbackLoop<6, 2, 2> &&loop)
+      : StateFeedbackLoop<6, 2, 2>(::std::move(loop)),
+        shoulder_max_voltage_(12.0),
+        wrist_max_voltage_(12.0) {}
+
+  void set_max_voltage(double shoulder_max_voltage, double wrist_max_voltage) {
+    shoulder_max_voltage_ = ::std::max(0.0, ::std::min(12.0, shoulder_max_voltage));
+    wrist_max_voltage_ = ::std::max(0.0, ::std::min(12.0, wrist_max_voltage));
+  }
+
+  void CapU() override;
+
+ private:
+  double shoulder_max_voltage_;
+  double wrist_max_voltage_;
+};
+
+class Intake {
+ public:
+  Intake();
+  // Returns whether the estimators have been initialized and zeroed.
+  bool initialized() const { return initialized_; }
+  bool zeroed() const { return zeroed_; }
+
+  // Updates our estimator with the latest position.
+  void Correct(PotAndIndexPosition position);
+
+  // Forces the current goal to the provided goal, bypassing the profiler.
+  void ForceGoal(double goal);
+  // Sets the unprofiled goal.  The profiler will generate a profile to go to
+  // this goal.
+  void set_unprofiled_goal(double unprofiled_goal);
+
+  // Runs the controller and profile generator for a cycle.
+  void Update(bool disabled);
+
+  // Limits our profiles to a max velocity and acceleration for proper motion.
+  void AdjustProfile(double max_angular_velocity,
+                     double max_angular_acceleration);
+  // Sets the maximum voltage that will be commanded by the loop.
+  void set_max_voltage(double voltage);
+
+  // Returns true if we have exceeded any hard limits.
+  bool CheckHardLimits();
+  // Resets the internal state.
+  void Reset();
+
+  // Returns the current internal estimator state for logging.
+  EstimatorState IntakeEstimatorState();
+
+  // Returns the requested intake voltage.
+  double intake_voltage() const { return loop_->U(0, 0); }
+
+  // Returns the current position.
+  double angle() const { return Y_(0, 0); }
+
+  // Returns the filtered goal.
+  const Eigen::Matrix<double, 3, 1> &goal() const { return loop_->R(); }
+  double goal(int row, int col) const { return loop_->R(row, col); }
+
+  // Returns the current state estimate.
+  const Eigen::Matrix<double, 3, 1> &X_hat() const { return loop_->X_hat(); }
+  double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
+
+ private:
+  // Limits the provided goal to the soft limits.  Prints "name" when it fails
+  // to aid debugging.
+  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal);
+
+  void UpdateIntakeOffset(double offset);
+
+  ::std::unique_ptr<SimpleCappedStateFeedbackLoop> loop_;
+
+  ::frc971::zeroing::ZeroingEstimator estimator_;
+  aos::util::TrapezoidProfile profile_;
+
+  // Current measurement.
+  Eigen::Matrix<double, 1, 1> Y_;
+  // Current offset.  Y_ = offset_ + raw_sensor;
+  Eigen::Matrix<double, 1, 1> offset_;
+
+  // The goal that the profile tries to reach.
+  Eigen::Matrix<double, 3, 1> unprofiled_goal_;
+
+  bool initialized_ = false;
+  bool zeroed_ = false;
+};
+
+class Arm {
+ public:
+  Arm();
+  // Returns whether the estimators have been initialized and zeroed.
+  bool initialized() const { return initialized_; }
+  bool zeroed() const { return shoulder_zeroed_ && wrist_zeroed_; }
+  bool shoulder_zeroed() const { return shoulder_zeroed_; }
+  bool wrist_zeroed() const { return wrist_zeroed_; }
+
+  // Updates our estimator with the latest position.
+  void Correct(PotAndIndexPosition position_shoulder,
+               PotAndIndexPosition position_wrist);
+
+  // Forces the goal to be the provided goal.
+  void ForceGoal(double unprofiled_goal_shoulder, double unprofiled_goal_wrist);
+  // Sets the unprofiled goal.  The profiler will generate a profile to go to
+  // this goal.
+  void set_unprofiled_goal(double unprofiled_goal_shoulder,
+                           double unprofiled_goal_wrist);
+
+  // Runs the controller and profile generator for a cycle.
+  void Update(bool disabled);
+
+  // Limits our profiles to a max velocity and acceleration for proper motion.
+  void AdjustProfile(double max_angular_velocity_shoulder,
+                     double max_angular_acceleration_shoulder,
+                     double max_angular_velocity_wrist,
+                     double max_angular_acceleration_wrist);
+  void set_max_voltage(double shoulder_max_voltage, double wrist_max_voltage);
+
+  // Returns true if we have exceeded any hard limits.
+  bool CheckHardLimits();
+  // Resets the internal state.
+  void Reset();
+
+  // Returns the current internal estimator state for logging.
+  EstimatorState ShoulderEstimatorState();
+  EstimatorState WristEstimatorState();
+
+  // Returns the requested shoulder and wrist voltages.
+  double shoulder_voltage() const { return loop_->U(0, 0); }
+  double wrist_voltage() const { return loop_->U(1, 0); }
+
+  // Returns the current positions.
+  double shoulder_angle() const { return Y_(0, 0); }
+  double wrist_angle() const { return Y_(1, 0) + Y_(0, 0); }
+
+  // Returns the filtered goal.
+  const Eigen::Matrix<double, 6, 1> &goal() const { return loop_->R(); }
+  double goal(int row, int col) const { return loop_->R(row, col); }
+
+  // Returns the current state estimate.
+  const Eigen::Matrix<double, 6, 1> &X_hat() const { return loop_->X_hat(); }
+  double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
+
+ private:
+  // Limits the provided goal to the soft limits.  Prints "name" when it fails
+  // to aid debugging.
+  void CapGoal(const char *name, Eigen::Matrix<double, 6, 1> *goal);
+
+  // Updates the offset
+  void UpdateWristOffset(double offset);
+  void UpdateShoulderOffset(double offset);
+
+  friend class testing::SuperstructureTest_DisabledGoalTest_Test;
+  ::std::unique_ptr<DoubleCappedStateFeedbackLoop> loop_;
+
+  aos::util::TrapezoidProfile shoulder_profile_, wrist_profile_;
+  ::frc971::zeroing::ZeroingEstimator shoulder_estimator_, wrist_estimator_;
+
+  // Current measurement.
+  Eigen::Matrix<double, 2, 1> Y_;
+  // Current offset.  Y_ = offset_ + raw_sensor;
+  Eigen::Matrix<double, 2, 1> offset_;
+
+  // The goal that the profile tries to reach.
+  Eigen::Matrix<double, 6, 1> unprofiled_goal_;
+
+  bool initialized_ = false;
+  bool shoulder_zeroed_ = false;
+  bool wrist_zeroed_ = false;
+};
 
 class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
@@ -17,18 +214,46 @@ class Superstructure
   explicit Superstructure(
       control_loops::SuperstructureQueue *my_superstructure =
           &control_loops::superstructure_queue);
+  enum State {
+    // Waiting to receive data before doing anything.
+    UNINITIALIZED = 0,
+    // Estimating the starting location.
+    INITIALIZING = 1,
+    // Moving the intake to find an index pulse.
+    ZEROING_INTAKE = 2,
+    // Moving the arm to find an index pulse.
+    ZEROING_ARM = 3,
+    // All good!
+    RUNNING = 4,
+    // Internal error caused the superstructure to abort.
+    ESTOP = 5,
+  };
+
+  State state() const { return state_; }
 
  protected:
   virtual void RunIteration(
-      const control_loops::SuperstructureQueue::Goal *goal,
+      const control_loops::SuperstructureQueue::Goal *unsafe_goal,
       const control_loops::SuperstructureQueue::Position *position,
-      ::aos::control_loops::Output *output,
+      control_loops::SuperstructureQueue::Output *output,
       control_loops::SuperstructureQueue::Status *status) override;
 
  private:
+  friend class testing::SuperstructureTest_DisabledGoalTest_Test;
+  Intake intake_;
+  Arm arm_;
+
+  State state_ = UNINITIALIZED;
+  State last_state_ = UNINITIALIZED;
+
+  // Sets state_ to the correct state given the current state of the zeroing
+  // estimators.
+  void UpdateZeroingState();
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
+}  // namespace superstructure
 }  // namespace control_loops
 }  // namespace y2016
 

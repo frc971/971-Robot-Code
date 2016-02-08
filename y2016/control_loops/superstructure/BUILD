@@ -29,32 +29,17 @@ genrule(
 )
 
 genrule(
-  name = 'genrule_shoulder',
+  name = 'genrule_arm',
   visibility = ['//visibility:private'],
-  cmd = '$(location //y2016/control_loops/python:shoulder) $(OUTS)',
+  cmd = '$(location //y2016/control_loops/python:arm) $(OUTS)',
   tools = [
-    '//y2016/control_loops/python:shoulder',
+    '//y2016/control_loops/python:arm',
   ],
   outs = [
-    'shoulder_plant.h',
-    'shoulder_plant.cc',
-    'integral_shoulder_plant.h',
-    'integral_shoulder_plant.cc',
-  ],
-)
-
-genrule(
-  name = 'genrule_wrist',
-  visibility = ['//visibility:private'],
-  cmd = '$(location //y2016/control_loops/python:wrist) $(OUTS)',
-  tools = [
-    '//y2016/control_loops/python:wrist',
-  ],
-  outs = [
-    'wrist_plant.h',
-    'wrist_plant.cc',
-    'integral_wrist_plant.h',
-    'integral_wrist_plant.cc',
+    'arm_plant.h',
+    'arm_plant.cc',
+    'integral_arm_plant.h',
+    'integral_arm_plant.cc',
   ],
 )
 
@@ -62,19 +47,15 @@ cc_library(
   name = 'superstructure_plants',
   srcs = [
     'intake_plant.cc',
-    'shoulder_plant.cc',
-    'wrist_plant.cc',
+    'arm_plant.cc',
     'integral_intake_plant.cc',
-    'integral_shoulder_plant.cc',
-    'integral_wrist_plant.cc',
+    'integral_arm_plant.cc',
   ],
   hdrs = [
     'intake_plant.h',
-    'shoulder_plant.h',
-    'wrist_plant.h',
+    'arm_plant.h',
     'integral_intake_plant.h',
-    'integral_shoulder_plant.h',
-    'integral_wrist_plant.h',
+    'integral_arm_plant.h',
   ],
   deps = [
     '//frc971/control_loops:state_feedback_loop',
@@ -91,8 +72,12 @@ cc_library(
   ],
   deps = [
     ':superstructure_queue',
+    ':superstructure_plants',
     '//aos/common/controls:control_loop',
+    '//aos/common/util:trapezoid_profile',
     '//frc971/control_loops:state_feedback_loop',
+    '//frc971/zeroing',
+    '//y2016:constants',
   ],
 )
 
@@ -107,6 +92,10 @@ cc_test(
     '//aos/testing:googletest',
     '//aos/common:queues',
     '//aos/common/controls:control_loop_test',
+    '//aos/common:math',
+    '//aos/common:time',
+    '//frc971/control_loops:position_sensor_sim',
+    '//frc971/control_loops:team_number_test_environment',
   ],
 )
 

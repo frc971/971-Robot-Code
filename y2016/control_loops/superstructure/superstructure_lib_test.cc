@@ -7,30 +7,181 @@
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/controls/control_loop_test.h"
+#include "aos/common/commonmath.h"
+#include "aos/common/time.h"
+#include "frc971/control_loops/position_sensor_sim.h"
+#include "frc971/control_loops/team_number_test_environment.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/control_loops/superstructure/intake_plant.h"
+#include "y2016/control_loops/superstructure/arm_plant.h"
+#include "y2016/constants.h"
 
 using ::aos::time::Time;
+using ::frc971::control_loops::PositionSensorSimulator;
 
 namespace y2016 {
 namespace control_loops {
+namespace superstructure {
 namespace testing {
+
+class ArmPlant : public StateFeedbackPlant<4, 2, 2> {
+ public:
+  explicit ArmPlant(StateFeedbackPlant<4, 2, 2> &&other)
+      : StateFeedbackPlant<4, 2, 2>(::std::move(other)) {}
+
+  void CheckU() override {
+    assert(U(0, 0) <= U_max(0, 0) + 0.00001 + shoulder_voltage_offset_);
+    assert(U(0, 0) >= U_min(0, 0) - 0.00001 + shoulder_voltage_offset_);
+    assert(U(1, 0) <= U_max(1, 0) + 0.00001 + wrist_voltage_offset_);
+    assert(U(1, 0) >= U_min(1, 0) - 0.00001 + wrist_voltage_offset_);
+  }
+
+  double shoulder_voltage_offset() const { return shoulder_voltage_offset_; }
+  void set_shoulder_voltage_offset(double shoulder_voltage_offset) {
+    shoulder_voltage_offset_ = shoulder_voltage_offset;
+  }
+
+  double wrist_voltage_offset() const { return wrist_voltage_offset_; }
+  void set_wrist_voltage_offset(double wrist_voltage_offset) {
+    wrist_voltage_offset_ = wrist_voltage_offset;
+  }
+
+ private:
+  double shoulder_voltage_offset_ = 0.0;
+  double wrist_voltage_offset_ = 0.0;
+};
+
+class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
+ public:
+  explicit IntakePlant(StateFeedbackPlant<2, 1, 1> &&other)
+      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+
+  void CheckU() override {
+    for (int i = 0; i < kNumInputs; ++i) {
+      assert(U(i, 0) <= U_max(i, 0) + 0.00001 + voltage_offset_);
+      assert(U(i, 0) >= U_min(i, 0) - 0.00001 + voltage_offset_);
+    }
+  }
+
+  double voltage_offset() const { return voltage_offset_; }
+  void set_voltage_offset(double voltage_offset) {
+    voltage_offset_ = voltage_offset;
+  }
+
+ private:
+  double voltage_offset_ = 0.0;
+};
 
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
 class SuperstructureSimulation {
  public:
+  static constexpr double kNoiseScalar = 0.1;
   SuperstructureSimulation()
-      : superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
-                               ".y2016.control_loops.superstructure.goal",
-                               ".y2016.control_loops.superstructure.status",
-                               ".y2016.control_loops.superstructure.output",
-                               ".y2016.control_loops.superstructure.status") {
+      : intake_plant_(new IntakePlant(MakeIntakePlant())),
+        plant_arm_(new ArmPlant(MakeArmPlant())),
+        pot_encoder_intake_(0.0),
+        pot_encoder_shoulder_(0.0),
+        pot_encoder_wrist_(0.0),
+        superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
+                              ".y2016.control_loops.superstructure.goal",
+                              ".y2016.control_loops.superstructure.status",
+                              ".y2016.control_loops.superstructure.output",
+                              ".y2016.control_loops.superstructure.status") {
+    InitializeIntakePosition(0.0);
+    InitializeShoulderPosition(0.0);
+    InitializeWristPosition(0.0);
   }
 
-  // Simulates superstructure for a single timestep.
-  void Simulate() { EXPECT_TRUE(superstructure_queue_.output.FetchLatest()); }
+  void InitializeIntakePosition(double start_pos) {
+    intake_plant_->mutable_X(0, 0) = start_pos;
+    intake_plant_->mutable_X(1, 0) = 0.0;
+
+    pot_encoder_intake_.Initialize(start_pos, kNoiseScalar);
+  }
+
+  void InitializeShoulderPosition(double start_pos) {
+    plant_arm_->mutable_X(0, 0) = start_pos;
+    plant_arm_->mutable_X(1, 0) = 0.0;
+
+    pot_encoder_shoulder_.Initialize(start_pos, kNoiseScalar);
+  }
+
+  // Must be called after any changes to InitializeShoulderPosition.
+  void InitializeWristPosition(double start_pos) {
+    plant_arm_->mutable_X(2, 0) = start_pos + plant_arm_->X(0, 0);
+    plant_arm_->mutable_X(3, 0) = 0.0;
+
+    pot_encoder_wrist_.Initialize(start_pos, kNoiseScalar);
+  }
+
+  // Sends a queue message with the position.
+  void SendPositionMessage() {
+    ::aos::ScopedMessagePtr<control_loops::SuperstructureQueue::Position>
+        position = superstructure_queue_.position.MakeMessage();
+
+    pot_encoder_intake_.GetSensorValues(&position->intake);
+    pot_encoder_shoulder_.GetSensorValues(&position->shoulder);
+    pot_encoder_wrist_.GetSensorValues(&position->wrist);
+
+    position.Send();
+  }
+
+  // Sets the difference between the commanded and applied powers.
+  // This lets us test that the integrators work.
+  void set_power_error(double power_error_intake, double power_error_shoulder,
+                       double power_error_wrist) {
+    intake_plant_->set_voltage_offset(power_error_intake);
+    plant_arm_->set_shoulder_voltage_offset(power_error_shoulder);
+    plant_arm_->set_wrist_voltage_offset(power_error_wrist);
+  }
+
+  // Simulates for a single timestep.
+  void Simulate() {
+    EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
+
+    // Feed voltages into physics simulation.
+    intake_plant_->mutable_U() << superstructure_queue_.output->voltage_intake +
+                                      intake_plant_->voltage_offset();
+
+    plant_arm_->mutable_U() << superstructure_queue_.output->voltage_shoulder +
+                                   plant_arm_->shoulder_voltage_offset(),
+        superstructure_queue_.output->voltage_wrist +
+            plant_arm_->wrist_voltage_offset();
+
+    // Use the plant to generate the next physical state given the voltages to
+    // the motors.
+    intake_plant_->Update();
+    plant_arm_->Update();
+
+    const double angle_intake = intake_plant_->Y(0, 0);
+    const double angle_shoulder = plant_arm_->Y(0, 0);
+    const double angle_wrist = plant_arm_->Y(1, 0);
+
+    // Use the physical state to simulate sensor readings.
+    pot_encoder_intake_.MoveTo(angle_intake);
+    pot_encoder_shoulder_.MoveTo(angle_shoulder);
+    pot_encoder_wrist_.MoveTo(angle_wrist);
+
+    // Validate that everything is within range.
+    EXPECT_GE(angle_intake, constants::GetValues().intake.limits.lower_hard);
+    EXPECT_LE(angle_intake, constants::GetValues().intake.limits.upper_hard);
+    EXPECT_GE(angle_shoulder,
+              constants::GetValues().shoulder.limits.lower_hard);
+    EXPECT_LE(angle_shoulder,
+              constants::GetValues().shoulder.limits.upper_hard);
+    EXPECT_GE(angle_wrist, constants::GetValues().wrist.limits.lower_hard);
+    EXPECT_LE(angle_wrist, constants::GetValues().wrist.limits.upper_hard);
+  }
 
  private:
+  ::std::unique_ptr<IntakePlant> intake_plant_;
+  ::std::unique_ptr<ArmPlant> plant_arm_;
+
+  PositionSensorSimulator pot_encoder_intake_;
+  PositionSensorSimulator pot_encoder_shoulder_;
+  PositionSensorSimulator pot_encoder_wrist_;
+
   SuperstructureQueue superstructure_queue_;
 };
 
@@ -38,21 +189,37 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
       : superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
-                               ".y2016.control_loops.superstructure.goal",
-                               ".y2016.control_loops.superstructure.status",
-                               ".y2016.control_loops.superstructure.output",
-                               ".y2016.control_loops.superstructure.status"),
+                              ".y2016.control_loops.superstructure.goal",
+                              ".y2016.control_loops.superstructure.status",
+                              ".y2016.control_loops.superstructure.output",
+                              ".y2016.control_loops.superstructure.status"),
         superstructure_(&superstructure_queue_),
         superstructure_plant_() {}
 
   void VerifyNearGoal() {
-    // TODO(phil): Implement a check here.
+    superstructure_queue_.goal.FetchLatest();
+    superstructure_queue_.status.FetchLatest();
+
+    EXPECT_TRUE(superstructure_queue_.goal.get() != nullptr);
+    EXPECT_TRUE(superstructure_queue_.status.get() != nullptr);
+
+    EXPECT_NEAR(superstructure_queue_.goal->angle_intake,
+                superstructure_queue_.status->intake.angle, 0.001);
+    EXPECT_NEAR(superstructure_queue_.goal->angle_shoulder,
+                superstructure_queue_.status->shoulder.angle, 0.001);
+    EXPECT_NEAR(superstructure_queue_.goal->angle_wrist,
+                superstructure_queue_.status->wrist.angle, 0.001);
   }
 
   // Runs one iteration of the whole simulation and checks that separation
   // remains reasonable.
   void RunIteration(bool enabled = true) {
     SendMessages(enabled);
+
+    superstructure_plant_.SendPositionMessage();
+    superstructure_.Iterate();
+    superstructure_plant_.Simulate();
+
     TickTime();
   }
 
@@ -76,11 +243,227 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
 // Tests that the superstructure does nothing when the goal is zero.
 TEST_F(SuperstructureTest, DoesNothing) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
   // TODO(phil): Send a goal of some sort.
-  RunIteration();
+  RunForTime(Time::InSeconds(5));
+  VerifyNearGoal();
+}
+
+// Tests that the loop can reach a goal.
+TEST_F(SuperstructureTest, ReachesGoal) {
+  // Set a reasonable goal.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(M_PI / 4.0)
+                  .angle_shoulder(M_PI / 4.0)
+                  .angle_wrist(M_PI / 4.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  // Give it a lot of time to get there.
+  RunForTime(Time::InSeconds(5));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop doesn't try and go beyond the physical range of the
+// mechanisms.
+TEST_F(SuperstructureTest, RespectsRange) {
+  // Set some ridiculous goals to test upper limits.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(M_PI * 10)
+                  .angle_shoulder(M_PI * 10)
+                  .angle_wrist(M_PI * 10)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  // Check that we are near our soft limit.
+  superstructure_queue_.status.FetchLatest();
+  const auto &values = constants::GetValues();
+  EXPECT_NEAR(values.intake.limits.upper,
+              superstructure_queue_.status->intake.angle, 0.001);
+  EXPECT_NEAR(values.shoulder.limits.upper,
+              superstructure_queue_.status->shoulder.angle, 0.001);
+  EXPECT_NEAR(values.wrist.limits.upper + values.shoulder.limits.upper,
+              superstructure_queue_.status->wrist.angle, 0.001);
+
+  // Set some ridiculous goals to test lower limits.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(-M_PI * 10)
+                  .angle_shoulder(-M_PI * 10)
+                  .angle_wrist(-M_PI * 10)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  // Check that we are near our soft limit.
+  superstructure_queue_.status.FetchLatest();
+  EXPECT_NEAR(values.intake.limits.lower,
+              superstructure_queue_.status->intake.angle, 0.001);
+  EXPECT_NEAR(values.shoulder.limits.lower,
+              superstructure_queue_.status->shoulder.angle, 0.001);
+  EXPECT_NEAR(values.wrist.limits.lower + values.shoulder.limits.lower,
+              superstructure_queue_.status->wrist.angle, 0.001);
+}
+
+// Tests that the loop zeroes when run for a while.
+TEST_F(SuperstructureTest, ZeroTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(5));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop zeroes when run for a while without a goal.
+TEST_F(SuperstructureTest, ZeroNoGoal) {
+  RunForTime(Time::InSeconds(5));
+
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+}
+
+// Tests that starting at the lower hardstops doesn't cause an abort.
+TEST_F(SuperstructureTest, LowerHardstopStartup) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::GetValues().intake.limits.lower);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::GetValues().shoulder.limits.lower);
+  superstructure_plant_.InitializeWristPosition(
+      constants::GetValues().wrist.limits.lower);
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .Send());
+  // We have to wait for it to put the elevator in a safe position as well.
+  RunForTime(Time::InSeconds(5));
+
+  VerifyNearGoal();
+}
+
+// Tests that starting at the upper hardstops doesn't cause an abort.
+TEST_F(SuperstructureTest, UpperHardstopStartup) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::GetValues().intake.limits.upper);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::GetValues().shoulder.limits.upper);
+  superstructure_plant_.InitializeWristPosition(
+      constants::GetValues().wrist.limits.upper);
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .Send());
+  // We have to wait for it to put the elevator in a safe position as well.
+  RunForTime(Time::InSeconds(5));
+
+  VerifyNearGoal();
+}
+
+// Tests that resetting WPILib results in a rezero.
+TEST_F(SuperstructureTest, ResetTest) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::GetValues().intake.limits.upper);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::GetValues().shoulder.limits.upper);
+  superstructure_plant_.InitializeWristPosition(
+      constants::GetValues().wrist.limits.upper);
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.3)
+                  .angle_shoulder(0.3)
+                  .angle_wrist(0.3)
+                  .Send());
+  RunForTime(Time::InSeconds(5));
+
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+  VerifyNearGoal();
+  SimulateSensorReset();
+  RunForTime(Time::InMS(100));
+  EXPECT_NE(Superstructure::RUNNING, superstructure_.state());
+  RunForTime(Time::InMS(6000));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+  VerifyNearGoal();
+}
+
+// Tests that the internal goals don't change while disabled.
+TEST_F(SuperstructureTest, DisabledGoalTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.03)
+                  .angle_shoulder(0.03)
+                  .angle_wrist(0.03)
+                  .Send());
+
+  RunForTime(Time::InMS(100), false);
+  EXPECT_EQ(0.0, superstructure_.intake_.goal(0, 0));
+  EXPECT_EQ(0.0, superstructure_.arm_.goal(0, 0));
+  EXPECT_EQ(0.0, superstructure_.arm_.goal(2, 0));
+
+  // Now make sure they move correctly
+  RunForTime(Time::InMS(4000), true);
+  EXPECT_NE(0.0, superstructure_.intake_.goal(0, 0));
+  EXPECT_NE(0.0, superstructure_.arm_.goal(0, 0));
+  EXPECT_NE(0.0, superstructure_.arm_.goal(2, 0));
+}
+
+// Tests that the integrators works.
+TEST_F(SuperstructureTest, IntegratorTest) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::GetValues().intake.limits.lower);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::GetValues().shoulder.limits.lower);
+  superstructure_plant_.InitializeWristPosition(
+      constants::GetValues().wrist.limits.lower);
+  superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
+  superstructure_queue_.goal.MakeWithBuilder()
+    .angle_intake(0.0)
+    .angle_shoulder(0.0)
+    .angle_wrist(0.0)
+    .Send();
+
+  RunForTime(Time::InSeconds(8));
+
   VerifyNearGoal();
 }
 
 }  // namespace testing
+}  // namespace superstructure
 }  // namespace control_loops
 }  // namespace frc971

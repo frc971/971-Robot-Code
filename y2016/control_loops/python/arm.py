@@ -75,13 +75,23 @@ class Arm(control_loop.ControlLoop):
     self.Q[2, 2] = 1.0 / q_pos_shooter ** 2.0
     self.Q[3, 3] = 1.0 / q_vel_shooter ** 2.0
 
+    self.Qff = numpy.matrix(numpy.zeros((4, 4)))
+    qff_pos_shoulder = 0.005
+    qff_vel_shoulder = 1.00
+    qff_pos_shooter = 0.005
+    qff_vel_shooter = 1.00
+    self.Qff[0, 0] = 1.0 / qff_pos_shoulder ** 2.0
+    self.Qff[1, 1] = 1.0 / qff_vel_shoulder ** 2.0
+    self.Qff[2, 2] = 1.0 / qff_pos_shooter ** 2.0
+    self.Qff[3, 3] = 1.0 / qff_vel_shooter ** 2.0
+
     # Cost of control effort
     self.R = numpy.matrix(numpy.zeros((2, 2)))
     r_voltage = 1.0 / 12.0
     self.R[0, 0] = r_voltage ** 2.0
     self.R[1, 1] = r_voltage ** 2.0
 
-    self.Kff = controls.TwoStateFeedForwards(self.B, self.Q)
+    self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
 
     glog.debug('Shoulder K')
     glog.debug(self._shoulder.K)
@@ -224,17 +234,15 @@ class ScenarioPlotter(object):
       initial_t = 0
 
     goal = numpy.concatenate((arm.X, numpy.matrix(numpy.zeros((2, 1)))), axis=0)
-    current_shoulder_goal = goal[0:2, 0].copy()
-    current_shooter_goal = goal[2:4, 0].copy()
 
     shoulder_profile = TrapizoidProfile(arm.dt)
     shoulder_profile.set_maximum_acceleration(50.0)
     shoulder_profile.set_maximum_velocity(10.0)
-    shoulder_profile.SetGoal(current_shoulder_goal[0, 0])
+    shoulder_profile.SetGoal(goal[0, 0])
     shooter_profile = TrapizoidProfile(arm.dt)
     shooter_profile.set_maximum_acceleration(50.0)
     shooter_profile.set_maximum_velocity(10.0)
-    shooter_profile.SetGoal(current_shooter_goal[0, 0])
+    shooter_profile.SetGoal(goal[2, 0])
 
     U_last = numpy.matrix(numpy.zeros((2, 1)))
     for i in xrange(iterations):
@@ -246,21 +254,24 @@ class ScenarioPlotter(object):
         self.offset_shoulder.append(observer.X_hat[4, 0])
         self.offset_shooter.append(observer.X_hat[5, 0])
 
+        X_hat = observer.X_hat
+        self.x_hat_shoulder.append(observer.X_hat[0, 0])
+        self.x_hat_shooter.append(observer.X_hat[2, 0])
+
       next_shoulder_goal = shoulder_profile.Update(end_goal[0, 0], end_goal[1, 0])
       next_shooter_goal = shooter_profile.Update(end_goal[2, 0], end_goal[3, 0])
 
-      next_goal = numpy.concatenate((next_shoulder_goal, next_shooter_goal, numpy.matrix(numpy.zeros((2, 1)))), axis=0)
+      next_goal = numpy.concatenate(
+          (next_shoulder_goal,
+           next_shooter_goal,
+           numpy.matrix(numpy.zeros((2, 1)))),
+          axis=0)
       self.goal_x_shoulder.append(goal[0, 0])
       self.goal_v_shoulder.append(goal[1, 0])
       self.goal_x_shooter.append(goal[2, 0])
       self.goal_v_shooter.append(goal[3, 0])
 
       ff_U = controller.Kff * (next_goal - observer.A * goal)
-
-      if observer is not None:
-        X_hat = observer.X_hat
-        self.x_hat_shoulder.append(observer.X_hat[0, 0])
-        self.x_hat_shooter.append(observer.X_hat[2, 0])
 
       U_uncapped = controller.K * (goal - X_hat) + ff_U
       U = U_uncapped.copy()
@@ -326,9 +337,8 @@ class ScenarioPlotter(object):
         shooter_profile.MoveCurrentState(
             numpy.matrix([[goal[2, 0]], [goal[3, 0]]]))
       U_last = U
-    glog.debug('End goal is %s', repr(end_goal))
-    glog.debug('last goal is %s', repr(goal))
-    glog.debug('End state is %s', repr(arm.X))
+    glog.debug('goal_error %s', repr(end_goal - goal))
+    glog.debug('error %s', repr(observer.X_hat - end_goal))
 
 
   def Plot(self):

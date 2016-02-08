@@ -56,6 +56,7 @@ py_binary(
     'intake.py',
   ],
   deps = [
+    '//aos/common/util:py_trapezoid_profile',
     '//external:python-gflags',
     '//external:python-glog',
     '//frc971/control_loops/python:controls',

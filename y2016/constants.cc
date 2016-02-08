@@ -50,6 +50,21 @@ const ShifterHallEffect kPracticeRightDriveShifter{2.90, 3.75, 3.80,
 
 const double kRobotWidth = 25.0 / 100.0 * 2.54;
 
+// TODO(comran): Remove comments from ratios for pots when they are actually
+// used.
+const double kIntakeEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
+//const double kIntakePotRatio = 48.0 / 48.0 * 16.0 / 72.0;
+const double kShoulderEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
+//const double kShoulderPotRatio = 48.0 / 48.0 * 16.0 / 72.0;
+const double kWristEncoderRatio = 18.0 / 48.0 * 16.0 / 72.0;
+//const double kWristPotRatio = 48.0 / 48.0 * 16.0 / 72.0;
+
+const double kIntakeEncoderIndexDifference = 2.0 * M_PI * kIntakeEncoderRatio;
+const double kShoulderEncoderIndexDifference = 2.0 * M_PI * kShoulderEncoderRatio;
+const double kWristEncoderIndexDifference = 2.0 * M_PI * kWristEncoderRatio;
+
+const int kZeroingSampleSize = 200;
+
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
@@ -63,6 +78,24 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,  // drivetrain max speed
+
+          // Intake
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kIntakeEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Shoulder
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kShoulderEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Wrist
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kWristEncoderIndexDifference, 0.9, 0.3},
+          },
       };
       break;
     case kCompTeamNumber:
@@ -76,6 +109,24 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,  // drivetrain max speed
+
+          // Intake
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kIntakeEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Shoulder
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kShoulderEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Wrist
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kWristEncoderIndexDifference, 0.9, 0.3},
+          },
       };
       break;
     case kPracticeTeamNumber:
@@ -89,6 +140,24 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,  // drivetrain max speed
+
+          // Intake
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kIntakeEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Shoulder
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kShoulderEncoderIndexDifference, 0.9, 0.3},
+          },
+
+          // Wrist
+          {
+            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+            {kZeroingSampleSize, kWristEncoderIndexDifference, 0.9, 0.3},
+          },
       };
       break;
     default:

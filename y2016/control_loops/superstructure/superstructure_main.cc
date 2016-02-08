@@ -4,7 +4,7 @@
 
 int main() {
   ::aos::Init();
-  ::y2016::control_loops::Superstructure superstructure;
+  ::y2016::control_loops::superstructure::Superstructure superstructure;
   superstructure.Run();
   ::aos::Cleanup();
   return 0;

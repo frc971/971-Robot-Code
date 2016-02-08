@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from aos.common.util.trapezoid_profile import TrapizoidProfile
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
@@ -77,6 +78,13 @@ class Intake(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
+    q_pos_ff = 0.005
+    q_vel_ff = 1.0
+    self.Qff = numpy.matrix([[(1.0 / (q_pos_ff ** 2.0)), 0.0],
+                             [0.0, (1.0 / (q_vel_ff ** 2.0))]])
+
+    self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
+
     glog.debug('K %s', repr(self.K))
     glog.debug('Poles are %s',
               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
@@ -149,6 +157,8 @@ class IntegralIntake(Intake):
     self.K[0, 0:2] = self.K_unaugmented
     self.K[0, 2] = 1
 
+    self.Kff = numpy.concatenate((self.Kff, numpy.matrix(numpy.zeros((1, 1)))), axis=1)
+
     self.InitializeState()
 
 class ScenarioPlotter(object):
@@ -162,24 +172,20 @@ class ScenarioPlotter(object):
     self.u = []
     self.offset = []
 
-  def run_test(self, intake, goal, iterations=200, controller_intake=None,
-             observer_intake=None):
+  def run_test(self, intake, end_goal,
+             controller_intake,
+             observer_intake=None,
+             iterations=200):
     """Runs the intake plant with an initial condition and goal.
 
-      Test for whether the goal has been reached and whether the separation
-      goes  outside of the initial and goal values by more than
-      max_separation_error.
-
-      Prints out something for a failure of either condition and returns
-      False if tests fail.
       Args:
         intake: intake object to use.
-        goal: goal state.
-        iterations: Number of timesteps to run the model for.
+        end_goal: end_goal state.
         controller_intake: Intake object to get K from, or None if we should
             use intake.
         observer_intake: Intake object to use for the observer, or None if we should
             use the actual state.
+        iterations: Number of timesteps to run the model for.
     """
 
     if controller_intake is None:
@@ -192,14 +198,30 @@ class ScenarioPlotter(object):
     else:
       initial_t = 0
 
+    goal = numpy.concatenate((intake.X, numpy.matrix(numpy.zeros((1, 1)))), axis=0)
+
+    profile = TrapizoidProfile(intake.dt)
+    profile.set_maximum_acceleration(70.0)
+    profile.set_maximum_velocity(10.0)
+    profile.SetGoal(goal[0, 0])
+
+    U_last = numpy.matrix(numpy.zeros((1, 1)))
     for i in xrange(iterations):
-      X_hat = intake.X
+      observer_intake.Y = intake.Y
+      observer_intake.CorrectObserver(U_last)
 
-      if observer_intake is not None:
-        X_hat = observer_intake.X_hat
-        self.x_hat.append(observer_intake.X_hat[0, 0])
+      self.offset.append(observer_intake.X_hat[2, 0])
+      self.x_hat.append(observer_intake.X_hat[0, 0])
 
-      U = controller_intake.K * (goal - X_hat)
+      next_goal = numpy.concatenate(
+          (profile.Update(end_goal[0, 0], end_goal[1, 0]),
+           numpy.matrix(numpy.zeros((1, 1)))),
+          axis=0)
+
+      ff_U = controller_intake.Kff * (next_goal - observer_intake.A * goal)
+
+      U_uncapped = controller_intake.K * (goal - observer_intake.X_hat) + ff_U
+      U = U_uncapped.copy()
       U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
       self.x.append(intake.X[0, 0])
 
@@ -211,20 +233,23 @@ class ScenarioPlotter(object):
       self.v.append(intake.X[1, 0])
       self.a.append((self.v[-1] - last_v) / intake.dt)
 
-      if observer_intake is not None:
-        observer_intake.Y = intake.Y
-        observer_intake.CorrectObserver(U)
-        self.offset.append(observer_intake.X_hat[2, 0])
+      intake.Update(U + 0.0)
 
-      intake.Update(U + 2.0)
-
-      if observer_intake is not None:
-        observer_intake.PredictObserver(U)
+      observer_intake.PredictObserver(U)
 
       self.t.append(initial_t + i * intake.dt)
       self.u.append(U[0, 0])
 
-      glog.debug('Time: %f', self.t[-1])
+      ff_U -= U_uncapped - U
+      goal = controller_intake.A * goal + controller_intake.B * ff_U
+
+      if U[0, 0] != U_uncapped[0, 0]:
+        profile.MoveCurrentState(
+            numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
+
+    glog.debug('Time: %f', self.t[-1])
+    glog.debug('goal_error %s', repr(end_goal - goal))
+    glog.debug('error %s', repr(observer_intake.X_hat - end_goal))
 
   def Plot(self):
     pylab.subplot(3, 1, 1)
@@ -257,7 +282,8 @@ def main(argv):
   # Test moving the intake with constant separation.
   initial_X = numpy.matrix([[0.0], [0.0]])
   R = numpy.matrix([[numpy.pi/2.0], [0.0], [0.0]])
-  scenario_plotter.run_test(intake, goal=R, controller_intake=intake_controller,
+  scenario_plotter.run_test(intake, end_goal=R,
+                            controller_intake=intake_controller,
                             observer_intake=observer_intake, iterations=200)
 
   if FLAGS.plot:
