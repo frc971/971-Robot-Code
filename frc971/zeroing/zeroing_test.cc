@@ -158,6 +158,13 @@ TEST_F(ZeroingTest, TestPercentage) {
     MoveTo(&sim, &estimator, 3.5 * index_diff);
   }
   ASSERT_NEAR(0.5, estimator.offset_ratio_ready(), 0.001);
+  ASSERT_FALSE(estimator.offset_ready());
+
+  for (unsigned int i = 0; i < kSampleSize / 2; i++) {
+    MoveTo(&sim, &estimator, 3.5 * index_diff);
+  }
+  ASSERT_NEAR(1.0, estimator.offset_ratio_ready(), 0.001);
+  ASSERT_TRUE(estimator.offset_ready());
 }
 
 TEST_F(ZeroingTest, TestOffset) {

@@ -63,6 +63,11 @@ class ZeroingEstimator {
     return start_pos_samples_.size() / static_cast<double>(max_sample_count_);
   }
 
+  // Returns true if the sample buffer is full.
+  bool offset_ready() const {
+    return start_pos_samples_.size() == max_sample_count_;
+  }
+
  private:
   // This function calculates the start position given the internal state and
   // the provided `latched_encoder' value.

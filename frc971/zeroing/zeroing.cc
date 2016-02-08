@@ -84,8 +84,8 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
   // If there are no index pulses to use or we don't have enough samples yet to
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
-  if (!zeroed_ && (info.index_pulses == last_used_index_pulse_count_ ||
-                   offset_ratio_ready() < 1.0)) {
+  if (!zeroed_ &&
+      (info.index_pulses == last_used_index_pulse_count_ || !offset_ready())) {
     start_pos_ = start_average;
   } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses) {
     // Note the accurate start position and the current index pulse count so
@@ -93,6 +93,10 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
     // resilient to corrupted intermediate data.
     start_pos_ = CalculateStartPosition(start_average, info.latched_encoder);
     last_used_index_pulse_count_ = info.index_pulses;
+
+    // TODO(austin): Reject encoder positions which have x% error rather than
+    // rounding to the closest index pulse.
+
     // Save the first starting position.
     if (!zeroed_) {
       first_start_pos_ = start_pos_;
