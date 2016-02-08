@@ -215,6 +215,7 @@ struct StateFeedbackController final {
 
   const Eigen::Matrix<double, number_of_states, number_of_outputs> L;
   const Eigen::Matrix<double, number_of_inputs, number_of_states> K;
+  const Eigen::Matrix<double, number_of_inputs, number_of_states> Kff;
   const Eigen::Matrix<double, number_of_states, number_of_states> A_inv;
   StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                  number_of_outputs> plant;
@@ -222,11 +223,13 @@ struct StateFeedbackController final {
   StateFeedbackController(
       const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
       const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
+      const Eigen::Matrix<double, number_of_inputs, number_of_states> &Kff,
       const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv,
       const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                            number_of_outputs> &plant)
       : L(L),
         K(K),
+        Kff(Kff),
         A_inv(A_inv),
         plant(plant) {
   }
@@ -309,6 +312,10 @@ class StateFeedbackLoop {
     return controller().K;
   }
   double K(int i, int j) const { return K()(i, j); }
+  const Eigen::Matrix<double, number_of_inputs, number_of_states> &Kff() const {
+    return controller().Kff;
+  }
+  double Kff(int i, int j) const { return Kff()(i, j); }
   const Eigen::Matrix<double, number_of_states, number_of_outputs> &L() const {
     return controller().L;
   }

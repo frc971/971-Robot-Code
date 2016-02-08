@@ -149,3 +149,25 @@ def kalman(A, B, C, Q, R):
   P = (I - K * C) * P_prior
 
   return K, P
+
+def TwoStateFeedForwards(B, Q):
+  """Computes the feed forwards constant for a 2 state controller.
+
+  This will take the form U = Kff * (R(n + 1) - A * R(n)), where Kff is the
+  feed-forwards constant.  It is important that Kff is *only* computed off
+  the goal and not the feed back terms.
+
+  Args:
+    B: numpy.Matrix[num_states, num_inputs] The B matrix.
+    Q: numpy.Matrix[num_states, num_states] The Q (cost) matrix.
+
+  Returns:
+    numpy.Matrix[num_inputs, num_states]
+  """
+
+  # We want to find the optimal U such that we minimize the tracking cost.
+  # This means that we want to minimize
+  #   (B * U - (R(n+1) - A R(n)))^T * Q * (B * U - (R(n+1) - A R(n)))
+  # TODO(austin): This doesn't take into account the cost of U
+
+  return numpy.linalg.inv(B.T * Q * B) * B.T * Q.T

@@ -38,7 +38,7 @@ class ControlLoopWriter(object):
 
     self._namespace_end = '\n'.join(
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
-    
+
     self._constant_list = []
 
   def AddConstant(self, constant):
@@ -330,10 +330,14 @@ class ControlLoop(object):
 
     ans.append(self._DumpMatrix('L', self.L))
     ans.append(self._DumpMatrix('K', self.K))
+    if not hasattr(self, 'Kff'):
+      self.Kff = numpy.matrix(numpy.zeros(self.K.shape))
+
+    ans.append(self._DumpMatrix('Kff', self.Kff))
     ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
 
     ans.append('  return StateFeedbackController<%d, %d, %d>'
-               '(L, K, A_inv, Make%sPlantCoefficients());\n' % (
+               '(L, K, Kff, A_inv, Make%sPlantCoefficients());\n' % (
                    num_states, num_inputs, num_outputs, self._name))
     ans.append('}\n')
     return ''.join(ans)
