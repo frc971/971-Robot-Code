@@ -7,18 +7,6 @@
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/constants.h"
 
-#define INTAKE_ENCODER_RATIO (16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0)
-#define INTAKE_POT_RATIO (16.0 / 58.0)
-#define INTAKE_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * INTAKE_ENCODER_RATIO)
-
-#define SHOULDER_ENCODER_RATIO (16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0)
-#define SHOULDER_POT_RATIO (16.0 / 58.0)
-#define SHOULDER_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * SHOULDER_ENCODER_RATIO)
-
-#define WRIST_ENCODER_RATIO (16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0)
-#define WRIST_POT_RATIO (16.0 / 48.0)
-#define WRIST_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * WRIST_ENCODER_RATIO)
-
 namespace y2016 {
 namespace constants {
 
@@ -34,22 +22,6 @@ using ::frc971::constants::ZeroingConstants;
 
 // This structure contains current values for all of the things that change.
 struct Values {
-  // The ratio from the encoder shaft to the drivetrain wheels.
-  double drivetrain_encoder_ratio;
-
-  // The gear ratios from motor shafts to the drivetrain wheels for high and low
-  // gear.
-  double low_gear_ratio;
-  double high_gear_ratio;
-  ShifterHallEffect left_drive, right_drive;
-
-  double turn_width;
-
-  ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
-  ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
-
-  double drivetrain_max_speed;
-
   // Defines a range of motion for a subsystem.
   // These are all absolute positions in scaled units.
   struct Range {
@@ -59,20 +31,59 @@ struct Values {
     double upper;
   };
 
+  // ///// Mutual constants between robots. /////
+  // TODO(constants): Update/check these with what we're using this year.
+  static const int kZeroingSampleSize = 200;
+
+  // The ratio from the encoder shaft to the drivetrain wheels.
+  static constexpr double kDrivetrainEncoderRatio =
+      (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0);
+
+  // The gear ratios from motor shafts to the drivetrain wheels for high and low
+  // gear.
+  static constexpr double kLowGearRatio = 18.0 / 60.0 * 18.0 / 50.0;
+  static constexpr double kHighGearRatio = 28.0 / 50.0 * 18.0 / 50.0;
+
+  static constexpr double kTurnWidth = 25.0 / 100.0 * 2.54;  // Robot width.
+
+  // Ratios for our subsystems.
+  static constexpr double kShooterEncoderRatio = 1.0;
+  static constexpr double kIntakeEncoderRatio = 16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0;
+  static constexpr double kShoulderEncoderRatio = 16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0;
+  static constexpr double kWristEncoderRatio = 16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0;
+
+  static constexpr double kIntakePotRatio = 16.0 / 58.0;
+  static constexpr double kShoulderPotRatio = 16.0 / 58.0;
+  static constexpr double kWristPotRatio = 16.0 / 48.0;
+
+  // Difference in radians between index pulses.
+  static constexpr double kIntakeEncoderIndexDifference = 2.0 * M_PI * kIntakeEncoderRatio;
+  static constexpr double kShoulderEncoderIndexDifference = 2.0 * M_PI * kShoulderEncoderRatio;
+  static constexpr double kWristEncoderIndexDifference = 2.0 * M_PI * kWristEncoderRatio;
+
+  // Subsystem motion ranges, in whatever units that their respective queues say
+  // the use.
+  static constexpr Range kIntakeRange{-0.4, 2.0, -0.3, 1.9};
+  static constexpr Range kShoulderRange{-0.2, 2.0, -0.1, 1.9};
+  static constexpr Range kWristRange{-2.0, 2.0, -1.9, 1.0};
+
+  // ///// Dynamic constants. /////
+  double drivetrain_max_speed;
+
   struct Intake {
-    Range limits;
+    double pot_offset;
     ZeroingConstants zeroing;
   };
   Intake intake;
 
   struct Shoulder {
-    Range limits;
+    double pot_offset;
     ZeroingConstants zeroing;
   };
   Shoulder shoulder;
 
   struct Wrist {
-    Range limits;
+    double pot_offset;
     ZeroingConstants zeroing;
   };
   Wrist wrist;

@@ -30,10 +30,11 @@
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
 
-#include "frc971/shifter_hall_effect.h"
-
+#include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/constants.h"
+#include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
@@ -52,6 +53,8 @@
 #endif
 
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2016::control_loops::shooter::shooter_queue;
+using ::y2016::control_loops::superstructure_queue;
 
 namespace y2016 {
 namespace wpilib {
@@ -67,34 +70,60 @@ std::unique_ptr<T> make_unique(U &&... u) {
   return std::unique_ptr<T>(new T(std::forward<U>(u)...));
 }
 
+// Translates for the sensor values to convert raw index pulses into something
+// with proper units.
+
+// TODO(comran): Template these methods since there is a lot of repetition here.
+double hall_translate(double in) {
+  // Turn voltage from our 3-state halls into a ratio that the loop can use.
+  return in / 5.0;
+}
+
 double drivetrain_translate(int32_t in) {
   return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::GetValues().drivetrain_encoder_ratio *
+         constants::Values::kDrivetrainEncoderRatio *
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
 double drivetrain_velocity_translate(double in) {
   return (1.0 / in) / 256.0 /*cpr*/ *
-         constants::GetValues().drivetrain_encoder_ratio *
+         constants::Values::kDrivetrainEncoderRatio *
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
-float hall_translate(const constants::ShifterHallEffect &k, float in_low,
-                     float in_high) {
-  const float low_ratio =
-      0.5 * (in_low - static_cast<float>(k.low_gear_low)) /
-      static_cast<float>(k.low_gear_middle - k.low_gear_low);
-  const float high_ratio =
-      0.5 +
-      0.5 * (in_high - static_cast<float>(k.high_gear_middle)) /
-          static_cast<float>(k.high_gear_high - k.high_gear_middle);
+double shooter_translate(int32_t in) {
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
+}
 
-  // Return low when we are below 1/2, and high when we are above 1/2.
-  if (low_ratio + high_ratio < 1.0) {
-    return low_ratio;
-  } else {
-    return high_ratio;
-  }
+double intake_translate(int32_t in) {
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double shoulder_translate(int32_t in) {
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kShoulderEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double wrist_translate(int32_t in) {
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kWristEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double intake_pot_translate(double voltage) {
+  return voltage * constants::Values::kIntakePotRatio *
+         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double shoulder_pot_translate(double voltage) {
+  return voltage * constants::Values::kShoulderPotRatio *
+         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double wrist_pot_translate(double voltage) {
+  return voltage * constants::Values::kWristPotRatio *
+         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 // TODO(constants): Update.
@@ -104,6 +133,7 @@ static const double kMaximumEncoderPulsesPerSecond =
     66.0 /* top gear reduction */ * 48.0 / 18.0 /* encoder gears */ /
     60.0 /* seconds / minute */ * 256.0 /* CPR */;
 
+// Class to send position messages with sensor readings to our loops.
 class SensorReader {
  public:
   SensorReader() {
@@ -114,6 +144,7 @@ class SensorReader {
     hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
+  // Drivetrain setters.
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
     drivetrain_left_encoder_ = ::std::move(encoder);
     drivetrain_left_encoder_->SetMaxPeriod(0.005);
@@ -124,20 +155,69 @@ class SensorReader {
     drivetrain_right_encoder_->SetMaxPeriod(0.005);
   }
 
-  void set_high_left_drive_hall(::std::unique_ptr<AnalogInput> analog) {
-    high_left_drive_hall_ = ::std::move(analog);
+  void set_drivetrain_left_hall(::std::unique_ptr<AnalogInput> analog) {
+    drivetrain_left_hall_ = ::std::move(analog);
   }
 
-  void set_low_right_drive_hall(::std::unique_ptr<AnalogInput> analog) {
-    low_right_drive_hall_ = ::std::move(analog);
+  void set_drivetrain_right_hall(::std::unique_ptr<AnalogInput> analog) {
+    drivetrain_right_hall_ = ::std::move(analog);
   }
 
-  void set_high_right_drive_hall(::std::unique_ptr<AnalogInput> analog) {
-    high_right_drive_hall_ = ::std::move(analog);
+  // Shooter setters.
+  void set_shooter_left_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_filter_.Add(encoder.get());
+    shooter_left_encoder_ = ::std::move(encoder);
   }
 
-  void set_low_left_drive_hall(::std::unique_ptr<AnalogInput> analog) {
-    low_left_drive_hall_ = ::std::move(analog);
+  void set_shooter_right_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_filter_.Add(encoder.get());
+    shooter_right_encoder_ = ::std::move(encoder);
+  }
+
+  // Intake setters.
+  void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_filter_.Add(encoder.get());
+    intake_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_intake_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    intake_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_intake_index(::std::unique_ptr<DigitalInput> index) {
+    encoder_filter_.Add(index.get());
+    intake_encoder_.set_index(::std::move(index));
+  }
+
+  // Shoulder setters.
+  void set_shoulder_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_filter_.Add(encoder.get());
+    shoulder_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_shoulder_potentiometer(
+      ::std::unique_ptr<AnalogInput> potentiometer) {
+    shoulder_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_shoulder_index(::std::unique_ptr<DigitalInput> index) {
+    encoder_filter_.Add(index.get());
+    shoulder_encoder_.set_index(::std::move(index));
+  }
+
+  // Wrist setters.
+  void set_wrist_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_filter_.Add(encoder.get());
+    wrist_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_wrist_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    wrist_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_wrist_index(::std::unique_ptr<DigitalInput> index) {
+    encoder_filter_.Add(index.get());
+    wrist_encoder_.set_index(::std::move(index));
   }
 
   // All of the DMA-related set_* calls must be made before this, and it doesn't
@@ -147,6 +227,9 @@ class SensorReader {
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_->Add(&intake_encoder_);
+    dma_synchronizer_->Add(&shoulder_encoder_);
+    dma_synchronizer_->Add(&wrist_encoder_);
   }
 
   void operator()() {
@@ -193,39 +276,77 @@ class SensorReader {
       drivetrain_message->right_speed =
           drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
 
-      drivetrain_message->low_left_hall = low_left_drive_hall_->GetVoltage();
-      drivetrain_message->high_left_hall = high_left_drive_hall_->GetVoltage();
       drivetrain_message->left_shifter_position =
-          hall_translate(values.left_drive, drivetrain_message->low_left_hall,
-                         drivetrain_message->high_left_hall);
-
-      drivetrain_message->low_right_hall = low_right_drive_hall_->GetVoltage();
-      drivetrain_message->high_right_hall =
-          high_right_drive_hall_->GetVoltage();
+          hall_translate(drivetrain_left_hall_->GetVoltage());
       drivetrain_message->right_shifter_position =
-          hall_translate(values.right_drive, drivetrain_message->low_right_hall,
-                         drivetrain_message->high_right_hall);
+          hall_translate(drivetrain_right_hall_->GetVoltage());
 
       drivetrain_message.Send();
     }
 
     dma_synchronizer_->RunIteration();
+
+    {
+      auto shooter_message = shooter_queue.position.MakeMessage();
+      shooter_message->theta_left =
+          shooter_translate(shooter_left_encoder_->GetRaw());
+      shooter_message->theta_right =
+          shooter_translate(shooter_right_encoder_->GetRaw());
+      shooter_message.Send();
+    }
+
+    {
+      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      CopyPotAndIndexPosition(intake_encoder_, &superstructure_message->intake,
+                              intake_translate, intake_pot_translate, false,
+                              values.intake.pot_offset);
+      CopyPotAndIndexPosition(shoulder_encoder_,
+                              &superstructure_message->shoulder,
+                              shoulder_translate, shoulder_pot_translate, false,
+                              values.shoulder.pot_offset);
+      CopyPotAndIndexPosition(wrist_encoder_, &superstructure_message->wrist,
+                              wrist_translate, wrist_pot_translate, false,
+                              values.wrist.pot_offset);
+
+      superstructure_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
 
  private:
+  void CopyPotAndIndexPosition(
+      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+      ::frc971::PotAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.polled_potentiometer_voltage()) +
+                    pot_offset;
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->latched_pot =
+        multiplier *
+            potentiometer_translate(encoder.last_potentiometer_voltage()) +
+        pot_offset;
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
   int32_t my_pid_;
   DriverStation *ds_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
-  ::std::unique_ptr<Encoder> drivetrain_left_encoder_;
-  ::std::unique_ptr<Encoder> drivetrain_right_encoder_;
-  ::std::unique_ptr<AnalogInput> low_left_drive_hall_;
-  ::std::unique_ptr<AnalogInput> high_left_drive_hall_;
-  ::std::unique_ptr<AnalogInput> low_right_drive_hall_;
-  ::std::unique_ptr<AnalogInput> high_right_drive_hall_;
+  ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
+      drivetrain_right_encoder_;
+  ::std::unique_ptr<AnalogInput> drivetrain_left_hall_, drivetrain_right_hall_;
+
+  ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
+  ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_, shoulder_encoder_, wrist_encoder_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter encoder_filter_, hall_filter_;
@@ -303,8 +424,8 @@ class SolenoidWriter {
  private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_;
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_right_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
+      drivetrain_right_;
 
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
@@ -316,12 +437,12 @@ class SolenoidWriter {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_left_drivetrain_talon(::std::unique_ptr<Talon> t) {
-    left_drivetrain_talon_ = ::std::move(t);
+  void set_drivetrain_left_talon(::std::unique_ptr<Talon> t) {
+    drivetrain_left_talon_ = ::std::move(t);
   }
 
-  void set_right_drivetrain_talon(::std::unique_ptr<Talon> t) {
-    right_drivetrain_talon_ = ::std::move(t);
+  void set_drivetrain_right_talon(::std::unique_ptr<Talon> t) {
+    drivetrain_right_talon_ = ::std::move(t);
   }
 
  private:
@@ -332,18 +453,85 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+    drivetrain_left_talon_->Set(-queue->left_voltage / 12.0);
+    drivetrain_right_talon_->Set(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    drivetrain_left_talon_->Disable();
+    drivetrain_right_talon_->Disable();
   }
 
-  ::std::unique_ptr<Talon> left_drivetrain_talon_;
-  ::std::unique_ptr<Talon> right_drivetrain_talon_;
+  ::std::unique_ptr<Talon> drivetrain_left_talon_, drivetrain_right_talon_;
+};
+
+class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_shooter_left_talon(::std::unique_ptr<Talon> t) {
+    shooter_left_talon_ = ::std::move(t);
+  }
+
+  void set_shooter_right_talon(::std::unique_ptr<Talon> t) {
+    shooter_right_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::y2016::control_loops::shooter::shooter_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::y2016::control_loops::shooter::shooter_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    shooter_left_talon_->Set(queue->voltage_left / 12.0);
+    shooter_right_talon_->Set(queue->voltage_right / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Shooter output too old.\n");
+    shooter_left_talon_->Disable();
+    shooter_right_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> shooter_left_talon_, shooter_right_talon_;
+};
+
+class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_intake_talon(::std::unique_ptr<Talon> t) {
+    intake_talon_ = ::std::move(t);
+  }
+
+  void set_shoulder_talon(::std::unique_ptr<Talon> t) {
+    shoulder_talon_ = ::std::move(t);
+  }
+
+  void set_wrist_talon(::std::unique_ptr<Talon> t) {
+    wrist_talon_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::y2016::control_loops::superstructure_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::y2016::control_loops::superstructure_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    intake_talon_->Set(queue->voltage_intake / 12.0);
+    shoulder_talon_->Set(-queue->voltage_shoulder / 12.0);
+    wrist_talon_->Set(queue->voltage_wrist / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Superstructure output too old.\n");
+    intake_talon_->Disable();
+    shoulder_talon_->Disable();
+    wrist_talon_->Disable();
+  }
+
+  ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -367,10 +555,23 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // TODO(constants): Update these input numbers.
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
-    reader.set_high_left_drive_hall(make_unique<AnalogInput>(1));
-    reader.set_low_left_drive_hall(make_unique<AnalogInput>(0));
-    reader.set_high_right_drive_hall(make_unique<AnalogInput>(2));
-    reader.set_low_right_drive_hall(make_unique<AnalogInput>(3));
+    reader.set_drivetrain_left_hall(make_unique<AnalogInput>(1));
+    reader.set_drivetrain_right_hall(make_unique<AnalogInput>(2));
+
+    reader.set_shooter_left_encoder(make_encoder(0));
+    reader.set_shooter_right_encoder(make_encoder(0));
+
+    reader.set_intake_encoder(make_encoder(0));
+    reader.set_intake_index(make_unique<DigitalInput>(0));
+    reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
+
+    reader.set_shoulder_encoder(make_encoder(0));
+    reader.set_shoulder_index(make_unique<DigitalInput>(0));
+    reader.set_shoulder_potentiometer(make_unique<AnalogInput>(0));
+
+    reader.set_wrist_encoder(make_encoder(0));
+    reader.set_wrist_index(make_unique<DigitalInput>(0));
+    reader.set_wrist_potentiometer(make_unique<AnalogInput>(0));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
@@ -379,11 +580,28 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     DrivetrainWriter drivetrain_writer;
-    drivetrain_writer.set_left_drivetrain_talon(
+    drivetrain_writer.set_drivetrain_left_talon(
         ::std::unique_ptr<Talon>(new Talon(5)));
-    drivetrain_writer.set_right_drivetrain_talon(
+    drivetrain_writer.set_drivetrain_right_talon(
         ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+
+    ShooterWriter shooter_writer;
+    shooter_writer.set_shooter_left_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    shooter_writer.set_shooter_right_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
+
+    SuperstructureWriter superstructure_writer;
+    superstructure_writer.set_intake_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    superstructure_writer.set_shoulder_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    superstructure_writer.set_wrist_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    ::std::thread superstructure_writer_thread(
+        ::std::ref(superstructure_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
@@ -418,6 +636,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
+    shooter_writer.Quit();
+    shooter_writer_thread.join();
+    superstructure_writer.Quit();
+    superstructure_writer_thread.join();
     solenoid_writer.Quit();
     solenoid_thread.join();
 

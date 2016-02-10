@@ -41,6 +41,7 @@ cc_library(
     '//frc971/control_loops:state_feedback_loop',
     '//third_party/eigen',
     '//y2016:constants',
+    '//y2016/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )
 

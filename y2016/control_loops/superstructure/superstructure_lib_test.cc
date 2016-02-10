@@ -14,6 +14,7 @@
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/intake_plant.h"
 #include "y2016/control_loops/superstructure/arm_plant.h"
+
 #include "y2016/constants.h"
 
 using ::aos::time::Time;
@@ -80,9 +81,11 @@ class SuperstructureSimulation {
   SuperstructureSimulation()
       : intake_plant_(new IntakePlant(MakeIntakePlant())),
         plant_arm_(new ArmPlant(MakeArmPlant())),
-        pot_encoder_intake_(INTAKE_ENCODER_INDEX_DIFFERENCE),
-        pot_encoder_shoulder_(SHOULDER_ENCODER_INDEX_DIFFERENCE),
-        pot_encoder_wrist_(WRIST_ENCODER_INDEX_DIFFERENCE),
+        pot_encoder_intake_(
+            constants::Values::kIntakeEncoderIndexDifference),
+        pot_encoder_shoulder_(
+            constants::Values::kShoulderEncoderIndexDifference),
+        pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
         superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
                               ".y2016.control_loops.superstructure.goal",
                               ".y2016.control_loops.superstructure.status",
@@ -164,14 +167,12 @@ class SuperstructureSimulation {
     pot_encoder_wrist_.MoveTo(angle_wrist);
 
     // Validate that everything is within range.
-    EXPECT_GE(angle_intake, constants::GetValues().intake.limits.lower_hard);
-    EXPECT_LE(angle_intake, constants::GetValues().intake.limits.upper_hard);
-    EXPECT_GE(angle_shoulder,
-              constants::GetValues().shoulder.limits.lower_hard);
-    EXPECT_LE(angle_shoulder,
-              constants::GetValues().shoulder.limits.upper_hard);
-    EXPECT_GE(angle_wrist, constants::GetValues().wrist.limits.lower_hard);
-    EXPECT_LE(angle_wrist, constants::GetValues().wrist.limits.upper_hard);
+    EXPECT_GE(angle_intake, constants::Values::kIntakeRange.lower_hard);
+    EXPECT_LE(angle_intake, constants::Values::kIntakeRange.upper_hard);
+    EXPECT_GE(angle_shoulder, constants::Values::kShoulderRange.lower_hard);
+    EXPECT_LE(angle_shoulder, constants::Values::kShoulderRange.upper_hard);
+    EXPECT_GE(angle_wrist, constants::Values::kWristRange.lower_hard);
+    EXPECT_LE(angle_wrist, constants::Values::kWristRange.upper_hard);
   }
 
  private:
@@ -301,12 +302,11 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
-  const auto &values = constants::GetValues();
-  EXPECT_NEAR(values.intake.limits.upper,
+  EXPECT_NEAR(constants::Values::kIntakeRange.upper,
               superstructure_queue_.status->intake.angle, 0.001);
-  EXPECT_NEAR(values.shoulder.limits.upper,
+  EXPECT_NEAR(constants::Values::kShoulderRange.upper,
               superstructure_queue_.status->shoulder.angle, 0.001);
-  EXPECT_NEAR(values.wrist.limits.upper + values.shoulder.limits.upper,
+  EXPECT_NEAR(constants::Values::kWristRange.upper + constants::Values::kShoulderRange.upper,
               superstructure_queue_.status->wrist.angle, 0.001);
 
   // Set some ridiculous goals to test lower limits.
@@ -326,11 +326,11 @@ TEST_F(SuperstructureTest, RespectsRange) {
 
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
-  EXPECT_NEAR(values.intake.limits.lower,
+  EXPECT_NEAR(constants::Values::kIntakeRange.lower,
               superstructure_queue_.status->intake.angle, 0.001);
-  EXPECT_NEAR(values.shoulder.limits.lower,
+  EXPECT_NEAR(constants::Values::kShoulderRange.lower,
               superstructure_queue_.status->shoulder.angle, 0.001);
-  EXPECT_NEAR(values.wrist.limits.lower + values.shoulder.limits.lower,
+  EXPECT_NEAR(constants::Values::kWristRange.lower + constants::Values::kShoulderRange.lower,
               superstructure_queue_.status->wrist.angle, 0.001);
 }
 
@@ -363,11 +363,11 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 // Tests that starting at the lower hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
-      constants::GetValues().intake.limits.lower);
+      constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
-      constants::GetValues().shoulder.limits.lower);
+      constants::Values::kShoulderRange.lower);
   superstructure_plant_.InitializeWristPosition(
-      constants::GetValues().wrist.limits.lower);
+      constants::Values::kWristRange.lower);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(0.0)
                   .angle_shoulder(0.0)
@@ -382,11 +382,11 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
 // Tests that starting at the upper hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, UpperHardstopStartup) {
   superstructure_plant_.InitializeIntakePosition(
-      constants::GetValues().intake.limits.upper);
+      constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
-      constants::GetValues().shoulder.limits.upper);
+      constants::Values::kShoulderRange.upper);
   superstructure_plant_.InitializeWristPosition(
-      constants::GetValues().wrist.limits.upper);
+      constants::Values::kWristRange.upper);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(0.0)
                   .angle_shoulder(0.0)
@@ -401,11 +401,11 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
 // Tests that resetting WPILib results in a rezero.
 TEST_F(SuperstructureTest, ResetTest) {
   superstructure_plant_.InitializeIntakePosition(
-      constants::GetValues().intake.limits.upper);
+      constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
-      constants::GetValues().shoulder.limits.upper);
+      constants::Values::kShoulderRange.upper);
   superstructure_plant_.InitializeWristPosition(
-      constants::GetValues().wrist.limits.upper);
+      constants::Values::kWristRange.upper);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(0.3)
                   .angle_shoulder(0.3)
@@ -446,17 +446,17 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
 // Tests that the integrators works.
 TEST_F(SuperstructureTest, IntegratorTest) {
   superstructure_plant_.InitializeIntakePosition(
-      constants::GetValues().intake.limits.lower);
+      constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
-      constants::GetValues().shoulder.limits.lower);
+      constants::Values::kShoulderRange.lower);
   superstructure_plant_.InitializeWristPosition(
-      constants::GetValues().wrist.limits.lower);
+      constants::Values::kWristRange.lower);
   superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
   superstructure_queue_.goal.MakeWithBuilder()
-    .angle_intake(0.0)
-    .angle_shoulder(0.0)
-    .angle_wrist(0.0)
-    .Send();
+      .angle_intake(0.0)
+      .angle_shoulder(0.0)
+      .angle_wrist(0.0)
+      .Send();
 
   RunForTime(Time::InSeconds(8));
 

@@ -13,6 +13,7 @@
 
 #include "y2016/actors/drivetrain_actor.h"
 #include "y2016/constants.h"
+#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 namespace y2016 {
@@ -20,7 +21,7 @@ namespace actors {
 
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup *s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s),
-      loop_(constants::GetValues().make_drivetrain_loop()) {
+      loop_(::y2016::control_loops::drivetrain::MakeDrivetrainLoop()) {
   loop_.set_controller_index(3);
 }
 
@@ -29,7 +30,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   const double yoffset = params.y_offset;
   const double turn_offset =
-      params.theta_offset * constants::GetValues().turn_width / 2.0;
+      params.theta_offset * constants::Values::kTurnWidth / 2.0;
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
@@ -42,10 +43,10 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   profile.set_maximum_acceleration(params.maximum_acceleration);
   profile.set_maximum_velocity(params.maximum_velocity);
   turn_profile.set_maximum_acceleration(params.maximum_turn_acceleration *
-                                        constants::GetValues().turn_width /
+                                        constants::Values::kTurnWidth /
                                         2.0);
   turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
-                                    constants::GetValues().turn_width / 2.0);
+                                    constants::Values::kTurnWidth / 2.0);
 
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);

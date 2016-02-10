@@ -85,9 +85,9 @@ const ProfileParams kFastTurn = {3.0, 10.0};
   auto drivetrain_action = actors::MakeDrivetrainAction(params);
   drivetrain_action->Start();
   left_initial_position +=
-      distance - theta * constants::GetValues().turn_width / 2.0;
+      distance - theta * constants::Values::kTurnWidth / 2.0;
   right_initial_position +=
-      distance + theta * constants::GetValues().turn_width / 2.0;
+      distance + theta * constants::Values::kTurnWidth / 2.0;
   return ::std::move(drivetrain_action);
 }
 

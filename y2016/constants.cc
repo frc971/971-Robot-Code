@@ -24,151 +24,79 @@
 
 namespace y2016 {
 namespace constants {
-namespace {
 
+// ///// Mutual constants between robots. /////
+const int Values::kZeroingSampleSize;
+
+constexpr double Values::kDrivetrainEncoderRatio, Values::kLowGearRatio,
+    Values::kHighGearRatio, Values::kTurnWidth, Values::kShooterEncoderRatio,
+    Values::kIntakeEncoderRatio, Values::kShoulderEncoderRatio,
+    Values::kWristEncoderRatio, Values::kIntakePotRatio,
+    Values::kShoulderPotRatio, Values::kWristPotRatio,
+    Values::kIntakeEncoderIndexDifference,
+    Values::kShoulderEncoderIndexDifference,
+    Values::kWristEncoderIndexDifference;
+constexpr Values::Range Values::kIntakeRange, Values::kShoulderRange,
+    Values::kWristRange;
+
+namespace {
 const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
 
-// TODO(constants): Update these to what we're using this year.
-const double kCompDrivetrainEncoderRatio =
-    (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0) /*encoder gears*/;
-const double kCompLowGearRatio = 18.0 / 60.0 * 18.0 / 50.0;
-const double kCompHighGearRatio = 28.0 / 50.0 * 18.0 / 50.0;
-
-const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
-const double kPracticeLowGearRatio = kCompLowGearRatio;
-const double kPracticeHighGearRatio = kCompHighGearRatio;
-
-const ShifterHallEffect kCompLeftDriveShifter{2.61, 2.33, 4.25, 3.28, 0.2, 0.7};
-const ShifterHallEffect kCompRightDriveShifter{2.94, 4.31, 4.32,
-                                               3.25, 0.2,  0.7};
-
-const ShifterHallEffect kPracticeLeftDriveShifter{2.80, 3.05, 4.15,
-                                                  3.2,  0.2,  0.7};
-const ShifterHallEffect kPracticeRightDriveShifter{2.90, 3.75, 3.80,
-                                                   2.98, 0.2,  0.7};
-
-const double kRobotWidth = 25.0 / 100.0 * 2.54;
-
-const int kZeroingSampleSize = 200;
-
-constexpr Values::Range kIntakeRange{// lower hard stop
-                                     -0.4,
-                                     // upper hard stop
-                                     2,
-                                     // lower soft limit
-                                     -0.3,
-                                     // upper soft limit
-                                     1.9};
-constexpr Values::Range kShoulderRange{// lower hard stop
-                                       -0.2,
-                                       // upper hard stop
-                                       2.0,
-                                       // lower soft limit
-                                       -0.1,
-                                       // upper soft limit
-                                       1.9};
-constexpr Values::Range kWristRange{// lower hard stop
-                                    -2,
-                                    // upper hard stop
-                                    2,
-                                    // lower soft limit
-                                    -1.9,
-                                    // upper soft limit
-                                    1.9};
+// ///// Dynamic constants. /////
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
-    case 1:  // for tests
-      return new Values{
-          kCompDrivetrainEncoderRatio,
-          kCompLowGearRatio,
-          kCompHighGearRatio,
-          kCompLeftDriveShifter,
-          kCompRightDriveShifter,
-          0.5,
-          ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-          ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
-          5.0,  // drivetrain max speed
-
-          // Intake
-          {
-           kIntakeRange,
-           {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
-          },
-
-          // Shoulder
-          {
-           kShoulderRange,
-           {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
-          },
-
-          // Wrist
-          {
-           kWristRange,
-           {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
-          },
-      };
-      break;
+    case 1:
     case kCompTeamNumber:
       return new Values{
-          kCompDrivetrainEncoderRatio,
-          kCompLowGearRatio,
-          kCompHighGearRatio,
-          kCompLeftDriveShifter,
-          kCompRightDriveShifter,
-          kRobotWidth,
-          ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-          ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,  // drivetrain max speed
 
           // Intake
           {
-           kIntakeRange,
-           {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
+            0.9, 0.3},
           },
 
           // Shoulder
           {
-           kShoulderRange,
-           {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
+            0.9, 0.3},
           },
 
           // Wrist
           {
-           kWristRange,
-           {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
+            0.9, 0.3},
           },
       };
       break;
     case kPracticeTeamNumber:
       return new Values{
-          kPracticeDrivetrainEncoderRatio,
-          kPracticeLowGearRatio,
-          kPracticeHighGearRatio,
-          kPracticeLeftDriveShifter,
-          kPracticeRightDriveShifter,
-          kRobotWidth,
-          ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-          ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,  // drivetrain max speed
 
           // Intake
           {
-           kIntakeRange,
-           {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
+            0.9, 0.3},
           },
 
           // Shoulder
           {
-           kShoulderRange,
-           {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
+            0.9, 0.3},
           },
 
           // Wrist
           {
-           kWristRange,
-           {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           0.0,
+           {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
+            0.9, 0.3},
           },
       };
       break;

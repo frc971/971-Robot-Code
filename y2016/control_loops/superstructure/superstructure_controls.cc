@@ -84,18 +84,16 @@ void Intake::Correct(PotAndIndexPosition position) {
 }
 
 void Intake::CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal) {
-  const auto &values = constants::GetValues();
-
   // Limit the goal to min/max allowable angles.
-  if ((*goal)(0, 0) >= values.intake.limits.upper) {
+  if ((*goal)(0, 0) >= constants::Values::kIntakeRange.upper) {
     LOG(WARNING, "Intake goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-        values.intake.limits.upper);
-    (*goal)(0, 0) = values.intake.limits.upper;
+        constants::Values::kIntakeRange.upper);
+    (*goal)(0, 0) = constants::Values::kIntakeRange.upper;
   }
-  if ((*goal)(0, 0) <= values.intake.limits.lower) {
+  if ((*goal)(0, 0) <= constants::Values::kIntakeRange.lower) {
     LOG(WARNING, "Intake goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-        values.intake.limits.lower);
-    (*goal)(0, 0) = values.intake.limits.lower;
+        constants::Values::kIntakeRange.lower);
+    (*goal)(0, 0) = constants::Values::kIntakeRange.lower;
   }
 }
 
@@ -133,13 +131,12 @@ void Intake::Update(bool disable) {
 }
 
 bool Intake::CheckHardLimits() {
-  const auto &values = constants::GetValues();
   // Returns whether hard limits have been exceeded.
 
-  if (angle() >= values.intake.limits.upper_hard ||
-      angle() <= values.intake.limits.lower_hard) {
+  if (angle() >= constants::Values::kIntakeRange.upper_hard ||
+      angle() <= constants::Values::kIntakeRange.lower_hard) {
     LOG(ERROR, "Intake at %f out of bounds [%f, %f], ESTOPing\n", angle(),
-        values.intake.limits.lower_hard, values.intake.limits.upper_hard);
+        constants::Values::kIntakeRange.lower_hard, constants::Values::kIntakeRange.upper_hard);
     return true;
   }
 
@@ -255,30 +252,29 @@ void Arm::Correct(PotAndIndexPosition position_shoulder,
 
 void Arm::CapGoal(const char *name, Eigen::Matrix<double, 6, 1> *goal) {
   // Limit the goals to min/max allowable angles.
-  const auto &values = constants::GetValues();
 
-  if ((*goal)(0, 0) >= values.shoulder.limits.upper) {
+  if ((*goal)(0, 0) >= constants::Values::kShoulderRange.upper) {
     LOG(WARNING, "Shoulder goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-        values.shoulder.limits.upper);
-    (*goal)(0, 0) = values.shoulder.limits.upper;
+        constants::Values::kShoulderRange.upper);
+    (*goal)(0, 0) = constants::Values::kShoulderRange.upper;
   }
-  if ((*goal)(0, 0) <= values.shoulder.limits.lower) {
+  if ((*goal)(0, 0) <= constants::Values::kShoulderRange.lower) {
     LOG(WARNING, "Shoulder goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-        values.shoulder.limits.lower);
-    (*goal)(0, 0) = values.shoulder.limits.lower;
+        constants::Values::kShoulderRange.lower);
+    (*goal)(0, 0) = constants::Values::kShoulderRange.lower;
   }
 
   const double wrist_goal_angle_ungrounded = (*goal)(2, 0) - (*goal)(0, 0);
 
-  if (wrist_goal_angle_ungrounded >= values.wrist.limits.upper) {
+  if (wrist_goal_angle_ungrounded >= constants::Values::kWristRange.upper) {
     LOG(WARNING, "Wrist goal %s above limit, %f > %f\n", name,
-        wrist_goal_angle_ungrounded, values.wrist.limits.upper);
-    (*goal)(2, 0) = values.wrist.limits.upper + (*goal)(0, 0);
+        wrist_goal_angle_ungrounded, constants::Values::kWristRange.upper);
+    (*goal)(2, 0) = constants::Values::kWristRange.upper + (*goal)(0, 0);
   }
-  if (wrist_goal_angle_ungrounded <= values.wrist.limits.lower) {
+  if (wrist_goal_angle_ungrounded <= constants::Values::kWristRange.lower) {
     LOG(WARNING, "Wrist goal %s below limit, %f < %f\n", name,
-        wrist_goal_angle_ungrounded, values.wrist.limits.lower);
-    (*goal)(2, 0) = values.wrist.limits.lower + (*goal)(0, 0);
+        wrist_goal_angle_ungrounded, constants::Values::kWristRange.lower);
+    (*goal)(2, 0) = constants::Values::kWristRange.lower + (*goal)(0, 0);
   }
 }
 
@@ -313,20 +309,19 @@ void Arm::AdjustProfile(double max_angular_velocity_shoulder,
 }
 
 bool Arm::CheckHardLimits() {
-  const auto &values = constants::GetValues();
-  if (shoulder_angle() >= values.shoulder.limits.upper_hard ||
-      shoulder_angle() <= values.shoulder.limits.lower_hard) {
+  if (shoulder_angle() >= constants::Values::kShoulderRange.upper_hard ||
+      shoulder_angle() <= constants::Values::kShoulderRange.lower_hard) {
     LOG(ERROR, "Shoulder at %f out of bounds [%f, %f], ESTOPing\n",
-        shoulder_angle(), values.shoulder.limits.lower_hard,
-        values.shoulder.limits.upper_hard);
+        shoulder_angle(), constants::Values::kShoulderRange.lower_hard,
+        constants::Values::kShoulderRange.upper_hard);
     return true;
   }
 
-  if (wrist_angle() - shoulder_angle() >= values.wrist.limits.upper_hard ||
-      wrist_angle() - shoulder_angle() <= values.wrist.limits.lower_hard) {
+  if (wrist_angle() - shoulder_angle() >= constants::Values::kWristRange.upper_hard ||
+      wrist_angle() - shoulder_angle() <= constants::Values::kWristRange.lower_hard) {
     LOG(ERROR, "Wrist at %f out of bounds [%f, %f], ESTOPing\n",
-        wrist_angle() - shoulder_angle(), values.wrist.limits.lower_hard,
-        values.wrist.limits.upper_hard);
+        wrist_angle() - shoulder_angle(), constants::Values::kWristRange.lower_hard,
+        constants::Values::kWristRange.upper_hard);
     return true;
   }
 

@@ -2,6 +2,7 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
@@ -11,6 +12,10 @@ using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace y2016 {
 namespace control_loops {
+
+using ::frc971::constants::ShifterHallEffect;
+
+const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.0, 0.0, 0.5, 0.5};
 
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
@@ -33,11 +38,11 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kV,
       drivetrain::kT,
 
-      constants::GetValues().turn_width,
-      constants::GetValues().high_gear_ratio,
-      constants::GetValues().low_gear_ratio,
-      constants::GetValues().left_drive,
-      constants::GetValues().right_drive};
+      constants::Values::kTurnWidth,
+      constants::Values::kHighGearRatio,
+      constants::Values::kLowGearRatio,
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter};
 
   return kDrivetrainConfig;
 };

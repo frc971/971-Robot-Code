@@ -60,6 +60,7 @@ cc_library(
   deps = [
     ':polydrivetrain_plants',
     '//frc971/control_loops/drivetrain:drivetrain_config',
+    '//frc971:shifter_hall_effect',
     '//y2016:constants',
   ],
 )
