@@ -9,7 +9,7 @@ from frc971.control_loops.python import controls
 
 from y2016.control_loops.python.shoulder import Shoulder, IntegralShoulder
 from y2016.control_loops.python.wrist import Wrist, IntegralWrist
-from aos.common.util.trapezoid_profile import TrapizoidProfile
+from aos.common.util.trapezoid_profile import TrapezoidProfile
 
 from matplotlib import pylab
 import gflags
@@ -235,11 +235,11 @@ class ScenarioPlotter(object):
 
     goal = numpy.concatenate((arm.X, numpy.matrix(numpy.zeros((2, 1)))), axis=0)
 
-    shoulder_profile = TrapizoidProfile(arm.dt)
+    shoulder_profile = TrapezoidProfile(arm.dt)
     shoulder_profile.set_maximum_acceleration(50.0)
     shoulder_profile.set_maximum_velocity(10.0)
     shoulder_profile.SetGoal(goal[0, 0])
-    shooter_profile = TrapizoidProfile(arm.dt)
+    shooter_profile = TrapezoidProfile(arm.dt)
     shooter_profile.set_maximum_acceleration(50.0)
     shooter_profile.set_maximum_velocity(10.0)
     shooter_profile.SetGoal(goal[2, 0])

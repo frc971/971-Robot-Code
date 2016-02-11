@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from aos.common.util.trapezoid_profile import TrapizoidProfile
+from aos.common.util.trapezoid_profile import TrapezoidProfile
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
@@ -200,7 +200,7 @@ class ScenarioPlotter(object):
 
     goal = numpy.concatenate((intake.X, numpy.matrix(numpy.zeros((1, 1)))), axis=0)
 
-    profile = TrapizoidProfile(intake.dt)
+    profile = TrapezoidProfile(intake.dt)
     profile.set_maximum_acceleration(70.0)
     profile.set_maximum_velocity(10.0)
     profile.SetGoal(goal[0, 0])
