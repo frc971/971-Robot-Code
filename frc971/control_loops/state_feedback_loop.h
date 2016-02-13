@@ -221,6 +221,20 @@ struct StateFeedbackController final {
       const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                            number_of_outputs> &plant)
       : L(L), K(K), Kff(Kff), A_inv(A_inv), plant(plant) {}
+
+  // TODO(Brian): Remove this overload once they're all converted.
+  StateFeedbackController(
+      const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
+      const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
+      const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv,
+      const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
+                                           number_of_outputs> &plant)
+      : L(L),
+        K(K),
+        Kff(::Eigen::Matrix<double, number_of_inputs,
+                            number_of_states>::Zero()),
+        A_inv(A_inv),
+        plant(plant) {}
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -234,20 +248,6 @@ class StateFeedbackLoop {
     controllers_.emplace_back(
         new StateFeedbackController<number_of_states, number_of_inputs,
                                     number_of_outputs>(controller));
-    Reset();
-  }
-
-  StateFeedbackLoop(
-      const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
-      const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
-      const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv,
-      const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
-                                           number_of_outputs> &plant)
-      : controller_index_(0) {
-    controllers_.emplace_back(
-        new StateFeedbackController<number_of_states, number_of_inputs,
-                                    number_of_outputs>(L, K, A_inv, plant));
-
     Reset();
   }
 
