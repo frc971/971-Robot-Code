@@ -238,8 +238,6 @@ class ScenarioPlotter(object):
 
 
 def main(argv):
-  argv = FLAGS(argv)
-
   scenario_plotter = ScenarioPlotter()
 
   wrist = Wrist()
@@ -260,7 +258,7 @@ def main(argv):
     glog.fatal('Expected .h file name and .cc file name for the wrist and integral wrist.')
   else:
     namespaces = ['y2016', 'control_loops', 'superstructure']
-    wrist = Wrist("Wrist")
+    wrist = Wrist('Wrist')
     loop_writer = control_loop.ControlLoopWriter(
         'Wrist', [wrist], namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
@@ -271,4 +269,5 @@ def main(argv):
     integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  sys.exit(main(argv))

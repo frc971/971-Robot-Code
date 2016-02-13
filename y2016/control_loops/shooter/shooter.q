@@ -1,38 +1,47 @@
-package y2016.control_loops;
+package y2016.control_loops.shooter;
 
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
 
+struct ShooterSideStatus {
+  // True if the shooter side is up to speed and stable.
+  bool ready;
+  // The current average velocity in radians/second.
+  double avg_angular_velocity;
+  // The current instantaneous filtered velocity in radians/second.
+  double angular_velocity;
+};
+
 queue_group ShooterQueue {
   implements aos.control_loops.ControlLoop;
 
-  // All angles are in radians, and angular velocities are in rad/sec. For all
-  // angular velocities, positive is shooting the ball out of the robot.
+  // All angles are in radians, and angular velocities are in radians/second.
+  // For all angular velocities, positive is shooting the ball out of the robot.
 
   message Goal {
-    // Angular velocity goals in rad/sec.
-    double angular_velocity_left;
-    double angular_velocity_right;
+    // Angular velocity goals in radians/second.
+    double angular_velocity;
   };
 
   message Position {
-    // Wheel angle in rad/sec.
+    // Wheel angle in radians/second.
     double theta_left;
     double theta_right;
   };
 
   message Status {
-    bool ready_left;
-    bool ready_right;
-    // Is the shooter ready to shoot?
-    bool ready_both;
+    // Left side status.
+    ShooterSideStatus left;
+    // Right side status.
+    ShooterSideStatus right;
 
-    // Average angular velocities over dt * kHistoryLength.
-    double avg_angular_velocity_left;
-    double avg_angular_velocity_right;
+    // True if the shooter is ready.  It is better to compare the velocities
+    // directly so there isn't confusion on if the goal is up to date.
+    bool ready;
   };
 
   message Output {
+    // Voltage in volts of the left and right shooter motors.
     double voltage_left;
     double voltage_right;
   };
