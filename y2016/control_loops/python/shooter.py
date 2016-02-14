@@ -161,20 +161,14 @@ class ScenarioPlotter(object):
              observer_shooter=None):
     """Runs the shooter plant with an initial condition and goal.
 
-      Test for whether the goal has been reached and whether the separation
-      goes  outside of the initial and goal values by more than
-      max_separation_error.
-
-      Prints out something for a failure of either condition and returns
-      False if tests fail.
       Args:
-        shooter: shooter object to use.
+        shooter: Shooter object to use.
         goal: goal state.
         iterations: Number of timesteps to run the model for.
-        controller_shooter: Wrist object to get K from, or None if we should
+        controller_shooter: Shooter object to get K from, or None if we should
             use shooter.
-        observer_shooter: Wrist object to use for the observer, or None if we should
-            use the actual state.
+        observer_shooter: Shooter object to use for the observer, or None if we
+            should use the actual state.
     """
 
     if controller_shooter is None:
@@ -252,7 +246,6 @@ def main(argv):
   shooter_controller = IntegralShooter()
   observer_shooter = IntegralShooter()
 
-  # Test moving the shooter with constant separation.
   initial_X = numpy.matrix([[0.0], [0.0]])
   R = numpy.matrix([[0.0], [100.0], [0.0]])
   scenario_plotter.run_test(shooter, goal=R, controller_shooter=shooter_controller,
