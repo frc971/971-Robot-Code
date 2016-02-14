@@ -7,6 +7,18 @@
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/constants.h"
 
+#define INTAKE_ENCODER_RATIO (16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0)
+#define INTAKE_POT_RATIO (16.0 / 58.0)
+#define INTAKE_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * INTAKE_ENCODER_RATIO)
+
+#define SHOULDER_ENCODER_RATIO (16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0)
+#define SHOULDER_POT_RATIO (16.0 / 58.0)
+#define SHOULDER_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * SHOULDER_ENCODER_RATIO)
+
+#define WRIST_ENCODER_RATIO (16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0)
+#define WRIST_POT_RATIO (16.0 / 48.0)
+#define WRIST_ENCODER_INDEX_DIFFERENCE (2.0 * M_PI * WRIST_ENCODER_RATIO)
+
 namespace y2016 {
 namespace constants {
 
