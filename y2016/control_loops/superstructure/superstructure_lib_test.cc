@@ -514,6 +514,26 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   VerifyNearGoal();
 }
 
+// Tests that the zeroing errors in the arm are caught
+TEST_F(SuperstructureTest, ArmZeroingErrorTest) {
+  RunIteration();
+  EXPECT_NE(Superstructure::ESTOP, superstructure_.state());
+  superstructure_.arm_.TriggerEstimatorError();
+  RunIteration();
+
+  EXPECT_EQ(Superstructure::ESTOP, superstructure_.state());
+}
+
+// Tests that the zeroing errors in the intake are caught
+TEST_F(SuperstructureTest, IntakeZeroingErrorTest) {
+  RunIteration();
+  EXPECT_NE(Superstructure::ESTOP, superstructure_.state());
+  superstructure_.intake_.TriggerEstimatorError();
+  RunIteration();
+
+  EXPECT_EQ(Superstructure::ESTOP, superstructure_.state());
+}
+
 }  // namespace testing
 }  // namespace superstructure
 }  // namespace control_loops

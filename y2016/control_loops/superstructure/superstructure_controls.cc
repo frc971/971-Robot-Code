@@ -54,6 +54,11 @@ void Intake::UpdateIntakeOffset(double offset) {
 void Intake::Correct(PotAndIndexPosition position) {
   estimator_.UpdateEstimate(position);
 
+  if (estimator_.error()) {
+    LOG(ERROR, "zeroing error with intake_estimator\n");
+    return;
+  }
+
   if (!initialized_) {
     if (estimator_.offset_ready()) {
       UpdateIntakeOffset(estimator_.offset());
@@ -213,6 +218,16 @@ void Arm::Correct(PotAndIndexPosition position_shoulder,
                   PotAndIndexPosition position_wrist) {
   shoulder_estimator_.UpdateEstimate(position_shoulder);
   wrist_estimator_.UpdateEstimate(position_wrist);
+
+  // Handle zeroing errors
+  if (shoulder_estimator_.error()) {
+    LOG(ERROR, "zeroing error with shoulder_estimator\n");
+    return;
+  }
+  if (wrist_estimator_.error()) {
+    LOG(ERROR, "zeroing error with wrist_estimator\n");
+    return;
+  }
 
   if (!initialized_) {
     if (shoulder_estimator_.offset_ready() && wrist_estimator_.offset_ready()) {

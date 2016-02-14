@@ -119,6 +119,10 @@ void Superstructure::RunIteration(
   // LOW_ARM_ZERO works by moving the intake out of the way, lifting the arm up,
   // leveling the shooter, and then moving back down.
 
+  if (arm_.error() || intake_.error()) {
+    state_ = ESTOP;
+  }
+
   switch (state_) {
     case UNINITIALIZED:
       // Wait in the uninitialized state until both the arm and intake are

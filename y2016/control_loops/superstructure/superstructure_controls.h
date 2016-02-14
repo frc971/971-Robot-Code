@@ -24,6 +24,8 @@ class Intake {
   // Returns whether the estimators have been initialized and zeroed.
   bool initialized() const { return initialized_; }
   bool zeroed() const { return zeroed_; }
+  // Returns whether an error has occured
+  bool error() const { return estimator_.error(); }
 
   // Updates our estimator with the latest position.
   void Correct(::frc971::PotAndIndexPosition position);
@@ -71,6 +73,10 @@ class Intake {
   const Eigen::Matrix<double, 3, 1> &X_hat() const { return loop_->X_hat(); }
   double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
 
+  // For testing:
+  // Triggers an estimator error.
+  void TriggerEstimatorError() { estimator_.TriggerError(); }
+
  private:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
@@ -96,6 +102,7 @@ class Intake {
   bool zeroed_ = false;
 };
 
+
 class Arm {
  public:
   Arm();
@@ -104,6 +111,10 @@ class Arm {
   bool zeroed() const { return shoulder_zeroed_ && wrist_zeroed_; }
   bool shoulder_zeroed() const { return shoulder_zeroed_; }
   bool wrist_zeroed() const { return wrist_zeroed_; }
+  // Returns whether an error has occured
+  bool error() const {
+    return shoulder_estimator_.error() || wrist_estimator_.error();
+  }
 
   // Updates our estimator with the latest position.
   void Correct(::frc971::PotAndIndexPosition position_shoulder,
@@ -158,6 +169,10 @@ class Arm {
   // Returns the current state estimate.
   const Eigen::Matrix<double, 6, 1> &X_hat() const { return loop_->X_hat(); }
   double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
+
+  // For testing:
+  // Triggers an estimator error.
+  void TriggerEstimatorError() { shoulder_estimator_.TriggerError(); }
 
  private:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails

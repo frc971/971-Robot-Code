@@ -16,6 +16,8 @@ namespace control_loops {
 namespace superstructure {
 namespace testing {
 class SuperstructureTest_DisabledGoalTest_Test;
+class SuperstructureTest_ArmZeroingErrorTest_Test;
+class SuperstructureTest_IntakeZeroingErrorTest_Test;
 }  // namespace testing
 
 class Superstructure
@@ -107,6 +109,8 @@ class Superstructure
 
  private:
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;
+  friend class testing::SuperstructureTest_ArmZeroingErrorTest_Test;
+  friend class testing::SuperstructureTest_IntakeZeroingErrorTest_Test;
   Intake intake_;
   Arm arm_;
 
