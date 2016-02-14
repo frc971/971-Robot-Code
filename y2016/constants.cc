@@ -47,7 +47,33 @@ const uint16_t kPracticeTeamNumber = 9971;
 
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
-    case 1:
+    case 1:  // for tests
+      return new Values{
+          5.0,  // drivetrain max speed
+
+          // Intake
+          {
+           0.0,
+           {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
+            0.0, 0.3},
+          },
+
+          // Shoulder
+          {
+           0.0,
+           {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
+            0.0, 0.3},
+          },
+
+          // Wrist
+          {
+           0.0,
+           {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
+            0.0, 0.3},
+          },
+      };
+      break;
+
     case kCompTeamNumber:
       return new Values{
           5.0,  // drivetrain max speed
