@@ -66,9 +66,11 @@ cc_library(
   name = 'superstructure_lib',
   srcs = [
     'superstructure.cc',
+    'superstructure_controls.cc',
   ],
   hdrs = [
     'superstructure.h',
+    'superstructure_controls.h',
   ],
   deps = [
     ':superstructure_queue',
