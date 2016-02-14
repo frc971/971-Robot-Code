@@ -452,7 +452,7 @@ class SolenoidWriter {
   ::std::unique_ptr<Relay> compressor_relay_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
-  ::aos::Queue<::y2016::control_loops::ShooterQueue::Output> shooter_;
+  ::aos::Queue<::y2016::control_loops::shooter::ShooterQueue::Output> shooter_;
 
   ::std::atomic<bool> run_{true};
 };
