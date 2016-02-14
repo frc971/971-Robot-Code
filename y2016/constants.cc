@@ -69,19 +69,19 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Intake
           {
            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
-           {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
 
           // Shoulder
           {
            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
-           {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
 
           // Wrist
           {
            {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
-           {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
+           {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
       };
       break;
