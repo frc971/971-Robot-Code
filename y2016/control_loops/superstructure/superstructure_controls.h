@@ -27,21 +27,19 @@ class Intake {
 
   // Updates our estimator with the latest position.
   void Correct(::frc971::PotAndIndexPosition position);
+  // Runs the controller and profile generator for a cycle.
+  void Update(bool disabled);
+  // Sets the maximum voltage that will be commanded by the loop.
+  void set_max_voltage(double voltage);
 
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal);
   // Sets the unprofiled goal.  The profiler will generate a profile to go to
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal);
-
-  // Runs the controller and profile generator for a cycle.
-  void Update(bool disabled);
-
   // Limits our profiles to a max velocity and acceleration for proper motion.
   void AdjustProfile(double max_angular_velocity,
                      double max_angular_acceleration);
-  // Sets the maximum voltage that will be commanded by the loop.
-  void set_max_voltage(double voltage);
 
   // Returns true if we have exceeded any hard limits.
   bool CheckHardLimits();

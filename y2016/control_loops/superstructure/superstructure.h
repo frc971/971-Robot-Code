@@ -24,22 +24,79 @@ class Superstructure
   explicit Superstructure(
       control_loops::SuperstructureQueue *my_superstructure =
           &control_loops::superstructure_queue);
+
+  // This is the angle above which we will do a HIGH_ARM_ZERO, and below which
+  // we will do a LOW_ARM_ZERO.
+  static constexpr double kShoulderMiddleAngle = M_PI / 4.0;
+  // This is the large scale movement tolerance.
+  static constexpr double kLooseTolerance = 0.05;
+
+  // This is the small scale movement tolerance.
+  static constexpr double kTightTolerance = 0.01;
+
+  // This is the angle such that the intake will clear the arm when the shooter
+  // is level.
+  static constexpr double kIntakeUpperClear = 1.1;
+  // This is the angle such that the intake will clear the arm when the shooter
+  // is at almost any position.
+  static constexpr double kIntakeLowerClear = 0.5;
+
+  // This is the angle that the shoulder will go to when doing the
+  // HIGH_ARM_ZERO.
+  static constexpr double kShoulderUpAngle = M_PI / 2.0;
+
+  // This is the angle that the shoulder will go down to when landing in the
+  // bellypan.
+  static constexpr double kShoulderLanded = -0.02;
+
+  // This is the angle below which we consider the wrist close enough to level
+  // that we should move it to level before doing anything.
+  static constexpr double kWristAlmostLevel = 0.10;
+
+  // This is the angle that the shoulder will go down to when raising up before
+  // leveling the shooter for calibration.
+  static constexpr double kShoulderWristClearAngle = 0.6;
+
   enum State {
-    // Waiting to receive data before doing anything.
+    // Wait for all the filters to be ready before starting the initialization
+    // process.
     UNINITIALIZED = 0,
-    // Estimating the starting location.
-    INITIALIZING = 1,
-    // Moving the intake to find an index pulse.
-    ZEROING_INTAKE = 2,
-    // Moving the arm to find an index pulse.
-    ZEROING_ARM = 3,
-    // All good!
-    RUNNING = 4,
+
+    // We now are ready to decide how to zero.  Decide what to do once we are
+    // enabled.
+    DISABLED_INITIALIZED = 1,
+
+    // Lift the arm up out of the way.
+    HIGH_ARM_ZERO_LIFT_ARM = 2,
+
+    HIGH_ARM_ZERO_LEVEL_SHOOTER = 3,
+
+    HIGH_ARM_ZERO_MOVE_INTAKE_OUT = 4,
+
+    HIGH_ARM_ZERO_LOWER_ARM = 6,
+
+    LOW_ARM_ZERO_LOWER_INTAKE = 7,
+    LOW_ARM_ZERO_MAYBE_LEVEL_SHOOTER = 8,
+    LOW_ARM_ZERO_LIFT_SHOULDER = 9,
+    LOW_ARM_ZERO_LEVEL_SHOOTER = 11,
+    // Run, but limit power to zeroing voltages.
+    SLOW_RUNNING = 12,
+    // Run with full power.
+    RUNNING = 13,
     // Internal error caused the superstructure to abort.
-    ESTOP = 5,
+    ESTOP = 14,
   };
 
   State state() const { return state_; }
+
+  // Returns the value to move the joint to such that it will stay below
+  // reference_angle starting at current_angle, but move at least move_distance
+  static double MoveButKeepBelow(double reference_angle, double current_angle,
+                                 double move_distance);
+  // Returns the value to move the joint to such that it will stay above
+  // reference_angle starting at current_angle, but move at least move_distance
+  static double MoveButKeepAbove(double reference_angle, double current_angle,
+                                 double move_distance);
 
  protected:
   virtual void RunIteration(
@@ -56,9 +113,11 @@ class Superstructure
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;
 
-  // Sets state_ to the correct state given the current state of the zeroing
-  // estimators.
-  void UpdateZeroingState();
+  // Returns true if the profile has finished, and the joint is within the
+  // specified tolerance.
+  bool IsArmNear(double tolerance);
+  bool IsArmNear(double shoulder_tolerance, double wrist_tolerance);
+  bool IsIntakeNear(double tolerance);
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
