@@ -81,8 +81,7 @@ class SuperstructureSimulation {
   SuperstructureSimulation()
       : intake_plant_(new IntakePlant(MakeIntakePlant())),
         plant_arm_(new ArmPlant(MakeArmPlant())),
-        pot_encoder_intake_(
-            constants::Values::kIntakeEncoderIndexDifference),
+        pot_encoder_intake_(constants::Values::kIntakeEncoderIndexDifference),
         pot_encoder_shoulder_(
             constants::Values::kShoulderEncoderIndexDifference),
         pot_encoder_wrist_(constants::Values::kWristEncoderIndexDifference),
@@ -245,9 +244,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 // Tests that the superstructure does nothing when the goal is zero.
 TEST_F(SuperstructureTest, DoesNothing) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.0)
-                  .angle_shoulder(0.0)
-                  .angle_wrist(0.0)
+                  .angle_intake(constants::Values::kIntakeRange.lower)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(constants::Values::kWristRange.lower)
                   .max_angular_velocity_intake(20)
                   .max_angular_velocity_shoulder(20)
                   .max_angular_velocity_wrist(20)
@@ -306,7 +305,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
               superstructure_queue_.status->intake.angle, 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.upper,
               superstructure_queue_.status->shoulder.angle, 0.001);
-  EXPECT_NEAR(constants::Values::kWristRange.upper + constants::Values::kShoulderRange.upper,
+  EXPECT_NEAR(constants::Values::kWristRange.upper +
+                  constants::Values::kShoulderRange.upper,
               superstructure_queue_.status->wrist.angle, 0.001);
 
   // Set some ridiculous goals to test lower limits.
@@ -330,16 +330,17 @@ TEST_F(SuperstructureTest, RespectsRange) {
               superstructure_queue_.status->intake.angle, 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.lower,
               superstructure_queue_.status->shoulder.angle, 0.001);
-  EXPECT_NEAR(constants::Values::kWristRange.lower + constants::Values::kShoulderRange.lower,
+  EXPECT_NEAR(constants::Values::kWristRange.lower +
+                  constants::Values::kShoulderRange.lower,
               superstructure_queue_.status->wrist.angle, 0.001);
 }
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(SuperstructureTest, ZeroTest) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.0)
-                  .angle_shoulder(0.0)
-                  .angle_wrist(0.0)
+                  .angle_intake(constants::Values::kIntakeRange.lower)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(constants::Values::kWristRange.lower)
                   .max_angular_velocity_intake(20)
                   .max_angular_acceleration_intake(20)
                   .max_angular_velocity_shoulder(20)
@@ -369,9 +370,9 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeWristPosition(
       constants::Values::kWristRange.lower);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.0)
-                  .angle_shoulder(0.0)
-                  .angle_wrist(0.0)
+                  .angle_intake(constants::Values::kIntakeRange.lower)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(constants::Values::kWristRange.lower)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
   RunForTime(Time::InSeconds(5));
@@ -388,9 +389,9 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
   superstructure_plant_.InitializeWristPosition(
       constants::Values::kWristRange.upper);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.0)
-                  .angle_shoulder(0.0)
-                  .angle_wrist(0.0)
+                  .angle_intake(constants::Values::kIntakeRange.lower)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(constants::Values::kWristRange.lower)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
   RunForTime(Time::InSeconds(5));
@@ -406,11 +407,12 @@ TEST_F(SuperstructureTest, ResetTest) {
       constants::Values::kShoulderRange.upper);
   superstructure_plant_.InitializeWristPosition(
       constants::Values::kWristRange.upper);
-  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.3)
-                  .angle_shoulder(0.3)
-                  .angle_wrist(0.3)
-                  .Send());
+  ASSERT_TRUE(
+      superstructure_queue_.goal.MakeWithBuilder()
+          .angle_intake(constants::Values::kIntakeRange.lower + 0.3)
+          .angle_shoulder(constants::Values::kShoulderRange.lower + 0.3)
+          .angle_wrist(constants::Values::kWristRange.lower + 0.3)
+          .Send());
   RunForTime(Time::InSeconds(5));
 
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
@@ -425,11 +427,12 @@ TEST_F(SuperstructureTest, ResetTest) {
 
 // Tests that the internal goals don't change while disabled.
 TEST_F(SuperstructureTest, DisabledGoalTest) {
-  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(0.03)
-                  .angle_shoulder(0.03)
-                  .angle_wrist(0.03)
-                  .Send());
+  ASSERT_TRUE(
+      superstructure_queue_.goal.MakeWithBuilder()
+          .angle_intake(constants::Values::kIntakeRange.lower + 0.03)
+          .angle_shoulder(constants::Values::kShoulderRange.lower + 0.03)
+          .angle_wrist(constants::Values::kWristRange.lower + 0.03)
+          .Send());
 
   RunForTime(Time::InMS(100), false);
   EXPECT_EQ(0.0, superstructure_.intake_.goal(0, 0));

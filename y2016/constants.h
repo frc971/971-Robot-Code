@@ -37,34 +37,40 @@ struct Values {
 
   // The ratio from the encoder shaft to the drivetrain wheels.
   static constexpr double kDrivetrainEncoderRatio =
-      (18.0 / 50.0) /*output reduction*/ * (56.0 / 30.0);
+      (18.0 / 36.0) /*output reduction*/ * (44.0 / 30.0);
 
   // The gear ratios from motor shafts to the drivetrain wheels for high and low
   // gear.
-  static constexpr double kLowGearRatio = 18.0 / 60.0 * 18.0 / 50.0;
-  static constexpr double kHighGearRatio = 28.0 / 50.0 * 18.0 / 50.0;
+  static constexpr double kLowGearRatio = 18.0 / 60.0 * 18.0 / 36.0;
+  static constexpr double kHighGearRatio = 28.0 / 50.0 * 18.0 / 36.0;
 
-  static constexpr double kTurnWidth = 25.0 / 100.0 * 2.54;  // Robot width.
+  static constexpr double kTurnWidth = 0.601;  // Robot width.
 
   // Ratios for our subsystems.
   static constexpr double kShooterEncoderRatio = 1.0;
-  static constexpr double kIntakeEncoderRatio = 16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0;
-  static constexpr double kShoulderEncoderRatio = 16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0;
-  static constexpr double kWristEncoderRatio = 16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0;
+  static constexpr double kIntakeEncoderRatio =
+      16.0 / 48.0 * 18.0 / 72.0 * 14.0 / 64.0;
+  static constexpr double kShoulderEncoderRatio =
+      16.0 / 58.0 * 18.0 / 72.0 * 14.0 / 64.0;
+  static constexpr double kWristEncoderRatio =
+      16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0;
 
-  static constexpr double kIntakePotRatio = 16.0 / 58.0;
+  static constexpr double kIntakePotRatio = 16.0 / 48.0;
   static constexpr double kShoulderPotRatio = 16.0 / 58.0;
   static constexpr double kWristPotRatio = 16.0 / 48.0;
 
   // Difference in radians between index pulses.
-  static constexpr double kIntakeEncoderIndexDifference = 2.0 * M_PI * kIntakeEncoderRatio;
-  static constexpr double kShoulderEncoderIndexDifference = 2.0 * M_PI * kShoulderEncoderRatio;
-  static constexpr double kWristEncoderIndexDifference = 2.0 * M_PI * kWristEncoderRatio;
+  static constexpr double kIntakeEncoderIndexDifference =
+      2.0 * M_PI * kIntakeEncoderRatio;
+  static constexpr double kShoulderEncoderIndexDifference =
+      2.0 * M_PI * kShoulderEncoderRatio;
+  static constexpr double kWristEncoderIndexDifference =
+      2.0 * M_PI * kWristEncoderRatio;
 
   // Subsystem motion ranges, in whatever units that their respective queues say
   // the use.
-  static constexpr Range kIntakeRange{-0.4, 2.0, -0.3, 1.9};
-  static constexpr Range kShoulderRange{-0.2, 2.0, -0.1, 1.9};
+  static constexpr Range kIntakeRange{-0.270, 2.0, -0.200, 1.9};
+  static constexpr Range kShoulderRange{-0.050, 2.0, 0.000, 1.9};
   static constexpr Range kWristRange{-2.0, 2.0, -1.9, 1.0};
 
   // ///// Dynamic constants. /////
