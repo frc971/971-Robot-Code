@@ -80,9 +80,9 @@ class SuperstructureSimulation {
   SuperstructureSimulation()
       : intake_plant_(new IntakePlant(MakeIntakePlant())),
         plant_arm_(new ArmPlant(MakeArmPlant())),
-        pot_encoder_intake_(0.0),
-        pot_encoder_shoulder_(0.0),
-        pot_encoder_wrist_(0.0),
+        pot_encoder_intake_(INTAKE_ENCODER_INDEX_DIFFERENCE),
+        pot_encoder_shoulder_(SHOULDER_ENCODER_INDEX_DIFFERENCE),
+        pot_encoder_wrist_(WRIST_ENCODER_INDEX_DIFFERENCE),
         superstructure_queue_(".y2016.control_loops.superstructure", 0x0,
                               ".y2016.control_loops.superstructure.goal",
                               ".y2016.control_loops.superstructure.status",
