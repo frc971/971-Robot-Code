@@ -5,13 +5,17 @@ import "frc971/control_loops/control_loops.q";
 
 struct JointState {
   // Angle of the joint in radians.
-  double angle;
+  float angle;
   // Angular velocity of the joint in radians/second.
   float angular_velocity;
   // Profiled goal angle of the joint in radians.
-  double goal_angle;
+  float goal_angle;
   // Profiled goal angular velocity of the joint in radians/second.
-  double goal_angular_velocity;
+  float goal_angular_velocity;
+  // Unprofiled goal angle of the joint in radians.
+  float unprofiled_goal_angle;
+  // Unprofiled goal angular velocity of the joint in radians/second.
+  float unprofiled_goal_angular_velocity;
 
   // State of the estimator.
   .frc971.EstimatorState estimator_state;
@@ -78,9 +82,9 @@ queue_group SuperstructureQueue {
   };
 
   message Output {
-    double voltage_intake;
-    double voltage_shoulder;
-    double voltage_wrist;
+    float voltage_intake;
+    float voltage_shoulder;
+    float voltage_wrist;
   };
 
   queue Goal goal;

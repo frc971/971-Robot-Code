@@ -98,6 +98,9 @@ void Intake::CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal) {
 void Intake::ForceGoal(double goal) {
   set_unprofiled_goal(goal);
   loop_->mutable_R() = unprofiled_goal_;
+  loop_->mutable_next_R() = loop_->R();
+
+  profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
 }
 
 void Intake::set_unprofiled_goal(double unprofiled_goal) {
@@ -121,9 +124,7 @@ void Intake::Update(bool disable) {
   loop_->Update(disable);
 
   if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
-    ::Eigen::Matrix<double, 2, 1> new_state;
-    new_state << loop_->R(0, 0), loop_->R(1, 0);
-    profile_.MoveCurrentState(new_state);
+    profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
   }
 }
 
@@ -182,11 +183,14 @@ void Arm::UpdateWristOffset(double offset) {
   loop_->mutable_X_hat()(2, 0) += doffset;
   Y_(1, 0) += doffset;
   loop_->mutable_R(2, 0) += doffset;
+  loop_->mutable_next_R(2, 0) += doffset;
+  unprofiled_goal_(2, 0) += doffset;
 
   wrist_profile_.MoveGoal(doffset);
   offset_(1, 0) = offset;
 
   CapGoal("R", &loop_->mutable_R());
+  CapGoal("unprofiled R", &loop_->mutable_next_R());
 }
 
 void Arm::UpdateShoulderOffset(double offset) {
@@ -199,11 +203,17 @@ void Arm::UpdateShoulderOffset(double offset) {
   Y_(0, 0) += doffset;
   loop_->mutable_R(0, 0) += doffset;
   loop_->mutable_R(2, 0) += doffset;
+  loop_->mutable_next_R(0, 0) += doffset;
+  loop_->mutable_next_R(2, 0) += doffset;
+  unprofiled_goal_(0, 0) += doffset;
+  unprofiled_goal_(2, 0) += doffset;
 
   shoulder_profile_.MoveGoal(doffset);
+  wrist_profile_.MoveGoal(doffset);
   offset_(0, 0) = offset;
 
   CapGoal("R", &loop_->mutable_R());
+  CapGoal("unprofiled R", &loop_->mutable_next_R());
 }
 
 // TODO(austin): Handle zeroing errors.
@@ -269,6 +279,10 @@ void Arm::CapGoal(const char *name, Eigen::Matrix<double, 6, 1> *goal) {
 void Arm::ForceGoal(double goal_shoulder, double goal_wrist) {
   set_unprofiled_goal(goal_shoulder, goal_wrist);
   loop_->mutable_R() = unprofiled_goal_;
+  loop_->mutable_next_R() = loop_->R();
+
+  shoulder_profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
+  wrist_profile_.MoveCurrentState(loop_->R().block<2, 1>(2, 0));
 }
 
 void Arm::set_unprofiled_goal(double unprofiled_goal_shoulder,
@@ -337,16 +351,12 @@ void Arm::Update(bool disable) {
 
   // Shoulder saturated
   if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
-    ::Eigen::Matrix<double, 2, 1> new_shoulder_state;
-    new_shoulder_state << loop_->R(0, 0), loop_->R(1, 0);
-    shoulder_profile_.MoveCurrentState(new_shoulder_state);
+    shoulder_profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
   }
 
   // Wrist saturated
   if (!disable && loop_->U(1, 0) != loop_->U_uncapped(1, 0)) {
-    ::Eigen::Matrix<double, 2, 1> new_wrist_state;
-    new_wrist_state << loop_->R(2, 0), loop_->R(3, 0);
-    wrist_profile_.MoveCurrentState(new_wrist_state);
+    wrist_profile_.MoveCurrentState(loop_->R().block<2, 1>(2, 0));
   }
 }
 
@@ -510,18 +520,26 @@ void Superstructure::RunIteration(
   status->shoulder.angular_velocity = arm_.X_hat(1, 0);
   status->shoulder.goal_angle = arm_.goal(0, 0);
   status->shoulder.goal_angular_velocity = arm_.goal(1, 0);
+  status->shoulder.unprofiled_goal_angle = arm_.unprofiled_goal(0, 0);
+  status->shoulder.unprofiled_goal_angular_velocity =
+      arm_.unprofiled_goal(1, 0);
   status->shoulder.estimator_state = arm_.ShoulderEstimatorState();
 
   status->wrist.angle = arm_.X_hat(2, 0);
   status->wrist.angular_velocity = arm_.X_hat(3, 0);
   status->wrist.goal_angle = arm_.goal(2, 0);
   status->wrist.goal_angular_velocity = arm_.goal(3, 0);
+  status->wrist.unprofiled_goal_angle = arm_.unprofiled_goal(2, 0);
+  status->wrist.unprofiled_goal_angular_velocity = arm_.unprofiled_goal(3, 0);
   status->wrist.estimator_state = arm_.WristEstimatorState();
 
   status->intake.angle = intake_.X_hat(0, 0);
   status->intake.angular_velocity = intake_.X_hat(1, 0);
   status->intake.goal_angle = intake_.goal(0, 0);
   status->intake.goal_angular_velocity = intake_.goal(1, 0);
+  status->intake.unprofiled_goal_angle = intake_.unprofiled_goal(0, 0);
+  status->intake.unprofiled_goal_angular_velocity =
+      intake_.unprofiled_goal(1, 0);
   status->intake.estimator_state = intake_.IntakeEstimatorState();
 
   status->estopped = (state_ == ESTOP);

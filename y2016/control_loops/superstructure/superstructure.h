@@ -97,6 +97,14 @@ class Intake {
   const Eigen::Matrix<double, 3, 1> &goal() const { return loop_->R(); }
   double goal(int row, int col) const { return loop_->R(row, col); }
 
+  // Returns the unprofiled goal.
+  const Eigen::Matrix<double, 3, 1> &unprofiled_goal() const {
+    return unprofiled_goal_;
+  }
+  double unprofiled_goal(int row, int col) const {
+    return unprofiled_goal_(row, col);
+  }
+
   // Returns the current state estimate.
   const Eigen::Matrix<double, 3, 1> &X_hat() const { return loop_->X_hat(); }
   double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
@@ -171,6 +179,14 @@ class Arm {
   // Returns the current positions.
   double shoulder_angle() const { return Y_(0, 0); }
   double wrist_angle() const { return Y_(1, 0) + Y_(0, 0); }
+
+  // Returns the unprofiled goal.
+  const Eigen::Matrix<double, 6, 1> &unprofiled_goal() const {
+    return unprofiled_goal_;
+  }
+  double unprofiled_goal(int row, int col) const {
+    return unprofiled_goal_(row, col);
+  }
 
   // Returns the filtered goal.
   const Eigen::Matrix<double, 6, 1> &goal() const { return loop_->R(); }
