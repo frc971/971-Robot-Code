@@ -127,12 +127,23 @@ double wrist_pot_translate(double voltage) {
          (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
-// TODO(constants): Update.
-static const double kMaximumEncoderPulsesPerSecond =
-    5600.0 /* free speed RPM */ * 14.0 / 48.0 /* bottom gear reduction */ *
-    18.0 / 32.0 /* big belt reduction */ * 18.0 /
-    66.0 /* top gear reduction */ * 48.0 / 18.0 /* encoder gears */ /
-    60.0 /* seconds / minute */ * 256.0 /* CPR */;
+constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
+    5600.0 /* CIM free speed RPM */ * 14.0 / 48.0 /* 1st reduction */ * 28.0 /
+    50.0 /* 2nd reduction (high gear) */ * 30.0 / 44.0 /* encoder gears */ /
+    60.0 /* seconds per minute */ * 256.0 /* CPR */ * 4 /* edges per cycle */;
+
+constexpr double kMaxShooterEncoderPulsesPerSecond =
+    18700.0 /* 775pro free speed RPM */ * 12.0 /
+    18.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
+    128.0 /* CPR */ * 4 /* edges per cycle */;
+
+double kMaxDrivetrainShooterEncoderPulsesPerSecond = ::std::max(
+    kMaxDrivetrainEncoderPulsesPerSecond, kMaxShooterEncoderPulsesPerSecond);
+
+constexpr double kMaxSuperstructureEncoderPulsesPerSecond =
+    18700.0 /* 775pro free speed RPM */ * 12.0 /
+    56.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
+    512.0 /* CPR */ * 4 /* index pulse every quarter cycle */;
 
 // Class to send position messages with sensor readings to our loops.
 class SensorReader {
@@ -140,20 +151,26 @@ class SensorReader {
   SensorReader() {
     // Set it to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
-    encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 / kMaximumEncoderPulsesPerSecond * 1e9 + 0.5));
+    drivetrain_shooter_encoder_filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
+                             kMaxDrivetrainShooterEncoderPulsesPerSecond * 1e9 +
+                         0.5));
+    superstructure_encoder_filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
+                             kMaxSuperstructureEncoderPulsesPerSecond * 1e9 +
+                         0.5));
     hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
   // Drivetrain setters.
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
     drivetrain_left_encoder_ = ::std::move(encoder);
-    drivetrain_left_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
     drivetrain_right_encoder_ = ::std::move(encoder);
-    drivetrain_right_encoder_->SetMaxPeriod(0.005);
   }
 
   void set_drivetrain_left_hall(::std::unique_ptr<AnalogInput> analog) {
@@ -166,18 +183,18 @@ class SensorReader {
 
   // Shooter setters.
   void set_shooter_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
     shooter_left_encoder_ = ::std::move(encoder);
   }
 
   void set_shooter_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
     shooter_right_encoder_ = ::std::move(encoder);
   }
 
   // Intake setters.
   void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    superstructure_encoder_filter_.Add(encoder.get());
     intake_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -186,13 +203,13 @@ class SensorReader {
   }
 
   void set_intake_index(::std::unique_ptr<DigitalInput> index) {
-    encoder_filter_.Add(index.get());
+    superstructure_encoder_filter_.Add(index.get());
     intake_encoder_.set_index(::std::move(index));
   }
 
   // Shoulder setters.
   void set_shoulder_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    superstructure_encoder_filter_.Add(encoder.get());
     shoulder_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -202,13 +219,13 @@ class SensorReader {
   }
 
   void set_shoulder_index(::std::unique_ptr<DigitalInput> index) {
-    encoder_filter_.Add(index.get());
+    superstructure_encoder_filter_.Add(index.get());
     shoulder_encoder_.set_index(::std::move(index));
   }
 
   // Wrist setters.
   void set_wrist_encoder(::std::unique_ptr<Encoder> encoder) {
-    encoder_filter_.Add(encoder.get());
+    superstructure_encoder_filter_.Add(encoder.get());
     wrist_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -217,7 +234,7 @@ class SensorReader {
   }
 
   void set_wrist_index(::std::unique_ptr<DigitalInput> index) {
-    encoder_filter_.Add(index.get());
+    superstructure_encoder_filter_.Add(index.get());
     wrist_encoder_.set_index(::std::move(index));
   }
 
@@ -351,7 +368,8 @@ class SensorReader {
       shoulder_encoder_, wrist_encoder_;
 
   ::std::atomic<bool> run_{true};
-  DigitalGlitchFilter encoder_filter_, hall_filter_;
+  DigitalGlitchFilter drivetrain_shooter_encoder_filter_, hall_filter_,
+      superstructure_encoder_filter_;
 };
 
 class SolenoidWriter {
