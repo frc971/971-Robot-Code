@@ -52,6 +52,31 @@ const double kRobotWidth = 25.0 / 100.0 * 2.54;
 
 const int kZeroingSampleSize = 200;
 
+constexpr Values::Range kIntakeRange{// lower hard stop
+                                     -0.4,
+                                     // upper hard stop
+                                     2,
+                                     // lower soft limit
+                                     -0.3,
+                                     // upper soft limit
+                                     1.9};
+constexpr Values::Range kShoulderRange{// lower hard stop
+                                       -0.2,
+                                       // upper hard stop
+                                       2.0,
+                                       // lower soft limit
+                                       -0.1,
+                                       // upper soft limit
+                                       1.9};
+constexpr Values::Range kWristRange{// lower hard stop
+                                    -2,
+                                    // upper hard stop
+                                    2,
+                                    // lower soft limit
+                                    -1.9,
+                                    // upper soft limit
+                                    1.9};
+
 const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
@@ -68,19 +93,19 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Intake
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kIntakeRange,
            {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
 
           // Shoulder
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kShoulderRange,
            {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
 
           // Wrist
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kWristRange,
            {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.0, 0.3},
           },
       };
@@ -99,19 +124,19 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Intake
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kIntakeRange,
            {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
 
           // Shoulder
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kShoulderRange,
            {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
 
           // Wrist
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kWristRange,
            {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
       };
@@ -130,19 +155,19 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Intake
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kIntakeRange,
            {kZeroingSampleSize, INTAKE_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
 
           // Shoulder
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kShoulderRange,
            {kZeroingSampleSize, SHOULDER_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
 
           // Wrist
           {
-           {-M_PI - 0.05, M_PI + 0.05, -M_PI, M_PI},
+           kWristRange,
            {kZeroingSampleSize, WRIST_ENCODER_INDEX_DIFFERENCE, 0.9, 0.3},
           },
       };
