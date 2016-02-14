@@ -63,7 +63,6 @@ void Intake::UpdateIntakeOffset(double offset) {
   CapGoal("R", &loop_->mutable_R());
 }
 
-
 void Intake::Correct(PotAndIndexPosition position) {
   estimator_.UpdateEstimate(position);
 
@@ -72,6 +71,11 @@ void Intake::Correct(PotAndIndexPosition position) {
       UpdateIntakeOffset(estimator_.offset());
       initialized_ = true;
     }
+  }
+
+  if (!zeroed_ && estimator_.zeroed()) {
+    UpdateIntakeOffset(estimator_.offset());
+    zeroed_ = true;
   }
 
   Y_ << position.encoder;
@@ -142,12 +146,15 @@ bool Intake::CheckHardLimits() {
   return false;
 }
 
-void Intake::set_max_voltage(double voltage) { loop_->set_max_voltage(voltage); }
+void Intake::set_max_voltage(double voltage) {
+  loop_->set_max_voltage(voltage);
+}
 
 void Intake::AdjustProfile(double max_angular_velocity,
                            double max_angular_acceleration) {
   profile_.set_maximum_velocity(UseUnlessZero(max_angular_velocity, 10.0));
-  profile_.set_maximum_acceleration(UseUnlessZero(max_angular_acceleration, 10.0));
+  profile_.set_maximum_acceleration(
+      UseUnlessZero(max_angular_acceleration, 10.0));
 }
 
 void Intake::Reset() {
@@ -195,8 +202,7 @@ void Arm::UpdateWristOffset(double offset) {
 
 void Arm::UpdateShoulderOffset(double offset) {
   const double doffset = offset - offset_(0, 0);
-  LOG(INFO, "Adjusting Shoulder offset from %f to %f\n", offset_(0, 0),
-      offset);
+  LOG(INFO, "Adjusting Shoulder offset from %f to %f\n", offset_(0, 0), offset);
 
   loop_->mutable_X_hat()(0, 0) += doffset;
   loop_->mutable_X_hat()(2, 0) += doffset;
