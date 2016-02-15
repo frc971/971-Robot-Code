@@ -294,9 +294,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 // Tests that the superstructure does nothing when the goal is zero.
 TEST_F(SuperstructureTest, DoesNothing) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(constants::Values::kIntakeRange.lower)
-                  .angle_shoulder(constants::Values::kShoulderRange.lower)
-                  .angle_wrist(constants::Values::kWristRange.lower)
+                  .angle_intake(0)
+                  .angle_shoulder(0)
+                  .angle_wrist(0)
                   .max_angular_velocity_intake(20)
                   .max_angular_velocity_shoulder(20)
                   .max_angular_velocity_wrist(20)
