@@ -351,7 +351,7 @@ TEST_F(SuperstructureTest, ZeroTest) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.lower)
                   .angle_shoulder(constants::Values::kShoulderRange.lower)
-                  .angle_wrist(constants::Values::kWristRange.lower)
+                  .angle_wrist(0.0)
                   .max_angular_velocity_intake(20)
                   .max_angular_acceleration_intake(20)
                   .max_angular_velocity_shoulder(20)
