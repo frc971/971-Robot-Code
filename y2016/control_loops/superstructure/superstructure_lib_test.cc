@@ -485,6 +485,35 @@ TEST_F(SuperstructureTest, IntegratorTest) {
   VerifyNearGoal();
 }
 
+// Tests that zeroing while disabled works.  Starts the superstructure near a
+// pulse, lets it initialize, moves it past the pulse, enables, and then make
+// sure it goes to the right spot.
+TEST_F(SuperstructureTest, DisabledZeroTest) {
+  superstructure_plant_.InitializeIntakePosition(-0.001);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::Values::kShoulderEncoderIndexDifference * 10 - 0.001);
+  superstructure_plant_.InitializeWristPosition(-0.001);
+
+  superstructure_queue_.goal.MakeWithBuilder()
+      .angle_intake(0.0)
+      .angle_shoulder(constants::Values::kShoulderEncoderIndexDifference * 10)
+      .angle_wrist(0.0)
+      .Send();
+
+  // Run disabled for 2 seconds
+  RunForTime(Time::InSeconds(2), false);
+  EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
+
+  superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
+
+  RunForTime(Time::InSeconds(1), false);
+
+  EXPECT_EQ(Superstructure::SLOW_RUNNING, superstructure_.state());
+  RunForTime(Time::InSeconds(1), true);
+
+  VerifyNearGoal();
+}
+
 }  // namespace testing
 }  // namespace superstructure
 }  // namespace control_loops

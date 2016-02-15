@@ -304,17 +304,30 @@ void Superstructure::RunIteration(
 
     case SLOW_RUNNING:
     case RUNNING:
-      // TODO(austin): Exit SLOW_RUNNING if we are not collided.
+      if (disable) {
+        // TODO(austin): Enter SLOW_RUNNING if we are collided.
+
+        // If we are disabled, reset the profile to the current position.
+        intake_.ForceGoal(intake_.angle());
+        arm_.ForceGoal(arm_.shoulder_angle(), arm_.wrist_angle());
+      } else {
+        if (state_ == SLOW_RUNNING) {
+          // TODO(austin): Exit SLOW_RUNNING if we are not collided.
+          LOG(ERROR, "Need to transition on non-collided, not all the time.\n");
+          state_ = RUNNING;
+        }
+      }
+
       if (unsafe_goal) {
         arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder,
-            unsafe_goal->max_angular_acceleration_shoulder,
-            unsafe_goal->max_angular_velocity_wrist,
-            unsafe_goal->max_angular_acceleration_wrist);
+                           unsafe_goal->max_angular_acceleration_shoulder,
+                           unsafe_goal->max_angular_velocity_wrist,
+                           unsafe_goal->max_angular_acceleration_wrist);
         intake_.AdjustProfile(unsafe_goal->max_angular_velocity_wrist,
-            unsafe_goal->max_angular_acceleration_intake);
+                              unsafe_goal->max_angular_acceleration_intake);
 
         arm_.set_unprofiled_goal(unsafe_goal->angle_shoulder,
-            unsafe_goal->angle_wrist);
+                                 unsafe_goal->angle_wrist);
         intake_.set_unprofiled_goal(unsafe_goal->angle_intake);
       }
 
