@@ -49,6 +49,9 @@ queue_group SuperstructureQueue {
     float max_angular_acceleration_intake;
     float max_angular_acceleration_shoulder;
     float max_angular_acceleration_wrist;
+
+    // Voltage to send to the rollers. Positive is sucking in.
+    float voltage_rollers;
   };
 
   message Status {
@@ -86,6 +89,8 @@ queue_group SuperstructureQueue {
     float voltage_intake;
     float voltage_shoulder;
     float voltage_wrist;
+
+    float voltage_rollers;
   };
 
   queue Goal goal;
