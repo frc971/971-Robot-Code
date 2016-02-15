@@ -76,10 +76,10 @@ class Drivetrain(control_loop.ControlLoop):
     self.J = 2.8
     # Mass of the robot, in kg.
     self.m = 68
-    # Radius of the robot, in meters (from last year).
-    self.rb = 0.647998644 / 2.0
+    # Radius of the robot, in meters (requires tuning by hand)
+    self.rb = 0.601 / 2.0
     # Radius of the wheels, in meters.
-    self.r = .04445
+    self.r = 0.097155
     # Resistance of the motor, divided by the number of motors.
     self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
@@ -88,8 +88,8 @@ class Drivetrain(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 18.0 / 60.0 * 18.0 / 50.0
-    self.G_high = 28.0 / 50.0 * 18.0 / 50.0
+    self.G_low = 14.0 / 48.0 * 18.0 / 60.0 * 18.0 / 36.0
+    self.G_high = 14.0 / 48.0 * 28.0 / 50.0 * 18.0 / 36.0
     if left_low:
       self.Gl = self.G_low
     else:
