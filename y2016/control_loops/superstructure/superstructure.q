@@ -32,7 +32,8 @@ queue_group SuperstructureQueue {
     // Zero on the shoulder is horizontal.  Positive is up.  The angle is
     // measured relative to the top of the robot frame.
     // Zero on the wrist is horizontal and landed in the bellypan.  Positive is
-    // up.  The angle is measured relative to the top of the robot frame.
+    // the same direction as the shoulder.  The angle is measured relative to
+    // the top of the robot frame.
 
     // Goal angles and angular velocities of the superstructure subsystems.
     double angle_intake;
