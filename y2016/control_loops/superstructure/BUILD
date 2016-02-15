@@ -78,6 +78,7 @@ cc_library(
     '//aos/common/controls:control_loop',
     '//aos/common/util:trapezoid_profile',
     '//frc971/control_loops:state_feedback_loop',
+    '//frc971/control_loops:simple_capped_state_feedback_loop',
     '//frc971/zeroing',
     '//y2016:constants',
   ],

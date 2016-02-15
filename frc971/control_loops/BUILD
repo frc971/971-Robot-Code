@@ -111,3 +111,14 @@ cc_library(
     '//aos/common:macros',
   ],
 )
+
+cc_library(
+  name = 'simple_capped_state_feedback_loop',
+  hdrs = [
+    'simple_capped_state_feedback_loop.h',
+  ],
+  deps = [
+    '//third_party/eigen',
+    ':state_feedback_loop',
+  ],
+)
