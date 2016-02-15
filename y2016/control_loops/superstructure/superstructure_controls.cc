@@ -25,22 +25,10 @@ double UseUnlessZero(double target_value, double default_value) {
 }
 }  // namespace
 
-void SimpleCappedStateFeedbackLoop::CapU() {
-  mutable_U(0, 0) = ::std::min(U(0, 0), max_voltage_);
-  mutable_U(0, 0) = ::std::max(U(0, 0), -max_voltage_);
-}
-
-void DoubleCappedStateFeedbackLoop::CapU() {
-  mutable_U(0, 0) = ::std::min(U(0, 0), shoulder_max_voltage_);
-  mutable_U(0, 0) = ::std::max(U(0, 0), -shoulder_max_voltage_);
-  mutable_U(1, 0) = ::std::min(U(1, 0), wrist_max_voltage_);
-  mutable_U(1, 0) = ::std::max(U(1, 0), -wrist_max_voltage_);
-}
-
 // Intake
 Intake::Intake()
-    : loop_(new SimpleCappedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1>(
-          ::y2016::control_loops::superstructure::MakeIntegralIntakeLoop()))),
+    : loop_(new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>(
+          ::y2016::control_loops::superstructure::MakeIntegralIntakeLoop())),
       estimator_(constants::GetValues().intake.zeroing),
       profile_(::aos::controls::kLoopFrequency) {
   Y_.setZero();
@@ -147,7 +135,7 @@ bool Intake::CheckHardLimits() {
 }
 
 void Intake::set_max_voltage(double voltage) {
-  loop_->set_max_voltage(voltage);
+  loop_->set_max_voltages(voltage);
 }
 
 void Intake::AdjustProfile(double max_angular_velocity,
@@ -171,7 +159,7 @@ EstimatorState Intake::IntakeEstimatorState() {
 }
 
 Arm::Arm()
-    : loop_(new DoubleCappedStateFeedbackLoop(
+    : loop_(new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2>(
           ::y2016::control_loops::superstructure::MakeIntegralArmLoop())),
       shoulder_profile_(::aos::controls::kLoopFrequency),
       wrist_profile_(::aos::controls::kLoopFrequency),
@@ -368,7 +356,7 @@ void Arm::Update(bool disable) {
 
 void Arm::set_max_voltage(double shoulder_max_voltage,
                           double wrist_max_voltage) {
-  loop_->set_max_voltage(shoulder_max_voltage, wrist_max_voltage);
+  loop_->set_max_voltages(shoulder_max_voltage, wrist_max_voltage);
 }
 
 void Arm::Reset() {

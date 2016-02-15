@@ -5,6 +5,7 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "aos/common/util/trapezoid_profile.h"
 
 #include "frc971/zeroing/zeroing.h"
@@ -16,41 +17,6 @@ namespace superstructure {
 namespace testing {
 class SuperstructureTest_DisabledGoalTest_Test;
 }  // namespace testing
-
-class SimpleCappedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
- public:
-  SimpleCappedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> &&loop)
-      : StateFeedbackLoop<3, 1, 1>(::std::move(loop)), max_voltage_(12.0) {}
-
-  void set_max_voltage(double max_voltage) {
-    max_voltage_ = ::std::max(0.0, ::std::min(12.0, max_voltage));
-  }
-
-  void CapU() override;
-
- private:
-  double max_voltage_;
-};
-
-class DoubleCappedStateFeedbackLoop : public StateFeedbackLoop<6, 2, 2> {
- public:
-  DoubleCappedStateFeedbackLoop(StateFeedbackLoop<6, 2, 2> &&loop)
-      : StateFeedbackLoop<6, 2, 2>(::std::move(loop)),
-        shoulder_max_voltage_(12.0),
-        wrist_max_voltage_(12.0) {}
-
-  void set_max_voltage(double shoulder_max_voltage, double wrist_max_voltage) {
-    shoulder_max_voltage_ =
-        ::std::max(0.0, ::std::min(12.0, shoulder_max_voltage));
-    wrist_max_voltage_ = ::std::max(0.0, ::std::min(12.0, wrist_max_voltage));
-  }
-
-  void CapU() override;
-
- private:
-  double shoulder_max_voltage_;
-  double wrist_max_voltage_;
-};
 
 class Intake {
  public:
@@ -114,7 +80,8 @@ class Intake {
 
   void UpdateIntakeOffset(double offset);
 
-  ::std::unique_ptr<SimpleCappedStateFeedbackLoop> loop_;
+  ::std::unique_ptr<
+      ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>> loop_;
 
   ::frc971::zeroing::ZeroingEstimator estimator_;
   aos::util::TrapezoidProfile profile_;
@@ -204,7 +171,8 @@ class Arm {
   void UpdateShoulderOffset(double offset);
 
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;
-  ::std::unique_ptr<DoubleCappedStateFeedbackLoop> loop_;
+  ::std::unique_ptr<
+      ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2>> loop_;
 
   aos::util::TrapezoidProfile shoulder_profile_, wrist_profile_;
   ::frc971::zeroing::ZeroingEstimator shoulder_estimator_, wrist_estimator_;
