@@ -241,16 +241,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   void RunForTime(const Time &run_for, bool enabled = true) {
     const auto start_time = Time::Now();
     while (Time::Now() < start_time + run_for) {
-      RunIteration(enabled);
-    }
-  }
-
-  // Runs iterations while watching the average acceleration per cycle and
-  // making sure it doesn't exceed the provided bounds.
-  void RunForTimeLimitedAccel(const Time &run_for, double shoulder_accel,
-                              double intake_accel, double wrist_accel) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
       const auto loop_start_time = Time::Now();
       double begin_shoulder_velocity =
           superstructure_plant_.shoulder_angular_velocity();
@@ -258,7 +248,7 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
           superstructure_plant_.intake_angular_velocity();
       double begin_wrist_velocity =
           superstructure_plant_.wrist_angular_velocity();
-      RunIteration(true);
+      RunIteration(enabled);
       const double loop_time = (Time::Now() - loop_start_time).ToSeconds();
       const double shoulder_acceleration =
           (superstructure_plant_.shoulder_angular_velocity() -
@@ -272,13 +262,25 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
           (superstructure_plant_.wrist_angular_velocity() -
            begin_wrist_velocity) /
           loop_time;
-      EXPECT_GE(shoulder_accel, shoulder_acceleration);
-      EXPECT_LE(-shoulder_accel, shoulder_acceleration);
-      EXPECT_GE(intake_accel, intake_acceleration);
-      EXPECT_LE(-intake_accel, intake_acceleration);
-      EXPECT_GE(wrist_accel, wrist_acceleration);
-      EXPECT_LE(-wrist_accel, wrist_acceleration);
+      EXPECT_GE(peak_shoulder_acceleration_, shoulder_acceleration);
+      EXPECT_LE(-peak_shoulder_acceleration_, shoulder_acceleration);
+      EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
+      EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
+      EXPECT_GE(peak_wrist_acceleration_, wrist_acceleration);
+      EXPECT_LE(-peak_wrist_acceleration_, wrist_acceleration);
     }
+  }
+
+  // Runs iterations while watching the average acceleration per cycle and
+  // making sure it doesn't exceed the provided bounds.
+  void set_peak_intake_acceleration(double value) {
+    peak_intake_acceleration_ = value;
+  }
+  void set_peak_shoulder_acceleration(double value) {
+    peak_shoulder_acceleration_ = value;
+  }
+  void set_peak_wrist_acceleration(double value) {
+    peak_wrist_acceleration_ = value;
   }
 
   // Create a new instance of the test queue so that it invalidates the queue
@@ -289,6 +291,12 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   // Create a control loop and simulation.
   Superstructure superstructure_;
   SuperstructureSimulation superstructure_plant_;
+
+ private:
+  // The acceleration limits to check for while moving for the 3 axes.
+  double peak_intake_acceleration_ = 1e10;
+  double peak_shoulder_acceleration_ = 1e10;
+  double peak_wrist_acceleration_ = 1e10;
 };
 
 // Tests that the superstructure does nothing when the goal is zero.
@@ -607,7 +615,10 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
   // TODO(austin): We should be able to hold the acceleration profile tighter
   // than this, but we somehow can't.  I'm not super worried though about 5%
   // error...
-  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+  set_peak_intake_acceleration(1.05);
+  set_peak_shoulder_acceleration(1.05);
+  set_peak_wrist_acceleration(1.05);
+  RunForTime(Time::InSeconds(4));
 
   VerifyNearGoal();
 }
@@ -646,7 +657,10 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
   // TODO(austin): We should be able to hold the acceleration profile tighter
   // than this, but we somehow can't.  I'm not super worried though about 5%
   // error...
-  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+  set_peak_intake_acceleration(1.05);
+  set_peak_shoulder_acceleration(1.05);
+  set_peak_wrist_acceleration(1.05);
+  RunForTime(Time::InSeconds(4));
 
   VerifyNearGoal();
 }
@@ -685,7 +699,10 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
   // TODO(austin): We should be able to hold the acceleration profile tighter
   // than this, but we somehow can't.  I'm not super worried though about 5%
   // error...
-  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+  set_peak_intake_acceleration(1.05);
+  set_peak_shoulder_acceleration(1.05);
+  set_peak_wrist_acceleration(1.05);
+  RunForTime(Time::InSeconds(4));
 
   VerifyNearGoal();
 }
