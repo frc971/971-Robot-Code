@@ -130,8 +130,11 @@ class SuperstructureSimulation {
   }
 
   double shoulder_angle() const { return arm_plant_->X(0, 0); }
+  double shoulder_angular_velocity() const { return arm_plant_->X(1, 0); }
   double wrist_angle() const { return arm_plant_->X(2, 0); }
+  double wrist_angular_velocity() const { return arm_plant_->X(3, 0); }
   double intake_angle() const { return intake_plant_->X(0, 0); }
+  double intake_angular_velocity() const { return intake_plant_->X(1, 0); }
 
   // Sets the difference between the commanded and applied powers.
   // This lets us test that the integrators work.
@@ -239,6 +242,42 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     const auto start_time = Time::Now();
     while (Time::Now() < start_time + run_for) {
       RunIteration(enabled);
+    }
+  }
+
+  // Runs iterations while watching the average acceleration per cycle and
+  // making sure it doesn't exceed the provided bounds.
+  void RunForTimeLimitedAccel(const Time &run_for, double shoulder_accel,
+                              double intake_accel, double wrist_accel) {
+    const auto start_time = Time::Now();
+    while (Time::Now() < start_time + run_for) {
+      const auto loop_start_time = Time::Now();
+      double begin_shoulder_velocity =
+          superstructure_plant_.shoulder_angular_velocity();
+      double begin_intake_velocity =
+          superstructure_plant_.intake_angular_velocity();
+      double begin_wrist_velocity =
+          superstructure_plant_.wrist_angular_velocity();
+      RunIteration(true);
+      const double loop_time = (Time::Now() - loop_start_time).ToSeconds();
+      const double shoulder_acceleration =
+          (superstructure_plant_.shoulder_angular_velocity() -
+           begin_shoulder_velocity) /
+          loop_time;
+      const double intake_acceleration =
+          (superstructure_plant_.intake_angular_velocity() -
+           begin_intake_velocity) /
+          loop_time;
+      const double wrist_acceleration =
+          (superstructure_plant_.wrist_angular_velocity() -
+           begin_wrist_velocity) /
+          loop_time;
+      EXPECT_GE(shoulder_accel, shoulder_acceleration);
+      EXPECT_LE(-shoulder_accel, shoulder_acceleration);
+      EXPECT_GE(intake_accel, intake_acceleration);
+      EXPECT_LE(-intake_accel, intake_acceleration);
+      EXPECT_GE(wrist_accel, wrist_acceleration);
+      EXPECT_LE(-wrist_accel, wrist_acceleration);
     }
   }
 
@@ -532,6 +571,123 @@ TEST_F(SuperstructureTest, IntakeZeroingErrorTest) {
   RunIteration();
 
   EXPECT_EQ(Superstructure::ESTOP, superstructure_.state());
+}
+
+// Tests that the loop respects shoulder acceleration limits while moving.
+TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.5)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(1)
+                  .max_angular_acceleration_intake(1)
+                  .max_angular_velocity_shoulder(1)
+                  .max_angular_acceleration_shoulder(1)
+                  .max_angular_velocity_wrist(1)
+                  .max_angular_acceleration_wrist(1)
+                  .Send());
+
+  // TODO(austin): We should be able to hold the acceleration profile tighter
+  // than this, but we somehow can't.  I'm not super worried though about 5%
+  // error...
+  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop respects intake acceleration limits while moving.
+TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.5)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(1)
+                  .max_angular_acceleration_intake(1)
+                  .max_angular_velocity_shoulder(1)
+                  .max_angular_acceleration_shoulder(1)
+                  .max_angular_velocity_wrist(1)
+                  .max_angular_acceleration_wrist(1)
+                  .Send());
+
+  // TODO(austin): We should be able to hold the acceleration profile tighter
+  // than this, but we somehow can't.  I'm not super worried though about 5%
+  // error...
+  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop respects wrist acceleration limits while moving.
+TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.5)
+                  .max_angular_velocity_intake(1)
+                  .max_angular_acceleration_intake(1)
+                  .max_angular_velocity_shoulder(1)
+                  .max_angular_acceleration_shoulder(1)
+                  .max_angular_velocity_wrist(1)
+                  .max_angular_acceleration_wrist(1)
+                  .Send());
+
+  // TODO(austin): We should be able to hold the acceleration profile tighter
+  // than this, but we somehow can't.  I'm not super worried though about 5%
+  // error...
+  RunForTimeLimitedAccel(Time::InSeconds(4), 1.05, 1.05, 1.05);
+
+  VerifyNearGoal();
 }
 
 }  // namespace testing
