@@ -16,6 +16,15 @@ struct ZeroingConstants {
   double allowable_encoder_error;
 };
 
+// Defines a range of motion for a subsystem.
+// These are all absolute positions in scaled units.
+struct Range {
+  double lower_hard;
+  double upper_hard;
+  double lower;
+  double upper;
+};
+
 }  // namespace constants
 }  // namespace frc971
 

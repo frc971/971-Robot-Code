@@ -22,15 +22,6 @@ using ::frc971::constants::ZeroingConstants;
 
 // This structure contains current values for all of the things that change.
 struct Values {
-  // Defines a range of motion for a subsystem.
-  // These are all absolute positions in scaled units.
-  struct Range {
-    double lower_hard;
-    double upper_hard;
-    double lower;
-    double upper;
-  };
-
   // ///// Mutual constants between robots. /////
   // TODO(constants): Update/check these with what we're using this year.
   static const int kZeroingSampleSize = 200;
@@ -69,9 +60,11 @@ struct Values {
 
   // Subsystem motion ranges, in whatever units that their respective queues say
   // the use.
-  static constexpr Range kIntakeRange{-0.270, 2.0, -0.200, 1.9};
-  static constexpr Range kShoulderRange{-0.050, 2.0, 0.000, 1.9};
-  static constexpr Range kWristRange{-2.0, 2.0, -1.9, 1.0};
+  static constexpr ::frc971::constants::Range kIntakeRange{-0.270, 2.0, -0.200,
+                                                           1.9};
+  static constexpr ::frc971::constants::Range kShoulderRange{-0.050, 2.0, 0.000,
+                                                             1.9};
+  static constexpr ::frc971::constants::Range kWristRange{-2.0, 2.0, -1.9, 1.0};
 
   // ///// Dynamic constants. /////
   double drivetrain_max_speed;
