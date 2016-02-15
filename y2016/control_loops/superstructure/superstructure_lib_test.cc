@@ -117,6 +117,11 @@ class SuperstructureSimulation {
     pot_encoder_wrist_.Initialize(start_pos, kNoiseScalar);
   }
 
+  // Must be called after any changes to InitializeShoulderPosition.
+  void InitializeAbsoluteWristPosition(double start_pos) {
+    InitializeRelativeWristPosition(start_pos - arm_plant_->X(0, 0));
+  }
+
   // Sends a queue message with the position.
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::SuperstructureQueue::Position>
@@ -237,6 +242,31 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     TickTime();
   }
 
+  void VerifyAbsenceOfCollisions() {
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+
+    double intake_angle = superstructure_queue_.status->intake.angle;
+    double shoulder_angle = superstructure_queue_.status->shoulder.angle;
+    double wrist_angle = superstructure_queue_.status->wrist.angle;
+
+    // The arm and the intake must not hit.
+    if (shoulder_angle >=
+            CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
+        shoulder_angle <=
+            CollisionAvoidance::kMinShoulderAngleForIntakeInterference) {
+      EXPECT_LT(intake_angle,
+                CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference);
+    }
+
+    // The wrist must go back to zero when the shoulder is moving the arm into
+    // a stowed/intaking position.
+    if (shoulder_angle <
+        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing) {
+      EXPECT_NEAR(0.0, wrist_angle, 0.01);
+    }
+  }
+
   // Runs iterations until the specified amount of simulated time has elapsed.
   void RunForTime(const Time &run_for, bool enabled = true) {
     const auto start_time = Time::Now();
@@ -281,6 +311,10 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                 superstructure_plant_.wrist_angular_velocity());
       EXPECT_LE(-peak_wrist_velocity_,
                 superstructure_plant_.wrist_angular_velocity());
+
+      if (check_for_collisions_) {
+        VerifyAbsenceOfCollisions();
+      }
     }
   }
 
@@ -300,6 +334,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     peak_shoulder_velocity_ = value;
   }
   void set_peak_wrist_velocity(double value) { peak_wrist_velocity_ = value; }
+
+  bool check_for_collisions_ = true;
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
@@ -364,6 +400,10 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // Tests that the loop doesn't try and go beyond the physical range of the
 // mechanisms.
 TEST_F(SuperstructureTest, RespectsRange) {
+  // Turn off collision avoidance for this test.
+  superstructure_.collision_avoidance_enabled_ = false;
+  check_for_collisions_ = false;
+
   // Set some ridiculous goals to test upper limits.
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(M_PI * 10)
@@ -376,7 +416,6 @@ TEST_F(SuperstructureTest, RespectsRange) {
                   .max_angular_velocity_wrist(20)
                   .max_angular_acceleration_wrist(20)
                   .Send());
-
   RunForTime(Time::InSeconds(10));
 
   // Check that we are near our soft limit.
@@ -443,6 +482,9 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
 // Tests that starting at the lower hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, LowerHardstopStartup) {
+  // Don't check for collisions for this test.
+  check_for_collisions_ = false;
+
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
@@ -462,6 +504,10 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
 
 // Tests that starting at the upper hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, UpperHardstopStartup) {
+  // Turn off collision avoidance for this test.
+  superstructure_.collision_avoidance_enabled_ = false;
+  check_for_collisions_ = false;
+
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
@@ -487,6 +533,7 @@ TEST_F(SuperstructureTest, ResetTest) {
       constants::Values::kShoulderRange.upper);
   superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.upper);
+
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(constants::Values::kIntakeRange.lower + 0.3)
@@ -507,6 +554,9 @@ TEST_F(SuperstructureTest, ResetTest) {
 
 // Tests that the internal goals don't change while disabled.
 TEST_F(SuperstructureTest, DisabledGoalTest) {
+  // Don't check for collisions for this test.
+  check_for_collisions_ = false;
+
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(constants::Values::kIntakeRange.lower + 0.03)
@@ -536,6 +586,9 @@ TEST_F(SuperstructureTest, MoveButKeepBelowTest) {
 
 // Tests that the integrators works.
 TEST_F(SuperstructureTest, IntegratorTest) {
+  // Don't check for collisions for this test.
+  check_for_collisions_ = false;
+
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
@@ -841,6 +894,65 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
   RunForTime(Time::InSeconds(4));
 
   VerifyNearGoal();
+}
+
+// Make sure that the intake moves out of the way when the arm wants to move
+// into a shooting position.
+TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange.upper);
+  superstructure_plant_.InitializeShoulderPosition(0.0);
+  superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
+
+  ASSERT_TRUE(
+      superstructure_queue_.goal.MakeWithBuilder()
+          .angle_intake(constants::Values::kIntakeRange.upper)  // stowed
+          .angle_shoulder(M_PI / 4.0)  // in the collision area
+          .angle_wrist(M_PI / 2.0)     // down
+          .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  superstructure_queue_.status.FetchLatest();
+  ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+
+  // The intake should be out of the way despite being told to move to stowing.
+  EXPECT_LT(superstructure_queue_.status->intake.angle, M_PI);
+  EXPECT_LT(superstructure_queue_.status->intake.angle,
+            constants::Values::kIntakeRange.upper);
+  EXPECT_LT(superstructure_queue_.status->intake.angle,
+            CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference);
+
+  // The arm should have reached its goal.
+  EXPECT_NEAR(M_PI / 4.0, superstructure_queue_.status->shoulder.angle, 0.001);
+  EXPECT_NEAR(M_PI / 2.0, superstructure_queue_.status->wrist.angle, 0.001);
+}
+
+// Make sure that the shooter holds itself level when the arm comes down
+// into a stowing/intaking position.
+TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
+  superstructure_plant_.InitializeIntakePosition(0.0);           // forward
+  superstructure_plant_.InitializeShoulderPosition(M_PI / 2.0);  // up
+  superstructure_plant_.InitializeAbsoluteWristPosition(M_PI);   // forward
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(M_PI)  // intentionally asking for forward
+                  .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  superstructure_queue_.status.FetchLatest();
+  ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+
+  // The intake should be in intaking position, as asked.
+  EXPECT_NEAR(0.0, superstructure_queue_.status->intake.angle, 0.001);
+
+  // The shoulder and wrist should both be at zero degrees (i.e.
+  // stowed/intaking position).
+  EXPECT_NEAR(0.0, superstructure_queue_.status->shoulder.angle, 0.001);
+  EXPECT_NEAR(0.0, superstructure_queue_.status->wrist.angle, 0.001);
 }
 
 }  // namespace testing

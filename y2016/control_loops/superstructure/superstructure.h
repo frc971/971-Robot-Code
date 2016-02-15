@@ -15,10 +15,71 @@ namespace y2016 {
 namespace control_loops {
 namespace superstructure {
 namespace testing {
+class SuperstructureTest_RespectsRange_Test;
 class SuperstructureTest_DisabledGoalTest_Test;
 class SuperstructureTest_ArmZeroingErrorTest_Test;
 class SuperstructureTest_IntakeZeroingErrorTest_Test;
+class SuperstructureTest_UpperHardstopStartup_Test;
 }  // namespace testing
+
+// Helper class to prevent parts from crashing into each other. The parts in
+// question here are: the frame, the arm (plus shooter), and the intake.
+// Assumptions:
+// - The shoulder, the wrist, and intake are horizontal when at angle 0.
+// - The arm (i.e. shoulder) and shooter (i.e. wrist) are stored when they are
+//   both at zero degrees.
+// - The intake at angle 0 is in a position to help get a ball in the robot.
+// - The intake at angle PI is in a "stowed" position. In other words, it is
+//   folded over the arm and shooter when they are also in a stowed position.
+// - The shooter must remain horizontal when the arm is folding into the robot.
+//   Otherwise, the shooter will collide with the frame.
+// - The arm has priority over the intake. If the arm wants to move in such a
+//   way that interferes with the intake's movement then the intake must move
+//   out of the way.
+class CollisionAvoidance {
+ public:
+  // Set up collision avoidance for an arm and intake.
+  CollisionAvoidance(Intake *intake, Arm *arm) : intake_(intake), arm_(arm) {}
+
+  // This function accepts goals for the intake and the arm and modifies them
+  // in such a way that collisions between all the different parts of the robot
+  // are avoided. The modified goals are then sent to the arm and intake as
+  // unprofiled goals.
+  void UpdateGoal(double shoulder_angle_goal, double wrist_angle_goal,
+                  double intake_angle_goal);
+
+  // TODO(phil): Verify that these numbers actually make sense. Someone needs
+  // to verify these either on the CAD or the real robot.
+
+  // The shoulder angle (in radians) below which the shooter must be in a
+  // stowing position. In other words the wrist must be at angle zero if the
+  // shoulder is below this angle.
+  static constexpr double kMinShoulderAngleForHorizontalShooter = 0.1;
+
+  // The shoulder angle (in radians) below which the arm as a whole has the
+  // potential to interfere with the intake.
+  static constexpr double kMinShoulderAngleForIntakeInterference = M_PI / 3.0;
+
+  // The intake angle (in radians) above which the intake can interfere (i.e.
+  // collide) with the arm and/or shooter.
+  static constexpr double kMaxIntakeAngleBeforeArmInterference = M_PI / 2.0;
+
+  // The maximum absolute angle (in radians) that the wrist must be below in
+  // order for the shouler to be allowed to move below
+  // kMinShoulderAngleForHorizontalShooter.  In other words, only allow the arm
+  // to move down into the belly pan if the shooter is horizontal, ready to
+  // also be placed into the belly pan.
+  static constexpr double kMaxWristAngleForSafeArmStowing = 0.01;
+
+  // The shoulder angle (in radians) below which the intake can safely move
+  // into the collision zone. This is necessary when the robot wants to fold up
+  // completely (i.e. stow the arm, shooter, and intake).
+  static constexpr double kMaxShoulderAngleUntilSafeIntakeStowing = 0.01;
+
+ private:
+  Intake *intake_;
+  Arm *arm_;
+};
 
 class Superstructure
     : public ::aos::controls::ControlLoop<control_loops::SuperstructureQueue> {
@@ -100,6 +161,9 @@ class Superstructure
   static double MoveButKeepAbove(double reference_angle, double current_angle,
                                  double move_distance);
 
+  // Returns true if collision avoidance is turned on. False if not.
+  bool collision_avoidance_enabled() { return collision_avoidance_enabled_; }
+
  protected:
   virtual void RunIteration(
       const control_loops::SuperstructureQueue::Goal *unsafe_goal,
@@ -111,8 +175,15 @@ class Superstructure
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;
   friend class testing::SuperstructureTest_ArmZeroingErrorTest_Test;
   friend class testing::SuperstructureTest_IntakeZeroingErrorTest_Test;
+  friend class testing::SuperstructureTest_RespectsRange_Test;
+  friend class testing::SuperstructureTest_UpperHardstopStartup_Test;
   Intake intake_;
   Arm arm_;
+
+  CollisionAvoidance collision_avoidance_;
+
+  // NOTE: Only touch this if you absolutely know what you're doing!
+  bool collision_avoidance_enabled_ = true;
 
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;

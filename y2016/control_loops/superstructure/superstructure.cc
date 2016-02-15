@@ -24,10 +24,103 @@ constexpr double kShoulderEncoderIndexDifference =
 constexpr double kZeroingVoltage = 4.0;
 }  // namespace
 
+// ///// CollisionAvoidance /////
+
+void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
+                                    double wrist_angle_goal,
+                                    double intake_angle_goal) {
+  double shoulder_angle = arm_->shoulder_angle();
+  double wrist_angle = arm_->wrist_angle();
+  double intake_angle = intake_->angle();
+
+  // TODO(phil): This may need tuning to account for bounciness in the limbs or
+  // some other thing that I haven't thought of. At the very least,
+  // incorporating a small safety margin makes writing test cases much easier
+  // since you can directly compare statuses against the constants in the
+  // CollisionAvoidance class.
+  constexpr double kSafetyMargin = 0.01;  // radians
+
+  // Avoid colliding the shooter with the frame.
+  // If the shoulder is below a certain angle or we want to move it below
+  // that angle, then the shooter has to stay level to the ground. Otherwise,
+  // it will crash into the frame.
+  if (shoulder_angle < kMinShoulderAngleForHorizontalShooter ||
+      shoulder_angle_goal < kMinShoulderAngleForHorizontalShooter) {
+    wrist_angle_goal = 0.0;
+
+    // Make sure that we don't move the shoulder below a certain angle until
+    // the wrist is level with the ground.
+    if (::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
+      shoulder_angle_goal =
+          ::std::max(shoulder_angle_goal,
+                     kMinShoulderAngleForHorizontalShooter + kSafetyMargin);
+    }
+  }
+
+  // Is the arm where it could interfere with the intake right now?
+  bool shoulder_is_in_danger =
+      (shoulder_angle < kMinShoulderAngleForIntakeInterference &&
+       shoulder_angle > kMaxShoulderAngleUntilSafeIntakeStowing);
+
+  // Is the arm moving into collision zone from above?
+  bool shoulder_moving_into_danger_from_above =
+      (shoulder_angle >= kMinShoulderAngleForIntakeInterference &&
+       shoulder_angle_goal <= kMinShoulderAngleForIntakeInterference);
+
+  // Is the arm moving into collision zone from below?
+  bool shoulder_moving_into_danger_from_below =
+      (shoulder_angle <= kMaxShoulderAngleUntilSafeIntakeStowing &&
+       shoulder_angle_goal >= kMaxShoulderAngleUntilSafeIntakeStowing);
+
+  // Avoid colliding the arm with the intake.
+  if (shoulder_is_in_danger || shoulder_moving_into_danger_from_above ||
+      shoulder_moving_into_danger_from_below) {
+    // If the arm could collide with the intake, we make sure to move the
+    // intake out of the way. The arm has priority.
+    intake_angle_goal =
+        ::std::min(intake_angle_goal,
+                   kMaxIntakeAngleBeforeArmInterference - kSafetyMargin);
+
+    // Don't let the shoulder move into the collision area until the intake is
+    // out of the way.
+    if (intake_angle > kMaxIntakeAngleBeforeArmInterference) {
+      const double kHalfwayPointBetweenSafeZones =
+          (kMinShoulderAngleForIntakeInterference +
+           kMaxShoulderAngleUntilSafeIntakeStowing) /
+          2.0;
+
+      if (shoulder_angle >= kHalfwayPointBetweenSafeZones) {
+        // The shoulder is closer to being above the collision area. Move it up
+        // there.
+        shoulder_angle_goal =
+            ::std::max(shoulder_angle_goal,
+                       kMinShoulderAngleForIntakeInterference + kSafetyMargin);
+      } else {
+        // The shoulder is closer to being below the collision zone (i.e. in
+        // stowing/intake position), keep it there for now.
+        shoulder_angle_goal =
+            ::std::min(shoulder_angle_goal,
+                       kMaxShoulderAngleUntilSafeIntakeStowing - kSafetyMargin);
+      }
+    }
+  }
+
+  // Send the possibly adjusted goals to the components.
+  arm_->set_unprofiled_goal(shoulder_angle_goal, wrist_angle_goal);
+  intake_->set_unprofiled_goal(intake_angle_goal);
+}
+
+constexpr double CollisionAvoidance::kMinShoulderAngleForHorizontalShooter;
+constexpr double CollisionAvoidance::kMinShoulderAngleForIntakeInterference;
+constexpr double CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference;
+constexpr double CollisionAvoidance::kMaxWristAngleForSafeArmStowing;
+constexpr double CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing;
+
 Superstructure::Superstructure(
     control_loops::SuperstructureQueue *superstructure_queue)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
-          superstructure_queue) {}
+          superstructure_queue),
+      collision_avoidance_(&intake_, &arm_) {}
 
 bool Superstructure::IsArmNear(double shoulder_tolerance,
                                double wrist_tolerance) {
@@ -80,16 +173,6 @@ double Superstructure::MoveButKeepBelow(double reference_angle,
     return small_positive_move;
   }
 }
-
-constexpr double Superstructure::kShoulderMiddleAngle;
-constexpr double Superstructure::kLooseTolerance;
-constexpr double Superstructure::kIntakeUpperClear;
-constexpr double Superstructure::kIntakeLowerClear;
-constexpr double Superstructure::kShoulderUpAngle;
-constexpr double Superstructure::kShoulderLanded;
-constexpr double Superstructure::kTightTolerance;
-constexpr double Superstructure::kWristAlmostLevel;
-constexpr double Superstructure::kShoulderWristClearAngle;
 
 void Superstructure::RunIteration(
     const control_loops::SuperstructureQueue::Goal *unsafe_goal,
@@ -330,9 +413,15 @@ void Superstructure::RunIteration(
         intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
                               unsafe_goal->max_angular_acceleration_intake);
 
-        arm_.set_unprofiled_goal(unsafe_goal->angle_shoulder,
-                                 unsafe_goal->angle_wrist);
-        intake_.set_unprofiled_goal(unsafe_goal->angle_intake);
+        if (collision_avoidance_enabled()) {
+          collision_avoidance_.UpdateGoal(unsafe_goal->angle_shoulder,
+                                          unsafe_goal->angle_wrist,
+                                          unsafe_goal->angle_intake);
+        } else {
+          arm_.set_unprofiled_goal(unsafe_goal->angle_shoulder,
+                                   unsafe_goal->angle_wrist);
+          intake_.set_unprofiled_goal(unsafe_goal->angle_intake);
+        }
       }
 
       // ESTOP if we hit any of the limits.  It is safe(ish) to hit the limits
@@ -403,6 +492,16 @@ void Superstructure::RunIteration(
 
   last_state_ = state_before_switch;
 }
+
+constexpr double Superstructure::kShoulderMiddleAngle;
+constexpr double Superstructure::kLooseTolerance;
+constexpr double Superstructure::kIntakeUpperClear;
+constexpr double Superstructure::kIntakeLowerClear;
+constexpr double Superstructure::kShoulderUpAngle;
+constexpr double Superstructure::kShoulderLanded;
+constexpr double Superstructure::kTightTolerance;
+constexpr double Superstructure::kWristAlmostLevel;
+constexpr double Superstructure::kShoulderWristClearAngle;
 
 }  // namespace superstructure
 }  // namespace control_loops
