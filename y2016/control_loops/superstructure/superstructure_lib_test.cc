@@ -268,6 +268,19 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
       EXPECT_GE(peak_wrist_acceleration_, wrist_acceleration);
       EXPECT_LE(-peak_wrist_acceleration_, wrist_acceleration);
+
+      EXPECT_GE(peak_shoulder_velocity_,
+                superstructure_plant_.shoulder_angular_velocity());
+      EXPECT_LE(-peak_shoulder_velocity_,
+                superstructure_plant_.shoulder_angular_velocity());
+      EXPECT_GE(peak_intake_velocity_,
+                superstructure_plant_.intake_angular_velocity());
+      EXPECT_LE(-peak_intake_velocity_,
+                superstructure_plant_.intake_angular_velocity());
+      EXPECT_GE(peak_wrist_velocity_,
+                superstructure_plant_.wrist_angular_velocity());
+      EXPECT_LE(-peak_wrist_velocity_,
+                superstructure_plant_.wrist_angular_velocity());
     }
   }
 
@@ -282,6 +295,11 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   void set_peak_wrist_acceleration(double value) {
     peak_wrist_acceleration_ = value;
   }
+  void set_peak_intake_velocity(double value) { peak_intake_velocity_ = value; }
+  void set_peak_shoulder_velocity(double value) {
+    peak_shoulder_velocity_ = value;
+  }
+  void set_peak_wrist_velocity(double value) { peak_wrist_velocity_ = value; }
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
@@ -297,6 +315,10 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   double peak_intake_acceleration_ = 1e10;
   double peak_shoulder_acceleration_ = 1e10;
   double peak_wrist_acceleration_ = 1e10;
+  // The velocity limits to check for while moving for the 3 axes.
+  double peak_intake_velocity_ = 1e10;
+  double peak_shoulder_velocity_ = 1e10;
+  double peak_wrist_velocity_ = 1e10;
 };
 
 // Tests that the superstructure does nothing when the goal is zero.
