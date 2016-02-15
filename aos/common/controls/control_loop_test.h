@@ -53,6 +53,8 @@ class ControlLoopTest : public ::testing::Test {
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
 
   ::aos::testing::TestSharedMemory my_shm_;
+
+  bool last_enabled_ = false;
 };
 
 }  // namespace testing

@@ -600,6 +600,135 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
   EXPECT_NE(0.0, superstructure_.arm_.goal(2, 0));
 }
 
+// Tests that disabling while zeroing at any state restarts from beginning
+TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange.upper);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::Values::kShoulderRange.upper);
+  superstructure_plant_.InitializeAbsoluteWristPosition(
+      constants::Values::kWristRange.upper);
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(constants::Values::kIntakeRange.upper)
+                  .angle_shoulder(constants::Values::kShoulderRange.upper)
+                  .angle_wrist(constants::Values::kWristRange.upper)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  // Expected states to cycle through and check in order.
+  Superstructure::State ExpectedStateOrder[] = {
+      Superstructure::DISABLED_INITIALIZED,
+      Superstructure::HIGH_ARM_ZERO_LIFT_ARM,
+      Superstructure::HIGH_ARM_ZERO_LEVEL_SHOOTER,
+      Superstructure::HIGH_ARM_ZERO_MOVE_INTAKE_OUT,
+      Superstructure::HIGH_ARM_ZERO_LOWER_ARM,
+  };
+
+  // Cycle through until arm_ and intake_ are initialized in superstructure.cc
+  while (superstructure_.state() < Superstructure::DISABLED_INITIALIZED) {
+    RunIteration(true);
+  }
+
+  static const int kNumberOfStates =
+      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+
+  // Next state when reached to disable
+  for (int i = 0; i < kNumberOfStates; i++) {
+    // Next expected state after being disabled that is expected until next
+    //  state to disable at is reached
+    for (int j = 0; superstructure_.state() != ExpectedStateOrder[i] && j <= i;
+         j++) {
+      // RunIteration until next expected state is reached with a maximum
+      //  of 10000 times to ensure a breakout
+      for (int o = 0;
+           superstructure_.state() < ExpectedStateOrder[j] && o < 10000; o++) {
+        RunIteration(true);
+      }
+      EXPECT_EQ(ExpectedStateOrder[j], superstructure_.state());
+    }
+
+    EXPECT_EQ(ExpectedStateOrder[i], superstructure_.state());
+
+    // Disable
+    RunIteration(false);
+
+    EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
+  }
+
+  RunForTime(Time::InSeconds(10));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+}
+
+// Tests that disabling while zeroing at any state restarts from beginning
+TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange.lower);
+  superstructure_plant_.InitializeShoulderPosition(
+      constants::Values::kShoulderRange.lower);
+  superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(constants::Values::kIntakeRange.lower)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(constants::Values::kWristRange.lower)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  // Expected states to cycle through and check in order.
+  Superstructure::State ExpectedStateOrder[] = {
+      Superstructure::DISABLED_INITIALIZED,
+      Superstructure::LOW_ARM_ZERO_LOWER_INTAKE,
+      Superstructure::LOW_ARM_ZERO_MAYBE_LEVEL_SHOOTER,
+      Superstructure::LOW_ARM_ZERO_LIFT_SHOULDER,
+      Superstructure::LOW_ARM_ZERO_LEVEL_SHOOTER,
+  };
+
+  // Cycle through until arm_ and intake_ are initialized in superstructure.cc
+  while (superstructure_.state() < Superstructure::DISABLED_INITIALIZED) {
+    RunIteration(true);
+  }
+
+  static const int kNumberOfStates =
+      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+
+  // Next state when reached to disable
+  for (int i = 0; i < kNumberOfStates; i++) {
+    // Next expected state after being disabled that is expected until next
+    //  state to disable at is reached
+    for (int j = 0; superstructure_.state() != ExpectedStateOrder[i] && j <= i;
+         j++) {
+      // RunIteration until next expected state is reached with a maximum
+      //  of 10000 times to ensure a breakout
+      for (int o = 0;
+           superstructure_.state() < ExpectedStateOrder[j] && o < 10000; o++) {
+        RunIteration(true);
+      }
+      EXPECT_EQ(ExpectedStateOrder[j], superstructure_.state());
+    }
+
+    EXPECT_EQ(ExpectedStateOrder[i], superstructure_.state());
+
+    // Disable
+    RunIteration(false);
+
+    EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
+  }
+
+  RunForTime(Time::InSeconds(10));
+  EXPECT_EQ(Superstructure::LANDING_RUNNING, superstructure_.state());
+}
+
 // Tests that MoveButKeepBelow returns sane values.
 TEST_F(SuperstructureTest, MoveButKeepBelowTest) {
   EXPECT_EQ(1.0, Superstructure::MoveButKeepBelow(1.0, 10.0, 1.0));
