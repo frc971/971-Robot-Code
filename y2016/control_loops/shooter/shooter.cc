@@ -92,6 +92,11 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
   if (output) {
     output->voltage_left = left_.voltage();
     output->voltage_right = right_.voltage();
+
+    if (goal) {
+      output->clamp_open = goal->clamp_open;
+      output->push_to_shooter = goal->push_to_shooter;
+    }
   }
 }
 
