@@ -138,7 +138,7 @@ bool Intake::CheckHardLimits() {
 }
 
 void Intake::set_max_voltage(double voltage) {
-  loop_->set_max_voltages(voltage);
+  loop_->set_max_voltage(0, voltage);
 }
 
 void Intake::AdjustProfile(double max_angular_velocity,
@@ -370,7 +370,8 @@ void Arm::Update(bool disable) {
 
 void Arm::set_max_voltage(double shoulder_max_voltage,
                           double wrist_max_voltage) {
-  loop_->set_max_voltages(shoulder_max_voltage, wrist_max_voltage);
+  loop_->set_max_voltage(0, shoulder_max_voltage);
+  loop_->set_max_voltage(1, wrist_max_voltage);
 }
 
 void Arm::Reset() {

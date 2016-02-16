@@ -19,27 +19,38 @@ class SimpleCappedStateFeedbackLoop
       number_of_states, number_of_inputs, number_of_outputs> &&loop)
       : StateFeedbackLoop<number_of_states, number_of_inputs,
                           number_of_outputs>(::std::move(loop)),
+        min_voltages_(
+            ::Eigen::Array<double, number_of_inputs, 1>::Constant(-12)),
         max_voltages_(
             ::Eigen::Array<double, number_of_inputs, 1>::Constant(12)) {}
 
   void set_max_voltages(
       const ::Eigen::Array<double, number_of_inputs, 1> &max_voltages) {
     max_voltages_ = max_voltages;
+    min_voltages_ = -max_voltages;
   }
   void set_max_voltage(int i, double max_voltage) {
     mutable_max_voltage(i) = max_voltage;
+    mutable_min_voltage(i) = -max_voltage;
   }
 
-  // Easier to use overloads for number_of_inputs == 1 or 2. Using the wrong one
-  // will result in a compile-time Eigen error about mixing matrices of
-  // different sizes.
-  void set_max_voltages(double v1) {
-    set_max_voltages((::Eigen::Array<double, 1, 1>() << v1).finished());
+  void set_asymetric_voltages(
+      const ::Eigen::Array<double, number_of_inputs, 1> &min_voltages,
+      const ::Eigen::Array<double, number_of_inputs, 1> &max_voltages) {
+    min_voltages_ = min_voltages;
+    max_voltages_ = max_voltages;
   }
-  void set_max_voltages(double v1, double v2) {
-    set_max_voltages((::Eigen::Array<double, 2, 1>() << v1, v2).finished());
+  void set_asymetric_voltage(int i, double min_voltage, double max_voltage) {
+    mutable_min_voltage(i) = min_voltage;
+    mutable_max_voltage(i) = max_voltage;
   }
 
+  const ::Eigen::Array<double, number_of_inputs, 1> &min_voltages() const {
+    return min_voltages_;
+  }
+  ::Eigen::Array<double, number_of_inputs, 1> &mutable_min_voltages() {
+    return min_voltages_;
+  }
   const ::Eigen::Array<double, number_of_inputs, 1> &max_voltages() const {
     return max_voltages_;
   }
@@ -47,22 +58,19 @@ class SimpleCappedStateFeedbackLoop
     return max_voltages_;
   }
 
-  double max_voltage(int i) const { return max_voltages()(i, 0); }
-  double max_voltage(double) const = delete;
-  double &mutable_max_voltage(int i) { return mutable_max_voltages()(i, 0); }
-  double &mutable_max_voltage(double) = delete;
+  double min_voltage(int i) const { return min_voltages()(i, 0); }
+  double &mutable_min_voltage(int i) { return mutable_min_voltages()(i, 0); }
 
-  // Don't accidentally call these when you mean to call set_max_voltages
-  // with a low number_of_inputs.
-  void set_max_voltage(double) = delete;
-  void set_max_voltage(double, double) = delete;
+  double max_voltage(int i) const { return max_voltages()(i, 0); }
+  double &mutable_max_voltage(int i) { return mutable_max_voltages()(i, 0); }
 
  private:
   void CapU() override {
     this->mutable_U() =
-        this->U().array().min(max_voltages_).max(-max_voltages_);
+        this->U().array().min(max_voltages_).max(min_voltages_);
   }
 
+  ::Eigen::Array<double, number_of_inputs, 1> min_voltages_;
   ::Eigen::Array<double, number_of_inputs, 1> max_voltages_;
 };
 
