@@ -12,11 +12,16 @@
 #include "aos/common/actions/actions.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2016/control_loops/shooter/shooter.q.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
+
 #include "y2016/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
 
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2016::control_loops::shooter::shooter_queue;
+using ::y2016::control_loops::superstructure_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::JoystickAxis;
@@ -30,11 +35,23 @@ const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
 const ButtonLocation kQuickTurn(1, 5);
 
+// Buttons on the lexan driver station to get things running on bring-up day.
+const ButtonLocation kTest1(3, 6);
+const ButtonLocation kTest2(3, 2);
+const ButtonLocation kTest3(3, 11);
+const ButtonLocation kTest4(3, 9);
+const ButtonLocation kTest5(3, 8);
+const ButtonLocation kTest6(3, 3);
+const ButtonLocation kTest7(3, 5);
+const ButtonLocation kTest8(3, 4);
+
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
       : is_high_gear_(false),
-        was_running_(false) {}
+        intake_goal_(0.0),
+        shoulder_goal_(M_PI / 2.0),
+        wrist_goal_(0.0) {}
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     bool last_auto_running = auto_running_;
@@ -90,6 +107,83 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(DEBUG, "Canceling\n");
     }
 
+    if (data.PosEdge(ControlBit::kEnabled)) {
+      // If we got enabled, wait for everything to zero.
+      LOG(INFO, "Waiting for zero.\n");
+      waiting_for_zero_ = true;
+    }
+
+    superstructure_queue.status.FetchLatest();
+    if (!superstructure_queue.status.get()) {
+      LOG(ERROR, "Got no superstructure status packet.\n");
+    }
+
+    if (superstructure_queue.status.get() &&
+        superstructure_queue.status->zeroed) {
+      if (waiting_for_zero_) {
+        LOG(INFO, "Zeroed! Starting teleop mode.\n");
+        waiting_for_zero_ = false;
+      }
+    } else {
+      waiting_for_zero_ = true;
+    }
+
+    // TODO(robot bringup): Populate these with test goals.
+    if (data.PosEdge(kTest1)) {
+    }
+
+    if (data.PosEdge(kTest2)) {
+    }
+
+    if (data.PosEdge(kTest3)) {
+    }
+
+    if (data.PosEdge(kTest4)) {
+    }
+
+    if (data.PosEdge(kTest5)) {
+    }
+
+    if (data.PosEdge(kTest6)) {
+    }
+
+    if (data.PosEdge(kTest7)) {
+    }
+
+    if (data.PosEdge(kTest8)) {
+    }
+
+    if (!waiting_for_zero_) {
+      if (!action_queue_.Running()) {
+        auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+        new_superstructure_goal->angle_intake = intake_goal_;
+        new_superstructure_goal->angle_shoulder = shoulder_goal_;
+        new_superstructure_goal->angle_wrist = wrist_goal_;
+        new_superstructure_goal->max_angular_velocity_intake = 0.1;
+        new_superstructure_goal->max_angular_velocity_shoulder = 0.1;
+        new_superstructure_goal->max_angular_velocity_wrist = 0.1;
+        new_superstructure_goal->max_angular_acceleration_intake = 0.05;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 0.05;
+        new_superstructure_goal->max_angular_acceleration_wrist = 0.05;
+        new_superstructure_goal->voltage_rollers = 0.0;
+
+        if (!new_superstructure_goal.Send()) {
+          LOG(ERROR, "Sending superstructure goal failed.\n");
+        } else {
+          LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
+              intake_goal_, shoulder_goal_, wrist_goal_);
+        }
+
+        if (!shooter_queue.goal.MakeWithBuilder()
+                 .angular_velocity(0.0)
+                 .clamp_open(false)
+                 .push_to_shooter(false)
+                 .Send()) {
+          LOG(ERROR, "Sending shooter goal failed.\n");
+        }
+      }
+    }
+
     was_running_ = action_queue_.Running();
   }
 
@@ -105,8 +199,16 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   bool is_high_gear_;
-  bool was_running_;
+  // Whatever these are set to are our default goals to send out after zeroing.
+  double intake_goal_;
+  double shoulder_goal_;
+  double wrist_goal_;
+
+  bool was_running_ = false;
   bool auto_running_ = false;
+
+  // If we're waiting for the subsystems to zero.
+  bool waiting_for_zero_ = true;
 
   ::aos::common::actions::ActionQueue action_queue_;
 
