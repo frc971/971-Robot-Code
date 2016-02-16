@@ -14,14 +14,14 @@ namespace control_loops {
 namespace superstructure {
 
 namespace {
+constexpr double kZeroingVoltage = 4.0;
+
 constexpr double kIntakeEncoderIndexDifference =
     constants::Values::kIntakeEncoderIndexDifference;
 constexpr double kWristEncoderIndexDifference =
     constants::Values::kWristEncoderIndexDifference;
 constexpr double kShoulderEncoderIndexDifference =
     constants::Values::kShoulderEncoderIndexDifference;
-
-constexpr double kZeroingVoltage = 4.0;
 }  // namespace
 
 // ///// CollisionAvoidance /////
@@ -482,6 +482,13 @@ void Superstructure::RunIteration(
     output->voltage_intake = intake_.intake_voltage();
     output->voltage_shoulder = arm_.shoulder_voltage();
     output->voltage_wrist = arm_.wrist_voltage();
+
+    // Logic to run our rollers on the intake.
+    output->voltage_rollers = 0.0;
+    if (unsafe_goal) {
+      output->voltage_rollers =
+          ::std::max(-8.0, ::std::min(8.0, unsafe_goal->voltage_rollers));
+    }
   }
 
   // Save debug/internal state.

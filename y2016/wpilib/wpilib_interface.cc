@@ -551,6 +551,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     wrist_talon_ = ::std::move(t);
   }
 
+  void set_rollers_talon(::std::unique_ptr<Talon> t) {
+    rollers_talon_ = ::std::move(t);
+  }
+
  private:
   virtual void Read() override {
     ::y2016::control_loops::superstructure_queue.output.FetchAnother();
@@ -562,6 +566,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     intake_talon_->Set(queue->voltage_intake / 12.0);
     shoulder_talon_->Set(-queue->voltage_shoulder / 12.0);
     wrist_talon_->Set(queue->voltage_wrist / 12.0);
+    rollers_talon_->Set(queue->voltage_rollers / 12.0);
   }
 
   virtual void Stop() override {
@@ -571,7 +576,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     wrist_talon_->Disable();
   }
 
-  ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_;
+  ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_,
+      rollers_talon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -639,6 +645,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_shoulder_talon(
         ::std::unique_ptr<Talon>(new Talon(0)));
     superstructure_writer.set_wrist_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
+    superstructure_writer.set_rollers_talon(
         ::std::unique_ptr<Talon>(new Talon(0)));
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
