@@ -15,7 +15,10 @@ namespace superstructure {
 
 namespace {
 constexpr double kZeroingVoltage = 4.0;
+// The maximum voltage the intake roller will be allowed to use.
+constexpr float kMaxIntakeVoltage = 8.0;
 
+// Aliases to reduce typing.
 constexpr double kIntakeEncoderIndexDifference =
     constants::Values::kIntakeEncoderIndexDifference;
 constexpr double kWristEncoderIndexDifference =
@@ -540,8 +543,9 @@ void Superstructure::RunIteration(
     // Logic to run our rollers on the intake.
     output->voltage_rollers = 0.0;
     if (unsafe_goal) {
-      output->voltage_rollers =
-          ::std::max(-8.0, ::std::min(8.0, unsafe_goal->voltage_rollers));
+      output->voltage_rollers = ::std::max(
+          -kMaxIntakeVoltage,
+          ::std::min(unsafe_goal->voltage_rollers, kMaxIntakeVoltage));
     }
   }
 
