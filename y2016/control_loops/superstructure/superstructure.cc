@@ -481,6 +481,16 @@ void Superstructure::RunIteration(
                          constants::Values::kShoulderRange.lower);
           requested_wrist = 0.0;
           requested_intake = unsafe_goal->angle_intake;
+          // Transition to landing once the profile is close to finished for the
+          // shoulder.
+          if (arm_.goal(0, 0) > kShoulderTransitionToLanded + 1e-4 ||
+              arm_.unprofiled_goal(0, 0) > kShoulderTransitionToLanded + 1e-4) {
+            if (state_ == LANDING_RUNNING) {
+              state_ = RUNNING;
+            } else {
+              state_ = SLOW_RUNNING;
+            }
+          }
         } else {
           // Otherwise, give the user what he asked for.
           arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder,
@@ -498,7 +508,9 @@ void Superstructure::RunIteration(
 
           // Transition to landing once the profile is close to finished for the
           // shoulder.
-          if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
+          if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4 &&
+              arm_.unprofiled_goal(0, 0) <=
+                  kShoulderTransitionToLanded + 1e-4) {
             if (state_ == RUNNING) {
               state_ = LANDING_RUNNING;
             } else {

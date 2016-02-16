@@ -905,12 +905,21 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
 
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
+          .angle_intake(constants::Values::kIntakeRange.upper)      // stowed
+          .angle_shoulder(constants::Values::kShoulderRange.lower)  // Down
+          .angle_wrist(0.0)                                         // Stowed
+          .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  ASSERT_TRUE(
+      superstructure_queue_.goal.MakeWithBuilder()
           .angle_intake(constants::Values::kIntakeRange.upper)  // stowed
           .angle_shoulder(M_PI / 4.0)  // in the collision area
           .angle_wrist(M_PI / 2.0)     // down
           .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(Time::InSeconds(3));
 
   superstructure_queue_.status.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
