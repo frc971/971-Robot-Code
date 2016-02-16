@@ -1007,8 +1007,75 @@ TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
   RunForTime(Time::InSeconds(2));
   EXPECT_LE(0.0, superstructure_queue_.goal->angle_shoulder);
 }
-// TODO(austin): Landed to unlanded needs to go fast!
-// TODO(austin): Test that landing is slow below the magic point.
+
+// Make sure that we land slowly.
+TEST_F(SuperstructureTest, LandSlowly) {
+  // Zero & go to initial position.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(M_PI * 0.25)
+                  .angle_wrist(0.0)
+                  .Send());
+  RunForTime(Time::InSeconds(8));
+
+  // Tell it to land in the bellypan as fast as possible.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  // Wait until we hit the transition point.
+  do {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+  } while (superstructure_plant_.shoulder_angle() >
+           Superstructure::kShoulderTransitionToLanded);
+
+  set_peak_shoulder_velocity(0.55);
+  RunForTime(Time::InSeconds(4));
+}
+
+// Make sure that we quickly take off from a land.
+TEST_F(SuperstructureTest, TakeOffQuickly) {
+  // Zero & go to initial position.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(0.0)
+                  .angle_wrist(0.0)
+                  .Send());
+  RunForTime(Time::InSeconds(8));
+
+  // Tell it to take off as fast as possible.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(M_PI / 2.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  // Wait until we hit the transition point.
+  do {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+  } while (superstructure_plant_.shoulder_angle() <
+           Superstructure::kShoulderTransitionToLanded);
+
+  // Make sure we are faster than the limited speed (which would indicate that
+  // we are still holding the shoulder back even when it's taking off).
+  EXPECT_GE(superstructure_plant_.shoulder_angular_velocity(), 0.55);
+}
 
 }  // namespace testing
 }  // namespace superstructure
