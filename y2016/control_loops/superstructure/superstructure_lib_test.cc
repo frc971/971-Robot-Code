@@ -634,9 +634,9 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
                   .max_angular_acceleration_wrist(1)
                   .Send());
 
-  // TODO(austin): We should be able to hold the acceleration profile tighter
-  // than this, but we somehow can't.  I'm not super worried though about 5%
-  // error...
+  // TODO(austin): The profile isn't feasible, so when we try to track it, we
+  // have trouble going from the acceleration step to the constant velocity
+  // step.  We end up under and then overshooting.
   set_peak_intake_acceleration(1.05);
   set_peak_shoulder_acceleration(1.05);
   set_peak_wrist_acceleration(1.05);
@@ -676,9 +676,6 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
                   .max_angular_acceleration_wrist(1)
                   .Send());
 
-  // TODO(austin): We should be able to hold the acceleration profile tighter
-  // than this, but we somehow can't.  I'm not super worried though about 5%
-  // error...
   set_peak_intake_acceleration(1.05);
   set_peak_shoulder_acceleration(1.05);
   set_peak_wrist_acceleration(1.05);
@@ -718,12 +715,129 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
                   .max_angular_acceleration_wrist(1)
                   .Send());
 
-  // TODO(austin): We should be able to hold the acceleration profile tighter
-  // than this, but we somehow can't.  I'm not super worried though about 5%
-  // error...
   set_peak_intake_acceleration(1.05);
   set_peak_shoulder_acceleration(1.05);
   set_peak_wrist_acceleration(1.05);
+  RunForTime(Time::InSeconds(4));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop respects intake handles saturation while accelerating
+// correctly.
+TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.5)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(4.5)
+                  .max_angular_acceleration_intake(800)
+                  .max_angular_velocity_shoulder(1)
+                  .max_angular_acceleration_shoulder(100)
+                  .max_angular_velocity_wrist(1)
+                  .max_angular_acceleration_wrist(100)
+                  .Send());
+
+  set_peak_intake_velocity(4.60);
+  set_peak_shoulder_velocity(1.00);
+  set_peak_wrist_velocity(1.00);
+  RunForTime(Time::InSeconds(4));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop respects shoulder handles saturation while accelerating
+// correctly.
+TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.9)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(1.0)
+                  .max_angular_acceleration_intake(1.0)
+                  .max_angular_velocity_shoulder(5.0)
+                  .max_angular_acceleration_shoulder(80)
+                  .max_angular_velocity_wrist(1)
+                  .max_angular_acceleration_wrist(100)
+                  .Send());
+
+  set_peak_intake_velocity(1.0);
+  set_peak_shoulder_velocity(5.5);
+  set_peak_wrist_velocity(1.0);
+  RunForTime(Time::InSeconds(4));
+
+  VerifyNearGoal();
+}
+
+// Tests that the loop respects wrist handles saturation while accelerating
+// correctly.
+TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(0.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(4));
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+
+  VerifyNearGoal();
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(1.0)
+                  .angle_wrist(1.9)
+                  .max_angular_velocity_intake(1.0)
+                  .max_angular_acceleration_intake(1.0)
+                  .max_angular_velocity_shoulder(1.0)
+                  .max_angular_acceleration_shoulder(1.0)
+                  .max_angular_velocity_wrist(10.0)
+                  .max_angular_acceleration_wrist(160.0)
+                  .Send());
+
+  set_peak_intake_velocity(1.0);
+  set_peak_shoulder_velocity(1.0);
+  set_peak_wrist_velocity(10.2);
   RunForTime(Time::InSeconds(4));
 
   VerifyNearGoal();

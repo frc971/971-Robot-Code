@@ -327,7 +327,7 @@ void Superstructure::RunIteration(
                            unsafe_goal->max_angular_acceleration_shoulder,
                            unsafe_goal->max_angular_velocity_wrist,
                            unsafe_goal->max_angular_acceleration_wrist);
-        intake_.AdjustProfile(unsafe_goal->max_angular_velocity_wrist,
+        intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
                               unsafe_goal->max_angular_acceleration_intake);
 
         arm_.set_unprofiled_goal(unsafe_goal->angle_shoulder,
