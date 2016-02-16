@@ -64,7 +64,7 @@ struct Values {
                                                            1.9};
   static constexpr ::frc971::constants::Range kShoulderRange{-0.050, 2.0, 0.000,
                                                              1.9};
-  static constexpr ::frc971::constants::Range kWristRange{-2.0, 2.0, -1.9, 1.0};
+  static constexpr ::frc971::constants::Range kWristRange{-2.0, 2.0, -1.9, 1.9};
 
   // ///// Dynamic constants. /////
   double drivetrain_max_speed;

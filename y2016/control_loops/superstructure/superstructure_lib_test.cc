@@ -420,12 +420,12 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   superstructure_plant_.InitializeWristPosition(
       constants::Values::kWristRange.lower);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
-                  .angle_intake(constants::Values::kIntakeRange.lower)
-                  .angle_shoulder(constants::Values::kShoulderRange.lower)
-                  .angle_wrist(constants::Values::kWristRange.lower)
+                  .angle_intake(constants::Values::kIntakeRange.upper)
+                  .angle_shoulder(constants::Values::kShoulderRange.upper)
+                  .angle_wrist(constants::Values::kWristRange.upper)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InSeconds(10));
+  RunForTime(Time::InSeconds(15));
 
   VerifyNearGoal();
 }
@@ -444,7 +444,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
                   .angle_wrist(constants::Values::kWristRange.lower)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InSeconds(10));
+  RunForTime(Time::InSeconds(15));
 
   VerifyNearGoal();
 }
@@ -463,7 +463,7 @@ TEST_F(SuperstructureTest, ResetTest) {
           .angle_shoulder(constants::Values::kShoulderRange.lower + 0.3)
           .angle_wrist(constants::Values::kWristRange.lower + 0.3)
           .Send());
-  RunForTime(Time::InSeconds(10));
+  RunForTime(Time::InSeconds(15));
 
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
   VerifyNearGoal();
