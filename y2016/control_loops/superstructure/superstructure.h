@@ -65,7 +65,7 @@ class CollisionAvoidance {
   // The shoulder angle (in radians) below which the shooter must be in a
   // stowing position. In other words the wrist must be at angle zero if the
   // shoulder is below this angle.
-  static constexpr double kMinShoulderAngleForHorizontalShooter = 0.1;
+  static constexpr double kMinShoulderAngleForHorizontalShooter = 0.6;
 
   // The shoulder angle (in radians) below which the arm as a whole has the
   // potential to interfere with the intake.
@@ -123,13 +123,18 @@ class Superstructure
   // bellypan.
   static constexpr double kShoulderLanded = -0.02;
 
+  // This is the angle below which the shoulder will slowly profile down and
+  // land.
+  static constexpr double kShoulderTransitionToLanded = 0.10;
+
   // This is the angle below which we consider the wrist close enough to level
   // that we should move it to level before doing anything.
   static constexpr double kWristAlmostLevel = 0.10;
 
   // This is the angle that the shoulder will go down to when raising up before
   // leveling the shooter for calibration.
-  static constexpr double kShoulderWristClearAngle = 0.6;
+  static constexpr double kShoulderWristClearAngle =
+      CollisionAvoidance::kMinShoulderAngleForHorizontalShooter;
 
   enum State {
     // Wait for all the filters to be ready before starting the initialization
@@ -157,8 +162,12 @@ class Superstructure
     SLOW_RUNNING = 12,
     // Run with full power.
     RUNNING = 13,
+    // Run, but limit power to zeroing voltages while landing.
+    LANDING_SLOW_RUNNING = 14,
+    // Run with full power while landing.
+    LANDING_RUNNING = 15,
     // Internal error caused the superstructure to abort.
-    ESTOP = 14,
+    ESTOP = 16,
   };
 
   State state() const { return state_; }

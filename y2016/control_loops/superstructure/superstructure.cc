@@ -426,50 +426,94 @@ void Superstructure::RunIteration(
       }
       break;
 
+    // These 4 cases are very similar.
     case SLOW_RUNNING:
     case RUNNING:
+    case LANDING_SLOW_RUNNING:
+    case LANDING_RUNNING: {
       if (disable) {
-        // TODO(austin): Enter SLOW_RUNNING if we are collided.
+        // If we are disabled, go to slow running (or landing slow running) if
+        // we are collided.
+        if (collided()) {
+          if (state_ == RUNNING) {
+            state_ = SLOW_RUNNING;
+          } else if (state_ == LANDING_RUNNING) {
+            state_ = LANDING_SLOW_RUNNING;
+          }
+        }
 
-        // If we are disabled, reset the profile to the current position.
+        // Reset the profile to the current position so it moves well from here.
         intake_.ForceGoal(intake_.angle());
         arm_.ForceGoal(arm_.shoulder_angle(), arm_.wrist_angle());
       } else {
+        // If we are in slow_running and are no longer collided, let 'er rip.
         if (state_ == SLOW_RUNNING) {
-          // TODO(austin): Exit SLOW_RUNNING if we are not collided.
-          LOG(ERROR, "Need to transition on non-collided, not all the time.\n");
-          state_ = RUNNING;
+          if (!collided()) {
+            state_ = RUNNING;
+          }
+        } else if (state_ == LANDING_SLOW_RUNNING) {
+          if (!collided()) {
+            state_ = LANDING_RUNNING;
+          }
         }
       }
+
+      double requested_shoulder = constants::Values::kShoulderRange.lower;
+      double requested_wrist = 0.0;
+      double requested_intake = M_PI / 2.0;
 
       if (unsafe_goal) {
-        arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder,
-                           unsafe_goal->max_angular_acceleration_shoulder,
-                           unsafe_goal->max_angular_velocity_wrist,
-                           unsafe_goal->max_angular_acceleration_wrist);
-        intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
-                              unsafe_goal->max_angular_acceleration_intake);
+        // If we are in one of the landing states, limit the accelerations and
+        // velocities to land cleanly.
+        if (state_ == LANDING_SLOW_RUNNING || state_ == LANDING_RUNNING) {
+          arm_.AdjustProfile(0.5,    // Shoulder Velocity
+                             4.0,    // Shoulder acceleration,
+                             4.0,    // Wrist velocity
+                             10.0);  // Wrist acceleration.
+          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
+                                unsafe_goal->max_angular_acceleration_intake);
 
-        if (collision_avoidance_enabled()) {
-          collision_avoidance_.UpdateGoal(unsafe_goal->angle_shoulder,
-                                          unsafe_goal->angle_wrist,
-                                          unsafe_goal->angle_intake);
+          requested_shoulder =
+              ::std::max(unsafe_goal->angle_shoulder,
+                         constants::Values::kShoulderRange.lower);
+          requested_wrist = 0.0;
+          requested_intake = unsafe_goal->angle_intake;
         } else {
-          arm_.set_unprofiled_goal(unsafe_goal->angle_shoulder,
-                                   unsafe_goal->angle_wrist);
-          intake_.set_unprofiled_goal(unsafe_goal->angle_intake);
+          // Otherwise, give the user what he asked for.
+          arm_.AdjustProfile(unsafe_goal->max_angular_velocity_shoulder,
+                             unsafe_goal->max_angular_acceleration_shoulder,
+                             unsafe_goal->max_angular_velocity_wrist,
+                             unsafe_goal->max_angular_acceleration_wrist);
+          intake_.AdjustProfile(unsafe_goal->max_angular_velocity_intake,
+                                unsafe_goal->max_angular_acceleration_intake);
+
+          // Except, don't let the shoulder go all the way down.
+          requested_shoulder = ::std::max(unsafe_goal->angle_shoulder,
+                                          kShoulderTransitionToLanded);
+          requested_wrist = unsafe_goal->angle_wrist;
+          requested_intake = unsafe_goal->angle_intake;
+
+          // Transition to landing once the profile is close to finished for the
+          // shoulder.
+          if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
+            if (state_ == RUNNING) {
+              state_ = LANDING_RUNNING;
+            } else {
+              state_ = LANDING_SLOW_RUNNING;
+            }
+          }
         }
       }
 
-      // ESTOP if we hit any of the limits.  It is safe(ish) to hit the limits
-      // while zeroing since we use such low power.
-      if (state_ == RUNNING || state_ == SLOW_RUNNING) {
-        // ESTOP if we hit the hard limits.
-        if ((arm_.CheckHardLimits() || intake_.CheckHardLimits()) && output) {
-          state_ = ESTOP;
-        }
+      // Push the request out to hardware!
+      collision_avoidance_.UpdateGoal(requested_shoulder, requested_wrist,
+                                      requested_intake);
+
+      // ESTOP if we hit the hard limits.
+      if ((arm_.CheckHardLimits() || intake_.CheckHardLimits()) && output) {
+        state_ = ESTOP;
       }
-      break;
+    } break;
 
     case ESTOP:
       LOG(ERROR, "Estop\n");
@@ -478,7 +522,8 @@ void Superstructure::RunIteration(
   }
 
   // Set the voltage limits.
-  const double max_voltage = state_ == RUNNING ? 12.0 : kZeroingVoltage;
+  const double max_voltage =
+      (state_ == RUNNING || state_ == LANDING_RUNNING) ? 12.0 : kZeroingVoltage;
   arm_.set_max_voltage(max_voltage, max_voltage);
   intake_.set_max_voltage(max_voltage);
 
@@ -502,7 +547,8 @@ void Superstructure::RunIteration(
 
   // Save debug/internal state.
   // TODO(austin): Save the voltage errors.
-  status->zeroed = state_ == RUNNING;
+  status->zeroed = (state_ == RUNNING || state_ == LANDING_RUNNING ||
+                    state_ == SLOW_RUNNING || state_ == LANDING_SLOW_RUNNING);
 
   status->shoulder.angle = arm_.X_hat(0, 0);
   status->shoulder.angular_velocity = arm_.X_hat(1, 0);
@@ -546,6 +592,7 @@ constexpr double Superstructure::kShoulderLanded;
 constexpr double Superstructure::kTightTolerance;
 constexpr double Superstructure::kWristAlmostLevel;
 constexpr double Superstructure::kShoulderWristClearAngle;
+constexpr double Superstructure::kShoulderTransitionToLanded;
 
 }  // namespace superstructure
 }  // namespace control_loops

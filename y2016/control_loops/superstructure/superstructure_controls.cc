@@ -129,7 +129,8 @@ bool Intake::CheckHardLimits() {
   if (angle() > constants::Values::kIntakeRange.upper_hard ||
       angle() < constants::Values::kIntakeRange.lower_hard) {
     LOG(ERROR, "Intake at %f out of bounds [%f, %f], ESTOPing\n", angle(),
-        constants::Values::kIntakeRange.lower_hard, constants::Values::kIntakeRange.upper_hard);
+        constants::Values::kIntakeRange.lower_hard,
+        constants::Values::kIntakeRange.upper_hard);
     return true;
   }
 
@@ -320,10 +321,13 @@ bool Arm::CheckHardLimits() {
     return true;
   }
 
-  if (wrist_angle() - shoulder_angle() > constants::Values::kWristRange.upper_hard ||
-      wrist_angle() - shoulder_angle() < constants::Values::kWristRange.lower_hard) {
+  if (wrist_angle() - shoulder_angle() >
+          constants::Values::kWristRange.upper_hard ||
+      wrist_angle() - shoulder_angle() <
+          constants::Values::kWristRange.lower_hard) {
     LOG(ERROR, "Wrist at %f out of bounds [%f, %f], ESTOPing\n",
-        wrist_angle() - shoulder_angle(), constants::Values::kWristRange.lower_hard,
+        wrist_angle() - shoulder_angle(),
+        constants::Values::kWristRange.lower_hard,
         constants::Values::kWristRange.upper_hard);
     return true;
   }
