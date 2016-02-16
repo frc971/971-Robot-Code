@@ -242,31 +242,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     TickTime();
   }
 
-  void VerifyAbsenceOfCollisions() {
-    superstructure_queue_.status.FetchLatest();
-    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
-
-    double intake_angle = superstructure_queue_.status->intake.angle;
-    double shoulder_angle = superstructure_queue_.status->shoulder.angle;
-    double wrist_angle = superstructure_queue_.status->wrist.angle;
-
-    // The arm and the intake must not hit.
-    if (shoulder_angle >=
-            CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
-        shoulder_angle <=
-            CollisionAvoidance::kMinShoulderAngleForIntakeInterference) {
-      EXPECT_LT(intake_angle,
-                CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference);
-    }
-
-    // The wrist must go back to zero when the shoulder is moving the arm into
-    // a stowed/intaking position.
-    if (shoulder_angle <
-        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing) {
-      EXPECT_NEAR(0.0, wrist_angle, 0.01);
-    }
-  }
-
   // Runs iterations until the specified amount of simulated time has elapsed.
   void RunForTime(const Time &run_for, bool enabled = true) {
     const auto start_time = Time::Now();
@@ -313,9 +288,20 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                 superstructure_plant_.wrist_angular_velocity());
 
       if (check_for_collisions_) {
-        VerifyAbsenceOfCollisions();
+        ASSERT_TRUE(superstructure_.collision_avoidance_enabled());
+        ASSERT_FALSE(collided());
       }
     }
+  }
+
+  // Helper function to quickly check if either the estimation detected a
+  // collision or if there's a collision using ground-truth plant values.
+  bool collided() const {
+    return superstructure_.collided() ||
+           CollisionAvoidance::collided_with_given_angles(
+               superstructure_plant_.shoulder_angle(),
+               superstructure_plant_.wrist_angle(),
+               superstructure_plant_.intake_angle());
   }
 
   // Runs iterations while watching the average acceleration per cycle and
@@ -534,12 +520,11 @@ TEST_F(SuperstructureTest, ResetTest) {
   superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.upper);
 
-  ASSERT_TRUE(
-      superstructure_queue_.goal.MakeWithBuilder()
-          .angle_intake(constants::Values::kIntakeRange.lower + 0.3)
-          .angle_shoulder(constants::Values::kShoulderRange.lower + 0.3)
-          .angle_wrist(constants::Values::kWristRange.lower + 0.3)
-          .Send());
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(constants::Values::kIntakeRange.lower + 0.3)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower + 0.3)
+                  .angle_wrist(constants::Values::kWristRange.lower + 0.3)
+                  .Send());
   RunForTime(Time::InSeconds(15));
 
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
@@ -953,6 +938,26 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
   // stowed/intaking position).
   EXPECT_NEAR(0.0, superstructure_queue_.status->shoulder.angle, 0.001);
   EXPECT_NEAR(0.0, superstructure_queue_.status->wrist.angle, 0.001);
+}
+
+// Make sure that we can properly detect a collision.
+TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange.upper);                     // upper limit
+  superstructure_plant_.InitializeShoulderPosition(M_PI * 0.25);  // 45° up
+  superstructure_plant_.InitializeAbsoluteWristPosition(0);       // level
+
+  // Since we're explicitly checking for collisions, we don't want to fail the
+  // test because of collisions.
+  check_for_collisions_ = false;
+
+  RunForTime(Time::InSeconds(1));
+  ASSERT_TRUE(collided());
+
+  // Make sure that the collision avoidance will properly move the limbs out of
+  // the collision area.
+  RunForTime(Time::InSeconds(10));
+  ASSERT_FALSE(collided());
 }
 
 }  // namespace testing

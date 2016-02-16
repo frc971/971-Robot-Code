@@ -48,6 +48,17 @@ class CollisionAvoidance {
   void UpdateGoal(double shoulder_angle_goal, double wrist_angle_goal,
                   double intake_angle_goal);
 
+  // Returns true if any of the limbs and frame are somehow currently
+  // interfering with one another. This is based purely on the angles that the
+  // limbs are reporting.
+  bool collided() const;
+
+  // Detects collision with the specified angles. This is especially useful for
+  // unit testing where we have proper ground truth for all the angles.
+  static bool collided_with_given_angles(double shoulder_angle,
+                                         double wrist_angle,
+                                         double intake_angle);
+
   // TODO(phil): Verify that these numbers actually make sense. Someone needs
   // to verify these either on the CAD or the real robot.
 
@@ -162,7 +173,10 @@ class Superstructure
                                  double move_distance);
 
   // Returns true if collision avoidance is turned on. False if not.
-  bool collision_avoidance_enabled() { return collision_avoidance_enabled_; }
+  bool collision_avoidance_enabled() const { return collision_avoidance_enabled_; }
+
+  // Returns true if anything is currently considered "collided".
+  bool collided() const { return collision_avoidance_.collided(); }
 
  protected:
   virtual void RunIteration(

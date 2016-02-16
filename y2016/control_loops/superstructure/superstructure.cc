@@ -110,6 +110,34 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
   intake_->set_unprofiled_goal(intake_angle_goal);
 }
 
+bool CollisionAvoidance::collided() const {
+  return collided_with_given_angles(arm_->shoulder_angle(), arm_->wrist_angle(),
+                                    intake_->angle());
+}
+
+bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
+                                                    double wrist_angle,
+                                                    double intake_angle) {
+  // The arm and the intake must not hit.
+  if (shoulder_angle >=
+          CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
+      shoulder_angle <=
+          CollisionAvoidance::kMinShoulderAngleForIntakeInterference &&
+      intake_angle > CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
+    return true;
+  }
+
+  // The wrist must go back to zero when the shoulder is moving the arm into
+  // a stowed/intaking position.
+  if (shoulder_angle <
+          CollisionAvoidance::kMinShoulderAngleForHorizontalShooter &&
+      ::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
+    return true;
+  }
+
+  return false;
+}
+
 constexpr double CollisionAvoidance::kMinShoulderAngleForHorizontalShooter;
 constexpr double CollisionAvoidance::kMinShoulderAngleForIntakeInterference;
 constexpr double CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference;
