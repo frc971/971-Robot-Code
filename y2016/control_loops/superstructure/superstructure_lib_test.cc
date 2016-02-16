@@ -536,8 +536,8 @@ TEST_F(SuperstructureTest, ResetTest) {
 
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.lower + 0.3)
-                  .angle_shoulder(constants::Values::kShoulderRange.lower + 0.3)
-                  .angle_wrist(constants::Values::kWristRange.lower + 0.3)
+                  .angle_shoulder(constants::Values::kShoulderRange.upper)
+                  .angle_wrist(0.0)
                   .Send());
   RunForTime(Time::InSeconds(15));
 
