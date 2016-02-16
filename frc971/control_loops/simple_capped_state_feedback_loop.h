@@ -18,7 +18,9 @@ class SimpleCappedStateFeedbackLoop
   SimpleCappedStateFeedbackLoop(StateFeedbackLoop<
       number_of_states, number_of_inputs, number_of_outputs> &&loop)
       : StateFeedbackLoop<number_of_states, number_of_inputs,
-                          number_of_outputs>(::std::move(loop)) {}
+                          number_of_outputs>(::std::move(loop)),
+        max_voltages_(
+            ::Eigen::Array<double, number_of_inputs, 1>::Constant(12)) {}
 
   void set_max_voltages(
       const ::Eigen::Array<double, number_of_inputs, 1> &max_voltages) {
@@ -61,8 +63,7 @@ class SimpleCappedStateFeedbackLoop
         this->U().array().min(max_voltages_).max(-max_voltages_);
   }
 
-  ::Eigen::Array<double, number_of_inputs, 1> max_voltages_ =
-      ::Eigen::Array<double, number_of_inputs, 1>::Constant(12);
+  ::Eigen::Array<double, number_of_inputs, 1> max_voltages_;
 };
 
 }  // namespace control_loops
