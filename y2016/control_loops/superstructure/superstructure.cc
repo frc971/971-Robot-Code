@@ -15,6 +15,8 @@ namespace superstructure {
 
 namespace {
 constexpr double kZeroingVoltage = 4.0;
+constexpr double kOperatingVoltage = 12.0;
+constexpr double kLandingShoulderDownVoltage = -2.0;
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeVoltage = 8.0;
 
@@ -537,8 +539,9 @@ void Superstructure::RunIteration(
   }
 
   // Set the voltage limits.
-  const double max_voltage =
-      (state_ == RUNNING || state_ == LANDING_RUNNING) ? 12.0 : kZeroingVoltage;
+  const double max_voltage = (state_ == RUNNING || state_ == LANDING_RUNNING)
+                                 ? kOperatingVoltage
+                                 : kZeroingVoltage;
   arm_.set_max_voltage(max_voltage, max_voltage);
   intake_.set_max_voltage(max_voltage);
 
@@ -549,7 +552,8 @@ void Superstructure::RunIteration(
     // point?  Maybe just put the goal slightly below the bellypan and call that
     // good enough.
     if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
-      arm_.set_shoulder_asymetric_limits(-2.0, max_voltage);
+      arm_.set_shoulder_asymetric_limits(kLandingShoulderDownVoltage,
+                                         max_voltage);
     }
   }
 
