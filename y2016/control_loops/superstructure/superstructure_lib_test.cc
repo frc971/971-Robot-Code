@@ -92,7 +92,7 @@ class SuperstructureSimulation {
                               ".y2016.control_loops.superstructure.status") {
     InitializeIntakePosition(0.0);
     InitializeShoulderPosition(0.0);
-    InitializeWristPosition(0.0);
+    InitializeRelativeWristPosition(0.0);
   }
 
   void InitializeIntakePosition(double start_pos) {
@@ -110,7 +110,7 @@ class SuperstructureSimulation {
   }
 
   // Must be called after any changes to InitializeShoulderPosition.
-  void InitializeWristPosition(double start_pos) {
+  void InitializeRelativeWristPosition(double start_pos) {
     arm_plant_->mutable_X(2, 0) = start_pos + arm_plant_->X(0, 0);
     arm_plant_->mutable_X(3, 0) = 0.0;
 
@@ -447,7 +447,7 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
       constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderRange.lower);
-  superstructure_plant_.InitializeWristPosition(
+  superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.lower);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.upper)
@@ -466,7 +466,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
       constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderRange.upper);
-  superstructure_plant_.InitializeWristPosition(
+  superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.upper);
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.lower)
@@ -485,7 +485,7 @@ TEST_F(SuperstructureTest, ResetTest) {
       constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderRange.upper);
-  superstructure_plant_.InitializeWristPosition(
+  superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.upper);
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
@@ -540,7 +540,7 @@ TEST_F(SuperstructureTest, IntegratorTest) {
       constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderRange.lower);
-  superstructure_plant_.InitializeWristPosition(
+  superstructure_plant_.InitializeRelativeWristPosition(
       constants::Values::kWristRange.lower);
   superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
   superstructure_queue_.goal.MakeWithBuilder()
@@ -561,7 +561,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   superstructure_plant_.InitializeIntakePosition(-0.001);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderEncoderIndexDifference * 10 - 0.001);
-  superstructure_plant_.InitializeWristPosition(-0.001);
+  superstructure_plant_.InitializeRelativeWristPosition(-0.001);
 
   superstructure_queue_.goal.MakeWithBuilder()
       .angle_intake(0.0)
