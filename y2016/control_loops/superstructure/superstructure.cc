@@ -124,6 +124,11 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
       shoulder_angle <=
           CollisionAvoidance::kMinShoulderAngleForIntakeInterference &&
       intake_angle > CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
+    LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n", intake_angle,
+        CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
+        CollisionAvoidance::kMinShoulderAngleForIntakeInterference,
+        shoulder_angle,
+        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing);
     return true;
   }
 
@@ -132,6 +137,10 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
   if (shoulder_angle <
           CollisionAvoidance::kMinShoulderAngleForHorizontalShooter &&
       ::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
+    LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| < %f.\n",
+        shoulder_angle,
+        CollisionAvoidance::kMinShoulderAngleForHorizontalShooter, wrist_angle,
+        kMaxWristAngleForSafeArmStowing);
     return true;
   }
 
