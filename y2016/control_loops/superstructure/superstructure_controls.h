@@ -137,6 +137,11 @@ class Arm {
                      double max_angular_acceleration_wrist);
   void set_max_voltage(double shoulder_max_voltage, double wrist_max_voltage);
 
+  void set_shoulder_asymetric_limits(double shoulder_min_voltage,
+                                     double shoulder_max_voltage) {
+    loop_->set_asymetric_voltage(0, shoulder_min_voltage, shoulder_max_voltage);
+  }
+
   // Returns true if we have exceeded any hard limits.
   bool CheckHardLimits();
   // Resets the internal state.

@@ -170,6 +170,11 @@ class Superstructure
     ESTOP = 16,
   };
 
+  bool IsRunning() const {
+    return (state_ == SLOW_RUNNING || state_ == RUNNING ||
+            state_ == LANDING_SLOW_RUNNING || state_ == LANDING_RUNNING);
+  }
+
   State state() const { return state_; }
 
   // Returns the value to move the joint to such that it will stay below

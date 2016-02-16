@@ -530,6 +530,17 @@ void Superstructure::RunIteration(
   arm_.set_max_voltage(max_voltage, max_voltage);
   intake_.set_max_voltage(max_voltage);
 
+  if (IsRunning()) {
+    // We don't want lots of negative voltage when we are near the bellypan on
+    // the shoulder...
+    // TODO(austin): Do I want to push negative power into the belly pan at this
+    // point?  Maybe just put the goal slightly below the bellypan and call that
+    // good enough.
+    if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
+      arm_.set_shoulder_asymetric_limits(-2.0, max_voltage);
+    }
+  }
+
   // Calculate the loops for a cycle.
   arm_.Update(disable);
   intake_.Update(disable);
@@ -551,8 +562,7 @@ void Superstructure::RunIteration(
 
   // Save debug/internal state.
   // TODO(austin): Save the voltage errors.
-  status->zeroed = (state_ == RUNNING || state_ == LANDING_RUNNING ||
-                    state_ == SLOW_RUNNING || state_ == LANDING_SLOW_RUNNING);
+  status->zeroed = IsRunning();
 
   status->shoulder.angle = arm_.X_hat(0, 0);
   status->shoulder.angular_velocity = arm_.X_hat(1, 0);

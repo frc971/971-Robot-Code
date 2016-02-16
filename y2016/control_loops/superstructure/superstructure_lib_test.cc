@@ -974,7 +974,32 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
   ASSERT_FALSE(collided());
 }
 
+// Make sure that the landing voltage limit works.
+TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
+  superstructure_plant_.InitializeIntakePosition(
+      constants::Values::kIntakeRange.lower);
+  superstructure_plant_.InitializeShoulderPosition(0.0);
+  superstructure_plant_.InitializeAbsoluteWristPosition(0.0);
+
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(0.0)  // intentionally asking for forward
+                  .Send());
+
+  RunForTime(Time::InSeconds(6));
+  VerifyNearGoal();
+
+  // If we are near the bottom of the range, we won't have enough power to
+  // compensate for the offset.  This means that we fail if we get to the goal.
+  superstructure_plant_.set_power_error(0.0, 3.0, 0.0);
+  RunForTime(Time::InSeconds(2));
+  superstructure_plant_.set_power_error(0.0, 6.0, 0.0);
+  RunForTime(Time::InSeconds(2));
+  EXPECT_LE(0.0, superstructure_queue_.goal->angle_shoulder);
+}
 // TODO(austin): Landed to unlanded needs to go fast!
+// TODO(austin): Test that landing is slow below the magic point.
 
 }  // namespace testing
 }  // namespace superstructure
