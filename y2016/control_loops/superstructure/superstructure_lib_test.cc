@@ -288,7 +288,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                 superstructure_plant_.wrist_angular_velocity());
 
       if (check_for_collisions_) {
-        ASSERT_TRUE(superstructure_.collision_avoidance_enabled());
         ASSERT_FALSE(collided());
       }
     }
@@ -386,10 +385,6 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // Tests that the loop doesn't try and go beyond the physical range of the
 // mechanisms.
 TEST_F(SuperstructureTest, RespectsRange) {
-  // Turn off collision avoidance for this test.
-  superstructure_.collision_avoidance_enabled_ = false;
-  check_for_collisions_ = false;
-
   // Set some ridiculous goals to test upper limits.
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(M_PI * 10)
@@ -414,11 +409,36 @@ TEST_F(SuperstructureTest, RespectsRange) {
                   constants::Values::kShoulderRange.upper,
               superstructure_queue_.status->wrist.angle, 0.001);
 
+  // Set some ridiculous goals to test limits.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(M_PI * 10)
+                  .angle_shoulder(M_PI * 10)
+                  .angle_wrist(-M_PI * 10.0)
+                  .max_angular_velocity_intake(20)
+                  .max_angular_acceleration_intake(20)
+                  .max_angular_velocity_shoulder(20)
+                  .max_angular_acceleration_shoulder(20)
+                  .max_angular_velocity_wrist(20)
+                  .max_angular_acceleration_wrist(20)
+                  .Send());
+
+  RunForTime(Time::InSeconds(10));
+
+  // Check that we are near our soft limit.
+  superstructure_queue_.status.FetchLatest();
+  EXPECT_NEAR(constants::Values::kIntakeRange.upper,
+              superstructure_queue_.status->intake.angle, 0.001);
+  EXPECT_NEAR(constants::Values::kShoulderRange.upper,
+              superstructure_queue_.status->shoulder.angle, 0.001);
+  EXPECT_NEAR(constants::Values::kWristRange.lower +
+                  constants::Values::kShoulderRange.upper,
+              superstructure_queue_.status->wrist.angle, 0.001);
+
   // Set some ridiculous goals to test lower limits.
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(-M_PI * 10)
                   .angle_shoulder(-M_PI * 10)
-                  .angle_wrist(-M_PI * 10)
+                  .angle_wrist(0.0)
                   .max_angular_velocity_intake(20)
                   .max_angular_acceleration_intake(20)
                   .max_angular_velocity_shoulder(20)
@@ -435,9 +455,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
               superstructure_queue_.status->intake.angle, 0.001);
   EXPECT_NEAR(constants::Values::kShoulderRange.lower,
               superstructure_queue_.status->shoulder.angle, 0.001);
-  EXPECT_NEAR(constants::Values::kWristRange.lower +
-                  constants::Values::kShoulderRange.lower,
-              superstructure_queue_.status->wrist.angle, 0.001);
+  EXPECT_NEAR(0.0, superstructure_queue_.status->wrist.angle, 0.001);
 }
 
 // Tests that the loop zeroes when run for a while.
@@ -490,10 +508,6 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
 
 // Tests that starting at the upper hardstops doesn't cause an abort.
 TEST_F(SuperstructureTest, UpperHardstopStartup) {
-  // Turn off collision avoidance for this test.
-  superstructure_.collision_avoidance_enabled_ = false;
-  check_for_collisions_ = false;
-
   superstructure_plant_.InitializeIntakePosition(
       constants::Values::kIntakeRange.upper);
   superstructure_plant_.InitializeShoulderPosition(
@@ -503,7 +517,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.lower)
                   .angle_shoulder(constants::Values::kShoulderRange.lower)
-                  .angle_wrist(constants::Values::kWristRange.lower)
+                  .angle_wrist(0.0)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
   RunForTime(Time::InSeconds(15));

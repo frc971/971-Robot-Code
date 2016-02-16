@@ -172,9 +172,6 @@ class Superstructure
   static double MoveButKeepAbove(double reference_angle, double current_angle,
                                  double move_distance);
 
-  // Returns true if collision avoidance is turned on. False if not.
-  bool collision_avoidance_enabled() const { return collision_avoidance_enabled_; }
-
   // Returns true if anything is currently considered "collided".
   bool collided() const { return collision_avoidance_.collided(); }
 
@@ -195,9 +192,6 @@ class Superstructure
   Arm arm_;
 
   CollisionAvoidance collision_avoidance_;
-
-  // NOTE: Only touch this if you absolutely know what you're doing!
-  bool collision_avoidance_enabled_ = true;
 
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;
