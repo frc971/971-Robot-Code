@@ -38,7 +38,7 @@ struct DrivetrainConfig {
   double t;  // Torque constant.
 
   double turn_width;  // Robot turn width, in meters.
-  // Gear ratios, from encoder shaft to transmission output.
+  // Gear ratios, from wheel to motor shaft.
   double high_gear_ratio;
   double low_gear_ratio;
 
