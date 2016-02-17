@@ -163,6 +163,31 @@ class SuperstructureSimulation {
         superstructure_queue_.output->voltage_wrist +
             arm_plant_->wrist_voltage_offset();
 
+    // Verify that the correct power limits are being respected depending on
+    // which mode we are in.
+    EXPECT_TRUE(superstructure_queue_.status.FetchLatest());
+    if (superstructure_queue_.status->state == Superstructure::RUNNING ||
+        superstructure_queue_.status->state ==
+            Superstructure::LANDING_RUNNING) {
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
+               12.00001);
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_shoulder),
+               12.00001);
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_wrist),
+               12.00001);
+    } else {
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
+               4.00001);
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_shoulder),
+               4.00001);
+      CHECK_LE(::std::abs(superstructure_queue_.output->voltage_wrist),
+               4.00001);
+    }
+    if (arm_plant_->X(0, 0) <=
+        Superstructure::kShoulderTransitionToLanded + 1e-4) {
+      CHECK_GE(superstructure_queue_.output->voltage_shoulder, -2.00001);
+    }
+
     // Use the plant to generate the next physical state given the voltages to
     // the motors.
     intake_plant_->Update();
@@ -964,22 +989,70 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
 
 // Make sure that we can properly detect a collision.
 TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
-  superstructure_plant_.InitializeIntakePosition(
-      constants::Values::kIntakeRange.upper);                     // upper limit
-  superstructure_plant_.InitializeShoulderPosition(M_PI * 0.25);  // 45° up
-  superstructure_plant_.InitializeAbsoluteWristPosition(0);       // level
+  // Zero & go straight up with the shoulder.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(M_PI * 0.5)
+                  .angle_wrist(0.0)
+                  .Send());
+
+  RunForTime(Time::InSeconds(6));
+  VerifyNearGoal();
 
   // Since we're explicitly checking for collisions, we don't want to fail the
   // test because of collisions.
   check_for_collisions_ = false;
 
-  RunForTime(Time::InSeconds(1));
+  // Move shoulder down until collided by applying a voltage offset while
+  // disabled.
+  superstructure_plant_.set_power_error(0.0, -1.0, 0.0);
+  while (!collided()) {
+    RunIteration(false);
+  }
+  RunForTime(Time::InSeconds(0.5), false);  // Move a bit further down.
+
   ASSERT_TRUE(collided());
+  EXPECT_EQ(Superstructure::SLOW_RUNNING, superstructure_.state());
+  superstructure_plant_.set_power_error(0.0, 0.0, 0.0);
 
   // Make sure that the collision avoidance will properly move the limbs out of
   // the collision area.
   RunForTime(Time::InSeconds(10));
   ASSERT_FALSE(collided());
+  EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
+}
+
+// Make sure that we can properly detect a collision.
+TEST_F(SuperstructureTest, DetectAndFixShoulderInDrivebase) {
+  // Zero & go straight up with the shoulder.
+  ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
+                  .angle_intake(0.0)
+                  .angle_shoulder(constants::Values::kShoulderRange.lower)
+                  .angle_wrist(0.0)
+                  .Send());
+
+  RunForTime(Time::InSeconds(6));
+  VerifyNearGoal();
+
+  // Since we're explicitly checking for collisions, we don't want to fail the
+  // test because of collisions.
+  check_for_collisions_ = false;
+
+  // Move wrist up until on top of the bellypan
+  superstructure_plant_.set_power_error(0.0, 0.0, -1.0);
+  while (superstructure_plant_.wrist_angle() > -0.2) {
+    RunIteration(false);
+  }
+
+  ASSERT_TRUE(collided());
+  EXPECT_EQ(Superstructure::LANDING_SLOW_RUNNING, superstructure_.state());
+
+  // Make sure that the collision avoidance will properly move the limbs out of
+  // the collision area.
+  superstructure_plant_.set_power_error(0.0, 0.0, 0.0);
+  RunForTime(Time::InSeconds(3));
+  ASSERT_FALSE(collided());
+  EXPECT_EQ(Superstructure::LANDING_RUNNING, superstructure_.state());
 }
 
 // Make sure that the landing voltage limit works.
