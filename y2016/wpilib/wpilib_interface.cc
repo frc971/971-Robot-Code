@@ -34,6 +34,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/constants.h"
+#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 
@@ -83,17 +84,17 @@ double hall_translate(double in) {
 double drivetrain_translate(int32_t in) {
   return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::Values::kDrivetrainEncoderRatio *
-         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
+         control_loops::drivetrain::kWheelRadius * 2.0 / 2.0;
 }
 
 double drivetrain_velocity_translate(double in) {
   return (1.0 / in) / 256.0 /*cpr*/ *
          constants::Values::kDrivetrainEncoderRatio *
-         (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
+         control_loops::drivetrain::kWheelRadius * 2.0 / 2.0;
 }
 
 double shooter_translate(int32_t in) {
-  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
 }
 
@@ -114,17 +115,17 @@ double wrist_translate(int32_t in) {
 
 double intake_pot_translate(double voltage) {
   return voltage * constants::Values::kIntakePotRatio *
-         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 double shoulder_pot_translate(double voltage) {
   return voltage * constants::Values::kShoulderPotRatio *
-         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 double wrist_pot_translate(double voltage) {
   return voltage * constants::Values::kWristPotRatio *
-         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
