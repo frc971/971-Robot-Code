@@ -10,12 +10,13 @@
 #include "aos/common/actions/actions.h"
 
 #include "frc971/autonomous/auto.q.h"
-#include "y2014/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2014/control_loops/shooter/shooter.q.h"
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/actors/shoot_actor.h"
 #include "y2014/actors/drivetrain_actor.h"
+#include "y2014/actors/shoot_actor.h"
+#include "y2014/constants.h"
+#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/shooter/shooter.q.h"
 #include "y2014/queues/auto_mode.q.h"
 
 #include "y2014/queues/hot_goal.q.h"
@@ -83,9 +84,9 @@ void WaitUntilDoneOrCanceled(
 
 void StepDrive(double distance, double theta) {
   double left_goal = (left_initial_position + distance -
-                      theta * constants::GetValues().turn_width / 2.0);
+                      theta * control_loops::drivetrain::kRobotRadius);
   double right_goal = (right_initial_position + distance +
-                       theta * constants::GetValues().turn_width / 2.0);
+                       theta * control_loops::drivetrain::kRobotRadius);
   ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .highgear(true)
@@ -197,9 +198,9 @@ const ProfileParams kFastTurn = {3.0, 10.0};
   auto drivetrain_action = actors::MakeDrivetrainAction(params);
   drivetrain_action->Start();
   left_initial_position +=
-      distance - theta * constants::GetValues().turn_width / 2.0;
+      distance - theta * control_loops::drivetrain::kRobotRadius;
   right_initial_position +=
-      distance + theta * constants::GetValues().turn_width / 2.0;
+      distance + theta * control_loops::drivetrain::kRobotRadius;
   return ::std::move(drivetrain_action);
 }
 

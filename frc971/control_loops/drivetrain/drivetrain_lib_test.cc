@@ -47,7 +47,6 @@ const DrivetrainConfig kDrivetrainConfig {
     ::y2014::control_loops::drivetrain::kV,
     ::y2014::control_loops::drivetrain::kT,
 
-    ::y2014::constants::GetValuesForTeam(971).turn_width,
     ::y2014::constants::GetValuesForTeam(971).high_gear_ratio,
     ::y2014::constants::GetValuesForTeam(971).low_gear_ratio,
     ::y2014::constants::GetValuesForTeam(971).left_drive,

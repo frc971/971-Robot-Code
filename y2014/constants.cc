@@ -45,8 +45,6 @@ const ShifterHallEffect kCompRightDriveShifter{2.94, 4.31, 4.32, 3.25, 0.2, 0.7}
 const ShifterHallEffect kPracticeLeftDriveShifter{2.80, 3.05, 4.15, 3.2, 0.2, 0.7};
 const ShifterHallEffect kPracticeRightDriveShifter{2.90, 3.75, 3.80, 2.98, 0.2, 0.7};
 
-const double kRobotWidth = 25.0 / 100.0 * 2.54;
-
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
 
@@ -63,7 +61,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
-          0.5,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0, // drivetrain max speed
@@ -100,7 +97,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompLeftDriveShifter,
           kCompRightDriveShifter,
           false,
-          kRobotWidth,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0, // drivetrain max speed
@@ -146,7 +142,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kPracticeLeftDriveShifter,
           kPracticeRightDriveShifter,
           false,
-          kRobotWidth,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0, // drivetrain max speed

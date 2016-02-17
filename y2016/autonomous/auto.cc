@@ -15,6 +15,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/actors/drivetrain_actor.h"
 #include "y2016/constants.h"
+#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/queues/profile_params.q.h"
 
 using ::aos::time::Time;
@@ -85,9 +86,9 @@ const ProfileParams kFastTurn = {3.0, 10.0};
   auto drivetrain_action = actors::MakeDrivetrainAction(params);
   drivetrain_action->Start();
   left_initial_position +=
-      distance - theta * constants::Values::kTurnWidth / 2.0;
+      distance - theta * control_loops::drivetrain::kRobotRadius;
   right_initial_position +=
-      distance + theta * constants::Values::kTurnWidth / 2.0;
+      distance + theta * control_loops::drivetrain::kRobotRadius;
   return ::std::move(drivetrain_action);
 }
 
