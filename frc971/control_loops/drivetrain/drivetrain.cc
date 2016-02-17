@@ -47,6 +47,14 @@ void DrivetrainLoop::RunIteration(
 
   kf_.set_controller_index(dt_openloop_.controller_index());
 
+  bool gyro_valid = false;
+  if (gyro_reading.FetchLatest()) {
+    LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
+    last_gyro_heading_ = gyro_reading->angle;
+    last_gyro_rate_ = gyro_reading->velocity;
+    gyro_valid = true;
+  }
+
   {
     Eigen::Matrix<double, 3, 1> Y;
     Y << position->left_encoder, position->right_encoder, last_gyro_rate_;
@@ -75,12 +83,9 @@ void DrivetrainLoop::RunIteration(
   if (!bad_pos) {
     const double left_encoder = position->left_encoder;
     const double right_encoder = position->right_encoder;
-    if (gyro_reading.FetchLatest()) {
-      LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
+    if (gyro_valid) {
       dt_closedloop_.SetPosition(left_encoder, right_encoder,
                                  gyro_reading->angle);
-      last_gyro_heading_ = gyro_reading->angle;
-      last_gyro_rate_ = gyro_reading->velocity;
     } else {
       dt_closedloop_.SetRawPosition(left_encoder, right_encoder);
     }
