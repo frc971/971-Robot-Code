@@ -7,15 +7,16 @@
 #include "aos/common/controls/polytope.h"
 #include "aos/common/controls/control_loop_test.h"
 
-#include "y2014/constants.h"
+#include "y2016/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
-#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
-#include "y2014/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
+#include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
+#include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
+#include "y2016/constants.h"
 #include "frc971/queues/gyro.q.h"
 
 namespace frc971 {
@@ -23,55 +24,41 @@ namespace control_loops {
 namespace drivetrain {
 namespace testing {
 
-using ::y2014::control_loops::drivetrain::MakeDrivetrainPlant;
+using ::y2016::control_loops::drivetrain::MakeDrivetrainPlant;
 
 // TODO(Comran): Make one that doesn't depend on the actual values for a
 // specific robot.
-const DrivetrainConfig kDrivetrainConfig {
-    ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
+const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0,  0.0,
+                                                           0.0, 0.25, 0.75};
 
-    ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
-    ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
-    ::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop,
+const DrivetrainConfig &GetDrivetrainConfig() {
+  static DrivetrainConfig kDrivetrainConfig{
+      ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
 
-    ::y2014::control_loops::drivetrain::kDt,
-    ::y2014::control_loops::drivetrain::kStallTorque,
-    ::y2014::control_loops::drivetrain::kStallCurrent,
-    ::y2014::control_loops::drivetrain::kFreeSpeedRPM,
-    ::y2014::control_loops::drivetrain::kFreeCurrent,
-    ::y2014::control_loops::drivetrain::kJ,
-    ::y2014::control_loops::drivetrain::kMass,
-    ::y2014::control_loops::drivetrain::kRobotRadius,
-    ::y2014::control_loops::drivetrain::kWheelRadius,
-    ::y2014::control_loops::drivetrain::kR,
-    ::y2014::control_loops::drivetrain::kV,
-    ::y2014::control_loops::drivetrain::kT,
+      ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
+      ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+      ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
-    ::y2014::constants::GetValuesForTeam(971).high_gear_ratio,
-    ::y2014::constants::GetValuesForTeam(971).low_gear_ratio,
-    ::y2014::constants::GetValuesForTeam(971).left_drive,
-    ::y2014::constants::GetValuesForTeam(971).right_drive
+      ::y2016::control_loops::drivetrain::kDt,
+      ::y2016::control_loops::drivetrain::kStallTorque,
+      ::y2016::control_loops::drivetrain::kStallCurrent,
+      ::y2016::control_loops::drivetrain::kFreeSpeedRPM,
+      ::y2016::control_loops::drivetrain::kFreeCurrent,
+      ::y2016::control_loops::drivetrain::kJ,
+      ::y2016::control_loops::drivetrain::kMass,
+      ::y2016::control_loops::drivetrain::kRobotRadius,
+      ::y2016::control_loops::drivetrain::kWheelRadius,
+      ::y2016::control_loops::drivetrain::kR,
+      ::y2016::control_loops::drivetrain::kV,
+      ::y2016::control_loops::drivetrain::kT,
+      ::y2016::control_loops::drivetrain::kHighGearRatio,
+      ::y2016::control_loops::drivetrain::kLowGearRatio,
+
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter};
+
+  return kDrivetrainConfig;
 };
-
-class Environment : public ::testing::Environment {
- public:
-  virtual ~Environment() {}
-  // how to set up the environment.
-  virtual void SetUp() {
-    aos::controls::HPolytope<0>::Init();
-  }
-};
-::testing::Environment* const holder_env =
-  ::testing::AddGlobalTestEnvironment(new Environment);
-
-class TeamNumberEnvironment : public ::testing::Environment {
- public:
-  // Override this to define how to set up the environment.
-  virtual void SetUp() { aos::network::OverrideTeamNumber(971); }
-};
-
-::testing::Environment* const team_number_env =
-    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
 
 // Class which simulates the drivetrain and sends out queue messages containing
 // the position.
@@ -82,11 +69,11 @@ class DrivetrainSimulation {
   DrivetrainSimulation()
       : drivetrain_plant_(
             new StateFeedbackPlant<4, 2, 2>(MakeDrivetrainPlant())),
-        my_drivetrain_queue_(".frc971.control_loops.drivetrain",
-                       0x8a8dde77, ".frc971.control_loops.drivetrain.goal",
-                       ".frc971.control_loops.drivetrain.position",
-                       ".frc971.control_loops.drivetrain.output",
-                       ".frc971.control_loops.drivetrain.status") {
+        my_drivetrain_queue_(".frc971.control_loops.drivetrain", 0x8a8dde77,
+                             ".frc971.control_loops.drivetrain.goal",
+                             ".frc971.control_loops.drivetrain.position",
+                             ".frc971.control_loops.drivetrain.output",
+                             ".frc971.control_loops.drivetrain.status") {
     Reinitialize();
   }
 
@@ -127,6 +114,7 @@ class DrivetrainSimulation {
   }
 
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> drivetrain_plant_;
+
  private:
   ::frc971::control_loops::DrivetrainQueue my_drivetrain_queue_;
   double last_left_position_;
@@ -144,14 +132,14 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
   DrivetrainLoop drivetrain_motor_;
   DrivetrainSimulation drivetrain_motor_plant_;
 
-  DrivetrainTest() : my_drivetrain_queue_(".frc971.control_loops.drivetrain",
-                               0x8a8dde77,
-                               ".frc971.control_loops.drivetrain.goal",
-                               ".frc971.control_loops.drivetrain.position",
-                               ".frc971.control_loops.drivetrain.output",
-                               ".frc971.control_loops.drivetrain.status"),
-                drivetrain_motor_(kDrivetrainConfig, &my_drivetrain_queue_),
-                drivetrain_motor_plant_() {
+  DrivetrainTest()
+      : my_drivetrain_queue_(".frc971.control_loops.drivetrain", 0x8a8dde77,
+                             ".frc971.control_loops.drivetrain.goal",
+                             ".frc971.control_loops.drivetrain.position",
+                             ".frc971.control_loops.drivetrain.output",
+                             ".frc971.control_loops.drivetrain.status"),
+        drivetrain_motor_(GetDrivetrainConfig(), &my_drivetrain_queue_),
+        drivetrain_motor_plant_() {
     ::frc971::sensors::gyro_reading.Clear();
   }
 
@@ -159,23 +147,21 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     my_drivetrain_queue_.goal.FetchLatest();
     my_drivetrain_queue_.position.FetchLatest();
     EXPECT_NEAR(my_drivetrain_queue_.goal->left_goal,
-                drivetrain_motor_plant_.GetLeftPosition(),
-                1e-2);
+                drivetrain_motor_plant_.GetLeftPosition(), 1e-2);
     EXPECT_NEAR(my_drivetrain_queue_.goal->right_goal,
-                drivetrain_motor_plant_.GetRightPosition(),
-                1e-2);
+                drivetrain_motor_plant_.GetRightPosition(), 1e-2);
   }
 
-  virtual ~DrivetrainTest() {
-    ::frc971::sensors::gyro_reading.Clear();
-  }
+  virtual ~DrivetrainTest() { ::frc971::sensors::gyro_reading.Clear(); }
 };
 
 // Tests that the drivetrain converges on a goal.
 TEST_F(DrivetrainTest, ConvergesCorrectly) {
-  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .control_loop_driving(true)
       .left_goal(-1.0)
-      .right_goal(1.0).Send();
+      .right_goal(1.0)
+      .Send();
   for (int i = 0; i < 200; ++i) {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
@@ -187,9 +173,11 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
 
 // Tests that it survives disabling.
 TEST_F(DrivetrainTest, SurvivesDisabling) {
-  my_drivetrain_queue_.goal.MakeWithBuilder().control_loop_driving(true)
+  my_drivetrain_queue_.goal.MakeWithBuilder()
+      .control_loop_driving(true)
       .left_goal(-1.0)
-      .right_goal(1.0).Send();
+      .right_goal(1.0)
+      .Send();
   for (int i = 0; i < 500; ++i) {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
@@ -269,14 +257,14 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
                                       double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;
   box_H << /*[[*/ 1.0, 0.0 /*]*/,
-            /*[*/-1.0, 0.0 /*]*/,
-            /*[*/ 0.0, 1.0 /*]*/,
-            /*[*/ 0.0,-1.0 /*]]*/;
+      /*[*/ -1.0, 0.0 /*]*/,
+      /*[*/ 0.0, 1.0 /*]*/,
+      /*[*/ 0.0, -1.0 /*]]*/;
   Eigen::Matrix<double, 4, 1> box_k;
   box_k << /*[[*/ x1_max /*]*/,
-            /*[*/-x1_min /*]*/,
-            /*[*/ x2_max /*]*/,
-            /*[*/-x2_min /*]]*/;
+      /*[*/ -x1_min /*]*/,
+      /*[*/ x2_max /*]*/,
+      /*[*/ -x2_min /*]]*/;
   ::aos::controls::HPolytope<2> t_poly(box_H, box_k);
   return t_poly;
 }
