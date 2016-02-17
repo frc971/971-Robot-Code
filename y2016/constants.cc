@@ -28,8 +28,7 @@ namespace constants {
 // ///// Mutual constants between robots. /////
 const int Values::kZeroingSampleSize;
 
-constexpr double Values::kDrivetrainEncoderRatio, Values::kLowGearRatio,
-    Values::kHighGearRatio, Values::kShooterEncoderRatio,
+constexpr double Values::kDrivetrainEncoderRatio, Values::kShooterEncoderRatio,
     Values::kIntakeEncoderRatio, Values::kShoulderEncoderRatio,
     Values::kWristEncoderRatio, Values::kIntakePotRatio,
     Values::kShoulderPotRatio, Values::kWristPotRatio,

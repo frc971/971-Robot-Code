@@ -341,6 +341,10 @@ def main(argv):
           drivetrain_low_low.Kv))
     dog_loop_writer.AddConstant(control_loop.Constant("kT", "%f",
           drivetrain_low_low.Kt))
+    dog_loop_writer.AddConstant(control_loop.Constant("kLowGearRatio", "%f",
+          drivetrain_low_low.G_low))
+    dog_loop_writer.AddConstant(control_loop.Constant("kHighGearRatio", "%f",
+          drivetrain_high_high.G_high))
 
     dog_loop_writer.Write(argv[1], argv[2])
 

@@ -37,9 +37,9 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kR,
       drivetrain::kV,
       drivetrain::kT,
+      drivetrain::kHighGearRatio,
+      drivetrain::kLowGearRatio,
 
-      constants::Values::kHighGearRatio,
-      constants::Values::kLowGearRatio,
       kThreeStateDriveShifter,
       kThreeStateDriveShifter};
 
