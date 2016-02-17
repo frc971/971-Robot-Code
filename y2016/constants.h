@@ -28,12 +28,14 @@ struct Values {
 
   // The ratio from the encoder shaft to the drivetrain wheels.
   static constexpr double kDrivetrainEncoderRatio =
-      (18.0 / 36.0) /*output reduction*/ * (44.0 / 30.0);
+      (18.0 / 36.0) /*output reduction*/ * (30.0 / 44.0) /*encoder gears*/;
 
   // The gear ratios from motor shafts to the drivetrain wheels for high and low
   // gear.
-  static constexpr double kLowGearRatio = 18.0 / 60.0 * 18.0 / 36.0;
-  static constexpr double kHighGearRatio = 28.0 / 50.0 * 18.0 / 36.0;
+  static constexpr double kLowGearRatio =
+      14.0 / 48.0 * 18.0 / 60.0 * 18.0 / 36.0;
+  static constexpr double kHighGearRatio =
+      14.0 / 48.0 * 28.0 / 50.0 * 18.0 / 36.0;
 
   static constexpr double kTurnWidth = 0.601;  // Robot width.
 
