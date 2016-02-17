@@ -25,7 +25,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kMass, drivetrain::kRobotRadius, drivetrain::kWheelRadius,
       drivetrain::kR, drivetrain::kV, drivetrain::kT,
 
-      constants::GetValues().turn_width, constants::GetValues().high_gear_ratio,
+      constants::GetValues().high_gear_ratio,
       constants::GetValues().low_gear_ratio,
       constants::GetValues().left_drive, constants::GetValues().right_drive};
 

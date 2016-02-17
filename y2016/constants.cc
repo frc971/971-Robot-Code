@@ -29,7 +29,7 @@ namespace constants {
 const int Values::kZeroingSampleSize;
 
 constexpr double Values::kDrivetrainEncoderRatio, Values::kLowGearRatio,
-    Values::kHighGearRatio, Values::kTurnWidth, Values::kShooterEncoderRatio,
+    Values::kHighGearRatio, Values::kShooterEncoderRatio,
     Values::kIntakeEncoderRatio, Values::kShoulderEncoderRatio,
     Values::kWristEncoderRatio, Values::kIntakePotRatio,
     Values::kShoulderPotRatio, Values::kWristPotRatio,

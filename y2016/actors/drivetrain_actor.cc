@@ -30,7 +30,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   const double yoffset = params.y_offset;
   const double turn_offset =
-      params.theta_offset * constants::Values::kTurnWidth / 2.0;
+      params.theta_offset * control_loops::drivetrain::kRobotRadius;
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
@@ -42,11 +42,11 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   profile.set_maximum_acceleration(params.maximum_acceleration);
   profile.set_maximum_velocity(params.maximum_velocity);
-  turn_profile.set_maximum_acceleration(params.maximum_turn_acceleration *
-                                        constants::Values::kTurnWidth /
-                                        2.0);
+  turn_profile.set_maximum_acceleration(
+      params.maximum_turn_acceleration *
+      control_loops::drivetrain::kRobotRadius);
   turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
-                                    constants::Values::kTurnWidth / 2.0);
+                                    control_loops::drivetrain::kRobotRadius);
 
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);

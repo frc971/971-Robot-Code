@@ -592,8 +592,7 @@ TEST_F(SuperstructureTest, IntegratorTest) {
       constants::Values::kIntakeRange.lower);
   superstructure_plant_.InitializeShoulderPosition(
       constants::Values::kShoulderRange.lower);
-  superstructure_plant_.InitializeRelativeWristPosition(
-      constants::Values::kWristRange.lower);
+  superstructure_plant_.InitializeRelativeWristPosition(0.0);
   superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
   superstructure_queue_.goal.MakeWithBuilder()
       .angle_intake(0.0)

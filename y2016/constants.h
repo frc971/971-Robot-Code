@@ -37,8 +37,6 @@ struct Values {
   static constexpr double kHighGearRatio =
       14.0 / 48.0 * 28.0 / 50.0 * 18.0 / 36.0;
 
-  static constexpr double kTurnWidth = 0.601;  // Robot width.
-
   // Ratios for our subsystems.
   static constexpr double kShooterEncoderRatio = 1.0;
   static constexpr double kIntakeEncoderRatio =

@@ -11,9 +11,10 @@
 #include "aos/common/commonmath.h"
 #include "aos/common/time.h"
 
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014/actors/drivetrain_actor.h"
 #include "y2014/constants.h"
-#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
 namespace y2014 {
 namespace actors {
@@ -29,7 +30,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   const double yoffset = params.y_offset;
   const double turn_offset =
-      params.theta_offset * constants::GetValues().turn_width / 2.0;
+      params.theta_offset * control_loops::drivetrain::kRobotRadius;
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
@@ -41,18 +42,18 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
   profile.set_maximum_acceleration(params.maximum_acceleration);
   profile.set_maximum_velocity(params.maximum_velocity);
-  turn_profile.set_maximum_acceleration(params.maximum_turn_acceleration *
-                                        constants::GetValues().turn_width /
-                                        2.0);
+  turn_profile.set_maximum_acceleration(
+      params.maximum_turn_acceleration *
+      control_loops::drivetrain::kRobotRadius);
   turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
-                                    constants::GetValues().turn_width / 2.0);
+                                    control_loops::drivetrain::kRobotRadius);
 
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);
 
     ::frc971::control_loops::drivetrain_queue.status.FetchLatest();
     if (::frc971::control_loops::drivetrain_queue.status.get()) {
-      const auto& status = *::frc971::control_loops::drivetrain_queue.status;
+      const auto &status = *::frc971::control_loops::drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) > 24) {
         LOG(DEBUG, "spinning in place\n");
@@ -140,14 +141,16 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
     if (ShouldCancel()) return true;
     const double kPositionThreshold = 0.05;
 
-    const double left_error = ::std::abs(
-        ::frc971::control_loops::drivetrain_queue.status->filtered_left_position -
-        (left_goal_state(0, 0) + params.left_initial_position));
-    const double right_error = ::std::abs(
-        ::frc971::control_loops::drivetrain_queue.status->filtered_right_position -
-        (right_goal_state(0, 0) + params.right_initial_position));
-    const double velocity_error =
-        ::std::abs(::frc971::control_loops::drivetrain_queue.status->robot_speed);
+    const double left_error =
+        ::std::abs(::frc971::control_loops::drivetrain_queue.status
+                       ->filtered_left_position -
+                   (left_goal_state(0, 0) + params.left_initial_position));
+    const double right_error =
+        ::std::abs(::frc971::control_loops::drivetrain_queue.status
+                       ->filtered_right_position -
+                   (right_goal_state(0, 0) + params.right_initial_position));
+    const double velocity_error = ::std::abs(
+        ::frc971::control_loops::drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
         velocity_error < 0.2) {
       break;
@@ -162,7 +165,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 }
 
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::y2014::actors::DrivetrainActionParams& params) {
+    const ::y2014::actors::DrivetrainActionParams &params) {
   return ::std::unique_ptr<DrivetrainAction>(
       new DrivetrainAction(&::y2014::actors::drivetrain_action, params));
 }

@@ -38,7 +38,6 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kV,
       drivetrain::kT,
 
-      constants::Values::kTurnWidth,
       constants::Values::kHighGearRatio,
       constants::Values::kLowGearRatio,
       kThreeStateDriveShifter,

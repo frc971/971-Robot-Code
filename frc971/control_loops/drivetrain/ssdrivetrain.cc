@@ -139,8 +139,7 @@ void DrivetrainMotorsSS::SetRawPosition(double left, double right) {
 }
 void DrivetrainMotorsSS::SetPosition(double left, double right, double gyro) {
   // Decay the offset quickly because this gyro is great.
-  const double offset =
-      (right - left - gyro * dt_config_.turn_width) / 2.0;
+  const double offset = (right - left) / 2.0 - gyro * dt_config_.robot_radius;
   filtered_offset_ = 0.25 * offset + 0.75 * filtered_offset_;
   gyro_ = gyro;
   SetRawPosition(left, right);
