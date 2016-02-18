@@ -44,6 +44,8 @@ class Plotter(object):
       None
     """
     pline = ParseLine(line)
+    pline_data = None
+
     for key in self.signal:
       value = self.signal[key]
       binary = key[0]
@@ -61,10 +63,12 @@ class Plotter(object):
       # Make sure that we're looking at the right binary structure instance.
       if binary == pline.name:
         if pline.msg.startswith(struct_instance_name + ': '):
-          # Parse the structure and traverse it as specified in
-          # `data_search_path`. This lets the user access very deeply nested
-          # structures.
-          _, _, data = pline.ParseStruct()
+          # Parse the structure once.
+          if pline_data is None:
+              _, _, pline_data = pline.ParseStruct()
+          # Traverse the structure as specified in `data_search_path`.
+          # This lets the user access very deeply nested structures.
+          data = pline_data
           for path in data_search_path:
             data = data[path]
 
