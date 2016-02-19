@@ -47,14 +47,29 @@ PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config)
 
 double PolyDrivetrain::MotorSpeed(
     const constants::ShifterHallEffect &hall_effect, double shifter_position,
-    double velocity) {
-  const double avg_hall_effect =
-      (hall_effect.clear_high + hall_effect.clear_low) / 2.0;
+    double velocity, Gear gear) {
+  const double high_gear_speed =
+      velocity / dt_config_.high_gear_ratio / dt_config_.wheel_radius;
+  const double low_gear_speed =
+      velocity / dt_config_.low_gear_ratio / dt_config_.wheel_radius;
 
-  if (shifter_position > avg_hall_effect) {
-    return velocity / dt_config_.high_gear_ratio / dt_config_.wheel_radius;
-  } else {
-    return velocity / dt_config_.low_gear_ratio / dt_config_.wheel_radius;
+  if (shifter_position < hall_effect.clear_low) {
+    // We're in low gear, so return speed for that gear.
+    return low_gear_speed;
+  } else if (shifter_position > hall_effect.clear_high) {
+    // We're in high gear, so return speed for that gear.
+    return high_gear_speed;
+  }
+
+  // Not in gear, so speed-match to destination gear.
+  switch (gear) {
+    case HIGH:
+    case SHIFTING_UP:
+      return high_gear_speed;
+    case LOW:
+    case SHIFTING_DOWN:
+      return low_gear_speed;
+      break;
   }
 }
 
@@ -311,35 +326,28 @@ void PolyDrivetrain::Update() {
         position_time_delta_;
     const double left_motor_speed =
         MotorSpeed(dt_config_.left_drive, position_.left_shifter_position,
-                   current_left_velocity);
+                   current_left_velocity, left_gear_);
     const double right_motor_speed =
         MotorSpeed(dt_config_.right_drive, position_.right_shifter_position,
-                   current_right_velocity);
+                   current_right_velocity, right_gear_);
 
     {
       CIMLogging logging;
 
       // Reset the CIM model to the current conditions to be ready for when we
       // shift.
-      if (IsInGear(left_gear_)) {
-        logging.left_in_gear = true;
-      } else {
-        logging.left_in_gear = false;
-      }
+      logging.left_in_gear = IsInGear(left_gear_);
       logging.left_motor_speed = left_motor_speed;
       logging.left_velocity = current_left_velocity;
-      if (IsInGear(right_gear_)) {
-        logging.right_in_gear = true;
-      } else {
-        logging.right_in_gear = false;
-      }
+
+      logging.right_in_gear = IsInGear(right_gear_);
       logging.right_motor_speed = right_motor_speed;
       logging.right_velocity = current_right_velocity;
 
       LOG_STRUCT(DEBUG, "currently", logging);
     }
 
-    // Any motor is not in gear.  Speed match.
+    // Any motor is not in gear. Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;
     ::Eigen::Matrix<double, 1, 1> R_right;
     R_left(0, 0) = left_motor_speed;
