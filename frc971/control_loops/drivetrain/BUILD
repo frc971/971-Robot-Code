@@ -115,7 +115,7 @@ cc_test(
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/queues:gyro',
     '//aos/common:queues',
-    '//y2014:constants',
-    '//y2014/control_loops/drivetrain:polydrivetrain_plants',
+    '//y2016:constants',
+    '//y2016/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )
