@@ -20,6 +20,8 @@ class SuperstructureTest_DisabledGoalTest_Test;
 class SuperstructureTest_ArmZeroingErrorTest_Test;
 class SuperstructureTest_IntakeZeroingErrorTest_Test;
 class SuperstructureTest_UpperHardstopStartup_Test;
+class SuperstructureTest_DisabledWhileZeroingHigh_Test;
+class SuperstructureTest_DisabledWhileZeroingLow_Test;
 }  // namespace testing
 
 // Helper class to prevent parts from crashing into each other. The parts in
@@ -202,6 +204,8 @@ class Superstructure
   friend class testing::SuperstructureTest_IntakeZeroingErrorTest_Test;
   friend class testing::SuperstructureTest_RespectsRange_Test;
   friend class testing::SuperstructureTest_UpperHardstopStartup_Test;
+  friend class testing::SuperstructureTest_DisabledWhileZeroingHigh_Test;
+  friend class testing::SuperstructureTest_DisabledWhileZeroingLow_Test;
   Intake intake_;
   Arm arm_;
 

@@ -25,7 +25,8 @@ ControlLoopTest::~ControlLoopTest() {
 }
 
 void ControlLoopTest::SendMessages(bool enabled) {
-  if (current_time_ - last_ds_time_ >= kDSPacketTime) {
+  if (current_time_ - last_ds_time_ >= kDSPacketTime ||
+      last_enabled_ != enabled) {
     last_ds_time_ = current_time_;
     auto new_state = ::aos::joystick_state.MakeMessage();
     new_state->fake = true;
@@ -35,6 +36,7 @@ void ControlLoopTest::SendMessages(bool enabled) {
     new_state->team_id = team_id_;
 
     new_state.Send();
+    last_enabled_ = enabled;
   }
 
   {
