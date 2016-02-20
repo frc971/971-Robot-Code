@@ -95,6 +95,15 @@ cc_library(
 )
 
 cc_library(
+    name = "googlemock_main",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":googlemock",
+        ":googletest_main",
+    ],
+)
+
+cc_library(
 	name = "googletest_sample_libs",
 	hdrs = [
 	    "googletest/samples/prime_tables.h",

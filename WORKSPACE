@@ -71,3 +71,34 @@ bind(
   name = 'ni-libraries',
   actual = '@allwpilib_ni_libraries_repo//:ni-libraries',
 )
+
+# Downloaded from:
+# https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz
+new_http_archive(
+  name = 'six_repo',
+  build_file = 'debian/six.BUILD',
+  sha256 = '105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a',
+  url = 'http://frc971.org/Build-Dependencies/six-1.10.0.tar.gz',
+  strip_prefix = 'six-1.10.0',
+)
+
+# For protobuf. Don't use these.
+bind(
+  name = 'six',
+  actual = '@six_repo//:six',
+)
+bind(
+  name = 'gtest',
+  actual = '//third_party/googletest:googlemock',
+)
+bind(
+  name = 'gtest_main',
+  actual = '//third_party/googletest:googlemock_main',
+)
+
+new_http_archive(
+  name = 'python_import_helpers',
+  build_file = 'third_party/python_import_helpers.BUILD',
+  url = 'http://frc971.org/Build-Dependencies/empty.tar.gz',
+  sha256 = '71939a7d75585a57d2e99a33d39f391764d8f930f9a16acf32e00c5d3f432aa0',
+)

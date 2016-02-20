@@ -2,18 +2,34 @@
 
 licenses(["notice"])
 
+load("/tools/build_rules/select", "compiler_select")
+
 ################################################################################
 # Protobuf Runtime Library
 ################################################################################
 
 COPTS = [
     "-DHAVE_PTHREAD",
+    "-DGOOGLE_THIRD_PARTY_PROTOBUF",
     "-Wall",
     "-Wwrite-strings",
     "-Woverloaded-virtual",
     "-Wno-sign-compare",
-    "-Wno-error=unused-function",
-]
+    "-Wno-unused-function",
+    "-Wno-unused-parameter",
+    "-Wno-format-nonliteral",
+    "-Wno-switch-enum",
+    "-Wno-missing-field-initializers",
+    "-Wno-ignored-qualifiers",
+] + compiler_select({
+    "gcc": [
+        "-Wno-error=cast-align",
+    ],
+    "clang": [
+        "-Wno-unused-const-variable",
+        "-Wno-unused-private-field",
+    ],
+})
 
 # Bazel should provide portable link_opts for pthread.
 LINK_OPTS = ["-lpthread"]
@@ -127,6 +143,7 @@ cc_library(
     deps = [":protobuf_lite"],
 )
 
+'''
 objc_library(
     name = "protobuf_objc",
     hdrs = ["objectivec/GPBProtocolBuffers.h"],
@@ -134,6 +151,7 @@ objc_library(
     non_arc_srcs = ["objectivec/GPBProtocolBuffers.m"],
     visibility = ["//visibility:public"],
 )
+'''
 
 RELATIVE_WELL_KNOWN_PROTOS = [
     # AUTOGEN(well_known_protos)
@@ -342,6 +360,7 @@ cc_proto_library(
     default_runtime = ":protobuf",
     protoc = ":protoc",
     deps = [":cc_wkt_protos"],
+    copts = COPTS,
 )
 
 COMMON_TEST_SRCS = [
@@ -366,6 +385,7 @@ cc_binary(
         ":protoc_lib",
         "//external:gtest",
     ],
+    copts = COPTS,
 )
 
 cc_test(
@@ -465,7 +485,7 @@ genrule(
         "wellknown.srcjar"
     ],
     cmd = "$(location :protoc) --java_out=$(@D)/wellknown.jar" +
-        " -Isrc $(SRCS) " +
+        " -Ithird_party/protobuf/src $(SRCS) " +
         " && mv $(@D)/wellknown.jar $(@D)/wellknown.srcjar",
     tools = [":protoc"],
 )
@@ -517,6 +537,7 @@ internal_copied_filegroup(
     include = "python",
 )
 
+'''
 cc_binary(
     name = "internal/_api_implementation.so",
     srcs = ["python/google/protobuf/internal/api_implementation.cc"],
@@ -527,7 +548,7 @@ cc_binary(
     linkstatic = 1,
     deps = select({
         "//conditions:default": [],
-        ":use_fast_cpp_protos": ["//util/python:python_headers"],
+        ":use_fast_cpp_protos": ["//third_party/protobuf/util/python:python_headers"],
     }),
 )
 
@@ -550,9 +571,10 @@ cc_binary(
         ":protobuf",
     ] + select({
         "//conditions:default": [],
-        ":use_fast_cpp_protos": ["//util/python:python_headers"],
+        ":use_fast_cpp_protos": ["//third_party/protobuf/util/python:python_headers"],
     }),
 )
+'''
 
 config_setting(
     name = "use_fast_cpp_protos",

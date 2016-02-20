@@ -1,14 +1,15 @@
 # -*- mode: python; -*- PYTHON-PREPROCESSING-REQUIRED
 
 def _GetPath(ctx, path):
-  if ctx.label.workspace_root:
-    return ctx.label.workspace_root + '/' + path
-  else:
-    return path
+  if str(ctx.label).startswith('@'):
+    fail('External labels not supported for now')
+  return path
 
 def _GenDir(ctx):
   if not ctx.attr.includes:
-    return ctx.label.workspace_root
+    if str(ctx.label).startswith('@'):
+      fail('External labels not supported for now')
+    return ''
   if not ctx.attr.includes[0]:
     return _GetPath(ctx, ctx.label.package)
   if not ctx.label.package:
@@ -34,13 +35,17 @@ def _RelativeOutputPath(path, include):
 
   path = path[len(include):]
 
-  if not path.startswith(PACKAGE_NAME):
-    fail("The package %s is not within the path %s" % (PACKAGE_NAME, path))
+  package_name = PACKAGE_NAME
+  if not package_name.startswith('third_party/protobuf'):
+    fail('The package %s is not a protobuf package' % package_name)
+  package_name = package_name[len('third_party/protobuf/'):]
+  if not path.startswith(package_name):
+    fail("The package %s is not within the path %s" % (package_name, path))
 
-  if not PACKAGE_NAME:
+  if not package_name:
     return path
 
-  return path[len(PACKAGE_NAME)+1:]
+  return path[len(package_name)+1:]
 
 def _proto_gen_impl(ctx):
   """General implementation for generating protos"""
@@ -265,6 +270,7 @@ def py_proto_library(
 
   if default_runtime and not default_runtime in py_libs + deps:
     py_libs += [default_runtime]
+  py_libs += ['@python_import_helpers//:google_protobuf_importer']
 
   native.py_library(
       name=name,
