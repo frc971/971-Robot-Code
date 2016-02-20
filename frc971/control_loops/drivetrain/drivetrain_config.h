@@ -25,17 +25,9 @@ struct DrivetrainConfig {
   ::std::function<StateFeedbackLoop<7, 2, 3>()> make_kf_drivetrain_loop;
 
   double dt;  // Control loop time step.
-  double stall_torque;  // Stall torque in N m.
-  double stall_current;  // Stall current in amps.
-  double free_speed_rpm;  // Free speed in rpm.
-  double free_current;  // Free current in amps.
-  double j;  // CIM moment of inertia in kg m^2.
-  double mass;  // Mass of the robot.
   double robot_radius;  // Robot radius, in meters.
   double wheel_radius;  // Wheel radius, in meters.
-  double r;  // Motor resistance.
   double v;  // Motor velocity constant.
-  double t;  // Torque constant.
 
   // Gear ratios, from wheel to motor shaft.
   double high_gear_ratio;

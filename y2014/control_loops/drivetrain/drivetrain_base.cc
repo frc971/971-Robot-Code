@@ -20,14 +20,15 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2014::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
-      drivetrain::kDt, drivetrain::kStallTorque, drivetrain::kStallCurrent,
-      drivetrain::kFreeSpeedRPM, drivetrain::kFreeCurrent, drivetrain::kJ,
-      drivetrain::kMass, drivetrain::kRobotRadius, drivetrain::kWheelRadius,
-      drivetrain::kR, drivetrain::kV, drivetrain::kT,
+      drivetrain::kDt,
+      drivetrain::kRobotRadius,
+      drivetrain::kWheelRadius,
+      drivetrain::kV,
 
       constants::GetValues().high_gear_ratio,
       constants::GetValues().low_gear_ratio,
-      constants::GetValues().left_drive, constants::GetValues().right_drive};
+      constants::GetValues().left_drive,
+      constants::GetValues().right_drive};
 
   return kDrivetrainConfig;
 };
