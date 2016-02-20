@@ -1,5 +1,6 @@
 load('/tools/build_rules/ruby', 'ruby_binary')
 load('/aos/build/queues', 'queue_library')
+load('/tools/build_rules/protobuf', 'proto_cc_library')
 
 cc_test(
   name = 'gflags_build_test',
@@ -66,6 +67,23 @@ sh_test(
   ],
   data = [
     ':tcmalloc_build_test_binary',
+  ],
+  size = 'small',
+)
+
+proto_cc_library(
+  name = 'proto_build_test_library',
+  src = 'proto.proto',
+)
+
+cc_test(
+  name = 'proto_build_test',
+  srcs = [
+    'proto.cc',
+  ],
+  deps = [
+    ':proto_build_test_library',
+    '//aos/testing:googletest',
   ],
   size = 'small',
 )

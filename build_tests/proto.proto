@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package frc971;
+
+import "google/protobuf/empty.proto";
+
+message TestProto {
+  string s = 1;
+  int32 i = 2;
+  // Making sure that well-known protos work.
+  .google.protobuf.Empty empty = 3;
+}
