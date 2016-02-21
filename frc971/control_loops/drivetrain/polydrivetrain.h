@@ -24,7 +24,7 @@ class PolyDrivetrain {
   // Computes the speed of the motor given the hall effect position and the
   // speed of the robot.
   double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
-                    double shifter_position, double velocity);
+                    double shifter_position, double velocity, Gear gear);
 
   // Computes the states of the shifters for the left and right drivetrain sides
   // given a requested state.

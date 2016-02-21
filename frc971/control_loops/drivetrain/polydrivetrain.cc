@@ -68,6 +68,7 @@ double PolyDrivetrain::MotorSpeed(
       return high_gear_speed;
     case LOW:
     case SHIFTING_DOWN:
+    default:
       return low_gear_speed;
       break;
   }
