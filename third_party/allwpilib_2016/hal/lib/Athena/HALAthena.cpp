@@ -5,6 +5,9 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
+#include "aos/common/logging/logging.h"
+#include <inttypes.h>
+
 #include "HAL/HAL.hpp"
 
 #include "HAL/Port.h"
@@ -33,8 +36,8 @@ static tSysWatchdog *watchdog = nullptr;
 
 static priority_mutex timeMutex;
 static priority_mutex msgMutex;
-static uint32_t timeEpoch = 0;
-static uint32_t prevFPGATime = 0;
+//static uint32_t timeEpoch = 0;
+//static uint32_t prevFPGATime = 0;
 static void* rolloverNotifier = nullptr;
 
 extern "C" {
@@ -234,13 +237,18 @@ bool getFPGAButton(int32_t *status)
 
 int HALSetErrorData(const char *errors, int errorsLength, int wait_ms)
 {
-	return setErrorData(errors, errorsLength, wait_ms);
+  LOG(FATAL, "Unused weird WPILib error function: %.*s\n", errorsLength, errors);
 }
 
 int HALSendError(int isError, int32_t errorCode, int isLVCode,
 	const char *details, const char *location, const char *callStack,
 	int printMsg)
 {
+#if 1
+  log_level level = isError ? ERROR : WARNING;
+  LOG(level, "from WPILib %" PRId32 "/%d at '%s': '%s': '%s'\n", errorCode,
+      isLVCode, location, details, callStack);
+#else
 	// Avoid flooding console by keeping track of previous 5 error
 	// messages and only printing again if they're longer than 1 second old.
 	static constexpr int KEEP_MSGS = 5;
@@ -283,6 +291,8 @@ int HALSendError(int isError, int32_t errorCode, int isLVCode,
 		prev_msg_time[i] = curTime;
 	}
 	return retval;
+#endif
+  return 0;
 }
 
 

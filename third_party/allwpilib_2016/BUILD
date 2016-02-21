@@ -39,6 +39,7 @@ cc_library(
  deps = [
    '//third_party/ntcore_2016:ntcore',
    '//external:ni-libraries',
+   '//aos/common/logging',
  ],
  hdrs = glob([d + '/**/*.h' for d in _header_dirs]) + glob([d + '/**/*.hpp' for d in _header_dirs]) + ['wpilibc/shared/include/Task.inc'],
  includes = _header_dirs,
