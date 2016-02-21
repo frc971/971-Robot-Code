@@ -17,7 +17,9 @@
 
 #include <memory>
 
+#if FULL_WPILIB
 class MotorSafetyHelper;
+#endif
 
 /**
  * Class for Spike style relay outputs.
@@ -33,10 +35,14 @@ class MotorSafetyHelper;
  * used independently
  * for something that does not care about voltage polatiry (like a solenoid).
  */
-class Relay : public MotorSafety,
-              public SensorBase,
+class Relay : public SensorBase
+#if FULL_WPILIB
+              ,
+              public MotorSafety,
               public ITableListener,
-              public LiveWindowSendable {
+              public LiveWindowSendable
+#endif
+              {
  public:
   enum Value { kOff, kOn, kForward, kReverse };
   enum Direction { kBothDirections, kForwardOnly, kReverseOnly };
@@ -48,6 +54,7 @@ class Relay : public MotorSafety,
   Value Get() const;
   uint32_t GetChannel() const;
 
+#if FULL_WPILIB
   void SetExpiration(float timeout) override;
   float GetExpiration() const override;
   bool IsAlive() const override;
@@ -55,6 +62,7 @@ class Relay : public MotorSafety,
   bool IsSafetyEnabled() const override;
   void SetSafetyEnabled(bool enabled) override;
   void GetDescription(std::ostringstream& desc) const override;
+#endif
 
 #if FULL_WPILIB
   void ValueChanged(ITable* source, llvm::StringRef key,
@@ -73,5 +81,7 @@ class Relay : public MotorSafety,
   uint32_t m_channel;
   Direction m_direction;
 
+#if FULL_WPILIB
   std::unique_ptr<MotorSafetyHelper> m_safetyHelper;
+#endif
 };

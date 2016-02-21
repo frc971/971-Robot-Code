@@ -90,4 +90,10 @@ void Talon::PIDWrite(float output) { Set(output); }
 /**
  * Common interface to stop the motor until Set is called again.
  */
-void Talon::StopMotor() { this->SafePWM::StopMotor(); }
+void Talon::StopMotor() {
+#if FULL_WPILIB
+  this->SafePWM::StopMotor();
+#else
+  Disable();
+#endif
+}

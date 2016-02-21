@@ -22,11 +22,17 @@
  * all
  * objects that implement MotorSafety.
  */
-class SafePWM : public PWM, public MotorSafety {
+class SafePWM : public PWM
+#if FULL_WPILIB
+                ,
+                public MotorSafety
+#endif
+                {
  public:
   explicit SafePWM(uint32_t channel);
   virtual ~SafePWM() = default;
 
+#if FULL_WPILIB
   void SetExpiration(float timeout);
   float GetExpiration() const;
   bool IsAlive() const;
@@ -34,9 +40,12 @@ class SafePWM : public PWM, public MotorSafety {
   bool IsSafetyEnabled() const;
   void SetSafetyEnabled(bool enabled);
   void GetDescription(std::ostringstream& desc) const;
+#endif
 
   virtual void SetSpeed(float speed);
 
  private:
+#if FULL_WPILIB
   std::unique_ptr<MotorSafetyHelper> m_safetyHelper;
+#endif
 };

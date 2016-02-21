@@ -13,10 +13,13 @@
  * port
  */
 SafePWM::SafePWM(uint32_t channel) : PWM(channel) {
+#if FULL_WPILIB
   m_safetyHelper = std::make_unique<MotorSafetyHelper>(this);
   m_safetyHelper->SetSafetyEnabled(false);
+#endif
 }
 
+#if FULL_WPILIB
 /**
  * Set the expiration time for the PWM object
  * @param timeout The timeout (in seconds) for this motor object
@@ -53,7 +56,9 @@ void SafePWM::StopMotor() { SetRaw(kPwmDisabled); }
  * @param enabled True if motor safety is enforced for this object
  */
 void SafePWM::SetSafetyEnabled(bool enabled) {
+#if FULL_WPILIB
   m_safetyHelper->SetSafetyEnabled(enabled);
+#endif
 }
 
 /**
@@ -61,12 +66,17 @@ void SafePWM::SetSafetyEnabled(bool enabled) {
  * @returns True if motor safety is enforced for this object
  */
 bool SafePWM::IsSafetyEnabled() const {
+#if FULL_WPILIB
   return m_safetyHelper->IsSafetyEnabled();
+#else
+  return false;
+#endif
 }
 
 void SafePWM::GetDescription(std::ostringstream& desc) const {
   desc << "PWM " << GetChannel();
 }
+#endif
 
 /**
  * Feed the MotorSafety timer when setting the speed.
@@ -77,5 +87,7 @@ void SafePWM::GetDescription(std::ostringstream& desc) const {
  */
 void SafePWM::SetSpeed(float speed) {
   PWM::SetSpeed(speed);
+#if FULL_WPILIB
   m_safetyHelper->Feed();
+#endif
 }

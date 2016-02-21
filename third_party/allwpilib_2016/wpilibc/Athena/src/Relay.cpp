@@ -65,8 +65,10 @@ Relay::Relay(uint32_t channel, Relay::Direction direction)
   setRelayReverse(m_relay_ports[m_channel], false, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 
+#if FULL_WPILIB
   m_safetyHelper = std::make_unique<MotorSafetyHelper>(this);
   m_safetyHelper->SetSafetyEnabled(false);
+#endif
 
 #if FULL_WPILIB
   LiveWindow::GetInstance()->AddActuator("Relay", 1, m_channel, this);
@@ -204,6 +206,7 @@ uint32_t Relay::GetChannel() const {
   return m_channel;
 }
 
+#if FULL_WPILIB
 /**
  * Set the expiration time for the Relay object
  * @param timeout The timeout (in seconds) for this relay object
@@ -252,6 +255,7 @@ bool Relay::IsSafetyEnabled() const {
 void Relay::GetDescription(std::ostringstream& desc) const {
   desc << "Relay " << GetChannel();
 }
+#endif
 
 #if FULL_WPILIB
 void Relay::ValueChanged(ITable* source, llvm::StringRef key,
