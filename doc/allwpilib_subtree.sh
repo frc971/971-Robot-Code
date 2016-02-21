@@ -15,7 +15,7 @@ set -u
 set -o pipefail
 
 if [ $# -ne 4 ]; then
-  echo "Usage: $0 add|pull|filter prefix remote ref" >&2
+  echo "Usage: $0 add|merge|filter prefix remote ref" >&2
   exit 1
 fi
 
