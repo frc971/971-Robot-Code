@@ -83,13 +83,13 @@ double hall_translate(double in) {
 double drivetrain_translate(int32_t in) {
   return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::Values::kDrivetrainEncoderRatio *
-         control_loops::drivetrain::kWheelRadius * 2.0 / 2.0;
+         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
 
 double drivetrain_velocity_translate(double in) {
   return (1.0 / in) / 256.0 /*cpr*/ *
          constants::Values::kDrivetrainEncoderRatio *
-         control_loops::drivetrain::kWheelRadius * 2.0 / 2.0;
+         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
 
 double shooter_translate(int32_t in) {
@@ -98,7 +98,7 @@ double shooter_translate(int32_t in) {
 }
 
 double intake_translate(int32_t in) {
-  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
 }
 
@@ -286,7 +286,7 @@ class SensorReader {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
-          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
+          drivetrain_translate(-drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
@@ -307,7 +307,7 @@ class SensorReader {
     {
       auto shooter_message = shooter_queue.position.MakeMessage();
       shooter_message->theta_left =
-          shooter_translate(shooter_left_encoder_->GetRaw());
+          shooter_translate(-shooter_left_encoder_->GetRaw());
       shooter_message->theta_right =
           shooter_translate(shooter_right_encoder_->GetRaw());
       shooter_message.Send();
@@ -323,7 +323,7 @@ class SensorReader {
                               shoulder_translate, shoulder_pot_translate, false,
                               values.shoulder.pot_offset);
       CopyPotAndIndexPosition(wrist_encoder_, &superstructure_message->wrist,
-                              wrist_translate, wrist_pot_translate, false,
+                              wrist_translate, wrist_pot_translate, true,
                               values.wrist.pot_offset);
 
       superstructure_message.Send();
@@ -589,25 +589,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader reader;
 
     // TODO(constants): Update these input numbers.
-    reader.set_drivetrain_left_encoder(make_encoder(0));
-    reader.set_drivetrain_right_encoder(make_encoder(1));
-    reader.set_drivetrain_left_hall(make_unique<AnalogInput>(1));
-    reader.set_drivetrain_right_hall(make_unique<AnalogInput>(2));
+    reader.set_drivetrain_left_encoder(make_encoder(5));
+    reader.set_drivetrain_right_encoder(make_encoder(6));
+    reader.set_drivetrain_left_hall(make_unique<AnalogInput>(5));
+    reader.set_drivetrain_right_hall(make_unique<AnalogInput>(6));
 
-    reader.set_shooter_left_encoder(make_encoder(0));
-    reader.set_shooter_right_encoder(make_encoder(0));
+    reader.set_shooter_left_encoder(make_encoder(3));
+    reader.set_shooter_right_encoder(make_encoder(4));
 
     reader.set_intake_encoder(make_encoder(0));
     reader.set_intake_index(make_unique<DigitalInput>(0));
     reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
 
-    reader.set_shoulder_encoder(make_encoder(0));
-    reader.set_shoulder_index(make_unique<DigitalInput>(0));
-    reader.set_shoulder_potentiometer(make_unique<AnalogInput>(0));
+    reader.set_shoulder_encoder(make_encoder(2));
+    reader.set_shoulder_index(make_unique<DigitalInput>(2));
+    reader.set_shoulder_potentiometer(make_unique<AnalogInput>(2));
 
-    reader.set_wrist_encoder(make_encoder(0));
-    reader.set_wrist_index(make_unique<DigitalInput>(0));
-    reader.set_wrist_potentiometer(make_unique<AnalogInput>(0));
+    reader.set_wrist_encoder(make_encoder(1));
+    reader.set_wrist_index(make_unique<DigitalInput>(1));
+    reader.set_wrist_potentiometer(make_unique<AnalogInput>(1));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));

@@ -79,23 +79,27 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Intake
           {
-           0.0,
+           // Value to add to the pot reading for the intake.
+           -4.550531 + 150.40906362 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
-            0.9, 0.3},
+            // Location of an index pulse.
+            -0.087413 + 150.40906362 * M_PI / 180.0, 0.3},
           },
 
           // Shoulder
           {
-           0.0,
+           // Value to add to the pot reading for the shoulder.
+           -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.9, 0.3},
+            0.06138835 * M_PI / 180.0 + 0.353794, 0.3},
           },
 
           // Wrist
           {
-           0.0,
+           // Value to add to the pot reading for the wrist.
+           3.2390714288298668 + -0.06138835 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            0.9, 0.3},
+            -0.06138835 * M_PI / 180.0 - 0.260542, 0.3},
           },
       };
       break;

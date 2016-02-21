@@ -48,8 +48,9 @@ aos_downloader(
     ':joystick_reader',
     '//aos:prime_start_binaries',
     '//y2016/control_loops/drivetrain:drivetrain',
+    '//y2016/control_loops/superstructure:superstructure',
+    '//y2016/control_loops/shooter:shooter',
     '//y2016/autonomous:auto',
-    '//y2016/actors:binaries',
     '//y2016/wpilib:wpilib_interface',
   ],
   srcs = [

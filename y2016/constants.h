@@ -28,7 +28,7 @@ struct Values {
 
   // The ratio from the encoder shaft to the drivetrain wheels.
   static constexpr double kDrivetrainEncoderRatio =
-      (18.0 / 36.0) /*output reduction*/ * (30.0 / 44.0) /*encoder gears*/;
+      (18.0 / 36.0) /*output reduction*/ * (44.0 / 30.0) /*encoder gears*/;
 
   // Ratios for our subsystems.
   static constexpr double kShooterEncoderRatio = 1.0;
@@ -39,7 +39,7 @@ struct Values {
   static constexpr double kWristEncoderRatio =
       16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0;
 
-  static constexpr double kIntakePotRatio = 16.0 / 48.0;
+  static constexpr double kIntakePotRatio = 16.0 / 48.0 * 18.0 / 72.0;
   static constexpr double kShoulderPotRatio = 16.0 / 58.0;
   static constexpr double kWristPotRatio = 16.0 / 48.0;
 
