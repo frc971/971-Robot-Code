@@ -206,6 +206,9 @@ uint64_t getFPGATime(int32_t *status)
 		*status = NiFpga_Status_ResourceNotInitialized;
 		return 0;
 	}
+#if 1
+	return global->readLocalTime(status);
+#else
 	std::lock_guard<priority_mutex> lock(timeMutex);
 	uint32_t fpgaTime = global->readLocalTime(status);
 	if (*status != 0) return 0;
@@ -213,6 +216,7 @@ uint64_t getFPGATime(int32_t *status)
 	if (fpgaTime < prevFPGATime) ++timeEpoch;
 	prevFPGATime = fpgaTime;
 	return (((uint64_t)timeEpoch) << 32) | ((uint64_t)fpgaTime);
+#endif
 }
 
 /**
