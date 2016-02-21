@@ -8,7 +8,9 @@
 #include "AnalogOutput.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 #include "HAL/Port.h"
 
 #include <limits>
@@ -50,7 +52,9 @@ AnalogOutput::AnalogOutput(uint32_t channel) {
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
   freePort(port);
 
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddActuator("AnalogOutput", m_channel, this);
+#endif
   HALReport(HALUsageReporting::kResourceType_AnalogOutput, m_channel);
 }
 
@@ -88,6 +92,7 @@ float AnalogOutput::GetVoltage() const {
   return voltage;
 }
 
+#if FULL_WPILIB
 void AnalogOutput::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutNumber("Value", GetVoltage());
@@ -108,3 +113,4 @@ void AnalogOutput::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> AnalogOutput::GetTable() const { return m_table; }
+#endif

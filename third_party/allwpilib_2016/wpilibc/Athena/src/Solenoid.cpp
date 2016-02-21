@@ -7,7 +7,9 @@
 
 #include "Solenoid.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 
 #include <sstream>
 
@@ -47,8 +49,10 @@ Solenoid::Solenoid(uint8_t moduleNumber, uint32_t channel)
     return;
   }
 
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddActuator("Solenoid", m_moduleNumber, m_channel,
                                          this);
+#endif
   HALReport(HALUsageReporting::kResourceType_Solenoid, m_channel,
             m_moduleNumber);
 }
@@ -60,7 +64,9 @@ Solenoid::~Solenoid() {
   if (CheckSolenoidModule(m_moduleNumber)) {
     m_allocated->Free(m_moduleNumber * kSolenoidChannels + m_channel);
   }
+#if FULL_WPILIB
   if (m_table != nullptr) m_table->RemoveTableListener(this);
+#endif
 }
 
 /**
@@ -99,6 +105,7 @@ bool Solenoid::IsBlackListed() const {
   return (value != 0);
 }
 
+#if FULL_WPILIB
 void Solenoid::ValueChanged(ITable* source, llvm::StringRef key,
                             std::shared_ptr<nt::Value> value, bool isNew) {
   if (!value->IsBoolean()) return;
@@ -133,3 +140,4 @@ void Solenoid::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> Solenoid::GetTable() const { return m_table; }
+#endif

@@ -9,9 +9,11 @@
 
 #include "MotorSafety.h"
 #include "SensorBase.h"
+#if FULL_WPILIB
 #include "tables/ITableListener.h"
 #include "LiveWindow/LiveWindowSendable.h"
 #include "tables/ITable.h"
+#endif
 
 #include <memory>
 
@@ -54,6 +56,7 @@ class Relay : public MotorSafety,
   void SetSafetyEnabled(bool enabled) override;
   void GetDescription(std::ostringstream& desc) const override;
 
+#if FULL_WPILIB
   void ValueChanged(ITable* source, llvm::StringRef key,
                     std::shared_ptr<nt::Value> value, bool isNew) override;
   void UpdateTable() override;
@@ -64,6 +67,7 @@ class Relay : public MotorSafety,
   std::shared_ptr<ITable> GetTable() const override;
 
   std::shared_ptr<ITable> m_table;
+#endif
 
  private:
   uint32_t m_channel;

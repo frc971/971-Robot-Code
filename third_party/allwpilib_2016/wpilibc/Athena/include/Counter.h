@@ -11,7 +11,9 @@
 #include "AnalogTriggerOutput.h"
 #include "CounterBase.h"
 #include "SensorBase.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
@@ -29,8 +31,12 @@ class DigitalGlitchFilter;
  * to be zeroed before use.
  */
 class Counter : public SensorBase,
-                public CounterBase,
-                public LiveWindowSendable {
+                public CounterBase
+#if FULL_WPILIB
+                ,
+                public LiveWindowSendable
+#endif
+                {
  public:
   explicit Counter(Mode mode = kTwoPulse);
   explicit Counter(int32_t channel);
@@ -86,12 +92,14 @@ class Counter : public SensorBase,
   int GetSamplesToAverage() const;
   uint32_t GetFPGAIndex() const { return m_index; }
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
   virtual std::string GetSmartDashboardType() const override;
   void InitTable(std::shared_ptr<ITable> subTable) override;
   std::shared_ptr<ITable> GetTable() const override;
+#endif
 
  protected:
   // Makes the counter count up.
@@ -103,6 +111,8 @@ class Counter : public SensorBase,
  private:
   uint32_t m_index = 0;            ///< The index of this counter.
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
   friend class DigitalGlitchFilter;
 };

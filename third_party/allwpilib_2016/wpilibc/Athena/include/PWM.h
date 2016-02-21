@@ -8,8 +8,10 @@
 #pragma once
 
 #include "SensorBase.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
 #include "tables/ITableListener.h"
+#endif
 
 #include <memory>
 
@@ -31,9 +33,13 @@
  *   - 1 = minimum pulse width (currently .5ms)
  *   - 0 = disabled (i.e. PWM output is held low)
  */
-class PWM : public SensorBase,
+class PWM : public SensorBase
+#if FULL_WPILIB
+            ,
             public ITableListener,
-            public LiveWindowSendable {
+            public LiveWindowSendable
+#endif
+            {
  public:
   enum PeriodMultiplier {
     kPeriodMultiplier_1X = 1,
@@ -100,6 +106,7 @@ class PWM : public SensorBase,
   int32_t m_deadbandMinPwm;
   int32_t m_minPwm;
 
+#if FULL_WPILIB
   void ValueChanged(ITable* source, llvm::StringRef key,
                     std::shared_ptr<nt::Value> value, bool isNew) override;
   void UpdateTable() override;
@@ -110,6 +117,7 @@ class PWM : public SensorBase,
   std::shared_ptr<ITable> GetTable() const override;
 
   std::shared_ptr<ITable> m_table;
+#endif
 
  private:
   uint32_t m_channel;

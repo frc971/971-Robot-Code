@@ -9,7 +9,9 @@
 #include "Resource.h"
 #include "Timer.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 #include "HAL/Port.h"
 
 #include <sstream>
@@ -50,7 +52,9 @@ AnalogInput::AnalogInput(uint32_t channel) {
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
   freePort(port);
 
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddSensor("AnalogInput", channel, this);
+#endif
   HALReport(HALUsageReporting::kResourceType_AnalogChannel, channel);
 }
 
@@ -405,6 +409,7 @@ double AnalogInput::PIDGet() {
   return GetAverageVoltage();
 }
 
+#if FULL_WPILIB
 void AnalogInput::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutNumber("Value", GetAverageVoltage());
@@ -425,3 +430,4 @@ void AnalogInput::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> AnalogInput::GetTable() const { return m_table; }
+#endif

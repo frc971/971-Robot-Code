@@ -7,7 +7,9 @@
 
 #include "ADXRS450_Gyro.h"
 #include "DriverStation.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 #include "Timer.h"
 
 static constexpr double kSamplePeriod = 0.001;
@@ -75,7 +77,9 @@ ADXRS450_Gyro::ADXRS450_Gyro(SPI::Port port) : m_spi(port) {
   Calibrate();
 
   HALReport(HALUsageReporting::kResourceType_ADXRS450, port);
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddSensor("ADXRS450_Gyro", port, this);
+#endif
 }
 
 static bool CalcParity(uint32_t v) {

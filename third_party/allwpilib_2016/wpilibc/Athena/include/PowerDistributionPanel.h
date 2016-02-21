@@ -10,7 +10,9 @@
 #define __WPILIB_POWER_DISTRIBUTION_PANEL_H__
 
 #include "SensorBase.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
@@ -19,7 +21,12 @@
  * CAN PDP.
  * @author Thomas Clark
  */
-class PowerDistributionPanel : public SensorBase, public LiveWindowSendable {
+class PowerDistributionPanel : public SensorBase
+#if FULL_WPILIB
+                               ,
+                               public LiveWindowSendable
+#endif
+                               {
  public:
   PowerDistributionPanel();
   PowerDistributionPanel(uint8_t module);
@@ -33,15 +40,19 @@ class PowerDistributionPanel : public SensorBase, public LiveWindowSendable {
   void ResetTotalEnergy();
   void ClearStickyFaults();
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
   std::string GetSmartDashboardType() const override;
   void InitTable(std::shared_ptr<ITable> subTable) override;
   std::shared_ptr<ITable> GetTable() const override;
+#endif
 
  private:
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
   uint8_t m_module;
 };
 

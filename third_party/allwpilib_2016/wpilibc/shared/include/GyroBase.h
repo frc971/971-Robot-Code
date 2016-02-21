@@ -10,7 +10,9 @@
 #include "SensorBase.h"
 #include "PIDSource.h"
 #include "interfaces/Gyro.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
@@ -18,13 +20,21 @@
  * GyroBase is the common base class for Gyro implementations such as
  * AnalogGyro.
  */
-class GyroBase : public Gyro, public SensorBase, public PIDSource, public LiveWindowSendable {
+class GyroBase : public Gyro,
+                 public SensorBase,
+                 public PIDSource
+#if FULL_WPILIB
+                 ,
+                 public LiveWindowSendable
+#endif
+                 {
  public:
   virtual ~GyroBase() = default;
 
   // PIDSource interface
   double PIDGet() override;
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
@@ -34,4 +44,5 @@ class GyroBase : public Gyro, public SensorBase, public PIDSource, public LiveWi
 
  private:
   std::shared_ptr<ITable> m_table;
+#endif
 };

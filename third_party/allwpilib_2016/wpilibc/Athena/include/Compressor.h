@@ -10,17 +10,23 @@
 
 #include "HAL/HAL.hpp"
 #include "SensorBase.h"
+#if FULL_WPILIB
 #include "tables/ITableListener.h"
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
 /**
  * PCM compressor
  */
-class Compressor : public SensorBase,
+class Compressor : public SensorBase
+#if FULL_WPILIB
+                   ,
                    public LiveWindowSendable,
-                   public ITableListener {
+                   public ITableListener
+#endif
+                   {
  public:
   // Default PCM ID is 0
   explicit Compressor(uint8_t pcmID = GetDefaultSolenoidModule());
@@ -45,6 +51,7 @@ class Compressor : public SensorBase,
   bool GetCompressorNotConnectedFault() const;
   void ClearAllPCMStickyFaults();
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
@@ -53,6 +60,7 @@ class Compressor : public SensorBase,
   std::shared_ptr<ITable> GetTable() const override;
   void ValueChanged(ITable* source, llvm::StringRef key,
                     std::shared_ptr<nt::Value> value, bool isNew) override;
+#endif
 
  protected:
   void *m_pcm_pointer;
@@ -60,7 +68,9 @@ class Compressor : public SensorBase,
  private:
   void SetCompressor(bool on);
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
 };
 
 #endif /* Compressor_H_ */

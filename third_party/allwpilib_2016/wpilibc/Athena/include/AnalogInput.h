@@ -10,7 +10,9 @@
 #include "HAL/HAL.hpp"
 #include "SensorBase.h"
 #include "PIDSource.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
@@ -30,8 +32,12 @@
  * but get more stable values.
  */
 class AnalogInput : public SensorBase,
-                    public PIDSource,
-                    public LiveWindowSendable {
+                    public PIDSource
+#if FULL_WPILIB
+                    ,
+                    public LiveWindowSendable
+#endif
+                    {
  public:
   static const uint8_t kAccumulatorModuleNumber = 1;
   static const uint32_t kAccumulatorNumChannels = 2;
@@ -71,12 +77,14 @@ class AnalogInput : public SensorBase,
 
   double PIDGet() override;
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
   std::string GetSmartDashboardType() const override;
   void InitTable(std::shared_ptr<ITable> subTable) override;
   std::shared_ptr<ITable> GetTable() const override;
+#endif
 
  private:
   uint32_t m_channel;
@@ -84,5 +92,7 @@ class AnalogInput : public SensorBase,
   void *m_port;
   int64_t m_accumulatorOffset;
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
 };

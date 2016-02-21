@@ -12,7 +12,9 @@
 #include "SensorBase.h"
 #include "Counter.h"
 #include "PIDSource.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 
@@ -39,8 +41,12 @@ class DigitalGlitchFilter;
  */
 class Encoder : public SensorBase,
                 public CounterBase,
-                public PIDSource,
-                public LiveWindowSendable {
+                public PIDSource
+#if FULL_WPILIB
+                ,
+                public LiveWindowSendable
+#endif
+                {
  public:
   enum IndexingType {
     kResetWhileHigh,
@@ -86,12 +92,14 @@ class Encoder : public SensorBase,
   void SetIndexSource(const DigitalSource &source,
                       IndexingType type = kResetOnRisingEdge);
 
+#if FULL_WPILIB
   void UpdateTable() override;
   void StartLiveWindowMode() override;
   void StopLiveWindowMode() override;
   std::string GetSmartDashboardType() const override;
   void InitTable(std::shared_ptr<ITable> subTable) override;
   std::shared_ptr<ITable> GetTable() const override;
+#endif
 
   int32_t GetFPGAIndex() const { return m_index; }
 
@@ -109,6 +117,8 @@ class Encoder : public SensorBase,
   EncodingType m_encodingType;     // Encoding type
   int32_t m_encodingScale;         // 1x, 2x, or 4x, per the encodingType
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
   friend class DigitalGlitchFilter;
 };

@@ -247,6 +247,7 @@ void Compressor::ClearAllPCMStickyFaults() {
     wpi_setWPIError(Timeout);
   }
 }
+#if FULL_WPILIB
 void Compressor::UpdateTable() {
   if (m_table) {
     m_table->PutBoolean("Enabled", Enabled());
@@ -275,3 +276,4 @@ void Compressor::ValueChanged(ITable* source, llvm::StringRef key,
   else
     Stop();
 }
+#endif

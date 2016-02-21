@@ -8,7 +8,9 @@
 #pragma once
 
 #include "DigitalSource.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
+#endif
 
 #include <memory>
 #include <cstdint>
@@ -25,7 +27,12 @@ class DigitalGlitchFilter;
  * devices like switches
  * etc. that aren't implemented anywhere else.
  */
-class DigitalInput : public DigitalSource, public LiveWindowSendable {
+class DigitalInput : public DigitalSource
+#if FULL_WPILIB
+                     ,
+                     public LiveWindowSendable
+#endif
+                     {
  public:
   explicit DigitalInput(uint32_t channel);
   virtual ~DigitalInput();
@@ -37,16 +44,20 @@ class DigitalInput : public DigitalSource, public LiveWindowSendable {
   virtual uint32_t GetModuleForRouting() const;
   virtual bool GetAnalogTriggerForRouting() const;
 
+#if FULL_WPILIB
   void UpdateTable();
   void StartLiveWindowMode();
   void StopLiveWindowMode();
   std::string GetSmartDashboardType() const;
   void InitTable(std::shared_ptr<ITable> subTable);
   std::shared_ptr<ITable> GetTable() const;
+#endif
 
  private:
   uint32_t m_channel;
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
   friend class DigitalGlitchFilter;
 };

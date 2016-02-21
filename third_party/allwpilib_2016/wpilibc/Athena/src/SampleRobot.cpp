@@ -9,9 +9,11 @@
 
 #include "DriverStation.h"
 #include "Timer.h"
+#if FULL_WPILIB
 #include "SmartDashboard/SmartDashboard.h"
 #include "LiveWindow/LiveWindow.h"
 #include "networktables/NetworkTable.h"
+#endif
 
 SampleRobot::SampleRobot() : m_robotMainOverridden(true) {}
 
@@ -105,15 +107,20 @@ void SampleRobot::RobotMain() { m_robotMainOverridden = false; }
  * robot to be enabled again.
  */
 void SampleRobot::StartCompetition() {
+
+#if FULL_WPILIB
   LiveWindow *lw = LiveWindow::GetInstance();
+#endif
 
   HALReport(HALUsageReporting::kResourceType_Framework,
             HALUsageReporting::kFramework_Sample);
 
+#if FULL_WPILIB
   SmartDashboard::init();
   NetworkTable::GetTable("LiveWindow")
       ->GetSubTable("~STATUS~")
       ->PutBoolean("LW Enabled", false);
+#endif
 
   RobotInit();
 
@@ -124,7 +131,9 @@ void SampleRobot::StartCompetition() {
 
   if (!m_robotMainOverridden) {
     // first and one-time initialization
+#if FULL_WPILIB
     lw->SetEnabled(false);
+#endif
 
     while (true) {
       if (IsDisabled()) {
@@ -138,12 +147,16 @@ void SampleRobot::StartCompetition() {
         m_ds.InAutonomous(false);
         while (IsAutonomous() && IsEnabled()) m_ds.WaitForData();
       } else if (IsTest()) {
+#if FULL_WPILIB
         lw->SetEnabled(true);
+#endif
         m_ds.InTest(true);
         Test();
         m_ds.InTest(false);
         while (IsTest() && IsEnabled()) m_ds.WaitForData();
+#if FULL_WPILIB
         lw->SetEnabled(false);
+#endif
       } else {
         m_ds.InOperatorControl(true);
         OperatorControl();

@@ -6,6 +6,8 @@ cc_library(
   srcs = glob([
     'src/**/*.cpp',
     'src/**/*.h',
+  ], [
+    'src/networktables/**',
   ]),
   copts = [
     '-Wno-switch-enum',

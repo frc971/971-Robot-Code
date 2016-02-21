@@ -8,7 +8,9 @@
 #include "DigitalInput.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 
 #include <limits>
 #include <sstream>
@@ -34,7 +36,9 @@ DigitalInput::DigitalInput(uint32_t channel) {
   allocateDIO(m_digital_ports[channel], true, &status);
   wpi_setErrorWithContext(status, getHALErrorMessage(status));
 
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddSensor("DigitalInput", channel, this);
+#endif
   HALReport(HALUsageReporting::kResourceType_DigitalInput, channel);
 }
 
@@ -88,6 +92,7 @@ uint32_t DigitalInput::GetModuleForRouting() const { return 0; }
  */
 bool DigitalInput::GetAnalogTriggerForRouting() const { return false; }
 
+#if FULL_WPILIB
 void DigitalInput::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutBoolean("Value", Get());
@@ -108,3 +113,4 @@ void DigitalInput::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> DigitalInput::GetTable() const { return m_table; }
+#endif

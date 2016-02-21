@@ -10,7 +10,9 @@
 #include "MotorSafetyHelper.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 #include "HAL/HAL.hpp"
 
 #include <sstream>
@@ -66,7 +68,9 @@ Relay::Relay(uint32_t channel, Relay::Direction direction)
   m_safetyHelper = std::make_unique<MotorSafetyHelper>(this);
   m_safetyHelper->SetSafetyEnabled(false);
 
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddActuator("Relay", 1, m_channel, this);
+#endif
 }
 
 /**
@@ -85,7 +89,9 @@ Relay::~Relay() {
   if (m_direction == kBothDirections || m_direction == kReverseOnly) {
     relayChannels->Free(m_channel * 2 + 1);
   }
+#if FULL_WPILIB
   if (m_table != nullptr) m_table->RemoveTableListener(this);
+#endif
 }
 
 /**
@@ -247,6 +253,7 @@ void Relay::GetDescription(std::ostringstream& desc) const {
   desc << "Relay " << GetChannel();
 }
 
+#if FULL_WPILIB
 void Relay::ValueChanged(ITable* source, llvm::StringRef key,
                          std::shared_ptr<nt::Value> value, bool isNew) {
   if (!value->IsString()) return;
@@ -290,3 +297,4 @@ void Relay::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> Relay::GetTable() const { return m_table; }
+#endif

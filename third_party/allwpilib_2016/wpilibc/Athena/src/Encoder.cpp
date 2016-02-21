@@ -9,7 +9,9 @@
 #include "DigitalInput.h"
 #include "Resource.h"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 
 /**
  * Common initialization code for Encoders.
@@ -68,8 +70,10 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType) {
   }
 
   HALReport(HALUsageReporting::kResourceType_Encoder, m_index, encodingType);
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddSensor("Encoder",
                                        m_aSource->GetChannelForRouting(), this);
+#endif
 }
 
 /**
@@ -534,6 +538,7 @@ void Encoder::SetIndexSource(const DigitalSource &source,
   wpi_setGlobalErrorWithContext(status, getHALErrorMessage(status));
 }
 
+#if FULL_WPILIB
 void Encoder::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutNumber("Speed", GetRate());
@@ -559,3 +564,4 @@ void Encoder::InitTable(std::shared_ptr<ITable> subTable) {
 }
 
 std::shared_ptr<ITable> Encoder::GetTable() const { return m_table; }
+#endif

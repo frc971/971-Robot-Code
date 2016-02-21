@@ -8,8 +8,10 @@
 #pragma once
 
 #include "DigitalSource.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
 #include "tables/ITableListener.h"
+#endif
 
 #include <memory>
 
@@ -19,9 +21,13 @@
  * elsewhere will allocate
  * channels automatically so for those devices it shouldn't be done here.
  */
-class DigitalOutput : public DigitalSource,
+class DigitalOutput : public DigitalSource
+#if FULL_WPILIB
+                      ,
                       public ITableListener,
-                      public LiveWindowSendable {
+                      public LiveWindowSendable
+#endif
+                      {
  public:
   explicit DigitalOutput(uint32_t channel);
   virtual ~DigitalOutput();
@@ -39,6 +45,7 @@ class DigitalOutput : public DigitalSource,
   virtual uint32_t GetModuleForRouting() const;
   virtual bool GetAnalogTriggerForRouting() const;
 
+#if FULL_WPILIB
   virtual void ValueChanged(ITable* source, llvm::StringRef key,
                             std::shared_ptr<nt::Value> value, bool isNew);
   void UpdateTable();
@@ -47,10 +54,13 @@ class DigitalOutput : public DigitalSource,
   std::string GetSmartDashboardType() const;
   void InitTable(std::shared_ptr<ITable> subTable);
   std::shared_ptr<ITable> GetTable() const;
+#endif
 
  private:
   uint32_t m_channel;
   void *m_pwmGenerator;
 
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
 };

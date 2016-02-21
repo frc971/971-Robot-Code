@@ -8,7 +8,9 @@
 #include "BuiltInAccelerometer.h"
 #include "HAL/HAL.hpp"
 #include "WPIErrors.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 
 /**
  * Constructor.
@@ -19,7 +21,9 @@ BuiltInAccelerometer::BuiltInAccelerometer(Range range) {
 
   HALReport(HALUsageReporting::kResourceType_Accelerometer, 0, 0,
             "Built-in accelerometer");
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddSensor((std::string) "BuiltInAccel", 0, this);
+#endif
 }
 
 /** {@inheritdoc} */
@@ -49,6 +53,7 @@ double BuiltInAccelerometer::GetY() { return getAccelerometerY(); }
  */
 double BuiltInAccelerometer::GetZ() { return getAccelerometerZ(); }
 
+#if FULL_WPILIB
 std::string BuiltInAccelerometer::GetSmartDashboardType() const {
   return "3AxisAccelerometer";
 }
@@ -67,3 +72,4 @@ void BuiltInAccelerometer::UpdateTable() {
 }
 
 std::shared_ptr<ITable> BuiltInAccelerometer::GetTable() const { return m_table; }
+#endif

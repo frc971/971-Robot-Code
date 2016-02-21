@@ -7,7 +7,9 @@
 
 #include "Talon.h"
 
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindow.h"
+#endif
 
 /**
  * Constructor for a Talon (original or Talon SR)
@@ -34,7 +36,9 @@ Talon::Talon(uint32_t channel) : SafePWM(channel) {
   SetZeroLatch();
 
   HALReport(HALUsageReporting::kResourceType_Talon, GetChannel());
+#if FULL_WPILIB
   LiveWindow::GetInstance()->AddActuator("Talon", GetChannel(), this);
+#endif
 }
 
 /**

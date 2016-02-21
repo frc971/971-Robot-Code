@@ -8,8 +8,10 @@
 #pragma once
 
 #include "SolenoidBase.h"
+#if FULL_WPILIB
 #include "LiveWindow/LiveWindowSendable.h"
 #include "tables/ITableListener.h"
+#endif
 
 #include <memory>
 
@@ -20,9 +22,13 @@
  * used
  * for any device within the current spec of the PCM.
  */
-class Solenoid : public SolenoidBase,
+class Solenoid : public SolenoidBase
+#if FULL_WPILIB
+                 ,
                  public LiveWindowSendable,
-                 public ITableListener {
+                 public ITableListener
+#endif
+                 {
  public:
   explicit Solenoid(uint32_t channel);
   Solenoid(uint8_t moduleNumber, uint32_t channel);
@@ -31,6 +37,7 @@ class Solenoid : public SolenoidBase,
   virtual bool Get() const;
   bool IsBlackListed() const;
 
+#if FULL_WPILIB
   void ValueChanged(ITable* source, llvm::StringRef key,
                     std::shared_ptr<nt::Value> value, bool isNew);
   void UpdateTable();
@@ -39,8 +46,11 @@ class Solenoid : public SolenoidBase,
   std::string GetSmartDashboardType() const;
   void InitTable(std::shared_ptr<ITable> subTable);
   std::shared_ptr<ITable> GetTable() const;
+#endif
 
  private:
   uint32_t m_channel;  ///< The channel on the module to control.
+#if FULL_WPILIB
   std::shared_ptr<ITable> m_table;
+#endif
 };

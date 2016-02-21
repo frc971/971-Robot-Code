@@ -12,7 +12,9 @@
 #include "HLUsageReporting.h"
 #include "Internal/HardwareHLReporting.h"
 #include "Utility.h"
+#if FULL_WPILIB
 #include "networktables/NetworkTable.h"
+#endif
 #include <cstring>
 #include "HAL/HAL.hpp"
 #include <cstdio>
@@ -49,8 +51,10 @@ RobotBase::RobotBase() : m_ds(DriverStation::GetInstance()) {
 
   RobotBase::setInstance(this);
 
+#if FULL_WPILIB
   NetworkTable::SetNetworkIdentity("Robot");
   NetworkTable::SetPersistentFilename("/home/lvuser/networktables.ini");
+#endif
 
   FILE *file = nullptr;
   file = fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");
