@@ -24,6 +24,8 @@ cc_library(
    'hal/lib/Shared/*.cpp',
 
    'networktables/ntcore/src/**/*.cpp',
+ ], [
+   'wpilibc/shared/*/Filters/**/*',
  ]),
  copts = [
    '-Wno-unused-parameter',
