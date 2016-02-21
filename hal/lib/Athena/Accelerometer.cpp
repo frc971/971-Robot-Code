@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Accelerometer.hpp"
 
 #include "ChipObject.h"
@@ -171,6 +178,8 @@ static double unpackAxis(int16_t raw) {
 	}
 }
 
+extern "C" {
+
 /**
  * Set the accelerometer to active or standby mode.  It must be in standby
  * mode to change any configuration.
@@ -232,3 +241,5 @@ double getAccelerometerZ() {
 	int raw = (readRegister(kReg_OutZMSB) << 4) | (readRegister(kReg_OutZLSB) >> 4);
 	return unpackAxis(raw);
 }
+
+}  // extern "C"

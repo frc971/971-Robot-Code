@@ -1,15 +1,15 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.							  */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "RobotDrive.h"
-
 //#include "CANJaguar.h"
 #include "GenericHID.h"
 #include "Joystick.h"
-#include "Jaguar.h"
+#include "Talon.h"
 #include "Utility.h"
 #include "WPIErrors.h"
 #include <math.h>
@@ -18,6 +18,10 @@
 #include <algorithm>
 
 const int32_t RobotDrive::kMaxNumberOfMotors;
+
+static auto make_shared_nodelete(SpeedController *ptr) {
+	return std::shared_ptr<SpeedController>(ptr, NullDeleter<SpeedController>());
+}
 
 /*
  * Driving functions
@@ -39,19 +43,15 @@ void RobotDrive::InitRobotDrive() {
 /** Constructor for RobotDrive with 2 motors specified with channel numbers.
  * Set up parameters for a two wheel drive system where the
  * left and right motor pwm channels are specified in the call.
- * This call assumes Jaguars for controlling the motors.
+ * This call assumes Talosn for controlling the motors.
  * @param leftMotorChannel The PWM channel number that drives the left motor.
  * @param rightMotorChannel The PWM channel number that drives the right motor.
  */
 RobotDrive::RobotDrive(uint32_t leftMotorChannel, uint32_t rightMotorChannel)
 {
 	InitRobotDrive();
-	m_rearLeftMotor = new Jaguar(leftMotorChannel);
-	m_rearRightMotor = new Jaguar(rightMotorChannel);
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
-	}
+	m_rearLeftMotor = std::make_shared<Talon>(leftMotorChannel);
+	m_rearRightMotor = std::make_shared<Talon>(rightMotorChannel);
 	SetLeftRightMotorOutputs(0.0, 0.0);
 	m_deleteSpeedControllers = true;
 }
@@ -60,7 +60,7 @@ RobotDrive::RobotDrive(uint32_t leftMotorChannel, uint32_t rightMotorChannel)
  * Constructor for RobotDrive with 4 motors specified with channel numbers.
  * Set up parameters for a four wheel drive system where all four motor
  * pwm channels are specified in the call.
- * This call assumes Jaguars for controlling the motors.
+ * This call assumes Talons for controlling the motors.
  * @param frontLeftMotor Front left motor channel number
  * @param rearLeftMotor Rear Left motor channel number
  * @param frontRightMotor Front right motor channel number
@@ -70,14 +70,10 @@ RobotDrive::RobotDrive(uint32_t frontLeftMotor, uint32_t rearLeftMotor,
 		uint32_t frontRightMotor, uint32_t rearRightMotor)
 {
 	InitRobotDrive();
-	m_rearLeftMotor = new Jaguar(rearLeftMotor);
-	m_rearRightMotor = new Jaguar(rearRightMotor);
-	m_frontLeftMotor = new Jaguar(frontLeftMotor);
-	m_frontRightMotor = new Jaguar(frontRightMotor);
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
-	}
+	m_rearLeftMotor = std::make_shared<Talon>(rearLeftMotor);
+	m_rearRightMotor = std::make_shared<Talon>(rearRightMotor);
+	m_frontLeftMotor = std::make_shared<Talon>(frontLeftMotor);
+	m_frontRightMotor = std::make_shared<Talon>(frontRightMotor);
 	SetLeftRightMotorOutputs(0.0, 0.0);
 	m_deleteSpeedControllers = true;
 }
@@ -90,34 +86,36 @@ RobotDrive::RobotDrive(uint32_t frontLeftMotor, uint32_t rearLeftMotor,
  * @param leftMotor The left SpeedController object used to drive the robot.
  * @param rightMotor the right SpeedController object used to drive the robot.
  */
-RobotDrive::RobotDrive(SpeedController *leftMotor, SpeedController *rightMotor)
-{
+RobotDrive::RobotDrive(SpeedController *leftMotor,
+                       SpeedController *rightMotor) {
 	InitRobotDrive();
-	if (leftMotor == nullptr || rightMotor == nullptr)
-	{
+	if (leftMotor == nullptr || rightMotor == nullptr) {
 		wpi_setWPIError(NullParameter);
 		m_rearLeftMotor = m_rearRightMotor = nullptr;
 		return;
 	}
-	m_rearLeftMotor = leftMotor;
-	m_rearRightMotor = rightMotor;
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
-	}
-	m_deleteSpeedControllers = false;
+	m_rearLeftMotor = make_shared_nodelete(leftMotor);
+	m_rearRightMotor = make_shared_nodelete(rightMotor);
 }
 
-RobotDrive::RobotDrive(SpeedController &leftMotor, SpeedController &rightMotor)
-{
+//TODO: Change to rvalue references & move syntax.
+RobotDrive::RobotDrive(SpeedController &leftMotor,
+                       SpeedController &rightMotor) {
 	InitRobotDrive();
-	m_rearLeftMotor = &leftMotor;
-	m_rearRightMotor = &rightMotor;
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
+	m_rearLeftMotor = make_shared_nodelete(&leftMotor);
+	m_rearRightMotor = make_shared_nodelete(&rightMotor);
+}
+
+RobotDrive::RobotDrive(std::shared_ptr<SpeedController> leftMotor,
+                       std::shared_ptr<SpeedController> rightMotor) {
+	InitRobotDrive();
+	if (leftMotor == nullptr || rightMotor == nullptr) {
+		wpi_setWPIError(NullParameter);
+		m_rearLeftMotor = m_rearRightMotor = nullptr;
+	return;
 	}
-	m_deleteSpeedControllers = false;
+	m_rearLeftMotor = leftMotor;
+	m_rearRightMotor = rightMotor;
 }
 
 /**
@@ -128,12 +126,40 @@ RobotDrive::RobotDrive(SpeedController &leftMotor, SpeedController &rightMotor)
  * @param rearRightMotor The back right SpeedController object used to drive the robot.
  * @param frontRightMotor The front right SpeedController object used to drive the robot.
  */
-RobotDrive::RobotDrive(SpeedController *frontLeftMotor, SpeedController *rearLeftMotor,
-						SpeedController *frontRightMotor, SpeedController *rearRightMotor)
-{
+RobotDrive::RobotDrive(SpeedController *frontLeftMotor,
+                       SpeedController *rearLeftMotor,
+                       SpeedController *frontRightMotor,
+                       SpeedController *rearRightMotor) {
 	InitRobotDrive();
-	if (frontLeftMotor == nullptr || rearLeftMotor == nullptr || frontRightMotor == nullptr || rearRightMotor == nullptr)
-	{
+	if (frontLeftMotor == nullptr || rearLeftMotor == nullptr ||
+	  frontRightMotor == nullptr || rearRightMotor == nullptr) {
+		wpi_setWPIError(NullParameter);
+		return;
+	}
+	m_frontLeftMotor = make_shared_nodelete(frontLeftMotor);
+	m_rearLeftMotor = make_shared_nodelete(rearLeftMotor);
+	m_frontRightMotor = make_shared_nodelete(frontRightMotor);
+	m_rearRightMotor = make_shared_nodelete(rearRightMotor);
+}
+
+RobotDrive::RobotDrive(SpeedController &frontLeftMotor,
+                       SpeedController &rearLeftMotor,
+                       SpeedController &frontRightMotor,
+                       SpeedController &rearRightMotor) {
+	InitRobotDrive();
+	m_frontLeftMotor = make_shared_nodelete(&frontLeftMotor);
+	m_rearLeftMotor = make_shared_nodelete(&rearLeftMotor);
+	m_frontRightMotor = make_shared_nodelete(&frontRightMotor);
+	m_rearRightMotor = make_shared_nodelete(&rearRightMotor);
+}
+
+RobotDrive::RobotDrive(std::shared_ptr<SpeedController> frontLeftMotor,
+                       std::shared_ptr<SpeedController> rearLeftMotor,
+                       std::shared_ptr<SpeedController> frontRightMotor,
+                       std::shared_ptr<SpeedController> rearRightMotor) {
+	InitRobotDrive();
+	if (frontLeftMotor == nullptr || rearLeftMotor == nullptr ||
+	  frontRightMotor == nullptr || rearRightMotor == nullptr) {
 		wpi_setWPIError(NullParameter);
 		return;
 	}
@@ -141,42 +167,6 @@ RobotDrive::RobotDrive(SpeedController *frontLeftMotor, SpeedController *rearLef
 	m_rearLeftMotor = rearLeftMotor;
 	m_frontRightMotor = frontRightMotor;
 	m_rearRightMotor = rearRightMotor;
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
-	}
-	m_deleteSpeedControllers = false;
-}
-
-RobotDrive::RobotDrive(SpeedController &frontLeftMotor, SpeedController &rearLeftMotor,
-						SpeedController &frontRightMotor, SpeedController &rearRightMotor)
-{
-	InitRobotDrive();
-	m_frontLeftMotor = &frontLeftMotor;
-	m_rearLeftMotor = &rearLeftMotor;
-	m_frontRightMotor = &frontRightMotor;
-	m_rearRightMotor = &rearRightMotor;
-	for (int32_t i=0; i < kMaxNumberOfMotors; i++)
-	{
-		m_invertedMotors[i] = 1;
-	}
-	m_deleteSpeedControllers = false;
-}
-
-/**
- * RobotDrive destructor.
- * Deletes motor objects that were not passed in and created internally only.
- **/
-RobotDrive::~RobotDrive()
-{
-	if (m_deleteSpeedControllers)
-	{
-		delete m_frontLeftMotor;
-		delete m_rearLeftMotor;
-		delete m_frontRightMotor;
-		delete m_rearRightMotor;
-	}
-	// FIXME: delete m_safetyHelper;
 }
 
 /**

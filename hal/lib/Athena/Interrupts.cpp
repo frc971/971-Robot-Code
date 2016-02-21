@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Interrupts.hpp"
 #include "ChipObject.h"
 
@@ -8,6 +15,8 @@ struct Interrupt // FIXME: why is this internal?
 	tInterrupt *anInterrupt;
 	tInterruptManager *manager;
 };
+
+extern "C" {
 
 void* initializeInterrupts(uint32_t interruptIndex, bool watcher, int32_t *status)
 {
@@ -121,3 +130,5 @@ void setInterruptUpSourceEdge(void* interrupt_pointer, bool risingEdge, bool fal
 	anInterrupt->anInterrupt->writeConfig_RisingEdge(risingEdge, status);
 	anInterrupt->anInterrupt->writeConfig_FallingEdge(fallingEdge, status);
 }
+
+}  // extern "C"

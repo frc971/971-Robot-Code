@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Semaphore.hpp"
 
 #include "Log.hpp"
@@ -8,6 +15,8 @@ TLogLevel semaphoreLogLevel = logDEBUG;
 #define SEMAPHORE_LOG(level) \
     if (level > semaphoreLogLevel) ; \
     else Log().Get(level)
+
+extern "C" {
 
 MUTEX_ID initializeMutexNormal() { return new priority_mutex; }
 
@@ -40,3 +49,5 @@ void takeMultiWait(MULTIWAIT_ID cond, MUTEX_ID m) {
 }
 
 void giveMultiWait(MULTIWAIT_ID cond) { cond->notify_all(); }
+
+}  // extern "C"

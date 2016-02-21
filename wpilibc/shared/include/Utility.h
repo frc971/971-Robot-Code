@@ -1,9 +1,10 @@
-/*---------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
-/* Open Source Software - may be modified and shared by FRC teams. The code  */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib. */
-/*---------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #pragma once
 
 /** @file
@@ -46,6 +47,6 @@ void wpi_suspendOnAssertEnabled(bool enabled);
 
 uint16_t GetFPGAVersion();
 uint32_t GetFPGARevision();
-uint32_t GetFPGATime();
+uint64_t GetFPGATime();
 bool GetUserButton();
 std::string GetStackTrace(uint32_t offset);

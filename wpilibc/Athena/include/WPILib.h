@@ -1,9 +1,10 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
+
 #pragma once
 
 #define REAL
@@ -50,6 +51,7 @@
 #include "DriverStation.h"
 #include "Encoder.h"
 #include "ErrorBase.h"
+#include "Filters/LinearDigitalFilter.h"
 #include "GearTooth.h"
 #include "GenericHID.h"
 #include "interfaces/Accelerometer.h"
@@ -71,6 +73,7 @@
 #include "Resource.h"
 #include "RobotBase.h"
 #include "RobotDrive.h"
+#include "SD540.h"
 #include "SensorBase.h"
 #include "SerialPort.h"
 #include "Servo.h"
@@ -78,6 +81,7 @@
 #include "SmartDashboard/SendableChooser.h"
 #include "SmartDashboard/SmartDashboard.h"
 #include "Solenoid.h"
+#include "Spark.h"
 #include "SpeedController.h"
 #include "SPI.h"
 #include "Talon.h"

@@ -1,9 +1,10 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
+
 #pragma once
 
 #include "SensorBase.h"
@@ -12,10 +13,8 @@
 #include "PIDSource.h"
 #include "LiveWindow/LiveWindowSendable.h"
 #include <atomic>
-
-#include "HAL/cpp/priority_mutex.h"
-
 #include <memory>
+#include <set>
 
 class DigitalInput;
 class DigitalOutput;
@@ -80,24 +79,22 @@ class Ultrasonic : public SensorBase,
 
   static void UltrasonicChecker();
 
-  static constexpr double kPingTime =
-      10 * 1e-6;  ///< Time (sec) for the ping trigger pulse.
-  static const uint32_t kPriority =
-      64;  ///< Priority that the ultrasonic round robin task runs.
-  static constexpr double kMaxUltrasonicTime =
-      0.1;  ///< Max time (ms) between readings.
+  // Time (sec) for the ping trigger pulse.
+  static constexpr double kPingTime = 10 * 1e-6;
+  // Priority that the ultrasonic round robin task runs.
+  static const uint32_t kPriority = 64;
+  // Max time (ms) between readings.
+  static constexpr double kMaxUltrasonicTime = 0.1;
   static constexpr double kSpeedOfSoundInchesPerSec = 1130.0 * 12.0;
 
   static Task m_task;  // task doing the round-robin automatic sensing
-  static Ultrasonic *m_firstSensor;  // head of the ultrasonic sensor list
+  static std::set<Ultrasonic*> m_sensors; // ultrasonic sensors
   static std::atomic<bool> m_automaticEnabled; // automatic round robin mode
-  static priority_mutex m_mutex;  // synchronize access to the list of sensors
 
   std::shared_ptr<DigitalOutput> m_pingChannel;
   std::shared_ptr<DigitalInput> m_echoChannel;
   bool m_enabled = false;
   Counter m_counter;
-  Ultrasonic *m_nextSensor;
   DistanceUnit m_units;
 
   std::shared_ptr<ITable> m_table;

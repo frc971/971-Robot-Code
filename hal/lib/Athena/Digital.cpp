@@ -1,3 +1,9 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
 
 #include "HAL/Digital.hpp"
 
@@ -53,42 +59,43 @@ struct DigitalPort {
   uint32_t PWMGeneratorID;
 };
 
-// XXX: Set these back to static once we figure out the memory clobbering issue
 // Create a mutex to protect changes to the digital output values
-priority_recursive_mutex digitalDIOMutex;
+static priority_recursive_mutex digitalDIOMutex;
 // Create a mutex to protect changes to the relay values
-priority_recursive_mutex digitalRelayMutex;
+static priority_recursive_mutex digitalRelayMutex;
 // Create a mutex to protect changes to the DO PWM config
-priority_recursive_mutex digitalPwmMutex;
-priority_recursive_mutex digitalI2COnBoardMutex;
-priority_recursive_mutex digitalI2CMXPMutex;
+static priority_recursive_mutex digitalPwmMutex;
+static priority_recursive_mutex digitalI2COnBoardMutex;
+static priority_recursive_mutex digitalI2CMXPMutex;
 
-tDIO* digitalSystem = NULL;
-tRelay* relaySystem = NULL;
-tPWM* pwmSystem = NULL;
-hal::Resource *DIOChannels = NULL;
-hal::Resource *DO_PWMGenerators = NULL;
-hal::Resource *PWMChannels = NULL;
+static tDIO* digitalSystem = NULL;
+static tRelay* relaySystem = NULL;
+static tPWM* pwmSystem = NULL;
+static hal::Resource *DIOChannels = NULL;
+static hal::Resource *DO_PWMGenerators = NULL;
+static hal::Resource *PWMChannels = NULL;
 
-bool digitalSystemsInitialized = false;
+static bool digitalSystemsInitialized = false;
 
-uint8_t i2COnboardObjCount = 0;
-uint8_t i2CMXPObjCount = 0;
-uint8_t i2COnBoardHandle = 0;
-uint8_t i2CMXPHandle = 0;
+static uint8_t i2COnboardObjCount = 0;
+static uint8_t i2CMXPObjCount = 0;
+static uint8_t i2COnBoardHandle = 0;
+static uint8_t i2CMXPHandle = 0;
 
-int32_t m_spiCS0Handle = 0;
-int32_t m_spiCS1Handle = 0;
-int32_t m_spiCS2Handle = 0;
-int32_t m_spiCS3Handle = 0;
-int32_t m_spiMXPHandle = 0;
-priority_recursive_mutex spiOnboardSemaphore;
-priority_recursive_mutex spiMXPSemaphore;
-tSPI *spiSystem;
+static int32_t m_spiCS0Handle = 0;
+static int32_t m_spiCS1Handle = 0;
+static int32_t m_spiCS2Handle = 0;
+static int32_t m_spiCS3Handle = 0;
+static int32_t m_spiMXPHandle = 0;
+static priority_recursive_mutex spiOnboardSemaphore;
+static priority_recursive_mutex spiMXPSemaphore;
+static tSPI *spiSystem;
+
+extern "C" {
 
 struct SPIAccumulator {
 	void* notifier = nullptr;
-	uint32_t triggerTime;
+	uint64_t triggerTime;
 	uint32_t period;
 
 	int64_t value = 0;
@@ -805,7 +812,7 @@ void setCounterAverageSize(void* counter_pointer, int32_t size, int32_t *status)
  * If it's an analog trigger, determine the module from the high order routing channel
  * else do normal digital input remapping based on pin number (MXP)
  */
-void remapDigitalSource(bool analogTrigger, uint32_t &pin, uint8_t &module) {
+extern "C++" void remapDigitalSource(bool analogTrigger, uint32_t &pin, uint8_t &module) {
   if (analogTrigger) {
     module = pin >> 4;
   } else {
@@ -1492,14 +1499,14 @@ void spiSetHandle(uint8_t port, int32_t handle){
  * @param port The number of the port to use. 0-3 for Onboard CS0-CS2, 4 for MXP
  * @return The semaphore for the SPI port.
  */
-priority_recursive_mutex& spiGetSemaphore(uint8_t port) {
+extern "C++" priority_recursive_mutex& spiGetSemaphore(uint8_t port) {
 	if(port < 4)
 		return spiOnboardSemaphore;
 	else
 		return spiMXPSemaphore;
 }
 
-static void spiAccumulatorProcess(uint32_t currentTime, void *param) {
+static void spiAccumulatorProcess(uint64_t currentTime, void *param) {
 	SPIAccumulator* accum = (SPIAccumulator*)param;
 
 	// perform SPI transaction
@@ -1872,3 +1879,5 @@ void i2CClose(uint8_t port) {
 	}
 	return;
 }
+
+}  // extern "C"

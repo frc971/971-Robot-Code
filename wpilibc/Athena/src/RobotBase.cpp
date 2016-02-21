@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "RobotBase.h"
@@ -27,6 +27,7 @@ void RobotBase::setInstance(RobotBase *robot) {
 RobotBase &RobotBase::getInstance() { return *m_instance; }
 
 void RobotBase::robotSetup(RobotBase *robot) {
+  printf("\n********** Robot program starting **********\n");
   robot->StartCompetition();
 }
 
@@ -49,12 +50,13 @@ RobotBase::RobotBase() : m_ds(DriverStation::GetInstance()) {
   RobotBase::setInstance(this);
 
   NetworkTable::SetNetworkIdentity("Robot");
+  NetworkTable::SetPersistentFilename("/home/lvuser/networktables.ini");
 
   FILE *file = nullptr;
   file = fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");
 
   if (file != nullptr) {
-    fputs("2016 C++ Beta5.0", file);
+    fputs("2016 C++ Release 4", file);
     fclose(file);
   }
 }

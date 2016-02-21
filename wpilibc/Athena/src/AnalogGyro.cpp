@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "AnalogGyro.h"
@@ -132,7 +132,7 @@ void AnalogGyro::InitGyro() {
   SetPIDSourceType(PIDSourceType::kDisplacement);
 
   HALReport(HALUsageReporting::kResourceType_Gyro, m_analog->GetChannel());
-  LiveWindow::GetInstance()->AddSensor("Gyro", m_analog->GetChannel(), this);
+  LiveWindow::GetInstance()->AddSensor("AnalogGyro", m_analog->GetChannel(), this);
 }
 
 /**
@@ -251,5 +251,3 @@ void AnalogGyro::SetDeadband(float volts) {
                      (1 << m_analog->GetOversampleBits());
   m_analog->SetAccumulatorDeadband(deadband);
 }
-
-std::string AnalogGyro::GetSmartDashboardType() const { return "AnalogGyro"; }

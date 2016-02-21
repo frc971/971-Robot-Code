@@ -1,9 +1,18 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/SerialPort.hpp"
 #include "visa/visa.h"
 
 
-uint32_t m_resourceManagerHandle;
-uint32_t m_portHandle[2];
+static uint32_t m_resourceManagerHandle;
+static uint32_t m_portHandle[2];
+
+extern "C" {
 
 void serialInitializePort(uint8_t port, int32_t *status) {
 	char const * portName;
@@ -144,5 +153,5 @@ void serialClose(uint8_t port, int32_t *status) {
 	if(*status > 0)
 		*status = 0;
 }
-	
-	
+
+}  // extern "C"

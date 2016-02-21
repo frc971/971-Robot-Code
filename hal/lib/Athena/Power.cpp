@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Power.hpp"
 #include "ChipObject.h"
 
@@ -8,6 +15,8 @@ static void initializePower(int32_t *status) {
 		power = tPower::create(status);
 	}
 }
+
+extern "C" {
 
 /**
  * Get the roboRIO input voltage
@@ -125,3 +134,5 @@ int getUserCurrentFaults3V3(int32_t *status) {
 	initializePower(status);
 	return (int)power->readFaultCounts_OverCurrentFaultCount3V3(status);
 }
+
+}  // extern "C"

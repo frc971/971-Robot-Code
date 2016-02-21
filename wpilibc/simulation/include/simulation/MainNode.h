@@ -1,3 +1,9 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2014-2016. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
 
 #ifndef _SIM_MAIN_NODE_H
 #define _SIM_MAIN_NODE_H
@@ -39,10 +45,16 @@ public:
 	transport::NodePtr main;
 private:
 	MainNode() {
-		gazebo::client::setup();
-		main = transport::NodePtr(new transport::Node());
-		main->Init("frc");
-		gazebo::transport::run();
+		bool success = gazebo::client::setup();
+
+    if (success){
+  		main = transport::NodePtr(new transport::Node());
+  		main->Init("frc");
+   		gazebo::transport::run();
+    }
+    else {
+      std::cout << "An error has occured setting up gazebo_client!" << std::endl;
+    }
 	}
 };
 

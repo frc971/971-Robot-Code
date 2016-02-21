@@ -1,8 +1,10 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2014. All Rights Reserved.                             */
+/* Copyright (c) FIRST 2014-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
+
 #pragma once
 
 #include "SpeedController.h"
@@ -20,21 +22,9 @@ class CANSpeedController : public SpeedController {
     kSpeed = 2,
     kPosition = 3,
     kVoltage = 4,
-    kFollower = 5  // Not supported in Jaguar.
+    kFollower = 5, // Not supported in Jaguar.
+    kMotionProfile = 6, // Not supported in Jaguar.
   };
-
-  // Helper function for the ControlMode enum
-  std::string GetModeName(ControlMode mode) {
-    switch(mode) {
-      case kPercentVbus: return "PercentVbus";
-      case kCurrent: return "Current";
-      case kSpeed: return "Speed";
-      case kPosition: return "Position";
-      case kVoltage: return "Voltage";
-      case kFollower: return "Follower";
-      default: return "[unknown control mode]";
-    }
-  }
 
   // Helper function for the ControlMode enum
   virtual bool IsModePID(ControlMode mode) const = 0;
@@ -75,6 +65,7 @@ class CANSpeedController : public SpeedController {
 
   virtual float Get() const = 0;
   virtual void Set(float value, uint8_t syncGroup = 0) = 0;
+  virtual void StopMotor() = 0;
   virtual void Disable() = 0;
   virtual void SetP(double p) = 0;
   virtual void SetI(double i) = 0;

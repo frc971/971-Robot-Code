@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "Error.h"
@@ -66,24 +66,21 @@ void Error::Set(Code code, llvm::StringRef contextMessage,
 }
 
 void Error::Report() {
-  std::stringstream errorStream;
+  std::stringstream locStream;
+  locStream << m_function << " [";
 
-  errorStream << "Error on line " << m_lineNumber << " ";
-#if defined(_UNIX)
-	errorStream << "of " << basename(m_filename.c_str()) << ": ";
-#elif defined(_WIN32)
+#if defined(_WIN32)
 	const int MAX_DIR = 100;
 	char basename[MAX_DIR];
 	_splitpath_s(m_filename.c_str(), NULL, 0, basename, MAX_DIR, NULL, 0, NULL, 0);
-	errorStream << "of " << basename << ": ";
+	locStream << basename;
+#else
+	locStream << basename(m_filename.c_str());
 #endif
+  locStream << ":" << m_lineNumber << "]";
 
-	errorStream << m_message << std::endl;
-	errorStream << GetStackTrace(4);
-
-  std::string error = errorStream.str();
-
-  DriverStation::ReportError(error);
+  DriverStation::ReportError(true, m_code, m_message, locStream.str(),
+                             GetStackTrace(4));
 }
 
 void Error::Clear() {

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2014. All Rights Reserved.                             */
+/* Copyright (c) FIRST 2014-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -58,9 +58,19 @@ class TestBench {
   /* PDP channels */
   static const uint32_t kJaguarPDPChannel = 6;
   static const uint32_t kVictorPDPChannel = 8;
-  static const uint32_t kTalonPDPChannel = 11;
+  static const uint32_t kTalonPDPChannel = 10;
 
   /* PCM channels */
   static const int32_t kSolenoidChannel1 = 0;
   static const int32_t kSolenoidChannel2 = 1;
+
+  /* Filter constants */
+  static constexpr double kFilterStep = 0.005;
+  static constexpr double kFilterTime = 2.0;
+  static constexpr double kSinglePoleIIRTimeConstant = 0.015915;
+  static constexpr double kSinglePoleIIRExpectedOutput = -3.2172003;
+  static constexpr double kHighPassTimeConstant = 0.006631;
+  static constexpr double kHighPassExpectedOutput = 10.074717;
+  static constexpr int kMovAvgTaps = 6;
+  static constexpr double kMovAvgExpectedOutput = -10.191644;
 };

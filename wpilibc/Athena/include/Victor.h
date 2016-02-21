@@ -1,9 +1,10 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
+
 #pragma once
 
 #include "SafePWM.h"
@@ -23,6 +24,7 @@ class Victor : public SafePWM, public SpeedController {
   virtual void Set(float value, uint8_t syncGroup = 0) override;
   virtual float Get() const override;
   virtual void Disable() override;
+  virtual void StopMotor() override;
 
   virtual void PIDWrite(float output) override;
 

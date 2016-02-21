@@ -1,7 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.							  */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "Notifier.h"
@@ -9,7 +10,7 @@
 #include "Utility.h"
 #include "WPIErrors.h"
 
-Notifier *Notifier::timerQueueHead = nullptr;
+std::list<Notifier*> Notifier::timerQueue;
 priority_recursive_mutex Notifier::queueMutex;
 std::atomic<int> Notifier::refcount{0};
 std::thread Notifier::m_task;
@@ -20,16 +21,14 @@ std::atomic<bool> Notifier::m_stopped(false);
  * @param handler The handler is called at the notification time which is set
  * using StartSingle or StartPeriodic.
  */
-Notifier::Notifier(TimerEventHandler handler, void *param)
+Notifier::Notifier(TimerEventHandler handler)
 {
 	if (handler == nullptr)
 		wpi_setWPIErrorWithContext(NullParameter, "handler must not be nullptr");
 	m_handler = handler;
-	m_param = param;
 	m_periodic = false;
 	m_expirationTime = 0;
 	m_period = 0;
-	m_nextEvent = nullptr;
 	m_queued = false;
 	{
 		std::lock_guard<priority_recursive_mutex> sync(queueMutex);
@@ -89,13 +88,20 @@ void Notifier::ProcessQueue(uint32_t mask, void *params)
 		{
 			std::lock_guard<priority_recursive_mutex> sync(queueMutex);
 			double currentTime = GetClock();
-			current = timerQueueHead;
-			if (current == nullptr || current->m_expirationTime > currentTime)
+
+			if (timerQueue.empty())
+			{
+				break;
+			}
+			current = timerQueue.front();
+			if (current->m_expirationTime > currentTime)
 			{
 				break;		// no more timer events to process
 			}
-			// need to process this entry
-			timerQueueHead = current->m_nextEvent;
+			// remove next entry before processing it
+			timerQueue.pop_front();
+
+			current->m_queued = false;
 			if (current->m_periodic)
 			{
 				// if periodic, requeue the event
@@ -112,7 +118,7 @@ void Notifier::ProcessQueue(uint32_t mask, void *params)
 			current->m_handlerMutex.lock();
 		}
 
-		current->m_handler(current->m_param);	// call the event handler
+		current->m_handler();	// call the event handler
 		current->m_handlerMutex.unlock();
 	}
 	// reschedule the first item in the queue
@@ -139,32 +145,34 @@ void Notifier::InsertInQueue(bool reschedule)
 	{
 		m_expirationTime = GetClock() + m_period;
 	}
-	if (timerQueueHead == nullptr || timerQueueHead->m_expirationTime >= this->m_expirationTime)
+
+	// Attempt to insert new entry into queue
+	for (auto i = timerQueue.begin(); i != timerQueue.end(); i++)
 	{
-		// the queue is empty or greater than the new entry
-		// the new entry becomes the first element
-		this->m_nextEvent = timerQueueHead;
-		timerQueueHead = this;
+		if ((*i)->m_expirationTime > m_expirationTime)
+		{
+			timerQueue.insert(i, this);
+			m_queued = true;
+		}
+	}
+
+	/* If the new entry wasn't queued, either the queue was empty or the first
+	 * element was greater than the new entry.
+	 */
+	if (!m_queued)
+	{
+		timerQueue.push_front(this);
+
 		if (!reschedule)
 		{
-			// since the first element changed, update alarm, unless we already plan to
+			/* Since the first element changed, update alarm, unless we already
+			 * plan to
+			 */
 			UpdateAlarm();
 		}
+
+		m_queued = true;
 	}
-	else
-	{
-		for (Notifier **npp = &(timerQueueHead->m_nextEvent); ; npp = &(*npp)->m_nextEvent)
-		{
-			Notifier *n = *npp;
-			if (n == nullptr || n->m_expirationTime > this->m_expirationTime)
-			{
-				*npp = this;
-				this->m_nextEvent = n;
-				break;
-			}
-		}
-	}
-	m_queued = true;
 }
 
 /**
@@ -179,23 +187,16 @@ void Notifier::DeleteFromQueue()
 	if (m_queued)
 	{
 		m_queued = false;
-		wpi_assert(timerQueueHead != nullptr);
-		if (timerQueueHead == this)
+		wpi_assert(!timerQueue.empty());
+		if (timerQueue.front() == this)
 		{
 			// remove the first item in the list - update the alarm
-			timerQueueHead = this->m_nextEvent;
+			timerQueue.pop_front();
 			UpdateAlarm();
 		}
 		else
 		{
-			for (Notifier *n = timerQueueHead; n != nullptr; n = n->m_nextEvent)
-			{
-				if (n->m_nextEvent == this)
-				{
-					// this element is the next element from *n from the queue
-					n->m_nextEvent = this->m_nextEvent;	// point around this one
-				}
-			}
+			timerQueue.remove(this);
 		}
 	}
 }
@@ -249,9 +250,19 @@ void Notifier::Stop()
 void Notifier::Run() {
     while (!m_stopped) {
         Notifier::ProcessQueue(0, nullptr);
-        if (timerQueueHead != nullptr)
+        bool isEmpty;
         {
-            Wait(timerQueueHead->m_expirationTime - GetClock());
+            std::lock_guard<priority_recursive_mutex> sync(queueMutex);
+            isEmpty = timerQueue.empty();
+        }
+        if (!isEmpty)
+        {
+            double expirationTime;
+            {
+                std::lock_guard<priority_recursive_mutex> sync(queueMutex);
+                expirationTime = timerQueue.front()->m_expirationTime;
+            }
+            Wait(expirationTime - GetClock());
         }
         else
         {

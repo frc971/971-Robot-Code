@@ -222,11 +222,14 @@ extern "C"
 
 	uint16_t getFPGAVersion(int32_t *status);
 	uint32_t getFPGARevision(int32_t *status);
-	uint32_t getFPGATime(int32_t *status);
+	uint64_t getFPGATime(int32_t *status);
 
 	bool getFPGAButton(int32_t *status);
 
 	int HALSetErrorData(const char *errors, int errorsLength, int wait_ms);
+	int HALSendError(int isError, int32_t errorCode, int isLVCode,
+		const char *details, const char *location, const char *callStack,
+		int printMsg);
 
 	int HALGetControlWord(HALControlWord *data);
 	int HALGetAllianceStation(enum HALAllianceStationID *allianceStation);
