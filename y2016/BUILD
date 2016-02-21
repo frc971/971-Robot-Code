@@ -37,6 +37,8 @@ cc_binary(
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/queues:gyro',
     '//frc971/autonomous:auto_queue',
+    '//y2016/control_loops/shooter:shooter_queue',
+    '//y2016/control_loops/superstructure:superstructure_queue',
   ],
 )
 
