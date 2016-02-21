@@ -708,6 +708,15 @@ void Run(void *watch);
 void Main() {
   logging::Init();
 
+  // Set UID to 0 so we can run things as root down below. Since the starter
+  // program on the roborio runs starter.sh under "lvuser", it will continuously
+  // fail due to lack of permissions if we do not manually set the UID to admin.
+#ifdef AOS_ARCHITECTURE_arm_frc
+  if (setuid(0) != 0) {
+    PLOG(FATAL, "setuid(0) failed");
+  }
+#endif
+
   if (setpgid(0 /*self*/, 0 /*make PGID the same as PID*/) != 0) {
     PLOG(FATAL, "setpgid(0, 0) failed");
   }
