@@ -260,8 +260,10 @@ double PolyDrivetrain::MaxVelocity() {
 }
 
 void PolyDrivetrain::Update() {
-  loop_->mutable_X_hat()(0, 0) = kf_.X_hat()(1, 0);
-  loop_->mutable_X_hat()(1, 0) = kf_.X_hat()(3, 0);
+  if (dt_config_.loop_type == LoopType::CLOSED_LOOP) {
+    loop_->mutable_X_hat()(0, 0) = kf_.X_hat()(1, 0);
+    loop_->mutable_X_hat()(1, 0) = kf_.X_hat()(3, 0);
+  }
 
   // TODO(austin): Observer for the current velocity instead of difference
   // calculations.
@@ -317,6 +319,11 @@ void PolyDrivetrain::Update() {
 
     for (int i = 0; i < 2; i++) {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
+    }
+
+    if (dt_config_.loop_type == LoopType::OPEN_LOOP) {
+      loop_->mutable_X_hat() =
+          loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
     }
   } else {
     const double current_left_velocity =

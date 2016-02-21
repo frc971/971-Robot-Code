@@ -15,6 +15,7 @@ namespace control_loops {
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
 
       ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,

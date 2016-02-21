@@ -15,9 +15,17 @@ enum class ShifterType : int32_t {
   SIMPLE_SHIFTER = 1,  // Switch gears without speedmatch logic.
 };
 
+enum class LoopType : int32_t {
+  OPEN_LOOP = 0,  // Only use open loop logic.
+  CLOSED_LOOP = 1,  // Add in closed loop calculation.
+};
+
 struct DrivetrainConfig {
   // Shifting method we are using.
   ShifterType shifter_type;
+
+  // Type of loop to use.
+  LoopType loop_type;
 
   // Polydrivetrain functions returning various controller loops with plants.
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;
