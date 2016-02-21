@@ -26,20 +26,12 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
       drivetrain::kDt,
-      drivetrain::kStallTorque,
-      drivetrain::kStallCurrent,
-      drivetrain::kFreeSpeedRPM,
-      drivetrain::kFreeCurrent,
-      drivetrain::kJ,
-      drivetrain::kMass,
       drivetrain::kRobotRadius,
       drivetrain::kWheelRadius,
-      drivetrain::kR,
       drivetrain::kV,
-      drivetrain::kT,
+
       drivetrain::kHighGearRatio,
       drivetrain::kLowGearRatio,
-
       kThreeStateDriveShifter,
       kThreeStateDriveShifter};
 
