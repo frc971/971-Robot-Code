@@ -27,7 +27,7 @@ namespace input {
 namespace joysticks {
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
-const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
+const ButtonLocation kShiftHigh(2, 3), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
 
 const ButtonLocation kCatch(3, 10);
@@ -93,10 +93,10 @@ class Reader : public ::aos::input::JoystickInput {
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
-    if (data.PosEdge(kShiftHigh)) {
+    if (data.PosEdge(kShiftLow)) {
       is_high_gear_ = false;
     }
-    if (data.PosEdge(kShiftLow)) {
+    if (data.PosEdge(kShiftHigh)) {
       is_high_gear_ = true;
     }
     if (!drivetrain_queue.goal.MakeWithBuilder()

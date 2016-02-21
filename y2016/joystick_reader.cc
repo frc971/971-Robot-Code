@@ -27,7 +27,7 @@ namespace input {
 namespace joysticks {
 
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
-const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
+const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
 
 class Reader : public ::aos::input::JoystickInput {
@@ -75,11 +75,11 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(WARNING, "sending stick values failed\n");
     }
 
-    if (data.PosEdge(kShiftHigh)) {
+    if (data.PosEdge(kShiftLow)) {
       is_high_gear_ = false;
     }
 
-    if (data.PosEdge(kShiftLow)) {
+    if (data.PosEdge(kShiftHigh) || data.PosEdge(kShiftHigh2)) {
       is_high_gear_ = true;
     }
   }

@@ -35,7 +35,7 @@ namespace joysticks {
 const ButtonLocation kDriveControlLoopEnable1(1, 7),
                      kDriveControlLoopEnable2(1, 11);
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
-const ButtonLocation kShiftHigh(2, 1), kShiftLow(2, 3);
+const ButtonLocation kShiftHigh(2, 3), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
 
 const ButtonLocation kCatch(3, 10);
@@ -241,10 +241,10 @@ class Reader : public ::aos::input::JoystickInput {
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
-    if (data.PosEdge(kShiftHigh)) {
+    if (data.PosEdge(kShiftLow)) {
       is_high_gear_ = false;
     }
-    if (data.PosEdge(kShiftLow)) {
+    if (data.PosEdge(kShiftHigh)) {
       is_high_gear_ = true;
     }
   }
