@@ -53,11 +53,31 @@ struct Values {
 
   // Subsystem motion ranges, in whatever units that their respective queues say
   // the use.
-  static constexpr ::frc971::constants::Range kIntakeRange{-0.270, 2.0, -0.200,
-                                                           1.9};
-  static constexpr ::frc971::constants::Range kShoulderRange{-0.050, 2.0, 0.000,
-                                                             1.9};
-  static constexpr ::frc971::constants::Range kWristRange{-2.0, 2.0, -1.9, 1.9};
+  static constexpr ::frc971::constants::Range kIntakeRange{
+      // Lower hard stop
+      -0.4,
+      // Upper hard stop
+      150.40906362 * M_PI / 180.0 + 0.05,
+      // Lower soft stop
+      -0.350,
+      // Uppper soft stop
+      1.8};
+  static constexpr ::frc971::constants::Range kShoulderRange{// Lower hard stop
+                                                             -0.010,
+                                                             // Upper hard stop
+                                                             2.8,
+                                                             // Lower soft stop
+                                                             0.00,
+                                                             // Uppper soft stop
+                                                             2.0};
+  static constexpr ::frc971::constants::Range kWristRange{// Lower hard stop
+                                                          -2.8,
+                                                          // Upper hard stop
+                                                          2.8,
+                                                          // Lower soft stop
+                                                          -2.4,
+                                                          // Uppper soft stop
+                                                          2.4};
 
   // ///// Dynamic constants. /////
   double drivetrain_max_speed;
