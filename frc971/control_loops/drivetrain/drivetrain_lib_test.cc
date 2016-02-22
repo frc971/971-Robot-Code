@@ -34,26 +34,19 @@ const constants::ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0,  0.0,
 const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
 
       ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,
 
       ::y2016::control_loops::drivetrain::kDt,
-      ::y2016::control_loops::drivetrain::kStallTorque,
-      ::y2016::control_loops::drivetrain::kStallCurrent,
-      ::y2016::control_loops::drivetrain::kFreeSpeedRPM,
-      ::y2016::control_loops::drivetrain::kFreeCurrent,
-      ::y2016::control_loops::drivetrain::kJ,
-      ::y2016::control_loops::drivetrain::kMass,
       ::y2016::control_loops::drivetrain::kRobotRadius,
       ::y2016::control_loops::drivetrain::kWheelRadius,
-      ::y2016::control_loops::drivetrain::kR,
       ::y2016::control_loops::drivetrain::kV,
-      ::y2016::control_loops::drivetrain::kT,
+
       ::y2016::control_loops::drivetrain::kHighGearRatio,
       ::y2016::control_loops::drivetrain::kLowGearRatio,
-
       kThreeStateDriveShifter,
       kThreeStateDriveShifter};
 
