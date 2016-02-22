@@ -165,7 +165,8 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->max_angular_acceleration_intake = 0.05;
         new_superstructure_goal->max_angular_acceleration_shoulder = 0.05;
         new_superstructure_goal->max_angular_acceleration_wrist = 0.05;
-        new_superstructure_goal->voltage_rollers = 0.0;
+        new_superstructure_goal->voltage_top_rollers = 0.0;
+        new_superstructure_goal->voltage_bottom_rollers = 0.0;
 
         if (!new_superstructure_goal.Send()) {
           LOG(ERROR, "Sending superstructure goal failed.\n");
