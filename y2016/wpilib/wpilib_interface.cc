@@ -624,27 +624,27 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     drivetrain_writer.set_drivetrain_left_talon(
         ::std::unique_ptr<Talon>(new Talon(5)));
     drivetrain_writer.set_drivetrain_right_talon(
-        ::std::unique_ptr<Talon>(new Talon(2)));
+        ::std::unique_ptr<Talon>(new Talon(4)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     ShooterWriter shooter_writer;
     shooter_writer.set_shooter_left_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(9)));
     shooter_writer.set_shooter_right_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(8)));
     ::std::thread shooter_writer_thread(::std::ref(shooter_writer));
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_intake_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(3)));
     superstructure_writer.set_shoulder_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(6)));
     superstructure_writer.set_wrist_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(2)));
     superstructure_writer.set_top_rollers_talon(
         ::std::unique_ptr<Talon>(new Talon(0)));
     superstructure_writer.set_bottom_rollers_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(1)));
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
