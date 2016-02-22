@@ -12,7 +12,6 @@
 #include "DriverStation.h"
 #include "AnalogInput.h"
 #include "Compressor.h"
-#include "Relay.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "dma.h"
 #ifndef WPILIB2015
@@ -380,12 +379,8 @@ class SolenoidWriter {
         drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
         shooter_(".y2016.control_loops.shooter_queue.output") {}
 
-  void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
-    pressure_switch_ = ::std::move(pressure_switch);
-  }
-
-  void set_compressor_relay(::std::unique_ptr<Relay> compressor_relay) {
-    compressor_relay_ = ::std::move(compressor_relay);
+  void set_compressor(::std::unique_ptr<Compressor> compressor) {
+    compressor_ = ::std::move(compressor);
   }
 
   void set_drivetrain_left(
@@ -409,6 +404,7 @@ class SolenoidWriter {
   }
 
   void operator()() {
+    compressor_->Start();
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(27);
 
@@ -444,13 +440,7 @@ class SolenoidWriter {
       {
         ::frc971::wpilib::PneumaticsToLog to_log;
         {
-          const bool compressor_on = !pressure_switch_->Get();
-          to_log.compressor_on = compressor_on;
-          if (compressor_on) {
-            compressor_relay_->Set(Relay::kForward);
-          } else {
-            compressor_relay_->Set(Relay::kOff);
-          }
+          to_log.compressor_on = compressor_->Enabled();
         }
 
         pcm_->Flush();
@@ -467,8 +457,7 @@ class SolenoidWriter {
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
       drivetrain_right_, shooter_clamp_, shooter_pusher_;
-  ::std::unique_ptr<DigitalInput> pressure_switch_;
-  ::std::unique_ptr<Relay> compressor_relay_;
+  ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2016::control_loops::shooter::ShooterQueue::Output> shooter_;
@@ -660,8 +649,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(6));
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(7));
 
-    solenoid_writer.set_pressure_switch(make_unique<DigitalInput>(25));
-    solenoid_writer.set_compressor_relay(make_unique<Relay>(0));
+    solenoid_writer.set_compressor(make_unique<Compressor>());
+
     ::std::thread solenoid_thread(::std::ref(solenoid_writer));
 
     // Wait forever. Not much else to do...
