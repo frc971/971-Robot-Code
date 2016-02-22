@@ -18,7 +18,8 @@ constexpr double kZeroingVoltage = 4.0;
 constexpr double kOperatingVoltage = 12.0;
 constexpr double kLandingShoulderDownVoltage = -2.0;
 // The maximum voltage the intake roller will be allowed to use.
-constexpr float kMaxIntakeVoltage = 8.0;
+constexpr float kMaxIntakeTopVoltage = 8.0;
+constexpr float kMaxIntakeBottomVoltage = 8.0;
 
 // Aliases to reduce typing.
 constexpr double kIntakeEncoderIndexDifference =
@@ -568,11 +569,15 @@ void Superstructure::RunIteration(
     output->voltage_wrist = arm_.wrist_voltage();
 
     // Logic to run our rollers on the intake.
-    output->voltage_rollers = 0.0;
+    output->voltage_top_rollers = 0.0;
+    output->voltage_bottom_rollers = 0.0;
     if (unsafe_goal) {
-      output->voltage_rollers = ::std::max(
-          -kMaxIntakeVoltage,
-          ::std::min(unsafe_goal->voltage_rollers, kMaxIntakeVoltage));
+      output->voltage_top_rollers = ::std::max(
+          -kMaxIntakeTopVoltage,
+          ::std::min(unsafe_goal->voltage_top_rollers, kMaxIntakeTopVoltage));
+      output->voltage_bottom_rollers = ::std::max(
+          -kMaxIntakeBottomVoltage,
+          ::std::min(unsafe_goal->voltage_bottom_rollers, kMaxIntakeBottomVoltage));
     }
   }
 
