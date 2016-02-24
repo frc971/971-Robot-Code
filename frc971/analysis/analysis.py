@@ -2,6 +2,7 @@
 import matplotlib
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
+import collections
 
 class Dataset(object):
   def __init__(self):
@@ -15,7 +16,7 @@ class Dataset(object):
 
 class Plotter(object):
   def __init__(self):
-    self.signal = dict()
+    self.signal = collections.OrderedDict()
 
   def Add(self, binary, struct_instance_name, *data_search_path):
     """
