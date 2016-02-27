@@ -71,23 +71,23 @@ class CollisionAvoidance {
 
   // The shoulder angle (in radians) below which the arm as a whole has the
   // potential to interfere with the intake.
-  static constexpr double kMinShoulderAngleForIntakeInterference = M_PI / 3.0;
+  static constexpr double kMinShoulderAngleForIntakeInterference = 0.8;
 
   // The intake angle (in radians) above which the intake can interfere (i.e.
   // collide) with the arm and/or shooter.
-  static constexpr double kMaxIntakeAngleBeforeArmInterference = M_PI / 2.0;
+  static constexpr double kMaxIntakeAngleBeforeArmInterference = 1.2;
 
   // The maximum absolute angle (in radians) that the wrist must be below in
   // order for the shouler to be allowed to move below
   // kMinShoulderAngleForHorizontalShooter.  In other words, only allow the arm
   // to move down into the belly pan if the shooter is horizontal, ready to
   // also be placed into the belly pan.
-  static constexpr double kMaxWristAngleForSafeArmStowing = 0.01;
+  static constexpr double kMaxWristAngleForSafeArmStowing = 0.05;
 
   // The shoulder angle (in radians) below which the intake can safely move
   // into the collision zone. This is necessary when the robot wants to fold up
   // completely (i.e. stow the arm, shooter, and intake).
-  static constexpr double kMaxShoulderAngleUntilSafeIntakeStowing = 0.01;
+  static constexpr double kMaxShoulderAngleUntilSafeIntakeStowing = 0.2;
 
  private:
   Intake *intake_;
@@ -112,10 +112,10 @@ class Superstructure
 
   // This is the angle such that the intake will clear the arm when the shooter
   // is level.
-  static constexpr double kIntakeUpperClear = 1.1;
+  static constexpr double kIntakeUpperClear = 1.2;
   // This is the angle such that the intake will clear the arm when the shooter
   // is at almost any position.
-  static constexpr double kIntakeLowerClear = 0.5;
+  static constexpr double kIntakeLowerClear = 0.4;
 
   // This is the angle that the shoulder will go to when doing the
   // HIGH_ARM_ZERO.

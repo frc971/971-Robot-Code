@@ -14,9 +14,9 @@ namespace control_loops {
 namespace superstructure {
 
 namespace {
-constexpr double kZeroingVoltage = 4.0;
-constexpr double kOperatingVoltage = 12.0;
-constexpr double kLandingShoulderDownVoltage = -2.0;
+constexpr double kZeroingVoltage = 6.0;
+constexpr double kOperatingVoltage = 6.0;
+constexpr double kLandingShoulderDownVoltage = -1.5;
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeTopVoltage = 8.0;
 constexpr float kMaxIntakeBottomVoltage = 8.0;
