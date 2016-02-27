@@ -111,6 +111,7 @@ class Reader : public ::aos::input::JoystickInput {
       // If we got enabled, wait for everything to zero.
       LOG(INFO, "Waiting for zero.\n");
       waiting_for_zero_ = true;
+      is_high_gear_ = true;
     }
 
     superstructure_queue.status.FetchLatest();
@@ -128,23 +129,36 @@ class Reader : public ::aos::input::JoystickInput {
       waiting_for_zero_ = true;
     }
 
-    // TODO(robot bringup): Populate these with test goals.
-    if (data.PosEdge(kTest1)) {
+    if (data.IsPressed(kTest1)) {
+      intake_goal_ = 0.0;
+    } else {
+      intake_goal_ = 1.6;
     }
 
-    if (data.PosEdge(kTest2)) {
+    if (data.IsPressed(kTest2)) {
+      shoulder_goal_ = M_PI / 2.0;
+    } else {
+      shoulder_goal_ = 0.0;
     }
 
-    if (data.PosEdge(kTest3)) {
+    if (data.IsPressed(kTest3)) {
+      wrist_goal_ = 0.0;
+    } else {
+      wrist_goal_ = -0.4;
     }
 
-    if (data.PosEdge(kTest4)) {
+    is_intaking_ = data.IsPressed(kTest4);
+
+    if (data.IsPressed(kTest5)) {
+      shooter_velocity_ = 600.0;
+    } else {
+      shooter_velocity_ = 0.0;
     }
 
-    if (data.PosEdge(kTest5)) {
-    }
-
-    if (data.PosEdge(kTest6)) {
+    if (data.IsPressed(kTest6)) {
+      fire_ = true;
+    } else {
+      fire_ = false;
     }
 
     if (data.PosEdge(kTest7)) {
@@ -159,14 +173,19 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->angle_intake = intake_goal_;
         new_superstructure_goal->angle_shoulder = shoulder_goal_;
         new_superstructure_goal->angle_wrist = wrist_goal_;
-        new_superstructure_goal->max_angular_velocity_intake = 0.1;
-        new_superstructure_goal->max_angular_velocity_shoulder = 0.1;
-        new_superstructure_goal->max_angular_velocity_wrist = 0.1;
-        new_superstructure_goal->max_angular_acceleration_intake = 0.05;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 0.05;
-        new_superstructure_goal->max_angular_acceleration_wrist = 0.05;
-        new_superstructure_goal->voltage_top_rollers = 0.0;
-        new_superstructure_goal->voltage_bottom_rollers = 0.0;
+        new_superstructure_goal->max_angular_velocity_intake = 4.0;
+        new_superstructure_goal->max_angular_velocity_shoulder = 1.0;
+        new_superstructure_goal->max_angular_velocity_wrist = 1.0;
+        new_superstructure_goal->max_angular_acceleration_intake = 5.0;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 3.0;
+        new_superstructure_goal->max_angular_acceleration_wrist = 3.0;
+        if (is_intaking_) {
+          new_superstructure_goal->voltage_top_rollers = 12.0;
+          new_superstructure_goal->voltage_bottom_rollers = 6.0;
+        } else {
+          new_superstructure_goal->voltage_top_rollers = 0.0;
+          new_superstructure_goal->voltage_bottom_rollers = 0.0;
+        }
 
         if (!new_superstructure_goal.Send()) {
           LOG(ERROR, "Sending superstructure goal failed.\n");
@@ -176,9 +195,9 @@ class Reader : public ::aos::input::JoystickInput {
         }
 
         if (!shooter_queue.goal.MakeWithBuilder()
-                 .angular_velocity(0.0)
-                 .clamp_open(false)
-                 .push_to_shooter(false)
+                 .angular_velocity(shooter_velocity_)
+                 .clamp_open(is_intaking_)
+                 .push_to_shooter(fire_)
                  .Send()) {
           LOG(ERROR, "Sending shooter goal failed.\n");
         }
@@ -204,12 +223,16 @@ class Reader : public ::aos::input::JoystickInput {
   double intake_goal_;
   double shoulder_goal_;
   double wrist_goal_;
+  double shooter_velocity_ = 0.0;
 
   bool was_running_ = false;
   bool auto_running_ = false;
 
   // If we're waiting for the subsystems to zero.
   bool waiting_for_zero_ = true;
+
+  bool is_intaking_ = false;
+  bool fire_ = false;
 
   ::aos::common::actions::ActionQueue action_queue_;
 
