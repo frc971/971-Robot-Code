@@ -389,10 +389,14 @@ class StateFeedbackLoop {
     X_hat_ += A_inv() * L() * (Y - C() * X_hat_ - D() * U());
   }
 
+  const Eigen::Matrix<double, number_of_states, 1> error() const {
+    return R() - X_hat();
+  }
+
   // Returns the calculated controller power.
   virtual const Eigen::Matrix<double, number_of_inputs, 1> ControllerOutput() {
     ff_U_ = FeedForward();
-    return K() * (R() - X_hat()) + ff_U_;
+    return K() * error() + ff_U_;
   }
 
   // Calculates the feed forwards power.
