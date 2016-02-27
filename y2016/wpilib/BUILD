@@ -8,6 +8,7 @@ cc_binary(
   deps = [
     '//aos/common:stl_mutex',
     '//aos/common/logging',
+    '//aos/common:math',
     '//aos/common/controls:control_loop',
     '//aos/common/util:log_interval',
     '//aos/common:time',

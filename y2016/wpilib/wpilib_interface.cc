@@ -28,6 +28,7 @@
 #include "aos/common/stl_mutex.h"
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
+#include "aos/common/commonmath.h"
 
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
@@ -377,7 +378,7 @@ class SolenoidWriter {
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
-        shooter_(".y2016.control_loops.shooter_queue.output") {}
+        shooter_(".y2016.control_loops.shooter.shooter_queue.output") {}
 
   void set_compressor(::std::unique_ptr<Compressor> compressor) {
     compressor_ = ::std::move(compressor);
@@ -483,8 +484,8 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_talon_->Set(-queue->left_voltage / 12.0);
-    drivetrain_right_talon_->Set(queue->right_voltage / 12.0);
+    drivetrain_left_talon_->Set(queue->left_voltage / 12.0);
+    drivetrain_right_talon_->Set(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
@@ -514,8 +515,9 @@ class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2016::control_loops::shooter::shooter_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
+
     shooter_left_talon_->Set(queue->voltage_left / 12.0);
-    shooter_right_talon_->Set(queue->voltage_right / 12.0);
+    shooter_right_talon_->Set(-queue->voltage_right / 12.0);
   }
 
   virtual void Stop() override {
@@ -558,10 +560,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     auto &queue = ::y2016::control_loops::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     intake_talon_->Set(queue->voltage_intake / 12.0);
-    shoulder_talon_->Set(-queue->voltage_shoulder / 12.0);
-    wrist_talon_->Set(queue->voltage_wrist / 12.0);
-    top_rollers_talon_->Set(queue->voltage_top_rollers / 12.0);
-    bottom_rollers_talon_->Set(queue->voltage_bottom_rollers / 12.0);
+    shoulder_talon_->Set(::aos::Clip(-queue->voltage_shoulder, -6.0, 6.0) / 12.0);
+    wrist_talon_->Set(::aos::Clip(queue->voltage_wrist, -6.0, 6.0) / 12.0);
+    top_rollers_talon_->Set(-queue->voltage_top_rollers / 12.0);
+    bottom_rollers_talon_->Set(-queue->voltage_bottom_rollers / 12.0);
   }
 
   virtual void Stop() override {
@@ -642,19 +644,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_wrist_talon(
         ::std::unique_ptr<Talon>(new Talon(2)));
     superstructure_writer.set_top_rollers_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
-    superstructure_writer.set_bottom_rollers_talon(
         ::std::unique_ptr<Talon>(new Talon(1)));
+    superstructure_writer.set_bottom_rollers_talon(
+        ::std::unique_ptr<Talon>(new Talon(0)));
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(6));
-    solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(7));
-    solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(6));
-    solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(7));
+    solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(1));
+    solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(0));
+    solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(4));
+    solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());
 
