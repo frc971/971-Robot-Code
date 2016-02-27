@@ -55,7 +55,7 @@ aos_downloader = rule(
       allow_files = True,
     ),
     'default_target': attr.string(
-      default = 'roboRIO-971.local',
+      default = 'roboRIO-971-frc.local',
     ),
   },
   executable = True,
