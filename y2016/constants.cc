@@ -109,23 +109,23 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Intake
           {
-           0.0,
+           -4.654 + 150.40906362 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
-            0.9, 0.3},
+            -0.076004 + 150.40906362 * M_PI / 180.0, 0.3},
           },
 
           // Shoulder
           {
-           0.0,
+           -1.0144 + 0.06138835 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.9, 0.3},
+            0.030038 + 0.06138835 * M_PI / 180.0, 0.3},
           },
 
           // Wrist
           {
-           0.0,
+           3.1344 - 0.06138835 * M_PI / 180.0,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            0.9, 0.3},
+            -0.02140 - 0.06138835 * M_PI / 180.0, 0.3},
           },
       };
       break;
