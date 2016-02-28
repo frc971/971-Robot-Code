@@ -78,7 +78,6 @@ cc_library(
   deps = [
     '//aos/common/messages:robot_state',
     '//aos/common/logging',
-    '//aos/common/util:phased_loop',
     '//aos/common:time',
     ':control_loop_queues',
     '//aos/common/logging:queue_logging',
