@@ -29,7 +29,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       constants::GetValues().high_gear_ratio,
       constants::GetValues().low_gear_ratio,
       constants::GetValues().left_drive,
-      constants::GetValues().right_drive};
+      constants::GetValues().right_drive,
+      true};
 
   return kDrivetrainConfig;
 };

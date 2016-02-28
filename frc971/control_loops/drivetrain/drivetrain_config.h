@@ -44,6 +44,10 @@ struct DrivetrainConfig {
   // Hall effect constants. Unused if not applicable to shifter type.
   constants::ShifterHallEffect left_drive;
   constants::ShifterHallEffect right_drive;
+
+  // Variable that holds the default gear ratio. We use this in ZeroOutputs().
+  // (ie. true means high gear is default).
+  bool default_high_gear;
 };
 
 }  // namespace drivetrain

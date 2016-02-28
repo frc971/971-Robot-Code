@@ -150,6 +150,14 @@ void DrivetrainLoop::RunIteration(
   kf_.UpdateObserver(U);
 }
 
+void DrivetrainLoop::Zero(
+    ::frc971::control_loops::DrivetrainQueue::Output *output) {
+  output->left_voltage = 0;
+  output->right_voltage = 0;
+  output->left_high = dt_config_.default_high_gear;
+  output->right_high = dt_config_.default_high_gear;
+}
+
 }  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace frc971
