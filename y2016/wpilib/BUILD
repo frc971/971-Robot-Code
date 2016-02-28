@@ -31,6 +31,7 @@ cc_binary(
     '//frc971/wpilib:logging_queue',
     '//frc971/wpilib:wpilib_interface',
     '//frc971/wpilib:pdp_fetcher',
+    '//frc971/wpilib:ADIS16448',
     '//y2016:constants',
     '//y2016/control_loops/drivetrain:polydrivetrain_plants',
     '//y2016/control_loops/shooter:shooter_queue',

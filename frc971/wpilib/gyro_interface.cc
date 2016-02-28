@@ -75,7 +75,11 @@ bool GyroInterface::DoTransaction(uint32_t to_write, uint32_t *result) {
   static_assert(kBytes == sizeof(to_write),
                 "need the same number of bytes as sizeof(the data)");
 
-  if (__builtin_parity(to_write & ~1) == 0) to_write |= 1;
+  if (__builtin_parity(to_write & ~1) == 0) {
+    to_write |= 1;
+  } else {
+    to_write &= ~1;
+  }
 
   uint8_t to_send[kBytes], to_receive[kBytes];
   const uint32_t to_write_flipped = __builtin_bswap32(to_write);
@@ -124,7 +128,7 @@ uint16_t GyroInterface::DoRead(uint8_t address) {
 }
 
 double GyroInterface::ExtractAngle(uint32_t value) {
-  const int16_t reading = -(int16_t)(value >> 10 & 0xFFFF);
+  const int16_t reading = -static_cast<int16_t>(value >> 10 & 0xFFFF);
   return static_cast<double>(reading) * 2.0 * M_PI / 360.0 / 80.0;
 }
 

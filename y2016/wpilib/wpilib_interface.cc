@@ -49,6 +49,7 @@
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/wpilib_interface.h"
 #include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/ADIS16448.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -631,6 +632,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
+#if 0
+    auto imu_trigger = make_unique<DigitalInput>(100);
+    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
+    ::std::thread imu_thread(::std::ref(imu));
+#endif
+
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_talon(
         ::std::unique_ptr<Talon>(new Talon(5)));
@@ -691,6 +698,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader_thread.join();
     gyro_sender.Quit();
     gyro_thread.join();
+#if 0
+    imu.Quit();
+    imu_thread.join();
+#endif
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();
