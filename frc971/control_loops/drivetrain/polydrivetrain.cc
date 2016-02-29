@@ -114,7 +114,7 @@ void PolyDrivetrain::UpdateGears(Gear requested_gear) {
 
 void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
                              bool highgear) {
-  const double kWheelNonLinearity = 0.3;
+  const double kWheelNonLinearity = 0.4;
   // Apply a sin function that's scaled to make it feel better.
   const double angular_range = M_PI_2 * kWheelNonLinearity;
 
@@ -130,6 +130,7 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
 
   wheel_ = sin(angular_range * wheel) / sin(angular_range);
   wheel_ = sin(angular_range * wheel_) / sin(angular_range);
+  wheel_ = 2.0 * wheel - wheel_;
   quickturn_ = quickturn;
 
   static const double kThrottleDeadband = 0.05;
