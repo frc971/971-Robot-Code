@@ -156,10 +156,10 @@ class IntegralArm(Arm):
 
     q_pos_shoulder = 0.08
     q_vel_shoulder = 4.00
-    q_voltage_shoulder = 6.0
+    q_voltage_shoulder = 3.0
     q_pos_shooter = 0.08
     q_vel_shooter = 4.00
-    q_voltage_shooter = 6.0
+    q_voltage_shooter = 1.0
     self.Q = numpy.matrix(numpy.zeros((6, 6)))
     self.Q[0, 0] = q_pos_shoulder ** 2.0
     self.Q[1, 1] = q_vel_shoulder ** 2.0
@@ -302,7 +302,7 @@ class ScenarioPlotter(object):
         #observer.X_hat[0, 0] += 0.20
         #arm.X[0, 0] += 0.20
         pass
-      U_error = numpy.matrix([[0.0], [0.0]])
+      U_error = numpy.matrix([[2.0], [2.0]])
       # Kick it and see what happens.
       #if (initial_t + i * arm.dt) % 0.4 > 0.2:
         #U_error = numpy.matrix([[4.0], [0.0]])
