@@ -17,6 +17,17 @@ struct JointState {
   // Unprofiled goal angular velocity of the joint in radians/second.
   float unprofiled_goal_angular_velocity;
 
+  // The estimated voltage error.
+  float voltage_error;
+
+  // The calculated velocity with delta x/delta t
+  float calculated_velocity;
+
+  // Components of the control loop output
+  float position_power;
+  float velocity_power;
+  float feedforwards_power;
+
   // State of the estimator.
   .frc971.EstimatorState estimator_state;
 };

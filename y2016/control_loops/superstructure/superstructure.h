@@ -214,6 +214,10 @@ class Superstructure
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;
 
+  float last_shoulder_angle_ = 0.0;
+  float last_wrist_angle_ = 0.0;
+  float last_intake_angle_ = 0.0;
+
   // Returns true if the profile has finished, and the joint is within the
   // specified tolerance.
   bool IsArmNear(double tolerance);

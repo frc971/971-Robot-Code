@@ -57,6 +57,9 @@ class Intake {
   // Returns the current position.
   double angle() const { return Y_(0, 0); }
 
+  // Returns the controller error.
+  const StateFeedbackLoop<3, 1, 1> &controller() const { return *loop_; }
+
   // Returns the filtered goal.
   const Eigen::Matrix<double, 3, 1> &goal() const { return loop_->R(); }
   double goal(int row, int col) const { return loop_->R(row, col); }
@@ -158,6 +161,9 @@ class Arm {
   // Returns the current positions.
   double shoulder_angle() const { return Y_(0, 0); }
   double wrist_angle() const { return Y_(1, 0) + Y_(0, 0); }
+
+  // Returns the controller error.
+  const StateFeedbackLoop<6, 2, 2> &controller() const { return *loop_; }
 
   // Returns the unprofiled goal.
   const Eigen::Matrix<double, 6, 1> &unprofiled_goal() const {
