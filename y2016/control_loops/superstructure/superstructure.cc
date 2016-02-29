@@ -596,8 +596,7 @@ void Superstructure::RunIteration(
   }
 
   // Save debug/internal state.
-  // TODO(austin): Save the voltage errors.
-  status->zeroed = IsRunning();
+  status->zeroed = arm_.zeroed() && intake_.zeroed();
 
   status->shoulder.angle = arm_.X_hat(0, 0);
   status->shoulder.angular_velocity = arm_.X_hat(1, 0);
