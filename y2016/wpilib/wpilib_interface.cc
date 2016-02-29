@@ -60,6 +60,9 @@ using ::y2016::control_loops::superstructure_queue;
 
 namespace y2016 {
 namespace wpilib {
+namespace {
+constexpr double kMaxBringupPower = 12.0;
+}  // namespace
 
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
 // DMA stuff and then removing the * 2.0 in *_translate.
@@ -559,9 +562,15 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2016::control_loops::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon_->Set(queue->voltage_intake / 12.0);
-    shoulder_talon_->Set(::aos::Clip(-queue->voltage_shoulder, -6.0, 6.0) / 12.0);
-    wrist_talon_->Set(::aos::Clip(queue->voltage_wrist, -6.0, 6.0) / 12.0);
+    intake_talon_->Set(::aos::Clip(queue->voltage_intake, -kMaxBringupPower,
+                                   kMaxBringupPower) /
+                       12.0);
+    shoulder_talon_->Set(::aos::Clip(-queue->voltage_shoulder,
+                                     -kMaxBringupPower, kMaxBringupPower) /
+                         12.0);
+    wrist_talon_->Set(
+        ::aos::Clip(queue->voltage_wrist, -kMaxBringupPower, kMaxBringupPower) /
+        12.0);
     top_rollers_talon_->Set(-queue->voltage_top_rollers / 12.0);
     bottom_rollers_talon_->Set(-queue->voltage_bottom_rollers / 12.0);
   }
