@@ -15,7 +15,8 @@ class PolyDrivetrain {
  public:
   enum Gear { HIGH, LOW, SHIFTING_UP, SHIFTING_DOWN };
 
-  PolyDrivetrain(const DrivetrainConfig &dt_config);
+  PolyDrivetrain(const DrivetrainConfig &dt_config,
+                 StateFeedbackLoop<7, 2, 3> *kf);
 
   int controller_index() const { return loop_->controller_index(); }
 
@@ -39,7 +40,7 @@ class PolyDrivetrain {
   void SetPosition(
       const ::frc971::control_loops::DrivetrainQueue::Position *position);
 
-  double FilterVelocity(double throttle);
+  double FilterVelocity(double throttle) const;
 
   double MaxVelocity();
 
@@ -47,8 +48,10 @@ class PolyDrivetrain {
 
   void SendMotors(::frc971::control_loops::DrivetrainQueue::Output *output);
 
+  void PopulateStatus(::frc971::control_loops::DrivetrainQueue::Status *status);
+
  private:
-  StateFeedbackLoop<7, 2, 3> kf_;
+  StateFeedbackLoop<7, 2, 3> *kf_;
 
   const ::aos::controls::HPolytope<2> U_Poly_;
 
@@ -66,6 +69,9 @@ class PolyDrivetrain {
   ::frc971::control_loops::DrivetrainQueue::Position position_;
   int counter_;
   DrivetrainConfig dt_config_;
+
+  double goal_left_velocity_ = 0.0;
+  double goal_right_velocity_ = 0.0;
 };
 
 }  // namespace drivetrain
