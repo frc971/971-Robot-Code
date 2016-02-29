@@ -23,7 +23,11 @@ queue_group ShooterQueue {
     double angular_velocity;
 
     bool clamp_open; // True to release our clamp on the ball.
-    bool push_to_shooter;  // True to push the ball into the shooter.
+    // True to push the ball into the shooter.
+    // If we are in the act of shooting with a goal velocity != 0, wait until it
+    // is up to speed, push the ball into the shooter, and then wait until it
+    // spins up and down before letting the piston be released.
+    bool push_to_shooter;
   };
 
   message Position {

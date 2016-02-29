@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "aos/common/controls/control_loop.h"
+#include "aos/common/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 #include "y2016/control_loops/shooter/shooter_integral_plant.h"
@@ -32,6 +33,9 @@ class ShooterSide {
   // Returns the control loop calculated voltage.
   double voltage() const;
 
+  // Returns the instantaneous velocity.
+  double velocity() const { return loop_->X_hat(1, 0); }
+
   // Executes the control loop for a cycle.
   void Update(bool disabled);
 
@@ -44,7 +48,7 @@ class ShooterSide {
   // History array for calculating a filtered angular velocity.
   static constexpr int kHistoryLength = 10;
   ::std::array<double, kHistoryLength> history_;
-  ptrdiff_t history_position_;
+  ptrdiff_t history_position_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(ShooterSide);
 };
@@ -54,6 +58,17 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
   explicit Shooter(
       ShooterQueue *shooter_queue = &control_loops::shooter::shooter_queue);
 
+  enum class ShooterLatchState {
+    // Any shoot commands will be passed through without modification.
+    PASS_THROUGH = 0,
+    // We are latched shooting waiting for the wheel to loose RPM.
+    WAITING_FOR_SPINDOWN = 1,
+    // We are latched shooting waiting for the wheel to spin back up.
+    WAITING_FOR_SPINUP = 2,
+    // Wait until the button is released.
+    WAITING_FOR_SHOT_NEGEDGE = 3
+  };
+
  protected:
   void RunIteration(const ShooterQueue::Goal *goal,
                     const ShooterQueue::Position *position,
@@ -62,6 +77,10 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
 
  private:
   ShooterSide left_, right_;
+
+  // Current state.
+  ShooterLatchState state_ = ShooterLatchState::PASS_THROUGH;
+  ::aos::time::Time last_pre_shot_timeout_;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
