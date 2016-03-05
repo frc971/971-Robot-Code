@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2014. All Rights Reserved.                             */
+/* Copyright (c) FIRST 2014-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -56,40 +56,3 @@ TEST_F(PowerDistributionPanelTest, CheckCurrentTalon) {
       << "The Talon current was not positive";
 }
 
-/**
- * Test if the current changes when the motor is driven using a victor
- */
-TEST_F(PowerDistributionPanelTest, CheckCurrentVictor) {
-  Wait(kMotorTime);
-
-  /* The Current should be 0 */
-  EXPECT_FLOAT_EQ(0, m_pdp->GetCurrent(TestBench::kVictorPDPChannel))
-      << "The Victor current was non-zero";
-
-  /* Set the motor to full forward */
-  m_victor->Set(1.0);
-  Wait(kMotorTime);
-
-  /* The current should now be positive */
-  ASSERT_GT(m_pdp->GetCurrent(TestBench::kVictorPDPChannel), 0)
-      << "The Victor current was not positive";
-}
-
-/**
- * Test if the current changes when the motor is driven using a jaguar
- */
-TEST_F(PowerDistributionPanelTest, CheckCurrentJaguar) {
-  Wait(kMotorTime);
-
-  /* The Current should be 0 */
-  EXPECT_FLOAT_EQ(0, m_pdp->GetCurrent(TestBench::kJaguarPDPChannel))
-      << "The Jaguar current was non-zero";
-
-  /* Set the motor to full forward */
-  m_jaguar->Set(1.0);
-  Wait(kMotorTime);
-
-  /* The current should now be positive */
-  ASSERT_GT(m_pdp->GetCurrent(TestBench::kJaguarPDPChannel), 0)
-      << "The Jaguar current was not positive";
-}

@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/HAL.hpp"
 
 #include "HAL/Port.h"
@@ -12,6 +19,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <unistd.h>
 #include <sys/prctl.h>
 #include <signal.h> // linux for kill
@@ -22,6 +30,14 @@ const uint32_t kSystemClockTicksPerMicrosecond = 40;
 
 static tGlobal *global = nullptr;
 static tSysWatchdog *watchdog = nullptr;
+
+static priority_mutex timeMutex;
+static priority_mutex msgMutex;
+static uint32_t timeEpoch = 0;
+static uint32_t prevFPGATime = 0;
+static void* rolloverNotifier = nullptr;
+
+extern "C" {
 
 void* getPort(uint8_t pin)
 {
@@ -99,6 +115,8 @@ const char* getHALErrorMessage(int32_t code)
 			return INCOMPATIBLE_STATE_MESSAGE;
 		case NO_AVAILABLE_RESOURCES:
 			return NO_AVAILABLE_RESOURCES_MESSAGE;
+		case RESOURCE_IS_ALLOCATED:
+			return RESOURCE_IS_ALLOCATED_MESSAGE;
 		case NULL_PARAMETER:
 			return NULL_PARAMETER_MESSAGE;
 		case ANALOG_TRIGGER_LIMIT_ORDER_ERROR:
@@ -182,13 +200,19 @@ uint32_t getFPGARevision(int32_t *status)
  *
  * @return The current time in microseconds according to the FPGA (since FPGA reset).
  */
-uint32_t getFPGATime(int32_t *status)
+uint64_t getFPGATime(int32_t *status)
 {
 	if (!global) {
 		*status = NiFpga_Status_ResourceNotInitialized;
 		return 0;
 	}
-	return global->readLocalTime(status);
+	std::lock_guard<priority_mutex> lock(timeMutex);
+	uint32_t fpgaTime = global->readLocalTime(status);
+	if (*status != 0) return 0;
+	// check for rollover
+	if (fpgaTime < prevFPGATime) ++timeEpoch;
+	prevFPGATime = fpgaTime;
+	return (((uint64_t)timeEpoch) << 32) | ((uint64_t)fpgaTime);
 }
 
 /**
@@ -207,6 +231,54 @@ bool getFPGAButton(int32_t *status)
 int HALSetErrorData(const char *errors, int errorsLength, int wait_ms)
 {
 	return setErrorData(errors, errorsLength, wait_ms);
+}
+
+int HALSendError(int isError, int32_t errorCode, int isLVCode,
+	const char *details, const char *location, const char *callStack,
+	int printMsg)
+{
+	// Avoid flooding console by keeping track of previous 5 error
+	// messages and only printing again if they're longer than 1 second old.
+	static constexpr int KEEP_MSGS = 5;
+	std::lock_guard<priority_mutex> lock(msgMutex);
+	static std::string prev_msg[KEEP_MSGS];
+	static uint64_t prev_msg_time[KEEP_MSGS] = { 0, 0, 0 };
+
+	int32_t status = 0;
+	uint64_t curTime = getFPGATime(&status);
+	int i;
+	for (i=0; i<KEEP_MSGS; ++i) {
+		if (prev_msg[i] == details) break;
+	}
+	int retval = 0;
+	if (i == KEEP_MSGS || (curTime - prev_msg_time[i]) >= 1000000) {
+		retval = FRC_NetworkCommunication_sendError(isError, errorCode, isLVCode, details, location, callStack);
+		if (printMsg) {
+			if (location && location[0] != '\0') {
+				fprintf(stderr, "%s at %s: ",
+					isError ? "Error" : "Warning",
+					location);
+			}
+			fprintf(stderr, "%s\n", details);
+			if (callStack && callStack[0] != '\0') {
+				fprintf(stderr, "%s\n", callStack);
+			}
+		}
+		if (i == KEEP_MSGS) {
+			// replace the oldest one
+			i = 0;
+			uint64_t first = prev_msg_time[0];
+			for (int j=1; j<KEEP_MSGS; ++j) {
+				if (prev_msg_time[j] < first) {
+					first = prev_msg_time[j];
+					i = j;
+				}
+			}
+			prev_msg[i] = details;
+		}
+		prev_msg_time[i] = curTime;
+	}
+	return retval;
 }
 
 
@@ -233,6 +305,12 @@ static void HALCleanupAtExit() {
 	watchdog = nullptr;
 }
 
+static void timerRollover(uint64_t currentTime, void*) {
+	// reschedule timer for next rollover
+	int32_t status = 0;
+	updateNotifierAlarm(rolloverNotifier, currentTime + 0x80000000ULL, &status);
+}
+
 /**
  * Call this to start up HAL. This is required for robot programs.
  */
@@ -253,6 +331,14 @@ int HALInitialize(int mode)
 	watchdog = tSysWatchdog::create(&status);
 
 	std::atexit(HALCleanupAtExit);
+
+	if (!rolloverNotifier)
+		rolloverNotifier = initializeNotifier(timerRollover, nullptr, &status);
+	if (status == 0) {
+		uint64_t curTime = getFPGATime(&status);
+		if (status == 0)
+			updateNotifierAlarm(rolloverNotifier, curTime + 0x80000000ULL, &status);
+	}
 
 	// Kill any previous robot programs
 	std::fstream fs;
@@ -300,6 +386,7 @@ int HALInitialize(int mode)
 	pid = getpid();
 	fs << pid << std::endl;
 	fs.close();
+
 	return 1;
 }
 
@@ -337,3 +424,5 @@ void imaqGetLastError()
 void niTimestamp64()
 {
 }
+
+}  // extern "C"

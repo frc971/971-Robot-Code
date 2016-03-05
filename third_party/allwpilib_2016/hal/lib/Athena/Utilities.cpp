@@ -1,8 +1,17 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Utilities.hpp"
 #include <time.h>
 
 const int32_t HAL_NO_WAIT = 0;
 const int32_t HAL_WAIT_FOREVER = -1;
+
+extern "C" {
 
 void delayTicks(int32_t ticks)
 {
@@ -42,3 +51,5 @@ void delaySeconds(double s)
 		test = remaining;
 	}
 }
+
+}  // extern "C"

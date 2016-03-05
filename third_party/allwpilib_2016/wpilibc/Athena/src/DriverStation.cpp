@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "DriverStation.h"
@@ -88,8 +88,8 @@ void DriverStation::Run() {
  * @return Pointer to the DS instance
  */
 DriverStation &DriverStation::GetInstance() {
-  static DriverStation instance;
-  return instance;
+  static DriverStation *instance = new DriverStation();
+  return *instance;
 }
 
 /**
@@ -147,7 +147,7 @@ std::string DriverStation::GetJoystickName(uint32_t stick) const {
   if (stick >= kJoystickPorts) {
     wpi_setWPIError(BadJoystickIndex);
   }
-  std::string retVal(m_joystickDescriptor[0].name);
+  std::string retVal(m_joystickDescriptor[stick].name);
   return retVal;
 }
 
@@ -502,11 +502,25 @@ double DriverStation::GetMatchTime() const {
  * The error is also printed to the program console.
  */
 void DriverStation::ReportError(std::string error) {
-  std::cout << error << std::endl;
+  HALSendError(1, 1, 0, error.c_str(), "", "", 1);
+}
 
-  HALControlWord controlWord;
-  HALGetControlWord(&controlWord);
-  if (controlWord.dsAttached) {
-    HALSetErrorData(error.c_str(), error.size(), 0);
-  }
+/**
+ * Report a warning to the DriverStation messages window.
+ * The warning is also printed to the program console.
+ */
+void DriverStation::ReportWarning(std::string error) {
+  HALSendError(0, 1, 0, error.c_str(), "", "", 1);
+}
+
+/**
+ * Report an error to the DriverStation messages window.
+ * The error is also printed to the program console.
+ */
+void DriverStation::ReportError(bool is_error, int32_t code,
+                                const std::string &error,
+                                const std::string &location,
+                                const std::string &stack) {
+  HALSendError(is_error, code, 0, error.c_str(), location.c_str(),
+               stack.c_str(), 1);
 }

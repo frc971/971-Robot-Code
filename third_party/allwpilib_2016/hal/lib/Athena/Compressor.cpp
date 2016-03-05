@@ -1,15 +1,24 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 #include "HAL/Compressor.hpp"
 #include "ctre/PCM.h"
 #include <iostream>
 
 static const int NUM_MODULE_NUMBERS = 63;
-extern PCM *modules[NUM_MODULE_NUMBERS];
+extern PCM *PCM_modules[NUM_MODULE_NUMBERS];
 extern void initializePCM(int module);
+
+extern "C" {
 
 void *initializeCompressor(uint8_t module) {
 	initializePCM(module);
 	
-	return modules[module];
+	return PCM_modules[module];
 }
 
 bool checkCompressorModule(uint8_t module) {
@@ -114,3 +123,5 @@ void clearAllPCMStickyFaults(void *pcm_pointer, int32_t *status) {
 	
 	*status = module->ClearStickyFaults();
 }
+
+}  // extern "C"

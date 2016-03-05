@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "Jaguar.h"
@@ -77,3 +77,8 @@ bool Jaguar::GetInverted() const { return m_isInverted; }
  * @param output Write out the PWM value as was found in the PIDController
  */
 void Jaguar::PIDWrite(float output) { Set(output); }
+
+/**
+ * Common interface to stop the motor until Set is called again.
+ */
+void Jaguar::StopMotor() { this->SafePWM::StopMotor(); }

@@ -1,13 +1,16 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2014. All Rights Reserved.                             */
+/* Copyright (c) FIRST 2014-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "CANTalon.h"
 #include "WPIErrors.h"
 #include <unistd.h>  // usleep
 #include <sstream>
+#include "LiveWindow/LiveWindow.h"
+
 /**
  * Number of adc engineering units per 0 to 3.3V sweep.
  * This is necessary for scaling Analog Position in rotations/RPM.
@@ -35,6 +38,7 @@ CANTalon::CANTalon(int deviceNumber)
   ApplyControlMode(m_controlMode);
   m_impl->SetProfileSlotSelect(m_profile);
   m_isInverted = false;
+  LiveWindow::GetInstance()->AddActuator("CANTalon", m_deviceNumber, this);
 }
 /**
  * Constructor for the CANTalon device.
@@ -48,6 +52,7 @@ CANTalon::CANTalon(int deviceNumber, int controlPeriodMs)
       m_safetyHelper(new MotorSafetyHelper(this)) {
   ApplyControlMode(m_controlMode);
   m_impl->SetProfileSlotSelect(m_profile);
+  LiveWindow::GetInstance()->AddActuator("CANTalon", m_deviceNumber, this);
 }
 
 CANTalon::~CANTalon() {
@@ -129,6 +134,12 @@ float CANTalon::Get() const {
 void CANTalon::Set(float value, uint8_t syncGroup) {
   /* feed safety helper since caller just updated our output */
   m_safetyHelper->Feed();
+
+  if (m_stopped) {
+    EnableControl();
+    m_stopped = false;
+  }
+
   if (m_controlEnabled) {
     m_setPoint = value;  /* cache set point for GetSetpoint() */
     CTR_Code status = CTR_OKAY;
@@ -155,6 +166,9 @@ void CANTalon::Set(float value, uint8_t syncGroup) {
       case CANSpeedController::kCurrent: {
         double milliamperes = (m_isInverted ? -value : value) * 1000.0; /* mA*/
         status = m_impl->SetDemand(milliamperes);
+      } break;
+      case CANSpeedController::kMotionProfile: {
+        status = m_impl->SetDemand((int)value);
       } break;
       default:
         wpi_setWPIErrorWithContext(
@@ -1198,7 +1212,43 @@ void CANTalon::DisableSoftPositionLimits() {
 }
 
 /**
- * TODO documentation (see CANJaguar.cpp)
+ * Overrides the forward and reverse limit switch enables.
+ * Unlike ConfigLimitMode, this function allows individual control of forward and
+ * reverse limit switch enables.
+ * Unlike ConfigLimitMode, this function does not affect the soft-limit features of Talon SRX.
+ * @see ConfigLimitMode()
+ */
+void CANTalon::ConfigLimitSwitchOverrides(bool bForwardLimitSwitchEn, bool bReverseLimitSwitchEn) {
+  CTR_Code status = CTR_OKAY;
+  int fwdRevEnable;
+  /* chose correct signal value based on caller's requests enables */
+  if(!bForwardLimitSwitchEn) {
+    /* caller wants Forward Limit Switch OFF */
+    if(!bReverseLimitSwitchEn) {
+      /* caller wants both OFF */
+      fwdRevEnable = CanTalonSRX::kLimitSwitchOverride_DisableFwd_DisableRev;
+    } else {
+      /* caller Forward OFF and Reverse ON */
+      fwdRevEnable = CanTalonSRX::kLimitSwitchOverride_DisableFwd_EnableRev;
+    }
+  } else {
+    /* caller wants Forward Limit Switch ON */
+    if(!bReverseLimitSwitchEn) {
+      /* caller wants Forward ON and Reverse OFF */
+      fwdRevEnable = CanTalonSRX::kLimitSwitchOverride_EnableFwd_DisableRev;
+    } else {
+      /* caller wants both ON */
+      fwdRevEnable = CanTalonSRX::kLimitSwitchOverride_EnableFwd_EnableRev;
+    }
+  }
+  /* update signal and error check code */
+  status = m_impl->SetOverrideLimitSwitchEn(fwdRevEnable);
+  if (status != CTR_OKAY) {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  }
+}
+
+/**
  * Configures the soft limit enable (wear leveled persistent memory).
  * Also sets the limit switch overrides.
  */
@@ -1271,6 +1321,32 @@ void CANTalon::ConfigForwardLimit(double forwardLimitPosition) {
   CTR_Code status = CTR_OKAY;
   int32_t nativeLimitPos = ScaleRotationsToNativeUnits(m_feedbackDevice, forwardLimitPosition);
   status = m_impl->SetForwardSoftLimit(nativeLimitPos);
+  if (status != CTR_OKAY) {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  }
+}
+
+/**
+ * Set the Forward Soft Limit Enable.
+ * This is the same setting that is in the Web-Based Configuration.
+ * @param bForwardSoftLimitEn true to enable Soft limit, false to disable.
+ */
+void CANTalon::ConfigForwardSoftLimitEnable(bool bForwardSoftLimitEn) {
+  CTR_Code status = CTR_OKAY;
+  status = m_impl->SetForwardSoftEnable(bForwardSoftLimitEn);
+  if (status != CTR_OKAY) {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  }
+}
+
+/**
+ * Set the Reverse Soft Limit Enable.
+ * This is the same setting that is in the Web-Based Configuration.
+ * @param bReverseSoftLimitEn true to enable Soft limit, false to disable.
+ */
+void CANTalon::ConfigReverseSoftLimitEnable(bool bReverseSoftLimitEn) {
+  CTR_Code status = CTR_OKAY;
+  status = m_impl->SetReverseSoftEnable(bReverseSoftLimitEn);
   if (status != CTR_OKAY) {
     wpi_setErrorWithContext(status, getHALErrorMessage(status));
   }
@@ -1429,6 +1505,9 @@ void CANTalon::ApplyControlMode(CANSpeedController::ControlMode mode) {
       break;
     case kFollower:
       m_sendMode = kFollowerMode;
+      break;
+    case kMotionProfile:
+      m_sendMode = kMotionProfileMode;
       break;
   }
   // Keep the talon disabled until Set() is called.
@@ -1668,6 +1747,136 @@ void CANTalon::EnableZeroSensorPositionOnIndex(bool enable, bool risingEdge)
     ConfigSetParameter(CanTalonSRX::eQuadIdxPolarity,risingEdge  ? 1 : 0);
   }
 }
+
+/**
+ * Calling application can opt to speed up the handshaking between the robot API and the Talon to increase the
+ * download rate of the Talon's Motion Profile.  Ideally the period should be no more than half the period
+ * of a trajectory point.
+ */
+void CANTalon::ChangeMotionControlFramePeriod(int periodMs)
+{
+  m_impl->ChangeMotionControlFramePeriod(periodMs);
+}
+
+/**
+ * Clear the buffered motion profile in both Talon RAM (bottom), and in the API (top).
+ * Be sure to check GetMotionProfileStatus() to know when the buffer is actually cleared.
+ */
+void CANTalon::ClearMotionProfileTrajectories()
+{
+  m_impl->ClearMotionProfileTrajectories();
+}
+
+/**
+ * Retrieve just the buffer count for the api-level (top) buffer.
+ * This routine performs no CAN or data structure lookups, so its fast and ideal
+ * if caller needs to quickly poll the progress of trajectory points being emptied
+ * into Talon's RAM. Otherwise just use GetMotionProfileStatus.
+ * @return number of trajectory points in the top buffer.
+ */
+int CANTalon::GetMotionProfileTopLevelBufferCount()
+{
+  return m_impl->GetMotionProfileTopLevelBufferCount();
+}
+
+/**
+ * Push another trajectory point into the top level buffer (which is emptied into
+ * the Talon's bottom buffer as room allows).
+ * @param trajPt the trajectory point to insert into buffer.
+ * @return true  if trajectory point push ok. CTR_BufferFull if buffer is full
+ * due to kMotionProfileTopBufferCapacity.
+ */
+bool CANTalon::PushMotionProfileTrajectory(const TrajectoryPoint & trajPt)
+{
+  /* convert positiona and velocity to native units */
+  int32_t targPos  = ScaleRotationsToNativeUnits(m_feedbackDevice, trajPt.position);
+  int32_t targVel = ScaleVelocityToNativeUnits(m_feedbackDevice, trajPt.velocity);
+  /* bounds check signals that require it */
+  uint32_t profileSlotSelect = (trajPt.profileSlotSelect) ? 1 : 0;
+  uint8_t timeDurMs = (trajPt.timeDurMs >= 255) ? 255 : trajPt.timeDurMs; /* cap time to 255ms */
+  /* send it to the top level buffer */
+  CTR_Code status = m_impl->PushMotionProfileTrajectory(targPos, targVel, profileSlotSelect, timeDurMs, trajPt.velocityOnly, trajPt.isLastPoint, trajPt.zeroPos);
+  return (status == CTR_OKAY) ? true : false;
+}
+/**
+ * @return true if api-level (top) buffer is full.
+ */
+bool CANTalon::IsMotionProfileTopLevelBufferFull()
+{
+  return m_impl->IsMotionProfileTopLevelBufferFull();
+}
+
+/**
+ * This must be called periodically to funnel the trajectory points from the API's top level buffer to
+ * the Talon's bottom level buffer.  Recommendation is to call this twice as fast as the executation rate of the motion profile.
+ * So if MP is running with 20ms trajectory points, try calling this routine every 10ms.  All motion profile functions are thread-safe
+ * through the use of a mutex, so there is no harm in having the caller utilize threading.
+ */
+void CANTalon::ProcessMotionProfileBuffer()
+{
+  m_impl->ProcessMotionProfileBuffer();
+}
+
+/**
+ * Retrieve all status information.
+ * Since this all comes from one CAN frame, its ideal to have one routine to retrieve the frame once and decode everything.
+ * @param [out] motionProfileStatus contains all progress information on the currently running MP.
+ */
+void CANTalon::GetMotionProfileStatus(MotionProfileStatus & motionProfileStatus)
+{
+  uint32_t flags;
+  uint32_t profileSlotSelect;
+  int32_t targPos, targVel;
+  uint32_t topBufferRem, topBufferCnt, btmBufferCnt;
+  uint32_t outputEnable;
+  /* retrieve all motion profile signals from status frame */
+  CTR_Code status = m_impl->GetMotionProfileStatus(flags, profileSlotSelect, targPos, targVel, topBufferRem, topBufferCnt, btmBufferCnt, outputEnable);
+  /* completely update the caller's structure */
+  motionProfileStatus.topBufferRem = topBufferRem;
+  motionProfileStatus.topBufferCnt = topBufferCnt;
+  motionProfileStatus.btmBufferCnt = btmBufferCnt;
+  motionProfileStatus.hasUnderrun =              (flags & CanTalonSRX::kMotionProfileFlag_HasUnderrun)     ? true :false;
+  motionProfileStatus.isUnderrun  =              (flags & CanTalonSRX::kMotionProfileFlag_IsUnderrun)      ? true :false;
+  motionProfileStatus.activePointValid =         (flags & CanTalonSRX::kMotionProfileFlag_ActTraj_IsValid) ? true :false;
+  motionProfileStatus.activePoint.isLastPoint =  (flags & CanTalonSRX::kMotionProfileFlag_ActTraj_IsLast)  ? true :false;
+  motionProfileStatus.activePoint.velocityOnly = (flags & CanTalonSRX::kMotionProfileFlag_ActTraj_VelOnly) ? true :false;
+  motionProfileStatus.activePoint.position = ScaleNativeUnitsToRotations(m_feedbackDevice, targPos);
+  motionProfileStatus.activePoint.velocity = ScaleNativeUnitsToRpm(m_feedbackDevice, targVel);
+  motionProfileStatus.activePoint.profileSlotSelect = profileSlotSelect;
+  switch(outputEnable){
+    case CanTalonSRX::kMotionProf_Disabled:
+      motionProfileStatus.outputEnable = SetValueMotionProfileDisable;
+    break;
+    case CanTalonSRX::kMotionProf_Enable:
+      motionProfileStatus.outputEnable = SetValueMotionProfileEnable;
+      break;
+    case CanTalonSRX::kMotionProf_Hold:
+      motionProfileStatus.outputEnable = SetValueMotionProfileHold;
+      break;
+    default:
+      motionProfileStatus.outputEnable = SetValueMotionProfileDisable;
+      break;
+  }
+  motionProfileStatus.activePoint.zeroPos = false; /* this signal is only used sending pts to Talon */
+  motionProfileStatus.activePoint.timeDurMs = 0;   /* this signal is only used sending pts to Talon */
+
+  if (status != CTR_OKAY) {
+    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  }
+}
+/**
+ * Clear the hasUnderrun flag in Talon's Motion Profile Executer when MPE is ready for another point,
+ * but the low level buffer is empty.
+ *
+ * Once the Motion Profile Executer sets the hasUnderrun flag, it stays set until
+ * Robot Application clears it with this routine, which ensures Robot Application
+ * gets a chance to instrument or react.  Caller could also check the isUnderrun flag
+ * which automatically clears when fault condition is removed.
+ */
+void CANTalon::ClearMotionProfileHasUnderrun()
+{
+  ConfigSetParameter(CanTalonSRX::eMotionProfileHasUnderrunErr, 0);
+}
 /**
 * Common interface for inverting direction of a speed controller.
 * Only works in PercentVbus, speed, and Voltage modes.
@@ -1684,12 +1893,15 @@ void CANTalon::SetInverted(bool isInverted) { m_isInverted = isInverted; }
 bool CANTalon::GetInverted() const { return m_isInverted; }
 
 /**
- * Common interface for stopping the motor
+ * Common interface for stopping the motor until the next Set() call
  * Part of the MotorSafety interface
  *
  * @deprecated Call Disable instead.
 */
-void CANTalon::StopMotor() { Disable(); }
+void CANTalon::StopMotor() {
+	Disable();
+	m_stopped = true;
+}
 
 void CANTalon::ValueChanged(ITable* source, llvm::StringRef key,
                             std::shared_ptr<nt::Value> value, bool isNew) {
@@ -1716,7 +1928,7 @@ void CANTalon::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutString("~TYPE~", "CANSpeedController");
     m_table->PutString("Type", "CANTalon");
-    m_table->PutString("Mode", GetModeName(m_controlMode));
+    m_table->PutNumber("Mode", m_controlMode);
     m_table->PutNumber("p", GetP());
     m_table->PutNumber("i", GetI());
     m_table->PutNumber("d", GetD());

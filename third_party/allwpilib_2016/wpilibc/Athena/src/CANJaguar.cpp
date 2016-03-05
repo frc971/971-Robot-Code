@@ -1,7 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2009. All Rights Reserved.                             */
+/* Copyright (c) FIRST 2009-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "CANJaguar.h"
@@ -245,8 +246,11 @@ void CANJaguar::Set(float outputValue, uint8_t syncGroup) {
   uint8_t dataBuffer[8];
   uint8_t dataSize;
 
-  if (m_safetyHelper && !m_safetyHelper->IsAlive() && m_controlEnabled) {
+  if (m_safetyHelper) m_safetyHelper->Feed();
+
+  if (m_stopped) {
     EnableControl();
+    m_stopped = false;
   }
 
   if (m_controlEnabled) {
@@ -289,8 +293,6 @@ void CANJaguar::Set(float outputValue, uint8_t syncGroup) {
     }
 
     sendMessage(messageID, dataBuffer, dataSize, kSendMessagePeriod);
-
-    if (m_safetyHelper) m_safetyHelper->Feed();
   }
 
   m_value = outputValue;
@@ -1010,6 +1012,7 @@ void CANJaguar::SetP(double p) {
     case kPercentVbus:
     case kVoltage:
     case kFollower:
+    case kMotionProfile:
       wpi_setWPIErrorWithContext(
           IncompatibleMode,
           "PID constants only apply in Speed, Position, and Current mode");
@@ -1045,6 +1048,7 @@ void CANJaguar::SetI(double i) {
     case kPercentVbus:
     case kVoltage:
     case kFollower:
+    case kMotionProfile:
       wpi_setWPIErrorWithContext(
           IncompatibleMode,
           "PID constants only apply in Speed, Position, and Current mode");
@@ -1080,6 +1084,7 @@ void CANJaguar::SetD(double d) {
     case kPercentVbus:
     case kVoltage:
     case kFollower:
+    case kMotionProfile:
       wpi_setWPIErrorWithContext(
           IncompatibleMode,
           "PID constants only apply in Speed, Position, and Current mode");
@@ -1516,7 +1521,7 @@ void CANJaguar::SetControlMode(ControlMode controlMode) {
   // Disable the previous mode
   DisableControl();
 
-  if (controlMode == kFollower)
+  if ((controlMode == kFollower) || (controlMode == kMotionProfile))
     wpi_setWPIErrorWithContext(IncompatibleMode,
                                "The Jaguar only supports Current, Voltage, "
                                "Position, Speed, and Percent (Throttle) "
@@ -1930,12 +1935,14 @@ void CANJaguar::GetDescription(std::ostringstream& desc) const {
 uint8_t CANJaguar::GetDeviceID() const { return m_deviceNumber; }
 
 /**
- * Common interface for stopping the motor
+ * Common interface for stopping the motor until the next Set() command
  * Part of the MotorSafety interface
  *
  * @deprecated Call DisableControl instead.
  */
-void CANJaguar::StopMotor() { DisableControl(); }
+void CANJaguar::StopMotor() {
+	m_stopped = true;
+}
 
 /**
 * Common interface for inverting direction of a speed controller.
@@ -1978,7 +1985,7 @@ void CANJaguar::UpdateTable() {
   if (m_table != nullptr) {
     m_table->PutString("~TYPE~", "CANSpeedController");
     m_table->PutString("Type", "CANJaguar");
-    m_table->PutString("Mode", GetModeName(m_controlMode));
+    m_table->PutNumber("Mode", m_controlMode);
     if (IsModePID(m_controlMode)) {
         m_table->PutNumber("p", GetP());
         m_table->PutNumber("i", GetI());

@@ -1,7 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.							  */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "RobotBase.h"
@@ -34,7 +35,7 @@ RobotBase &RobotBase::getInstance()
 RobotBase::RobotBase() : m_ds(DriverStation::GetInstance())
 {
 	RobotState::SetImplementation(DriverStation::GetInstance());
-	transport::SubscriberPtr time_pub = MainNode::Subscribe("time", &wpilib::internal::time_callback);
+	time_sub = MainNode::Subscribe("~/time", &wpilib::internal::time_callback);
 }
 
 /**

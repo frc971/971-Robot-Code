@@ -1,12 +1,15 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.							  */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
+
 #pragma once
 
 #include "ErrorBase.h"
 #include <stdlib.h>
+#include <memory>
 #include "MotorSafety.h"
 #include "MotorSafetyHelper.h"
 
@@ -37,11 +40,17 @@ public:
 			uint32_t frontRightMotorChannel, uint32_t rearRightMotorChannel);
 	RobotDrive(SpeedController *leftMotor, SpeedController *rightMotor);
 	RobotDrive(SpeedController &leftMotor, SpeedController &rightMotor);
+	RobotDrive(std::shared_ptr<SpeedController> leftMotor,
+			   std::shared_ptr<SpeedController> rightMotor);
 	RobotDrive(SpeedController *frontLeftMotor, SpeedController *rearLeftMotor,
 			SpeedController *frontRightMotor, SpeedController *rearRightMotor);
 	RobotDrive(SpeedController &frontLeftMotor, SpeedController &rearLeftMotor,
 			SpeedController &frontRightMotor, SpeedController &rearRightMotor);
-	virtual ~RobotDrive();
+	RobotDrive(std::shared_ptr<SpeedController> frontLeftMotor,
+			  std::shared_ptr<SpeedController> rearLeftMotor,
+			  std::shared_ptr<SpeedController> frontRightMotor,
+			  std::shared_ptr<SpeedController> rearRightMotor);
+	virtual ~RobotDrive() = default;
 
     RobotDrive(const RobotDrive&) = delete;
     RobotDrive& operator=(const RobotDrive&) = delete;
@@ -85,14 +94,14 @@ protected:
 
 	static const int32_t kMaxNumberOfMotors = 4;
 
-	int32_t m_invertedMotors[kMaxNumberOfMotors];
+	int32_t m_invertedMotors[kMaxNumberOfMotors] = {1,1,1,1};
 	float m_sensitivity = 0.5;
 	double m_maxOutput = 1.0;
 	bool m_deleteSpeedControllers;
-	SpeedController *m_frontLeftMotor = nullptr;
-	SpeedController *m_frontRightMotor = nullptr;
-	SpeedController *m_rearLeftMotor = nullptr;
-	SpeedController *m_rearRightMotor = nullptr;
+	std::shared_ptr<SpeedController> m_frontLeftMotor;
+	std::shared_ptr<SpeedController> m_frontRightMotor;
+	std::shared_ptr<SpeedController> m_rearLeftMotor;
+	std::shared_ptr<SpeedController> m_rearRightMotor;
 	// FIXME: MotorSafetyHelper *m_safetyHelper;
 
 private:

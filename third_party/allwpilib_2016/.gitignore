@@ -175,3 +175,9 @@ __pycache__
 
 #catkin stuff
 package.xml
+
+# Doxygen stuff
+NO
+
+# Simulation folder stuff
+!simulation/install_resources/*

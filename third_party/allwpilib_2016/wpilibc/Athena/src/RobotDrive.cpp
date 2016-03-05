@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) FIRST 2008. All Rights Reserved.
- */
+/* Copyright (c) FIRST 2008-2016. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in $(WIND_BASE)/WPILib.  */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
 #include "RobotDrive.h"
@@ -745,9 +745,9 @@ void RobotDrive::GetDescription(std::ostringstream& desc) const {
 }
 
 void RobotDrive::StopMotor() {
-  if (m_frontLeftMotor != nullptr) m_frontLeftMotor->Disable();
-  if (m_frontRightMotor != nullptr) m_frontRightMotor->Disable();
-  if (m_rearLeftMotor != nullptr) m_rearLeftMotor->Disable();
-  if (m_rearRightMotor != nullptr) m_rearRightMotor->Disable();
+  if (m_frontLeftMotor != nullptr) m_frontLeftMotor->StopMotor();
+  if (m_frontRightMotor != nullptr) m_frontRightMotor->StopMotor();
+  if (m_rearLeftMotor != nullptr) m_rearLeftMotor->StopMotor();
+  if (m_rearRightMotor != nullptr) m_rearRightMotor->StopMotor();
   m_safetyHelper->Feed();
 }

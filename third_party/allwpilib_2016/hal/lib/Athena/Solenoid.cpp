@@ -1,3 +1,9 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) FIRST 2016. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
 
 #include "HAL/Solenoid.hpp"
 
@@ -9,7 +15,7 @@
 
 static const int NUM_MODULE_NUMBERS = 63;
 
-PCM *modules[NUM_MODULE_NUMBERS] = { NULL };
+PCM *PCM_modules[NUM_MODULE_NUMBERS] = { NULL };
 
 struct solenoid_port_t {
 	PCM *module;
@@ -17,17 +23,19 @@ struct solenoid_port_t {
 };
 
 void initializePCM(int module) {
-	if(!modules[module]) {
-		modules[module] = new PCM(module);
+	if(!PCM_modules[module]) {
+		PCM_modules[module] = new PCM(module);
 	}
 }
+
+extern "C" {
 
 void* initializeSolenoidPort(void *port_pointer, int32_t *status) {
 	Port* port = (Port*) port_pointer;
 	initializePCM(port->module);
 	
 	solenoid_port_t *solenoid_port = new solenoid_port_t;
-	solenoid_port->module = modules[port->module];
+	solenoid_port->module = PCM_modules[port->module];
 	solenoid_port->pin = port->pin;
 
 	return solenoid_port;
@@ -101,3 +109,5 @@ void clearAllPCMStickyFaults_sol(void *solenoid_port_pointer, int32_t *status){
 	
 	*status = port->module->ClearStickyFaults();
 }
+
+}  // extern "C"
