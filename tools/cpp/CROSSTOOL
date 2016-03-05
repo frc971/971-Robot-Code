@@ -89,6 +89,7 @@ toolchain {
   objcopy_embed_flag: "binary"
   tool_path { name: "objdump" path: "/usr/bin/objdump" }
   tool_path { name: "strip" path: "/usr/bin/strip" }
+  linking_mode_flags { mode: DYNAMIC }
 
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
   # used by gcc. That works because bazel currently doesn't track files at
@@ -311,6 +312,7 @@ toolchain {
   objcopy_embed_flag: "binary"
   tool_path { name: "objdump" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-objdump" }
   tool_path { name: "strip" path: "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-strip" }
+  linking_mode_flags { mode: DYNAMIC }
 
   compiler_flag: "--sysroot=external/arm_frc_linux_gnueabi_repo/usr/arm-frc-linux-gnueabi"
   compiler_flag: "-nostdinc"
@@ -563,6 +565,7 @@ toolchain {
   objcopy_embed_flag: "binary"
   tool_path { name: "objdump" path: "linaro_linux_gcc/arm-linux-gnueabihf-objdump" }
   tool_path { name: "strip" path: "linaro_linux_gcc/arm-linux-gnueabihf-strip" }
+  linking_mode_flags { mode: DYNAMIC }
 
   compiler_flag: "-target"
   compiler_flag: "armv7a-arm-linux-gnueabif"
