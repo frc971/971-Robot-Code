@@ -11,7 +11,7 @@ cc_library(
 filegroup(
   name = 'gcc',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:gcc',
+    '@linaro_linux_gcc_4_9_repo//:gcc',
     'arm-linux-gnueabihf-gcc',
   ],
 )
@@ -19,7 +19,7 @@ filegroup(
 filegroup(
   name = 'ar',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:ar',
+    '@linaro_linux_gcc_4_9_repo//:ar',
     'arm-linux-gnueabihf-ar',
   ],
 )
@@ -27,7 +27,7 @@ filegroup(
 filegroup(
   name = 'ld',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:ld',
+    '@linaro_linux_gcc_4_9_repo//:ld',
     'arm-linux-gnueabihf-ld',
   ],
 )
@@ -35,7 +35,7 @@ filegroup(
 filegroup(
   name = 'nm',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:nm',
+    '@linaro_linux_gcc_4_9_repo//:nm',
     'arm-linux-gnueabihf-nm',
   ],
 )
@@ -43,7 +43,7 @@ filegroup(
 filegroup(
   name = 'objcopy',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:objcopy',
+    '@linaro_linux_gcc_4_9_repo//:objcopy',
     'arm-linux-gnueabihf-objcopy',
   ],
 )
@@ -51,7 +51,7 @@ filegroup(
 filegroup(
   name = 'objdump',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:objdump',
+    '@linaro_linux_gcc_4_9_repo//:objdump',
     'arm-linux-gnueabihf-objdump',
   ],
 )
@@ -59,7 +59,7 @@ filegroup(
 filegroup(
   name = 'strip',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:strip',
+    '@linaro_linux_gcc_4_9_repo//:strip',
     'arm-linux-gnueabihf-strip',
   ],
 )
@@ -67,7 +67,7 @@ filegroup(
 filegroup(
   name = 'as',
   srcs = [
-    '@linaro_linux_gcc_4.9_repo//:as',
+    '@linaro_linux_gcc_4_9_repo//:as',
     'arm-linux-gnueabihf-as',
   ],
 )

@@ -41,7 +41,7 @@ filegroup(
     '@arm_frc_linux_gnueabi_repo//:compiler_components',
     ':roborio-compiler-files',
     ':flags_compiler_inputs',
-    '@linaro_linux_gcc_4.9_repo//:compiler_components',
+    '@linaro_linux_gcc_4_9_repo//:compiler_components',
     ':linaro-gcc-files',
   ],
 )
@@ -120,7 +120,7 @@ filegroup(
   srcs = [
     '//tools/cpp/linaro_linux_gcc:clang-symlinks',
     '//tools/cpp/linaro_linux_gcc:tool-wrappers',
-    '@linaro_linux_gcc_4.9_repo//:compiler_pieces',
+    '@linaro_linux_gcc_4_9_repo//:compiler_pieces',
   ],
 )
 
@@ -132,7 +132,7 @@ filegroup(
     '//tools/cpp/linaro_linux_gcc:ar',
     '//tools/cpp/linaro_linux_gcc:clang-ld',
     '//tools/cpp/linaro_linux_gcc:clang',
-    '@linaro_linux_gcc_4.9_repo//:compiler_pieces',
+    '@linaro_linux_gcc_4_9_repo//:compiler_pieces',
   ],
 )
 

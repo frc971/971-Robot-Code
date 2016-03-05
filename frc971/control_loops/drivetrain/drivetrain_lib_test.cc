@@ -48,7 +48,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       ::y2016::control_loops::drivetrain::kHighGearRatio,
       ::y2016::control_loops::drivetrain::kLowGearRatio,
       kThreeStateDriveShifter,
-      kThreeStateDriveShifter};
+      kThreeStateDriveShifter,
+      false};
 
   return kDrivetrainConfig;
 };

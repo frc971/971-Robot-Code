@@ -21,17 +21,20 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
  public:
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
-  explicit DrivetrainLoop(const DrivetrainConfig &dt_config,
+  explicit DrivetrainLoop(
+      const DrivetrainConfig &dt_config,
       ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
           &::frc971::control_loops::drivetrain_queue);
 
  protected:
   // Executes one cycle of the control loop.
-  virtual void RunIteration(
+  void RunIteration(
       const ::frc971::control_loops::DrivetrainQueue::Goal *goal,
       const ::frc971::control_loops::DrivetrainQueue::Position *position,
       ::frc971::control_loops::DrivetrainQueue::Output *output,
-      ::frc971::control_loops::DrivetrainQueue::Status *status);
+      ::frc971::control_loops::DrivetrainQueue::Status *status) override;
+
+  void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
   SimpleLogInterval no_position_ = SimpleLogInterval(
