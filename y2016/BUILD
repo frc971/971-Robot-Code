@@ -39,6 +39,7 @@ cc_binary(
     '//frc971/autonomous:auto_queue',
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/superstructure:superstructure_queue',
+    '//y2016/queues:ball_detector',
   ],
 )
 

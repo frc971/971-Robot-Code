@@ -14,6 +14,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/queues/ball_detector.q.h"
 
 #include "y2016/constants.h"
 #include "frc971/queues/gyro.q.h"
@@ -172,7 +173,17 @@ class Reader : public ::aos::input::JoystickInput {
       wrist_goal_ = 0.0;
     }
 
-    is_intaking_ = data.IsPressed(kIntakeIn);
+    bool ball_detected = false;
+    ::y2016::sensors::ball_detector.FetchLatest();
+    if (::y2016::sensors::ball_detector.get()) {
+      ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+    }
+    if (data.PosEdge(kIntakeIn)) {
+      saw_ball_when_started_intaking_ = ball_detected;
+    }
+
+    is_intaking_ = data.IsPressed(kIntakeIn) &&
+                   (!ball_detected || saw_ball_when_started_intaking_);
 
     if (data.IsPressed(kFire) && shooter_velocity_ != 0.0) {
       fire_ = true;
@@ -262,6 +273,9 @@ class Reader : public ::aos::input::JoystickInput {
 
   // If we're waiting for the subsystems to zero.
   bool waiting_for_zero_ = true;
+
+  // If true, the ball was present when the intaking button was pressed.
+  bool saw_ball_when_started_intaking_ = false;
 
   bool is_intaking_ = false;
   bool is_outtaking_ = false;

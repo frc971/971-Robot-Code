@@ -37,5 +37,6 @@ cc_binary(
     '//y2016/control_loops/drivetrain:polydrivetrain_plants',
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/superstructure:superstructure_queue',
+    '//y2016/queues:ball_detector',
   ],
 )

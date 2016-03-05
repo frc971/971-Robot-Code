@@ -36,6 +36,7 @@
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/queues/ball_detector.q.h"
 
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
@@ -243,6 +244,12 @@ class SensorReader {
     wrist_encoder_.set_index(::std::move(index));
   }
 
+  // Ball detector setter.
+  void set_ball_detector(::std::unique_ptr<AnalogInput> analog) {
+    ball_detector_ = ::std::move(analog);
+  }
+
+
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
 
@@ -333,6 +340,14 @@ class SensorReader {
 
       superstructure_message.Send();
     }
+
+    {
+      auto ball_detector_message =
+          ::y2016::sensors::ball_detector.MakeMessage();
+      ball_detector_message->voltage = ball_detector_->GetVoltage();
+      LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
+      ball_detector_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
@@ -371,6 +386,7 @@ class SensorReader {
   ::std::unique_ptr<Encoder> shooter_left_encoder_, shooter_right_encoder_;
   ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_,
       shoulder_encoder_, wrist_encoder_;
+  ::std::unique_ptr<AnalogInput> ball_detector_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter drivetrain_shooter_encoder_filter_, hall_filter_,
@@ -611,7 +627,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader;
 
-    // TODO(constants): Update these input numbers.
     reader.set_drivetrain_left_encoder(make_encoder(5));
     reader.set_drivetrain_right_encoder(make_encoder(6));
     reader.set_drivetrain_left_hall(make_unique<AnalogInput>(5));
@@ -631,6 +646,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_wrist_encoder(make_encoder(1));
     reader.set_wrist_index(make_unique<DigitalInput>(1));
     reader.set_wrist_potentiometer(make_unique<AnalogInput>(1));
+
+    reader.set_ball_detector(make_unique<AnalogInput>(7));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
