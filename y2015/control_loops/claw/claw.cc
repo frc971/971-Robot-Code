@@ -33,7 +33,8 @@ double ClawCappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
 Claw::Claw(control_loops::ClawQueue *claw)
     : aos::controls::ControlLoop<control_loops::ClawQueue>(claw),
       last_piston_edge_(Time::Now()),
-      claw_loop_(new ClawCappedStateFeedbackLoop(MakeClawLoop())),
+      claw_loop_(new ClawCappedStateFeedbackLoop(
+          ::y2015::control_loops::claw::MakeClawLoop())),
       claw_estimator_(constants::GetValues().claw.zeroing),
       profile_(::aos::controls::kLoopFrequency) {}
 

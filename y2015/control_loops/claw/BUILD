@@ -25,15 +25,39 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_claw',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2015/control_loops/python:claw) $(OUTS)',
+  tools = [
+    '//y2015/control_loops/python:claw',
+  ],
+  outs = [
+    'claw_motor_plant.h',
+    'claw_motor_plant.cc',
+  ],
+)
+
 cc_library(
-  name = 'claw_lib',
+  name = 'claw_plants',
   srcs = [
-    'claw.cc',
     'claw_motor_plant.cc',
   ],
   hdrs = [
-    'claw.h',
     'claw_motor_plant.h',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
+cc_library(
+  name = 'claw_lib',
+  hdrs = [
+    'claw.h',
+  ],
+  srcs = [
+    'claw.cc',
   ],
   deps = [
     ':claw_queue',
@@ -43,6 +67,7 @@ cc_library(
     '//y2015:constants',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/zeroing:zeroing',
+    ':claw_plants',
   ],
 )
 

@@ -1,13 +1,21 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
-import polytope
-import polydrivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
+from frc971.control_loops.python import polytope
 import numpy
 import sys
 import matplotlib
 from matplotlib import pylab
+import glog
+import gflags
+
+FLAGS = gflags.FLAGS
+
+try:
+  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+except gflags.DuplicateFlagError:
+  pass
 
 class Claw(control_loop.ControlLoop):
   def __init__(self, name="Claw", mass=None):
@@ -110,7 +118,7 @@ class Claw(control_loop.ControlLoop):
 
 
 def run_test(claw, initial_X, goal, max_separation_error=0.01,
-             show_graph=True, iterations=200, controller_claw=None,
+             show_graph=False, iterations=200, controller_claw=None,
              observer_claw=None):
   """Runs the claw plant with an initial condition and goal.
 
@@ -198,14 +206,13 @@ def main(argv):
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
-    print "Expected .h file name and .cc file name for the claw."
+    glog.fatal('Expected .h and .cc filename for claw.')
   else:
-    claw = Claw("Claw")
-    loop_writer = control_loop.ControlLoopWriter("Claw", [claw])
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+    namespaces = ['y2015', 'control_loops', 'claw']
+    claw = Claw('Claw')
+    loop_writer = control_loop.ControlLoopWriter('Claw', [claw],
+                                                 namespaces=namespaces)
+    loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
