@@ -20,7 +20,7 @@ class GyroSender {
 
   // For ::std::thread to call.
   //
-  // Initializes the gyro and then loops forever taking readings.
+  // Initializes the gyro and then loops until Quit() is called taking readings.
   void operator()();
 
   void Quit() { run_ = false; }

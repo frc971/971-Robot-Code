@@ -206,3 +206,28 @@ cc_library(
     '//aos/externals:wpilib',
   ],
 )
+
+queue_library(
+  name = 'imu_queue',
+  srcs = [
+    'imu.q',
+  ],
+)
+
+cc_library(
+  name = 'ADIS16448',
+  hdrs = [
+    'ADIS16448.h',
+  ],
+  srcs = [
+    'ADIS16448.cc',
+  ],
+  deps = [
+    '//aos/externals:wpilib',
+    '//aos/common/logging',
+    '//aos/common/logging:queue_logging',
+    '//aos/common:time',
+    '//aos/linux_code:init',
+    ':imu_queue',
+  ],
+)
