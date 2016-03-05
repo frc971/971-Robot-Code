@@ -37,7 +37,7 @@ class Shoulder(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratio
-    self.G = (56.0 / 12.0) * (64.0 / 14.0) * (72.0 / 18.0) * (58.0 / 16.0)
+    self.G = (56.0 / 12.0) * (64.0 / 14.0) * (72.0 / 18.0) * (42.0 / 12.0)
 
     self.J = 3.0
 
