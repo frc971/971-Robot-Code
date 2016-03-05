@@ -57,3 +57,19 @@ aos_downloader(
     '//aos:prime_binaries',
   ],
 )
+
+aos_downloader(
+  name = 'download_stripped',
+  start_srcs = [
+    ':joystick_reader.stripped',
+    '//aos:prime_start_binaries_stripped',
+    '//y2016/control_loops/drivetrain:drivetrain.stripped',
+    '//y2016/control_loops/superstructure:superstructure.stripped',
+    '//y2016/control_loops/shooter:shooter.stripped',
+    '//y2016/autonomous:auto.stripped',
+    '//y2016/wpilib:wpilib_interface.stripped',
+  ],
+  srcs = [
+    '//aos:prime_binaries_stripped',
+  ],
+)
