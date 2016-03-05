@@ -54,7 +54,7 @@ _single_fortran_object = rule(
     # TODO(Brian): Replace this with something more fine-grained from the
     # configuration fragment or something.
     '_cc_toolchain': attr.label(
-      default = Label('//tools/cpp:toolchain'),
+      default = Label('@//tools/cpp:toolchain'),
     ),
   },
   outputs = _define_fortran_output,
