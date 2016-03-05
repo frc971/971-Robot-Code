@@ -40,10 +40,9 @@ class Intake(control_loop.ControlLoop):
     # Gear ratio
     self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 18.0) * (48.0 / 16.0)
 
-    # Measured in CAD
-    # self.J = 0.9
-    # With extra mass to compensate for friction.
-    self.J = 1.2
+    # Moment of inertia, measured in CAD.
+    # Extra mass to compensate for friction is added on.
+    self.J = 0.34 + 0.1
 
     # Control loop time step
     self.dt = 0.005
