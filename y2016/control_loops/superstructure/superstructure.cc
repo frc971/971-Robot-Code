@@ -14,12 +14,12 @@ namespace control_loops {
 namespace superstructure {
 
 namespace {
-constexpr double kZeroingVoltage = 6.0;
-constexpr double kOperatingVoltage = 6.0;
-constexpr double kLandingShoulderDownVoltage = -1.5;
+constexpr double kZeroingVoltage = 5.0;
+constexpr double kOperatingVoltage = 12.0;
+constexpr double kLandingShoulderDownVoltage = -2.0;
 // The maximum voltage the intake roller will be allowed to use.
-constexpr float kMaxIntakeTopVoltage = 8.0;
-constexpr float kMaxIntakeBottomVoltage = 8.0;
+constexpr float kMaxIntakeTopVoltage = 12.0;
+constexpr float kMaxIntakeBottomVoltage = 12.0;
 
 // Aliases to reduce typing.
 constexpr double kIntakeEncoderIndexDifference =
@@ -559,6 +559,20 @@ void Superstructure::RunIteration(
   }
 
   // Calculate the loops for a cycle.
+  {
+    Eigen::Matrix<double, 3, 1> error = intake_.controller().error();
+    status->intake.position_power = intake_.controller().K(0, 0) * error(0, 0);
+    status->intake.velocity_power = intake_.controller().K(0, 1) * error(1, 0);
+  }
+
+  {
+    Eigen::Matrix<double, 6, 1> error = arm_.controller().error();
+    status->shoulder.position_power = arm_.controller().K(0, 0) * error(0, 0);
+    status->shoulder.velocity_power = arm_.controller().K(0, 1) * error(1, 0);
+    status->wrist.position_power = arm_.controller().K(0, 2) * error(2, 0);
+    status->wrist.velocity_power = arm_.controller().K(0, 3) * error(3, 0);
+  }
+
   arm_.Update(disable);
   intake_.Update(disable);
 
@@ -582,8 +596,7 @@ void Superstructure::RunIteration(
   }
 
   // Save debug/internal state.
-  // TODO(austin): Save the voltage errors.
-  status->zeroed = IsRunning();
+  status->zeroed = arm_.zeroed() && intake_.zeroed();
 
   status->shoulder.angle = arm_.X_hat(0, 0);
   status->shoulder.angular_velocity = arm_.X_hat(1, 0);
@@ -592,6 +605,9 @@ void Superstructure::RunIteration(
   status->shoulder.unprofiled_goal_angle = arm_.unprofiled_goal(0, 0);
   status->shoulder.unprofiled_goal_angular_velocity =
       arm_.unprofiled_goal(1, 0);
+  status->shoulder.voltage_error = arm_.X_hat(4, 0);
+  status->shoulder.calculated_velocity =
+      (arm_.shoulder_angle() - last_shoulder_angle_) / 0.005;
   status->shoulder.estimator_state = arm_.ShoulderEstimatorState();
 
   status->wrist.angle = arm_.X_hat(2, 0);
@@ -600,6 +616,9 @@ void Superstructure::RunIteration(
   status->wrist.goal_angular_velocity = arm_.goal(3, 0);
   status->wrist.unprofiled_goal_angle = arm_.unprofiled_goal(2, 0);
   status->wrist.unprofiled_goal_angular_velocity = arm_.unprofiled_goal(3, 0);
+  status->wrist.voltage_error = arm_.X_hat(5, 0);
+  status->wrist.calculated_velocity =
+      (arm_.wrist_angle() - last_wrist_angle_) / 0.005;
   status->wrist.estimator_state = arm_.WristEstimatorState();
 
   status->intake.angle = intake_.X_hat(0, 0);
@@ -609,7 +628,14 @@ void Superstructure::RunIteration(
   status->intake.unprofiled_goal_angle = intake_.unprofiled_goal(0, 0);
   status->intake.unprofiled_goal_angular_velocity =
       intake_.unprofiled_goal(1, 0);
+  status->intake.calculated_velocity = (intake_.angle() - last_intake_angle_) / 0.005;
+  status->intake.voltage_error = intake_.X_hat(2, 0);
   status->intake.estimator_state = intake_.IntakeEstimatorState();
+  status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
+
+  last_shoulder_angle_ = arm_.shoulder_angle();
+  last_wrist_angle_ = arm_.wrist_angle();
+  last_intake_angle_ = intake_.angle();
 
   status->estopped = (state_ == ESTOP);
 

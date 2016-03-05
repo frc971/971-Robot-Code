@@ -20,8 +20,9 @@ using ::frc971::control_loops::GearLogging;
 using ::frc971::control_loops::CIMLogging;
 using ::frc971::control_loops::CoerceGoal;
 
-PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config)
-    : kf_(dt_config.make_kf_drivetrain_loop()),
+PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config,
+                               StateFeedbackLoop<7, 2, 3> *kf)
+    : kf_(kf),
       U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                /*[*/ -1, 0 /*]*/,
                /*[*/ 0, 1 /*]*/,
@@ -113,7 +114,7 @@ void PolyDrivetrain::UpdateGears(Gear requested_gear) {
 
 void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
                              bool highgear) {
-  const double kWheelNonLinearity = 0.3;
+  const double kWheelNonLinearity = 0.4;
   // Apply a sin function that's scaled to make it feel better.
   const double angular_range = M_PI_2 * kWheelNonLinearity;
 
@@ -129,6 +130,7 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
 
   wheel_ = sin(angular_range * wheel) / sin(angular_range);
   wheel_ = sin(angular_range * wheel_) / sin(angular_range);
+  wheel_ = 2.0 * wheel - wheel_;
   quickturn_ = quickturn;
 
   static const double kThrottleDeadband = 0.05;
@@ -212,7 +214,7 @@ void PolyDrivetrain::SetPosition(
   }
 }
 
-double PolyDrivetrain::FilterVelocity(double throttle) {
+double PolyDrivetrain::FilterVelocity(double throttle) const {
   const Eigen::Matrix<double, 2, 2> FF =
       loop_->B().inverse() *
       (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
@@ -261,8 +263,8 @@ double PolyDrivetrain::MaxVelocity() {
 
 void PolyDrivetrain::Update() {
   if (dt_config_.loop_type == LoopType::CLOSED_LOOP) {
-    loop_->mutable_X_hat()(0, 0) = kf_.X_hat()(1, 0);
-    loop_->mutable_X_hat()(1, 0) = kf_.X_hat()(3, 0);
+    loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(1, 0);
+    loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(3, 0);
   }
 
   // TODO(austin): Observer for the current velocity instead of difference
@@ -292,6 +294,8 @@ void PolyDrivetrain::Update() {
     }
     const double left_velocity = fvel - steering_velocity;
     const double right_velocity = fvel + steering_velocity;
+    goal_left_velocity_ = left_velocity;
+    goal_right_velocity_ = right_velocity;
 
     // Integrate velocity to get the position.
     // This position is used to get integral control.
@@ -354,6 +358,8 @@ void PolyDrivetrain::Update() {
 
       LOG_STRUCT(DEBUG, "currently", logging);
     }
+    goal_left_velocity_ = current_left_velocity;
+    goal_right_velocity_ = current_right_velocity;
 
     // Any motor is not in gear. Speed match.
     ::Eigen::Matrix<double, 1, 1> R_left;
@@ -382,6 +388,12 @@ void PolyDrivetrain::SendMotors(
     output->left_high = left_gear_ == HIGH || left_gear_ == SHIFTING_UP;
     output->right_high = right_gear_ == HIGH || right_gear_ == SHIFTING_UP;
   }
+}
+
+void PolyDrivetrain::PopulateStatus(
+    ::frc971::control_loops::DrivetrainQueue::Status *status) {
+  status->left_velocity_goal = goal_left_velocity_;
+  status->right_velocity_goal = goal_right_velocity_;
 }
 
 }  // namespace drivetrain

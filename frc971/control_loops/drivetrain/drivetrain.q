@@ -112,6 +112,10 @@ queue_group DrivetrainQueue {
     double uncapped_left_voltage;
     double uncapped_right_voltage;
 
+    // The goal velocities for the polydrive controller.
+    double left_velocity_goal;
+    double right_velocity_goal;
+
     // True if the output voltage was capped last cycle.
     bool output_was_capped;
   };

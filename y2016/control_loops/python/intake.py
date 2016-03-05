@@ -40,7 +40,10 @@ class Intake(control_loop.ControlLoop):
     # Gear ratio
     self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 18.0) * (48.0 / 16.0)
 
-    self.J = 0.9
+    # Measured in CAD
+    # self.J = 0.9
+    # With extra mass to compensate for friction.
+    self.J = 1.2
 
     # Control loop time step
     self.dt = 0.005
@@ -96,8 +99,8 @@ class Intake(control_loop.ControlLoop):
 
     glog.debug('L is %s', repr(self.L))
 
-    q_pos = 0.05
-    q_vel = 2.65
+    q_pos = 0.10
+    q_vel = 1.65
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0],
                            [0.0, (q_vel ** 2.0)]])
 
@@ -138,8 +141,8 @@ class IntegralIntake(Intake):
 
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 0.08
-    q_vel = 4.00
+    q_pos = 0.12
+    q_vel = 2.00
     q_voltage = 3.0
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],

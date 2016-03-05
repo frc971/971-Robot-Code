@@ -41,9 +41,9 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   const DrivetrainConfig dt_config_;
 
-  PolyDrivetrain dt_openloop_{dt_config_};
-  DrivetrainMotorsSS dt_closedloop_{dt_config_};
   StateFeedbackLoop<7, 2, 3> kf_;
+  PolyDrivetrain dt_openloop_;
+  DrivetrainMotorsSS dt_closedloop_;
 
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;

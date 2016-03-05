@@ -29,7 +29,9 @@ DrivetrainLoop::DrivetrainLoop(
     : aos::controls::ControlLoop<::frc971::control_loops::DrivetrainQueue>(
           my_drivetrain),
       dt_config_(dt_config),
-      kf_(dt_config_.make_kf_drivetrain_loop()) {
+      kf_(dt_config_.make_kf_drivetrain_loop()),
+      dt_openloop_(dt_config_, &kf_),
+      dt_closedloop_(dt_config_) {
   ::aos::controls::HPolytope<0>::Init();
 }
 
@@ -116,6 +118,8 @@ void DrivetrainLoop::RunIteration(
     status->output_was_capped = dt_closedloop_.OutputWasCapped();
     status->uncapped_left_voltage = dt_closedloop_.loop().U_uncapped(0, 0);
     status->uncapped_right_voltage = dt_closedloop_.loop().U_uncapped(1, 0);
+
+    dt_openloop_.PopulateStatus(status);
   }
 
   double left_voltage = 0.0;

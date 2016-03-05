@@ -128,12 +128,12 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.PlaceControllerPoles([0.7, 0.7])
+    self.PlaceControllerPoles([0.67, 0.67])
     self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
     self.G_low = self._drivetrain.G_low
-    self.R = self._drivetrain.R
+    self.resistance = self._drivetrain.resistance
     self.r = self._drivetrain.r
     self.Kv = self._drivetrain.Kv
     self.Kt = self._drivetrain.Kt
@@ -180,6 +180,10 @@ class VelocityDrivetrain(object):
     self.dt = 0.005
 
     self.R = numpy.matrix(
+        [[0.0],
+         [0.0]])
+
+    self.U_ideal = numpy.matrix(
         [[0.0],
          [0.0]])
 
@@ -238,9 +242,9 @@ class VelocityDrivetrain(object):
                  self.CurrentDrivetrain().r)
     #print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
     high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
-                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
-                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     high_power = high_torque * high_omega
     low_power = low_torque * low_omega
     #if should_print:
@@ -410,24 +414,25 @@ def main(argv):
 
   vdrivetrain = VelocityDrivetrain()
 
-  if len(argv) != 5:
-    glog.fatal('Expected .h file name and .cc file name')
-  else:
-    namespaces = ['y2016', 'control_loops', 'drivetrain']
-    dog_loop_writer = control_loop.ControlLoopWriter(
-        "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
-                       vdrivetrain.drivetrain_low_high,
-                       vdrivetrain.drivetrain_high_low,
-                       vdrivetrain.drivetrain_high_high],
-                       namespaces=namespaces)
+  if not FLAGS.plot:
+    if len(argv) != 5:
+      glog.fatal('Expected .h file name and .cc file name')
+    else:
+      namespaces = ['y2016', 'control_loops', 'drivetrain']
+      dog_loop_writer = control_loop.ControlLoopWriter(
+          "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
+                         vdrivetrain.drivetrain_low_high,
+                         vdrivetrain.drivetrain_high_low,
+                         vdrivetrain.drivetrain_high_high],
+                         namespaces=namespaces)
 
-    dog_loop_writer.Write(argv[1], argv[2])
+      dog_loop_writer.Write(argv[1], argv[2])
 
-    cim_writer = control_loop.ControlLoopWriter(
-        "CIM", [drivetrain.CIM()])
+      cim_writer = control_loop.ControlLoopWriter(
+          "CIM", [drivetrain.CIM()])
 
-    cim_writer.Write(argv[3], argv[4])
-    return
+      cim_writer.Write(argv[3], argv[4])
+      return
 
   vl_plot = []
   vr_plot = []
@@ -474,22 +479,6 @@ def main(argv):
       radius_plot.append(turn_velocity)
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
-
-  cim_velocity_plot = []
-  cim_voltage_plot = []
-  cim_time = []
-  cim = drivetrain.CIM()
-  R = numpy.matrix([[300]])
-  for t in numpy.arange(0, 0.5, cim.dt):
-    U = numpy.clip(cim.K * (R - cim.X) + R / cim.Kv, cim.U_min, cim.U_max)
-    cim.Update(U)
-    cim_velocity_plot.append(cim.X[0, 0])
-    cim_voltage_plot.append(U[0, 0] * 10)
-    cim_time.append(t)
-  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
-  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
-  pylab.legend()
-  pylab.show()
 
   # TODO(austin):
   # Shifting compensation.

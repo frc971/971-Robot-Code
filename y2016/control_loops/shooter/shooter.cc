@@ -11,6 +11,8 @@ namespace y2016 {
 namespace control_loops {
 namespace shooter {
 
+using ::aos::time::Time;
+
 // TODO(austin): Pseudo current limit?
 
 ShooterSide::ShooterSide()
@@ -67,7 +69,8 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
 }
 
 Shooter::Shooter(ShooterQueue *my_shooter)
-    : aos::controls::ControlLoop<ShooterQueue>(my_shooter) {}
+    : aos::controls::ControlLoop<ShooterQueue>(my_shooter),
+      last_pre_shot_timeout_(0, 0) {}
 
 void Shooter::RunIteration(const ShooterQueue::Goal *goal,
                            const ShooterQueue::Position *position,
@@ -94,8 +97,53 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
     output->voltage_right = right_.voltage();
 
     if (goal) {
+      bool shoot = false;
+      switch (state_) {
+        case ShooterLatchState::PASS_THROUGH:
+          if (goal->push_to_shooter) {
+            if (::std::abs(goal->angular_velocity) > 10) {
+              if (status->ready) {
+                state_ = ShooterLatchState::WAITING_FOR_SPINDOWN;
+                shoot = true;
+              }
+            } else {
+              shoot = true;
+            }
+          }
+          last_pre_shot_timeout_ = Time::Now() + Time::InSeconds(1.0);
+          break;
+        case ShooterLatchState::WAITING_FOR_SPINDOWN:
+          shoot = true;
+          if (left_.velocity() < goal->angular_velocity * 0.9 ||
+              right_.velocity() < goal->angular_velocity * 0.9) {
+            state_ = ShooterLatchState::WAITING_FOR_SPINUP;
+          }
+          if (::std::abs(goal->angular_velocity) < 10 ||
+              last_pre_shot_timeout_ < Time::Now()) {
+            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+          }
+          break;
+        case ShooterLatchState::WAITING_FOR_SPINUP:
+          shoot = true;
+          if (left_.velocity() > goal->angular_velocity * 0.95 &&
+              right_.velocity() > goal->angular_velocity * 0.95) {
+            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+          }
+          if (::std::abs(goal->angular_velocity) < 10 ||
+              last_pre_shot_timeout_ < Time::Now()) {
+            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+          }
+          break;
+        case ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE:
+          shoot = true;
+          if (!goal->push_to_shooter) {
+            state_ = ShooterLatchState::PASS_THROUGH;
+          }
+          break;
+      }
+
       output->clamp_open = goal->clamp_open;
-      output->push_to_shooter = goal->push_to_shooter;
+      output->push_to_shooter = shoot;
     }
   }
 }

@@ -123,7 +123,7 @@ class IntegralShooter(Shooter):
 
     q_pos = 0.08
     q_vel = 4.00
-    q_voltage = 0.2
+    q_voltage = 0.3
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])

@@ -130,13 +130,13 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kTest1)) {
-      intake_goal_ = 0.0;
+      intake_goal_ = -0.2;
     } else {
       intake_goal_ = 1.6;
     }
 
     if (data.IsPressed(kTest2)) {
-      shoulder_goal_ = M_PI / 2.0;
+      shoulder_goal_ = M_PI / 2.0 - 0.2;
     } else {
       shoulder_goal_ = 0.0;
     }
@@ -144,18 +144,22 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kTest3)) {
       wrist_goal_ = 0.0;
     } else {
-      wrist_goal_ = -0.4;
+      // Backwards shot
+      //wrist_goal_ = -0.59;
+      // Forwards shot
+      wrist_goal_ = M_PI + 0.42;
     }
 
     is_intaking_ = data.IsPressed(kTest4);
 
     if (data.IsPressed(kTest5)) {
-      shooter_velocity_ = 600.0;
+      //shooter_velocity_ = 600.0;
+      shooter_velocity_ = 640.0;
     } else {
       shooter_velocity_ = 0.0;
     }
 
-    if (data.IsPressed(kTest6)) {
+    if (data.IsPressed(kTest6) && shooter_velocity_ != 0.0) {
       fire_ = true;
     } else {
       fire_ = false;
@@ -167,6 +171,8 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kTest8)) {
     }
 
+    is_outtaking_ = data.IsPressed(kTest8);
+
     if (!waiting_for_zero_) {
       if (!action_queue_.Running()) {
         auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -174,14 +180,17 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->angle_shoulder = shoulder_goal_;
         new_superstructure_goal->angle_wrist = wrist_goal_;
         new_superstructure_goal->max_angular_velocity_intake = 4.0;
-        new_superstructure_goal->max_angular_velocity_shoulder = 1.0;
-        new_superstructure_goal->max_angular_velocity_wrist = 1.0;
+        new_superstructure_goal->max_angular_velocity_shoulder = 2.0;
+        new_superstructure_goal->max_angular_velocity_wrist = 7.0;
         new_superstructure_goal->max_angular_acceleration_intake = 5.0;
         new_superstructure_goal->max_angular_acceleration_shoulder = 3.0;
-        new_superstructure_goal->max_angular_acceleration_wrist = 3.0;
+        new_superstructure_goal->max_angular_acceleration_wrist = 15.0;
         if (is_intaking_) {
           new_superstructure_goal->voltage_top_rollers = 12.0;
-          new_superstructure_goal->voltage_bottom_rollers = 6.0;
+          new_superstructure_goal->voltage_bottom_rollers = 12.0;
+        } else if (is_outtaking_) {
+          new_superstructure_goal->voltage_top_rollers = -12.0;
+          new_superstructure_goal->voltage_bottom_rollers = -7.0;
         } else {
           new_superstructure_goal->voltage_top_rollers = 0.0;
           new_superstructure_goal->voltage_bottom_rollers = 0.0;
@@ -196,7 +205,7 @@ class Reader : public ::aos::input::JoystickInput {
 
         if (!shooter_queue.goal.MakeWithBuilder()
                  .angular_velocity(shooter_velocity_)
-                 .clamp_open(is_intaking_)
+                 .clamp_open(is_intaking_ || is_outtaking_)
                  .push_to_shooter(fire_)
                  .Send()) {
           LOG(ERROR, "Sending shooter goal failed.\n");
@@ -232,6 +241,7 @@ class Reader : public ::aos::input::JoystickInput {
   bool waiting_for_zero_ = true;
 
   bool is_intaking_ = false;
+  bool is_outtaking_ = false;
   bool fire_ = false;
 
   ::aos::common::actions::ActionQueue action_queue_;
