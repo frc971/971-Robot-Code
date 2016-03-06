@@ -1,8 +1,11 @@
 #!/usr/bin/python3
+
+import collections
 import matplotlib
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
-import collections
+import re
+import sys
 
 class Dataset(object):
   def __init__(self):
@@ -134,34 +137,43 @@ class Plotter(object):
         self.HandleLine(line)
 
 
+"""
+A regular expression to match the envelope part of the log entry.
+Parsing of the JSON msg is handled elsewhere.
+"""
+LOG_RE = re.compile("""
+  (.*?)              # 1 name
+  \((\d+)\)          # 2 pid
+  \((\d+)\)          # 3 message_index
+  :\s
+  (\w+?)             # 4 level
+  \s+at\s+
+  (\d+\.\d+)s        # 5 time
+  :\s
+  ([A-Za-z0-9_./-]+) # 6 filename
+  :\s
+  (\d+)              # 7 linenumber
+  :\s
+  (.*)               # 8 msg
+  """, re.VERBOSE)
+
 class LogEntry:
   """This class provides a way to parse log entries."""
 
   def __init__(self, line):
-    """Creates a LogEntry from a line."""
-    name_index = line.find('(')
-    self.name = line[0:name_index]
-
-    pid_index = line.find(')', name_index + 1)
-    self.pid = int(line[name_index + 1:pid_index])
-
-    msg_index_index = line.find(')', pid_index + 1)
-    self.msg_index = int(line[pid_index + 2:msg_index_index])
-
-    level_index = line.find(' ', msg_index_index + 3)
-    self.level = line[msg_index_index + 3:level_index]
-
-    time_index_start = line.find(' at ', level_index) + 4
-    time_index_end = line.find('s:', level_index)
-    self.time = float(line[time_index_start:time_index_end])
-
-    filename_end = line.find(':', time_index_end + 3)
-    self.filename = line[time_index_end + 3:filename_end]
-
-    linenumber_end = line.find(':', filename_end + 2)
-    self.linenumber = int(line[filename_end + 2:linenumber_end])
-
-    self.msg = line[linenumber_end+2:]
+    """Populates a LogEntry from a line."""
+    m = LOG_RE.match(line)
+    if m is None:
+        print("LOG_RE failed on", line)
+        sys.exit(1)
+    self.name = m.group(1)
+    self.pid_index = int(m.group(2))
+    self.msg_index = int(m.group(3))
+    self.level = m.group(4)
+    self.time = float(m.group(5))
+    self.filename = m.group(6)
+    self.linenumber = m.group(7)
+    self.msg = m.group(8)
 
   def __str__(self):
     """Formats the data cleanly."""
