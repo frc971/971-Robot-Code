@@ -25,7 +25,8 @@ class ClawSimulation {
  public:
   // Constructs a claw simulation.
   ClawSimulation()
-      : claw_plant_(new StateFeedbackPlant<2, 1, 1>(MakeClawPlant())),
+      : claw_plant_(new StateFeedbackPlant<2, 1, 1>(
+            y2015::control_loops::claw::MakeClawPlant())),
         pot_and_encoder_(constants::GetValues().claw.zeroing.index_difference),
         claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
                     ".frc971.control_loops.claw_queue.goal",
