@@ -2,7 +2,7 @@
 
 import sys
 import numpy
-import analysis
+from plotter import Plotter
 import argparse
 
 def ReadPlotDefinitions(filename):
@@ -62,7 +62,7 @@ def main():
 
   args = arg_parser.parse_args(sys.argv[1:])
 
-  p = analysis.Plotter()
+  p = Plotter()
 
   # If the user defines the list of data to plot in a file, read it from there.
   if args.plot_defs:
