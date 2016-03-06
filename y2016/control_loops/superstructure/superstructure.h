@@ -101,6 +101,9 @@ class Superstructure
       control_loops::SuperstructureQueue *my_superstructure =
           &control_loops::superstructure_queue);
 
+  static constexpr double kZeroingVoltage = 5.0;
+  static constexpr double kOperatingVoltage = 12.0;
+
   // This is the angle above which we will do a HIGH_ARM_ZERO, and below which
   // we will do a LOW_ARM_ZERO.
   static constexpr double kShoulderMiddleAngle = M_PI / 4.0;

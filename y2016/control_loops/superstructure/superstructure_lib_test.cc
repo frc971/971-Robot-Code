@@ -170,18 +170,18 @@ class SuperstructureSimulation {
         superstructure_queue_.status->state ==
             Superstructure::LANDING_RUNNING) {
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
-               12.00001);
+               Superstructure::kOperatingVoltage);
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_shoulder),
-               12.00001);
+               Superstructure::kOperatingVoltage);
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_wrist),
-               12.00001);
+               Superstructure::kOperatingVoltage);
     } else {
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
-               4.00001);
+               Superstructure::kZeroingVoltage);
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_shoulder),
-               4.00001);
+               Superstructure::kZeroingVoltage);
       CHECK_LE(::std::abs(superstructure_queue_.output->voltage_wrist),
-               4.00001);
+               Superstructure::kZeroingVoltage);
     }
     if (arm_plant_->X(0, 0) <=
         Superstructure::kShoulderTransitionToLanded + 1e-4) {
