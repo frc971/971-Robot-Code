@@ -51,8 +51,8 @@ void ControlLoopTest::SendMessages(bool enabled) {
     new_state->voltage_3v3 = 3.3;
     new_state->voltage_5v = 5.0;
 
-    new_state->voltage_roborio_in = 12.4;
-    new_state->voltage_battery = 12.4;
+    new_state->voltage_roborio_in = battery_voltage_;
+    new_state->voltage_battery = battery_voltage_;
 
     new_state.Send();
   }

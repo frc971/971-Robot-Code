@@ -41,6 +41,11 @@ class ControlLoopTest : public ::testing::Test {
     ++reader_pid_;
   }
 
+  // Sets the battery voltage in robot_state.
+  void set_battery_voltage(double battery_voltage) {
+    battery_voltage_ = battery_voltage;
+  }
+
  private:
   static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(5000);
   static constexpr ::aos::time::Time kDSPacketTime =
@@ -48,6 +53,7 @@ class ControlLoopTest : public ::testing::Test {
 
   uint16_t team_id_ = 971;
   int32_t reader_pid_ = 1;
+  double battery_voltage_ = 12.4;
 
   ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
   ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
