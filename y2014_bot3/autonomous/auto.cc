@@ -49,9 +49,9 @@ void ResetDrivetrain() {
 void InitializeEncoders() {
   control_loops::drivetrain_queue.status.FetchAnother();
   left_initial_position =
-      control_loops::drivetrain_queue.status->filtered_left_position;
+      control_loops::drivetrain_queue.status->estimated_left_position;
   right_initial_position =
-      control_loops::drivetrain_queue.status->filtered_right_position;
+      control_loops::drivetrain_queue.status->estimated_right_position;
 }
 
 void HandleAuto() {

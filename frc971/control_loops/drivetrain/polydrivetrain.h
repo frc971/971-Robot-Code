@@ -3,6 +3,7 @@
 
 #include "aos/common/controls/polytope.h"
 
+#include "frc971/control_loops/drivetrain/gear.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -13,32 +14,21 @@ namespace drivetrain {
 
 class PolyDrivetrain {
  public:
-  enum Gear { HIGH, LOW, SHIFTING_UP, SHIFTING_DOWN };
-
   PolyDrivetrain(const DrivetrainConfig &dt_config,
                  StateFeedbackLoop<7, 2, 3> *kf);
 
   int controller_index() const { return loop_->controller_index(); }
-
-  bool IsInGear(Gear gear) { return gear == LOW || gear == HIGH; }
 
   // Computes the speed of the motor given the hall effect position and the
   // speed of the robot.
   double MotorSpeed(const constants::ShifterHallEffect &hall_effect,
                     double shifter_position, double velocity, Gear gear);
 
-  // Computes the states of the shifters for the left and right drivetrain sides
-  // given a requested state.
-  void UpdateGears(Gear requested_gear);
-
-  // Computes the next state of a shifter given the current state and the
-  // requested state.
-  Gear UpdateSingleGear(Gear requested_gear, Gear current_gear);
-
-  void SetGoal(double wheel, double throttle, bool quickturn, bool highgear);
+  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
 
   void SetPosition(
-      const ::frc971::control_loops::DrivetrainQueue::Position *position);
+      const ::frc971::control_loops::DrivetrainQueue::Position *position,
+      Gear left_gear, Gear right_gear);
 
   double FilterVelocity(double throttle) const;
 
@@ -46,9 +36,13 @@ class PolyDrivetrain {
 
   void Update();
 
-  void SendMotors(::frc971::control_loops::DrivetrainQueue::Output *output);
+  void SetOutput(::frc971::control_loops::DrivetrainQueue::Output *output);
 
   void PopulateStatus(::frc971::control_loops::DrivetrainQueue::Status *status);
+
+  // Computes the next state of a shifter given the current state and the
+  // requested state.
+  Gear UpdateSingleGear(Gear requested_gear, Gear current_gear);
 
  private:
   StateFeedbackLoop<7, 2, 3> *kf_;
@@ -61,10 +55,10 @@ class PolyDrivetrain {
   double wheel_;
   double throttle_;
   bool quickturn_;
-  int stale_count_;
-  double position_time_delta_;
+
   Gear left_gear_;
   Gear right_gear_;
+
   ::frc971::control_loops::DrivetrainQueue::Position last_position_;
   ::frc971::control_loops::DrivetrainQueue::Position position_;
   int counter_;

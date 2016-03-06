@@ -1,9 +1,11 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
 
-#include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
+#include "aos/common/controls/control_loop.h"
+#include "aos/common/controls/polytope.h"
 #include "aos/common/logging/matrix_logging.h"
+#include "aos/common/util/trapezoid_profile.h"
 
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
@@ -16,74 +18,62 @@ namespace drivetrain {
 
 class DrivetrainMotorsSS {
  public:
-  class LimitedDrivetrainLoop : public StateFeedbackLoop<4, 2, 2> {
-   public:
-    LimitedDrivetrainLoop(StateFeedbackLoop<4, 2, 2> &&loop);
+  DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
+                     StateFeedbackLoop<7, 2, 3> *kf,
+                     double *integrated_kf_heading);
 
-    bool output_was_capped() const {
-      return output_was_capped_;
-    }
+  void SetGoal(const ::frc971::control_loops::DrivetrainQueue::Goal &goal);
 
-   private:
-    void CapU() override;
+  // Computes the power to send out as part of the controller.  Should be called
+  // when disabled (with enable_control_loop false) so the profiles get computed
+  // correctly.
+  // enable_control_loop includes the actual enable bit and if the loop will go
+  // out to hw.
+  void Update(bool enable_control_loop);
 
-    // Reprsents +/- full power on each motor in U-space, aka the square from
-    // (-12, -12) to (12, 12).
-    const ::aos::controls::HPolytope<2> U_poly_;
+  bool output_was_capped() const { return output_was_capped_; }
 
-    // multiplying by T converts [left_error, right_error] to
-    // [left_right_error_difference, total_distance_error].
-    Eigen::Matrix<double, 2, 2> T_, T_inverse_;
-
-    bool output_was_capped_ = false;
-  };
-
-  DrivetrainMotorsSS(const DrivetrainConfig &dt_config);
-
-  void SetGoal(double left, double left_velocity, double right,
-               double right_velocity);
-
-  void SetRawPosition(double left, double right);
-
-  void SetPosition(double left, double right, double gyro);
-
-  void SetExternalMotors(double left_voltage, double right_voltage);
-
-  void Update(bool stop_motors, bool enable_control_loop);
-
-  double GetEstimatedRobotSpeed() const;
-
-  double GetEstimatedLeftEncoder() const {
-    return loop_->X_hat(0, 0);
-  }
-
-  double left_velocity() const { return loop_->X_hat(1, 0); }
-  double right_velocity() const { return loop_->X_hat(3, 0); }
-
-  double GetEstimatedRightEncoder() const {
-    return loop_->X_hat(2, 0);
-  }
-
-  bool OutputWasCapped() const {
-    return loop_->output_was_capped();
-  }
-
-  void SendMotors(
+  void SetOutput(
       ::frc971::control_loops::DrivetrainQueue::Output *output) const;
+  void PopulateStatus(
+      ::frc971::control_loops::DrivetrainQueue::Status *status) const;
 
-  const LimitedDrivetrainLoop &loop() const { return *loop_; }
+  // Converts the robot state to a linear distance position, velocity.
+  Eigen::Matrix<double, 2, 1> LeftRightToLinear(
+      const Eigen::Matrix<double, 7, 1> &left_right);
+  // Converts the robot state to an anglular distance, velocity.
+  Eigen::Matrix<double, 2, 1> LeftRightToAngular(
+      const Eigen::Matrix<double, 7, 1> &left_right);
+
+  // Converts the linear and angular position, velocity to the top 4 states of
+  // the robot state.
+  Eigen::Matrix<double, 4, 1> AngularLinearToLeftRight(
+      const Eigen::Matrix<double, 2, 1> &linear,
+      const Eigen::Matrix<double, 2, 1> &angular);
 
  private:
-  ::std::unique_ptr<LimitedDrivetrainLoop> loop_;
-
-  double filtered_offset_;
-  double gyro_;
-  double left_goal_;
-  double right_goal_;
-  double raw_left_;
-  double raw_right_;
+  void PolyCapU(Eigen::Matrix<double, 2, 1> *U);
+  void ScaleCapU(Eigen::Matrix<double, 2, 1> *U);
 
   const DrivetrainConfig dt_config_;
+  StateFeedbackLoop<7, 2, 3> *kf_;
+  Eigen::Matrix<double, 7, 1> unprofiled_goal_;
+
+  // Reprsents +/- full power on each motor in U-space, aka the square from
+  // (-12, -12) to (12, 12).
+  const ::aos::controls::HPolytope<2> U_poly_;
+
+  // multiplying by T converts [left_error, right_error] to
+  // [left_right_error_difference, total_distance_error].
+  Eigen::Matrix<double, 2, 2> T_, T_inverse_;
+
+  aos::util::TrapezoidProfile linear_profile_, angular_profile_;
+
+  bool output_was_capped_ = false;
+
+  bool use_profile_ = false;
+
+  double *integrated_kf_heading_;
 };
 
 }  // namespace drivetrain

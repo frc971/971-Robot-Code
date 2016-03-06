@@ -95,9 +95,9 @@ const ProfileParams kFastTurn = {3.0, 10.0};
 void InitializeEncoders() {
   ::frc971::control_loops::drivetrain_queue.status.FetchAnother();
   left_initial_position =
-      ::frc971::control_loops::drivetrain_queue.status->filtered_left_position;
+      ::frc971::control_loops::drivetrain_queue.status->estimated_left_position;
   right_initial_position =
-      ::frc971::control_loops::drivetrain_queue.status->filtered_right_position;
+      ::frc971::control_loops::drivetrain_queue.status->estimated_right_position;
 }
 
 void HandleAuto() {

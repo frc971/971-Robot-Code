@@ -3,14 +3,15 @@
 
 #include "Eigen/Dense"
 
-#include "aos/common/controls/polytope.h"
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/controls/polytope.h"
+#include "aos/common/controls/polytope.h"
+#include "aos/common/util/log_interval.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/gear.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
-#include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "aos/common/util/log_interval.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -26,6 +27,8 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
       ::frc971::control_loops::DrivetrainQueue *my_drivetrain =
           &::frc971::control_loops::drivetrain_queue);
 
+  int ControllerIndexFromGears();
+
  protected:
   // Executes one cycle of the control loop.
   void RunIteration(
@@ -36,9 +39,6 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
 
-  typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
-  SimpleLogInterval no_position_ = SimpleLogInterval(
-      ::aos::time::Time::InSeconds(0.25), WARNING, "no position");
   double last_gyro_heading_ = 0.0;
   double last_gyro_rate_ = 0.0;
 
@@ -48,10 +48,17 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
 
+  // Current gears for each drive side.
+  Gear left_gear_;
+  Gear right_gear_;
+
   double last_left_voltage_ = 0;
   double last_right_voltage_ = 0;
 
   double integrated_kf_heading_ = 0;
+
+  bool left_high_requested_;
+  bool right_high_requested_;
 };
 
 }  // namespace drivetrain

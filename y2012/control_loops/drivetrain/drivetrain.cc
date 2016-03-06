@@ -100,11 +100,11 @@ void DrivetrainLoop::RunIteration(
   // set the output status of the control loop state
   if (status) {
     status->robot_speed = dt_closedloop_.GetEstimatedRobotSpeed();
-    status->filtered_left_position = dt_closedloop_.GetEstimatedLeftEncoder();
-    status->filtered_right_position = dt_closedloop_.GetEstimatedRightEncoder();
+    status->estimated_left_position = dt_closedloop_.GetEstimatedLeftEncoder();
+    status->estimated_right_position = dt_closedloop_.GetEstimatedRightEncoder();
 
-    status->filtered_left_velocity = dt_closedloop_.loop().X_hat(1, 0);
-    status->filtered_right_velocity = dt_closedloop_.loop().X_hat(3, 0);
+    status->estimated_left_velocity = dt_closedloop_.loop().X_hat(1, 0);
+    status->estimated_right_velocity = dt_closedloop_.loop().X_hat(3, 0);
     status->output_was_capped = dt_closedloop_.OutputWasCapped();
     status->uncapped_left_voltage = dt_closedloop_.loop().U_uncapped(0, 0);
     status->uncapped_right_voltage = dt_closedloop_.loop().U_uncapped(1, 0);

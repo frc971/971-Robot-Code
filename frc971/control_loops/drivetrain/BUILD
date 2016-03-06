@@ -37,6 +37,13 @@ cc_library(
 )
 
 cc_library(
+  name = 'gear',
+  hdrs = [
+    'gear.h',
+  ],
+)
+
+cc_library(
   name = 'ssdrivetrain',
   srcs = [
     'ssdrivetrain.cc',
@@ -47,15 +54,18 @@ cc_library(
   deps = [
     ':drivetrain_queue',
     ':drivetrain_config',
+    ':gear',
+    '//aos/common/controls:control_loop',
     '//aos/common/controls:polytope',
-    '//aos/common:math',
-    '//aos/common/messages:robot_state',
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971/control_loops:coerce_goal',
-    '//frc971:shifter_hall_effect',
-    '//aos/common/util:log_interval',
-    '//aos/common/logging:queue_logging',
     '//aos/common/logging:matrix_logging',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
+    '//aos/common/util:log_interval',
+    '//aos/common/util:trapezoid_profile',
+    '//aos/common:math',
+    '//frc971/control_loops:coerce_goal',
+    '//frc971/control_loops:state_feedback_loop',
+    '//frc971:shifter_hall_effect',
   ],
 )
 
@@ -70,6 +80,7 @@ cc_library(
   deps = [
     ':drivetrain_queue',
     ':drivetrain_config',
+    ':gear',
     '//aos/common/controls:polytope',
     '//aos/common:math',
     '//aos/common/messages:robot_state',
@@ -91,6 +102,7 @@ cc_library(
   ],
   deps = [
     ':drivetrain_queue',
+    ':gear',
     ':polydrivetrain',
     ':ssdrivetrain',
     '//aos/common/controls:control_loop',
