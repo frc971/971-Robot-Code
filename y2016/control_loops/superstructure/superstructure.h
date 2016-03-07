@@ -69,13 +69,13 @@ class CollisionAvoidance {
   // shoulder is below this angle.
   static constexpr double kMinShoulderAngleForHorizontalShooter = 0.6;
 
-  // The shoulder angle (in radians) below which the arm as a whole has the
-  // potential to interfere with the intake.
-  static constexpr double kMinShoulderAngleForIntakeInterference = 0.8;
+  // The shoulder angle (in radians) below which the arm and the shooter have
+  // the potential to interfere with the intake.
+  static constexpr double kMinShoulderAngleForIntakeInterference = 1.3;
 
   // The intake angle (in radians) above which the intake can interfere (i.e.
   // collide) with the arm and/or shooter.
-  static constexpr double kMaxIntakeAngleBeforeArmInterference = 1.2;
+  static constexpr double kMaxIntakeAngleBeforeArmInterference = 1.12;
 
   // The maximum absolute angle (in radians) that the wrist must be below in
   // order for the shouler to be allowed to move below
