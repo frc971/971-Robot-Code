@@ -960,7 +960,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
                   .max_angular_acceleration_wrist(100)
                   .Send());
 
-  set_peak_intake_velocity(4.60);
+  set_peak_intake_velocity(4.65);
   set_peak_shoulder_velocity(1.00);
   set_peak_wrist_velocity(1.00);
   RunForTime(Time::InSeconds(4));
