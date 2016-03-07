@@ -14,8 +14,6 @@ namespace control_loops {
 namespace superstructure {
 
 namespace {
-constexpr double kZeroingVoltage = 5.0;
-constexpr double kOperatingVoltage = 12.0;
 constexpr double kLandingShoulderDownVoltage = -2.0;
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeTopVoltage = 12.0;
@@ -644,6 +642,8 @@ void Superstructure::RunIteration(
   last_state_ = state_before_switch;
 }
 
+constexpr double Superstructure::kZeroingVoltage;
+constexpr double Superstructure::kOperatingVoltage;
 constexpr double Superstructure::kShoulderMiddleAngle;
 constexpr double Superstructure::kLooseTolerance;
 constexpr double Superstructure::kIntakeUpperClear;
