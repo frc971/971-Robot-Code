@@ -26,3 +26,13 @@ py_test(
     ':controls',
   ],
 )
+
+py_binary(
+  name = 'down_estimator',
+  srcs = [
+    'down_estimator.py',
+  ],
+  deps = [
+    ':controls',
+  ],
+)
