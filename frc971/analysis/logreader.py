@@ -47,7 +47,11 @@ class CollectingLogReader(object):
     """
     with open(f, 'r') as fd:
       for line in fd:
-        self.HandleLine(line)
+        try:
+            self.HandleLine(line)
+        except Exception as ex:
+            # It's common for the last line of the file to be malformed.
+            print("Ignoring malformed log entry: ", line)
 
   def HandleLine(self, line):
     """
@@ -60,7 +64,6 @@ class CollectingLogReader(object):
       None
     """
     pline = LogEntry(line)
-    pline_data = None
 
     for key in self.signal:
       value = self.signal[key]
@@ -79,12 +82,9 @@ class CollectingLogReader(object):
       # Make sure that we're looking at the right binary structure instance.
       if binary == pline.name:
         if pline.msg.startswith(struct_instance_name + ': '):
-          # Parse the structure once.
-          if pline_data is None:
-              _, _, pline_data = pline.ParseStruct()
           # Traverse the structure as specified in `data_search_path`.
           # This lets the user access very deeply nested structures.
-          data = pline_data
+          _, _, data = pline.ParseStruct()
           for path in data_search_path:
             data = data[path]
 

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import re
-import sys
 
 """
 A regular expression to match the envelope part of the log entry.
@@ -32,10 +31,11 @@ class LogEntry:
 
   def __init__(self, line):
     """Populates a LogEntry from a line."""
+    self.line = line
     m = LOG_RE.match(line)
     if m is None:
         print("LOG_RE failed on", line)
-        sys.exit(1)
+        return
     self.name = m.group(1)
     self.pid_index = int(m.group(2))
     self.msg_index = int(m.group(3))
@@ -44,6 +44,7 @@ class LogEntry:
     self.filename = m.group(6)
     self.linenumber = m.group(7)
     self.msg = m.group(8)
+    self.struct_name = None
 
   def __str__(self):
     """Formats the data cleanly."""
@@ -56,6 +57,10 @@ class LogEntry:
     Returns:
       struct_name, struct_type, json dict.
     """
+    if self.struct_name:
+        # We've already parsed the structural part. Return the cached result
+        return (self.struct_name, self.struct_type, self.struct_json)
+
     struct_name_index = self.msg.find(':')
     struct_name = self.msg[0:struct_name_index]
 
@@ -108,6 +113,11 @@ class LogEntry:
     json = dict()
     # Now that we have tokens, parse them.
     self.JsonizeTokens(json, tokens, 1)
+
+    # Cache the result to avoid having to reparse.
+    self.struct_name = struct_name
+    self.struct_type = struct_type
+    self.struct_json = json
 
     return (struct_name, struct_type, json)
 
