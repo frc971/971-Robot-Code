@@ -20,6 +20,7 @@
 #include "y2016/constants.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
+#include "y2016/actors/autonomous_actor.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
@@ -289,12 +290,15 @@ class Reader : public ::aos::input::JoystickInput {
  private:
   void StartAuto() {
     LOG(INFO, "Starting auto mode\n");
-    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(true).Send();
+
+    actors::AutonomousActionParams params;
+    params.mode = 0;
+    action_queue_.EnqueueAction(actors::MakeAutonomousAction(params));
   }
 
   void StopAuto() {
     LOG(INFO, "Stopping auto mode\n");
-    ::frc971::autonomous::autonomous.MakeWithBuilder().run_auto(false).Send();
+    action_queue_.CancelAllActions();
   }
 
   bool is_high_gear_;

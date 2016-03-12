@@ -37,6 +37,7 @@ cc_binary(
     '//frc971/autonomous:auto_queue',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/queues:gyro',
+    '//y2016/actors:autonomous_action_lib',
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/superstructure:superstructure_lib',
     '//y2016/control_loops/superstructure:superstructure_queue',
@@ -52,7 +53,7 @@ aos_downloader(
     '//y2016/control_loops/drivetrain:drivetrain',
     '//y2016/control_loops/superstructure:superstructure',
     '//y2016/control_loops/shooter:shooter',
-    '//y2016/autonomous:auto',
+    '//y2016/actors:autonomous_action',
     '//y2016/wpilib:wpilib_interface',
   ],
   srcs = [
@@ -68,7 +69,7 @@ aos_downloader(
     '//y2016/control_loops/drivetrain:drivetrain.stripped',
     '//y2016/control_loops/superstructure:superstructure.stripped',
     '//y2016/control_loops/shooter:shooter.stripped',
-    '//y2016/autonomous:auto.stripped',
+    '//y2016/actors:autonomous_action.stripped',
     '//y2016/wpilib:wpilib_interface.stripped',
   ],
   srcs = [
