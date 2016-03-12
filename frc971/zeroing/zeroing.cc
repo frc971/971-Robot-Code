@@ -11,6 +11,7 @@ void PopulateEstimatorState(const zeroing::ZeroingEstimator& estimator,
   state->error = estimator.error();
   state->zeroed = estimator.zeroed();
   state->position = estimator.position();
+  state->pot_position = estimator.filtered_position();
 }
 
 ZeroingEstimator::ZeroingEstimator(
@@ -122,6 +123,7 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
   }
 
   pos_ = start_pos_ + info.encoder;
+  filtered_position_ = start_average + info.encoder;
 }
 
 }  // namespace zeroing

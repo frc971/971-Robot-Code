@@ -29,6 +29,9 @@ struct EstimatorState {
   bool zeroed;
   // The estimated position of the joint.
   double position;
+
+  // The estimated position not using the index pulse.
+  double pot_position;
 };
 
 // A left/right pair of PotAndIndexPositions.

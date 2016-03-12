@@ -53,6 +53,10 @@ class ZeroingEstimator {
   // some contexts we refer to this as the "offset".
   double offset() const { return start_pos_; }
 
+  // Return the estimated position of the corresponding mechanism not using the
+  // index pulse, even if one is available.
+  double filtered_position() const { return filtered_position_; }
+
   // Returns a number between 0 and 1 that represents the percentage of the
   // samples being used in the moving average filter. A value of 0.0 means that
   // no samples are being used. A value of 1.0 means that the filter is using
@@ -76,6 +80,8 @@ class ZeroingEstimator {
 
   // The estimated position.
   double pos_;
+  // The unzeroed filtered position.
+  double filtered_position_ = 0.0;
   // The distance between two consecutive index positions.
   double index_diff_;
   // The next position in 'start_pos_samples_' to be used to store the next
