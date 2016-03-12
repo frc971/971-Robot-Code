@@ -57,17 +57,17 @@ struct Values {
       // Lower hard stop
       -0.4,
       // Upper hard stop
-      150.40906362 * M_PI / 180.0 + 0.05,
+      164.2067247 * M_PI / 180.0 + 0.05,
       // Lower soft stop
-      -0.350,
+      -0.300,
       // Uppper soft stop
       1.8};
   static constexpr ::frc971::constants::Range kShoulderRange{// Lower hard stop
-                                                             -0.010,
+                                                             -0.050,
                                                              // Upper hard stop
                                                              2.8,
                                                              // Lower soft stop
-                                                             0.00,
+                                                             -0.010,
                                                              // Uppper soft stop
                                                              2.0};
   static constexpr ::frc971::constants::Range kWristRange{// Lower hard stop
