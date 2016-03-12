@@ -83,6 +83,9 @@ queue_group SuperstructureQueue {
     JointState wrist;
 
     int32_t shoulder_controller_index;
+
+    // Is the superstructure collided?
+    bool is_collided;
   };
 
   message Position {
