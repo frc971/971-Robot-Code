@@ -81,6 +81,8 @@ queue_group SuperstructureQueue {
     JointState intake;
     JointState shoulder;
     JointState wrist;
+
+    int32_t shoulder_controller_index;
   };
 
   message Position {

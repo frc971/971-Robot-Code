@@ -162,7 +162,7 @@ EstimatorState Intake::IntakeEstimatorState() {
 }
 
 Arm::Arm()
-    : loop_(new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2>(
+    : loop_(new ArmControlLoop(
           ::y2016::control_loops::superstructure::MakeIntegralArmLoop())),
       shoulder_profile_(::aos::controls::kLoopFrequency),
       wrist_profile_(::aos::controls::kLoopFrequency),
@@ -338,19 +338,14 @@ bool Arm::CheckHardLimits() {
 void Arm::Update(bool disable) {
   if (!disable) {
     // Compute next goal.
-    ::Eigen::Matrix<double, 2, 1> goal_state_shoulder =
-        shoulder_profile_.Update(unprofiled_goal_(0, 0),
-                                 unprofiled_goal_(1, 0));
-    loop_->mutable_next_R(0, 0) = goal_state_shoulder(0, 0);
-    loop_->mutable_next_R(1, 0) = goal_state_shoulder(1, 0);
+    loop_->mutable_next_R().block<2, 1>(0, 0) = shoulder_profile_.Update(
+        unprofiled_goal_(0, 0), unprofiled_goal_(1, 0));
 
-    ::Eigen::Matrix<double, 2, 1> goal_state_wrist =
+    loop_->mutable_next_R().block<2, 1>(2, 0) =
         wrist_profile_.Update(unprofiled_goal_(2, 0), unprofiled_goal_(3, 0));
-    loop_->mutable_next_R(2, 0) = goal_state_wrist(0, 0);
-    loop_->mutable_next_R(3, 0) = goal_state_wrist(1, 0);
 
-    loop_->mutable_next_R(4, 0) = unprofiled_goal_(4, 0);
-    loop_->mutable_next_R(5, 0) = unprofiled_goal_(5, 0);
+    loop_->mutable_next_R().block<2, 1>(4, 0) =
+        unprofiled_goal_.block<2, 1>(4, 0);
     CapGoal("next R", &loop_->mutable_next_R());
   }
 

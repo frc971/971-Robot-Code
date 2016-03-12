@@ -10,6 +10,7 @@
 
 #include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/control_loops/superstructure/integral_arm_plant.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -105,6 +106,53 @@ class Intake {
   bool zeroed_ = false;
 };
 
+class ArmControlLoop
+    : public ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2> {
+ public:
+  ArmControlLoop(SimpleCappedStateFeedbackLoop<6, 2, 2> &&loop)
+      : SimpleCappedStateFeedbackLoop<6, 2, 2>(::std::move(loop)) {}
+
+  const Eigen::Matrix<double, 2, 1> ControllerOutput() override {
+    const Eigen::Matrix<double, 2, 1> accelerating_ff =
+        controller(0).Kff * (next_R() - controller(0).plant.A() * R());
+    const Eigen::Matrix<double, 2, 1> accelerating_controller =
+        controller(0).K * error() + accelerating_ff;
+
+    const Eigen::Matrix<double, 2, 1> decelerating_ff =
+        controller(1).Kff * (next_R() - controller(1).plant.A() * R());
+    const Eigen::Matrix<double, 2, 1> decelerating_controller =
+        controller(1).K * error() + decelerating_ff;
+
+    const double bemf_voltage = X_hat(1, 0) / kV_shoulder;
+    bool use_accelerating_controller = true;
+    LOG(DEBUG, "Accelerating at %f, decel %f, bemf %f\n",
+        accelerating_controller(0, 0), accelerating_controller(1, 0),
+        bemf_voltage);
+    if (IsAccelerating(bemf_voltage, accelerating_controller(0, 0))) {
+      use_accelerating_controller = true;
+    } else {
+      use_accelerating_controller = false;
+    }
+    if (use_accelerating_controller) {
+      ff_U_ = accelerating_ff;
+      set_controller_index(0);
+      return accelerating_controller;
+    } else {
+      set_controller_index(1);
+      ff_U_ = decelerating_ff;
+      return decelerating_controller;
+    }
+  }
+
+ private:
+  bool IsAccelerating(double bemf_voltage, double voltage) {
+    if (bemf_voltage > 0) {
+      return voltage > bemf_voltage;
+    } else {
+      return voltage < bemf_voltage;
+    }
+  }
+};
 
 class Arm {
  public:
@@ -129,6 +177,8 @@ class Arm {
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal_shoulder,
                            double unprofiled_goal_wrist);
+
+  int controller_index() const { return loop_->controller_index(); }
 
   // Runs the controller and profile generator for a cycle.
   void Update(bool disabled);
@@ -196,7 +246,7 @@ class Arm {
 
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;
   ::std::unique_ptr<
-      ::frc971::control_loops::SimpleCappedStateFeedbackLoop<6, 2, 2>> loop_;
+      ArmControlLoop> loop_;
 
   aos::util::TrapezoidProfile shoulder_profile_, wrist_profile_;
   ::frc971::zeroing::ZeroingEstimator shoulder_estimator_, wrist_estimator_;

@@ -444,9 +444,12 @@ class StateFeedbackLoop {
       number_of_states, number_of_inputs, number_of_outputs>>> controllers_;
 
   // These are accessible from non-templated subclasses.
-  static const int kNumStates = number_of_states;
-  static const int kNumOutputs = number_of_outputs;
-  static const int kNumInputs = number_of_inputs;
+  static constexpr int kNumStates = number_of_states;
+  static constexpr int kNumOutputs = number_of_outputs;
+  static constexpr int kNumInputs = number_of_inputs;
+
+  // Portion of U which is based on the feed-forwards.
+  Eigen::Matrix<double, number_of_inputs, 1> ff_U_;
 
  private:
   // Internal state estimate.
@@ -459,8 +462,6 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_inputs, 1> U_;
   // Computed output before being capped.
   Eigen::Matrix<double, number_of_inputs, 1> U_uncapped_;
-  // Portion of U which is based on the feed-forwards.
-  Eigen::Matrix<double, number_of_inputs, 1> ff_U_;
 
   int controller_index_;
 

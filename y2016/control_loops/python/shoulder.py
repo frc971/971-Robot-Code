@@ -17,7 +17,7 @@ except gflags.DuplicateFlagError:
   pass
 
 class Shoulder(control_loop.ControlLoop):
-  def __init__(self, name="Shoulder", mass=None):
+  def __init__(self, name="Shoulder", J=None):
     super(Shoulder, self).__init__(name)
     # TODO(constants): Update all of these & retune poles.
     # Stall Torque in N m
@@ -39,7 +39,10 @@ class Shoulder(control_loop.ControlLoop):
     # Gear ratio
     self.G = (56.0 / 12.0) * (64.0 / 14.0) * (72.0 / 18.0) * (42.0 / 12.0)
 
-    self.J = 3.0
+    if J is None:
+      self.J = 10.0
+    else:
+      self.J = J
 
     # Control loop time step
     self.dt = 0.005
@@ -67,8 +70,8 @@ class Shoulder(control_loop.ControlLoop):
 
     controllability = controls.ctrb(self.A, self.B)
 
-    q_pos = 0.14
-    q_vel = 4.5
+    q_pos = 0.16
+    q_vel = 1.5
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 

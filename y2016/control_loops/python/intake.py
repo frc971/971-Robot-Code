@@ -42,7 +42,7 @@ class Intake(control_loop.ControlLoop):
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
-    self.J = 0.34 + 0.1
+    self.J = 0.34 + 0.6
 
     # Control loop time step
     self.dt = 0.005
@@ -138,11 +138,12 @@ class IntegralIntake(Intake):
     self.C = numpy.matrix(numpy.zeros((1, 3)))
     self.C[0:1, 0:2] = self.C_unaugmented
 
-    self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous, self.dt)
+    self.A, self.B = self.ContinuousToDiscrete(
+        self.A_continuous, self.B_continuous, self.dt)
 
     q_pos = 0.12
     q_vel = 2.00
-    q_voltage = 3.0
+    q_voltage = 4.0
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])
@@ -235,7 +236,10 @@ class ScenarioPlotter(object):
       self.v.append(intake.X[1, 0])
       self.a.append((self.v[-1] - last_v) / intake.dt)
 
-      intake.Update(U + 0.0)
+      offset = 0.0
+      if i > 100:
+        offset = 2.0
+      intake.Update(U + offset)
 
       observer_intake.PredictObserver(U)
 
