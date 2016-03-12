@@ -145,24 +145,24 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kTest1)) {
-      intake_goal_ = -0.2;
-    } else {
       intake_goal_ = 1.6;
+    } else {
+      intake_goal_ = 0.1;
     }
 
     if (data.IsPressed(kTest2)) {
       shoulder_goal_ = M_PI / 2.0 - 0.2;
     } else {
-      shoulder_goal_ = 0.0;
+      shoulder_goal_ = -0.010;
     }
 
     if (data.IsPressed(kTest3)) {
       wrist_goal_ = 0.0;
     } else {
       // Backwards shot
-      //wrist_goal_ = -0.59;
+      wrist_goal_ = -0.59;
       // Forwards shot
-      wrist_goal_ = M_PI + 0.42;
+      //wrist_goal_ = M_PI + 0.42;
     }
 
     is_intaking_ = data.IsPressed(kTest4);
@@ -194,12 +194,23 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->angle_intake = intake_goal_;
         new_superstructure_goal->angle_shoulder = shoulder_goal_;
         new_superstructure_goal->angle_wrist = wrist_goal_;
-        new_superstructure_goal->max_angular_velocity_intake = 4.0;
-        new_superstructure_goal->max_angular_velocity_shoulder = 2.0;
-        new_superstructure_goal->max_angular_velocity_wrist = 7.0;
-        new_superstructure_goal->max_angular_acceleration_intake = 5.0;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 3.0;
-        new_superstructure_goal->max_angular_acceleration_wrist = 15.0;
+
+        new_superstructure_goal->max_angular_velocity_intake = 7.0;
+        new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
+        new_superstructure_goal->max_angular_velocity_wrist = 11.0;
+        new_superstructure_goal->max_angular_acceleration_intake = 40.0;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 8.0;
+        new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+
+        /*
+        // Granny mode
+        new_superstructure_goal->max_angular_velocity_intake = 0.2;
+        new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
+        new_superstructure_goal->max_angular_velocity_wrist = 0.2;
+        new_superstructure_goal->max_angular_acceleration_intake = 1.0;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
+        new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
+        */
         if (is_intaking_) {
           new_superstructure_goal->voltage_top_rollers = 12.0;
           new_superstructure_goal->voltage_bottom_rollers = 12.0;
