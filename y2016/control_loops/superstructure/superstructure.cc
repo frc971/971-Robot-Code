@@ -14,7 +14,6 @@ namespace control_loops {
 namespace superstructure {
 
 namespace {
-constexpr double kLandingShoulderDownVoltage = -2.0;
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeTopVoltage = 12.0;
 constexpr float kMaxIntakeBottomVoltage = 12.0;
@@ -33,6 +32,9 @@ constexpr double kShoulderEncoderIndexDifference =
 void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
                                     double wrist_angle_goal,
                                     double intake_angle_goal) {
+  const double original_shoulder_angle_goal = shoulder_angle_goal;
+  const double original_intake_angle_goal = intake_angle_goal;
+
   double shoulder_angle = arm_->shoulder_angle();
   double wrist_angle = arm_->wrist_angle();
   double intake_angle = intake_->angle();
@@ -48,33 +50,39 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
   // If the shoulder is below a certain angle or we want to move it below
   // that angle, then the shooter has to stay level to the ground. Otherwise,
   // it will crash into the frame.
-  if (shoulder_angle < kMinShoulderAngleForHorizontalShooter ||
-      shoulder_angle_goal < kMinShoulderAngleForHorizontalShooter) {
+  if (shoulder_angle < kMinShoulderAngleForIntakeUpInterference ||
+      original_shoulder_angle_goal < kMinShoulderAngleForIntakeUpInterference) {
     wrist_angle_goal = 0.0;
 
     // Make sure that we don't move the shoulder below a certain angle until
     // the wrist is level with the ground.
+    if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
+      shoulder_angle_goal =
+          ::std::max(original_shoulder_angle_goal,
+                     kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
+    }
     if (::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
       shoulder_angle_goal =
-          ::std::max(shoulder_angle_goal,
+          ::std::max(original_shoulder_angle_goal,
                      kMinShoulderAngleForHorizontalShooter + kSafetyMargin);
     }
   }
 
   // Is the arm where it could interfere with the intake right now?
   bool shoulder_is_in_danger =
-      (shoulder_angle < kMinShoulderAngleForIntakeInterference &&
+      (shoulder_angle < kMinShoulderAngleForIntakeUpInterference &&
        shoulder_angle > kMaxShoulderAngleUntilSafeIntakeStowing);
 
   // Is the arm moving into collision zone from above?
   bool shoulder_moving_into_danger_from_above =
-      (shoulder_angle >= kMinShoulderAngleForIntakeInterference &&
-       shoulder_angle_goal <= kMinShoulderAngleForIntakeInterference);
+      (shoulder_angle >= kMinShoulderAngleForIntakeUpInterference &&
+       original_shoulder_angle_goal <=
+           kMinShoulderAngleForIntakeUpInterference);
 
   // Is the arm moving into collision zone from below?
   bool shoulder_moving_into_danger_from_below =
       (shoulder_angle <= kMaxShoulderAngleUntilSafeIntakeStowing &&
-       shoulder_angle_goal >= kMaxShoulderAngleUntilSafeIntakeStowing);
+       original_shoulder_angle_goal >= kMaxShoulderAngleUntilSafeIntakeStowing);
 
   // Avoid colliding the arm with the intake.
   if (shoulder_is_in_danger || shoulder_moving_into_danger_from_above ||
@@ -82,7 +90,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
     // If the arm could collide with the intake, we make sure to move the
     // intake out of the way. The arm has priority.
     intake_angle_goal =
-        ::std::min(intake_angle_goal,
+        ::std::min(original_intake_angle_goal,
                    kMaxIntakeAngleBeforeArmInterference - kSafetyMargin);
 
     // Don't let the shoulder move into the collision area until the intake is
@@ -97,13 +105,13 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
         // The shoulder is closer to being above the collision area. Move it up
         // there.
         shoulder_angle_goal =
-            ::std::max(shoulder_angle_goal,
+            ::std::max(original_shoulder_angle_goal,
                        kMinShoulderAngleForIntakeInterference + kSafetyMargin);
       } else {
         // The shoulder is closer to being below the collision zone (i.e. in
         // stowing/intake position), keep it there for now.
         shoulder_angle_goal =
-            ::std::min(shoulder_angle_goal,
+            ::std::min(original_shoulder_angle_goal,
                        kMaxShoulderAngleUntilSafeIntakeStowing - kSafetyMargin);
       }
     }
@@ -126,13 +134,31 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
   if (shoulder_angle >=
           CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
       shoulder_angle <=
-          CollisionAvoidance::kMinShoulderAngleForIntakeInterference &&
-      intake_angle > CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
-    LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n", intake_angle,
-        CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
-        CollisionAvoidance::kMinShoulderAngleForIntakeInterference,
+          CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference &&
+      intake_angle >
+           CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
+    LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n",
+        intake_angle, CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
+        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
         shoulder_angle,
-        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing);
+        CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference);
+    return true;
+  }
+
+  if (shoulder_angle >=
+          CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
+      shoulder_angle <=
+          CollisionAvoidance::kMinShoulderAngleForIntakeInterference &&
+      intake_angle < CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference &&
+      intake_angle > Superstructure::kIntakeLowerClear &&
+      ::std::abs(wrist_angle) >
+          CollisionAvoidance::kMaxWristAngleForMovingByIntake) {
+    LOG(DEBUG, "Collided: Intake %f < %f < %f, and shoulder %f < %f < %f.\n",
+        Superstructure::kIntakeLowerClear, intake_angle,
+        CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
+        CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
+        shoulder_angle,
+        CollisionAvoidance::kMinShoulderAngleForIntakeInterference);
     return true;
   }
 
@@ -551,7 +577,8 @@ void Superstructure::RunIteration(
     // TODO(austin): Do I want to push negative power into the belly pan at this
     // point?  Maybe just put the goal slightly below the bellypan and call that
     // good enough.
-    if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
+    if (arm_.goal(0, 0) <= kShoulderTransitionToLanded + 1e-4 ||
+        arm_.X_hat(0, 0) <= kShoulderTransitionToLanded + 1e-4) {
       arm_.set_shoulder_asymetric_limits(kLandingShoulderDownVoltage,
                                          max_voltage);
     }
@@ -648,6 +675,7 @@ void Superstructure::RunIteration(
 
 constexpr double Superstructure::kZeroingVoltage;
 constexpr double Superstructure::kOperatingVoltage;
+constexpr double Superstructure::kLandingShoulderDownVoltage;
 constexpr double Superstructure::kShoulderMiddleAngle;
 constexpr double Superstructure::kLooseTolerance;
 constexpr double Superstructure::kIntakeUpperClear;
