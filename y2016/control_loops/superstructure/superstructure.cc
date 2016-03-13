@@ -56,14 +56,22 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
 
     // Make sure that we don't move the shoulder below a certain angle until
     // the wrist is level with the ground.
-    if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
-      shoulder_angle_goal =
+    if (intake_angle < kMaxIntakeAngleBeforeArmInterference + kSafetyMargin) {
+      if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
+        shoulder_angle_goal =
           ::std::max(original_shoulder_angle_goal,
-                     kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
+              kMinShoulderAngleForIntakeInterference + kSafetyMargin);
+      }
+    } else {
+      if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
+        shoulder_angle_goal =
+          ::std::max(original_shoulder_angle_goal,
+              kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
+      }
     }
     if (::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
       shoulder_angle_goal =
-          ::std::max(original_shoulder_angle_goal,
+          ::std::max(shoulder_angle_goal,
                      kMinShoulderAngleForHorizontalShooter + kSafetyMargin);
     }
   }
