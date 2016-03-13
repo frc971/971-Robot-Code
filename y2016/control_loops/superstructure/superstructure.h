@@ -88,7 +88,7 @@ class CollisionAvoidance {
 
   // The maximum absolute angle in radians that the wrist can be from horizontal
   // while it is near the intake.
-  static constexpr double kMaxWristAngleForMovingByIntake = 0.20;
+  static constexpr double kMaxWristAngleForMovingByIntake = 0.50;
 
   // The shoulder angle (in radians) below which the intake can safely move
   // into the collision zone. This is necessary when the robot wants to fold up
