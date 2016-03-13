@@ -1,0 +1,59 @@
+syntax = "proto2";
+
+package y2016.vision;
+
+// Stores configuration information for a given set of hardware.
+message Calibration {
+  // The focal length of the camera divided by the width of images.
+  optional double focal_length = 1;
+  // Physical distance between the two cameras in meters.
+  optional double center_center_dist = 2;
+
+  // Rotational misalignment in x direction in pixels.
+  optional double center_center_skew = 3;
+  // Rotational misalignment in x direction in pixels.
+  optional double camera_y_skew = 4;
+  // The number of meters from the physical point measured on the robot to the
+  // camera. This is added into the result of translating camera coordinates to
+  // real-world coordinates to get the correct values.
+  optional double measure_camera_offset = 5;
+
+  // Image width to read from camera.
+  optional int32 camera_image_width = 6;
+  // Image height to read from camera.
+  optional int32 camera_image_height = 7;
+
+  // Device name of the left camera.
+  optional string left_camera_name = 8;
+  // Device name of the right camera.
+  optional string right_camera_name = 9;
+
+  // roboRIO IP address.
+  optional string roborio_ip_addr = 10;
+  // Jetson board IP address.
+  optional string jetson_ip_addr = 11;
+
+  // Exposure to set the camera to (V4L2_CID_EXPOSURE_ABSOLUTE value).
+  optional int32 camera_exposure = 12;
+  // Brightness to set the camera to (V4L2_CID_BRIGHTNESS value).
+  optional int32 camera_brightness = 13;
+  // Gain to set the camera to (V4L2_CID_GAIN value).
+  optional int32 camera_gain = 14;
+
+  // Number of frames per second to try for. V4L2/the camera/etc decide on the
+  // actual value to use.
+  optional int32 camera_fps = 15;
+}
+
+// Matches a robot identifer and its calibration information.
+message RobotCalibration {
+  // Identifier for which robot this applies to.
+  optional string robot = 1;
+  // The calibration for this robot.
+  optional Calibration calibration = 2;
+}
+
+// Top-level message for a file of calibration information.
+message CalibrationFile {
+  repeated RobotCalibration calibration = 1;
+}
