@@ -36,10 +36,8 @@ PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config,
       wheel_(0.0),
       throttle_(0.0),
       quickturn_(false),
-      stale_count_(0),
-      position_time_delta_(dt_config.dt),
-      left_gear_(LOW),
-      right_gear_(LOW),
+      left_gear_(Gear::LOW),
+      right_gear_(Gear::LOW),
       counter_(0),
       dt_config_(dt_config) {
   last_position_.Zero();
@@ -64,69 +62,59 @@ double PolyDrivetrain::MotorSpeed(
 
   // Not in gear, so speed-match to destination gear.
   switch (gear) {
-    case HIGH:
-    case SHIFTING_UP:
+    case Gear::HIGH:
+    case Gear::SHIFTING_UP:
       return high_gear_speed;
-    case LOW:
-    case SHIFTING_DOWN:
+    case Gear::LOW:
+    case Gear::SHIFTING_DOWN:
     default:
       return low_gear_speed;
       break;
   }
 }
 
-PolyDrivetrain::Gear PolyDrivetrain::UpdateSingleGear(Gear requested_gear,
-                                                      Gear current_gear) {
+Gear PolyDrivetrain::UpdateSingleGear(Gear requested_gear, Gear current_gear) {
   const Gear shift_up =
       (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
-          ? SHIFTING_UP
-          : HIGH;
+          ? Gear::SHIFTING_UP
+          : Gear::HIGH;
   const Gear shift_down =
       (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
-          ? SHIFTING_DOWN
-          : LOW;
+          ? Gear::SHIFTING_DOWN
+          : Gear::LOW;
   if (current_gear != requested_gear) {
     if (IsInGear(current_gear)) {
-      if (requested_gear == HIGH) {
-        if (current_gear != HIGH) {
+      if (requested_gear == Gear::HIGH) {
+        if (current_gear != Gear::HIGH) {
           current_gear = shift_up;
         }
       } else {
-        if (current_gear != LOW) {
+        if (current_gear != Gear::LOW) {
           current_gear = shift_down;
         }
       }
     } else {
-      if (requested_gear == HIGH && current_gear == SHIFTING_DOWN) {
-        current_gear = SHIFTING_UP;
-      } else if (requested_gear == LOW && current_gear == SHIFTING_UP) {
-        current_gear = SHIFTING_DOWN;
+      if (requested_gear == Gear::HIGH && current_gear == Gear::SHIFTING_DOWN) {
+        current_gear = Gear::SHIFTING_UP;
+      } else if (requested_gear == Gear::LOW &&
+                 current_gear == Gear::SHIFTING_UP) {
+        current_gear = Gear::SHIFTING_DOWN;
       }
     }
   }
   return current_gear;
 }
 
-void PolyDrivetrain::UpdateGears(Gear requested_gear) {
-  left_gear_ = UpdateSingleGear(requested_gear, left_gear_);
-  right_gear_ = UpdateSingleGear(requested_gear, right_gear_);
-}
+void PolyDrivetrain::SetGoal(
+    const ::frc971::control_loops::DrivetrainQueue::Goal &goal) {
+  const double wheel = goal.steering;
+  const double throttle = goal.throttle;
+  const bool quickturn = goal.quickturn;
+  const bool highgear = goal.highgear;
 
-void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
-                             bool highgear) {
   const double kWheelNonLinearity = 0.4;
   // Apply a sin function that's scaled to make it feel better.
   const double angular_range = M_PI_2 * kWheelNonLinearity;
-
-  if (dt_config_.shifter_type == ShifterType::SIMPLE_SHIFTER) {
-    // Force the right controller for simple shifters since we assume that
-    // gear switching is instantaneous.
-    if (highgear) {
-      loop_->set_controller_index(3);
-    } else {
-      loop_->set_controller_index(0);
-    }
-  }
 
   wheel_ = sin(angular_range * wheel) / sin(angular_range);
   wheel_ = sin(angular_range * wheel_) / sin(angular_range);
@@ -142,76 +130,19 @@ void PolyDrivetrain::SetGoal(double wheel, double throttle, bool quickturn,
         throttle);
   }
 
-  UpdateGears(highgear ? HIGH : LOW);
+  Gear requested_gear = highgear ? Gear::HIGH : Gear::LOW;
+
+  left_gear_ = PolyDrivetrain::UpdateSingleGear(requested_gear, left_gear_);
+  right_gear_ = PolyDrivetrain::UpdateSingleGear(requested_gear, right_gear_);
 }
 
 void PolyDrivetrain::SetPosition(
-    const ::frc971::control_loops::DrivetrainQueue::Position *position) {
-  if (position == NULL) {
-    ++stale_count_;
-  } else {
-    last_position_ = position_;
-    position_ = *position;
-    position_time_delta_ = (stale_count_ + 1) * dt_config_.dt;
-    stale_count_ = 0;
-  }
-
-  if (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER && position) {
-    GearLogging gear_logging;
-    // Switch to the correct controller.
-    const double left_middle_shifter_position =
-        (dt_config_.left_drive.clear_high + dt_config_.left_drive.clear_low) /
-        2.0;
-    const double right_middle_shifter_position =
-        (dt_config_.right_drive.clear_high + dt_config_.right_drive.clear_low) /
-        2.0;
-
-    if (position->left_shifter_position < left_middle_shifter_position ||
-        left_gear_ == LOW) {
-      if (position->right_shifter_position < right_middle_shifter_position ||
-          right_gear_ == LOW) {
-        gear_logging.left_loop_high = false;
-        gear_logging.right_loop_high = false;
-        loop_->set_controller_index(gear_logging.controller_index = 0);
-      } else {
-        gear_logging.left_loop_high = false;
-        gear_logging.right_loop_high = true;
-        loop_->set_controller_index(gear_logging.controller_index = 1);
-      }
-    } else {
-      if (position->right_shifter_position < right_middle_shifter_position ||
-          right_gear_ == LOW) {
-        gear_logging.left_loop_high = true;
-        gear_logging.right_loop_high = false;
-        loop_->set_controller_index(gear_logging.controller_index = 2);
-      } else {
-        gear_logging.left_loop_high = true;
-        gear_logging.right_loop_high = true;
-        loop_->set_controller_index(gear_logging.controller_index = 3);
-      }
-    }
-
-    if (position->left_shifter_position > dt_config_.left_drive.clear_high &&
-        left_gear_ == SHIFTING_UP) {
-      left_gear_ = HIGH;
-    }
-    if (position->left_shifter_position < dt_config_.left_drive.clear_low &&
-        left_gear_ == SHIFTING_DOWN) {
-      left_gear_ = LOW;
-    }
-    if (position->right_shifter_position > dt_config_.right_drive.clear_high &&
-        right_gear_ == SHIFTING_UP) {
-      right_gear_ = HIGH;
-    }
-    if (position->right_shifter_position < dt_config_.right_drive.clear_low &&
-        right_gear_ == SHIFTING_DOWN) {
-      right_gear_ = LOW;
-    }
-
-    gear_logging.left_state = left_gear_;
-    gear_logging.right_state = right_gear_;
-    LOG_STRUCT(DEBUG, "state", gear_logging);
-  }
+    const ::frc971::control_loops::DrivetrainQueue::Position *position,
+    Gear left_gear, Gear right_gear) {
+  left_gear_ = left_gear;
+  right_gear_ = right_gear;
+  last_position_ = position_;
+  position_ = *position;
 }
 
 double PolyDrivetrain::FilterVelocity(double throttle) const {
@@ -331,11 +262,10 @@ void PolyDrivetrain::Update() {
     }
   } else {
     const double current_left_velocity =
-        (position_.left_encoder - last_position_.left_encoder) /
-        position_time_delta_;
+        (position_.left_encoder - last_position_.left_encoder) / dt_config_.dt;
     const double current_right_velocity =
         (position_.right_encoder - last_position_.right_encoder) /
-        position_time_delta_;
+        dt_config_.dt;
     const double left_motor_speed =
         MotorSpeed(dt_config_.left_drive, position_.left_shifter_position,
                    current_left_velocity, left_gear_);
@@ -380,13 +310,13 @@ void PolyDrivetrain::Update() {
   }
 }
 
-void PolyDrivetrain::SendMotors(
+void PolyDrivetrain::SetOutput(
     ::frc971::control_loops::DrivetrainQueue::Output *output) {
   if (output != NULL) {
     output->left_voltage = loop_->U(0, 0);
     output->right_voltage = loop_->U(1, 0);
-    output->left_high = left_gear_ == HIGH || left_gear_ == SHIFTING_UP;
-    output->right_high = right_gear_ == HIGH || right_gear_ == SHIFTING_UP;
+    output->left_high = MaybeHigh(left_gear_);
+    output->right_high = MaybeHigh(right_gear_);
   }
 }
 

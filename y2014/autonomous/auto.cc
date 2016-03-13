@@ -163,10 +163,10 @@ void WaitUntilNear(double distance) {
     ::frc971::control_loops::drivetrain_queue.status.FetchAnother();
     double left_error = ::std::abs(
         left_initial_position -
-        ::frc971::control_loops::drivetrain_queue.status->filtered_left_position);
+        ::frc971::control_loops::drivetrain_queue.status->estimated_left_position);
     double right_error = ::std::abs(
         right_initial_position -
-        ::frc971::control_loops::drivetrain_queue.status->filtered_right_position);
+        ::frc971::control_loops::drivetrain_queue.status->estimated_right_position);
     const double kPositionThreshold = 0.05 + distance;
     if (right_error < kPositionThreshold && left_error < kPositionThreshold) {
       LOG(INFO, "At the goal\n");
@@ -214,9 +214,9 @@ void Shoot() {
 void InitializeEncoders() {
   ::frc971::control_loops::drivetrain_queue.status.FetchAnother();
   left_initial_position =
-      ::frc971::control_loops::drivetrain_queue.status->filtered_left_position;
+      ::frc971::control_loops::drivetrain_queue.status->estimated_left_position;
   right_initial_position =
-      ::frc971::control_loops::drivetrain_queue.status->filtered_right_position;
+      ::frc971::control_loops::drivetrain_queue.status->estimated_right_position;
 }
 
 void WaitUntilClawDone() {

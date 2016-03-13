@@ -55,7 +55,7 @@ void DrivetrainAction::RunAction() {
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
         profile.SetGoal(
-            (status.filtered_left_position + status.filtered_right_position) /
+            (status.estimated_left_position + status.estimated_right_position) /
             2.0);
       } else {
         static const double divisor = K(0, 0) + K(0, 2);
@@ -133,10 +133,10 @@ void DrivetrainAction::RunAction() {
     const double kPositionThreshold = 0.05;
 
     const double left_error = ::std::abs(
-        control_loops::drivetrain.status->filtered_left_position -
+        control_loops::drivetrain.status->estimated_left_position -
         (left_goal_state(0, 0) + action_q_->goal->left_initial_position));
     const double right_error = ::std::abs(
-        control_loops::drivetrain.status->filtered_right_position -
+        control_loops::drivetrain.status->estimated_right_position -
         (right_goal_state(0, 0) + action_q_->goal->right_initial_position));
     const double velocity_error =
         ::std::abs(control_loops::drivetrain.status->robot_speed);

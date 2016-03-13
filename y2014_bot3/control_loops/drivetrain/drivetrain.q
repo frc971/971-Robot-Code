@@ -79,13 +79,13 @@ queue_group DrivetrainQueue {
     // Estimated speed of the center of the robot in m/s (positive forwards).
     double robot_speed;
     // Estimated relative position of the left side in meters.
-    double filtered_left_position;
+    double estimated_left_position;
     // Estimated relative position of the right side in meters.
-    double filtered_right_position;
+    double estimated_right_position;
     // Estimated velocity of the left side in m/s.
-    double filtered_left_velocity;
+    double estimated_left_velocity;
     // Estimated velocity of the right side in m/s.
-    double filtered_right_velocity;
+    double estimated_right_velocity;
 
     // The voltage we wanted to send to the left side last cycle.
     double uncapped_left_voltage;

@@ -2,6 +2,14 @@ package frc971.control_loops;
 
 import "aos/common/controls/control_loops.q";
 
+// Parameters for the motion profiles.
+struct ProfileParameters {
+  // Maximum velocity for the profile.
+  float max_velocity;
+  // Maximum acceleration for the profile.
+  float max_acceleration;
+};
+
 // For logging information about what the code is doing with the shifters.
 struct GearLogging {
   // Which controller is being used.
@@ -62,6 +70,11 @@ queue_group DrivetrainQueue {
     // controller is active.
     double left_velocity_goal;
     double right_velocity_goal;
+
+    // Motion profile parameters.
+    // The control loop will profile if these are all non-zero.
+    ProfileParameters linear;
+    ProfileParameters angular;
   };
 
   message Position {
@@ -101,12 +114,12 @@ queue_group DrivetrainQueue {
     double robot_speed;
 
     // Estimated relative position of each drivetrain side (in meters).
-    double filtered_left_position;
-    double filtered_right_position;
+    double estimated_left_position;
+    double estimated_right_position;
 
     // Estimated velocity of each drivetrain side (in m/s).
-    double filtered_left_velocity;
-    double filtered_right_velocity;
+    double estimated_left_velocity;
+    double estimated_right_velocity;
 
     // The voltage we wanted to send to each drivetrain side last cycle.
     double uncapped_left_voltage;
@@ -115,6 +128,23 @@ queue_group DrivetrainQueue {
     // The goal velocities for the polydrive controller.
     double left_velocity_goal;
     double right_velocity_goal;
+
+    // The voltage error for the left and right sides.
+    double left_voltage_error;
+    double right_voltage_error;
+
+    // The profiled goal states.
+    double profiled_left_position_goal;
+    double profiled_right_position_goal;
+    double profiled_left_velocity_goal;
+    double profiled_right_velocity_goal;
+
+    // The KF offset
+    double estimated_angular_velocity_error;
+    // The KF estimated heading.
+    double estimated_heading;
+    // The KF wheel estimated heading.
+    //double estimated_wheel_heading;
 
     // True if the output voltage was capped last cycle.
     bool output_was_capped;

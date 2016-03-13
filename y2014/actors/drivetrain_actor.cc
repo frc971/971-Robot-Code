@@ -60,7 +60,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         // They're more than 24V apart, so stop moving forwards and let it deal
         // with spinning first.
         profile.SetGoal(
-            (status.filtered_left_position + status.filtered_right_position -
+            (status.estimated_left_position + status.estimated_right_position -
              params.left_initial_position - params.right_initial_position) /
             2.0);
       } else {
@@ -143,11 +143,11 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
 
     const double left_error =
         ::std::abs(::frc971::control_loops::drivetrain_queue.status
-                       ->filtered_left_position -
+                       ->estimated_left_position -
                    (left_goal_state(0, 0) + params.left_initial_position));
     const double right_error =
         ::std::abs(::frc971::control_loops::drivetrain_queue.status
-                       ->filtered_right_position -
+                       ->estimated_right_position -
                    (right_goal_state(0, 0) + params.right_initial_position));
     const double velocity_error = ::std::abs(
         ::frc971::control_loops::drivetrain_queue.status->robot_speed);

@@ -416,6 +416,12 @@ class StateFeedbackLoop {
     }
 
     UpdateObserver(U_);
+
+    UpdateFFReference();
+  }
+
+  // Updates R() after any CapU operations happen on U().
+  void UpdateFFReference() {
     ff_U_ -= U_uncapped() - U();
     if (!Kff().isZero(0)) {
       R_ = A() * R() + B() * ff_U_;

@@ -7,8 +7,7 @@ using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
 int main() {
   ::aos::Init();
-  DrivetrainLoop drivetrain =
-      DrivetrainLoop(::y2016::control_loops::GetDrivetrainConfig());
+  DrivetrainLoop drivetrain(::y2016::control_loops::GetDrivetrainConfig());
   drivetrain.Run();
   ::aos::Cleanup();
   return 0;

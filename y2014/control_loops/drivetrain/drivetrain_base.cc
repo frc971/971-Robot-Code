@@ -30,7 +30,9 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       constants::GetValues().low_gear_ratio,
       constants::GetValues().left_drive,
       constants::GetValues().right_drive,
-      true};
+      true,
+      // TODO(austin): Switch over to using the profle.
+      false};
 
   return kDrivetrainConfig;
 };

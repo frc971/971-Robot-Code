@@ -14,8 +14,6 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
-#TODO(constants): All of the constants need to be updated for 2016.
-
 class CIM(control_loop.ControlLoop):
   def __init__(self):
     super(CIM, self).__init__("CIM")
@@ -133,8 +131,13 @@ class Drivetrain(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 0.12
-    q_vel = 1.0
+    if left_low or right_low:
+      q_pos = 0.12
+      q_vel = 1.0
+    else:
+      q_pos = 0.14
+      q_vel = 0.95
+
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0)), 0.0, 0.0],
                            [0.0, 0.0, (1.0 / (q_pos ** 2.0)), 0.0],
@@ -144,9 +147,9 @@ class Drivetrain(control_loop.ControlLoop):
                            [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    glog.debug('DT K %s', name)
-    glog.debug(str(self.K))
+    glog.debug('DT q_pos %f q_vel %s %s', q_pos, q_vel, name)
     glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+    glog.debug('K %s', repr(self.K))
 
     self.hlp = 0.3
     self.llp = 0.4
@@ -154,6 +157,7 @@ class Drivetrain(control_loop.ControlLoop):
 
     self.U_max = numpy.matrix([[12.0], [12.0]])
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
+
     self.InitializeState()
 
 
@@ -170,6 +174,13 @@ class KFDrivetrain(Drivetrain):
     #
     # [left position, left velocity, right position, right velocity,
     #  left voltage error, right voltage error, angular_error]
+    #
+    # The left and right positions are filtered encoder positions and are not
+    # adjusted for heading error.
+    # The turn velocity as computed by the left and right velocities is
+    # adjusted by the gyro velocity.
+    # The angular_error is the angular velocity error between the wheel speed
+    # and the gyro speed.
     self.A_continuous = numpy.matrix(numpy.zeros((7, 7)))
     self.B_continuous = numpy.matrix(numpy.zeros((7, 2)))
     self.A_continuous[0:4,0:4] = self.unaugmented_A_continuous
@@ -214,8 +225,26 @@ class KFDrivetrain(Drivetrain):
 
     self.L = self.A * self.KalmanGain
 
-    # We need a nothing controller for the autogen code to be happy.
+    unaug_K = self.K
+
+    # Implement a nice closed loop controller for use by the closed loop
+    # controller.
     self.K = numpy.matrix(numpy.zeros((self.B.shape[1], self.A.shape[0])))
+    self.K[0:2, 0:4] = unaug_K
+    self.K[0, 4] = 1.0
+    self.K[1, 5] = 1.0
+
+    self.Qff = numpy.matrix(numpy.zeros((4, 4)))
+    qff_pos = 0.005
+    qff_vel = 1.00
+    self.Qff[0, 0] = 1.0 / qff_pos ** 2.0
+    self.Qff[1, 1] = 1.0 / qff_vel ** 2.0
+    self.Qff[2, 2] = 1.0 / qff_pos ** 2.0
+    self.Qff[3, 3] = 1.0 / qff_vel ** 2.0
+    self.Kff = numpy.matrix(numpy.zeros((2, 7)))
+    self.Kff[0:2, 0:4] = controls.TwoStateFeedForwards(self.B[0:4,:], self.Qff)
+
+    self.InitializeState()
 
 
 def main(argv):
@@ -223,7 +252,7 @@ def main(argv):
   glog.init()
 
   # Simulate the response of the system to a step input.
-  drivetrain = Drivetrain()
+  drivetrain = Drivetrain(left_low=False, right_low=False)
   simulated_left = []
   simulated_right = []
   for _ in xrange(100):
@@ -234,24 +263,33 @@ def main(argv):
   if FLAGS.plot:
     pylab.plot(range(100), simulated_left)
     pylab.plot(range(100), simulated_right)
+    pylab.suptitle('Acceleration Test')
     pylab.show()
 
   # Simulate forwards motion.
-  drivetrain = Drivetrain()
+  drivetrain = Drivetrain(left_low=False, right_low=False)
   close_loop_left = []
   close_loop_right = []
+  left_power = []
+  right_power = []
   R = numpy.matrix([[1.0], [0.0], [1.0], [0.0]])
-  for _ in xrange(100):
+  for _ in xrange(300):
     U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat),
                    drivetrain.U_min, drivetrain.U_max)
     drivetrain.UpdateObserver(U)
     drivetrain.Update(U)
     close_loop_left.append(drivetrain.X[0, 0])
     close_loop_right.append(drivetrain.X[2, 0])
+    left_power.append(U[0, 0])
+    right_power.append(U[1, 0])
 
   if FLAGS.plot:
-    pylab.plot(range(100), close_loop_left)
-    pylab.plot(range(100), close_loop_right)
+    pylab.plot(range(300), close_loop_left, label='left position')
+    pylab.plot(range(300), close_loop_right, label='right position')
+    pylab.plot(range(300), left_power, label='left power')
+    pylab.plot(range(300), right_power, label='right power')
+    pylab.suptitle('Linear Move')
+    pylab.legend()
     pylab.show()
 
   # Try turning in place
@@ -270,6 +308,7 @@ def main(argv):
   if FLAGS.plot:
     pylab.plot(range(100), close_loop_left)
     pylab.plot(range(100), close_loop_right)
+    pylab.suptitle('Angular Move')
     pylab.show()
 
   # Try turning just one side.
@@ -288,6 +327,7 @@ def main(argv):
   if FLAGS.plot:
     pylab.plot(range(100), close_loop_left)
     pylab.plot(range(100), close_loop_right)
+    pylab.suptitle('Pivot')
     pylab.show()
 
   # Write the generated constants out to a file.
