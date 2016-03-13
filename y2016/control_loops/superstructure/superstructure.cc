@@ -631,6 +631,8 @@ void Superstructure::RunIteration(
   status->intake.estimator_state = intake_.IntakeEstimatorState();
   status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
 
+  status->shoulder_controller_index = arm_.controller_index();
+
   last_shoulder_angle_ = arm_.shoulder_angle();
   last_wrist_angle_ = arm_.wrist_angle();
   last_intake_angle_ = intake_.angle();

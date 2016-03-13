@@ -24,10 +24,11 @@ except gflags.DuplicateFlagError:
 
 
 class Arm(control_loop.ControlLoop):
-  def __init__(self, name="Arm"):
+  def __init__(self, name="Arm", J=None):
     super(Arm, self).__init__(name=name)
-    self._shoulder = Shoulder(name=name)
+    self._shoulder = Shoulder(name=name, J=J)
     self._shooter = Wrist(name=name)
+    self.shoulder_Kv = self._shoulder.Kv / self._shoulder.G
 
     # Do a coordinate transformation.
     # X_shooter_grounded = X_shooter + X_shoulder
@@ -94,7 +95,10 @@ class Arm(control_loop.ControlLoop):
     self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
 
     glog.debug('Shoulder K')
-    glog.debug(self._shoulder.K)
+    glog.debug(repr(self._shoulder.K))
+    glog.debug('Poles are %s',
+        repr(numpy.linalg.eig(self._shoulder.A -
+                              self._shoulder.B * self._shoulder.K)[0]))
 
     # Compute controller gains.
     # self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
@@ -135,8 +139,8 @@ class Arm(control_loop.ControlLoop):
 
 
 class IntegralArm(Arm):
-  def __init__(self, name="IntegralArm"):
-    super(IntegralArm, self).__init__(name=name)
+  def __init__(self, name="IntegralArm", J=None):
+    super(IntegralArm, self).__init__(name=name, J=J)
 
     self.A_continuous_unaugmented = self.A_continuous
     self.B_continuous_unaugmented = self.B_continuous
@@ -154,11 +158,11 @@ class IntegralArm(Arm):
 
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos_shoulder = 0.08
-    q_vel_shoulder = 4.00
-    q_voltage_shoulder = 3.0
+    q_pos_shoulder = 0.10
+    q_vel_shoulder = 0.005
+    q_voltage_shoulder = 3.5
     q_pos_shooter = 0.08
-    q_vel_shooter = 4.00
+    q_vel_shooter = 2.00
     q_voltage_shooter = 1.0
     self.Q = numpy.matrix(numpy.zeros((6, 6)))
     self.Q[0, 0] = q_pos_shoulder ** 2.0
@@ -236,7 +240,7 @@ class ScenarioPlotter(object):
     goal = numpy.concatenate((arm.X, numpy.matrix(numpy.zeros((2, 1)))), axis=0)
 
     shoulder_profile = TrapezoidProfile(arm.dt)
-    shoulder_profile.set_maximum_acceleration(50.0)
+    shoulder_profile.set_maximum_acceleration(12.0)
     shoulder_profile.set_maximum_velocity(10.0)
     shoulder_profile.SetGoal(goal[0, 0])
     shooter_profile = TrapezoidProfile(arm.dt)
@@ -318,8 +322,6 @@ class ScenarioPlotter(object):
       self.u_shoulder.append(U[0, 0])
       self.u_shooter.append(U[1, 0])
 
-      glog.debug('Time: %f', self.t[-1])
-
       ff_U -= U_uncapped - U
       goal = controller.A * goal + controller.B * ff_U
 
@@ -378,7 +380,7 @@ def main(argv):
   scenario_plotter = ScenarioPlotter()
 
   arm = Arm()
-  arm_controller = IntegralArm()
+  arm_controller = IntegralArm(name='AcceleratingIntegralArm', J=12)
   arm_observer = IntegralArm()
 
   # Test moving the shoulder with constant separation.
@@ -406,8 +408,12 @@ def main(argv):
                                                  namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
 
+    decelerating_arm_controller = IntegralArm(name='DeceleratingIntegralArm', J=5)
     integral_loop_writer = control_loop.ControlLoopWriter(
-        'IntegralArm', [arm_controller], namespaces=namespaces)
+        'IntegralArm', [arm_controller, decelerating_arm_controller],
+        namespaces=namespaces)
+    integral_loop_writer.AddConstant(control_loop.Constant("kV_shoulder", "%f",
+          arm_controller.shoulder_Kv))
     integral_loop_writer.Write(argv[3], argv[4])
 
   if FLAGS.plot:
