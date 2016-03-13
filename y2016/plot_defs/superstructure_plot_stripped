@@ -1,0 +1,13 @@
+superstructure.stripped output voltage_intake
+superstructure.stripped output voltage_shoulder
+superstructure.stripped output voltage_wrist
+superstructure.stripped status state
+superstructure.stripped status shoulder angle
+superstructure.stripped status wrist angle
+superstructure.stripped status intake angle
+superstructure.stripped position intake pot
+superstructure.stripped position shoulder pot
+superstructure.stripped position wrist pot
+superstructure.stripped status shoulder estimator_state position
+superstructure.stripped status wrist estimator_state position
+superstructure.stripped status intake estimator_state position

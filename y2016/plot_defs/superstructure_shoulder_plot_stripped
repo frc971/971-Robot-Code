@@ -1,0 +1,17 @@
+superstructure.stripped output voltage_shoulder
+superstructure.stripped status state
+superstructure.stripped status shoulder angle
+superstructure.stripped status shoulder angular_velocity
+
+superstructure.stripped status shoulder goal_angle
+superstructure.stripped status shoulder goal_angular_velocity
+
+superstructure.stripped status shoulder estimator_state position
+superstructure.stripped status shoulder calculated_velocity
+
+superstructure.stripped status shoulder voltage_error
+superstructure.stripped status shoulder feedforwards_power
+superstructure.stripped status shoulder position_power
+superstructure.stripped status shoulder velocity_power
+
+superstructure.stripped status shoulder_controller_index

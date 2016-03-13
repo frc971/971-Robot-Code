@@ -1,0 +1,15 @@
+superstructure status state
+superstructure output voltage_intake
+superstructure status intake angle
+superstructure status intake angular_velocity
+
+superstructure status intake goal_angle
+superstructure status intake goal_angular_velocity
+
+superstructure status intake estimator_state position
+superstructure status intake calculated_velocity
+
+superstructure status intake voltage_error
+superstructure status intake feedforwards_power
+superstructure status intake position_power
+superstructure status intake velocity_power

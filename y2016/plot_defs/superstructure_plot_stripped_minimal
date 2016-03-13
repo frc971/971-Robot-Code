@@ -1,0 +1,12 @@
+superstructure.stripped goal angle_shoulder
+superstructure.stripped goal angle_wrist
+superstructure.stripped goal angle_intake
+superstructure.stripped status shoulder angle
+superstructure.stripped status wrist angle
+superstructure.stripped status intake angle
+superstructure.stripped status shoulder goal_angle
+superstructure.stripped status wrist goal_angle
+superstructure.stripped status intake goal_angle
+superstructure.stripped status shoulder unprofiled_goal_angle
+superstructure.stripped status wrist unprofiled_goal_angle
+superstructure.stripped status intake unprofiled_goal_angle

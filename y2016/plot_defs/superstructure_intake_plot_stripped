@@ -1,0 +1,15 @@
+superstructure.stripped status state
+superstructure.stripped output voltage_intake
+superstructure.stripped status intake angle
+superstructure.stripped status intake angular_velocity
+
+superstructure.stripped status intake goal_angle
+superstructure.stripped status intake goal_angular_velocity
+
+superstructure.stripped status intake estimator_state position
+superstructure.stripped status intake calculated_velocity
+
+superstructure.stripped status intake voltage_error
+superstructure.stripped status intake feedforwards_power
+superstructure.stripped status intake position_power
+superstructure.stripped status intake velocity_power

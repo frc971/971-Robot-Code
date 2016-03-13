@@ -1,0 +1,13 @@
+superstructure_lib_test output voltage_intake
+superstructure_lib_test output voltage_shoulder
+superstructure_lib_test output voltage_wrist
+superstructure_lib_test status state
+superstructure_lib_test status shoulder angle
+superstructure_lib_test status wrist angle
+superstructure_lib_test status intake angle
+superstructure_lib_test position intake pot
+superstructure_lib_test position shoulder pot
+superstructure_lib_test position wrist pot
+superstructure_lib_test status shoulder estimator_state position
+superstructure_lib_test status wrist estimator_state position
+superstructure_lib_test status intake estimator_state position

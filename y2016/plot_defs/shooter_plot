@@ -1,0 +1,8 @@
+shooter output voltage_left
+shooter output voltage_right
+shooter output push_to_shooter -b 200
+shooter status left angular_velocity
+shooter status right angular_velocity
+shooter goal angular_velocity
+
+shooter goal push_to_shooter -b 100

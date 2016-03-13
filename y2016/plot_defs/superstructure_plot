@@ -1,0 +1,13 @@
+superstructure output voltage_intake
+superstructure output voltage_shoulder
+superstructure output voltage_wrist
+superstructure status state
+superstructure status shoulder angle
+superstructure status wrist angle
+superstructure status intake angle
+superstructure position intake pot
+superstructure position shoulder pot
+superstructure position wrist pot
+superstructure status shoulder estimator_state position
+superstructure status wrist estimator_state position
+superstructure status intake estimator_state position

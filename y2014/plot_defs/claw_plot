@@ -1,0 +1,10 @@
+claw output top_claw_voltage
+claw output bottom_claw_voltage
+
+claw status bottom
+claw status separation
+claw status bottom_velocity
+claw status separation_velocity
+
+claw goal separation_angle
+claw goal bottom_angle
