@@ -80,6 +80,13 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
     // Update position/goal for our two shooter sides.
     left_.set_goal(goal->angular_velocity);
     right_.set_goal(goal->angular_velocity);
+
+    // Turn the lights on if we are supposed to spin.
+    if (output) {
+      if (::std::abs(goal->angular_velocity) > 0.0) {
+        output->lights_on = true;
+      }
+    }
   }
 
   left_.set_position(position->theta_left);
