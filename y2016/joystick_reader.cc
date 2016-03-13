@@ -24,8 +24,9 @@ using ::y2016::control_loops::shooter::shooter_queue;
 using ::y2016::control_loops::superstructure_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
+using ::aos::input::driver_station::JoystickAxis;
+using ::aos::input::driver_station::POVLocation;
 
 namespace y2016 {
 namespace input {
@@ -39,14 +40,15 @@ const ButtonLocation kTurn1(1, 7);
 const ButtonLocation kTurn2(1, 11);
 
 // Buttons on the lexan driver station to get things running on bring-up day.
-const ButtonLocation kTest1(3, 6);
-const ButtonLocation kTest2(3, 2);
-const ButtonLocation kTest3(3, 11);
-const ButtonLocation kTest4(3, 9);
+const ButtonLocation kIntakeDown(3, 11);
+const POVLocation kFrontLong(3, 180);
+const POVLocation kBackLong(3, 0);
+const ButtonLocation kTest3(3, 7);
+const ButtonLocation kIntakeIn(3, 12);
 const ButtonLocation kTest5(3, 8);
-const ButtonLocation kTest6(3, 3);
+const ButtonLocation kFire(3, 3);
 const ButtonLocation kTest7(3, 5);
-const ButtonLocation kTest8(3, 4);
+const ButtonLocation kIntakeOut(3, 9);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -144,37 +146,35 @@ class Reader : public ::aos::input::JoystickInput {
       waiting_for_zero_ = true;
     }
 
-    if (data.IsPressed(kTest1)) {
-      intake_goal_ = 1.6;
-    } else {
+    if (data.IsPressed(kIntakeDown)) {
       intake_goal_ = 0.1;
+    } else {
+      intake_goal_ = 1.6;
     }
 
-    if (data.IsPressed(kTest2)) {
+    if (data.IsPressed(kFrontLong)) {
+      // Forwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
+      wrist_goal_ = M_PI + 0.42;
+      shooter_velocity_ = 640.0;
+    } else if (data.IsPressed(kBackLong)) {
+      // Backwards shot
+      shoulder_goal_ = M_PI / 2.0 - 0.2;
+      wrist_goal_ = -0.59;
+      shooter_velocity_ = 640.0;
     } else {
+      wrist_goal_ = 0.0;
       shoulder_goal_ = -0.010;
+      shooter_velocity_ = 0.0;
     }
 
     if (data.IsPressed(kTest3)) {
       wrist_goal_ = 0.0;
-    } else {
-      // Backwards shot
-      wrist_goal_ = -0.59;
-      // Forwards shot
-      //wrist_goal_ = M_PI + 0.42;
     }
 
-    is_intaking_ = data.IsPressed(kTest4);
+    is_intaking_ = data.IsPressed(kIntakeIn);
 
-    if (data.IsPressed(kTest5)) {
-      //shooter_velocity_ = 600.0;
-      shooter_velocity_ = 640.0;
-    } else {
-      shooter_velocity_ = 0.0;
-    }
-
-    if (data.IsPressed(kTest6) && shooter_velocity_ != 0.0) {
+    if (data.IsPressed(kFire) && shooter_velocity_ != 0.0) {
       fire_ = true;
     } else {
       fire_ = false;
@@ -183,10 +183,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kTest7)) {
     }
 
-    if (data.PosEdge(kTest8)) {
-    }
-
-    is_outtaking_ = data.IsPressed(kTest8);
+    is_outtaking_ = data.IsPressed(kIntakeOut);
 
     if (!waiting_for_zero_) {
       if (!action_queue_.Running()) {
@@ -197,13 +194,13 @@ class Reader : public ::aos::input::JoystickInput {
 
         new_superstructure_goal->max_angular_velocity_intake = 7.0;
         new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
-        new_superstructure_goal->max_angular_velocity_wrist = 11.0;
+        new_superstructure_goal->max_angular_velocity_wrist = 10.0;
         new_superstructure_goal->max_angular_acceleration_intake = 40.0;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 8.0;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
         new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
 
-        /*
         // Granny mode
+        /*
         new_superstructure_goal->max_angular_velocity_intake = 0.2;
         new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
         new_superstructure_goal->max_angular_velocity_wrist = 0.2;
