@@ -110,10 +110,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Intake
           {
            // Hard stop is 164.2067247 degrees.
-           -4.654 + 0.5405079649920759 - 0.1755 + 161.25942780 * M_PI / 180.0 +
-               0.007 + 0.062681,
+           -4.2193 + (164.2067247 * M_PI / 180.0 + 0.02 - 0.0235) + 0.0549 -
+               0.104,
            {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
-            0.826033, 0.3},
+            0.363074, 0.3},
           },
 
           // Shoulder (Now calibrated at 0)
@@ -125,9 +125,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Wrist
           {
-           3.326328571170133 - 0.06138835 * M_PI / 180.0 - 0.177 + 0.0323,
+           3.326328571170133 - 0.06138835 * M_PI / 180.0 - 0.177 + 0.0323 -
+               0.023,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            -0.141904, 0.3},
+            -0.622423, 0.3},
           },
       };
       break;

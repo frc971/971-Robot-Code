@@ -61,7 +61,7 @@ struct Values {
       // Lower soft stop
       -0.300,
       // Uppper soft stop
-      1.8};
+      164.2067247 * M_PI / 180.0};
   static constexpr ::frc971::constants::Range kShoulderRange{// Lower hard stop
                                                              -0.050,
                                                              // Upper hard stop
@@ -71,13 +71,13 @@ struct Values {
                                                              // Uppper soft stop
                                                              2.0};
   static constexpr ::frc971::constants::Range kWristRange{// Lower hard stop
-                                                          -2.8,
+                                                          -2.9,
                                                           // Upper hard stop
-                                                          2.8,
+                                                          2.9,
                                                           // Lower soft stop
-                                                          -2.4,
+                                                          -2.6,
                                                           // Uppper soft stop
-                                                          2.4};
+                                                          2.6};
 
   // ///// Dynamic constants. /////
   double drivetrain_max_speed;
