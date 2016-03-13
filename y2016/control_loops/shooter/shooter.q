@@ -28,6 +28,9 @@ queue_group ShooterQueue {
     // is up to speed, push the ball into the shooter, and then wait until it
     // spins up and down before letting the piston be released.
     bool push_to_shooter;
+
+    // Forces the lights on.
+    bool force_lights_on;
   };
 
   message Position {

@@ -83,7 +83,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
 
     // Turn the lights on if we are supposed to spin.
     if (output) {
-      if (::std::abs(goal->angular_velocity) > 0.0) {
+      if (::std::abs(goal->angular_velocity) > 0.0 || goal->force_lights_on) {
         output->lights_on = true;
       }
     }
