@@ -61,9 +61,6 @@ class CollisionAvoidance {
                                          double wrist_angle,
                                          double intake_angle);
 
-  // TODO(phil): Verify that these numbers actually make sense. Someone needs
-  // to verify these either on the CAD or the real robot.
-
   // The shoulder angle (in radians) below which the shooter must be in a
   // stowing position. In other words the wrist must be at angle zero if the
   // shoulder is below this angle.
@@ -71,7 +68,12 @@ class CollisionAvoidance {
 
   // The shoulder angle (in radians) below which the arm and the shooter have
   // the potential to interfere with the intake.
-  static constexpr double kMinShoulderAngleForIntakeInterference = 1.3;
+  static constexpr double kMinShoulderAngleForIntakeUpInterference = 1.3;
+
+  // The shoulder angle (in radians) below which the shooter should be closer to
+  // level to fix the inverted case.
+  // TODO(austin): Verify
+  static constexpr double kMinShoulderAngleForIntakeInterference = 1.1;
 
   // The intake angle (in radians) above which the intake can interfere (i.e.
   // collide) with the arm and/or shooter.
@@ -84,10 +86,14 @@ class CollisionAvoidance {
   // also be placed into the belly pan.
   static constexpr double kMaxWristAngleForSafeArmStowing = 0.05;
 
+  // The maximum absolute angle in radians that the wrist can be from horizontal
+  // while it is near the intake.
+  static constexpr double kMaxWristAngleForMovingByIntake = 0.20;
+
   // The shoulder angle (in radians) below which the intake can safely move
   // into the collision zone. This is necessary when the robot wants to fold up
   // completely (i.e. stow the arm, shooter, and intake).
-  static constexpr double kMaxShoulderAngleUntilSafeIntakeStowing = 0.2;
+  static constexpr double kMaxShoulderAngleUntilSafeIntakeStowing = 0.19;
 
  private:
   Intake *intake_;
@@ -103,6 +109,7 @@ class Superstructure
 
   static constexpr double kZeroingVoltage = 5.0;
   static constexpr double kOperatingVoltage = 12.0;
+  static constexpr double kLandingShoulderDownVoltage = -2.0;
 
   // This is the angle above which we will do a HIGH_ARM_ZERO, and below which
   // we will do a LOW_ARM_ZERO.
@@ -115,7 +122,8 @@ class Superstructure
 
   // This is the angle such that the intake will clear the arm when the shooter
   // is level.
-  static constexpr double kIntakeUpperClear = 1.2;
+  static constexpr double kIntakeUpperClear =
+      CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference;
   // This is the angle such that the intake will clear the arm when the shooter
   // is at almost any position.
   static constexpr double kIntakeLowerClear = 0.4;

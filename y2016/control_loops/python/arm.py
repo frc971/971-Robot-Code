@@ -379,8 +379,12 @@ def main(argv):
 
   scenario_plotter = ScenarioPlotter()
 
-  arm = Arm()
-  arm_controller = IntegralArm(name='AcceleratingIntegralArm', J=12)
+  J_accelerating = 12
+  J_decelerating = 5
+
+  arm = Arm(name='AcceleratingArm', J=J_accelerating)
+  arm_integral_controller = IntegralArm(
+      name='AcceleratingIntegralArm', J=J_accelerating)
   arm_observer = IntegralArm()
 
   # Test moving the shoulder with constant separation.
@@ -397,23 +401,27 @@ def main(argv):
   scenario_plotter.run_test(arm=arm,
                             end_goal=R,
                             iterations=300,
-                            controller=arm_controller,
+                            controller=arm_integral_controller,
                             observer=arm_observer)
 
   if len(argv) != 5:
     glog.fatal('Expected .h file name and .cc file name for the wrist and integral wrist.')
   else:
     namespaces = ['y2016', 'control_loops', 'superstructure']
-    loop_writer = control_loop.ControlLoopWriter('Arm', [arm],
-                                                 namespaces=namespaces)
+    decelerating_arm = Arm(name='DeceleratingArm', J=J_decelerating)
+    loop_writer = control_loop.ControlLoopWriter(
+        'Arm', [arm, decelerating_arm], namespaces=namespaces)
     loop_writer.Write(argv[1], argv[2])
 
-    decelerating_arm_controller = IntegralArm(name='DeceleratingIntegralArm', J=5)
+    decelerating_integral_arm_controller = IntegralArm(
+        name='DeceleratingIntegralArm', J=J_decelerating)
+
     integral_loop_writer = control_loop.ControlLoopWriter(
-        'IntegralArm', [arm_controller, decelerating_arm_controller],
+        'IntegralArm',
+        [arm_integral_controller, decelerating_integral_arm_controller],
         namespaces=namespaces)
     integral_loop_writer.AddConstant(control_loop.Constant("kV_shoulder", "%f",
-          arm_controller.shoulder_Kv))
+          arm_integral_controller.shoulder_Kv))
     integral_loop_writer.Write(argv[3], argv[4])
 
   if FLAGS.plot:

@@ -148,13 +148,9 @@ class StateFeedbackPlant {
 
   int plant_index() const { return plant_index_; }
   void set_plant_index(int plant_index) {
-    if (plant_index < 0) {
-      plant_index_ = 0;
-    } else if (plant_index >= static_cast<int>(coefficients_.size())) {
-      plant_index_ = static_cast<int>(coefficients_.size()) - 1;
-    } else {
-      plant_index_ = plant_index;
-    }
+    assert(plant_index >= 0);
+    assert(plant_index < static_cast<int>(coefficients_.size()));
+    plant_index_ = plant_index;
   }
 
   void Reset() {
