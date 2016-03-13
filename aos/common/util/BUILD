@@ -220,3 +220,29 @@ cc_test(
     '//aos/testing:test_logging',
   ],
 )
+
+cc_library(
+  name = 'file',
+  hdrs = [
+    'file.h',
+  ],
+  srcs = [
+    'file.cc',
+  ],
+  deps = [
+    '//aos/common:scoped_fd',
+  ],
+)
+
+cc_test(
+  name = 'file_test',
+  srcs = [
+    'file_test.cc',
+  ],
+  deps = [
+    ':file',
+    '//aos/testing:googletest',
+    '//aos/testing:test_logging',
+  ],
+  size = 'small',
+)
