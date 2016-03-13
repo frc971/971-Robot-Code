@@ -354,11 +354,15 @@ void Arm::Update(bool disable) {
 
   // Shoulder saturated
   if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
+    LOG(DEBUG, "Moving shoulder state.  U: %f, %f\n", loop_->U(0, 0),
+        loop_->U_uncapped(0, 0));
     shoulder_profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
   }
 
   // Wrist saturated
   if (!disable && loop_->U(1, 0) != loop_->U_uncapped(1, 0)) {
+    LOG(DEBUG, "Moving shooter state.  U: %f, %f\n", loop_->U(1, 0),
+        loop_->U_uncapped(1, 0));
     wrist_profile_.MoveCurrentState(loop_->R().block<2, 1>(2, 0));
   }
 }
