@@ -408,6 +408,11 @@ class SolenoidWriter {
     shooter_pusher_ = ::std::move(s);
   }
 
+  void set_lights(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    lights_ = ::std::move(s);
+  }
+
   void operator()() {
     compressor_->Start();
     ::aos::SetCurrentThreadName("Solenoids");
@@ -439,6 +444,7 @@ class SolenoidWriter {
           LOG_STRUCT(DEBUG, "solenoids", *shooter_);
           shooter_clamp_->Set(shooter_->clamp_open);
           shooter_pusher_->Set(shooter_->push_to_shooter);
+          lights_->Set(shooter_->lights_on);
         }
       }
 
@@ -461,7 +467,7 @@ class SolenoidWriter {
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
-      drivetrain_right_, shooter_clamp_, shooter_pusher_;
+      drivetrain_right_, shooter_clamp_, shooter_pusher_, lights_;
   ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
@@ -673,6 +679,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(0));
     solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(4));
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
+    solenoid_writer.set_lights(pcm->MakeSolenoid(6));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());
 

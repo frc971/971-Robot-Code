@@ -55,6 +55,9 @@ queue_group ShooterQueue {
     // See comments on the identical fields in Goal for details.
     bool clamp_open;
     bool push_to_shooter;
+
+    // If true, the lights are on.
+    bool lights_on;
   };
 
   queue Goal goal;
