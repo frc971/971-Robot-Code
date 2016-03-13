@@ -10,9 +10,9 @@
 #include "Encoder.h"
 #include "DigitalSource.h"
 #include "AnalogInput.h"
-#include "dma.h"
 
 #include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/dma.h"
 
 namespace frc971 {
 namespace wpilib {

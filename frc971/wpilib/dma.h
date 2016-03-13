@@ -1,7 +1,8 @@
-#ifndef _DMA_H_
-#define _DMA_H_
+#ifndef FRC971_WPILIB_DMA_H_
+#define FRC971_WPILIB_DMA_H_
 
 // Interface to the roboRIO FPGA's DMA features.
+// TODO(Brian): Make this less wpilib-like and more frc971-like.
 
 #include <stdint.h>
 
@@ -131,4 +132,4 @@ class DMA : public ErrorBase {
 #endif
 };
 
-#endif  // _DMA_H_
+#endif  // FRC971_WPILIB_DMA_H_

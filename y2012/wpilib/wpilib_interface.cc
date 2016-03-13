@@ -14,7 +14,6 @@
 #include "Compressor.h"
 #include "Relay.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "dma.h"
 #ifndef WPILIB2015
 #include "DigitalGlitchFilter.h"
 #endif
@@ -44,6 +43,7 @@
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/logging.q.h"
 #include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/dma.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

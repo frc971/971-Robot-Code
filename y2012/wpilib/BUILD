@@ -9,7 +9,7 @@ cc_binary(
     '//aos/linux_code:init',
     '//aos/common:stl_mutex',
     '//aos/common/logging',
-    '//aos/externals:wpilib',
+    '//third_party/allwpilib_2016:wpilib',
     '//y2012/control_loops/drivetrain:drivetrain_queue',
     '//y2012/control_loops/accessories:accessories_queue',
     '//aos/common/controls:control_loop',
@@ -30,5 +30,6 @@ cc_binary(
     '//frc971/control_loops:queues',
     '//frc971/wpilib:logging_queue',
     '//frc971/wpilib:wpilib_interface',
+    '//frc971/wpilib:dma',
   ],
 )

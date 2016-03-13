@@ -9,7 +9,7 @@ cc_binary(
     '//aos/linux_code:init',
     '//aos/common:stl_mutex',
     '//aos/common/logging',
-    '//aos/externals:wpilib',
+    '//third_party/allwpilib_2016:wpilib',
     '//y2014:constants',
     '//y2014/queues:auto_mode',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
@@ -34,5 +34,6 @@ cc_binary(
     '//frc971/wpilib:logging_queue',
     '//frc971/wpilib:wpilib_interface',
     '//frc971/wpilib:pdp_fetcher',
+    '//frc971/wpilib:dma',
   ],
 )
