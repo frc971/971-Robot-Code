@@ -145,6 +145,35 @@ class ArmControlLoop
   }
 
  private:
+  void CapU() override {
+    // U(0)
+    // U(1) = coupling * U(0) + ...
+    // So, when modifying U(0), remove the coupling.
+    if (U(0, 0) > max_voltage(0)) {
+      const double overage_amount = U(0, 0) - max_voltage(0);
+      mutable_U(0, 0) = max_voltage(0);
+      const double coupled_amount =
+          (Kff().block<1, 2>(1, 2) * B().block<2, 1>(2, 0))(0, 0) * overage_amount;
+      LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
+      mutable_U(1, 0) += coupled_amount;
+    }
+    if (U(0, 0) < min_voltage(0)) {
+      const double under_amount = U(0, 0) - min_voltage(0);
+      mutable_U(0, 0) = min_voltage(0);
+      const double coupled_amount =
+          (Kff().block<1, 2>(1, 2) * B().block<2, 1>(2, 0))(0, 0) *
+          under_amount;
+      LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
+      mutable_U(1, 0) += coupled_amount;
+    }
+
+    // Uncapping U above isn't actually a problem with U for the shoulder.
+    // Reset any change.
+    mutable_U_uncapped(1, 0) = U(1, 0);
+    mutable_U(1, 0) =
+        ::std::min(max_voltage(1), ::std::max(min_voltage(1), U(1, 0)));
+  }
+
   bool IsAccelerating(double bemf_voltage, double voltage) {
     if (bemf_voltage > 0) {
       return voltage > bemf_voltage;
