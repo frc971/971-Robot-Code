@@ -1,4 +1,4 @@
-#include "dma.h"
+#include "frc971/wpilib/dma.h"
 
 #include <string.h>
 
@@ -8,7 +8,6 @@
 #include "DigitalSource.h"
 #include "AnalogInput.h"
 #include "Encoder.h"
-
 
 // Interface to the roboRIO FPGA's DMA features.
 
