@@ -77,6 +77,7 @@ cc_library(
     ':superstructure_plants',
     '//aos/common/controls:control_loop',
     '//aos/common/util:trapezoid_profile',
+    '//aos/common:math',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:simple_capped_state_feedback_loop',
     '//frc971/zeroing',

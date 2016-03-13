@@ -77,7 +77,7 @@ class CollisionAvoidance {
 
   // The intake angle (in radians) above which the intake can interfere (i.e.
   // collide) with the arm and/or shooter.
-  static constexpr double kMaxIntakeAngleBeforeArmInterference = 1.12;
+  static constexpr double kMaxIntakeAngleBeforeArmInterference = 1.05;
 
   // The maximum absolute angle (in radians) that the wrist must be below in
   // order for the shouler to be allowed to move below
@@ -86,9 +86,12 @@ class CollisionAvoidance {
   // also be placed into the belly pan.
   static constexpr double kMaxWristAngleForSafeArmStowing = 0.05;
 
-  // The maximum absolute angle in radians that the wrist can be from horizontal
+  // The maximum angle in radians that the wrist can be from horizontal
   // while it is near the intake.
   static constexpr double kMaxWristAngleForMovingByIntake = 0.50;
+  // The minimum angle in radians that the wrist can be from horizontal
+  // while it is near the intake.
+  static constexpr double kMinWristAngleForMovingByIntake = -1.20;
 
   // The shoulder angle (in radians) below which the intake can safely move
   // into the collision zone. This is necessary when the robot wants to fold up
@@ -109,7 +112,7 @@ class Superstructure
 
   static constexpr double kZeroingVoltage = 5.0;
   static constexpr double kOperatingVoltage = 12.0;
-  static constexpr double kLandingShoulderDownVoltage = -2.0;
+  static constexpr double kLandingShoulderDownVoltage = -1.5;
 
   // This is the angle above which we will do a HIGH_ARM_ZERO, and below which
   // we will do a LOW_ARM_ZERO.

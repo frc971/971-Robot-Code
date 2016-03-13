@@ -1,6 +1,7 @@
 #include "y2016/control_loops/superstructure/superstructure.h"
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 
+#include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 
@@ -34,6 +35,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
                                     double intake_angle_goal) {
   const double original_shoulder_angle_goal = shoulder_angle_goal;
   const double original_intake_angle_goal = intake_angle_goal;
+  const double original_wrist_angle_goal = wrist_angle_goal;
 
   double shoulder_angle = arm_->shoulder_angle();
   double wrist_angle = arm_->wrist_angle();
@@ -50,20 +52,40 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
   // If the shoulder is below a certain angle or we want to move it below
   // that angle, then the shooter has to stay level to the ground. Otherwise,
   // it will crash into the frame.
+  if (intake_angle < kMaxIntakeAngleBeforeArmInterference + kSafetyMargin) {
+    if (shoulder_angle < kMinShoulderAngleForHorizontalShooter ||
+        original_shoulder_angle_goal < kMinShoulderAngleForHorizontalShooter) {
+      wrist_angle_goal = 0.0;
+    } else if (shoulder_angle < kMinShoulderAngleForIntakeInterference ||
+               original_shoulder_angle_goal <
+                   kMinShoulderAngleForIntakeInterference) {
+      wrist_angle_goal =
+          aos::Clip(original_wrist_angle_goal,
+                    kMinWristAngleForMovingByIntake + kSafetyMargin,
+                    kMaxWristAngleForMovingByIntake - kSafetyMargin);
+    }
+  } else {
+    if (shoulder_angle < kMinShoulderAngleForIntakeUpInterference ||
+        original_shoulder_angle_goal <
+            kMinShoulderAngleForIntakeUpInterference) {
+      wrist_angle_goal = 0.0;
+    }
+  }
+
   if (shoulder_angle < kMinShoulderAngleForIntakeUpInterference ||
       original_shoulder_angle_goal < kMinShoulderAngleForIntakeUpInterference) {
-    wrist_angle_goal = 0.0;
-
     // Make sure that we don't move the shoulder below a certain angle until
     // the wrist is level with the ground.
     if (intake_angle < kMaxIntakeAngleBeforeArmInterference + kSafetyMargin) {
-      if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
+      if (wrist_angle > kMaxWristAngleForMovingByIntake ||
+          wrist_angle < kMinWristAngleForMovingByIntake) {
         shoulder_angle_goal =
           ::std::max(original_shoulder_angle_goal,
               kMinShoulderAngleForIntakeInterference + kSafetyMargin);
       }
     } else {
-      if (::std::abs(wrist_angle) > kMaxWristAngleForMovingByIntake) {
+      if (wrist_angle > kMaxWristAngleForMovingByIntake ||
+          wrist_angle < kMinWristAngleForMovingByIntake) {
         shoulder_angle_goal =
           ::std::max(original_shoulder_angle_goal,
               kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
@@ -112,9 +134,16 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
       if (shoulder_angle >= kHalfwayPointBetweenSafeZones) {
         // The shoulder is closer to being above the collision area. Move it up
         // there.
-        shoulder_angle_goal =
-            ::std::max(original_shoulder_angle_goal,
-                       kMinShoulderAngleForIntakeInterference + kSafetyMargin);
+        if (intake_angle <
+            kMaxIntakeAngleBeforeArmInterference + kSafetyMargin) {
+          shoulder_angle_goal = ::std::max(
+              original_shoulder_angle_goal,
+              kMinShoulderAngleForIntakeInterference + kSafetyMargin);
+        } else {
+          shoulder_angle_goal = ::std::max(
+              original_shoulder_angle_goal,
+              kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
+        }
       } else {
         // The shoulder is closer to being below the collision zone (i.e. in
         // stowing/intake position), keep it there for now.
@@ -159,14 +188,18 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
           CollisionAvoidance::kMinShoulderAngleForIntakeInterference &&
       intake_angle < CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference &&
       intake_angle > Superstructure::kIntakeLowerClear &&
-      ::std::abs(wrist_angle) >
-          CollisionAvoidance::kMaxWristAngleForMovingByIntake) {
-    LOG(DEBUG, "Collided: Intake %f < %f < %f, and shoulder %f < %f < %f.\n",
+      (wrist_angle > CollisionAvoidance::kMaxWristAngleForMovingByIntake ||
+       wrist_angle < CollisionAvoidance::kMinWristAngleForMovingByIntake)) {
+    LOG(DEBUG,
+        "Collided: Intake %f < %f < %f, shoulder %f < %f < %f, and %f < %f < "
+        "%f.\n",
         Superstructure::kIntakeLowerClear, intake_angle,
         CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
         CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
         shoulder_angle,
-        CollisionAvoidance::kMinShoulderAngleForIntakeInterference);
+        CollisionAvoidance::kMinShoulderAngleForIntakeInterference,
+        CollisionAvoidance::kMinWristAngleForMovingByIntake, wrist_angle,
+        CollisionAvoidance::kMaxWristAngleForMovingByIntake);
     return true;
   }
 

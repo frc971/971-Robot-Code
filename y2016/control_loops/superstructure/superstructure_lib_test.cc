@@ -539,7 +539,8 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
                   .angle_intake(constants::Values::kIntakeRange.upper)
                   .angle_shoulder(constants::Values::kShoulderRange.upper)
-                  .angle_wrist(constants::Values::kWristRange.upper)
+                  .angle_wrist(constants::Values::kWristRange.upper +
+                               constants::Values::kShoulderRange.upper)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
   RunForTime(Time::InSeconds(15));
@@ -561,7 +562,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
                   .angle_wrist(0.0)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InSeconds(15));
+  RunForTime(Time::InSeconds(20));
 
   VerifyNearGoal();
 }
@@ -1095,7 +1096,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(0.0)                                         // Stowed
           .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(Time::InSeconds(15));
 
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
@@ -1104,7 +1105,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(M_PI / 2.0)     // down
           .Send());
 
-  RunForTime(Time::InSeconds(3));
+  RunForTime(Time::InSeconds(5));
 
   superstructure_queue_.status.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
@@ -1120,7 +1121,10 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
   EXPECT_NEAR(M_PI / 4.0, superstructure_queue_.status->shoulder.angle, 0.001);
 
   // The wrist should be forced into a stowing position.
-  EXPECT_NEAR(0, superstructure_queue_.status->wrist.angle, 0.001);
+  // Since the intake is kicked out, we can be within
+  // kMaxWristAngleForMovingByIntake
+  EXPECT_NEAR(0, superstructure_queue_.status->wrist.angle,
+              CollisionAvoidance::kMaxWristAngleForMovingByIntake + 0.001);
 
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
@@ -1129,7 +1133,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(M_PI)     // forward
           .Send());
 
-  RunForTime(Time::InSeconds(3));
+  RunForTime(Time::InSeconds(5));
   VerifyNearGoal();
 }
 
