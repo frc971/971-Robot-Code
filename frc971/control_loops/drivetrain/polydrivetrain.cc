@@ -112,7 +112,7 @@ void PolyDrivetrain::SetGoal(
   const bool quickturn = goal.quickturn;
   const bool highgear = goal.highgear;
 
-  const double kWheelNonLinearity = 0.4;
+  const double kWheelNonLinearity = 0.55;
   // Apply a sin function that's scaled to make it feel better.
   const double angular_range = M_PI_2 * kWheelNonLinearity;
 
