@@ -14,6 +14,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
+#include "y2016/control_loops/superstructure/superstructure.h"
 #include "y2016/queues/ball_detector.q.h"
 
 #include "y2016/constants.h"
@@ -33,6 +34,13 @@ namespace y2016 {
 namespace input {
 namespace joysticks {
 
+namespace {
+
+constexpr double kMaxIntakeAngleBeforeArmInterference = control_loops::
+    superstructure::CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference;
+
+}  // namespace
+
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
@@ -44,6 +52,8 @@ const ButtonLocation kTurn2(1, 11);
 const ButtonLocation kIntakeDown(3, 11);
 const POVLocation kFrontLong(3, 180);
 const POVLocation kBackLong(3, 0);
+const POVLocation kBackFender(3, 90);
+const POVLocation kFrontFender(3, 270);
 const ButtonLocation kTest3(3, 7);
 const ButtonLocation kIntakeIn(3, 12);
 const ButtonLocation kTest5(3, 8);
@@ -88,9 +98,8 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
       drivetrain_queue.status.FetchLatest();
       if (drivetrain_queue.status.get()) {
-        const double delta = data.PosEdge(kTurn2) ? 0.1 : -0.1;
-        left_goal = drivetrain_queue.status->estimated_left_position + delta;
-        right_goal = drivetrain_queue.status->estimated_right_position - delta;
+        left_goal = drivetrain_queue.status->estimated_left_position;
+        right_goal = drivetrain_queue.status->estimated_right_position;
       }
     }
     if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
@@ -102,8 +111,8 @@ class Reader : public ::aos::input::JoystickInput {
              .highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))
              .control_loop_driving(is_control_loop_driving)
-             .left_goal(left_goal + wheel * 0.5 + throttle * 0.3)
-             .right_goal(right_goal - wheel * 0.5 + throttle * 0.3)
+             .left_goal(left_goal - wheel * 0.5 + throttle * 0.3)
+             .right_goal(right_goal + wheel * 0.5 + throttle * 0.3)
              .left_velocity_goal(0)
              .right_velocity_goal(0)
              .Send()) {
@@ -120,6 +129,10 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    // Default the intake to up.
+    intake_goal_ = constants::Values::kIntakeRange.upper - 0.04;
+
+    bool force_lights_on = false;
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       LOG(DEBUG, "Canceling\n");
@@ -147,22 +160,30 @@ class Reader : public ::aos::input::JoystickInput {
       waiting_for_zero_ = true;
     }
 
-    if (data.IsPressed(kIntakeDown)) {
-      intake_goal_ = 0.1;
-    } else {
-      intake_goal_ = 1.6;
-    }
-
     if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
       wrist_goal_ = M_PI + 0.42;
       shooter_velocity_ = 640.0;
+      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
       wrist_goal_ = -0.59;
       shooter_velocity_ = 640.0;
+      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+    } else if (data.IsPressed(kBackFender)) {
+      // Fender shot back
+      shoulder_goal_ = 0.65;
+      wrist_goal_ = -1.0;
+      shooter_velocity_ = 550.0;
+      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+    } else if (data.IsPressed(kFrontFender)) {
+      // Fender shot back
+      shoulder_goal_ = 1.45;
+      wrist_goal_ = 2.5 + 1.7;
+      shooter_velocity_ = 550.0;
+      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
     } else {
       wrist_goal_ = 0.0;
       shoulder_goal_ = -0.010;
@@ -182,8 +203,22 @@ class Reader : public ::aos::input::JoystickInput {
       saw_ball_when_started_intaking_ = ball_detected;
     }
 
-    is_intaking_ = data.IsPressed(kIntakeIn) &&
-                   (!ball_detected || saw_ball_when_started_intaking_);
+    if (data.IsPressed(kIntakeIn)) {
+      is_intaking_ = (!ball_detected || saw_ball_when_started_intaking_);
+      if (ball_detected) {
+        force_lights_on = true;
+      }
+    } else {
+      is_intaking_ = false;
+    }
+
+    if (data.IsPressed(kIntakeDown)) {
+      if (is_intaking_) {
+        intake_goal_ = 0.1;
+      } else {
+        intake_goal_ = -0.05;
+      }
+    }
 
     if (data.IsPressed(kFire) && shooter_velocity_ != 0.0) {
       fire_ = true;
@@ -241,6 +276,7 @@ class Reader : public ::aos::input::JoystickInput {
                  .angular_velocity(shooter_velocity_)
                  .clamp_open(is_intaking_ || is_outtaking_)
                  .push_to_shooter(fire_)
+                 .force_lights_on(force_lights_on)
                  .Send()) {
           LOG(ERROR, "Sending shooter goal failed.\n");
         }
