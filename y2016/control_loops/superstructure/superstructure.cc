@@ -247,6 +247,7 @@ void Superstructure::RunIteration(
     state_ = ESTOP;
   }
 
+  const bool is_collided = collided();
   switch (state_) {
     case UNINITIALIZED:
       // Wait in the uninitialized state until both the arm and intake are
@@ -438,7 +439,7 @@ void Superstructure::RunIteration(
       if (disable) {
         // If we are disabled, go to slow running (or landing slow running) if
         // we are collided.
-        if (collided()) {
+        if (is_collided) {
           if (state_ == RUNNING) {
             state_ = SLOW_RUNNING;
           } else if (state_ == LANDING_RUNNING) {
@@ -452,11 +453,11 @@ void Superstructure::RunIteration(
       } else {
         // If we are in slow_running and are no longer collided, let 'er rip.
         if (state_ == SLOW_RUNNING) {
-          if (!collided()) {
+          if (!is_collided) {
             state_ = RUNNING;
           }
         } else if (state_ == LANDING_SLOW_RUNNING) {
-          if (!collided()) {
+          if (!is_collided) {
             state_ = LANDING_RUNNING;
           }
         }
@@ -640,6 +641,7 @@ void Superstructure::RunIteration(
   status->estopped = (state_ == ESTOP);
 
   status->state = state_;
+  status->is_collided = is_collided;
 
   last_state_ = state_before_switch;
 }
