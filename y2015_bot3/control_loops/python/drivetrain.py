@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
 import numpy
 import sys
 from matplotlib import pylab
 
+import glog
 
 class CIM(control_loop.ControlLoop):
   def __init__(self):
@@ -123,7 +124,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.D = numpy.matrix([[0, 0],
                            [0, 0]])
 
-    #print "THE NUMBER I WANT" + str(numpy.linalg.inv(self.A_continuous) * -self.B_continuous * numpy.matrix([[12.0], [12.0]]))
+    #glog.debug('THE NUMBER I WANT %s', str(numpy.linalg.inv(self.A_continuous) * -self.B_continuous * numpy.matrix([[12.0], [12.0]])))
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
@@ -131,7 +132,7 @@ class Drivetrain(control_loop.ControlLoop):
     self.hp = 0.65
     self.lp = 0.83
     self.PlaceControllerPoles([self.hp, self.lp, self.hp, self.lp])
-    print self.K
+    glog.info('K %s', str(self.K))
     q_pos = 0.07
     q_vel = 1.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
@@ -142,10 +143,10 @@ class Drivetrain(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
                            [0.0, (1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
-    print self.A
-    print self.B
-    print self.K
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.info('A %s', str(self.A))
+    glog.info('B %s', str(self.B))
+    glog.info('K %s', str(self.K))
+    glog.info('Poles are %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.hlp = 0.3
     self.llp = 0.4
@@ -221,23 +222,20 @@ def main(argv):
   #pylab.show()
 
   # Write the generated constants out to a file.
-  print "Output one"
+  glog.info('Output one')
   drivetrain_low_low = Drivetrain(name="DrivetrainLowLow", left_low=True, right_low=True)
   drivetrain_low_high = Drivetrain(name="DrivetrainLowHigh", left_low=True, right_low=False)
   drivetrain_high_low = Drivetrain(name="DrivetrainHighLow", left_low=False, right_low=True)
   drivetrain_high_high = Drivetrain(name="DrivetrainHighHigh", left_low=False, right_low=False)
 
-  if len(argv) != 5:
-    print "Expected .h file name and .cc file name"
+  if len(argv) != 3:
+    glog.fatal('Expected .h file name and .cc file name %s', str(len(argv)))
   else:
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
                        drivetrain_high_low, drivetrain_high_high],
-        namespaces=['y2015_bot3', 'control_loops'])
-    if argv[1][-3:] == '.cc':
-      dog_loop_writer.Write(argv[2], argv[1])
-    else:
-      dog_loop_writer.Write(argv[1], argv[2])
+        namespaces=['y2015_bot3', 'control_loops', 'drivetrain'])
+    dog_loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

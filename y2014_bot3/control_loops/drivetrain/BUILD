@@ -41,6 +41,19 @@ cc_library(
   ],
 )
 
+genrule(
+  name = 'genrule_drivetrain',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014_bot3/control_loops/python:drivetrain) $(OUTS)',
+  tools = [
+    '//y2014_bot3/control_loops/python:drivetrain',
+  ],
+  outs = [
+    'drivetrain_dog_motor_plant.h',
+    'drivetrain_dog_motor_plant.cc',
+  ],
+)
+
 cc_library(
   name = 'drivetrain_lib',
   hdrs = [
