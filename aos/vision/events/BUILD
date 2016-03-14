@@ -1,0 +1,19 @@
+cc_library(
+  name = 'udp',
+  srcs = ['udp.cc'],
+  hdrs = ['udp.h'],
+  deps = [
+    '//aos/common:macros',
+    '//aos/common/logging',
+    '//aos/common:scoped_fd',
+  ],
+)
+
+cc_test(
+  name = 'udp_test',
+  srcs = ['udp_test.cc'],
+  deps = [
+    ':udp',
+    '//aos/testing:googletest'
+  ],
+)
