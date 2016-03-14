@@ -65,7 +65,7 @@ const ButtonLocation kIntakeOut(3, 9);
 class Reader : public ::aos::input::JoystickInput {
  public:
   Reader()
-      : is_high_gear_(false),
+      : is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
         wrist_goal_(0.0) {}
@@ -82,7 +82,14 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
 
-    if (!data.GetControlBit(ControlBit::kAutonomous)) {
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      // If we are not enabled, reset the waiting for zero bit.
+      LOG(DEBUG, "Waiting for zero.\n");
+      waiting_for_zero_ = true;
+      is_high_gear_ = true;
+    }
+
+    if (!auto_running_) {
       HandleDrivetrain(data);
       HandleTeleop(data);
     }
@@ -139,13 +146,6 @@ class Reader : public ::aos::input::JoystickInput {
       LOG(DEBUG, "Canceling\n");
     }
 
-    if (data.PosEdge(ControlBit::kEnabled)) {
-      // If we got enabled, wait for everything to zero.
-      LOG(INFO, "Waiting for zero.\n");
-      waiting_for_zero_ = true;
-      is_high_gear_ = true;
-    }
-
     superstructure_queue.status.FetchLatest();
     if (!superstructure_queue.status.get()) {
       LOG(ERROR, "Got no superstructure status packet.\n");
@@ -154,7 +154,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (superstructure_queue.status.get() &&
         superstructure_queue.status->zeroed) {
       if (waiting_for_zero_) {
-        LOG(INFO, "Zeroed! Starting teleop mode.\n");
+        LOG(DEBUG, "Zeroed! Starting teleop mode.\n");
         waiting_for_zero_ = false;
       }
     } else {

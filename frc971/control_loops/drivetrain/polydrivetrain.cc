@@ -36,8 +36,8 @@ PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config,
       wheel_(0.0),
       throttle_(0.0),
       quickturn_(false),
-      left_gear_(Gear::LOW),
-      right_gear_(Gear::LOW),
+      left_gear_(dt_config.default_high_gear ? Gear::HIGH : Gear::LOW),
+      right_gear_(dt_config.default_high_gear ? Gear::HIGH : Gear::LOW),
       counter_(0),
       dt_config_(dt_config) {
   last_position_.Zero();
