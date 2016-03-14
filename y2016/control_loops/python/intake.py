@@ -42,7 +42,7 @@ class Intake(control_loop.ControlLoop):
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
-    self.J = 0.34 + 0.6
+    self.J = 0.34 + 0.65
 
     # Control loop time step
     self.dt = 0.005
