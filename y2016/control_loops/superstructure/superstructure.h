@@ -110,7 +110,7 @@ class Superstructure
       control_loops::SuperstructureQueue *my_superstructure =
           &control_loops::superstructure_queue);
 
-  static constexpr double kZeroingVoltage = 5.0;
+  static constexpr double kZeroingVoltage = 6.0;
   static constexpr double kOperatingVoltage = 12.0;
   static constexpr double kLandingShoulderDownVoltage = -1.5;
 
@@ -121,7 +121,7 @@ class Superstructure
   static constexpr double kLooseTolerance = 0.05;
 
   // This is the small scale movement tolerance.
-  static constexpr double kTightTolerance = 0.01;
+  static constexpr double kTightTolerance = 0.03;
 
   // This is the angle such that the intake will clear the arm when the shooter
   // is level.
