@@ -99,6 +99,8 @@ struct Values {
     ZeroingConstants zeroing;
   };
   Wrist wrist;
+
+  const char *vision_name;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

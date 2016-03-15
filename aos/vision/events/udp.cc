@@ -9,7 +9,8 @@ namespace vision {
 
 TXUdpSocket::TXUdpSocket(const char *ip_addr, int port)
     : fd_(PCHECK(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))) {
-  sockaddr_in destination_in{};
+  sockaddr_in destination_in;
+  memset(&destination_in, 0, sizeof(destination_in));
   destination_in.sin_family = AF_INET;
   destination_in.sin_port = htons(port);
   if (inet_aton(ip_addr, &destination_in.sin_addr) == 0) {
@@ -26,7 +27,8 @@ int TXUdpSocket::Send(const void *data, int size) {
 
 RXUdpSocket::RXUdpSocket(int port)
     : fd_(PCHECK(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))) {
-  sockaddr_in bind_address{};
+  sockaddr_in bind_address;
+  memset(&bind_address, 0, sizeof(bind_address));
 
   bind_address.sin_family = AF_INET;
   bind_address.sin_port = htons(port);

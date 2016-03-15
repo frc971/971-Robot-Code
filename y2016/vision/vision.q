@@ -1,0 +1,22 @@
+package y2016.vision;
+
+message VisionStatus {
+  // Times when the images were taken as nanoseconds on CLOCK_MONOTONIC on the
+  // TK1.
+  int64_t left_image_timestamp;
+  int64_t right_image_timestamp;
+  // Times when the images were sent from the TK1 as nanoseconds on the TK1's
+  // CLOCK_MONOTONIC.
+  int64_t left_send_timestamp;
+  int64_t right_send_timestamp;
+
+  // Horizontal angle of the goal in radians.
+  // TODO(Brian): Figure out which way is positive.
+  double horizontal_angle;
+  // Vertical angle of the goal in radians.
+  // TODO(Brian): Figure out which way is positive.
+  double vertical_angle;
+  // Distance to the target in meters.
+  double distance;
+};
+queue VisionStatus vision_status;

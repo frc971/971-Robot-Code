@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package y2016.vision;
+
+// Represents a target found by the vision processing code.
+message Target {
+  optional float left_corner_x = 1;
+  optional float left_corner_y = 2;
+  optional float right_corner_x = 3;
+  optional float right_corner_y = 4;
+}
+
+// Contains all of the information extracted from a single frame captured by a
+// single camera.
+// TODO(Brian): Figure out what this all means and rework it to properly handle
+// 2 cameras without assuming they will stay perfectly in sync.
+message VisionData {
+  optional int32 camera_index = 1;
+  optional int64 image_timestamp = 2;
+  optional int64 send_timestamp = 3;
+  repeated Target target = 4;
+  optional bytes raw = 5;
+}

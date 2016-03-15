@@ -70,6 +70,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
             0.0, 0.3},
           },
+
+          "practice",
       };
       break;
 
@@ -101,6 +103,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
             -0.06138835 * M_PI / 180.0 - 0.260542, 0.3},
           },
+
+          "competition",
       };
       break;
     case kPracticeTeamNumber:
@@ -130,6 +134,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
             -0.622423, 0.3},
           },
+
+          "practice",
       };
       break;
     default:

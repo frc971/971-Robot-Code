@@ -1,5 +1,6 @@
 cc_library(
   name = 'udp',
+  visibility = ['//visibility:public'],
   srcs = ['udp.cc'],
   hdrs = ['udp.h'],
   deps = [
