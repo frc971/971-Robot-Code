@@ -12,6 +12,7 @@
 
 namespace y2016 {
 namespace actors {
+using ::frc971::ProfileParameters;
 
 class AutonomousActor
     : public ::aos::common::actions::ActorBase<AutonomousActionQueueGroup> {
@@ -32,9 +33,30 @@ class AutonomousActor
   // false if it cancels.
   bool WaitForDriveDone();
 
-  double left_initial_position_, right_initial_position_;
-
   const ::frc971::control_loops::drivetrain::DrivetrainConfig dt_config_;
+
+  // Initial drivetrain positions.
+  struct InitialDrivetrain {
+    double left;
+    double right;
+  };
+  InitialDrivetrain initial_drivetrain_;
+
+  // Internal struct holding superstructure goals sent by autonomous to the
+  // loop.
+  struct SuperstructureGoal {
+    double intake;
+    double shoulder;
+    double wrist;
+  };
+  SuperstructureGoal superstructure_goal_;
+
+  void MoveSuperstructure(double intake, double shoulder, double wrist,
+                          const ProfileParameters intake_params,
+                          const ProfileParameters shoulder_params,
+                          const ProfileParameters wrist_params, double top_rollers,
+                          double bottom_rollers);
+  void WaitForSuperstructure();
 };
 
 typedef ::aos::common::actions::TypedAction<AutonomousActionQueueGroup>
