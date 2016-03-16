@@ -93,6 +93,10 @@ class Reader : public ::aos::input::JoystickInput {
       HandleDrivetrain(data);
       HandleTeleop(data);
     }
+
+    // Process any pending actions.
+    action_queue_.Tick();
+    was_running_ = action_queue_.Running();
   }
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
@@ -283,8 +287,6 @@ class Reader : public ::aos::input::JoystickInput {
         }
       }
     }
-
-    was_running_ = action_queue_.Running();
   }
 
  private:
