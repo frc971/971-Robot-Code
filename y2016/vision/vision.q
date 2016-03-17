@@ -1,6 +1,8 @@
 package y2016.vision;
 
 message VisionStatus {
+  bool left_image_valid;
+  bool right_image_valid;
   // Times when the images were taken as nanoseconds on CLOCK_MONOTONIC on the
   // TK1.
   int64_t left_image_timestamp;

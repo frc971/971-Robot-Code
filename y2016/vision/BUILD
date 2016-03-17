@@ -3,6 +3,7 @@ load('/aos/build/queues', 'queue_library')
 
 queue_library(
   name = 'vision_queue',
+  visibility = ['//visibility:public'],
   srcs = [
     'vision.q',
   ],
@@ -80,6 +81,7 @@ cc_binary(
   srcs = [
     'target_receiver.cc',
   ],
+  visibility = ['//visibility:public'],
   deps = [
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
