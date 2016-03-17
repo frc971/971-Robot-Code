@@ -38,6 +38,7 @@ cc_binary(
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/queues:gyro',
     '//y2016/actors:autonomous_action_lib',
+    '//y2016/actors:vision_align_action_lib',
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/superstructure:superstructure_lib',
     '//y2016/control_loops/superstructure:superstructure_queue',
@@ -54,7 +55,9 @@ aos_downloader(
     '//y2016/control_loops/superstructure:superstructure',
     '//y2016/control_loops/shooter:shooter',
     '//y2016/actors:autonomous_action',
+    '//y2016/actors:vision_align_action',
     '//y2016/wpilib:wpilib_interface',
+    '//y2016/vision:target_receiver',
   ],
   srcs = [
     '//aos:prime_binaries',
@@ -70,7 +73,9 @@ aos_downloader(
     '//y2016/control_loops/superstructure:superstructure.stripped',
     '//y2016/control_loops/shooter:shooter.stripped',
     '//y2016/actors:autonomous_action.stripped',
+    '//y2016/actors:vision_align_action.stripped',
     '//y2016/wpilib:wpilib_interface.stripped',
+    '//y2016/vision:target_receiver.stripped',
   ],
   srcs = [
     '//aos:prime_binaries_stripped',

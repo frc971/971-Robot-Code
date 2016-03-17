@@ -21,6 +21,7 @@
 #include "frc971/queues/gyro.q.h"
 #include "frc971/autonomous/auto.q.h"
 #include "y2016/actors/autonomous_actor.h"
+#include "y2016/actors/vision_align_actor.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
@@ -61,6 +62,8 @@ const ButtonLocation kTest5(3, 8);
 const ButtonLocation kFire(3, 3);
 const ButtonLocation kTest7(3, 5);
 const ButtonLocation kIntakeOut(3, 9);
+
+const ButtonLocation kVisionAlign(1, 6);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -106,6 +109,20 @@ class Reader : public ::aos::input::JoystickInput {
 
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
+
+    if (data.PosEdge(kVisionAlign)) {
+      actors::VisionAlignActionParams params;
+      action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
+    }
+
+    if (data.NegEdge(kVisionAlign)) {
+      action_queue_.CancelAllActions();
+    }
+
+    // Don't do any normal drivetrain stuff if vision is in charge.
+    if (was_running_) {
+      return;
+    }
 
     if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
       drivetrain_queue.status.FetchLatest();
