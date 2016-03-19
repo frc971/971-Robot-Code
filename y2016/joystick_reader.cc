@@ -23,6 +23,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "y2016/actors/autonomous_actor.h"
 #include "y2016/actors/vision_align_actor.h"
+#include "y2016/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2016::control_loops::shooter::shooter_queue;
@@ -72,7 +73,8 @@ class Reader : public ::aos::input::JoystickInput {
       : is_high_gear_(true),
         intake_goal_(0.0),
         shoulder_goal_(M_PI / 2.0),
-        wrist_goal_(0.0) {}
+        wrist_goal_(0.0),
+        dt_config_(control_loops::drivetrain::GetDrivetrainConfig()) {}
 
   void RunIteration(const ::aos::input::driver_station::Data &data) override {
     bool last_auto_running = auto_running_;
@@ -100,6 +102,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (::y2016::vision::vision_status.get()) {
       vision_valid_ = (::y2016::vision::vision_status->left_image_valid &&
                       ::y2016::vision::vision_status->right_image_valid);
+      last_angle_ = ::y2016::vision::vision_status->horizontal_angle;
     }
 
     if (!auto_running_) {
@@ -209,7 +212,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
-      wrist_goal_ = M_PI + 0.42;
+      wrist_goal_ = M_PI + 0.45;
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackLong)) {
@@ -258,24 +261,62 @@ class Reader : public ::aos::input::JoystickInput {
       is_intaking_ = false;
     }
 
-    if (data.IsPressed(kIntakeDown)) {
-      if (is_intaking_) {
-        intake_goal_ = 0.1;
-      } else {
-        intake_goal_ = -0.05;
-      }
-    }
-
+    fire_ = false;
     if (data.IsPressed(kFire) && shooter_velocity_ != 0.0) {
-      fire_ = true;
-    } else {
-      fire_ = false;
+      if (data.IsPressed(kVisionAlign)) {
+        // Make sure that we are lined up.
+        drivetrain_queue.status.FetchLatest();
+        drivetrain_queue.goal.FetchLatest();
+        if (drivetrain_queue.status.get() && drivetrain_queue.goal.get()) {
+          const double left_goal = drivetrain_queue.goal->left_goal;
+          const double right_goal = drivetrain_queue.goal->right_goal;
+          const double left_current =
+              drivetrain_queue.status->estimated_left_position;
+          const double right_current =
+              drivetrain_queue.status->estimated_right_position;
+          const double left_velocity =
+              drivetrain_queue.status->estimated_left_velocity;
+          const double right_velocity =
+              drivetrain_queue.status->estimated_right_velocity;
+          if (vision_action_running_ && ::std::abs(last_angle_) < 0.02 &&
+              ::std::abs((left_goal - right_goal) -
+                         (left_current - right_current)) /
+                      dt_config_.robot_radius / 2.0 <
+                  0.02 &&
+              ::std::abs(left_velocity - right_velocity) < 0.01) {
+            ++ready_to_fire_;
+          } else {
+            ready_to_fire_ = 0;
+          }
+          if (ready_to_fire_ > 10) {
+            fire_ = true;
+          }
+        }
+      } else {
+        fire_ = true;
+      }
     }
 
     if (data.PosEdge(kTest7)) {
     }
 
     is_outtaking_ = data.IsPressed(kIntakeOut);
+
+    if (is_intaking_ || is_outtaking_) {
+      recently_intaking_accumulator_ = 20;
+    }
+
+    if (data.IsPressed(kIntakeDown)) {
+      if (recently_intaking_accumulator_) {
+        intake_goal_ = 0.1;
+      } else {
+        intake_goal_ = -0.05;
+      }
+    }
+
+    if (recently_intaking_accumulator_ > 0) {
+      --recently_intaking_accumulator_;
+    }
 
     if (!waiting_for_zero_) {
       auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
@@ -369,7 +410,14 @@ class Reader : public ::aos::input::JoystickInput {
   bool vision_action_running_ = false;
   bool vision_valid_ = false;
 
+  int recently_intaking_accumulator_ = 0;
+  double last_angle_ = 100;
+
+  int ready_to_fire_ = 0;
+
   ::aos::common::actions::ActionQueue action_queue_;
+
+  const ::frc971::control_loops::drivetrain::DrivetrainConfig dt_config_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
