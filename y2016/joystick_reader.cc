@@ -16,6 +16,7 @@
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/superstructure.h"
 #include "y2016/queues/ball_detector.q.h"
+#include "y2016/vision/vision.q.h"
 
 #include "y2016/constants.h"
 #include "frc971/queues/gyro.q.h"
@@ -63,7 +64,7 @@ const ButtonLocation kFire(3, 3);
 const ButtonLocation kTest7(3, 5);
 const ButtonLocation kIntakeOut(3, 9);
 
-const ButtonLocation kVisionAlign(1, 6);
+const ButtonLocation kVisionAlign(3, 4);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -92,6 +93,15 @@ class Reader : public ::aos::input::JoystickInput {
       is_high_gear_ = true;
     }
 
+    vision_valid_ = false;
+
+    ::y2016::vision::vision_status.FetchLatest();
+
+    if (::y2016::vision::vision_status.get()) {
+      vision_valid_ = (::y2016::vision::vision_status->left_image_valid &&
+                      ::y2016::vision::vision_status->right_image_valid);
+    }
+
     if (!auto_running_) {
       HandleDrivetrain(data);
       HandleTeleop(data);
@@ -110,13 +120,18 @@ class Reader : public ::aos::input::JoystickInput {
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
 
-    if (data.PosEdge(kVisionAlign)) {
+    if (data.IsPressed(kVisionAlign) && vision_valid_ &&
+        !vision_action_running_) {
       actors::VisionAlignActionParams params;
       action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
+      vision_action_running_ = true;
     }
 
     if (data.NegEdge(kVisionAlign)) {
       action_queue_.CancelAllActions();
+    }
+    if (!data.IsPressed(kVisionAlign)) {
+      vision_action_running_ = false;
     }
 
     // Don't do any normal drivetrain stuff if vision is in charge.
@@ -182,30 +197,39 @@ class Reader : public ::aos::input::JoystickInput {
       waiting_for_zero_ = true;
     }
 
+    double intake_when_shooting = kMaxIntakeAngleBeforeArmInterference;
+    bool use_slow_profile = false;
+    if (vision_action_running_) {
+      use_slow_profile = true;
+      if (vision_valid_) {
+        intake_when_shooting -= 0.5;
+      }
+    }
+
     if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
       wrist_goal_ = M_PI + 0.42;
       shooter_velocity_ = 640.0;
-      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+      intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
       wrist_goal_ = -0.59;
       shooter_velocity_ = 640.0;
-      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+      intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
       // Fender shot back
       shoulder_goal_ = 0.65;
       wrist_goal_ = -1.0;
       shooter_velocity_ = 550.0;
-      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+      intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kFrontFender)) {
       // Fender shot back
       shoulder_goal_ = 1.45;
       wrist_goal_ = 2.5 + 1.7;
       shooter_velocity_ = 550.0;
-      intake_goal_ = kMaxIntakeAngleBeforeArmInterference;
+      intake_goal_ = intake_when_shooting;
     } else {
       wrist_goal_ = 0.0;
       shoulder_goal_ = -0.010;
@@ -254,54 +278,56 @@ class Reader : public ::aos::input::JoystickInput {
     is_outtaking_ = data.IsPressed(kIntakeOut);
 
     if (!waiting_for_zero_) {
-      if (!action_queue_.Running()) {
-        auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
-        new_superstructure_goal->angle_intake = intake_goal_;
-        new_superstructure_goal->angle_shoulder = shoulder_goal_;
-        new_superstructure_goal->angle_wrist = wrist_goal_;
+      auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+      new_superstructure_goal->angle_intake = intake_goal_;
+      new_superstructure_goal->angle_shoulder = shoulder_goal_;
+      new_superstructure_goal->angle_wrist = wrist_goal_;
 
-        new_superstructure_goal->max_angular_velocity_intake = 7.0;
-        new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
-        new_superstructure_goal->max_angular_velocity_wrist = 10.0;
+      new_superstructure_goal->max_angular_velocity_intake = 7.0;
+      new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
+      new_superstructure_goal->max_angular_velocity_wrist = 10.0;
+      if (use_slow_profile) {
+        new_superstructure_goal->max_angular_acceleration_intake = 10.0;
+      } else {
         new_superstructure_goal->max_angular_acceleration_intake = 40.0;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
-        new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+      }
+      new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
+      new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
 
-        // Granny mode
-        /*
-        new_superstructure_goal->max_angular_velocity_intake = 0.2;
-        new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
-        new_superstructure_goal->max_angular_velocity_wrist = 0.2;
-        new_superstructure_goal->max_angular_acceleration_intake = 1.0;
-        new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
-        new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
-        */
-        if (is_intaking_) {
-          new_superstructure_goal->voltage_top_rollers = 12.0;
-          new_superstructure_goal->voltage_bottom_rollers = 12.0;
-        } else if (is_outtaking_) {
-          new_superstructure_goal->voltage_top_rollers = -12.0;
-          new_superstructure_goal->voltage_bottom_rollers = -7.0;
-        } else {
-          new_superstructure_goal->voltage_top_rollers = 0.0;
-          new_superstructure_goal->voltage_bottom_rollers = 0.0;
-        }
+      // Granny mode
+      /*
+      new_superstructure_goal->max_angular_velocity_intake = 0.2;
+      new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
+      new_superstructure_goal->max_angular_velocity_wrist = 0.2;
+      new_superstructure_goal->max_angular_acceleration_intake = 1.0;
+      new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
+      new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
+      */
+      if (is_intaking_) {
+        new_superstructure_goal->voltage_top_rollers = 12.0;
+        new_superstructure_goal->voltage_bottom_rollers = 12.0;
+      } else if (is_outtaking_) {
+        new_superstructure_goal->voltage_top_rollers = -12.0;
+        new_superstructure_goal->voltage_bottom_rollers = -7.0;
+      } else {
+        new_superstructure_goal->voltage_top_rollers = 0.0;
+        new_superstructure_goal->voltage_bottom_rollers = 0.0;
+      }
 
-        if (!new_superstructure_goal.Send()) {
-          LOG(ERROR, "Sending superstructure goal failed.\n");
-        } else {
-          LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
-              intake_goal_, shoulder_goal_, wrist_goal_);
-        }
+      if (!new_superstructure_goal.Send()) {
+        LOG(ERROR, "Sending superstructure goal failed.\n");
+      } else {
+        LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
+            intake_goal_, shoulder_goal_, wrist_goal_);
+      }
 
-        if (!shooter_queue.goal.MakeWithBuilder()
-                 .angular_velocity(shooter_velocity_)
-                 .clamp_open(is_intaking_ || is_outtaking_)
-                 .push_to_shooter(fire_)
-                 .force_lights_on(force_lights_on)
-                 .Send()) {
-          LOG(ERROR, "Sending shooter goal failed.\n");
-        }
+      if (!shooter_queue.goal.MakeWithBuilder()
+               .angular_velocity(shooter_velocity_)
+               .clamp_open(is_intaking_ || is_outtaking_)
+               .push_to_shooter(fire_)
+               .force_lights_on(force_lights_on)
+               .Send()) {
+        LOG(ERROR, "Sending shooter goal failed.\n");
       }
     }
   }
@@ -339,6 +365,9 @@ class Reader : public ::aos::input::JoystickInput {
   bool is_intaking_ = false;
   bool is_outtaking_ = false;
   bool fire_ = false;
+
+  bool vision_action_running_ = false;
+  bool vision_valid_ = false;
 
   ::aos::common::actions::ActionQueue action_queue_;
 
