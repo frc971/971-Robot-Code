@@ -3,13 +3,14 @@
 
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
-using ::frc971::control_loops::drivetrain::DrivetrainConfig;
-
 namespace y2016 {
 namespace control_loops {
+namespace drivetrain {
 
-const DrivetrainConfig &GetDrivetrainConfig();
+const ::frc971::control_loops::drivetrain::DrivetrainConfig &
+GetDrivetrainConfig();
 
+}  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace y2016
 

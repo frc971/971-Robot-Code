@@ -120,6 +120,10 @@ cc_library(
     '//aos/common/util:phased_loop',
     '//aos/common/logging',
     '//aos/common/actions:action_lib',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2016/control_loops/superstructure:superstructure_queue',
+    '//y2016/control_loops/drivetrain:drivetrain_base',
+    '//y2016/queues:profile_params',
   ],
 )
 

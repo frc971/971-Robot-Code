@@ -148,7 +148,7 @@ void DrivetrainMotorsSS::SetGoal(
 // (right - left) / width = angular
 
 Eigen::Matrix<double, 2, 1> DrivetrainMotorsSS::LeftRightToLinear(
-    const Eigen::Matrix<double, 7, 1> &left_right) {
+    const Eigen::Matrix<double, 7, 1> &left_right) const {
   Eigen::Matrix<double, 2, 1> linear;
   linear << (left_right(0, 0) + left_right(2, 0)) / 2.0,
       (left_right(1, 0) + left_right(3, 0)) / 2.0;
@@ -156,7 +156,7 @@ Eigen::Matrix<double, 2, 1> DrivetrainMotorsSS::LeftRightToLinear(
 }
 
 Eigen::Matrix<double, 2, 1> DrivetrainMotorsSS::LeftRightToAngular(
-    const Eigen::Matrix<double, 7, 1> &left_right) {
+    const Eigen::Matrix<double, 7, 1> &left_right) const {
   Eigen::Matrix<double, 2, 1> angular;
   angular << (left_right(2, 0) - left_right(0, 0)) /
                  (dt_config_.robot_radius * 2.0),
@@ -166,7 +166,7 @@ Eigen::Matrix<double, 2, 1> DrivetrainMotorsSS::LeftRightToAngular(
 
 Eigen::Matrix<double, 4, 1> DrivetrainMotorsSS::AngularLinearToLeftRight(
     const Eigen::Matrix<double, 2, 1> &linear,
-    const Eigen::Matrix<double, 2, 1> &angular) {
+    const Eigen::Matrix<double, 2, 1> &angular) const {
   Eigen::Matrix<double, 2, 1> scaled_angle = angular * dt_config_.robot_radius;
   Eigen::Matrix<double, 4, 1> state;
   state << linear(0, 0) - scaled_angle(0, 0), linear(1, 0) - scaled_angle(1, 0),
@@ -175,15 +175,17 @@ Eigen::Matrix<double, 4, 1> DrivetrainMotorsSS::AngularLinearToLeftRight(
 }
 
 void DrivetrainMotorsSS::Update(bool enable_control_loop) {
+  Eigen::Matrix<double, 2, 1> wheel_heading = LeftRightToAngular(kf_->X_hat());
+
+  const double gyro_to_wheel_offset =
+      wheel_heading(0, 0) - *integrated_kf_heading_;
+
   if (enable_control_loop) {
     // Update profiles.
     Eigen::Matrix<double, 2, 1> unprofiled_linear =
-      LeftRightToLinear(unprofiled_goal_);
+        LeftRightToLinear(unprofiled_goal_);
     Eigen::Matrix<double, 2, 1> unprofiled_angular =
-      LeftRightToAngular(unprofiled_goal_);
-
-    Eigen::Matrix<double, 2, 1> wheel_heading =
-        LeftRightToAngular(kf_->X_hat());
+        LeftRightToAngular(unprofiled_goal_);
 
     Eigen::Matrix<double, 2, 1> next_linear;
     Eigen::Matrix<double, 2, 1> next_angular;
@@ -193,13 +195,16 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
                                            unprofiled_linear(1, 0));
       next_angular = angular_profile_.Update(unprofiled_angular(0, 0),
                                              unprofiled_angular(1, 0));
-
     } else {
       next_angular = unprofiled_angular;
       next_linear = unprofiled_linear;
     }
 
-    next_angular(0, 0) += wheel_heading(0, 0) - *integrated_kf_heading_;
+    const double wheel_compensation_offset =
+        gyro_to_wheel_offset * dt_config_.robot_radius;
+    const double scaled_angle_delta =
+        (gyro_to_wheel_offset - last_gyro_to_wheel_offset_) *
+        dt_config_.robot_radius;
 
     kf_->mutable_next_R().block<4, 1>(0, 0) =
         AngularLinearToLeftRight(next_linear, next_angular);
@@ -207,8 +212,14 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
     kf_->mutable_next_R().block<3, 1>(4, 0) =
         unprofiled_goal_.block<3, 1>(4, 0);
 
+    kf_->mutable_next_R(0, 0) -= wheel_compensation_offset;
+    kf_->mutable_next_R(2, 0) += wheel_compensation_offset;
+
     if (!use_profile_) {
       kf_->mutable_R() = kf_->next_R();
+    } else {
+      kf_->mutable_R(0, 0) -= scaled_angle_delta;
+      kf_->mutable_R(2, 0) += scaled_angle_delta;
     }
 
     // Run the controller.
@@ -223,21 +234,34 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
     // Now, move the profile if things didn't go perfectly.
     if (use_profile_ &&
         (kf_->U() - kf_->U_uncapped()).lpNorm<Eigen::Infinity>() > 1e-4) {
+      // kf_->R() is in wheel coordinates, while the profile is in absolute
+      // coordinates.  Convert back...
       linear_profile_.MoveCurrentState(LeftRightToLinear(kf_->R()));
-      angular_profile_.MoveCurrentState(LeftRightToAngular(kf_->R()));
+
+      LOG(DEBUG, "Saturated while moving\n");
+
+      Eigen::Matrix<double, 2, 1> absolute_angular =
+          LeftRightToAngular(kf_->R());
+      absolute_angular(0, 0) -= gyro_to_wheel_offset;
+      angular_profile_.MoveCurrentState(absolute_angular);
     }
   } else {
-    unprofiled_goal_(0, 0) = kf_->X_hat()(0, 0);
-    unprofiled_goal_(1, 0) = 0.0;
-    unprofiled_goal_(2, 0) = kf_->X_hat()(2, 0);
-    unprofiled_goal_(3, 0) = 0.0;
+    Eigen::Matrix<double, 2, 1> wheel_linear = LeftRightToLinear(kf_->X_hat());
+    Eigen::Matrix<double, 2, 1> next_angular = wheel_heading;
+    next_angular(0, 0) = *integrated_kf_heading_;
 
-    linear_profile_.MoveCurrentState(LeftRightToLinear(unprofiled_goal_));
-    angular_profile_.MoveCurrentState(LeftRightToAngular(unprofiled_goal_));
+    unprofiled_goal_.block<4, 1>(0, 0) =
+        AngularLinearToLeftRight(wheel_linear, next_angular);
 
-    kf_->mutable_next_R() = unprofiled_goal_;
-    kf_->mutable_R() = unprofiled_goal_;
+    auto current_linear = LeftRightToLinear(unprofiled_goal_);
+    auto current_angular = LeftRightToAngular(unprofiled_goal_);
+    linear_profile_.MoveCurrentState(current_linear);
+    angular_profile_.MoveCurrentState(current_angular);
+
+    kf_->mutable_next_R().block<4, 1>(0, 0) = kf_->X_hat().block<4, 1>(0, 0);
+    kf_->mutable_R().block<4, 1>(0, 0) = kf_->X_hat().block<4, 1>(0, 0);
   }
+  last_gyro_to_wheel_offset_ = gyro_to_wheel_offset;
 }
 
 void DrivetrainMotorsSS::SetOutput(
@@ -252,10 +276,20 @@ void DrivetrainMotorsSS::SetOutput(
 
 void DrivetrainMotorsSS::PopulateStatus(
     ::frc971::control_loops::DrivetrainQueue::Status *status) const {
-  status->profiled_left_position_goal = kf_->next_R(0, 0);
-  status->profiled_left_velocity_goal = kf_->next_R(1, 0);
-  status->profiled_right_position_goal = kf_->next_R(2, 0);
-  status->profiled_right_velocity_goal = kf_->next_R(3, 0);
+  Eigen::Matrix<double, 2, 1> profiled_linear =
+      LeftRightToLinear(kf_->next_R());
+  Eigen::Matrix<double, 2, 1> profiled_angular =
+      LeftRightToAngular(kf_->next_R());
+
+  profiled_angular(0, 0) -= last_gyro_to_wheel_offset_;
+
+  Eigen::Matrix<double, 4, 1> profiled_gyro_left_right =
+      AngularLinearToLeftRight(profiled_linear, profiled_angular);
+
+  status->profiled_left_position_goal = profiled_gyro_left_right(0, 0);
+  status->profiled_left_velocity_goal = profiled_gyro_left_right(1, 0);
+  status->profiled_right_position_goal = profiled_gyro_left_right(2, 0);
+  status->profiled_right_velocity_goal = profiled_gyro_left_right(3, 0);
 }
 
 }  // namespace drivetrain

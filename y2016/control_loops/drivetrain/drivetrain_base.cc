@@ -12,6 +12,7 @@ using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace y2016 {
 namespace control_loops {
+namespace drivetrain {
 
 using ::frc971::constants::ShifterHallEffect;
 
@@ -40,5 +41,6 @@ const DrivetrainConfig &GetDrivetrainConfig() {
   return kDrivetrainConfig;
 };
 
+}  // namespace drivetrain
 }  // namespace control_loops
 }  // namespace y2016

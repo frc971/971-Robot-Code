@@ -40,16 +40,16 @@ class DrivetrainMotorsSS {
 
   // Converts the robot state to a linear distance position, velocity.
   Eigen::Matrix<double, 2, 1> LeftRightToLinear(
-      const Eigen::Matrix<double, 7, 1> &left_right);
+      const Eigen::Matrix<double, 7, 1> &left_right) const;
   // Converts the robot state to an anglular distance, velocity.
   Eigen::Matrix<double, 2, 1> LeftRightToAngular(
-      const Eigen::Matrix<double, 7, 1> &left_right);
+      const Eigen::Matrix<double, 7, 1> &left_right) const;
 
   // Converts the linear and angular position, velocity to the top 4 states of
   // the robot state.
   Eigen::Matrix<double, 4, 1> AngularLinearToLeftRight(
       const Eigen::Matrix<double, 2, 1> &linear,
-      const Eigen::Matrix<double, 2, 1> &angular);
+      const Eigen::Matrix<double, 2, 1> &angular) const;
 
  private:
   void PolyCapU(Eigen::Matrix<double, 2, 1> *U);
@@ -58,6 +58,8 @@ class DrivetrainMotorsSS {
   const DrivetrainConfig dt_config_;
   StateFeedbackLoop<7, 2, 3> *kf_;
   Eigen::Matrix<double, 7, 1> unprofiled_goal_;
+
+  double last_gyro_to_wheel_offset_ = 0;
 
   // Reprsents +/- full power on each motor in U-space, aka the square from
   // (-12, -12) to (12, 12).

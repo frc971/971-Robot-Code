@@ -26,6 +26,8 @@ VisionAlignActor::VisionAlignActor(actors::VisionAlignActionQueueGroup *s)
 
 bool VisionAlignActor::RunAction(
     const actors::VisionAlignActionParams & /*params*/) {
+  const double robot_radius =
+      control_loops::drivetrain::GetDrivetrainConfig().robot_radius;
   ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                       ::aos::time::Time::InMS(5) / 2);
   while (true) {
@@ -48,8 +50,7 @@ bool VisionAlignActor::RunAction(
     }
 
     const double side_distance_change =
-        ::y2016::vision::vision_status->horizontal_angle *
-        control_loops::GetDrivetrainConfig().robot_radius;
+        ::y2016::vision::vision_status->horizontal_angle * robot_radius;
     if (!::std::isfinite(side_distance_change)) {
       continue;
     }
