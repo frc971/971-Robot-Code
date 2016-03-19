@@ -26,8 +26,8 @@ class AutonomousActor
   void WaitUntilDoneOrCanceled(::std::unique_ptr<aos::common::actions::Action>
       action);
   void StartDrive(double distance, double angle,
-                  ::frc971::control_loops::ProfileParameters linear,
-                  ::frc971::control_loops::ProfileParameters angular);
+                  ::frc971::ProfileParameters linear,
+                  ::frc971::ProfileParameters angular);
   // Waits for the drive motion to finish.  Returns true if it succeeded, and
   // false if it cancels.
   bool WaitForDriveDone();

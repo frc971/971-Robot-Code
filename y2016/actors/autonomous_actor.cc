@@ -10,7 +10,7 @@
 
 namespace y2016 {
 namespace actors {
-using ::frc971::control_loops::ProfileParameters;
+using ::frc971::ProfileParameters;
 using ::frc971::control_loops::drivetrain_queue;
 
 namespace {

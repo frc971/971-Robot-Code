@@ -1,14 +1,7 @@
 package frc971.control_loops;
 
 import "aos/common/controls/control_loops.q";
-
-// Parameters for the motion profiles.
-struct ProfileParameters {
-  // Maximum velocity for the profile.
-  float max_velocity;
-  // Maximum acceleration for the profile.
-  float max_acceleration;
-};
+import "frc971/control_loops/control_loops.q";
 
 // For logging information about what the code is doing with the shifters.
 struct GearLogging {
@@ -73,8 +66,8 @@ queue_group DrivetrainQueue {
 
     // Motion profile parameters.
     // The control loop will profile if these are all non-zero.
-    ProfileParameters linear;
-    ProfileParameters angular;
+    .frc971.ProfileParameters linear;
+    .frc971.ProfileParameters angular;
   };
 
   message Position {

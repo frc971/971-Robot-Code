@@ -63,3 +63,11 @@ struct PosedgeOnlyCountedHallEffectStruct {
   int32_t negedge_count;
   double posedge_value;
 };
+
+// Parameters for the motion profiles.
+struct ProfileParameters {
+  // Maximum velocity for the profile.
+  float max_velocity;
+  // Maximum acceleration for the profile.
+  float max_acceleration;
+};
