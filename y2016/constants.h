@@ -63,7 +63,7 @@ struct Values {
       // Uppper soft stop
       164.2067247 * M_PI / 180.0};
   static constexpr ::frc971::constants::Range kShoulderRange{// Lower hard stop
-                                                             -0.050,
+                                                             -0.100,
                                                              // Upper hard stop
                                                              2.8,
                                                              // Lower soft stop
