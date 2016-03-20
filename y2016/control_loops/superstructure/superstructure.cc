@@ -659,6 +659,8 @@ void Superstructure::RunIteration(
       output->voltage_bottom_rollers = ::std::max(
           -kMaxIntakeBottomVoltage,
           ::std::min(unsafe_goal->voltage_bottom_rollers, kMaxIntakeBottomVoltage));
+      output->traverse_unlatched = unsafe_goal->traverse_unlatched;
+      output->traverse_down = unsafe_goal->traverse_down;
     }
   }
 

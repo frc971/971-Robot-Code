@@ -398,7 +398,10 @@ class SolenoidWriter {
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
         drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
-        shooter_(".y2016.control_loops.shooter.shooter_queue.output") {}
+        shooter_(".y2016.control_loops.shooter.shooter_queue.output"),
+        superstructure_(
+            ".y2016.control_loops.superstructure_queue.output") {
+  }
 
   void set_compressor(::std::unique_ptr<Compressor> compressor) {
     compressor_ = ::std::move(compressor);
@@ -412,6 +415,16 @@ class SolenoidWriter {
   void set_drivetrain_right(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
     drivetrain_right_ = ::std::move(s);
+  }
+
+  void set_traverse(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    traverse_ = ::std::move(s);
+  }
+
+  void set_traverse_latch(
+      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
+    traverse_latch_ = ::std::move(s);
   }
 
   void set_shooter_clamp(
@@ -465,6 +478,15 @@ class SolenoidWriter {
       }
 
       {
+        superstructure_.FetchLatest();
+        if (superstructure_.get()) {
+          LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+          traverse_->Set(superstructure_->traverse_down);
+          traverse_latch_->Set(superstructure_->traverse_unlatched);
+        }
+      }
+
+      {
         ::frc971::wpilib::PneumaticsToLog to_log;
         {
           to_log.compressor_on = compressor_->Enabled();
@@ -483,11 +505,15 @@ class SolenoidWriter {
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
-      drivetrain_right_, shooter_clamp_, shooter_pusher_, lights_;
+      drivetrain_right_, shooter_clamp_, shooter_pusher_, lights_, traverse_,
+      traverse_latch_;
   ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2016::control_loops::shooter::ShooterQueue::Output> shooter_;
+  ::aos::Queue<
+      ::y2016::control_loops::SuperstructureQueue::Output>
+      superstructure_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -694,6 +720,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SolenoidWriter solenoid_writer(pcm);
     solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(1));
     solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(0));
+    solenoid_writer.set_traverse_latch(pcm->MakeSolenoid(2));
+    solenoid_writer.set_traverse(pcm->MakeSolenoid(3));
     solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(4));
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
     solenoid_writer.set_lights(pcm->MakeSolenoid(6));

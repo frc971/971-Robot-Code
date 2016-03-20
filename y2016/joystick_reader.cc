@@ -58,12 +58,11 @@ const POVLocation kFrontLong(3, 180);
 const POVLocation kBackLong(3, 0);
 const POVLocation kBackFender(3, 90);
 const POVLocation kFrontFender(3, 270);
-const ButtonLocation kTest3(3, 7);
 const ButtonLocation kIntakeIn(3, 12);
-const ButtonLocation kTest5(3, 8);
 const ButtonLocation kFire(3, 3);
-const ButtonLocation kTest7(3, 5);
 const ButtonLocation kIntakeOut(3, 9);
+const ButtonLocation kPortcullis(3, 7);
+const ButtonLocation kChevalDeFrise(3, 8);
 
 const ButtonLocation kVisionAlign(3, 4);
 
@@ -239,10 +238,6 @@ class Reader : public ::aos::input::JoystickInput {
       shooter_velocity_ = 0.0;
     }
 
-    if (data.IsPressed(kTest3)) {
-      wrist_goal_ = 0.0;
-    }
-
     bool ball_detected = false;
     ::y2016::sensors::ball_detector.FetchLatest();
     if (::y2016::sensors::ball_detector.get()) {
@@ -297,9 +292,6 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
 
-    if (data.PosEdge(kTest7)) {
-    }
-
     is_outtaking_ = data.IsPressed(kIntakeOut);
 
     if (is_intaking_ || is_outtaking_) {
@@ -316,6 +308,17 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (recently_intaking_accumulator_ > 0) {
       --recently_intaking_accumulator_;
+    }
+
+    if (data.IsPressed(kPortcullis)) {
+      traverse_unlatched_ = true;
+      traverse_down_ = true;
+    } else if (data.IsPressed(kChevalDeFrise)) {
+      traverse_unlatched_ = false;
+      traverse_down_ = true;
+    } else {
+      traverse_unlatched_ = true;
+      traverse_down_ = false;
     }
 
     if (!waiting_for_zero_) {
@@ -354,6 +357,9 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->voltage_top_rollers = 0.0;
         new_superstructure_goal->voltage_bottom_rollers = 0.0;
       }
+
+      new_superstructure_goal->traverse_unlatched = traverse_unlatched_;
+      new_superstructure_goal->traverse_down = traverse_down_;
 
       if (!new_superstructure_goal.Send()) {
         LOG(ERROR, "Sending superstructure goal failed.\n");
@@ -396,6 +402,9 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool was_running_ = false;
   bool auto_running_ = false;
+
+  bool traverse_unlatched_ = false;
+  bool traverse_down_ = false;
 
   // If we're waiting for the subsystems to zero.
   bool waiting_for_zero_ = true;

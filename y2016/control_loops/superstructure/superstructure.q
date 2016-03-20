@@ -64,6 +64,12 @@ queue_group SuperstructureQueue {
     // Voltage to send to the rollers. Positive is sucking in.
     float voltage_top_rollers;
     float voltage_bottom_rollers;
+
+    // If true, release the latch which holds the traverse mechanism in the
+    // middle.
+    bool traverse_unlatched;
+    // If true, fire the traverse mechanism down.
+    bool traverse_down;
   };
 
   message Status {
@@ -109,6 +115,11 @@ queue_group SuperstructureQueue {
 
     float voltage_top_rollers;
     float voltage_bottom_rollers;
+
+    // If true, release the latch to hold the traverse mechanism in the middle.
+    bool traverse_unlatched;
+    // If true, fire the traverse mechanism down.
+    bool traverse_down;
   };
 
   queue Goal goal;
