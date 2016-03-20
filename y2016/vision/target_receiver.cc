@@ -19,6 +19,89 @@
 namespace y2016 {
 namespace vision {
 
+::aos::vision::Vector<2> CreateCenterFromTarget(double lx, double ly, double rx, double ry) {
+  return ::aos::vision::Vector<2>((lx + rx) / 2.0, (ly + ry) / 2.0);
+}
+
+double TargetWidth(double lx, double ly, double rx, double ry) {
+  double dx = lx - rx;
+  double dy = ly - ry;
+  return ::std::sqrt(dx * dx + dy * dy);
+}
+
+void SelectTargets(const VisionData &left_target,
+                   const VisionData &right_target,
+                   ::aos::vision::Vector<2> *center_left,
+                   ::aos::vision::Vector<2> *center_right) {
+  // No good targets. Let the caller decide defaults.
+  if (right_target.target_size() == 0 || left_target.target_size() == 0) {
+    return;
+  }
+
+  // Only one option, we have to go with it.
+  if (right_target.target_size() == 1 && left_target.target_size() == 1) {
+    *center_left =
+        CreateCenterFromTarget(left_target.target(0).left_corner_x(),
+                               left_target.target(0).left_corner_y(),
+                               left_target.target(0).right_corner_x(),
+                               left_target.target(0).right_corner_y());
+    *center_right =
+        CreateCenterFromTarget(right_target.target(0).left_corner_x(),
+                               right_target.target(0).left_corner_y(),
+                               right_target.target(0).right_corner_x(),
+                               right_target.target(0).right_corner_y());
+    return;
+  }
+
+  // Now we have to make a decision.
+  double max_wid = -1.0;
+  int left_index = 0;
+  // First pick the widest target from the left.
+  for (int i = 0; i < left_target.target_size(); i++) {
+    double wid1 = TargetWidth(left_target.target(i).left_corner_x(),
+                                left_target.target(i).left_corner_y(),
+                                left_target.target(i).right_corner_x(),
+                                left_target.target(i).right_corner_y());
+    if (max_wid == -1.0 || wid1 > max_wid) {
+      max_wid = wid1;
+      left_index = i;
+    }
+  }
+  // Calculate the angle of the bottom edge for the left.
+  double h = left_target.target(left_index).left_corner_y() -
+             left_target.target(left_index).right_corner_y();
+  double good_ang = h / max_wid;
+  double min_ang_err = -1.0;
+  int right_index = -1;
+  // Now pick the bottom edge angle from the right that lines up best with the left.
+  for (int j = 0; j < right_target.target_size(); j++) {
+    double wid2 = TargetWidth(right_target.target(j).left_corner_x(),
+                                right_target.target(j).left_corner_y(),
+                                right_target.target(j).right_corner_x(),
+                                right_target.target(j).right_corner_y());
+    h = right_target.target(j).left_corner_y() -
+        right_target.target(j).right_corner_y();
+    double ang = h/ wid2;
+    double ang_err = ::std::abs(good_ang - ang);
+    if (min_ang_err == -1.0 || min_ang_err > ang_err) {
+      min_ang_err = ang_err;
+      right_index = j;
+    }
+  }
+
+  *center_left =
+      CreateCenterFromTarget(left_target.target(left_index).left_corner_x(),
+                             left_target.target(left_index).left_corner_y(),
+                             left_target.target(left_index).right_corner_x(),
+                             left_target.target(left_index).right_corner_y());
+  *center_right =
+      CreateCenterFromTarget(right_target.target(right_index).left_corner_x(),
+                             right_target.target(right_index).left_corner_y(),
+                             right_target.target(right_index).right_corner_x(),
+                             right_target.target(right_index).right_corner_y());
+}
+
+
 void Main() {
   StereoGeometry stereo(constants::GetValues().vision_name);
   LOG(INFO, "calibration: %s\n",
@@ -71,21 +154,9 @@ void Main() {
       new_vision_status->left_image_valid = left_image_valid;
       new_vision_status->right_image_valid = right_image_valid;
       if (left_image_valid && right_image_valid) {
-        const ::aos::vision::Vector<2> center0(
-            (left_target.target(0).left_corner_x() +
-             left_target.target(0).right_corner_x()) /
-                2.0,
-            (left_target.target(0).left_corner_y() +
-             left_target.target(0).right_corner_y()) /
-                2.0);
-        // out of sync.
-        const ::aos::vision::Vector<2> center1(
-            (right_target.target(0).left_corner_x() +
-             right_target.target(0).right_corner_x()) /
-                2.0,
-            (right_target.target(0).left_corner_y() +
-             right_target.target(0).right_corner_y()) /
-                2.0);
+        ::aos::vision::Vector<2> center0(0.0, 0.0);
+        ::aos::vision::Vector<2> center1(0.0, 0.0);
+        SelectTargets(left_target, right_target, &center0, &center1);
         double distance, horizontal_angle, vertical_angle;
         stereo.Process(center0, center1, &distance, &horizontal_angle,
                        &vertical_angle);
