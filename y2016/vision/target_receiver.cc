@@ -26,7 +26,7 @@ namespace vision {
 double TargetWidth(double lx, double ly, double rx, double ry) {
   double dx = lx - rx;
   double dy = ly - ry;
-  return ::std::sqrt(dx * dx + dy * dy);
+  return ::std::hypot(dx, dy);
 }
 
 void SelectTargets(const VisionData &left_target,
