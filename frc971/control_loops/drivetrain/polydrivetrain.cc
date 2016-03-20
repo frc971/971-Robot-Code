@@ -298,7 +298,7 @@ void PolyDrivetrain::Update() {
     R_right(0, 0) = right_motor_speed;
 
     const double wiggle =
-        (static_cast<double>((counter_ % 20) / 10) - 0.5) * 5.0;
+        (static_cast<double>((counter_ % 30) / 15) - 0.5) * 8.0;
 
     loop_->mutable_U(0, 0) = ::aos::Clip(
         (R_left / dt_config_.v)(0, 0) + (IsInGear(left_gear_) ? 0 : wiggle),

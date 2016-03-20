@@ -48,6 +48,10 @@ queue_group ShooterQueue {
     // True if the shooter is ready.  It is better to compare the velocities
     // directly so there isn't confusion on if the goal is up to date.
     bool ready;
+
+    // The number of shots that have been fired since the start of the shooter
+    // control loop.
+    uint32_t shots;
   };
 
   message Output {

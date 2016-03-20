@@ -70,6 +70,7 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
 
 Shooter::Shooter(ShooterQueue *my_shooter)
     : aos::controls::ControlLoop<ShooterQueue>(my_shooter),
+      shots_(0),
       last_pre_shot_timeout_(0, 0) {}
 
 void Shooter::RunIteration(const ShooterQueue::Goal *goal,
@@ -127,19 +128,23 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
               last_pre_shot_timeout_ < Time::Now()) {
-            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+            state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           break;
         case ShooterLatchState::WAITING_FOR_SPINUP:
           shoot = true;
           if (left_.velocity() > goal->angular_velocity * 0.95 &&
               right_.velocity() > goal->angular_velocity * 0.95) {
-            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+            state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
               last_pre_shot_timeout_ < Time::Now()) {
-            state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
+            state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
+          break;
+        case ShooterLatchState::INCREMENT_SHOT_COUNT:
+          ++shots_;
+          state_ = ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE;
           break;
         case ShooterLatchState::WAITING_FOR_SHOT_NEGEDGE:
           shoot = true;
@@ -153,6 +158,8 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
       output->push_to_shooter = shoot;
     }
   }
+
+  status->shots = shots_;
 }
 
 }  // namespace shooter
