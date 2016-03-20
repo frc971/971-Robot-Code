@@ -53,15 +53,14 @@ struct Values {
 
   // Subsystem motion ranges, in whatever units that their respective queues say
   // the use.
-  static constexpr ::frc971::constants::Range kIntakeRange{
-      // Lower hard stop
-      -0.4,
-      // Upper hard stop
-      164.2067247 * M_PI / 180.0 + 0.05,
-      // Lower soft stop
-      -0.300,
-      // Uppper soft stop
-      164.2067247 * M_PI / 180.0};
+  static constexpr ::frc971::constants::Range kIntakeRange{// Lower hard stop
+                                                           -0.4,
+                                                           // Upper hard stop
+                                                           2.75 + 0.05,
+                                                           // Lower soft stop
+                                                           -0.300,
+                                                           // Uppper soft stop
+                                                           2.725};
   static constexpr ::frc971::constants::Range kShoulderRange{// Lower hard stop
                                                              -0.100,
                                                              // Upper hard stop
