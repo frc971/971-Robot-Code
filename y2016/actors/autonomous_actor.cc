@@ -209,6 +209,7 @@ void AutonomousActor::WaitForSuperstructure() {
           ::std::abs(control_loops::superstructure_queue.status->wrist
                          .angular_velocity) < kEpsilon) {
         LOG(INFO, "Near goal, done.\n");
+        return;
       }
     }
   }
