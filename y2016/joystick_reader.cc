@@ -223,7 +223,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kBackFender)) {
       // Fender shot back
       shoulder_goal_ = 0.65;
-      wrist_goal_ = -1.0;
+      wrist_goal_ = -1.20;
       shooter_velocity_ = 550.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kFrontFender)) {
