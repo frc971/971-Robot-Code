@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <functional>
+#include <array>
 
 #include "Encoder.h"
 #include "Talon.h"
@@ -37,6 +38,7 @@
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/queues/ball_detector.q.h"
+#include "y2016/actors/autonomous_action.q.h"
 
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/loop_output_handler.h"
@@ -249,11 +251,15 @@ class SensorReader {
     ball_detector_ = ::std::move(analog);
   }
 
+  // Autonomous mode switch setter.
+  void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
+    autonomous_modes_.at(i) = ::std::move(sensor);
+  }
+
 
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
 
-  // TODO(comran): Add 2016 things down below for dma synchronization.
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
@@ -348,6 +354,18 @@ class SensorReader {
       LOG_STRUCT(DEBUG, "ball detector", *ball_detector_message);
       ball_detector_message.Send();
     }
+
+    {
+      auto auto_mode_message = ::y2016::actors::auto_mode.MakeMessage();
+      auto_mode_message->mode = 0;
+      for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
+        if (autonomous_modes_[i]->Get()) {
+          auto_mode_message->mode |= 1 << i;
+        }
+      }
+      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      auto_mode_message.Send();
+    }
   }
 
   void Quit() { run_ = false; }
@@ -387,6 +405,8 @@ class SensorReader {
   ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_,
       shoulder_encoder_, wrist_encoder_;
   ::std::unique_ptr<AnalogInput> ball_detector_;
+
+  ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
 
   ::std::atomic<bool> run_{true};
   DigitalGlitchFilter drivetrain_shooter_encoder_filter_, hall_filter_,
@@ -648,6 +668,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_wrist_potentiometer(make_unique<AnalogInput>(1));
 
     reader.set_ball_detector(make_unique<AnalogInput>(7));
+
+    reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
+    reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
+    reader.set_autonomous_mode(2, make_unique<DigitalInput>(7));
+    reader.set_autonomous_mode(3, make_unique<DigitalInput>(6));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));

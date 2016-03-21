@@ -38,5 +38,6 @@ cc_binary(
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/superstructure:superstructure_queue',
     '//y2016/queues:ball_detector',
+    '//y2016/actors:autonomous_action_queue',
   ],
 )
