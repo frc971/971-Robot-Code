@@ -54,23 +54,27 @@ void SelectTargets(const VisionData &left_target,
   }
 
   // Now we have to make a decision.
-  double max_wid = -1.0;
+  double min_angle = -1.0;
   int left_index = 0;
   // First pick the widest target from the left.
   for (int i = 0; i < left_target.target_size(); i++) {
-    double wid1 = TargetWidth(left_target.target(i).left_corner_x(),
-                                left_target.target(i).left_corner_y(),
-                                left_target.target(i).right_corner_x(),
-                                left_target.target(i).right_corner_y());
-    if (max_wid == -1.0 || wid1 > max_wid) {
-      max_wid = wid1;
+    const double h = left_target.target(i).left_corner_y() -
+                     left_target.target(i).right_corner_y();
+    const double wid1 = TargetWidth(left_target.target(i).left_corner_x(),
+                                    left_target.target(i).left_corner_y(),
+                                    left_target.target(i).right_corner_x(),
+                                    left_target.target(i).right_corner_y());
+    const double angle = h / wid1;
+    if (min_angle == -1.0 || ::std::abs(angle) < ::std::abs(min_angle)) {
+      min_angle = angle;
       left_index = i;
     }
   }
   // Calculate the angle of the bottom edge for the left.
   double h = left_target.target(left_index).left_corner_y() -
              left_target.target(left_index).right_corner_y();
-  double good_ang = h / max_wid;
+
+  double good_ang = min_angle;
   double min_ang_err = -1.0;
   int right_index = -1;
   // Now pick the bottom edge angle from the right that lines up best with the left.
