@@ -217,7 +217,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.2;
-      wrist_goal_ = -0.59;
+      wrist_goal_ = -0.65;
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
@@ -283,7 +283,7 @@ class Reader : public ::aos::input::JoystickInput {
           } else {
             ready_to_fire_ = 0;
           }
-          if (ready_to_fire_ > 10) {
+          if (ready_to_fire_ > 7) {
             fire_ = true;
           }
         }
