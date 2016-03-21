@@ -210,14 +210,14 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (data.IsPressed(kFrontLong)) {
       // Forwards shot
-      shoulder_goal_ = M_PI / 2.0 - 0.2;
-      wrist_goal_ = M_PI + 0.45;
+      shoulder_goal_ = M_PI / 2.0 + 0.1;
+      wrist_goal_ = M_PI + 0.40;
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
-      shoulder_goal_ = M_PI / 2.0 - 0.2;
-      wrist_goal_ = -0.65;
+      shoulder_goal_ = M_PI / 2.0 - 0.4;
+      wrist_goal_ = -0.62;
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
@@ -283,7 +283,7 @@ class Reader : public ::aos::input::JoystickInput {
           } else {
             ready_to_fire_ = 0;
           }
-          if (ready_to_fire_ > 7) {
+          if (ready_to_fire_ > 9) {
             fire_ = true;
           }
         }
