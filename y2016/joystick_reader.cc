@@ -384,7 +384,13 @@ class Reader : public ::aos::input::JoystickInput {
     LOG(INFO, "Starting auto mode\n");
 
     actors::AutonomousActionParams params;
-    params.mode = 0;
+    actors::auto_mode.FetchLatest();
+    if (actors::auto_mode.get() != nullptr) {
+      params.mode = actors::auto_mode->mode;
+    } else {
+      LOG(WARNING, "no auto mode values\n");
+      params.mode = 0;
+    }
     action_queue_.EnqueueAction(actors::MakeAutonomousAction(params));
   }
 

@@ -2,8 +2,16 @@ package y2016.actors;
 
 import "aos/common/actions/actions.q";
 
+message AutonomousMode {
+  // Mode read from the mode setting sensors.
+  int32_t mode;
+};
+
+queue AutonomousMode auto_mode;
+
 struct AutonomousActionParams {
-  int32_t mode;  // 0 = single ball auto
+  // The mode from the sensors when auto starts.
+  int32_t mode;
 };
 
 queue_group AutonomousActionQueueGroup {
