@@ -46,7 +46,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
   // incorporating a small safety margin makes writing test cases much easier
   // since you can directly compare statuses against the constants in the
   // CollisionAvoidance class.
-  constexpr double kSafetyMargin = 0.01;  // radians
+  constexpr double kSafetyMargin = 0.02;  // radians
 
   // Avoid colliding the shooter with the frame.
   // If the shoulder is below a certain angle or we want to move it below

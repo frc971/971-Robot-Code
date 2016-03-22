@@ -65,8 +65,10 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
     WAITING_FOR_SPINDOWN = 1,
     // We are latched shooting waiting for the wheel to spin back up.
     WAITING_FOR_SPINUP = 2,
+    // Increment the shot count for the Status.
+    INCREMENT_SHOT_COUNT = 3,
     // Wait until the button is released.
-    WAITING_FOR_SHOT_NEGEDGE = 3
+    WAITING_FOR_SHOT_NEGEDGE = 4,
   };
 
  protected:
@@ -77,6 +79,9 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
 
  private:
   ShooterSide left_, right_;
+
+  // The number of shots since starting the Shooter.
+  uint32_t shots_;
 
   // Current state.
   ShooterLatchState state_ = ShooterLatchState::PASS_THROUGH;

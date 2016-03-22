@@ -7,6 +7,7 @@
 #include "aos/common/actions/actions.h"
 
 #include "y2016/actors/autonomous_action.q.h"
+#include "y2016/actors/vision_align_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
@@ -33,6 +34,10 @@ class AutonomousActor
   // false if it cancels.
   bool WaitForDriveDone();
 
+  // Waits until the profile and distance is within distance and angle of the
+  // goal.  Returns true on success, and false when canceled.
+  bool WaitForDriveNear(double distance, double angle);
+
   const ::frc971::control_loops::drivetrain::DrivetrainConfig dt_config_;
 
   // Initial drivetrain positions.
@@ -54,9 +59,32 @@ class AutonomousActor
   void MoveSuperstructure(double intake, double shoulder, double wrist,
                           const ProfileParameters intake_params,
                           const ProfileParameters shoulder_params,
-                          const ProfileParameters wrist_params, double top_rollers,
-                          double bottom_rollers);
+                          const ProfileParameters wrist_params,
+                          bool traverse_up);
   void WaitForSuperstructure();
+
+  void BackLongShot();
+  void BackMiddleShot();
+  void TuckArm(bool arm_down, bool traverse_down);
+
+  void DoFullShot(bool center);
+  void LowBarDrive();
+  // Drive to the middle spot over the middle position.  Designed for the rock
+  // wall, rough terain, or ramparts.
+  void MiddleDrive();
+
+  void OneFromMiddleDrive(bool left);
+  void TwoFromMiddleDrive();
+
+  double shooter_speed_ = 0.0;
+  void SetShooterSpeed(double speed);
+  void WaitForShooterSpeed();
+  void Shoot();
+
+  void AlignWithVisionGoal();
+  void WaitForAlignedWithVision();
+
+  ::std::unique_ptr<actors::VisionAlignAction> vision_action_;
 };
 
 typedef ::aos::common::actions::TypedAction<AutonomousActionQueueGroup>

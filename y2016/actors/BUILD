@@ -117,13 +117,16 @@ cc_library(
   ],
   deps = [
     ':autonomous_action_queue',
+    ':vision_align_action_lib',
     '//aos/common/util:phased_loop',
     '//aos/common/logging',
     '//aos/common/actions:action_lib',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2016/control_loops/superstructure:superstructure_queue',
+    '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/drivetrain:drivetrain_base',
     '//y2016/queues:profile_params',
+    '//y2016/vision:vision_queue',
   ],
 )
 
