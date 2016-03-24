@@ -1,4 +1,15 @@
 cc_library(
+  name = 'epoll_events',
+  srcs = ['epoll_events.cc'],
+  hdrs = ['epoll_events.h'],
+  deps = [
+    '//aos/common:scoped_fd',
+    '//aos/common/logging',
+    '//aos/common:time',
+  ],
+)
+
+cc_library(
   name = 'udp',
   visibility = ['//visibility:public'],
   srcs = ['udp.cc'],
