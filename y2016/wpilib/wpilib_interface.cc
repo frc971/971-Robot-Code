@@ -10,6 +10,7 @@
 
 #include "Encoder.h"
 #include "Talon.h"
+#include "Relay.h"
 #include "DriverStation.h"
 #include "AnalogInput.h"
 #include "Compressor.h"
@@ -462,6 +463,10 @@ class SolenoidWriter {
     lights_ = ::std::move(s);
   }
 
+  void set_flashlight(::std::unique_ptr<Relay> relay) {
+    flashlight_ = ::std::move(relay);
+  }
+
   void operator()() {
     compressor_->Start();
     ::aos::SetCurrentThreadName("Solenoids");
@@ -494,6 +499,7 @@ class SolenoidWriter {
           shooter_clamp_->Set(shooter_->clamp_open);
           shooter_pusher_->Set(shooter_->push_to_shooter);
           lights_->Set(shooter_->lights_on);
+          flashlight_->Set(shooter_->lights_on ? Relay::kForward : Relay::kOff);
         }
       }
 
@@ -527,6 +533,7 @@ class SolenoidWriter {
   ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
       drivetrain_right_, shooter_clamp_, shooter_pusher_, lights_, traverse_,
       traverse_latch_;
+  ::std::unique_ptr<Relay> flashlight_;
   ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
@@ -750,6 +757,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(4));
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
     solenoid_writer.set_lights(pcm->MakeSolenoid(6));
+    solenoid_writer.set_flashlight(make_unique<Relay>(0));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());
 
