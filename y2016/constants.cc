@@ -82,26 +82,28 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Intake
           {
            // Value to add to the pot reading for the intake.
-           -4.550531 + 150.40906362 * M_PI / 180.0 + 0.5098,
+           -4.550531 + 150.40906362 * M_PI / 180.0 + 0.5098 - 0.0178 - 0.0725,
            {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
             // Location of an index pulse.
-            0.040211, 1.5},
+            0.018008, 1.5},
           },
 
           // Shoulder
           {
            // Value to add to the pot reading for the shoulder.
-           -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0 - 0.0323 - 0.1057 + 0.0035,
+           -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0 - 0.0323 - 0.1057 +
+               0.0035 + 0.0055,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.335702, 1.5},
+            0.536989, 1.5},
           },
 
           // Wrist
           {
            // Value to add to the pot reading for the wrist.
-           3.2390714288298668 + -0.06138835 * M_PI / 180.0 + 0.0078,
+           3.2390714288298668 + -0.06138835 * M_PI / 180.0 + 0.0078 - 0.0548 -
+               0.0167 + 0.002,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-           -0.736662, 1.5},
+            -1.040454, 1.5},
           },
 
           "competition",
