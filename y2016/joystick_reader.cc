@@ -55,6 +55,7 @@ const ButtonLocation kTurn2(1, 11);
 // Buttons on the lexan driver station to get things running on bring-up day.
 const ButtonLocation kIntakeDown(3, 11);
 const POVLocation kFrontLong(3, 180);
+const ButtonLocation kHigherFrontLong(3, 6);
 const POVLocation kBackLong(3, 0);
 const POVLocation kBackFender(3, 90);
 const POVLocation kFrontFender(3, 270);
@@ -208,7 +209,13 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
 
-    if (data.IsPressed(kFrontLong)) {
+    if (data.IsPressed(kHigherFrontLong)) {
+      // Forwards shot
+      shoulder_goal_ = M_PI / 2.0 + 0.1;
+      wrist_goal_ = M_PI + 0.43;
+      shooter_velocity_ = 640.0;
+      intake_goal_ = intake_when_shooting;
+    } else if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.40;
