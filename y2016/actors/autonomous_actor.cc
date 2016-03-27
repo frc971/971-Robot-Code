@@ -531,8 +531,7 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
   InitializeEncoders();
   ResetDrivetrain();
 
-  int index = 0;
-  switch (index) {
+  switch (params.mode) {
     case 0:
       LowBarDrive();
       break;
@@ -549,13 +548,13 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
       OneFromMiddleDrive(false);
       break;
     default:
-      LOG(ERROR, "Invalid auto index %d\n", index);
+      LOG(ERROR, "Invalid auto mode %d\n", params.mode);
       return true;
   }
 
   if (!WaitForDriveDone()) return true;
 
-  DoFullShot(index != 0);
+  DoFullShot(params.mode != 0);
 
   ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                       ::aos::time::Time::InMS(5) / 2);
