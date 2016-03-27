@@ -483,7 +483,7 @@ void AutonomousActor::LowBarDrive() {
 
   if (!WaitForDriveNear(1.0, 0.0)) return;
 
-  StartDrive(0, -M_PI / 4.0 - 0.1, kLowBarDrive, kSlowTurn);
+  StartDrive(0, -M_PI / 4.0 - 0.2, kLowBarDrive, kSlowTurn);
 }
 
 void AutonomousActor::MiddleDrive() {
