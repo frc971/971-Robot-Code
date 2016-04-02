@@ -40,16 +40,17 @@ constexpr uint8_t kLotId2Address = 0x54;
 constexpr uint8_t kProdIdAddress = 0x56;
 constexpr uint8_t kSerialNumberAddress = 0x58;
 
-// LSB/degree/second for the gyros.
-constexpr double kGyroLsbDegreeSecond = 25;
-// LSB/G for the accelerometers.
-constexpr double kAccelerometerLsbG = 1200;
-// LSB/gauss for the magnetometers.
-constexpr double kMagnetometerLsbGauss = 7.0 / 1000.0 /* mgauss to gauss */;
-// LSB/bar for the barometer.
-constexpr double kBarometerLsbPascal = 1.0 / (20.0 / 10 /* ubar to pascals */);
-// LSB/degree C for the temperature sensor.
-constexpr double kTemperatureLsbDegree = 1.0 / 0.07386;
+// degree/second/LSB for the gyros.
+constexpr double kGyroLsbDegreeSecond = 1.0 / 25.0;
+// G/LSB for the accelerometers.
+constexpr double kAccelerometerLsbG = 1.0 / 1200.0;
+// gauss/LSB for the magnetometers.
+constexpr double kMagnetometerLsbGauss =
+    1.0 / (7.0 / 1000.0) /* mgauss to gauss */;
+// bar/LSB for the barometer.
+constexpr double kBarometerLsbPascal = 0.02 * 100;
+// degree/LSB C for the temperature sensor.
+constexpr double kTemperatureLsbDegree = 0.07386;
 // Degrees C corresponding to 0 for the temperature sensor.
 constexpr double kTemperatureZero = 31;
 
@@ -142,10 +143,10 @@ void ADIS16448::operator()() {
     got_an_interrupt = true;
     const ::aos::time::Time read_time = ::aos::time::Time::Now();
 
-    uint8_t to_send[8 * 2 * 14], to_receive[8 * 2 * 14];
+    uint8_t to_send[2 * 14], to_receive[2 * 14];
+    memset(&to_send[0], 0, sizeof(to_send));
     to_send[0] = kGlobalReadAddress;
-    memset(&to_send[1], 0, sizeof(to_send) - 1);
-    if (!DoTransaction<8 * 2 * 14>(to_send, to_receive)) continue;
+    if (!DoTransaction<2 * 14>(to_send, to_receive)) continue;
 
     // If it's false now or another edge happened, then we're in trouble. This
     // won't catch all instances of being a little bit slow (because of the
@@ -161,8 +162,8 @@ void ADIS16448::operator()() {
 
     {
       const uint16_t calculated_crc = CalculateCrc(&to_receive[4], 11);
-      uint16_t received_crc;
-      memcpy(&received_crc, &to_receive[13], 2);
+      uint16_t received_crc =
+          to_receive[13 * 2 + 1] | (to_receive[13 * 2] << 8);
       if (received_crc != calculated_crc) {
         LOG(WARNING, "received CRC %" PRIx16 " but calculated %" PRIx16 "\n",
             received_crc, calculated_crc);
@@ -172,7 +173,7 @@ void ADIS16448::operator()() {
 
     {
       uint16_t diag_stat;
-      memcpy(&diag_stat, &to_receive[1], 2);
+      memcpy(&diag_stat, &to_receive[2], 2);
       if (!CheckDiagStatValue(diag_stat)) continue;
     }
 
@@ -181,28 +182,31 @@ void ADIS16448::operator()() {
     message->monotonic_timestamp_ns = read_time.ToNSec();
 
     message->gyro_x =
-        ConvertValue(&to_receive[2], kGyroLsbDegreeSecond) * (M_PI / 2.0);
+        ConvertValue(&to_receive[4], kGyroLsbDegreeSecond * M_PI / 180.0);
     message->gyro_y =
-        ConvertValue(&to_receive[3], kGyroLsbDegreeSecond) * (M_PI / 2.0);
+        ConvertValue(&to_receive[6], kGyroLsbDegreeSecond * M_PI / 180.0);
     message->gyro_z =
-        ConvertValue(&to_receive[4], kGyroLsbDegreeSecond) * (M_PI / 2.0);
+        ConvertValue(&to_receive[8], kGyroLsbDegreeSecond * M_PI / 180.0);
 
-    message->accelerometer_x = ConvertValue(&to_receive[5], kAccelerometerLsbG);
-    message->accelerometer_y = ConvertValue(&to_receive[6], kAccelerometerLsbG);
-    message->accelerometer_z = ConvertValue(&to_receive[7], kAccelerometerLsbG);
+    message->accelerometer_x =
+        ConvertValue(&to_receive[10], kAccelerometerLsbG);
+    message->accelerometer_y =
+        ConvertValue(&to_receive[12], kAccelerometerLsbG);
+    message->accelerometer_z =
+        ConvertValue(&to_receive[14], kAccelerometerLsbG);
 
     message->magnetometer_x =
-        ConvertValue(&to_receive[8], kMagnetometerLsbGauss);
+        ConvertValue(&to_receive[16], kMagnetometerLsbGauss);
     message->magnetometer_y =
-        ConvertValue(&to_receive[9], kMagnetometerLsbGauss);
+        ConvertValue(&to_receive[18], kMagnetometerLsbGauss);
     message->magnetometer_z =
-        ConvertValue(&to_receive[10], kMagnetometerLsbGauss);
+        ConvertValue(&to_receive[20], kMagnetometerLsbGauss);
 
     message->barometer =
-        ConvertValue(&to_receive[11], kBarometerLsbPascal, false);
+        ConvertValue(&to_receive[22], kBarometerLsbPascal, false);
 
     message->temperature =
-        ConvertValue(&to_receive[12], kTemperatureLsbDegree) + kTemperatureZero;
+        ConvertValue(&to_receive[24], kTemperatureLsbDegree) + kTemperatureZero;
 
     LOG_STRUCT(DEBUG, "sending", *message);
     if (!message.Send()) {
@@ -214,12 +218,12 @@ void ADIS16448::operator()() {
 float ADIS16448::ConvertValue(uint8_t *data, double lsb_per_output, bool sign) {
   double value;
   if (sign) {
-    int16_t raw_value;
-    memcpy(&raw_value, data, 2);
+    int16_t raw_value = static_cast<int16_t>(
+        (static_cast<uint16_t>(data[0]) << 8) | static_cast<uint16_t>(data[1]));
     value = raw_value;
   } else {
-    uint16_t raw_value;
-    memcpy(&raw_value, data, 2);
+    uint16_t raw_value =
+        (static_cast<uint16_t>(data[0]) << 8) | static_cast<uint16_t>(data[1]);
     value = raw_value;
   }
   return value * lsb_per_output;
@@ -232,7 +236,9 @@ bool ADIS16448::ReadRegister(uint8_t next_address, uint16_t *value) {
 
   if (!DoTransaction<2>(to_send, to_receive)) return false;
 
-  if (value) memcpy(value, to_receive, 2);
+  if (value) {
+    memcpy(value, to_receive, 2);
+  }
   return true;
 }
 
@@ -248,12 +254,6 @@ bool ADIS16448::WriteRegister(uint8_t address, uint16_t value) {
 
 bool ADIS16448::CheckDiagStatValue(uint16_t value) const {
   bool r = true;
-  if (value & (1 << 0)) {
-    LOG(WARNING, "IMU gave magnetometer functional test failure\n");
-  }
-  if (value & (1 << 1)) {
-    LOG(WARNING, "IMU gave barometer functional test failure\n");
-  }
   if (value & (1 << 2)) {
     LOG(WARNING, "IMU gave flash update failure\n");
   }
@@ -266,6 +266,31 @@ bool ADIS16448::CheckDiagStatValue(uint16_t value) const {
   if (value & (1 << 5)) {
     LOG(WARNING, "IMU gave self-test failure\n");
     r = false;
+    if (value & (1 << 10)) {
+      LOG(WARNING, "IMU gave X-axis gyro self-test failure\n");
+    }
+    if (value & (1 << 11)) {
+      LOG(WARNING, "IMU gave Y-axis gyro self-test failure\n");
+    }
+    if (value & (1 << 12)) {
+      LOG(WARNING, "IMU gave Z-axis gyro self-test failure\n");
+    }
+    if (value & (1 << 13)) {
+      LOG(WARNING, "IMU gave X-axis accelerometer self-test failure\n");
+    }
+    if (value & (1 << 14)) {
+      LOG(WARNING, "IMU gave Y-axis accelerometer self-test failure\n");
+    }
+    if (value & (1 << 15)) {
+      LOG(WARNING, "IMU gave Z-axis accelerometer self-test failure, %x\n",
+          value);
+    }
+    if (value & (1 << 0)) {
+      LOG(WARNING, "IMU gave magnetometer functional test failure\n");
+    }
+    if (value & (1 << 1)) {
+      LOG(WARNING, "IMU gave barometer functional test failure\n");
+    }
   }
   if (value & (1 << 6)) {
     LOG(WARNING, "IMU gave flash test checksum failure\n");
@@ -275,30 +300,6 @@ bool ADIS16448::CheckDiagStatValue(uint16_t value) const {
   }
   if (value & (1 << 9)) {
     LOG(WARNING, "IMU says alarm 2 is active\n");
-  }
-  if (value & (1 << 10)) {
-    LOG(WARNING, "IMU gave X-axis gyro self-test failure\n");
-    r = false;
-  }
-  if (value & (1 << 11)) {
-    LOG(WARNING, "IMU gave Y-axis gyro self-test failure\n");
-    r = false;
-  }
-  if (value & (1 << 12)) {
-    LOG(WARNING, "IMU gave Z-axis gyro self-test failure\n");
-    r = false;
-  }
-  if (value & (1 << 13)) {
-    LOG(WARNING, "IMU gave X-axis accelerometer self-test failure\n");
-    r = false;
-  }
-  if (value & (1 << 14)) {
-    LOG(WARNING, "IMU gave Y-axis accelerometer self-test failure\n");
-    r = false;
-  }
-  if (value & (1 << 15)) {
-    LOG(WARNING, "IMU gave Z-axis accelerometer self-test failure\n");
-    r = false;
   }
   return r;
 }
@@ -320,7 +321,7 @@ bool ADIS16448::Initialize() {
       serial_number);
 
   // Divide the sampling by 2^2 = 4 to get 819.2 / 4 = 204.8 Hz.
-  if (!WriteRegister(kSmplPrdAddress, 2 << 8)) return false;
+  if (!WriteRegister(kSmplPrdAddress, (2 << 8) | 1)) return false;
 
   // Start a self test.
   if (!WriteRegister(kMscCtrlAddress, 1 << 10)) return false;
@@ -342,8 +343,8 @@ bool ADIS16448::Initialize() {
                      ((0 << 0) |  // DIO1
                       (1 << 1) |  // DIO goes high when data is valid
                       (1 << 2) |  // enable DIO changing when data is vald
-                      (1 << 4))   // enable CRC16 for burst mode
-                     )) {
+                      (1 << 4) |  // enable CRC16 for burst mode
+                      (1 << 6)))) {
     return false;
   }
   return true;
