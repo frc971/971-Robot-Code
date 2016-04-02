@@ -10,6 +10,7 @@
 #include "aos/linux_code/init.h"
 
 #include "frc971/queues/gyro.q.h"
+#include "frc971/zeroing/averager.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -35,10 +36,8 @@ void GyroSender::operator()() {
 
   int startup_cycles_left = 2 * kReadingRate;
 
-  double zeroing_data[6 * kReadingRate];
-  size_t zeroing_index = 0;
+  zeroing::Averager<double, 6 * kReadingRate> zeroing_data;
   bool zeroed = false;
-  bool have_zeroing_data = false;
   double zero_offset = 0;
 
   ::aos::time::PhasedLoop phased_loop(
@@ -118,22 +117,12 @@ void GyroSender::operator()() {
         message->velocity = 0.0;
         message.Send();
       }
-      zeroing_data[zeroing_index] = new_angle;
-      ++zeroing_index;
-      if (zeroing_index >= sizeof(zeroing_data) / sizeof(zeroing_data[0])) {
-        zeroing_index = 0;
-        have_zeroing_data = true;
-      }
+      zeroing_data.AddData(new_angle);
 
       ::aos::joystick_state.FetchLatest();
       if (::aos::joystick_state.get() && ::aos::joystick_state->enabled &&
-          have_zeroing_data) {
-        zero_offset = 0;
-        for (size_t i = 0; i < sizeof(zeroing_data) / sizeof(zeroing_data[0]);
-             ++i) {
-          zero_offset -= zeroing_data[i];
-        }
-        zero_offset /= sizeof(zeroing_data) / sizeof(zeroing_data[0]);
+          zeroing_data.full()) {
+        zero_offset = -zeroing_data.GetAverage();
         LOG(INFO, "total zero offset %f\n", zero_offset);
         zeroed = true;
       }

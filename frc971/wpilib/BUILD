@@ -99,8 +99,9 @@ cc_library(
     'gyro_sender.h',
   ],
   deps = [
-    '//frc971/queues:gyro',
     ':gyro_interface',
+    '//frc971/queues:gyro',
+    '//frc971/zeroing:averager',
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
     '//aos/common/util:phased_loop',
@@ -225,12 +226,13 @@ cc_library(
     'ADIS16448.cc',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    ':imu_queue',
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
     '//aos/common:time',
     '//aos/linux_code:init',
-    ':imu_queue',
+    '//frc971/zeroing:averager',
+    '//third_party/allwpilib_2016:wpilib',
   ],
 )
 

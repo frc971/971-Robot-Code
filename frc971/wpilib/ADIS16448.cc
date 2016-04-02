@@ -11,6 +11,7 @@
 #include "aos/linux_code/init.h"
 
 #include "frc971/wpilib/imu.q.h"
+#include "frc971/zeroing/averager.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -130,6 +131,13 @@ void ADIS16448::operator()() {
   }
   LOG(INFO, "IMU initialized successfully\n");
 
+  // Rounded to approximate the 204.8 Hz.
+  constexpr size_t kImuSendRate = 205;
+
+  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_x;
+  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_y;
+  zeroing::Averager<double, 6 * kImuSendRate> average_gyro_z;
+
   bool got_an_interrupt = false;
   while (run_) {
     {
@@ -187,6 +195,24 @@ void ADIS16448::operator()() {
         ConvertValue(&to_receive[6], kGyroLsbDegreeSecond * M_PI / 180.0);
     message->gyro_z =
         ConvertValue(&to_receive[8], kGyroLsbDegreeSecond * M_PI / 180.0);
+
+    // The first few seconds of samples are averaged and subtracted from
+    // subsequent samples for zeroing purposes.
+    if (!gyros_are_zeroed()) {
+      average_gyro_x.AddData(message->gyro_x);
+      average_gyro_y.AddData(message->gyro_y);
+      average_gyro_z.AddData(message->gyro_z);
+
+      if (average_gyro_x.full() && average_gyro_y.full() &&
+          average_gyro_z.full()) {
+        gyro_x_zeroed_offset_ = average_gyro_x.GetAverage();
+        gyro_y_zeroed_offset_ = average_gyro_y.GetAverage();
+        gyro_z_zeroed_offset_ = average_gyro_z.GetAverage();
+        LOG(DEBUG, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
+            gyro_x_zeroed_offset_, gyro_y_zeroed_offset_, gyro_z_zeroed_offset_);
+        gyros_are_zeroed_.store(true);
+      }
+    }
 
     message->accelerometer_x =
         ConvertValue(&to_receive[10], kAccelerometerLsbG);

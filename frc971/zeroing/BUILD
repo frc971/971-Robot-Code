@@ -2,6 +2,24 @@ package(default_visibility = ['//visibility:public'])
 
 load('/aos/build/queues', 'queue_library')
 
+cc_library(
+  name = 'averager',
+  hdrs = [
+    'averager.h',
+  ],
+)
+
+cc_test(
+  name = 'averager_test',
+  srcs = [
+    'averager_test.cc',
+  ],
+  deps = [
+    ':averager',
+    '//aos/testing:googletest',
+  ],
+)
+
 queue_library(
   name = 'zeroing_queue',
   srcs = [
