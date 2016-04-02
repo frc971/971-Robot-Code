@@ -93,6 +93,32 @@ cc_library(
   ],
 )
 
+genrule(
+  name = 'genrule_down_estimator',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //frc971/control_loops/python:down_estimator) $(OUTS)',
+  tools = [
+    '//frc971/control_loops/python:down_estimator',
+  ],
+  outs = [
+    'down_estimator.h',
+    'down_estimator.cc',
+  ],
+)
+
+cc_library(
+  name = 'down_estimator',
+  hdrs = [
+    'down_estimator.h',
+  ],
+  srcs = [
+    'down_estimator.cc',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
 cc_library(
   name = 'drivetrain_lib',
   srcs = [
@@ -102,12 +128,14 @@ cc_library(
     'drivetrain.h',
   ],
   deps = [
+    ':down_estimator',
     ':drivetrain_queue',
     ':gear',
     ':polydrivetrain',
     ':ssdrivetrain',
     '//aos/common/controls:control_loop',
     '//frc971/queues:gyro',
+    '//frc971/wpilib:imu_queue',
     '//aos/common/util:log_interval',
     '//aos/common/logging:queue_logging',
     '//aos/common/logging:matrix_logging',

@@ -13,9 +13,11 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/drivetrain/down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/queues/gyro.q.h"
 #include "frc971/shifter_hall_effect.h"
+#include "frc971/wpilib/imu.q.h"
 
 using frc971::sensors::gyro_reading;
 
@@ -32,11 +34,13 @@ DrivetrainLoop::DrivetrainLoop(
       kf_(dt_config_.make_kf_drivetrain_loop()),
       dt_openloop_(dt_config_, &kf_),
       dt_closedloop_(dt_config_, &kf_, &integrated_kf_heading_),
+      down_estimator_(MakeDownEstimatorLoop()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       left_high_requested_(dt_config_.default_high_gear),
       right_high_requested_(dt_config_.default_high_gear) {
   ::aos::controls::HPolytope<0>::Init();
+  down_U_.setZero();
 }
 
 int DrivetrainLoop::ControllerIndexFromGears() {
@@ -110,6 +114,36 @@ void DrivetrainLoop::RunIteration(
     gear_logging.controller_index = kf_.controller_index();
     LOG_STRUCT(DEBUG, "state", gear_logging);
   }
+
+  if (::frc971::imu_values.FetchLatest()) {
+    const double rate = -::frc971::imu_values->gyro_y;
+    const double accel_squared = ::frc971::imu_values->accelerometer_x *
+                                     ::frc971::imu_values->accelerometer_x +
+                                 ::frc971::imu_values->accelerometer_y *
+                                     ::frc971::imu_values->accelerometer_y +
+                                 ::frc971::imu_values->accelerometer_z *
+                                     ::frc971::imu_values->accelerometer_z;
+    const double angle = ::std::atan2(-::frc971::imu_values->accelerometer_x,
+                                      -::frc971::imu_values->accelerometer_z) +
+                         0.008;
+    if (accel_squared > 1.03 || accel_squared < 0.97) {
+      LOG(DEBUG, "New IMU value, rejecting reading\n");
+    } else {
+      // -y is our gyro.
+      // -z accel is down
+      // -x accel is the front of the robot pointed down.
+      Eigen::Matrix<double, 1, 1> Y;
+      Y << angle;
+      down_estimator_.Correct(Y);
+    }
+
+    LOG(DEBUG,
+        "New IMU value from ADIS16448, rate is %f, angle %f, fused %f, bias "
+        "%f\n",
+        rate, angle, down_estimator_.X_hat(0, 0), down_estimator_.X_hat(1, 0));
+    down_U_ << rate;
+  }
+  down_estimator_.UpdateObserver(down_U_);
 
   // TODO(austin): Signal the current gear to both loops.
 

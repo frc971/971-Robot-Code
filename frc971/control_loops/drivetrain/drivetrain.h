@@ -48,6 +48,9 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
   PolyDrivetrain dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
 
+  StateFeedbackLoop<2, 1, 1> down_estimator_;
+  Eigen::Matrix<double, 1, 1> down_U_;
+
   // Current gears for each drive side.
   Gear left_gear_;
   Gear right_gear_;

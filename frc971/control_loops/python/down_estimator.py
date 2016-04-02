@@ -10,6 +10,7 @@ import glog
 from matplotlib import pylab
 
 from frc971.control_loops.python import controls
+from frc971.control_loops.python import control_loop
 
 FLAGS = gflags.FLAGS
 
@@ -29,16 +30,23 @@ class DownEstimator(control_loop.ControlLoop):
     self.B_continuous = numpy.matrix([[1],
                                       [0]])
 
-    self.A, self.B = c2d(self.A_continuous, self.B_continuous, dt):
+    self.A, self.B = self.ContinuousToDiscrete(
+        self.A_continuous, self.B_continuous, self.dt)
 
     q_gyro_noise = 1e-6
+    q_gyro_bias_noise = 1e-3
     self.Q = numpy.matrix([[1.0 / (q_gyro_noise ** 2.0), 0.0],
-                           [0.0, 1.0 / (q_gyro_noise ** 2.0)]])
+                           [0.0, 1.0 / (q_gyro_bias_noise ** 2.0)]])
 
-    r_accelerometer_angle_noise = 5e-3
+    r_accelerometer_angle_noise = 5e+7
     self.R = numpy.matrix([[(r_accelerometer_angle_noise ** 2.0)]])
 
     self.C = numpy.matrix([[1.0, 0.0]])
+    self.D = numpy.matrix([[0]])
+
+    self.U_max = numpy.matrix([[numpy.pi]])
+    self.U_min = numpy.matrix([[-numpy.pi]])
+    self.K = numpy.matrix(numpy.zeros((1, 2)))
 
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
@@ -99,6 +107,15 @@ def main(argv):
     pylab.plot(range(len(estimated_angles)), estimated_angles)
     pylab.plot(range(len(estimated_velocities)), estimated_velocities)
     pylab.show()
+
+  if len(argv) != 3:
+    print "Expected .h file name and .cc file name"
+  else:
+    namespaces = ['frc971', 'control_loops', 'drivetrain']
+    kf_loop_writer = control_loop.ControlLoopWriter(
+        "DownEstimator", [estimator],
+        namespaces = namespaces)
+    kf_loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
