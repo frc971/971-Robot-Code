@@ -78,6 +78,7 @@ cc_library(
     '//aos/common/controls:control_loop',
     '//aos/common/util:trapezoid_profile',
     '//aos/common:math',
+    '//y2016/queues:ball_detector',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops:simple_capped_state_feedback_loop',
     '//frc971/zeroing',

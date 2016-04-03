@@ -367,6 +367,7 @@ class Reader : public ::aos::input::JoystickInput {
 
       new_superstructure_goal->traverse_unlatched = traverse_unlatched_;
       new_superstructure_goal->traverse_down = traverse_down_;
+      new_superstructure_goal->force_intake = true;
 
       if (!new_superstructure_goal.Send()) {
         LOG(ERROR, "Sending superstructure goal failed.\n");

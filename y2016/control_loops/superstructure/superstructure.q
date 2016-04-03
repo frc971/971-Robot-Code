@@ -65,6 +65,8 @@ queue_group SuperstructureQueue {
     float voltage_top_rollers;
     float voltage_bottom_rollers;
 
+    bool force_intake;
+
     // If true, release the latch which holds the traverse mechanism in the
     // middle.
     bool traverse_unlatched;

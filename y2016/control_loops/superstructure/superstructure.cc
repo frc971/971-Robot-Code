@@ -7,6 +7,7 @@
 
 #include "y2016/control_loops/superstructure/integral_intake_plant.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
+#include "y2016/queues/ball_detector.q.h"
 
 #include "y2016/constants.h"
 
@@ -653,12 +654,23 @@ void Superstructure::RunIteration(
     output->voltage_top_rollers = 0.0;
     output->voltage_bottom_rollers = 0.0;
     if (unsafe_goal) {
-      output->voltage_top_rollers = ::std::max(
-          -kMaxIntakeTopVoltage,
-          ::std::min(unsafe_goal->voltage_top_rollers, kMaxIntakeTopVoltage));
-      output->voltage_bottom_rollers = ::std::max(
-          -kMaxIntakeBottomVoltage,
-          ::std::min(unsafe_goal->voltage_bottom_rollers, kMaxIntakeBottomVoltage));
+      ::y2016::sensors::ball_detector.FetchAnother();
+      bool ball_detected = false;
+      if (::y2016::sensors::ball_detector.get()) {
+        ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+      }
+      if (unsafe_goal->force_intake || !ball_detected) {
+        output->voltage_top_rollers = ::std::max(
+            -kMaxIntakeTopVoltage,
+            ::std::min(unsafe_goal->voltage_top_rollers, kMaxIntakeTopVoltage));
+        output->voltage_bottom_rollers =
+            ::std::max(-kMaxIntakeBottomVoltage,
+                       ::std::min(unsafe_goal->voltage_bottom_rollers,
+                                  kMaxIntakeBottomVoltage));
+      } else {
+        output->voltage_top_rollers = 0.0;
+        output->voltage_bottom_rollers = 0.0;
+      }
       output->traverse_unlatched = unsafe_goal->traverse_unlatched;
       output->traverse_down = unsafe_goal->traverse_down;
     }
