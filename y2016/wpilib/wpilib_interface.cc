@@ -499,7 +499,19 @@ class SolenoidWriter {
           shooter_clamp_->Set(shooter_->clamp_open);
           shooter_pusher_->Set(shooter_->push_to_shooter);
           lights_->Set(shooter_->lights_on);
-          flashlight_->Set(shooter_->lights_on ? Relay::kForward : Relay::kOff);
+          if (shooter_->forwards_flashlight) {
+            if (shooter_->backwards_flashlight) {
+              flashlight_->Set(Relay::kOn);
+            } else {
+              flashlight_->Set(Relay::kReverse);
+            }
+          } else {
+            if (shooter_->backwards_flashlight) {
+              flashlight_->Set(Relay::kForward);
+            } else {
+              flashlight_->Set(Relay::kOff);
+            }
+          }
         }
       }
 

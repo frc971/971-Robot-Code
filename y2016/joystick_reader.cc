@@ -380,6 +380,7 @@ class Reader : public ::aos::input::JoystickInput {
                .clamp_open(is_intaking_ || is_outtaking_)
                .push_to_shooter(fire_)
                .force_lights_on(force_lights_on)
+               .shooting_forwards(wrist_goal_ > 0)
                .Send()) {
         LOG(ERROR, "Sending shooter goal failed.\n");
       }

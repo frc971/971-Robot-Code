@@ -31,6 +31,9 @@ queue_group ShooterQueue {
 
     // Forces the lights on.
     bool force_lights_on;
+
+    // If true, the robot is shooting forwards.
+    bool shooting_forwards;
   };
 
   message Position {
@@ -65,6 +68,9 @@ queue_group ShooterQueue {
 
     // If true, the lights are on.
     bool lights_on;
+
+    bool forwards_flashlight;
+    bool backwards_flashlight;
   };
 
   queue Goal goal;
