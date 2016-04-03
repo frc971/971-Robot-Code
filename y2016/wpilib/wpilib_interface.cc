@@ -685,14 +685,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_drivetrain_left_hall(make_unique<AnalogInput>(5));
     reader.set_drivetrain_right_hall(make_unique<AnalogInput>(6));
 
-    reader.set_shooter_left_encoder(make_encoder(3));
-    reader.set_shooter_right_encoder(make_encoder(4));
+    reader.set_shooter_left_encoder(make_encoder(7));
+    reader.set_shooter_right_encoder(make_encoder(-3));
 
     reader.set_intake_encoder(make_encoder(0));
     reader.set_intake_index(make_unique<DigitalInput>(0));
     reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
 
-    reader.set_shoulder_encoder(make_encoder(2));
+    reader.set_shoulder_encoder(make_encoder(4));
     reader.set_shoulder_index(make_unique<DigitalInput>(2));
     reader.set_shoulder_potentiometer(make_unique<AnalogInput>(2));
 
@@ -713,11 +713,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::GyroSender gyro_sender;
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
-#if 0
-    auto imu_trigger = make_unique<DigitalInput>(100);
-    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
+    auto imu_trigger = make_unique<DigitalInput>(3);
+    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kMXP, imu_trigger.get());
     ::std::thread imu_thread(::std::ref(imu));
-#endif
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_talon(
@@ -783,10 +781,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader_thread.join();
     gyro_sender.Quit();
     gyro_thread.join();
-#if 0
     imu.Quit();
     imu_thread.join();
-#endif
 
     drivetrain_writer.Quit();
     drivetrain_writer_thread.join();

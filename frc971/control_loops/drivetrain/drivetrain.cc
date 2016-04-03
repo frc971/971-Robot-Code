@@ -123,15 +123,15 @@ void DrivetrainLoop::RunIteration(
                                      ::frc971::imu_values->accelerometer_y +
                                  ::frc971::imu_values->accelerometer_z *
                                      ::frc971::imu_values->accelerometer_z;
-    const double angle = ::std::atan2(-::frc971::imu_values->accelerometer_x,
-                                      -::frc971::imu_values->accelerometer_z) +
+    const double angle = ::std::atan2(::frc971::imu_values->accelerometer_x,
+                                      ::frc971::imu_values->accelerometer_z) +
                          0.008;
     if (accel_squared > 1.03 || accel_squared < 0.97) {
       LOG(DEBUG, "New IMU value, rejecting reading\n");
     } else {
       // -y is our gyro.
-      // -z accel is down
-      // -x accel is the front of the robot pointed down.
+      // z accel is down
+      // x accel is the front of the robot pointed down.
       Eigen::Matrix<double, 1, 1> Y;
       Y << angle;
       down_estimator_.Correct(Y);
