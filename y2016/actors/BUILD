@@ -122,6 +122,7 @@ cc_library(
     '//aos/common/logging',
     '//aos/common/actions:action_lib',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2016/queues:ball_detector',
     '//y2016/control_loops/superstructure:superstructure_queue',
     '//y2016/control_loops/shooter:shooter_queue',
     '//y2016/control_loops/drivetrain:drivetrain_base',

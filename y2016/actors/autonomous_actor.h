@@ -60,12 +60,24 @@ class AutonomousActor
                           const ProfileParameters intake_params,
                           const ProfileParameters shoulder_params,
                           const ProfileParameters wrist_params,
-                          bool traverse_up);
+                          bool traverse_up, double roller_power);
   void WaitForSuperstructure();
+  void WaitForSuperstructureLow();
+  void WaitForIntake();
+  bool IntakeDone();
+  bool WaitForDriveProfileDone();
 
   void BackLongShot();
+  void BackLongShotTwoBall();
+  void BackLongShotLowBarTwoBall();
   void BackMiddleShot();
+  void WaitForBall();
   void TuckArm(bool arm_down, bool traverse_down);
+  void OpenShooter();
+  void CloseShooter();
+  void CloseIfBall();
+  bool SuperstructureProfileDone();
+  bool SuperstructureDone();
 
   void DoFullShot(bool center);
   void LowBarDrive();
@@ -82,7 +94,7 @@ class AutonomousActor
   void Shoot();
 
   void AlignWithVisionGoal();
-  void WaitForAlignedWithVision();
+  void WaitForAlignedWithVision(aos::time::Time align_duration);
 
   ::std::unique_ptr<actors::VisionAlignAction> vision_action_;
 };
