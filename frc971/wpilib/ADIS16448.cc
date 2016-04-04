@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "aos/common/logging/queue_logging.h"
+#include "aos/common/messages/robot_state.q.h"
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"
 
@@ -198,21 +199,29 @@ void ADIS16448::operator()() {
 
     // The first few seconds of samples are averaged and subtracted from
     // subsequent samples for zeroing purposes.
-    if (!gyros_are_zeroed()) {
+    if (!gyros_are_zeroed_) {
       average_gyro_x.AddData(message->gyro_x);
       average_gyro_y.AddData(message->gyro_y);
       average_gyro_z.AddData(message->gyro_z);
 
       if (average_gyro_x.full() && average_gyro_y.full() &&
           average_gyro_z.full()) {
-        gyro_x_zeroed_offset_ = average_gyro_x.GetAverage();
-        gyro_y_zeroed_offset_ = average_gyro_y.GetAverage();
-        gyro_z_zeroed_offset_ = average_gyro_z.GetAverage();
-        LOG(DEBUG, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
-            gyro_x_zeroed_offset_, gyro_y_zeroed_offset_, gyro_z_zeroed_offset_);
-        gyros_are_zeroed_.store(true);
+        ::aos::joystick_state.FetchLatest();
+        if (::aos::joystick_state.get() && ::aos::joystick_state->enabled) {
+          gyro_x_zeroed_offset_ = -average_gyro_x.GetAverage();
+          gyro_y_zeroed_offset_ = -average_gyro_y.GetAverage();
+          gyro_z_zeroed_offset_ = -average_gyro_z.GetAverage();
+          LOG(INFO, "total gyro zero offset X:%f, Y:%f, Z:%f\n",
+              gyro_x_zeroed_offset_, gyro_y_zeroed_offset_,
+              gyro_z_zeroed_offset_);
+          gyros_are_zeroed_ = true;
+        }
       }
     }
+
+    message->gyro_x += gyro_x_zeroed_offset_;
+    message->gyro_y += gyro_y_zeroed_offset_;
+    message->gyro_z += gyro_z_zeroed_offset_;
 
     message->accelerometer_x =
         ConvertValue(&to_receive[10], kAccelerometerLsbG);

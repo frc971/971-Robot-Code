@@ -229,6 +229,7 @@ cc_library(
     ':imu_queue',
     '//aos/common/logging',
     '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
     '//aos/common:time',
     '//aos/linux_code:init',
     '//frc971/zeroing:averager',

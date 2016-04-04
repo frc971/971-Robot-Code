@@ -37,8 +37,6 @@ class ADIS16448 {
 
   void Quit() { run_ = false; }
 
-  bool gyros_are_zeroed() const { return gyros_are_zeroed_.load(); }
-
   double gyro_x_zeroed_offset() const { return gyro_x_zeroed_offset_; }
   double gyro_y_zeroed_offset() const { return gyro_y_zeroed_offset_; }
   double gyro_z_zeroed_offset() const { return gyro_z_zeroed_offset_; }
@@ -78,7 +76,7 @@ class ADIS16448 {
   ::std::atomic<bool> run_{true};
 
   // The averaged values of the gyro over 6 seconds after power up.
-  ::std::atomic<bool> gyros_are_zeroed_{false};
+  bool gyros_are_zeroed_ = false;
   double gyro_x_zeroed_offset_ = 0.0;
   double gyro_y_zeroed_offset_ = 0.0;
   double gyro_z_zeroed_offset_ = 0.0;
