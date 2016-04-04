@@ -123,7 +123,7 @@ class TypedAction : public Action {
         run_value_(run_counter_.fetch_add(1, ::std::memory_order_relaxed) |
                    ((getpid() & 0xFFFF) << 16)),
         params_(params) {
-    LOG(INFO, "Action %" PRIx32 " created on queue %s\n", run_value_,
+    LOG(DEBUG, "Action %" PRIx32 " created on queue %s\n", run_value_,
         queue_group_->goal.name());
     // Clear out any old status messages from before now.
     queue_group_->status.FetchLatest();
@@ -211,10 +211,10 @@ void TypedAction<T>::DoCancel() {
           run_value_, queue_group_->goal.name());
     } else {
       if (sent_cancel_) {
-        LOG(INFO, "Action %" PRIx32 " on queue %s already cancelled\n",
+        LOG(DEBUG, "Action %" PRIx32 " on queue %s already cancelled\n",
             run_value_, queue_group_->goal.name());
       } else {
-        LOG(INFO, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
+        LOG(DEBUG, "Canceling action %" PRIx32 " on queue %s\n", run_value_,
             queue_group_->goal.name());
         queue_group_->goal.MakeWithBuilder().run(0).Send();
         sent_cancel_ = true;
@@ -292,7 +292,7 @@ void TypedAction<T>::CheckStarted() {
          queue_group_->status->last_running == run_value_)) {
       // It's currently running our instance.
       has_started_ = true;
-      LOG(INFO, "Action %" PRIx32 " on queue %s has been started\n",
+      LOG(DEBUG, "Action %" PRIx32 " on queue %s has been started\n",
           run_value_, queue_group_->goal.name());
     } else if (old_run_value_ != 0 &&
                queue_group_->status->running == old_run_value_) {
@@ -324,7 +324,7 @@ void TypedAction<T>::CheckInterrupted() {
 template <typename T>
 void TypedAction<T>::DoStart() {
   if (goal_) {
-    LOG(INFO, "Starting action %" PRIx32 "\n", run_value_);
+    LOG(DEBUG, "Starting action %" PRIx32 "\n", run_value_);
     goal_->run = run_value_;
     goal_->params = params_;
     sent_started_ = true;
