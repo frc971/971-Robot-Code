@@ -115,8 +115,9 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
       if (!error_) {
         LOG(ERROR,
             "Encoder ticks out of range since last index pulse. first start "
-            "position: %f recent starting position: %f\n",
-            first_start_pos_, start_pos_);
+            "position: %f recent starting position: %f, allowable error: %f\n",
+            first_start_pos_, start_pos_,
+            allowable_encoder_error_ * index_diff_);
         error_ = true;
       }
     }
