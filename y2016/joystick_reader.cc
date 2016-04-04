@@ -66,6 +66,7 @@ const ButtonLocation kPortcullis(3, 7);
 const ButtonLocation kChevalDeFrise(3, 8);
 
 const ButtonLocation kVisionAlign(3, 4);
+constexpr double kDownOffset = 0.011;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -122,6 +123,7 @@ class Reader : public ::aos::input::JoystickInput {
 
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
+    drivetrain_queue.status.FetchLatest();
 
     if (data.IsPressed(kVisionAlign) && vision_valid_ &&
         !vision_action_running_) {
@@ -143,7 +145,6 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
-      drivetrain_queue.status.FetchLatest();
       if (drivetrain_queue.status.get()) {
         left_goal = drivetrain_queue.status->estimated_left_position;
         right_goal = drivetrain_queue.status->estimated_right_position;
@@ -213,18 +214,27 @@ class Reader : public ::aos::input::JoystickInput {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.43;
+      if (drivetrain_queue.status.get()) {
+        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+      }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.40;
+      wrist_goal_ = M_PI + 0.41;
+      if (drivetrain_queue.status.get()) {
+        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+      }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.4;
       wrist_goal_ = -0.62;
+      if (drivetrain_queue.status.get()) {
+        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+      }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
@@ -343,7 +353,11 @@ class Reader : public ::aos::input::JoystickInput {
         new_superstructure_goal->max_angular_acceleration_intake = 40.0;
       }
       new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
-      new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+      if (shoulder_goal_ > 1.0) {
+        new_superstructure_goal->max_angular_acceleration_wrist = 45.0;
+      } else {
+        new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+      }
 
       // Granny mode
       /*
