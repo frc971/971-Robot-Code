@@ -62,6 +62,8 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   bool left_high_requested_;
   bool right_high_requested_;
+
+  bool has_been_enabled_ = false;
 };
 
 }  // namespace drivetrain

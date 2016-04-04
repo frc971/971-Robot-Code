@@ -141,6 +141,9 @@ queue_group DrivetrainQueue {
 
     // True if the output voltage was capped last cycle.
     bool output_was_capped;
+
+    // The angle of the robot relative to the ground.
+    double ground_angle;
   };
 
   queue Goal goal;
