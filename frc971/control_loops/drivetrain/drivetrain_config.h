@@ -48,6 +48,8 @@ struct DrivetrainConfig {
   // Variable that holds the default gear ratio. We use this in ZeroOutputs().
   // (ie. true means high gear is default).
   bool default_high_gear;
+
+  double down_offset;
 };
 
 }  // namespace drivetrain

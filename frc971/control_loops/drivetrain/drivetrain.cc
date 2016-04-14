@@ -225,7 +225,7 @@ void DrivetrainLoop::RunIteration(
     status->right_voltage_error = kf_.X_hat(5, 0);
     status->estimated_angular_velocity_error = kf_.X_hat(6, 0);
     status->estimated_heading = integrated_kf_heading_;
-    status->ground_angle = down_estimator_.X_hat(0, 0);
+    status->ground_angle = down_estimator_.X_hat(0, 0) + dt_config_.down_offset;
 
     dt_openloop_.PopulateStatus(status);
     dt_closedloop_.PopulateStatus(status);

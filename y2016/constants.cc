@@ -71,6 +71,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             0.0, 0.3},
           },
 
+          0.0,
           "practice",
       };
       break;
@@ -106,6 +107,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             -1.040454, 1.5},
           },
 
+          0.0,
           "competition",
       };
       break;
@@ -137,6 +139,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
             -0.005145, 1.3},
           },
 
+          0.011,
           "practice",
       };
       break;

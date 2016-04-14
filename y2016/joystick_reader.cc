@@ -66,7 +66,6 @@ const ButtonLocation kPortcullis(3, 7);
 const ButtonLocation kChevalDeFrise(3, 8);
 
 const ButtonLocation kVisionAlign(3, 4);
-constexpr double kDownOffset = 0.011;
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -215,7 +214,7 @@ class Reader : public ::aos::input::JoystickInput {
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.43;
       if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+        wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -224,7 +223,7 @@ class Reader : public ::aos::input::JoystickInput {
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.41;
       if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+        wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
@@ -233,7 +232,7 @@ class Reader : public ::aos::input::JoystickInput {
       shoulder_goal_ = M_PI / 2.0 - 0.4;
       wrist_goal_ = -0.62;
       if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle + kDownOffset;
+        wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;

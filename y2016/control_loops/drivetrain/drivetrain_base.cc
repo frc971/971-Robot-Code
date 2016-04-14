@@ -36,7 +36,8 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       drivetrain::kLowGearRatio,
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
-      true};
+      true,
+      constants::GetValues().down_error};
 
   return kDrivetrainConfig;
 };

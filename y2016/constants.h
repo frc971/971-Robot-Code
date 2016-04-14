@@ -99,6 +99,7 @@ struct Values {
   };
   Wrist wrist;
 
+  const double down_error;
   const char *vision_name;
 };
 
