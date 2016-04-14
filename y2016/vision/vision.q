@@ -20,5 +20,8 @@ message VisionStatus {
   double vertical_angle;
   // Distance to the target in meters.
   double distance;
+
+  // Capture time of the angle using the clock behind Time::Now().
+  int64_t target_time;
 };
 queue VisionStatus vision_status;
