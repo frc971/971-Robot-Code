@@ -344,7 +344,7 @@ void Main() {
         } else {
           filtered_center_right = center_right;
           new_vision_status->target_time = right.capture_time().ToNSec();
-          filtered_center_right =
+          filtered_center_left =
               CalculateFiltered(right, left, center_left, last_center_left);
         }
 
