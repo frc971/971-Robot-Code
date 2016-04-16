@@ -43,38 +43,33 @@ bool VisionAlignActor::RunAction(
     if (!::y2016::vision::vision_status.FetchLatest()) {
       continue;
     }
+    const auto &vision_status = *::y2016::vision::vision_status;
 
-    if (!::y2016::vision::vision_status->left_image_valid ||
-        !::y2016::vision::vision_status->right_image_valid) {
+    if (!vision_status.left_image_valid || !vision_status.right_image_valid) {
       continue;
     }
 
     const double side_distance_change =
-        ::y2016::vision::vision_status->horizontal_angle * robot_radius;
+        vision_status.horizontal_angle * robot_radius;
     if (!::std::isfinite(side_distance_change)) {
       continue;
     }
 
-    drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status.get()) {
-      const double left_current =
-          drivetrain_queue.status->estimated_left_position;
-      const double right_current =
-          drivetrain_queue.status->estimated_right_position;
+    const double left_current = vision_status.drivetrain_left_position;
+    const double right_current = vision_status.drivetrain_right_position;
 
-      if (!drivetrain_queue.goal.MakeWithBuilder()
-               .steering(0.0)
-               .throttle(0.0)
-               .highgear(false)
-               .quickturn(false)
-               .control_loop_driving(true)
-               .left_goal(left_current + side_distance_change)
-               .right_goal(right_current - side_distance_change)
-               .left_velocity_goal(0)
-               .right_velocity_goal(0)
-               .Send()) {
-        LOG(WARNING, "sending drivetrain goal failed\n");
-      }
+    if (!drivetrain_queue.goal.MakeWithBuilder()
+             .steering(0.0)
+             .throttle(0.0)
+             .highgear(false)
+             .quickturn(false)
+             .control_loop_driving(true)
+             .left_goal(left_current + side_distance_change)
+             .right_goal(right_current - side_distance_change)
+             .left_velocity_goal(0)
+             .right_velocity_goal(0)
+             .Send()) {
+      LOG(WARNING, "sending drivetrain goal failed\n");
     }
   }
 

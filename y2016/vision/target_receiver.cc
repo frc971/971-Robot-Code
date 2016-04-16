@@ -4,12 +4,19 @@
 
 #include <vector>
 #include <memory>
+#include <array>
+#include <thread>
+#include <atomic>
+#include <limits>
 
 #include "aos/linux_code/init.h"
 #include "aos/common/time.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/vision/events/udp.h"
+#include "aos/common/mutex.h"
+
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
 #include "y2016/vision/vision.q.h"
 #include "y2016/vision/vision_data.pb.h"
@@ -164,10 +171,122 @@ class CameraHandler {
       newer_center.y() * age_ratio + (1 - age_ratio) * last_newer_center.y());
 }
 
+// Handles calculating drivetrain offsets.
+class DrivetrainOffsetCalculator {
+ public:
+  // To be called by ::std::thread.
+  void operator()() {
+    auto &status = ::frc971::control_loops::drivetrain_queue.status;
+    while (run_) {
+      status.FetchAnother();
+
+      ::aos::MutexLocker locker(&lock_);
+      data_[data_index_].time = status->sent_time;
+      data_[data_index_].left = status->estimated_left_position;
+      data_[data_index_].right = status->estimated_right_position;
+      ++data_index_;
+      if (data_index_ == data_.size()) data_index_ = 0;
+      if (valid_data_ < data_.size()) ++valid_data_;
+    }
+  }
+
+  // Takes a vision status message with everything except
+  // drivetrain_{left,right}_position set and sets those.
+  // Returns false if it doesn't have enough data to fill them out.
+  bool CompleteVisionStatus(::y2016::vision::VisionStatus *status) {
+    if (valid_data_ == 0) return false;
+
+    const ::aos::time::Time capture_time =
+        ::aos::time::Time::InNS(status->target_time);
+    DrivetrainData before, after;
+    FindBeforeAfter(&before, &after, capture_time);
+
+    if (before.time == after.time) {
+      status->drivetrain_left_position = before.left;
+      status->drivetrain_right_position = before.right;
+    } else {
+      const double age_ratio = (capture_time - before.time).ToSeconds() /
+                               (after.time - before.time).ToSeconds();
+      status->drivetrain_left_position =
+          before.left * (1 - age_ratio) + after.left * age_ratio;
+      status->drivetrain_right_position =
+          before.right * (1 - age_ratio) + after.right * age_ratio;
+    }
+
+    return true;
+  }
+
+  void Quit() { run_ = false; }
+
+ private:
+  struct DrivetrainData {
+    ::aos::time::Time time;
+    double left, right;
+  };
+
+  // Fills out before and after with the data surrounding capture_time.
+  // They might be identical if that's the closest approximation.
+  // Do not call this if valid_data_ is 0.
+  void FindBeforeAfter(DrivetrainData *before, DrivetrainData *after,
+                       ::aos::time::Time capture_time) {
+    ::aos::MutexLocker locker(&lock_);
+    size_t location = 0;
+    while (true) {
+      // We hit the end of our data. Just fill them both out as the last data
+      // point.
+      if (location >= valid_data_) {
+        *before = *after =
+            data_[previous_index((valid_data_ + data_index_) % data_.size())];
+        return;
+      }
+
+      // The index into data_ corresponding to location positions after
+      // (data_index_ - 1).
+      const size_t index = previous_index(location + data_index_);
+
+      // If we've found the one we want.
+      if (data_[index].time > capture_time) {
+        *after = data_[index];
+        if (location == 0) {
+          // If this is the first one and it's already after, just return the
+          // same thing for both.
+          *before = data_[index];
+        } else {
+          *before = data_[previous_index(index)];
+        }
+        return;
+      }
+
+      ++location;
+    }
+  }
+
+  size_t previous_index(size_t index) const {
+    if (index == 0) {
+      return data_.size() - 1;
+    } else {
+      return index - 1;
+    }
+  }
+
+  ::std::array<DrivetrainData, 200> data_;
+  // The index into data_ the next data point is going at.
+  size_t data_index_ = 0;
+  // How many elemets of data_ are valid.
+  size_t valid_data_ = 0;
+
+  ::aos::Mutex lock_;
+
+  ::std::atomic<bool> run_{true};
+};
+
 void Main() {
   StereoGeometry stereo(constants::GetValues().vision_name);
   LOG(INFO, "calibration: %s\n",
       stereo.calibration().ShortDebugString().c_str());
+
+  DrivetrainOffsetCalculator drivetrain_offset;
+  ::std::thread drivetrain_offset_thread(::std::ref(drivetrain_offset));
 
   CameraHandler left;
   CameraHandler right;
@@ -242,10 +361,14 @@ void Main() {
         new_vision_status->vertical_angle = vertical_angle;
         new_vision_status->distance = distance;
       }
-      LOG_STRUCT(DEBUG, "vision", *new_vision_status);
 
-      if (!new_vision_status.Send()) {
-        LOG(ERROR, "Failed to send vision information\n");
+      if (drivetrain_offset.CompleteVisionStatus(new_vision_status.get())) {
+        LOG_STRUCT(DEBUG, "vision", *new_vision_status);
+        if (!new_vision_status.Send()) {
+          LOG(ERROR, "Failed to send vision information\n");
+        }
+      } else {
+        LOG_STRUCT(WARNING, "vision without drivetrain", *new_vision_status);
       }
     }
 
@@ -256,6 +379,9 @@ void Main() {
           right.target().ShortDebugString().c_str());
     }
   }
+
+  drivetrain_offset.Quit();
+  drivetrain_offset_thread.join();
 }
 
 }  // namespace vision

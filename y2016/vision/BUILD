@@ -92,5 +92,7 @@ cc_binary(
     ':vision_data',
     ':stereo_geometry',
     '//y2016:constants',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//aos/common:mutex',
   ],
 )

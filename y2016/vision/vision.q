@@ -23,5 +23,12 @@ message VisionStatus {
 
   // Capture time of the angle using the clock behind Time::Now().
   int64_t target_time;
+
+  // The estimated positions of both sides of the drivetrain when the frame
+  // was captured.
+  // These are the estimated_left_position and estimated_right_position members
+  // of the drivetrain queue.
+  double drivetrain_left_position;
+  double drivetrain_right_position;
 };
 queue VisionStatus vision_status;
