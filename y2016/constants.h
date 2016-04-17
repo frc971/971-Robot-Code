@@ -56,7 +56,7 @@ struct Values {
   static constexpr ::frc971::constants::Range kIntakeRange{// Lower hard stop
                                                            -0.4,
                                                            // Upper hard stop
-                                                           2.75 + 0.05,
+                                                           2.85 + 0.05,
                                                            // Lower soft stop
                                                            -0.300,
                                                            // Uppper soft stop
