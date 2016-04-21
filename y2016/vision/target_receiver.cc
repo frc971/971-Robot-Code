@@ -40,7 +40,8 @@ double TargetWidth(double lx, double ly, double rx, double ry) {
 void SelectTargets(const VisionData &left_target,
                    const VisionData &right_target,
                    ::aos::vision::Vector<2> *center_left,
-                   ::aos::vision::Vector<2> *center_right) {
+                   ::aos::vision::Vector<2> *center_right, double *angle_left,
+                   double *angle_right) {
   // No good targets. Let the caller decide defaults.
   if (right_target.target_size() == 0 || left_target.target_size() == 0) {
     return;
@@ -75,6 +76,7 @@ void SelectTargets(const VisionData &left_target,
     const double angle = h / wid1;
     if (min_angle == -1.0 || ::std::abs(angle) < ::std::abs(min_angle)) {
       min_angle = angle;
+      *angle_left = angle;
       left_index = i;
     }
   }
@@ -99,6 +101,7 @@ void SelectTargets(const VisionData &left_target,
     if (min_ang_err == -1.0 || min_ang_err > ang_err) {
       min_ang_err = ang_err;
       right_index = j;
+      *angle_right = ang;
     }
   }
 
@@ -159,16 +162,20 @@ class CameraHandler {
   TargetWithTimes last_;
 };
 
-::aos::vision::Vector<2> CalculateFiltered(
-    const CameraHandler &older, const CameraHandler &newer,
-    const ::aos::vision::Vector<2> &newer_center,
-    const ::aos::vision::Vector<2> &last_newer_center) {
+void CalculateFiltered(const CameraHandler &older, const CameraHandler &newer,
+                       const ::aos::vision::Vector<2> &newer_center,
+                       const ::aos::vision::Vector<2> &last_newer_center,
+                       double angle, double last_angle,
+                       ::aos::vision::Vector<2> *interpolated_result,
+                       double *interpolated_angle) {
   const double age_ratio =
       (older.capture_time() - newer.last_capture_time()).ToSeconds() /
       (newer.capture_time() - newer.last_capture_time()).ToSeconds();
-  return ::aos::vision::Vector<2>(
+  interpolated_result->Set(
       newer_center.x() * age_ratio + (1 - age_ratio) * last_newer_center.x(),
       newer_center.y() * age_ratio + (1 - age_ratio) * last_newer_center.y());
+
+  *interpolated_angle = angle * age_ratio + (1 - age_ratio) * last_angle;
 }
 
 // Handles calculating drivetrain offsets.
@@ -324,28 +331,39 @@ void Main() {
       if (left_image_valid && right_image_valid) {
         ::aos::vision::Vector<2> center_left(0.0, 0.0);
         ::aos::vision::Vector<2> center_right(0.0, 0.0);
+        double angle_left;
+        double angle_right;
         SelectTargets(left.target(), right.target(), &center_left,
-                      &center_right);
+                      &center_right, &angle_left, &angle_right);
 
         // TODO(Ben): Remember this from last time instead of recalculating it
         // each time.
         ::aos::vision::Vector<2> last_center_left(0.0, 0.0);
         ::aos::vision::Vector<2> last_center_right(0.0, 0.0);
+        double last_angle_left;
+        double last_angle_right;
         SelectTargets(left.last_target(), right.last_target(),
-                      &last_center_left, &last_center_right);
+                      &last_center_left, &last_center_right,
+                      &last_angle_left, &last_angle_right);
 
         ::aos::vision::Vector<2> filtered_center_left(0.0, 0.0);
         ::aos::vision::Vector<2> filtered_center_right(0.0, 0.0);
+        double filtered_angle_left;
+        double filtered_angle_right;
         if (left.capture_time() < right.capture_time()) {
           filtered_center_left = center_left;
+          filtered_angle_left = angle_left;
           new_vision_status->target_time = left.capture_time().ToNSec();
-          filtered_center_right =
-              CalculateFiltered(left, right, center_right, last_center_right);
+          CalculateFiltered(left, right, center_right, last_center_right,
+                            angle_right, last_angle_right,
+                            &filtered_center_right, &filtered_angle_right);
         } else {
           filtered_center_right = center_right;
+          filtered_angle_right = angle_right;
           new_vision_status->target_time = right.capture_time().ToNSec();
-          filtered_center_left =
-              CalculateFiltered(right, left, center_left, last_center_left);
+          CalculateFiltered(right, left, center_left, last_center_left,
+                            angle_left, last_angle_left, &filtered_center_left,
+                            &filtered_angle_left);
         }
 
         double distance, horizontal_angle, vertical_angle;
@@ -360,6 +378,8 @@ void Main() {
         new_vision_status->horizontal_angle = horizontal_angle;
         new_vision_status->vertical_angle = vertical_angle;
         new_vision_status->distance = distance;
+        new_vision_status->angle =
+            (filtered_angle_left + filtered_angle_right) / 2.0;
       }
 
       if (drivetrain_offset.CompleteVisionStatus(new_vision_status.get())) {
