@@ -124,11 +124,17 @@ class Reader : public ::aos::input::JoystickInput {
     const double throttle = -data.GetAxis(kDriveThrottle);
     drivetrain_queue.status.FetchLatest();
 
-    if (data.IsPressed(kVisionAlign) && vision_valid_ &&
-        !vision_action_running_) {
-      actors::VisionAlignActionParams params;
-      action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
-      vision_action_running_ = true;
+    if (data.IsPressed(kVisionAlign)) {
+      if (vision_valid_ && !vision_action_running_) {
+        actors::VisionAlignActionParams params;
+        action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
+        vision_action_running_ = true;
+        LOG(INFO, "Starting vision align\n");
+      } else {
+        if (!vision_valid_) {
+          LOG(INFO, "Vision align but not valid\n");
+        }
+      }
     }
 
     if (data.NegEdge(kVisionAlign)) {
