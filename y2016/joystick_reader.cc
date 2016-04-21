@@ -218,7 +218,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kHigherFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.43;
+      wrist_goal_ = M_PI + 0.43 + 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
@@ -227,7 +227,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.41;
+      wrist_goal_ = M_PI + 0.41 + 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
@@ -236,7 +236,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.4;
-      wrist_goal_ = -0.62;
+      wrist_goal_ = -0.62 - 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
