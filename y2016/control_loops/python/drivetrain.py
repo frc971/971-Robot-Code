@@ -77,7 +77,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Radius of the robot, in meters (requires tuning by hand)
     self.rb = 0.601 / 2.0
     # Radius of the wheels, in meters.
-    self.r = 0.097155 * 0.9811158901447808
+    self.r = 0.097155 * 0.9811158901447808 / 118.0 * 115.75
     # Resistance of the motor, divided by the number of motors.
     self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
