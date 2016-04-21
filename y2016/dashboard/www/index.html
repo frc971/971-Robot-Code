@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spartan Dashboard</title>
+
+<script type="text/javascript">
+var escapable =
+  /[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g;
+var ws;
+var intervalTime = 50;
+var selected = 0;
+var reconnecting = false;
+var lastSampleID = 0;
+var resetTimeout;
+
+// Filter out junky JSON packets that will otherwise cause nasty decoding
+// errors. These errors come as a result of incomplete packets, corrupted data,
+// or any other artifacts that find themselves into the socket stream.
+
+function filterUnicode(quoted) {
+  escapable.lastIndex = 0;
+  if (!escapable.test(quoted)) return quoted;
+
+  return quoted.replace(escapable, '');
+}
+
+// Change the current data index to plot on the graph.
+// Get a new JSON packet from the websocket on the robot.
+function refresh() {
+  if (!reconnecting) ws.send(lastSampleID);
+}
+
+function initSocketLoop() {
+  ws = new WebSocket('ws://' + document.location.host + '/ws');
+
+  var numDatas = 0;
+
+  $(function() {
+
+    // Socket created & first opened.
+    ws.onopen = function() {
+      reconnecting = false;
+      refresh();
+      $('#message').text('');
+    };
+
+    // Socket disconnected.
+    ws.onclose = function() {
+      console.log('onclose');
+      reconnect();
+    };
+
+    ws.onmessage = function(message) {
+      message = message.data;
+      if(message.charAt(0) == "*"){
+        message = message.substring(1);
+        var names = message.split(",");
+        for (var i = numDatas; i < names.length; i++) {
+          $('#dataTable').append('<tr><td>' + names[i] + '</td><td></td></tr>');
+          numDatas++;
+        }
+        lastSampleID = 1;
+      }else{
+        var samples = message.split("$");
+        for(var x = 0;x < samples.length;x++){
+          var info = samples[x].split("%");
+          lastSampleID = info[0];
+
+          if(!(typeof info[2] === "undefined")){
+            var values = info[2].split(",");
+
+            // For the big indicator.
+            switch(parseInt(values[0])){
+              case 1:
+                $("#bigIndicator").css("background", "#00FF00");
+                $("#bigIndicator").css("color", "#000000");
+                $("#bigIndicator").text("Ball detected");
+                break;
+              case 2:
+                $("#bigIndicator").css("background", "#FFFF00");
+                $("#bigIndicator").css("color", "#000000");
+                $("#bigIndicator").text("Target seen");
+                break;
+              case 3:
+                $("#bigIndicator").css("background", "#0000FF");
+                $("#bigIndicator").css("color", "#000000");
+                $("#bigIndicator").text("Target aligned");
+                break;
+              case 0:
+              default:
+                $("#bigIndicator").css("background", "#000000");
+                $("#bigIndicator").css("color", "#444444");
+                $("#bigIndicator").text("No ball, no target");
+                break;
+            }
+
+            // Superstructure state indicator.
+            switch(parseInt(values[1])){
+              case 1:
+                $("#superstructureStateIndicator").css("background", "#FF0000");
+                $("#superstructureStateIndicator").css("color", "#000000");
+                $("#superstructureStateIndicator").text("Not zeroed");
+                break;
+              case 2:
+                $("#superstructureStateIndicator").css("background", "#FF8C00");
+                $("#superstructureStateIndicator").css("color", "#000000");
+                $("#superstructureStateIndicator").text("Estopped");
+                break;
+              case 0:
+              default:
+                $("#superstructureStateIndicator").css("background", "#000000");
+                $("#superstructureStateIndicator").css("color", "#444444");
+                $("#superstructureStateIndicator").text("Superstructure OK");
+                break;
+            }
+
+            // Auto mode indicator.
+            $("#autoModeIndicator").text("Mode: " + values[2]);
+            if (parseInt(values[2]) < 0){
+              $("#autoModeIndicator").css("visibility", "hidden");
+            } else {
+              $("#autoModeIndicator").css("visibility", "visible");
+            }
+
+            // Populate data table.
+            for(var y = 0;y < values.length;y++){
+              if(!(typeof info[1] === "undefined"
+                    || typeof values[y] === "undefined")){
+                $('#dataTable').find('tr').eq(y).find('td').eq(1)
+                  .text(values[y]);
+              }
+            }
+          }
+        }
+      }
+
+      setTimeout(refresh, intervalTime);
+    };
+
+    // Socket error, most likely due to a server-side error.
+    ws.onerror = function(error) {
+      console.log('onerror ' + error);
+    };
+  });
+}
+
+function reconnect() {
+  $('#message').text('Reconnecting...');
+  $('#dataTable').empty();
+  lastSampleID = 0;
+  reconnecting = true;
+
+  setTimeout(function(){
+    initSocketLoop()
+  }, 500);
+}
+
+window.onload = function() {
+  initSocketLoop();
+}
+</script>
+<script type="text/javascript" src='/lib/jquery-2.2.3.min.js'></script>
+<script type="text/javascript" src='/lib/canvasjs.min.js'></script>
+<style>
+body {
+  width: 100%;
+  margin-left: auto;
+  margin-right:auto;
+}
+
+#dataTable {
+  position: absolute;
+  top: 0;
+  background: #FFFFFF;
+  left: 0;
+  width: 200px;
+  cell-spacing:0;
+  cell-padding:0;
+  text-align: left;
+  z-index: 99999;
+}
+
+#headsUpDisplay {
+  width: 1000px;
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+  left: 0;
+  right: 0;
+  z-index: 10000000;
+}
+
+#message {
+  color: #FF0000;
+  text-align: center;
+  background: #000000;
+  font-size: 100px;
+}
+
+#indicatorContainer {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #000000;
+  text-align: center;
+  font-size: 100px;
+}
+
+#bigIndicator {
+  background: #000000;
+}
+
+#superstructureStateIndicator {
+  background: #000000;
+  width: 60%;
+}
+
+#autoModeIndicator {
+  background: #FF0000;
+}
+</style>
+</head>
+<body>
+<!-- Data -->
+<table id="dataTable">
+</table>
+
+<div id="headsUpDisplay">
+  <p id="message"></p>
+  <p id="data"></p>
+</div>
+
+<table id="indicatorContainer">
+  <tr>
+    <td id="bigIndicator" colspan="2">Ball detected</td>
+  </tr>
+  <tr style="height:10%">
+    <td id="superstructureStateIndicator">Superstructure state</td>
+    <td id="autoModeIndicator">Auto mode</td>
+  </tr>
+</table>
+
+</body>
+</html>
