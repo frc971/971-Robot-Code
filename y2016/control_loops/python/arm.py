@@ -379,7 +379,7 @@ def main(argv):
 
   scenario_plotter = ScenarioPlotter()
 
-  J_accelerating = 12
+  J_accelerating = 15
   J_decelerating = 5
 
   arm = Arm(name='AcceleratingArm', J=J_accelerating)

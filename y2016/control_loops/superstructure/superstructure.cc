@@ -627,7 +627,7 @@ void Superstructure::RunIteration(
   arm_.set_max_voltage(kill_shoulder_ ? 0.0 : max_voltage, max_voltage);
   intake_.set_max_voltage(max_voltage);
 
-  if (IsRunning()) {
+  if (IsRunning() && !kill_shoulder_) {
     // We don't want lots of negative voltage when we are near the bellypan on
     // the shoulder...
     // TODO(austin): Do I want to push negative power into the belly pan at this

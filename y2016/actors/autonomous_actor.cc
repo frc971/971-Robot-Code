@@ -322,6 +322,8 @@ void AutonomousActor::MoveSuperstructure(
 
   new_superstructure_goal->traverse_unlatched = true;
   new_superstructure_goal->traverse_down = !traverse_up;
+  new_superstructure_goal->voltage_climber = 0.0;
+  new_superstructure_goal->unfold_climber = false;
 
   if (!new_superstructure_goal.Send()) {
     LOG(ERROR, "Sending superstructure goal failed.\n");

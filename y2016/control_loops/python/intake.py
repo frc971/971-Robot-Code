@@ -42,7 +42,7 @@ class Intake(control_loop.ControlLoop):
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
-    self.J = 0.34 + 0.65
+    self.J = 0.34 + 0.40
 
     # Control loop time step
     self.dt = 0.005
@@ -73,7 +73,7 @@ class Intake(control_loop.ControlLoop):
     glog.debug("Free speed is %f", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G)
 
     q_pos = 0.20
-    q_vel = 5.5
+    q_vel = 5.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 

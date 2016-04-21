@@ -13,9 +13,21 @@ namespace actors {
 class SuperstructureActor
     : public ::aos::common::actions::ActorBase<SuperstructureActionQueueGroup> {
  public:
-  explicit SuperstructureActor(SuperstructureActionQueueGroup* s);
+  explicit SuperstructureActor(SuperstructureActionQueueGroup *s);
 
-  bool RunAction(const actors::SuperstructureActionParams& params) override;
+  // Internal struct holding superstructure goals sent by autonomous to the
+  // loop.
+  struct SuperstructureGoal {
+    double intake;
+    double shoulder;
+    double wrist;
+  };
+  SuperstructureGoal superstructure_goal_;
+  bool RunAction(const actors::SuperstructureActionParams &params) override;
+  void MoveSuperstructure(double shoulder, bool unfold_climber);
+  void WaitForSuperstructure();
+  bool SuperstructureProfileDone();
+  bool SuperstructureDone();
 };
 
 using SuperstructureAction =
@@ -23,7 +35,7 @@ using SuperstructureAction =
 
 // Makes a new SuperstructureActor action.
 ::std::unique_ptr<SuperstructureAction> MakeSuperstructureAction(
-    const ::y2016::actors::SuperstructureActionParams& params);
+    const ::y2016::actors::SuperstructureActionParams &params);
 
 }  // namespace actors
 }  // namespace y2016

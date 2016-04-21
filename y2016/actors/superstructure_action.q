@@ -4,7 +4,9 @@ import "aos/common/actions/actions.q";
 
 // Parameters to send with start.
 struct SuperstructureActionParams {
-  double value;
+  double partial_angle;
+  double delay_time;
+  double full_angle;
 };
 
 queue_group SuperstructureActionQueueGroup {

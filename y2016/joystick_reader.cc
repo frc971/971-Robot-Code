@@ -23,6 +23,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "y2016/actors/autonomous_actor.h"
 #include "y2016/actors/vision_align_actor.h"
+#include "y2016/actors/superstructure_actor.h"
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain_queue;
@@ -55,7 +56,6 @@ const ButtonLocation kTurn2(1, 11);
 // Buttons on the lexan driver station to get things running on bring-up day.
 const ButtonLocation kIntakeDown(3, 11);
 const POVLocation kFrontLong(3, 180);
-const ButtonLocation kHigherFrontLong(3, 6);
 const POVLocation kBackLong(3, 0);
 const POVLocation kBackFender(3, 90);
 const POVLocation kFrontFender(3, 270);
@@ -66,6 +66,9 @@ const ButtonLocation kPortcullis(3, 7);
 const ButtonLocation kChevalDeFrise(3, 8);
 
 const ButtonLocation kVisionAlign(3, 4);
+
+const ButtonLocation kExpand(3, 6);
+const ButtonLocation kWinch(3, 5);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -182,6 +185,7 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    float voltage_climber = 0.0;
     // Default the intake to up.
     intake_goal_ = constants::Values::kIntakeRange.upper - 0.04;
 
@@ -215,16 +219,7 @@ class Reader : public ::aos::input::JoystickInput {
       }
     }
 
-    if (data.IsPressed(kHigherFrontLong)) {
-      // Forwards shot
-      shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.43 + 0.02;
-      if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle;
-      }
-      shooter_velocity_ = 640.0;
-      intake_goal_ = intake_when_shooting;
-    } else if (data.IsPressed(kFrontLong)) {
+    if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
       wrist_goal_ = M_PI + 0.41 + 0.02;
@@ -254,10 +249,31 @@ class Reader : public ::aos::input::JoystickInput {
       wrist_goal_ = 2.5 + 1.7;
       shooter_velocity_ = 550.0;
       intake_goal_ = intake_when_shooting;
+    } else if (data.IsPressed(kExpand) || data.IsPressed(kWinch)) {
+      // Set the goals to the hanging position so when the actor finishes, we
+      // will still be at the right spot.
+      shoulder_goal_ = 1.2;
+      wrist_goal_ = 0.0;
+      intake_goal_ = 0.0;
+      if (data.PosEdge(kExpand)) {
+        is_expanding_ = true;
+        actors::SuperstructureActionParams params;
+        params.partial_angle = 0.3;
+        params.delay_time = 0.7;
+        params.full_angle = shoulder_goal_;
+        action_queue_.EnqueueAction(actors::MakeSuperstructureAction(params));
+      }
+      if (data.IsPressed(kWinch)) {
+        voltage_climber = 12.0;
+      }
     } else {
       wrist_goal_ = 0.0;
       shoulder_goal_ = -0.010;
       shooter_velocity_ = 0.0;
+    }
+    if (data.NegEdge(kExpand) || voltage_climber > 1.0) {
+      is_expanding_ = false;
+      action_queue_.CancelAllActions();
     }
 
     bool ball_detected = false;
@@ -344,55 +360,59 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (!waiting_for_zero_) {
-      auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
-      new_superstructure_goal->angle_intake = intake_goal_;
-      new_superstructure_goal->angle_shoulder = shoulder_goal_;
-      new_superstructure_goal->angle_wrist = wrist_goal_;
+      if (!is_expanding_) {
+        auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+        new_superstructure_goal->angle_intake = intake_goal_;
+        new_superstructure_goal->angle_shoulder = shoulder_goal_;
+        new_superstructure_goal->angle_wrist = wrist_goal_;
 
-      new_superstructure_goal->max_angular_velocity_intake = 7.0;
-      new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
-      new_superstructure_goal->max_angular_velocity_wrist = 10.0;
-      if (use_slow_profile) {
-        new_superstructure_goal->max_angular_acceleration_intake = 10.0;
-      } else {
-        new_superstructure_goal->max_angular_acceleration_intake = 40.0;
-      }
-      new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
-      if (shoulder_goal_ > 1.0) {
-        new_superstructure_goal->max_angular_acceleration_wrist = 45.0;
-      } else {
-        new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
-      }
+        new_superstructure_goal->max_angular_velocity_intake = 7.0;
+        new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
+        new_superstructure_goal->max_angular_velocity_wrist = 10.0;
+        if (use_slow_profile) {
+          new_superstructure_goal->max_angular_acceleration_intake = 10.0;
+        } else {
+          new_superstructure_goal->max_angular_acceleration_intake = 40.0;
+        }
+        new_superstructure_goal->max_angular_acceleration_shoulder = 10.0;
+        if (shoulder_goal_ > 1.0) {
+          new_superstructure_goal->max_angular_acceleration_wrist = 45.0;
+        } else {
+          new_superstructure_goal->max_angular_acceleration_wrist = 25.0;
+        }
 
-      // Granny mode
-      /*
-      new_superstructure_goal->max_angular_velocity_intake = 0.2;
-      new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
-      new_superstructure_goal->max_angular_velocity_wrist = 0.2;
-      new_superstructure_goal->max_angular_acceleration_intake = 1.0;
-      new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
-      new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
-      */
-      if (is_intaking_) {
-        new_superstructure_goal->voltage_top_rollers = 12.0;
-        new_superstructure_goal->voltage_bottom_rollers = 12.0;
-      } else if (is_outtaking_) {
-        new_superstructure_goal->voltage_top_rollers = -12.0;
-        new_superstructure_goal->voltage_bottom_rollers = -7.0;
-      } else {
-        new_superstructure_goal->voltage_top_rollers = 0.0;
-        new_superstructure_goal->voltage_bottom_rollers = 0.0;
-      }
+        // Granny mode
+        /*
+        new_superstructure_goal->max_angular_velocity_intake = 0.2;
+        new_superstructure_goal->max_angular_velocity_shoulder = 0.2;
+        new_superstructure_goal->max_angular_velocity_wrist = 0.2;
+        new_superstructure_goal->max_angular_acceleration_intake = 1.0;
+        new_superstructure_goal->max_angular_acceleration_shoulder = 1.0;
+        new_superstructure_goal->max_angular_acceleration_wrist = 1.0;
+        */
+        if (is_intaking_) {
+          new_superstructure_goal->voltage_top_rollers = 12.0;
+          new_superstructure_goal->voltage_bottom_rollers = 12.0;
+        } else if (is_outtaking_) {
+          new_superstructure_goal->voltage_top_rollers = -12.0;
+          new_superstructure_goal->voltage_bottom_rollers = -7.0;
+        } else {
+          new_superstructure_goal->voltage_top_rollers = 0.0;
+          new_superstructure_goal->voltage_bottom_rollers = 0.0;
+        }
 
-      new_superstructure_goal->traverse_unlatched = traverse_unlatched_;
-      new_superstructure_goal->traverse_down = traverse_down_;
-      new_superstructure_goal->force_intake = true;
+        new_superstructure_goal->traverse_unlatched = traverse_unlatched_;
+        new_superstructure_goal->unfold_climber = false;
+        new_superstructure_goal->voltage_climber = voltage_climber;
+        new_superstructure_goal->traverse_down = traverse_down_;
+        new_superstructure_goal->force_intake = true;
 
-      if (!new_superstructure_goal.Send()) {
-        LOG(ERROR, "Sending superstructure goal failed.\n");
-      } else {
-        LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
-            intake_goal_, shoulder_goal_, wrist_goal_);
+        if (!new_superstructure_goal.Send()) {
+          LOG(ERROR, "Sending superstructure goal failed.\n");
+        } else {
+          LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
+              intake_goal_, shoulder_goal_, wrist_goal_);
+        }
       }
 
       if (!shooter_queue.goal.MakeWithBuilder()
@@ -461,6 +481,8 @@ class Reader : public ::aos::input::JoystickInput {
   ::aos::common::actions::ActionQueue action_queue_;
 
   const ::frc971::control_loops::drivetrain::DrivetrainConfig dt_config_;
+
+  bool is_expanding_ = false;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
