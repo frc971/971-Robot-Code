@@ -428,14 +428,14 @@ class SolenoidWriter {
     compressor_ = ::std::move(compressor);
   }
 
-  void set_drivetrain_left(
+  void set_drivetrain_shifter(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    drivetrain_left_ = ::std::move(s);
+    drivetrain_shifter_ = ::std::move(s);
   }
 
-  void set_drivetrain_right(
+  void set_climber_trigger(
       ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    drivetrain_right_ = ::std::move(s);
+    climber_trigger_ = ::std::move(s);
   }
 
   void set_traverse(
@@ -487,8 +487,8 @@ class SolenoidWriter {
         drivetrain_.FetchLatest();
         if (drivetrain_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *drivetrain_);
-          drivetrain_left_->Set(!drivetrain_->left_high);
-          drivetrain_right_->Set(!drivetrain_->right_high);
+          drivetrain_shifter_->Set(
+              !(drivetrain_->left_high || drivetrain_->right_high));
         }
       }
 
@@ -518,7 +518,10 @@ class SolenoidWriter {
       {
         superstructure_.FetchLatest();
         if (superstructure_.get()) {
-          LOG_STRUCT(DEBUG, "solenoids", *shooter_);
+          LOG_STRUCT(DEBUG, "solenoids", *superstructure_);
+
+          climber_trigger_->Set(superstructure_->unfold_climber);
+
           traverse_->Set(superstructure_->traverse_down);
           traverse_latch_->Set(superstructure_->traverse_unlatched);
         }
@@ -542,9 +545,9 @@ class SolenoidWriter {
  private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_left_,
-      drivetrain_right_, shooter_clamp_, shooter_pusher_, lights_, traverse_,
-      traverse_latch_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> drivetrain_shifter_,
+      shooter_clamp_, shooter_pusher_, lights_, traverse_, traverse_latch_,
+      climber_trigger_;
   ::std::unique_ptr<Relay> flashlight_;
   ::std::unique_ptr<Compressor> compressor_;
 
@@ -642,6 +645,10 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     bottom_rollers_talon_ = ::std::move(t);
   }
 
+  void set_climber_talon(::std::unique_ptr<Talon> t) {
+    climber_talon_ = ::std::move(t);
+  }
+
  private:
   virtual void Read() override {
     ::y2016::control_loops::superstructure_queue.output.FetchAnother();
@@ -661,6 +668,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
         12.0);
     top_rollers_talon_->Set(-queue->voltage_top_rollers / 12.0);
     bottom_rollers_talon_->Set(-queue->voltage_bottom_rollers / 12.0);
+    climber_talon_->Set(-queue->voltage_climber / 12.0);
   }
 
   virtual void Stop() override {
@@ -671,7 +679,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   }
 
   ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_,
-      top_rollers_talon_, bottom_rollers_talon_;
+      top_rollers_talon_, bottom_rollers_talon_, climber_talon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -754,19 +762,21 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<Talon>(new Talon(1)));
     superstructure_writer.set_bottom_rollers_talon(
         ::std::unique_ptr<Talon>(new Talon(0)));
+    superstructure_writer.set_climber_talon(
+        ::std::unique_ptr<Talon>(new Talon(7)));
     ::std::thread superstructure_writer_thread(
         ::std::ref(superstructure_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_drivetrain_left(pcm->MakeSolenoid(1));
-    solenoid_writer.set_drivetrain_right(pcm->MakeSolenoid(0));
+    solenoid_writer.set_drivetrain_shifter(pcm->MakeSolenoid(0));
     solenoid_writer.set_traverse_latch(pcm->MakeSolenoid(2));
     solenoid_writer.set_traverse(pcm->MakeSolenoid(3));
     solenoid_writer.set_shooter_clamp(pcm->MakeSolenoid(4));
     solenoid_writer.set_shooter_pusher(pcm->MakeSolenoid(5));
     solenoid_writer.set_lights(pcm->MakeSolenoid(6));
+    solenoid_writer.set_climber_trigger(pcm->MakeSolenoid(1));
     solenoid_writer.set_flashlight(make_unique<Relay>(0));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());

@@ -65,6 +65,11 @@ queue_group SuperstructureQueue {
     float voltage_top_rollers;
     float voltage_bottom_rollers;
 
+    // Voltage to sent to the climber. Positive is pulling the robot up.
+    float voltage_climber;
+    // If true, unlatch the climber and allow it to unfold.
+    bool unfold_climber;
+
     bool force_intake;
 
     // If true, release the latch which holds the traverse mechanism in the
@@ -117,6 +122,11 @@ queue_group SuperstructureQueue {
 
     float voltage_top_rollers;
     float voltage_bottom_rollers;
+
+    // Voltage to sent to the climber. Positive is pulling the robot up.
+    float voltage_climber;
+    // If true, release the latch to trigger the climber to unfold.
+    bool unfold_climber;
 
     // If true, release the latch to hold the traverse mechanism in the middle.
     bool traverse_unlatched;

@@ -232,6 +232,9 @@ class Superstructure
   float last_wrist_angle_ = 0.0;
   float last_intake_angle_ = 0.0;
 
+  double kill_shoulder_accumulator_ = 0.0;
+  bool kill_shoulder_ = false;
+
   // Returns true if the profile has finished, and the joint is within the
   // specified tolerance.
   bool IsArmNear(double tolerance);

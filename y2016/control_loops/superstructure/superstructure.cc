@@ -19,6 +19,7 @@ namespace {
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeTopVoltage = 12.0;
 constexpr float kMaxIntakeBottomVoltage = 12.0;
+constexpr float kMaxClimberVoltage = 12.0;
 
 // Aliases to reduce typing.
 constexpr double kIntakeEncoderIndexDifference =
@@ -81,15 +82,15 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
       if (wrist_angle > kMaxWristAngleForMovingByIntake ||
           wrist_angle < kMinWristAngleForMovingByIntake) {
         shoulder_angle_goal =
-          ::std::max(original_shoulder_angle_goal,
-              kMinShoulderAngleForIntakeInterference + kSafetyMargin);
+            ::std::max(original_shoulder_angle_goal,
+                       kMinShoulderAngleForIntakeInterference + kSafetyMargin);
       }
     } else {
       if (wrist_angle > kMaxWristAngleForMovingByIntake ||
           wrist_angle < kMinWristAngleForMovingByIntake) {
-        shoulder_angle_goal =
-          ::std::max(original_shoulder_angle_goal,
-              kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
+        shoulder_angle_goal = ::std::max(
+            original_shoulder_angle_goal,
+            kMinShoulderAngleForIntakeUpInterference + kSafetyMargin);
       }
     }
     if (::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
@@ -173,8 +174,7 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
           CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing &&
       shoulder_angle <=
           CollisionAvoidance::kMinShoulderAngleForIntakeUpInterference &&
-      intake_angle >
-           CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
+      intake_angle > CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference) {
     LOG(DEBUG, "Collided: Intake %f > %f, and shoulder %f < %f < %f.\n",
         intake_angle, CollisionAvoidance::kMaxIntakeAngleBeforeArmInterference,
         CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing,
@@ -610,7 +610,21 @@ void Superstructure::RunIteration(
   const double max_voltage = (state_ == RUNNING || state_ == LANDING_RUNNING)
                                  ? kOperatingVoltage
                                  : kZeroingVoltage;
-  arm_.set_max_voltage(max_voltage, max_voltage);
+  if (unsafe_goal) {
+    constexpr float kTriggerThreshold = 12.0 * 0.25 / 0.005;
+
+    if (unsafe_goal->voltage_climber > 1.0) {
+      kill_shoulder_accumulator_ +=
+          ::std::min(kMaxClimberVoltage, unsafe_goal->voltage_climber);
+    } else {
+      kill_shoulder_accumulator_ = 0.0;
+    }
+
+    if (kill_shoulder_accumulator_ > kTriggerThreshold) {
+      kill_shoulder_ = true;
+    }
+  }
+  arm_.set_max_voltage(kill_shoulder_ ? 0.0 : max_voltage, max_voltage);
   intake_.set_max_voltage(max_voltage);
 
   if (IsRunning()) {
@@ -650,15 +664,26 @@ void Superstructure::RunIteration(
     output->voltage_shoulder = arm_.shoulder_voltage();
     output->voltage_wrist = arm_.wrist_voltage();
 
-    // Logic to run our rollers on the intake.
     output->voltage_top_rollers = 0.0;
     output->voltage_bottom_rollers = 0.0;
+
+    output->voltage_climber = 0.0;
+    output->unfold_climber = false;
     if (unsafe_goal) {
+      // Ball detector lights.
       ::y2016::sensors::ball_detector.FetchAnother();
       bool ball_detected = false;
       if (::y2016::sensors::ball_detector.get()) {
         ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
       }
+
+      // Climber.
+      output->voltage_climber = ::std::max(
+          static_cast<float>(0.0),
+          ::std::min(unsafe_goal->voltage_climber, kMaxClimberVoltage));
+      output->unfold_climber = unsafe_goal->unfold_climber;
+
+      // Intake.
       if (unsafe_goal->force_intake || !ball_detected) {
         output->voltage_top_rollers = ::std::max(
             -kMaxIntakeTopVoltage,
@@ -671,6 +696,8 @@ void Superstructure::RunIteration(
         output->voltage_top_rollers = 0.0;
         output->voltage_bottom_rollers = 0.0;
       }
+
+      // Traverse.
       output->traverse_unlatched = unsafe_goal->traverse_unlatched;
       output->traverse_down = unsafe_goal->traverse_down;
     }
@@ -709,7 +736,8 @@ void Superstructure::RunIteration(
   status->intake.unprofiled_goal_angle = intake_.unprofiled_goal(0, 0);
   status->intake.unprofiled_goal_angular_velocity =
       intake_.unprofiled_goal(1, 0);
-  status->intake.calculated_velocity = (intake_.angle() - last_intake_angle_) / 0.005;
+  status->intake.calculated_velocity =
+      (intake_.angle() - last_intake_angle_) / 0.005;
   status->intake.voltage_error = intake_.X_hat(2, 0);
   status->intake.estimator_state = intake_.IntakeEstimatorState();
   status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
