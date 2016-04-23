@@ -124,11 +124,17 @@ class Reader : public ::aos::input::JoystickInput {
     const double throttle = -data.GetAxis(kDriveThrottle);
     drivetrain_queue.status.FetchLatest();
 
-    if (data.IsPressed(kVisionAlign) && vision_valid_ &&
-        !vision_action_running_) {
-      actors::VisionAlignActionParams params;
-      action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
-      vision_action_running_ = true;
+    if (data.IsPressed(kVisionAlign)) {
+      if (vision_valid_ && !vision_action_running_) {
+        actors::VisionAlignActionParams params;
+        action_queue_.EnqueueAction(actors::MakeVisionAlignAction(params));
+        vision_action_running_ = true;
+        LOG(INFO, "Starting vision align\n");
+      } else {
+        if (!vision_valid_) {
+          LOG(INFO, "Vision align but not valid\n");
+        }
+      }
     }
 
     if (data.NegEdge(kVisionAlign)) {
@@ -212,7 +218,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kHigherFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.43;
+      wrist_goal_ = M_PI + 0.43 + 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
@@ -221,7 +227,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.41;
+      wrist_goal_ = M_PI + 0.41 + 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
@@ -230,7 +236,7 @@ class Reader : public ::aos::input::JoystickInput {
     } else if (data.IsPressed(kBackLong)) {
       // Backwards shot
       shoulder_goal_ = M_PI / 2.0 - 0.4;
-      wrist_goal_ = -0.62;
+      wrist_goal_ = -0.62 - 0.02;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }

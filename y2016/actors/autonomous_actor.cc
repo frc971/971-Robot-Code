@@ -183,12 +183,98 @@ bool AutonomousActor::WaitForDriveProfileDone() {
   }
 }
 
-bool AutonomousActor::WaitForDriveDone() {
+bool AutonomousActor::WaitForMaxBy(double angle) {
   ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                       ::aos::time::Time::InMS(5) / 2);
+  double max_angle = -M_PI;
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (IsDriveDone()) {
+      return true;
+    }
+    if (drivetrain_queue.status.get()) {
+      if (drivetrain_queue.status->ground_angle > max_angle) {
+        max_angle = drivetrain_queue.status->ground_angle;
+      }
+      if (drivetrain_queue.status->ground_angle < max_angle - angle) {
+        return true;
+      }
+    }
+  }
+}
+
+bool AutonomousActor::WaitForAboveAngle(double angle) {
+  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
+                                      ::aos::time::Time::InMS(5) / 2);
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (IsDriveDone()) {
+      return true;
+    }
+    if (drivetrain_queue.status.get()) {
+      if (drivetrain_queue.status->ground_angle > angle) {
+        return true;
+      }
+    }
+  }
+}
+
+bool AutonomousActor::WaitForBelowAngle(double angle) {
+  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
+                                      ::aos::time::Time::InMS(5) / 2);
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    drivetrain_queue.status.FetchLatest();
+    if (IsDriveDone()) {
+      return true;
+    }
+    if (drivetrain_queue.status.get()) {
+      if (drivetrain_queue.status->ground_angle < angle) {
+        return true;
+      }
+    }
+  }
+}
+
+bool AutonomousActor::IsDriveDone() {
   constexpr double kPositionTolerance = 0.02;
   constexpr double kVelocityTolerance = 0.10;
   constexpr double kProfileTolerance = 0.001;
+
+  if (drivetrain_queue.status.get()) {
+    if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
+                   initial_drivetrain_.left) < kProfileTolerance &&
+        ::std::abs(drivetrain_queue.status->profiled_right_position_goal -
+                   initial_drivetrain_.right) < kProfileTolerance &&
+        ::std::abs(drivetrain_queue.status->estimated_left_position -
+                   initial_drivetrain_.left) < kPositionTolerance &&
+        ::std::abs(drivetrain_queue.status->estimated_right_position -
+                   initial_drivetrain_.right) < kPositionTolerance &&
+        ::std::abs(drivetrain_queue.status->estimated_left_velocity) <
+            kVelocityTolerance &&
+        ::std::abs(drivetrain_queue.status->estimated_right_velocity) <
+            kVelocityTolerance) {
+      LOG(INFO, "Finished drive\n");
+      return true;
+    }
+  }
+  return false;
+}
+
+bool AutonomousActor::WaitForDriveDone() {
+  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
+                                      ::aos::time::Time::InMS(5) / 2);
 
   while (true) {
     if (ShouldCancel()) {
@@ -196,22 +282,8 @@ bool AutonomousActor::WaitForDriveDone() {
     }
     phased_loop.SleepUntilNext();
     drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status.get()) {
-      if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
-                     initial_drivetrain_.left) < kProfileTolerance &&
-          ::std::abs(drivetrain_queue.status->profiled_right_position_goal -
-                     initial_drivetrain_.right) < kProfileTolerance &&
-          ::std::abs(drivetrain_queue.status->estimated_left_position -
-                     initial_drivetrain_.left) < kPositionTolerance &&
-          ::std::abs(drivetrain_queue.status->estimated_right_position -
-                     initial_drivetrain_.right) < kPositionTolerance &&
-          ::std::abs(drivetrain_queue.status->estimated_left_velocity) <
-              kVelocityTolerance &&
-          ::std::abs(drivetrain_queue.status->estimated_right_velocity) <
-              kVelocityTolerance) {
-        LOG(INFO, "Finished drive\n");
-        return true;
-      }
+    if (IsDriveDone()) {
+      return true;
     }
   }
 }
@@ -404,7 +476,7 @@ void AutonomousActor::WaitForAlignedWithVision(
       } else {
         ready_to_fire = 0;
       }
-      if (ready_to_fire > 9) {
+      if (ready_to_fire > 15) {
         break;
         LOG(INFO, "Vision align success!\n");
       }
@@ -550,28 +622,31 @@ void AutonomousActor::BackMiddleShot() {
                      {10.0, 25.0}, false, 0.0);
 }
 
+void AutonomousActor::FrontLongShot() {
+  LOG(INFO, "Expanding for front long shot\n");
+  MoveSuperstructure(0.80, M_PI / 2.0 + 0.1, M_PI + 0.41 + 0.02, {7.0, 40.0},
+                     {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
+}
+
+void AutonomousActor::FrontMiddleShot() {
+  LOG(INFO, "Expanding for front middle shot\n");
+  MoveSuperstructure(-0.05, M_PI / 2.0 + 0.1, M_PI + 0.42, {7.0, 40.0},
+                     {4.0, 10.0}, {10.0, 25.0}, true, 0.0);
+}
+
 void AutonomousActor::TuckArm(bool low_bar, bool traverse_down) {
   MoveSuperstructure(low_bar ? -0.05 : 2.0, -0.010, 0.0, {7.0, 40.0},
                      {4.0, 10.0}, {10.0, 25.0}, !traverse_down, 0.0);
 }
 
-void AutonomousActor::DoFullShot(bool center) {
-  // Get the superstructure to unfold and get ready for shooting.
-  LOG(INFO, "Unfolding superstructure\n");
-  if (center) {
-    BackMiddleShot();
-  } else {
-    BackLongShot();
-  }
-
-  // Spin up the shooter wheels.
-  LOG(INFO, "Spinning up the shooter wheels\n");
-  SetShooterSpeed(640.0);
-
+void AutonomousActor::DoFullShot() {
   if (ShouldCancel()) return;
   // Make sure that the base is aligned with the base.
   LOG(INFO, "Waiting for the superstructure\n");
   WaitForSuperstructure();
+
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(1.5));
+
   if (ShouldCancel()) return;
   LOG(INFO, "Triggering the vision actor\n");
   AlignWithVisionGoal();
@@ -585,6 +660,7 @@ void AutonomousActor::DoFullShot(bool center) {
   WaitForShooterSpeed();
   if (ShouldCancel()) return;
 
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(1.0));
   LOG(INFO, "Shoot!\n");
   Shoot();
 
@@ -597,7 +673,7 @@ void AutonomousActor::DoFullShot(bool center) {
 
   // Wait for everything to be folded up.
   LOG(INFO, "Waiting for superstructure to be folded back down\n");
-  WaitForSuperstructure();
+  WaitForSuperstructureLow();
 }
 
 void AutonomousActor::LowBarDrive() {
@@ -620,43 +696,54 @@ void AutonomousActor::LowBarDrive() {
   StartDrive(0, -M_PI / 4.0 - 0.2, kLowBarDrive, kSlowTurn);
 }
 
+void AutonomousActor::TippyDrive(double goal_distance, double tip_distance,
+                                 double below, double above) {
+  StartDrive(goal_distance, 0.0, kMoatDrive, kSlowTurn);
+  if (!WaitForBelowAngle(below)) return;
+  if (!WaitForAboveAngle(above)) return;
+  // Ok, we are good now.  Compensate by moving the goal by the error.
+  // Should be here at 2.7
+  drivetrain_queue.status.FetchLatest();
+  if (drivetrain_queue.status.get()) {
+    const double left_error =
+        (initial_drivetrain_.left -
+         drivetrain_queue.status->estimated_left_position);
+    const double right_error =
+        (initial_drivetrain_.right -
+         drivetrain_queue.status->estimated_right_position);
+    const double distance_to_go = (left_error + right_error) / 2.0;
+    const double distance_compensation =
+        goal_distance - tip_distance - distance_to_go;
+    LOG(INFO, "Going %f further at the bump\n", distance_compensation);
+    StartDrive(distance_compensation, 0.0, kMoatDrive, kSlowTurn);
+  }
+}
+
 void AutonomousActor::MiddleDrive() {
   TuckArm(false, false);
-  StartDrive(4.05, 0.0, kMoatDrive, kSlowTurn);
+  TippyDrive(3.65, 2.7, -0.2, 0.0);
   if (!WaitForDriveDone()) return;
-  StartDrive(0.0, M_PI, kMoatDrive, kFastTurn);
 }
 
 void AutonomousActor::OneFromMiddleDrive(bool left) {
-  const double kTurnAngle = left ? M_PI / 2.0 - 0.40 : (-M_PI / 2.0 + 0.40);
-  const double kFlipTurnAngle =
-      left ? (M_PI - kTurnAngle) : (-M_PI - kTurnAngle);
+  const double kTurnAngle = left ? -0.41 : 0.41;
   TuckArm(false, false);
-  StartDrive(5.0 - kDistanceShort, 0.0, kMoatDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(0.0, kTurnAngle, kRealignDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(-1.3, 0.0, kRealignDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(0.0, kFlipTurnAngle, kRealignDrive, kFastTurn);
+  TippyDrive(4.05, 2.7, -0.2, 0.0);
 
   if (!WaitForDriveDone()) return;
-  StartDrive(0.3, 0.0, kRealignDrive, kFastTurn);
+  StartDrive(0.0, kTurnAngle, kRealignDrive, kFastTurn);
 }
 
 void AutonomousActor::TwoFromMiddleDrive() {
-  const double kTurnAngle = M_PI / 2.0 - 0.13;
   TuckArm(false, false);
-  StartDrive(5.0 - kDistanceShort, 0.0, kMoatDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(0.0, kTurnAngle, kMoatDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(-2.6, 0.0, kRealignDrive, kFastTurn);
-  if (!WaitForDriveDone()) return;
-  StartDrive(0.0, M_PI - kTurnAngle, kMoatDrive, kFastTurn);
+  constexpr double kDriveDistance = 5.10;
+  TippyDrive(kDriveDistance, 2.7, -0.2, 0.0);
+
+  if (!WaitForDriveNear(kDriveDistance - 3.0, 2.0)) return;
+  StartDrive(0, -M_PI / 2 - 0.10, kMoatDrive, kFastTurn);
 
   if (!WaitForDriveDone()) return;
-  StartDrive(0.3, 0.0, kRealignDrive, kFastTurn);
+  StartDrive(0, M_PI / 3 + 0.35, kMoatDrive, kFastTurn);
 }
 
 void AutonomousActor::CloseIfBall() {
@@ -682,204 +769,251 @@ void AutonomousActor::WaitForBall() {
   }
 }
 
+void AutonomousActor::TwoBallAuto() {
+  aos::time::Time start_time = aos::time::Time::Now();
+  OpenShooter();
+  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
+                     false, 12.0);
+  if (ShouldCancel()) return;
+  LOG(INFO, "Waiting for the intake to come down.\n");
+
+  WaitForIntake();
+  LOG(INFO, "Intake done at %f seconds, starting to drive\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  if (ShouldCancel()) return;
+  const double kDriveDistance = 5.05;
+  StartDrive(-kDriveDistance, 0.0, kTwoBallLowDrive, kSlowTurn);
+
+  StartDrive(0.0, 0.4, kTwoBallLowDrive, kSwerveTurn);
+  if (!WaitForDriveNear(kDriveDistance - 0.5, 0.0)) return;
+
+  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
+                     false, 0.0);
+  LOG(INFO, "Shutting off rollers at %f seconds, starting to straighten out\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  StartDrive(0.0, -0.4, kTwoBallLowDrive, kSwerveTurn);
+  MoveSuperstructure(-0.05, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
+                     false, 0.0);
+  CloseShooter();
+  if (!WaitForDriveNear(kDriveDistance - 2.4, 0.0)) return;
+
+  // We are now under the low bar.  Start lifting.
+  BackLongShotLowBarTwoBall();
+  LOG(INFO, "Spinning up the shooter wheels\n");
+  SetShooterSpeed(640.0);
+  StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
+
+  if (!WaitForDriveNear(1.50, 0.0)) return;
+  constexpr double kShootTurnAngle = -M_PI / 4.0 + 0.05;
+  StartDrive(0, kShootTurnAngle, kTwoBallFastDrive, kFinishTurn);
+  BackLongShotTwoBall();
+
+  if (!WaitForDriveDone()) return;
+  LOG(INFO, "First shot done driving at %f seconds\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+
+  WaitForSuperstructure();
+
+  if (ShouldCancel()) return;
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+  AlignWithVisionGoal();
+
+  WaitForShooterSpeed();
+  if (ShouldCancel()) return;
+
+  WaitForAlignedWithVision(aos::time::Time::InSeconds(0.2));
+  LOG(INFO, "Shoot!\n");
+  Shoot();
+
+  LOG(INFO, "First shot at %f seconds\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  if (ShouldCancel()) return;
+
+  SetShooterSpeed(0.0);
+  LOG(INFO, "Folding superstructure back down\n");
+  TuckArm(true, true);
+
+  // Undo vision move.
+  StartDrive(0.0, 0.0, kTwoBallFastDrive, kFinishTurn);
+  if (!WaitForDriveDone()) return;
+
+  constexpr double kBackDrive = 3.09 - 0.4;
+  StartDrive(kBackDrive, 0.0, kTwoBallReturnDrive, kSlowTurn);
+  if (!WaitForDriveNear(kBackDrive - 0.19, 0.0)) return;
+  StartDrive(0, -kShootTurnAngle, kTwoBallReturnDrive, kSwerveTurn);
+
+  if (!WaitForDriveNear(0.06, 0.0)) return;
+  LOG(INFO, "At Low Bar %f\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+
+  OpenShooter();
+  constexpr double kSecondBallAfterBarDrive = 2.10;
+  StartDrive(kSecondBallAfterBarDrive, 0.0, kTwoBallBallPickup, kSlowTurn);
+  if (!WaitForDriveNear(kSecondBallAfterBarDrive - 0.5, 0.0)) return;
+  constexpr double kBallSmallWallTurn = -0.11;
+  StartDrive(0, kBallSmallWallTurn, kTwoBallBallPickup, kFinishTurn);
+
+  MoveSuperstructure(0.03, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
+                     false, 12.0);
+
+  if (!WaitForDriveProfileDone()) return;
+
+  MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0}, {4.0, 10.0}, {10.0, 25.0},
+                     false, 12.0);
+
+  LOG(INFO, "Done backing up %f\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+
+  constexpr double kDriveBackDistance = 5.15 - 0.4;
+  StartDrive(-kDriveBackDistance, 0.0, kTwoBallLowDrive, kFinishTurn);
+  CloseIfBall();
+  if (!WaitForDriveNear(kDriveBackDistance - 0.75, 0.0)) return;
+
+  StartDrive(0.0, -kBallSmallWallTurn, kTwoBallLowDrive, kFinishTurn);
+  LOG(INFO, "Straightening up at %f\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+
+  CloseIfBall();
+  if (!WaitForDriveNear(kDriveBackDistance - 2.3, 0.0)) return;
+
+  ::y2016::sensors::ball_detector.FetchLatest();
+  if (::y2016::sensors::ball_detector.get()) {
+    const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+    if (!ball_detected) {
+      if (!WaitForDriveDone()) return;
+      LOG(INFO, "Aborting, no ball %f\n",
+          (aos::time::Time::Now() - start_time).ToSeconds());
+      return;
+    }
+  }
+  CloseShooter();
+
+  BackLongShotLowBarTwoBall();
+  LOG(INFO, "Spinning up the shooter wheels\n");
+  SetShooterSpeed(640.0);
+  StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
+
+  if (!WaitForDriveNear(1.80, 0.0)) return;
+  StartDrive(0, kShootTurnAngle, kTwoBallFastDrive, kFinishTurn);
+  BackLongShotTwoBall();
+
+  if (!WaitForDriveDone()) return;
+  LOG(INFO, "Second shot done driving at %f seconds\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  WaitForSuperstructure();
+  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+  AlignWithVisionGoal();
+  if (ShouldCancel()) return;
+
+  WaitForShooterSpeed();
+  if (ShouldCancel()) return;
+
+  // 2.2 with 0.4 of vision.
+  // 1.8 without any vision.
+  LOG(INFO, "Going to vision align at %f\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  WaitForAlignedWithVision(start_time + aos::time::Time::InSeconds(13.1) -
+                           aos::time::Time::Now());
+  LOG(INFO, "Shoot at %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
+  Shoot();
+
+  LOG(INFO, "Second shot at %f seconds\n",
+      (aos::time::Time::Now() - start_time).ToSeconds());
+  if (ShouldCancel()) return;
+
+  SetShooterSpeed(0.0);
+  LOG(INFO, "Folding superstructure back down\n");
+  TuckArm(true, false);
+  LOG(INFO, "Shot %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
+
+  WaitForSuperstructureLow();
+
+  LOG(INFO, "Done %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
+}
+
 bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
+  aos::time::Time start_time = aos::time::Time::Now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
 
   InitializeEncoders();
   ResetDrivetrain();
 
-  switch (params.mode) {
+  switch (1) {
     case 0:
       LowBarDrive();
+      if (!WaitForDriveDone()) return true;
+      // Get the superstructure to unfold and get ready for shooting.
+      LOG(INFO, "Unfolding superstructure\n");
+      FrontLongShot();
+
+      // Spin up the shooter wheels.
+      LOG(INFO, "Spinning up the shooter wheels\n");
+      SetShooterSpeed(640.0);
+
       break;
     case 1:
       TwoFromMiddleDrive();
+      if (!WaitForDriveDone()) return true;
+      // Get the superstructure to unfold and get ready for shooting.
+      LOG(INFO, "Unfolding superstructure\n");
+      FrontMiddleShot();
+
+      // Spin up the shooter wheels.
+      LOG(INFO, "Spinning up the shooter wheels\n");
+      SetShooterSpeed(600.0);
+
       break;
     case 2:
       OneFromMiddleDrive(true);
+      if (!WaitForDriveDone()) return true;
+      // Get the superstructure to unfold and get ready for shooting.
+      LOG(INFO, "Unfolding superstructure\n");
+      FrontMiddleShot();
+
+      // Spin up the shooter wheels.
+      LOG(INFO, "Spinning up the shooter wheels\n");
+      SetShooterSpeed(600.0);
+
       break;
     case 3:
       MiddleDrive();
+      if (!WaitForDriveDone()) return true;
+      // Get the superstructure to unfold and get ready for shooting.
+      LOG(INFO, "Unfolding superstructure\n");
+      FrontMiddleShot();
+
+      // Spin up the shooter wheels.
+      LOG(INFO, "Spinning up the shooter wheels\n");
+      SetShooterSpeed(600.0);
+
       break;
     case 4:
       OneFromMiddleDrive(false);
+      if (!WaitForDriveDone()) return true;
+      // Get the superstructure to unfold and get ready for shooting.
+      LOG(INFO, "Unfolding superstructure\n");
+      FrontMiddleShot();
+
+      // Spin up the shooter wheels.
+      LOG(INFO, "Spinning up the shooter wheels\n");
+      SetShooterSpeed(600.0);
+
       break;
-    case 5: {
-      aos::time::Time start_time = aos::time::Time::Now();
-      OpenShooter();
-      MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0},
-                         {4.0, 10.0}, {10.0, 25.0}, false, 12.0);
-      if (ShouldCancel()) return true;
-      LOG(INFO, "Waiting for the intake to come down.\n");
-
-      WaitForIntake();
-      LOG(INFO, "Intake done at %f seconds, starting to drive\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      if (ShouldCancel()) return true;
-      const double kDriveDistance = 5.05;
-      StartDrive(-kDriveDistance, 0.0, kTwoBallLowDrive, kSlowTurn);
-
-      StartDrive(0.0, 0.4, kTwoBallLowDrive, kSwerveTurn);
-      if (!WaitForDriveNear(kDriveDistance - 0.5, 0.0)) return true;
-
-      MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0},
-                         {10.0, 25.0}, false, 0.0);
-      LOG(INFO, "Shutting off rollers at %f seconds, starting to straighten out\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      StartDrive(0.0, -0.4, kTwoBallLowDrive, kSwerveTurn);
-      MoveSuperstructure(-0.05, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0},
-                         {10.0, 25.0}, false, 0.0);
-      CloseShooter();
-      if (!WaitForDriveNear(kDriveDistance - 2.4, 0.0)) return true;
-
-      // We are now under the low bar.  Start lifting.
-      BackLongShotLowBarTwoBall();
-      LOG(INFO, "Spinning up the shooter wheels\n");
-      SetShooterSpeed(640.0);
-      StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
-
-      if (!WaitForDriveNear(1.50, 0.0)) return true;
-      constexpr double kShootTurnAngle = -M_PI / 4.0 - 0.05;
-      StartDrive(0, kShootTurnAngle, kTwoBallFastDrive, kFinishTurn);
-      BackLongShotTwoBall();
-
-      if (!WaitForDriveDone()) return true;
-      LOG(INFO, "First shot done driving at %f seconds\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
-      WaitForSuperstructure();
-
-      if (ShouldCancel()) return true;
-      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
-      AlignWithVisionGoal();
-
-      WaitForShooterSpeed();
-      if (ShouldCancel()) return true;
-
-      WaitForAlignedWithVision(aos::time::Time::InSeconds(0.2));
-      LOG(INFO, "Shoot!\n");
-      Shoot();
-
-      LOG(INFO, "First shot at %f seconds\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      if (ShouldCancel()) return true;
-
-      SetShooterSpeed(0.0);
-      LOG(INFO, "Folding superstructure back down\n");
-      TuckArm(true, true);
-
-      // Undo vision move.
-      StartDrive(0.0, 0.0, kTwoBallFastDrive, kFinishTurn);
-      if (!WaitForDriveDone()) return true;
-
-      constexpr double kBackDrive = 3.09 - 0.4;
-      StartDrive(kBackDrive, 0.0, kTwoBallReturnDrive, kSlowTurn);
-      if (!WaitForDriveNear(kBackDrive - 0.16, 0.0)) return true;
-      StartDrive(0, -kShootTurnAngle, kTwoBallReturnDrive, kSwerveTurn);
-
-      if (!WaitForDriveNear(0.06, 0.0)) return true;
-      LOG(INFO, "At Low Bar %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
-      OpenShooter();
-      constexpr double kSecondBallAfterBarDrive = 2.10;
-      StartDrive(kSecondBallAfterBarDrive, 0.0, kTwoBallBallPickup, kSlowTurn);
-      if (!WaitForDriveNear(kSecondBallAfterBarDrive - 0.5, 0.0)) return true;
-      constexpr double kBallSmallWallTurn = -0.11;
-      StartDrive(0, kBallSmallWallTurn, kTwoBallBallPickup, kFinishTurn);
-
-      MoveSuperstructure(0.03, -0.010, 0.0, {8.0, 60.0},
-                         {4.0, 10.0}, {10.0, 25.0}, false, 12.0);
-
-      if (!WaitForDriveProfileDone()) return true;
-
-      MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 60.0},
-                         {4.0, 10.0}, {10.0, 25.0}, false, 12.0);
-
-      LOG(INFO, "Done backing up %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
-      constexpr double kDriveBackDistance = 5.15 - 0.4;
-      StartDrive(-kDriveBackDistance, 0.0, kTwoBallLowDrive, kFinishTurn);
-      CloseIfBall();
-      if (!WaitForDriveNear(kDriveBackDistance - 0.75, 0.0)) return true;
-
-      StartDrive(0.0, -kBallSmallWallTurn, kTwoBallLowDrive, kFinishTurn);
-      LOG(INFO, "Straightening up at %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
-      CloseIfBall();
-      if (!WaitForDriveNear(kDriveBackDistance - 2.3, 0.0)) return true;
-
-      ::y2016::sensors::ball_detector.FetchLatest();
-      if (::y2016::sensors::ball_detector.get()) {
-        const bool ball_detected =
-            ::y2016::sensors::ball_detector->voltage > 2.5;
-        if (!ball_detected) {
-          if (!WaitForDriveDone()) return true;
-          LOG(INFO, "Aborting, no ball %f\n",
-              (aos::time::Time::Now() - start_time).ToSeconds());
-          return true;
-        }
-      }
-      CloseShooter();
-
-      BackLongShotLowBarTwoBall();
-      LOG(INFO, "Spinning up the shooter wheels\n");
-      SetShooterSpeed(640.0);
-      StartDrive(0.0, 0.0, kTwoBallFastDrive, kSwerveTurn);
-
-      if (!WaitForDriveNear(1.80, 0.0)) return true;
-      StartDrive(0, kShootTurnAngle, kTwoBallFastDrive, kFinishTurn);
-      BackLongShotTwoBall();
-
-      if (!WaitForDriveDone()) return true;
-      LOG(INFO, "Second shot done driving at %f seconds\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      WaitForSuperstructure();
-      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
-      AlignWithVisionGoal();
-      if (ShouldCancel()) return true;
-
-      WaitForShooterSpeed();
-      if (ShouldCancel()) return true;
-
-      // 2.2 with 0.4 of vision.
-      // 1.8 without any vision.
-      LOG(INFO, "Going to vision align at %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      WaitForAlignedWithVision(start_time + aos::time::Time::InSeconds(12.9) -
-                               aos::time::Time::Now());
-      LOG(INFO, "Shoot at %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      Shoot();
-
-      LOG(INFO, "Second shot at %f seconds\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-      if (ShouldCancel()) return true;
-
-      SetShooterSpeed(0.0);
-      LOG(INFO, "Folding superstructure back down\n");
-      TuckArm(true, false);
-      LOG(INFO, "Shot %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
-      WaitForSuperstructureLow();
-
-      LOG(INFO, "Done %f\n",
-          (aos::time::Time::Now() - start_time).ToSeconds());
-
+    case 5:
+      TwoBallAuto();
       return true;
-
-    } break;
+      break;
     default:
       LOG(ERROR, "Invalid auto mode %d\n", params.mode);
       return true;
   }
 
+  DoFullShot();
+
+  StartDrive(0.5, 0.0, kMoatDrive, kFastTurn);
   if (!WaitForDriveDone()) return true;
 
-  DoFullShot(params.mode != 0);
+  LOG(INFO, "Done %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
 
   ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
                                       ::aos::time::Time::InMS(5) / 2);

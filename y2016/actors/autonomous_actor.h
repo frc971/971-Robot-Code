@@ -34,6 +34,14 @@ class AutonomousActor
   // false if it cancels.
   bool WaitForDriveDone();
 
+  // Returns true if the drive has finished.
+  bool IsDriveDone();
+  // Waits until the robot is pitched up above the specified angle, or the move
+  // finishes.  Returns true on success, and false if it cancels.
+  bool WaitForAboveAngle(double angle);
+  bool WaitForBelowAngle(double angle);
+  bool WaitForMaxBy(double angle);
+
   // Waits until the profile and distance is within distance and angle of the
   // goal.  Returns true on success, and false when canceled.
   bool WaitForDriveNear(double distance, double angle);
@@ -67,6 +75,8 @@ class AutonomousActor
   bool IntakeDone();
   bool WaitForDriveProfileDone();
 
+  void FrontLongShot();
+  void FrontMiddleShot();
   void BackLongShot();
   void BackLongShotTwoBall();
   void BackLongShotLowBarTwoBall();
@@ -78,8 +88,10 @@ class AutonomousActor
   void CloseIfBall();
   bool SuperstructureProfileDone();
   bool SuperstructureDone();
+  void TippyDrive(double goal_distance, double tip_distance, double below,
+                  double above);
 
-  void DoFullShot(bool center);
+  void DoFullShot();
   void LowBarDrive();
   // Drive to the middle spot over the middle position.  Designed for the rock
   // wall, rough terain, or ramparts.
@@ -95,6 +107,8 @@ class AutonomousActor
 
   void AlignWithVisionGoal();
   void WaitForAlignedWithVision(aos::time::Time align_duration);
+
+  void TwoBallAuto();
 
   ::std::unique_ptr<actors::VisionAlignAction> vision_action_;
 };
