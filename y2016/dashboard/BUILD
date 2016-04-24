@@ -1,8 +1,18 @@
 load('/aos/externals/seasocks/gen_embedded', 'gen_embedded')
+load('/aos/downloader/downloader', 'aos_downloader_dir')
 
 gen_embedded(
   name = 'gen_embedded',
   srcs = glob(['www_defaults/**/*'], ['www/**/*']),
+)
+
+aos_downloader_dir(
+  name = 'www_files',
+  visibility = ['//visibility:public'],
+  srcs = glob([
+    'www/**/*',
+  ]),
+  dir = "www",
 )
 
 cc_binary(

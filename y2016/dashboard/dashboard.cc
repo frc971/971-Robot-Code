@@ -80,29 +80,33 @@ void DataCollector::RunIteration() {
   ::y2016::actors::auto_mode.FetchLatest();
   ::y2016::control_loops::superstructure_queue.status.FetchLatest();
   ::y2016::sensors::ball_detector.FetchLatest();
+  ::y2016::vision::vision_status.FetchLatest();
 
+// Caused glitching with auto-aim at NASA, so be cautious with this until
+// we find a good fix.
+#ifdef DASHBOARD_READ_VISION_QUEUE
+  if (::y2016::vision::vision_status.get() &&
+      (::y2016::vision::vision_status->left_image_valid ||
+       ::y2016::vision::vision_status->right_image_valid)) {
+    big_indicator = big_indicator::kAiming;
+    if (::std::abs(::y2016::vision::vision_status->horizontal_angle) < 0.002) {
+      big_indicator = big_indicator::kLockedOn;
+    }
+  }
+#else
+  (void)big_indicator::kAiming;
+  (void)big_indicator::kLockedOn;
+#endif
+
+  // Ball detector comes after vision because we want to prioritize that
+  // indication.
   if (::y2016::sensors::ball_detector.get()) {
     // TODO(comran): Grab detected voltage from joystick_reader. Except this
     // value may not change, so it may be worth it to keep it as it is right
     // now.
-    if (::y2016::sensors::ball_detector->voltage > 2.5) big_indicator = big_indicator::kBallIntaked;
-#ifdef DASHBOARD_READ_VISION_QUEUE
-    // Caused glitching with auto-aim at NASA, so be cautious with this until
-    // we find a good fix.
-    if (::y2016::vision::vision_status.FetchLatest()) {
-      if (::y2016::vision::vision_status->left_image_valid ||
-          ::y2016::vision::vision_status->right_image_valid) {
-        big_indicator = big_indicator::kAiming;
-        if (::std::abs(::y2016::vision::vision_status->horizontal_angle) <
-            0.002) {
-          big_indicator = big_indicator::kLockedOn;
-        }
-      }
+    if (::y2016::sensors::ball_detector->voltage > 2.5) {
+      big_indicator = big_indicator::kBallIntaked;
     }
-#else
-    (void)big_indicator::kAiming;
-    (void)big_indicator::kLockedOn;
-#endif
   }
 
   if (::y2016::control_loops::superstructure_queue.status.get()) {
@@ -184,10 +188,12 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
   message << "$";  // Begin data packet.
 
   // Make sure we are not out of range.
-  if (static_cast<size_t>(adjusted_index) < sample_items_.at(0).datapoints.size()){
+  if (static_cast<size_t>(adjusted_index) <
+      sample_items_.at(0).datapoints.size()) {
     message << cur_sample << "%"
-            << sample_items_.at(0).datapoints.at(adjusted_index).time.ToSeconds()
-            << "%";  // Send time.
+            << sample_items_.at(0)
+                   .datapoints.at(adjusted_index)
+                   .time.ToSeconds() << "%";  // Send time.
     // Add comma-separated list of data points.
     for (size_t cur_measure = 0; cur_measure < sample_items_.size();
          cur_measure++) {

@@ -23,8 +23,18 @@ def install(ssh_target, pkg):
 
 
 def main(argv):
-  srcs = argv[1:argv.index('--')]
   args = argv[argv.index('--') + 1:]
+
+  relative_dir = ''
+  recursive = False
+
+  if '--dirs' in argv:
+    dirs_index = argv.index('--dirs')
+    srcs = argv[1:dirs_index]
+    relative_dir = argv[dirs_index + 1]
+    recursive = True
+  else:
+    srcs = argv[1:argv.index('--')]
 
   ROBORIO_TARGET_DIR = '/home/admin/robot_code'
   ROBORIO_USER = 'admin'
@@ -47,7 +57,7 @@ def main(argv):
   ssh_target = '%s@%s' % (user, hostname)
 
   rsync_cmd = (['rsync', '-c', '-v', '-z', '--copy-links'] + srcs +
-               ['%s:%s' % (ssh_target, target_dir)])
+               ['%s:%s/%s' % (ssh_target, target_dir, relative_dir)])
   try:
     subprocess.check_call(rsync_cmd)
   except subprocess.CalledProcessError as e:
@@ -60,12 +70,13 @@ def main(argv):
     else:
       raise e
 
-  subprocess.check_call(
-      ('ssh', ssh_target, '&&'.join([
-          'chmod u+s %s/starter_exe' % target_dir,
-          'echo \'Done moving new executables into place\'',
-          'bash -c \'sync && sync && sync\'',
-        ])))
+  if not recursive:
+    subprocess.check_call(
+        ('ssh', ssh_target, '&&'.join([
+            'chmod u+s %s/starter_exe' % target_dir,
+            'echo \'Done moving new executables into place\'',
+            'bash -c \'sync && sync && sync\'',
+          ])))
 
 if __name__ == '__main__':
   main(sys.argv)

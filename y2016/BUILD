@@ -1,4 +1,5 @@
 load('/aos/downloader/downloader', 'aos_downloader')
+load('/aos/downloader/downloader', 'aos_downloader_dir')
 
 cc_library(
   name = 'constants',
@@ -63,6 +64,9 @@ aos_downloader(
   srcs = [
     '//aos:prime_binaries',
   ],
+  dirs = [
+    '//y2016/dashboard:www_files',
+  ],
 )
 
 aos_downloader(
@@ -81,5 +85,8 @@ aos_downloader(
   ],
   srcs = [
     '//aos:prime_binaries_stripped',
+  ],
+  dirs = [
+    '//y2016/dashboard:www_files',
   ],
 )
