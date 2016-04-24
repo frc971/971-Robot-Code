@@ -1,4 +1,5 @@
 load('/aos/downloader/downloader', 'aos_downloader')
+load('/aos/downloader/downloader', 'aos_downloader_dir')
 
 cc_library(
   name = 'constants',
@@ -54,6 +55,7 @@ aos_downloader(
     '//y2016/control_loops/drivetrain:drivetrain',
     '//y2016/control_loops/superstructure:superstructure',
     '//y2016/control_loops/shooter:shooter',
+    '//y2016/dashboard:dashboard',
     '//y2016/actors:autonomous_action',
     '//y2016/actors:vision_align_action',
     '//y2016/wpilib:wpilib_interface',
@@ -61,6 +63,9 @@ aos_downloader(
   ],
   srcs = [
     '//aos:prime_binaries',
+  ],
+  dirs = [
+    '//y2016/dashboard:www_files',
   ],
 )
 
@@ -72,6 +77,7 @@ aos_downloader(
     '//y2016/control_loops/drivetrain:drivetrain.stripped',
     '//y2016/control_loops/superstructure:superstructure.stripped',
     '//y2016/control_loops/shooter:shooter.stripped',
+    '//y2016/dashboard:dashboard.stripped',
     '//y2016/actors:autonomous_action.stripped',
     '//y2016/actors:vision_align_action.stripped',
     '//y2016/wpilib:wpilib_interface.stripped',
@@ -79,5 +85,8 @@ aos_downloader(
   ],
   srcs = [
     '//aos:prime_binaries_stripped',
+  ],
+  dirs = [
+    '//y2016/dashboard:www_files',
   ],
 )
