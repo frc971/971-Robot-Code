@@ -33,6 +33,9 @@ class AutonomousActor
   // Waits for the drive motion to finish.  Returns true if it succeeded, and
   // false if it cancels.
   bool WaitForDriveDone();
+  void WaitForBallOrDriveDone();
+
+  void StealAndMoveOverBy(double distance);
 
   // Returns true if the drive has finished.
   bool IsDriveDone();
@@ -70,6 +73,7 @@ class AutonomousActor
                           const ProfileParameters wrist_params,
                           bool traverse_up, double roller_power);
   void WaitForSuperstructure();
+  void WaitForSuperstructureProfile();
   void WaitForSuperstructureLow();
   void WaitForIntake();
   bool IntakeDone();
@@ -79,6 +83,7 @@ class AutonomousActor
   void FrontMiddleShot();
   void BackLongShot();
   void BackLongShotTwoBall();
+  void BackLongShotTwoBallFinish();
   void BackLongShotLowBarTwoBall();
   void BackMiddleShot();
   void WaitForBall();
