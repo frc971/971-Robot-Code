@@ -39,7 +39,7 @@ class Wrist(control_loop.ControlLoop):
     # Gear ratio
     self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 18.0) * (48.0 / 16.0)
 
-    self.J = 0.20
+    self.J = 0.35
 
     # Control loop time step
     self.dt = 0.005

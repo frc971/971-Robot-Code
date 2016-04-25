@@ -379,8 +379,8 @@ def main(argv):
 
   scenario_plotter = ScenarioPlotter()
 
-  J_accelerating = 15
-  J_decelerating = 5
+  J_accelerating = 18
+  J_decelerating = 7
 
   arm = Arm(name='AcceleratingArm', J=J_accelerating)
   arm_integral_controller = IntegralArm(

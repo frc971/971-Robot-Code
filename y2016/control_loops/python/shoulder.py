@@ -71,7 +71,7 @@ class Shoulder(control_loop.ControlLoop):
     controllability = controls.ctrb(self.A, self.B)
 
     q_pos = 0.16
-    q_vel = 1.5
+    q_vel = 0.95
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 
