@@ -1,7 +1,7 @@
 calibration {
   robot: "competition"
   calibration: {
-    focal_length: 1.116070312
+    focal_length: 1.236070312
     center_center_dist: 0.27051
     center_center_skew: -16.65
     camera_y_skew: 20.0
@@ -15,14 +15,14 @@ calibration {
     camera_exposure: 10
     camera_brightness: 128
     camera_gain: 0
-    camera_fps: 10
+    camera_fps: 20
   }
 }
 
 calibration {
   robot: "practice"
   calibration {
-    focal_length: 1.1160703125
+    focal_length: 1.236070312
     center_center_dist: 0.26829
     center_center_skew: 0.0
     camera_y_skew: 0.0
@@ -36,7 +36,7 @@ calibration {
     camera_exposure: 10
     camera_brightness: 128
     camera_gain: 0
-    camera_fps: 5
+    camera_fps: 20
   }
 }
 

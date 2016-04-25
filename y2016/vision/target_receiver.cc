@@ -125,9 +125,12 @@ class CameraHandler {
     }
     current_.target = target;
     current_.rx_time = now;
-    current_.capture_time =
-        now - ::aos::time::Time::InNS(target.send_timestamp() -
-                                      target.image_timestamp());
+    current_.capture_time = now -
+                            ::aos::time::Time::InNS(target.send_timestamp() -
+                                                    target.image_timestamp()) +
+                            // It takes a bit to shoot a frame.  Push the frame
+                            // further back in time.
+                            ::aos::time::Time::InMS(10);
     current_.received = true;
   }
 
