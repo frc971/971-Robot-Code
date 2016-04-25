@@ -48,7 +48,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
   // incorporating a small safety margin makes writing test cases much easier
   // since you can directly compare statuses against the constants in the
   // CollisionAvoidance class.
-  constexpr double kSafetyMargin = 0.02;  // radians
+  constexpr double kSafetyMargin = 0.03;  // radians
 
   // Avoid colliding the shooter with the frame.
   // If the shoulder is below a certain angle or we want to move it below
@@ -624,7 +624,8 @@ void Superstructure::RunIteration(
       kill_shoulder_ = true;
     }
   }
-  arm_.set_max_voltage(kill_shoulder_ ? 0.0 : max_voltage, max_voltage);
+  arm_.set_max_voltage(kill_shoulder_ ? 0.0 : max_voltage,
+                       kill_shoulder_ ? kShooterHangingVoltage : max_voltage);
   intake_.set_max_voltage(max_voltage);
 
   if (IsRunning() && !kill_shoulder_) {
@@ -671,7 +672,7 @@ void Superstructure::RunIteration(
     output->unfold_climber = false;
     if (unsafe_goal) {
       // Ball detector lights.
-      ::y2016::sensors::ball_detector.FetchAnother();
+      ::y2016::sensors::ball_detector.FetchLatest();
       bool ball_detected = false;
       if (::y2016::sensors::ball_detector.get()) {
         ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;

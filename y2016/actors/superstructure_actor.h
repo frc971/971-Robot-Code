@@ -24,7 +24,7 @@ class SuperstructureActor
   };
   SuperstructureGoal superstructure_goal_;
   bool RunAction(const actors::SuperstructureActionParams &params) override;
-  void MoveSuperstructure(double shoulder, bool unfold_climber);
+  void MoveSuperstructure(double shoulder, double shooter, bool unfold_climber);
   void WaitForSuperstructure();
   bool SuperstructureProfileDone();
   bool SuperstructureDone();

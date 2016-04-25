@@ -7,6 +7,7 @@ struct SuperstructureActionParams {
   double partial_angle;
   double delay_time;
   double full_angle;
+  double shooter_angle;
 };
 
 queue_group SuperstructureActionQueueGroup {

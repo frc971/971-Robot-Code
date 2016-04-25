@@ -19,27 +19,27 @@ bool SuperstructureActor::RunAction(
     const actors::SuperstructureActionParams &params) {
   LOG(INFO, "Starting superstructure action\n");
 
-  MoveSuperstructure(params.partial_angle, false);
+  MoveSuperstructure(params.partial_angle, params.shooter_angle, false);
   WaitForSuperstructure();
   if (ShouldCancel()) return true;
-  MoveSuperstructure(params.partial_angle, true);
+  MoveSuperstructure(params.partial_angle, params.shooter_angle, true);
   if (!WaitOrCancel(::aos::time::Time::InSeconds(params.delay_time))) return true;
-  MoveSuperstructure(params.full_angle, true);
+  MoveSuperstructure(params.full_angle, params.shooter_angle, true);
   WaitForSuperstructure();
   if (ShouldCancel()) return true;
   return true;
 }
 
-void SuperstructureActor::MoveSuperstructure(double shoulder,
+void SuperstructureActor::MoveSuperstructure(double shoulder, double shooter,
                                              bool unfold_climber) {
-  superstructure_goal_ = {0, shoulder, 0};
+  superstructure_goal_ = {0, shoulder, shooter};
 
   auto new_superstructure_goal =
       ::y2016::control_loops::superstructure_queue.goal.MakeMessage();
 
   new_superstructure_goal->angle_intake = 0;
   new_superstructure_goal->angle_shoulder = shoulder;
-  new_superstructure_goal->angle_wrist = 0;
+  new_superstructure_goal->angle_wrist = shooter;
 
   new_superstructure_goal->max_angular_velocity_intake = 7.0;
   new_superstructure_goal->max_angular_velocity_shoulder = 4.0;
@@ -70,14 +70,9 @@ bool SuperstructureActor::SuperstructureProfileDone() {
          ::std::abs(
              control_loops::superstructure_queue.status->shoulder.goal_angle -
              superstructure_goal_.shoulder) < kProfileError &&
-         ::std::abs(
-             control_loops::superstructure_queue.status->wrist.goal_angle -
-             superstructure_goal_.wrist) < kProfileError &&
          ::std::abs(control_loops::superstructure_queue.status->intake
                         .goal_angular_velocity) < kProfileError &&
          ::std::abs(control_loops::superstructure_queue.status->shoulder
-                        .goal_angular_velocity) < kProfileError &&
-         ::std::abs(control_loops::superstructure_queue.status->wrist
                         .goal_angular_velocity) < kProfileError;
 }
 

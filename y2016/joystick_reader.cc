@@ -148,7 +148,7 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     // Don't do any normal drivetrain stuff if vision is in charge.
-    if (was_running_) {
+    if (vision_action_running_) {
       return;
     }
 
@@ -253,7 +253,7 @@ class Reader : public ::aos::input::JoystickInput {
       // Set the goals to the hanging position so when the actor finishes, we
       // will still be at the right spot.
       shoulder_goal_ = 1.2;
-      wrist_goal_ = 0.0;
+      wrist_goal_ = 1.0;
       intake_goal_ = 0.0;
       if (data.PosEdge(kExpand)) {
         is_expanding_ = true;
@@ -261,6 +261,7 @@ class Reader : public ::aos::input::JoystickInput {
         params.partial_angle = 0.3;
         params.delay_time = 0.7;
         params.full_angle = shoulder_goal_;
+        params.shooter_angle = wrist_goal_;
         action_queue_.EnqueueAction(actors::MakeSuperstructureAction(params));
       }
       if (data.IsPressed(kWinch)) {
