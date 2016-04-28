@@ -49,7 +49,7 @@ DataCollector::DataCollector()
     : cur_raw_data_("no data"),
       sample_id_(0),
       measure_index_(0),
-      overflow_id_(20) {}
+      overflow_id_(1) {}
 
 void DataCollector::RunIteration() {
   ::aos::MutexLocker locker(&mutex_);
@@ -183,26 +183,28 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
 
   // Note that we are ignoring the from_sample being sent to keep up with the
   // live data without worrying about client lag.
-  int32_t cur_sample = sample_id_ - 2;
+  int32_t cur_sample = sample_id_;
   int32_t adjusted_index = GetIndex(cur_sample);
   message << "$";  // Begin data packet.
 
   // Make sure we are not out of range.
-  if (static_cast<size_t>(adjusted_index) <
-      sample_items_.at(0).datapoints.size()) {
-    message << cur_sample << "%"
-            << sample_items_.at(0)
-                   .datapoints.at(adjusted_index)
-                   .time.ToSeconds() << "%";  // Send time.
-    // Add comma-separated list of data points.
-    for (size_t cur_measure = 0; cur_measure < sample_items_.size();
-         cur_measure++) {
-      if (cur_measure > 0) {
-        message << ",";
-      }
-      message << sample_items_.at(cur_measure)
+  if (sample_items_.size() > 0) {
+    if (static_cast<size_t>(adjusted_index) <
+        sample_items_.at(0).datapoints.size()) {
+      message << cur_sample << "%"
+              << sample_items_.at(0)
                      .datapoints.at(adjusted_index)
-                     .value;
+                     .time.ToSeconds() << "%";  // Send time.
+      // Add comma-separated list of data points.
+      for (size_t cur_measure = 0; cur_measure < sample_items_.size();
+           cur_measure++) {
+        if (cur_measure > 0) {
+          message << ",";
+        }
+        message << sample_items_.at(cur_measure)
+                       .datapoints.at(adjusted_index)
+                       .value;
+      }
     }
   }
 
