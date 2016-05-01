@@ -838,6 +838,15 @@ void AutonomousActor::TwoBallAuto() {
   StartDrive(0.0, 0.4, kTwoBallLowDrive, kSwerveTurn);
   if (!WaitForDriveNear(kDriveDistance - 0.5, kDoNotTurnCare)) return;
 
+  // Check if the ball is there.
+  bool first_ball_there = true;
+  ::y2016::sensors::ball_detector.FetchLatest();
+  if (::y2016::sensors::ball_detector.get()) {
+    const bool ball_detected = ::y2016::sensors::ball_detector->voltage > 2.5;
+    first_ball_there = ball_detected;
+    LOG(INFO, "Saw the ball: %d at %f\n", first_ball_there,
+        (aos::time::Time::Now() - start_time).ToSeconds());
+  }
   MoveSuperstructure(0.10, -0.010, 0.0, {8.0, 40.0}, {4.0, 10.0}, {10.0, 25.0},
                      false, 0.0);
   LOG(INFO, "Shutting off rollers at %f seconds, starting to straighten out\n",
@@ -877,7 +886,11 @@ void AutonomousActor::TwoBallAuto() {
   WaitForSuperstructureProfile();
   if (ShouldCancel()) return;
   LOG(INFO, "Shoot!\n");
-  Shoot();
+  if (first_ball_there) {
+    Shoot();
+  } else {
+    LOG(INFO, "Nah, not shooting\n");
+  }
 
   LOG(INFO, "First shot at %f seconds\n",
       (aos::time::Time::Now() - start_time).ToSeconds());
@@ -1016,7 +1029,7 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
   InitializeEncoders();
   ResetDrivetrain();
 
-  switch (1) {
+  switch (params.mode) {
     case 0:
       LowBarDrive();
       if (!WaitForDriveDone()) return true;
