@@ -222,7 +222,7 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.IsPressed(kFrontLong)) {
       // Forwards shot
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.41 + 0.02;
+      wrist_goal_ = M_PI + 0.41 + 0.02 - 0.005;
       if (drivetrain_queue.status.get()) {
         wrist_goal_ += drivetrain_queue.status->ground_angle;
       }
@@ -239,15 +239,18 @@ class Reader : public ::aos::input::JoystickInput {
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
       // Fender shot back
-      shoulder_goal_ = 0.65;
-      wrist_goal_ = -1.20;
-      shooter_velocity_ = 550.0;
+      shoulder_goal_ = M_PI / 2.0 - 0.2;
+      wrist_goal_ = -0.55;
+      shooter_velocity_ = 600.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kFrontFender)) {
-      // Fender shot back
-      shoulder_goal_ = 1.45;
-      wrist_goal_ = 2.5 + 1.7;
-      shooter_velocity_ = 550.0;
+      // Forwards shot, higher
+      shoulder_goal_ = M_PI / 2.0 + 0.1;
+      wrist_goal_ = M_PI + 0.41 + 0.02 + 0.020;
+      if (drivetrain_queue.status.get()) {
+        wrist_goal_ += drivetrain_queue.status->ground_angle;
+      }
+      shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kExpand) || data.IsPressed(kWinch)) {
       // Set the goals to the hanging position so when the actor finishes, we
