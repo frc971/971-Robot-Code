@@ -611,7 +611,7 @@ void Superstructure::RunIteration(
                                  ? kOperatingVoltage
                                  : kZeroingVoltage;
   if (unsafe_goal) {
-    constexpr float kTriggerThreshold = 12.0 * 0.25 / 0.005;
+    constexpr float kTriggerThreshold = 12.0 * 0.90 / 0.005;
 
     if (unsafe_goal->voltage_climber > 1.0) {
       kill_shoulder_accumulator_ +=
@@ -624,8 +624,11 @@ void Superstructure::RunIteration(
       kill_shoulder_ = true;
     }
   }
-  arm_.set_max_voltage(kill_shoulder_ ? 0.0 : max_voltage,
-                       kill_shoulder_ ? kShooterHangingVoltage : max_voltage);
+  arm_.set_max_voltage(
+      kill_shoulder_ ? 0.0 : max_voltage,
+      kill_shoulder_ ? (arm_.X_hat(0, 0) < 0.05 ? kShooterHangingLowVoltage
+                                                : kShooterHangingVoltage)
+                     : max_voltage);
   intake_.set_max_voltage(max_voltage);
 
   if (IsRunning() && !kill_shoulder_) {
