@@ -12,7 +12,45 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/mutex.h"
 
+namespace std {
+namespace this_thread {
+template <>
+void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
+  struct timespec end_time_timespec;
+  ::std::chrono::seconds sec =
+      ::std::chrono::duration_cast<::std::chrono::seconds>(
+          end_time.time_since_epoch());
+  ::std::chrono::nanoseconds nsec =
+      ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+          end_time.time_since_epoch() - sec);
+  end_time_timespec.tv_sec = sec.count();
+  end_time_timespec.tv_nsec = nsec.count();
+  int returnval;
+  do {
+    returnval = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                                &end_time_timespec, nullptr);
+    if (returnval != EINTR && returnval != 0) {
+      PLOG(FATAL, "clock_nanosleep(%jd, TIMER_ABSTIME, %p, nullptr) failed",
+           static_cast<uintmax_t>(CLOCK_MONOTONIC), &end_time_timespec);
+    }
+  } while (returnval != 0);
+}
+
+}  // namespace this_thread
+}  // namespace std
+
+
 namespace aos {
+monotonic_clock::time_point monotonic_clock::now() noexcept {
+  struct timespec current_time;
+  if (clock_gettime(CLOCK_MONOTONIC, &current_time) != 0) {
+    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
+         static_cast<uintmax_t>(CLOCK_MONOTONIC), &current_time);
+  }
+  return time_point(::std::chrono::seconds(current_time.tv_sec) +
+                    ::std::chrono::nanoseconds(current_time.tv_nsec));
+}
+
 namespace time {
 
 // State required to enable and use mock time.
