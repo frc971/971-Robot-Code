@@ -28,8 +28,10 @@ class monotonic_clock {
 
   // Returns the epoch (0).
   static constexpr monotonic_clock::time_point epoch() {
-    return time_point(duration(0));
+    return time_point(zero());
   }
+
+  static constexpr monotonic_clock::duration zero() { return duration(0); }
 };
 
 namespace time {
@@ -146,8 +148,10 @@ struct Time {
   }
 
   // Construct a time representing the period of hertz.
-  static constexpr Time FromRate(int hertz) {
-    return Time(0, kNSecInSec / hertz);
+  static constexpr ::std::chrono::nanoseconds FromRate(int hertz) {
+    return ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+               ::std::chrono::seconds(1)) /
+           hertz;
   }
 
   // Checks whether or not this time is within amount nanoseconds of other.

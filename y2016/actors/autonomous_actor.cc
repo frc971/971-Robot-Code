@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 
+#include <chrono>
 #include <cmath>
 
 #include "aos/common/util/phased_loop.h"
@@ -102,8 +103,8 @@ void AutonomousActor::WaitUntilDoneOrCanceled(
     return;
   }
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     // Poll the running bit and see if we should cancel.
     phased_loop.SleepUntilNext();
@@ -116,8 +117,8 @@ void AutonomousActor::WaitUntilDoneOrCanceled(
 constexpr double kDoNotTurnCare = 2.0;
 
 bool AutonomousActor::WaitForDriveNear(double distance, double angle) {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   constexpr double kPositionTolerance = 0.02;
   constexpr double kProfileTolerance = 0.001;
 
@@ -164,8 +165,8 @@ bool AutonomousActor::WaitForDriveNear(double distance, double angle) {
 }
 
 bool AutonomousActor::WaitForDriveProfileDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   constexpr double kProfileTolerance = 0.001;
 
   while (true) {
@@ -187,8 +188,8 @@ bool AutonomousActor::WaitForDriveProfileDone() {
 }
 
 bool AutonomousActor::WaitForMaxBy(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   double max_angle = -M_PI;
   while (true) {
     if (ShouldCancel()) {
@@ -211,8 +212,8 @@ bool AutonomousActor::WaitForMaxBy(double angle) {
 }
 
 bool AutonomousActor::WaitForAboveAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -231,8 +232,8 @@ bool AutonomousActor::WaitForAboveAngle(double angle) {
 }
 
 bool AutonomousActor::WaitForBelowAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -276,8 +277,8 @@ bool AutonomousActor::IsDriveDone() {
 }
 
 bool AutonomousActor::WaitForDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
 
   while (true) {
     if (ShouldCancel()) {
@@ -397,8 +398,8 @@ void AutonomousActor::Shoot() {
     LOG(ERROR, "Sending shooter goal failed.\n");
   }
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) return;
 
@@ -414,8 +415,8 @@ void AutonomousActor::Shoot() {
 }
 
 void AutonomousActor::WaitForShooterSpeed() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) return;
 
@@ -442,8 +443,8 @@ void AutonomousActor::WaitForAlignedWithVision(
   double last_angle = 0.0;
   int ready_to_fire = 0;
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   ::aos::time::Time end_time =
       ::aos::time::Time::Now() + align_duration;
   while (end_time > ::aos::time::Time::Now()) {
@@ -783,8 +784,8 @@ void AutonomousActor::CloseIfBall() {
 }
 
 void AutonomousActor::WaitForBallOrDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
       return;
@@ -1164,8 +1165,8 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
 
   LOG(INFO, "Done %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
 
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();

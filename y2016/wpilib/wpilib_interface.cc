@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include <chrono>
 #include <thread>
 #include <mutex>
 #include <functional>
@@ -282,8 +283,8 @@ class SensorReader {
 
     dma_synchronizer_->Start();
 
-    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                        ::aos::time::Time::InMS(4));
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(4));
 
     ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
@@ -472,8 +473,8 @@ class SolenoidWriter {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(27);
 
-    ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
-                                        ::aos::time::Time::InMS(1));
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                        ::std::chrono::milliseconds(1));
 
     while (run_) {
       {

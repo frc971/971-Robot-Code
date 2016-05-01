@@ -8,111 +8,115 @@ namespace aos {
 namespace time {
 namespace testing {
 
+using ::std::chrono::milliseconds;
+
 class PhasedLoopTest : public ::testing::Test {
  protected:
-  PhasedLoopTest() {
-    ::aos::testing::EnableTestLogging();
-  }
+  PhasedLoopTest() { ::aos::testing::EnableTestLogging(); }
 };
 
 typedef PhasedLoopTest PhasedLoopDeathTest;
 
+monotonic_clock::time_point InMs(int ms) {
+  return monotonic_clock::time_point(::std::chrono::milliseconds(ms));
+}
+
 TEST_F(PhasedLoopTest, Reset) {
   {
-    PhasedLoop loop(Time::InMS(100), Time::kZero);
+    PhasedLoop loop(milliseconds(100), milliseconds(0));
 
-    loop.Reset(Time::kZero);
-    EXPECT_EQ(Time::InMS(0), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::kZero));
-    EXPECT_EQ(Time::InMS(100), loop.sleep_time());
+    loop.Reset(monotonic_clock::epoch());
+    EXPECT_EQ(InMs(0), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch()));
+    EXPECT_EQ(InMs(100), loop.sleep_time());
 
-    loop.Reset(Time::InMS(99));
-    EXPECT_EQ(Time::InMS(0), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(99)));
-    EXPECT_EQ(Time::InMS(100), loop.sleep_time());
+    loop.Reset(InMs(99));
+    EXPECT_EQ(InMs(0), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(99)));
+    EXPECT_EQ(InMs(100), loop.sleep_time());
 
-    loop.Reset(Time::InMS(100));
-    EXPECT_EQ(Time::InMS(100), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(199)));
-    EXPECT_EQ(Time::InMS(200), loop.sleep_time());
+    loop.Reset(InMs(100));
+    EXPECT_EQ(InMs(100), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(199)));
+    EXPECT_EQ(InMs(200), loop.sleep_time());
 
-    loop.Reset(Time::InMS(101));
-    EXPECT_EQ(Time::InMS(100), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(101)));
-    EXPECT_EQ(Time::InMS(200), loop.sleep_time());
+    loop.Reset(InMs(101));
+    EXPECT_EQ(InMs(100), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(101)));
+    EXPECT_EQ(InMs(200), loop.sleep_time());
   }
   {
-    PhasedLoop loop(Time::InMS(100), Time::InMS(1));
-    loop.Reset(Time::kZero);
-    EXPECT_EQ(Time::InMS(-99), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::kZero));
-    EXPECT_EQ(Time::InMS(1), loop.sleep_time());
+    PhasedLoop loop(milliseconds(100), milliseconds(1));
+    loop.Reset(monotonic_clock::epoch());
+    EXPECT_EQ(InMs(-99), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch()));
+    EXPECT_EQ(InMs(1), loop.sleep_time());
   }
   {
-    PhasedLoop loop(Time::InMS(100), Time::InMS(99));
+    PhasedLoop loop(milliseconds(100), milliseconds(99));
 
-    loop.Reset(Time::kZero);
-    EXPECT_EQ(Time::InMS(-1), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::kZero));
-    EXPECT_EQ(Time::InMS(99), loop.sleep_time());
+    loop.Reset(monotonic_clock::epoch());
+    EXPECT_EQ(InMs(-1), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch()));
+    EXPECT_EQ(InMs(99), loop.sleep_time());
 
-    loop.Reset(Time::InMS(98));
-    EXPECT_EQ(Time::InMS(-1), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(98)));
-    EXPECT_EQ(Time::InMS(99), loop.sleep_time());
+    loop.Reset(InMs(98));
+    EXPECT_EQ(InMs(-1), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(98)));
+    EXPECT_EQ(InMs(99), loop.sleep_time());
 
-    loop.Reset(Time::InMS(99));
-    EXPECT_EQ(Time::InMS(99), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(99)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
+    loop.Reset(InMs(99));
+    EXPECT_EQ(InMs(99), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(99)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
 
-    loop.Reset(Time::InMS(100));
-    EXPECT_EQ(Time::InMS(99), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(100)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
+    loop.Reset(InMs(100));
+    EXPECT_EQ(InMs(99), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(100)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
   }
 }
 
 TEST_F(PhasedLoopTest, Iterate) {
   {
-    PhasedLoop loop(Time::InMS(100), Time::InMS(99));
-    loop.Reset(Time::kZero);
-    EXPECT_EQ(1, loop.Iterate(Time::kZero));
-    EXPECT_EQ(Time::InMS(99), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(100)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(100)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(101)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(198)));
-    EXPECT_EQ(Time::InMS(199), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(199)));
-    EXPECT_EQ(Time::InMS(299), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(300)));
-    EXPECT_EQ(Time::InMS(399), loop.sleep_time());
-    EXPECT_EQ(3, loop.Iterate(Time::InMS(600)));
-    EXPECT_EQ(Time::InMS(699), loop.sleep_time());
+    PhasedLoop loop(milliseconds(100), milliseconds(99));
+    loop.Reset(monotonic_clock::epoch());
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch()));
+    EXPECT_EQ(InMs(99), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(100)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(100)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(101)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(198)));
+    EXPECT_EQ(InMs(199), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(199)));
+    EXPECT_EQ(InMs(299), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(300)));
+    EXPECT_EQ(InMs(399), loop.sleep_time());
+    EXPECT_EQ(3, loop.Iterate(InMs(600)));
+    EXPECT_EQ(InMs(699), loop.sleep_time());
   }
   {
-    PhasedLoop loop(Time::InMS(100), Time::InMS(1));
-    loop.Reset(Time::kZero);
-    EXPECT_EQ(1, loop.Iterate(Time::kZero));
-    EXPECT_EQ(Time::InMS(1), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(100)));
-    EXPECT_EQ(Time::InMS(101), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(100)));
-    EXPECT_EQ(Time::InMS(101), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(103)));
-    EXPECT_EQ(Time::InMS(201), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(198)));
-    EXPECT_EQ(Time::InMS(201), loop.sleep_time());
-    EXPECT_EQ(0, loop.Iterate(Time::InMS(200)));
-    EXPECT_EQ(Time::InMS(201), loop.sleep_time());
-    EXPECT_EQ(1, loop.Iterate(Time::InMS(201)));
-    EXPECT_EQ(Time::InMS(301), loop.sleep_time());
-    EXPECT_EQ(3, loop.Iterate(Time::InMS(600)));
-    EXPECT_EQ(Time::InMS(601), loop.sleep_time());
+    PhasedLoop loop(milliseconds(100), milliseconds(1));
+    loop.Reset(monotonic_clock::epoch());
+    EXPECT_EQ(1, loop.Iterate(monotonic_clock::epoch()));
+    EXPECT_EQ(InMs(1), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(100)));
+    EXPECT_EQ(InMs(101), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(100)));
+    EXPECT_EQ(InMs(101), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(103)));
+    EXPECT_EQ(InMs(201), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(198)));
+    EXPECT_EQ(InMs(201), loop.sleep_time());
+    EXPECT_EQ(0, loop.Iterate(InMs(200)));
+    EXPECT_EQ(InMs(201), loop.sleep_time());
+    EXPECT_EQ(1, loop.Iterate(InMs(201)));
+    EXPECT_EQ(InMs(301), loop.sleep_time());
+    EXPECT_EQ(3, loop.Iterate(InMs(600)));
+    EXPECT_EQ(InMs(601), loop.sleep_time());
   }
 }
 
@@ -120,40 +124,42 @@ TEST_F(PhasedLoopTest, Iterate) {
 // This seems like a rare case at first, but starting from zero needs to
 // work, which means negatives should too.
 TEST_F(PhasedLoopTest, CrossingZero) {
-  PhasedLoop loop(Time::InMS(100), Time::InMS(1));
-  loop.Reset(Time::InMS(-1000));
-  EXPECT_EQ(Time::InMS(-1099), loop.sleep_time());
-  EXPECT_EQ(9, loop.Iterate(Time::InMS(-250)));
-  EXPECT_EQ(Time::InMS(-199), loop.sleep_time());
-  EXPECT_EQ(1, loop.Iterate(Time::InMS(-199)));
-  EXPECT_EQ(Time::InMS(-99), loop.sleep_time());
-  EXPECT_EQ(1, loop.Iterate(Time::InMS(-90)));
-  EXPECT_EQ(Time::InMS(1), loop.sleep_time());
-  EXPECT_EQ(0, loop.Iterate(Time::InMS(0)));
-  EXPECT_EQ(Time::InMS(1), loop.sleep_time());
-  EXPECT_EQ(1, loop.Iterate(Time::InMS(1)));
-  EXPECT_EQ(Time::InMS(101), loop.sleep_time());
+  PhasedLoop loop(milliseconds(100), milliseconds(1));
+  loop.Reset(InMs(-1000));
+  EXPECT_EQ(InMs(-1099), loop.sleep_time());
+  EXPECT_EQ(9, loop.Iterate(InMs(-250)));
+  EXPECT_EQ(InMs(-199), loop.sleep_time());
+  EXPECT_EQ(1, loop.Iterate(InMs(-199)));
+  EXPECT_EQ(InMs(-99), loop.sleep_time());
+  EXPECT_EQ(1, loop.Iterate(InMs(-90)));
+  EXPECT_EQ(InMs(1), loop.sleep_time());
+  EXPECT_EQ(0, loop.Iterate(InMs(0)));
+  EXPECT_EQ(InMs(1), loop.sleep_time());
+  EXPECT_EQ(1, loop.Iterate(InMs(1)));
+  EXPECT_EQ(InMs(101), loop.sleep_time());
 
-  EXPECT_EQ(0, loop.Iterate(Time::InMS(2)));
-  EXPECT_EQ(Time::InMS(101), loop.sleep_time());
+  EXPECT_EQ(0, loop.Iterate(InMs(2)));
+  EXPECT_EQ(InMs(101), loop.sleep_time());
 
-  EXPECT_EQ(-2, loop.Iterate(Time::InMS(-101)));
-  EXPECT_EQ(Time::InMS(-99), loop.sleep_time());
-  EXPECT_EQ(1, loop.Iterate(Time::InMS(-99)));
-  EXPECT_EQ(Time::InMS(1), loop.sleep_time());
+  EXPECT_EQ(-2, loop.Iterate(InMs(-101)));
+  EXPECT_EQ(InMs(-99), loop.sleep_time());
+  EXPECT_EQ(1, loop.Iterate(InMs(-99)));
+  EXPECT_EQ(InMs(1), loop.sleep_time());
 
-  EXPECT_EQ(0, loop.Iterate(Time::InMS(-99)));
-  EXPECT_EQ(Time::InMS(1), loop.sleep_time());
+  EXPECT_EQ(0, loop.Iterate(InMs(-99)));
+  EXPECT_EQ(InMs(1), loop.sleep_time());
 }
 
 // Tests that passing invalid values to the constructor dies correctly.
 TEST_F(PhasedLoopDeathTest, InvalidValues) {
-  EXPECT_DEATH(PhasedLoop(Time::InMS(1), Time::InMS(2)), ".*offset<interval.*");
-  EXPECT_DEATH(PhasedLoop(Time::InMS(1), Time::InMS(1)), ".*offset<interval.*");
-  EXPECT_DEATH(PhasedLoop(Time::InMS(1), Time::InMS(-1)),
-               ".*offset>=Time::kZero.*");
-  EXPECT_DEATH(PhasedLoop(Time::InMS(0), Time::InMS(0)),
-               ".*interval>Time::kZero.*");
+  EXPECT_DEATH(PhasedLoop(milliseconds(1), milliseconds(2)),
+               ".*offset<interval.*");
+  EXPECT_DEATH(PhasedLoop(milliseconds(1), milliseconds(1)),
+               ".*offset<interval.*");
+  EXPECT_DEATH(PhasedLoop(milliseconds(1), milliseconds(-1)),
+               ".*offset>=monotonic_clock::duration\\(0\\).*");
+  EXPECT_DEATH(PhasedLoop(milliseconds(0), milliseconds(0)),
+               ".*interval>monotonic_clock::duration\\(0\\).*");
 }
 
 }  // namespace testing
