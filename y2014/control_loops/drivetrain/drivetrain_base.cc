@@ -13,6 +13,7 @@ namespace y2014 {
 namespace control_loops {
 
 const DrivetrainConfig &GetDrivetrainConfig() {
+  // TODO(austin): Switch over to using the profile.
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
@@ -31,8 +32,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       constants::GetValues().left_drive,
       constants::GetValues().right_drive,
       true,
-      // TODO(austin): Switch over to using the profle.
-      false};
+      0};
 
   return kDrivetrainConfig;
 };
