@@ -39,8 +39,6 @@ const ProfileParameters kTwoBallReturnDrive = {3.0, 1.9};
 const ProfileParameters kTwoBallReturnSlow = {3.0, 2.5};
 const ProfileParameters kTwoBallBallPickup = {2.0, 1.75};
 const ProfileParameters kTwoBallBallPickupAccel = {2.0, 2.5};
-
-const double kDistanceShort = 0.25;
 }  // namespace
 
 AutonomousActor::AutonomousActor(actors::AutonomousActionQueueGroup *s)
