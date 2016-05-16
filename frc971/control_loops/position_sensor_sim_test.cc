@@ -150,5 +150,50 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_DOUBLE_EQ(index_diff * 1.25, position.latched_encoder);
 }
 
+// Tests that the latched values update correctly.
+TEST_F(PositionSensorSimTest, LatchedValues) {
+  const double index_diff = 0.5;
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(0, 0.25);
+  PotAndIndexPosition position;
+
+  sim.MoveTo(0.75 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(0u, position.index_pulses);
+
+  sim.MoveTo(1.75 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(1u, position.index_pulses);
+  EXPECT_NEAR(index_diff, position.latched_pot, 0.75);
+  EXPECT_DOUBLE_EQ(index_diff, position.latched_encoder);
+  const double first_latched_pot = position.latched_pot;
+
+  sim.MoveTo(1.95 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(1u, position.index_pulses);
+  EXPECT_NEAR(index_diff, position.latched_pot, 0.75);
+  EXPECT_DOUBLE_EQ(first_latched_pot, position.latched_pot);
+  EXPECT_DOUBLE_EQ(index_diff, position.latched_encoder);
+
+  sim.MoveTo(2.05 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(2u, position.index_pulses);
+  EXPECT_NEAR(index_diff * 2, position.latched_pot, 0.75);
+  EXPECT_DOUBLE_EQ(index_diff * 2, position.latched_encoder);
+
+  sim.MoveTo(1.95 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(3u, position.index_pulses);
+  EXPECT_NEAR(index_diff * 2, position.latched_pot, 0.75);
+  EXPECT_DOUBLE_EQ(index_diff * 2, position.latched_encoder);
+
+  sim.MoveTo(0.95 * index_diff);
+  sim.GetSensorValues(&position);
+  EXPECT_EQ(4u, position.index_pulses);
+  EXPECT_NEAR(index_diff, position.latched_pot, 0.75);
+  EXPECT_GT(::std::abs(first_latched_pot - position.latched_pot), 0.005);
+  EXPECT_DOUBLE_EQ(index_diff, position.latched_encoder);
+}
+
 }  // namespace control_loops
 }  // namespace frc971
