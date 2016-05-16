@@ -1,13 +1,13 @@
 # -*- mode: python; -*- PYTHON-PREPROCESSING-REQUIRED
 
 def _GetPath(ctx, path):
-  if str(ctx.label).startswith('@'):
+  if str(ctx.label).startswith('@') and not str(ctx.label).startswith('@//'):
     fail('External labels not supported for now')
   return path
 
 def _GenDir(ctx):
   if not ctx.attr.includes:
-    if str(ctx.label).startswith('@'):
+    if str(ctx.label).startswith('@') and not str(ctx.label).startswith('@//'):
       fail('External labels not supported for now')
     return ''
   if not ctx.attr.includes[0]:
