@@ -112,6 +112,7 @@ class Superstructure
 
   static constexpr double kZeroingVoltage = 6.0;
   static constexpr double kShooterHangingVoltage = 6.0;
+  static constexpr double kShooterHangingLowVoltage = 2.0;
   static constexpr double kOperatingVoltage = 12.0;
   static constexpr double kLandingShoulderDownVoltage = -1.5;
 
