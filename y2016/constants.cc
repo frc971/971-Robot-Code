@@ -86,25 +86,25 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            -4.550531 + 150.40906362 * M_PI / 180.0 + 0.5098 - 0.0178 - 0.0725,
            {Values::kZeroingSampleSize, Values::kIntakeEncoderIndexDifference,
             // Location of an index pulse.
-            0.018008, 1.5},
+            0.018008, 2.5},
           },
 
           // Shoulder
           {
            // Value to add to the pot reading for the shoulder.
            -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0 - 0.0323 - 0.1057 +
-               0.0035 + 0.0055 - 0.001,
+               0.0035 + 0.0055 - 0.001 - 0.0103 + 0.0032,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.536989, 1.5},
+            0.535359, 2.5},
           },
 
           // Wrist
           {
            // Value to add to the pot reading for the wrist.
            3.2390714288298668 + -0.06138835 * M_PI / 180.0 + 0.0078 - 0.0548 -
-               0.0167 + 0.002 - 0.0026 - 0.1040 - 0.0035 - 0.0012,
+               0.0167 + 0.002 - 0.0026 - 0.1040 - 0.0035 - 0.0012 + 0.0166 - 0.017 + 0.148 + 0.004,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            -0.054882, 1.5},
+            -0.354946, 2.5},
           },
 
           0.0,
@@ -126,17 +126,18 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Shoulder (Now calibrated at 0)
           {
-           -1.0016 - 0.0841 + 0.06138835 * M_PI / 180.0 + 1.07838 - 1.0441 + 0.0034,
+           -1.0016 - 0.0841 + 0.06138835 * M_PI / 180.0 + 1.07838 - 1.0441 +
+               0.0034 + 0.0065,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.416092, 1.3},
+            0.126458, 1.3},
           },
 
           // Wrist
           {
            3.326328571170133 - 0.06138835 * M_PI / 180.0 - 0.177 + 0.0323 -
-               0.023 + 0.0488,
+               0.023 + 0.0488 + 0.0120 - 0.0005 - 0.0784 - 0.0010 - 0.080 + 0.1245,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            -0.005145, 1.3},
+            -0.263227, 1.3},
           },
 
           0.011,
