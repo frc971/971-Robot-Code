@@ -209,7 +209,7 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
   if (shoulder_angle <
           CollisionAvoidance::kMinShoulderAngleForHorizontalShooter &&
       ::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
-    LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| < %f.\n",
+    LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| > %f.\n",
         shoulder_angle,
         CollisionAvoidance::kMinShoulderAngleForHorizontalShooter, wrist_angle,
         kMaxWristAngleForSafeArmStowing);
