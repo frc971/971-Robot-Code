@@ -49,7 +49,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
 
       ::y2016::control_loops::drivetrain::kHighGearRatio,
       ::y2016::control_loops::drivetrain::kLowGearRatio,
-      kThreeStateDriveShifter, kThreeStateDriveShifter, false};
+      kThreeStateDriveShifter, kThreeStateDriveShifter, false, 0};
 
   return kDrivetrainConfig;
 };
@@ -256,7 +256,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
-  RunForTime(Time::InSeconds(1.0));
+  RunForTime(Time::InSeconds(2.0));
   VerifyNearGoal();
 }
 
