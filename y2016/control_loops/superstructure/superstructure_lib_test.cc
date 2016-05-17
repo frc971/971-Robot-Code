@@ -795,7 +795,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   RunForTime(Time::InSeconds(2), false);
   EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
 
-  superstructure_plant_.set_power_error(1.0, 1.0, 1.0);
+  superstructure_plant_.set_power_error(1.0, 1.5, 1.0);
 
   RunForTime(Time::InSeconds(1), false);
 
