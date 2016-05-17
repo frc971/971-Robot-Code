@@ -108,8 +108,7 @@ void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
     // zeroed.
     zeroed_ = true;
     // Throw an error if first_start_pos is bigger/smaller than
-    // allowable_encoder_error_ * index_diff +
-    // start_pos.
+    // allowable_encoder_error_ * index_diff + start_pos.
     if (::std::abs(first_start_pos_ - start_pos_) >
         allowable_encoder_error_ * index_diff_) {
       if (!error_) {
