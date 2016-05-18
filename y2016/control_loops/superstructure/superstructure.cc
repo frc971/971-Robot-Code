@@ -470,6 +470,29 @@ void Superstructure::RunIteration(
               arm_.unprofiled_goal(2, 0));
         }
 
+        // If we're about to ask the wrist to go past one of its limits, then
+        // move the goal so it will be just at the limit when we finish lifting
+        // the shoulder. If it wasn't intersecting something before, this can't
+        // cause it to crash into anything.
+        const double ungrounded_wrist = arm_.goal(2, 0) - arm_.goal(0, 0);
+        const double unprofiled_ungrounded_wrist =
+            arm_.unprofiled_goal(2, 0) - arm_.unprofiled_goal(0, 0);
+        if (unprofiled_ungrounded_wrist >
+                constants::Values::kWristRange.upper &&
+            ungrounded_wrist >
+                constants::Values::kWristRange.upper - kWristAlmostLevel) {
+          arm_.set_unprofiled_goal(arm_.unprofiled_goal(0, 0),
+                                   constants::Values::kWristRange.upper +
+                                       arm_.unprofiled_goal(0, 0));
+        } else if (unprofiled_ungrounded_wrist <
+                       constants::Values::kWristRange.lower &&
+                   ungrounded_wrist < constants::Values::kWristRange.lower +
+                                          kWristAlmostLevel) {
+          arm_.set_unprofiled_goal(arm_.unprofiled_goal(0, 0),
+                                   constants::Values::kWristRange.lower +
+                                       arm_.unprofiled_goal(0, 0));
+        }
+
         // Wait until we are level and then go for it.
         if (IsArmNear(kLooseTolerance)) {
           state_ = LOW_ARM_ZERO_LEVEL_SHOOTER;
