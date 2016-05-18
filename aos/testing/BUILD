@@ -72,3 +72,15 @@ cc_library(
   ],
   testonly = True,
 )
+
+cc_library(
+  name = 'random_seed',
+  visibility = ['//visibility:public'],
+  srcs = [
+    'random_seed.cc',
+  ],
+  hdrs = [
+    'random_seed.h',
+  ],
+  testonly = True,
+)

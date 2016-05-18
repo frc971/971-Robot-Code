@@ -1,6 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 #define FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 
+#include "aos/testing/random_seed.h"
+
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/gaussian_noise.h"
 
@@ -18,7 +20,8 @@ class PositionSensorSimulator {
   // noise_seed: The seed to feed into the random number generator for the
   //             potentiometer values.
   // TODO(danielp): Allow for starting with a non-zero encoder value.
-  PositionSensorSimulator(double index_diff, unsigned int noise_seed = 0);
+  PositionSensorSimulator(double index_diff, unsigned int noise_seed =
+                                                 ::aos::testing::RandomSeed());
 
   // Set new parameters for the sensors. This is useful for unit tests to change
   // the simulated sensors' behavior on the fly.
@@ -57,6 +60,8 @@ class PositionSensorSimulator {
   int cur_index_;
   // How many index pulses we've seen.
   int index_count_;
+  // The pot position at the most recent index pulse with noise added.
+  double latched_pot_;
   // Distance between index pulses on the mechanism.
   double index_diff_;
   // Absolute position of a known index pulse.

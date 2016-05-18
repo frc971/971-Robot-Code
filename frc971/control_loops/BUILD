@@ -59,6 +59,7 @@ cc_test(
 
 cc_library(
   name = 'position_sensor_sim',
+  testonly = True,
   srcs = [
     'position_sensor_sim.cc',
   ],
@@ -69,6 +70,7 @@ cc_library(
     ':queues',
     ':gaussian_noise',
     '//debian:libm',
+    '//aos/testing:random_seed',
   ],
 )
 

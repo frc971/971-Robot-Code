@@ -70,6 +70,11 @@ void PositionSensorSimulator::MoveTo(double new_pos) {
     index_count_++;
   }
 
+  if (new_index_segment != cur_index_segment_) {
+    latched_pot_ = pot_noise_.AddNoiseToSample(cur_index_ * index_diff_ +
+                                               known_index_pos_);
+  }
+
   cur_index_segment_ = new_index_segment;
   cur_pos_ = new_pos;
 }
@@ -86,7 +91,7 @@ void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
     double index_pulse_position = cur_index_ * index_diff_ + known_index_pos_;
 
     // Populate the latched pot/encoder samples.
-    values->latched_pot = pot_noise_.AddNoiseToSample(index_pulse_position);
+    values->latched_pot = latched_pot_;
     values->latched_encoder = index_pulse_position - start_position_;
   }
 
