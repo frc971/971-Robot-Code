@@ -33,7 +33,7 @@
 
 using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 
-// This code was originally based on <http://www.akkadia.org/drepper/futex.pdf>,
+// This code was originally based on <https://www.akkadia.org/drepper/futex.pdf>,
 // but is has since evolved a lot. However, that still has useful information.
 //
 // Finding information about actually using futexes is really REALLY hard, so
