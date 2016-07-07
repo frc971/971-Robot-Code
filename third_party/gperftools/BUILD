@@ -137,6 +137,9 @@ cc_library(
     '//third_party/empty_config_h',
   ],
   copts = common_copts,
+  linkopts = [
+    '-pthread',
+  ],
   alwayslink = True,
   nocopts = '-std=gnu\+\+1y',
 )

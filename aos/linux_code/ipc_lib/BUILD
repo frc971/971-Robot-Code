@@ -8,6 +8,9 @@ cc_library(
   hdrs = [
     'aos_sync.h',
   ],
+  linkopts = [
+    '-pthread',
+  ],
   deps = [
     '//aos/common/logging',
     '//aos/common:once',

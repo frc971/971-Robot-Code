@@ -66,15 +66,15 @@ cc_binary(
     ':slycot_c',
   ],
   linkopts = ['-shared', '-lblas', '-llapack'],
-  linkstatic=0,
+  linkstatic = False,
 )
 
 # Generate the _wrapper file which loads _fortranwrapper and pretends.
 genrule(
   name = '_wrapper',
   outs = ['slycot/_wrapper.py'],
-  cmd = 'echo "from _fortranwrapper import *" > $(OUTS)',
-  output_to_bindir=1,
+  cmd = 'echo "from external.slycot_repo._fortranwrapper import *" > $(OUTS)',
+  output_to_bindir = True,
 )
 
 # Now present a python library for slycot

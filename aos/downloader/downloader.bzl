@@ -6,7 +6,7 @@ def _aos_downloader_impl(ctx):
     content = '\n'.join([
       '#!/bin/bash',
       'set -e',
-      'cd "${BASH_SOURCE[@]}.runfiles"',
+      'cd "${BASH_SOURCE[@]}.runfiles/%s"' % ctx.workspace_name,
     ] + ['%s %s --dirs %s -- %s "$@"' % (
        ctx.executable._downloader.short_path,
        ' '.join([src.short_path for src in d.downloader_srcs]),

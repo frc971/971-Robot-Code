@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# The bazel script calls this instead of the bazel-real binary which is
+# installed next to it. This script downloads a specific version of Bazel and
+# then calls that.
+
+# Alternatively, if the environment variable BAZEL_OVERRIDE is set, that will be
+# run directly (after printing a message). That is intended for testing only.
+
+# This script operates based on the assumption that any directory of the correct
+# name is a fully extracted, valid Bazel installation. It is careful to avoid
+# putting an invalid directory at that name at any point.
+
+set -e
+set -u
+set -o pipefail
+
+if [[ -n "${BAZEL_OVERRIDE+x}" ]]; then
+  tput setaf 1 >&2
+  echo -n "Actually calling " >&2
+  tput setaf 3 >&2
+  echo "${BAZEL_OVERRIDE}" >&2
+  tput sgr0 >&2
+  exec "${BAZEL_OVERRIDE}" "$@"
+fi
+
+readonly VERSION="201607070016+7a0d360"
+
+readonly DOWNLOAD_DIR="$(dirname "${BASH_SOURCE[0]}")/../bazel-downloads"
+# Directory to unpack bazel into.  This must change whenever bazel changes.
+readonly VERSION_DIR="${DOWNLOAD_DIR}/${VERSION}-v1"
+readonly VERSION_BAZEL="${VERSION_DIR}/usr/bin/bazel"
+
+# Creating might fail if another invocation is racing us.
+if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
+  mkdir "${DOWNLOAD_DIR}" || true
+fi
+if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
+  echo "Failed to create ${DOWNLOAD_DIR}" >&2
+  exit 1
+fi
+
+readonly INSTALLER_NAME="bazel_${VERSION}_amd64.deb"
+readonly DOWNLOAD_URL="http://frc971.org/Build-Dependencies/${INSTALLER_NAME}"
+
+if [[ ! -d "${VERSION_DIR}" ]]; then
+  echo "Downloading Bazel version ${VERSION} from ${DOWNLOAD_URL}..." >&2
+
+  # A temporary directory which is definitely on the same filesystem as our final
+  # destination, which is important so we can atomically move it.
+  # If this move is non-atomic, then a concurrent Bazel command (like the verifier
+  # uses several of) could use a half-copied Bazel installation.
+  TEMP_DIR="$(mktemp --directory --tmpdir="${DOWNLOAD_DIR}")"
+  readonly TEMP_DIR
+
+  ( cd "${TEMP_DIR}"
+    wget "${DOWNLOAD_URL}" -O "${INSTALLER_NAME}" --no-verbose --show-progress
+    echo "Unpacking Bazel version ${VERSION}..." >&2
+    dpkg-deb -x "${INSTALLER_NAME}" extracted
+  )
+
+  touch "${TEMP_DIR}/extracted/usr/bin/bazel.bazelrc"
+
+  # Careful: somebody else might have already done it. If they manage to make
+  # the move between our check and our move, then we'll end up with a random
+  # extracted directory which won't do anybody any harm. If somebody else does
+  # that first, then our move will fail.
+  if [[ ! -d "${VERSION_DIR}" ]]; then
+    mv "${TEMP_DIR}/extracted" "${VERSION_DIR}" || true
+  fi
+  if [[ ! -d "${VERSION_DIR}" ]]; then
+    echo "Failed to create ${VERSION_DIR}" >&2
+    exit 1
+  fi
+  rm -rf "${TEMP_DIR}"
+  echo "Done downloading Bazel version ${VERSION}"
+fi
+
+if [[ -x "${VERSION_BAZEL}-real" ]]; then
+  exec -a "${VERSION_BAZEL}" env -i \
+      HOSTNAME="${HOSTNAME}" \
+      SHELL="${SHELL}" \
+      USER="${USER}" \
+      PATH="${PATH}" \
+      LANG="${LANG}" \
+      HOME="${HOME}" \
+      LOGNAME="${LOGNAME}" \
+      TERM="${TERM}" \
+      "${VERSION_BAZEL}-real" "$@"
+fi
+if [[ -x "${VERSION_BAZEL}" ]]; then
+  exec env -i \
+      HOSTNAME="${HOSTNAME}" \
+      SHELL="${SHELL}" \
+      USER="${USER}" \
+      PATH="${PATH}" \
+      LANG="${LANG}" \
+      HOME="${HOME}" \
+      LOGNAME="${LOGNAME}" \
+      TERM="${TERM}" \
+      "${VERSION_BAZEL}" "$@"
+fi
+
+echo "Can't find the real bazel!" >&2
+exit 1

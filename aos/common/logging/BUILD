@@ -176,6 +176,9 @@ cc_library(
   hdrs = [
     'implementations.h',
   ],
+  linkopts = [
+    '-pthread',
+  ],
   deps = [
     '//aos/common:die',
     '//aos/common:time',

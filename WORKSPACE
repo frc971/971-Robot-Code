@@ -1,3 +1,5 @@
+workspace(name = 'org_frc971')
+
 new_local_repository(
   name = 'usr_repo',
   path = '/usr',
