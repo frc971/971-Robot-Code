@@ -86,6 +86,7 @@ if [[ -x "${VERSION_BAZEL}-real" ]]; then
       HOME="${HOME}" \
       LOGNAME="${LOGNAME}" \
       TERM="${TERM}" \
+      DISPLAY="${DISPLAY}" \
       "${VERSION_BAZEL}-real" "$@"
 fi
 if [[ -x "${VERSION_BAZEL}" ]]; then
@@ -98,6 +99,7 @@ if [[ -x "${VERSION_BAZEL}" ]]; then
       HOME="${HOME}" \
       LOGNAME="${LOGNAME}" \
       TERM="${TERM}" \
+      DISPLAY="${DISPLAY}" \
       "${VERSION_BAZEL}" "$@"
 fi
 
