@@ -62,3 +62,15 @@ py_binary(
     '//frc971/control_loops/python:controls',
   ]
 )
+
+py_binary(
+  name = 'extended_lqr',
+  srcs = [
+    'extended_lqr.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+)
