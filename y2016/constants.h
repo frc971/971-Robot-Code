@@ -33,14 +33,14 @@ struct Values {
   // Ratios for our subsystems.
   static constexpr double kShooterEncoderRatio = 1.0;
   static constexpr double kIntakeEncoderRatio =
-      16.0 / 48.0 * 18.0 / 72.0 * 14.0 / 64.0;
+      14.0 / 64.0 * 18.0 / 72.0 * 16.0 / 48.0;
   static constexpr double kShoulderEncoderRatio =
-      12.0 / 42.0 * 18.0 / 72.0 * 14.0 / 64.0;
+      14.0 / 64.0 * 18.0 / 72.0 * 12.0 / 42.0;
   static constexpr double kWristEncoderRatio =
-      16.0 / 48.0 * 18.0 / 64.0 * 14.0 / 54.0;
+      14.0 / 54.0 * 18.0 / 64.0 * 16.0 / 48.0;
 
-  static constexpr double kIntakePotRatio = 16.0 / 48.0 * 18.0 / 72.0;
-  static constexpr double kShoulderPotRatio = 16.0 / 58.0;
+  static constexpr double kIntakePotRatio = 18.0 / 72.0 * 16.0 / 48.0;
+  static constexpr double kShoulderPotRatio = 12.0 / 42.0;
   static constexpr double kWristPotRatio = 16.0 / 48.0;
 
   // Difference in radians between index pulses.

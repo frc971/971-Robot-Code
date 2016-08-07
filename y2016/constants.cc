@@ -93,7 +93,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           {
            // Value to add to the pot reading for the shoulder.
            -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0 - 0.0323 - 0.1057 +
-               0.0035 + 0.0055 - 0.001 - 0.0103 + 0.0032,
+               0.0035 + 0.0055 - 0.001 - 0.0103 + 0.0032 - 0.0755,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
             0.535359, 2.5},
           },
