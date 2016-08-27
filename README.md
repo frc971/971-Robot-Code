@@ -32,7 +32,8 @@ Steps to set up a computer to build the code:
 ```console
 apt-get install python libpython-dev bazel ruby clang-format-3.5 clang-3.6 gfortran libblas-dev liblapack-dev python-scipy python-matplotlib
 ```
-  2. Allow Bazel's sandboxing to work
+  2. Allow Bazel's sandboxing to work:
+     Follow the direction in `doc/frc971.conf`.
 
 Some useful Bazel commands:
   * Build and test everything (on the host system):
