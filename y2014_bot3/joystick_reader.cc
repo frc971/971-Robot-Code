@@ -11,11 +11,11 @@
 #include "aos/common/time.h"
 
 #include "frc971/queues/gyro.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/autonomous/auto.q.h"
-#include "y2014_bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
-using ::y2014_bot3::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2014_bot3::control_loops::rollers_queue;
 using ::frc971::sensors::gyro_reading;
 
@@ -30,8 +30,11 @@ namespace joysticks {
 
 // Joystick & button addresses.
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
-const ButtonLocation kShiftHigh(2, 3), kShiftLow(2, 1);
+const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
+
+const ButtonLocation kTurn1(1, 7);
+const ButtonLocation kTurn2(1, 11);
 
 const ButtonLocation kFrontRollersIn(3, 8);
 const ButtonLocation kBackRollersIn(3, 7);
@@ -62,15 +65,33 @@ class Reader : public ::aos::input::JoystickInput {
   }
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
+    bool is_control_loop_driving = false;
+    static double left_goal = 0.0;
+    static double right_goal = 0.0;
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
+
+    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
+      drivetrain_queue.status.FetchLatest();
+      if (drivetrain_queue.status.get()) {
+        left_goal = drivetrain_queue.status->estimated_left_position;
+        right_goal = drivetrain_queue.status->estimated_right_position;
+      }
+    }
+    if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
+      is_control_loop_driving = true;
+    }
 
     if (!drivetrain_queue.goal.MakeWithBuilder()
              .steering(wheel)
              .throttle(throttle)
-             .quickturn(data.IsPressed(kQuickTurn))
-             .control_loop_driving(false)
              .highgear(is_high_gear_)
+             .quickturn(data.IsPressed(kQuickTurn))
+             .control_loop_driving(is_control_loop_driving)
+             .left_goal(left_goal - wheel * 0.5 + throttle * 0.3)
+             .right_goal(right_goal + wheel * 0.5 + throttle * 0.3)
+             .left_velocity_goal(0)
+             .right_velocity_goal(0)
              .Send()) {
       LOG(WARNING, "sending stick values failed\n");
     }
@@ -79,7 +100,7 @@ class Reader : public ::aos::input::JoystickInput {
       is_high_gear_ = false;
     }
 
-    if (data.PosEdge(kShiftHigh)) {
+    if (data.PosEdge(kShiftHigh) || data.PosEdge(kShiftHigh2)) {
       is_high_gear_ = true;
     }
   }

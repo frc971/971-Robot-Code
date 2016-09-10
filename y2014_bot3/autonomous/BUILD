@@ -20,8 +20,7 @@ cc_library(
   deps = [
     ':auto_queue',
     '//aos/common/controls:control_loop',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain_queue',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain_lib',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2014_bot3/control_loops/rollers:rollers_queue',
     '//aos/common:time',
     '//aos/common/util:phased_loop',

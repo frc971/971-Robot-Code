@@ -2,45 +2,6 @@ package(default_visibility = ['//visibility:public'])
 
 load('/aos/build/queues', 'queue_library')
 
-cc_binary(
-  name = 'replay_drivetrain',
-  srcs = [
-    'replay_drivetrain.cc',
-  ],
-  deps = [
-    ':drivetrain_queue',
-    '//aos/common/controls:replay_control_loop',
-    '//aos/linux_code:init',
-  ],
-)
-
-queue_library(
-  name = 'drivetrain_queue',
-  srcs = [
-    'drivetrain.q',
-  ],
-  deps = [
-    '//aos/common/controls:control_loop_queues',
-  ],
-)
-
-cc_library(
-  name = 'polydrivetrain_plants',
-  srcs = [
-    'polydrivetrain_dog_motor_plant.cc',
-    'drivetrain_dog_motor_plant.cc',
-    'polydrivetrain_cim_plant.cc',
-  ],
-  hdrs = [
-    'polydrivetrain_dog_motor_plant.h',
-    'drivetrain_dog_motor_plant.h',
-    'polydrivetrain_cim_plant.h',
-  ],
-  deps = [
-    '//frc971/control_loops:state_feedback_loop',
-  ],
-)
-
 genrule(
   name = 'genrule_drivetrain',
   visibility = ['//visibility:private'],
@@ -51,47 +12,55 @@ genrule(
   outs = [
     'drivetrain_dog_motor_plant.h',
     'drivetrain_dog_motor_plant.cc',
+    'kalman_drivetrain_motor_plant.h',
+    'kalman_drivetrain_motor_plant.cc',
+  ],
+)
+
+genrule(
+  name = 'genrule_polydrivetrain',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2014_bot3/control_loops/python:polydrivetrain) $(OUTS)',
+  tools = [
+    '//y2014_bot3/control_loops/python:polydrivetrain',
+  ],
+  outs = [
+    'polydrivetrain_dog_motor_plant.h',
+    'polydrivetrain_dog_motor_plant.cc',
+    'polydrivetrain_cim_plant.h',
+    'polydrivetrain_cim_plant.cc',
   ],
 )
 
 cc_library(
-  name = 'drivetrain_lib',
-  hdrs = [
-    'drivetrain.h',
-  ],
+  name = 'polydrivetrain_plants',
   srcs = [
-    'drivetrain.cc',
+    'polydrivetrain_dog_motor_plant.cc',
+    'drivetrain_dog_motor_plant.cc',
+    'kalman_drivetrain_motor_plant.cc',
+  ],
+  hdrs = [
+    'polydrivetrain_dog_motor_plant.h',
+    'drivetrain_dog_motor_plant.h',
+    'kalman_drivetrain_motor_plant.h',
   ],
   deps = [
-    ':polydrivetrain_plants',
-    ':drivetrain_queue',
-    '//aos/common/controls:control_loop',
-    '//aos/common/controls:polytope',
     '//frc971/control_loops:state_feedback_loop',
-    '//frc971/control_loops:coerce_goal',
-    '//frc971/queues:gyro',
-    '//aos/common/logging:queue_logging',
-    '//aos/common/logging:matrix_logging',
-    '//aos/common:math',
-    '//aos/common/util:log_interval',
-    '//frc971:shifter_hall_effect',
   ],
 )
 
-cc_test(
-  name = 'drivetrain_lib_test',
+cc_library(
+  name = 'drivetrain_base',
   srcs = [
-    'drivetrain_lib_test.cc',
+    'drivetrain_base.cc',
+  ],
+  hdrs = [
+    'drivetrain_base.h',
   ],
   deps = [
-    '//aos/testing:googletest',
-    ':drivetrain_queue',
-    ':drivetrain_lib',
-    '//aos/common/controls:control_loop_test',
-    '//frc971/control_loops:state_feedback_loop',
-    '//frc971/queues:gyro',
-    '//aos/common:queues',
-    '//aos/common/network:team_number',
+    ':polydrivetrain_plants',
+    '//frc971/control_loops/drivetrain:drivetrain_config',
+    '//frc971:shifter_hall_effect',
   ],
 )
 
@@ -101,8 +70,8 @@ cc_binary(
     'drivetrain_main.cc',
   ],
   deps = [
-    ':drivetrain_lib',
-    ':drivetrain_queue',
+    ':drivetrain_base',
     '//aos/linux_code:init',
+    '//frc971/control_loops/drivetrain:drivetrain_lib',
   ],
 )
