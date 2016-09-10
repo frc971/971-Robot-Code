@@ -954,9 +954,6 @@ void condition_broadcast(aos_condition *c, aos_mutex *m) {
 
 int futex_wait_timeout(aos_futex *m, const struct timespec *timeout) {
   RunObservers run_observers(m, false);
-  if (__atomic_load_n(m, __ATOMIC_SEQ_CST) != 0) {
-    return 0;
-  }
   const int ret = sys_futex_wait(FUTEX_WAIT, m, 0, timeout);
   if (ret != 0) {
     if (ret == -EINTR) {

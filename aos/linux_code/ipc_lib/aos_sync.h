@@ -111,9 +111,10 @@ bool mutex_islocked(const aos_mutex *m);
 // example messages are available to read on a queue), use the condition_
 // functions or there will be race conditions.
 
-// Wait for the futex to be set. Will return immediately if it's already set.
+// Wait for the futex to be set. Will return immediately if it's already set
+// (after a syscall).
 // Returns 0 if successful or it was already set, 1 if interrupted by a signal,
-// or -1 with an error in errno.
+// or -1 with an error in errno. Can return 0 spuriously.
 int futex_wait(aos_futex *m) __attribute__((warn_unused_result));
 // The same as futex_wait except returns 2 if it times out.
 int futex_wait_timeout(aos_futex *m, const struct timespec *timeout)
