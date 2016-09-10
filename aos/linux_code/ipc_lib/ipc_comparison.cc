@@ -5,6 +5,7 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -224,8 +225,12 @@ class UnixPingPonger : public FDPingPonger {
 
 class TCPPingPonger : public FDPingPonger {
  public:
-  TCPPingPonger() {
+  TCPPingPonger(bool nodelay) {
     server_ = PCHECK(socket(AF_INET, SOCK_STREAM, 0));
+    if (nodelay) {
+      const int yes = 1;
+      PCHECK(setsockopt(server_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
+    }
     {
       sockaddr_in server_address;
       memset(&server_address, 0, sizeof(server_address));
@@ -237,6 +242,10 @@ class TCPPingPonger : public FDPingPonger {
     PCHECK(listen(server_, 1));
 
     client_ = PCHECK(socket(AF_INET, SOCK_STREAM, 0));
+    if (nodelay) {
+      const int yes = 1;
+      PCHECK(setsockopt(client_, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)));
+    }
     {
       sockaddr_in client_address;
       unsigned int length = sizeof(client_address);
@@ -465,19 +474,42 @@ class AOSEventPingPonger : public SemaphorePingPonger {
 
 class PthreadMutexPingPonger : public ConditionVariablePingPonger {
  public:
-  PthreadMutexPingPonger()
+  PthreadMutexPingPonger(int pshared, bool pi)
       : ConditionVariablePingPonger(
             ::std::unique_ptr<ConditionVariableInterface>(
-                new PthreadConditionVariable()),
+                new PthreadConditionVariable(pshared, pi)),
             ::std::unique_ptr<ConditionVariableInterface>(
-                new PthreadConditionVariable())) {}
+                new PthreadConditionVariable(pshared, pi))) {}
 
  private:
   class PthreadConditionVariable : public ConditionVariableInterface {
    public:
-    PthreadConditionVariable() {
-      PRCHECK(pthread_cond_init(&condition_, nullptr));
-      PRCHECK(pthread_mutex_init(&mutex_, nullptr));
+    PthreadConditionVariable(bool pshared, bool pi) {
+      {
+        pthread_condattr_t cond_attr;
+        PRCHECK(pthread_condattr_init(&cond_attr));
+        if (pshared) {
+          PRCHECK(
+              pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
+        }
+        PRCHECK(pthread_cond_init(&condition_, &cond_attr));
+        PRCHECK(pthread_condattr_destroy(&cond_attr));
+      }
+
+      {
+        pthread_mutexattr_t mutex_attr;
+        PRCHECK(pthread_mutexattr_init(&mutex_attr));
+        if (pshared) {
+          PRCHECK(pthread_mutexattr_setpshared(&mutex_attr,
+                                               PTHREAD_PROCESS_SHARED));
+        }
+        if (pi) {
+          PRCHECK(
+              pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT));
+        }
+        PRCHECK(pthread_mutex_init(&mutex_, nullptr));
+        PRCHECK(pthread_mutexattr_destroy(&mutex_attr));
+      }
     }
     ~PthreadConditionVariable() {
       PRCHECK(pthread_mutex_destroy(&mutex_));
@@ -779,7 +811,13 @@ int Main(int /*argc*/, char **argv) {
   } else if (FLAGS_method == "aos_event") {
     ping_ponger.reset(new AOSEventPingPonger());
   } else if (FLAGS_method == "pthread_mutex") {
-    ping_ponger.reset(new PthreadMutexPingPonger());
+    ping_ponger.reset(new PthreadMutexPingPonger(false, false));
+  } else if (FLAGS_method == "pthread_mutex_pshared") {
+    ping_ponger.reset(new PthreadMutexPingPonger(true, false));
+  } else if (FLAGS_method == "pthread_mutex_pshared_pi") {
+    ping_ponger.reset(new PthreadMutexPingPonger(true, true));
+  } else if (FLAGS_method == "pthread_mutex_pi") {
+    ping_ponger.reset(new PthreadMutexPingPonger(false, true));
   } else if (FLAGS_method == "aos_queue") {
     ping_ponger.reset(new AOSQueuePingPonger());
   } else if (FLAGS_method == "eventfd") {
@@ -803,7 +841,9 @@ int Main(int /*argc*/, char **argv) {
   } else if (FLAGS_method == "unix_seqpacket") {
     ping_ponger.reset(new UnixPingPonger(SOCK_SEQPACKET));
   } else if (FLAGS_method == "tcp") {
-    ping_ponger.reset(new TCPPingPonger());
+    ping_ponger.reset(new TCPPingPonger(false));
+  } else if (FLAGS_method == "tcp_nodelay") {
+    ping_ponger.reset(new TCPPingPonger(true));
   } else if (FLAGS_method == "udp") {
     ping_ponger.reset(new UDPPingPonger());
   } else {
@@ -890,6 +930,9 @@ int main(int argc, char **argv) {
       "\taos_mutex\n"
       "\taos_event\n"
       "\tpthread_mutex\n"
+      "\tpthread_mutex_pshared\n"
+      "\tpthread_mutex_pshared_pi\n"
+      "\tpthread_mutex_pi\n"
       "\taos_queue\n"
       "\teventfd\n"
       "\tsysv_semaphore\n"
@@ -902,6 +945,7 @@ int main(int argc, char **argv) {
       "\tunix_datagram\n"
       "\tunix_seqpacket\n"
       "\ttcp\n"
+      "\ttcp_nodelay\n"
       "\tudp\n");
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
 
