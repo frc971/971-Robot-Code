@@ -10,7 +10,7 @@ cc_binary(
     '//aos/common:stl_mutex',
     '//aos/common/logging',
     '//third_party/allwpilib_2016:wpilib',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//aos/common/controls:control_loop',
     '//aos/common/util:log_interval',
     '//aos/common:time',
@@ -29,7 +29,7 @@ cc_binary(
     '//frc971/wpilib:pdp_fetcher',
     '//frc971/wpilib:dma',
     '//y2014_bot3/autonomous:auto_queue',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain_lib',
     '//y2014_bot3/control_loops/rollers:rollers_lib',
+    '//y2014_bot3/control_loops/drivetrain:drivetrain_base',
   ],
 )

@@ -2,14 +2,23 @@
 
 import numpy
 import sys
-import polytope
-import drivetrain
-import control_loop
-import controls
+from frc971.control_loops.python import polytope
+from y2014_bot3.control_loops.python import drivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
 from matplotlib import pylab
+
+import gflags
+import glog
 
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
+FLAGS = gflags.FLAGS
+
+try:
+  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+except gflags.DuplicateFlagError:
+  pass
 
 def CoerceGoal(region, K, w, R):
   """Intersects a line with a region, and finds the closest point to R.
@@ -110,8 +119,8 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     self.B_continuous = numpy.matrix(
         [[self._drivetrain.B_continuous[1, 0], self._drivetrain.B_continuous[1, 1]],
          [self._drivetrain.B_continuous[3, 0], self._drivetrain.B_continuous[3, 1]]])
-    self.C = numpy.matrix(numpy.eye(2));
-    self.D = numpy.matrix(numpy.zeros((2, 2)));
+    self.C = numpy.matrix(numpy.eye(2))
+    self.D = numpy.matrix(numpy.zeros((2, 2)))
 
     self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
                                                self.B_continuous, self.dt)
@@ -119,12 +128,12 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.PlaceControllerPoles([0.6, 0.6])
+    self.PlaceControllerPoles([0.67, 0.67])
     self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
     self.G_low = self._drivetrain.G_low
-    self.R = self._drivetrain.R
+    self.resistance = self._drivetrain.resistance
     self.r = self._drivetrain.r
     self.Kv = self._drivetrain.Kv
     self.Kt = self._drivetrain.Kt
@@ -174,10 +183,14 @@ class VelocityDrivetrain(object):
         [[0.0],
          [0.0]])
 
+    self.U_ideal = numpy.matrix(
+        [[0.0],
+         [0.0]])
+
     # ttrust is the comprimise between having full throttle negative inertia,
     # and having no throttle negative inertia.  A value of 0 is full throttle
     # inertia.  A value of 1 is no throttle negative inertia.
-    self.ttrust = 1.1
+    self.ttrust = 1.0
 
     self.left_gear = VelocityDrivetrain.LOW
     self.right_gear = VelocityDrivetrain.LOW
@@ -229,9 +242,9 @@ class VelocityDrivetrain(object):
                  self.CurrentDrivetrain().r)
     #print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
     high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
-                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
-                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     high_power = high_torque * high_omega
     low_power = low_torque * low_omega
     #if should_print:
@@ -250,16 +263,16 @@ class VelocityDrivetrain(object):
     #goal_gear_is_high = True
 
     if not self.IsInGear(current_gear):
-      print gear_name, 'Not in gear.'
+      glog.debug('%s Not in gear.', gear_name)
       return current_gear
     else:
       is_high = current_gear is VelocityDrivetrain.HIGH
       if is_high != goal_gear_is_high:
         if goal_gear_is_high:
-          print gear_name, 'Shifting up.'
+          glog.debug('%s Shifting up.', gear_name)
           return VelocityDrivetrain.SHIFTING_UP
         else:
-          print gear_name, 'Shifting down.'
+          glog.debug('%s Shifting down.', gear_name)
           return VelocityDrivetrain.SHIFTING_DOWN
       else:
         return current_gear
@@ -303,7 +316,7 @@ class VelocityDrivetrain(object):
     # wheel.
 
     self.left_gear = self.right_gear = True
-    if False:
+    if True:
       self.left_gear = self.ComputeGear(self.X[0, 0], should_print=True,
                                         current_gear=self.left_gear,
                                         gear_name="left")
@@ -316,8 +329,7 @@ class VelocityDrivetrain(object):
       if self.IsInGear(self.right_gear):
         self.right_cim.X[0, 0] = self.MotorRPM(self.right_shifter_position, self.X[0, 0])
 
-    steering *= 2.3
-    if True or self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
       # Filter the throttle to provide a nicer response.
       fvel = self.FilterVelocity(throttle)
 
@@ -362,7 +374,7 @@ class VelocityDrivetrain(object):
       FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
       self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R - self.X) + FF_volts
     else:
-      print 'Not all in gear'
+      glog.debug('Not all in gear')
       if not self.IsInGear(self.left_gear) and not self.IsInGear(self.right_gear):
         # TODO(austin): Use battery volts here.
         R_left = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
@@ -383,7 +395,7 @@ class VelocityDrivetrain(object):
 
     # TODO(austin): Model the robot as not accelerating when you shift...
     # This hack only works when you shift at the same time.
-    if True or self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
+    if self.IsInGear(self.left_gear) and self.IsInGear(self.right_gear):
       self.X = self.CurrentDrivetrain().A * self.X + self.CurrentDrivetrain().B * self.U
 
     self.left_gear, self.left_shifter_position = self.SimShifter(
@@ -391,37 +403,36 @@ class VelocityDrivetrain(object):
     self.right_gear, self.right_shifter_position = self.SimShifter(
         self.right_gear, self.right_shifter_position)
 
-    print "U is", self.U[0, 0], self.U[1, 0]
-    print "Left shifter", self.left_gear, self.left_shifter_position, "Right shifter", self.right_gear, self.right_shifter_position
+    glog.debug('U is %s %s', str(self.U[0, 0]), str(self.U[1, 0]))
+    glog.debug('Left shifter %s %d Right shifter %s %d',
+               self.left_gear, self.left_shifter_position,
+               self.right_gear, self.right_shifter_position)
 
 
 def main(argv):
+  argv = FLAGS(argv)
+
   vdrivetrain = VelocityDrivetrain()
 
-  if len(argv) != 7:
-    print "Expected .h file name and .cc file name"
-  else:
-    dog_loop_writer = control_loop.ControlLoopWriter(
-        "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
-                       vdrivetrain.drivetrain_low_high,
-                       vdrivetrain.drivetrain_high_low,
-                       vdrivetrain.drivetrain_high_high],
-        namespaces=['y2014_bot3', 'control_loops'])
-
-    if argv[1][-3:] == '.cc':
-      dog_loop_writer.Write(argv[2], argv[1])
+  if not FLAGS.plot:
+    if len(argv) != 5:
+      glog.fatal('Expected .h file name and .cc file name')
     else:
+      namespaces = ['y2014_bot3', 'control_loops', 'drivetrain']
+      dog_loop_writer = control_loop.ControlLoopWriter(
+          "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
+                         vdrivetrain.drivetrain_low_high,
+                         vdrivetrain.drivetrain_high_low,
+                         vdrivetrain.drivetrain_high_high],
+                         namespaces=namespaces)
+
       dog_loop_writer.Write(argv[1], argv[2])
 
-    cim_writer = control_loop.ControlLoopWriter(
-        "CIM", [drivetrain.CIM()],
-        namespaces=['y2014_bot3', 'control_loops'])
+      cim_writer = control_loop.ControlLoopWriter(
+          "CIM", [drivetrain.CIM()])
 
-    if argv[5][-3:] == '.cc':
-      cim_writer.Write(argv[6], argv[5])
-    else:
-      cim_writer.Write(argv[5], argv[6])
-    return
+      cim_writer.Write(argv[3], argv[4])
+      return
 
   vl_plot = []
   vr_plot = []
@@ -436,16 +447,16 @@ def main(argv):
   vdrivetrain.left_gear = VelocityDrivetrain.LOW
   vdrivetrain.right_gear = VelocityDrivetrain.LOW
 
-  print "K is", vdrivetrain.CurrentDrivetrain().K
+  glog.debug('K is %s', str(vdrivetrain.CurrentDrivetrain().K))
 
   if vdrivetrain.left_gear is VelocityDrivetrain.HIGH:
-    print "Left is high"
+    glog.debug('Left is high')
   else:
-    print "Left is low"
+    glog.debug('Left is low')
   if vdrivetrain.right_gear is VelocityDrivetrain.HIGH:
-    print "Right is high"
+    glog.debug('Right is high')
   else:
-    print "Right is low"
+    glog.debug('Right is low')
 
   for t in numpy.arange(0, 1.7, vdrivetrain.dt):
     if t < 0.5:
@@ -468,22 +479,6 @@ def main(argv):
       radius_plot.append(turn_velocity)
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
-
-  cim_velocity_plot = []
-  cim_voltage_plot = []
-  cim_time = []
-  cim = drivetrain.CIM()
-  R = numpy.matrix([[300]])
-  for t in numpy.arange(0, 0.5, cim.dt):
-    U = numpy.clip(cim.K * (R - cim.X) + R / cim.Kv, cim.U_min, cim.U_max)
-    cim.Update(U)
-    cim_velocity_plot.append(cim.X[0, 0])
-    cim_voltage_plot.append(U[0, 0] * 10)
-    cim_time.append(t)
-  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
-  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
-  pylab.legend()
-  pylab.show()
 
   # TODO(austin):
   # Shifting compensation.

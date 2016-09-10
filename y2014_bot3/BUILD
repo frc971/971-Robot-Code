@@ -16,21 +16,22 @@ cc_binary(
     '//frc971/queues:gyro',
     '//y2014_bot3/autonomous:auto_queue',
     '//y2014_bot3/control_loops/rollers:rollers_queue',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
   ],
 )
 
 aos_downloader(
-  name = 'download',
+  name = 'download_stripped',
   start_srcs = [
-    '//aos:prime_start_binaries',
-    '//y2014_bot3/control_loops/drivetrain:drivetrain',
-    '//y2014_bot3/control_loops/rollers:rollers',
-    '//y2014_bot3/autonomous:auto',
-    ':joystick_reader',
-    '//y2014_bot3/wpilib:wpilib_interface',
+    ':joystick_reader.stripped',
+    '//aos:prime_start_binaries_stripped',
+    '//y2014_bot3/autonomous:auto.stripped',
+    '//y2014_bot3/control_loops/drivetrain:drivetrain.stripped',
+    '//y2014_bot3/control_loops/rollers:rollers.stripped',
+    '//y2014_bot3/wpilib:wpilib_interface.stripped',
+
   ],
   srcs = [
-    '//aos:prime_binaries',
+    '//aos:prime_binaries_stripped',
   ],
 )

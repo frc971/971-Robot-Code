@@ -27,10 +27,10 @@
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
 
-#include "y2014_bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 #include "y2014_bot3/autonomous/auto.q.h"
-#include "y2014_bot3/control_loops/drivetrain/drivetrain.h"
 #include "y2014_bot3/control_loops/rollers/rollers.h"
 
 #include "frc971/wpilib/joystick_sender.h"
@@ -48,7 +48,7 @@
 #endif
 
 using ::aos::util::SimpleLogInterval;
-using ::y2014_bot3::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2014_bot3::control_loops::rollers_queue;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
@@ -61,13 +61,13 @@ namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         ::y2014_bot3::control_loops::kDrivetrainEncoderRatio *
+         ::y2014_bot3::control_loops::drivetrain::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 double drivetrain_velocity_translate(double in) {
   return (1.0 / in) / 256.0 /*cpr*/ *
-         ::y2014_bot3::control_loops::kDrivetrainEncoderRatio *
+         ::y2014_bot3::control_loops::drivetrain::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
@@ -154,7 +154,7 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm)
       : pcm_(pcm),
-        drivetrain_(".y2014_bot3.control_loops.drivetrain_queue.output"),
+        drivetrain_(".frc971.control_loops.drivetrain_queue.output"),
         rollers_(".y2014_bot3.control_loops.rollers_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
@@ -249,7 +249,7 @@ class SolenoidWriter {
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
-  ::aos::Queue<::y2014_bot3::control_loops::DrivetrainQueue::Output>
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output>
       drivetrain_;
   ::aos::Queue<::y2014_bot3::control_loops::RollersQueue::Output> rollers_;
 
@@ -269,11 +269,11 @@ class DrivetrainWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::y2014_bot3::control_loops::drivetrain_queue.output.FetchAnother();
+    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::y2014_bot3::control_loops::drivetrain_queue.output;
+    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
@@ -373,9 +373,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Outputs
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_left_drivetrain_talon(
-        ::std::unique_ptr<Talon>(new Talon(2)));
-    drivetrain_writer.set_right_drivetrain_talon(
         ::std::unique_ptr<Talon>(new Talon(5)));
+    drivetrain_writer.set_right_drivetrain_talon(
+        ::std::unique_ptr<Talon>(new Talon(2)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     RollersWriter rollers_writer;
