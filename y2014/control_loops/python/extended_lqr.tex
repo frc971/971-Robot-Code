@@ -1,0 +1,766 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{amsmath}
+\begin{document}
+
+% From http://www.eecs.tufts.edu/~khan/Courses/Spring2013/EE194/Lecs/Lec9and10.pdf
+% and http://www.cs.unc.edu/~wens/WAFR2014-Sun.pdf
+%   (which references http://maeresearch.ucsd.edu/skelton/publications/weiwei_ilqg_CDC43.pdf)
+% and http://arl.cs.utah.edu/pubs/ISRR2013.pdf
+
+\section{Backwards Pass}
+
+Let's start with some definitions for the standard LQR controller.
+$c_t(\boldsymbol{x}, \boldsymbol{u})$ is the cost for the iteration $t$ given that we are at $\boldsymbol{x}$ and are going to apply $\boldsymbol{u}$ for one cycle.
+$v_t(\boldsymbol{x})$ is the optimal cost-to-go for the starting point $\boldsymbol{x}$ at step $t$.
+$v_N(\boldsymbol{x})$ may be defined to be a different final cost from $v_t(\boldsymbol{x})$ if need be, where $N$ is the horizon.
+
+$$\begin{array}{rcl}
+c_t(\boldsymbol{x}, \boldsymbol{u}) &=&
+  \frac{1}{2}
+    \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} Q_t & P_t^T \\ P_t & R_t \end{bmatrix}
+    \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix} +
+  \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} \boldsymbol{q}_t \\ \boldsymbol{r}_t \end{bmatrix} +
+  q_t \\
+v_{t + 1}(\boldsymbol{x}) &=&
+  \frac{1}{2} \boldsymbol{x}^T S_{t + 1} \boldsymbol{x} + \boldsymbol{x}^T \boldsymbol{s}_{t + 1} + s_{t + 1} \\
+
+g_t(\boldsymbol{x}_t, \boldsymbol{u}_t) = \boldsymbol{x}_{t + 1}(\boldsymbol{u}_t) &=&
+  A_{t} \boldsymbol{x}_t + B_t \boldsymbol{u}_t + \boldsymbol{c}_{t} \\
+
+v_{t}(\boldsymbol{x}_t, \boldsymbol{u}_t) &=&
+  v_{t+1}(\boldsymbol{x}_{t+1}) +
+  c_t(\boldsymbol{x}_t, \boldsymbol{u}_t) \\\
+ &=&
+  v_{t+1}(g_t(\boldsymbol{x}_{t}, \boldsymbol{u}_t)) +
+  c_t(\boldsymbol{x}_t, \boldsymbol{u}_t)
+  \\
+\end{array}$$
+
+Now, let's calculate $v_t(\boldsymbol{x})$ given $v_{t+1}(\boldsymbol{x})$ and the step cost from $c_t(\boldsymbol{x})$.
+This tells us the cost of applying $\boldsymbol{u}$ starting from $\boldsymbol{x}$.
+We will then optimize over all $\boldsymbol{u}$ to find the optimal next state and cost for that state.
+This lets us then use dynamic programing methods to work out the optimal $\boldsymbol{x}$ and $\boldsymbol{u}$ at each timestep.
+
+We want to get a quadratic solution of the form
+$$v_{t}(\boldsymbol{x}) =
+  \frac{1}{2} \boldsymbol{x}^T S_{t} \boldsymbol{x} + \boldsymbol{x}^T \boldsymbol{s}_{t} + s_{t}$$ for each step.
+
+$$\begin{array}{rcl}
+v_{t}(\boldsymbol{x}, \boldsymbol{u}) &=&
+  \frac{1}{2} \left( A_{t}\boldsymbol{x} + B_{t}\boldsymbol{u} + \boldsymbol{c}_{t}\right)^T
+    S_{t + 1}
+    \left( A_{t}\boldsymbol{x} + B_{t}\boldsymbol{u} + \boldsymbol{c}_{t}\right) +
+  \left( A_{t}\boldsymbol{x} + B_{t}\boldsymbol{u} + \boldsymbol{c}_{t}\right)^T \boldsymbol{s}_{t + 1} +
+  s_{t + 1} + \\ &&
+  \frac{1}{2}
+    \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} Q_{t} & P_{t}^T \\ P_{t} & R_{t} \end{bmatrix}
+    \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix} +
+  \begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} \boldsymbol{q}_{t} \\ \boldsymbol{r}_{t} \end{bmatrix} +
+    q_{t}
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T A_{t}^T S_{t + 1} A_{t} \boldsymbol{x} +
+    \boldsymbol{u}^T B_{t}^T S_{t + 1} A_{t} \boldsymbol{x} +
+    \boldsymbol{c}_t^T S_{t + 1} A_{t} \boldsymbol{x} + \right. \\ &&
+    \left. \boldsymbol{x}^T A_{t}^T S_{t + 1} B_{t} \boldsymbol{u} +
+    \boldsymbol{u}^T B_{t}^T S_{t + 1} B_{t} \boldsymbol{u} +
+    \boldsymbol{c}_t^T S_{t + 1} B_{t} \boldsymbol{u} + \right. \\ &&
+    \left. \boldsymbol{x}^T A_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{u}^T B_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t
+  \right) + \\ &&
+  \boldsymbol{x}^T A_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{u}^T B_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} +
+  s_{t + 1} + \\ &&
+  \frac{1}{2} \left(\boldsymbol{x}^T Q_t \boldsymbol{x} + \boldsymbol{u}^T P_t \boldsymbol{x} + \boldsymbol{x}^T P_t^T \boldsymbol{u} + \boldsymbol{u}^T R_t \boldsymbol{u} \right) + \boldsymbol{x}^T \boldsymbol{q}_t + \boldsymbol{u}^T \boldsymbol{r}_t + q_t
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} A_{t} + Q_t \right) \boldsymbol{x} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} \right. + \\ &&
+    \left. \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) \boldsymbol{u} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) \boldsymbol{u} \right) + \\ &&
+  \boldsymbol{x}^T \left(A_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{q}_t \right)+
+
+  \boldsymbol{u}^T \left( B_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{r}_t \right) +
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} +
+  q_t + \\ &&
+  \frac{1}{2} \left( \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+     \boldsymbol{x}^T A_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{u}^T B_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T S_{t + 1} B_{t} \boldsymbol{u} +
+    \boldsymbol{c}_t^T S_{t + 1} A_{t} \boldsymbol{x} \right)
+\end{array}$$
+
+Now, let's find the optimal $\boldsymbol{u}$.  Do this by evaluating $\frac{\partial}{\partial \boldsymbol{u}} v_t(\boldsymbol{x}, \boldsymbol{u}) = 0$.
+
+$$\begin{array}{rcl}
+\frac{\partial}{\partial \boldsymbol{u}} v_{t}(\boldsymbol{x}, \boldsymbol{u}) &=& \frac{1}{2} \left( 2 \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) + 2 \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) + 2 \boldsymbol{c}_t^T S_{t + 1} B_{t} \right) + \\&&\boldsymbol{s}_{t + 1}^T B_{t} + \boldsymbol{r}_t^T \\
+
+\frac{\partial}{\partial \boldsymbol{u}} v_{t}(\boldsymbol{x}, \boldsymbol{u}) &=& \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) + \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) + \boldsymbol{c}_t^T S_{t + 1} B_{t} + \boldsymbol{s}_{t + 1}^T B_{t} + \boldsymbol{r}_t^T \\
+0 &=& \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) + \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) + \boldsymbol{c}_t^T S_{t + 1} B_{t} + \boldsymbol{s}_{t + 1}^T B_{t} + \boldsymbol{r}_t^T
+\end{array}$$
+$$\begin{array}{rcl}
+\boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) &=& - \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) - \boldsymbol{c}_t^T S_{t + 1} B_{t} - \boldsymbol{s}_{t + 1}^T B_{t} - \boldsymbol{r}_t^T \\
+\left( B_{t}^T S_{t + 1} B_{t} + R_t \right) \boldsymbol{u} &=& - \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} - B_t^T S_{t + 1} \boldsymbol{c}_t - B_{t}^T \boldsymbol{s}_{t + 1}- \boldsymbol{r}_t \\
+\boldsymbol{u} &=& - \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) ^{-1} \left( \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} + B_t^T S_{t + 1} \boldsymbol{c}_t + B_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{r}_t \right)
+\end{array}$$
+
+This gives us the optimal $\boldsymbol{u}$.  There are some substitutions defined here from the 2013 paper which make it easier to read.
+Note: the 2014 paper uses different letters for these same quantities\dots
+\\
+$$\begin{array}{rcl}
+C_t &=& B^T_t S_{t + 1} A_t + P_t \\
+E_t &=&  B_{t}^T S_{t + 1} B_{t} + R_t \\
+L_t &=& - E_t ^{-1} C_t \\
+
+\boldsymbol{e}_t &=& B_t^T S_{t + 1} \boldsymbol{c}_t + B_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{r}_t \\
+\boldsymbol{l}_t &=&  - E^{-1}_t \boldsymbol{e}_t \\
+
+D_t &=& A_t^T S_{t + 1} A_t + Q_t \\
+\boldsymbol{d}_t &=& A_t^T S_{t + 1} \boldsymbol{c}_t + A_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{q}_t
+\\
+\boldsymbol{u} &=& L_t \boldsymbol{x} + \boldsymbol{l}_t
+\end{array}$$
+
+With these, we can simplify $\boldsymbol{u}$ a bit and make it look like the 2014 paper has it.
+
+$$\begin{array}{rcl}
+  \boldsymbol{u} &=& -E_t^{-1} \left( C_t \boldsymbol{x} + \boldsymbol{e}_t \right) \\
+  \boldsymbol{u} &=& -E_t^{-1} C_t \boldsymbol{x} - E_t^{-1} \boldsymbol{e}_t
+\end{array}$$
+
+For reference, here are some equivalences between the symbols used in the 2013
+paper (the ones we use) and the 2014 paper.
+TODO(Brian): Figure out where the ones in the 2014 paper are defined instead of
+guessing by pattern-matching.
+\\ \begin{tabular}{ | r | l | }
+  \hline
+  2013 paper (ours) & 2014 paper \\
+  \hline
+  $C_t$ & $E_t$ \\
+  $D_t$ & $C_t$ \\
+  $\boldsymbol{d}_t$ & $\boldsymbol{c}_t$ \\
+  $E_t$ & $D_t$ \\
+  $\boldsymbol{e}_t$ & $\boldsymbol{d}_t$ \\
+  \hline
+\end{tabular} \\
+
+Now, let's solve for the new cost function.
+
+$$\begin{array}{rcl}
+v_{t}(\boldsymbol{x}, \boldsymbol{u}) &=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} A_{t} + Q_t \right) \boldsymbol{x} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} \right. + \\ &&
+    \left. \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) \boldsymbol{u} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) \boldsymbol{u} \right) + \\ &&
+  \boldsymbol{x}^T \left(A_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{q}_t \right)+
+
+  \boldsymbol{u}^T \left( B_{t}^T \boldsymbol{s}_{t + 1} +
+  \boldsymbol{r}_t \right) +
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} +
+  q_t + \\ &&
+  \frac{1}{2} \left( \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+     \boldsymbol{x}^T A_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{u}^T B_{t}^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T S_{t + 1} B_{t} \boldsymbol{u} +
+    \boldsymbol{c}_t^T S_{t + 1} A_{t} \boldsymbol{x} \right)
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} A_{t} + Q_t \right) \boldsymbol{x} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} \right. + \\ &&
+    \left. \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) \boldsymbol{u} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) \boldsymbol{u} \right) + \\ &&
+
+  \boldsymbol{x}^T \left(A_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{q}_t +
+    \frac{1}{2} A_{t}^T S_{t + 1} \boldsymbol{c}_t \right) + \\ &&
+
+  \boldsymbol{u}^T \left( B_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{r}_t +
+    \frac{1}{2} B_{t}^T S_{t + 1} \boldsymbol{c}_t \right) + \\ &&
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \left( A_t \boldsymbol{x} +
+    B_t \boldsymbol{u} + \boldsymbol{c}_t \right) + \\ &&
+
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} A_{t} + Q_t \right) \boldsymbol{x} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} A_{t} + P_t \right) \boldsymbol{x} \right. + \\ &&
+    \left. \boldsymbol{x}^T \left( A_{t}^T S_{t + 1} B_{t} + P_t^T \right) \boldsymbol{u} +
+    \boldsymbol{u}^T \left( B_{t}^T S_{t + 1} B_{t} + R_t \right) \boldsymbol{u} \right) + \\ &&
+
+  \boldsymbol{x}^T \left(A_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{q}_t +
+    A_{t}^T S_{t + 1} \boldsymbol{c}_t \right) + \\ &&
+
+  \boldsymbol{u}^T \left( B_{t}^T \boldsymbol{s}_{t + 1} + \boldsymbol{r}_t +
+    B_{t}^T S_{t + 1} \boldsymbol{c}_t \right) + \\ &&
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T D_t \boldsymbol{x} +
+    \boldsymbol{u}^T C_t \boldsymbol{x} +
+    \boldsymbol{x}^T C_t^T \boldsymbol{u} +
+    \boldsymbol{u}^T E_t \boldsymbol{u} \right) + \\ &&
+
+  \boldsymbol{x}^T \boldsymbol{d}_t +
+  \boldsymbol{u}^T \boldsymbol{e}_t + \\ &&
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T D_t \boldsymbol{x} +
+    \left( L_t \boldsymbol{x} + \boldsymbol{l}_t \right)^T C_t \boldsymbol{x} \right. + \\ &&
+    \left. \boldsymbol{x}^T C_t^T \left( L_t \boldsymbol{x} + \boldsymbol{l}_t \right) +
+    \left( L_t \boldsymbol{x} + \boldsymbol{l}_t \right)^T E_t \left( L_t \boldsymbol{x} + \boldsymbol{l}_t \right) \right) + \\ &&
+
+  \boldsymbol{x}^T \boldsymbol{d}_t +
+  \left( L_t \boldsymbol{x} + \boldsymbol{l}_t \right)^T \boldsymbol{e}_t + \\&&
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t
+\\
+&=&
+  \frac{1}{2} \left(
+    \boldsymbol{x}^T D_t \boldsymbol{x} + \right.
+    \boldsymbol{x}^T L_t^T C_t \boldsymbol{x} + \boldsymbol{l}_t^T C_t \boldsymbol{x} + \\ &&
+
+    \left. \boldsymbol{x}^T C_t^T L_t \boldsymbol{x} + \boldsymbol{x}^T C_t^T \boldsymbol{l}_t +
+
+    \boldsymbol{x}^T L_t^T E_t L_t \boldsymbol{x} +
+    \boldsymbol{l}_t^T E_t L_t \boldsymbol{x} +
+    \boldsymbol{x}^T L_t^T E_t \boldsymbol{l}_t +
+    \boldsymbol{l}_t^T E_t \boldsymbol{l}_t \right) + \\&&
+
+  \boldsymbol{x}^T \boldsymbol{d}_t +
+  \boldsymbol{x}^T L_t^T \boldsymbol{e}_t + \boldsymbol{l}^T_t \boldsymbol{e}_t + \\&&
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+    \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t
+\\
+&=&
+  \frac{1}{2}
+    \boldsymbol{x}^T \left(
+      D_t +
+     L_t^T C_t +
+     C_t^T L_t +
+     L_t^T E_t L_t
+      \right) \boldsymbol{x} + \\ &&
+
+  \boldsymbol{x}^T \left(
+    \frac{1}{2} \left( C_t^T \boldsymbol{l}_t +
+    L_t^T E_t \boldsymbol{l}_t \right) +
+    \boldsymbol{d}_t +
+    L_t^T \boldsymbol{e}_t \right) +
+    \frac{1}{2} \left( \boldsymbol{l}_t^T E_t L_t + \boldsymbol{l}_t^T C_t \right) \boldsymbol{x} + \\ &&
+
+  \frac{1}{2} \boldsymbol{l}_t^T E_t \boldsymbol{l}_t +
+    \boldsymbol{l}^T_t \boldsymbol{e}_t +
+
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t +
+    \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t
+\\
+&=&
+  \frac{1}{2}
+    \boldsymbol{x}^T \left(
+      D_t +
+     L_t^T C_t +
+     C_t^T L_t +
+     L_t^T E_t L_t
+      \right) \boldsymbol{x} + \\ &&
+
+  \boldsymbol{x}^T \left(
+    C_t^T \boldsymbol{l}_t +
+    L_t^T E_t \boldsymbol{l}_t +
+    \boldsymbol{d}_t +
+    L_t^T \boldsymbol{e}_t \right) + \\ &&
+
+  \frac{1}{2} \boldsymbol{l}_t^T E_t \boldsymbol{l}_t +
+    \boldsymbol{l}^T_t \boldsymbol{e}_t +
+
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t +
+    \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t
+\end{array}$$
+
+Ok, let's now pull out the 3 variables of interest and do further simplification.
+
+$$\begin{array}{rcl}
+v_{t}(\boldsymbol{x}) &=&
+  \frac{1}{2} \boldsymbol{x}^T S_{t} \boldsymbol{x} + \boldsymbol{x}^T \boldsymbol{s}_{t} + s_{t} \\
+S_t &=&
+     D_t +
+     L_t^T C_t +
+     C_t^T L_t +
+     L_t^T E_t L_t \\
+    &=&
+     D_t -
+     C_t^T E_t^{-1} C_t -
+     C_t^T E_t^{-1} C_t +
+     C_t^T E_t^{-1} C_t \\
+    &=& D_t - C_t^T E_t^{-1} C_t
+\\
+\boldsymbol{s}_t &=&
+    \left( C_t^T + L_t^T E_t \right) \boldsymbol{l}_t +
+    \boldsymbol{d}_t +
+    L_t^T \boldsymbol{e}_t \\
+
+  &=&
+    \left( C_t^T - C_t^T E_t^{-1} E_t \right) \boldsymbol{l}_t +
+    \boldsymbol{d}_t -
+    C_t^T E_t^{-1} \boldsymbol{e}_t \\
+  &=& \boldsymbol{d}_t - C_t^T E_t^{-1} \boldsymbol{e}_t
+\\
+s_t &=&
+  \frac{1}{2} \boldsymbol{l}_t^T E_t \boldsymbol{l}_t +
+    \boldsymbol{l}^T_t \boldsymbol{e}_t +
+
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t +
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t
+\\
+&=&
+\frac{1}{2} \boldsymbol{e}_t^T E_t^{-1} E_t E_t^{-1} \boldsymbol{e}_t -
+  \boldsymbol{e}_t^T E_t^{-1} \boldsymbol{e}_t +
+
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1} + q_t +
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t
+\\
+&=&
+q_t - \frac{1}{2} \boldsymbol{e}_t^T E_t^{-1} \boldsymbol{e}_t +
+
+  \frac{1}{2} \boldsymbol{c}_t^T S_{t + 1} \boldsymbol{c}_t +
+  \boldsymbol{c}_t^T \boldsymbol{s}_{t + 1} + s_{t + 1}
+\end{array}$$
+
+For better or worse, everything but the constant term matches both the 2013
+paper (which has no constant term) and the 2014 paper.
+The constant term does not match the 2014 paper, but we're pretty sure it's
+correct (extended\_lqr\_derivation.py verifies what we have).
+The 2014 paper has this for the constant term instead:
+$$\begin{array}{rcl}
+s_t &=&
+  q_t - \frac{1}{2} \boldsymbol{e}_t^T E_t^{-1} \boldsymbol{e}_t
+\end{array}$$
+
+\section{Forwards Pass}
+
+Let's define the forwards pass to build the cost-to-come function.
+We must use the same cycle cost, $c_t(\boldsymbol{x}, \boldsymbol{u})$, as the backwards pass.
+The initial cost $v_0(\boldsymbol{x})$ needs to evaluate to $0$ at $\boldsymbol{x}_0$ since
+there is no cost needed to get from $\boldsymbol{x}_0$ to $\boldsymbol{x}_0$.
+
+$$\begin{array}{rcl}
+\bar v_{t}(\boldsymbol{x}) &=&
+  \frac{1}{2} \boldsymbol{x}^T \bar S_{t} \boldsymbol{x} + \boldsymbol{x}^T \boldsymbol{\bar s}_{t} + \bar s_{t} \\
+
+\bar g_t(\boldsymbol{x}_{t + 1}, \boldsymbol{u}) = \boldsymbol{x}_{t}(\boldsymbol{u}) &=&
+  \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t} \\
+
+\bar c_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u}) &=& c_t(\bar g_{t}(\boldsymbol{x}_{t + 1}, \boldsymbol{u}), \boldsymbol{u}) \\
+
+\bar v_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u}) &=&
+  \bar v_{t}(\boldsymbol{x}_{t}) +
+  \bar c_t(\boldsymbol{x}_{t + 1}, \boldsymbol{u}_t)
+  \\
+&=&
+  \bar v_{t}(\bar g_t(\boldsymbol{x}_{t + 1}, \boldsymbol{u})) +
+ c_t(\bar g_{t}(\boldsymbol{x}_{t + 1}, \boldsymbol{u}), \boldsymbol{u}) \\
+  \\
+\end{array}$$
+
+It is important to note that the optimal $\boldsymbol{u}$ used to get from $\boldsymbol{x}_t$ to $\boldsymbol{x}_{t+1}$
+when evaluating $g_t(\boldsymbol{x}, \boldsymbol{u})$ is the same optimal $\boldsymbol{u}$
+used to get from $\boldsymbol{x}_{t+1}$ to $\boldsymbol{x}_t$ when evaluating $\bar g_{t}(\boldsymbol{x}_{t + 1}, \boldsymbol{u})$.
+Conveniently, this means that the $\boldsymbol{u}_t$, $L_t$, and $\boldsymbol{l}_t$ calculated in both the forwards and backwards passes is the same.
+
+Like before, we want to get a quadratic solution of the form
+$$\bar v_{t + 1}(\boldsymbol{x}_{t+1}) =
+  \frac{1}{2} \boldsymbol{x}_{t+1}^T \bar S_{t + 1} \boldsymbol{x}_{t+1} + \boldsymbol{x}_{t+1}^T \boldsymbol{\bar s}_{t + 1} + \bar s_{t + 1}$$ for each step.
+
+$$\begin{array}{rcl}
+\bar v_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u}) &=&
+    \frac{1}{2} \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T
+        \bar S_{t}
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) + \\ &&
+    \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) ^T \boldsymbol{\bar s}_{t} + \bar s_{t} +  \\&&
+  \frac{1}{2}
+    \begin{bmatrix} \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} Q_t & P_t^T \\ P_t & R_t \end{bmatrix}
+    \begin{bmatrix} \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) \\ \boldsymbol{u} \end{bmatrix} + \\&&
+  \begin{bmatrix} \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) \\ \boldsymbol{u} \end{bmatrix}^T
+    \begin{bmatrix} \boldsymbol{q}_t \\ \boldsymbol{r}_t \end{bmatrix} +
+  q_t \\
+
+  &=&
+    \frac{1}{2} \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T
+        \bar S_{t}
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) + \\ &&
+    \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) ^T \boldsymbol{\bar s}_{t} + \bar s_{t} +  \\&&
+
+      \frac{1}{2} \left(
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T Q_t \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) + \right. \\&&
+        \boldsymbol{u}^T P_t \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) + \\&&
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T P_t^T \boldsymbol{u} + \\&&
+        \left. \boldsymbol{u}^T R_t \boldsymbol{u} \right) + \\&&
+
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T \boldsymbol{q}_t + \boldsymbol{u}^T \boldsymbol{r}_t + q_t \\
+
+  &=&
+    \frac{1}{2} \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T
+      \left( \bar S_{t} + Q_t \right)
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) + \\ &&
+    \left(\bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) ^T \boldsymbol{\bar s}_{t} + \bar s_{t} +  \\&&
+
+      \frac{1}{2} \left(
+        \boldsymbol{u}^T P_t \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right) \right. + \\&&
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T P_t^T \boldsymbol{u} + \\&&
+        \left. \boldsymbol{u}^T R_t \boldsymbol{u} \right) + \\&&
+
+        \left( \bar A_{t} \boldsymbol{x}_{t + 1} + \bar B_t \boldsymbol{u} + \boldsymbol{\bar c}_{t}\right)^T \boldsymbol{q}_t + \boldsymbol{u}^T \boldsymbol{r}_t + q_t \\
+
+  &=& \frac{1}{2} \left(
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t + \right. \\&&
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t + \\&&
+      \left. \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t \right) + \\&&
+
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \boldsymbol{\bar s}_t +
+      \boldsymbol{u}^T \bar B_t^T \boldsymbol{\bar s}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t +
+
+      \bar s_t + \\ &&
+
+      \frac{1}{2} \left( \boldsymbol{u}^T P_t \bar A_{t} \boldsymbol{x}_{t + 1} +
+      \boldsymbol{u}^T P_t \bar B_{t} \boldsymbol{u} +
+      \boldsymbol{u}^T P_t \boldsymbol{\bar c}_{t} \right) + \\&&
+      \frac{1}{2} \left( \boldsymbol{x}_{t+1}^T \bar A^T_t P_t^T \boldsymbol{u} +
+      \boldsymbol{u}^T \bar B^T_{t} P_t^T \boldsymbol{u} +
+      \boldsymbol{\bar c}_t^T P^T_t \boldsymbol{u} \right) + \\&&
+
+      \frac{1}{2} \boldsymbol{u}^T R_t \boldsymbol{u} + \\&&
+
+        \boldsymbol{x}^T_{t + 1} \bar A^T_t \boldsymbol{q}_t +
+        \boldsymbol{u}^T \bar B^T_t \boldsymbol{q}_t +
+      \boldsymbol{\bar c}_t^T  \boldsymbol{q}_t +
+
+        \boldsymbol{u}^T \boldsymbol{r}_t + q_t
+\end{array}$$
+
+Now, let's find the optimal $\boldsymbol{u}$.
+Do this by evaluating
+$\frac{\partial}{\partial \boldsymbol{u}} \bar v_t(\boldsymbol{x}, \boldsymbol{u}) = 0$.
+
+$$\begin{array}{rcl}
+\frac{\partial}{\partial \boldsymbol{u}} \bar v_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u})
+  &=& \frac{1}{2} \left(
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+
+      \left(\bar B_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1}\right)^T + \right. \\&&
+
+      2 \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+      \left( \bar B_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t \right)^T + \\&&
+      \left. \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t \right) + \\&& 
+      \boldsymbol{\bar s}_t ^T \bar B_t + \\&&
+
+      \frac{1}{2} \left( P_t \bar A_{t} \boldsymbol{x}_{t + 1}\right) ^T +
+      \frac{1}{2} \boldsymbol{x}_{t+1}^T \bar A^T_t P_t^T + \\&&
+
+      \frac{1}{2} \boldsymbol{u}^T \left( P_t \bar B_{t} + \bar B_t^T P_t^T \right) +
+      \frac{1}{2} \boldsymbol{u}^T \left( \bar B^T_{t} P_t^T + P_t \bar B_t \right) + \\&&
+      \frac{1}{2} \left( P_t \boldsymbol{\bar c}_{t} \right)^T +
+      \frac{1}{2} \boldsymbol{\bar c}^T_{t} P_t^T +
+
+      \boldsymbol{u}^T R_t + \\&&
+
+        \left(\bar B^T_t \boldsymbol{q}_t\right)^T +
+
+        \boldsymbol{r}_t^T \\
+
+  &=&
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t + \\&& 
+
+      \boldsymbol{\bar s}_t ^T \bar B_t + \\&&
+
+      \boldsymbol{x}_{t+1}^T \bar A^T_t P_t^T + \\&&
+
+      \boldsymbol{u}^T \left( \bar B^T_{t} P_t^T + P_t \bar B_t \right) + \\&&
+      \boldsymbol{\bar c}^T_{t} P_t^T +
+
+      \boldsymbol{u}^T R_t + \\&&
+
+      \boldsymbol{q}_t^T \bar B_t +
+      \boldsymbol{r}_t^T \\
+0 &=&
+      \boldsymbol{x}_{t + 1}^T \left( \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t + \bar A^T_t P_t^T \right) + \\&&
+
+      \boldsymbol{u}^T \left(
+          \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+          \bar B^T_{t} P_t^T + P_t \bar B_t + R_t
+      \right) + \\&&
+
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+      \boldsymbol{\bar s}_t^T \bar B_t +
+      \boldsymbol{\bar c}^T_{t} P_t^T +
+      \boldsymbol{q}_t^T \bar B_t +
+      \boldsymbol{r}_t^T \\
+\end{array}$$
+
+$$\begin{array}{rcl}
+      \boldsymbol{u}^T \left(
+          \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+          \bar B^T_{t} P_t^T + P_t \bar B_t + R_t
+      \right)
+ &=&
+      - \boldsymbol{x}_{t + 1}^T \left( \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t + \bar A^T_t P_t^T \right) - \\&&
+
+
+      \left( \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+      \boldsymbol{\bar s}_t^T \bar B_t +
+      \boldsymbol{\bar c}^T_{t} P_t^T +
+      \boldsymbol{q}_t^T \bar B_t +
+      \boldsymbol{r}_t^T \right) \\
+
+\left(
+    \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+    \bar B^T_{t} P_t^T + P_t \bar B_t + R_t
+\right) \boldsymbol{u}
+   &=&
+      - \left( \bar B_t^T \left( \bar S_t + Q_t \right) \bar A_t + P_t \bar A_t \right) \boldsymbol{x}_{t + 1} - \\&&
+
+      \left( \bar B_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t  +
+      \bar B_t^T \boldsymbol{\bar s}_t +
+      P_t \boldsymbol{\bar c}_{t} +
+      \bar B_t^T \boldsymbol{q}_t +
+      \boldsymbol{r}_t \right) \\
+\end{array}$$
+
+Some substitutions to use for simplifying:
+
+$$\begin{array}{rcl}
+\bar C_t &=& \bar B_t^T \left( \bar S_t + Q_t \right) \bar A_t + P_t \bar A_t \\
+\bar E_t &=&
+    \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t +
+    \bar B^T_{t} P_t^T + P_t \bar B_t + R_t \\
+\bar L_t &=& - \bar E_t^{-1} \bar C_t \\
+
+\boldsymbol{\bar e}_t &=&
+      \bar B_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t  +
+      \bar B_t^T \boldsymbol{\bar s}_t +
+      P_t \boldsymbol{\bar c}_{t} +
+      \bar B_t^T \boldsymbol{q}_t +
+      \boldsymbol{r}_t \\
+\boldsymbol{\bar l}_t &=& - \bar E_t^{-1} \boldsymbol{\bar e}_t \\
+
+\bar D_t &=& \bar A_t^T \left( \bar S_t + Q_t \right) \bar A_t \\
+\boldsymbol{\bar d}_t &=&
+      \bar A_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t +
+      \bar A_t^T \left( \boldsymbol{\bar s}_t + \boldsymbol{q}_t \right) \\
+
+\boldsymbol{u} &=& - \bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \\
+\boldsymbol{u} &=& \bar L_t \boldsymbol{x}_{t + 1} + \boldsymbol{\bar l}_t \\
+
+\bar E_t \boldsymbol{u} &=& -\bar C_t \boldsymbol{x}_{t + 1} - \boldsymbol{\bar e}_t
+\end{array}$$
+
+Now, let's solve for the new cost function.
+
+$$\begin{array}{rcl}
+\bar v_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u})
+  &=& \frac{1}{2} \left(
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t + \right. \\&&
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{u}^T \bar B_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t + \\&&
+      \left. \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar A_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \bar B_t \boldsymbol{u} +
+      \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t \right) + \\&& 
+
+      \boldsymbol{x}_{t + 1}^T \bar A_t^T \boldsymbol{\bar s}_t +
+      \boldsymbol{u}^T \bar B_t^T \boldsymbol{\bar s}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t +
+
+      \bar s_t + \\ &&
+
+      \frac{1}{2} \left( \boldsymbol{u}^T P_t \bar A_{t} \boldsymbol{x}_{t + 1} +
+      \boldsymbol{u}^T P_t \bar B_{t} \boldsymbol{u} +
+      \boldsymbol{u}^T P_t \boldsymbol{\bar c}_{t} \right) + \\&&
+      \frac{1}{2} \left( \boldsymbol{x}_{t+1}^T \bar A^T_t P_t^T \boldsymbol{u} +
+      \boldsymbol{u}^T \bar B^T_{t} P_t^T \boldsymbol{u} +
+      \boldsymbol{\bar c}_t^T P^T_t \boldsymbol{u} \right) + \\&&
+
+      \frac{1}{2} \boldsymbol{u}^T R_t \boldsymbol{u} + \\&&
+
+        \boldsymbol{x}^T_{t + 1} \bar A^T_t \boldsymbol{q}_t +
+        \boldsymbol{u}^T \bar B^T_t \boldsymbol{q}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{q}_t +
+
+        \boldsymbol{u}^T \boldsymbol{r}_t + q_t \\
+
+\bar v_{t + 1}(\boldsymbol{x}_{t+1}, \boldsymbol{u})
+  &=& \frac{1}{2} \left(
+      \boldsymbol{x}_{t + 1}^T \bar D_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{x}_{t + 1}^T \bar C_t^T \boldsymbol{u} +
+      \boldsymbol{u}^T \bar C_t \boldsymbol{x}_{t + 1} +
+      \boldsymbol{u}^T \bar E_t \boldsymbol{u} \right) + \\&&
+
+      \boldsymbol{x}_{t + 1}^T \boldsymbol{\bar d}_t +
+
+      \boldsymbol{u}^T \boldsymbol{\bar e}_t + \\&&
+
+      \frac{1}{2} \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t + \boldsymbol{\bar c}_t^T \boldsymbol{q}_t + \bar s_t + q_t \\
+
+\bar v_{t + 1}(\boldsymbol{x}_{t+1})
+  &=& \frac{1}{2} \left(
+      \boldsymbol{x}_{t + 1}^T \bar D_t \boldsymbol{x}_{t + 1} + \right. \\ &&
+      \boldsymbol{x}_{t + 1}^T \bar C_t^T \left( -\bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \right) + \\&&
+      \left( -\bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \right)^T \bar C_t \boldsymbol{x}_{t + 1} + \\&&
+      \left. \left( -\bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \right)^T \bar E_t \left( -\bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \right) \right) + \\&&
+
+      \boldsymbol{x}_{t + 1}^T \boldsymbol{\bar d}_t +
+
+      \left( -\bar E_t^{-1} \bar C_t \boldsymbol{x}_{t + 1} - \bar E_t^{-1} \boldsymbol{\bar e}_t \right)^T \boldsymbol{\bar e}_t + \\&&
+
+      \frac{1}{2} \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t + \boldsymbol{\bar c}_t^T \boldsymbol{q}_t + \bar s_t + q_t \\
+
+\bar v_{t + 1}(\boldsymbol{x}_{t+1})
+  &=& \frac{1}{2}
+      \boldsymbol{x}_{t + 1}^T \left(\bar D_t - \bar C_t^T \bar E_t^{-1} \bar C_t \right) \boldsymbol{x}_{t + 1} + \\ &&
+
+      \boldsymbol{x}_{t + 1}^T \left(\boldsymbol{\bar d}_t
+      - \bar C_t^T \bar E_t^{-1} \boldsymbol{\bar e}_t \right)\\&&
+
+      - \frac{1}{2} \boldsymbol{\bar e}_t^T \bar E_t^{-1} \boldsymbol{\bar e}_t +
+      \frac{1}{2} \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t + \boldsymbol{\bar c}_t^T \boldsymbol{q}_t + \bar s_t + q_t \\
+\end{array}$$
+
+Ok, let's now pull out the 3 variables of interest and do further simplification.
+
+$$\begin{array}{rcl}
+\bar v_{t + 1}(\boldsymbol{x}_{t+1}) &=& \frac{1}{2} \boldsymbol{x}_{t + 1}^T \bar S_{t + 1} \boldsymbol{x}_{t + 1} + \boldsymbol{x}_{t + 1}^T \boldsymbol{\bar s}_{t + 1} + \bar s_{t+1} \\
+  \bar S_{t + 1} &=& \bar D_t - \bar C_t^T \bar E_t^{-1} \bar C_t \\
+  \boldsymbol{\bar s}_{t + 1} &=&
+       \left(\boldsymbol{\bar d}_t - \bar C_t^T \bar E_t^{-1} \boldsymbol{\bar e}_t \right)\\
+
+\bar s_{t+1} &=&
+      - \frac{1}{2} \boldsymbol{\bar e}_t^T \bar E_t^{-1} \boldsymbol{\bar e}_t +
+      \frac{1}{2} \boldsymbol{\bar c}_t^T \left( \bar S_t + Q_t \right) \boldsymbol{\bar c}_t +
+      \boldsymbol{\bar c}_t^T \boldsymbol{\bar s}_t + \boldsymbol{\bar c}_t^T \boldsymbol{q}_t + \bar s_t + q_t \\
+\end{array}$$
+
+\newpage
+\section{Detailed work for a few transformations}
+
+$$\begin{array}{l}
+\begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+\begin{bmatrix} Q_{t} & P_{t}^T \\ P_{t} & R_{t} \end{bmatrix}
+\begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix} \\
+
+\begin{bmatrix} \boldsymbol{x}_1 & \boldsymbol{x}_2 & \boldsymbol{u}_1 & \boldsymbol{u}_2 \end{bmatrix}
+\left[\begin{array}{cc|cc}
+    Q_{t11} & Q_{t12} & P_{t11} & P_{t21} \\
+    Q_{t21} & Q_{t22} & P_{t12} & P_{t22} \\
+    \hline
+    P_{t11} & P_{t12} & R_{t11} & R_{t12} \\
+    P_{t21} & P_{t22} & R_{t21} & R_{t22} \\
+\end{array}\right]
+\begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix}
+\\
+\begin{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} Q_{t11} \\ Q_{t21} \\ P_{t11} \\ P_{t21} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} Q_{t12} \\ Q_{t22} \\ P_{t12} \\ P_{t22} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} P_{t11} \\ P_{t12} \\ R_{t11} \\ R_{t21} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} P_{t21} \\ P_{t22} \\ R_{t12} \\ R_{t22} \end{bmatrix} &
+\end{bmatrix}
+\begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix}
+\\
+\begin{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} Q_{t11} \\ Q_{t21} \end{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} Q_{t12} \\ Q_{t22} \end{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} P_{t11} \\ P_{t12} \end{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+    \begin{bmatrix} P_{t21} \\ P_{t22} \end{bmatrix}
+\end{bmatrix}
+\begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} + \\ \quad
+\begin{bmatrix}
+    \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+      \begin{bmatrix} P_{t11} \\ P_{t21} \end{bmatrix} &
+    \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+      \begin{bmatrix} P_{t12} \\ P_{t22} \end{bmatrix} &
+    \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+      \begin{bmatrix} R_{t11} \\ R_{t21} \end{bmatrix} &
+    \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+      \begin{bmatrix} R_{t12} \\ R_{t22} \end{bmatrix} &
+\end{bmatrix}
+\begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \\ \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix}
+\\
+\begin{bmatrix} \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} Q_{t11} \\ Q_{t21} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} Q_{t12} \\ Q_{t22} \end{bmatrix}\end{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} +
+\begin{bmatrix} \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} P_{t11} \\ P_{t12} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} P_{t21} \\ P_{t22} \end{bmatrix}\end{bmatrix}
+  \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} + \\ \quad
+\begin{bmatrix} \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} P_{t11} \\ P_{t21} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} P_{t12} \\ P_{t22} \end{bmatrix}\end{bmatrix}
+  \begin{bmatrix} \boldsymbol{x}_1 \\ \boldsymbol{x}_2 \end{bmatrix} +
+\begin{bmatrix} \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} R_{t11} \\ R_{t21} \end{bmatrix} &
+  \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix} \cdot
+  \begin{bmatrix} R_{t12} \\ R_{t22} \end{bmatrix}\end{bmatrix}
+  \begin{bmatrix} \boldsymbol{u}_1 \\ \boldsymbol{u}_2 \end{bmatrix}
+\\
+\boldsymbol{x}^T Q_t \boldsymbol{x} + \boldsymbol{u}^T P_t \boldsymbol{x} + \boldsymbol{x}^T P_t^T \boldsymbol{u} + \boldsymbol{u}^T R_t \boldsymbol{u}
+\end{array}$$
+\\ \\
+$$\begin{array}{l}
+\begin{bmatrix} \boldsymbol{x} \\ \boldsymbol{u} \end{bmatrix}^T
+\begin{bmatrix} \boldsymbol{q}_{t} \\ \boldsymbol{r}_{t} \end{bmatrix}
+\\
+\begin{bmatrix} \boldsymbol{x}_1 & \boldsymbol{x}_2 & \boldsymbol{u}_1 & \boldsymbol{u}_2 \end{bmatrix}
+\begin{bmatrix} \boldsymbol{q}_{t1} \\ \boldsymbol{q}_{t2} \\ \boldsymbol{r}_{t1} \\ \boldsymbol{r}_{t1} \end{bmatrix}
+\\
+\boldsymbol{x}^T \boldsymbol{q}_t + \boldsymbol{u}^T \boldsymbol{r}_t
+\end{array}$$
+
+\end{document}
