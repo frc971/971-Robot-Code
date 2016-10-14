@@ -11,25 +11,28 @@ Event::Event() : impl_(0) {
 }
 
 void Event::Wait() {
-  int ret;
-  do {
-    ret = futex_wait(&impl_);
-  } while (ret == 1);
-  if (ret == 0) return;
-  CHECK_EQ(-1, ret);
-  PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+  while (__atomic_load_n(&impl_, __ATOMIC_SEQ_CST) == 0) {
+    const int ret = futex_wait(&impl_);
+    if (ret != 0) {
+      CHECK_EQ(-1, ret);
+      PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+    }
+  }
 }
 
 bool Event::WaitTimeout(const ::aos::time::Time &timeout) {
   const auto timeout_timespec = timeout.ToTimespec();
-  int ret;
-  do {
-    ret = futex_wait_timeout(&impl_, &timeout_timespec);
-  } while (ret == 1);
-  if (ret == 0) return true;
-  if (ret == 2) return false;
-  CHECK_EQ(-1, ret);
-  PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+  while (true) {
+    if (__atomic_load_n(&impl_, __ATOMIC_SEQ_CST) != 0) {
+      return true;
+    }
+    const int ret = futex_wait_timeout(&impl_, &timeout_timespec);
+    if (ret != 0) {
+      if (ret == 2) return false;
+      CHECK_EQ(-1, ret);
+      PLOG(FATAL, "futex_wait(%p) failed", &impl_);
+    }
+  }
 }
 
 // We're not going to expose the number woken because that's not easily portable
