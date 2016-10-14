@@ -17,6 +17,7 @@
 #include <thread>
 #include <memory>
 #include <string>
+#include <atomic>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/implementations.h"
@@ -811,7 +812,7 @@ int Main(int /*argc*/, char **argv) {
     return 1;
   }
 
-  bool done = false;
+  ::std::atomic<bool> done{false};
 
   ::std::thread server([&ping_ponger, &done]() {
     if (FLAGS_server_priority > 0) {
@@ -854,6 +855,11 @@ int Main(int /*argc*/, char **argv) {
 
   const time::Time end = time::Time::Now();
 
+  // Try to make sure the server thread gets past its check of done so our
+  // Ping() down below doesn't hang. Kind of lame, but doing better would
+  // require complicating the interface to each implementation which isn't worth
+  // it here.
+  ::std::this_thread::sleep_for(::std::chrono::milliseconds(200));
   done = true;
   ping_ponger->PingData();
   ping_ponger->Ping();
