@@ -90,19 +90,18 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
           // Shoulder
           {// Value to add to the pot reading for the shoulder.
-           -1.0 - 0.0822 + 0.06138835 * M_PI / 180.0 - 0.0323 - 0.1057 +
-               0.0035 + 0.0055 - 0.001 - 0.0103 + 0.0032 - 0.0755,
+           -2.86275657117,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.535359, 2.5},
+            0.097312, 2.5},
           },
 
           // Wrist
           {// Value to add to the pot reading for the wrist.
            3.2390714288298668 + -0.06138835 * M_PI / 180.0 + 0.0078 - 0.0548 -
                0.0167 + 0.002 - 0.0026 - 0.1040 - 0.0035 - 0.0012 + 0.0166 -
-               0.017 + 0.148 + 0.004,
+               0.017 + 0.148 + 0.004 + 0.024701 - 0.0741,
            {Values::kZeroingSampleSize, Values::kWristEncoderIndexDifference,
-            -0.354946, 2.5},
+            0.000820, 2.5},
           },
 
           0.0,

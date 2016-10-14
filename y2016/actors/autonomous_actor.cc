@@ -632,8 +632,10 @@ void AutonomousActor::BackLongShotTwoBall() {
 
 void AutonomousActor::BackLongShotTwoBallFinish() {
   LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.625, {7.0, 40.0}, {4.0, 6.0},
-                     {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(
+      0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03, {7.0, 40.0},
+      {4.0, 6.0},
+      {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackLongShot() {
