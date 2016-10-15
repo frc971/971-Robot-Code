@@ -522,8 +522,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
   VerifyNearGoal();
 }
 
-::aos::controls::HPolytope<2> MakeBox(double x1_min, double x1_max,
-                                      double x2_min, double x2_max) {
+::aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
+                                             double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;
   box_H << /*[[*/ 1.0, 0.0 /*]*/,
       /*[*/ -1.0, 0.0 /*]*/,
@@ -535,7 +535,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
       /*[*/ x2_max /*]*/,
       /*[*/ -x2_min /*]]*/;
   ::aos::controls::HPolytope<2> t_poly(box_H, box_k);
-  return t_poly;
+  return ::aos::controls::HVPolytope<2, 4, 4>(t_poly.H(), t_poly.k(),
+                                              t_poly.Vertices());
 }
 
 class CoerceGoalTest : public ::testing::Test {
@@ -545,7 +546,7 @@ class CoerceGoalTest : public ::testing::Test {
 
 // WHOOOHH!
 TEST_F(CoerceGoalTest, Inside) {
-  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+  ::aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << /*[[*/ 1, -1 /*]]*/;
@@ -561,7 +562,7 @@ TEST_F(CoerceGoalTest, Inside) {
 }
 
 TEST_F(CoerceGoalTest, Outside_Inside_Intersect) {
-  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+  ::aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, -1;
@@ -577,7 +578,7 @@ TEST_F(CoerceGoalTest, Outside_Inside_Intersect) {
 }
 
 TEST_F(CoerceGoalTest, Outside_Inside_no_Intersect) {
-  ::aos::controls::HPolytope<2> box = MakeBox(3, 4, 1, 2);
+  ::aos::controls::HVPolytope<2, 4, 4> box = MakeBox(3, 4, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, -1;
@@ -593,7 +594,7 @@ TEST_F(CoerceGoalTest, Outside_Inside_no_Intersect) {
 }
 
 TEST_F(CoerceGoalTest, Middle_Of_Edge) {
-  ::aos::controls::HPolytope<2> box = MakeBox(0, 4, 1, 2);
+  ::aos::controls::HVPolytope<2, 4, 4> box = MakeBox(0, 4, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << -1, 1;
@@ -609,7 +610,7 @@ TEST_F(CoerceGoalTest, Middle_Of_Edge) {
 }
 
 TEST_F(CoerceGoalTest, PerpendicularLine) {
-  ::aos::controls::HPolytope<2> box = MakeBox(1, 2, 1, 2);
+  ::aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, 1;
