@@ -140,7 +140,7 @@ void DrivetrainLoop::RunIteration(
       // z accel is down
       // x accel is the front of the robot pointed down.
       Eigen::Matrix<double, 1, 1> Y;
-      Y << angle;
+      Y(0, 0) = angle;
       down_estimator_.Correct(Y);
     }
 
@@ -148,7 +148,7 @@ void DrivetrainLoop::RunIteration(
         "New IMU value from ADIS16448, rate is %f, angle %f, fused %f, bias "
         "%f\n",
         rate, angle, down_estimator_.X_hat(0, 0), down_estimator_.X_hat(1, 0));
-    down_U_ << rate;
+    down_U_(0, 0) = rate;
   }
   down_estimator_.UpdateObserver(down_U_);
 
@@ -256,7 +256,8 @@ void DrivetrainLoop::RunIteration(
   // Voltage error.
 
   Eigen::Matrix<double, 2, 1> U;
-  U << last_left_voltage_, last_right_voltage_;
+  U(0, 0) = last_left_voltage_;
+  U(1, 0) = last_right_voltage_;
   last_left_voltage_ = left_voltage;
   last_right_voltage_ = right_voltage;
 

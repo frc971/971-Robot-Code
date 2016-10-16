@@ -244,18 +244,10 @@ class ControlLoop(object):
     """
     ans = ['  Eigen::Matrix<double, %d, %d> %s;\n' % (
         matrix.shape[0], matrix.shape[1], matrix_name)]
-    first = True
     for x in xrange(matrix.shape[0]):
       for y in xrange(matrix.shape[1]):
-        element = matrix[x, y]
-        if first:
-          ans.append('  %s << ' % matrix_name)
-          first = False
-        else:
-          ans.append(', ')
-        ans.append(str(element))
+        ans.append('  %s(%d, %d) = %s;\n' % (matrix_name, x, y, repr(matrix[x, y])))
 
-    ans.append(';\n')
     return ''.join(ans)
 
   def DumpPlantHeader(self):
