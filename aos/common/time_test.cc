@@ -255,7 +255,7 @@ TEST(TimeTest, Abs) {
 }
 
 TEST(TimeTest, FromRate) {
-  EXPECT_EQ(MACRO_DARG(Time(0, Time::kNSecInSec / 100)), Time::FromRate(100));
+  EXPECT_EQ(::std::chrono::milliseconds(10), Time::FromRate(100));
 }
 
 // Test the monotonic_clock and sleep_until functions.

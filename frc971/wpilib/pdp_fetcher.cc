@@ -1,5 +1,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 
+#include <chrono>
+
 #include "aos/common/logging/queue_logging.h"
 #include "aos/linux_code/init.h"
 #include "aos/common/util/phased_loop.h"
@@ -12,8 +14,8 @@ void PDPFetcher::operator()() {
   ::aos::SetCurrentThreadName("PDPFetcher");
   ::std::unique_ptr<PowerDistributionPanel> pdp(new PowerDistributionPanel());
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(20),
-                                      ::aos::time::Time::InMS(4));
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
+                                      ::std::chrono::milliseconds(4));
 
   while (true) {
     {

@@ -10,15 +10,21 @@ void PhasedLoopXMS(int ms, int offset) {
              frequency + Time::InUS(offset));
 }
 
-int PhasedLoop::Iterate(const Time &now) {
-  const Time next_time = Time::InNS(((now - offset_).ToNSec() + 1) /
-                                    interval_.ToNSec() * interval_.ToNSec()) +
-                         ((now < offset_) ? Time::kZero : interval_) + offset_;
+int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
+  const monotonic_clock::time_point next_time =
+      monotonic_clock::time_point(
+          (((now - offset_).time_since_epoch() + monotonic_clock::duration(1)) /
+           interval_) *
+          interval_) +
+      ((now.time_since_epoch() < offset_) ? monotonic_clock::zero()
+                                          : interval_) +
+      offset_;
 
-  const Time difference = next_time - last_time_;
-  const int result = difference.ToNSec() / interval_.ToNSec();
+  const monotonic_clock::duration difference = next_time - last_time_;
+  const int result = difference / interval_;
   CHECK_EQ(difference, interval_ * result);
-  CHECK_EQ(0, (next_time - offset_).ToNSec() % interval_.ToNSec());
+  CHECK_EQ(
+      0, (next_time - offset_).time_since_epoch().count() % interval_.count());
   CHECK_GE(next_time, now);
   CHECK_LE(next_time - now, interval_);
   last_time_ = next_time;

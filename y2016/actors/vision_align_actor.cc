@@ -1,5 +1,6 @@
 #include "y2016/actors/vision_align_actor.h"
 
+#include <chrono>
 #include <functional>
 #include <numeric>
 
@@ -28,8 +29,8 @@ bool VisionAlignActor::RunAction(
     const actors::VisionAlignActionParams & /*params*/) {
   const double robot_radius =
       control_loops::drivetrain::GetDrivetrainConfig().robot_radius;
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     const int iterations = phased_loop.SleepUntilNext();
     if (iterations != 1) {
