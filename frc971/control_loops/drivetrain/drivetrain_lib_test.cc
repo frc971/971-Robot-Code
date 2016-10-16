@@ -353,27 +353,23 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
 // Tests that converting from a left, right position to a distance, angle
 // coordinate system and back returns the same answer.
 TEST_F(DrivetrainTest, LinearToAngularAndBack) {
-  StateFeedbackLoop<7, 2, 3> kf(
-      GetDrivetrainConfig().make_kf_drivetrain_loop());
-  double kf_heading = 0;
-  DrivetrainMotorsSS drivetrain_ss(GetDrivetrainConfig(), &kf, &kf_heading);
-
-  const double width = GetDrivetrainConfig().robot_radius * 2.0;
+  const DrivetrainConfig dt_config = GetDrivetrainConfig();
+  const double width = dt_config.robot_radius * 2.0;
 
   Eigen::Matrix<double, 7, 1> state;
   state << 2, 3, 4, 5, 0, 0, 0;
-  Eigen::Matrix<double, 2, 1> linear = drivetrain_ss.LeftRightToLinear(state);
+  Eigen::Matrix<double, 2, 1> linear = dt_config.LeftRightToLinear(state);
 
   EXPECT_NEAR(3.0, linear(0, 0), 1e-6);
   EXPECT_NEAR(4.0, linear(1, 0), 1e-6);
 
-  Eigen::Matrix<double, 2, 1> angular = drivetrain_ss.LeftRightToAngular(state);
+  Eigen::Matrix<double, 2, 1> angular = dt_config.LeftRightToAngular(state);
 
   EXPECT_NEAR(2.0 / width, angular(0, 0), 1e-6);
   EXPECT_NEAR(2.0 / width, angular(1, 0), 1e-6);
 
   Eigen::Matrix<double, 4, 1> back_state =
-      drivetrain_ss.AngularLinearToLeftRight(linear, angular);
+      dt_config.AngularLinearToLeftRight(linear, angular);
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_NEAR(state(i, 0), back_state(i, 0), 1e-8);

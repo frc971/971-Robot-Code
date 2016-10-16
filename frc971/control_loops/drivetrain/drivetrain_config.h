@@ -55,6 +55,40 @@ struct DrivetrainConfig {
   double wheel_non_linearity;
 
   double quickturn_wheel_multiplier;
+
+  // Converts the robot state to a linear distance position, velocity.
+  static Eigen::Matrix<double, 2, 1> LeftRightToLinear(
+      const Eigen::Matrix<double, 7, 1> &left_right) {
+    Eigen::Matrix<double, 2, 1> linear;
+    linear(0, 0) = (left_right(0, 0) + left_right(2, 0)) / 2.0;
+    linear(1, 0) = (left_right(1, 0) + left_right(3, 0)) / 2.0;
+    return linear;
+  }
+  // Converts the robot state to an anglular distance, velocity.
+  Eigen::Matrix<double, 2, 1> LeftRightToAngular(
+      const Eigen::Matrix<double, 7, 1> &left_right) const {
+    Eigen::Matrix<double, 2, 1> angular;
+    angular(0, 0) =
+        (left_right(2, 0) - left_right(0, 0)) / (this->robot_radius * 2.0);
+    angular(1, 0) =
+        (left_right(3, 0) - left_right(1, 0)) / (this->robot_radius * 2.0);
+    return angular;
+  }
+
+  // Converts the linear and angular position, velocity to the top 4 states of
+  // the robot state.
+  Eigen::Matrix<double, 4, 1> AngularLinearToLeftRight(
+      const Eigen::Matrix<double, 2, 1> &linear,
+      const Eigen::Matrix<double, 2, 1> &angular) const {
+    Eigen::Matrix<double, 2, 1> scaled_angle =
+        angular * this->robot_radius;
+    Eigen::Matrix<double, 4, 1> state;
+    state(0, 0) = linear(0, 0) - scaled_angle(0, 0);
+    state(1, 0) = linear(1, 0) - scaled_angle(1, 0);
+    state(2, 0) = linear(0, 0) + scaled_angle(0, 0);
+    state(3, 0) = linear(1, 0) + scaled_angle(1, 0);
+    return state;
+  }
 };
 
 }  // namespace drivetrain

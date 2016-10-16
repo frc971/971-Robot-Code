@@ -205,14 +205,14 @@ void DrivetrainLoop::RunIteration(
     status->robot_speed = (kf_.X_hat(1, 0) + kf_.X_hat(3, 0)) / 2.0;
 
     Eigen::Matrix<double, 2, 1> linear =
-        dt_closedloop_.LeftRightToLinear(kf_.X_hat());
+        dt_config_.LeftRightToLinear(kf_.X_hat());
     Eigen::Matrix<double, 2, 1> angular =
-        dt_closedloop_.LeftRightToAngular(kf_.X_hat());
+        dt_config_.LeftRightToAngular(kf_.X_hat());
 
     angular(0, 0) = integrated_kf_heading_;
 
     Eigen::Matrix<double, 4, 1> gyro_left_right =
-        dt_closedloop_.AngularLinearToLeftRight(linear, angular);
+        dt_config_.AngularLinearToLeftRight(linear, angular);
 
     status->estimated_left_position = gyro_left_right(0, 0);
     status->estimated_right_position = gyro_left_right(2, 0);
