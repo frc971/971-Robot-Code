@@ -37,7 +37,9 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
       true,
-      constants::GetValues().down_error};
+      constants::GetValues().down_error,
+      0.25,
+      1.0};
 
   return kDrivetrainConfig;
 };

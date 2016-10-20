@@ -49,7 +49,13 @@ const DrivetrainConfig &GetDrivetrainConfig() {
 
       ::y2016::control_loops::drivetrain::kHighGearRatio,
       ::y2016::control_loops::drivetrain::kLowGearRatio,
-      kThreeStateDriveShifter, kThreeStateDriveShifter, false, 0};
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter,
+      false,
+      0,
+
+      0.25,
+      1.00};
 
   return kDrivetrainConfig;
 };
@@ -88,8 +94,7 @@ class DrivetrainSimulation {
   // Constructs a motor simulation.
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation()
-      : drivetrain_plant_(
-            new DrivetrainPlant(MakeDrivetrainPlant())),
+      : drivetrain_plant_(new DrivetrainPlant(MakeDrivetrainPlant())),
         my_drivetrain_queue_(".frc971.control_loops.drivetrain", 0x8a8dde77,
                              ".frc971.control_loops.drivetrain.goal",
                              ".frc971.control_loops.drivetrain.position",

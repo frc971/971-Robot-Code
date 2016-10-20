@@ -32,7 +32,9 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       constants::GetValues().left_drive,
       constants::GetValues().right_drive,
       true,
-      0};
+      0,
+      0.25,
+      1.0};
 
   return kDrivetrainConfig;
 };

@@ -51,6 +51,10 @@ struct DrivetrainConfig {
   bool default_high_gear;
 
   double down_offset;
+
+  double wheel_non_linearity;
+
+  double quickturn_wheel_multiplier;
 };
 
 }  // namespace drivetrain

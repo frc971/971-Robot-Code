@@ -37,7 +37,10 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       // No shifter sensors, so we could put anything for the things below.
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
-      false};
+      false,
+      0.0,
+      0.60,
+      0.60};
 
   return kDrivetrainConfig;
 };
