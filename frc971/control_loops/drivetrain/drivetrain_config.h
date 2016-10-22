@@ -12,11 +12,12 @@ namespace drivetrain {
 
 enum class ShifterType : int32_t {
   HALL_EFFECT_SHIFTER = 0,  // Detect when inbetween gears.
-  SIMPLE_SHIFTER = 1,  // Switch gears without speedmatch logic.
+  SIMPLE_SHIFTER = 1,       // Switch gears without speedmatch logic.
+  NO_SHIFTER = 2,           // Only one gear ratio.
 };
 
 enum class LoopType : int32_t {
-  OPEN_LOOP = 0,  // Only use open loop logic.
+  OPEN_LOOP = 0,    // Only use open loop logic.
   CLOSED_LOOP = 1,  // Add in closed loop calculation.
 };
 
@@ -32,10 +33,10 @@ struct DrivetrainConfig {
   ::std::function<StateFeedbackLoop<2, 2, 2>()> make_v_drivetrain_loop;
   ::std::function<StateFeedbackLoop<7, 2, 3>()> make_kf_drivetrain_loop;
 
-  double dt;  // Control loop time step.
+  double dt;            // Control loop time step.
   double robot_radius;  // Robot radius, in meters.
   double wheel_radius;  // Wheel radius, in meters.
-  double v;  // Motor velocity constant.
+  double v;             // Motor velocity constant.
 
   // Gear ratios, from wheel to motor shaft.
   double high_gear_ratio;
