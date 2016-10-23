@@ -78,8 +78,8 @@ void AutonomousActor::WaitUntilDoneOrCanceled(
     return;
   }
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     // Poll the running bit and see if we should cancel.
     phased_loop.SleepUntilNext();
@@ -90,8 +90,8 @@ void AutonomousActor::WaitUntilDoneOrCanceled(
 }
 
 bool AutonomousActor::WaitForDriveNear(double distance, double angle) {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   constexpr double kPositionTolerance = 0.02;
   constexpr double kProfileTolerance = 0.001;
 
@@ -138,8 +138,8 @@ bool AutonomousActor::WaitForDriveNear(double distance, double angle) {
 }
 
 bool AutonomousActor::WaitForDriveProfileDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   constexpr double kProfileTolerance = 0.001;
 
   while (true) {
@@ -186,8 +186,8 @@ bool AutonomousActor::IsDriveDone() {
 }
 
 bool AutonomousActor::WaitForDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
 
   while (true) {
     if (ShouldCancel()) {
@@ -281,8 +281,8 @@ void AutonomousActor::LowBarDrive() {
 }
 
 void AutonomousActor::WaitForBallOrDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
     if (ShouldCancel()) {
       return;
@@ -337,8 +337,8 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
 
   LOG(INFO, "Done %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::Time::InMS(5),
-                                      ::aos::time::Time::InMS(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
 
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();
