@@ -107,6 +107,8 @@ void DrivetrainLoop::RunIteration(
       right_gear_ = ComputeGear(position->right_shifter_position,
                                 dt_config_.right_drive, right_high_requested_);
       break;
+    case ShifterType::NO_SHIFTER:
+      break;
   }
 
   kf_.set_controller_index(ControllerIndexFromGears());
