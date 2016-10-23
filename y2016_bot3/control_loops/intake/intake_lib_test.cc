@@ -357,7 +357,7 @@ TEST_F(IntakeTest, DisabledWhileZeroingHigh) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Intake::State ExpectedStateOrder[] = {
+  Intake::State kExpectedStateOrder[] = {
       Intake::DISABLED_INITIALIZED, Intake::ZERO_LOWER_INTAKE};
 
   // Cycle through until intake_ is initialized in intake.cc
@@ -366,23 +366,23 @@ TEST_F(IntakeTest, DisabledWhileZeroingHigh) {
   }
 
   static const int kNumberOfStates =
-      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+      sizeof(kExpectedStateOrder) / sizeof(kExpectedStateOrder[0]);
 
   // Next state when reached to disable
   for (int i = 0; i < kNumberOfStates; i++) {
     // Next expected state after being disabled that is expected until next
     //  state to disable at is reached
-    for (int j = 0; intake_.state() != ExpectedStateOrder[i] && j <= i; j++) {
+    for (int j = 0; intake_.state() != kExpectedStateOrder[i] && j <= i; j++) {
       // RunIteration until next expected state is reached with a maximum
       //  of 10000 times to ensure a breakout
-      for (int o = 0; intake_.state() < ExpectedStateOrder[j] && o < 10000;
+      for (int o = 0; intake_.state() < kExpectedStateOrder[j] && o < 10000;
            o++) {
         RunIteration(true);
       }
-      EXPECT_EQ(ExpectedStateOrder[j], intake_.state());
+      EXPECT_EQ(kExpectedStateOrder[j], intake_.state());
     }
 
-    EXPECT_EQ(ExpectedStateOrder[i], intake_.state());
+    EXPECT_EQ(kExpectedStateOrder[i], intake_.state());
 
     // Disable
     RunIteration(false);
@@ -406,7 +406,7 @@ TEST_F(IntakeTest, DisabledWhileZeroingLow) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Intake::State ExpectedStateOrder[] = {
+  Intake::State kExpectedStateOrder[] = {
       Intake::DISABLED_INITIALIZED, Intake::ZERO_LIFT_INTAKE};
 
   // Cycle through until intake_ is initialized in intake.cc
@@ -415,23 +415,23 @@ TEST_F(IntakeTest, DisabledWhileZeroingLow) {
   }
 
   static const int kNumberOfStates =
-      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+      sizeof(kExpectedStateOrder) / sizeof(kExpectedStateOrder[0]);
 
   // Next state when reached to disable
   for (int i = 0; i < kNumberOfStates; i++) {
     // Next expected state after being disabled that is expected until next
     //  state to disable at is reached
-    for (int j = 0; intake_.state() != ExpectedStateOrder[i] && j <= i; j++) {
+    for (int j = 0; intake_.state() != kExpectedStateOrder[i] && j <= i; j++) {
       // RunIteration until next expected state is reached with a maximum
       //  of 10000 times to ensure a breakout
-      for (int o = 0; intake_.state() < ExpectedStateOrder[j] && o < 10000;
+      for (int o = 0; intake_.state() < kExpectedStateOrder[j] && o < 10000;
            o++) {
         RunIteration(true);
       }
-      EXPECT_EQ(ExpectedStateOrder[j], intake_.state());
+      EXPECT_EQ(kExpectedStateOrder[j], intake_.state());
     }
 
-    EXPECT_EQ(ExpectedStateOrder[i], intake_.state());
+    EXPECT_EQ(kExpectedStateOrder[i], intake_.state());
 
     // Disable
     RunIteration(false);
