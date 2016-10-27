@@ -443,14 +443,6 @@ TEST_F(IntakeTest, DisabledWhileZeroingLow) {
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 }
 
-// Tests that MoveButKeepBelow returns sane values.
-TEST_F(IntakeTest, MoveButKeepBelowTest) {
-  EXPECT_EQ(1.0, Intake::MoveButKeepBelow(1.0, 10.0, 1.0));
-  EXPECT_EQ(1.0, Intake::MoveButKeepBelow(1.0, 2.0, 1.0));
-  EXPECT_EQ(0.0, Intake::MoveButKeepBelow(1.0, 1.0, 1.0));
-  EXPECT_EQ(1.0, Intake::MoveButKeepBelow(1.0, 0.0, 1.0));
-}
-
 // Tests that the integrators works.
 TEST_F(IntakeTest, IntegratorTest) {
   intake_plant_.InitializeIntakePosition(

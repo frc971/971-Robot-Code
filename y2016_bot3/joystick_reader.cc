@@ -143,11 +143,8 @@ class Reader : public ::aos::input::JoystickInput {
       saw_ball_when_started_intaking_ = ball_detected;
     }
 
-    if (data.IsPressed(kIntakeIn)) {
-      is_intaking_ = (!ball_detected || saw_ball_when_started_intaking_);
-    } else {
-      is_intaking_ = false;
-    }
+    is_intaking_ = data.IsPressed(kIntakeIn) &&
+                   (!ball_detected || saw_ball_when_started_intaking_);
 
     is_outtaking_ = data.IsPressed(kIntakeOut);
 

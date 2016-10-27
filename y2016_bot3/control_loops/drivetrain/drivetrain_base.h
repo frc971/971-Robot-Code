@@ -8,7 +8,6 @@ namespace constants {
 static constexpr double drivetrain_max_speed = 5.0;
 
 // The ratio from the encoder shaft to the drivetrain wheels.
-// TODO(constants): Update these.
 static constexpr double kDrivetrainEncoderRatio = 1.0;
 
 }  // namespace constants

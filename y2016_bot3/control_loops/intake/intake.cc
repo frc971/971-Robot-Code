@@ -33,28 +33,6 @@ bool Intake::IsIntakeNear(double tolerance) {
               .lpNorm<Eigen::Infinity>() < tolerance);
 }
 
-double Intake::MoveButKeepAbove(double reference_angle, double current_angle,
-                                double move_distance) {
-  return -MoveButKeepBelow(-reference_angle, -current_angle, -move_distance);
-}
-
-double Intake::MoveButKeepBelow(double reference_angle, double current_angle,
-                                double move_distance) {
-  // There are 3 interesting places to move to.
-  const double small_negative_move = current_angle - move_distance;
-  const double small_positive_move = current_angle + move_distance;
-  // And the reference angle.
-
-  // Move the the highest one that is below reference_angle.
-  if (small_negative_move > reference_angle) {
-    return reference_angle;
-  } else if (small_positive_move > reference_angle) {
-    return small_negative_move;
-  } else {
-    return small_positive_move;
-  }
-}
-
 void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
                           const control_loops::IntakeQueue::Position *position,
                           control_loops::IntakeQueue::Output *output,

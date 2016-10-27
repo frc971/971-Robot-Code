@@ -80,9 +80,6 @@ queue_group IntakeQueue {
 
     // Estimated angle and angular velocitie of the intake.
     JointState intake;
-
-    // Is the intake collided?
-    bool is_collided;
   };
 
   message Position {

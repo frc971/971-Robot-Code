@@ -54,6 +54,7 @@ class IntakeTest_DisabledWhileZeroingHigh_Test;
 class IntakeTest_DisabledWhileZeroingLow_Test;
 }
 
+// TODO(Adam): Implement this class and delete it from here.
 class LimitChecker {
   public:
     LimitChecker(IntakeArm *intake) : intake_(intake) {}
@@ -108,15 +109,6 @@ class Intake : public ::aos::controls::ControlLoop<control_loops::IntakeQueue> {
   }
 
   State state() const { return state_; }
-
-  // Returns the value to move the joint to such that it will stay below
-  // reference_angle starting at current_angle, but move at least move_distance
-  static double MoveButKeepBelow(double reference_angle, double current_angle,
-                                 double move_distance);
-  // Returns the value to move the joint to such that it will stay above
-  // reference_angle starting at current_angle, but move at least move_distance
-  static double MoveButKeepAbove(double reference_angle, double current_angle,
-                                 double move_distance);
 
  protected:
   void RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,

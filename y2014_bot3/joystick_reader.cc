@@ -66,8 +66,6 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     bool is_control_loop_driving = false;
-    static double left_goal = 0.0;
-    static double right_goal = 0.0;
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
 
@@ -139,6 +137,9 @@ class Reader : public ::aos::input::JoystickInput {
   bool auto_running_ = false;
 
   bool is_high_gear_;
+  // Turning goals.
+  double left_goal;
+  double right_goal;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,

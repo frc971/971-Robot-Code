@@ -36,7 +36,9 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       kThreeStateDriveShifter,
       kThreeStateDriveShifter,
       true,
-      0.0};
+      0.0,
+      0.25,
+      1.0};
 
   return kDrivetrainConfig;
 };
