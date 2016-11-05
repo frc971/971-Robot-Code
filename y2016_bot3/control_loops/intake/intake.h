@@ -31,7 +31,7 @@ static constexpr double kIntakeEncoderIndexDifference =
 static constexpr ::frc971::constants::Range kIntakeRange{// Lower hard stop
                                                          -0.4,
                                                          // Upper hard stop
-                                                         2.80,
+                                                         2.90,
                                                          // Lower soft stop
                                                          -0.28,
                                                          // Uppper soft stop

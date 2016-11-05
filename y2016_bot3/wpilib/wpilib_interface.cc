@@ -84,13 +84,13 @@ std::unique_ptr<T> make_unique(U &&... u) {
 // with proper units.
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
          ::y2016_bot3::constants::kDrivetrainEncoderRatio *
          control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / 256.0 /*cpr*/ *
+  return (1.0 / in) / 512.0 /*cpr*/ *
          ::y2016_bot3::constants::kDrivetrainEncoderRatio *
          control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
