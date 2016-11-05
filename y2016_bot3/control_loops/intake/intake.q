@@ -57,12 +57,10 @@ queue_group IntakeQueue {
     // Voltage to send to the rollers. Positive is sucking in.
     float voltage_top_rollers;
     float voltage_bottom_rollers;
+    float voltage_intake_rollers;
 
     bool force_intake;
 
-    // If true, release the latch which holds the traverse mechanism in the
-    // middle.
-    bool traverse_unlatched;
     // If true, fire the traverse mechanism down.
     bool traverse_down;
   };
@@ -76,7 +74,6 @@ queue_group IntakeQueue {
 
     // The internal state of the state machine.
     int32_t state;
-
 
     // Estimated angle and angular velocitie of the intake.
     JointState intake;
@@ -93,9 +90,8 @@ queue_group IntakeQueue {
 
     float voltage_top_rollers;
     float voltage_bottom_rollers;
+    float voltage_intake_rollers;
 
-    // If true, release the latch to hold the traverse mechanism in the middle.
-    bool traverse_unlatched;
     // If true, fire the traverse mechanism down.
     bool traverse_down;
   };

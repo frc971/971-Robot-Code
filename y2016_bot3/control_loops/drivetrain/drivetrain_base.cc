@@ -38,7 +38,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
       true,
       0.0,
       0.25,
-      1.0};
+      0.50};
 
   return kDrivetrainConfig;
 };
