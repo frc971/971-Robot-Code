@@ -195,7 +195,7 @@ RawQueue::RawQueue(const char *name, size_t length, int hash, int queue_length)
 
   if (queue_length < 1) {
     LOG(FATAL, "queue length %d of %s needs to be at least 1\n", queue_length,
-        name_);
+        name);
   }
 
   const size_t name_size = strlen(name) + 1;
