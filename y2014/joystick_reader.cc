@@ -191,10 +191,6 @@ class Reader : public ::aos::input::JoystickInput {
     const double kThrottleGain = 1.0 / 2.5;
     if (false && (data.IsPressed(kDriveControlLoopEnable1) ||
                   data.IsPressed(kDriveControlLoopEnable2))) {
-      // TODO(austin): Static sucks!
-      static double distance = 0.0;
-      static double angle = 0.0;
-      static double filtered_goal_distance = 0.0;
       if (data.PosEdge(kDriveControlLoopEnable1) ||
           data.PosEdge(kDriveControlLoopEnable2)) {
         if (drivetrain_queue.position.FetchLatest() &&
@@ -504,6 +500,10 @@ class Reader : public ::aos::input::JoystickInput {
   double goal_angle_;
   double separation_angle_, shot_separation_angle_;
   double velocity_compensation_;
+  // Distance, angle, and filtered goal for closed loop driving.
+  double distance;
+  double angle;
+  double filtered_goal_distance;
   double intake_power_;
   bool was_running_;
   bool moving_for_shot_ = false;

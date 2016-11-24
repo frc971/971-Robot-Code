@@ -40,11 +40,11 @@ const ButtonLocation kTurn1(1, 7);
 const ButtonLocation kTurn2(1, 11);
 
 // Buttons on the lexan driver station to get things running on bring-up day.
-const ButtonLocation kIntakeDown(3, 11);
-const ButtonLocation kIntakeIn(3, 12);
+const ButtonLocation kIntakeDown(3, 5);
+const ButtonLocation kIntakeIn(3, 4);
 const ButtonLocation kFire(3, 3);
-const ButtonLocation kIntakeOut(3, 9);
-const ButtonLocation kChevalDeFrise(3, 8);
+const ButtonLocation kIntakeOut(3, 3);
+const ButtonLocation kChevalDeFrise(3, 11);
 
 class Reader : public ::aos::input::JoystickInput {
  public:
@@ -143,11 +143,8 @@ class Reader : public ::aos::input::JoystickInput {
       saw_ball_when_started_intaking_ = ball_detected;
     }
 
-    if (data.IsPressed(kIntakeIn)) {
-      is_intaking_ = (!ball_detected || saw_ball_when_started_intaking_);
-    } else {
-      is_intaking_ = false;
-    }
+    is_intaking_ = data.IsPressed(kIntakeIn) &&
+                   (!ball_detected || saw_ball_when_started_intaking_);
 
     is_outtaking_ = data.IsPressed(kIntakeOut);
 
@@ -168,10 +165,8 @@ class Reader : public ::aos::input::JoystickInput {
     }
 
     if (data.IsPressed(kChevalDeFrise)) {
-      traverse_unlatched_ = false;
       traverse_down_ = true;
     } else {
-      traverse_unlatched_ = true;
       traverse_down_ = false;
     }
 
@@ -182,23 +177,26 @@ class Reader : public ::aos::input::JoystickInput {
       new_intake_goal->max_angular_velocity_intake = 7.0;
       new_intake_goal->max_angular_acceleration_intake = 40.0;
 
-      // Granny mode
-      /*
+#define GrannyMode false
+#if GrannyMode
       new_intake_goal->max_angular_velocity_intake = 0.2;
       new_intake_goal->max_angular_acceleration_intake = 1.0;
-      */
+#endif
+
       if (is_intaking_) {
-        new_intake_goal->voltage_top_rollers = 12.0;
+        new_intake_goal->voltage_intake_rollers = -12.0;
+        new_intake_goal->voltage_top_rollers = -12.0;
         new_intake_goal->voltage_bottom_rollers = 12.0;
       } else if (is_outtaking_) {
-        new_intake_goal->voltage_top_rollers = -12.0;
+        new_intake_goal->voltage_intake_rollers = 12.0;
+        new_intake_goal->voltage_top_rollers = 12.0;
         new_intake_goal->voltage_bottom_rollers = -7.0;
       } else {
+        new_intake_goal->voltage_intake_rollers = 0.0;
         new_intake_goal->voltage_top_rollers = 0.0;
         new_intake_goal->voltage_bottom_rollers = 0.0;
       }
 
-      new_intake_goal->traverse_unlatched = traverse_unlatched_;
       new_intake_goal->traverse_down = traverse_down_;
       new_intake_goal->force_intake = true;
 
@@ -236,7 +234,6 @@ class Reader : public ::aos::input::JoystickInput {
   bool was_running_ = false;
   bool auto_running_ = false;
 
-  bool traverse_unlatched_ = false;
   bool traverse_down_ = false;
 
   // If we're waiting for the subsystems to zero.

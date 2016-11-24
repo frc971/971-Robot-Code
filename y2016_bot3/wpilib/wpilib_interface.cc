@@ -84,13 +84,13 @@ std::unique_ptr<T> make_unique(U &&... u) {
 // with proper units.
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
          ::y2016_bot3::constants::kDrivetrainEncoderRatio *
          control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / 256.0 /*cpr*/ *
+  return (1.0 / in) / 512.0 /*cpr*/ *
          ::y2016_bot3::constants::kDrivetrainEncoderRatio *
          control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
 }
@@ -102,7 +102,7 @@ double intake_translate(int32_t in) {
 
 double intake_pot_translate(double voltage) {
   return voltage * ::y2016_bot3::constants::kIntakePotRatio *
-         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+         (5.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
@@ -194,7 +194,7 @@ class SensorReader {
     {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
-          drivetrain_translate(-drivetrain_right_encoder_->GetRaw());
+          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
@@ -210,7 +210,7 @@ class SensorReader {
     {
       auto intake_message = intake_queue.position.MakeMessage();
       CopyPotAndIndexPosition(intake_encoder_, &intake_message->intake,
-                              intake_translate, intake_pot_translate, false,
+                              intake_translate, intake_pot_translate, true,
                               intake_pot_offset);
 
       intake_message.Send();
@@ -286,11 +286,6 @@ class SolenoidWriter {
     traverse_ = ::std::move(s);
   }
 
-  void set_traverse_latch(
-      ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> s) {
-    traverse_latch_ = ::std::move(s);
-  }
-
   void operator()() {
     compressor_->Start();
     ::aos::SetCurrentThreadName("Solenoids");
@@ -311,9 +306,7 @@ class SolenoidWriter {
         intake_.FetchLatest();
         if (intake_.get()) {
           LOG_STRUCT(DEBUG, "solenoids", *intake_);
-
           traverse_->Set(intake_->traverse_down);
-          traverse_latch_->Set(intake_->traverse_unlatched);
         }
       }
 
@@ -333,8 +326,7 @@ class SolenoidWriter {
  private:
   const ::std::unique_ptr<::frc971::wpilib::BufferedPcm> &pcm_;
 
-  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> traverse_,
-      traverse_latch_;
+  ::std::unique_ptr<::frc971::wpilib::BufferedSolenoid> traverse_;
   ::std::unique_ptr<Compressor> compressor_;
 
   ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
@@ -345,12 +337,16 @@ class SolenoidWriter {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
-  void set_drivetrain_left_talon(::std::unique_ptr<Talon> t) {
-    drivetrain_left_talon_ = ::std::move(t);
+  void set_drivetrain_left_talon(::std::unique_ptr<Talon> t0,
+                                 ::std::unique_ptr<Talon> t1) {
+    drivetrain_left_talon_0_ = ::std::move(t0);
+    drivetrain_left_talon_1_ = ::std::move(t1);
   }
 
-  void set_drivetrain_right_talon(::std::unique_ptr<Talon> t) {
-    drivetrain_right_talon_ = ::std::move(t);
+  void set_drivetrain_right_talon(::std::unique_ptr<Talon> t0,
+                                  ::std::unique_ptr<Talon> t1) {
+    drivetrain_right_talon_0_ = ::std::move(t0);
+    drivetrain_right_talon_1_ = ::std::move(t1);
   }
 
  private:
@@ -361,23 +357,32 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_talon_->Set(queue->left_voltage / 12.0);
-    drivetrain_right_talon_->Set(-queue->right_voltage / 12.0);
+    drivetrain_left_talon_0_->Set(queue->left_voltage / 12.0);
+    drivetrain_left_talon_1_->Set(queue->left_voltage / 12.0);
+    drivetrain_right_talon_0_->Set(-queue->right_voltage / 12.0);
+    drivetrain_right_talon_1_->Set(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_talon_->Disable();
-    drivetrain_right_talon_->Disable();
+    drivetrain_left_talon_0_->Disable();
+    drivetrain_right_talon_0_->Disable();
+    drivetrain_left_talon_1_->Disable();
+    drivetrain_right_talon_1_->Disable();
   }
 
-  ::std::unique_ptr<Talon> drivetrain_left_talon_, drivetrain_right_talon_;
+  ::std::unique_ptr<Talon> drivetrain_left_talon_0_, drivetrain_right_talon_0_,
+      drivetrain_right_talon_1_, drivetrain_left_talon_1_;
 };
 
 class IntakeWriter : public ::frc971::wpilib::LoopOutputHandler {
  public:
   void set_intake_talon(::std::unique_ptr<Talon> t) {
     intake_talon_ = ::std::move(t);
+  }
+
+  void set_intake_rollers_talon(::std::unique_ptr<Talon> t) {
+    intake_rollers_talon_ = ::std::move(t);
   }
 
   void set_top_rollers_talon(::std::unique_ptr<Talon> t) {
@@ -400,6 +405,7 @@ class IntakeWriter : public ::frc971::wpilib::LoopOutputHandler {
                                    kMaxBringupPower) /
                        12.0);
     top_rollers_talon_->Set(-queue->voltage_top_rollers / 12.0);
+    intake_rollers_talon_->Set(-queue->voltage_intake_rollers / 12.0);
     bottom_rollers_talon_->Set(-queue->voltage_bottom_rollers / 12.0);
   }
 
@@ -409,7 +415,7 @@ class IntakeWriter : public ::frc971::wpilib::LoopOutputHandler {
   }
 
   ::std::unique_ptr<Talon> intake_talon_, top_rollers_talon_,
-      bottom_rollers_talon_;
+      bottom_rollers_talon_, intake_rollers_talon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -430,14 +436,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
     SensorReader reader;
 
-    reader.set_drivetrain_left_encoder(make_encoder(5));
-    reader.set_drivetrain_right_encoder(make_encoder(6));
+    reader.set_drivetrain_left_encoder(make_encoder(0));
+    reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    reader.set_intake_encoder(make_encoder(0));
+    reader.set_intake_encoder(make_encoder(2));
     reader.set_intake_index(make_unique<DigitalInput>(0));
-    reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
+    reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
 
-    reader.set_ball_detector(make_unique<AnalogInput>(7));
+    reader.set_ball_detector(make_unique<AnalogInput>(5));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
@@ -446,23 +452,27 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     DrivetrainWriter drivetrain_writer;
+    // 2 and 3 are right. 0 and 1 are left
     drivetrain_writer.set_drivetrain_left_talon(
-        ::std::unique_ptr<Talon>(new Talon(5)));
+        ::std::unique_ptr<Talon>(new Talon(0)),
+        ::std::unique_ptr<Talon>(new Talon(1)));
     drivetrain_writer.set_drivetrain_right_talon(
-        ::std::unique_ptr<Talon>(new Talon(4)));
+        ::std::unique_ptr<Talon>(new Talon(2)),
+        ::std::unique_ptr<Talon>(new Talon(3)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     IntakeWriter intake_writer;
-    intake_writer.set_intake_talon(::std::unique_ptr<Talon>(new Talon(3)));
-    intake_writer.set_top_rollers_talon(::std::unique_ptr<Talon>(new Talon(1)));
+    intake_writer.set_intake_talon(::std::unique_ptr<Talon>(new Talon(7)));
+    intake_writer.set_top_rollers_talon(::std::unique_ptr<Talon>(new Talon(6)));
+    intake_writer.set_intake_rollers_talon(
+        ::std::unique_ptr<Talon>(new Talon(5)));
     intake_writer.set_bottom_rollers_talon(
-        ::std::unique_ptr<Talon>(new Talon(0)));
+        ::std::unique_ptr<Talon>(new Talon(4)));
     ::std::thread intake_writer_thread(::std::ref(intake_writer));
 
     ::std::unique_ptr<::frc971::wpilib::BufferedPcm> pcm(
         new ::frc971::wpilib::BufferedPcm());
     SolenoidWriter solenoid_writer(pcm);
-    solenoid_writer.set_traverse_latch(pcm->MakeSolenoid(2));
     solenoid_writer.set_traverse(pcm->MakeSolenoid(3));
 
     solenoid_writer.set_compressor(make_unique<Compressor>());

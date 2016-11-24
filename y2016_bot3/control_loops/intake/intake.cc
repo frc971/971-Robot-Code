@@ -16,7 +16,7 @@ namespace {
 // The maximum voltage the intake roller will be allowed to use.
 constexpr float kMaxIntakeTopVoltage = 12.0;
 constexpr float kMaxIntakeBottomVoltage = 12.0;
-
+constexpr float kMaxIntakeRollersVoltage = 12.0;
 }
 // namespace
 
@@ -31,28 +31,6 @@ bool Intake::IsIntakeNear(double tolerance) {
   return ((intake_.unprofiled_goal() - intake_.X_hat())
               .block<2, 1>(0, 0)
               .lpNorm<Eigen::Infinity>() < tolerance);
-}
-
-double Intake::MoveButKeepAbove(double reference_angle, double current_angle,
-                                double move_distance) {
-  return -MoveButKeepBelow(-reference_angle, -current_angle, -move_distance);
-}
-
-double Intake::MoveButKeepBelow(double reference_angle, double current_angle,
-                                double move_distance) {
-  // There are 3 interesting places to move to.
-  const double small_negative_move = current_angle - move_distance;
-  const double small_positive_move = current_angle + move_distance;
-  // And the reference angle.
-
-  // Move the the highest one that is below reference_angle.
-  if (small_negative_move > reference_angle) {
-    return reference_angle;
-  } else if (small_positive_move > reference_angle) {
-    return small_negative_move;
-  } else {
-    return small_positive_move;
-  }
 }
 
 void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
@@ -162,10 +140,10 @@ void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
 
         requested_intake = unsafe_goal->angle_intake;
       }
-      //Push the request out to the hardware.
+      // Push the request out to the hardware.
       limit_checker_.UpdateGoal(requested_intake);
 
-            // ESTOP if we hit the hard limits.
+      // ESTOP if we hit the hard limits.
       if (intake_.CheckHardLimits() && output) {
         state_ = ESTOP;
       }
@@ -198,6 +176,7 @@ void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
 
     output->voltage_top_rollers = 0.0;
     output->voltage_bottom_rollers = 0.0;
+    output->voltage_intake_rollers = 0.0;
 
     if (unsafe_goal) {
       // Ball detector lights.
@@ -212,6 +191,10 @@ void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
         output->voltage_top_rollers = ::std::max(
             -kMaxIntakeTopVoltage,
             ::std::min(unsafe_goal->voltage_top_rollers, kMaxIntakeTopVoltage));
+        output->voltage_intake_rollers =
+            ::std::max(-kMaxIntakeRollersVoltage,
+                       ::std::min(unsafe_goal->voltage_intake_rollers,
+                                  kMaxIntakeRollersVoltage));
         output->voltage_bottom_rollers =
             ::std::max(-kMaxIntakeBottomVoltage,
                        ::std::min(unsafe_goal->voltage_bottom_rollers,
@@ -222,7 +205,6 @@ void Intake::RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
       }
 
       // Traverse.
-      output->traverse_unlatched = unsafe_goal->traverse_unlatched;
       output->traverse_down = unsafe_goal->traverse_down;
     }
   }

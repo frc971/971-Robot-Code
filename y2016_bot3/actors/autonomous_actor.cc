@@ -204,14 +204,12 @@ bool AutonomousActor::WaitForDriveDone() {
 void AutonomousActor::MoveIntake(double intake_goal,
                                  const ProfileParameters intake_params,
                                  bool traverse_up, double roller_power) {
-
   auto new_intake_goal =
       ::y2016_bot3::control_loops::intake_queue.goal.MakeMessage();
 
   new_intake_goal->angle_intake = intake_goal;
 
-  new_intake_goal->max_angular_velocity_intake =
-      intake_params.max_velocity;
+  new_intake_goal->max_angular_velocity_intake = intake_params.max_velocity;
 
   new_intake_goal->max_angular_acceleration_intake =
       intake_params.max_acceleration;
@@ -219,7 +217,6 @@ void AutonomousActor::MoveIntake(double intake_goal,
   new_intake_goal->voltage_top_rollers = roller_power;
   new_intake_goal->voltage_bottom_rollers = roller_power;
 
-  new_intake_goal->traverse_unlatched = true;
   new_intake_goal->traverse_down = !traverse_up;
 
   if (!new_intake_goal.Send()) {
@@ -241,13 +238,15 @@ bool AutonomousActor::IntakeDone() {
 
   if (::std::abs(control_loops::intake_queue.status->intake.goal_angle -
                  intake_goal_.intake) < kProfileError &&
-      ::std::abs(control_loops::intake_queue.status->intake
-                     .goal_angular_velocity) < kProfileError) {
+      ::std::abs(
+          control_loops::intake_queue.status->intake.goal_angular_velocity) <
+          kProfileError) {
     LOG(DEBUG, "Profile done.\n");
     if (::std::abs(control_loops::intake_queue.status->intake.angle -
                    intake_goal_.intake) < kEpsilon &&
-        ::std::abs(control_loops::intake_queue.status->intake
-                       .angular_velocity) < kEpsilon) {
+        ::std::abs(
+            control_loops::intake_queue.status->intake.angular_velocity) <
+            kEpsilon) {
       LOG(INFO, "Near goal, done.\n");
       return true;
     }

@@ -120,8 +120,6 @@ class Reader : public ::aos::input::JoystickInput {
 
   void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
     bool is_control_loop_driving = false;
-    static double left_goal = 0.0;
-    static double right_goal = 0.0;
 
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
@@ -238,18 +236,15 @@ class Reader : public ::aos::input::JoystickInput {
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kBackFender)) {
-      // Fender shot back
-      shoulder_goal_ = M_PI / 2.0 - 0.2;
-      wrist_goal_ = -0.55;
-      shooter_velocity_ = 600.0;
+      // Backwards shot no IMU
+      shoulder_goal_ = M_PI / 2.0 - 0.4;
+      wrist_goal_ = -0.62 - 0.02;
+      shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kFrontFender)) {
-      // Forwards shot, higher
+      // Forwards shot no IMU
       shoulder_goal_ = M_PI / 2.0 + 0.1;
-      wrist_goal_ = M_PI + 0.41 + 0.02 + 0.020;
-      if (drivetrain_queue.status.get()) {
-        wrist_goal_ += drivetrain_queue.status->ground_angle;
-      }
+      wrist_goal_ = M_PI + 0.41 + 0.02 - 0.005;
       shooter_velocity_ = 640.0;
       intake_goal_ = intake_when_shooting;
     } else if (data.IsPressed(kExpand) || data.IsPressed(kWinch)) {
@@ -457,6 +452,10 @@ class Reader : public ::aos::input::JoystickInput {
   double shoulder_goal_;
   double wrist_goal_;
   double shooter_velocity_ = 0.0;
+
+  // Turning goals
+  double left_goal;
+  double right_goal;
 
   bool was_running_ = false;
   bool auto_running_ = false;

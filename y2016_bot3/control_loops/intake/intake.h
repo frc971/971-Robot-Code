@@ -29,18 +29,19 @@ static constexpr double kIntakeEncoderIndexDifference =
 // the use.
 // TODO(constants): Update these.
 static constexpr ::frc971::constants::Range kIntakeRange{// Lower hard stop
-                                                         -0.5,
+                                                         -0.4,
                                                          // Upper hard stop
                                                          2.90,
                                                          // Lower soft stop
-                                                         -0.300,
+                                                         -0.28,
                                                          // Uppper soft stop
-                                                         2.725};
+                                                         2.77};
 
 struct IntakeZero {
-  double pot_offset = 0.0;
-  ::frc971::constants::ZeroingConstants zeroing{
-      kZeroingSampleSize, kIntakeEncoderIndexDifference, 0.0, 0.3};
+  double pot_offset = 5.462409 + 0.333162;
+  ::frc971::constants::ZeroingConstants zeroing{kZeroingSampleSize,
+                                                kIntakeEncoderIndexDifference,
+                                                +(-0.291240 + 0.148604), 0.3};
 };
 }  // namespace constants
 namespace control_loops {
@@ -54,12 +55,14 @@ class IntakeTest_DisabledWhileZeroingHigh_Test;
 class IntakeTest_DisabledWhileZeroingLow_Test;
 }
 
+// TODO(Adam): Implement this class and delete it from here.
 class LimitChecker {
-  public:
-    LimitChecker(IntakeArm *intake) : intake_(intake) {}
-    void UpdateGoal(double intake_angle_goal);
-  private:
-    IntakeArm *intake_;
+ public:
+  LimitChecker(IntakeArm *intake) : intake_(intake) {}
+  void UpdateGoal(double intake_angle_goal);
+
+ private:
+  IntakeArm *intake_;
 };
 
 class Intake : public ::aos::controls::ControlLoop<control_loops::IntakeQueue> {
@@ -109,15 +112,6 @@ class Intake : public ::aos::controls::ControlLoop<control_loops::IntakeQueue> {
 
   State state() const { return state_; }
 
-  // Returns the value to move the joint to such that it will stay below
-  // reference_angle starting at current_angle, but move at least move_distance
-  static double MoveButKeepBelow(double reference_angle, double current_angle,
-                                 double move_distance);
-  // Returns the value to move the joint to such that it will stay above
-  // reference_angle starting at current_angle, but move at least move_distance
-  static double MoveButKeepAbove(double reference_angle, double current_angle,
-                                 double move_distance);
-
  protected:
   void RunIteration(const control_loops::IntakeQueue::Goal *unsafe_goal,
                     const control_loops::IntakeQueue::Position *position,
@@ -144,7 +138,6 @@ class Intake : public ::aos::controls::ControlLoop<control_loops::IntakeQueue> {
 
   DISALLOW_COPY_AND_ASSIGN(Intake);
 };
-
 
 }  // namespace intake
 }  // namespace control_loops
