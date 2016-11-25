@@ -1092,6 +1092,7 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
 
       break;
     case 5:
+    case 15:
       TwoBallAuto();
       return true;
       break;

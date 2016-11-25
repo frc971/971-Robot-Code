@@ -124,7 +124,9 @@ void DataCollector::RunIteration() {
 
   AddPoint("big indicator", big_indicator);
   AddPoint("superstructure state indicator", superstructure_state_indicator);
-  AddPoint("auto mode indicator", auto_mode_indicator);
+  if(auto_mode_indicator != 15) {
+    AddPoint("auto mode indicator", auto_mode_indicator);
+  }
 #endif
 
   // Get ready for next iteration. /////
