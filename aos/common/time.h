@@ -32,6 +32,9 @@ class monotonic_clock {
   }
 
   static constexpr monotonic_clock::duration zero() { return duration(0); }
+
+  static constexpr time_point min_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::min()))};
 };
 
 namespace time {
