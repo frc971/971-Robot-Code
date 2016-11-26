@@ -1,0 +1,13 @@
+superstructure.stripped status shoulder estimator_state position
+superstructure.stripped status shoulder estimator_state pot_position
+superstructure.stripped position shoulder pot
+
+superstructure.stripped status wrist estimator_state position
+superstructure.stripped status wrist estimator_state pot_position
+superstructure.stripped position wrist pot
+
+superstructure.stripped status intake estimator_state position
+superstructure.stripped status intake estimator_state pot_position
+superstructure.stripped position intake pot
+
+superstructure.stripped status state

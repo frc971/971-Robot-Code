@@ -1,0 +1,7 @@
+target_receiver.stripped vision horizontal_angle
+drivetrain.stripped using angle
+shooter.stripped status shots
+
+drivetrain.stripped status profiled_left_position_goal
+drivetrain.stripped status profiled_right_position_goal
+drivetrain.stripped status heading_goal
