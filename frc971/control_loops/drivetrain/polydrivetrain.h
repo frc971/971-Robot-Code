@@ -47,7 +47,7 @@ class PolyDrivetrain {
  private:
   StateFeedbackLoop<7, 2, 3> *kf_;
 
-  const ::aos::controls::HPolytope<2> U_Poly_;
+  const ::aos::controls::HVPolytope<2, 4, 4> U_Poly_;
 
   ::std::unique_ptr<StateFeedbackLoop<2, 2, 2>> loop_;
 

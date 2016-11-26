@@ -72,23 +72,6 @@ class HPolytopeTest : public ::testing::Test {
     }
     return r;
   }
-
-  template <int number_of_dimensions>
-  void CheckShiftedVertices(
-      const HPolytope<number_of_dimensions> &base,
-      const Eigen::Matrix<double, number_of_dimensions, number_of_dimensions> &
-          H_multiplier,
-      const Eigen::Matrix<double, number_of_dimensions, 1> &k_shifter) {
-    LOG_MATRIX(DEBUG, "base vertices", base.Vertices());
-    const auto shifted = HPolytope<number_of_dimensions>(
-        base.H() * H_multiplier, base.k() + base.H() * k_shifter);
-    LOG_MATRIX(DEBUG, "shifted vertices", shifted.Vertices());
-    LOG_MATRIX(DEBUG, "shifted - base", shifted.Vertices() - base.Vertices());
-    EXPECT_THAT(MatrixToVectors(HPolytope<number_of_dimensions>(
-                                    base, H_multiplier, k_shifter).Vertices()),
-                ::testing::UnorderedElementsAreArray(
-                    MatrixToMatchers(shifted.Vertices())));
-  }
 };
 
 // Tests that the vertices for various polytopes calculated from H and k are
@@ -113,41 +96,6 @@ TEST_F(HPolytopeTest, CalculatedVertices) {
               ::testing::UnorderedElementsAreArray(
                   MatrixToVectors((Eigen::Matrix<double, 2, 4>() << 0.5, 1, 1.5,
                                    1, 0, 0.5, 0, -0.5).finished())));
-}
-
-TEST_F(HPolytopeTest, ShiftedVertices) {
-  CheckShiftedVertices(
-      Polytope1(), (Eigen::Matrix<double, 2, 2>() << 1, 1, 1, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(), (Eigen::Matrix<double, 2, 2>() << 1, -1, 1, 1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(), (Eigen::Matrix<double, 2, 2>() << 1, 1, 1.5, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(),
-      (Eigen::Matrix<double, 2, 2>() << 1, 1.5, -1.5, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(),
-      (Eigen::Matrix<double, 2, 2>() << 1, -1.5, -1.5, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(),
-      (Eigen::Matrix<double, 2, 2>() << 2, -1.5, -1.5, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-  CheckShiftedVertices(
-      Polytope1(),
-      (Eigen::Matrix<double, 2, 2>() << 2, -1.5, -1.25, -1).finished(),
-      (Eigen::Matrix<double, 2, 1>() << 9.71, 2.54).finished());
-
-  CheckShiftedVertices(Polytope3(),
-                       (Eigen::Matrix<double, 1, 1>() << 1).finished(),
-                       (Eigen::Matrix<double, 1, 1>() << 9.71).finished());
-  CheckShiftedVertices(Polytope3(),
-                       (Eigen::Matrix<double, 1, 1>() << -2.54).finished(),
-                       (Eigen::Matrix<double, 1, 1>() << 16.78).finished());
 }
 
 }  // namespace controls

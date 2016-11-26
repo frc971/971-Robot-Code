@@ -13,8 +13,6 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-using ::frc971::control_loops::DoCoerceGoal;
-
 void DrivetrainMotorsSS::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
   output_was_capped_ =
       ::std::abs((*U)(0, 0)) > 12.0 || ::std::abs((*U)(1, 0)) > 12.0;
@@ -53,9 +51,15 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   Eigen::Matrix<double, 2, 1> U_integral;
   U_integral << kf_->X_hat(4, 0), kf_->X_hat(5, 0);
 
-  const ::aos::controls::HPolytope<2> pos_poly(
-      U_poly_, position_K * T_,
-      -velocity_K * velocity_error + U_integral - kf_->ff_U());
+  const ::aos::controls::HVPolytope<2, 4, 4> pos_poly_hv(
+      U_poly_.static_H() * position_K * T_,
+      U_poly_.static_H() *
+              (-velocity_K * velocity_error + U_integral - kf_->ff_U()) +
+          U_poly_.static_k(),
+      (position_K * T_).inverse() *
+          ::aos::controls::ShiftPoints<2, 4>(
+              U_poly_.StaticVertices(),
+              -velocity_K * velocity_error + U_integral - kf_->ff_U()));
 
   Eigen::Matrix<double, 2, 1> adjusted_pos_error;
   {
@@ -81,10 +85,10 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
 
     bool is_inside_h, is_inside_45;
     const auto adjusted_pos_error_h =
-        DoCoerceGoal(pos_poly, LH, wh, drive_error, &is_inside_h);
+        DoCoerceGoal(pos_poly_hv, LH, wh, drive_error, &is_inside_h);
     const auto adjusted_pos_error_45 =
-        DoCoerceGoal(pos_poly, L45, w45, intersection, &is_inside_45);
-    if (pos_poly.IsInside(intersection)) {
+        DoCoerceGoal(pos_poly_hv, L45, w45, intersection, &is_inside_45);
+    if (pos_poly_hv.IsInside(intersection)) {
       adjusted_pos_error = adjusted_pos_error_h;
     } else {
       if (is_inside_h) {
@@ -115,10 +119,16 @@ DrivetrainMotorsSS::DrivetrainMotorsSS(const DrivetrainConfig &dt_config,
                                        double *integrated_kf_heading)
     : dt_config_(dt_config),
       kf_(kf),
-      U_poly_(
-          (Eigen::Matrix<double, 4, 2>() << 1, 0, -1, 0, 0, 1, 0, -1)
-              .finished(),
-          (Eigen::Matrix<double, 4, 1>() << 12.0, 12.0, 12.0, 12.0).finished()),
+      U_poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
+               /*[*/ -1, 0 /*]*/,
+               /*[*/ 0, 1 /*]*/,
+               /*[*/ 0, -1 /*]]*/).finished(),
+              (Eigen::Matrix<double, 4, 1>() << /*[[*/ 12 /*]*/,
+               /*[*/ 12 /*]*/,
+               /*[*/ 12 /*]*/,
+               /*[*/ 12 /*]]*/).finished(),
+              (Eigen::Matrix<double, 2, 4>() << /*[[*/ 12, 12, -12, -12 /*]*/,
+               /*[*/ -12, 12, 12, -12 /*]*/).finished()),
       linear_profile_(::aos::controls::kLoopFrequency),
       angular_profile_(::aos::controls::kLoopFrequency),
       integrated_kf_heading_(integrated_kf_heading) {

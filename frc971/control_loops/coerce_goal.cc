@@ -8,7 +8,7 @@ namespace frc971 {
 namespace control_loops {
 
 Eigen::Matrix<double, 2, 1> DoCoerceGoal(
-    const aos::controls::HPolytope<2> &region,
+    const aos::controls::HVPolytope<2, 4, 4> &region,
     const Eigen::Matrix<double, 1, 2> &K, double w,
     const Eigen::Matrix<double, 2, 1> &R, bool *is_inside) {
   if (region.IsInside(R)) {
@@ -20,12 +20,26 @@ Eigen::Matrix<double, 2, 1> DoCoerceGoal(
   perpendicular_vector = K.transpose().normalized();
   parallel_vector << perpendicular_vector(1, 0), -perpendicular_vector(0, 0);
 
-  aos::controls::HPolytope<1> t_poly(
-      region.H() * parallel_vector,
-      region.k() - region.H() * perpendicular_vector * w);
+  Eigen::Matrix<double, 4, 1> projectedh = region.static_H() * parallel_vector;
+  Eigen::Matrix<double, 4, 1> projectedk =
+      region.static_k() - region.static_H() * perpendicular_vector * w;
 
-  Eigen::Matrix<double, 1, Eigen::Dynamic> vertices = t_poly.Vertices();
-  if (vertices.innerSize() > 0) {
+  double min_boundary = ::std::numeric_limits<double>::lowest();
+  double max_boundary = ::std::numeric_limits<double>::max();
+  for (int i = 0; i < 4; ++i) {
+    if (projectedh(i, 0) > 0) {
+      max_boundary =
+          ::std::min(max_boundary, projectedk(i, 0) / projectedh(i, 0));
+    } else {
+      min_boundary =
+          ::std::max(min_boundary, projectedk(i, 0) / projectedh(i, 0));
+    }
+  }
+
+  Eigen::Matrix<double, 1, 2> vertices;
+  vertices << max_boundary, min_boundary;
+
+  if (max_boundary > min_boundary) {
     double min_distance_sqr = 0;
     Eigen::Matrix<double, 2, 1> closest_point;
     for (int i = 0; i < vertices.innerSize(); i++) {
@@ -40,8 +54,8 @@ Eigen::Matrix<double, 2, 1> DoCoerceGoal(
     if (is_inside) *is_inside = true;
     return closest_point;
   } else {
-    Eigen::Matrix<double, 2, Eigen::Dynamic> region_vertices =
-        region.Vertices();
+    Eigen::Matrix<double, 2, 4> region_vertices =
+        region.StaticVertices();
     CHECK_GT(region_vertices.outerSize(), 0);
     double min_distance = INFINITY;
     int closest_i = 0;

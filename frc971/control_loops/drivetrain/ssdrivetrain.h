@@ -63,7 +63,7 @@ class DrivetrainMotorsSS {
 
   // Reprsents +/- full power on each motor in U-space, aka the square from
   // (-12, -12) to (12, 12).
-  const ::aos::controls::HPolytope<2> U_poly_;
+  const ::aos::controls::HVPolytope<2, 4, 4> U_poly_;
 
   // multiplying by T converts [left_error, right_error] to
   // [left_right_error_difference, total_distance_error].

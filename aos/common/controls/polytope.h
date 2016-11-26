@@ -19,129 +19,140 @@ namespace controls {
 // avoid issues with that, using the "shifting" constructor is recommended
 // whenever possible.
 template <int number_of_dimensions>
-class HPolytope {
+class Polytope {
  public:
-  // Constructs a polytope given the H and k matrices.
-  // Do NOT use this to calculate a polytope derived from another one in a way
-  // another constructor can be used instead.
-  HPolytope(
-      const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> &H,
-      const Eigen::Matrix<double, Eigen::Dynamic, 1> &k)
-      : H_(H), k_(k), vertices_(CalculateVertices(H, k)) {}
-
-  // Constructs a polytope with H = other.H() * H_multiplier and
-  // k = other.k() + other.H() * k_shifter.
-  // This avoids calculating the vertices for the new H and k directly because
-  // that sometimes confuses libcdd depending on what exactly the new H and k
-  // are.
-  //
-  // This currently has the following restrictions (CHECKed internally) because
-  // we don't have uses for anything else:
-  //   If number_of_dimensions is not 1, it must be 2, other.H() *
-  //   H_multiplier.inverse() * k_shifter must have its first 2 columns and last
-  //   2 columns as opposites, and the 1st+2nd and 3rd+4th vertices must be
-  //   normal to each other.
-  HPolytope(const HPolytope<number_of_dimensions> &other,
-            const Eigen::Matrix<double, number_of_dimensions,
-                                number_of_dimensions> &H_multiplier,
-            const Eigen::Matrix<double, number_of_dimensions, 1> &k_shifter)
-      : H_(other.H() * H_multiplier),
-        k_(other.k() + other.H() * k_shifter),
-        vertices_(
-            ShiftVertices(CalculateVertices(H_, other.k()),
-                          other.H() * H_multiplier.inverse() * k_shifter)) {}
-
-  // This is an initialization function shared across all instantiations of this
-  // template.
-  // This must be called at least once before creating any instances. It is
-  // not thread-safe.
-  static void Init() {
-    dd_set_global_constants();
-  }
+  virtual ~Polytope() {}
 
   // Returns a reference to H.
-  const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> &H() const {
-    return H_;
-  }
+  virtual Eigen::Ref<
+      const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>>
+  H() const = 0;
 
   // Returns a reference to k.
-  const Eigen::Matrix<double, Eigen::Dynamic, 1> &k() const { return k_; }
+  virtual Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k()
+      const = 0;
 
   // Returns the number of dimensions in the polytope.
-  int ndim() const { return number_of_dimensions; }
+  constexpr int ndim() const { return number_of_dimensions; }
 
   // Returns the number of constraints currently in the polytope.
-  int num_constraints() const { return k_.rows(); }
+  int num_constraints() const { return k().rows(); }
 
   // Returns true if the point is inside the polytope.
   bool IsInside(Eigen::Matrix<double, number_of_dimensions, 1> point) const;
 
   // Returns the list of vertices inside the polytope.
-  const Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> &Vertices()
+  virtual Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
+      const = 0;
+};
+
+template <int number_of_dimensions, int num_vertices>
+Eigen::Matrix<double, number_of_dimensions, num_vertices> ShiftPoints(
+    const Eigen::Matrix<double, number_of_dimensions, num_vertices> &vertices,
+    const Eigen::Matrix<double, number_of_dimensions, 1> &offset) {
+  Eigen::Matrix<double, number_of_dimensions, num_vertices> ans = vertices;
+  for (int i = 0; i < num_vertices; ++i) {
+    ans.col(i) += offset;
+  }
+  return ans;
+}
+
+template <int number_of_dimensions, int num_constraints, int num_vertices>
+class HVPolytope : public Polytope<number_of_dimensions> {
+ public:
+  // Constructs a polytope given the H and k matrices.
+  HVPolytope(Eigen::Ref<const Eigen::Matrix<double, num_constraints,
+                                            number_of_dimensions>> H,
+             Eigen::Ref<const Eigen::Matrix<double, num_constraints, 1>> k,
+             Eigen::Ref<const Eigen::Matrix<double, number_of_dimensions,
+                                            num_vertices>> vertices)
+      : H_(H), k_(k), vertices_(vertices) {}
+
+  Eigen::Ref<const Eigen::Matrix<double, num_constraints, number_of_dimensions>>
+  static_H() const {
+    return H_;
+  }
+
+  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>>
+  H() const override {
+    return H_;
+  }
+
+  Eigen::Ref<const Eigen::Matrix<double, num_constraints, 1>> static_k()
       const {
+    return k_;
+  }
+  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k()
+      const override {
+    return k_;
+  }
+
+  Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
+      const override {
+    return vertices_;
+  }
+
+  Eigen::Matrix<double, number_of_dimensions, num_vertices>
+  StaticVertices() const {
     return vertices_;
   }
 
  private:
-  static Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
-  CalculateVertices(
-      const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> &H,
-      const Eigen::Matrix<double, Eigen::Dynamic, 1> &k);
+  const Eigen::Matrix<double, num_constraints, number_of_dimensions> H_;
+  const Eigen::Matrix<double, num_constraints, 1> k_;
+  const Eigen::Matrix<double, number_of_dimensions, num_vertices> vertices_;
+};
 
-  static Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
-  ShiftVertices(const Eigen::Matrix<double, number_of_dimensions,
-                                    Eigen::Dynamic> &vertices,
-                const Eigen::Matrix<double, Eigen::Dynamic, 1> &shift) {
-    static_assert(number_of_dimensions <= 2, "not implemented yet");
-    if (vertices.cols() != number_of_dimensions * 2) {
-      LOG(FATAL,
-          "less vertices not supported yet: %zd vertices vs %d dimensions\n",
-          vertices.cols(), number_of_dimensions);
-    }
-    if (number_of_dimensions == 2) {
-      if ((shift.row(0) + shift.row(1)).norm() > 0.0001) {
-        LOG_MATRIX(FATAL, "bad shift amount", shift.row(0) + shift.row(1));
-      }
-      if ((shift.row(2) + shift.row(3)).norm() > 0.0001) {
-        LOG_MATRIX(FATAL, "bad shift amount", shift.row(2) + shift.row(3));
-      }
-      if (vertices.col(0).dot(vertices.col(1)) > 0.0001) {
-        ::Eigen::Matrix<double, number_of_dimensions, 2> bad;
-        bad.col(0) = vertices.col(0);
-        bad.col(1) = vertices.col(1);
-        LOG_MATRIX(FATAL, "bad vertices", bad);
-      }
-      if (vertices.col(2).dot(vertices.col(3)) > 0.0001) {
-        ::Eigen::Matrix<double, number_of_dimensions, 2> bad;
-        bad.col(0) = vertices.col(2);
-        bad.col(1) = vertices.col(3);
-        LOG_MATRIX(FATAL, "bad vertices", bad);
-      }
-    }
 
-    Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> r(
-        number_of_dimensions, vertices.cols());
-    Eigen::Matrix<double, number_of_dimensions, 1> real_shift;
-    real_shift(0, 0) = shift(0, 0);
-    if (number_of_dimensions == 2) real_shift(1, 0) = shift(2, 0);
-    for (int i = 0; i < vertices.cols(); ++i) {
-      r.col(i) = vertices.col(i) + real_shift;
-    }
-    return r;
+
+template <int number_of_dimensions>
+class HPolytope : public Polytope<number_of_dimensions> {
+ public:
+  // Constructs a polytope given the H and k matrices.
+  HPolytope(Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic,
+                                           number_of_dimensions>> H,
+            Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k)
+      : H_(H), k_(k), vertices_(CalculateVertices(H, k)) {}
+
+  // This is an initialization function shared across all instantiations of this
+  // template.
+  // This must be called at least once before creating any instances. It is
+  // not thread-safe.
+  static void Init() { dd_set_global_constants(); }
+
+  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>>
+  H() const override {
+    return H_;
+  }
+  Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k()
+      const override {
+    return k_;
   }
 
+  Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> Vertices()
+      const override {
+    return vertices_;
+  }
+
+ private:
   const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> H_;
   const Eigen::Matrix<double, Eigen::Dynamic, 1> k_;
-
   const Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic> vertices_;
+
+  static Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
+  CalculateVertices(
+      Eigen::Ref<
+          const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>> &H,
+      Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> &k);
 };
 
 template <int number_of_dimensions>
-bool HPolytope<number_of_dimensions>::IsInside(
+bool Polytope<number_of_dimensions>::IsInside(
     Eigen::Matrix<double, number_of_dimensions, 1> point) const {
-  auto ev = H_ * point;
-  for (int i = 0; i < num_constraints(); ++i) {
-    if (ev(i, 0) > k_(i, 0)) {
+  auto k_ptr = k();
+  auto ev = H() * point;
+  for (int i = 0; i < k_ptr.rows(); ++i) {
+    if (ev(i, 0) > k_ptr(i, 0)) {
       return false;
     }
   }
@@ -151,8 +162,9 @@ bool HPolytope<number_of_dimensions>::IsInside(
 template <int number_of_dimensions>
 Eigen::Matrix<double, number_of_dimensions, Eigen::Dynamic>
 HPolytope<number_of_dimensions>::CalculateVertices(
-    const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions> &H,
-    const Eigen::Matrix<double, Eigen::Dynamic, 1> &k) {
+    Eigen::Ref<
+        const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>> &H,
+    Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> &k) {
   dd_MatrixPtr matrix = dd_CreateMatrix(k.rows(), number_of_dimensions + 1);
 
   // Copy the data over. TODO(aschuh): Is there a better way?  I hate copying...
