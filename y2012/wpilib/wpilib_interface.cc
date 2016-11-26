@@ -31,26 +31,25 @@
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
 
-#include "y2012/control_loops/drivetrain/drivetrain.q.h"
-#include "y2012/control_loops/accessories/accessories.q.h"
-
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/dma_edge_counting.h"
-#include "frc971/wpilib/interrupt_edge_counting.h"
-#include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/wpilib_interface.h"
+#include "y2012/control_loops/accessories/accessories.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::y2012::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2012::control_loops::accessories_queue;
 
 namespace y2012 {
@@ -235,7 +234,7 @@ class SolenoidWriter {
 
   ::std::unique_ptr<Compressor> compressor_;
 
-  ::aos::Queue<::y2012::control_loops::DrivetrainQueue::Output> drivetrain_;
+  ::aos::Queue<::frc971::control_loops::DrivetrainQueue::Output> drivetrain_;
   ::aos::Queue<::y2012::control_loops::AccessoriesQueue::Message> accessories_;
 
   ::std::atomic<bool> run_{true};
@@ -253,11 +252,11 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::y2012::control_loops::drivetrain_queue.output.FetchAnother();
+    drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::y2012::control_loops::drivetrain_queue.output;
+    auto &queue = drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(queue->right_voltage / 12.0);

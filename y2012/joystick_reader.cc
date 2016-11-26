@@ -10,10 +10,10 @@
 #include "aos/common/time.h"
 #include "aos/common/actions/actions.h"
 
-#include "y2012/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2012/control_loops/accessories/accessories.q.h"
 
-using ::y2012::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2012::control_loops::accessories_queue;
 
 using ::aos::input::driver_station::ButtonLocation;

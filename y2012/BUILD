@@ -12,7 +12,7 @@ cc_binary(
     '//aos/common:time',
     '//aos/common/util:log_interval',
     '//aos/common/actions:action_lib',
-    '//y2012/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2012/control_loops/accessories:accessories_queue',
     '//frc971/queues:gyro',
     '//frc971/autonomous:auto_queue',

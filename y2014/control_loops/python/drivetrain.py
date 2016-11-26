@@ -120,10 +120,10 @@ class KFDrivetrain(Drivetrain):
     self.unaugmented_A_continuous = self.A_continuous
     self.unaugmented_B_continuous = self.B_continuous
 
-    # The states are
     # The practical voltage applied to the wheels is
     #   V_left = U_left + left_voltage_error
     #
+    # The states are
     # [left position, left velocity, right position, right velocity,
     #  left voltage error, right voltage error, angular_error]
     self.A_continuous = numpy.matrix(numpy.zeros((7, 7)))

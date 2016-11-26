@@ -95,6 +95,7 @@ class Drivetrain(control_loop.ControlLoop):
       q_pos = 0.14
       q_vel = 0.95
 
+    # Tune the LQR controller
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0, 0.0, 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0)), 0.0, 0.0],
                            [0.0, 0.0, (1.0 / (q_pos ** 2.0)), 0.0],
@@ -125,10 +126,10 @@ class KFDrivetrain(Drivetrain):
     self.unaugmented_A_continuous = self.A_continuous
     self.unaugmented_B_continuous = self.B_continuous
 
-    # The states are
     # The practical voltage applied to the wheels is
     #   V_left = U_left + left_voltage_error
     #
+    # The states are
     # [left position, left velocity, right position, right velocity,
     #  left voltage error, right voltage error, angular_error]
     #
