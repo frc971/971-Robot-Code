@@ -3,6 +3,7 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "gtest/gtest.h"
@@ -13,12 +14,14 @@
 #include "y2015_bot3/control_loops/elevator/elevator_motor_plant.h"
 #include "y2015_bot3/control_loops/elevator/elevator.q.h"
 
-using ::aos::time::Time;
 using ::y2015_bot3::control_loops::PositionSensorSimulator;
 
 namespace y2015_bot3 {
 namespace control_loops {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 
 // TODO(comran+adam): Check these over with Austin, Ben, Brian, and others to
@@ -123,9 +126,10 @@ class ElevatorTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
+  void RunForTime(const monotonic_clock::duration run_for,
+                  bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
       RunIteration(enabled);
     }
   }
@@ -151,7 +155,7 @@ TEST_F(ElevatorTest, DoesNothing) {
                   .Send());
 
   // Run a few iterations.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -166,7 +170,7 @@ TEST_F(ElevatorTest, ReachesGoal) {
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -182,7 +186,7 @@ TEST_F(ElevatorTest, RespectsRange) {
                   .max_acceleration(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   queue_.status.FetchLatest();
@@ -195,7 +199,7 @@ TEST_F(ElevatorTest, RespectsRange) {
                   .max_acceleration(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   queue_.status.FetchLatest();
@@ -209,7 +213,7 @@ TEST_F(ElevatorTest, ZeroTest) {
       .max_velocity(20)
       .max_acceleration(20)
       .Send();
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -218,7 +222,7 @@ TEST_F(ElevatorTest, ZeroTest) {
 TEST_F(ElevatorTest, LowerHardstopStartup) {
   plant_.InitializePosition(kElevLowerHardLimit);
   queue_.goal.MakeWithBuilder().height(0.4).Send();
-  RunForTime(Time::InMS(5000));
+  RunForTime(chrono::milliseconds(5000));
 
   VerifyNearGoal();
 }
@@ -227,7 +231,7 @@ TEST_F(ElevatorTest, LowerHardstopStartup) {
 TEST_F(ElevatorTest, UpperHardstopStartup) {
   plant_.InitializePosition(kElevUpperHardLimit);
   queue_.goal.MakeWithBuilder().height(0.4).Send();
-  RunForTime(Time::InMS(30000));
+  RunForTime(chrono::milliseconds(30000));
 
   VerifyNearGoal();
 }
@@ -236,14 +240,14 @@ TEST_F(ElevatorTest, UpperHardstopStartup) {
 TEST_F(ElevatorTest, ResetTest) {
   plant_.InitializePosition(kElevLowerLimit);
   queue_.goal.MakeWithBuilder().height(0.05).Send();
-  RunForTime(Time::InMS(5000));
+  RunForTime(chrono::milliseconds(5000));
 
   EXPECT_EQ(Elevator::RUNNING, elevator_.state());
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(Time::InMS(100));
+  RunForTime(chrono::milliseconds(100));
   EXPECT_NE(Elevator::RUNNING, elevator_.state());
-  RunForTime(Time::InMS(10000));
+  RunForTime(chrono::milliseconds(10000));
   EXPECT_EQ(Elevator::RUNNING, elevator_.state());
   VerifyNearGoal();
 }
@@ -252,11 +256,11 @@ TEST_F(ElevatorTest, ResetTest) {
 TEST_F(ElevatorTest, DisabledGoalTest) {
   queue_.goal.MakeWithBuilder().height(0.45).Send();
 
-  RunForTime(Time::InMS(100), false);
+  RunForTime(chrono::milliseconds(100), false);
   EXPECT_EQ(0.0, elevator_.goal_);
 
   // Now make sure they move correctly
-  RunForTime(Time::InMS(4000), true);
+  RunForTime(chrono::milliseconds(4000), true);
   EXPECT_NE(0.0, elevator_.goal_);
 }
 
@@ -270,7 +274,7 @@ TEST_F(ElevatorTest, ElevatorGoalPositiveWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_goal = elevator_.goal_;
   elevator_.goal_ += 100.0;
 
@@ -293,7 +297,7 @@ TEST_F(ElevatorTest, ElevatorGoalNegativeWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_goal = elevator_.goal_;
   elevator_.goal_ -= 100.0;
 
@@ -308,7 +312,7 @@ TEST_F(ElevatorTest, ElevatorGoalNegativeWindupTest) {
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(ElevatorTest, ZeroNoGoal) {
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   EXPECT_EQ(Elevator::RUNNING, elevator_.state());
 }
@@ -331,7 +335,7 @@ TEST_F(ElevatorTest, CasualStart) {
   queue_.goal.MakeWithBuilder().height(0.5).Send();
 
   // Find a reasonable value for the time.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -345,7 +349,7 @@ TEST_F(ElevatorTest, AboveSoftLimitStart) {
 
   EXPECT_TRUE(elevator_.CheckZeroed());
   queue_.goal.MakeWithBuilder().height(0.5).Send();
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -359,7 +363,7 @@ TEST_F(ElevatorTest, BelowSoftLimitStart) {
 
   EXPECT_TRUE(elevator_.CheckZeroed());
   queue_.goal.MakeWithBuilder().height(0.4).Send();
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -373,7 +377,7 @@ TEST_F(ElevatorTest, OverHallEffect) {
 
   EXPECT_TRUE(elevator_.CheckZeroed());
   queue_.goal.MakeWithBuilder().height(0.4).Send();
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -429,7 +433,7 @@ TEST_F(ElevatorTest, ReachesGoalWithIntegral) {
 
   plant_.set_acceleration_offset(0.1);
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -443,7 +447,7 @@ TEST_F(ElevatorTest, PositiveRunawayProfileTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
 
 
   double orig_goal = elevator_.goal_;
@@ -471,7 +475,7 @@ TEST_F(ElevatorTest, NegativeRunawayProfileTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
 
 
   double orig_goal = elevator_.goal_;
@@ -558,11 +562,11 @@ TEST_F(ElevatorTest, VeryLowMotionVeryLowVolt) {
 
   // Checks voltage is not crazy
   // Runs for enough time to move to position
-  const auto start_time = Time::Now();
-  const Time run_for = Time::InSeconds(5);
+  const auto start_time = monotonic_clock::now();
+  const monotonic_clock::duration run_for = chrono::seconds(5);
   // Acceptable range for voltage
   double voltage_range = 5.5;
-  while (Time::Now() < start_time + run_for) {
+  while (monotonic_clock::now() < start_time + run_for) {
     RunIteration(true);
     EXPECT_NEAR(0.0, plant_.GetVoltage(), voltage_range);
   }
@@ -583,11 +587,11 @@ TEST_F(ElevatorTest, LowMotionLowVolt) {
 
   // Checks voltage is not crazy
   // Runs for enough time to move to position
-  const auto start_time = Time::Now();
-  const Time run_for = Time::InSeconds(5);
+  const auto start_time = monotonic_clock::now();
+  const monotonic_clock::duration run_for = chrono::seconds(5);
   // Acceptable range for voltage
   double voltage_range = 7.5;
-  while (Time::Now() < start_time + run_for) {
+  while (monotonic_clock::now() < start_time + run_for) {
     RunIteration(true);
     EXPECT_NEAR(0.0, plant_.GetVoltage(), voltage_range);
   }
