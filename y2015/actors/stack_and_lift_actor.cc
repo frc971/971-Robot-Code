@@ -67,7 +67,8 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
     }
   }
 
-  if (!WaitOrCancel(aos::time::Time::InSeconds(params.clamp_pause_time))) {
+  if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+          chrono::duration<double>(params.clamp_pause_time)))) {
     return true;
   }
 

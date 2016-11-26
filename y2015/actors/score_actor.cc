@@ -154,7 +154,7 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
     LOG(ERROR, "Sending fridge message failed.\n");
     return false;
   }
-  if (!WaitOrCancel(::aos::time::Time::InSeconds(0.1))) return true;
+  if (!WaitOrCancel(chrono::milliseconds(100))) return true;
 
   // Go back to the home position.
   if (!SendGoal(0.0, params.place_height, false, kReallyFastMaxXVelocity,

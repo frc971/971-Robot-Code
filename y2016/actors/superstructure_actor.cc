@@ -10,6 +10,8 @@
 namespace y2016 {
 namespace actors {
 
+namespace chrono = ::std::chrono;
+
 SuperstructureActor::SuperstructureActor(
     actors::SuperstructureActionQueueGroup *s)
     : aos::common::actions::ActorBase<actors::SuperstructureActionQueueGroup>(
@@ -23,7 +25,9 @@ bool SuperstructureActor::RunAction(
   WaitForSuperstructure();
   if (ShouldCancel()) return true;
   MoveSuperstructure(params.partial_angle, params.shooter_angle, true);
-  if (!WaitOrCancel(::aos::time::Time::InSeconds(params.delay_time))) return true;
+  if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+          chrono::duration<double>(params.delay_time))))
+    return true;
   MoveSuperstructure(params.full_angle, params.shooter_angle, true);
   WaitForSuperstructure();
   if (ShouldCancel()) return true;

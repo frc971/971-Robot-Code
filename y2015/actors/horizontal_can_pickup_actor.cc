@@ -27,6 +27,8 @@ constexpr double kGoalAngleEpsilon = 0.01;
 
 }  // namespace
 
+namespace chrono = ::std::chrono;
+
 HorizontalCanPickupActor::HorizontalCanPickupActor(
     HorizontalCanPickupActionQueueGroup *queues)
     : FridgeActorBase<HorizontalCanPickupActionQueueGroup>(queues) {}
@@ -86,7 +88,8 @@ bool HorizontalCanPickupActor::RunAction(
 
   MoveArm(control_loops::claw_queue.status->angle, params.spit_power);
 
-  if (!WaitOrCancel(aos::time::Time::InSeconds(params.spit_time))) {
+  if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+          chrono::duration<double>(params.spit_time)))) {
     return true;
   }
 
@@ -98,7 +101,8 @@ bool HorizontalCanPickupActor::RunAction(
 
   MoveArm(params.pickup_angle, params.suck_power);
 
-  if (!WaitOrCancel(aos::time::Time::InSeconds(params.suck_time))) {
+  if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+          chrono::duration<double>(params.suck_time)))) {
     return true;
   }
 
@@ -110,7 +114,8 @@ bool HorizontalCanPickupActor::RunAction(
 
   MoveArm(0.0, params.claw_settle_power);
 
-  if (!WaitOrCancel(aos::time::Time::InSeconds(params.claw_settle_time))) {
+  if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+          chrono::duration<double>(params.claw_settle_time)))) {
     return true;
   }
 

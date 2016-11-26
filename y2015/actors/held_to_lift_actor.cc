@@ -73,8 +73,8 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
     DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, false);
     if (ShouldCancel()) return true;
 
-    if (!WaitOrCancel(
-            aos::time::Time::InSeconds(params.before_lift_settle_time))) {
+    if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+            chrono::duration<double>(params.before_lift_settle_time)))) {
       return true;
     }
 
@@ -82,7 +82,8 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
     DoFridgeProfile(params.bottom_height, 0.0, kElevatorMove, kArmMove, true);
     if (ShouldCancel()) return true;
 
-    if (!WaitOrCancel(aos::time::Time::InSeconds(params.clamp_pause_time))) {
+    if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
+            chrono::duration<double>(params.clamp_pause_time)))) {
       return true;
     }
   }

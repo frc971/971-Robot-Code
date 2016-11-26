@@ -58,19 +58,20 @@ class ActorBase {
   // end_time is when to stop and return true. Time(0, 0) (the default) means
   // never time out.
   bool WaitUntil(::std::function<bool(void)> done_condition,
-                 const ::aos::time::Time& end_time = ::aos::time::Time(0, 0));
+                 ::aos::monotonic_clock::time_point end_time =
+                     ::aos::monotonic_clock::min_time);
 
   // Waits for a certain amount of time from when this method is called.
   // Returns false if the action was canceled or failed, and true if the wait
   // succeeded.
-  bool WaitOrCancel(const ::aos::time::Time& duration) {
+  bool WaitOrCancel(monotonic_clock::duration duration) {
     return !WaitUntil([]() {
       ::aos::time::PhasedLoopXMS(
           ::std::chrono::duration_cast<::std::chrono::milliseconds>(
               ::aos::controls::kLoopFrequency).count(),
           2500);
       return false;
-    }, ::aos::time::Time::Now() + duration);
+    }, ::aos::monotonic_clock::now() + duration);
   }
 
   // Returns true if the action should be canceled.
@@ -207,15 +208,15 @@ void ActorBase<T>::Initialize() {
 
 template <class T>
 bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
-                             const ::aos::time::Time& end_time) {
+                             ::aos::monotonic_clock::time_point end_time) {
   while (!done_condition()) {
     if (ShouldCancel() || abort_) {
       // Clear abort bit as we have just aborted.
       abort_ = false;
       return true;
     }
-    if (end_time != ::aos::time::Time(0, 0) &&
-        ::aos::time::Time::Now() >= end_time) {
+    if (end_time != ::aos::monotonic_clock::min_time &&
+        ::aos::monotonic_clock::now() >= end_time) {
       LOG(DEBUG, "WaitUntil timed out\n");
       return false;
     }
