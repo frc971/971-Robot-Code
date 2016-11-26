@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "gtest/gtest.h"
@@ -12,13 +13,15 @@
 #include "y2016/control_loops/shooter/shooter.h"
 #include "y2016/control_loops/shooter/shooter_plant.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::testing::kTeamNumber;
 
 namespace y2016 {
 namespace control_loops {
 namespace shooter {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
  public:
@@ -138,9 +141,9 @@ class ShooterTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
+  void RunForTime(const monotonic_clock::duration run_for, bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
       RunIteration(enabled);
     }
   }
@@ -175,7 +178,7 @@ TEST_F(ShooterTest, SpinUpAndDown) {
   // Spin up.
   EXPECT_TRUE(
       shooter_queue_.goal.MakeWithBuilder().angular_velocity(450.0).Send());
-  RunForTime(Time::InSeconds(1));
+  RunForTime(chrono::seconds(1));
   VerifyNearGoal();
   EXPECT_TRUE(shooter_queue_.status->ready);
   EXPECT_TRUE(
@@ -188,7 +191,7 @@ TEST_F(ShooterTest, SpinUpAndDown) {
   EXPECT_EQ(0.0, shooter_queue_.output->voltage_right);
 
   // Continue to stop.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   EXPECT_TRUE(shooter_queue_.output.FetchLatest());
   EXPECT_EQ(0.0, shooter_queue_.output->voltage_left);
   EXPECT_EQ(0.0, shooter_queue_.output->voltage_right);
@@ -203,7 +206,7 @@ TEST_F(ShooterTest, SideLagTest) {
       shooter_queue_.goal.MakeWithBuilder().angular_velocity(20.0).Send());
   // Cause problems by adding a voltage error on one side.
   shooter_plant_.set_right_voltage_offset(-4.0);
-  RunForTime(Time::InSeconds(0.1));
+  RunForTime(chrono::milliseconds(100));
 
   shooter_queue_.goal.FetchLatest();
   shooter_queue_.status.FetchLatest();
@@ -216,7 +219,7 @@ TEST_F(ShooterTest, SideLagTest) {
   EXPECT_FALSE(shooter_queue_.status->right.ready);
   EXPECT_FALSE(shooter_queue_.status->ready);
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   shooter_queue_.goal.FetchLatest();
   shooter_queue_.status.FetchLatest();
@@ -235,10 +238,10 @@ TEST_F(ShooterTest, Disabled) {
   ASSERT_TRUE(shooter_queue_.goal.MakeWithBuilder()
                   .angular_velocity(200.0)
                   .Send());
-  RunForTime(Time::InSeconds(5), false);
+  RunForTime(chrono::seconds(5), false);
   EXPECT_EQ(nullptr, shooter_queue_.output.get());
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }

@@ -13,8 +13,8 @@ namespace y2016 {
 namespace control_loops {
 namespace shooter {
 
-using ::aos::time::Time;
 namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 // TODO(austin): Pseudo current limit?
 
@@ -75,7 +75,7 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
 Shooter::Shooter(ShooterQueue *my_shooter)
     : aos::controls::ControlLoop<ShooterQueue>(my_shooter),
       shots_(0),
-      last_pre_shot_timeout_(0, 0) {}
+      last_pre_shot_timeout_(::aos::monotonic_clock::min_time) {}
 
 void Shooter::RunIteration(const ShooterQueue::Goal *goal,
                            const ShooterQueue::Position *position,
@@ -132,7 +132,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
               shoot = true;
             }
           }
-          last_pre_shot_timeout_ = Time::Now() + Time::InSeconds(1.0);
+          last_pre_shot_timeout_ = monotonic_clock::now() + chrono::seconds(1);
           break;
         case ShooterLatchState::WAITING_FOR_SPINDOWN:
           shoot = true;
@@ -141,7 +141,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
             state_ = ShooterLatchState::WAITING_FOR_SPINUP;
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
-              last_pre_shot_timeout_ < Time::Now()) {
+              last_pre_shot_timeout_ < monotonic_clock::now()) {
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           break;
@@ -152,7 +152,7 @@ void Shooter::RunIteration(const ShooterQueue::Goal *goal,
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           if (::std::abs(goal->angular_velocity) < 10 ||
-              last_pre_shot_timeout_ < Time::Now()) {
+              last_pre_shot_timeout_ < monotonic_clock::now()) {
             state_ = ShooterLatchState::INCREMENT_SHOT_COUNT;
           }
           break;

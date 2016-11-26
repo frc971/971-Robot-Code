@@ -85,7 +85,7 @@ class Shooter : public ::aos::controls::ControlLoop<ShooterQueue> {
 
   // Current state.
   ShooterLatchState state_ = ShooterLatchState::PASS_THROUGH;
-  ::aos::time::Time last_pre_shot_timeout_;
+  ::aos::monotonic_clock::time_point last_pre_shot_timeout_;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
