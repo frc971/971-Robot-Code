@@ -1,5 +1,6 @@
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "gtest/gtest.h"
@@ -11,6 +12,8 @@
 #include "y2014/constants.h"
 
 using ::aos::time::Time;
+
+namespace chrono = ::std::chrono;
 
 namespace y2014 {
 namespace control_loops {
@@ -263,7 +266,7 @@ class ShooterSimulation {
               GetAbsolutePosition());
 
     last_voltage_ = shooter_queue_.output->voltage;
-    ::aos::time::Time::IncrementMockTime(::aos::time::Time::InMS(10.0));
+    ::aos::time::IncrementMockTime(chrono::milliseconds(10));
   }
 
   // pointer to plant

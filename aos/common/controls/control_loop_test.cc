@@ -5,14 +5,14 @@
 namespace aos {
 namespace testing {
 
-constexpr ::aos::time::Time ControlLoopTest::kTimeTick;
-constexpr ::aos::time::Time ControlLoopTest::kDSPacketTime;
+constexpr ::std::chrono::milliseconds ControlLoopTest::kTimeTick;
+constexpr ::std::chrono::milliseconds ControlLoopTest::kDSPacketTime;
 
 ControlLoopTest::ControlLoopTest() {
   ::aos::joystick_state.Clear();
   ::aos::robot_state.Clear();
 
-  ::aos::time::Time::EnableMockTime(current_time_);
+  ::aos::time::EnableMockTime(current_time_);
 
   SendMessages(false);
 }
@@ -21,11 +21,11 @@ ControlLoopTest::~ControlLoopTest() {
   ::aos::joystick_state.Clear();
   ::aos::robot_state.Clear();
 
-  ::aos::time::Time::DisableMockTime();
+  ::aos::time::DisableMockTime();
 }
 
 void ControlLoopTest::SendMessages(bool enabled) {
-  if (current_time_ - last_ds_time_ >= kDSPacketTime ||
+  if (current_time_ >= kDSPacketTime + last_ds_time_ ||
       last_enabled_ != enabled) {
     last_ds_time_ = current_time_;
     auto new_state = ::aos::joystick_state.MakeMessage();

@@ -55,7 +55,7 @@ namespace {
 // Mutex to make time reads and writes thread safe.
 Mutex time_mutex;
 // Current time when time is mocked.
-Time current_mock_time(0, 0);
+monotonic_clock::time_point current_mock_time = monotonic_clock::epoch();
 
 // TODO(aschuh): This doesn't include SleepFor and SleepUntil.
 // TODO(aschuh): Create a clock source object and change the default?
@@ -85,22 +85,20 @@ const int32_t Time::kUSecInSec;
 
 const Time Time::kZero{0, 0};
 
-void Time::EnableMockTime(const Time &now) {
+void EnableMockTime(monotonic_clock::time_point now) {
   MutexLocker time_mutex_locker(&time_mutex);
   mock_time_enabled = true;
   current_mock_time = now;
 }
 
-void Time::UpdateMockTime() {
-  SetMockTime(NowImpl(kDefaultClock));
-}
+void UpdateMockTime() { SetMockTime(monotonic_clock::now()); }
 
-void Time::DisableMockTime() {
+void DisableMockTime() {
   MutexLocker time_mutex_locker(&time_mutex);
   mock_time_enabled = false;
 }
 
-void Time::SetMockTime(const Time &now) {
+void SetMockTime(monotonic_clock::time_point now) {
   MutexLocker time_mutex_locker(&time_mutex);
   if (__builtin_expect(!mock_time_enabled, 0)) {
     LOG(FATAL, "Tried to set mock time and mock time is not enabled\n");
@@ -108,17 +106,19 @@ void Time::SetMockTime(const Time &now) {
   current_mock_time = now;
 }
 
-void Time::IncrementMockTime(const Time &amount) {
+void IncrementMockTime(monotonic_clock::duration amount) {
   static ::aos::Mutex mutex;
   ::aos::MutexLocker sync(&mutex);
-  SetMockTime(Now() + amount);
+  SetMockTime(monotonic_clock::now() + amount);
 }
 
 Time Time::Now(clockid_t clock) {
   {
     if (mock_time_enabled.load(::std::memory_order_relaxed)) {
       MutexLocker time_mutex_locker(&time_mutex);
-      return current_mock_time;
+      return Time::InNS(
+          ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+              current_mock_time.time_since_epoch()).count());
     }
   }
   return NowImpl(clock);
@@ -278,8 +278,7 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
   {
     if (time::mock_time_enabled.load(::std::memory_order_relaxed)) {
       MutexLocker time_mutex_locker(&time::time_mutex);
-      return monotonic_clock::time_point(
-          ::std::chrono::nanoseconds(time::current_mock_time.ToNSec()));
+      return time::current_mock_time;
     }
   }
 

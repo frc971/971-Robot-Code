@@ -39,6 +39,19 @@ class monotonic_clock {
 
 namespace time {
 
+// Enables returning the mock time value for Now instead of checking the system
+// clock.
+void EnableMockTime(monotonic_clock::time_point now);
+// Calls SetMockTime with the current actual time.
+void UpdateMockTime();
+// Sets now when time is being mocked.
+void SetMockTime(monotonic_clock::time_point now);
+// Convenience function to just increment the mock time by a certain amount in
+// a thread safe way.
+void IncrementMockTime(monotonic_clock::duration amount);
+// Disables mocking time.
+void DisableMockTime();
+
 // A nice structure for representing times.
 // 0 <= nsec_ < kNSecInSec should always be true. All functions here will make
 // sure that that is true if it was on all inputs (including *this).
@@ -243,19 +256,6 @@ struct Time {
     return Time(-sec_ - 1, kNSecInSec - nsec_);
   }
 
-  // Enables returning the mock time value for Now instead of checking the
-  // system clock.
-  static void EnableMockTime(const Time &now = Now());
-  // Calls SetMockTime with the current actual time.
-  static void UpdateMockTime();
-  // Sets now when time is being mocked.
-  static void SetMockTime(const Time &now);
-  // Convenience function to just increment the mock time by a certain amount in
-  // a thread safe way.
-  static void IncrementMockTime(const Time &amount);
-  // Disables mocking time.
-  static void DisableMockTime();
-
  private:
   int32_t sec_, nsec_;
 
@@ -292,12 +292,8 @@ void OffsetToNow(const Time &now);
 // syscalls to find the real time).
 class TimeFreezer {
  public:
-  TimeFreezer() {
-    Time::EnableMockTime();
-  }
-  ~TimeFreezer() {
-    Time::DisableMockTime();
-  }
+  TimeFreezer() { EnableMockTime(monotonic_clock::now()); }
+  ~TimeFreezer() { DisableMockTime(); }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TimeFreezer);

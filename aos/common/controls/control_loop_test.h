@@ -25,9 +25,7 @@ class ControlLoopTest : public ::testing::Test {
   // Sends out all of the required queue messages.
   void SendMessages(bool enabled);
   // Ticks time for a single control loop cycle.
-  void TickTime() {
-    ::aos::time::Time::SetMockTime(current_time_ += kTimeTick);
-  }
+  void TickTime() { ::aos::time::SetMockTime(current_time_ += kTimeTick); }
 
   // Simulates everything that happens during 1 loop time step.
   void SimulateTimestep(bool enabled) {
@@ -47,16 +45,17 @@ class ControlLoopTest : public ::testing::Test {
   }
 
  private:
-  static constexpr ::aos::time::Time kTimeTick = ::aos::time::Time::InUS(5000);
-  static constexpr ::aos::time::Time kDSPacketTime =
-      ::aos::time::Time::InMS(20);
+  static constexpr ::std::chrono::milliseconds kTimeTick{5};
+  static constexpr ::std::chrono::milliseconds kDSPacketTime{20};
 
   uint16_t team_id_ = 971;
   int32_t reader_pid_ = 1;
   double battery_voltage_ = 12.4;
 
-  ::aos::time::Time last_ds_time_ = ::aos::time::Time::InSeconds(0);
-  ::aos::time::Time current_time_ = ::aos::time::Time::InSeconds(0);
+  ::aos::monotonic_clock::time_point last_ds_time_ =
+      ::aos::monotonic_clock::epoch();
+  ::aos::monotonic_clock::time_point current_time_ =
+      ::aos::monotonic_clock::epoch();
 
   ::aos::testing::TestSharedMemory my_shm_;
 
