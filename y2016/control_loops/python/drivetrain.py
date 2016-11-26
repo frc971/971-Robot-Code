@@ -4,7 +4,6 @@ from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
 import sys
-import argparse
 from matplotlib import pylab
 
 import gflags
