@@ -55,7 +55,7 @@ _hpp_hdrs = glob([d + '/**/*.hpp' for d in _header_dirs], _bad_hdrs)
 
 cc_library(
  name = 'wpilib',
- visibility = ['//visibility:public'],
+ visibility = ['//third_party:__pkg__'],
  srcs = glob([
    'wpilibc/Athena/src/*.cpp',
    'wpilibc/Athena/src/Internal/*.cpp',
