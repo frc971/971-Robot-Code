@@ -15,6 +15,8 @@
 namespace frc971 {
 namespace control_loops {
 
+namespace chrono = ::std::chrono;
+
 namespace {
 constexpr double kZeroingVoltage = 4.0;
 constexpr double kElevatorZeroingVelocity = 0.10;
@@ -333,7 +335,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
           LOG(DEBUG, "Moving elevator to safe height.\n");
           if (elevator_goal_ < values.fridge.arm_zeroing_height) {
             elevator_goal_ += kElevatorSafeHeightVelocity *
-                              ::aos::controls::kLoopFrequency.ToSeconds();
+                              chrono::duration_cast<chrono::duration<double>>(
+                                  ::aos::controls::kLoopFrequency).count();
             elevator_goal_velocity_ = kElevatorSafeHeightVelocity;
             state_ = ZEROING_ELEVATOR;
           } else {
@@ -344,7 +347,8 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
       } else if (!disable) {
         elevator_goal_velocity_ = elevator_zeroing_velocity();
         elevator_goal_ += elevator_goal_velocity_ *
-                          ::aos::controls::kLoopFrequency.ToSeconds();
+                          chrono::duration_cast<chrono::duration<double>>(
+                              ::aos::controls::kLoopFrequency).count();
       }
 
       // Bypass motion profiles while we are zeroing.
@@ -380,8 +384,9 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
         LOG(DEBUG, "Zeroed the arm!\n");
       } else if (!disable) {
         arm_goal_velocity_ = arm_zeroing_velocity();
-        arm_goal_ +=
-            arm_goal_velocity_ * ::aos::controls::kLoopFrequency.ToSeconds();
+        arm_goal_ += arm_goal_velocity_ *
+                     chrono::duration_cast<chrono::duration<double>>(
+                         ::aos::controls::kLoopFrequency).count();
       }
 
       // Bypass motion profiles while we are zeroing.

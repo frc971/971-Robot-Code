@@ -17,6 +17,8 @@ constexpr ProfileParams kElevatorMove{0.9, 3.0};
 constexpr ProfileParams kFastElevatorMove{1.2, 5.0};
 }  // namespace
 
+namespace chrono = ::std::chrono;
+
 HeldToLiftActor::HeldToLiftActor(HeldToLiftActionQueueGroup *queues)
     : FridgeActorBase<HeldToLiftActionQueueGroup>(queues) {}
 
@@ -90,7 +92,8 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
         MakeLiftAction(params.lift_params);
     lift_action->Start();
     while (lift_action->Running()) {
-      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                     ::aos::controls::kLoopFrequency).count(),
                                  2500);
 
       if (ShouldCancel()) {

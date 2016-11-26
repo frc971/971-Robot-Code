@@ -12,6 +12,8 @@
 
 using ::frc971::control_loops::fridge_queue;
 
+namespace chrono = ::std::chrono;
+
 namespace frc971 {
 namespace actors {
 namespace {
@@ -67,7 +69,9 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
   }
 
   while (true) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                   ::aos::controls::kLoopFrequency).count(),
+                               2500);
     if (ShouldCancel()) {
       return true;
     }
@@ -91,7 +95,9 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
   bool started_lowering = false;
 
   while (true) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                   ::aos::controls::kLoopFrequency).count(),
+                               2500);
     if (ShouldCancel()) {
       return true;
     }
@@ -129,7 +135,9 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
   }
 
   while (true) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                   ::aos::controls::kLoopFrequency).count(),
+                               2500);
     if (ShouldCancel()) {
       return true;
     }
@@ -158,7 +166,9 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
 
   bool has_lifted = false;
   while (true) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                   ::aos::controls::kLoopFrequency).count(),
+                               2500);
     if (ShouldCancel()) {
       return true;
     }

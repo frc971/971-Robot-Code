@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <chrono>
 
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
@@ -15,11 +16,13 @@
 namespace y2014 {
 namespace control_loops {
 
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
+
 using ::y2014::control_loops::shooter::kSpringConstant;
 using ::y2014::control_loops::shooter::kMaxExtension;
 using ::y2014::control_loops::shooter::kDt;
 using ::y2014::control_loops::shooter::MakeShooterLoop;
-using ::aos::time::Time;
 
 void ZeroedStateFeedbackLoop::CapU() {
   const double old_voltage = voltage_;
@@ -115,11 +118,6 @@ ShooterMotor::ShooterMotor(::y2014::control_loops::ShooterQueue *my_shooter)
           my_shooter),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
-      loading_problem_end_time_(0, 0),
-      load_timeout_(0, 0),
-      shooter_brake_set_time_(0, 0),
-      unload_timeout_(0, 0),
-      shot_end_time_(0, 0),
       cycles_not_moved_(0),
       shot_count_(0),
       zeroed_(false),
@@ -404,16 +402,18 @@ void ShooterMotor::RunIteration(
                               shooter_.goal_position()) < 0.001) {
           // We are at the goal, but not latched.
           state_ = STATE_LOADING_PROBLEM;
-          loading_problem_end_time_ = Time::Now() + kLoadProblemEndTimeout;
+          loading_problem_end_time_ =
+              monotonic_clock::now() + kLoadProblemEndTimeout;
         }
       }
-      if (load_timeout_ < Time::Now()) {
+      if (load_timeout_ < monotonic_clock::now()) {
         if (position) {
           // If none of the sensors is triggered, estop.
           // Otherwise, trigger anyways if it has been 0.5 seconds more.
           if (!(position->pusher_distal.current ||
                 position->pusher_proximal.current) ||
-              (load_timeout_ + Time::InSeconds(0.5) < Time::Now())) {
+              (load_timeout_ + chrono::milliseconds(500) <
+               monotonic_clock::now())) {
             state_ = STATE_ESTOP;
             LOG(ERROR, "Estopping because took too long to load.\n");
           }
@@ -428,7 +428,7 @@ void ShooterMotor::RunIteration(
       }
       // We got to the goal, but the latch hasn't registered as down.  It might
       // be stuck, or on it's way but not there yet.
-      if (Time::Now() > loading_problem_end_time_) {
+      if (monotonic_clock::now() > loading_problem_end_time_) {
         // Timeout by unloading.
         Unload();
       } else if (position && position->plunger && position->latch) {
@@ -468,7 +468,7 @@ void ShooterMotor::RunIteration(
         // We are there, set the brake and move on.
         latch_piston_ = true;
         brake_piston_ = true;
-        shooter_brake_set_time_ = Time::Now() + kShooterBrakeSetTime;
+        shooter_brake_set_time_ = monotonic_clock::now() + kShooterBrakeSetTime;
         state_ = STATE_READY;
       } else {
         latch_piston_ = true;
@@ -482,7 +482,7 @@ void ShooterMotor::RunIteration(
       LOG(DEBUG, "In ready\n");
       // Wait until the brake is set, and a shot is requested or the shot power
       // is changed.
-      if (Time::Now() > shooter_brake_set_time_) {
+      if (monotonic_clock::now() > shooter_brake_set_time_) {
         status->ready = true;
         // We have waited long enough for the brake to set, turn the shooter
         // control loop off.
@@ -491,7 +491,7 @@ void ShooterMotor::RunIteration(
         if (goal && goal->shot_requested && !disabled) {
           LOG(DEBUG, "Shooting now\n");
           shooter_loop_disable = true;
-          shot_end_time_ = Time::Now() + kShotEndTimeout;
+          shot_end_time_ = monotonic_clock::now() + kShotEndTimeout;
           firing_starting_position_ = shooter_.absolute_position();
           state_ = STATE_FIRE;
         }
@@ -526,7 +526,7 @@ void ShooterMotor::RunIteration(
           if (position->plunger) {
             // If disabled and the plunger is still back there, reset the
             // timeout.
-            shot_end_time_ = Time::Now() + kShotEndTimeout;
+            shot_end_time_ = monotonic_clock::now() + kShotEndTimeout;
           }
         }
       }
@@ -545,7 +545,7 @@ void ShooterMotor::RunIteration(
       if (((::std::abs(firing_starting_position_ -
                        shooter_.absolute_position()) > 0.0005 &&
             cycles_not_moved_ > 6) ||
-           Time::Now() > shot_end_time_) &&
+           monotonic_clock::now() > shot_end_time_) &&
           ::aos::robot_state->voltage_battery > 10.5) {
         state_ = STATE_REQUEST_LOAD;
         ++shot_count_;
@@ -585,10 +585,10 @@ void ShooterMotor::RunIteration(
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
         latch_piston_ = false;
         state_ = STATE_UNLOAD_MOVE;
-        unload_timeout_ = Time::Now() + kUnloadTimeout;
+        unload_timeout_ = monotonic_clock::now() + kUnloadTimeout;
       }
 
-      if (Time::Now() > unload_timeout_) {
+      if (monotonic_clock::now() > unload_timeout_) {
         // We have been stuck trying to unload for way too long, give up and
         // turn everything off.
         state_ = STATE_ESTOP;
@@ -599,7 +599,7 @@ void ShooterMotor::RunIteration(
       break;
     case STATE_UNLOAD_MOVE: {
       if (disabled) {
-        unload_timeout_ = Time::Now() + kUnloadTimeout;
+        unload_timeout_ = monotonic_clock::now() + kUnloadTimeout;
         shooter_.SetGoalPosition(shooter_.absolute_position(), 0.0);
       }
       cap_goal = true;

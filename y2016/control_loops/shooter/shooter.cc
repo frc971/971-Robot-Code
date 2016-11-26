@@ -1,5 +1,7 @@
 #include "y2016/control_loops/shooter/shooter.h"
 
+#include <chrono>
+
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
@@ -12,6 +14,7 @@ namespace control_loops {
 namespace shooter {
 
 using ::aos::time::Time;
+namespace chrono = ::std::chrono;
 
 // TODO(austin): Pseudo current limit?
 
@@ -57,7 +60,8 @@ void ShooterSide::SetStatus(ShooterSideStatus *status) {
   // Compute the distance moved over that time period.
   status->avg_angular_velocity =
       (history_[oldest_history_position] - history_[history_position_]) /
-      (::aos::controls::kLoopFrequency.ToSeconds() *
+      (chrono::duration_cast<chrono::duration<double>>(
+           ::aos::controls::kLoopFrequency).count() *
        static_cast<double>(kHistoryLength - 1));
 
   status->angular_velocity = loop_->X_hat(1, 0);

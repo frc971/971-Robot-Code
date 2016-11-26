@@ -1,6 +1,7 @@
 #include "y2015_bot3/control_loops/elevator/elevator.h"
 
 #include <cmath>
+#include <chrono>
 
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
@@ -9,6 +10,8 @@
 
 namespace y2015_bot3 {
 namespace control_loops {
+
+namespace chrono = ::std::chrono;
 
 void SimpleCappedStateFeedbackLoop::CapU() {
   mutable_U(0, 0) = ::std::min(U(0, 0), max_voltage_);
@@ -131,8 +134,10 @@ void Elevator::RunIteration(
           // Move the elevator either up or down based on where the zeroing hall
           // effect is located.
 
-          goal_velocity_ = zeroing_velocity_temp; 
-          goal_ += goal_velocity_ * ::aos::controls::kLoopFrequency.ToSeconds();
+          goal_velocity_ = zeroing_velocity_temp;
+          goal_ += goal_velocity_ *
+                   chrono::duration_cast<chrono::duration<double>>(
+                       ::aos::controls::kLoopFrequency).count();
         }
       }
 
