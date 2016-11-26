@@ -1,0 +1,4 @@
+drivetrain.stripped output left_voltage
+drivetrain.stripped output right_voltage
+
+drivetrain.stripped status ground_angle

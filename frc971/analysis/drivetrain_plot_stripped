@@ -1,0 +1,13 @@
+drivetrain.stripped output left_voltage
+drivetrain.stripped output right_voltage
+
+drivetrain.stripped status profiled_left_position_goal
+drivetrain.stripped status profiled_right_position_goal
+drivetrain.stripped status profiled_left_velocity_goal
+drivetrain.stripped status profiled_right_velocity_goal
+
+drivetrain.stripped status estimated_left_position
+drivetrain.stripped status estimated_right_position
+
+drivetrain.stripped goal left_goal
+drivetrain.stripped goal right_goal

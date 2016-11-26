@@ -1,0 +1,16 @@
+drivetrain_lib_test output left_voltage
+drivetrain_lib_test output right_voltage
+
+drivetrain_lib_test status estimated_left_position
+drivetrain_lib_test status estimated_right_position
+drivetrain_lib_test status estimated_left_velocity
+drivetrain_lib_test status estimated_right_velocity
+
+drivetrain_lib_test goal left_goal
+drivetrain_lib_test goal right_goal
+drivetrain_lib_test status profiled_left_position_goal
+drivetrain_lib_test status profiled_right_position_goal
+drivetrain_lib_test status profiled_left_velocity_goal
+drivetrain_lib_test status profiled_right_velocity_goal
+
+robot_state browned_out
