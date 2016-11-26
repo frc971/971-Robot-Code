@@ -9,7 +9,7 @@ cc_binary(
     '//aos/linux_code:init',
     '//aos/common:stl_mutex',
     '//aos/common/logging',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//y2012/control_loops/drivetrain:drivetrain_queue',
     '//y2012/control_loops/accessories:accessories_queue',
     '//aos/common/controls:control_loop',

@@ -18,7 +18,7 @@ cc_library(
     'encoder_and_potentiometer.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     ':dma_edge_counting',
     '//aos/linux_code:init',
     '//aos/common/logging',
@@ -36,7 +36,7 @@ cc_library(
     'dma_edge_counting.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging',
     ':dma',
   ],
@@ -51,7 +51,7 @@ cc_library(
     'interrupt_edge_counting.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging',
     '//aos/common:stl_mutex',
     '//aos/common:time',
@@ -70,7 +70,7 @@ cc_library(
     'buffered_pcm.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging',
   ],
 )
@@ -84,7 +84,7 @@ cc_library(
     'gyro_interface.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging',
     '//aos/common:time',
   ],
@@ -121,7 +121,7 @@ cc_library(
   ],
   deps = [
     '//aos/common:mutex',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//frc971/queues:gyro',
     '//aos/common:time',
   ],
@@ -153,7 +153,7 @@ cc_library(
     'joystick_sender.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/messages:robot_state',
     '//aos/linux_code:init',
     '//aos/common/network:team_number',
@@ -171,7 +171,7 @@ cc_library(
   ],
   deps = [
     '//aos/common/messages:robot_state',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging:queue_logging',
   ],
 )
@@ -193,7 +193,7 @@ cc_library(
   ],
   deps = [
     ':pdp_values',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//aos/common/logging:queue_logging',
     '//aos/linux_code:init',
     '//aos/common/util:phased_loop',
@@ -206,7 +206,7 @@ cc_library(
     'wpilib_robot_base.h',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
   ],
 )
 
@@ -233,7 +233,7 @@ cc_library(
     '//aos/common:time',
     '//aos/linux_code:init',
     '//frc971/zeroing:averager',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
   ],
 )
 
@@ -246,6 +246,6 @@ cc_library(
     'dma.cc',
   ],
   deps = [
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
   ],
 )

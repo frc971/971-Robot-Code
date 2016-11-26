@@ -17,7 +17,7 @@ cc_binary(
     '//aos/common/util:phased_loop',
     '//aos/common/util:wrapping_counter',
     '//aos/linux_code:init',
-    '//third_party/allwpilib_2016:wpilib',
+    '//third_party:wpilib',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//frc971/control_loops:queues',
     '//frc971/wpilib:joystick_sender',
