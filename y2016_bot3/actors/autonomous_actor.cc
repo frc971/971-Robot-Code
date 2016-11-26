@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 
+#include <chrono>
 #include <cmath>
 
 #include "aos/common/util/phased_loop.h"
@@ -16,6 +17,8 @@
 namespace y2016_bot3 {
 namespace actors {
 using ::frc971::control_loops::drivetrain_queue;
+
+namespace chrono = ::std::chrono;
 
 namespace {
 const ProfileParameters kLowBarDrive = {1.3, 2.5};
@@ -318,7 +321,7 @@ void AutonomousActor::WaitForBall() {
 }
 
 bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
-  aos::time::Time start_time = aos::time::Time::Now();
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
 
   InitializeEncoders();
@@ -334,7 +337,8 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
 
   if (!WaitForDriveDone()) return true;
 
-  LOG(INFO, "Done %f\n", (aos::time::Time::Now() - start_time).ToSeconds());
+  LOG(INFO, "Done %f\n", chrono::duration_cast<chrono::duration<double>>(
+                             aos::monotonic_clock::now() - start_time).count());
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       ::std::chrono::milliseconds(5) / 2);
