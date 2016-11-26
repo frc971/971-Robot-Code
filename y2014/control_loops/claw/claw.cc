@@ -123,6 +123,8 @@ void ClawLimitedLoop::CapU() {
     const Eigen::Matrix<double, 4, 1> pos_poly_k =
         poly.k() - poly.H() * velocity_K * velocity_error;
     const ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+    const ::aos::controls::HVPolytope<2, 4, 4> hv_pos_poly(
+        pos_poly_H, pos_poly_k, pos_poly.Vertices());
 
     Eigen::Matrix<double, 2, 1> adjusted_pos_error;
     {
@@ -163,9 +165,9 @@ void ClawLimitedLoop::CapU() {
 
       bool is_inside_h;
       const auto adjusted_pos_error_h =
-          DoCoerceGoal(pos_poly, LH, wh, position_error, &is_inside_h);
+          DoCoerceGoal(hv_pos_poly, LH, wh, position_error, &is_inside_h);
       const auto adjusted_pos_error_45 =
-          DoCoerceGoal(pos_poly, L45, w45, intersection, nullptr);
+          DoCoerceGoal(hv_pos_poly, L45, w45, intersection, nullptr);
       if (pos_poly.IsInside(intersection)) {
         adjusted_pos_error = adjusted_pos_error_h;
       } else {
