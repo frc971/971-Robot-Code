@@ -639,7 +639,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Superstructure::State ExpectedStateOrder[] = {
+  Superstructure::State kExpectedStateOrder[] = {
       Superstructure::DISABLED_INITIALIZED,
       Superstructure::HIGH_ARM_ZERO_LIFT_ARM,
       Superstructure::HIGH_ARM_ZERO_LEVEL_SHOOTER,
@@ -653,24 +653,24 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
   }
 
   static const int kNumberOfStates =
-      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+      sizeof(kExpectedStateOrder) / sizeof(kExpectedStateOrder[0]);
 
   // Next state when reached to disable
   for (int i = 0; i < kNumberOfStates; i++) {
     // Next expected state after being disabled that is expected until next
     //  state to disable at is reached
-    for (int j = 0; superstructure_.state() != ExpectedStateOrder[i] && j <= i;
+    for (int j = 0; superstructure_.state() != kExpectedStateOrder[i] && j <= i;
          j++) {
       // RunIteration until next expected state is reached with a maximum
       //  of 10000 times to ensure a breakout
       for (int o = 0;
-           superstructure_.state() < ExpectedStateOrder[j] && o < 10000; o++) {
+           superstructure_.state() < kExpectedStateOrder[j] && o < 10000; o++) {
         RunIteration(true);
       }
-      EXPECT_EQ(ExpectedStateOrder[j], superstructure_.state());
+      EXPECT_EQ(kExpectedStateOrder[j], superstructure_.state());
     }
 
-    EXPECT_EQ(ExpectedStateOrder[i], superstructure_.state());
+    EXPECT_EQ(kExpectedStateOrder[i], superstructure_.state());
 
     // Disable
     RunIteration(false);
@@ -703,7 +703,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Superstructure::State ExpectedStateOrder[] = {
+  Superstructure::State kExpectedStateOrder[] = {
       Superstructure::DISABLED_INITIALIZED,
       Superstructure::LOW_ARM_ZERO_LOWER_INTAKE,
       Superstructure::LOW_ARM_ZERO_MAYBE_LEVEL_SHOOTER,
@@ -717,24 +717,24 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
   }
 
   static const int kNumberOfStates =
-      sizeof(ExpectedStateOrder) / sizeof(ExpectedStateOrder[0]);
+      sizeof(kExpectedStateOrder) / sizeof(kExpectedStateOrder[0]);
 
   // Next state when reached to disable
   for (int i = 0; i < kNumberOfStates; i++) {
     // Next expected state after being disabled that is expected until next
     //  state to disable at is reached
-    for (int j = 0; superstructure_.state() != ExpectedStateOrder[i] && j <= i;
+    for (int j = 0; superstructure_.state() != kExpectedStateOrder[i] && j <= i;
          j++) {
       // RunIteration until next expected state is reached with a maximum
       //  of 10000 times to ensure a breakout
       for (int o = 0;
-           superstructure_.state() < ExpectedStateOrder[j] && o < 10000; o++) {
+           superstructure_.state() < kExpectedStateOrder[j] && o < 10000; o++) {
         RunIteration(true);
       }
-      EXPECT_EQ(ExpectedStateOrder[j], superstructure_.state());
+      EXPECT_EQ(kExpectedStateOrder[j], superstructure_.state());
     }
 
-    EXPECT_EQ(ExpectedStateOrder[i], superstructure_.state());
+    EXPECT_EQ(kExpectedStateOrder[i], superstructure_.state());
 
     // Disable
     RunIteration(false);
