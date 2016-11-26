@@ -177,11 +177,11 @@ class Reader : public ::aos::input::JoystickInput {
       new_intake_goal->max_angular_velocity_intake = 7.0;
       new_intake_goal->max_angular_acceleration_intake = 40.0;
 
-#define GrannyMode false
-#if GrannyMode
-      new_intake_goal->max_angular_velocity_intake = 0.2;
-      new_intake_goal->max_angular_acceleration_intake = 1.0;
-#endif
+      static constexpr bool kGrannyMode = false;
+      if (kGrannyMode) {
+        new_intake_goal->max_angular_velocity_intake = 0.2;
+        new_intake_goal->max_angular_acceleration_intake = 1.0;
+      }
 
       if (is_intaking_) {
         new_intake_goal->voltage_intake_rollers = -12.0;
