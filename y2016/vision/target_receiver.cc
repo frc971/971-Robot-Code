@@ -2,12 +2,13 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include <vector>
-#include <memory>
 #include <array>
-#include <thread>
 #include <atomic>
+#include <chrono>
 #include <limits>
+#include <memory>
+#include <thread>
+#include <vector>
 
 #include "aos/linux_code/init.h"
 #include "aos/common/time.h"
@@ -25,6 +26,9 @@
 
 namespace y2016 {
 namespace vision {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 ::aos::vision::Vector<2> CreateCenterFromTarget(double lx, double ly, double rx,
                                                 double ry) {
@@ -119,23 +123,23 @@ void SelectTargets(const VisionData &left_target,
 
 class CameraHandler {
  public:
-  void Received(const VisionData &target, ::aos::time::Time now) {
+  void Received(const VisionData &target, monotonic_clock::time_point now) {
     if (current_.received) {
       last_ = current_;
     }
     current_.target = target;
     current_.rx_time = now;
     current_.capture_time = now -
-                            ::aos::time::Time::InNS(target.send_timestamp() -
-                                                    target.image_timestamp()) +
+                            chrono::nanoseconds(target.send_timestamp() -
+                                                target.image_timestamp()) +
                             // It takes a bit to shoot a frame.  Push the frame
                             // further back in time.
-                            ::aos::time::Time::InMS(10);
+                            chrono::milliseconds(10);
     current_.received = true;
   }
 
-  void CheckStale(::aos::time::Time now) {
-    if (now > current_.rx_time + ::aos::time::Time::InMS(50)) {
+  void CheckStale(monotonic_clock::time_point now) {
+    if (now > current_.rx_time + chrono::milliseconds(50)) {
       current_.received = false;
       last_.received = false;
     }
@@ -150,14 +154,18 @@ class CameraHandler {
   const VisionData &target() const { return current_.target; }
   const VisionData &last_target() const { return last_.target; }
 
-  ::aos::time::Time capture_time() const { return current_.capture_time; }
-  ::aos::time::Time last_capture_time() const { return last_.capture_time; }
+  monotonic_clock::time_point capture_time() const {
+    return current_.capture_time;
+  }
+  monotonic_clock::time_point last_capture_time() const {
+    return last_.capture_time;
+  }
 
  private:
   struct TargetWithTimes {
     VisionData target;
-    ::aos::time::Time rx_time{0, 0};
-    ::aos::time::Time capture_time{0, 0};
+    monotonic_clock::time_point rx_time{monotonic_clock::epoch()};
+    monotonic_clock::time_point capture_time{monotonic_clock::epoch()};
     bool received = false;
   };
 
@@ -172,8 +180,10 @@ void CalculateFiltered(const CameraHandler &older, const CameraHandler &newer,
                        ::aos::vision::Vector<2> *interpolated_result,
                        double *interpolated_angle) {
   const double age_ratio =
-      (older.capture_time() - newer.last_capture_time()).ToSeconds() /
-      (newer.capture_time() - newer.last_capture_time()).ToSeconds();
+      chrono::duration_cast<chrono::duration<double>>(
+          older.capture_time() - newer.last_capture_time()).count() /
+      chrono::duration_cast<chrono::duration<double>>(
+          newer.capture_time() - newer.last_capture_time()).count();
   interpolated_result->Set(
       newer_center.x() * age_ratio + (1 - age_ratio) * last_newer_center.x(),
       newer_center.y() * age_ratio + (1 - age_ratio) * last_newer_center.y());
@@ -191,7 +201,8 @@ class DrivetrainOffsetCalculator {
       status.FetchAnother();
 
       ::aos::MutexLocker locker(&lock_);
-      data_[data_index_].time = status->sent_time;
+      data_[data_index_].time = monotonic_clock::time_point(
+          chrono::nanoseconds(status->sent_time.ToNSec()));
       data_[data_index_].left = status->estimated_left_position;
       data_[data_index_].right = status->estimated_right_position;
       ++data_index_;
@@ -206,8 +217,8 @@ class DrivetrainOffsetCalculator {
   bool CompleteVisionStatus(::y2016::vision::VisionStatus *status) {
     if (valid_data_ == 0) return false;
 
-    const ::aos::time::Time capture_time =
-        ::aos::time::Time::InNS(status->target_time);
+    const monotonic_clock::time_point capture_time =
+        monotonic_clock::time_point(chrono::nanoseconds(status->target_time));
     DrivetrainData before, after;
     FindBeforeAfter(&before, &after, capture_time);
 
@@ -215,8 +226,10 @@ class DrivetrainOffsetCalculator {
       status->drivetrain_left_position = before.left;
       status->drivetrain_right_position = before.right;
     } else {
-      const double age_ratio = (capture_time - before.time).ToSeconds() /
-                               (after.time - before.time).ToSeconds();
+      const double age_ratio = chrono::duration_cast<chrono::duration<double>>(
+                                   capture_time - before.time).count() /
+                               chrono::duration_cast<chrono::duration<double>>(
+                                   after.time - before.time).count();
       status->drivetrain_left_position =
           before.left * (1 - age_ratio) + after.left * age_ratio;
       status->drivetrain_right_position =
@@ -230,7 +243,7 @@ class DrivetrainOffsetCalculator {
 
  private:
   struct DrivetrainData {
-    ::aos::time::Time time;
+    monotonic_clock::time_point time;
     double left, right;
   };
 
@@ -238,7 +251,7 @@ class DrivetrainOffsetCalculator {
   // They might be identical if that's the closest approximation.
   // Do not call this if valid_data_ is 0.
   void FindBeforeAfter(DrivetrainData *before, DrivetrainData *after,
-                       ::aos::time::Time capture_time) {
+                       monotonic_clock::time_point capture_time) {
     ::aos::MutexLocker locker(&lock_);
     size_t location = 0;
     while (true) {
@@ -308,7 +321,7 @@ void Main() {
     // TODO(austin): Don't malloc.
     VisionData target;
     int size = recv.Recv(rawData, 65507);
-    ::aos::time::Time now = ::aos::time::Time::Now();
+    monotonic_clock::time_point now = monotonic_clock::now();
 
     if (target.ParseFromArray(rawData, size)) {
       if (target.camera_index() == 0) {
@@ -356,14 +369,18 @@ void Main() {
         if (left.capture_time() < right.capture_time()) {
           filtered_center_left = center_left;
           filtered_angle_left = angle_left;
-          new_vision_status->target_time = left.capture_time().ToNSec();
+          new_vision_status->target_time =
+              chrono::duration_cast<chrono::nanoseconds>(
+                  left.capture_time().time_since_epoch()).count();
           CalculateFiltered(left, right, center_right, last_center_right,
                             angle_right, last_angle_right,
                             &filtered_center_right, &filtered_angle_right);
         } else {
           filtered_center_right = center_right;
           filtered_angle_right = angle_right;
-          new_vision_status->target_time = right.capture_time().ToNSec();
+          new_vision_status->target_time =
+              chrono::duration_cast<chrono::nanoseconds>(
+                  right.capture_time().time_since_epoch()).count();
           CalculateFiltered(right, left, center_left, last_center_left,
                             angle_left, last_angle_left, &filtered_center_left,
                             &filtered_angle_left);
