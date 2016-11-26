@@ -20,8 +20,8 @@ cc_library(
   deps = [
     ':auto_queue',
     '//aos/common/controls:control_loop',
-    '//y2015_bot3/control_loops/drivetrain:drivetrain_queue',
-    '//y2015_bot3/control_loops/drivetrain:drivetrain_lib',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_lib',
     '//y2015_bot3/actors:drivetrain_action_lib',
     '//y2015_bot3/control_loops/elevator:elevator_queue',
     '//y2015_bot3/control_loops/intake:intake_queue',

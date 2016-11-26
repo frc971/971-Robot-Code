@@ -37,8 +37,10 @@ cc_library(
     '//aos/common/logging:queue_logging',
     '//third_party/eigen',
     '//aos/common/util:trapezoid_profile',
-    '//y2015_bot3/control_loops/drivetrain:drivetrain_queue',
-    '//y2015_bot3/control_loops/drivetrain:drivetrain_lib',
+    '//frc971/control_loops/drivetrain:drivetrain_lib',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2015_bot3/control_loops/drivetrain:drivetrain_base',
+    '//y2015_bot3/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )
 

@@ -14,11 +14,11 @@
 #include "frc971/queues/gyro.q.h"
 #include "y2015_bot3/autonomous/auto.q.h"
 #include "y2015_bot3/control_loops/elevator/elevator.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015_bot3/control_loops/elevator/elevator.q.h"
 #include "y2015_bot3/control_loops/intake/intake.q.h"
 
-using ::y2015_bot3::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2015_bot3::control_loops::elevator_queue;
 using ::y2015_bot3::control_loops::intake_queue;
 using ::frc971::sensors::gyro_reading;

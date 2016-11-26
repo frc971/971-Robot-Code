@@ -10,16 +10,16 @@
 
 #include "y2015_bot3/autonomous/auto.q.h"
 #include "y2015_bot3/actors/drivetrain_actor.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.q.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2015_bot3/control_loops/elevator/elevator.q.h"
 #include "y2015_bot3/control_loops/intake/intake.q.h"
+#include "y2015_bot3/control_loops/drivetrain/drivetrain_base.h"
 
 using ::aos::time::Time;
-using ::y2015_bot3::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2015_bot3::control_loops::intake_queue;
 using ::y2015_bot3::control_loops::elevator_queue;
-using ::y2015_bot3::control_loops::kDrivetrainTurnWidth;
 
 namespace y2015_bot3 {
 namespace autonomous {
@@ -53,7 +53,7 @@ bool ShouldExitAuto() {
 
 void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       .steering(0.0)
       .throttle(0.0)
@@ -65,11 +65,9 @@ void ResetDrivetrain() {
 }
 
 void InitializeEncoders() {
-  control_loops::drivetrain_queue.status.FetchAnother();
-  left_initial_position =
-      control_loops::drivetrain_queue.status->estimated_left_position;
-  right_initial_position =
-      control_loops::drivetrain_queue.status->estimated_right_position;
+  drivetrain_queue.status.FetchAnother();
+  left_initial_position = drivetrain_queue.status->estimated_left_position;
+  right_initial_position = drivetrain_queue.status->estimated_right_position;
 }
 
 ::std::unique_ptr< ::frc971::actors::DrivetrainAction> SetDriveGoal(
@@ -89,8 +87,10 @@ void InitializeEncoders() {
   auto drivetrain_action = actors::MakeDrivetrainAction(params);
 
   drivetrain_action->Start();
-  left_initial_position += distance - theta * kDrivetrainTurnWidth / 2.0;
-  right_initial_position += distance + theta * kDrivetrainTurnWidth / 2.0;
+  left_initial_position +=
+      distance - theta * control_loops::drivetrain::kDrivetrainTurnWidth / 2.0;
+  right_initial_position +=
+      distance + theta * control_loops::drivetrain::kDrivetrainTurnWidth / 2.0;
   return ::std::move(drivetrain_action);
 }
 void WaitUntilDoneOrCanceled(
@@ -111,13 +111,13 @@ void WaitUntilDoneOrCanceled(
 void WaitUntilNear(double distance) {
   while (true) {
     if (ShouldExitAuto()) return;
-    control_loops::drivetrain_queue.status.FetchAnother();
-    double left_error = ::std::abs(
-        left_initial_position -
-        control_loops::drivetrain_queue.status->estimated_left_position);
-    double right_error = ::std::abs(
-        right_initial_position -
-        control_loops::drivetrain_queue.status->estimated_right_position);
+    drivetrain_queue.status.FetchAnother();
+    double left_error =
+        ::std::abs(left_initial_position -
+                   drivetrain_queue.status->estimated_left_position);
+    double right_error =
+        ::std::abs(right_initial_position -
+                   drivetrain_queue.status->estimated_right_position);
     const double kPositionThreshold = 0.05 + distance;
     if (right_error < kPositionThreshold && left_error < kPositionThreshold) {
       LOG(INFO, "At the goal\n");
@@ -183,7 +183,7 @@ void CanGrabberAuto() {
   //const double kMoveBackDistance = 0.0;
 
   // Drive backwards, and pulse the can grabbers again to tip the cans.
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .steering(0.0)
       .throttle(0.0)

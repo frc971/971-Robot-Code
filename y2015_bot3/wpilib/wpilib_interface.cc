@@ -32,31 +32,30 @@
 #include "aos/common/messages/robot_state.q.h"
 
 #include "frc971/control_loops/control_loops.q.h"
-
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.q.h"
-#include "y2015_bot3/control_loops/elevator/elevator.q.h"
-#include "y2015_bot3/control_loops/intake/intake.q.h"
-#include "y2015_bot3/autonomous/auto.q.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.h"
-#include "y2015_bot3/control_loops/elevator/elevator.h"
-#include "y2015_bot3/control_loops/intake/intake.h"
-
-#include "frc971/wpilib/joystick_sender.h"
-#include "frc971/wpilib/loop_output_handler.h"
-#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
-#include "frc971/wpilib/logging.q.h"
-#include "frc971/wpilib/wpilib_interface.h"
-#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/wpilib_interface.h"
+#include "y2015_bot3/autonomous/auto.q.h"
+#include "y2015_bot3/control_loops/drivetrain/drivetrain_base.h"
+#include "y2015_bot3/control_loops/elevator/elevator.h"
+#include "y2015_bot3/control_loops/elevator/elevator.q.h"
+#include "y2015_bot3/control_loops/intake/intake.h"
+#include "y2015_bot3/control_loops/intake/intake.q.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 using ::aos::util::SimpleLogInterval;
-using ::y2015_bot3::control_loops::drivetrain_queue;
+using ::frc971::control_loops::drivetrain_queue;
 using ::y2015_bot3::control_loops::elevator_queue;
 using ::y2015_bot3::control_loops::intake_queue;
 using ::frc971::wpilib::BufferedPcm;
@@ -70,13 +69,13 @@ namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         ::y2015_bot3::control_loops::kDrivetrainEncoderRatio *
+         ::y2015_bot3::control_loops::drivetrain::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
 double drivetrain_velocity_translate(double in) {
   return (1.0 / in) / 256.0 /*cpr*/ *
-         ::y2015_bot3::control_loops::kDrivetrainEncoderRatio *
+         ::y2015_bot3::control_loops::drivetrain::kDrivetrainEncoderRatio *
          (4 /*wheel diameter*/ * 2.54 / 100.0 * M_PI);
 }
 
@@ -337,11 +336,11 @@ class DrivetrainWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::y2015_bot3::control_loops::drivetrain_queue.output.FetchAnother();
+    drivetrain_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::y2015_bot3::control_loops::drivetrain_queue.output;
+    auto &queue = drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_drivetrain_talon_->Set(queue->left_voltage / 12.0);
     right_drivetrain_talon_->Set(-queue->right_voltage / 12.0);

@@ -11,9 +11,10 @@
 #include "aos/common/commonmath.h"
 #include "aos/common/time.h"
 
+#include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015_bot3/actors/drivetrain_actor.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.q.h"
-#include "y2015_bot3/control_loops/drivetrain/drivetrain.h"
+#include "y2015_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2015_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
 namespace frc971 {
@@ -21,8 +22,8 @@ namespace actors {
 
 namespace chrono = ::std::chrono;
 
-using ::y2015_bot3::control_loops::drivetrain_queue;
-using ::y2015_bot3::control_loops::kDrivetrainTurnWidth;
+using ::frc971::control_loops::drivetrain_queue;
+using ::y2015_bot3::control_loops::drivetrain::kDrivetrainTurnWidth;
 
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
