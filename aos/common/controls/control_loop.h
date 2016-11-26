@@ -37,7 +37,8 @@ class SerializableControlLoop : public Runnable {
 };
 
 // Control loops run this often, "starting" at time 0.
-constexpr time::Time kLoopFrequency = time::Time::InSeconds(0.005);
+constexpr ::std::chrono::nanoseconds kLoopFrequency =
+    ::std::chrono::milliseconds(5);
 
 // Provides helper methods to assist in writing control loops.
 // This template expects to be constructed with a queue group as an argument

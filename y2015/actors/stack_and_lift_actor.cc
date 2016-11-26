@@ -14,6 +14,8 @@
 namespace frc971 {
 namespace actors {
 
+namespace chrono = ::std::chrono;
+
 StackAndLiftActor::StackAndLiftActor(StackAndLiftActionQueueGroup *queues)
     : FridgeActorBase<StackAndLiftActionQueueGroup>(queues) {}
 
@@ -36,7 +38,8 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
         MakeStackAction(stack_params);
     stack_action->Start();
     while (stack_action->Running()) {
-      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                     ::aos::controls::kLoopFrequency).count(),
                                  2500);
 
       if (ShouldCancel()) {
@@ -75,7 +78,8 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
     ::std::unique_ptr<LiftAction> lift_action = MakeLiftAction(lift_params);
     lift_action->Start();
     while (lift_action->Running()) {
-      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                     ::aos::controls::kLoopFrequency).count(),
                                  2500);
 
       if (ShouldCancel()) {

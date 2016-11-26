@@ -19,8 +19,6 @@ class ShooterTest_UnloadWindupNegative_Test;
 class ShooterTest_RezeroWhileUnloading_Test;
 };
 
-using ::aos::time::Time;
-
 // Note: Everything in this file assumes that there is a 1 cycle delay between
 // power being requested and it showing up at the motor.  It assumes that
 // X_hat(2, 1) is the voltage being applied as well.  It will go unstable if
@@ -113,13 +111,19 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   bool capped_goal_;
 };
 
-const Time kUnloadTimeout = Time::InSeconds(10);
-const Time kLoadTimeout = Time::InSeconds(2.0);
-const Time kLoadProblemEndTimeout = Time::InSeconds(1.0);
-const Time kShooterBrakeSetTime = Time::InSeconds(0.05);
+static constexpr ::std::chrono::nanoseconds kUnloadTimeout =
+    ::std::chrono::seconds(10);
+static constexpr ::std::chrono::nanoseconds kLoadTimeout =
+    ::std::chrono::seconds(2);
+static constexpr ::std::chrono::nanoseconds kLoadProblemEndTimeout =
+    ::std::chrono::seconds(1);
+static constexpr ::std::chrono::nanoseconds kShooterBrakeSetTime =
+    ::std::chrono::milliseconds(50);
 // Time to wait after releasing the latch piston before winching back again.
-const Time kShotEndTimeout = Time::InSeconds(0.2);
-const Time kPrepareFireEndTime = Time::InMS(40);
+static constexpr ::std::chrono::nanoseconds kShotEndTimeout =
+    ::std::chrono::milliseconds(200);
+static constexpr ::std::chrono::nanoseconds kPrepareFireEndTime =
+    ::std::chrono::milliseconds(40);
 
 class ShooterMotor
     : public aos::controls::ControlLoop<::y2014::control_loops::ShooterQueue> {
@@ -171,12 +175,12 @@ class ShooterMotor
   // Enter state STATE_UNLOAD
   void Unload() {
     state_ = STATE_UNLOAD;
-    unload_timeout_ = Time::Now() + kUnloadTimeout;
+    unload_timeout_ = ::aos::monotonic_clock::now() + kUnloadTimeout;
   }
   // Enter state STATE_LOAD
   void Load() {
     state_ = STATE_LOAD;
-    load_timeout_ = Time::Now() + kLoadTimeout;
+    load_timeout_ = ::aos::monotonic_clock::now() + kLoadTimeout;
   }
 
   ::y2014::control_loops::ShooterQueue::Position last_position_;
@@ -187,19 +191,24 @@ class ShooterMotor
   State state_;
 
   // time to giving up on loading problem
-  Time loading_problem_end_time_;
+  ::aos::monotonic_clock::time_point loading_problem_end_time_ =
+      ::aos::monotonic_clock::min_time;
 
   // The end time when loading for it to timeout.
-  Time load_timeout_;
+  ::aos::monotonic_clock::time_point load_timeout_ =
+      ::aos::monotonic_clock::min_time;
 
   // wait for brake to set
-  Time shooter_brake_set_time_;
+  ::aos::monotonic_clock::time_point shooter_brake_set_time_ =
+      ::aos::monotonic_clock::min_time;
 
   // The timeout for unloading.
-  Time unload_timeout_;
+  ::aos::monotonic_clock::time_point unload_timeout_ =
+      ::aos::monotonic_clock::min_time;
 
   // time that shot must have completed
-  Time shot_end_time_;
+  ::aos::monotonic_clock::time_point shot_end_time_ =
+      ::aos::monotonic_clock::min_time;
 
   // track cycles that we are stuck to detect errors
   int cycles_not_moved_;

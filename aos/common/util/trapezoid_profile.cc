@@ -7,10 +7,8 @@ using ::Eigen::Matrix;
 namespace aos {
 namespace util {
 
-TrapezoidProfile::TrapezoidProfile(const time::Time &delta_time)
-    : maximum_acceleration_(0),
-      maximum_velocity_(0),
-      timestep_(delta_time) {
+TrapezoidProfile::TrapezoidProfile(::std::chrono::nanoseconds delta_time)
+    : maximum_acceleration_(0), maximum_velocity_(0), timestep_(delta_time) {
   output_.setZero();
 }
 
@@ -26,7 +24,9 @@ const Matrix<double, 2, 1> &TrapezoidProfile::Update(
     double goal_velocity) {
   CalculateTimes(goal_position - output_(0), goal_velocity);
 
-  double next_timestep = timestep_.ToSeconds();
+  double next_timestep =
+      ::std::chrono::duration_cast<::std::chrono::duration<double>>(timestep_)
+          .count();
 
   if (acceleration_time_ > next_timestep) {
     UpdateVals(acceleration_, next_timestep);

@@ -45,11 +45,13 @@ class TrapezoidProfileTest : public ::testing::Test {
   }
 
  private:
-  static const time::Time delta_time;
+  static constexpr ::std::chrono::nanoseconds delta_time =
+      ::std::chrono::milliseconds(10);
 
   Eigen::Matrix<double, 2, 1> position_;
 };
-const time::Time TrapezoidProfileTest::delta_time = time::Time::InSeconds(0.01);
+
+constexpr ::std::chrono::nanoseconds TrapezoidProfileTest::delta_time;
 
 TEST_F(TrapezoidProfileTest, ReachesGoal) {
   for (int i = 0; i < 450; ++i) {

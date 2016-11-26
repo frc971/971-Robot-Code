@@ -65,11 +65,12 @@ class ActorBase {
   // succeeded.
   bool WaitOrCancel(const ::aos::time::Time& duration) {
     return !WaitUntil([]() {
-                        ::aos::time::PhasedLoopXMS(
-                            ::aos::controls::kLoopFrequency.ToMSec(), 2500);
-                        return false;
-                      },
-                      ::aos::time::Time::Now() + duration);
+      ::aos::time::PhasedLoopXMS(
+          ::std::chrono::duration_cast<::std::chrono::milliseconds>(
+              ::aos::controls::kLoopFrequency).count(),
+          2500);
+      return false;
+    }, ::aos::time::Time::Now() + duration);
   }
 
   // Returns true if the action should be canceled.

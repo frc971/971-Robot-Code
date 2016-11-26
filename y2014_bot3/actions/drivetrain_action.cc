@@ -16,6 +16,8 @@
 namespace bot3 {
 namespace actions {
 
+namespace chrono = ::std::chrono;
+
 DrivetrainAction::DrivetrainAction(::frc971::actions::DrivetrainActionQueueGroup* s)
     : ::frc971::actions::ActionBase
         <::frc971::actions::DrivetrainActionQueueGroup>(s) {}
@@ -29,8 +31,8 @@ void DrivetrainAction::RunAction() {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(10));
-  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(10));
+  ::aos::util::TrapezoidProfile profile(chrono::milliseconds(10));
+  ::aos::util::TrapezoidProfile turn_profile(chrono::milliseconds(10));
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;

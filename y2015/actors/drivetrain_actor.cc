@@ -18,6 +18,8 @@
 namespace frc971 {
 namespace actors {
 
+namespace chrono = ::std::chrono;
+
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
 
@@ -30,8 +32,8 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   LOG(INFO, "Going to move %f and turn %f\n", yoffset, turn_offset);
 
   // Measured conversion to get the distance right.
-  ::aos::util::TrapezoidProfile profile(::aos::time::Time::InMS(5));
-  ::aos::util::TrapezoidProfile turn_profile(::aos::time::Time::InMS(5));
+  ::aos::util::TrapezoidProfile profile(chrono::milliseconds(5));
+  ::aos::util::TrapezoidProfile turn_profile(chrono::milliseconds(5));
   const double goal_velocity = 0.0;
   const double epsilon = 0.01;
   ::Eigen::Matrix<double, 2, 1> left_goal_state, right_goal_state;

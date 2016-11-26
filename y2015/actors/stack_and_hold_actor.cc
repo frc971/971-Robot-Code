@@ -19,6 +19,8 @@ constexpr ProfileParams kFastArmMove{0.8, 4.0};
 constexpr ProfileParams kFastElevatorMove{1.2, 4.0};
 }  // namespace
 
+namespace chrono = ::std::chrono;
+
 StackAndHoldActor::StackAndHoldActor(StackAndHoldActionQueueGroup *queues)
     : FridgeActorBase<StackAndHoldActionQueueGroup>(queues) {}
 
@@ -76,7 +78,8 @@ bool StackAndHoldActor::RunAction(const StackAndHoldParams &params) {
         MakeStackAction(stack_params);
     stack_action->Start();
     while (stack_action->Running()) {
-      ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(),
+      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
+                                     ::aos::controls::kLoopFrequency).count(),
                                  2500);
 
       if (ShouldCancel()) {

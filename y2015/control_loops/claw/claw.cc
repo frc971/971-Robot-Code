@@ -13,6 +13,7 @@ namespace frc971 {
 namespace control_loops {
 
 using ::aos::time::Time;
+namespace chrono = ::std::chrono;
 
 constexpr double kZeroingVoltage = 4.0;
 
@@ -169,8 +170,9 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
         SetClawOffset(claw_estimator_.offset());
       } else if (!disable) {
         claw_goal_velocity = claw_zeroing_velocity();
-        claw_goal_ +=
-            claw_goal_velocity * ::aos::controls::kLoopFrequency.ToSeconds();
+        claw_goal_ += claw_goal_velocity *
+                      chrono::duration_cast<chrono::duration<double>>(
+                          ::aos::controls::kLoopFrequency).count();
       }
 
       // Clear the current profile state if we are zeroing.

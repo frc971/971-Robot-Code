@@ -17,7 +17,7 @@ namespace util {
 class TrapezoidProfile {
  public:
   // delta_time is how long between each call to Update.
-  TrapezoidProfile(const time::Time &delta_time);
+  TrapezoidProfile(::std::chrono::nanoseconds delta_time);
 
   // Updates the state.
   const Eigen::Matrix<double, 2, 1> &Update(double goal_position,
@@ -58,7 +58,7 @@ class TrapezoidProfile {
   double maximum_velocity_;
 
   // How long between calls to Update.
-  const time::Time timestep_;
+  ::std::chrono::nanoseconds timestep_;
 
   DISALLOW_COPY_AND_ASSIGN(TrapezoidProfile);
 };

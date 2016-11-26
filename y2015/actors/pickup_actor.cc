@@ -92,7 +92,10 @@ bool PickupActor::RunAction(const PickupParams& params) {
   ::aos::time::Time end_time =
       ::aos::time::Time::Now() + aos::time::Time::InSeconds(params.intake_time);
   while ( ::aos::time::Time::Now() <= end_time) {
-    ::aos::time::PhasedLoopXMS(::aos::controls::kLoopFrequency.ToMSec(), 2500);
+    ::aos::time::PhasedLoopXMS(
+        ::std::chrono::duration_cast<::std::chrono::milliseconds>(
+            ::aos::controls::kLoopFrequency).count(),
+        2500);
     if (ShouldCancel()) return true;
   }
 
