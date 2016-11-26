@@ -72,8 +72,8 @@ class Reader : public ::aos::input::JoystickInput {
     if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
       drivetrain_queue.status.FetchLatest();
       if (drivetrain_queue.status.get()) {
-        left_goal = drivetrain_queue.status->estimated_left_position;
-        right_goal = drivetrain_queue.status->estimated_right_position;
+        left_goal_ = drivetrain_queue.status->estimated_left_position;
+        right_goal_ = drivetrain_queue.status->estimated_right_position;
       }
     }
     if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
@@ -86,8 +86,8 @@ class Reader : public ::aos::input::JoystickInput {
              .highgear(is_high_gear_)
              .quickturn(data.IsPressed(kQuickTurn))
              .control_loop_driving(is_control_loop_driving)
-             .left_goal(left_goal - wheel * 0.5 + throttle * 0.3)
-             .right_goal(right_goal + wheel * 0.5 + throttle * 0.3)
+             .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
+             .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
              .left_velocity_goal(0)
              .right_velocity_goal(0)
              .Send()) {
@@ -138,8 +138,8 @@ class Reader : public ::aos::input::JoystickInput {
 
   bool is_high_gear_;
   // Turning goals.
-  double left_goal;
-  double right_goal;
+  double left_goal_;
+  double right_goal_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
       ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,

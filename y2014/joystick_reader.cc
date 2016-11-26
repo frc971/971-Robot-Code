@@ -195,31 +195,31 @@ class Reader : public ::aos::input::JoystickInput {
           data.PosEdge(kDriveControlLoopEnable2)) {
         if (drivetrain_queue.position.FetchLatest() &&
             gyro_reading.FetchLatest()) {
-          distance = (drivetrain_queue.position->left_encoder +
+          distance_ = (drivetrain_queue.position->left_encoder +
                       drivetrain_queue.position->right_encoder) /
                          2.0 -
                      throttle * kThrottleGain / 2.0;
-          angle = gyro_reading->angle;
-          filtered_goal_distance = distance;
+          angle_ = gyro_reading->angle;
+          filtered_goal_distance_ = distance_;
         }
       }
       is_control_loop_driving = true;
 
       // const double gyro_angle = Gyro.View().angle;
-      const double goal_theta = angle - wheel * 0.27;
-      const double goal_distance = distance + throttle * kThrottleGain;
+      const double goal_theta = angle_ - wheel * 0.27;
+      const double goal_distance = distance_ + throttle * kThrottleGain;
       const double robot_width = 22.0 / 100.0 * 2.54;
       const double kMaxVelocity = 0.6;
-      if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance) {
-        filtered_goal_distance += kMaxVelocity * 0.02;
+      if (goal_distance > kMaxVelocity * 0.02 + filtered_goal_distance_) {
+        filtered_goal_distance_ += kMaxVelocity * 0.03;
       } else if (goal_distance <
-                 -kMaxVelocity * 0.02 + filtered_goal_distance) {
-        filtered_goal_distance -= kMaxVelocity * 0.02;
+                 -kMaxVelocity * 0.02 + filtered_goal_distance_) {
+        filtered_goal_distance_ -= kMaxVelocity * 0.02;
       } else {
-        filtered_goal_distance = goal_distance;
+        filtered_goal_distance_ = goal_distance;
       }
-      left_goal = filtered_goal_distance - robot_width * goal_theta / 2.0;
-      right_goal = filtered_goal_distance + robot_width * goal_theta / 2.0;
+      left_goal = filtered_goal_distance_ - robot_width * goal_theta / 2.0;
+      right_goal = filtered_goal_distance_ + robot_width * goal_theta / 2.0;
       is_high_gear_ = false;
 
       LOG(DEBUG, "Left goal %f Right goal %f\n", left_goal, right_goal);
@@ -501,9 +501,9 @@ class Reader : public ::aos::input::JoystickInput {
   double separation_angle_, shot_separation_angle_;
   double velocity_compensation_;
   // Distance, angle, and filtered goal for closed loop driving.
-  double distance;
-  double angle;
-  double filtered_goal_distance;
+  double distance_;
+  double angle_;
+  double filtered_goal_distance_;
   double intake_power_;
   bool was_running_;
   bool moving_for_shot_ = false;
