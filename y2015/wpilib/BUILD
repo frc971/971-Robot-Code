@@ -11,7 +11,7 @@ cc_binary(
     '//aos/common/logging',
     '//third_party:wpilib',
     '//y2015:constants',
-    '//y2015/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2015/control_loops/fridge:fridge_queue',
     '//y2015/control_loops/claw:claw_queue',
     '//y2015/autonomous:auto_queue',

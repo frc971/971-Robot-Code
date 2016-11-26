@@ -147,8 +147,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompRightDriveShifter,
           false,
           0.5,
-          control_loops::MakeVelocityDrivetrainLoop,
-          control_loops::MakeDrivetrainLoop,
+          ::y2015::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+          ::y2015::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,   // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
@@ -214,8 +214,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kCompRightDriveShifter,
           false,
           kRobotWidth,
-          control_loops::MakeVelocityDrivetrainLoop,
-          control_loops::MakeDrivetrainLoop,
+          ::y2015::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+          ::y2015::control_loops::drivetrain::MakeDrivetrainLoop,
           5.0,   // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
@@ -283,9 +283,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           kPracticeRightDriveShifter,
           false,
           kRobotWidth,
-          control_loops::MakeVelocityDrivetrainLoop,
-          control_loops::MakeDrivetrainLoop,
-          5.0,   // drivetrain max speed
+          ::y2015::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
+          ::y2015::control_loops::drivetrain::MakeDrivetrainLoop,
+          5.0,  // drivetrain max speed
 
           // Motion ranges: hard_lower_limit, hard_upper_limit,
           //                soft_lower_limit, soft_upper_limit
@@ -303,7 +303,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            kClawPistonSwitchTime,
            kClawZeroingRange},
 
-          {// Elevator values, in meters.
+          {
+           // Elevator values, in meters.
            // 0 is at the top of the elevator frame.
            // Positive is down towards the drivebase.
            {-0.00500, 0.689000, 0.010000, 0.680000},
@@ -325,7 +326,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {kZeroingSampleSize, kArmEncoderIndexDifference, 0.210155, 0.3},
            // These are the potentiometer offsets.
            0.72069366666666679 - 0.026008 - 0.024948 + 0.025,
-           -0.078959636363636357 - 0.024646  - 0.020260,
+           -0.078959636363636357 - 0.024646 - 0.020260,
            -3.509611 - 0.007415 - -0.019081 - 0.029393 - -0.013585,
            3.506927 - 0.170017 - -0.147970 - 0.005045 - -0.026504,
 

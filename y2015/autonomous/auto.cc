@@ -11,7 +11,7 @@
 #include "frc971/autonomous/auto.q.h"
 #include "y2015/autonomous/auto.q.h"
 #include "y2015/constants.h"
-#include "y2015/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/actors/drivetrain_actor.h"
 #include "y2015/control_loops/claw/claw.q.h"
 #include "y2015/control_loops/fridge/fridge.q.h"

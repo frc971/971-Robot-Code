@@ -12,7 +12,7 @@
 #include "aos/common/actions/actions.h"
 
 #include "y2015/control_loops/claw/claw.q.h"
-#include "y2015/control_loops/drivetrain/drivetrain.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/control_loops/fridge/fridge.q.h"
 #include "y2015/constants.h"
 #include "frc971/queues/gyro.q.h"

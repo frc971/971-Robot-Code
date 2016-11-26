@@ -11,9 +11,9 @@
 #include "aos/common/commonmath.h"
 #include "aos/common/time.h"
 
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/actors/drivetrain_actor.h"
 #include "y2015/constants.h"
-#include "y2015/control_loops/drivetrain/drivetrain.q.h"
 
 namespace frc971 {
 namespace actors {

@@ -35,7 +35,7 @@ cc_binary(
     '//aos/common/actions:action_lib',
     '//frc971/queues:gyro',
     '//y2015/control_loops/claw:claw_queue',
-    '//y2015/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//y2015/control_loops/fridge:fridge_queue',
     '//y2015:constants',
     '//frc971/autonomous:auto_queue',
