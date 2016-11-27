@@ -38,7 +38,7 @@ class Intake(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratio
-    self.G = (56.0 / 12.0) * (54.0 / 14.0) * (64.0 / 18.0) * (48.0 / 16.0)
+    self.G = (56.0 / 12.0) * (64.0 / 14.0) * (72.0 / 18.0) * (48.0 / 15.0)
 
     # Moment of inertia, measured in CAD.
     # Extra mass to compensate for friction is added on.
