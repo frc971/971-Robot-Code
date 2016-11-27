@@ -56,8 +56,7 @@ using internal::Context;
 
 void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
                                int levels) {
-  internal::RunWithCurrentImplementation(
-      levels, [&](LogImplementation * implementation) {
+  auto log_impl = [&](LogImplementation *implementation) {
     va_list ap1;
     va_copy(ap1, ap);
     implementation->DoLog(level, format, ap1);
@@ -66,7 +65,8 @@ void LogImplementation::DoVLog(log_level level, const char *format, va_list ap,
     if (level == FATAL) {
       VDie(format, ap);
     }
-  });
+  };
+  internal::RunWithCurrentImplementation(levels, ::std::ref(log_impl));
 }
 
 void VLog(log_level level, const char *format, va_list ap) {
