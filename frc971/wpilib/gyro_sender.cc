@@ -45,6 +45,8 @@ void GyroSender::operator()() {
   // How many timesteps the next reading represents.
   int number_readings = 0;
 
+  ::aos::SetCurrentThreadRealtimePriority(33);
+
   while (run_) {
     number_readings += phased_loop.SleepUntilNext();
 
