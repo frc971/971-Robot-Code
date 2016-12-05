@@ -134,17 +134,14 @@ class ControlLoop : public SerializableControlLoop {
   const T *queue_group() const { return control_loop_; }
 
  private:
-  static constexpr ::aos::time::Time kStaleLogInterval =
-      ::aos::time::Time::InSeconds(0.1);
+  static constexpr ::std::chrono::milliseconds kStaleLogInterval =
+      ::std::chrono::milliseconds(100);
   // The amount of time after the last PWM pulse we consider motors enabled for.
   // 100ms is the result of using an oscilliscope to look at the input and
   // output of a Talon. The Info Sheet also lists 100ms for Talon SR, Talon SRX,
   // and Victor SP.
-  static constexpr ::aos::time::Time kPwmDisableTime =
-      ::aos::time::Time::InMS(100);
-
-  // Maximum age of driver station packets before the loop will be disabled.
-  static const int kDSPacketTimeoutMs = 500;
+  static constexpr ::std::chrono::milliseconds kPwmDisableTime =
+      ::std::chrono::milliseconds(100);
 
   // Pointer to the queue group
   T *control_loop_;
@@ -152,15 +149,10 @@ class ControlLoop : public SerializableControlLoop {
   bool reset_ = false;
   int32_t sensor_reader_pid_ = 0;
 
-  ::aos::time::Time last_pwm_sent_{0, 0};
+  ::aos::monotonic_clock::time_point last_pwm_sent_ =
+      ::aos::monotonic_clock::min_time;
 
   typedef ::aos::util::SimpleLogInterval SimpleLogInterval;
-  SimpleLogInterval no_driver_station_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "no driver station packet");
-  SimpleLogInterval driver_station_old_ =
-      SimpleLogInterval(kStaleLogInterval, ERROR,
-                        "driver station packet is too old");
   SimpleLogInterval no_sensor_state_ =
       SimpleLogInterval(kStaleLogInterval, ERROR, "no sensor state");
   SimpleLogInterval motors_off_log_ =

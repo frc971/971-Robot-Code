@@ -25,8 +25,9 @@ cc_library(
     'control_loop_test.h',
   ],
   deps = [
-    '//aos/common:time',
+    '//aos/common/logging:queue_logging',
     '//aos/common/messages:robot_state',
+    '//aos/common:time',
     '//aos/testing:googletest',
     '//aos/testing:test_shm',
   ],

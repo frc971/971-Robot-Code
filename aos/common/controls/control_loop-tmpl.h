@@ -11,9 +11,9 @@ namespace controls {
 // TODO(aschuh): Tests.
 
 template <class T>
-constexpr ::aos::time::Time ControlLoop<T>::kStaleLogInterval;
+constexpr ::std::chrono::milliseconds ControlLoop<T>::kStaleLogInterval;
 template <class T>
-constexpr ::aos::time::Time ControlLoop<T>::kPwmDisableTime;
+constexpr ::std::chrono::milliseconds ControlLoop<T>::kPwmDisableTime;
 
 template <class T>
 void ControlLoop<T>::ZeroOutputs() {
@@ -26,9 +26,7 @@ void ControlLoop<T>::ZeroOutputs() {
 template <class T>
 void ControlLoop<T>::Iterate() {
   no_goal_.Print();
-  driver_station_old_.Print();
   no_sensor_state_.Print();
-  no_driver_station_.Print();
   motors_off_log_.Print();
 
   control_loop_->position.FetchAnother();
@@ -45,7 +43,7 @@ void ControlLoop<T>::Iterate() {
     LOG_INTERVAL(no_goal_);
   }
 
-  ::aos::robot_state.FetchLatest();
+  const bool new_robot_state = ::aos::robot_state.FetchLatest();
   if (!::aos::robot_state.get()) {
     LOG_INTERVAL(no_sensor_state_);
     return;
@@ -57,37 +55,22 @@ void ControlLoop<T>::Iterate() {
     sensor_reader_pid_ = ::aos::robot_state->reader_pid;
   }
 
-  bool outputs_enabled = false;
+  bool outputs_enabled = ::aos::robot_state->outputs_enabled;
 
   // Check to see if we got a driver station packet recently.
-  if (::aos::joystick_state.FetchLatest()) {
-    if (::aos::joystick_state->enabled) outputs_enabled = true;
+  if (new_robot_state) {
     if (::aos::robot_state->outputs_enabled) {
       // If the driver's station reports being disabled, we're probably not
       // actually going to send motor values regardless of what the FPGA
       // reports.
-      if (::aos::joystick_state->enabled) {
-        last_pwm_sent_ = ::aos::robot_state->sent_time;
-      } else {
-        LOG(WARNING, "outputs enabled while disabled\n");
-      }
-    } else if (::aos::joystick_state->enabled) {
-      LOG(WARNING, "outputs disabled while enabled\n");
-    }
-  } else if (::aos::joystick_state.IsNewerThanMS(kDSPacketTimeoutMs)) {
-    if (::aos::joystick_state->enabled) {
-      outputs_enabled = true;
-    }
-  } else {
-    if (::aos::joystick_state.get()) {
-      LOG_INTERVAL(driver_station_old_);
-    } else {
-      LOG_INTERVAL(no_driver_station_);
+      last_pwm_sent_ = monotonic_clock::time_point(
+          ::std::chrono::nanoseconds(::aos::robot_state->sent_time.ToNSec()));
     }
   }
 
-  const bool motors_off =
-      (::aos::time::Time::Now() - last_pwm_sent_) >= kPwmDisableTime;
+  const ::aos::monotonic_clock::time_point now = ::aos::monotonic_clock::now();
+  const bool motors_off = now >= kPwmDisableTime + last_pwm_sent_;
+  ::aos::joystick_state.FetchLatest();
   if (motors_off) {
     if (::aos::joystick_state.get() && ::aos::joystick_state->enabled) {
       LOG_INTERVAL(motors_off_log_);

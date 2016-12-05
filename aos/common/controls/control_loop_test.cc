@@ -1,6 +1,7 @@
 #include "aos/common/controls/control_loop_test.h"
 
 #include "aos/common/messages/robot_state.q.h"
+#include "aos/common/logging/queue_logging.h"
 
 namespace aos {
 namespace testing {
@@ -54,6 +55,7 @@ void ControlLoopTest::SendMessages(bool enabled) {
     new_state->voltage_roborio_in = battery_voltage_;
     new_state->voltage_battery = battery_voltage_;
 
+    LOG_STRUCT(INFO, "robot_state", *new_state);
     new_state.Send();
   }
 }

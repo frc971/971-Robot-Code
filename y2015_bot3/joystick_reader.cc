@@ -369,7 +369,7 @@ class Reader : public ::aos::input::JoystickInput {
   StackingStateMachine stacking_state_machine_;
 
   ::aos::util::SimpleLogInterval no_drivetrain_status_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.2), WARNING,
+      ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(200), WARNING,
                                      "no drivetrain status");
   int grab_delay_ = 0;
 };

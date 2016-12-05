@@ -2,6 +2,7 @@
 #define FRC971_WPILIB_LOOP_OUTPUT_HANDLER_H_
 
 #include <atomic>
+#include <chrono>
 
 #include "aos/common/scoped_fd.h"
 #include "aos/common/time.h"
@@ -76,10 +77,10 @@ class LoopOutputHandler {
   ::std::atomic<bool> run_{true};
 
   ::aos::util::SimpleLogInterval no_joystick_state_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), INFO,
+      ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(500), INFO,
                                      "no joystick state -> not outputting");
   ::aos::util::SimpleLogInterval fake_joystick_state_ =
-      ::aos::util::SimpleLogInterval(::aos::time::Time::InSeconds(0.5), DEBUG,
+      ::aos::util::SimpleLogInterval(::std::chrono::milliseconds(500), DEBUG,
                                      "fake joystick state -> not outputting");
 };
 

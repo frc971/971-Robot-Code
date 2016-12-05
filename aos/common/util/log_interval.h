@@ -23,18 +23,19 @@ namespace util {
 // }
 class LogInterval {
  public:
-  constexpr LogInterval(const ::aos::time::Time &interval)
-      : count_(0), interval_(interval), last_done_(0, 0) {}
+  constexpr LogInterval(::std::chrono::nanoseconds interval)
+      : interval_(interval) {}
 
   void WantToLog() {
     if (count_ == 0) {
-      last_done_ = ::aos::time::Time::Now();
+      last_done_ = ::aos::monotonic_clock::now();
     }
     ++count_;
   }
   bool ShouldLog() {
-    const ::aos::time::Time now = ::aos::time::Time::Now();
-    const bool r = (now - last_done_) >= interval_ && count_ > 0;
+    const ::aos::monotonic_clock::time_point now =
+        ::aos::monotonic_clock::now();
+    const bool r = now >= interval_ + last_done_ && count_ > 0;
     if (r) {
       last_done_ = now;
     }
@@ -46,12 +47,13 @@ class LogInterval {
     return r;
   }
 
-  const ::aos::time::Time &interval() const { return interval_; }
+  ::std::chrono::nanoseconds interval() const { return interval_; }
 
  private:
-  int count_;
-  const ::aos::time::Time interval_;
-  ::aos::time::Time last_done_;
+  int count_ = 0;
+  const ::std::chrono::nanoseconds interval_;
+  ::aos::monotonic_clock::time_point last_done_ =
+      ::aos::monotonic_clock::min_time;
 };
 
 // This one is even easier to use. It always logs with a message "%s %d
@@ -59,7 +61,7 @@ class LogInterval {
 // called often (ie not after a conditional return)
 class SimpleLogInterval {
  public:
-  SimpleLogInterval(const ::aos::time::Time &interval, log_level level,
+  SimpleLogInterval(::std::chrono::nanoseconds interval, log_level level,
                     const ::std::string &message)
       : interval_(interval), level_(level), message_(message) {}
 
@@ -75,7 +77,9 @@ class SimpleLogInterval {
       CHECK_NOTNULL(context_);
       log_do(level_, "%s: %.*s %d times over %f sec\n", context_,
              static_cast<int>(message_.size()), message_.data(),
-             interval_.Count(), interval_.interval().ToSeconds());
+             interval_.Count(),
+             ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+                 interval_.interval()).count());
       context_ = NULL;
     }
   }
