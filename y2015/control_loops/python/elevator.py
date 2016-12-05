@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
-import polytope
-import polydrivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
+from frc971.control_loops.python import polytope
 import numpy
 import sys
 import matplotlib
@@ -128,7 +127,7 @@ def CapU(U):
 
 
 def run_test(elevator, initial_X, goal, max_separation_error=0.01,
-             show_graph=True, iterations=200, controller_elevator=None,
+             show_graph=False, iterations=200, controller_elevator=None,
              observer_elevator=None):
   """Runs the elevator plant with an initial condition and goal.
 
@@ -235,12 +234,14 @@ def main(argv):
   if len(argv) != 3:
     print "Expected .h file name and .cc file name for the elevator."
   else:
+    namespaces = ['y2015', 'control_loops', 'fridge']
     elevator = Elevator("Elevator")
-    loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator])
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+    loop_writer = control_loop.ControlLoopWriter("Elevator", [elevator],
+                                                 namespaces=namespaces)
+  if argv[1][-3:] == '.cc':
+    loop_writer.Write(argv[2], argv[1])
+  else:
+    loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

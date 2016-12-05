@@ -7,7 +7,7 @@
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/constants.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace constants {
 
 // Has all of the numbers that change for both robots and makes it easy to
@@ -45,7 +45,7 @@ struct Values {
   // gear.
   double low_gear_ratio;
   double high_gear_ratio;
-  ShifterHallEffect left_drive, right_drive;
+  ::frc971::constants::ShifterHallEffect left_drive, right_drive;
   bool clutch_transmission;
 
   double turn_width;
@@ -68,7 +68,7 @@ struct Values {
 
   struct Claw {
     Range wrist;
-    ZeroingConstants zeroing;
+    ::frc971::constants::ZeroingConstants zeroing;
     // The value to add to potentiometer readings after they have been converted
     // to radians so that the resulting value is 0 when the claw is at absolute
     // 0 (horizontal straight out the front).
@@ -86,10 +86,10 @@ struct Values {
     Range elevator;
     Range arm;
 
-    ZeroingConstants left_elev_zeroing;
-    ZeroingConstants right_elev_zeroing;
-    ZeroingConstants left_arm_zeroing;
-    ZeroingConstants right_arm_zeroing;
+    ::frc971::constants::ZeroingConstants left_elev_zeroing;
+    ::frc971::constants::ZeroingConstants right_elev_zeroing;
+    ::frc971::constants::ZeroingConstants left_arm_zeroing;
+    ::frc971::constants::ZeroingConstants right_arm_zeroing;
 
     // Values to add to scaled potentiometer readings so 0 lines up with the
     // physical absolute 0.
@@ -143,6 +143,6 @@ const Values &GetValues();
 const Values &GetValuesForTeam(uint16_t team_number);
 
 }  // namespace constants
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_CONSTANTS_H_

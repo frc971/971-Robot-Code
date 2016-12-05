@@ -4,7 +4,7 @@
 
 int main() {
   ::aos::Init();
-  frc971::control_loops::Fridge fridge;
+  y2015::control_loops::fridge::Fridge fridge;
   fridge.Run();
   ::aos::Cleanup();
   return 0;

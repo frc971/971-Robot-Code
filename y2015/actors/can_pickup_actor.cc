@@ -7,9 +7,10 @@
 #include "y2015/constants.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
-using ::frc971::control_loops::fridge_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
+using ::y2015::control_loops::claw_queue;
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr ProfileParams kHorizontalMove{1.1, 1.8};
@@ -45,7 +46,7 @@ double CanPickupActor::CurrentGoalHeight() {
 bool CanPickupActor::RunAction(const CanPickupParams &params) {
   // Make sure the claw is down.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = 0.0;
     message->angular_velocity = 0.0;
     message->intake = 0.0;
@@ -68,7 +69,7 @@ bool CanPickupActor::RunAction(const CanPickupParams &params) {
     return false;
   }
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = 0.0;
     message->angular_velocity = 0.0;
     message->intake = 0.0;
@@ -115,8 +116,8 @@ bool CanPickupActor::RunAction(const CanPickupParams &params) {
 ::std::unique_ptr<CanPickupAction> MakeCanPickupAction(
     const CanPickupParams &params) {
   return ::std::unique_ptr<CanPickupAction>(
-      new CanPickupAction(&::frc971::actors::can_pickup_action, params));
+      new CanPickupAction(&::y2015::actors::can_pickup_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

@@ -1,4 +1,4 @@
-package frc971.control_loops;
+package y2015.control_loops.fridge;
 
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
@@ -82,8 +82,8 @@ queue_group FridgeQueue {
   };
 
   message Position {
-    PotAndIndexPair arm;
-    PotAndIndexPair elevator;
+    .frc971.PotAndIndexPair arm;
+    .frc971.PotAndIndexPair elevator;
   };
 
   message Status {
@@ -128,10 +128,10 @@ queue_group FridgeQueue {
     // The internal state of the state machine.
     int32_t state;
 
-    EstimatorState left_elevator_state;
-    EstimatorState right_elevator_state;
-    EstimatorState left_arm_state;
-    EstimatorState right_arm_state;
+    .frc971.EstimatorState left_elevator_state;
+    .frc971.EstimatorState right_elevator_state;
+    .frc971.EstimatorState left_arm_state;
+    .frc971.EstimatorState right_arm_state;
   };
 
   message Output {

@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
 
   ::aos::InitNRT();
 
-  ::aos::controls::ControlLoopReplayer<::frc971::control_loops::ClawQueue>
-      replayer(&::frc971::control_loops::claw_queue, "claw");
+  ::aos::controls::ControlLoopReplayer<::y2015::control_loops::ClawQueue>
+      replayer(&::y2015::control_loops::claw_queue, "claw");
   for (int i = 1; i < argc; ++i) {
     replayer.ProcessFile(argv[i]);
   }

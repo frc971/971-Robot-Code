@@ -20,8 +20,9 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
+namespace fridge {
 namespace testing {
 // Class which simulates the fridge and sends out queue messages with the
 // position.
@@ -30,7 +31,8 @@ class FridgeSimulation {
   static constexpr double kNoiseScalar = 0.1;
   // Constructs a simulation.
   FridgeSimulation()
-      : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
+      : arm_plant_(new StateFeedbackPlant<4, 2, 2>(
+            ::frc971::control_loops::MakeArmPlant())),
         elevator_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
         left_arm_pot_encoder_(
             constants::GetValues().fridge.left_arm_zeroing.index_difference),
@@ -40,11 +42,11 @@ class FridgeSimulation {
             constants::GetValues().fridge.left_elev_zeroing.index_difference),
         right_elevator_pot_encoder_(
             constants::GetValues().fridge.right_elev_zeroing.index_difference),
-        fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
-                      ".frc971.control_loops.fridge_queue.goal",
-                      ".frc971.control_loops.fridge_queue.position",
-                      ".frc971.control_loops.fridge_queue.output",
-                      ".frc971.control_loops.fridge_queue.status") {
+        fridge_queue_(".y2015.control_loops.fridge.fridge_queue", 0xe4e05855,
+                      ".y2015.control_loops.fridge.fridge_queue.goal",
+                      ".y2015.control_loops.fridge.fridge_queue.position",
+                      ".y2015.control_loops.fridge.fridge_queue.output",
+                      ".y2015.control_loops.fridge.fridge_queue.status") {
     // Initialize the elevator.
     InitializeElevatorPosition(
         constants::GetValues().fridge.elevator.lower_limit);
@@ -109,7 +111,7 @@ class FridgeSimulation {
 
   // Sends a queue message with the position.
   void SendPositionMessage() {
-    ::aos::ScopedMessagePtr<control_loops::FridgeQueue::Position> position =
+    ::aos::ScopedMessagePtr<FridgeQueue::Position> position =
         fridge_queue_.position.MakeMessage();
 
     left_arm_pot_encoder_.GetSensorValues(&position->arm.left);
@@ -196,10 +198,10 @@ class FridgeSimulation {
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> arm_plant_;
   ::std::unique_ptr<StateFeedbackPlant<4, 2, 2>> elevator_plant_;
 
-  PositionSensorSimulator left_arm_pot_encoder_;
-  PositionSensorSimulator right_arm_pot_encoder_;
-  PositionSensorSimulator left_elevator_pot_encoder_;
-  PositionSensorSimulator right_elevator_pot_encoder_;
+  ::frc971::control_loops::PositionSensorSimulator left_arm_pot_encoder_;
+  ::frc971::control_loops::PositionSensorSimulator right_arm_pot_encoder_;
+  ::frc971::control_loops::PositionSensorSimulator left_elevator_pot_encoder_;
+  ::frc971::control_loops::PositionSensorSimulator right_elevator_pot_encoder_;
 
   FridgeQueue fridge_queue_;
 
@@ -211,11 +213,11 @@ class FridgeSimulation {
 class FridgeTest : public ::aos::testing::ControlLoopTest {
  protected:
   FridgeTest()
-      : fridge_queue_(".frc971.control_loops.fridge_queue", 0xe4e05855,
-                      ".frc971.control_loops.fridge_queue.goal",
-                      ".frc971.control_loops.fridge_queue.position",
-                      ".frc971.control_loops.fridge_queue.output",
-                      ".frc971.control_loops.fridge_queue.status"),
+      : fridge_queue_(".y2015.control_loops.fridge.fridge_queue", 0xe4e05855,
+                      ".y2015.control_loops.fridge.fridge_queue.goal",
+                      ".y2015.control_loops.fridge.fridge_queue.position",
+                      ".y2015.control_loops.fridge.fridge_queue.output",
+                      ".y2015.control_loops.fridge.fridge_queue.status"),
         fridge_(&fridge_queue_),
         fridge_plant_(),
         kinematics_(constants::GetValues().fridge.arm_length,
@@ -223,7 +225,7 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
                     constants::GetValues().fridge.elevator.lower_limit,
                     constants::GetValues().fridge.arm.upper_limit,
                     constants::GetValues().fridge.arm.lower_limit) {
-    set_team_id(kTeamNumber);
+    set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 
   void VerifyNearGoal() {
@@ -731,5 +733,6 @@ TEST_F(FridgeTest, ArmIntegratorTest) {
 // after we are zeroed.
 
 }  // namespace testing
+}  // namespace fridge
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015

@@ -15,7 +15,7 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
 namespace testing {
 
@@ -28,11 +28,11 @@ class ClawSimulation {
       : claw_plant_(new StateFeedbackPlant<2, 1, 1>(
             y2015::control_loops::claw::MakeClawPlant())),
         pot_and_encoder_(constants::GetValues().claw.zeroing.index_difference),
-        claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
-                    ".frc971.control_loops.claw_queue.goal",
-                    ".frc971.control_loops.claw_queue.position",
-                    ".frc971.control_loops.claw_queue.output",
-                    ".frc971.control_loops.claw_queue.status") {
+        claw_queue_(".y2015.control_loops.claw_queue", 0x9d7452fb,
+                    ".y2015.control_loops.claw_queue.goal",
+                    ".y2015.control_loops.claw_queue.position",
+                    ".y2015.control_loops.claw_queue.output",
+                    ".y2015.control_loops.claw_queue.status") {
     InitializePosition(constants::GetValues().claw.wrist.lower_limit);
   }
 
@@ -85,7 +85,7 @@ class ClawSimulation {
 
  private:
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> claw_plant_;
-  PositionSensorSimulator pot_and_encoder_;
+  ::frc971::control_loops::PositionSensorSimulator pot_and_encoder_;
 
   ClawQueue claw_queue_;
 };
@@ -93,14 +93,14 @@ class ClawSimulation {
 class ClawTest : public ::aos::testing::ControlLoopTest {
  protected:
   ClawTest()
-      : claw_queue_(".frc971.control_loops.claw_queue", 0x9d7452fb,
-                    ".frc971.control_loops.claw_queue.goal",
-                    ".frc971.control_loops.claw_queue.position",
-                    ".frc971.control_loops.claw_queue.output",
-                    ".frc971.control_loops.claw_queue.status"),
+      : claw_queue_(".y2015.control_loops.claw_queue", 0x9d7452fb,
+                    ".y2015.control_loops.claw_queue.goal",
+                    ".y2015.control_loops.claw_queue.position",
+                    ".y2015.control_loops.claw_queue.output",
+                    ".y2015.control_loops.claw_queue.status"),
         claw_(&claw_queue_),
         claw_plant_() {
-    set_team_id(kTeamNumber);
+    set_team_id(::frc971::control_loops::testing::kTeamNumber);
   }
 
   void VerifyNearGoal() {
@@ -345,4 +345,4 @@ TEST_F(ClawTest, GoalNegativeWindup) {
 
 }  // namespace testing
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015

@@ -9,7 +9,7 @@
 #include "y2015/control_loops/claw/claw.q.h"
 #include "y2015/actors/stack_actor.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr ProfileParams kReallySlowArmMove{0.1, 1.0};
@@ -20,6 +20,8 @@ constexpr ProfileParams kFastElevatorMove{1.2, 4.0};
 }  // namespace
 
 namespace chrono = ::std::chrono;
+
+using ::y2015::control_loops::claw_queue;
 
 StackAndHoldActor::StackAndHoldActor(StackAndHoldActionQueueGroup *queues)
     : FridgeActorBase<StackAndHoldActionQueueGroup>(queues) {}
@@ -32,15 +34,15 @@ bool StackAndHoldActor::RunAction(const StackAndHoldParams &params) {
     // Move the arm out of the way.
     {
       bool send_goal = true;
-      control_loops::claw_queue.status.FetchLatest();
-      if (control_loops::claw_queue.status.get()) {
-        if (control_loops::claw_queue.status->goal_angle <
+      claw_queue.status.FetchLatest();
+      if (claw_queue.status.get()) {
+        if (claw_queue.status->goal_angle <
             params.claw_out_angle) {
           send_goal = false;
         }
       }
       if (send_goal) {
-        auto message = control_loops::claw_queue.goal.MakeMessage();
+        auto message = claw_queue.goal.MakeMessage();
         message->angle = params.claw_out_angle;
         message->angular_velocity = 0.0;
         message->intake = 0.0;
@@ -103,7 +105,7 @@ bool StackAndHoldActor::RunAction(const StackAndHoldParams &params) {
 
   if (params.place_not_stack) {
     // Clamp the stack with the claw.
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.claw_clamp_angle;
     message->angular_velocity = 0.0;
     message->intake = 0.0;
@@ -129,8 +131,8 @@ bool StackAndHoldActor::RunAction(const StackAndHoldParams &params) {
 ::std::unique_ptr<StackAndHoldAction> MakeStackAndHoldAction(
     const StackAndHoldParams &params) {
   return ::std::unique_ptr<StackAndHoldAction>(
-      new StackAndHoldAction(&::frc971::actors::stack_and_hold_action, params));
+      new StackAndHoldAction(&::y2015::actors::stack_and_hold_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

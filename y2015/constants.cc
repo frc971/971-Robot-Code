@@ -22,7 +22,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace frc971 {
+namespace y2015 {
 namespace constants {
 namespace {
 
@@ -36,13 +36,15 @@ const double kDrivetrainEncoderRatio = 20.0 / 50.0;
 const double kLowGearRatio = kDrivetrainEncoderRatio * 20.0 / 50.0;
 const double kHighGearRatio = kLowGearRatio;
 
-const ShifterHallEffect kCompRightDriveShifter{555, 657, 660, 560, 0.2, 0.7};
-const ShifterHallEffect kCompLeftDriveShifter{555, 660, 644, 552, 0.2, 0.7};
+const ::frc971::constants::ShifterHallEffect kCompRightDriveShifter{
+    555, 657, 660, 560, 0.2, 0.7};
+const ::frc971::constants::ShifterHallEffect kCompLeftDriveShifter{
+    555, 660, 644, 552, 0.2, 0.7};
 
-const ShifterHallEffect kPracticeRightDriveShifter{2.95, 3.95, 3.95,
-                                                   2.95, 0.2,  0.7};
-const ShifterHallEffect kPracticeLeftDriveShifter{2.95, 4.2, 3.95,
-                                                  3.0,  0.2, 0.7};
+const ::frc971::constants::ShifterHallEffect kPracticeRightDriveShifter{
+    2.95, 3.95, 3.95, 2.95, 0.2, 0.7};
+const ::frc971::constants::ShifterHallEffect kPracticeLeftDriveShifter{
+    2.95, 4.2, 3.95, 3.0, 0.2, 0.7};
 const double kToteHeight = 0.3;
 
 // Set by Daniel on 2/13/15.
@@ -376,4 +378,4 @@ const Values &GetValuesForTeam(uint16_t team_number) {
 }
 
 }  // namespace constants
-}  // namespace frc971
+}  // namespace y2015

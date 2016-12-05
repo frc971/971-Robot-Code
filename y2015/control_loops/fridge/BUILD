@@ -26,27 +26,52 @@ queue_library(
   ],
 )
 
+genrule(
+  name = 'genrule_elevator',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2015/control_loops/python:elevator) $(OUTS)',
+  tools = [
+    '//y2015/control_loops/python:elevator',
+  ],
+  outs = [
+    'elevator_motor_plant.h',
+    'elevator_motor_plant.cc',
+  ],
+)
+
+cc_library(
+  name = 'elevator_plants',
+  srcs = [
+    'elevator_motor_plant.cc',
+  ],
+  hdrs = [
+    'elevator_motor_plant.h',
+  ],
+  deps = [
+    '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
 cc_library(
   name = 'fridge_lib',
   srcs = [
     'fridge.cc',
     'integral_arm_plant.cc',
-    'elevator_motor_plant.cc',
   ],
   hdrs = [
     'fridge.h',
     'integral_arm_plant.h',
-    'elevator_motor_plant.h',
   ],
   deps = [
+    ':elevator_plants',
     ':fridge_queue',
     '//aos/common/controls:control_loop',
     '//aos/common/util:trapezoid_profile',
-    '//y2015:constants',
-    '//frc971/control_loops:state_feedback_loop',
     '//frc971/control_loops/voltage_cap:voltage_cap',
+    '//frc971/control_loops:state_feedback_loop',
     '//frc971/zeroing',
     '//y2015/util:kinematics',
+    '//y2015:constants',
   ],
 )
 

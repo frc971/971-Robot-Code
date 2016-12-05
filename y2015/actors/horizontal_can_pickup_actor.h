@@ -10,7 +10,7 @@
 #include "y2015/actors/horizontal_can_pickup_action.q.h"
 #include "y2015/actors/fridge_profile_lib.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class HorizontalCanPickupActor
@@ -40,6 +40,6 @@ typedef aos::common::actions::TypedAction<HorizontalCanPickupActionQueueGroup>
     const HorizontalCanPickupParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_HORIZONTAL_CAN_PICKUP_ACTOR_H_

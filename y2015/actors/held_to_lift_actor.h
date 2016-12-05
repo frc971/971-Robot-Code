@@ -10,7 +10,7 @@
 #include "y2015/actors/held_to_lift_action.q.h"
 #include "y2015/actors/fridge_profile_lib.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class HeldToLiftActor : public FridgeActorBase<HeldToLiftActionQueueGroup> {
@@ -28,6 +28,6 @@ typedef aos::common::actions::TypedAction<HeldToLiftActionQueueGroup>
     const HeldToLiftParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_HELD_TO_LIFT_ACTOR_H_

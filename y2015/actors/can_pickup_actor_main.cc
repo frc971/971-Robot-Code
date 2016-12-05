@@ -7,7 +7,7 @@
 int main(int /*argc*/, char* /*argv*/ []) {
   ::aos::Init(-1);
 
-  ::frc971::actors::CanPickupActor can_pickup(&::frc971::actors::can_pickup_action);
+  ::y2015::actors::CanPickupActor can_pickup(&::y2015::actors::can_pickup_action);
   can_pickup.Run();
 
   ::aos::Cleanup();

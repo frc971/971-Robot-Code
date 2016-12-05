@@ -8,7 +8,7 @@
 #include "aos/common/time.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr double kClawPickupVelocity = 3.00;
@@ -19,6 +19,8 @@ constexpr double kClawMoveUpVelocity = 8.0;
 constexpr double kClawMoveUpAcceleration = 25.0;
 }  // namespace
 
+using ::y2015::control_loops::claw_queue;
+
 PickupActor::PickupActor(PickupActionQueueGroup* queues)
     : aos::common::actions::ActorBase<PickupActionQueueGroup>(queues) {}
 
@@ -26,7 +28,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
   constexpr double kAngleEpsilon = 0.10;
   // Start lifting the tote.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
     message->max_velocity = kClawPickupVelocity;
     message->max_acceleration = kClawPickupAcceleration;
@@ -38,10 +40,10 @@ bool PickupActor::RunAction(const PickupParams& params) {
     message.Send();
   }
   while (true) {
-    control_loops::claw_queue.status.FetchAnother();
+    claw_queue.status.FetchAnother();
     if (ShouldCancel()) return true;
-    const double current_angle = control_loops::claw_queue.status->angle;
-    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+    const double current_angle = claw_queue.status->angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *claw_queue.status);
 
     if (current_angle > params.suck_angle ||
         ::std::abs(current_angle - params.pickup_angle) < kAngleEpsilon) {
@@ -51,7 +53,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
   // Once above params.suck_angle, start sucking while lifting.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.pickup_angle;
     message->max_velocity = kClawPickupVelocity;
     message->max_acceleration = kClawPickupAcceleration;
@@ -64,10 +66,10 @@ bool PickupActor::RunAction(const PickupParams& params) {
   }
 
   while (true) {
-    control_loops::claw_queue.status.FetchAnother();
+    claw_queue.status.FetchAnother();
     if (ShouldCancel()) return true;
-    const double current_angle = control_loops::claw_queue.status->angle;
-    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+    const double current_angle = claw_queue.status->angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *claw_queue.status);
 
     if (::std::abs(current_angle - params.pickup_angle) < kAngleEpsilon) {
       break;
@@ -76,7 +78,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
   // Now that we have reached the upper height, come back down while intaking.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.suck_angle_finish;
     message->max_velocity = kClawMoveDownVelocity;
     message->max_acceleration = kClawMoveDownAcceleration;
@@ -101,7 +103,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
   // Lift the claw back up to pack the box back in.
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.pickup_finish_angle;
     message->max_velocity = kClawMoveUpVelocity;
     message->max_acceleration = kClawMoveUpAcceleration;
@@ -114,10 +116,10 @@ bool PickupActor::RunAction(const PickupParams& params) {
   }
 
   while (true) {
-    control_loops::claw_queue.status.FetchAnother();
+    claw_queue.status.FetchAnother();
     if (ShouldCancel()) return true;
-    const double current_angle = control_loops::claw_queue.status->angle;
-    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+    const double current_angle = claw_queue.status->angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *claw_queue.status);
 
     if (::std::abs(current_angle - params.pickup_finish_angle) <
         kAngleEpsilon) {
@@ -127,7 +129,7 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
   // Stop the motors...
   {
-    auto message = control_loops::claw_queue.goal.MakeMessage();
+    auto message = claw_queue.goal.MakeMessage();
     message->angle = params.pickup_finish_angle;
     message->max_velocity = kClawMoveUpVelocity;
     message->max_acceleration = kClawMoveUpAcceleration;
@@ -145,8 +147,8 @@ bool PickupActor::RunAction(const PickupParams& params) {
 
 ::std::unique_ptr<PickupAction> MakePickupAction(const PickupParams& params) {
   return ::std::unique_ptr<PickupAction>(
-      new PickupAction(&::frc971::actors::pickup_action, params));
+      new PickupAction(&::y2015::actors::pickup_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

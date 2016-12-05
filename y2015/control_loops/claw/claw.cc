@@ -9,7 +9,7 @@
 #include "y2015/control_loops/claw/claw_motor_plant.h"
 #include "aos/common/util/trapezoid_profile.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
 
 using ::aos::time::Time;
@@ -280,7 +280,8 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
   status->zeroed = state_ == RUNNING;
   status->estopped = state_ == ESTOP;
   status->state = state_;
-  zeroing::PopulateEstimatorState(claw_estimator_, &status->zeroing_state);
+  ::frc971::zeroing::PopulateEstimatorState(claw_estimator_,
+                                            &status->zeroing_state);
 
   status->angle = claw_loop_->X_hat(0, 0);
   status->angular_velocity = claw_loop_->X_hat(1, 0);
@@ -311,4 +312,4 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
 }
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015

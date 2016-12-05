@@ -15,10 +15,11 @@
 #include "y2015/actors/drivetrain_actor.h"
 #include "y2015/constants.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 namespace chrono = ::std::chrono;
+using ::frc971::control_loops::drivetrain_queue;
 
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
@@ -49,9 +50,9 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   while (true) {
     ::aos::time::PhasedLoopXMS(5, 2500);
 
-    control_loops::drivetrain_queue.status.FetchLatest();
-    if (control_loops::drivetrain_queue.status.get()) {
-      const auto& status = *control_loops::drivetrain_queue.status;
+    drivetrain_queue.status.FetchLatest();
+    if (drivetrain_queue.status.get()) {
+      const auto& status = *drivetrain_queue.status;
       if (::std::abs(status.uncapped_left_voltage -
                      status.uncapped_right_voltage) > 24) {
         LOG(DEBUG, "spinning in place\n");
@@ -118,7 +119,7 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
     LOG(DEBUG, "Driving left to %f, right to %f\n",
         left_goal_state(0, 0) + params.left_initial_position,
         right_goal_state(0, 0) + params.right_initial_position);
-    control_loops::drivetrain_queue.goal.MakeWithBuilder()
+    drivetrain_queue.goal.MakeWithBuilder()
         .control_loop_driving(true)
         //.highgear(false)
         .left_goal(left_goal_state(0, 0) + params.left_initial_position)
@@ -128,25 +129,25 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
         .Send();
   }
   if (ShouldCancel()) return true;
-  control_loops::drivetrain_queue.status.FetchLatest();
-  while (!control_loops::drivetrain_queue.status.get()) {
+  drivetrain_queue.status.FetchLatest();
+  while (!drivetrain_queue.status.get()) {
     LOG(WARNING,
         "No previous drivetrain status packet, trying to fetch again\n");
-    control_loops::drivetrain_queue.status.FetchNextBlocking();
+    drivetrain_queue.status.FetchNextBlocking();
     if (ShouldCancel()) return true;
   }
   while (true) {
     if (ShouldCancel()) return true;
     const double kPositionThreshold = 0.05;
 
-    const double left_error = ::std::abs(
-        control_loops::drivetrain_queue.status->estimated_left_position -
-        (left_goal_state(0, 0) + params.left_initial_position));
-    const double right_error = ::std::abs(
-        control_loops::drivetrain_queue.status->estimated_right_position -
-        (right_goal_state(0, 0) + params.right_initial_position));
+    const double left_error =
+        ::std::abs(drivetrain_queue.status->estimated_left_position -
+                   (left_goal_state(0, 0) + params.left_initial_position));
+    const double right_error =
+        ::std::abs(drivetrain_queue.status->estimated_right_position -
+                   (right_goal_state(0, 0) + params.right_initial_position));
     const double velocity_error =
-        ::std::abs(control_loops::drivetrain_queue.status->robot_speed);
+        ::std::abs(drivetrain_queue.status->robot_speed);
     if (left_error < kPositionThreshold && right_error < kPositionThreshold &&
         velocity_error < 0.2) {
       break;
@@ -154,17 +155,17 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
       LOG(DEBUG, "Drivetrain error is %f, %f, %f\n", left_error, right_error,
           velocity_error);
     }
-    control_loops::drivetrain_queue.status.FetchNextBlocking();
+    drivetrain_queue.status.FetchNextBlocking();
   }
   LOG(INFO, "Done moving\n");
   return true;
 }
 
 ::std::unique_ptr<DrivetrainAction> MakeDrivetrainAction(
-    const ::frc971::actors::DrivetrainActionParams& params) {
+    const ::y2015::actors::DrivetrainActionParams& params) {
   return ::std::unique_ptr<DrivetrainAction>(
-      new DrivetrainAction(&::frc971::actors::drivetrain_action, params));
+      new DrivetrainAction(&::y2015::actors::drivetrain_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

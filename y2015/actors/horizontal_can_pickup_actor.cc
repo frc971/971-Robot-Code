@@ -9,7 +9,7 @@
 #include "y2015/constants.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr ProfileParams kClawPickup{3.0, 2.0};
@@ -28,6 +28,7 @@ constexpr double kGoalAngleEpsilon = 0.01;
 }  // namespace
 
 namespace chrono = ::std::chrono;
+using ::y2015::control_loops::claw_queue;
 
 HorizontalCanPickupActor::HorizontalCanPickupActor(
     HorizontalCanPickupActionQueueGroup *queues)
@@ -35,10 +36,10 @@ HorizontalCanPickupActor::HorizontalCanPickupActor(
 
 bool HorizontalCanPickupActor::WaitUntilGoalNear(double angle) {
   while (true) {
-    control_loops::claw_queue.status.FetchAnother();
+    claw_queue.status.FetchAnother();
     if (ShouldCancel()) return false;
-    const double goal_angle = control_loops::claw_queue.status->goal_angle;
-    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+    const double goal_angle = claw_queue.status->goal_angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *claw_queue.status);
 
     if (::std::abs(goal_angle - angle) < kGoalAngleEpsilon) {
       return true;
@@ -48,10 +49,10 @@ bool HorizontalCanPickupActor::WaitUntilGoalNear(double angle) {
 
 bool HorizontalCanPickupActor::WaitUntilNear(double angle) {
   while (true) {
-    control_loops::claw_queue.status.FetchAnother();
+    claw_queue.status.FetchAnother();
     if (ShouldCancel()) return false;
-    const double current_angle = control_loops::claw_queue.status->angle;
-    LOG_STRUCT(DEBUG, "Got claw status", *control_loops::claw_queue.status);
+    const double current_angle = claw_queue.status->angle;
+    LOG_STRUCT(DEBUG, "Got claw status", *claw_queue.status);
 
     if (::std::abs(current_angle - angle) < kAngleEpsilon) {
       return true;
@@ -64,7 +65,7 @@ void HorizontalCanPickupActor::MoveArm(double angle, double intake_power) {
 
 void HorizontalCanPickupActor::MoveArm(double angle, double intake_power,
                                        const ProfileParams profile_params) {
-  auto message = control_loops::claw_queue.goal.MakeMessage();
+  auto message = claw_queue.goal.MakeMessage();
   message->angle = angle;
   message->max_velocity = profile_params.velocity;
   message->max_acceleration = profile_params.acceleration;
@@ -84,9 +85,9 @@ bool HorizontalCanPickupActor::RunAction(
     return true;
   }
 
-  control_loops::claw_queue.status.FetchAnother();
+  claw_queue.status.FetchAnother();
 
-  MoveArm(control_loops::claw_queue.status->angle, params.spit_power);
+  MoveArm(claw_queue.status->angle, params.spit_power);
 
   if (!WaitOrCancel(chrono::duration_cast<::aos::monotonic_clock::duration>(
           chrono::duration<double>(params.spit_time)))) {
@@ -159,8 +160,8 @@ bool HorizontalCanPickupActor::RunAction(
     const HorizontalCanPickupParams &params) {
   return ::std::unique_ptr<HorizontalCanPickupAction>(
       new HorizontalCanPickupAction(
-          &::frc971::actors::horizontal_can_pickup_action, params));
+          &::y2015::actors::horizontal_can_pickup_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

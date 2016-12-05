@@ -55,11 +55,21 @@
 #endif
 
 using ::aos::util::SimpleLogInterval;
+using ::frc971::PotAndIndexPosition;
 using ::frc971::control_loops::drivetrain_queue;
-using ::frc971::control_loops::fridge_queue;
-using ::frc971::control_loops::claw_queue;
+using ::frc971::wpilib::BufferedPcm;
+using ::frc971::wpilib::BufferedSolenoid;
+using ::frc971::wpilib::DMAEncoderAndPotentiometer;
+using ::frc971::wpilib::DMASynchronizer;
+using ::frc971::wpilib::GyroSender;
+using ::frc971::wpilib::InterruptEncoderAndPotentiometer;
+using ::frc971::wpilib::JoystickSender;
+using ::frc971::wpilib::LoopOutputHandler;
+using ::frc971::wpilib::PneumaticsToLog;
+using ::y2015::control_loops::claw_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
 
-namespace frc971 {
+namespace y2015 {
 namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
@@ -373,8 +383,8 @@ class SolenoidWriter {
  public:
   SolenoidWriter(const ::std::unique_ptr<BufferedPcm> &pcm)
       : pcm_(pcm),
-        fridge_(".frc971.control_loops.fridge_queue.output"),
-        claw_(".frc971.control_loops.claw_queue.output") {}
+        fridge_(".y2015.control_loops.fridge.fridge_queue.output"),
+        claw_(".y2015.control_loops.claw_queue.output") {}
 
   void set_pressure_switch(::std::unique_ptr<DigitalInput> pressure_switch) {
     pressure_switch_ = ::std::move(pressure_switch);
@@ -487,8 +497,8 @@ class SolenoidWriter {
   ::std::unique_ptr<DigitalInput> pressure_switch_;
   ::std::unique_ptr<Relay> compressor_relay_;
 
-  ::aos::Queue<::frc971::control_loops::FridgeQueue::Output> fridge_;
-  ::aos::Queue<::frc971::control_loops::ClawQueue::Output> claw_;
+  ::aos::Queue<::y2015::control_loops::fridge::FridgeQueue::Output> fridge_;
+  ::aos::Queue<::y2015::control_loops::ClawQueue::Output> claw_;
 
   ::std::atomic<bool> run_{true};
 };
@@ -503,11 +513,11 @@ class CanWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::autonomous::can_control.FetchAnother();
+    ::y2015::autonomous::can_control.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::autonomous::can_control;
+    auto &queue = ::y2015::autonomous::can_control;
     LOG_STRUCT(DEBUG, "will output", *queue);
     can_talon_->Set(queue->can_voltage / 12.0);
   }
@@ -572,11 +582,11 @@ class FridgeWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::fridge_queue.output.FetchAnother();
+    ::y2015::control_loops::fridge::fridge_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::fridge_queue.output;
+    auto &queue = ::y2015::control_loops::fridge::fridge_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_arm_talon_->Set(queue->left_arm / 12.0);
     right_arm_talon_->Set(-queue->right_arm / 12.0);
@@ -614,11 +624,11 @@ class ClawWriter : public LoopOutputHandler {
 
  private:
   virtual void Read() override {
-    ::frc971::control_loops::claw_queue.output.FetchAnother();
+    ::y2015::control_loops::claw_queue.output.FetchAnother();
   }
 
   virtual void Write() override {
-    auto &queue = ::frc971::control_loops::claw_queue.output;
+    auto &queue = ::y2015::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
     left_intake_talon_->Set(queue->intake_voltage / 12.0);
     right_intake_talon_->Set(-queue->intake_voltage / 12.0);
@@ -770,7 +780,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 };
 
 }  // namespace wpilib
-}  // namespace frc971
+}  // namespace y2015
 
 
-AOS_ROBOT_CLASS(::frc971::wpilib::WPILibRobot);
+AOS_ROBOT_CLASS(::y2015::wpilib::WPILibRobot);

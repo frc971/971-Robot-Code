@@ -10,11 +10,11 @@
 #include "y2015/constants.h"
 #include "y2015/control_loops/fridge/fridge.q.h"
 
-using ::frc971::control_loops::fridge_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
 
 namespace chrono = ::std::chrono;
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 
@@ -245,7 +245,7 @@ bool ScoreActor::SendGoal(double x, double y, bool grabbers_enabled,
                           double max_x_velocity, double max_y_velocity,
                           double max_x_acceleration,
                           double max_y_acceleration) {
-  auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+  auto new_fridge_goal = fridge_queue.goal.MakeMessage();
   new_fridge_goal->x = x;
   new_fridge_goal->y = y;
   new_fridge_goal->profiling_type = 1;
@@ -299,8 +299,8 @@ bool ScoreActor::NearGoal(double x, double y) {
 
 ::std::unique_ptr<ScoreAction> MakeScoreAction(const ScoreParams& params) {
   return ::std::unique_ptr<ScoreAction>(
-      new ScoreAction(&::frc971::actors::score_action, params));
+      new ScoreAction(&::y2015::actors::score_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

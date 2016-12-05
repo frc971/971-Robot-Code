@@ -12,8 +12,9 @@
 
 #include "y2015/constants.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
+namespace fridge {
 
 namespace chrono = ::std::chrono;
 
@@ -27,8 +28,9 @@ constexpr double kArmZeroingVelocity = 0.20;
 
 template <int S>
 void CappedStateFeedbackLoop<S>::CapU() {
-  VoltageCap(max_voltage_, this->U(0, 0), this->U(1, 0), &this->mutable_U(0, 0),
-             &this->mutable_U(1, 0));
+  ::frc971::control_loops::VoltageCap(max_voltage_, this->U(0, 0),
+                                      this->U(1, 0), &this->mutable_U(0, 0),
+                                      &this->mutable_U(1, 0));
 }
 
 template <int S>
@@ -49,10 +51,10 @@ CappedStateFeedbackLoop<S>::UnsaturateOutputGoalChange() {
   return deltaR;
 }
 
-Fridge::Fridge(control_loops::FridgeQueue *fridge)
-    : aos::controls::ControlLoop<control_loops::FridgeQueue>(fridge),
-      arm_loop_(new CappedStateFeedbackLoop<5>(
-          StateFeedbackLoop<5, 2, 2>(MakeIntegralArmLoop()))),
+Fridge::Fridge(FridgeQueue *fridge)
+    : aos::controls::ControlLoop<FridgeQueue>(fridge),
+      arm_loop_(new CappedStateFeedbackLoop<5>(StateFeedbackLoop<5, 2, 2>(
+          ::frc971::control_loops::MakeIntegralArmLoop()))),
       elevator_loop_(new CappedStateFeedbackLoop<4>(
           StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop()))),
       left_arm_estimator_(constants::GetValues().fridge.left_arm_zeroing),
@@ -239,10 +241,10 @@ double Fridge::arm_zeroing_velocity() {
   return arm_zeroing_velocity_;
 }
 
-void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
-                          const control_loops::FridgeQueue::Position *position,
-                          control_loops::FridgeQueue::Output *output,
-                          control_loops::FridgeQueue::Status *status) {
+void Fridge::RunIteration(const FridgeQueue::Goal *unsafe_goal,
+                          const FridgeQueue::Position *position,
+                          FridgeQueue::Output *output,
+                          FridgeQueue::Status *status) {
   if (WasReset()) {
     LOG(ERROR, "WPILib reset, restarting\n");
     left_elevator_estimator_.Reset();
@@ -709,17 +711,19 @@ void Fridge::RunIteration(const control_loops::FridgeQueue::Goal *unsafe_goal,
     status->grabbers.bottom_front = false;
     status->grabbers.bottom_back = false;
   }
-  zeroing::PopulateEstimatorState(left_arm_estimator_, &status->left_arm_state);
-  zeroing::PopulateEstimatorState(right_arm_estimator_,
-                                  &status->right_arm_state);
-  zeroing::PopulateEstimatorState(left_elevator_estimator_,
-                                  &status->left_elevator_state);
-  zeroing::PopulateEstimatorState(right_elevator_estimator_,
-                                  &status->right_elevator_state);
+  ::frc971::zeroing::PopulateEstimatorState(left_arm_estimator_,
+                                            &status->left_arm_state);
+  ::frc971::zeroing::PopulateEstimatorState(right_arm_estimator_,
+                                            &status->right_arm_state);
+  ::frc971::zeroing::PopulateEstimatorState(left_elevator_estimator_,
+                                            &status->left_elevator_state);
+  ::frc971::zeroing::PopulateEstimatorState(right_elevator_estimator_,
+                                            &status->right_elevator_state);
   status->estopped = (state_ == ESTOP);
   status->state = state_;
   last_state_ = state_;
 }
 
+}  // namespace fridge
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015

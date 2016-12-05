@@ -5,7 +5,7 @@
 #include "aos/common/actions/actor.h"
 #include "y2015/actors/pickup_action.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class PickupActor
@@ -22,6 +22,6 @@ typedef aos::common::actions::TypedAction<PickupActionQueueGroup> PickupAction;
 ::std::unique_ptr<PickupAction> MakePickupAction(const PickupParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_PICKUP_ACTOR_H_

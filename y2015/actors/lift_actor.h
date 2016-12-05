@@ -10,7 +10,7 @@
 #include "y2015/actors/lift_action.q.h"
 #include "y2015/actors/fridge_profile_lib.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class LiftActor : public FridgeActorBase<LiftActionQueueGroup> {
@@ -26,6 +26,6 @@ typedef aos::common::actions::TypedAction<LiftActionQueueGroup> LiftAction;
 ::std::unique_ptr<LiftAction> MakeLiftAction(const LiftParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_LIFT_ACTOR_H_

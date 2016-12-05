@@ -10,7 +10,7 @@
 #include "y2015/actors/stack_action.q.h"
 #include "y2015/actors/fridge_profile_lib.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class StackActor : public FridgeActorBase<StackActionQueueGroup> {
@@ -26,6 +26,6 @@ typedef aos::common::actions::TypedAction<StackActionQueueGroup> StackAction;
 ::std::unique_ptr<StackAction> MakeStackAction(const StackParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif

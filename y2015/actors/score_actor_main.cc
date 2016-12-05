@@ -7,7 +7,7 @@
 int main(int /*argc*/, char* /*argv*/ []) {
   ::aos::Init(-1);
 
-  frc971::actors::ScoreActor score(&::frc971::actors::score_action);
+  y2015::actors::ScoreActor score(&::y2015::actors::score_action);
   score.Run();
 
   ::aos::Cleanup();

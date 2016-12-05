@@ -88,7 +88,7 @@ class ElevatorArmKinematics {
         elevator_min_(height_min),
         upper_angle_limit_(angle_max),
         lower_angle_limit_(angle_min),
-        geometry_(frc971::constants::GetValues().clawGeometry) {}
+        geometry_(::y2015::constants::GetValues().clawGeometry) {}
 
   ~ElevatorArmKinematics() {}
 
@@ -379,7 +379,7 @@ class ElevatorArmKinematics {
   // arm angle lower limit
   double lower_angle_limit_;
   // Geometry of the arm + fridge
-  frc971::constants::Values::ClawGeometry geometry_;
+  ::y2015::constants::Values::ClawGeometry geometry_;
 };
 
 }  // namespace util

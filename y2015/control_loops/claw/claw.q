@@ -1,4 +1,4 @@
-package frc971.control_loops;
+package y2015.control_loops;
 
 import "aos/common/controls/control_loops.q";
 import "frc971/control_loops/control_loops.q";
@@ -28,7 +28,7 @@ queue_group ClawQueue {
   };
 
   message Position {
-    PotAndIndexPosition joint;
+    .frc971.PotAndIndexPosition joint;
   };
 
   message Output {
@@ -49,7 +49,7 @@ queue_group ClawQueue {
     bool estopped;
     // The internal state of the claw state machine.
     uint32_t state;
-    EstimatorState zeroing_state;
+    .frc971.EstimatorState zeroing_state;
 
     // Estimated angle of wrist joint.
     double angle;

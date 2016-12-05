@@ -16,7 +16,7 @@
 #include "aos/common/util/phased_loop.h"
 #include "aos/common/mutex.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace http_status {
 
 // A class for storing data from DataCollector and packaging it as a custom
@@ -103,4 +103,4 @@ class SeasocksLogger : public seasocks::PrintfLogger {
 };
 
 }  // namespace http_status
-}  // namespace frc971
+}  // namespace y2015

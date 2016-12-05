@@ -7,8 +7,8 @@
 int main(int /*argc*/, char* /*argv*/ []) {
   ::aos::Init(-1);
 
-  ::frc971::actors::StackAndLiftActor stack_and_lift(
-      &::frc971::actors::stack_and_lift_action);
+  ::y2015::actors::StackAndLiftActor stack_and_lift(
+      &::y2015::actors::stack_and_lift_action);
   stack_and_lift.Run();
 
   ::aos::Cleanup();

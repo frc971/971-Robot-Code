@@ -14,8 +14,9 @@ int main(int argc, char **argv) {
 
   ::aos::InitNRT();
 
-  ::aos::controls::ControlLoopReplayer<::frc971::control_loops::FridgeQueue>
-      replayer(&::frc971::control_loops::fridge_queue, "fridge");
+  ::aos::controls::ControlLoopReplayer<
+      ::y2015::control_loops::fridge::FridgeQueue>
+      replayer(&::y2015::control_loops::fridge::fridge_queue, "fridge");
   for (int i = 1; i < argc; ++i) {
     replayer.ProcessFile(argv[i]);
   }

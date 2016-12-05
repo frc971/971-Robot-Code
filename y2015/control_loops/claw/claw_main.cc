@@ -4,7 +4,7 @@
 
 int main() {
   ::aos::Init();
-  frc971::control_loops::Claw claw;
+  y2015::control_loops::Claw claw;
   claw.Run();
   ::aos::Cleanup();
   return 0;

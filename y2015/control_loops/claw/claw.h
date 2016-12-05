@@ -11,7 +11,7 @@
 #include "y2015/control_loops/claw/claw_motor_plant.h"
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
 namespace testing {
 class ClawTest_DisabledGoal_Test;
@@ -95,7 +95,7 @@ class Claw : public aos::controls::ControlLoop<control_loops::ClawQueue> {
   // Latest position from queue.
   control_loops::ClawQueue::Position current_position_;
   // Zeroing estimator for claw.
-  zeroing::ZeroingEstimator claw_estimator_;
+  ::frc971::zeroing::ZeroingEstimator claw_estimator_;
 
   // The goal for the claw.
   double claw_goal_ = 0.0;
@@ -111,6 +111,6 @@ class Claw : public aos::controls::ControlLoop<control_loops::ClawQueue> {
 };
 
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_CONTROL_LOOPS_CLAW_H_

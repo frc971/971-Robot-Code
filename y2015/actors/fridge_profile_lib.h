@@ -7,7 +7,7 @@
 #include "aos/common/util/phased_loop.h"
 #include "y2015/control_loops/fridge/fridge.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 struct ProfileParams {
@@ -34,7 +34,8 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                           ProfileParams elevator_parameters,
                           ProfileParams arm_parameters, bool top_grabbers,
                           bool front_grabbers, bool back_grabbers) {
-    auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+    auto new_fridge_goal =
+        control_loops::fridge::fridge_queue.goal.MakeMessage();
     new_fridge_goal->profiling_type = 0;
     new_fridge_goal->max_velocity = elevator_parameters.velocity;
     new_fridge_goal->max_acceleration = elevator_parameters.acceleration;
@@ -65,29 +66,30 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                                bool front_grabbers, bool back_grabbers) {
     if (this->ShouldCancel()) {
       LOG(INFO, "Canceling fridge movement\n");
-      if (!control_loops::fridge_queue.status.get()) {
+      if (!control_loops::fridge::fridge_queue.status.get()) {
         LOG(WARNING, "no fridge status so can't really cancel\n");
         return CANCELED;
       }
 
-      auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+      auto new_fridge_goal =
+          control_loops::fridge::fridge_queue.goal.MakeMessage();
       new_fridge_goal->profiling_type = 0;
       new_fridge_goal->max_velocity = elevator_parameters.velocity;
       new_fridge_goal->max_acceleration = elevator_parameters.acceleration;
       new_fridge_goal->height =
-          control_loops::fridge_queue.status->height +
-          (control_loops::fridge_queue.status->goal_velocity *
-           ::std::abs(control_loops::fridge_queue.status->goal_velocity)) /
+          control_loops::fridge::fridge_queue.status->height +
+          (control_loops::fridge::fridge_queue.status->goal_velocity *
+           ::std::abs(control_loops::fridge::fridge_queue.status->goal_velocity)) /
               (2.0 * new_fridge_goal->max_acceleration);
       height = new_fridge_goal->height;
       new_fridge_goal->velocity = 0.0;
       new_fridge_goal->max_angular_velocity = arm_parameters.velocity;
       new_fridge_goal->max_angular_acceleration = arm_parameters.acceleration;
       new_fridge_goal->angle =
-          control_loops::fridge_queue.status->angle +
-          (control_loops::fridge_queue.status->goal_angular_velocity *
+          control_loops::fridge::fridge_queue.status->angle +
+          (control_loops::fridge::fridge_queue.status->goal_angular_velocity *
            ::std::abs(
-               control_loops::fridge_queue.status->goal_angular_velocity)) /
+               control_loops::fridge::fridge_queue.status->goal_angular_velocity)) /
               (2.0 * new_fridge_goal->max_angular_acceleration);
       angle = new_fridge_goal->angle;
       new_fridge_goal->angular_velocity = 0.0;
@@ -101,29 +103,30 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
       }
       return CANCELED;
     }
-    control_loops::fridge_queue.status.FetchAnother();
+    control_loops::fridge::fridge_queue.status.FetchAnother();
 
     constexpr double kProfileError = 1e-5;
     constexpr double kAngleEpsilon = 0.02, kHeightEpsilon = 0.015;
 
-    if (control_loops::fridge_queue.status->state != 4) {
+    if (control_loops::fridge::fridge_queue.status->state != 4) {
       LOG(ERROR, "Fridge no longer running, aborting action\n");
       return CANCELED;
     }
 
-    if (::std::abs(control_loops::fridge_queue.status->goal_angle - angle) <
+    if (::std::abs(control_loops::fridge::fridge_queue.status->goal_angle -
+                   angle) < kProfileError &&
+        ::std::abs(control_loops::fridge::fridge_queue.status->goal_height -
+                   height) < kProfileError &&
+        ::std::abs(
+            control_loops::fridge::fridge_queue.status->goal_angular_velocity) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_height - height) <
-            kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_angular_velocity) <
-            kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_velocity) <
+        ::std::abs(control_loops::fridge::fridge_queue.status->goal_velocity) <
             kProfileError) {
       LOG(INFO, "Profile done.\n");
-      if (::std::abs(control_loops::fridge_queue.status->angle - angle) <
-                     kAngleEpsilon &&
-                 ::std::abs(control_loops::fridge_queue.status->height -
-                            height) < kHeightEpsilon) {
+      if (::std::abs(control_loops::fridge::fridge_queue.status->angle -
+                     angle) < kAngleEpsilon &&
+          ::std::abs(control_loops::fridge::fridge_queue.status->height -
+                     height) < kHeightEpsilon) {
         LOG(INFO, "Near goal, done.\n");
         return DONE;
       }
@@ -179,28 +182,31 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                       bool top_grabbers, bool front_grabbers,
                       bool back_grabbers) {
     LOG(INFO, "Canceling fridge movement\n");
-    if (!control_loops::fridge_queue.status.get()) {
+    if (!control_loops::fridge::fridge_queue.status.get()) {
       LOG(WARNING, "no fridge status so can't really cancel\n");
       return;
     }
 
-    auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+    auto new_fridge_goal =
+        control_loops::fridge::fridge_queue.goal.MakeMessage();
     new_fridge_goal->profiling_type = 1;
     new_fridge_goal->max_x_velocity = x_parameters.velocity;
     new_fridge_goal->max_x_acceleration = x_parameters.acceleration;
     new_fridge_goal->x =
-        control_loops::fridge_queue.status->x +
-        (control_loops::fridge_queue.status->goal_x_velocity *
-         ::std::abs(control_loops::fridge_queue.status->goal_x_velocity)) /
+        control_loops::fridge::fridge_queue.status->x +
+        (control_loops::fridge::fridge_queue.status->goal_x_velocity *
+         ::std::abs(
+             control_loops::fridge::fridge_queue.status->goal_x_velocity)) /
             (2.0 * new_fridge_goal->max_x_acceleration);
     new_fridge_goal->x_velocity = 0.0;
 
     new_fridge_goal->max_y_velocity = y_parameters.velocity;
     new_fridge_goal->max_y_acceleration = y_parameters.acceleration;
     new_fridge_goal->y =
-        control_loops::fridge_queue.status->y +
-        (control_loops::fridge_queue.status->goal_y_velocity *
-         ::std::abs(control_loops::fridge_queue.status->goal_y_velocity)) /
+        control_loops::fridge::fridge_queue.status->y +
+        (control_loops::fridge::fridge_queue.status->goal_y_velocity *
+         ::std::abs(
+             control_loops::fridge::fridge_queue.status->goal_y_velocity)) /
             (2.0 * new_fridge_goal->max_y_acceleration);
     new_fridge_goal->y_velocity = 0.0;
 
@@ -222,27 +228,31 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
                      back_grabbers);
       return CANCELED;
     }
-    control_loops::fridge_queue.status.FetchAnother();
+    control_loops::fridge::fridge_queue.status.FetchAnother();
 
     constexpr double kProfileError = 1e-5;
     constexpr double kXEpsilon = 0.02, kYEpsilon = 0.02;
 
-    if (control_loops::fridge_queue.status->state != 4) {
+    if (control_loops::fridge::fridge_queue.status->state != 4) {
       LOG(ERROR, "Fridge no longer running, aborting action\n");
       return CANCELED;
     }
 
-    if (::std::abs(control_loops::fridge_queue.status->goal_x - x) <
+    if (::std::abs(control_loops::fridge::fridge_queue.status->goal_x - x) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_y - y) <
+        ::std::abs(control_loops::fridge::fridge_queue.status->goal_y - y) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_x_velocity) <
+        ::std::abs(
+            control_loops::fridge::fridge_queue.status->goal_x_velocity) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_y_velocity) <
+        ::std::abs(
+            control_loops::fridge::fridge_queue.status->goal_y_velocity) <
             kProfileError) {
       LOG(INFO, "Profile done.\n");
-      if (::std::abs(control_loops::fridge_queue.status->x - x) < kXEpsilon &&
-          ::std::abs(control_loops::fridge_queue.status->y - y) < kYEpsilon) {
+      if (::std::abs(control_loops::fridge::fridge_queue.status->x - x) <
+              kXEpsilon &&
+          ::std::abs(control_loops::fridge::fridge_queue.status->y - y) <
+              kYEpsilon) {
         LOG(INFO, "Near goal, done.\n");
         return DONE;
       }
@@ -254,7 +264,8 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
   bool StartFridgeXYProfile(double x, double y, ProfileParams x_parameters,
                             ProfileParams y_parameters, bool top_grabbers,
                             bool front_grabbers, bool back_grabbers) {
-    auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
+    auto new_fridge_goal =
+        control_loops::fridge::fridge_queue.goal.MakeMessage();
     new_fridge_goal->profiling_type = 1;
     new_fridge_goal->max_x_velocity = x_parameters.velocity;
     new_fridge_goal->max_x_acceleration = x_parameters.acceleration;
@@ -280,6 +291,6 @@ class FridgeActorBase : public aos::common::actions::ActorBase<T> {
 };
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_FRIDGE_PROFILE_LIB_H_

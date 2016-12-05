@@ -20,11 +20,11 @@
 #include "y2015/actors/held_to_lift_actor.h"
 
 using ::aos::time::Time;
-using ::frc971::control_loops::claw_queue;
-using ::frc971::control_loops::fridge_queue;
 using ::frc971::control_loops::drivetrain_queue;
+using ::y2015::control_loops::claw_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
 
-namespace frc971 {
+namespace y2015 {
 namespace autonomous {
 
 constexpr double kClawAutoVelocity = 3.00;
@@ -56,7 +56,7 @@ bool ShouldExitAuto() {
 
 void StopDrivetrain() {
   LOG(INFO, "Stopping the drivetrain\n");
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .left_goal(left_initial_position)
       .left_velocity_goal(0)
@@ -68,7 +68,7 @@ void StopDrivetrain() {
 
 void ResetDrivetrain() {
   LOG(INFO, "resetting the drivetrain\n");
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)
       //.highgear(false)
       .steering(0.0)
@@ -100,7 +100,7 @@ void StepDrive(double distance, double theta) {
                       theta * constants::GetValues().turn_width / 2.0);
   double right_goal = (right_initial_position + distance +
                        theta * constants::GetValues().turn_width / 2.0);
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       .left_goal(left_goal)
       .right_goal(right_goal)
@@ -114,13 +114,13 @@ void StepDrive(double distance, double theta) {
 void WaitUntilNear(double distance) {
   while (true) {
     if (ShouldExitAuto()) return;
-    control_loops::drivetrain_queue.status.FetchAnother();
-    double left_error = ::std::abs(
-        left_initial_position -
-        control_loops::drivetrain_queue.status->estimated_left_position);
-    double right_error = ::std::abs(
-        right_initial_position -
-        control_loops::drivetrain_queue.status->estimated_right_position);
+    drivetrain_queue.status.FetchAnother();
+    double left_error =
+        ::std::abs(left_initial_position -
+                   drivetrain_queue.status->estimated_left_position);
+    double right_error =
+        ::std::abs(right_initial_position -
+                   drivetrain_queue.status->estimated_right_position);
     const double kPositionThreshold = 0.05 + distance;
     if (right_error < kPositionThreshold && left_error < kPositionThreshold) {
       LOG(INFO, "At the goal\n");
@@ -140,11 +140,12 @@ const ProfileParams kRaceTurn = {4.0, 10.0};
 const ProfileParams kRaceDrive = {2.0, 2.0};
 const ProfileParams kRaceBackupDrive = {2.0, 5.0};
 
-::std::unique_ptr<::frc971::actors::DrivetrainAction> SetDriveGoal(
-    double distance, const ProfileParams drive_params, double theta = 0, const ProfileParams &turn_params = kFastTurn) {
+::std::unique_ptr<::y2015::actors::DrivetrainAction> SetDriveGoal(
+    double distance, const ProfileParams drive_params, double theta = 0,
+    const ProfileParams &turn_params = kFastTurn) {
   LOG(INFO, "Driving to %f\n", distance);
 
-  ::frc971::actors::DrivetrainActionParams params;
+  ::y2015::actors::DrivetrainActionParams params;
   params.left_initial_position = left_initial_position;
   params.right_initial_position = right_initial_position;
   params.y_offset = distance;
@@ -201,28 +202,26 @@ void MoveFridge(double x, double y, bool grabbers, const ProfileParams x_params,
 void WaitForFridge() {
   while (true) {
     if (ShouldExitAuto()) return;
-    control_loops::fridge_queue.status.FetchAnother();
+    fridge_queue.status.FetchAnother();
 
     constexpr double kProfileError = 1e-5;
     constexpr double kXEpsilon = 0.03, kYEpsilon = 0.03;
 
-    if (control_loops::fridge_queue.status->state != 4) {
+    if (fridge_queue.status->state != 4) {
       LOG(ERROR, "Fridge no longer running, aborting action\n");
       return;
     }
 
-    if (::std::abs(control_loops::fridge_queue.status->goal_x - fridge_goal_x) <
+    if (::std::abs(fridge_queue.status->goal_x - fridge_goal_x) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_y - fridge_goal_y) <
+        ::std::abs(fridge_queue.status->goal_y - fridge_goal_y) <
             kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_x_velocity) <
-            kProfileError &&
-        ::std::abs(control_loops::fridge_queue.status->goal_y_velocity) <
-            kProfileError) {
+        ::std::abs(fridge_queue.status->goal_x_velocity) < kProfileError &&
+        ::std::abs(fridge_queue.status->goal_y_velocity) < kProfileError) {
       LOG(INFO, "Profile done.\n");
-      if (::std::abs(control_loops::fridge_queue.status->x - fridge_goal_x) <
+      if (::std::abs(fridge_queue.status->x - fridge_goal_x) <
               kXEpsilon &&
-          ::std::abs(control_loops::fridge_queue.status->y - fridge_goal_y) <
+          ::std::abs(fridge_queue.status->y - fridge_goal_y) <
               kYEpsilon) {
         LOG(INFO, "Near goal, done.\n");
         return;
@@ -232,11 +231,9 @@ void WaitForFridge() {
 }
 
 void InitializeEncoders() {
-  control_loops::drivetrain_queue.status.FetchAnother();
-  left_initial_position =
-      control_loops::drivetrain_queue.status->estimated_left_position;
-  right_initial_position =
-      control_loops::drivetrain_queue.status->estimated_right_position;
+  drivetrain_queue.status.FetchAnother();
+  left_initial_position = drivetrain_queue.status->estimated_left_position;
+  right_initial_position = drivetrain_queue.status->estimated_right_position;
 }
 
 void WaitForClawZero() {
@@ -256,9 +253,9 @@ void WaitForClawZero() {
 void WaitForFridgeZero() {
   LOG(INFO, "Waiting for claw to zero.\n");
   while (true) {
-    control_loops::fridge_queue.status.FetchAnother();
-    LOG_STRUCT(DEBUG, "Got fridge status", *control_loops::fridge_queue.status);
-    if (control_loops::fridge_queue.status->zeroed) {
+    fridge_queue.status.FetchAnother();
+    LOG_STRUCT(DEBUG, "Got fridge status", *fridge_queue.status);
+    if (fridge_queue.status->zeroed) {
       LOG(INFO, "Fridge zeroed\n");
       return;
     }
@@ -308,10 +305,10 @@ void SetClawState(double angle, double intake_voltage, double rollers_closed,
 }
 
 void TripleCanAuto() {
-  ::std::unique_ptr<::frc971::actors::DrivetrainAction> drive;
-  ::std::unique_ptr<::frc971::actors::PickupAction> pickup;
-  ::std::unique_ptr<::frc971::actors::StackAction> stack;
-  ::std::unique_ptr<::frc971::actors::HeldToLiftAction> lift;
+  ::std::unique_ptr<::y2015::actors::DrivetrainAction> drive;
+  ::std::unique_ptr<::y2015::actors::PickupAction> pickup;
+  ::std::unique_ptr<::y2015::actors::StackAction> stack;
+  ::std::unique_ptr<::y2015::actors::HeldToLiftAction> lift;
 
   actors::PickupParams pickup_params;
   // Lift to here initially.
@@ -581,7 +578,7 @@ void CanGrabberAuto() {
   InitializeEncoders();
   ResetDrivetrain();
   if (ShouldExitAuto()) return;
-  control_loops::drivetrain_queue.goal.MakeWithBuilder()
+  drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(true)
       //.highgear(false)
       .steering(0.0)
@@ -605,4 +602,4 @@ void HandleAuto() {
 }
 
 }  // namespace autonomous
-}  // namespace frc971
+}  // namespace y2015

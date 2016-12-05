@@ -13,24 +13,26 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace testing {
+
+using ::y2015::control_loops::fridge::fridge_queue;
 
 class ScoreActionTest : public ::testing::Test {
  protected:
   ScoreActionTest() {
-    frc971::actors::score_action.goal.Clear();
-    frc971::actors::score_action.status.Clear();
-    control_loops::fridge_queue.status.Clear();
-    control_loops::fridge_queue.goal.Clear();
+    y2015::actors::score_action.goal.Clear();
+    y2015::actors::score_action.status.Clear();
+    fridge_queue.status.Clear();
+    fridge_queue.goal.Clear();
   }
 
   virtual ~ScoreActionTest() {
-    frc971::actors::score_action.goal.Clear();
-    frc971::actors::score_action.status.Clear();
-    control_loops::fridge_queue.status.Clear();
-    control_loops::fridge_queue.goal.Clear();
+    y2015::actors::score_action.goal.Clear();
+    y2015::actors::score_action.status.Clear();
+    fridge_queue.status.Clear();
+    fridge_queue.goal.Clear();
   }
 
   // Bring up and down Core.
@@ -40,12 +42,12 @@ class ScoreActionTest : public ::testing::Test {
 // Tests that cancel stops not only the score action, but also the underlying
 // profile action.
 TEST_F(ScoreActionTest, PlaceTheStackCancel) {
-  ScoreActor score(&frc971::actors::score_action);
+  ScoreActor score(&y2015::actors::score_action);
 
-  frc971::actors::score_action.goal.MakeWithBuilder().run(true).Send();
+  y2015::actors::score_action.goal.MakeWithBuilder().run(true).Send();
 
   // Tell it the fridge is zeroed.
-  ASSERT_TRUE(control_loops::fridge_queue.status.MakeWithBuilder()
+  ASSERT_TRUE(fridge_queue.status.MakeWithBuilder()
                   .zeroed(true)
                   .angle(0.0)
                   .height(0.0)
@@ -56,7 +58,7 @@ TEST_F(ScoreActionTest, PlaceTheStackCancel) {
 
   // the action has started, so now cancel it and it should cancel
   // the underlying profile
-  frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
+  y2015::actors::score_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
   const ScoreParams params = {true, true, 0.14, 0.13, -0.7, -0.7, -0.10, -0.5, 0.1};
@@ -68,12 +70,12 @@ TEST_F(ScoreActionTest, PlaceTheStackCancel) {
 // Tests that cancel stops not only the score action, but also the underlying
 // profile action.
 TEST_F(ScoreActionTest, MoveStackIntoPositionCancel) {
-  ScoreActor score(&frc971::actors::score_action);
+  ScoreActor score(&y2015::actors::score_action);
 
-  frc971::actors::score_action.goal.MakeWithBuilder().run(true).Send();
+  y2015::actors::score_action.goal.MakeWithBuilder().run(true).Send();
 
   // Tell it the fridge is zeroed.
-  ASSERT_TRUE(control_loops::fridge_queue.status.MakeWithBuilder()
+  ASSERT_TRUE(fridge_queue.status.MakeWithBuilder()
                   .zeroed(true)
                   .angle(0.0)
                   .height(0.0)
@@ -84,7 +86,7 @@ TEST_F(ScoreActionTest, MoveStackIntoPositionCancel) {
 
   // the action has started, so now cancel it and it should cancel
   // the underlying profile
-  frc971::actors::score_action.goal.MakeWithBuilder().run(false).Send();
+  y2015::actors::score_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
   const ScoreParams params = {false, true, 0.14, 0.13, -0.7, -0.7, -0.10, -0.5, 0.1};
@@ -95,4 +97,4 @@ TEST_F(ScoreActionTest, MoveStackIntoPositionCancel) {
 
 }  // namespace testing
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

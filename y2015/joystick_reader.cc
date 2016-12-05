@@ -28,17 +28,17 @@
 #include "y2015/actors/can_pickup_actor.h"
 #include "y2015/actors/horizontal_can_pickup_actor.h"
 
-using ::frc971::control_loops::claw_queue;
 using ::frc971::control_loops::drivetrain_queue;
-using ::frc971::control_loops::fridge_queue;
 using ::frc971::sensors::gyro_reading;
+using ::y2015::control_loops::claw_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
 
 using ::aos::input::driver_station::ButtonLocation;
 using ::aos::input::driver_station::POVLocation;
 using ::aos::input::driver_station::JoystickAxis;
 using ::aos::input::driver_station::ControlBit;
 
-namespace frc971 {
+namespace y2015 {
 namespace input {
 namespace joysticks {
 
@@ -491,10 +491,10 @@ class Reader : public ::aos::input::JoystickInput {
 
     if (action_queue_.Running()) {
       // If we are running an action, update our goals to the current goals.
-      control_loops::fridge_queue.status.FetchLatest();
-      if (control_loops::fridge_queue.status.get()) {
-        arm_goal_ = control_loops::fridge_queue.status->goal_angle;
-        elevator_goal_ = control_loops::fridge_queue.status->goal_height;
+      fridge_queue.status.FetchLatest();
+      if (fridge_queue.status.get()) {
+        arm_goal_ = fridge_queue.status->goal_angle;
+        elevator_goal_ = fridge_queue.status->goal_height;
       } else {
         LOG(ERROR, "No fridge status!\n");
       }
@@ -547,11 +547,11 @@ class Reader : public ::aos::input::JoystickInput {
 
 }  // namespace joysticks
 }  // namespace input
-}  // namespace frc971
+}  // namespace y2015
 
 int main() {
   ::aos::Init(-1);
-  ::frc971::input::joysticks::Reader reader;
+  ::y2015::input::joysticks::Reader reader;
   reader.Run();
   ::aos::Cleanup();
 }

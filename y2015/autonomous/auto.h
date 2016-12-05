@@ -1,12 +1,12 @@
 #ifndef Y2015_AUTONOMOUS_AUTO_H_
 #define Y2015_AUTONOMOUS_AUTO_H_
 
-namespace frc971 {
+namespace y2015 {
 namespace autonomous {
 
 void HandleAuto();
 
 }  // namespace autonomous
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_AUTONOMOUS_AUTO_H_

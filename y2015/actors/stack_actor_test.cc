@@ -15,24 +15,26 @@
 
 using ::aos::time::Time;
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace testing {
+
+using ::y2015::control_loops::fridge::fridge_queue;
 
 class StackActionTest : public ::testing::Test {
  protected:
   StackActionTest() {
-    frc971::actors::stack_action.goal.Clear();
-    frc971::actors::stack_action.status.Clear();
-    control_loops::fridge_queue.status.Clear();
-    control_loops::fridge_queue.goal.Clear();
+    y2015::actors::stack_action.goal.Clear();
+    y2015::actors::stack_action.status.Clear();
+    fridge_queue.status.Clear();
+    fridge_queue.goal.Clear();
   }
 
   virtual ~StackActionTest() {
-    frc971::actors::stack_action.goal.Clear();
-    frc971::actors::stack_action.status.Clear();
-    control_loops::fridge_queue.status.Clear();
-    control_loops::fridge_queue.goal.Clear();
+    y2015::actors::stack_action.goal.Clear();
+    y2015::actors::stack_action.status.Clear();
+    fridge_queue.status.Clear();
+    fridge_queue.goal.Clear();
   }
 
   // Bring up and down Core.
@@ -42,12 +44,12 @@ class StackActionTest : public ::testing::Test {
 // Tests that cancel stops not only the stack action, but the underlying profile
 // action.
 TEST_F(StackActionTest, StackCancel) {
-  StackActor stack(&frc971::actors::stack_action);
+  StackActor stack(&y2015::actors::stack_action);
 
-  frc971::actors::stack_action.goal.MakeWithBuilder().run(true).Send();
+  y2015::actors::stack_action.goal.MakeWithBuilder().run(true).Send();
 
   // tell it the fridge is zeroed
-  control_loops::fridge_queue.status.MakeWithBuilder()
+  fridge_queue.status.MakeWithBuilder()
       .zeroed(true)
       .angle(0.0)
       .height(0.0)
@@ -58,7 +60,7 @@ TEST_F(StackActionTest, StackCancel) {
 
   // the action has started, so now cancel it and it should cancel
   // the underlying profile
-  frc971::actors::stack_action.goal.MakeWithBuilder().run(false).Send();
+  y2015::actors::stack_action.goal.MakeWithBuilder().run(false).Send();
 
   // let the action start running, if we return from this call it has worked.
   StackParams s;
@@ -69,4 +71,4 @@ TEST_F(StackActionTest, StackCancel) {
 
 }  // namespace testing
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

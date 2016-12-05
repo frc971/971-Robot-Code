@@ -19,7 +19,7 @@
 
 #include "y2015/http_status/embedded.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace http_status {
 
 // TODO(comran): Make some of these separate libraries & document them better.
@@ -139,7 +139,7 @@ void HTTPStatusMessage::AddMeasure(::std::string name, double value) {
 DataCollector::DataCollector() : cur_raw_data_("no data") {}
 
 void DataCollector::RunIteration() {
-  auto& fridge_queue = control_loops::fridge_queue;
+  auto& fridge_queue = control_loops::fridge::fridge_queue;
   auto& claw_queue = control_loops::claw_queue;
 
   fridge_queue.status.FetchAnother();
@@ -275,18 +275,18 @@ void SeasocksLogger::log(Level level, const char* message) {
 }
 
 }  // namespace http_status
-}  // namespace frc971
+}  // namespace y2015
 
 int main(int, char* []) {
   ::aos::InitNRT();
 
   seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
-      new frc971::http_status::SeasocksLogger(seasocks::Logger::INFO)));
-  frc971::http_status::SocketHandler socket_handler;
+      new ::y2015::http_status::SeasocksLogger(seasocks::Logger::INFO)));
+  ::y2015::http_status::SocketHandler socket_handler;
 
   server.addWebSocketHandler(
       "/ws",
-      ::std::shared_ptr<frc971::http_status::SocketHandler>(&socket_handler));
+      ::std::shared_ptr<::y2015::http_status::SocketHandler>(&socket_handler));
   server.serve("www", 8080);
 
   socket_handler.Quit();

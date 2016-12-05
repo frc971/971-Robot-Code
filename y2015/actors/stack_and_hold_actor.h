@@ -10,7 +10,7 @@
 #include "y2015/actors/stack_and_hold_action.q.h"
 #include "y2015/actors/fridge_profile_lib.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class StackAndHoldActor : public FridgeActorBase<StackAndHoldActionQueueGroup> {
@@ -28,6 +28,6 @@ typedef aos::common::actions::TypedAction<StackAndHoldActionQueueGroup>
     const StackAndHoldParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif  // Y2015_ACTORS_STACK_AND_HOLD_ACTOR_H_

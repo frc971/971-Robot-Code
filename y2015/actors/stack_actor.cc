@@ -8,7 +8,7 @@
 #include "y2015/constants.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr ProfileParams kArmWithStackMove{1.75, 4.20};
@@ -20,23 +20,26 @@ constexpr ProfileParams kFastElevatorMove{1.2, 5.0};
 constexpr ProfileParams kReallyFastElevatorMove{1.2, 6.0};
 }  // namespace
 
+using ::y2015::control_loops::claw_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
+
 StackActor::StackActor(StackActionQueueGroup *queues)
     : FridgeActorBase<StackActionQueueGroup>(queues) {}
 
 bool StackActor::RunAction(const StackParams &params) {
   const auto &values = constants::GetValues();
 
-  control_loops::fridge_queue.status.FetchLatest();
-  if (!control_loops::fridge_queue.status.get()) {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
     LOG(ERROR, "Got no fridge status packet.\n");
     return false;
   }
 
   // If we are really high, probably have a can.  Move over before down.
-  if (control_loops::fridge_queue.status->goal_height >
+  if (fridge_queue.status->goal_height >
       params.over_box_before_place_height + 0.1) {
     // Set the current stack down on top of the bottom box.
-    DoFridgeProfile(control_loops::fridge_queue.status->goal_height, 0.0,
+    DoFridgeProfile(fridge_queue.status->goal_height, 0.0,
                     kSlowElevatorMove, kArmWithStackMove, true);
     if (ShouldCancel()) return true;
   }
@@ -50,15 +53,15 @@ bool StackActor::RunAction(const StackParams &params) {
   if (!params.only_place) {
     // Move the claw out of the way only if we are supposed to pick up.
     bool send_goal = true;
-    control_loops::claw_queue.status.FetchLatest();
-    if (control_loops::claw_queue.status.get()) {
-      if (control_loops::claw_queue.status->goal_angle <
+    claw_queue.status.FetchLatest();
+    if (claw_queue.status.get()) {
+      if (claw_queue.status->goal_angle <
           params.claw_out_angle) {
         send_goal = false;
       }
     }
     if (send_goal) {
-      auto message = control_loops::claw_queue.goal.MakeMessage();
+      auto message = claw_queue.goal.MakeMessage();
       message->angle = params.claw_out_angle;
       message->angular_velocity = 0.0;
       message->intake = 0.0;
@@ -89,8 +92,8 @@ bool StackActor::RunAction(const StackParams &params) {
 
 ::std::unique_ptr<StackAction> MakeStackAction(const StackParams &params) {
   return ::std::unique_ptr<StackAction>(
-      new StackAction(&::frc971::actors::stack_action, params));
+      new StackAction(&::y2015::actors::stack_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

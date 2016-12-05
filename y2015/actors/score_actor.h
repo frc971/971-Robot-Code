@@ -6,7 +6,7 @@
 #include "y2015/util/kinematics.h"
 #include "y2015/actors/score_action.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 class ScoreActor
@@ -38,6 +38,6 @@ typedef aos::common::actions::TypedAction<ScoreActionQueueGroup> ScoreAction;
 ::std::unique_ptr<ScoreAction> MakeScoreAction(const ScoreParams &params);
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
 
 #endif

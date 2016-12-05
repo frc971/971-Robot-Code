@@ -10,8 +10,9 @@
 #include "frc971/zeroing/zeroing.h"
 #include "y2015/util/kinematics.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace control_loops {
+namespace fridge {
 namespace testing {
 class FridgeTest_DisabledGoalTest_Test;
 class FridgeTest_ArmGoalPositiveWindupTest_Test;
@@ -42,10 +43,10 @@ class CappedStateFeedbackLoop : public StateFeedbackLoop<S, 2, 2> {
 };
 
 class Fridge
-    : public aos::controls::ControlLoop<control_loops::FridgeQueue> {
+    : public aos::controls::ControlLoop<FridgeQueue> {
  public:
-  explicit Fridge(
-      control_loops::FridgeQueue *fridge_queue = &control_loops::fridge_queue);
+  explicit Fridge(FridgeQueue *fridge_queue =
+                      &::y2015::control_loops::fridge::fridge_queue);
 
   enum State {
     // Waiting to receive data before doing anything.
@@ -72,10 +73,10 @@ class Fridge
   State state() const { return state_; }
 
  protected:
-  void RunIteration(const control_loops::FridgeQueue::Goal *goal,
-                    const control_loops::FridgeQueue::Position *position,
-                    control_loops::FridgeQueue::Output *output,
-                    control_loops::FridgeQueue::Status *status) override;
+  void RunIteration(const FridgeQueue::Goal *goal,
+                    const FridgeQueue::Position *position,
+                    FridgeQueue::Output *output,
+                    FridgeQueue::Status *status) override;
 
  private:
   friend class testing::FridgeTest_DisabledGoalTest_Test;
@@ -127,10 +128,10 @@ class Fridge
   ::std::unique_ptr<CappedStateFeedbackLoop<5>> arm_loop_;
   ::std::unique_ptr<CappedStateFeedbackLoop<4>> elevator_loop_;
 
-  zeroing::ZeroingEstimator left_arm_estimator_;
-  zeroing::ZeroingEstimator right_arm_estimator_;
-  zeroing::ZeroingEstimator left_elevator_estimator_;
-  zeroing::ZeroingEstimator right_elevator_estimator_;
+  ::frc971::zeroing::ZeroingEstimator left_arm_estimator_;
+  ::frc971::zeroing::ZeroingEstimator right_arm_estimator_;
+  ::frc971::zeroing::ZeroingEstimator left_elevator_estimator_;
+  ::frc971::zeroing::ZeroingEstimator right_elevator_estimator_;
 
   // Offsets from the encoder position to the absolute position.  Add these to
   // the encoder position to get the absolute position.
@@ -153,7 +154,7 @@ class Fridge
   State state_ = UNINITIALIZED;
   State last_state_ = UNINITIALIZED;
 
-  control_loops::FridgeQueue::Position current_position_;
+  FridgeQueue::Position current_position_;
 
   ProfilingType last_profiling_type_;
   aos::util::ElevatorArmKinematics kinematics_;
@@ -165,8 +166,9 @@ class Fridge
   aos::util::TrapezoidProfile y_profile_;
 };
 
+}  // namespace fridge
 }  // namespace control_loops
-}  // namespace frc971
+}  // namespace y2015
 
 #endif // Y2015_CONTROL_LOOPS_FRIDGE_H_
 

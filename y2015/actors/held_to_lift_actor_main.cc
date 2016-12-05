@@ -7,8 +7,7 @@
 int main(int /*argc*/, char* /*argv*/ []) {
   ::aos::Init(-1);
 
-  ::frc971::actors::HeldToLiftActor lift(
-      &::frc971::actors::held_to_lift_action);
+  ::y2015::actors::HeldToLiftActor lift(&::y2015::actors::held_to_lift_action);
   lift.Run();
 
   ::aos::Cleanup();

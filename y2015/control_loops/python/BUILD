@@ -61,3 +61,15 @@ py_binary(
     '//frc971/control_loops/python:controls',
   ],
 )
+
+py_binary(
+  name = 'elevator',
+  srcs  = [
+    'elevator.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ],
+)

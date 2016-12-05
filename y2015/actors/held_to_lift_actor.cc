@@ -8,7 +8,7 @@
 #include "y2015/actors/lift_actor.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 namespace {
 constexpr ProfileParams kArmMove{0.6, 2.0};
@@ -18,13 +18,15 @@ constexpr ProfileParams kFastElevatorMove{1.2, 5.0};
 }  // namespace
 
 namespace chrono = ::std::chrono;
+using ::y2015::control_loops::fridge::fridge_queue;
+using ::y2015::control_loops::claw_queue;
 
 HeldToLiftActor::HeldToLiftActor(HeldToLiftActionQueueGroup *queues)
     : FridgeActorBase<HeldToLiftActionQueueGroup>(queues) {}
 
 bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
-  control_loops::fridge_queue.status.FetchLatest();
-  if (!control_loops::fridge_queue.status.get()) {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
     return false;
   }
 
@@ -32,14 +34,14 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
   {
     bool send_goal = true;
     double claw_goal = params.claw_out_angle;
-    control_loops::claw_queue.status.FetchLatest();
-    if (control_loops::claw_queue.status.get()) {
-      if (control_loops::claw_queue.status->goal_angle < claw_goal) {
+    claw_queue.status.FetchLatest();
+    if (claw_queue.status.get()) {
+      if (claw_queue.status->goal_angle < claw_goal) {
         send_goal = false;
       }
     }
     if (send_goal) {
-      auto message = control_loops::claw_queue.goal.MakeMessage();
+      auto message = claw_queue.goal.MakeMessage();
       message->angle = params.claw_out_angle;
       message->angular_velocity = 0.0;
       message->intake = 0.0;
@@ -52,17 +54,16 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
     }
   }
 
-  control_loops::fridge_queue.status.FetchLatest();
-  if (!control_loops::fridge_queue.status.get()) {
+  fridge_queue.status.FetchLatest();
+  if (!fridge_queue.status.get()) {
     return false;
   }
 
-  if (control_loops::fridge_queue.status->goal_height != params.bottom_height ||
-      control_loops::fridge_queue.status->goal_angle != 0.0) {
+  if (fridge_queue.status->goal_height != params.bottom_height ||
+      fridge_queue.status->goal_angle != 0.0) {
     // Lower with the fridge clamps open and move it forwards slightly to clear.
-    DoFridgeProfile(control_loops::fridge_queue.status->goal_height,
-                    params.arm_clearance, kFastElevatorMove, kFastArmMove,
-                    false);
+    DoFridgeProfile(fridge_queue.status->goal_height, params.arm_clearance,
+                    kFastElevatorMove, kFastArmMove, false);
     if (ShouldCancel()) return true;
 
     DoFridgeProfile(params.bottom_height, params.arm_clearance,
@@ -111,8 +112,8 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
 ::std::unique_ptr<HeldToLiftAction> MakeHeldToLiftAction(
     const HeldToLiftParams &params) {
   return ::std::unique_ptr<HeldToLiftAction>(
-      new HeldToLiftAction(&::frc971::actors::held_to_lift_action, params));
+      new HeldToLiftAction(&::y2015::actors::held_to_lift_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015

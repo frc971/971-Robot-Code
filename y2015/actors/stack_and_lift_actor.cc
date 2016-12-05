@@ -11,20 +11,22 @@
 #include "y2015/actors/stack_actor.h"
 #include "y2015/actors/lift_actor.h"
 
-namespace frc971 {
+namespace y2015 {
 namespace actors {
 
 namespace chrono = ::std::chrono;
+using ::y2015::control_loops::claw_queue;
+using ::y2015::control_loops::fridge::fridge_queue;
 
 StackAndLiftActor::StackAndLiftActor(StackAndLiftActionQueueGroup *queues)
     : FridgeActorBase<StackAndLiftActionQueueGroup>(queues) {}
 
 bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
-  control_loops::claw_queue.goal.FetchLatest();
+  claw_queue.goal.FetchLatest();
   double claw_goal_start;
   bool have_claw_goal_start;
-  if (control_loops::claw_queue.goal.get()) {
-    claw_goal_start = control_loops::claw_queue.goal->angle;
+  if (claw_queue.goal.get()) {
+    claw_goal_start = claw_queue.goal->angle;
     have_claw_goal_start = true;
   } else {
     claw_goal_start = 0;
@@ -51,12 +53,12 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
   }
 
   {
-    control_loops::fridge_queue.goal.FetchLatest();
-    if (!control_loops::fridge_queue.goal.get()) {
+    fridge_queue.goal.FetchLatest();
+    if (!fridge_queue.goal.get()) {
       return false;
     }
-    auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
-    *new_fridge_goal = *control_loops::fridge_queue.goal;
+    auto new_fridge_goal = fridge_queue.goal.MakeMessage();
+    *new_fridge_goal = *fridge_queue.goal;
     new_fridge_goal->grabbers.top_front = params.grab_after_stack;
     new_fridge_goal->grabbers.top_back = params.grab_after_stack;
     new_fridge_goal->grabbers.bottom_front = params.grab_after_stack;
@@ -92,12 +94,12 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
   }
 
   {
-    control_loops::fridge_queue.goal.FetchLatest();
-    if (!control_loops::fridge_queue.goal.get()) {
+    fridge_queue.goal.FetchLatest();
+    if (!fridge_queue.goal.get()) {
       return false;
     }
-    auto new_fridge_goal = control_loops::fridge_queue.goal.MakeMessage();
-    *new_fridge_goal = *control_loops::fridge_queue.goal;
+    auto new_fridge_goal = fridge_queue.goal.MakeMessage();
+    *new_fridge_goal = *fridge_queue.goal;
     new_fridge_goal->grabbers.top_front = params.grab_after_lift;
     new_fridge_goal->grabbers.top_back = params.grab_after_lift;
     new_fridge_goal->grabbers.bottom_front = params.grab_after_lift;
@@ -113,8 +115,8 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
 ::std::unique_ptr<StackAndLiftAction> MakeStackAndLiftAction(
     const StackAndLiftParams &params) {
   return ::std::unique_ptr<StackAndLiftAction>(
-      new StackAndLiftAction(&::frc971::actors::stack_and_lift_action, params));
+      new StackAndLiftAction(&::y2015::actors::stack_and_lift_action, params));
 }
 
 }  // namespace actors
-}  // namespace frc971
+}  // namespace y2015
