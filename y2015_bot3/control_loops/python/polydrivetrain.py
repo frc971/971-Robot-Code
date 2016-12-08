@@ -6,6 +6,7 @@ import polytope
 import drivetrain
 import control_loop
 import controls
+from frc971.control_loops.python.cim import CIM
 from matplotlib import pylab
 
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
@@ -183,8 +184,8 @@ class VelocityDrivetrain(object):
     self.right_gear = VelocityDrivetrain.LOW
     self.left_shifter_position = 0.0
     self.right_shifter_position = 0.0
-    self.left_cim = drivetrain.CIM()
-    self.right_cim = drivetrain.CIM()
+    self.left_cim = CIM()
+    self.right_cim = CIM()
 
   def IsInGear(self, gear):
     return gear is VelocityDrivetrain.HIGH or gear is VelocityDrivetrain.LOW
@@ -413,8 +414,7 @@ def main(argv):
     else:
       dog_loop_writer.Write(argv[1], argv[2])
 
-    cim_writer = control_loop.ControlLoopWriter(
-        "CIM", [drivetrain.CIM()],
+    cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()],
         namespaces=['y2015_bot3', 'control_loops'])
 
     if argv[5][-3:] == '.cc':
@@ -472,7 +472,7 @@ def main(argv):
   cim_velocity_plot = []
   cim_voltage_plot = []
   cim_time = []
-  cim = drivetrain.CIM()
+  cim = CIM()
   R = numpy.matrix([[300]])
   for t in numpy.arange(0, 0.5, cim.dt):
     U = numpy.clip(cim.K * (R - cim.X) + R / cim.Kv, cim.U_min, cim.U_max)

@@ -3,6 +3,7 @@ package(default_visibility = ['//visibility:public'])
 py_library(
   name = 'controls',
   srcs = [
+    'cim.py',
     'control_loop.py',
     'controls.py',
     'polytope.py',
