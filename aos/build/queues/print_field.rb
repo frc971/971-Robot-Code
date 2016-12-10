@@ -1,7 +1,7 @@
 require_relative 'load.rb'
 
 # TODO(brians): Special-case Time too and float/double if we can find a good way to do it.
-GenericTypeNames = ['float', 'double', 'char', '::aos::time::Time']
+GenericTypeNames = ['float', 'double', 'char', '::aos::monotonic_clock::time_point']
 IntegerSizes = [8, 16, 32, 64]
 
 WriteIffChanged.open(ARGV[0]) do |output|
