@@ -1,11 +1,12 @@
 #include "y2015/actors/pickup_actor.h"
 
+#include <chrono>
 #include <cmath>
 
-#include "aos/common/logging/logging.h"
 #include "aos/common/controls/control_loop.h"
-#include "aos/common/util/phased_loop.h"
+#include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
+#include "aos/common/util/phased_loop.h"
 #include "y2015/control_loops/claw/claw.q.h"
 
 namespace y2015 {
@@ -19,6 +20,8 @@ constexpr double kClawMoveUpVelocity = 8.0;
 constexpr double kClawMoveUpAcceleration = 25.0;
 }  // namespace
 
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 using ::y2015::control_loops::claw_queue;
 
 PickupActor::PickupActor(PickupActionQueueGroup* queues)
@@ -91,13 +94,14 @@ bool PickupActor::RunAction(const PickupParams& params) {
   }
 
   // Pull in for params.intake_time.
-  ::aos::time::Time end_time =
-      ::aos::time::Time::Now() + aos::time::Time::InSeconds(params.intake_time);
-  while ( ::aos::time::Time::Now() <= end_time) {
-    ::aos::time::PhasedLoopXMS(
-        ::std::chrono::duration_cast<::std::chrono::milliseconds>(
-            ::aos::controls::kLoopFrequency).count(),
-        2500);
+  monotonic_clock::time_point end_time =
+      monotonic_clock::now() +
+      chrono::duration_cast<chrono::nanoseconds>(
+          chrono::duration<double>(params.intake_time));
+  ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                      ::std::chrono::milliseconds(5) / 2);
+  while (monotonic_clock::now() <= end_time) {
+    phased_loop.SleepUntilNext();
     if (ShouldCancel()) return true;
   }
 

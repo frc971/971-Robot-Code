@@ -42,7 +42,7 @@ class Event {
   // Waits for the event to be set or until timeout has elapsed. Returns
   // immediately if it is already set.
   // Returns true if the event was Set or false if the timeout expired.
-  bool WaitTimeout(const ::aos::time::Time &timeout);
+  bool WaitTimeout(monotonic_clock::duration timeout);
 
   // Wakes up all Wait()ers and sets the event (atomically).
   void Set();

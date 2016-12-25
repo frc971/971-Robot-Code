@@ -39,10 +39,10 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
     ::std::unique_ptr<StackAction> stack_action =
         MakeStackAction(stack_params);
     stack_action->Start();
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        ::std::chrono::milliseconds(5) / 2);
     while (stack_action->Running()) {
-      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                     ::aos::controls::kLoopFrequency).count(),
-                                 2500);
+      phased_loop.SleepUntilNext();
 
       if (ShouldCancel()) {
         stack_action->Cancel();
@@ -80,10 +80,10 @@ bool StackAndLiftActor::RunAction(const StackAndLiftParams &params) {
     lift_params.pack_claw_angle = claw_goal_start;
     ::std::unique_ptr<LiftAction> lift_action = MakeLiftAction(lift_params);
     lift_action->Start();
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        ::std::chrono::milliseconds(5) / 2);
     while (lift_action->Running()) {
-      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                     ::aos::controls::kLoopFrequency).count(),
-                                 2500);
+      phased_loop.SleepUntilNext();
 
       if (ShouldCancel()) {
         lift_action->Cancel();

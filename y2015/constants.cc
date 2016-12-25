@@ -127,7 +127,8 @@ const int kZeroingSampleSize = 200;
 const double kArmLength = 0.7366;
 
 // TODO(danielp): All these values might need to change.
-const double kClawPistonSwitchTime = 0.4;
+constexpr ::aos::monotonic_clock::duration kClawPistonSwitchTime =
+    ::std::chrono::milliseconds(400);
 const double kClawZeroingRange = 0.3;
 
 const Values *DoGetValuesForTeam(uint16_t team) {

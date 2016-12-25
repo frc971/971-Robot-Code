@@ -7,8 +7,6 @@
 #include "aos/common/queue.h"
 #include "aos/testing/test_shm.h"
 
-using ::aos::time::Time;
-
 namespace frc971 {
 namespace control_loops {
 namespace testing {

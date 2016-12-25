@@ -3,13 +3,6 @@
 namespace aos {
 namespace time {
 
-void PhasedLoopXMS(int ms, int offset) {
-  const Time frequency = Time::InMS(ms);
-  SleepUntil((Time::Now() / static_cast<int32_t>(frequency.ToNSec())) *
-             static_cast<int32_t>(frequency.ToNSec()) +
-             frequency + Time::InUS(offset));
-}
-
 int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
   const monotonic_clock::time_point next_time =
       monotonic_clock::time_point(

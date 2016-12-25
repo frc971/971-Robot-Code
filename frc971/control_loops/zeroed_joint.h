@@ -135,12 +135,11 @@ class ZeroedJoint {
 
   ZeroedJoint(StateFeedbackLoop<3, 1, 1> loop)
       : loop_(new ZeroedStateFeedbackLoop<kNumZeroSensors>(loop, this)),
-        last_good_time_(0, 0),
+        last_good_time_(::aos::monotonic_clock::min_time()),
         state_(UNINITIALIZED),
         error_count_(0),
         zero_offset_(0.0),
-        capped_goal_(false) {
-  }
+        capped_goal_(false) {}
 
   // Copies the provided configuration data locally.
   void set_config_data(const ConfigurationData &config_data) {
@@ -191,14 +190,14 @@ class ZeroedJoint {
   friend class testing::WristTest_NoWindupPositive_Test;
   friend class testing::WristTest_NoWindupNegative_Test;
 
-  static const ::aos::time::Time kRezeroTime;
+  static constexpr ::aos::monotonic_clock::duration kRezeroTime;
 
   // The state feedback control loop to talk to.
   ::std::unique_ptr<ZeroedStateFeedbackLoop<kNumZeroSensors>> loop_;
 
   ConfigurationData config_data_;
 
-  ::aos::time::Time last_good_time_;
+  ::aos::monotonic_clock::time_point last_good_time_;
 
   // Returns the index of the first active sensor, or -1 if none are active.
   int ActiveSensorIndex(
@@ -262,8 +261,8 @@ class ZeroedJoint {
 };
 
 template <int kNumZeroSensors>
-const ::aos::time::Time ZeroedJoint<kNumZeroSensors>::kRezeroTime =
-    ::aos::time::Time::InSeconds(2);
+constexpr ::aos::monotonic_clock::duration
+    ZeroedJoint<kNumZeroSensors>::kRezeroTime = ::std::chrono::seconds(2);
 
 template <int kNumZeroSensors>
 /*static*/ const double ZeroedJoint<kNumZeroSensors>::dt = 0.01;
@@ -283,7 +282,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     output_enabled = false;
     LOG(WARNING, "err_count is %d so disabling\n", error_count_);
 
-    if ((::aos::time::Time::Now() - last_good_time_) > kRezeroTime) {
+    if (::aos::monotonic_clock::now() > kRezeroTime + last_good_time_) {
       LOG(WARNING, "err_count is %d (or 1st time) so forcing a re-zero\n",
           error_count_);
       state_ = UNINITIALIZED;
@@ -291,7 +290,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     }
   }
   if (position != NULL) {
-    last_good_time_ = ::aos::time::Time::Now();
+    last_good_time_ = ::aos::monotonic_clock::now();
     error_count_ = 0;
   }
 

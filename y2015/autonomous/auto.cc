@@ -1,28 +1,31 @@
 #include <stdio.h>
 
+#include <chrono>
 #include <memory>
 
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/time.h"
-#include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
-
+#include "aos/common/time.h"
+#include "aos/common/util/phased_loop.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "frc971/autonomous/auto.q.h"
-#include "y2015/autonomous/auto.q.h"
-#include "y2015/constants.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2015/actors/drivetrain_actor.h"
-#include "y2015/control_loops/claw/claw.q.h"
-#include "y2015/control_loops/fridge/fridge.q.h"
+#include "y2015/actors/held_to_lift_actor.h"
 #include "y2015/actors/pickup_actor.h"
 #include "y2015/actors/stack_actor.h"
-#include "y2015/actors/held_to_lift_actor.h"
+#include "y2015/autonomous/auto.q.h"
+#include "y2015/constants.h"
+#include "y2015/control_loops/claw/claw.q.h"
+#include "y2015/control_loops/fridge/fridge.q.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2015::control_loops::claw_queue;
 using ::y2015::control_loops::fridge::fridge_queue;
+
+namespace chrono = ::std::chrono;
+namespace this_thread = ::std::this_thread;
+using ::aos::monotonic_clock;
 
 namespace y2015 {
 namespace autonomous {
@@ -86,9 +89,11 @@ void WaitUntilDoneOrCanceled(
     LOG(ERROR, "No action, not waiting\n");
     return;
   }
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                      chrono::microseconds(2500));
   while (true) {
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoopXMS(5, 2500);
+    phased_loop.SleepUntilNext();
     if (!action->Running() || ShouldExitAuto()) {
       return;
     }
@@ -338,14 +343,14 @@ void TripleCanAuto() {
   LOG(INFO, "Sucking in tote.\n");
   SetClawState(0.0, 6.0, true, kInstantaneousClaw);
 
-  time::SleepFor(time::Time::InSeconds(0.7));
+  this_thread::sleep_for(chrono::milliseconds(700));
   LOG(INFO, "Done sucking in tote\n");
 
   // Now pick it up
   pickup = actors::MakePickupAction(pickup_params);
   pickup->Start();
 
-  time::SleepFor(time::Time::InSeconds(0.9));
+  this_thread::sleep_for(chrono::milliseconds(900));
   // Start turning.
   LOG(INFO, "Turning in place\n");
   drive = SetDriveGoal(0.0, kFastDrive, -0.23, kStackingFirstTurn);
@@ -379,7 +384,7 @@ void TripleCanAuto() {
   LOG(INFO, "Lowering the claw to knock the tote\n");
   SetClawStateNoWait(0.0, 0.0, true, kFastClaw);
 
-  time::SleepFor(time::Time::InSeconds(0.1));
+  this_thread::sleep_for(chrono::milliseconds(100));
   if (ShouldExitAuto()) return;
 
   WaitUntilDoneOrCanceled(::std::move(drive));
@@ -421,12 +426,12 @@ void TripleCanAuto() {
   if (ShouldExitAuto()) return;
 
   if (ShouldExitAuto()) return;
-  time::SleepFor(time::Time::InSeconds(0.30));
+  this_thread::sleep_for(chrono::milliseconds(300));
   if (ShouldExitAuto()) return;
 
   SetClawStateNoWait(0.0, 4.0, true, kFastClaw);
   if (ShouldExitAuto()) return;
-  time::SleepFor(time::Time::InSeconds(0.10));
+  this_thread::sleep_for(chrono::milliseconds(100));
 
   WaitUntilDoneOrCanceled(::std::move(lift));
   if (ShouldExitAuto()) return;
@@ -439,7 +444,7 @@ void TripleCanAuto() {
   pickup = actors::MakePickupAction(pickup_params);
   pickup->Start();
 
-  time::SleepFor(time::Time::InSeconds(1.0));
+  this_thread::sleep_for(chrono::seconds(1));
   if (ShouldExitAuto()) return;
 
   // Start turning.
@@ -478,7 +483,7 @@ void TripleCanAuto() {
   // Lift the fridge.
   MoveFridge(0.0, 0.3, true, kFridgeXProfile, kFridgeYProfile);
 
-  time::SleepFor(time::Time::InSeconds(0.1));
+  this_thread::sleep_for(chrono::milliseconds(100));
   if (ShouldExitAuto()) return;
 
   WaitUntilDoneOrCanceled(::std::move(drive));
@@ -503,7 +508,7 @@ void TripleCanAuto() {
   SetClawState(0.0, 7.0, true, kFastClaw);
   if (ShouldExitAuto()) return;
 
-  time::SleepFor(time::Time::InSeconds(0.2));
+  this_thread::sleep_for(chrono::milliseconds(200));
   if (ShouldExitAuto()) return;
 
   WaitUntilDoneOrCanceled(::std::move(drive));
@@ -514,7 +519,7 @@ void TripleCanAuto() {
   //StepDrive(2.5, -1.4);
   drive = SetDriveGoal(2.5, kRaceDrive, -1.4, kRaceTurn);
 
-  time::SleepFor(time::Time::InSeconds(0.5));
+  this_thread::sleep_for(chrono::milliseconds(500));
 
   LOG(INFO, "Moving totes out\n");
   MoveFridge(0.6, 0.32, true, kFridgeXProfile, kFridgeYProfile);
@@ -528,7 +533,7 @@ void TripleCanAuto() {
   WaitForFridge();
   if (ShouldExitAuto()) return;
 
-  time::SleepFor(time::Time::InSeconds(0.1));
+  this_thread::sleep_for(chrono::milliseconds(100));
 
   if (ShouldExitAuto()) return;
 
@@ -550,30 +555,33 @@ void TripleCanAuto() {
   if (ShouldExitAuto()) return;
 }
 
-void GrabberForTime(double voltage, double wait_time) {
-  ::aos::time::Time now = ::aos::time::Time::Now();
-  ::aos::time::Time end_time = now + time::Time::InSeconds(wait_time);
-  LOG(INFO, "Starting to grab at %f for %f seconds\n", voltage, wait_time);
+void GrabberForTime(double voltage, monotonic_clock::duration wait_time) {
+  monotonic_clock::time_point now = monotonic_clock::now();
+  monotonic_clock::time_point end_time = now + wait_time;
+  LOG(INFO, "Starting to grab at %f for %f seconds\n", voltage,
+      chrono::duration_cast<chrono::duration<double>>(wait_time).count());
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                      chrono::microseconds(2500));
   while (true) {
     autonomous::can_control.MakeWithBuilder().can_voltage(voltage).Send();
     // Poll the running bit and auto done bits.
     if (ShouldExitAuto()) {
       return;
     }
-    if (::aos::time::Time::Now() > end_time) {
+    if (monotonic_clock::now() > end_time) {
       LOG(INFO, "Done grabbing\n");
       return;
     }
-    ::aos::time::PhasedLoopXMS(5, 2500);
+    phased_loop.SleepUntilNext();
   }
 }
 
 void CanGrabberAuto() {
   ResetDrivetrain();
-  GrabberForTime(12.0, 0.18);
+  GrabberForTime(12.0, chrono::milliseconds(180));
   if (ShouldExitAuto()) return;
 
-  //GrabberForTime(4.0, 0.10);
+  //GrabberForTime(4.0, chrono::milliseconds(100));
   if (ShouldExitAuto()) return;
   InitializeEncoders();
   ResetDrivetrain();
@@ -588,15 +596,17 @@ void CanGrabberAuto() {
       .right_goal(right_initial_position + 1.5)
       .right_velocity_goal(0)
       .Send();
-  GrabberForTime(12.0, 0.02);
+  GrabberForTime(12.0, chrono::milliseconds(20));
 
-  GrabberForTime(4.0, 14.0);
+  GrabberForTime(4.0, chrono::seconds(14));
   if (ShouldExitAuto()) return;
 }
 
 void HandleAuto() {
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
-  LOG(INFO, "Starting auto mode at %f\n", start_time.ToSeconds());
+  monotonic_clock::time_point start_time = monotonic_clock::now();
+  LOG(INFO, "Starting auto mode at %f\n",
+      chrono::duration_cast<chrono::duration<double>>(
+          start_time.time_since_epoch()).count());
   //TripleCanAuto();
   CanGrabberAuto();
 }

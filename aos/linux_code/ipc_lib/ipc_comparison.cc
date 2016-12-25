@@ -1,31 +1,32 @@
 #include "third_party/gflags/include/gflags/gflags.h"
 
-#include <stdint.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <pthread.h>
+#include <fcntl.h>
+#include <mqueue.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdint.h>
+#include <sys/eventfd.h>
 #include <sys/msg.h>
 #include <sys/sem.h>
-#include <sys/eventfd.h>
-#include <semaphore.h>
-#include <mqueue.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
 
-#include <thread>
+#include <atomic>
+#include <chrono>
 #include <memory>
 #include <string>
-#include <atomic>
+#include <thread>
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/logging/implementations.h"
-#include "aos/common/time.h"
-#include "aos/common/mutex.h"
-#include "aos/common/event.h"
 #include "aos/common/condition.h"
+#include "aos/common/event.h"
+#include "aos/common/logging/implementations.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/mutex.h"
+#include "aos/common/time.h"
 #include "aos/linux_code/init.h"
 #include "aos/linux_code/ipc_lib/queue.h"
 
@@ -39,6 +40,8 @@ DEFINE_int32(server_priority, 1,
              "Realtime priority for server. Negative for don't change");
 
 namespace aos {
+
+namespace chrono = ::std::chrono;
 
 // A generic interface for an object which can send some data to another thread
 // and back.
@@ -882,7 +885,7 @@ int Main(int /*argc*/, char **argv) {
     ping_ponger->Ping();
   }
 
-  const time::Time start = time::Time::Now();
+  const monotonic_clock::time_point start = monotonic_clock::now();
 
   for (int32_t i = 0; i < FLAGS_messages; ++i) {
     PingPongerInterface::Data *to_send = ping_ponger->PingData();
@@ -893,7 +896,7 @@ int Main(int /*argc*/, char **argv) {
     }
   }
 
-  const time::Time end = time::Time::Now();
+  const monotonic_clock::time_point end = monotonic_clock::now();
 
   // Try to make sure the server thread gets past its check of done so our
   // Ping() down below doesn't hang. Kind of lame, but doing better would
@@ -906,13 +909,14 @@ int Main(int /*argc*/, char **argv) {
   server.join();
 
   LOG(INFO, "Took %f seconds to send %" PRId32 " messages\n",
-      (end - start).ToSeconds(), FLAGS_messages);
-  const time::Time per_message = (end - start) / FLAGS_messages;
-  if (per_message.sec() > 0) {
+      chrono::duration_cast<chrono::duration<double>>(end - start).count(),
+      FLAGS_messages);
+  const chrono::nanoseconds per_message = (end - start) / FLAGS_messages;
+  if (per_message >= chrono::seconds(1)) {
     LOG(INFO, "More than 1 second per message ?!?\n");
   } else {
     LOG(INFO, "That is %" PRId32 " nanoseconds per message\n",
-        per_message.nsec());
+        static_cast<int>(per_message.count()));
   }
 
   return 0;

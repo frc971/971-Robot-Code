@@ -1,5 +1,6 @@
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "aos/common/controls/control_loop_test.h"
@@ -24,8 +25,8 @@ namespace control_loops {
 namespace drivetrain {
 namespace testing {
 
-using ::aos::time::Time;
-
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 using ::y2016::control_loops::drivetrain::MakeDrivetrainPlant;
 
 // TODO(Comran): Make one that doesn't depend on the actual values for a
@@ -235,9 +236,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     SimulateTimestep(true);
   }
 
-  void RunForTime(const Time run_for) {
-    const auto end_time = Time::Now() + run_for;
-    while (Time::Now() < end_time) {
+  void RunForTime(monotonic_clock::duration run_for) {
+    const auto end_time = monotonic_clock::now() + run_for;
+    while (monotonic_clock::now() < end_time) {
       RunIteration();
     }
   }
@@ -261,7 +262,7 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
       .left_goal(-1.0)
       .right_goal(1.0)
       .Send();
-  RunForTime(Time::InSeconds(2.0));
+  RunForTime(chrono::seconds(2));
   VerifyNearGoal();
 }
 
@@ -275,7 +276,7 @@ TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
       .Send();
   drivetrain_motor_plant_.set_left_voltage_offset(1.0);
   drivetrain_motor_plant_.set_right_voltage_offset(1.0);
-  RunForTime(Time::InSeconds(1.5));
+  RunForTime(chrono::milliseconds(1500));
   VerifyNearGoal();
 }
 
@@ -311,7 +312,7 @@ TEST_F(DrivetrainTest, NoGoalStart) {
 // Tests that never having a goal, but having driver's station messages, doesn't
 // break.
 TEST_F(DrivetrainTest, NoGoalWithRobotState) {
-  RunForTime(Time::InSeconds(0.1));
+  RunForTime(chrono::milliseconds(100));
 }
 
 // Tests that the robot successfully drives straight forward.
@@ -393,7 +394,8 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
     goal.Send();
   }
 
-  while (Time::Now() < Time::InSeconds(6)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(6))) {
     RunIteration();
     ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
     EXPECT_NEAR(my_drivetrain_queue_.output->left_voltage,
@@ -423,7 +425,8 @@ TEST_F(DrivetrainTest, ProfileTurn) {
     goal.Send();
   }
 
-  while (Time::Now() < Time::InSeconds(6)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(6))) {
     RunIteration();
     ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
     EXPECT_NEAR(my_drivetrain_queue_.output->left_voltage,
@@ -453,7 +456,8 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
     goal.Send();
   }
 
-  while (Time::Now() < Time::InSeconds(3)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(3))) {
     RunIteration();
     ASSERT_TRUE(my_drivetrain_queue_.output.FetchLatest());
   }
@@ -471,7 +475,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
       .quickturn(false)
       .Send();
 
-  RunForTime(Time::InSeconds(1.0));
+  RunForTime(chrono::seconds(1));
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .control_loop_driving(false)
@@ -481,7 +485,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
       .quickturn(false)
       .Send();
 
-  RunForTime(Time::InSeconds(1.0));
+  RunForTime(chrono::seconds(1));
 
   my_drivetrain_queue_.goal.MakeWithBuilder()
       .control_loop_driving(false)
@@ -491,7 +495,7 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
       .quickturn(false)
       .Send();
 
-  RunForTime(Time::InSeconds(10.0));
+  RunForTime(chrono::seconds(10));
 
   {
     ::aos::ScopedMessagePtr<::frc971::control_loops::DrivetrainQueue::Goal>
@@ -508,8 +512,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal.Send();
   }
 
-  const auto end_time = Time::Now() + Time::InSeconds(4);
-  while (Time::Now() < end_time) {
+  const auto end_time = monotonic_clock::now() + chrono::seconds(4);
+  while (monotonic_clock::now() < end_time) {
     drivetrain_motor_plant_.SendPositionMessage();
     drivetrain_motor_.Iterate();
     drivetrain_motor_plant_.Simulate();

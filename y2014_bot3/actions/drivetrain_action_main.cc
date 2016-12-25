@@ -1,11 +1,9 @@
 #include <stdio.h>
 
-#include "aos/linux_code/init.h"
 #include "aos/common/logging/logging.h"
+#include "aos/linux_code/init.h"
 #include "bot3/actions/drivetrain_action.h"
 #include "frc971/actions/drivetrain_action.q.h"
-
-using ::aos::time::Time;
 
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init();

@@ -4,12 +4,13 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <chrono>
 #include <functional>
 
+#include "aos/common/controls/control_loop.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/time.h"
-#include "aos/common/controls/control_loop.h"
 #include "aos/common/util/phased_loop.h"
 
 namespace aos {
@@ -65,13 +66,14 @@ class ActorBase {
   // Returns false if the action was canceled or failed, and true if the wait
   // succeeded.
   bool WaitOrCancel(monotonic_clock::duration duration) {
-    return !WaitUntil([]() {
-      ::aos::time::PhasedLoopXMS(
-          ::std::chrono::duration_cast<::std::chrono::milliseconds>(
-              ::aos::controls::kLoopFrequency).count(),
-          2500);
-      return false;
-    }, ::aos::monotonic_clock::now() + duration);
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        ::std::chrono::milliseconds(5) / 2);
+    return !WaitUntil(
+        [&phased_loop]() {
+          phased_loop.SleepUntilNext();
+          return false;
+        },
+        ::aos::monotonic_clock::now() + duration);
   }
 
   // Returns true if the action should be canceled.

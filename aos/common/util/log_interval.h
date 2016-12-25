@@ -12,7 +12,7 @@ namespace util {
 // A class to help with logging things that happen a lot only occasionally.
 //
 // Intended use {
-//   static LogInterval interval(::aos::time::Time::InSeconds(0.2));
+//   static LogInterval interval(::std::chrono::millseconds(200));
 //
 //   if (WantToLog()) {
 //     interval.WantToLog();

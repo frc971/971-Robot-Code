@@ -72,8 +72,9 @@ int main() {
       fd_set fds;
       FD_ZERO(&fds);
       FD_SET(connection, &fds);
-      struct timeval timeout_timeval =
-          ::aos::time::Time::InSeconds(1).ToTimeval();
+      struct timeval timeout_timeval;
+      timeout_timeval.tv_sec = 1;
+      timeout_timeval.tv_usec = 0;
       switch (
           select(connection + 1, &fds, nullptr, nullptr, &timeout_timeval)) {
         case 1: {

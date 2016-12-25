@@ -1,11 +1,12 @@
 #include "y2016/dashboard/dashboard.h"
 
+#include <chrono>
+#include <complex>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include <complex>
 
 #include "seasocks/Server.h"
 
@@ -21,6 +22,8 @@
 #include "y2016/queues/ball_detector.q.h"
 
 #include "y2016/dashboard/embedded.h"
+
+namespace chrono = ::std::chrono;
 
 namespace y2016 {
 namespace dashboard {
@@ -139,7 +142,7 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
 
   size_t index = GetIndex(sample_id_);
 
-  ItemDatapoint datapoint{value, ::aos::time::Time::Now()};
+  ItemDatapoint datapoint{value, ::aos::monotonic_clock::now()};
   if (measure_index_ >= sample_items_.size()) {
     // New item in our data table.
     ::std::vector<ItemDatapoint> datapoints;
@@ -194,9 +197,12 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
     if (static_cast<size_t>(adjusted_index) <
         sample_items_.at(0).datapoints.size()) {
       message << cur_sample << "%"
-              << sample_items_.at(0)
-                     .datapoints.at(adjusted_index)
-                     .time.ToSeconds() << "%";  // Send time.
+              << chrono::duration_cast<chrono::duration<double>>(
+                     sample_items_.at(0)
+                         .datapoints.at(adjusted_index)
+                         .time.time_since_epoch())
+                     .count()
+              << "%";  // Send time.
       // Add comma-separated list of data points.
       for (size_t cur_measure = 0; cur_measure < sample_items_.size();
            cur_measure++) {
@@ -220,8 +226,10 @@ size_t DataCollector::GetIndex(size_t sample_id) {
 void DataCollector::operator()() {
   ::aos::SetCurrentThreadName("DashboardData");
 
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(100),
+                                      chrono::seconds(0));
   while (run_) {
-    ::aos::time::PhasedLoopXMS(100, 0);
+    phased_loop.SleepUntilNext();
     RunIteration();
   }
 }

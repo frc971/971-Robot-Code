@@ -28,12 +28,12 @@ typedef struct aos_shm_core_t {
   // the owner sets as soon as it finishes setting stuff up.
   aos_condition creation_condition;
 
-  // An offset from CLOCK_REALTIME to times for all the code.
+  // An offset from CLOCK_MONOTONIC to times for all the code in nanoseconds.
   // This is currently only set to non-zero by the log replay code.
   // There is no synchronization on this to avoid the overhead because it is
   // only updated with proper memory barriers when only a single task is
   // running.
-  struct timespec time_offset;
+  int64_t time_offset;
 
   struct aos_mutex msg_alloc_lock;
   void *msg_alloc;

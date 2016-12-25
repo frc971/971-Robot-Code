@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 
+#include "aos/common/time.h"
+#include "frc971/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/shifter_hall_effect.h"
-#include "frc971/constants.h"
 
 namespace y2015 {
 namespace constants {
@@ -76,7 +77,7 @@ struct Values {
 
     // Time between sending commands to claw opening pistons and them reaching
     // the new state.
-    double piston_switch_time;
+    ::aos::monotonic_clock::duration piston_switch_time;
     // How far on either side we look for the index pulse before we give up.
     double zeroing_range;
   };

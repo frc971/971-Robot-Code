@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 #include <algorithm>
+#include <chrono>
 
 #include "aos/common/die.h"
 #include "aos/common/once.h"
@@ -15,6 +16,8 @@
 namespace aos {
 namespace logging {
 namespace {
+
+namespace chrono = ::std::chrono;
 
 // The root LogImplementation. It only logs to stderr/stdout.
 // Some of the things specified in the LogImplementation documentation doesn't
@@ -84,9 +87,14 @@ void FillInMessageBase(log_level level, LogMessage *message) {
   memcpy(message->name, context->name, context->name_size);
   message->name_length = context->name_size;
 
-  time::Time now = time::Time::Now();
-  message->seconds = now.sec();
-  message->nseconds = now.nsec();
+  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+  message->seconds =
+      chrono::duration_cast<chrono::seconds>(monotonic_now.time_since_epoch())
+          .count();
+  message->nseconds =
+      chrono::duration_cast<chrono::nanoseconds>(
+          monotonic_now.time_since_epoch() - chrono::seconds(message->seconds))
+          .count();
 
   message->sequence = context->sequence++;
 }
@@ -325,9 +333,9 @@ namespace {
 RawQueue *queue = NULL;
 
 int dropped_messages = 0;
-::aos::time::Time dropped_start, backoff_start;
+monotonic_clock::time_point dropped_start, backoff_start;
 // Wait this long after dropping a message before even trying to write any more.
-constexpr ::aos::time::Time kDropBackoff = ::aos::time::Time::InSeconds(0.1);
+constexpr chrono::milliseconds kDropBackoff = chrono::milliseconds(100);
 
 LogMessage *GetMessageOrDie() {
   LogMessage *message = static_cast<LogMessage *>(queue->GetMessage());
@@ -340,8 +348,8 @@ LogMessage *GetMessageOrDie() {
 
 void Write(LogMessage *msg) {
   if (__builtin_expect(dropped_messages > 0, false)) {
-    ::aos::time::Time message_time =
-        ::aos::time::Time(msg->seconds, msg->nseconds);
+    monotonic_clock::time_point message_time(
+        chrono::seconds(msg->seconds) + chrono::nanoseconds(msg->nseconds));
     if (message_time - backoff_start < kDropBackoff) {
       ++dropped_messages;
       queue->FreeMessage(msg);
@@ -349,10 +357,16 @@ void Write(LogMessage *msg) {
     }
 
     LogMessage *dropped_message = GetMessageOrDie();
+    chrono::seconds dropped_start_sec = chrono::duration_cast<chrono::seconds>(
+        dropped_start.time_since_epoch());
+    chrono::nanoseconds dropped_start_nsec =
+        chrono::duration_cast<chrono::nanoseconds>(
+            dropped_start.time_since_epoch() - dropped_start_sec);
     internal::FillInMessageVarargs(
         ERROR, dropped_message,
         "%d logs starting at %" PRId32 ".%" PRId32 " dropped\n",
-        dropped_messages, dropped_start.sec(), dropped_start.nsec());
+        dropped_messages, static_cast<int32_t>(dropped_start_sec.count()),
+        static_cast<int32_t>(dropped_start_nsec.count()));
     if (queue->WriteMessage(dropped_message, RawQueue::kNonBlock)) {
       dropped_messages = 0;
     } else {
@@ -367,8 +381,9 @@ void Write(LogMessage *msg) {
   }
   if (!queue->WriteMessage(msg, RawQueue::kNonBlock)) {
     if (dropped_messages == 0) {
-      dropped_start = backoff_start =
-          ::aos::time::Time(msg->seconds, msg->nseconds);
+      monotonic_clock::time_point message_time(
+          chrono::seconds(msg->seconds) + chrono::nanoseconds(msg->nseconds));
+      dropped_start = backoff_start = message_time;
     }
     ++dropped_messages;
   }

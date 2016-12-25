@@ -16,16 +16,15 @@ struct MessageType;
 // thing for the whole thing.
 class Message {
  public:
-  typedef ::aos::time::Time Time;
   // The time that the message was sent at.
-  Time sent_time;
+  monotonic_clock::time_point sent_time;
 
-  Message() : sent_time(0, 0) {}
+  Message() : sent_time(monotonic_clock::min_time) {}
 
   // Zeros out the time.
   void Zero();
   // Returns the size of the common fields.
-  static size_t Size() { return sizeof(Time); }
+  static size_t Size() { return sizeof(sent_time); }
 
   // Deserializes the common fields from the buffer.
   size_t Deserialize(const char *buffer);
@@ -33,7 +32,7 @@ class Message {
   size_t Serialize(char *buffer) const;
 
   // Populates sent_time with the current time.
-  void SetTimeToNow() { sent_time = Time::Now(); }
+  void SetTimeToNow() { sent_time = monotonic_clock::now(); }
 
   // Writes the contents of the message to the provided buffer.
   size_t Print(char *buffer, int length) const;
@@ -198,18 +197,11 @@ class Queue {
   void FetchAnother();
 
   // Returns the age of the message.
-  const time::Time Age() const {
-    return time::Time::Now() - queue_msg_->sent_time;
+  const monotonic_clock::duration Age() const {
+    return monotonic_clock::now() - queue_msg_->sent_time;
   }
 
-  // Returns true if the latest value in the queue is newer than age mseconds.
-  // DEPRECATED(brians): Use IsNewerThan(const time::Time&) instead.
-  bool IsNewerThanMS(int age) const {
-    // TODO(aschuh): Log very verbosely if something is _ever_ stale.
-    return IsNewerThan(time::Time::InMS(age));
-  }
-
-  bool IsNewerThan(const time::Time &age) const {
+  bool IsNewerThan(const monotonic_clock::duration age) const {
     return get() != nullptr && Age() < age;
   }
 

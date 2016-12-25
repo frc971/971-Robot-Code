@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <thread>
+#include <chrono>
 
 #include "gtest/gtest.h"
 
@@ -13,12 +14,13 @@
 #include "aos/common/event.h"
 #include "aos/testing/test_shm.h"
 
-using ::aos::time::Time;
-
 namespace aos {
 namespace common {
 namespace actions {
 namespace testing {
+
+
+namespace chrono = ::std::chrono;
 
 class TestActorIndex
     : public aos::common::actions::ActorBase<actions::TestActionQueueGroup> {
@@ -135,7 +137,7 @@ TEST_F(ActionTest, StartWithOldGoal) {
 
   ASSERT_FALSE(actions::test_action.status.FetchLatest());
   ::std::thread init_thread([&nop_act]() { nop_act.Initialize(); });
-  ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.1));
+  ::std::this_thread::sleep_for(chrono::milliseconds(100));
   ASSERT_TRUE(actions::test_action.goal.MakeWithBuilder().run(1).Send());
   init_thread.join();
   ASSERT_TRUE(actions::test_action.status.FetchLatest());

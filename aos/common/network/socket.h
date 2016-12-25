@@ -1,15 +1,15 @@
 #ifndef AOS_COMMON_NETWORK_SOCKET_H_
 #define AOS_COMMON_NETWORK_SOCKET_H_
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <chrono>
 
-#include "aos/common/time.h"
 #include "aos/common/network_port.h"
 
 namespace aos {
@@ -28,7 +28,7 @@ class Socket {
   // No timeout.
   int Receive(void *buf, int length);
   // timeout is relative
-  int Receive(void *buf, int length, time::Time timeout);
+  int Receive(void *buf, int length, ::std::chrono::microseconds timeout);
 
  protected:
   int Connect(NetworkPort port, const char *address, int type = SOCK_DGRAM);

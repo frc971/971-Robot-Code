@@ -1,21 +1,22 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
+#include <libgen.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <libgen.h>
+#include <unistd.h>
 
+#include <chrono>
 #include <string>
 
+#include "aos/common/die.h"
+#include "aos/common/libc/aos_strsignal.h"
+#include "aos/common/libc/dirname.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/mutex.h"
 #include "aos/common/time.h"
 #include "aos/common/type_traits.h"
-#include "aos/common/mutex.h"
 #include "aos/linux_code/ipc_lib/core_lib.h"
-#include "aos/common/die.h"
-#include "aos/common/libc/dirname.h"
-#include "aos/common/libc/aos_strsignal.h"
-#include "aos/common/logging/logging.h"
 #include "aos/testing/test_shm.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
@@ -33,6 +34,8 @@
 // IO-bound, which is a bad way to test CPU contention.
 
 namespace aos {
+
+namespace chrono = ::std::chrono;
 
 // Each test is represented by the name of the test binary and then any
 // arguments to pass to it.
@@ -55,12 +58,12 @@ static const char *kDefaultArgs[] = {
 // How many test processes to run at a time.
 static const int kTesters = 100;
 // How long to test for.
-static constexpr time::Time kTestTime = time::Time::InSeconds(30);
+static constexpr monotonic_clock::duration kTestTime = chrono::seconds(30);
 
 // The structure that gets put into shared memory and then referenced by all of
 // the child processes.
 struct Shared {
-  Shared(const time::Time &stop_time)
+  Shared(const monotonic_clock::time_point stop_time)
     : stop_time(stop_time), total_iterations(0) {}
 
   // Synchronizes access to stdout/stderr to avoid interleaving failure
@@ -68,7 +71,7 @@ struct Shared {
   Mutex output_mutex;
 
   // When to stop.
-  time::Time stop_time;
+  monotonic_clock::time_point stop_time;
 
   // The total number of iterations. Updated by each child as it finishes.
   int total_iterations;
@@ -128,7 +131,7 @@ void DoRun(Shared *shared) {
   // same test at the same time for the whole test.
   const char *(*test)[kTestMaxArgs] = &kTests[getpid() % kTestsLength];
   int pipes[2];
-  while (time::Time::Now() < shared->stop_time) {
+  while (monotonic_clock::now() < shared->stop_time) {
     if (pipe(pipes) == -1) {
       PDie("pipe(%p) failed", &pipes);
     }
@@ -213,7 +216,7 @@ int Main(int argc, char **argv) {
   ::aos::testing::TestSharedMemory my_shm_;
 
   Shared *shared = static_cast<Shared *>(shm_malloc(sizeof(Shared)));
-  new (shared) Shared(time::Time::Now() + kTestTime);
+  new (shared) Shared(monotonic_clock::now() + kTestTime);
 
   if (asprintf(const_cast<char **>(&shared->path),
                "%s/../tests", ::aos::libc::Dirname(argv[0]).c_str()) == -1) {

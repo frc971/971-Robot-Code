@@ -1,25 +1,25 @@
 #include <stdio.h>
 
+#include <chrono>
 #include <memory>
 
-#include "aos/common/util/phased_loop.h"
-#include "aos/common/time.h"
-#include "aos/common/util/trapezoid_profile.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
-
+#include "aos/common/time.h"
+#include "aos/common/util/phased_loop.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2014_bot3/autonomous/auto.q.h"
 #include "y2014_bot3/control_loops/rollers/rollers.q.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2014_bot3::control_loops::rollers_queue;
 
 namespace y2014_bot3 {
 namespace autonomous {
 
-namespace time = ::aos::time;
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 static double left_initial_position, right_initial_position;
 
@@ -54,8 +54,10 @@ void InitializeEncoders() {
 }
 
 void HandleAuto() {
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
-  LOG(INFO, "Starting auto mode at %f\n", start_time.ToSeconds());
+  monotonic_clock::time_point start_time = monotonic_clock::now();
+  LOG(INFO, "Starting auto mode at %f\n",
+      chrono::duration_cast<chrono::duration<double>>(
+          start_time.time_since_epoch()).count());
 
   // TODO(comran): Add various options for different autos down below.
   ResetDrivetrain();
@@ -73,7 +75,7 @@ void HandleAuto() {
       .right_goal(right_initial_position)
       .right_velocity_goal(0)
       .Send();
-  time::SleepFor(time::Time::InSeconds(2.0));
+  ::std::this_thread::sleep_for(chrono::seconds(2));
 
   ::frc971::control_loops::drivetrain_queue.goal.MakeWithBuilder()
       .control_loop_driving(false)

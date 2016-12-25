@@ -3,27 +3,30 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
-#include "gtest/gtest.h"
-#include "aos/common/queue.h"
-#include "aos/common/time.h"
 #include "aos/common/commonmath.h"
 #include "aos/common/controls/control_loop_test.h"
-#include "y2015/util/kinematics.h"
+#include "aos/common/queue.h"
+#include "aos/common/time.h"
 #include "frc971/control_loops/position_sensor_sim.h"
+#include "frc971/control_loops/team_number_test_environment.h"
+#include "gtest/gtest.h"
+#include "y2015/constants.h"
 #include "y2015/control_loops/fridge/arm_motor_plant.h"
 #include "y2015/control_loops/fridge/elevator_motor_plant.h"
 #include "y2015/control_loops/fridge/fridge.q.h"
-#include "y2015/constants.h"
-#include "frc971/control_loops/team_number_test_environment.h"
-
-using ::aos::time::Time;
+#include "y2015/util/kinematics.h"
 
 namespace y2015 {
 namespace control_loops {
 namespace fridge {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
+
 // Class which simulates the fridge and sends out queue messages with the
 // position.
 class FridgeSimulation {
@@ -263,9 +266,10 @@ class FridgeTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
+  void RunForTime(const monotonic_clock::duration run_for,
+                  bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
       RunIteration(enabled);
     }
   }
@@ -297,7 +301,7 @@ TEST_F(FridgeTest, DoesNothing) {
                   .Send());
 
   // Run a few iterations.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -324,7 +328,7 @@ TEST_F(FridgeTest, ReachesXYGoal) {
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -344,7 +348,7 @@ TEST_F(FridgeTest, ReachesGoal) {
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -364,7 +368,7 @@ TEST_F(FridgeTest, RespectsRange) {
                   .max_angular_acceleration(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   fridge_queue_.status.FetchLatest();
@@ -385,7 +389,7 @@ TEST_F(FridgeTest, RespectsRange) {
                   .max_angular_acceleration(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   fridge_queue_.status.FetchLatest();
@@ -405,7 +409,7 @@ TEST_F(FridgeTest, ZeroTest) {
       .max_angular_velocity(20)
       .max_angular_acceleration(20)
       .Send();
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -420,7 +424,7 @@ TEST_F(FridgeTest, LowerHardstopStartup) {
       constants::GetValues().fridge.arm.lower_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
   // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InMS(8000));
+  RunForTime(chrono::milliseconds(8000));
 
   VerifyNearGoal();
 }
@@ -434,7 +438,7 @@ TEST_F(FridgeTest, UpperHardstopStartup) {
       constants::GetValues().fridge.arm.upper_hard_limit,
       constants::GetValues().fridge.arm.upper_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
-  RunForTime(Time::InMS(5000));
+  RunForTime(chrono::milliseconds(5000));
 
   VerifyNearGoal();
 }
@@ -525,7 +529,7 @@ TEST_F(FridgeTest, ElevatorFixError) {
 
   EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -551,7 +555,7 @@ TEST_F(FridgeTest, ArmFixError) {
 
   EXPECT_EQ(Fridge::ZEROING_ELEVATOR, fridge_.state());
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -564,14 +568,14 @@ TEST_F(FridgeTest, ResetTest) {
       constants::GetValues().fridge.arm.upper_hard_limit,
       constants::GetValues().fridge.arm.upper_hard_limit);
   fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
-  RunForTime(Time::InMS(5000));
+  RunForTime(chrono::milliseconds(5000));
 
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(Time::InMS(100));
+  RunForTime(chrono::milliseconds(100));
   EXPECT_NE(Fridge::RUNNING, fridge_.state());
-  RunForTime(Time::InMS(6000));
+  RunForTime(chrono::milliseconds(6000));
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
   VerifyNearGoal();
 }
@@ -580,12 +584,12 @@ TEST_F(FridgeTest, ResetTest) {
 TEST_F(FridgeTest, DisabledGoalTest) {
   fridge_queue_.goal.MakeWithBuilder().angle(0.03).height(0.45).Send();
 
-  RunForTime(Time::InMS(100), false);
+  RunForTime(chrono::milliseconds(100), false);
   EXPECT_EQ(0.0, fridge_.elevator_goal_);
   EXPECT_EQ(0.0, fridge_.arm_goal_);
 
   // Now make sure they move correctly
-  RunForTime(Time::InMS(4000), true);
+  RunForTime(chrono::milliseconds(4000), true);
   EXPECT_NE(0.0, fridge_.elevator_goal_);
   EXPECT_NE(0.0, fridge_.arm_goal_);
 }
@@ -599,7 +603,7 @@ TEST_F(FridgeTest, ElevatorGoalPositiveWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_fridge_goal = fridge_.elevator_goal_;
   fridge_.elevator_goal_ += 100.0;
 
@@ -623,7 +627,7 @@ TEST_F(FridgeTest, ArmGoalPositiveWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_fridge_goal = fridge_.arm_goal_;
   fridge_.arm_goal_ += 100.0;
 
@@ -644,7 +648,7 @@ TEST_F(FridgeTest, ElevatorGoalNegativeWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_fridge_goal = fridge_.elevator_goal_;
   fridge_.elevator_goal_ -= 100.0;
 
@@ -665,7 +669,7 @@ TEST_F(FridgeTest, ArmGoalNegativeWindupTest) {
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_fridge_goal = fridge_.arm_goal_;
   fridge_.arm_goal_ -= 100.0;
 
@@ -679,7 +683,7 @@ TEST_F(FridgeTest, ArmGoalNegativeWindupTest) {
 
 // Tests that the loop zeroes when run for a while.
 TEST_F(FridgeTest, ZeroNoGoal) {
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   EXPECT_EQ(Fridge::RUNNING, fridge_.state());
 }
@@ -692,9 +696,9 @@ TEST_F(FridgeTest, SafeArmZeroing) {
       values.fridge.elevator.lower_hard_limit);
   fridge_plant_.InitializeArmPosition(M_PI / 4.0);
 
-  const auto start_time = Time::Now();
+  const auto start_time = monotonic_clock::now();
   double last_arm_goal = fridge_.arm_goal_;
-  while (Time::Now() < start_time + Time::InMS(4000)) {
+  while (monotonic_clock::now() < start_time + chrono::milliseconds(4000)) {
     RunIteration();
 
     if (fridge_.state() != Fridge::ZEROING_ELEVATOR) {
@@ -721,7 +725,7 @@ TEST_F(FridgeTest, ArmIntegratorTest) {
   fridge_plant_.set_arm_power_error(1.0);
   fridge_queue_.goal.MakeWithBuilder().angle(0.0).height(0.4).Send();
 
-  RunForTime(Time::InMS(8000));
+  RunForTime(chrono::milliseconds(8000));
 
   VerifyNearGoal();
 }

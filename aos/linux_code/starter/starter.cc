@@ -55,6 +55,8 @@ using ::std::unique_ptr;
 namespace aos {
 namespace starter {
 
+namespace chrono = ::std::chrono;
+
 // TODO(brians): split out the c++ libevent wrapper stuff into its own file(s)
 class EventBaseDeleter {
  public:
@@ -332,12 +334,21 @@ std::string RunCommand(std::string command) {
 }
 
 // Will call callback(arg) after time.
-void Timeout(time::Time time, void (*callback)(int, short, void *), void *arg) {
+void Timeout(monotonic_clock::duration time,
+             void (*callback)(int, short, void *), void *arg) {
   EventUniquePtr timeout(evtimer_new(libevent_base.get(), callback, arg));
-  struct timeval time_timeval = time.ToTimeval();
+  struct timeval time_timeval;
+  {
+    ::std::chrono::seconds sec =
+        ::std::chrono::duration_cast<::std::chrono::seconds>(time);
+    ::std::chrono::microseconds usec =
+        ::std::chrono::duration_cast<::std::chrono::microseconds>(time - sec);
+    time_timeval.tv_sec = sec.count();
+    time_timeval.tv_usec = usec.count();
+  }
   if (evtimer_add(timeout.release(), &time_timeval) != 0) {
-    LOG(FATAL, "evtimer_add(%p, %p) failed\n",
-        timeout.release(), &time_timeval);
+    LOG(FATAL, "evtimer_add(%p, %p) failed\n", timeout.release(),
+        &time_timeval);
   }
 }
 
@@ -383,11 +394,11 @@ class Child {
   // restarted.
   void ProcessDied() {
     pid_ = -1;
-    restarts_.push(time::Time::Now());
+    restarts_.push(monotonic_clock::now());
     if (restarts_.size() > kMaxRestartsNumber) {
-      time::Time oldest = restarts_.front();
+      monotonic_clock::time_point oldest = restarts_.front();
       restarts_.pop();
-      if ((time::Time::Now() - oldest) <= kMaxRestartsTime) {
+      if (monotonic_clock::now() <= kMaxRestartsTime + oldest) {
         LOG(WARNING, "process %s getting restarted too often\n", name());
         Timeout(kResumeWait, StaticStart, this);
         return;
@@ -408,19 +419,20 @@ class Child {
   };
 
   // How long to wait for a child to die nicely.
-  static constexpr time::Time kProcessDieTime = time::Time::InSeconds(2);
+  static constexpr chrono::nanoseconds kProcessDieTime = chrono::seconds(2);
 
   // How long to wait after the file is modified to restart it.
   // This is important because some programs like modifying the binaries by
   // writing them in little bits, which results in attempting to start partial
   // binaries without this.
-  static constexpr time::Time kRestartWaitTime = time::Time::InSeconds(1.5);
+  static constexpr chrono::nanoseconds kRestartWaitTime =
+      chrono::milliseconds(1500);
 
   // Only kMaxRestartsNumber restarts will be allowed in kMaxRestartsTime.
-  static constexpr time::Time kMaxRestartsTime = time::Time::InSeconds(4);
+  static constexpr chrono::nanoseconds kMaxRestartsTime = chrono::seconds(4);
   static const size_t kMaxRestartsNumber = 3;
   // How long to wait if it gets restarted too many times.
-  static constexpr time::Time kResumeWait = time::Time::InSeconds(5);
+  static constexpr chrono::nanoseconds kResumeWait = chrono::seconds(5);
 
   static void StaticFileModified(void *self) {
     static_cast<Child *>(self)->FileModified();
@@ -428,11 +440,21 @@ class Child {
 
   void FileModified() {
     LOG(DEBUG, "file for %s modified\n", name());
-    struct timeval restart_time_timeval = kRestartWaitTime.ToTimeval();
+    struct timeval restart_time_timeval;
+    {
+      ::std::chrono::seconds sec =
+          ::std::chrono::duration_cast<::std::chrono::seconds>(
+              kRestartWaitTime);
+      ::std::chrono::microseconds usec =
+          ::std::chrono::duration_cast<::std::chrono::microseconds>(
+              kRestartWaitTime - sec);
+      restart_time_timeval.tv_sec = sec.count();
+      restart_time_timeval.tv_usec = usec.count();
+    }
     // This will reset the timeout again if it hasn't run yet.
     if (evtimer_add(restart_timeout.get(), &restart_time_timeval) != 0) {
-      LOG(FATAL, "evtimer_add(%p, %p) failed\n",
-          restart_timeout.get(), &restart_time_timeval);
+      LOG(FATAL, "evtimer_add(%p, %p) failed\n", restart_timeout.get(),
+          &restart_time_timeval);
     }
     waiting_to_restart.insert(this);
   }
@@ -551,7 +573,8 @@ class Child {
   }
 
   // A history of the times that this process has been restarted.
-  std::queue<time::Time, std::list<time::Time>> restarts_;
+  std::queue<monotonic_clock::time_point,
+             std::list<monotonic_clock::time_point>> restarts_;
 
   // The currently running child's PID or NULL.
   pid_t pid_;
@@ -581,10 +604,10 @@ class Child {
   DISALLOW_COPY_AND_ASSIGN(Child);
 };
 
-constexpr time::Time Child::kProcessDieTime;
-constexpr time::Time Child::kRestartWaitTime;
-constexpr time::Time Child::kMaxRestartsTime;
-constexpr time::Time Child::kResumeWait;
+constexpr chrono::nanoseconds Child::kProcessDieTime;
+constexpr chrono::nanoseconds Child::kRestartWaitTime;
+constexpr chrono::nanoseconds Child::kMaxRestartsTime;
+constexpr chrono::nanoseconds Child::kResumeWait;
 
 EventUniquePtr Child::restart_timeout;
 ::std::set<Child *> Child::waiting_to_restart;
@@ -592,8 +615,8 @@ EventUniquePtr Child::restart_timeout;
 // Kills off the entire process group (including ourself).
 void KillChildren(bool try_nice) {
   if (try_nice) {
-    static const int kNiceStopSignal = SIGTERM;
-    static const time::Time kNiceWaitTime = time::Time::InSeconds(1);
+    static constexpr int kNiceStopSignal = SIGTERM;
+    static constexpr auto kNiceWaitTime = chrono::seconds(1);
 
     // Make sure that we don't just nicely stop ourself...
     sigset_t mask;
@@ -604,7 +627,7 @@ void KillChildren(bool try_nice) {
     kill(-getpid(), kNiceStopSignal);
 
     fflush(NULL);
-    time::SleepFor(kNiceWaitTime);
+    ::std::this_thread::sleep_for(kNiceWaitTime);
   }
 
   // Send SIGKILL to our whole process group, which will forcibly terminate any

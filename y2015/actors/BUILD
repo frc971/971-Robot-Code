@@ -123,26 +123,6 @@ cc_binary(
   ],
 )
 
-cc_test(
-  name = 'score_action_test',
-  srcs = [
-    'score_actor_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    '//aos/testing:test_shm',
-    '//aos/common/logging:queue_logging',
-    '//aos/common:queues',
-    '//aos/common:time',
-    '//aos/linux_code:init',
-    '//aos/common/actions:action_lib',
-    '//y2015/control_loops/fridge:fridge_queue',
-    '//frc971/control_loops:team_number_test_environment',
-    ':score_action_queue',
-    ':score_action_lib',
-  ],
-)
-
 queue_library(
   name = 'pickup_action_queue',
   srcs = [
@@ -421,27 +401,6 @@ queue_library(
   name = 'stack_action_params',
   srcs = [
     'stack_action_params.q',
-  ],
-)
-
-cc_test(
-  name = 'stack_action_test',
-  srcs = [
-    'stack_actor_test.cc',
-  ],
-  deps = [
-    '//aos/testing:googletest',
-    '//aos/testing:test_shm',
-    '//aos/common/logging:queue_logging',
-    '//aos/common:queues',
-    '//aos/common:time',
-    '//aos/linux_code:init',
-    '//aos/common/actions:action_lib',
-    '//aos/common/controls:control_loop_test',
-    '//y2015/control_loops/fridge:fridge_queue',
-    '//frc971/control_loops:team_number_test_environment',
-    ':stack_action_queue',
-    ':stack_action_lib',
   ],
 )
 

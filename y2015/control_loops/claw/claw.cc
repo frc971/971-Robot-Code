@@ -1,18 +1,19 @@
 #include "y2015/control_loops/claw/claw.h"
 
 #include <algorithm>
+#include <chrono>
 
 #include "aos/common/controls/control_loops.q.h"
 #include "aos/common/logging/logging.h"
-
+#include "aos/common/time.h"
+#include "aos/common/util/trapezoid_profile.h"
 #include "y2015/constants.h"
 #include "y2015/control_loops/claw/claw_motor_plant.h"
-#include "aos/common/util/trapezoid_profile.h"
 
 namespace y2015 {
 namespace control_loops {
 
-using ::aos::time::Time;
+using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
 constexpr double kZeroingVoltage = 4.0;
@@ -33,7 +34,7 @@ double ClawCappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
 
 Claw::Claw(control_loops::ClawQueue *claw)
     : aos::controls::ControlLoop<control_loops::ClawQueue>(claw),
-      last_piston_edge_(Time::Now()),
+      last_piston_edge_(monotonic_clock::min_time),
       claw_loop_(new ClawCappedStateFeedbackLoop(
           ::y2015::control_loops::claw::MakeClawLoop())),
       claw_estimator_(constants::GetValues().claw.zeroing),
@@ -273,7 +274,7 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
       }
     }
     if (output->rollers_closed != last_rollers_closed_) {
-      last_piston_edge_ = Time::Now();
+      last_piston_edge_ = monotonic_clock::now();
     }
   }
 
@@ -296,11 +297,12 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
 
   if (output) {
     status->rollers_open = !output->rollers_closed &&
-                           ((Time::Now() - last_piston_edge_).ToSeconds() >=
-                            values.claw.piston_switch_time);
-    status->rollers_closed = output->rollers_closed &&
-                             ((Time::Now() - last_piston_edge_).ToSeconds() >=
-                              values.claw.piston_switch_time);
+                           (monotonic_clock::now() >=
+                            values.claw.piston_switch_time + last_piston_edge_);
+    status->rollers_closed =
+        output->rollers_closed &&
+        (monotonic_clock::now() >=
+         values.claw.piston_switch_time + last_piston_edge_);
   } else {
     status->rollers_open = false;
     status->rollers_closed = false;

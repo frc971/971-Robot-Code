@@ -16,7 +16,6 @@
 #include "y2015_bot3/control_loops/intake/intake.q.h"
 #include "y2015_bot3/control_loops/drivetrain/drivetrain_base.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2015_bot3::control_loops::intake_queue;
 using ::y2015_bot3::control_loops::elevator_queue;
@@ -29,8 +28,9 @@ struct ProfileParams {
   double acceleration;
 };
 
-namespace time = ::aos::time;
+using ::aos::monotonic_clock;
 namespace actors = ::frc971::actors;
+namespace chrono = ::std::chrono;
 
 const ProfileParams kFastDrive = {3.0, 3.5};
 const ProfileParams kLastDrive = {4.0, 4.0};
@@ -99,9 +99,11 @@ void WaitUntilDoneOrCanceled(
     LOG(ERROR, "No action, not waiting\n");
     return;
   }
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                      chrono::microseconds(2500));
   while (true) {
+    phased_loop.SleepUntilNext();
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoopXMS(5, 2500);
     if (!action->Running() || ShouldExitAuto()) {
       return;
     }
@@ -126,11 +128,14 @@ void WaitUntilNear(double distance) {
   }
 }
 
-void GrabberForTime(double voltage, double wait_time) {
-  ::aos::time::Time now = ::aos::time::Time::Now();
-  ::aos::time::Time end_time = now + time::Time::InSeconds(wait_time);
-  LOG(INFO, "Starting to grab at %f for %f seconds\n", voltage, wait_time);
+void GrabberForTime(double voltage, monotonic_clock::duration wait_time) {
+  monotonic_clock::time_point monotonic_now = monotonic_clock::now();
+  monotonic_clock::time_point end_time = monotonic_now + wait_time;
+  LOG(INFO, "Starting to grab at %f for %f seconds\n", voltage,
+      chrono::duration_cast<chrono::duration<double>>(wait_time).count());
 
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                      chrono::microseconds(2500));
   while (true) {
     autonomous::can_grabber_control.MakeWithBuilder()
         .can_grabber_voltage(voltage).can_grabbers(false).Send();
@@ -139,11 +144,11 @@ void GrabberForTime(double voltage, double wait_time) {
     if (ShouldExitAuto()) {
       return;
     }
-    if (::aos::time::Time::Now() > end_time) {
+    if (monotonic_clock::now() > end_time) {
       LOG(INFO, "Done grabbing\n");
       return;
     }
-    ::aos::time::PhasedLoopXMS(5, 2500);
+    phased_loop.SleepUntilNext();
   }
 }
 
@@ -152,8 +157,8 @@ void CanGrabberAuto() {
   ResetDrivetrain();
 
   // Launch can grabbers.
-  //GrabberForTime(12.0, 0.26);
-  GrabberForTime(6.0, 0.40);
+  // GrabberForTime(12.0, chrono::milliseconds(260));
+  GrabberForTime(6.0, chrono::milliseconds(400));
   if (ShouldExitAuto()) return;
   InitializeEncoders();
   ResetDrivetrain();
@@ -192,18 +197,18 @@ void CanGrabberAuto() {
       .right_goal(right_initial_position + kMoveBackDistance)
       .right_velocity_goal(0)
       .Send();
-  GrabberForTime(12.0, 0.02);
+  GrabberForTime(12.0, chrono::milliseconds(20));
   if (ShouldExitAuto()) return;
 
   // We shouldn't need as much power at this point, so lower the can grabber
   // voltages to avoid damaging the motors due to stalling.
-  GrabberForTime(4.0, 0.75);
+  GrabberForTime(4.0, chrono::milliseconds(750));
   if (ShouldExitAuto()) return;
-  GrabberForTime(-3.0, 0.25);
+  GrabberForTime(-3.0, chrono::milliseconds(250));
   if (ShouldExitAuto()) return;
-  GrabberForTime(-12.0, 1.0);
+  GrabberForTime(-12.0, chrono::milliseconds(1000));
   if (ShouldExitAuto()) return;
-  GrabberForTime(-3.0, 12.0);
+  GrabberForTime(-3.0, chrono::milliseconds(12000));
 }
 
 const ProfileParams kElevatorProfile = {1.0, 5.0};
@@ -312,7 +317,7 @@ void LiftTote(double final_height = 0.48) {
 }
 
 void TripleCanAuto() {
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
+  monotonic_clock::time_point start_time = monotonic_clock::now();
 
   ::std::unique_ptr<::frc971::actors::DrivetrainAction> drive;
   InitializeEncoders();
@@ -428,15 +433,17 @@ void TripleCanAuto() {
       LOG(INFO, "Got the tote!\n");
       break;
     }
-    if ((::aos::time::Time::Now() - start_time) > time::Time::InSeconds(15.0)) {
+    if (monotonic_clock::now() > chrono::seconds(15) + start_time) {
       LOG(INFO, "Out of time\n");
       break;
     }
   }
 
-  ::aos::time::Time end_time = ::aos::time::Time::Now();
+  monotonic_clock::time_point end_time = monotonic_clock::now();
   LOG(INFO, "Ended auto with %f to spare\n",
-      (time::Time::InSeconds(15.0) - (end_time - start_time)).ToSeconds());
+      chrono::duration_cast<chrono::duration<double>>(chrono::seconds(15) -
+                                                      (end_time - start_time))
+          .count());
   if (!intake_queue.goal.MakeWithBuilder().movement(0.0).claw_closed(true)
           .Send()) {
     LOG(ERROR, "Sending intake goal failed.\n");
@@ -444,8 +451,11 @@ void TripleCanAuto() {
 }
 
 void HandleAuto() {
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
-  LOG(INFO, "Starting auto mode at %f\n", start_time.ToSeconds());
+  monotonic_clock::time_point start_time = monotonic_clock::now();
+  LOG(INFO, "Starting auto mode at %f\n",
+      chrono::duration_cast<chrono::duration<double>>(
+          start_time.time_since_epoch())
+          .count());
 
   // TODO(comran): Add various options for different autos down below.
   //CanGrabberAuto();

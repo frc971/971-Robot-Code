@@ -20,9 +20,10 @@ namespace output {
 
 class MotorWriter : public ::aos::MotorOutput {
   // Maximum age of an output packet before the motors get zeroed instead.
-  static const int kOutputMaxAgeMS = 20;
-  static constexpr ::aos::time::Time kOldLogInterval =
-      ::aos::time::Time::InSeconds(0.5);
+  static constexpr chrono::milliseconds kOutputMaxAge =
+      chrono::milliseconds(20);
+  static constexpr chrono::milliseconds kOldLogInterval =
+      chrono::milliseconds(500);
 
   double Cap(double value, double max) {
     if (value > max) return max;
@@ -39,7 +40,7 @@ class MotorWriter : public ::aos::MotorOutput {
     if (true) {
       static auto &drivetrain = ::bot3::control_loops::drivetrain.output;
       drivetrain.FetchLatest();
-      if (drivetrain.IsNewerThanMS(kOutputMaxAgeMS)) {
+      if (drivetrain.IsNewerThan(kOutputMaxAge)) {
         LOG_STRUCT(DEBUG, "will output", *drivetrain);
         SetPWMOutput(5, drivetrain->right_voltage / 12.0, kTalonBounds);
         SetPWMOutput(2, -drivetrain->left_voltage / 12.0, kTalonBounds);
@@ -56,7 +57,7 @@ class MotorWriter : public ::aos::MotorOutput {
     {
       static auto &rollers = ::bot3::control_loops::rollers.output;
       rollers.FetchLatest();
-      if (rollers.IsNewerThanMS(kOutputMaxAgeMS)) {
+      if (rollers.IsNewerThan(kOutputMaxAge)) {
         LOG_STRUCT(DEBUG, "will output", *rollers);
         // There are two motors for each of these.
         SetPWMOutput(3, rollers->front_intake_voltage / 12.0, kTalonBounds);
@@ -108,7 +109,7 @@ class MotorWriter : public ::aos::MotorOutput {
   uint8_t output_check_ = 0;
 };
 
-constexpr ::aos::time::Time MotorWriter::kOldLogInterval;
+constexpr chrono::milliseconds MotorWriter::kOldLogInterval;
 
 }  // namespace output
 }  // namespace bot3

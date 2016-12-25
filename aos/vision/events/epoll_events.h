@@ -25,7 +25,7 @@ class EpollWait {
 
   // Sets this wait to end at new_time.
   // A negative new_time disables this wait.
-  void SetTime(const ::aos::time::Time &new_time) { time_ = new_time; }
+  void SetTime(const monotonic_clock::time_point new_time) { time_ = new_time; }
 
  private:
   // Calculates how long to wait starting at now and calls Done() if
@@ -33,21 +33,23 @@ class EpollWait {
   // Returns the number of milliseconds from now that this event will expire in.
   // Returns -1 if this wait is never going to expire.
   // Returns INT_MAX if this wait expires in longer than that.
-  int Recalculate(const ::aos::time::Time &now) {
-    if (time_ < ::aos::time::Time::kZero) return -1;
+  int Recalculate(const monotonic_clock::time_point now) {
+    if (time_ < monotonic_clock::epoch()) return -1;
     if (time_ <= now) {
       Done();
-      time_ = ::aos::time::Time(-1, 0);
+      time_ = monotonic_clock::time_point(::std::chrono::seconds(-1));
       return -1;
     }
-    if (time_ - now > ::aos::time::Time::InMS(INT_MAX)) {
+    if (time_ - now > ::std::chrono::milliseconds(INT_MAX)) {
       return INT_MAX;
     } else {
-      return (time_ - now).ToMSec();
+      return ::std::chrono::duration_cast<::std::chrono::milliseconds>(time_ -
+                                                                       now)
+          .count();
     }
   }
 
-  ::aos::time::Time time_ = ::aos::time::Time::kZero;
+  ::aos::monotonic_clock::time_point time_ = ::aos::monotonic_clock::epoch();
 
   friend class EpollLoop;
 };

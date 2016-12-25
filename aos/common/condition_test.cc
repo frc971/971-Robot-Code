@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 
 #include <atomic>
+#include <chrono>
 #include <thread>
 
 #include "gtest/gtest.h"
@@ -21,18 +22,16 @@
 #include "aos/common/util/thread.h"
 #include "aos/testing/prevent_exit.h"
 
-using ::aos::time::Time;
-
 namespace aos {
 namespace testing {
+
+namespace chrono = ::std::chrono;
 
 class ConditionTestCommon : public ::testing::Test {
  public:
   ConditionTestCommon() {}
 
-  void Settle() {
-    time::SleepFor(::Time::InSeconds(0.008));
-  }
+  void Settle() { ::std::this_thread::sleep_for(chrono::milliseconds(8)); }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ConditionTestCommon);
@@ -132,16 +131,22 @@ class ConditionTestProcess {
   };
 
   // This amount gets added to any passed in delay to make the test repeatable.
-  static constexpr ::Time kMinimumDelay = ::Time::InSeconds(0.15);
-  static constexpr ::Time kDefaultTimeout = ::Time::InSeconds(0.15);
+  static constexpr chrono::milliseconds kMinimumDelay =
+      chrono::milliseconds(150);
+  static constexpr chrono::milliseconds kDefaultTimeout =
+      chrono::milliseconds(150);
 
   // delay is how long to wait before doing action to condition.
   // timeout is how long to wait after delay before deciding that it's hung.
-  ConditionTestProcess(const ::Time &delay, Action action, Condition *condition,
-                       const ::Time &timeout = kDefaultTimeout)
-    : delay_(kMinimumDelay + delay), action_(action), condition_(condition),
-      timeout_(delay_ + timeout), child_(-1),
-      shared_(static_cast<Shared *>(shm_malloc(sizeof(Shared)))) {
+  ConditionTestProcess(chrono::milliseconds delay, Action action,
+                       Condition *condition,
+                       chrono::milliseconds timeout = kDefaultTimeout)
+      : delay_(kMinimumDelay + delay),
+        action_(action),
+        condition_(condition),
+        timeout_(delay_ + timeout),
+        child_(-1),
+        shared_(static_cast<Shared *>(shm_malloc(sizeof(Shared)))) {
     new (shared_) Shared();
   }
   ~ConditionTestProcess() {
@@ -179,15 +184,17 @@ class ConditionTestProcess {
       return ::testing::AssertionFailure() << "already returned";
     }
     if (shared_->delayed) {
-      if (shared_->start_time > ::Time::Now() + timeout_) {
+      if (shared_->start_time > monotonic_clock::now() + timeout_) {
         Kill();
         return ::testing::AssertionSuccess() << "already been too long";
       }
     } else {
       CHECK_EQ(0, futex_wait(&shared_->done_delaying));
     }
-    time::SleepFor(::Time::InSeconds(0.01));
-    if (!shared_->finished) time::SleepUntil(shared_->start_time + timeout_);
+    ::std::this_thread::sleep_for(chrono::milliseconds(10));
+    if (!shared_->finished) {
+      ::std::this_thread::sleep_until(shared_->start_time + timeout_);
+    }
     if (shared_->finished) {
       Join();
       return ::testing::AssertionFailure() << "completed within timeout";
@@ -204,14 +211,17 @@ class ConditionTestProcess {
  private:
   struct Shared {
     Shared()
-      : started(false), delayed(false), done_delaying(0), start_time(0, 0),
-        finished(false), ready(0) {
-    }
+        : started(false),
+          delayed(false),
+          done_delaying(0),
+          start_time(monotonic_clock::epoch()),
+          finished(false),
+          ready(0) {}
 
     volatile bool started;
     volatile bool delayed;
     aos_futex done_delaying;
-    ::Time start_time;
+    monotonic_clock::time_point start_time;
     volatile bool finished;
     aos_futex ready;
   };
@@ -223,8 +233,8 @@ class ConditionTestProcess {
       ASSERT_EQ(1, futex_set(&shared_->ready));
       ASSERT_FALSE(condition_->m()->Lock());
     }
-    time::SleepFor(delay_);
-    shared_->start_time = ::Time::Now();
+    ::std::this_thread::sleep_for(delay_);
+    shared_->start_time = monotonic_clock::now();
     shared_->delayed = true;
     ASSERT_NE(-1, futex_set(&shared_->done_delaying));
     if (action_ != Action::kWaitLockStart) {
@@ -253,10 +263,10 @@ class ConditionTestProcess {
     Join();
   }
 
-  const ::Time delay_;
+  const chrono::milliseconds delay_;
   const Action action_;
   Condition *const condition_;
-  const ::Time timeout_;
+  const chrono::milliseconds timeout_;
 
   pid_t child_;
 
@@ -264,13 +274,13 @@ class ConditionTestProcess {
 
   DISALLOW_COPY_AND_ASSIGN(ConditionTestProcess);
 };
-constexpr ::Time ConditionTestProcess::kMinimumDelay;
-constexpr ::Time ConditionTestProcess::kDefaultTimeout;
+constexpr chrono::milliseconds ConditionTestProcess::kMinimumDelay;
+constexpr chrono::milliseconds ConditionTestProcess::kDefaultTimeout;
 
 // Makes sure that the testing framework and everything work for a really simple
 // Wait() and then Signal().
 TEST_F(ConditionTest, Basic) {
-  ConditionTestProcess child(::Time(0, 0),
+  ConditionTestProcess child(chrono::milliseconds(0),
                              ConditionTestProcess::Action::kWait,
                              &shared_->condition);
   child.Start();
@@ -282,7 +292,7 @@ TEST_F(ConditionTest, Basic) {
 
 // Makes sure that the worker child locks before it tries to Wait() etc.
 TEST_F(ConditionTest, Locking) {
-  ConditionTestProcess child(::Time(0, 0),
+  ConditionTestProcess child(chrono::milliseconds(0),
                              ConditionTestProcess::Action::kWait,
                              &shared_->condition);
   ASSERT_FALSE(shared_->mutex.Lock());
@@ -299,7 +309,7 @@ TEST_F(ConditionTest, Locking) {
 // Tests that the work child only catches a Signal() after the mutex gets
 // unlocked.
 TEST_F(ConditionTest, LockFirst) {
-  ConditionTestProcess child(::Time(0, 0),
+  ConditionTestProcess child(chrono::milliseconds(0),
                              ConditionTestProcess::Action::kWait,
                              &shared_->condition);
   ASSERT_FALSE(shared_->mutex.Lock());
@@ -317,7 +327,7 @@ TEST_F(ConditionTest, LockFirst) {
 
 // Tests that the mutex gets relocked after Wait() returns.
 TEST_F(ConditionTest, Relocking) {
-  ConditionTestProcess child(::Time(0, 0),
+  ConditionTestProcess child(chrono::milliseconds(0),
                              ConditionTestProcess::Action::kWaitNoUnlock,
                              &shared_->condition);
   child.Start();
@@ -330,13 +340,13 @@ TEST_F(ConditionTest, Relocking) {
 
 // Tests that Signal() stops exactly 1 Wait()er.
 TEST_F(ConditionTest, SignalOne) {
-  ConditionTestProcess child1(::Time(0, 0),
+  ConditionTestProcess child1(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
-  ConditionTestProcess child2(::Time(0, 0),
+  ConditionTestProcess child2(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
-  ConditionTestProcess child3(::Time(0, 0),
+  ConditionTestProcess child3(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
   auto number_finished = [&]() { return (child1.IsFinished() ? 1 : 0) +
@@ -362,13 +372,13 @@ TEST_F(ConditionTest, SignalOne) {
 
 // Tests that Brodcast() wakes multiple Wait()ers.
 TEST_F(ConditionTest, Broadcast) {
-  ConditionTestProcess child1(::Time(0, 0),
+  ConditionTestProcess child1(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
-  ConditionTestProcess child2(::Time(0, 0),
+  ConditionTestProcess child2(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
-  ConditionTestProcess child3(::Time(0, 0),
+  ConditionTestProcess child3(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
   child1.Start();

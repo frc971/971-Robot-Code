@@ -12,6 +12,7 @@ cc_library(
   deps = [
     '//aos/common/logging',
     '//aos/common:once',
+    '//aos/common:time',
     '//aos/common/network:team_number',
     '//frc971/control_loops:state_feedback_loop',
     '//frc971:shifter_hall_effect',

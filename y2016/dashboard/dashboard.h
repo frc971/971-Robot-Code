@@ -52,7 +52,7 @@ class DataCollector {
 
   struct ItemDatapoint {
     double value;
-    ::aos::time::Time time;
+    ::aos::monotonic_clock::time_point time;
   };
 
   struct SampleItem {

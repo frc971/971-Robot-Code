@@ -23,7 +23,7 @@ message VisionStatus {
   // The angle in radians of the bottom of the target.
   double angle;
 
-  // Capture time of the angle using the clock behind Time::Now().
+  // Capture time of the angle using the clock behind monotonic_clock::now().
   int64_t target_time;
 
   // The estimated positions of both sides of the drivetrain when the frame

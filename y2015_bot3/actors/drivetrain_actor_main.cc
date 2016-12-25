@@ -4,8 +4,6 @@
 #include "y2015_bot3/actors/drivetrain_action.q.h"
 #include "y2015_bot3/actors/drivetrain_actor.h"
 
-using ::aos::time::Time;
-
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init(-1);
 

@@ -1,23 +1,25 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
-#include "gtest/gtest.h"
+#include "aos/common/controls/control_loop_test.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"
-#include "aos/common/controls/control_loop_test.h"
-#include "y2015/control_loops/claw/claw.q.h"
-#include "y2015/control_loops/claw/claw.h"
 #include "frc971/control_loops/position_sensor_sim.h"
-#include "y2015/constants.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-
-using ::aos::time::Time;
+#include "gtest/gtest.h"
+#include "y2015/constants.h"
+#include "y2015/control_loops/claw/claw.h"
+#include "y2015/control_loops/claw/claw.q.h"
 
 namespace y2015 {
 namespace control_loops {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 // Class which simulates the claw and sends out queue messages with the
 // position.
@@ -37,21 +39,20 @@ class ClawSimulation {
   }
 
   void InitializePosition(double start_pos) {
-    InitializePosition(start_pos,
-        constants::GetValues().claw.zeroing.measured_index_position);
+    InitializePosition(
+        start_pos, constants::GetValues().claw.zeroing.measured_index_position);
   }
 
   void InitializePosition(double start_pos, double index_pos) {
-    InitializePosition(start_pos,
+    InitializePosition(
+        start_pos,
         // This gives us a standard deviation of ~9 degrees on the pot noise.
-        constants::GetValues().claw.zeroing.index_difference / 10.0,
-        index_pos);
+        constants::GetValues().claw.zeroing.index_difference / 10.0, index_pos);
   }
 
   // Do specific initialization for the sensors.
-  void InitializePosition(double start_pos,
-                         double pot_noise_stddev,
-                         double index_pos) {
+  void InitializePosition(double start_pos, double pot_noise_stddev,
+                          double index_pos) {
     // Update internal state.
     claw_plant_->mutable_X(0, 0) = start_pos;
     // Zero velocity.
@@ -63,7 +64,7 @@ class ClawSimulation {
   // Sends a queue message with the position.
   void SendPositionMessage() {
     ::aos::ScopedMessagePtr<control_loops::ClawQueue::Position> position =
-      claw_queue_.position.MakeMessage();
+        claw_queue_.position.MakeMessage();
     pot_and_encoder_.GetSensorValues(&position->joint);
     position.Send();
   }
@@ -106,9 +107,7 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   void VerifyNearGoal() {
     claw_queue_.goal.FetchLatest();
     claw_queue_.status.FetchLatest();
-    EXPECT_NEAR(claw_queue_.goal->angle,
-                claw_queue_.status->angle,
-                10.0);
+    EXPECT_NEAR(claw_queue_.goal->angle, claw_queue_.status->angle, 10.0);
 
     EXPECT_TRUE(claw_queue_.status->zeroed);
     EXPECT_FALSE(claw_queue_.status->estopped);
@@ -126,9 +125,9 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
+  void RunForTime(monotonic_clock::duration run_for, bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
       RunIteration(enabled);
     }
   }
@@ -147,10 +146,10 @@ class ClawTest : public ::aos::testing::ControlLoopTest {
 TEST_F(ClawTest, DoesNothing) {
   const auto &values = constants::GetValues();
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(values.claw.wrist.lower_limit)
-      .Send());
+                  .angle(values.claw.wrist.lower_limit)
+                  .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
 
   // We should not have moved.
   VerifyNearGoal();
@@ -162,11 +161,9 @@ TEST_F(ClawTest, DoesNothing) {
 // Tests that the loop zeroing works with normal values.
 TEST_F(ClawTest, Zeroes) {
   // It should zero itself if we run it for awhile.
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
 
   ASSERT_TRUE(claw_queue_.status.FetchLatest());
   EXPECT_TRUE(claw_queue_.status->zeroed);
@@ -180,13 +177,11 @@ TEST_F(ClawTest, BadIndexPosition) {
   claw_plant_.InitializePosition(values.claw.wrist.lower_limit,
                                  values.claw.wrist.upper_limit);
 
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
   // The zeroing is going to take its sweet time on this one, so we had better
   // run it for longer.
-  RunForTime(Time::InMS(12000));
+  RunForTime(chrono::milliseconds(12000));
 
   ASSERT_TRUE(claw_queue_.status.FetchLatest());
   EXPECT_FALSE(claw_queue_.status->zeroed);
@@ -195,11 +190,9 @@ TEST_F(ClawTest, BadIndexPosition) {
 
 // Tests that we can reach a reasonable goal.
 TEST_F(ClawTest, ReachesGoal) {
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
 
   VerifyNearGoal();
 }
@@ -209,26 +202,24 @@ TEST_F(ClawTest, RespectsRange) {
   const auto &values = constants::GetValues();
   // Upper limit
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(values.claw.wrist.upper_hard_limit + 5.0)
-      .Send());
+                  .angle(values.claw.wrist.upper_hard_limit + 5.0)
+                  .Send());
 
-  RunForTime(Time::InSeconds(7));
+  RunForTime(chrono::seconds(7));
 
   claw_queue_.status.FetchLatest();
-  EXPECT_NEAR(values.claw.wrist.upper_limit,
-              claw_queue_.status->angle,
+  EXPECT_NEAR(values.claw.wrist.upper_limit, claw_queue_.status->angle,
               2.0 * M_PI / 180.0);
 
   // Lower limit.
   ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(values.claw.wrist.lower_hard_limit - 5.0)
-      .Send());
+                  .angle(values.claw.wrist.lower_hard_limit - 5.0)
+                  .Send());
 
-  RunForTime(Time::InMS(6000));
+  RunForTime(chrono::milliseconds(6000));
 
   claw_queue_.status.FetchLatest();
-  EXPECT_NEAR(values.claw.wrist.lower_limit,
-              claw_queue_.status->angle,
+  EXPECT_NEAR(values.claw.wrist.lower_limit, claw_queue_.status->angle,
               2.0 * M_PI / 180.0);
 }
 
@@ -236,10 +227,8 @@ TEST_F(ClawTest, RespectsRange) {
 TEST_F(ClawTest, LowerHardstopStartup) {
   claw_plant_.InitializePosition(
       constants::GetValues().claw.wrist.lower_hard_limit);
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
-  RunForTime(Time::InSeconds(6));
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
+  RunForTime(chrono::seconds(6));
 
   VerifyNearGoal();
 }
@@ -248,67 +237,56 @@ TEST_F(ClawTest, LowerHardstopStartup) {
 TEST_F(ClawTest, UpperHardstopStartup) {
   claw_plant_.InitializePosition(
       constants::GetValues().claw.wrist.upper_hard_limit);
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
   // Zeroing will take a long time here.
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   VerifyNearGoal();
 }
 
-
 // Tests that not having a goal doesn't break anything.
-TEST_F(ClawTest, NoGoal) {
-  RunForTime(Time::InMS(50));
-}
+TEST_F(ClawTest, NoGoal) { RunForTime(chrono::milliseconds(50)); }
 
 // Tests that a WPILib reset results in rezeroing.
 TEST_F(ClawTest, WpilibReset) {
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   VerifyNearGoal();
 
   SimulateSensorReset();
-  RunForTime(Time::InMS(100));
+  RunForTime(chrono::milliseconds(100));
   ASSERT_TRUE(claw_queue_.status.FetchLatest());
   EXPECT_NE(Claw::RUNNING, claw_queue_.status->state);
 
   // Once again, it's going to take us awhile to rezero since we moved away from
   // our index pulse.
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   VerifyNearGoal();
 }
 
 // Tests that internal goals don't change while disabled.
 TEST_F(ClawTest, DisabledGoal) {
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
-  RunForTime(Time::InMS(100), false);
+  RunForTime(chrono::milliseconds(100), false);
   EXPECT_EQ(0.0, claw_.claw_goal_);
 
   // Now make sure they move correctly.
-  RunForTime(Time::InMS(1000), true);
+  RunForTime(chrono::milliseconds(1000), true);
   EXPECT_NE(0.0, claw_.claw_goal_);
 }
 
 // Tests that the claw zeroing goals don't wind up too far.
 TEST_F(ClawTest, GoalPositiveWindup) {
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
   while (claw_.state() != Claw::ZEROING) {
     RunIteration();
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   const double orig_claw_goal = claw_.claw_goal_;
   claw_.claw_goal_ += 100.0;
 
@@ -322,16 +300,14 @@ TEST_F(ClawTest, GoalPositiveWindup) {
 
 // Tests that the claw zeroing goals don't wind up too far.
 TEST_F(ClawTest, GoalNegativeWindup) {
-  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder()
-      .angle(M_PI / 4.0)
-      .Send());
+  ASSERT_TRUE(claw_queue_.goal.MakeWithBuilder().angle(M_PI / 4.0).Send());
 
   while (claw_.state() != Claw::ZEROING) {
     RunIteration();
   }
 
   // Kick it.
-  RunForTime(Time::InMS(50));
+  RunForTime(chrono::milliseconds(50));
   double orig_claw_goal = claw_.claw_goal_;
   claw_.claw_goal_ -= 100.0;
 

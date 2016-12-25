@@ -63,8 +63,7 @@ void ControlLoop<T>::Iterate() {
       // If the driver's station reports being disabled, we're probably not
       // actually going to send motor values regardless of what the FPGA
       // reports.
-      last_pwm_sent_ = monotonic_clock::time_point(
-          ::std::chrono::nanoseconds(::aos::robot_state->sent_time.ToNSec()));
+      last_pwm_sent_ = ::aos::robot_state->sent_time;
     }
   }
 

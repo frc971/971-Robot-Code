@@ -22,7 +22,7 @@ namespace wpilib {
 class LoopOutputHandler {
  public:
   LoopOutputHandler(
-      const ::aos::time::Time &timeout = ::aos::time::Time::InSeconds(0.10));
+      ::std::chrono::nanoseconds timeout = ::std::chrono::milliseconds(100));
 
   void Quit() { run_ = false; }
 
@@ -54,7 +54,7 @@ class LoopOutputHandler {
   // LoopOutputHandler whenever the timerfd expires.
   class Watchdog {
    public:
-    Watchdog(LoopOutputHandler *handler, const ::aos::time::Time &timeout);
+    Watchdog(LoopOutputHandler *handler, ::std::chrono::nanoseconds timeout);
 
     void operator()();
 
@@ -65,7 +65,7 @@ class LoopOutputHandler {
    private:
     LoopOutputHandler *const handler_;
 
-    const ::aos::time::Time timeout_;
+    const ::std::chrono::nanoseconds timeout_;
 
     ::aos::ScopedFD timerfd_;
 

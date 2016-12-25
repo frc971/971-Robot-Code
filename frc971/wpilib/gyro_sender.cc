@@ -1,6 +1,11 @@
 #include "frc971/wpilib/gyro_sender.h"
 
+#include <fcntl.h>
 #include <inttypes.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <chrono>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
@@ -16,13 +21,15 @@ namespace frc971 {
 namespace wpilib {
 
 GyroSender::GyroSender() {}
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 void GyroSender::operator()() {
   ::aos::SetCurrentThreadName("Gyro");
 
   // Try to initialize repeatedly as long as we're supposed to be running.
   while (run_ && !gyro_.InitializeGyro()) {
-    ::aos::time::SleepFor(::aos::time::Time::InMS(50));
+    ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
   }
   LOG(INFO, "gyro initialized successfully\n");
 

@@ -1,6 +1,7 @@
-#include <string>
-
 #include <inttypes.h>
+
+#include <chrono>
+#include <string>
 
 #include "gtest/gtest.h"
 
@@ -15,6 +16,8 @@ using ::testing::AssertionFailure;
 namespace aos {
 namespace logging {
 namespace testing {
+
+namespace chrono = ::std::chrono;
 
 class TestLogImplementation : public SimpleLogImplementation {
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)))
@@ -168,23 +171,25 @@ TEST_F(LoggingTest, Timing) {
   //static const long kTimingCycles = 5000000;
   static const long kTimingCycles = 5000;
 
-  time::Time start = time::Time::Now();
+  monotonic_clock::time_point start = monotonic_clock::now();
   for (long i = 0; i < kTimingCycles; ++i) {
     LOG(INFO, "a\n");
   }
-  time::Time end = time::Time::Now();
-  time::Time diff = end - start;
+  monotonic_clock::time_point end = monotonic_clock::now();
+  auto diff = end - start;
   printf("short message took %" PRId64 " nsec for %ld\n",
-         diff.ToNSec(), kTimingCycles);
+         chrono::duration_cast<chrono::nanoseconds>(diff).count(),
+         kTimingCycles);
 
-  start = time::Time::Now();
+  start = monotonic_clock::now();
   for (long i = 0; i < kTimingCycles; ++i) {
     LOG(INFO, "something longer than just \"a\" to log to test timing\n");
   }
-  end = time::Time::Now();
+  end = monotonic_clock::now();
   diff = end - start;
   printf("long message took %" PRId64 " nsec for %ld\n",
-         diff.ToNSec(), kTimingCycles);
+         chrono::duration_cast<chrono::nanoseconds>(diff).count(),
+         kTimingCycles);
 }
 
 TEST(LoggingPrintFormatTest, Time) {

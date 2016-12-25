@@ -67,6 +67,8 @@ using ::frc971::wpilib::GyroSender;
 namespace y2015_bot3 {
 namespace wpilib {
 
+namespace chrono = ::std::chrono;
+
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          ::y2015_bot3::control_loops::drivetrain::kDrivetrainEncoderRatio *
@@ -137,8 +139,8 @@ class SensorReader {
         &DriverStation::GetInstance();
 #endif
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
+    ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                        chrono::milliseconds(4));
 
     ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
@@ -242,8 +244,8 @@ class SolenoidWriter {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(27);
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
-                                        ::std::chrono::milliseconds(1));
+    ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(20),
+                                        chrono::milliseconds(1));
 
     while (run_) {
       {
@@ -423,7 +425,7 @@ class IntakeWriter : public LoopOutputHandler {
 // Writes out can grabber voltages.
 class CanGrabberWriter : public LoopOutputHandler {
  public:
-  CanGrabberWriter() : LoopOutputHandler(::aos::time::Time::InSeconds(0.05)) {}
+  CanGrabberWriter() : LoopOutputHandler(chrono::milliseconds(50)) {}
 
   void set_can_grabber_talon1(::std::unique_ptr<Talon> t) {
     can_grabber_talon1_ = ::std::move(t);

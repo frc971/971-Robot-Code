@@ -1,27 +1,28 @@
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <mntent.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <time.h>
 #include <string.h>
-#include <string>
-#include <unistd.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <mntent.h>
+#include <time.h>
+#include <unistd.h>
+#include <string>
 
+#include <chrono>
 #include <map>
 #include <unordered_set>
 
-#include "aos/common/logging/implementations.h"
-#include "aos/common/logging/binary_log_file.h"
-#include "aos/linux_code/init.h"
-#include "aos/linux_code/configuration.h"
-#include "aos/linux_code/ipc_lib/queue.h"
-#include "aos/common/queue_types.h"
 #include "aos/common/die.h"
+#include "aos/common/logging/binary_log_file.h"
+#include "aos/common/logging/implementations.h"
+#include "aos/common/queue_types.h"
 #include "aos/common/time.h"
+#include "aos/linux_code/configuration.h"
+#include "aos/linux_code/init.h"
+#include "aos/linux_code/ipc_lib/queue.h"
 
 namespace aos {
 namespace logging {
@@ -213,8 +214,7 @@ int BinaryLogReaderMain() {
       // again so the queue can buffer up some logs. This avoids lots of context
       // switches and mutex contention which happens if we're constantly reading
       // new messages as they come in.
-      static constexpr auto kSleepTime = ::aos::time::Time::InSeconds(0.1);
-      ::aos::time::SleepFor(kSleepTime);
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(100));
       continue;
     }
 

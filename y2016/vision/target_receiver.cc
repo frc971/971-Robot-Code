@@ -201,8 +201,7 @@ class DrivetrainOffsetCalculator {
       status.FetchAnother();
 
       ::aos::MutexLocker locker(&lock_);
-      data_[data_index_].time = monotonic_clock::time_point(
-          chrono::nanoseconds(status->sent_time.ToNSec()));
+      data_[data_index_].time = status->sent_time;
       data_[data_index_].left = status->estimated_left_position;
       data_[data_index_].right = status->estimated_right_position;
       ++data_index_;

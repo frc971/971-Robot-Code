@@ -1,14 +1,17 @@
 #include "aos/common/network/socket.h"
 
-#include <string.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <chrono>
 
-#include "aos/common/logging/logging.h"
 #include "aos/common/byteorder.h"
+#include "aos/common/logging/logging.h"
 
 namespace aos {
 namespace network {
+
+namespace chrono = ::std::chrono;
 
 int Socket::Connect(NetworkPort port, const char *address, int type) {
   last_ret_ = 0;
@@ -53,8 +56,13 @@ int Socket::Receive(void *buf, int length) {
   return ret;
 }
 
-int Socket::Receive(void *buf, int length, time::Time timeout) {
-  timeval timeout_timeval = timeout.ToTimeval();
+int Socket::Receive(void *buf, int length, chrono::microseconds timeout) {
+  timeval timeout_timeval;
+  timeout_timeval.tv_sec = chrono::duration_cast<chrono::seconds>(timeout).count();
+  timeout_timeval.tv_usec =
+      chrono::duration_cast<chrono::microseconds>(
+          timeout - chrono::seconds(timeout_timeval.tv_sec))
+          .count();
   fd_set fds;
   FD_ZERO(&fds);
   FD_SET(socket_, &fds);

@@ -1,8 +1,12 @@
 #include "aos/common/logging/replay.h"
 
+#include <chrono>
+
 namespace aos {
 namespace logging {
 namespace linux_code {
+
+namespace chrono = ::std::chrono;
 
 bool LogReplayer::ProcessMessage() {
   const LogFileMessageHeader *message = reader_->ReadNextMessage(false);
@@ -32,8 +36,9 @@ bool LogReplayer::ProcessMessage() {
   if (handler == handlers_.end()) return false;
 
   handler->second->HandleStruct(
-      ::aos::time::Time(message->time_sec, message->time_nsec), type_id,
-      position,
+      monotonic_clock::time_point(chrono::seconds(message->time_sec) +
+                                  chrono::nanoseconds(message->time_nsec)),
+      type_id, position,
       message->message_size -
           (sizeof(type_id) + sizeof(message_length) + message_length));
   return false;

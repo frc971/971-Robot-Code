@@ -1,5 +1,7 @@
 #include "frc971/wpilib/interrupt_edge_counting.h"
 
+#include <chrono>
+
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"
 
@@ -64,7 +66,7 @@ void InterruptSynchronizer::RunIteration() {
 
     // Wait more than the amount of time it takes for a digital input change
     // to go from visible to software to having triggered an interrupt.
-    ::aos::time::SleepFor(::aos::time::Time::InUS(120));
+    ::std::this_thread::sleep_for(::std::chrono::microseconds(120));
 
     if (TryFinishingIteration()) return;
   }

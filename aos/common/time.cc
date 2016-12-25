@@ -1,9 +1,10 @@
 #include "aos/common/time.h"
 
-#include <atomic>
-
-#include <string.h>
 #include <inttypes.h>
+#include <string.h>
+
+#include <atomic>
+#include <chrono>
 
 // We only use global_core from here, which is weak, so we don't really have a
 // dependency on it.
@@ -11,6 +12,8 @@
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/mutex.h"
+
+namespace chrono = ::std::chrono;
 
 namespace std {
 namespace this_thread {
@@ -57,33 +60,7 @@ Mutex time_mutex;
 // Current time when time is mocked.
 monotonic_clock::time_point current_mock_time = monotonic_clock::epoch();
 
-// TODO(aschuh): This doesn't include SleepFor and SleepUntil.
-// TODO(aschuh): Create a clock source object and change the default?
-//  That would let me create a MockTime clock source.
-
-Time NowImpl(clockid_t clock) {
-  timespec temp;
-  if (clock_gettime(clock, &temp) != 0) {
-    PLOG(FATAL, "clock_gettime(%jd, %p) failed",
-         static_cast<uintmax_t>(clock), &temp);
-  }
-
-  const timespec offset = (&global_core == nullptr || global_core == nullptr ||
-                           global_core->mem_struct == nullptr)
-                              ? timespec{0, 0}
-                              : global_core->mem_struct->time_offset;
-  return Time(temp) + Time(offset);
-}
-
 }  // namespace
-
-const int32_t Time::kNSecInSec;
-const int32_t Time::kNSecInMSec;
-const int32_t Time::kNSecInUSec;
-const int32_t Time::kMSecInSec;
-const int32_t Time::kUSecInSec;
-
-const Time Time::kZero{0, 0};
 
 void EnableMockTime(monotonic_clock::time_point now) {
   MutexLocker time_mutex_locker(&time_mutex);
@@ -112,162 +89,13 @@ void IncrementMockTime(monotonic_clock::duration amount) {
   SetMockTime(monotonic_clock::now() + amount);
 }
 
-Time Time::Now(clockid_t clock) {
-  {
-    if (mock_time_enabled.load(::std::memory_order_relaxed)) {
-      MutexLocker time_mutex_locker(&time_mutex);
-      return Time::InNS(
-          ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
-              current_mock_time.time_since_epoch()).count());
-    }
-  }
-  return NowImpl(clock);
-}
-
-void Time::CheckImpl(int32_t nsec) {
-  static_assert(aos::shm_ok<Time>::value,
-                "it should be able to go through shared memory");
-  if (nsec >= kNSecInSec || nsec < 0) {
-    LOG(FATAL, "0 <= nsec(%" PRId32 ") < %" PRId32 " isn't true.\n",
-        nsec, kNSecInSec);
-  }
-}
-
-Time &Time::operator+=(const Time &rhs) {
-  sec_ += rhs.sec_;
-  nsec_ += rhs.nsec_;
-  if (nsec_ >= kNSecInSec) {
-    nsec_ -= kNSecInSec;
-    sec_ += 1;
-  }
-  return *this;
-}
-const Time Time::operator+(const Time &rhs) const {
-  return Time(*this) += rhs;
-}
-Time &Time::operator-=(const Time &rhs) {
-  sec_ -= rhs.sec_;
-  nsec_ -= rhs.nsec_;
-  if (nsec_ < 0) {
-    nsec_ += kNSecInSec;
-    sec_ -= 1;
-  }
-  return *this;
-}
-const Time Time::operator-(const Time &rhs) const {
-  return Time(*this) -= rhs;
-}
-Time &Time::operator*=(int32_t rhs) {
-  const int64_t temp = static_cast<int64_t>(nsec_) *
-      static_cast<int64_t>(rhs);
-  sec_ *= rhs;  // better not overflow, or the result is just too big
-  nsec_ = temp % kNSecInSec;
-  sec_ += (temp - nsec_) / kNSecInSec;
-  if (nsec_ < 0) {
-    nsec_ += kNSecInSec;
-    sec_ -= 1;
-  }
-  return *this;
-}
-const Time Time::operator*(int32_t rhs) const {
-  return Time(*this) *= rhs;
-}
-Time &Time::operator/=(int32_t rhs) {
-  nsec_ = (sec_ % rhs) * (kNSecInSec / rhs) + nsec_ / rhs;
-  sec_ /= rhs;
-  if (nsec_ < 0) {
-    nsec_ += kNSecInSec;
-    sec_ -= 1;
-  }
-  return *this;
-}
-const Time Time::operator/(int32_t rhs) const {
-  return Time(*this) /= rhs;
-}
-double Time::operator/(const Time &rhs) const {
-  return ToSeconds() / rhs.ToSeconds();
-}
-Time &Time::operator%=(int32_t rhs) {
-  nsec_ = ToNSec() % rhs;
-  const int wraps = nsec_ / ((rhs / kNSecInSec + 1) * kNSecInSec);
-  sec_ = wraps + rhs / kNSecInSec;
-  nsec_ -= kNSecInSec * wraps;
-  if (nsec_ < 0) {
-    nsec_ += kNSecInSec;
-    sec_ -= 1;
-  }
-  return *this;
-}
-const Time Time::operator%(int32_t rhs) const {
-  return Time(*this) %= rhs;
-}
-
-const Time Time::operator-() const {
-  return Time(-sec_ - 1, kNSecInSec - nsec_);
-}
-
-bool Time::operator==(const Time &rhs) const {
-  return sec_ == rhs.sec_ && nsec_ == rhs.nsec_;
-}
-bool Time::operator!=(const Time &rhs) const {
-  return !(*this == rhs);
-}
-bool Time::operator<(const Time &rhs) const {
-  return sec_ < rhs.sec_ || (sec_ == rhs.sec_ && nsec_ < rhs.nsec_);
-}
-bool Time::operator>(const Time &rhs) const {
-  return sec_ > rhs.sec_ || (sec_ == rhs.sec_ && nsec_ > rhs.nsec_);
-}
-bool Time::operator<=(const Time &rhs) const {
-  return sec_ < rhs.sec_ || (sec_ == rhs.sec_ && nsec_ <= rhs.nsec_);
-}
-bool Time::operator>=(const Time &rhs) const {
-  return sec_ > rhs.sec_ || (sec_ == rhs.sec_ && nsec_ >= rhs.nsec_);
-}
-
-bool Time::IsWithin(const Time &other, int64_t amount) const {
-  const int64_t temp = ToNSec() - other.ToNSec();
-  return temp <= amount && temp >= -amount;
-}
-
-std::ostream &operator<<(std::ostream &os, const Time& time) {
-  return os << "Time{" << time.sec_ << "s, " << time.nsec_ << "ns}";
-}
-
-void SleepFor(const Time &time, clockid_t clock) {
-  timespec converted(time.ToTimespec()), remaining;
-  int failure = EINTR;
-  do {
-    // This checks whether the last time through the loop actually failed or got
-    // interrupted.
-    if (failure != EINTR) {
-      PELOG(FATAL, failure, "clock_nanosleep(%jd, 0, %p, %p) failed",
-            static_cast<intmax_t>(clock), &converted, &remaining);
-    }
-    failure = clock_nanosleep(clock, 0, &converted, &remaining);
-    memcpy(&converted, &remaining, sizeof(converted));
-  } while (failure != 0);
-}
-
-void SleepUntil(const Time &time, clockid_t clock) {
-  timespec converted(time.ToTimespec());
-  int failure;
-  while ((failure = clock_nanosleep(clock, TIMER_ABSTIME,
-                                    &converted, NULL)) != 0) {
-    if (failure != EINTR) {
-      PELOG(FATAL, failure, "clock_nanosleep(%jd, TIMER_ABSTIME, %p, NULL)"
-            " failed", static_cast<intmax_t>(clock), &converted);
-    }
-  }
-}
-
-void OffsetToNow(const Time &now) {
+void OffsetToNow(monotonic_clock::time_point now) {
   CHECK_NOTNULL(&global_core);
   CHECK_NOTNULL(global_core);
   CHECK_NOTNULL(global_core->mem_struct);
-  global_core->mem_struct->time_offset.tv_nsec = 0;
-  global_core->mem_struct->time_offset.tv_sec = 0;
-  global_core->mem_struct->time_offset = (now - Time::Now()).ToTimespec();
+  const auto offset = now - monotonic_clock::now();
+  global_core->mem_struct->time_offset =
+      chrono::duration_cast<chrono::nanoseconds>(offset).count();
 }
 
 }  // namespace time
@@ -287,8 +115,14 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
     PLOG(FATAL, "clock_gettime(%jd, %p) failed",
          static_cast<uintmax_t>(CLOCK_MONOTONIC), &current_time);
   }
+  const chrono::nanoseconds offset =
+      (&global_core == nullptr || global_core == nullptr ||
+       global_core->mem_struct == nullptr)
+          ? chrono::nanoseconds(0)
+          : chrono::nanoseconds(global_core->mem_struct->time_offset);
+
   return time_point(::std::chrono::seconds(current_time.tv_sec) +
-                    ::std::chrono::nanoseconds(current_time.tv_nsec));
+                    ::std::chrono::nanoseconds(current_time.tv_nsec)) + offset;
 }
 
 

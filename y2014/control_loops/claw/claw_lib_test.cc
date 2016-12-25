@@ -1,17 +1,15 @@
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
-#include "aos/common/network/team_number.h"
 #include "aos/common/controls/control_loop_test.h"
-
-#include "y2014/control_loops/claw/claw.q.h"
-#include "y2014/control_loops/claw/claw.h"
-#include "y2014/constants.h"
-#include "y2014/control_loops/claw/claw_motor_plant.h"
-
+#include "aos/common/network/team_number.h"
 #include "gtest/gtest.h"
-
+#include "y2014/constants.h"
+#include "y2014/control_loops/claw/claw.h"
+#include "y2014/control_loops/claw/claw.q.h"
+#include "y2014/control_loops/claw/claw_motor_plant.h"
 
 namespace y2014 {
 namespace control_loops {
@@ -20,6 +18,8 @@ namespace testing {
 using ::y2014::control_loops::claw::MakeClawPlant;
 using ::frc971::HallEffectStruct;
 using ::y2014::control_loops::HalfClawPosition;
+using ::aos::monotonic_clock;
+namespace chrono = ::std::chrono;
 
 typedef enum {
 	TOP_CLAW = 0,
@@ -288,7 +288,8 @@ TEST_F(ClawTest, HandlesNAN) {
       .bottom_angle(::std::nan(""))
       .separation_angle(::std::nan(""))
       .Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(5))) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -302,7 +303,8 @@ TEST_F(ClawTest, ZerosCorrectly) {
       .bottom_angle(0.1)
       .separation_angle(0.2)
       .Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(5))) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -400,7 +402,8 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
       .bottom_angle(0.1)
       .separation_angle(0.2)
       .Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(7)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(7))) {
     claw_motor_plant_.SendPositionMessage();
     claw_motor_.Iterate();
     claw_motor_plant_.Simulate();
@@ -511,15 +514,17 @@ TEST_F(ClawTest, DisableGoesUninitialized) {
 
 class WindupClawTest : public ClawTest {
  protected:
-  void TestWindup(ClawMotor::CalibrationMode mode, ::aos::time::Time start_time, double offset) {
+  void TestWindup(ClawMotor::CalibrationMode mode,
+                  monotonic_clock::time_point start_time, double offset) {
     int capped_count = 0;
     const constants::Values& values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
-    while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(7)) {
+    while (monotonic_clock::now() <
+           monotonic_clock::time_point(chrono::seconds(7))) {
       claw_motor_plant_.SendPositionMessage();
-      if (::aos::time::Time::Now() >= start_time &&
-          mode == claw_motor_.mode() && !kicked) {
+      if (monotonic_clock::now() >= start_time && mode == claw_motor_.mode() &&
+          !kicked) {
         EXPECT_EQ(mode, claw_motor_.mode());
         // Move the zeroing position far away and verify that it gets moved
         // back.
@@ -578,8 +583,8 @@ TEST_F(WindupClawTest, NoWindupPositive) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::UNKNOWN_LOCATION, ::aos::time::Time::InSeconds(1.0),
-             971.0);
+  TestWindup(ClawMotor::UNKNOWN_LOCATION,
+             monotonic_clock::time_point(chrono::seconds(1)), 971.0);
 
   VerifyNearGoal();
 }
@@ -592,8 +597,8 @@ TEST_F(WindupClawTest, NoWindupNegative) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::UNKNOWN_LOCATION, ::aos::time::Time::InSeconds(1.0),
-             -971.0);
+  TestWindup(ClawMotor::UNKNOWN_LOCATION,
+             monotonic_clock::time_point(chrono::seconds(1)), -971.0);
 
   VerifyNearGoal();
 }
@@ -606,8 +611,8 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
       .separation_angle(0.2)
       .Send();
 
-  TestWindup(ClawMotor::FINE_TUNE_BOTTOM, ::aos::time::Time::InSeconds(2.0),
-             -971.0);
+  TestWindup(ClawMotor::FINE_TUNE_BOTTOM,
+             monotonic_clock::time_point(chrono::seconds(2)), -971.0);
 
   VerifyNearGoal();
 }

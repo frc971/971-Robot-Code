@@ -5,17 +5,20 @@
 
 #include <inttypes.h>
 #include <math.h>
+#include <chrono>
 
 #include "aos/common/logging/queue_logging.h"
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/time.h"
 #include "aos/linux_code/init.h"
-
 #include "frc971/wpilib/imu.q.h"
 #include "frc971/zeroing/averager.h"
 
 namespace frc971 {
 namespace wpilib {
+
+using ::aos::monotonic_clock;
+namespace chrono = ::std::chrono;
 
 template <uint8_t size>
 bool ADIS16448::DoTransaction(uint8_t to_send[size], uint8_t to_receive[size]) {
@@ -128,7 +131,7 @@ void ADIS16448::operator()() {
 
   // Try to initialize repeatedly as long as we're supposed to be running.
   while (run_ && !Initialize()) {
-    ::aos::time::SleepFor(::aos::time::Time::InMS(50));
+    ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
   }
   LOG(INFO, "IMU initialized successfully\n");
 
@@ -150,7 +153,7 @@ void ADIS16448::operator()() {
       }
     }
     got_an_interrupt = true;
-    const ::aos::time::Time read_time = ::aos::time::Time::Now();
+    const monotonic_clock::time_point read_time = monotonic_clock::now();
 
     uint8_t to_send[2 * 14], to_receive[2 * 14];
     memset(&to_send[0], 0, sizeof(to_send));
@@ -188,7 +191,9 @@ void ADIS16448::operator()() {
 
     auto message = imu_values.MakeMessage();
     message->fpga_timestamp = dio1_->ReadRisingTimestamp();
-    message->monotonic_timestamp_ns = read_time.ToNSec();
+    message->monotonic_timestamp_ns =
+        chrono::duration_cast<chrono::nanoseconds>(read_time.time_since_epoch())
+            .count();
 
     message->gyro_x =
         ConvertValue(&to_receive[4], kGyroLsbDegreeSecond * M_PI / 180.0);
@@ -364,7 +369,7 @@ bool ADIS16448::Initialize() {
   {
     uint16_t value;
     do {
-      ::aos::time::SleepFor(::aos::time::Time::InMS(10));
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
       if (!ReadRegister(kMscCtrlAddress, &value)) return false;
     } while ((value & (1 << 10)) != 0);
   }

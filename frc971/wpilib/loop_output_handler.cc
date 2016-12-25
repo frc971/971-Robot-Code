@@ -2,8 +2,9 @@
 
 #include <sys/timerfd.h>
 
-#include <thread>
+#include <chrono>
 #include <functional>
+#include <thread>
 
 #include "aos/linux_code/init.h"
 #include "aos/common/messages/robot_state.q.h"
@@ -11,7 +12,9 @@
 namespace frc971 {
 namespace wpilib {
 
-LoopOutputHandler::LoopOutputHandler(const ::aos::time::Time &timeout)
+namespace chrono = ::std::chrono;
+
+LoopOutputHandler::LoopOutputHandler(::std::chrono::nanoseconds timeout)
     : watchdog_(this, timeout) {}
 
 void LoopOutputHandler::operator()() {
@@ -44,12 +47,12 @@ void LoopOutputHandler::operator()() {
 }
 
 LoopOutputHandler::Watchdog::Watchdog(LoopOutputHandler *handler,
-                                      const ::aos::time::Time &timeout)
+                                      ::std::chrono::nanoseconds timeout)
     : handler_(handler),
       timeout_(timeout),
-      timerfd_(timerfd_create(::aos::time::Time::kDefaultClock, 0)) {
+      timerfd_(timerfd_create(CLOCK_MONOTONIC, 0)) {
   if (timerfd_.get() == -1) {
-    PLOG(FATAL, "timerfd_create(Time::kDefaultClock, 0)");
+    PLOG(FATAL, "timerfd_create(CLOCK_MONOTONIC, 0)");
   }
 }
 
@@ -65,7 +68,11 @@ void LoopOutputHandler::Watchdog::operator()() {
 
 void LoopOutputHandler::Watchdog::Reset() {
   itimerspec value = itimerspec();
-  value.it_value = timeout_.ToTimespec();
+  value.it_value.tv_sec = chrono::duration_cast<chrono::seconds>(timeout_).count();
+  value.it_value.tv_nsec =
+      chrono::duration_cast<chrono::nanoseconds>(
+          timeout_ - chrono::seconds(value.it_value.tv_sec))
+          .count();
   PCHECK(timerfd_settime(timerfd_.get(), 0, &value, nullptr));
 }
 

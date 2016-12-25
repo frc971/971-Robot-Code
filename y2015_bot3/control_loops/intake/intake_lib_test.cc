@@ -3,16 +3,19 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <chrono>
+
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "y2015_bot3/control_loops/intake/intake.q.h"
 
-using ::aos::time::Time;
-
 namespace y2015_bot3 {
 namespace control_loops {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 // Class which simulates the elevator and sends out queue messages with the
 // position.
@@ -60,9 +63,9 @@ class IntakeTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(double run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + Time::InSeconds(run_for)) {
+  void RunForTime(monotonic_clock::duration run_for, bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
       RunIteration(enabled);
     }
   }
@@ -84,7 +87,7 @@ TEST_F(IntakeTest, DoesNothing) {
                   .Send());
 
   // Run for a bit.
-  RunForTime(1.0);
+  RunForTime(chrono::seconds(1));
 
   ASSERT_TRUE(queue_.output.FetchLatest());
   EXPECT_EQ(queue_.output->intake, 0.0);
@@ -97,7 +100,7 @@ TEST_F(IntakeTest, SuckingGoal) {
                   .Send());
 
   // Run for a bit.
-  RunForTime(1.0);
+  RunForTime(chrono::seconds(1));
 
   ASSERT_TRUE(queue_.output.FetchLatest());
   EXPECT_GT(queue_.output->intake, 0.0);
@@ -110,7 +113,7 @@ TEST_F(IntakeTest, SpittingGoal) {
                   .Send());
 
   // Run for a bit.
-  RunForTime(1.0);
+  RunForTime(chrono::seconds(1));
 
   ASSERT_TRUE(queue_.output.FetchLatest());
   EXPECT_LT(queue_.output->intake, 0.0);

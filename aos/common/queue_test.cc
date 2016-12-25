@@ -1,19 +1,20 @@
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "gtest/gtest.h"
 
+#include "aos/common/die.h"
 #include "aos/common/test_queue.q.h"
 #include "aos/common/util/thread.h"
-#include "aos/common/die.h"
 #include "aos/testing/test_shm.h"
-
-using ::aos::time::Time;
 
 namespace aos {
 namespace common {
 namespace testing {
+
+namespace chrono = ::std::chrono;
 
 class QueueTest : public ::testing::Test {
  protected:
@@ -54,7 +55,7 @@ TEST_F(QueueTest, FetchBlocking) {
   usleep(50000);
   my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
   t.Join();
-  EXPECT_LE(t.threaded_test_queue.Age(), time::Time::InMS(57));
+  EXPECT_LE(t.threaded_test_queue.Age(), chrono::milliseconds(57));
 }
 
 // Tests that we can send a message with the message pointer and get it back.
@@ -76,7 +77,7 @@ TEST_F(QueueTest, SendWithBuilder) {
   ASSERT_TRUE(my_test_queue.FetchLatest());
   EXPECT_EQ(true, my_test_queue->test_bool);
   EXPECT_EQ(0x971, my_test_queue->test_int);
-  EXPECT_EQ(true, my_test_queue.IsNewerThanMS(10000));
+  EXPECT_EQ(true, my_test_queue.IsNewerThan(chrono::milliseconds(10000)));
 }
 
 // Tests that multiple queue instances don't break each other.
@@ -202,10 +203,9 @@ TEST_F(QueueTest, Age) {
   my_test_queue.MakeWithBuilder().test_bool(true).test_int(0x971).Send();
 
   ASSERT_TRUE(my_test_queue.FetchLatest());
-  EXPECT_TRUE(my_test_queue.IsNewerThanMS(100));
-  const Time age = my_test_queue.Age();
-  EXPECT_EQ(0, age.sec());
-  EXPECT_GE(100000000, age.nsec());
+  EXPECT_TRUE(my_test_queue.IsNewerThan(chrono::milliseconds(100)));
+  const auto age = my_test_queue.Age();
+  EXPECT_GE(chrono::nanoseconds(100000000), age);
 }
 
 
@@ -257,8 +257,7 @@ TEST_F(MessageTest, Zeroing) {
 
   EXPECT_FALSE(msg.test_bool);
   EXPECT_EQ(0, msg.test_int);
-  EXPECT_EQ(0, msg.sent_time.sec());
-  EXPECT_EQ(0, msg.sent_time.nsec());
+  EXPECT_EQ(monotonic_clock::min_time, msg.sent_time);
 }
 
 TEST_F(MessageTest, Size) {
@@ -286,7 +285,8 @@ TEST_F(MessageTest, Print) {
   char printdata[1024];
   msg.test_bool = true;
   msg.test_int = 2056;
-  msg.sent_time = Time(971, 254);
+  msg.sent_time = monotonic_clock::time_point(chrono::seconds(971) +
+                                              chrono::nanoseconds(254));
 
   std::string golden("971.000000254s, T, 2056");
   EXPECT_EQ(golden.size(), msg.Print(printdata, sizeof(printdata)));
@@ -304,7 +304,7 @@ TEST_F(MessageTest, Hash) {
 
 TEST_F(MessageTest, SetNow) {
   msg.SetTimeToNow();
-  EXPECT_LE(msg.sent_time - Time::Now(), Time::InMS(20));
+  EXPECT_LE(msg.sent_time - monotonic_clock::now(), chrono::milliseconds(20));
 }
 
 // Tests that EqualsNoTime works.

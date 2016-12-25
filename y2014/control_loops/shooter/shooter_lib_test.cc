@@ -11,9 +11,8 @@
 #include "y2014/control_loops/shooter/unaugmented_shooter_motor_plant.h"
 #include "y2014/constants.h"
 
-using ::aos::time::Time;
-
 namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 namespace y2014 {
 namespace control_loops {
@@ -363,7 +362,8 @@ TEST_F(ShooterTest, InversePowerConversion) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, GoesToValue) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(2)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(2))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -380,7 +380,8 @@ TEST_F(ShooterTest, GoesToValue) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, Fire) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.2)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1200))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -393,7 +394,8 @@ TEST_F(ShooterTest, Fire) {
       .Send();
 
   bool hit_fire = false;
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5.2)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(5200))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -420,7 +422,8 @@ TEST_F(ShooterTest, Fire) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, FireLong) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -430,7 +433,8 @@ TEST_F(ShooterTest, FireLong) {
   shooter_queue_.goal.MakeWithBuilder().shot_requested(true).Send();
 
   bool hit_fire = false;
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(5.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(5500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -455,7 +459,8 @@ TEST_F(ShooterTest, FireLong) {
 // power.
 TEST_F(ShooterTest, LoadTooFar) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(500.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.6)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1600))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -470,7 +475,8 @@ TEST_F(ShooterTest, LoadTooFar) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, MoveGoal) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -479,7 +485,8 @@ TEST_F(ShooterTest, MoveGoal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_.goal.MakeWithBuilder().shot_power(14.0).Send();
 
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.0)) {
+  while (::aos::monotonic_clock::now() <
+         ::aos::monotonic_clock::time_point(chrono::seconds(1))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -496,7 +503,8 @@ TEST_F(ShooterTest, MoveGoal) {
 
 TEST_F(ShooterTest, Unload) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -505,7 +513,8 @@ TEST_F(ShooterTest, Unload) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
   shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(8.0) &&
+  while (monotonic_clock::now() <
+             monotonic_clock::time_point(chrono::seconds(8)) &&
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -521,7 +530,8 @@ TEST_F(ShooterTest, Unload) {
 // Tests that it rezeros while unloading.
 TEST_F(ShooterTest, RezeroWhileUnloading) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -530,7 +540,8 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 
   shooter_motor_.shooter_.offset_ += 0.01;
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(2.0)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(2))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -539,7 +550,8 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
 
   shooter_queue_.goal.MakeWithBuilder().unload_requested(true).Send();
 
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(10.0) &&
+  while (::aos::monotonic_clock::now() <
+             ::aos::monotonic_clock::time_point(chrono::seconds(10)) &&
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -555,7 +567,8 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupNegative) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -566,7 +579,8 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
 
   int kicked_delay = 20;
   int capped_goal_count = 0;
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(9.5) &&
+  while (monotonic_clock::now() <
+             monotonic_clock::time_point(chrono::milliseconds(9500)) &&
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -594,7 +608,8 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, UnloadWindupPositive) {
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(1.5)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::milliseconds(1500))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -605,7 +620,8 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
 
   int kicked_delay = 20;
   int capped_goal_count = 0;
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(9.5) &&
+  while (monotonic_clock::now() <
+             monotonic_clock::time_point(chrono::milliseconds(9500)) &&
          shooter_motor_.state() != ShooterMotor::STATE_READY_UNLOAD) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
@@ -638,7 +654,8 @@ double HallEffectMiddle(constants::Values::AnglePair pair) {
 TEST_F(ShooterTest, StartsOnDistal) {
   Reinitialize(HallEffectMiddle(constants::GetValues().shooter.pusher_distal));
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(2.0)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(2))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -658,7 +675,8 @@ TEST_F(ShooterTest, StartsOnProximal) {
   Reinitialize(
       HallEffectMiddle(constants::GetValues().shooter.pusher_proximal));
   shooter_queue_.goal.MakeWithBuilder().shot_power(70.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(3.0)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(3))) {
     shooter_motor_plant_.SendPositionMessage();
     shooter_motor_.Iterate();
     shooter_motor_plant_.Simulate();
@@ -687,7 +705,8 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   bool initialized = false;
   Reinitialize(start_pos);
   shooter_queue_.goal.MakeWithBuilder().shot_power(120.0).Send();
-  while (::aos::time::Time::Now() < ::aos::time::Time::InSeconds(2.0)) {
+  while (monotonic_clock::now() <
+         monotonic_clock::time_point(chrono::seconds(2))) {
     shooter_motor_plant_.SendPositionMessage(!initialized, plunger_back, latch, brake);
     initialized = true;
     shooter_motor_.Iterate();

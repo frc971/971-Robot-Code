@@ -1,5 +1,6 @@
 #include "y2015/http_status/http_status.h"
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -22,6 +23,9 @@
 namespace y2015 {
 namespace http_status {
 
+using ::aos::monotonic_clock;
+namespace chrono = ::std::chrono;
+
 // TODO(comran): Make some of these separate libraries & document them better.
 
 HTTPStatusMessage::HTTPStatusMessage()
@@ -33,13 +37,13 @@ HTTPStatusMessage::HTTPStatusMessage()
 void HTTPStatusMessage::NextSample() {
   int32_t adjusted_index = GetIndex(sample_id_);
 
-  ::aos::time::Time time_now = ::aos::time::Time::Now();
+  const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
 
   if (sample_id_ < overflow_id_) {
-    sample_times_.emplace_back(time_now);
+    sample_times_.emplace_back(monotonic_now);
     data_values_.emplace_back(::std::vector<double>());
   } else {
-    sample_times_[adjusted_index] = time_now;
+    sample_times_[adjusted_index] = monotonic_now;
   }
 
   sample_id_++;
@@ -122,7 +126,10 @@ void HTTPStatusMessage::AddMeasure(::std::string name, double value) {
 
     int32_t adjusted_index = GetIndex(cur_sample);
 
-    message << cur_sample << "%" << sample_times_.at(adjusted_index).ToSeconds()
+    message << cur_sample << "%"
+            << chrono::duration_cast<chrono::duration<double>>(
+                   sample_times_.at(adjusted_index).time_since_epoch())
+                   .count()
             << "%";
     for (int32_t cur_measure = 0;
          cur_measure < static_cast<int32_t>(data_names_.size());
@@ -216,8 +223,10 @@ void DataCollector::RunIteration() {
 void DataCollector::operator()() {
   ::aos::SetCurrentThreadName("HTTPStatusData");
 
+  ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                      chrono::microseconds(0));
   while (run_) {
-    ::aos::time::PhasedLoopXMS(5, 0);
+    phased_loop.SleepUntilNext();
     RunIteration();
   }
 }

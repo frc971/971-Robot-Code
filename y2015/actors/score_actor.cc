@@ -68,10 +68,10 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
     return false;
   }
 
+  ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
-    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                   ::aos::controls::kLoopFrequency).count(),
-                               2500);
+    phased_loop.SleepUntilNext();
     if (ShouldCancel()) {
       return true;
     }
@@ -94,29 +94,31 @@ bool ScoreActor::MoveStackIntoPosition(const ScoreParams& params) {
 
   bool started_lowering = false;
 
-  while (true) {
-    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                   ::aos::controls::kLoopFrequency).count(),
-                               2500);
-    if (ShouldCancel()) {
-      return true;
-    }
-    // Round the moving out corner and start setting down.
-    if (params.place_the_stack && !started_lowering) {
-      if (CurrentGoalX() < params.horizontal_start_lowering) {
-        if (!SendGoal(params.horizontal_move_target, params.place_height, true,
-                      kSlowMaxXVelocity, kFastMaxYVelocity,
-                      kSlowMaxXAcceleration, kMaxYAcceleration)) {
-          LOG(ERROR, "Sending fridge message failed.\n");
-          return false;
-        }
-        started_lowering = true;
+  {
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        ::std::chrono::milliseconds(5) / 2);
+    while (true) {
+      phased_loop.SleepUntilNext();
+      if (ShouldCancel()) {
+        return true;
       }
-    }
+      // Round the moving out corner and start setting down.
+      if (params.place_the_stack && !started_lowering) {
+        if (CurrentGoalX() < params.horizontal_start_lowering) {
+          if (!SendGoal(params.horizontal_move_target, params.place_height,
+                        true, kSlowMaxXVelocity, kFastMaxYVelocity,
+                        kSlowMaxXAcceleration, kMaxYAcceleration)) {
+            LOG(ERROR, "Sending fridge message failed.\n");
+            return false;
+          }
+          started_lowering = true;
+        }
+      }
 
-    if (NearHorizontalGoal(params.horizontal_move_target)) {
-      LOG(INFO, "reached goal\n");
-      break;
+      if (NearHorizontalGoal(params.horizontal_move_target)) {
+        LOG(INFO, "reached goal\n");
+        break;
+      }
     }
   }
 
@@ -134,16 +136,18 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
     return false;
   }
 
-  while (true) {
-    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                   ::aos::controls::kLoopFrequency).count(),
-                               2500);
-    if (ShouldCancel()) {
-      return true;
-    }
+  {
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        chrono::microseconds(2500));
+    while (true) {
+      phased_loop.SleepUntilNext();
+      if (ShouldCancel()) {
+        return true;
+      }
 
-    if (NearGoal(params.horizontal_move_target, params.place_height)) {
-      break;
+      if (NearGoal(params.horizontal_move_target, params.place_height)) {
+        break;
+      }
     }
   }
 
@@ -165,10 +169,10 @@ bool ScoreActor::PlaceTheStack(const ScoreParams& params) {
   }
 
   bool has_lifted = false;
+  ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                      chrono::microseconds(2500));
   while (true) {
-    ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                   ::aos::controls::kLoopFrequency).count(),
-                               2500);
+    phased_loop.SleepUntilNext();
     if (ShouldCancel()) {
       return true;
     }

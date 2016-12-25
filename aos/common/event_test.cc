@@ -1,14 +1,18 @@
 #include "aos/common/event.h"
 
+#include <chrono>
 #include <thread>
 
 #include "gtest/gtest.h"
 
-#include "aos/testing/test_logging.h"
 #include "aos/common/time.h"
+#include "aos/testing/test_logging.h"
 
 namespace aos {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+namespace this_thread = ::std::this_thread;
 
 class EventTest : public ::testing::Test {
  public:
@@ -50,38 +54,38 @@ TEST_F(EventTest, ThreadSanitizer) {
 
 // Tests that an event blocks correctly.
 TEST_F(EventTest, Blocks) {
-  time::Time start_time, finish_time;
+  monotonic_clock::time_point start_time, finish_time;
   // Without this, it sometimes manages to fail under tsan.
   Event started;
   ::std::thread thread([this, &start_time, &finish_time, &started]() {
-    start_time = time::Time::Now();
+    start_time = monotonic_clock::now();
     started.Set();
     test_event_.Wait();
-    finish_time = time::Time::Now();
+    finish_time = monotonic_clock::now();
   });
-  static const time::Time kWaitTime = time::Time::InSeconds(0.05);
+  static constexpr auto kWaitTime = chrono::milliseconds(50);
   started.Wait();
-  time::SleepFor(kWaitTime);
+  this_thread::sleep_for(kWaitTime);
   test_event_.Set();
   thread.join();
   EXPECT_GE(finish_time - start_time, kWaitTime);
 }
 
 TEST_F(EventTest, WaitTimeout) {
-  EXPECT_FALSE(test_event_.WaitTimeout(time::Time::InSeconds(0.05)));
+  EXPECT_FALSE(test_event_.WaitTimeout(chrono::milliseconds(50)));
 
-  time::Time start_time, finish_time;
+  monotonic_clock::time_point start_time, finish_time;
   // Without this, it sometimes manages to fail under tsan.
   Event started;
   ::std::thread thread([this, &start_time, &finish_time, &started]() {
-    start_time = time::Time::Now();
+    start_time = monotonic_clock::now();
     started.Set();
-    EXPECT_TRUE(test_event_.WaitTimeout(time::Time::InSeconds(0.5)));
-    finish_time = time::Time::Now();
+    EXPECT_TRUE(test_event_.WaitTimeout(chrono::milliseconds(500)));
+    finish_time = monotonic_clock::now();
   });
-  static const time::Time kWaitTime = time::Time::InSeconds(0.05);
+  constexpr auto kWaitTime = chrono::milliseconds(50);
   started.Wait();
-  time::SleepFor(kWaitTime);
+  this_thread::sleep_for(kWaitTime);
   test_event_.Set();
   thread.join();
   EXPECT_GE(finish_time - start_time, kWaitTime);

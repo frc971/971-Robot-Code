@@ -1,24 +1,28 @@
 #include "aos/common/mutex.h"
 
-#include <sched.h>
 #include <math.h>
 #include <pthread.h>
+#include <sched.h>
 
+#include <chrono>
 #include <thread>
 
 #include "gtest/gtest.h"
 
-#include "aos/linux_code/ipc_lib/aos_sync.h"
 #include "aos/common/die.h"
+#include "aos/common/time.h"
 #include "aos/common/util/death_test_log_implementation.h"
 #include "aos/common/util/thread.h"
-#include "aos/common/time.h"
+#include "aos/linux_code/ipc_lib/aos_sync.h"
+#include "aos/linux_code/ipc_lib/core_lib.h"
 #include "aos/testing/test_logging.h"
 #include "aos/testing/test_shm.h"
-#include "aos/linux_code/ipc_lib/core_lib.h"
 
 namespace aos {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+namespace this_thread = ::std::this_thread;
 
 class MutexTest : public ::testing::Test {
  public:
@@ -169,8 +173,9 @@ namespace {
 
 class AdderThread : public ::aos::util::Thread {
  public:
-  AdderThread(int *counter, Mutex *mutex, ::aos::time::Time sleep_before_time,
-              ::aos::time::Time sleep_after_time)
+  AdderThread(int *counter, Mutex *mutex,
+              monotonic_clock::duration sleep_before_time,
+              monotonic_clock::duration sleep_after_time)
       : counter_(counter),
         mutex_(mutex),
         sleep_before_time_(sleep_before_time),
@@ -178,15 +183,15 @@ class AdderThread : public ::aos::util::Thread {
 
  private:
   virtual void Run() override {
-    ::aos::time::SleepFor(sleep_before_time_);
+    this_thread::sleep_for(sleep_before_time_);
     MutexLocker locker(mutex_);
     ++(*counter_);
-    ::aos::time::SleepFor(sleep_after_time_);
+    this_thread::sleep_for(sleep_after_time_);
   }
 
   int *const counter_;
   Mutex *const mutex_;
-  const ::aos::time::Time sleep_before_time_, sleep_after_time_;
+  const monotonic_clock::duration sleep_before_time_, sleep_after_time_;
 };
 
 }  // namespace
@@ -196,10 +201,11 @@ class AdderThread : public ::aos::util::Thread {
 TEST_F(MutexTest, ThreadSanitizerContended) {
   int counter = 0;
   AdderThread threads[2]{
-      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0.2),
-       ::aos::time::Time::InSeconds(0)},
-      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0),
-       ::aos::time::Time::InSeconds(0)}, };
+      {&counter, &test_mutex_, chrono::milliseconds(200),
+       chrono::milliseconds(0)},
+      {&counter, &test_mutex_, chrono::milliseconds(0),
+       chrono::milliseconds(0)},
+  };
   for (auto &c : threads) {
     c.Start();
   }
@@ -235,10 +241,10 @@ TEST_F(MutexTest, ThreadSanitizerMutexLocker) {
 TEST_F(MutexTest, ThreadSanitizerUncontended) {
   int counter = 0;
   AdderThread threads[2]{
-      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0),
-       ::aos::time::Time::InSeconds(0)},
-      {&counter, &test_mutex_, ::aos::time::Time::InSeconds(0.2),
-       ::aos::time::Time::InSeconds(0)}, };
+      {&counter, &test_mutex_, chrono::milliseconds(0),
+       chrono::milliseconds(0)},
+      {&counter, &test_mutex_, chrono::milliseconds(200),
+       chrono::milliseconds(0)}, };
   for (auto &c : threads) {
     c.Start();
   }

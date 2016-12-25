@@ -1,6 +1,7 @@
 #include "frc971/wpilib/gyro_interface.h"
 
 #include <inttypes.h>
+#include <chrono>
 
 #include "aos/common/logging/logging.h"
 #include "aos/common/time.h"
@@ -35,7 +36,7 @@ bool GyroInterface::InitializeGyro() {
   }
 
   // Wait for it to assert the fault conditions before reading them.
-  ::aos::time::SleepFor(::aos::time::Time::InMS(50));
+  ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
 
   if (!DoTransaction(0x20000000, &result)) {
     LOG(WARNING, "failed to clear latched non-fault data\n");

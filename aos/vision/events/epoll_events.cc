@@ -57,10 +57,10 @@ class EpollLoop::Impl {
  private:
   // Calculates the new timeout value to pass to epoll_wait.
   int CalculateTimeout() {
-    const ::aos::time::Time now = ::aos::time::Time::Now();
+    const monotonic_clock::time_point monotonic_now = monotonic_clock::now();
     int r = -1;
     for (EpollWait *c : waits_) {
-      const int new_timeout = c->Recalculate(now);
+      const int new_timeout = c->Recalculate(monotonic_now);
       if (new_timeout >= 0) {
         if (r < 0 || new_timeout < r) {
           r = new_timeout;

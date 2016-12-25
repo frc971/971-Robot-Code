@@ -1,5 +1,7 @@
 #include "aos/common/event.h"
 
+#include <chrono>
+
 #include "aos/common/type_traits.h"
 #include "aos/common/logging/logging.h"
 
@@ -20,8 +22,14 @@ void Event::Wait() {
   }
 }
 
-bool Event::WaitTimeout(const ::aos::time::Time &timeout) {
-  const auto timeout_timespec = timeout.ToTimespec();
+bool Event::WaitTimeout(monotonic_clock::duration timeout) {
+  ::std::chrono::seconds sec =
+      ::std::chrono::duration_cast<::std::chrono::seconds>(timeout);
+  ::std::chrono::nanoseconds nsec =
+      ::std::chrono::duration_cast<::std::chrono::nanoseconds>(timeout - sec);
+  struct timespec timeout_timespec;
+  timeout_timespec.tv_sec = sec.count();
+  timeout_timespec.tv_nsec = nsec.count();
   while (true) {
     if (__atomic_load_n(&impl_, __ATOMIC_SEQ_CST) != 0) {
       return true;

@@ -68,6 +68,7 @@ using ::frc971::wpilib::LoopOutputHandler;
 using ::frc971::wpilib::PneumaticsToLog;
 using ::y2015::control_loops::claw_queue;
 using ::y2015::control_loops::fridge::fridge_queue;
+namespace chrono = ::std::chrono;
 
 namespace y2015 {
 namespace wpilib {
@@ -251,8 +252,8 @@ class SensorReader {
     wrist_encoder_.Start();
     dma_synchronizer_->Start();
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
+    ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(5),
+                                        chrono::milliseconds(4));
 
     ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
@@ -428,8 +429,8 @@ class SolenoidWriter {
     ::aos::SetCurrentThreadName("Solenoids");
     ::aos::SetCurrentThreadRealtimePriority(27);
 
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(20),
-                                        ::std::chrono::milliseconds(1));
+    ::aos::time::PhasedLoop phased_loop(chrono::milliseconds(20),
+                                        chrono::milliseconds(1));
 
     while (run_) {
       {
@@ -505,7 +506,7 @@ class SolenoidWriter {
 
 class CanWriter : public LoopOutputHandler {
  public:
-  CanWriter() : LoopOutputHandler(::aos::time::Time::InSeconds(0.10)) {}
+  CanWriter() : LoopOutputHandler(chrono::milliseconds(100)) {}
 
   void set_can_talon(::std::unique_ptr<Talon> t) {
     can_talon_ = ::std::move(t);

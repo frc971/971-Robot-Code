@@ -6,8 +6,6 @@
 #include "y2015_bot3/autonomous/auto.q.h"
 #include "y2015_bot3/autonomous/auto.h"
 
-using ::aos::time::Time;
-
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init(-1);
 
@@ -24,12 +22,15 @@ int main(int /*argc*/, char * /*argv*/[]) {
       LOG(INFO, "Got another auto packet\n");
     }
     LOG(INFO, "Starting auto mode\n");
-    ::aos::time::Time start_time = ::aos::time::Time::Now();
+    const ::aos::monotonic_clock::time_point start_time =
+        ::aos::monotonic_clock::now();
     ::y2015_bot3::autonomous::HandleAuto();
 
-    ::aos::time::Time elapsed_time = ::aos::time::Time::Now() - start_time;
+    const auto elapsed_time = ::aos::monotonic_clock::now() - start_time;
     LOG(INFO, "Auto mode exited in %f, waiting for it to finish.\n",
-        elapsed_time.ToSeconds());
+        ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+            elapsed_time)
+            .count());
     while (::y2015_bot3::autonomous::autonomous->run_auto) {
       ::y2015_bot3::autonomous::autonomous.FetchNextBlocking();
       LOG(INFO, "Got another auto packet\n");

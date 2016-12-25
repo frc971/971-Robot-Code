@@ -1,15 +1,15 @@
 #ifndef Y2016_ACTORS_AUTONOMOUS_ACTOR_H_
 #define Y2016_ACTORS_AUTONOMOUS_ACTOR_H_
 
+#include <chrono>
 #include <memory>
 
-#include "aos/common/actions/actor.h"
 #include "aos/common/actions/actions.h"
-
-#include "y2016/actors/autonomous_action.q.h"
-#include "y2016/actors/vision_align_actor.h"
+#include "aos/common/actions/actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "y2016/actors/autonomous_action.q.h"
+#include "y2016/actors/vision_align_actor.h"
 
 namespace y2016 {
 namespace actors {
@@ -111,7 +111,7 @@ class AutonomousActor
   void Shoot();
 
   void AlignWithVisionGoal();
-  void WaitForAlignedWithVision(aos::time::Time align_duration);
+  void WaitForAlignedWithVision(::std::chrono::nanoseconds align_duration);
 
   void TwoBallAuto();
 

@@ -90,13 +90,13 @@ bool HeldToLiftActor::RunAction(const HeldToLiftParams &params) {
   }
 
   {
+    ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+                                        ::std::chrono::milliseconds(5) / 2);
     ::std::unique_ptr<LiftAction> lift_action =
         MakeLiftAction(params.lift_params);
     lift_action->Start();
     while (lift_action->Running()) {
-      ::aos::time::PhasedLoopXMS(chrono::duration_cast<chrono::milliseconds>(
-                                     ::aos::controls::kLoopFrequency).count(),
-                                 2500);
+      phased_loop.SleepUntilNext();
 
       if (ShouldCancel()) {
         lift_action->Cancel();

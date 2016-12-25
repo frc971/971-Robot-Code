@@ -73,12 +73,6 @@ double drivetrain_velocity_translate(double in) {
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
-static const double kMaximumEncoderPulsesPerSecond =
-    5600.0 /* free speed RPM */ * 14.0 / 48.0 /* bottom gear reduction */ *
-    18.0 / 32.0 /* big belt reduction */ *
-    18.0 / 66.0 /* top gear reduction */ * 48.0 / 18.0 /* encoder gears */ /
-    60.0 /* seconds / minute */ * 256.0 /* CPR */;
-
 class SensorReader {
  public:
   SensorReader() {}

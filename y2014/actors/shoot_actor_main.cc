@@ -4,8 +4,6 @@
 #include "y2014/actors/shoot_action.q.h"
 #include "y2014/actors/shoot_actor.h"
 
-using ::aos::time::Time;
-
 int main(int /*argc*/, char * /*argv*/[]) {
   ::aos::Init(-1);
 

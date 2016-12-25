@@ -8,11 +8,6 @@
 namespace aos {
 namespace time {
 
-// Will not be accurate if ms isn't a factor of 1000.
-// offset is in us.
-// DEPRECATED(Brian): Use PhasedLoop instead.
-void PhasedLoopXMS(int ms, int offset);
-
 // Handles sleeping until a fixed offset from some time interval.
 class PhasedLoop {
  public:
@@ -21,7 +16,7 @@ class PhasedLoop {
   //   1.1s
   //   ...
   //   10000.1s
-  // offset must be >= Time::kZero and < interval.
+  // offset must be >= chrono::seconds(0) and < interval.
   PhasedLoop(
       const monotonic_clock::duration interval,
       const monotonic_clock::duration offset = monotonic_clock::duration(0))

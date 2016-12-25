@@ -4,6 +4,7 @@
 #include <sys/mman.h>
 #include <inttypes.h>
 
+#include <chrono>
 #include <ostream>
 #include <memory>
 #include <map>
@@ -27,6 +28,9 @@ using ::testing::AssertionFailure;
 
 namespace aos {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+namespace this_thread = ::std::this_thread;
 
 // The same constant from queue.cc. This will have to be updated if that one is.
 const int kExtraMessages = 20;
@@ -70,7 +74,7 @@ class RawQueueTest : public ::testing::Test {
   };
   template<typename T>
   static void Hangs_(FunctionToCall<T> *const to_call) {
-    time::SleepFor(time::Time::InSeconds(0.01));
+    this_thread::sleep_for(chrono::milliseconds(10));
     ASSERT_EQ(1, futex_set(&to_call->started));
     to_call->result = ResultType::Called;
     to_call->function(to_call->arg, const_cast<char *>(to_call->failure));
@@ -78,9 +82,9 @@ class RawQueueTest : public ::testing::Test {
   }
 
   // How long until a function is considered to have hung.
-  static constexpr time::Time kHangTime = time::Time::InSeconds(0.09);
+  static constexpr chrono::nanoseconds kHangTime = chrono::milliseconds(90);
   // How long to sleep after forking (for debugging).
-  static constexpr time::Time kForkSleep = time::Time::InSeconds(0);
+  static constexpr chrono::nanoseconds kForkSleep = chrono::milliseconds(0);
 
   // Represents a process that has been forked off. The destructor kills the
   // process and wait(2)s for it.
@@ -118,8 +122,19 @@ class RawQueueTest : public ::testing::Test {
     enum class JoinResult {
       Finished, Hung, Error
     };
-    JoinResult Join(time::Time timeout = kHangTime) {
-      timespec done_timeout = (kForkSleep + timeout).ToTimespec();
+    JoinResult Join(chrono::nanoseconds timeout = kHangTime) {
+      struct timespec done_timeout;
+      {
+        auto full_timeout = kForkSleep + timeout;
+        ::std::chrono::seconds sec =
+            ::std::chrono::duration_cast<::std::chrono::seconds>(full_timeout);
+        ::std::chrono::nanoseconds nsec =
+            ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+                full_timeout - sec);
+        done_timeout.tv_sec = sec.count();
+        done_timeout.tv_nsec = nsec.count();
+      }
+
       switch (futex_wait_timeout(done_, &done_timeout)) {
         case 2:
           return JoinResult::Hung;
@@ -172,11 +187,10 @@ class RawQueueTest : public ::testing::Test {
     const pid_t pid = fork();
     switch (pid) {
       case 0:  // child
-        if (kForkSleep != time::Time(0, 0)) {
-          LOG(INFO, "pid %jd sleeping for %ds%dns\n",
-              static_cast<intmax_t>(getpid()),
-              kForkSleep.sec(), kForkSleep.nsec());
-          time::SleepFor(kForkSleep);
+        if (kForkSleep != chrono::milliseconds(0)) {
+          LOG(INFO, "pid %jd sleeping for %" PRId64 "ns\n",
+              static_cast<intmax_t>(getpid()), kForkSleep.count());
+          this_thread::sleep_for(kForkSleep);
         }
         ::aos::testing::PreventExit();
         function(arg);
@@ -325,8 +339,8 @@ class RawQueueTest : public ::testing::Test {
 char *RawQueueTest::fatal_failure;
 std::map<RawQueueTest::ChildID, RawQueueTest::ForkedProcess *>
     RawQueueTest::children_;
-constexpr time::Time RawQueueTest::kHangTime;
-constexpr time::Time RawQueueTest::kForkSleep;
+constexpr chrono::nanoseconds RawQueueTest::kHangTime;
+constexpr chrono::nanoseconds RawQueueTest::kForkSleep;
 
 typedef RawQueueTest RawQueueDeathTest;
 

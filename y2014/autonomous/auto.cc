@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include <chrono>
 #include <memory>
 
 #include "aos/common/util/phased_loop.h"
@@ -22,12 +23,20 @@
 #include "y2014/queues/hot_goal.q.h"
 #include "y2014/queues/profile_params.q.h"
 
-using ::aos::time::Time;
-
 namespace y2014 {
 namespace autonomous {
+namespace chrono = ::std::chrono;
+namespace this_thread = ::std::this_thread;
+using ::aos::monotonic_clock;
 
-namespace time = ::aos::time;
+namespace {
+
+double DoubleSeconds(monotonic_clock::duration duration) {
+  return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
+      .count();
+}
+
+}  // namespace
 
 static double left_initial_position, right_initial_position;
 
@@ -73,9 +82,11 @@ void WaitUntilDoneOrCanceled(
     LOG(ERROR, "No action, not waiting\n");
     return;
   }
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(10),
+                                      ::std::chrono::milliseconds(10) / 2);
   while (true) {
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoopXMS(10, 5000);
+    phased_loop.SleepUntilNext();
     if (!action->Running() || ShouldExitAuto()) {
       return;
     }
@@ -221,8 +232,10 @@ void InitializeEncoders() {
 
 void WaitUntilClawDone() {
   while (true) {
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(10),
+                                        ::std::chrono::milliseconds(10) / 2);
     // Poll the running bit and auto done bits.
-    ::aos::time::PhasedLoopXMS(10, 5000);
+    phased_loop.SleepUntilNext();
     control_loops::claw_queue.status.FetchLatest();
     control_loops::claw_queue.goal.FetchLatest();
     if (ShouldExitAuto()) {
@@ -345,7 +358,7 @@ void HandleAuto() {
   static const double kPickupDistance = 0.5;
   static const double kTurnAngle = 0.3;
 
-  ::aos::time::Time start_time = ::aos::time::Time::Now();
+  monotonic_clock::time_point start_time = monotonic_clock::now();
   LOG(INFO, "Handling auto mode\n");
 
   AutoVersion auto_version;
@@ -380,27 +393,27 @@ void HandleAuto() {
 
   ResetDrivetrain();
 
-  time::SleepFor(time::Time::InSeconds(0.1));
+  this_thread::sleep_for(chrono::milliseconds(100));
   if (ShouldExitAuto()) return;
   InitializeEncoders();
 
   // Turn the claw on, keep it straight up until the ball has been grabbed.
   LOG(INFO, "Claw going up at %f\n",
-      (::aos::time::Time::Now() - start_time).ToSeconds());
+      DoubleSeconds(monotonic_clock::now() - start_time));
   PositionClawVertically(12.0, 4.0);
   SetShotPower(115.0);
 
   // Wait for the ball to enter the claw.
-  time::SleepFor(time::Time::InSeconds(0.25));
+  this_thread::sleep_for(chrono::milliseconds(250));
   if (ShouldExitAuto()) return;
   LOG(INFO, "Readying claw for shot at %f\n",
-      (::aos::time::Time::Now() - start_time).ToSeconds());
+      DoubleSeconds(monotonic_clock::now() - start_time));
 
   {
     if (ShouldExitAuto()) return;
     // Drive to the goal.
     auto drivetrain_action = SetDriveGoal(-kShootDistance, drive_params);
-    time::SleepFor(time::Time::InSeconds(0.75));
+    this_thread::sleep_for(chrono::milliseconds(750));
     PositionClawForShot();
     LOG(INFO, "Waiting until drivetrain is finished\n");
     WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
@@ -430,21 +443,20 @@ void HandleAuto() {
   } else if (auto_version == AutoVersion::kSingleHot) {
     do {
       // TODO(brians): Wait for next message with timeout or something.
-      ::aos::time::SleepFor(::aos::time::Time::InSeconds(0.003));
+      this_thread::sleep_for(chrono::milliseconds(3));
       hot_goal_decoder.Update(false);
       if (ShouldExitAuto()) return;
     } while (!hot_goal_decoder.left_triggered() &&
-             (::aos::time::Time::Now() - start_time) <
-                 ::aos::time::Time::InSeconds(9));
+             (monotonic_clock::now() - start_time) < chrono::seconds(9));
   } else if (auto_version == AutoVersion::kStraight) {
-    time::SleepFor(time::Time::InSeconds(0.4));
+    this_thread::sleep_for(chrono::milliseconds(400));
   }
 
   // Shoot.
   LOG(INFO, "Shooting at %f\n",
-      (::aos::time::Time::Now() - start_time).ToSeconds());
+      DoubleSeconds(monotonic_clock::now() - start_time));
   Shoot();
-  time::SleepFor(time::Time::InSeconds(0.05));
+  this_thread::sleep_for(chrono::milliseconds(50));
 
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldExitAuto()) return;
@@ -454,7 +466,7 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kSingleHot) {
     LOG(INFO, "auto done at %f\n",
-        (::aos::time::Time::Now() - start_time).ToSeconds());
+        DoubleSeconds(monotonic_clock::now() - start_time));
     PositionClawVertically(0.0, 0.0);
     return;
   }
@@ -463,7 +475,7 @@ void HandleAuto() {
     if (ShouldExitAuto()) return;
     // Intake the new ball.
     LOG(INFO, "Claw ready for intake at %f\n",
-        (::aos::time::Time::Now() - start_time).ToSeconds());
+        DoubleSeconds(monotonic_clock::now() - start_time));
     PositionClawBackIntake();
     auto drivetrain_action =
         SetDriveGoal(kShootDistance + kPickupDistance, drive_params);
@@ -471,7 +483,7 @@ void HandleAuto() {
     WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
     LOG(INFO, "Wait for the claw at %f\n",
-        (::aos::time::Time::Now() - start_time).ToSeconds());
+        DoubleSeconds(monotonic_clock::now() - start_time));
     WaitUntilClawDone();
     if (ShouldExitAuto()) return;
   }
@@ -479,10 +491,10 @@ void HandleAuto() {
   // Drive back.
   {
     LOG(INFO, "Driving back at %f\n",
-        (::aos::time::Time::Now() - start_time).ToSeconds());
+        DoubleSeconds(monotonic_clock::now() - start_time));
     auto drivetrain_action =
         SetDriveGoal(-(kShootDistance + kPickupDistance), drive_params);
-    time::SleepFor(time::Time::InSeconds(0.3));
+    this_thread::sleep_for(chrono::milliseconds(300));
     hot_goal_decoder.ResetCounts();
     if (ShouldExitAuto()) return;
     PositionClawUpClosed();
@@ -515,17 +527,17 @@ void HandleAuto() {
     WaitUntilDoneOrCanceled(::std::move(drivetrain_action));
     if (ShouldExitAuto()) return;
   } else if (auto_version == AutoVersion::kStraight) {
-    time::SleepFor(time::Time::InSeconds(0.4));
+    this_thread::sleep_for(chrono::milliseconds(400));
   }
 
   LOG(INFO, "Shooting at %f\n",
-      (::aos::time::Time::Now() - start_time).ToSeconds());
+      DoubleSeconds(monotonic_clock::now() - start_time));
   // Shoot
   Shoot();
   if (ShouldExitAuto()) return;
 
   // Get ready to zero when we come back up.
-  time::SleepFor(time::Time::InSeconds(0.05));
+  this_thread::sleep_for(chrono::milliseconds(50));
   PositionClawVertically(0.0, 0.0);
 }
 

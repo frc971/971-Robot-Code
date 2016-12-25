@@ -80,8 +80,9 @@ class LogReplayer {
    public:
     virtual ~StructHandlerInterface() {}
 
-    virtual void HandleStruct(::aos::time::Time log_time, uint32_t type_id,
-                              const void *data, size_t data_size) = 0;
+    virtual void HandleStruct(::aos::monotonic_clock::time_point log_time,
+                              uint32_t type_id, const void *data,
+                              size_t data_size) = 0;
   };
 
   // Converts struct log messages to a message type and passes it to an
@@ -92,8 +93,9 @@ class LogReplayer {
     TypedStructHandler(::std::function<void(const T &message)> handler)
         : handler_(handler) {}
 
-    void HandleStruct(::aos::time::Time log_time, uint32_t type_id,
-                      const void *data, size_t data_size) override {
+    void HandleStruct(::aos::monotonic_clock::time_point log_time,
+                      uint32_t type_id, const void *data,
+                      size_t data_size) override {
       CHECK_EQ(type_id, T::GetType()->id);
       T message;
       CHECK_EQ(data_size, T::Size());

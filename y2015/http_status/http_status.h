@@ -55,7 +55,7 @@ class HTTPStatusMessage {
   // Vectors of vectors to store samples at indexes determined by GetIndex.
   ::std::vector<::std::string> data_names_;
   ::std::vector<::std::vector<double>> data_values_;
-  ::std::vector<::aos::time::Time> sample_times_;
+  ::std::vector<::aos::monotonic_clock::time_point> sample_times_;
 
   int32_t sample_id_;          // Last sample id used.
   int32_t measure_index_;      // Last measure index used.

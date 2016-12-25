@@ -87,7 +87,7 @@ class Claw : public aos::controls::ControlLoop<control_loops::ClawQueue> {
   State state_ = UNINITIALIZED;
 
   // The time when we last changed the claw piston state.
-  ::aos::time::Time last_piston_edge_;
+  ::aos::monotonic_clock::time_point last_piston_edge_;
 
   // The state feedback control loop to talk to.
   ::std::unique_ptr<ClawCappedStateFeedbackLoop> claw_loop_;

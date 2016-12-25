@@ -2,28 +2,31 @@
 
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
-#include "gtest/gtest.h"
-#include "aos/common/queue.h"
-#include "aos/common/controls/control_loop_test.h"
 #include "aos/common/commonmath.h"
+#include "aos/common/controls/control_loop_test.h"
+#include "aos/common/queue.h"
 #include "aos/common/time.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/control_loops/superstructure/intake_plant.h"
+#include "gtest/gtest.h"
 #include "y2016/control_loops/superstructure/arm_plant.h"
+#include "y2016/control_loops/superstructure/intake_plant.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 
 #include "y2016/constants.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::PositionSensorSimulator;
 
 namespace y2016 {
 namespace control_loops {
 namespace superstructure {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 class ArmPlant : public StateFeedbackPlant<4, 2, 2> {
  public:
@@ -284,10 +287,10 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
-      const auto loop_start_time = Time::Now();
+  void RunForTime(monotonic_clock::duration run_for, bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
+      const auto loop_start_time = monotonic_clock::now();
       double begin_shoulder_velocity =
           superstructure_plant_.shoulder_angular_velocity();
       double begin_intake_velocity =
@@ -295,7 +298,9 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
       double begin_wrist_velocity =
           superstructure_plant_.wrist_angular_velocity();
       RunIteration(enabled);
-      const double loop_time = (Time::Now() - loop_start_time).ToSeconds();
+      const double loop_time =
+          chrono::duration_cast<chrono::duration<double>>(
+              monotonic_clock::now() - loop_start_time).count();
       const double shoulder_acceleration =
           (superstructure_plant_.shoulder_angular_velocity() -
            begin_shoulder_velocity) /
@@ -398,7 +403,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
                   .Send());
 
   // TODO(phil): Send a goal of some sort.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -418,7 +423,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -438,7 +443,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
                   .max_angular_velocity_wrist(20)
                   .max_angular_acceleration_wrist(20)
                   .Send());
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
@@ -463,7 +468,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
@@ -488,7 +493,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   superstructure_queue_.status.FetchLatest();
@@ -513,14 +518,14 @@ TEST_F(SuperstructureTest, ZeroTest) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that the loop zeroes when run for a while without a goal.
 TEST_F(SuperstructureTest, ZeroNoGoal) {
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 }
@@ -543,7 +548,7 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
                                constants::Values::kShoulderRange.upper)
                   .Send());
   // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   VerifyNearGoal();
 }
@@ -561,8 +566,9 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
                   .angle_shoulder(constants::Values::kShoulderRange.lower)
                   .angle_wrist(0.0)
                   .Send());
-  // We have to wait for it to put the elevator in a safe position as well.
-  RunForTime(Time::InSeconds(20));
+  // We have to wait for it to put the superstructure in a safe position as
+  // well.
+  RunForTime(chrono::seconds(20));
 
   VerifyNearGoal();
 }
@@ -581,14 +587,14 @@ TEST_F(SuperstructureTest, ResetTest) {
                   .angle_shoulder(constants::Values::kShoulderRange.upper)
                   .angle_wrist(0.0)
                   .Send());
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(Time::InMS(100));
+  RunForTime(chrono::milliseconds(100));
   EXPECT_NE(Superstructure::RUNNING, superstructure_.state());
-  RunForTime(Time::InMS(10000));
+  RunForTime(chrono::milliseconds(10000));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
   VerifyNearGoal();
 }
@@ -605,13 +611,13 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
           .angle_wrist(constants::Values::kWristRange.lower + 0.03)
           .Send());
 
-  RunForTime(Time::InMS(100), false);
+  RunForTime(chrono::milliseconds(100), false);
   EXPECT_EQ(0.0, superstructure_.intake_.goal(0, 0));
   EXPECT_EQ(0.0, superstructure_.arm_.goal(0, 0));
   EXPECT_EQ(0.0, superstructure_.arm_.goal(2, 0));
 
   // Now make sure they move correctly
-  RunForTime(Time::InMS(4000), true);
+  RunForTime(chrono::milliseconds(4000), true);
   EXPECT_NE(0.0, superstructure_.intake_.goal(0, 0));
   EXPECT_NE(0.0, superstructure_.arm_.goal(0, 0));
   EXPECT_NE(0.0, superstructure_.arm_.goal(2, 0));
@@ -678,7 +684,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
     EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
   }
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 }
 
@@ -742,7 +748,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
     EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
   }
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
   EXPECT_EQ(Superstructure::LANDING_RUNNING, superstructure_.state());
 }
 
@@ -771,7 +777,7 @@ TEST_F(SuperstructureTest, IntegratorTest) {
       .angle_wrist(0.0)
       .Send();
 
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -792,15 +798,15 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
       .Send();
 
   // Run disabled for 2 seconds
-  RunForTime(Time::InSeconds(2), false);
+  RunForTime(chrono::seconds(2), false);
   EXPECT_EQ(Superstructure::DISABLED_INITIALIZED, superstructure_.state());
 
   superstructure_plant_.set_power_error(1.0, 1.5, 1.0);
 
-  RunForTime(Time::InSeconds(1), false);
+  RunForTime(chrono::seconds(1), false);
 
   EXPECT_EQ(Superstructure::SLOW_RUNNING, superstructure_.state());
-  RunForTime(Time::InSeconds(2), true);
+  RunForTime(chrono::seconds(2), true);
 
   VerifyNearGoal();
 }
@@ -839,7 +845,7 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -862,7 +868,7 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
   set_peak_intake_acceleration(1.10);
   set_peak_shoulder_acceleration(1.20);
   set_peak_wrist_acceleration(1.10);
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
 
   VerifyNearGoal();
 }
@@ -881,7 +887,7 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -901,7 +907,7 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
   set_peak_intake_acceleration(1.20);
   set_peak_shoulder_acceleration(1.20);
   set_peak_wrist_acceleration(1.20);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -923,7 +929,7 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
           .max_angular_acceleration_wrist(20)
           .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -946,7 +952,7 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
   set_peak_intake_acceleration(1.05);
   set_peak_shoulder_acceleration(1.05);
   set_peak_wrist_acceleration(1.05);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -968,7 +974,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
           .max_angular_acceleration_wrist(20)
           .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -990,7 +996,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
   set_peak_intake_velocity(4.65);
   set_peak_shoulder_velocity(1.00);
   set_peak_wrist_velocity(1.00);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -1010,7 +1016,7 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
                   .max_angular_acceleration_wrist(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -1030,7 +1036,7 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
   set_peak_intake_velocity(1.0);
   set_peak_shoulder_velocity(5.5);
   set_peak_wrist_velocity(1.0);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -1053,7 +1059,7 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
           .max_angular_acceleration_wrist(20)
           .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 
   VerifyNearGoal();
@@ -1076,7 +1082,7 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
   set_peak_intake_velocity(1.0);
   set_peak_shoulder_velocity(1.0);
   set_peak_wrist_velocity(10.2);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -1096,7 +1102,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(0.0)                                         // Stowed
           .Send());
 
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   ASSERT_TRUE(
       superstructure_queue_.goal.MakeWithBuilder()
@@ -1105,7 +1111,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(M_PI / 2.0)     // down
           .Send());
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   superstructure_queue_.status.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
@@ -1133,7 +1139,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
           .angle_wrist(M_PI)     // forward
           .Send());
 
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -1150,7 +1156,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
                   .angle_wrist(M_PI)  // intentionally asking for forward
                   .Send());
 
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   superstructure_queue_.status.FetchLatest();
   ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
@@ -1173,7 +1179,7 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
                   .angle_wrist(0.0)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   VerifyNearGoal();
 
   // Since we're explicitly checking for collisions, we don't want to fail the
@@ -1186,7 +1192,7 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
   while (!collided()) {
     RunIteration(false);
   }
-  RunForTime(Time::InSeconds(0.5), false);  // Move a bit further down.
+  RunForTime(chrono::milliseconds(500), false);  // Move a bit further down.
 
   ASSERT_TRUE(collided());
   EXPECT_EQ(Superstructure::SLOW_RUNNING, superstructure_.state());
@@ -1194,7 +1200,7 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
 
   // Make sure that the collision avoidance will properly move the limbs out of
   // the collision area.
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
   ASSERT_FALSE(collided());
   EXPECT_EQ(Superstructure::RUNNING, superstructure_.state());
 }
@@ -1208,7 +1214,7 @@ TEST_F(SuperstructureTest, DetectAndFixShoulderInDrivebase) {
                   .angle_wrist(0.0)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   VerifyNearGoal();
 
   // Since we're explicitly checking for collisions, we don't want to fail the
@@ -1227,7 +1233,7 @@ TEST_F(SuperstructureTest, DetectAndFixShoulderInDrivebase) {
   // Make sure that the collision avoidance will properly move the limbs out of
   // the collision area.
   superstructure_plant_.set_power_error(0.0, 0.0, 0.0);
-  RunForTime(Time::InSeconds(3));
+  RunForTime(chrono::seconds(3));
   ASSERT_FALSE(collided());
   EXPECT_EQ(Superstructure::LANDING_RUNNING, superstructure_.state());
 }
@@ -1245,17 +1251,17 @@ TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
                   .angle_wrist(0.0)  // intentionally asking for forward
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   VerifyNearGoal();
 
   // If we are near the bottom of the range, we won't have enough power to
   // compensate for the offset.  This means that we fail if we get to the goal.
   superstructure_plant_.set_power_error(
       0.0, -Superstructure::kLandingShoulderDownVoltage, 0.0);
-  RunForTime(Time::InSeconds(2));
+  RunForTime(chrono::seconds(2));
   superstructure_plant_.set_power_error(
       0.0, -2.0 * Superstructure::kLandingShoulderDownVoltage, 0.0);
-  RunForTime(Time::InSeconds(2));
+  RunForTime(chrono::seconds(2));
   EXPECT_LE(constants::Values::kShoulderRange.lower,
             superstructure_queue_.goal->angle_shoulder);
 }
@@ -1268,7 +1274,7 @@ TEST_F(SuperstructureTest, LandSlowly) {
                   .angle_shoulder(M_PI * 0.25)
                   .angle_wrist(0.0)
                   .Send());
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   // Tell it to land in the bellypan as fast as possible.
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()
@@ -1291,7 +1297,7 @@ TEST_F(SuperstructureTest, LandSlowly) {
            Superstructure::kShoulderTransitionToLanded);
 
   set_peak_shoulder_velocity(0.55);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 }
 
 // Make sure that we quickly take off from a land.
@@ -1302,7 +1308,7 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
                   .angle_shoulder(0.0)
                   .angle_wrist(0.0)
                   .Send());
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   // Tell it to take off as fast as possible.
   ASSERT_TRUE(superstructure_queue_.goal.MakeWithBuilder()

@@ -47,8 +47,10 @@ bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   turn_profile.set_maximum_velocity(params.maximum_turn_velocity *
                                     constants::GetValues().turn_width / 2.0);
 
+  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                      ::std::chrono::milliseconds(5) / 2);
   while (true) {
-    ::aos::time::PhasedLoopXMS(5, 2500);
+    phased_loop.SleepUntilNext();
 
     drivetrain_queue.status.FetchLatest();
     if (drivetrain_queue.status.get()) {
