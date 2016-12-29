@@ -1,11 +1,12 @@
 #ifndef AOS_VISION_EVENTS_EPOLL_EVENTS_H_
 #define AOS_VISION_EVENTS_EPOLL_EVENTS_H_
 
-#include <stdint.h>
 #include <limits.h>
-
+#include <stdint.h>
 #include <memory>
+#include <vector>
 
+#include "aos/common/scoped_fd.h"
 #include "aos/common/time.h"
 
 namespace aos {
@@ -66,8 +67,12 @@ class EpollEvent {
   // loop degrades into a busy loop.
   virtual void ReadEvent() = 0;
 
+  EpollLoop *loop() { return loop_; }
+
  private:
   const int fd_;
+  friend class EpollLoop;
+  EpollLoop *loop_ = nullptr;
 };
 
 // Provides a way for code to be notified every time after events are handled by
@@ -82,11 +87,6 @@ class EpollWatcher {
 };
 
 // A file descriptor based event loop implemented with epoll.
-//
-// There is currently no way to remove events because that's hard
-// (have to deal with events that come in for a file descriptor after it's
-// removed, which means not closing the fd or destroying the object until the
-// epoll mechanism confirms its removal) and we don't have a use for it.
 class EpollLoop {
  public:
   EpollLoop();
@@ -97,13 +97,28 @@ class EpollLoop {
   void Add(EpollEvent *event);
   void AddWatcher(EpollWatcher *watcher);
 
+  // Delete event. Note that there are caveats here as this is
+  // not idiot proof.
+  // ie:
+  //  - Do not call from other threads.
+  //  - Do not free while the object could still receive events.
+  //  - This is safe only because the events are set as edge.
+  //  TODO(parker): The thread-safety of this should be investigated and
+  //  improved as well as adding support for non-edge events if this is to
+  //  be used more generally.
+  void Delete(EpollEvent *event);
+
   // Loops forever, handling events.
   void Run();
 
  private:
-  class Impl;
+  int epoll_fd() { return epoll_fd_.get(); }
 
-  ::std::unique_ptr<Impl> impl_;
+  int CalculateTimeout();
+
+  ::aos::ScopedFD epoll_fd_;
+  ::std::vector<EpollWait *> waits_;
+  ::std::vector<EpollWatcher *> watchers_;
 };
 
 }  // namespace events

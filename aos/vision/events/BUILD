@@ -12,13 +12,30 @@ cc_library(
 )
 
 cc_library(
+  name = 'intrusive_free_list',
+  hdrs = ['intrusive_free_list.h'],
+)
+
+cc_library(
+  name = 'tcp_server',
+  srcs = ['tcp_server.cc'],
+  hdrs = ['tcp_server.h'],
+  deps = [':epoll_events', ':intrusive_free_list'],
+)
+
+cc_library(
+  name = 'tcp_client',
+  srcs = ['tcp_client.cc'],
+  hdrs = ['tcp_client.h'],
+  deps = [':epoll_events'],
+)
+
+cc_library(
   name = 'udp',
-  visibility = ['//visibility:public'],
   srcs = ['udp.cc'],
   hdrs = ['udp.h'],
   deps = [
     '//aos/common:macros',
-    '//aos/common/logging',
     '//aos/common:scoped_fd',
   ],
 )
@@ -28,6 +45,6 @@ cc_test(
   srcs = ['udp_test.cc'],
   deps = [
     ':udp',
-    '//aos/testing:googletest'
+    '//aos/testing:googletest',
   ],
 )
