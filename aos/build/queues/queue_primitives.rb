@@ -4,7 +4,7 @@ require 'fileutils'
 
 TypeNames = [8, 16, 32, 64].collect do |size|
   ["uint#{size}_t", "int#{size}_t"]
-end.flatten + ['bool', 'float', 'char', 'double', '::aos::time::Time']
+end.flatten + ['bool', 'float', 'char', 'double', '::aos::monotonic_clock::time_point']
 
 FileUtils.mkdir_p(File.dirname(ARGV[0]))
 WriteIffChanged.open(ARGV[0]) do |output|
@@ -22,7 +22,7 @@ namespace queue_primitive_types {
   message_element = Target::MessageElement.new(name, 'value')
   statement = MessageElementStmt.new(name, 'value')
   message_element.size = statement.size
-  name = 'Time' if name == '::aos::time::Time'
+  name = 'Time' if name == '::aos::monotonic_clock::time_point'
   next <<END2
   static const uint32_t #{name}_p = #{message_element.getTypeID()};
 END2

@@ -331,8 +331,14 @@ class Target::MessageElement < Target::Node
     end
     if (@type == 'bool')
       args.push("#{parent}#{this_name} ? 'T' : 'f'")
-    elsif (@type == '::aos::time::Time')
-      args.push("AOS_TIME_ARGS(#{parent}#{this_name}.sec(), #{parent}#{this_name}.nsec())")
+    elsif (@type == '::aos::monotonic_clock::time_point')
+      args.push(["AOS_TIME_ARGS(static_cast<int32_t>(",
+                 "::std::chrono::duration_cast<::std::chrono::seconds>(",
+                 "#{parent}#{this_name}.time_since_epoch()).count()), ",
+                 "static_cast<int32_t>(::std::chrono::duration_cast<::std::chrono::nanoseconds>(",
+                 "#{parent}#{this_name}.time_since_epoch() - ",
+                 "::std::chrono::duration_cast<::std::chrono::seconds>(",
+                 "#{parent}#{this_name}.time_since_epoch())).count()))"].join(''))
     else
       args.push("#{parent}#{this_name}")
     end

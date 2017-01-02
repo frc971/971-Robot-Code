@@ -3,7 +3,7 @@ class MessageElementStmt < QStmt
 	def initialize(type_name,name,length = nil) #lengths are for arrays
 		@type_name = type_name
 		@type = type_name.to_s
-    @type = '::aos::time::Time' if @type == 'Time'
+    @type = '::aos::monotonic_clock::time_point' if @type == 'Time'
 		@name = name
 		@length = length
 	end
@@ -50,7 +50,7 @@ ERROR_MSG
                        "int16_t" => "%\" PRId16 \"",
                        "int32_t" => "%\" PRId32 \"",
                        "int64_t" => "%\" PRId64 \"",
-                       "::aos::time::Time" => "\" AOS_TIME_FORMAT \""}
+                       "::aos::monotonic_clock::time_point" => "\" AOS_TIME_FORMAT \""}
         def toPrintFormat()
 		if(format = PrintFormat[@type])
 			return format;
@@ -62,12 +62,12 @@ Somehow this slipped past me, but
 ERROR_MSG
 	end
 
-	Sizes = {"bool" => 1, "float" => 4,"double" => 8,"::aos::time::Time" => 8}
+	Sizes = {"bool" => 1, "float" => 4,"double" => 8,"::aos::monotonic_clock::time_point" => 8}
 	[8,16,32,64].each do |len|
 		Sizes["int#{len}_t"] = len / 8
 		Sizes["uint#{len}_t"] = len / 8
 	end
-	Zero = {"float" => "0.0f","double" => "0.0","bool" => "false","::aos::time::Time" => "::aos::time::Time(0, 0)"}
+	Zero = {"float" => "0.0f","double" => "0.0","bool" => "false","::aos::monotonic_clock::time_point" => "::aos::monotonic_clock::epoch()"}
 	def size()
 		if(size = Sizes[@type]); return size; end
 		return 1 if(@type == "char")
