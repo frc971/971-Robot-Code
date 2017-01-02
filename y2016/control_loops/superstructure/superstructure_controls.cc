@@ -23,16 +23,22 @@ double UseUnlessZero(double target_value, double default_value) {
     return default_value;
   }
 }
+
+enum ArmIndices { kShoulderIndex = 0, kWristIndex = 1 };
+
 }  // namespace
 
 // Intake
 Intake::Intake()
-    : loop_(new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>(
-          ::y2016::control_loops::superstructure::MakeIntegralIntakeLoop())),
+    : ProfiledSubsystem(
+          ::std::unique_ptr<
+              ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>>(
+              new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
+                  3, 1, 1>(::y2016::control_loops::superstructure::
+                               MakeIntegralIntakeLoop()))),
       estimator_(constants::GetValues().intake.zeroing),
       profile_(::aos::controls::kLoopFrequency) {
   Y_.setZero();
-  unprofiled_goal_.setZero();
   offset_.setZero();
   AdjustProfile(0.0, 0.0);
 }
@@ -66,9 +72,9 @@ void Intake::Correct(PotAndIndexPosition position) {
     }
   }
 
-  if (!zeroed_ && estimator_.zeroed()) {
+  if (!zeroed(0) && estimator_.zeroed()) {
     UpdateIntakeOffset(estimator_.offset());
-    zeroed_ = true;
+    set_zeroed(0, true);
   }
 
   Y_ << position.encoder;
@@ -148,10 +154,8 @@ void Intake::AdjustProfile(double max_angular_velocity,
       UseUnlessZero(max_angular_acceleration, 10.0));
 }
 
-void Intake::Reset() {
+void Intake::DoReset() {
   estimator_.Reset();
-  initialized_ = false;
-  zeroed_ = false;
 }
 
 EstimatorState Intake::IntakeEstimatorState() {
@@ -162,15 +166,14 @@ EstimatorState Intake::IntakeEstimatorState() {
 }
 
 Arm::Arm()
-    : loop_(new ArmControlLoop(
-          ::y2016::control_loops::superstructure::MakeIntegralArmLoop())),
+    : ProfiledSubsystem(::std::unique_ptr<ArmControlLoop>(new ArmControlLoop(
+          ::y2016::control_loops::superstructure::MakeIntegralArmLoop()))),
       shoulder_profile_(::aos::controls::kLoopFrequency),
       wrist_profile_(::aos::controls::kLoopFrequency),
       shoulder_estimator_(constants::GetValues().shoulder.zeroing),
       wrist_estimator_(constants::GetValues().wrist.zeroing) {
   Y_.setZero();
   offset_.setZero();
-  unprofiled_goal_.setZero();
   AdjustProfile(0.0, 0.0, 0.0, 0.0);
 }
 
@@ -238,13 +241,13 @@ void Arm::Correct(PotAndIndexPosition position_shoulder,
     }
   }
 
-  if (!shoulder_zeroed_ && shoulder_estimator_.zeroed()) {
+  if (!zeroed(kShoulderIndex) && shoulder_estimator_.zeroed()) {
     UpdateShoulderOffset(shoulder_estimator_.offset());
-    shoulder_zeroed_ = true;
+    set_zeroed(kShoulderIndex, true);
   }
-  if (!wrist_zeroed_ && wrist_estimator_.zeroed()) {
+  if (!zeroed(kWristIndex) && wrist_estimator_.zeroed()) {
     UpdateWristOffset(wrist_estimator_.offset());
-    wrist_zeroed_ = true;
+    set_zeroed(kWristIndex, true);
   }
 
   {
@@ -373,12 +376,9 @@ void Arm::set_max_voltage(double shoulder_max_voltage,
   loop_->set_max_voltage(1, wrist_max_voltage);
 }
 
-void Arm::Reset() {
+void Arm::DoReset() {
   shoulder_estimator_.Reset();
   wrist_estimator_.Reset();
-  initialized_ = false;
-  shoulder_zeroed_ = false;
-  wrist_zeroed_ = false;
 }
 
 EstimatorState Arm::ShoulderEstimatorState() {
