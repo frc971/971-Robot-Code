@@ -28,13 +28,13 @@ class Drivetrain(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 4.7 * self.num_motors
     # Moment of inertia of the drivetrain in kg m^2
-    self.J = 1.8
+    self.J = 2.0
     # Mass of the robot, in kg.
-    self.m = 37
+    self.m = 24
     # Radius of the robot, in meters (requires tuning by hand)
-    self.rb = 0.45 / 2.0
+    self.rb = 0.59055 / 2.0
     # Radius of the wheels, in meters.
-    self.r = 0.04445
+    self.r = 0.08255 / 2.0
     # Resistance of the motor, divided by the number of motors.
     self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
@@ -43,8 +43,8 @@ class Drivetrain(control_loop.ControlLoop):
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Gear ratios
-    self.G_low = 28.0 / 60.0 * 19.0 / 50.0
-    self.G_high = 28.0 / 48.0 * 19.0 / 50.0
+    self.G_low = 12.0 / 54.0
+    self.G_high = 12.0 / 54.0
     if left_low:
       self.Gl = self.G_low
     else:
@@ -310,7 +310,7 @@ def main(argv):
   if len(argv) != 5:
     print "Expected .h file name and .cc file name"
   else:
-    namespaces = ['y2014_bot3', 'control_loops', 'drivetrain']
+    namespaces = ['y2016_bot4', 'control_loops', 'drivetrain']
     dog_loop_writer = control_loop.ControlLoopWriter(
         "Drivetrain", [drivetrain_low_low, drivetrain_low_high,
                        drivetrain_high_low, drivetrain_high_high],

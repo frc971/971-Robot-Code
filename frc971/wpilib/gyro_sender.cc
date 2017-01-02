@@ -47,8 +47,7 @@ void GyroSender::operator()() {
   bool zeroed = false;
   double zero_offset = 0;
 
-  ::aos::time::PhasedLoop phased_loop(
-      ::aos::time::Time::FromRate(kReadingRate));
+  ::aos::time::PhasedLoop phased_loop(::aos::time::FromRate(kReadingRate));
   // How many timesteps the next reading represents.
   int number_readings = 0;
 
