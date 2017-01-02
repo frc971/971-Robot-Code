@@ -124,3 +124,25 @@ cc_library(
     ':state_feedback_loop',
   ],
 )
+
+cc_library(
+  name = 'runge_kutta',
+  hdrs = [
+    'runge_kutta.h',
+  ],
+  deps = [
+    '//third_party/eigen',
+  ],
+)
+
+cc_test(
+  name = 'runge_kutta_test',
+  srcs = [
+    'runge_kutta_test.cc',
+  ],
+  deps = [
+    ':runge_kutta',
+    '//aos/testing:googletest',
+    '//third_party/eigen',
+  ],
+)
