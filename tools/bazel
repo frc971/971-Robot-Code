@@ -76,30 +76,28 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
   echo "Done downloading Bazel version ${VERSION}"
 fi
 
+ENVIRONMENT_VARIABLES=()
+ENVIRONMENT_VARIABLES+=(HOSTNAME="${HOSTNAME}")
+ENVIRONMENT_VARIABLES+=(SHELL="${SHELL}")
+ENVIRONMENT_VARIABLES+=(USER="${USER}")
+ENVIRONMENT_VARIABLES+=(PATH="${PATH}")
+ENVIRONMENT_VARIABLES+=(LANG="${LANG}")
+ENVIRONMENT_VARIABLES+=(HOME="${HOME}")
+ENVIRONMENT_VARIABLES+=(LOGNAME="${LOGNAME}")
+ENVIRONMENT_VARIABLES+=(TERM="${TERM}")
+
+if [[ ! -z "${DISPLAY+x}" ]]; then
+  ENVIRONMENT_VARIABLES+=(DISPLAY="${DISPLAY}")
+fi
+
 if [[ -x "${VERSION_BAZEL}-real" ]]; then
   exec -a "${VERSION_BAZEL}" env -i \
-      HOSTNAME="${HOSTNAME}" \
-      SHELL="${SHELL}" \
-      USER="${USER}" \
-      PATH="${PATH}" \
-      LANG="${LANG}" \
-      HOME="${HOME}" \
-      LOGNAME="${LOGNAME}" \
-      TERM="${TERM}" \
-      DISPLAY="${DISPLAY}" \
+      "${ENVIRONMENT_VARIABLES[@]}" \
       "${VERSION_BAZEL}-real" "$@"
 fi
 if [[ -x "${VERSION_BAZEL}" ]]; then
   exec env -i \
-      HOSTNAME="${HOSTNAME}" \
-      SHELL="${SHELL}" \
-      USER="${USER}" \
-      PATH="${PATH}" \
-      LANG="${LANG}" \
-      HOME="${HOME}" \
-      LOGNAME="${LOGNAME}" \
-      TERM="${TERM}" \
-      DISPLAY="${DISPLAY}" \
+      "${ENVIRONMENT_VARIABLES[@]}" \
       "${VERSION_BAZEL}" "$@"
 fi
 
