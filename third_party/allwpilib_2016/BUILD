@@ -50,8 +50,8 @@ _bad_hdrs = ([
 ] + ['wpilibc/shared/include/%s/**/*' % d
      for d in _excluded_shared_directories] +
  ['wpilibc/*/include/%s.h' % d for d in _excluded_devices])
-_h_hdrs = glob([d + '/**/*.h' for d in _header_dirs], _bad_hdrs)
-_hpp_hdrs = glob([d + '/**/*.hpp' for d in _header_dirs], _bad_hdrs)
+_h_hdrs = glob([d + '/**/*.h' for d in _header_dirs], exclude=_bad_hdrs)
+_hpp_hdrs = glob([d + '/**/*.hpp' for d in _header_dirs], exclude=_bad_hdrs)
 
 cc_library(
  name = 'wpilib',
@@ -65,8 +65,8 @@ cc_library(
    'hal/lib/Athena/cpp/*.cpp',
    'hal/lib/Athena/ctre/*.cpp',
    'hal/lib/Shared/*.cpp',
- ], (['wpilibc/shared/src/%s/**/*' % d for d in _excluded_shared_directories] +
-     ['wpilibc/*/src/%s.cpp' % d for d in _excluded_devices])),
+ ], exclude=(['wpilibc/shared/src/%s/**/*' % d for d in _excluded_shared_directories] +
+             ['wpilibc/*/src/%s.cpp' % d for d in _excluded_devices])),
  copts = [
    '-Wno-unused-parameter',
    '-Wno-switch-enum',

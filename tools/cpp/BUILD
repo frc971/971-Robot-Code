@@ -23,27 +23,13 @@ filegroup(
   srcs = [],
 )
 
-# This is the entry point for --crosstool_top.  Toolchains are found
-# by lopping off the name of --crosstool_top and searching for
-# 'cc-compiler-${CPU}' in this BUILD file, where CPU is the target CPU
-# specified in --cpu.
-#
-# This file group should include
-#   * all cc_toolchain targets supported
-#   * all file groups that said cc_toolchain might refer to,
-# including the default_grte_top setting in the CROSSTOOL
-# protobuf.
-filegroup(
+# This is the entry point for --crosstool_top.
+cc_toolchain_suite(
   name = 'toolchain',
-  srcs = [
-    ':cc-compiler-k8',
-    ':cc-compiler-roborio',
-    '@arm_frc_linux_gnueabi_repo//:compiler_components',
-    ':roborio-compiler-files',
-    ':flags_compiler_inputs',
-    '@linaro_linux_gcc_4_9_repo//:compiler_components',
-    ':linaro-gcc-files',
-  ],
+  toolchains = {
+    'k8|clang': ':cc-compiler-k8',
+    'roborio|gcc': ':cc-compiler-roborio',
+  },
 )
 
 # Compiler inputs given by --copt etc in //tools:bazel.rc.
@@ -90,6 +76,7 @@ filegroup(
     '//tools/cpp/arm-frc-linux-gnueabi:ld',
     '//tools/cpp/arm-frc-linux-gnueabi:ar',
     '//tools/cpp/arm-frc-linux-gnueabi:gcc',
+    '//tools/cpp/arm-frc-linux-gnueabi:libs',
     '@arm_frc_linux_gnueabi_repo//:compiler_pieces',
   ],
 )
@@ -98,6 +85,8 @@ filegroup(
   srcs = [
     '//tools/cpp/arm-frc-linux-gnueabi:gcc',
     '//tools/cpp/arm-frc-linux-gnueabi:ld',
+    '@arm_frc_linux_gnueabi_repo//:compiler_components',
+    '@arm_frc_linux_gnueabi_repo//:compiler_pieces',
   ],
 )
 

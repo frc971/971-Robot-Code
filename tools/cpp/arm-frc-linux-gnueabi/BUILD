@@ -77,3 +77,10 @@ filegroup(
     ':strip',
   ],
 )
+
+filegroup(
+  name = 'libs',
+  srcs = glob([
+    'libs/**',
+  ]),
+)

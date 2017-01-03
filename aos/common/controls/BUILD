@@ -31,6 +31,7 @@ cc_library(
     '//aos/testing:googletest',
     '//aos/testing:test_shm',
   ],
+  testonly = True,
 )
 
 cc_library(

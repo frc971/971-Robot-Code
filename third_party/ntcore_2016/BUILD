@@ -6,7 +6,7 @@ cc_library(
   srcs = glob([
     'src/**/*.cpp',
     'src/**/*.h',
-  ], [
+  ], exclude=[
     'src/networktables/**',
   ]),
   copts = [

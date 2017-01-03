@@ -6,7 +6,7 @@ cc_library(
   srcs = glob(['src/main/c/**/*.cpp']),
   hdrs = glob([
     'src/main/c/**/*.h',
-  ], [
+  ], exclude=[
     'src/main/internal/**/*',
   ]),
   includes = ['src/main/c'],

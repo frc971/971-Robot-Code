@@ -91,7 +91,8 @@ filegroup(
     'libexec/**',
     'lib/gcc/arm-linux-gnueabihf/**',
     'include/**',
-  ], [
+  ],
+  exclude=[
     # Exclude empty files so Bazel's caching works.
     # TODO(Brian): remove this once the Bazel bug is fixed.
     '**/.install',

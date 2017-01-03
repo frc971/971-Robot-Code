@@ -15,7 +15,7 @@ DEB="bazel_${VERSION}_amd64.deb"
 "${BAZEL_SOURCE}/compile.sh" compile
 (
 cd "${BAZEL_SOURCE}"
-./output/bazel build -c opt //scripts/packages:bazel-debian --embed_label="${VERSION}"
+./output/bazel build -c opt //scripts/packages:bazel-debian --embed_label="${VERSION}" --stamp=yes
 )
 
 cp "${BAZEL_SOURCE}/bazel-bin/scripts/packages/bazel-debian.deb" "${DEB}"

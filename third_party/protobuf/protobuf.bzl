@@ -90,7 +90,7 @@ _proto_gen = rule(
         "deps": attr.label_list(providers = ["proto"]),
         "includes": attr.string_list(),
         "protoc": attr.label(
-            cfg = HOST_CFG,
+            cfg = 'host',
             executable = True,
             single_file = True,
             mandatory = True,

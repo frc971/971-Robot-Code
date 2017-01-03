@@ -51,7 +51,7 @@ _ruby_attrs = {
   ),
   'data': attr.label_list(
     allow_files = True,
-    cfg = DATA_CFG,
+    cfg = 'data',
   ),
 }
 
@@ -84,6 +84,7 @@ ruby_binary = rule(
   attrs = _ruby_attrs + {
     '_ruby_linker': attr.label(
       executable = True,
+      cfg = 'host',
       default = Label('//tools/ruby:standalone_ruby'),
     )
   },

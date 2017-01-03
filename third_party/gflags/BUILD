@@ -31,7 +31,7 @@ cc_library(
   srcs = glob([
     'src/*.cc',
     'src/*.h',
-  ], [
+  ], exclude=[
     'src/windows_*',
   ]) + [
     'include/gflags/gflags_declare.h',
