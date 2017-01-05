@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+namespace frc971 {
+namespace control_loops {
 namespace testing {
 
 // Tests that everything compiles and nothing crashes even if
@@ -48,3 +50,5 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
 }
 
 }  // namespace testing
+}  // namespace control_loops
+}  // namespace frc971
