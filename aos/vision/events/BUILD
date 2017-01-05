@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
   name = 'epoll_events',
   srcs = ['epoll_events.cc'],
