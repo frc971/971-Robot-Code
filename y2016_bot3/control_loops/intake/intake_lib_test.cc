@@ -2,24 +2,26 @@
 
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 
 #include "gtest/gtest.h"
 #include "aos/common/queue.h"
 #include "aos/common/controls/control_loop_test.h"
 #include "aos/common/commonmath.h"
-#include "aos/common/time.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "y2016_bot3/control_loops/intake/intake.q.h"
 #include "y2016_bot3/control_loops/intake/intake_plant.h"
 
-using ::aos::time::Time;
 using ::frc971::control_loops::PositionSensorSimulator;
 
 namespace y2016_bot3 {
 namespace control_loops {
 namespace intake {
 namespace testing {
+
+namespace chrono = ::std::chrono;
+using ::aos::monotonic_clock;
 
 class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
  public:
@@ -63,7 +65,9 @@ class IntakeSimulation {
     intake_plant_->mutable_X(0, 0) = start_pos;
     intake_plant_->mutable_X(1, 0) = 0.0;
 
-    pot_encoder_intake_.Initialize(start_pos, kNoiseScalar);
+    pot_encoder_intake_.Initialize(
+        start_pos, kNoiseScalar,
+        constants::IntakeZero::zeroing.measured_index_position);
   }
 
   // Sends a queue message with the position.
@@ -162,13 +166,15 @@ class IntakeTest : public ::aos::testing::ControlLoopTest {
   }
 
   // Runs iterations until the specified amount of simulated time has elapsed.
-  void RunForTime(const Time &run_for, bool enabled = true) {
-    const auto start_time = Time::Now();
-    while (Time::Now() < start_time + run_for) {
-      const auto loop_start_time = Time::Now();
+  void RunForTime(monotonic_clock::duration run_for, bool enabled = true) {
+    const auto start_time = monotonic_clock::now();
+    while (monotonic_clock::now() < start_time + run_for) {
+      const auto loop_start_time = monotonic_clock::now();
       double begin_intake_velocity = intake_plant_.intake_angular_velocity();
       RunIteration(enabled);
-      const double loop_time = (Time::Now() - loop_start_time).ToSeconds();
+      const double loop_time =
+          chrono::duration_cast<chrono::duration<double>>(
+              (monotonic_clock::now() - loop_start_time)).count();
       const double intake_acceleration =
           (intake_plant_.intake_angular_velocity() - begin_intake_velocity) /
           loop_time;
@@ -187,8 +193,6 @@ class IntakeTest : public ::aos::testing::ControlLoopTest {
     peak_intake_acceleration_ = value;
   }
   void set_peak_intake_velocity(double value) { peak_intake_velocity_ = value; }
-
-
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointed to
@@ -215,7 +219,7 @@ TEST_F(IntakeTest, DoesNothing) {
                   .Send());
 
   // TODO(phil): Send a goal of some sort.
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
   VerifyNearGoal();
 }
 
@@ -229,7 +233,7 @@ TEST_F(IntakeTest, ReachesGoal) {
                   .Send());
 
   // Give it a lot of time to get there.
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -243,13 +247,12 @@ TEST_F(IntakeTest, RespectsRange) {
                   .max_angular_velocity_intake(20)
                   .max_angular_acceleration_intake(20)
                   .Send());
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   intake_queue_.status.FetchLatest();
   EXPECT_NEAR(y2016_bot3::constants::kIntakeRange.upper,
               intake_queue_.status->intake.angle, 0.001);
-
 
   // Set some ridiculous goals to test lower limits.
   ASSERT_TRUE(intake_queue_.goal.MakeWithBuilder()
@@ -258,7 +261,7 @@ TEST_F(IntakeTest, RespectsRange) {
                   .max_angular_acceleration_intake(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   // Check that we are near our soft limit.
   intake_queue_.status.FetchLatest();
@@ -274,14 +277,14 @@ TEST_F(IntakeTest, ZeroTest) {
                   .max_angular_acceleration_intake(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
 
   VerifyNearGoal();
 }
 
 // Tests that the loop zeroes when run for a while without a goal.
 TEST_F(IntakeTest, ZeroNoGoal) {
-  RunForTime(Time::InSeconds(5));
+  RunForTime(chrono::seconds(5));
 
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 }
@@ -294,7 +297,7 @@ TEST_F(IntakeTest, LowerHardstopStartup) {
                   .angle_intake(y2016_bot3::constants::kIntakeRange.upper)
                   .Send());
 
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
   VerifyNearGoal();
 }
 
@@ -306,7 +309,7 @@ TEST_F(IntakeTest, UpperHardstopStartup) {
                   .angle_intake(y2016_bot3::constants::kIntakeRange.lower)
                   .Send());
 
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
   VerifyNearGoal();
 }
 
@@ -318,14 +321,14 @@ TEST_F(IntakeTest, ResetTest) {
   ASSERT_TRUE(intake_queue_.goal.MakeWithBuilder()
                   .angle_intake(y2016_bot3::constants::kIntakeRange.lower + 0.3)
                   .Send());
-  RunForTime(Time::InSeconds(15));
+  RunForTime(chrono::seconds(15));
 
   EXPECT_EQ(Intake::RUNNING, intake_.state());
   VerifyNearGoal();
   SimulateSensorReset();
-  RunForTime(Time::InMS(100));
+  RunForTime(chrono::milliseconds(100));
   EXPECT_NE(Intake::RUNNING, intake_.state());
-  RunForTime(Time::InMS(10000));
+  RunForTime(chrono::milliseconds(10000));
   EXPECT_EQ(Intake::RUNNING, intake_.state());
   VerifyNearGoal();
 }
@@ -337,11 +340,11 @@ TEST_F(IntakeTest, DisabledGoalTest) {
           .angle_intake(y2016_bot3::constants::kIntakeRange.lower + 0.03)
           .Send());
 
-  RunForTime(Time::InMS(100), false);
+  RunForTime(chrono::milliseconds(100), false);
   EXPECT_EQ(0.0, intake_.intake_.goal(0, 0));
 
   // Now make sure they move correctly
-  RunForTime(Time::InMS(4000), true);
+  RunForTime(chrono::milliseconds(4000), true);
   EXPECT_NE(0.0, intake_.intake_.goal(0, 0));
 }
 
@@ -357,8 +360,8 @@ TEST_F(IntakeTest, DisabledWhileZeroingHigh) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Intake::State kExpectedStateOrder[] = {
-      Intake::DISABLED_INITIALIZED, Intake::ZERO_LOWER_INTAKE};
+  Intake::State kExpectedStateOrder[] = {Intake::DISABLED_INITIALIZED,
+                                         Intake::ZERO_LOWER_INTAKE};
 
   // Cycle through until intake_ is initialized in intake.cc
   while (intake_.state() < Intake::DISABLED_INITIALIZED) {
@@ -390,7 +393,7 @@ TEST_F(IntakeTest, DisabledWhileZeroingHigh) {
     EXPECT_EQ(Intake::DISABLED_INITIALIZED, intake_.state());
   }
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 }
 
@@ -406,8 +409,8 @@ TEST_F(IntakeTest, DisabledWhileZeroingLow) {
                   .Send());
 
   // Expected states to cycle through and check in order.
-  Intake::State kExpectedStateOrder[] = {
-      Intake::DISABLED_INITIALIZED, Intake::ZERO_LIFT_INTAKE};
+  Intake::State kExpectedStateOrder[] = {Intake::DISABLED_INITIALIZED,
+                                         Intake::ZERO_LIFT_INTAKE};
 
   // Cycle through until intake_ is initialized in intake.cc
   while (intake_.state() < Intake::DISABLED_INITIALIZED) {
@@ -439,7 +442,7 @@ TEST_F(IntakeTest, DisabledWhileZeroingLow) {
     EXPECT_EQ(Intake::DISABLED_INITIALIZED, intake_.state());
   }
 
-  RunForTime(Time::InSeconds(10));
+  RunForTime(chrono::seconds(10));
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 }
 
@@ -450,7 +453,7 @@ TEST_F(IntakeTest, IntegratorTest) {
   intake_plant_.set_power_error(1.0);
   intake_queue_.goal.MakeWithBuilder().angle_intake(0.0).Send();
 
-  RunForTime(Time::InSeconds(8));
+  RunForTime(chrono::seconds(8));
 
   VerifyNearGoal();
 }
@@ -464,15 +467,15 @@ TEST_F(IntakeTest, DisabledZeroTest) {
   intake_queue_.goal.MakeWithBuilder().angle_intake(0.0).Send();
 
   // Run disabled for 2 seconds
-  RunForTime(Time::InSeconds(2), false);
+  RunForTime(chrono::seconds(2), false);
   EXPECT_EQ(Intake::DISABLED_INITIALIZED, intake_.state());
 
   intake_plant_.set_power_error(1.0);
 
-  RunForTime(Time::InSeconds(1), false);
+  RunForTime(chrono::seconds(1), false);
 
   EXPECT_EQ(Intake::SLOW_RUNNING, intake_.state());
-  RunForTime(Time::InSeconds(2), true);
+  RunForTime(chrono::seconds(2), true);
 
   VerifyNearGoal();
 }
@@ -495,7 +498,7 @@ TEST_F(IntakeTest, IntakeAccelerationLimitTest) {
                   .max_angular_acceleration_intake(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 
   VerifyNearGoal();
@@ -507,7 +510,7 @@ TEST_F(IntakeTest, IntakeAccelerationLimitTest) {
                   .Send());
 
   set_peak_intake_acceleration(1.20);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }
@@ -521,7 +524,7 @@ TEST_F(IntakeTest, SaturatedIntakeProfileTest) {
                   .max_angular_acceleration_intake(20)
                   .Send());
 
-  RunForTime(Time::InSeconds(6));
+  RunForTime(chrono::seconds(6));
   EXPECT_EQ(Intake::RUNNING, intake_.state());
 
   VerifyNearGoal();
@@ -533,7 +536,7 @@ TEST_F(IntakeTest, SaturatedIntakeProfileTest) {
                   .Send());
 
   set_peak_intake_velocity(4.65);
-  RunForTime(Time::InSeconds(4));
+  RunForTime(chrono::seconds(4));
 
   VerifyNearGoal();
 }

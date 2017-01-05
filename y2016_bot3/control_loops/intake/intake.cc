@@ -9,6 +9,11 @@
 #include "y2016_bot3/queues/ball_detector.q.h"
 
 namespace y2016_bot3 {
+namespace constants {
+constexpr double IntakeZero::pot_offset;
+constexpr ::frc971::constants::ZeroingConstants IntakeZero::zeroing;
+}  // namespace constants
+
 namespace control_loops {
 namespace intake {
 

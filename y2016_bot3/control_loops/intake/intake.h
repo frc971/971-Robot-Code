@@ -38,10 +38,10 @@ static constexpr ::frc971::constants::Range kIntakeRange{// Lower hard stop
                                                          2.77};
 
 struct IntakeZero {
-  double pot_offset = 5.462409 + 0.333162;
-  ::frc971::constants::ZeroingConstants zeroing{kZeroingSampleSize,
-                                                kIntakeEncoderIndexDifference,
-                                                0.148604 - 0.291240, 0.3};
+  static constexpr double pot_offset = 5.462409 + 0.333162;
+  static constexpr ::frc971::constants::ZeroingConstants zeroing{
+      kZeroingSampleSize, kIntakeEncoderIndexDifference, 0.148604 - 0.291240,
+      0.3};
 };
 }  // namespace constants
 namespace control_loops {
