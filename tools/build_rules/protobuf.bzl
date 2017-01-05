@@ -19,8 +19,8 @@ def _do_proto_cc_library_impl(ctx):
     ],
   )
 
-def _do_proto_cc_library_outputs(attr):
-  basename = attr.src.name[:-len('.proto')]
+def _do_proto_cc_library_outputs(src):
+  basename = src.name[:-len('.proto')]
   return {
     'pb_h': '%s.pb.h' % basename,
     'pb_cc': '%s.pb.cc' % basename,
@@ -37,7 +37,7 @@ _do_proto_cc_library = rule(
     '_protoc': attr.label(
       default = Label('//third_party/protobuf:protoc'),
       executable = True,
-      cfg = HOST_CFG,
+      cfg = 'host',
     ),
     '_well_known_protos': attr.label(
       default = Label('//third_party/protobuf:well_known_protos'),

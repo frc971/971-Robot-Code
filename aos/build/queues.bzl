@@ -18,10 +18,10 @@ def _single_queue_file_impl(ctx):
     progress_message = 'Generating C++ code for %s' % ctx.file.src.short_path,
   )
 
-def _single_queue_file_outputs(attrs):
+def _single_queue_file_outputs(src):
   return {
-    'header': attrs.src.name + '.h',
-    'cc': attrs.src.name + '.cc',
+    'header': src.name + '.h',
+    'cc': src.name + '.cc',
   }
 
 _single_queue_file = rule(
@@ -30,7 +30,7 @@ _single_queue_file = rule(
     'src': attr.label(
       mandatory = True,
       single_file = True,
-      allow_files = FileType(['.q']),
+      allow_files = ['.q'],
     ),
     'q_deps': attr.label(
       providers = ['transitive_q_files'],
@@ -42,6 +42,7 @@ _single_queue_file = rule(
     '_queue_compiler': attr.label(
       executable = True,
       default = Label('//aos/build/queues:compiler'),
+      cfg = 'host',
     ),
   },
   outputs = _single_queue_file_outputs,
@@ -60,7 +61,7 @@ _q_deps = rule(
     'srcs': attr.label_list(
       mandatory = True,
       non_empty = True,
-      allow_files = FileType(['.q']),
+      allow_files = ['.q'],
     ),
     'deps': attr.label_list(
       mandatory = True,

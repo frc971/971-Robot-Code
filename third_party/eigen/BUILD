@@ -5,7 +5,7 @@ cc_library(
   visibility = ['//visibility:public'],
   srcs = glob(['Eigen/src/**/*.h']),
   includes = ['.'],
-  hdrs = glob(['Eigen/*'], [
+  hdrs = glob(['Eigen/*'], exclude=[
     # Stuff that we don't have the dependencies for.
     'Eigen/CholmodSupport',
     'Eigen/MetisSupport',

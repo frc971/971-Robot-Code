@@ -46,3 +46,5 @@ build:msan --test_env MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
 build --show_result 5
 # Dump the output of the failing test to stdout.
 test --test_output=errors
+
+build --experimental_sandbox_shm

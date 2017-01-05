@@ -14,6 +14,7 @@ cc_library(
     '//aos/common/network:team_number',
     '//aos/testing:googletest',
   ],
+  testonly = True,
 )
 
 cc_test(

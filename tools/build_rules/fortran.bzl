@@ -36,11 +36,11 @@ def _single_fortran_object_impl(ctx):
     progress_message = 'Building %s' % ctx.outputs.pic_o.short_path,
   )
 
-def _define_fortran_output(attrs):
-  if not attrs.src.name.endswith('.f'):
+def _define_fortran_output(src):
+  if not src.name.endswith('.f'):
     fail('Fortran files must end in \'.f\'', 'src')
 
-  fortran_file_base = attrs.src.name[:-2]
+  fortran_file_base = src.name[:-2]
   return {
     'pic_o': fortran_file_base + '.pic.o',
   }

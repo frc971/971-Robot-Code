@@ -53,7 +53,7 @@ cc_library(
   ]),
   hdrs = glob([
     '*.h',
-  ], [
+  ], exclude=[
     'jmemdos.h',
     'jmemmac.h',
   ]),
