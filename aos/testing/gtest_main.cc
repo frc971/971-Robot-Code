@@ -40,7 +40,8 @@ GTEST_API_ int main(int argc, char **argv) {
             "  -p, --print-logs\n"
             "      Print the log messages as they are being generated.\n"
             "  -o, --log-file=FILE\n"
-            "      Print all log messages to FILE instead of standard output\n"
+            "      Print all log messages to FILE instead of standard output.\n"
+	    "      This implies -p.\n"
             );
         break;
 
@@ -51,6 +52,9 @@ GTEST_API_ int main(int argc, char **argv) {
         break;
 
       case 'o':
+        if (::aos::testing::ForcePrintLogsDuringTests) {
+          ::aos::testing::ForcePrintLogsDuringTests();
+        }
         if (::aos::testing::SetLogFileName) {
           ::aos::testing::SetLogFileName(optarg);
         }
