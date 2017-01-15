@@ -53,9 +53,7 @@ Usage
         vagrant reload
 
 1. You can then log in and open a terminal. The username and password are both
-   `vagrant`. Or you can SSH in from the host.
-
-        vagrant ssh
+   `user`.
 
 1. Download the code and build it.
 
