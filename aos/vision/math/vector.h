@@ -20,7 +20,7 @@ namespace vision {
 template <int size>
 class Vector {
  public:
-  Vector() { data_.SetZero(); }
+  Vector() : data_(::Eigen::Matrix<double, 1, size>::Zero()) {}
 
   Vector(double x, double y) { Set(x, y); }
 
@@ -175,13 +175,13 @@ class Vector {
   }
 
   // Return the angle between this and other.
-  double AngleTo(const Vector<size> other) const {
+  double AngleTo(const Vector<size> &other) const {
     // cos(theta) = u.dot(v) / (u.magnitude() * v.magnitude())
     return ::std::acos(dot(other) / (Mag() * other.Mag()));
   }
 
   // Returns the distance between this and other squared.
-  double SquaredDistanceTo(const Vector<size> other) {
+  double SquaredDistanceTo(const Vector<size> &other) const {
     Vector<size> tmp = *this - other;
     return tmp.MagSqr();
   }
@@ -194,6 +194,15 @@ class Vector {
 // Returns the cross product of two points.
 inline double PointsCrossProduct(const Vector<2> &a, const Vector<2> &b) {
   return a.x() * b.y() - a.y() * b.x();
+}
+// scalar multiply
+template <int Size>
+inline Vector<Size> operator*(const double &lhs, Vector<Size> &rhs) {
+  Vector<Size> nv;
+  for (int i = 0; i < Size; i++) {
+    nv.Set(i, lhs * rhs.Get(i));
+  }
+  return nv;
 }
 
 }  // namespace vision

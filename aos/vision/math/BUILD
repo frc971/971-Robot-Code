@@ -1,6 +1,13 @@
+package(default_visibility = ['//visibility:public'])
+
+cc_library(
+  name = 'segment',
+  hdrs = ['segment.h'],
+  deps = [':vector'],
+)
+
 cc_library(
   name = 'vector',
-  visibility = ['//visibility:public'],
   hdrs = [
     'vector.h',
   ],
