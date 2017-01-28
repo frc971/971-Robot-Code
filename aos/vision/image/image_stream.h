@@ -9,6 +9,8 @@
 namespace aos {
 namespace vision {
 
+// Converts a camera reader into a virtual base class that calls ProcessImage
+// on each new image.
 class ImageStreamEvent : public ::aos::events::EpollEvent {
  public:
   static std::unique_ptr<::camera::Reader> GetCamera(
@@ -17,28 +19,28 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
     using namespace std::placeholders;
     std::unique_ptr<::camera::Reader> camread(new ::camera::Reader(
         fname,
-        std::bind(&ImageStreamEvent::ProcessHelper, obj, _1, _2), params);
+        std::bind(&ImageStreamEvent::ProcessHelper, obj, _1, _2), params));
     camread->StartAsync();
     return camread;
   }
 
   explicit ImageStreamEvent(std::unique_ptr<::camera::Reader> reader)
-      : ::aos::events::EpollEvent(reader->fd()), reader_(reader) {}
+      : ::aos::events::EpollEvent(reader->fd()), reader_(std::move(reader)) {}
 
   explicit ImageStreamEvent(const std::string &fname,
                             camera::CameraParams params)
       : ImageStreamEvent(GetCamera(fname, this, params)) {}
 
-  void ProcessHelper(DataRef data, uint64_t timestamp) {
+  void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp) {
     if (data.size() < 300) {
-      LOG(INFO, "got bad img: %d of size(%lu)\n", (int)timestamp, data.size());
+      LOG(INFO, "got bad img of size(%lu)\n", data.size());
       return;
     }
     ProcessImage(data, timestamp);
   }
-  virtual void ProcessImage(DataRef data, uint64_t timestamp) = 0;
+  virtual void ProcessImage(DataRef data, aos::monotonic_clock::time_point timestamp) = 0;
 
-  void ReadEvent(Context /*ctx*/) override { reader_->HandleFrame(); }
+  void ReadEvent() override { reader_->HandleFrame(); }
 
  private:
   std::unique_ptr<::camera::Reader> reader_;

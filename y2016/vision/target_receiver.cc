@@ -1,5 +1,5 @@
-#include <stdlib.h>
 #include <netdb.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <array>
@@ -10,19 +10,19 @@
 #include <thread>
 #include <vector>
 
-#include "aos/linux_code/init.h"
-#include "aos/common/time.h"
 #include "aos/common/logging/logging.h"
 #include "aos/common/logging/queue_logging.h"
-#include "aos/vision/events/udp.h"
 #include "aos/common/mutex.h"
+#include "aos/common/time.h"
+#include "aos/linux_code/init.h"
+#include "aos/vision/events/udp.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 
+#include "y2016/constants.h"
+#include "y2016/vision/stereo_geometry.h"
 #include "y2016/vision/vision.q.h"
 #include "y2016/vision/vision_data.pb.h"
-#include "y2016/vision/stereo_geometry.h"
-#include "y2016/constants.h"
 
 namespace y2016 {
 namespace vision {
@@ -179,11 +179,12 @@ void CalculateFiltered(const CameraHandler &older, const CameraHandler &newer,
                        double angle, double last_angle,
                        ::aos::vision::Vector<2> *interpolated_result,
                        double *interpolated_angle) {
-  const double age_ratio =
-      chrono::duration_cast<chrono::duration<double>>(
-          older.capture_time() - newer.last_capture_time()).count() /
-      chrono::duration_cast<chrono::duration<double>>(
-          newer.capture_time() - newer.last_capture_time()).count();
+  const double age_ratio = chrono::duration_cast<chrono::duration<double>>(
+                               older.capture_time() - newer.last_capture_time())
+                               .count() /
+                           chrono::duration_cast<chrono::duration<double>>(
+                               newer.capture_time() - newer.last_capture_time())
+                               .count();
   interpolated_result->Set(
       newer_center.x() * age_ratio + (1 - age_ratio) * last_newer_center.x(),
       newer_center.y() * age_ratio + (1 - age_ratio) * last_newer_center.y());
@@ -226,9 +227,11 @@ class DrivetrainOffsetCalculator {
       status->drivetrain_right_position = before.right;
     } else {
       const double age_ratio = chrono::duration_cast<chrono::duration<double>>(
-                                   capture_time - before.time).count() /
+                                   capture_time - before.time)
+                                   .count() /
                                chrono::duration_cast<chrono::duration<double>>(
-                                   after.time - before.time).count();
+                                   after.time - before.time)
+                                   .count();
       status->drivetrain_left_position =
           before.left * (1 - age_ratio) + after.left * age_ratio;
       status->drivetrain_right_position =
@@ -313,7 +316,7 @@ void Main() {
   CameraHandler left;
   CameraHandler right;
 
-  ::aos::vision::RXUdpSocket recv(8080);
+  ::aos::events::RXUdpSocket recv(8080);
   char rawData[65507];
 
   while (true) {
@@ -358,8 +361,8 @@ void Main() {
         double last_angle_left;
         double last_angle_right;
         SelectTargets(left.last_target(), right.last_target(),
-                      &last_center_left, &last_center_right,
-                      &last_angle_left, &last_angle_right);
+                      &last_center_left, &last_center_right, &last_angle_left,
+                      &last_angle_right);
 
         ::aos::vision::Vector<2> filtered_center_left(0.0, 0.0);
         ::aos::vision::Vector<2> filtered_center_right(0.0, 0.0);
@@ -370,7 +373,8 @@ void Main() {
           filtered_angle_left = angle_left;
           new_vision_status->target_time =
               chrono::duration_cast<chrono::nanoseconds>(
-                  left.capture_time().time_since_epoch()).count();
+                  left.capture_time().time_since_epoch())
+                  .count();
           CalculateFiltered(left, right, center_right, last_center_right,
                             angle_right, last_angle_right,
                             &filtered_center_right, &filtered_angle_right);
@@ -379,7 +383,8 @@ void Main() {
           filtered_angle_right = angle_right;
           new_vision_status->target_time =
               chrono::duration_cast<chrono::nanoseconds>(
-                  right.capture_time().time_since_epoch()).count();
+                  right.capture_time().time_since_epoch())
+                  .count();
           CalculateFiltered(right, left, center_left, last_center_left,
                             angle_left, last_angle_left, &filtered_center_left,
                             &filtered_angle_left);
@@ -393,7 +398,8 @@ void Main() {
         new_vision_status->right_image_timestamp =
             right.target().image_timestamp();
         new_vision_status->left_send_timestamp = left.target().send_timestamp();
-        new_vision_status->right_send_timestamp = right.target().send_timestamp();
+        new_vision_status->right_send_timestamp =
+            right.target().send_timestamp();
         new_vision_status->horizontal_angle = horizontal_angle;
         new_vision_status->vertical_angle = vertical_angle;
         new_vision_status->distance = distance;

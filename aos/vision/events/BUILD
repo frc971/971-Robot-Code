@@ -11,6 +11,14 @@ cc_library(
   ],
 )
 
+cc_library(name = "socket_types",
+    hdrs = ["socket_types.h"],
+    deps = [
+        "//aos/vision/events:tcp_server",
+        "//aos/vision/image:image_types",
+    ],
+)
+
 cc_library(
   name = 'intrusive_free_list',
   hdrs = ['intrusive_free_list.h'],

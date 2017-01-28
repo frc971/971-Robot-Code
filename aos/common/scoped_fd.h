@@ -1,7 +1,10 @@
+#ifndef _AOS_COMMON_SCOPED_FD_
+#define _AOS_COMMON_SCOPED_FD_
+
 #include <unistd.h>
 
-#include "aos/common/macros.h"
 #include "aos/common/logging/logging.h"
+#include "aos/common/macros.h"
 
 namespace aos {
 
@@ -9,9 +12,7 @@ namespace aos {
 class ScopedFD {
  public:
   explicit ScopedFD(int fd = -1) : fd_(fd) {}
-  ~ScopedFD() {
-    Close();
-  }
+  ~ScopedFD() { Close(); }
   int get() const { return fd_; }
   int release() {
     const int r = fd_;
@@ -25,6 +26,7 @@ class ScopedFD {
     }
   }
   operator bool() const { return fd_ != -1; }
+
  private:
   int fd_;
   void Close() {
@@ -38,3 +40,5 @@ class ScopedFD {
 };
 
 }  // namespace aos
+
+#endif  // _AOS_COMMON_SCOPED_FD_
