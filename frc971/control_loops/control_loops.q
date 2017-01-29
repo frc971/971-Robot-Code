@@ -21,6 +21,21 @@ struct PotAndIndexPosition {
   uint32_t index_pulses;
 };
 
+// Represents all of the data for a single potentiometer with an absolute and
+// relative encoder pair.
+// The units on all of the positions are the same.
+// The relative encoder values are relative to where the encoder was at some
+// arbitrary point in time. All potentiometer values are relative to some
+// arbitrary 0 position which varies with each robot.
+struct PotAndAbsolutePosition {
+  // Current position read from each encoder.
+  double relative_encoder;
+  double absolute_encoder;
+
+  // Current position read from the potentiometer.
+  double pot;
+};
+
 // The internal state of a zeroing estimator.
 struct EstimatorState {
   // If true, there has been a fatal error for the estimator.
