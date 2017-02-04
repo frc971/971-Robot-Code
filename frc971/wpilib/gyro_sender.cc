@@ -20,9 +20,14 @@
 namespace frc971 {
 namespace wpilib {
 
-GyroSender::GyroSender() {}
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
+
+GyroSender::GyroSender() {
+  PCHECK(system(
+             "ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+             "33") == 0);
+}
 
 void GyroSender::operator()() {
   ::aos::SetCurrentThreadName("Gyro");
@@ -47,7 +52,10 @@ void GyroSender::operator()() {
   bool zeroed = false;
   double zero_offset = 0;
 
-  ::aos::time::PhasedLoop phased_loop(::aos::time::FromRate(kReadingRate));
+  ::aos::SetCurrentThreadRealtimePriority(33);
+
+  ::aos::time::PhasedLoop phased_loop(::aos::time::FromRate(kReadingRate),
+                                      chrono::milliseconds(4));
   // How many timesteps the next reading represents.
   int number_readings = 0;
 
