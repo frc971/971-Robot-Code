@@ -46,6 +46,12 @@ class PositionSensorSimulator {
   // values: The target structure will be populated with simulated sensor
   //         readings. The readings will be in SI units. For example the units
   //         can be given in radians, meters, etc.
+  void GetSensorValues(IndexPosition* values);
+
+  // Get the current values of the simulated sensors.
+  // values: The target structure will be populated with simulated sensor
+  //         readings. The readings will be in SI units. For example the units
+  //         can be given in radians, meters, etc.
   void GetSensorValues(PotAndIndexPosition* values);
 
  private:
