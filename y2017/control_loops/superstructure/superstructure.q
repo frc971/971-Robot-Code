@@ -52,11 +52,12 @@ struct SerializerGoal {
 };
 
 struct TurretGoal {
-  // An azimuth angle of zero means the turrent faces toward the front of the
+  // An angle of zero means the turrent faces toward the front of the
   // robot where the intake is located. The angle increases when the turret
-  // turns clockwise, and decreases when the turrent turns counter-clockwise.
+  // turns clockwise (towards right from the front), and decreases when
+  // the turrent turns counter-clockwise (towards left from the front).
   // These are from a top view above the robot.
-  double angle_azimuth;
+  double angle;
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
   .frc971.ProfileParameters profile_params;
@@ -109,7 +110,7 @@ struct TurretStatus {
   bool estopped;
 
   // Estimate angles and angular velocities.
-  JointState azimuth;
+  JointState turret;
 };
 
 struct HoodStatus {
@@ -172,9 +173,9 @@ queue_group SuperstructureQueue {
     // Serializer angle in radians.
     double theta_serializer;
 
-    // The sensor readings for the azimuth. The units and sign are defined the
+    // The sensor readings for the turret. The units and sign are defined the
     // same as what's in the Goal message.
-    .frc971.PotAndAbsolutePosition azimuth_turret;
+    .frc971.PotAndAbsolutePosition turret;
 
     // Position of the hood in radians
     double theta_hood;
@@ -194,7 +195,7 @@ queue_group SuperstructureQueue {
     // Roller on the serializer
     float voltage_serializer_rollers;
 
-    float voltage_azimuth_turret;
+    float voltage_turret;
     float voltage_hood;
   };
 
