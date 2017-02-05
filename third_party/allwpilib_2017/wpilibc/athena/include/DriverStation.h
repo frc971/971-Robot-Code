@@ -96,8 +96,6 @@ class DriverStation : public SensorBase, public RobotStateInterface {
 
  private:
   DriverStation();
-  void ReportJoystickUnpluggedError(llvm::StringRef message);
-  void ReportJoystickUnpluggedWarning(llvm::StringRef message);
   void Run();
   void UpdateControlWord(bool force, HAL_ControlWord& controlWord) const;
 
@@ -136,8 +134,6 @@ class DriverStation : public SensorBase, public RobotStateInterface {
   mutable HAL_ControlWord m_controlWordCache;
   mutable std::chrono::steady_clock::time_point m_lastControlWordUpdate;
   mutable priority_mutex m_controlWordMutex;
-
-  double m_nextMessageTime = 0;
 };
 
 }  // namespace frc

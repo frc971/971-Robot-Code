@@ -7,15 +7,25 @@
 #include "ControllerPower.h"
 #undef ERROR
 
+#ifndef WPILIB2017
+namespace frc {
+using ::DriverStation;
+}  // namespace frc
+#endif
+
 namespace frc971 {
 namespace wpilib {
 
-void SendRobotState(int32_t my_pid, DriverStation *ds) {
+void SendRobotState(int32_t my_pid, frc::DriverStation *ds) {
   auto new_state = ::aos::robot_state.MakeMessage();
 
   new_state->reader_pid = my_pid;
   new_state->outputs_enabled = ds->IsSysActive();
+#ifdef WPILIB2017
+  new_state->browned_out = ds->IsBrownedOut();
+#else
   new_state->browned_out = ds->IsSysBrownedOut();
+#endif
 
   new_state->is_3v3_active = ControllerPower::GetEnabled3V3();
   new_state->is_5v_active = ControllerPower::GetEnabled5V();

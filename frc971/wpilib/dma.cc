@@ -8,6 +8,9 @@
 #include "DigitalSource.h"
 #include "AnalogInput.h"
 #include "Encoder.h"
+#ifdef WPILIB2017
+#include "HAL/HAL.h"
+#endif
 
 // Interface to the roboRIO FPGA's DMA features.
 
@@ -22,14 +25,13 @@ typedef union {
   };
 } t1Output;
 
-static const uint32_t kNumHeaders = 10;
+static const int32_t kNumHeaders = 10;
 
-#ifdef WPILIB2015
-static constexpr ssize_t kChannelSize[18] = {2, 2, 4, 4, 2, 2, 4, 4, 3, 3,
-                                             2, 1, 4, 4, 4, 4, 4, 4};
-#else
 static constexpr ssize_t kChannelSize[20] = {2, 2, 4, 4, 2, 2, 4, 4, 3, 3,
                                              2, 1, 4, 4, 4, 4, 4, 4, 4, 4};
+
+#ifndef WPILIB2017
+#define HAL_GetErrorMessage getHALErrorMessage
 #endif
 
 enum DMAOffsetConstants {
@@ -49,25 +51,17 @@ enum DMAOffsetConstants {
   kEnable_Counters_High = 13,
   kEnable_CounterTimers_Low = 14,
   kEnable_CounterTimers_High = 15,
-#ifdef WPILIB2015
-  kEnable_Encoders = 16,
-  kEnable_EncoderTimers = 17,
-#else
   kEnable_Encoders_Low = 16,
   kEnable_Encoders_High = 17,
   kEnable_EncoderTimers_Low = 18,
   kEnable_EncoderTimers_High = 19,
-#endif
 };
 
 DMA::DMA() {
   tRioStatusCode status = 0;
   tdma_config_ = tDMA::create(&status);
   tdma_config_->writeConfig_ExternalClock(false, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
-#ifdef WPILIB2015
-  NiFpga_WriteU32(0x10000, 0x1832c, 0x0);
-#endif
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
@@ -85,7 +79,7 @@ DMA::~DMA() {
 void DMA::SetPause(bool pause) {
   tRioStatusCode status = 0;
   tdma_config_->writeConfig_Pause(pause, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void DMA::SetRate(uint32_t cycles) {
@@ -94,7 +88,7 @@ void DMA::SetRate(uint32_t cycles) {
   }
   tRioStatusCode status = 0;
   tdma_config_->writeRate(cycles, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void DMA::Add(Encoder *encoder) {
@@ -107,17 +101,6 @@ void DMA::Add(Encoder *encoder) {
   }
   const int index = encoder->GetFPGAIndex();
 
-#ifdef WPILIB2015
-  if (index < 4) {
-    // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
-    tdma_config_->writeConfig_Enable_Encoders(true, &status);
-  } else {
-    wpi_setErrorWithContext(
-        NiFpga_Status_InvalidParameter,
-        "FPGA encoder index is not in the 4 that get logged.");
-    return;
-  }
-#else
   if (index < 4) {
     // TODO(austin): Encoder uses a Counter for 1x or 2x; quad for 4x...
     tdma_config_->writeConfig_Enable_Encoders_Low(true, &status);
@@ -130,9 +113,8 @@ void DMA::Add(Encoder *encoder) {
         "FPGA encoder index is not in the 4 that get logged.");
     return;
   }
-#endif
 
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void DMA::Add(DigitalSource * /*input*/) {
@@ -145,7 +127,7 @@ void DMA::Add(DigitalSource * /*input*/) {
   }
 
   tdma_config_->writeConfig_Enable_DI(true, &status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void DMA::Add(AnalogInput *input) {
@@ -162,7 +144,7 @@ void DMA::Add(AnalogInput *input) {
   } else {
     tdma_config_->writeConfig_Enable_AI0_High(true, &status);
   }
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
@@ -190,13 +172,13 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   if (status == 0) {
     if (!is_external_clock) {
       tdma_config_->writeConfig_ExternalClock(true, &status);
-      wpi_setErrorWithContext(status, getHALErrorMessage(status));
+      wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
       if (status != 0) {
         return;
       }
     }
   } else {
-    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+    wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
     return;
   }
 
@@ -206,7 +188,12 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.RisingEdge = rising;
   new_trigger.ExternalClockSource_AnalogTrigger = false;
   unsigned char module = 0;
-  unsigned char channel = input->GetChannelForRouting();
+  uint32_t channel =
+#ifdef WPILIB2017
+      input->GetChannel();
+#else
+      input->GetChannelForRouting();
+#endif
   if (channel >= kNumHeaders) {
     module = 1;
     channel -= kNumHeaders;
@@ -218,29 +205,12 @@ void DMA::SetExternalTrigger(DigitalSource *input, bool rising, bool falling) {
   new_trigger.ExternalClockSource_Channel = channel;
 
 // Configures the trigger to be external, not off the FPGA clock.
-#ifndef WPILIB2015
   tdma_config_->writeExternalTriggers(channel_index / 4, channel_index % 4,
                                       new_trigger, &status);
   if (status != 0) {
-    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+    wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
     return;
   }
-#else
-  uint32_t current_triggers;
-  tRioStatusCode register_status =
-      NiFpga_ReadU32(0x10000, 0x1832c, &current_triggers);
-  if (register_status != 0) {
-    wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
-    return;
-  }
-  current_triggers = (current_triggers & ~(0xff << (channel_index * 8))) |
-                     (new_trigger.value << (channel_index * 8));
-  register_status = NiFpga_WriteU32(0x10000, 0x1832c, current_triggers);
-  if (register_status != 0) {
-    wpi_setErrorWithContext(register_status, getHALErrorMessage(status));
-    return;
-  }
-#endif
 }
 
 DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
@@ -269,7 +239,7 @@ DMA::ReadStatus DMA::Read(DMASample *sample, uint32_t timeout_ms,
   } else if (status == NiFpga_Status_FifoTimeout) {
     return STATUS_TIMEOUT;
   } else {
-    wpi_setErrorWithContext(status, getHALErrorMessage(status));
+    wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
     return STATUS_ERROR;
   }
 }
@@ -286,7 +256,7 @@ const char *DMA::NameOfReadStatus(ReadStatus s) {
 void DMA::Start(size_t queue_depth) {
   tRioStatusCode status = 0;
   tconfig_ = tdma_config_->readConfig(&status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
@@ -317,15 +287,10 @@ void DMA::Start(size_t queue_depth) {
     SET_SIZE(Enable_Counters_High);
     SET_SIZE(Enable_CounterTimers_Low);
     SET_SIZE(Enable_CounterTimers_High);
-#ifdef WPILIB2015
-    SET_SIZE(Enable_Encoders);
-    SET_SIZE(Enable_EncoderTimers);
-#else
     SET_SIZE(Enable_Encoders_Low);
     SET_SIZE(Enable_Encoders_High);
     SET_SIZE(Enable_EncoderTimers_Low);
     SET_SIZE(Enable_EncoderTimers_High);
-#endif
 #undef SET_SIZE
     capture_size_ = accum_size + 1;
   }
@@ -333,23 +298,23 @@ void DMA::Start(size_t queue_depth) {
   manager_.reset(
       new nFPGA::tDMAManager(0, queue_depth * capture_size_, &status));
 
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
   // Start, stop, start to clear the buffer.
   manager_->start(&status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
   manager_->stop(&status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
   manager_->start(&status);
-  wpi_setErrorWithContext(status, getHALErrorMessage(status));
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   if (status != 0) {
     return;
   }
@@ -372,36 +337,30 @@ bool DMASample::Get(DigitalSource *input) const {
   if (offset(kEnable_DI) == -1) {
     wpi_setStaticErrorWithContext(
         dma_, NiFpga_Status_ResourceNotFound,
-        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+        HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
     return false;
   }
-  if (input->GetChannelForRouting() < kNumHeaders) {
-    return (read_buffer_[offset(kEnable_DI)] >> input->GetChannelForRouting()) &
-           0x1;
+  const uint32_t channel =
+#ifdef WPILIB2017
+      input->GetChannel();
+#else
+      input->GetChannelForRouting();
+#endif
+  if (channel < kNumHeaders) {
+    return (read_buffer_[offset(kEnable_DI)] >> channel) & 0x1;
   } else {
-    return (read_buffer_[offset(kEnable_DI)] >>
-            (input->GetChannelForRouting() + 6)) &
-           0x1;
+    return (read_buffer_[offset(kEnable_DI)] >> (channel + 6)) & 0x1;
   }
 }
 
 int32_t DMASample::GetRaw(Encoder *input) const {
   int index = input->GetFPGAIndex();
   uint32_t dmaWord = 0;
-#ifdef WPILIB2015
-  if (index >= 4 || offset(kEnable_Encoders) == -1) {
-    wpi_setStaticErrorWithContext(
-        dma_, NiFpga_Status_ResourceNotFound,
-        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
-    return -1;
-  }
-  dmaWord = read_buffer_[offset(kEnable_Encoders) + index];
-#else
   if (index < 4) {
     if (offset(kEnable_Encoders_Low) == -1) {
       wpi_setStaticErrorWithContext(
           dma_, NiFpga_Status_ResourceNotFound,
-          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+          HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
       return -1;
     }
     dmaWord = read_buffer_[offset(kEnable_Encoders_Low) + index];
@@ -409,17 +368,16 @@ int32_t DMASample::GetRaw(Encoder *input) const {
     if (offset(kEnable_Encoders_High) == -1) {
       wpi_setStaticErrorWithContext(
           dma_, NiFpga_Status_ResourceNotFound,
-          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+          HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
       return -1;
     }
     dmaWord = read_buffer_[offset(kEnable_Encoders_High) + (index - 4)];
   } else {
     wpi_setStaticErrorWithContext(
         dma_, NiFpga_Status_ResourceNotFound,
-        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+        HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
     return 0;
   }
-#endif
 
   int32_t result = 0;
 
@@ -448,7 +406,7 @@ uint16_t DMASample::GetValue(AnalogInput *input) const {
     if (offset(kEnable_AI0_Low) == -1) {
       wpi_setStaticErrorWithContext(
           dma_, NiFpga_Status_ResourceNotFound,
-          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+          HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
       return 0xffff;
     }
     dmaWord = read_buffer_[offset(kEnable_AI0_Low) + channel / 2];
@@ -456,14 +414,14 @@ uint16_t DMASample::GetValue(AnalogInput *input) const {
     if (offset(kEnable_AI0_High) == -1) {
       wpi_setStaticErrorWithContext(
           dma_, NiFpga_Status_ResourceNotFound,
-          getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+          HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
       return 0xffff;
     }
     dmaWord = read_buffer_[offset(kEnable_AI0_High) + (channel - 4) / 2];
   } else {
     wpi_setStaticErrorWithContext(
         dma_, NiFpga_Status_ResourceNotFound,
-        getHALErrorMessage(NiFpga_Status_ResourceNotFound));
+        HAL_GetErrorMessage(NiFpga_Status_ResourceNotFound));
     return 0xffff;
   }
   if (channel % 2) {

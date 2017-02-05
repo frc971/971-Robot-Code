@@ -9,13 +9,30 @@
 #include <array>
 #include <memory>
 
+#ifdef WPILIB2017
+#include "HAL/ChipObject.h"
+#else
 #include "ChipObject.h"
+#endif
 #include "ErrorBase.h"
 
 class DMA;
+#ifdef WPILIB2017
+namespace frc {
 class DigitalSource;
 class AnalogInput;
 class Encoder;
+}  // namespace frc
+#else
+class DigitalSource;
+class AnalogInput;
+class Encoder;
+namespace frc {
+using ::DigitalSource;
+using ::AnalogInput;
+using ::Encoder;
+}  // namespace frc
+#endif
 
 // A POD class which stores the data from a DMA sample and provides safe ways to
 // access it.

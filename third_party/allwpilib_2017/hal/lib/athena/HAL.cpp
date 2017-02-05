@@ -36,8 +36,6 @@ static std::unique_ptr<tGlobal> global;
 static std::unique_ptr<tSysWatchdog> watchdog;
 
 static priority_mutex timeMutex;
-static uint32_t timeEpoch = 0;
-static uint32_t prevFPGATime = 0;
 static HAL_NotifierHandle rolloverNotifier = 0;
 
 using namespace hal;
@@ -224,14 +222,7 @@ uint64_t HAL_GetFPGATime(int32_t* status) {
     *status = NiFpga_Status_ResourceNotInitialized;
     return 0;
   }
-  std::lock_guard<priority_mutex> lock(timeMutex);
-  uint32_t fpgaTime = global->readLocalTime(status);
-  if (*status != 0) return 0;
-  // check for rollover
-  if (fpgaTime < prevFPGATime) ++timeEpoch;
-  prevFPGATime = fpgaTime;
-  return static_cast<uint64_t>(timeEpoch) << 32 |
-         static_cast<uint64_t>(fpgaTime);
+  return global->readLocalTime(status);
 }
 
 /**

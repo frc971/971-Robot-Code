@@ -78,7 +78,7 @@ cc_library(
  ],
  deps = [
    '//third_party/ntcore_2016:ntcore',
-   '//external:ni-libraries',
+   '//external:ni-libraries-2016',
    '//aos/common/logging',
  ],
  hdrs = _h_hdrs + _hpp_hdrs + ['wpilibc/shared/include/Task.inc'],

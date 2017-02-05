@@ -21,7 +21,11 @@ void EdgeCounter::GatherPolledValue() {
 
 void EdgeCounter::operator()() {
   ::aos::SetCurrentThreadName("EdgeCounter_" +
+#ifdef WPILIB2017
+                              ::std::to_string(input_->GetChannel()));
+#else
                               ::std::to_string(input_->GetChannelForRouting()));
+#endif
 
   input_->RequestInterrupts();
   input_->SetUpSourceEdge(true, true);
@@ -55,7 +59,11 @@ void EdgeCounter::operator()() {
       current_value_ = hall_value;
     } else {
       LOG(WARNING, "Detected spurious edge on %d.  Dropping it.\n",
+#ifdef WPILIB2017
+          input_->GetChannel());
+#else
           input_->GetChannelForRouting());
+#endif
     }
   }
 }
