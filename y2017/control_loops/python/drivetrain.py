@@ -28,13 +28,13 @@ class Drivetrain(control_loop.ControlLoop):
     # Free Current in Amps
     self.free_current = 4.7 * self.num_motors
     # Moment of inertia of the drivetrain in kg m^2
-    self.J = 1.5
+    self.J = 2.0
     # Mass of the robot, in kg.
-    self.m = 50
+    self.m = 24
     # Radius of the robot, in meters (requires tuning by hand)
-    self.rb = 0.6 / 2.0
+    self.rb = 0.59055 / 2.0
     # Radius of the wheels, in meters.
-    self.r = 0.041275
+    self.r = 0.08255 / 2.0
     # Resistance of the motor, divided by the number of motors.
     self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
