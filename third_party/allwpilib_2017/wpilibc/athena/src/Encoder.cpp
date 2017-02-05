@@ -421,23 +421,6 @@ int Encoder::GetSamplesToAverage() const {
 }
 
 /**
- * Implement the PIDSource interface.
- *
- * @return The current value of the selected source parameter.
- */
-double Encoder::PIDGet() {
-  if (StatusIsFatal()) return 0.0;
-  switch (GetPIDSourceType()) {
-    case PIDSourceType::kDisplacement:
-      return GetDistance();
-    case PIDSourceType::kRate:
-      return GetRate();
-    default:
-      return 0.0;
-  }
-}
-
-/**
  * Set the index source for the encoder.
  *
  * When this source is activated, the encoder count automatically resets.
