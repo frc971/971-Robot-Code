@@ -147,3 +147,20 @@ cc_test(
     '//third_party/eigen',
   ],
 )
+
+cc_library(
+  name = 'profiled_subsystem',
+  srcs = [
+    'profiled_subsystem.cc',
+  ],
+  hdrs = [
+    'profiled_subsystem.h',
+  ],
+  deps = [
+    ':simple_capped_state_feedback_loop',
+    ':state_feedback_loop',
+    '//aos/common/controls:control_loop',
+    '//aos/common/util:trapezoid_profile',
+    '//frc971/zeroing:zeroing',
+  ],
+)

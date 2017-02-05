@@ -4,13 +4,14 @@
 #include <memory>
 
 #include "aos/common/controls/control_loop.h"
-#include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "aos/common/util/trapezoid_profile.h"
+#include "frc971/control_loops/profiled_subsystem.h"
+#include "frc971/control_loops/simple_capped_state_feedback_loop.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 #include "frc971/zeroing/zeroing.h"
-#include "y2016/control_loops/superstructure/superstructure.q.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
+#include "y2016/control_loops/superstructure/superstructure.q.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -66,7 +67,8 @@ class ArmControlLoop
       const double overage_amount = U(0, 0) - max_voltage(0);
       mutable_U(0, 0) = max_voltage(0);
       const double coupled_amount =
-          (Kff().block<1, 2>(1, 2) * B().block<2, 1>(2, 0))(0, 0) * overage_amount;
+          (Kff().block<1, 2>(1, 2) * B().block<2, 1>(2, 0))(0, 0) *
+          overage_amount;
       LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
       mutable_U(1, 0) += coupled_amount;
     }
@@ -96,149 +98,15 @@ class ArmControlLoop
   }
 };
 
-template <int number_of_states, int number_of_axes>
-class ProfiledSubsystem {
- public:
-  ProfiledSubsystem(
-      ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
-          number_of_states, number_of_axes, number_of_axes>>
-          loop)
-      : loop_(::std::move(loop)) {
-    zeroed_.fill(false);
-    unprofiled_goal_.setZero();
-  }
-
-  void Reset() {
-    zeroed_.fill(false);
-    DoReset();
-  }
-
-  // Returns the controller.
-  const StateFeedbackLoop<number_of_states, number_of_axes, number_of_axes>
-      &controller() const {
-    return *loop_;
-  }
-
-  int controller_index() const { return loop_->controller_index(); }
-
-  // Returns whether the estimators have been initialized and zeroed.
-  bool initialized() const { return initialized_; }
-
-  bool zeroed() const {
-    for (int i = 0; i < number_of_axes; ++i) {
-      if (!zeroed_[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool zeroed(int index) const { return zeroed_[index]; };
-
-  // Returns the filtered goal.
-  const Eigen::Matrix<double, number_of_states, 1> &goal() const {
-    return loop_->R();
-  }
-  double goal(int row, int col) const { return loop_->R(row, col); }
-
-  // Returns the unprofiled goal.
-  const Eigen::Matrix<double, number_of_states, 1> &unprofiled_goal() const {
-    return unprofiled_goal_;
-  }
-  double unprofiled_goal(int row, int col) const {
-    return unprofiled_goal_(row, col);
-  }
-
-  // Returns the current state estimate.
-  const Eigen::Matrix<double, number_of_states, 1> &X_hat() const {
-    return loop_->X_hat();
-  }
-  double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
-
- protected:
-  void set_zeroed(int index, bool val) { zeroed_[index] = val; }
-
-  // TODO(austin): It's a bold assumption to assume that we will have the same
-  // number of sensors as axes.  So far, that's been fine.
-  ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
-      number_of_states, number_of_axes, number_of_axes>>
-      loop_;
-
-  // The goal that the profile tries to reach.
-  Eigen::Matrix<double, number_of_states, 1> unprofiled_goal_;
-
-  bool initialized_ = false;
-
- private:
-  ::std::array<bool, number_of_axes> zeroed_;
-
-  virtual void DoReset() = 0;
-};
-
-class Intake : public ProfiledSubsystem<3, 1> {
+class Intake : public ::frc971::control_loops::SingleDOFProfiledSubsystem {
  public:
   Intake();
-  // Returns whether an error has occured
-  bool error() const { return estimator_.error(); }
-
-  // Updates our estimator with the latest position.
-  void Correct(::frc971::PotAndIndexPosition position);
-  // Runs the controller and profile generator for a cycle.
-  void Update(bool disabled);
-  // Sets the maximum voltage that will be commanded by the loop.
-  void set_max_voltage(double voltage);
-
-  // Forces the current goal to the provided goal, bypassing the profiler.
-  void ForceGoal(double goal);
-  // Sets the unprofiled goal.  The profiler will generate a profile to go to
-  // this goal.
-  void set_unprofiled_goal(double unprofiled_goal);
-  // Limits our profiles to a max velocity and acceleration for proper motion.
-  void AdjustProfile(double max_angular_velocity,
-                     double max_angular_acceleration);
-
-  // Returns true if we have exceeded any hard limits.
-  bool CheckHardLimits();
-
-  // Returns the current internal estimator state for logging.
-  ::frc971::EstimatorState IntakeEstimatorState();
-
-  // Returns the requested intake voltage.
-  double intake_voltage() const { return loop_->U(0, 0); }
-
-  // Returns the current position.
-  double angle() const { return Y_(0, 0); }
-
-  // For testing:
-  // Triggers an estimator error.
-  void TriggerEstimatorError() { estimator_.TriggerError(); }
-
- private:
-  // Limits the provided goal to the soft limits.  Prints "name" when it fails
-  // to aid debugging.
-  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal);
-
-  // Resets the internal state.
-  void DoReset() override;
-
-  void UpdateIntakeOffset(double offset);
-
-  ::frc971::zeroing::ZeroingEstimator estimator_;
-  aos::util::TrapezoidProfile profile_;
-
-  // Current measurement.
-  Eigen::Matrix<double, 1, 1> Y_;
-  // Current offset.  Y_ = offset_ + raw_sensor;
-  Eigen::Matrix<double, 1, 1> offset_;
 };
 
-class Arm : public ProfiledSubsystem<6, 2> {
+
+class Arm : public ::frc971::control_loops::ProfiledSubsystem<6, 2> {
  public:
   Arm();
-  // Returns whether an error has occured
-  bool error() const {
-    return shoulder_estimator_.error() || wrist_estimator_.error();
-  }
 
   // Updates our estimator with the latest position.
   void Correct(::frc971::PotAndIndexPosition position_shoulder,
@@ -259,7 +127,6 @@ class Arm : public ProfiledSubsystem<6, 2> {
                      double max_angular_acceleration_shoulder,
                      double max_angular_velocity_wrist,
                      double max_angular_acceleration_wrist);
-  void set_max_voltage(double shoulder_max_voltage, double wrist_max_voltage);
 
   void set_shoulder_asymetric_limits(double shoulder_min_voltage,
                                      double shoulder_max_voltage) {
@@ -268,10 +135,6 @@ class Arm : public ProfiledSubsystem<6, 2> {
 
   // Returns true if we have exceeded any hard limits.
   bool CheckHardLimits();
-
-  // Returns the current internal estimator state for logging.
-  ::frc971::EstimatorState ShoulderEstimatorState();
-  ::frc971::EstimatorState WristEstimatorState();
 
   // Returns the requested shoulder and wrist voltages.
   double shoulder_voltage() const { return loop_->U(0, 0); }
@@ -283,12 +146,9 @@ class Arm : public ProfiledSubsystem<6, 2> {
 
   // For testing:
   // Triggers an estimator error.
-  void TriggerEstimatorError() { shoulder_estimator_.TriggerError(); }
+  void TriggerEstimatorError() { estimators_[0].TriggerError(); }
 
  private:
-  // Resets the internal state.
-  void DoReset() override;
-
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
   void CapGoal(const char *name, Eigen::Matrix<double, 6, 1> *goal);
@@ -300,7 +160,6 @@ class Arm : public ProfiledSubsystem<6, 2> {
   friend class testing::SuperstructureTest_DisabledGoalTest_Test;
 
   aos::util::TrapezoidProfile shoulder_profile_, wrist_profile_;
-  ::frc971::zeroing::ZeroingEstimator shoulder_estimator_, wrist_estimator_;
 
   // Current measurement.
   Eigen::Matrix<double, 2, 1> Y_;
