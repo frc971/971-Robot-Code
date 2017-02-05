@@ -16,6 +16,19 @@ struct ZeroingConstants {
   double allowable_encoder_error;
 };
 
+struct EncoderPlusIndexZeroingConstants {
+  // The amount of index pulses in the limb's range of motion.
+  int num_index_pulses;
+};
+
+struct PotAndAbsoluteEncoderZeroingConstants {
+  // The distance that the absolute encoder needs to complete a full rotation.
+  double abs_duration;
+  // Sample mechanism angle and absolute encoder value.
+  double sample_abs_value;
+  double sample_degrees;
+};
+
 // Defines a range of motion for a subsystem.
 // These are all absolute positions in scaled units.
 struct Range {
