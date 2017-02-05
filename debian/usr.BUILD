@@ -1,3 +1,5 @@
+load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
+
 package(default_visibility = ['@//debian:__pkg__'])
 
 cc_library(
@@ -87,7 +89,7 @@ cc_library(
   visibility = ['//visibility:public'],
 )
 
-cc_library(
+gtk_dependent_cc_library(
   name = 'gtk+-3.0',
   hdrs = glob([
     'include/gtk-3.0/**/*.h',

@@ -1,3 +1,4 @@
+load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
 package(default_visibility = ['//visibility:public'])
 
 cc_library(
@@ -93,7 +94,7 @@ cc_test(
   ],
 )
 
-cc_library(
+gtk_dependent_cc_library(
   name = 'stream_view',
   hdrs = ['stream_view.h'],
   deps = [
