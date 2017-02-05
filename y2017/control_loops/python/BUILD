@@ -37,3 +37,66 @@ py_library(
     '//frc971/control_loops/python:controls',
   ],
 )
+
+py_binary(
+  name = 'shooter',
+  srcs = [
+    'shooter.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'indexer',
+  srcs = [
+    'indexer.py',
+  ],
+  deps = [
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'intake',
+  srcs = [
+    'intake.py',
+  ],
+  deps = [
+    '//aos/common/util:py_trapezoid_profile',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'turret',
+  srcs = [
+    'turret.py',
+  ],
+  deps = [
+    '//aos/common/util:py_trapezoid_profile',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
+
+py_binary(
+  name = 'hood',
+  srcs = [
+    'hood.py',
+  ],
+  deps = [
+    '//aos/common/util:py_trapezoid_profile',
+    '//external:python-gflags',
+    '//external:python-glog',
+    '//frc971/control_loops/python:controls',
+  ]
+)
