@@ -1,6 +1,7 @@
 #include "aos/input/joystick_input.h"
 
 #include <string.h>
+#include <atomic>
 
 #include "aos/common/messages/robot_state.q.h"
 #include "aos/common/logging/logging.h"
@@ -9,9 +10,23 @@
 namespace aos {
 namespace input {
 
+::std::atomic<bool> JoystickInput::run_;
+
+void JoystickInput::Quit(int /*signum*/) { run_ = false; }
+
 void JoystickInput::Run() {
+  run_ = true;
+  struct sigaction action;
+  action.sa_handler = &JoystickInput::Quit;
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = SA_RESETHAND;
+
+  PCHECK(sigaction(SIGTERM, &action, nullptr));
+  PCHECK(sigaction(SIGQUIT, &action, nullptr));
+  PCHECK(sigaction(SIGINT, &action, nullptr));
+
   driver_station::Data data;
-  while (true) {
+  while (run_) {
     joystick_state.FetchAnother();
 
     data.Update(*joystick_state);
@@ -60,6 +75,7 @@ void JoystickInput::Run() {
 
     RunIteration(data);
   }
+  LOG(INFO, "Shutting down\n");
 }
 
 }  // namespace input

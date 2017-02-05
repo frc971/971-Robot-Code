@@ -102,10 +102,23 @@ void ControlLoop<T>::Iterate() {
 
 template <class T>
 void ControlLoop<T>::Run() {
-  while (true) {
+  struct sigaction action;
+  action.sa_handler = &ControlLoop<T>::Quit;
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = SA_RESETHAND;
+
+  PCHECK(sigaction(SIGTERM, &action, nullptr));
+  PCHECK(sigaction(SIGQUIT, &action, nullptr));
+  PCHECK(sigaction(SIGINT, &action, nullptr));
+
+  while (run_) {
     Iterate();
   }
+  LOG(INFO, "Shutting down\n");
 }
+
+template <class T>
+::std::atomic<bool> ControlLoop<T>::run_{true};
 
 }  // namespace controls
 }  // namespace aos

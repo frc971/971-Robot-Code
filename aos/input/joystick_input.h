@@ -1,6 +1,8 @@
 #ifndef AOS_INPUT_JOYSTICK_INPUT_H_
 #define AOS_INPUT_JOYSTICK_INPUT_H_
 
+#include <atomic>
+
 #include "aos/common/input/driver_station_data.h"
 
 namespace aos {
@@ -18,6 +20,10 @@ class JoystickInput {
  private:
   // Subclasses should do whatever they want with data here.
   virtual void RunIteration(const driver_station::Data &data) = 0;
+
+  static void Quit(int /*signum*/);
+
+  static ::std::atomic<bool> run_;
 };
 
 // Class which will proxy joystick information from UDP packets to the queues.
