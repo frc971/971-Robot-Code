@@ -11,7 +11,8 @@
 namespace y2016_bot3 {
 namespace constants {
 constexpr double IntakeZero::pot_offset;
-constexpr ::frc971::constants::ZeroingConstants IntakeZero::zeroing;
+constexpr ::frc971::constants::PotAndIndexPulseZeroingConstants
+    IntakeZero::zeroing;
 }  // namespace constants
 
 namespace control_loops {

@@ -11,7 +11,7 @@ namespace y2016 {
 namespace constants {
 
 using ::frc971::constants::ShifterHallEffect;
-using ::frc971::constants::ZeroingConstants;
+using ::frc971::constants::PotAndIndexPulseZeroingConstants;
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.
@@ -83,19 +83,19 @@ struct Values {
 
   struct Intake {
     double pot_offset;
-    ZeroingConstants zeroing;
+    PotAndIndexPulseZeroingConstants zeroing;
   };
   Intake intake;
 
   struct Shoulder {
     double pot_offset;
-    ZeroingConstants zeroing;
+    PotAndIndexPulseZeroingConstants zeroing;
   };
   Shoulder shoulder;
 
   struct Wrist {
     double pot_offset;
-    ZeroingConstants zeroing;
+    PotAndIndexPulseZeroingConstants zeroing;
   };
   Wrist wrist;
 

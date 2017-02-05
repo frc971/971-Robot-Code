@@ -16,7 +16,7 @@ namespace frc971 {
 namespace zeroing {
 
 using control_loops::PositionSensorSimulator;
-using constants::ZeroingConstants;
+using constants::PotAndIndexPulseZeroingConstants;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
@@ -26,7 +26,8 @@ class ZeroingTest : public ::testing::Test {
  protected:
   void SetUp() override { aos::SetDieTestMode(true); }
 
-  void MoveTo(PositionSensorSimulator* simulator, ZeroingEstimator* estimator,
+  void MoveTo(PositionSensorSimulator *simulator,
+              PotAndIndexPulseZeroingEstimator *estimator,
               double new_position) {
     PotAndIndexPosition sensor_values_;
     simulator->MoveTo(new_position);
@@ -41,7 +42,7 @@ TEST_F(ZeroingTest, TestMovingAverageFilter) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
@@ -65,7 +66,7 @@ TEST_F(ZeroingTest, NotZeroedBeforeEnoughSamplesCollected) {
   double position = 3.6 * index_diff;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(position, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure that the zeroing code does not consider itself zeroed until we
@@ -84,7 +85,7 @@ TEST_F(ZeroingTest, TestLotsOfMovement) {
   double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
@@ -117,7 +118,7 @@ TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
@@ -151,7 +152,7 @@ TEST_F(ZeroingTest, TestPercentage) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   for (unsigned int i = 0; i < kSampleSize / 2; i++) {
@@ -171,7 +172,7 @@ TEST_F(ZeroingTest, TestOffset) {
   double index_diff = 0.89;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   MoveTo(&sim, &estimator, 3.1 * index_diff);
@@ -187,7 +188,7 @@ TEST_F(ZeroingTest, WaitForIndexPulseAfterReset) {
   double index_diff = 0.6;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
@@ -222,7 +223,7 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
   const double known_index_pos = 3.5 * index_diff;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.3 * index_diff, index_diff / 3.0, known_index_pos);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, known_index_pos, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
@@ -247,7 +248,7 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
 
 TEST_F(ZeroingTest, BasicErrorAPITest) {
   const double index_diff = 1.0;
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       kSampleSize, index_diff, 0.0, kIndexErrorFraction});
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(1.5 * index_diff, index_diff / 3.0, 0.0);
@@ -283,7 +284,7 @@ TEST_F(ZeroingTest, TestOffsetError) {
   int sample_size = 30;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(10 * index_diff, index_diff / 3.0, known_index_pos);
-  ZeroingEstimator estimator(ZeroingConstants{
+  PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       sample_size, index_diff, known_index_pos, kIndexErrorFraction});
 
   for (int i = 0; i < sample_size; i++) {

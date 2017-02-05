@@ -90,7 +90,7 @@ class IntakeArm {
   ::std::unique_ptr<
       ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>> loop_;
 
-  ::frc971::zeroing::ZeroingEstimator estimator_;
+  ::frc971::zeroing::PotAndIndexPulseZeroingEstimator estimator_;
   aos::util::TrapezoidProfile profile_;
 
   // Current measurement.

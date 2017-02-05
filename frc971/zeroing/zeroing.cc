@@ -6,16 +6,17 @@
 namespace frc971 {
 namespace zeroing {
 
-void PopulateEstimatorState(const zeroing::ZeroingEstimator& estimator,
-                            EstimatorState* state) {
+void PopulateEstimatorState(
+    const zeroing::PotAndIndexPulseZeroingEstimator &estimator,
+    EstimatorState *state) {
   state->error = estimator.error();
   state->zeroed = estimator.zeroed();
   state->position = estimator.position();
   state->pot_position = estimator.filtered_position();
 }
 
-ZeroingEstimator::ZeroingEstimator(
-    const constants::ZeroingConstants& constants) {
+PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
+    const constants::PotAndIndexPulseZeroingConstants &constants) {
   index_diff_ = constants.index_difference;
   max_sample_count_ = constants.average_filter_size;
   known_index_pos_ = constants.measured_index_position;
@@ -24,7 +25,7 @@ ZeroingEstimator::ZeroingEstimator(
   Reset();
 }
 
-void ZeroingEstimator::Reset() {
+void PotAndIndexPulseZeroingEstimator::Reset() {
   samples_idx_ = 0;
   start_pos_ = 0;
   start_pos_samples_.clear();
@@ -35,15 +36,15 @@ void ZeroingEstimator::Reset() {
   error_ = false;
 }
 
-void ZeroingEstimator::TriggerError() {
+void PotAndIndexPulseZeroingEstimator::TriggerError() {
   if (!error_) {
     LOG(ERROR, "Manually triggered zeroing error.\n");
     error_ = true;
   }
 }
 
-double ZeroingEstimator::CalculateStartPosition(double start_average,
-                                                double latched_encoder) const {
+double PotAndIndexPulseZeroingEstimator::CalculateStartPosition(
+    double start_average, double latched_encoder) const {
   // We calculate an aproximation of the value of the last index position.
   // Also account for index pulses not lining up with integer multiples of the
   // index_diff.
@@ -54,7 +55,8 @@ double ZeroingEstimator::CalculateStartPosition(double start_average,
   return accurate_index_pos - latched_encoder + known_index_pos_;
 }
 
-void ZeroingEstimator::UpdateEstimate(const PotAndIndexPosition& info) {
+void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
+    const PotAndIndexPosition &info) {
   // We want to make sure that we encounter at least one index pulse while
   // zeroing. So we take the index pulse count from the first sample after
   // reset and wait for that count to change before we consider ourselves

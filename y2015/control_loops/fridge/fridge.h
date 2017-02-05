@@ -22,7 +22,7 @@ class FridgeTest_ElevatorGoalNegativeWindupTest_Test;
 class FridgeTest_SafeArmZeroing_Test;
 }  // namespace testing
 
-template<int S>
+template <int S>
 class CappedStateFeedbackLoop : public StateFeedbackLoop<S, 2, 2> {
  public:
   CappedStateFeedbackLoop(StateFeedbackLoop<S, 2, 2> &&loop)
@@ -42,8 +42,7 @@ class CappedStateFeedbackLoop : public StateFeedbackLoop<S, 2, 2> {
   double max_voltage_;
 };
 
-class Fridge
-    : public aos::controls::ControlLoop<FridgeQueue> {
+class Fridge : public aos::controls::ControlLoop<FridgeQueue> {
  public:
   explicit Fridge(FridgeQueue *fridge_queue =
                       &::y2015::control_loops::fridge::fridge_queue);
@@ -128,10 +127,10 @@ class Fridge
   ::std::unique_ptr<CappedStateFeedbackLoop<5>> arm_loop_;
   ::std::unique_ptr<CappedStateFeedbackLoop<4>> elevator_loop_;
 
-  ::frc971::zeroing::ZeroingEstimator left_arm_estimator_;
-  ::frc971::zeroing::ZeroingEstimator right_arm_estimator_;
-  ::frc971::zeroing::ZeroingEstimator left_elevator_estimator_;
-  ::frc971::zeroing::ZeroingEstimator right_elevator_estimator_;
+  ::frc971::zeroing::PotAndIndexPulseZeroingEstimator left_arm_estimator_;
+  ::frc971::zeroing::PotAndIndexPulseZeroingEstimator right_arm_estimator_;
+  ::frc971::zeroing::PotAndIndexPulseZeroingEstimator left_elevator_estimator_;
+  ::frc971::zeroing::PotAndIndexPulseZeroingEstimator right_elevator_estimator_;
 
   // Offsets from the encoder position to the absolute position.  Add these to
   // the encoder position to get the absolute position.
@@ -170,5 +169,4 @@ class Fridge
 }  // namespace control_loops
 }  // namespace y2015
 
-#endif // Y2015_CONTROL_LOOPS_FRIDGE_H_
-
+#endif  // Y2015_CONTROL_LOOPS_FRIDGE_H_

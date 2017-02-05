@@ -21,10 +21,9 @@ class ProfiledSubsystem {
  public:
   ProfiledSubsystem(
       ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
-          number_of_states, number_of_axes, number_of_axes>>
-          loop,
-      ::std::array<::frc971::zeroing::ZeroingEstimator, number_of_axes>
-          &&estimators)
+          number_of_states, number_of_axes, number_of_axes>> loop,
+      ::std::array<::frc971::zeroing::PotAndIndexPulseZeroingEstimator,
+                   number_of_axes> &&estimators)
       : loop_(::std::move(loop)), estimators_(::std::move(estimators)) {
     zeroed_.fill(false);
     unprofiled_goal_.setZero();
@@ -48,8 +47,8 @@ class ProfiledSubsystem {
   }
 
   // Returns the controller.
-  const StateFeedbackLoop<number_of_states, number_of_axes, number_of_axes>
-      &controller() const {
+  const StateFeedbackLoop<number_of_states, number_of_axes, number_of_axes> &
+  controller() const {
     return *loop_;
   }
 
@@ -111,15 +110,15 @@ class ProfiledSubsystem {
   // TODO(austin): It's a bold assumption to assume that we will have the same
   // number of sensors as axes.  So far, that's been fine.
   ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
-      number_of_states, number_of_axes, number_of_axes>>
-      loop_;
+      number_of_states, number_of_axes, number_of_axes>> loop_;
 
   // The goal that the profile tries to reach.
   Eigen::Matrix<double, number_of_states, 1> unprofiled_goal_;
 
   bool initialized_ = false;
 
-  ::std::array<::frc971::zeroing::ZeroingEstimator, number_of_axes> estimators_;
+  ::std::array<::frc971::zeroing::PotAndIndexPulseZeroingEstimator,
+               number_of_axes> estimators_;
 
  private:
   ::std::array<bool, number_of_axes> zeroed_;
@@ -130,7 +129,7 @@ class SingleDOFProfiledSubsystem
  public:
   SingleDOFProfiledSubsystem(
       ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,
-      const ::frc971::constants::ZeroingConstants &estimator,
+      const ::frc971::constants::PotAndIndexPulseZeroingConstants &estimator,
       const ::frc971::constants::Range &range, double default_angular_velocity,
       double default_angular_acceleration);
 

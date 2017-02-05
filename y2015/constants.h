@@ -69,7 +69,7 @@ struct Values {
 
   struct Claw {
     Range wrist;
-    ::frc971::constants::ZeroingConstants zeroing;
+    ::frc971::constants::PotAndIndexPulseZeroingConstants zeroing;
     // The value to add to potentiometer readings after they have been converted
     // to radians so that the resulting value is 0 when the claw is at absolute
     // 0 (horizontal straight out the front).
@@ -87,10 +87,10 @@ struct Values {
     Range elevator;
     Range arm;
 
-    ::frc971::constants::ZeroingConstants left_elev_zeroing;
-    ::frc971::constants::ZeroingConstants right_elev_zeroing;
-    ::frc971::constants::ZeroingConstants left_arm_zeroing;
-    ::frc971::constants::ZeroingConstants right_arm_zeroing;
+    ::frc971::constants::PotAndIndexPulseZeroingConstants left_elev_zeroing;
+    ::frc971::constants::PotAndIndexPulseZeroingConstants right_elev_zeroing;
+    ::frc971::constants::PotAndIndexPulseZeroingConstants left_arm_zeroing;
+    ::frc971::constants::PotAndIndexPulseZeroingConstants right_arm_zeroing;
 
     // Values to add to scaled potentiometer readings so 0 lines up with the
     // physical absolute 0.

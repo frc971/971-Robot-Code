@@ -4,7 +4,7 @@
 namespace frc971 {
 namespace constants {
 
-struct ZeroingConstants {
+struct PotAndIndexPulseZeroingConstants {
   // The number of samples in the moving average filter.
   int average_filter_size;
   // The difference in scaled units between two index pulses.

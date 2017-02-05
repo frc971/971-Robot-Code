@@ -21,9 +21,10 @@ namespace zeroing {
 
 // Estimates the position with encoder,
 // the pot and the indices.
-class ZeroingEstimator {
+class PotAndIndexPulseZeroingEstimator {
  public:
-  ZeroingEstimator(const constants::ZeroingConstants &constants);
+  PotAndIndexPulseZeroingEstimator(
+      const constants::PotAndIndexPulseZeroingConstants &constants);
 
   // Update the internal logic with the next sensor values.
   void UpdateEstimate(const PotAndIndexPosition &info);
@@ -123,7 +124,7 @@ class ZeroingEstimator {
 
 // Populates an EstimatorState struct with information from the zeroing
 // estimator.
-void PopulateEstimatorState(const ZeroingEstimator &estimator,
+void PopulateEstimatorState(const PotAndIndexPulseZeroingEstimator &estimator,
                             EstimatorState *state);
 
 }  // namespace zeroing

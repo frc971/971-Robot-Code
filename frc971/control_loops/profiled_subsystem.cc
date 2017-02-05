@@ -15,7 +15,8 @@ double UseUnlessZero(double target_value, double default_value) {
 
 SingleDOFProfiledSubsystem::SingleDOFProfiledSubsystem(
     ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,
-    const ::frc971::constants::ZeroingConstants &zeroing_constants,
+    const ::frc971::constants::PotAndIndexPulseZeroingConstants &
+        zeroing_constants,
     const ::frc971::constants::Range &range, double default_velocity,
     double default_acceleration)
     : ProfiledSubsystem(::std::move(loop), {{zeroing_constants}}),

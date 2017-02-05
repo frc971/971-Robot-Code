@@ -43,7 +43,7 @@ struct Values {
 
   double drivetrain_max_speed;
 
-  struct ZeroingConstants {
+  struct PotAndIndexPulseZeroingConstants {
     // The number of samples in the moving average filter.
     int average_filter_size;
     // The difference in scaled units between two index pulses.
@@ -126,7 +126,7 @@ struct Values {
     // should be larger than claw_shooting_separation so that we can shoot
     // promptly.
     double claw_separation_goal;
-   };
+  };
   ShooterAction shooter_action;
 };
 
