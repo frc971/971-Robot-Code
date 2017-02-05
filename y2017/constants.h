@@ -25,6 +25,8 @@ struct Values {
 
   // ///// Dynamic constants. /////
   double drivetrain_max_speed;
+
+  double down_error;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
