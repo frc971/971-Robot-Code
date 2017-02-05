@@ -89,7 +89,8 @@ def c2d(A, B, dt):
   """Converts from continuous time state space representation to discrete time.
      Returns (A, B).  C and D are unchanged."""
 
-  ans_a, ans_b, _, _, _ = scipy.signal.cont2discrete((A, B, None, None), dt)
+  ans_a, ans_b, _, _, _ = scipy.signal.cont2discrete(
+      (numpy.array(A), numpy.array(B), None, None), dt)
   return numpy.matrix(ans_a), numpy.matrix(ans_b)
 
 def ctrb(A, B):
