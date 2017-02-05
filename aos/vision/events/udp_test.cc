@@ -11,8 +11,8 @@ TEST(UDPTest, SendRecv) {
 
   int txdata[] = {1, 2, 3, 4};
   int rxdata[4];
-  tx.Send(static_cast<const void *>(&txdata), sizeof(txdata));
-  rx.Recv(static_cast<void *>(&rxdata), sizeof(rxdata));
+  tx.Send(reinterpret_cast<const char *>(&txdata), sizeof(txdata));
+  rx.Recv(reinterpret_cast<char *>(&rxdata), sizeof(rxdata));
   EXPECT_EQ(txdata[0], rxdata[0]);
   EXPECT_EQ(txdata[1], rxdata[1]);
   EXPECT_EQ(txdata[2], rxdata[2]);
