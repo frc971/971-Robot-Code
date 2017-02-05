@@ -4,9 +4,13 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
 namespace y2017 {
+namespace constants {
+// The ratio from the encoder shaft to the drivetrain wheels.
+static constexpr double kDrivetrainEncoderRatio = 1.0;
+
+}  // namespace constants
 namespace control_loops {
 namespace drivetrain {
-
 const ::frc971::control_loops::drivetrain::DrivetrainConfig &
 GetDrivetrainConfig();
 
