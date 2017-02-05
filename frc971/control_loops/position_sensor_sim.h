@@ -17,6 +17,9 @@ class PositionSensorSimulator {
   // index_diff: The interval between index pulses. This is measured in SI
   //             units. For example, if an index pulse hits every 5cm on the
   //             elevator, set this to 0.05.
+  //             NOTE: When retrieving the sensor values for a
+  //             PotAndAbsolutePosition message this field represents the
+  //             interval between when the absolute encoder reads 0.
   // noise_seed: The seed to feed into the random number generator for the
   //             potentiometer values.
   // TODO(danielp): Allow for starting with a non-zero encoder value.
@@ -34,7 +37,8 @@ class PositionSensorSimulator {
   // known_index_pos: The absolute position of an index pulse.
   void Initialize(double start_position,
                   double pot_noise_stddev,
-                  double known_index_pos = 0.0);
+                  double known_index_pos = 0.0,
+                  double known_absolute_encoder_pos = 0.0);
 
   // Simulate the structure moving to a new position. The new value is measured
   // relative to absolute zero. This will update the simulated sensors with new
@@ -54,6 +58,12 @@ class PositionSensorSimulator {
   //         can be given in radians, meters, etc.
   void GetSensorValues(PotAndIndexPosition* values);
 
+  // Get the current values of the simulated sensors.
+  // values: The target structure will be populated with simulated sensor
+  //         readings. The readings will be in SI units. For example the units
+  //         can be given in radians, meters, etc.
+  void GetSensorValues(PotAndAbsolutePosition* values);
+
  private:
   // The absolute segment between two index pulses the simulation is on. For
   // example, when the current position is betwen index pulse zero and one,
@@ -71,7 +81,13 @@ class PositionSensorSimulator {
   // Distance between index pulses on the mechanism.
   double index_diff_;
   // Absolute position of a known index pulse.
+  // OR
+  // Absolute position of the absolute encoder's reading stored in
+  // known_absolute_encoder_.
   double known_index_pos_;
+  // The readout of the absolute encoder when the robot's mechanism is at
+  // known_index_pos_.
+  double known_absolute_encoder_;
   // Current position of the mechanism relative to absolute zero.
   double cur_pos_;
   // Starting position of the mechanism relative to absolute zero. See the

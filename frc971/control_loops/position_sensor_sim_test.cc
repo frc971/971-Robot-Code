@@ -238,5 +238,70 @@ TEST_F(PositionSensorSimTest, LatchedValues) {
   EXPECT_DOUBLE_EQ(index_diff, position.latched_encoder);
 }
 
+// This test makes sure that our simulation for an absolute encoder + relative
+// encoder + pot combo works OK. Let's pretend that we know that a reading of
+// 0.07m on the absolute encoder corresponds to 0.2m on the robot. We also know
+// that every 0.1m the absolute encoder resets. Then we can construct a table
+// quickly from there:
+//
+// abs_encoder | robot
+//     0.07m   |  0.20m
+//     0.07m   |  0.30m
+//     0.07m   |  0.40m
+//     0.01m   |  0.34m
+//     0.01m   |  0.24m
+//     0.00m   |  0.23m
+//     0.00m   |  0.13m
+//
+// Since the absolute encoder wraps around, we'll notice that the same reading
+// can correspond to multiple positions on the robot.
+//
+// NOTE: We use EXPECT_NEAR rather than EXPECT_DOUBLE_EQ for the absolute
+// encoder because the modulo operation inside the simulator introduces just
+// enough imprecision to fail the EXPECT_DOUBLE_EQ macro.
+TEST_F(PositionSensorSimTest, PotAndEncodersNoIndexPulse) {
+  const double index_diff = 0.1;
+  PositionSensorSimulator sim(index_diff);
+  sim.Initialize(0.20, 0.05, 0.2, 0.07);
+  PotAndAbsolutePosition position;
+
+  sim.MoveTo(0.20);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.00, position.relative_encoder);
+  EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.30);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.10, position.relative_encoder);
+  EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.40);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.20, position.relative_encoder);
+  EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.34);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.14, position.relative_encoder);
+  EXPECT_NEAR(0.01, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.24);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.04, position.relative_encoder);
+  EXPECT_NEAR(0.01, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.23);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(0.03, position.relative_encoder);
+  EXPECT_NEAR(0.00, position.absolute_encoder, 0.00000001);
+
+  sim.MoveTo(0.13);
+  sim.GetSensorValues(&position);
+  EXPECT_DOUBLE_EQ(-0.07, position.relative_encoder);
+  EXPECT_NEAR(0.00, position.absolute_encoder, 0.00000001);
+
+  // TODO(philipp): Test negative values.
+}
+
 }  // namespace control_loops
 }  // namespace frc971

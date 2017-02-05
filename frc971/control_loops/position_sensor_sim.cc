@@ -27,6 +27,33 @@ namespace control_loops {
  *                   A
  *                   |
  *              index pulse
+ *
+ *
+ *
+ * Absolute encoder explanation:
+ *
+ * If we were to graph the output of an absolute encoder that resets every 0.1
+ * meters for example, it would looks something like the following. The y-axis
+ * represents the output of the absolute encoder. The x-axis represents the
+ * actual position of the robot's mechanism.
+ *
+ *          1 encoder segment
+ *              +------+
+ *
+ *      |
+ *  0.1 +      /|     /|     /|     /|     /|     /|     /|     /|
+ *      |     / |    / |    / |    / |    / |    / |    / |    / |
+ *      |    /  |   /  |   /  |   /  |   /  |   /  |   /  |   /  |
+ *      |   /   |  /   |  /   |  /   |  /   |  /   |  /   |  /   |
+ *      |  /    | /    | /    | /    | /    | /    | /    | /    |
+ *      | /     |/     |/     |/     |/     |/     |/     |/     |
+ *  0.0 ++------+------+------+------+------+------+------+------+----
+ *      0.05   0.15   0.25   0.35   0.45   0.55   0.65   0.75   0.85
+ *
+ * An absolute encoder can be used to determine exactly where the mechanism in
+ * question is within a certain segment. As long as you know a single combo of
+ * absolute encoder reading and mechanism location you can extrapolate the
+ * remainder of the graph.
  */
 
 PositionSensorSimulator::PositionSensorSimulator(double index_diff,
@@ -35,12 +62,14 @@ PositionSensorSimulator::PositionSensorSimulator(double index_diff,
   Initialize(0.0, 0.0);
 }
 
-void PositionSensorSimulator::Initialize(double start_position,
-                                         double pot_noise_stddev,
-                                         double known_index_pos /* = 0*/) {
+void PositionSensorSimulator::Initialize(
+    double start_position, double pot_noise_stddev,
+    double known_index_pos /* = 0*/,
+    double known_absolute_encoder_pos /* = 0*/) {
   // We're going to make the index pulse we know "segment zero".
   cur_index_segment_ = floor((start_position - known_index_pos) / index_diff_);
   known_index_pos_ = known_index_pos;
+  known_absolute_encoder_ = known_absolute_encoder_pos;
   cur_index_ = 0;
   index_count_ = 0;
   cur_pos_ = start_position;
@@ -112,6 +141,16 @@ void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
   }
 
   values->index_pulses = index_count_;
+}
+
+void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
+  values->pot = pot_noise_.AddNoiseToSample(cur_pos_);
+  values->relative_encoder = cur_pos_ - start_position_;
+  // TODO(phil): Create some lag here since this is a PWM signal it won't be
+  // instantaneous like the other signals. Better yet, its lag varies
+  // randomly with the distribution varying depending on the reading.
+  values->absolute_encoder =
+      fmod(cur_pos_ - known_index_pos_ + known_absolute_encoder_, index_diff_);
 }
 
 }  // namespace control_loops
