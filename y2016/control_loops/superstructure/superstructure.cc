@@ -648,11 +648,11 @@ void Superstructure::RunIteration(
     }
   }
   arm_.set_max_voltage(
-      kill_shoulder_ ? 0.0 : max_voltage,
-      kill_shoulder_ ? (arm_.X_hat(0, 0) < 0.05 ? kShooterHangingLowVoltage
-                                                : kShooterHangingVoltage)
-                     : max_voltage);
-  intake_.set_max_voltage(max_voltage);
+      {{kill_shoulder_ ? 0.0 : max_voltage,
+        kill_shoulder_ ? (arm_.X_hat(0, 0) < 0.05 ? kShooterHangingLowVoltage
+                                                  : kShooterHangingVoltage)
+                       : max_voltage}});
+  intake_.set_max_voltage({{max_voltage}});
 
   if (IsRunning() && !kill_shoulder_) {
     // We don't want lots of negative voltage when we are near the bellypan on
@@ -743,7 +743,7 @@ void Superstructure::RunIteration(
   status->shoulder.voltage_error = arm_.X_hat(4, 0);
   status->shoulder.calculated_velocity =
       (arm_.shoulder_angle() - last_shoulder_angle_) / 0.005;
-  status->shoulder.estimator_state = arm_.ShoulderEstimatorState();
+  status->shoulder.estimator_state = arm_.EstimatorState(0);
 
   status->wrist.angle = arm_.X_hat(2, 0);
   status->wrist.angular_velocity = arm_.X_hat(3, 0);
@@ -754,7 +754,7 @@ void Superstructure::RunIteration(
   status->wrist.voltage_error = arm_.X_hat(5, 0);
   status->wrist.calculated_velocity =
       (arm_.wrist_angle() - last_wrist_angle_) / 0.005;
-  status->wrist.estimator_state = arm_.WristEstimatorState();
+  status->wrist.estimator_state = arm_.EstimatorState(1);
 
   status->intake.angle = intake_.X_hat(0, 0);
   status->intake.angular_velocity = intake_.X_hat(1, 0);
@@ -766,7 +766,7 @@ void Superstructure::RunIteration(
   status->intake.calculated_velocity =
       (intake_.angle() - last_intake_angle_) / 0.005;
   status->intake.voltage_error = intake_.X_hat(2, 0);
-  status->intake.estimator_state = intake_.IntakeEstimatorState();
+  status->intake.estimator_state = intake_.EstimatorState(0);
   status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
 
   status->shoulder_controller_index = arm_.controller_index();

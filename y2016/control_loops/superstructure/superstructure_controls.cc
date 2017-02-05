@@ -13,7 +13,6 @@ namespace control_loops {
 namespace superstructure {
 
 using ::frc971::PotAndIndexPosition;
-using ::frc971::EstimatorState;
 
 namespace {
 double UseUnlessZero(double target_value, double default_value) {
@@ -30,148 +29,23 @@ enum ArmIndices { kShoulderIndex = 0, kWristIndex = 1 };
 
 // Intake
 Intake::Intake()
-    : ProfiledSubsystem(
+    : ::frc971::control_loops::SingleDOFProfiledSubsystem(
           ::std::unique_ptr<
               ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>>(
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
                   3, 1, 1>(::y2016::control_loops::superstructure::
-                               MakeIntegralIntakeLoop()))),
-      estimator_(constants::GetValues().intake.zeroing),
-      profile_(::aos::controls::kLoopFrequency) {
-  Y_.setZero();
-  offset_.setZero();
-  AdjustProfile(0.0, 0.0);
-}
-
-void Intake::UpdateIntakeOffset(double offset) {
-  const double doffset = offset - offset_(0, 0);
-  LOG(INFO, "Adjusting Intake offset from %f to %f\n", offset_(0, 0), offset);
-
-  loop_->mutable_X_hat()(0, 0) += doffset;
-  Y_(0, 0) += doffset;
-  loop_->mutable_R(0, 0) += doffset;
-
-  profile_.MoveGoal(doffset);
-  offset_(0, 0) = offset;
-
-  CapGoal("R", &loop_->mutable_R());
-}
-
-void Intake::Correct(PotAndIndexPosition position) {
-  estimator_.UpdateEstimate(position);
-
-  if (estimator_.error()) {
-    LOG(ERROR, "zeroing error with intake_estimator\n");
-    return;
-  }
-
-  if (!initialized_) {
-    if (estimator_.offset_ready()) {
-      UpdateIntakeOffset(estimator_.offset());
-      initialized_ = true;
-    }
-  }
-
-  if (!zeroed(0) && estimator_.zeroed()) {
-    UpdateIntakeOffset(estimator_.offset());
-    set_zeroed(0, true);
-  }
-
-  Y_ << position.encoder;
-  Y_ += offset_;
-  loop_->Correct(Y_);
-}
-
-void Intake::CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal) {
-  // Limit the goal to min/max allowable angles.
-  if ((*goal)(0, 0) > constants::Values::kIntakeRange.upper) {
-    LOG(WARNING, "Intake goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
-        constants::Values::kIntakeRange.upper);
-    (*goal)(0, 0) = constants::Values::kIntakeRange.upper;
-  }
-  if ((*goal)(0, 0) < constants::Values::kIntakeRange.lower) {
-    LOG(WARNING, "Intake goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
-        constants::Values::kIntakeRange.lower);
-    (*goal)(0, 0) = constants::Values::kIntakeRange.lower;
-  }
-}
-
-void Intake::ForceGoal(double goal) {
-  set_unprofiled_goal(goal);
-  loop_->mutable_R() = unprofiled_goal_;
-  loop_->mutable_next_R() = loop_->R();
-
-  profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
-}
-
-void Intake::set_unprofiled_goal(double unprofiled_goal) {
-  unprofiled_goal_(0, 0) = unprofiled_goal;
-  unprofiled_goal_(1, 0) = 0.0;
-  unprofiled_goal_(2, 0) = 0.0;
-  CapGoal("unprofiled R", &unprofiled_goal_);
-}
-
-void Intake::Update(bool disable) {
-  if (!disable) {
-    ::Eigen::Matrix<double, 2, 1> goal_state =
-        profile_.Update(unprofiled_goal_(0, 0), unprofiled_goal_(1, 0));
-
-    loop_->mutable_next_R(0, 0) = goal_state(0, 0);
-    loop_->mutable_next_R(1, 0) = goal_state(1, 0);
-    loop_->mutable_next_R(2, 0) = 0.0;
-    CapGoal("next R", &loop_->mutable_next_R());
-  }
-
-  loop_->Update(disable);
-
-  if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
-    profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
-  }
-}
-
-bool Intake::CheckHardLimits() {
-  // Returns whether hard limits have been exceeded.
-
-  if (angle() > constants::Values::kIntakeRange.upper_hard ||
-      angle() < constants::Values::kIntakeRange.lower_hard) {
-    LOG(ERROR, "Intake at %f out of bounds [%f, %f], ESTOPing\n", angle(),
-        constants::Values::kIntakeRange.lower_hard,
-        constants::Values::kIntakeRange.upper_hard);
-    return true;
-  }
-
-  return false;
-}
-
-void Intake::set_max_voltage(double voltage) {
-  loop_->set_max_voltage(0, voltage);
-}
-
-void Intake::AdjustProfile(double max_angular_velocity,
-                           double max_angular_acceleration) {
-  profile_.set_maximum_velocity(UseUnlessZero(max_angular_velocity, 10.0));
-  profile_.set_maximum_acceleration(
-      UseUnlessZero(max_angular_acceleration, 10.0));
-}
-
-void Intake::DoReset() {
-  estimator_.Reset();
-}
-
-EstimatorState Intake::IntakeEstimatorState() {
-  EstimatorState estimator_state;
-  ::frc971::zeroing::PopulateEstimatorState(estimator_, &estimator_state);
-
-  return estimator_state;
-}
+                               MakeIntegralIntakeLoop())),
+          constants::GetValues().intake.zeroing,
+          constants::Values::kIntakeRange, 10.0, 10.0) {}
 
 Arm::Arm()
-    : ProfiledSubsystem(::std::unique_ptr<ArmControlLoop>(new ArmControlLoop(
-          ::y2016::control_loops::superstructure::MakeIntegralArmLoop()))),
+    : ProfiledSubsystem(
+          ::std::unique_ptr<ArmControlLoop>(new ArmControlLoop(
+              ::y2016::control_loops::superstructure::MakeIntegralArmLoop())),
+          {{constants::GetValues().shoulder.zeroing,
+            constants::GetValues().wrist.zeroing}}),
       shoulder_profile_(::aos::controls::kLoopFrequency),
-      wrist_profile_(::aos::controls::kLoopFrequency),
-      shoulder_estimator_(constants::GetValues().shoulder.zeroing),
-      wrist_estimator_(constants::GetValues().wrist.zeroing) {
+      wrist_profile_(::aos::controls::kLoopFrequency) {
   Y_.setZero();
   offset_.setZero();
   AdjustProfile(0.0, 0.0, 0.0, 0.0);
@@ -220,33 +94,34 @@ void Arm::UpdateShoulderOffset(double offset) {
 
 void Arm::Correct(PotAndIndexPosition position_shoulder,
                   PotAndIndexPosition position_wrist) {
-  shoulder_estimator_.UpdateEstimate(position_shoulder);
-  wrist_estimator_.UpdateEstimate(position_wrist);
+  estimators_[kShoulderIndex].UpdateEstimate(position_shoulder);
+  estimators_[kWristIndex].UpdateEstimate(position_wrist);
 
   // Handle zeroing errors
-  if (shoulder_estimator_.error()) {
+  if (estimators_[kShoulderIndex].error()) {
     LOG(ERROR, "zeroing error with shoulder_estimator\n");
     return;
   }
-  if (wrist_estimator_.error()) {
+  if (estimators_[kWristIndex].error()) {
     LOG(ERROR, "zeroing error with wrist_estimator\n");
     return;
   }
 
   if (!initialized_) {
-    if (shoulder_estimator_.offset_ready() && wrist_estimator_.offset_ready()) {
-      UpdateShoulderOffset(shoulder_estimator_.offset());
-      UpdateWristOffset(wrist_estimator_.offset());
+    if (estimators_[kShoulderIndex].offset_ready() &&
+        estimators_[kWristIndex].offset_ready()) {
+      UpdateShoulderOffset(estimators_[kShoulderIndex].offset());
+      UpdateWristOffset(estimators_[kWristIndex].offset());
       initialized_ = true;
     }
   }
 
-  if (!zeroed(kShoulderIndex) && shoulder_estimator_.zeroed()) {
-    UpdateShoulderOffset(shoulder_estimator_.offset());
+  if (!zeroed(kShoulderIndex) && estimators_[kShoulderIndex].zeroed()) {
+    UpdateShoulderOffset(estimators_[kShoulderIndex].offset());
     set_zeroed(kShoulderIndex, true);
   }
-  if (!zeroed(kWristIndex) && wrist_estimator_.zeroed()) {
-    UpdateWristOffset(wrist_estimator_.offset());
+  if (!zeroed(kWristIndex) && estimators_[kWristIndex].zeroed()) {
+    UpdateWristOffset(estimators_[kWristIndex].offset());
     set_zeroed(kWristIndex, true);
   }
 
@@ -368,32 +243,6 @@ void Arm::Update(bool disable) {
         loop_->U_uncapped(1, 0));
     wrist_profile_.MoveCurrentState(loop_->R().block<2, 1>(2, 0));
   }
-}
-
-void Arm::set_max_voltage(double shoulder_max_voltage,
-                          double wrist_max_voltage) {
-  loop_->set_max_voltage(0, shoulder_max_voltage);
-  loop_->set_max_voltage(1, wrist_max_voltage);
-}
-
-void Arm::DoReset() {
-  shoulder_estimator_.Reset();
-  wrist_estimator_.Reset();
-}
-
-EstimatorState Arm::ShoulderEstimatorState() {
-  EstimatorState estimator_state;
-  ::frc971::zeroing::PopulateEstimatorState(shoulder_estimator_,
-                                            &estimator_state);
-
-  return estimator_state;
-}
-
-EstimatorState Arm::WristEstimatorState() {
-  EstimatorState estimator_state;
-  ::frc971::zeroing::PopulateEstimatorState(wrist_estimator_, &estimator_state);
-
-  return estimator_state;
 }
 
 }  // namespace superstructure
