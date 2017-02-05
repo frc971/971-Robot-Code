@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include "PWMSpeedController.h"
+#include "PWM.h"
 
 namespace frc {
 
 /**
  * Vex Robotics Victor SP Speed Controller
  */
-class VictorSP : public PWMSpeedController {
+class VictorSP : public PWM {
  public:
   explicit VictorSP(int channel);
   virtual ~VictorSP() = default;
