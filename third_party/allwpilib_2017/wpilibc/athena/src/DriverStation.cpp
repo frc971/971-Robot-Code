@@ -97,9 +97,6 @@ double DriverStation::GetStickAxis(int stick, int axis) {
     lock.release();
     if (axis >= HAL_kMaxJoystickAxes)
       wpi_setWPIError(BadJoystickAxis);
-    else
-      ReportJoystickUnpluggedWarning(
-          "Joystick Axis missing, check if all controllers are plugged in");
     return 0.0;
   }
 
@@ -122,9 +119,6 @@ int DriverStation::GetStickPOV(int stick, int pov) {
     lock.unlock();
     if (pov >= HAL_kMaxJoystickPOVs)
       wpi_setWPIError(BadJoystickAxis);
-    else
-      ReportJoystickUnpluggedWarning(
-          "Joystick POV missing, check if all controllers are plugged in");
     return -1;
   }
 
@@ -159,17 +153,12 @@ bool DriverStation::GetStickButton(int stick, int button) {
     return false;
   }
   if (button == 0) {
-    ReportJoystickUnpluggedError(
-        "ERROR: Button indexes begin at 1 in WPILib for C++ and Java");
     return false;
   }
   std::unique_lock<priority_mutex> lock(m_joystickDataMutex);
   if (button > m_joystickButtons[stick].count) {
     // Unlock early so error printing isn't locked.
     lock.unlock();
-    ReportJoystickUnpluggedWarning(
-        "Joystick Button missing, check if all controllers are "
-        "plugged in");
     return false;
   }
 
@@ -595,31 +584,6 @@ DriverStation::DriverStation() {
   }
 
   m_dsThread = std::thread(&DriverStation::Run, this);
-}
-
-/**
- * Reports errors related to unplugged joysticks
- * Throttles the errors so that they don't overwhelm the DS
- */
-void DriverStation::ReportJoystickUnpluggedError(llvm::StringRef message) {
-  double currentTime = Timer::GetFPGATimestamp();
-  if (currentTime > m_nextMessageTime) {
-    ReportError(message);
-    m_nextMessageTime = currentTime + JOYSTICK_UNPLUGGED_MESSAGE_INTERVAL;
-  }
-}
-
-/**
- * Reports errors related to unplugged joysticks.
- *
- * Throttles the errors so that they don't overwhelm the DS.
- */
-void DriverStation::ReportJoystickUnpluggedWarning(llvm::StringRef message) {
-  double currentTime = Timer::GetFPGATimestamp();
-  if (currentTime > m_nextMessageTime) {
-    ReportWarning(message);
-    m_nextMessageTime = currentTime + JOYSTICK_UNPLUGGED_MESSAGE_INTERVAL;
-  }
 }
 
 void DriverStation::Run() {

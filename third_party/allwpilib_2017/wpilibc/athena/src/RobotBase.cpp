@@ -14,10 +14,8 @@
 #include "HLUsageReporting.h"
 #include "Internal/HardwareHLReporting.h"
 #include "RobotState.h"
-#include "SmartDashboard/SmartDashboard.h"
 #include "Utility.h"
 #include "WPILibVersion.h"
-#include "networktables/NetworkTable.h"
 
 using namespace frc;
 
@@ -39,11 +37,6 @@ RobotBase::RobotBase() : m_ds(DriverStation::GetInstance()) {
 
   RobotState::SetImplementation(DriverStation::GetInstance());
   HLUsageReporting::SetImplementation(new HardwareHLReporting());
-
-  NetworkTable::SetNetworkIdentity("Robot");
-  NetworkTable::SetPersistentFilename("/home/lvuser/networktables.ini");
-
-  SmartDashboard::init();
 
   std::FILE* file = nullptr;
   file = std::fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");

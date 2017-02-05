@@ -616,22 +616,3 @@ void Counter::SetReverseDirection(bool reverseDirection) {
   HAL_SetCounterReverseDirection(m_counter, reverseDirection, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
-
-void Counter::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutNumber("Value", Get());
-  }
-}
-
-void Counter::StartLiveWindowMode() {}
-
-void Counter::StopLiveWindowMode() {}
-
-std::string Counter::GetSmartDashboardType() const { return "Counter"; }
-
-void Counter::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Counter::GetTable() const { return m_table; }

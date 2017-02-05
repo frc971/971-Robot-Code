@@ -9,7 +9,6 @@
 
 #include "HAL/Accelerometer.h"
 #include "HAL/HAL.h"
-#include "LiveWindow/LiveWindow.h"
 #include "WPIErrors.h"
 
 using namespace frc;
@@ -24,7 +23,6 @@ BuiltInAccelerometer::BuiltInAccelerometer(Range range) {
 
   HAL_Report(HALUsageReporting::kResourceType_Accelerometer, 0, 0,
              "Built-in accelerometer");
-  LiveWindow::GetInstance()->AddSensor((std::string) "BuiltInAccel", 0, this);
 }
 
 void BuiltInAccelerometer::SetRange(Range range) {
@@ -52,24 +50,3 @@ double BuiltInAccelerometer::GetY() { return HAL_GetAccelerometerY(); }
  * @return The acceleration of the roboRIO along the Z axis in g-forces
  */
 double BuiltInAccelerometer::GetZ() { return HAL_GetAccelerometerZ(); }
-
-std::string BuiltInAccelerometer::GetSmartDashboardType() const {
-  return "3AxisAccelerometer";
-}
-
-void BuiltInAccelerometer::InitTable(std::shared_ptr<ITable> subtable) {
-  m_table = subtable;
-  UpdateTable();
-}
-
-void BuiltInAccelerometer::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutNumber("X", GetX());
-    m_table->PutNumber("Y", GetY());
-    m_table->PutNumber("Z", GetZ());
-  }
-}
-
-std::shared_ptr<ITable> BuiltInAccelerometer::GetTable() const {
-  return m_table;
-}

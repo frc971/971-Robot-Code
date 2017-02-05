@@ -13,7 +13,6 @@
 #include <string>
 
 #include "HAL/AnalogOutput.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "SensorBase.h"
 
 namespace frc {
@@ -21,7 +20,7 @@ namespace frc {
 /**
  * MXP analog output class.
  */
-class AnalogOutput : public SensorBase, public LiveWindowSendable {
+class AnalogOutput : public SensorBase {
  public:
   explicit AnalogOutput(int channel);
   virtual ~AnalogOutput();
@@ -30,18 +29,9 @@ class AnalogOutput : public SensorBase, public LiveWindowSendable {
   double GetVoltage() const;
   int GetChannel();
 
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
  protected:
   int m_channel;
   HAL_AnalogOutputHandle m_port;
-
-  std::shared_ptr<ITable> m_table;
 };
 
 }  // namespace frc

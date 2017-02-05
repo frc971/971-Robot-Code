@@ -14,8 +14,8 @@
 #include "CounterBase.h"
 #include "HAL/Counter.h"
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "SensorBase.h"
+#include "support/deprecated.h"
 
 namespace frc {
 
@@ -31,8 +31,7 @@ class DigitalGlitchFilter;
  * to be zeroed before use.
  */
 class Counter : public SensorBase,
-                public CounterBase,
-                public LiveWindowSendable {
+                public CounterBase {
  public:
   enum Mode {
     kTwoPulse = 0,
@@ -94,13 +93,6 @@ class Counter : public SensorBase,
   int GetSamplesToAverage() const;
   int GetFPGAIndex() const { return m_index; }
 
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
  protected:
   // Makes the counter count up.
   std::shared_ptr<DigitalSource> m_upSource;
@@ -112,7 +104,6 @@ class Counter : public SensorBase,
  private:
   int m_index = 0;  ///< The index of this counter.
 
-  std::shared_ptr<ITable> m_table;
   friend class DigitalGlitchFilter;
 };
 

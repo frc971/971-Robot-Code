@@ -7,8 +7,7 @@
 # The implementation running `git filter-branch` over allwpilib's entire history
 # isn't the fastest thing ever, but it's not all that bad.
 
-# Example: ./doc/allwpilib_subtree.sh add third_party/allwpilib_2016 \
-#   https://usfirst.collab.net/gerrit/allwpilib master
+# Example: `./doc/allwpilib_subtree.sh add third_party/allwpilib_2017 https://github.com/wpilibsuite/allwpilib master`
 
 set -e
 set -u
@@ -26,8 +25,18 @@ REF="$4"
 
 git fetch "${REMOTE}" "${REF}"
 
-readonly REMOVE_DIRECTORIES="ni-libraries wpilibj wpilibjIntegrationTests gradle"
-readonly TREE_FILTER="$(for d in ${REMOVE_DIRECTORIES}; do
+readonly REMOVE_DIRECTORIES=(
+ni-libraries
+wpilibj
+wpilibjIntegrationTests
+gradle
+simulation
+myRobot
+myRobotCpp
+gen
+test-scripts
+)
+readonly TREE_FILTER="$(for d in "${REMOVE_DIRECTORIES[@]}"}; do
   echo "if [ -d $d ]; then git rm -rf $d; fi && "
 done)"
 git filter-branch --tree-filter "${TREE_FILTER}true" FETCH_HEAD

@@ -3,8 +3,7 @@
 # A script to generate a allwpilib_ni-libraries_bla.tar.gz file from a given
 # revision of allwpilib.
 
-# Example: ./doc/allwpilib_ni-libraries_tarball.sh \
-#   https://usfirst.collab.net/gerrit/allwpilib master
+# Example: `./doc/allwpilib_ni-libraries_tarball.sh https://github.com/wpilibsuite/allwpilib master`
 
 set -e
 set -u

@@ -12,7 +12,6 @@
 
 #include "HAL/HAL.h"
 #include "HAL/Ports.h"
-#include "LiveWindow/LiveWindow.h"
 #include "MotorSafetyHelper.h"
 #include "WPIErrors.h"
 
@@ -86,8 +85,6 @@ Relay::Relay(int channel, Relay::Direction direction)
 
   m_safetyHelper = std::make_unique<MotorSafetyHelper>(this);
   m_safetyHelper->SetSafetyEnabled(false);
-
-  LiveWindow::GetInstance()->AddActuator("Relay", 1, m_channel, this);
 }
 
 /**
@@ -102,8 +99,6 @@ Relay::~Relay() {
   // ignore errors, as we want to make sure a free happens.
   if (m_forwardHandle != HAL_kInvalidHandle) HAL_FreeRelayPort(m_forwardHandle);
   if (m_reverseHandle != HAL_kInvalidHandle) HAL_FreeRelayPort(m_reverseHandle);
-
-  if (m_table != nullptr) m_table->RemoveTableListener(this);
 }
 
 /**
@@ -265,51 +260,3 @@ bool Relay::IsSafetyEnabled() const {
 void Relay::GetDescription(std::ostringstream& desc) const {
   desc << "Relay " << GetChannel();
 }
-
-void Relay::ValueChanged(ITable* source, llvm::StringRef key,
-                         std::shared_ptr<nt::Value> value, bool isNew) {
-  if (!value->IsString()) return;
-  if (value->GetString() == "Off")
-    Set(kOff);
-  else if (value->GetString() == "Forward")
-    Set(kForward);
-  else if (value->GetString() == "Reverse")
-    Set(kReverse);
-  else if (value->GetString() == "On")
-    Set(kOn);
-}
-
-void Relay::UpdateTable() {
-  if (m_table != nullptr) {
-    if (Get() == kOn) {
-      m_table->PutString("Value", "On");
-    } else if (Get() == kForward) {
-      m_table->PutString("Value", "Forward");
-    } else if (Get() == kReverse) {
-      m_table->PutString("Value", "Reverse");
-    } else {
-      m_table->PutString("Value", "Off");
-    }
-  }
-}
-
-void Relay::StartLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->AddTableListener("Value", this, true);
-  }
-}
-
-void Relay::StopLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->RemoveTableListener(this);
-  }
-}
-
-std::string Relay::GetSmartDashboardType() const { return "Relay"; }
-
-void Relay::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Relay::GetTable() const { return m_table; }

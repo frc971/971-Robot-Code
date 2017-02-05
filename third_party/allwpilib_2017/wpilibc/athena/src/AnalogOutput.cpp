@@ -12,7 +12,6 @@
 
 #include "HAL/HAL.h"
 #include "HAL/Ports.h"
-#include "LiveWindow/LiveWindow.h"
 #include "WPIErrors.h"
 
 using namespace frc;
@@ -48,7 +47,6 @@ AnalogOutput::AnalogOutput(int channel) {
     return;
   }
 
-  LiveWindow::GetInstance()->AddActuator("AnalogOutput", m_channel, this);
   HAL_Report(HALUsageReporting::kResourceType_AnalogOutput, m_channel);
 }
 
@@ -89,24 +87,3 @@ double AnalogOutput::GetVoltage() const {
 
   return voltage;
 }
-
-void AnalogOutput::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutNumber("Value", GetVoltage());
-  }
-}
-
-void AnalogOutput::StartLiveWindowMode() {}
-
-void AnalogOutput::StopLiveWindowMode() {}
-
-std::string AnalogOutput::GetSmartDashboardType() const {
-  return "Analog Output";
-}
-
-void AnalogOutput::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> AnalogOutput::GetTable() const { return m_table; }

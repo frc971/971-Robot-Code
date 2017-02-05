@@ -12,8 +12,6 @@
 
 #include "DigitalSource.h"
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
-#include "tables/ITableListener.h"
 
 namespace frc {
 
@@ -23,9 +21,7 @@ namespace frc {
  * elsewhere will allocate channels automatically so for those devices it
  * shouldn't be done here.
  */
-class DigitalOutput : public DigitalSource,
-                      public ITableListener,
-                      public LiveWindowSendable {
+class DigitalOutput : public DigitalSource {
  public:
   explicit DigitalOutput(int channel);
   virtual ~DigitalOutput();
@@ -44,21 +40,10 @@ class DigitalOutput : public DigitalSource,
   AnalogTriggerType GetAnalogTriggerTypeForRouting() const override;
   bool IsAnalogTrigger() const override;
 
-  void ValueChanged(ITable* source, llvm::StringRef key,
-                    std::shared_ptr<nt::Value> value, bool isNew) override;
-  void UpdateTable();
-  void StartLiveWindowMode();
-  void StopLiveWindowMode();
-  std::string GetSmartDashboardType() const;
-  void InitTable(std::shared_ptr<ITable> subTable);
-  std::shared_ptr<ITable> GetTable() const;
-
  private:
   int m_channel;
   HAL_DigitalHandle m_handle;
   HAL_DigitalPWMHandle m_pwmGenerator;
-
-  std::shared_ptr<ITable> m_table;
 };
 
 }  // namespace frc

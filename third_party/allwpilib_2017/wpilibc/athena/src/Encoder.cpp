@@ -9,7 +9,6 @@
 
 #include "DigitalInput.h"
 #include "HAL/HAL.h"
-#include "LiveWindow/LiveWindow.h"
 #include "WPIErrors.h"
 
 using namespace frc;
@@ -44,8 +43,6 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType) {
 
   HAL_Report(HALUsageReporting::kResourceType_Encoder, GetFPGAIndex(),
              encodingType);
-  LiveWindow::GetInstance()->AddSensor("Encoder", m_aSource->GetChannel(),
-                                       this);
 }
 
 /**
@@ -492,36 +489,3 @@ int Encoder::GetFPGAIndex() const {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
   return val;
 }
-
-void Encoder::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutNumber("Speed", GetRate());
-    m_table->PutNumber("Distance", GetDistance());
-    int32_t status = 0;
-    double distancePerPulse =
-        HAL_GetEncoderDistancePerPulse(m_encoder, &status);
-    wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
-    m_table->PutNumber("Distance per Tick", distancePerPulse);
-  }
-}
-
-void Encoder::StartLiveWindowMode() {}
-
-void Encoder::StopLiveWindowMode() {}
-
-std::string Encoder::GetSmartDashboardType() const {
-  int32_t status = 0;
-  HAL_EncoderEncodingType type = HAL_GetEncoderEncodingType(m_encoder, &status);
-  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
-  if (type == HAL_EncoderEncodingType::HAL_Encoder_k4X)
-    return "Quadrature Encoder";
-  else
-    return "Encoder";
-}
-
-void Encoder::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Encoder::GetTable() const { return m_table; }
