@@ -1,0 +1,8 @@
+include 'native:ntcore'
+include 'native:wpiutil'
+include 'gmock'
+
+if (!hasProperty('skipArm')) {
+    include 'arm:ntcore'
+    include 'arm:wpiutil'
+}
