@@ -14,7 +14,6 @@
 #include "HAL/HAL.h"
 #include "HAL/Power.h"
 #include "HAL/cpp/Log.h"
-#include "MotorSafetyHelper.h"
 #include "Timer.h"
 #include "Utility.h"
 #include "WPIErrors.h"
@@ -588,7 +587,6 @@ DriverStation::DriverStation() {
 
 void DriverStation::Run() {
   m_isRunning = true;
-  int period = 0;
   while (m_isRunning) {
     HAL_WaitForDSData();
     GetData();
@@ -602,10 +600,6 @@ void DriverStation::Run() {
     }
     m_waitForDataCond.notify_all();
 
-    if (++period >= 4) {
-      MotorSafetyHelper::CheckMotors();
-      period = 0;
-    }
     if (m_userInDisabled) HAL_ObserveUserProgramDisabled();
     if (m_userInAutonomous) HAL_ObserveUserProgramAutonomous();
     if (m_userInTeleop) HAL_ObserveUserProgramTeleop();

@@ -344,14 +344,14 @@ class DrivetrainWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(-queue->right_voltage / 12.0);
+    left_drivetrain_talon_->SetSpeed(queue->left_voltage / 12.0);
+    right_drivetrain_talon_->SetSpeed(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    left_drivetrain_talon_->SetDisabled();
+    right_drivetrain_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
@@ -376,14 +376,14 @@ class ElevatorWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015_bot3::control_loops::elevator_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    elevator_talon1_->Set(queue->elevator / 12.0);
-    elevator_talon2_->Set(-queue->elevator / 12.0);
+    elevator_talon1_->SetSpeed(queue->elevator / 12.0);
+    elevator_talon2_->SetSpeed(-queue->elevator / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Elevator output too old.\n");
-    elevator_talon1_->Disable();
-    elevator_talon2_->Disable();
+    elevator_talon1_->SetDisabled();
+    elevator_talon2_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> elevator_talon1_;
@@ -408,14 +408,14 @@ class IntakeWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015_bot3::control_loops::intake_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon1_->Set(queue->intake / 12.0);
-    intake_talon2_->Set(-queue->intake / 12.0);
+    intake_talon1_->SetSpeed(queue->intake / 12.0);
+    intake_talon2_->SetSpeed(-queue->intake / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Intake output too old.\n");
-    intake_talon1_->Disable();
-    intake_talon2_->Disable();
+    intake_talon1_->SetDisabled();
+    intake_talon2_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> intake_talon1_;
@@ -443,14 +443,14 @@ class CanGrabberWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015_bot3::autonomous::can_grabber_control;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    can_grabber_talon1_->Set(queue->can_grabber_voltage / 12.0);
-    can_grabber_talon2_->Set(-queue->can_grabber_voltage / 12.0);
+    can_grabber_talon1_->SetSpeed(queue->can_grabber_voltage / 12.0);
+    can_grabber_talon2_->SetSpeed(-queue->can_grabber_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Can grabber output too old\n");
-    can_grabber_talon1_->Disable();
-    can_grabber_talon2_->Disable();
+    can_grabber_talon1_->SetDisabled();
+    can_grabber_talon2_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> can_grabber_talon1_, can_grabber_talon2_;

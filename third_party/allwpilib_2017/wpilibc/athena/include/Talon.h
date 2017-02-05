@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include "PWMSpeedController.h"
+#include "PWM.h"
 
 namespace frc {
 
 /**
  * Cross the Road Electronics (CTRE) Talon and Talon SR Speed Controller
  */
-class Talon : public PWMSpeedController {
+class Talon : public PWM {
  public:
   explicit Talon(int channel);
   virtual ~Talon() = default;

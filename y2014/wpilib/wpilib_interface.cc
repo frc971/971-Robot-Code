@@ -590,14 +590,14 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+    left_drivetrain_talon_->SetSpeed(-queue->left_voltage / 12.0);
+    right_drivetrain_talon_->SetSpeed(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    left_drivetrain_talon_->SetDisabled();
+    right_drivetrain_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
@@ -618,12 +618,12 @@ class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2014::control_loops::shooter_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    shooter_talon_->Set(queue->voltage / 12.0);
+    shooter_talon_->SetSpeed(queue->voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "shooter output too old\n");
-    shooter_talon_->Disable();
+    shooter_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> shooter_talon_;
@@ -663,22 +663,22 @@ class ClawWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2014::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake1_talon_->Set(queue->intake_voltage / 12.0);
-    intake2_talon_->Set(queue->intake_voltage / 12.0);
-    bottom_claw_talon_->Set(-queue->bottom_claw_voltage / 12.0);
-    top_claw_talon_->Set(queue->top_claw_voltage / 12.0);
-    left_tusk_talon_->Set(queue->tusk_voltage / 12.0);
-    right_tusk_talon_->Set(-queue->tusk_voltage / 12.0);
+    intake1_talon_->SetSpeed(queue->intake_voltage / 12.0);
+    intake2_talon_->SetSpeed(queue->intake_voltage / 12.0);
+    bottom_claw_talon_->SetSpeed(-queue->bottom_claw_voltage / 12.0);
+    top_claw_talon_->SetSpeed(queue->top_claw_voltage / 12.0);
+    left_tusk_talon_->SetSpeed(queue->tusk_voltage / 12.0);
+    right_tusk_talon_->SetSpeed(-queue->tusk_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "claw output too old\n");
-    intake1_talon_->Disable();
-    intake2_talon_->Disable();
-    bottom_claw_talon_->Disable();
-    top_claw_talon_->Disable();
-    left_tusk_talon_->Disable();
-    right_tusk_talon_->Disable();
+    intake1_talon_->SetDisabled();
+    intake2_talon_->SetDisabled();
+    bottom_claw_talon_->SetDisabled();
+    top_claw_talon_->SetDisabled();
+    left_tusk_talon_->SetDisabled();
+    right_tusk_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> top_claw_talon_;

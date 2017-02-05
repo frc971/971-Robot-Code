@@ -252,14 +252,14 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+    left_drivetrain_talon_->SetSpeed(-queue->left_voltage / 12.0);
+    right_drivetrain_talon_->SetSpeed(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    left_drivetrain_talon_->SetDisabled();
+    right_drivetrain_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
@@ -283,15 +283,15 @@ class AccessoriesWriter : public ::frc971::wpilib::LoopOutputHandler {
 
   virtual void Write() override {
     auto &queue = ::y2012::control_loops::accessories_queue.output;
-    talon1_->Set(queue->sticks[0]);
-    talon2_->Set(queue->sticks[1]);
+    talon1_->SetSpeed(queue->sticks[0]);
+    talon2_->SetSpeed(queue->sticks[1]);
     LOG_STRUCT(DEBUG, "will output", *queue);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "shooter output too old\n");
-    talon1_->Disable();
-    talon2_->Disable();
+    talon1_->SetDisabled();
+    talon2_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> talon1_, talon2_;

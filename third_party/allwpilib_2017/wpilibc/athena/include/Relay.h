@@ -11,12 +11,9 @@
 #include <string>
 
 #include "HAL/Types.h"
-#include "MotorSafety.h"
 #include "SensorBase.h"
 
 namespace frc {
-
-class MotorSafetyHelper;
 
 /**
  * Class for Spike style relay outputs.
@@ -29,8 +26,7 @@ class MotorSafetyHelper;
  * independently for something that does not care about voltage polarity (like
  * a solenoid).
  */
-class Relay : public MotorSafety,
-              public SensorBase {
+class Relay : public SensorBase {
  public:
   enum Value { kOff, kOn, kForward, kReverse };
   enum Direction { kBothDirections, kForwardOnly, kReverseOnly };
@@ -42,22 +38,12 @@ class Relay : public MotorSafety,
   Value Get() const;
   int GetChannel() const;
 
-  void SetExpiration(double timeout) override;
-  double GetExpiration() const override;
-  bool IsAlive() const override;
-  void StopMotor() override;
-  bool IsSafetyEnabled() const override;
-  void SetSafetyEnabled(bool enabled) override;
-  void GetDescription(std::ostringstream& desc) const override;
-
  private:
   int m_channel;
   Direction m_direction;
 
   HAL_RelayHandle m_forwardHandle = HAL_kInvalidHandle;
   HAL_RelayHandle m_reverseHandle = HAL_kInvalidHandle;
-
-  std::unique_ptr<MotorSafetyHelper> m_safetyHelper;
 };
 
 }  // namespace frc

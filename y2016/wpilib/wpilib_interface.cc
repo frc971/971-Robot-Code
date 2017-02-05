@@ -579,14 +579,14 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_talon_->Set(queue->left_voltage / 12.0);
-    drivetrain_right_talon_->Set(-queue->right_voltage / 12.0);
+    drivetrain_left_talon_->SetSpeed(queue->left_voltage / 12.0);
+    drivetrain_right_talon_->SetSpeed(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_talon_->Disable();
-    drivetrain_right_talon_->Disable();
+    drivetrain_left_talon_->SetDisabled();
+    drivetrain_right_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> drivetrain_left_talon_, drivetrain_right_talon_;
@@ -611,14 +611,14 @@ class ShooterWriter : public ::frc971::wpilib::LoopOutputHandler {
     auto &queue = ::y2016::control_loops::shooter::shooter_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
 
-    shooter_left_talon_->Set(queue->voltage_left / 12.0);
-    shooter_right_talon_->Set(-queue->voltage_right / 12.0);
+    shooter_left_talon_->SetSpeed(queue->voltage_left / 12.0);
+    shooter_right_talon_->SetSpeed(-queue->voltage_right / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Shooter output too old.\n");
-    shooter_left_talon_->Disable();
-    shooter_right_talon_->Disable();
+    shooter_left_talon_->SetDisabled();
+    shooter_right_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> shooter_left_talon_, shooter_right_talon_;
@@ -658,25 +658,25 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2016::control_loops::superstructure_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    intake_talon_->Set(::aos::Clip(queue->voltage_intake, -kMaxBringupPower,
-                                   kMaxBringupPower) /
-                       12.0);
-    shoulder_talon_->Set(::aos::Clip(-queue->voltage_shoulder,
-                                     -kMaxBringupPower, kMaxBringupPower) /
-                         12.0);
-    wrist_talon_->Set(
+    intake_talon_->SetSpeed(::aos::Clip(queue->voltage_intake,
+                                        -kMaxBringupPower, kMaxBringupPower) /
+                            12.0);
+    shoulder_talon_->SetSpeed(::aos::Clip(-queue->voltage_shoulder,
+                                          -kMaxBringupPower, kMaxBringupPower) /
+                              12.0);
+    wrist_talon_->SetSpeed(
         ::aos::Clip(queue->voltage_wrist, -kMaxBringupPower, kMaxBringupPower) /
         12.0);
-    top_rollers_talon_->Set(-queue->voltage_top_rollers / 12.0);
-    bottom_rollers_talon_->Set(-queue->voltage_bottom_rollers / 12.0);
-    climber_talon_->Set(-queue->voltage_climber / 12.0);
+    top_rollers_talon_->SetSpeed(-queue->voltage_top_rollers / 12.0);
+    bottom_rollers_talon_->SetSpeed(-queue->voltage_bottom_rollers / 12.0);
+    climber_talon_->SetSpeed(-queue->voltage_climber / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Superstructure output too old.\n");
-    intake_talon_->Disable();
-    shoulder_talon_->Disable();
-    wrist_talon_->Disable();
+    intake_talon_->SetDisabled();
+    shoulder_talon_->SetDisabled();
+    wrist_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> intake_talon_, shoulder_talon_, wrist_talon_,
