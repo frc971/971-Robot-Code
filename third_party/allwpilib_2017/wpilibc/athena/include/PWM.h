@@ -11,9 +11,7 @@
 #include <string>
 
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "SensorBase.h"
-#include "tables/ITableListener.h"
 
 namespace frc {
 
@@ -34,9 +32,7 @@ namespace frc {
  *   - 1 = minimum pulse width (currently .5ms)
  *   - 0 = disabled (i.e. PWM output is held low)
  */
-class PWM : public SensorBase,
-            public ITableListener,
-            public LiveWindowSendable {
+class PWM : public SensorBase {
  public:
   enum PeriodMultiplier {
     kPeriodMultiplier_1X = 1,
@@ -65,16 +61,6 @@ class PWM : public SensorBase,
   int GetChannel() const { return m_channel; }
 
  protected:
-  void ValueChanged(ITable* source, llvm::StringRef key,
-                    std::shared_ptr<nt::Value> value, bool isNew) override;
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
-  std::shared_ptr<ITable> m_table;
 
  private:
   int m_channel;

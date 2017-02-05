@@ -32,6 +32,12 @@ int SolenoidBase::GetAll(int module) const {
   return value;
 }
 
+void SolenoidBase::SetAll(int value, int module) {
+  int32_t status = 0;
+  HAL_SetAllSolenoids(static_cast<int>(module), value, &status);
+  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+}
+
 /**
  * Reads complete solenoid blacklist for all 8 solenoids as a single byte.
  *

@@ -297,32 +297,3 @@ void Compressor::ClearAllPCMStickyFaults() {
     wpi_setWPIError(Timeout);
   }
 }
-
-void Compressor::UpdateTable() {
-  if (m_table) {
-    m_table->PutBoolean("Enabled", Enabled());
-    m_table->PutBoolean("Pressure switch", GetPressureSwitchValue());
-  }
-}
-
-void Compressor::StartLiveWindowMode() {}
-
-void Compressor::StopLiveWindowMode() {}
-
-std::string Compressor::GetSmartDashboardType() const { return "Compressor"; }
-
-void Compressor::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Compressor::GetTable() const { return m_table; }
-
-void Compressor::ValueChanged(ITable* source, llvm::StringRef key,
-                              std::shared_ptr<nt::Value> value, bool isNew) {
-  if (!value->IsBoolean()) return;
-  if (value->GetBoolean())
-    Start();
-  else
-    Stop();
-}

@@ -54,7 +54,6 @@ DigitalOutput::DigitalOutput(int channel) {
  * Free the resources associated with a digital output.
  */
 DigitalOutput::~DigitalOutput() {
-  if (m_table != nullptr) m_table->RemoveTableListener(this);
   if (StatusIsFatal()) return;
   // Disable the PWM in case it was running.
   DisablePWM();
@@ -228,34 +227,3 @@ bool DigitalOutput::IsAnalogTrigger() const { return false; }
 AnalogTriggerType DigitalOutput::GetAnalogTriggerTypeForRouting() const {
   return (AnalogTriggerType)0;
 }
-
-void DigitalOutput::ValueChanged(ITable* source, llvm::StringRef key,
-                                 std::shared_ptr<nt::Value> value, bool isNew) {
-  if (!value->IsBoolean()) return;
-  Set(value->GetBoolean());
-}
-
-void DigitalOutput::UpdateTable() {}
-
-void DigitalOutput::StartLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->AddTableListener("Value", this, true);
-  }
-}
-
-void DigitalOutput::StopLiveWindowMode() {
-  if (m_table != nullptr) {
-    m_table->RemoveTableListener(this);
-  }
-}
-
-std::string DigitalOutput::GetSmartDashboardType() const {
-  return "Digital Output";
-}
-
-void DigitalOutput::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> DigitalOutput::GetTable() const { return m_table; }

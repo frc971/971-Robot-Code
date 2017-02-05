@@ -21,6 +21,7 @@ class SolenoidBase : public SensorBase {
  public:
   virtual ~SolenoidBase() = default;
   int GetAll(int module = 0) const;
+  void SetAll(int value, int module = 0);
 
   int GetPCMSolenoidBlackList(int module) const;
   bool GetPCMSolenoidVoltageStickyFault(int module) const;

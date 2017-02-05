@@ -11,7 +11,6 @@
 #include <string>
 
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "PIDSource.h"
 #include "SensorBase.h"
 
@@ -30,8 +29,7 @@ namespace frc {
  * stable values.
  */
 class AnalogInput : public SensorBase,
-                    public PIDSource,
-                    public LiveWindowSendable {
+                    public PIDSource {
   friend class AnalogTrigger;
   friend class AnalogGyro;
 
@@ -74,20 +72,11 @@ class AnalogInput : public SensorBase,
 
   double PIDGet() override;
 
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
  private:
   int m_channel;
   // TODO: Adjust HAL to avoid use of raw pointers.
   HAL_AnalogInputHandle m_port;
   int64_t m_accumulatorOffset;
-
-  std::shared_ptr<ITable> m_table;
 };
 
 }  // namespace frc

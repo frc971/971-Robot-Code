@@ -13,7 +13,6 @@
 #include "Counter.h"
 #include "CounterBase.h"
 #include "HAL/Encoder.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "PIDSource.h"
 #include "SensorBase.h"
 
@@ -38,8 +37,7 @@ class DigitalGlitchFilter;
  */
 class Encoder : public SensorBase,
                 public CounterBase,
-                public PIDSource,
-                public LiveWindowSendable {
+                public PIDSource {
  public:
   enum IndexingType {
     kResetWhileHigh,
@@ -85,13 +83,6 @@ class Encoder : public SensorBase,
   void SetIndexSource(const DigitalSource& source,
                       IndexingType type = kResetOnRisingEdge);
 
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
   int GetFPGAIndex() const;
 
  private:
@@ -104,7 +95,6 @@ class Encoder : public SensorBase,
   std::unique_ptr<DigitalSource> m_indexSource = nullptr;
   HAL_EncoderHandle m_encoder = HAL_kInvalidHandle;
 
-  std::shared_ptr<ITable> m_table;
   friend class DigitalGlitchFilter;
 };
 

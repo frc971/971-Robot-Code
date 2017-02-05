@@ -11,9 +11,7 @@
 #include <string>
 
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "SolenoidBase.h"
-#include "tables/ITableListener.h"
 
 namespace frc {
 
@@ -23,9 +21,7 @@ namespace frc {
  * The Solenoid class is typically used for pneumatics solenoids, but could be
  * used for any device within the current spec of the PCM.
  */
-class Solenoid : public SolenoidBase,
-                 public LiveWindowSendable,
-                 public ITableListener {
+class Solenoid : public SolenoidBase {
  public:
   explicit Solenoid(int channel);
   Solenoid(int moduleNumber, int channel);
@@ -34,19 +30,9 @@ class Solenoid : public SolenoidBase,
   virtual bool Get() const;
   bool IsBlackListed() const;
 
-  void ValueChanged(ITable* source, llvm::StringRef key,
-                    std::shared_ptr<nt::Value> value, bool isNew);
-  void UpdateTable();
-  void StartLiveWindowMode();
-  void StopLiveWindowMode();
-  std::string GetSmartDashboardType() const;
-  void InitTable(std::shared_ptr<ITable> subTable);
-  std::shared_ptr<ITable> GetTable() const;
-
  private:
   HAL_SolenoidHandle m_solenoidHandle = HAL_kInvalidHandle;
   int m_channel;  ///< The channel on the module to control.
-  std::shared_ptr<ITable> m_table;
 };
 
 }  // namespace frc

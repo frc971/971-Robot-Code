@@ -12,7 +12,6 @@
 
 #include "HAL/HAL.h"
 #include "HAL/Ports.h"
-#include "LiveWindow/LiveWindow.h"
 #include "WPIErrors.h"
 
 using namespace frc;
@@ -55,8 +54,6 @@ Solenoid::Solenoid(int moduleNumber, int channel)
     return;
   }
 
-  LiveWindow::GetInstance()->AddActuator("Solenoid", m_moduleNumber, m_channel,
-                                         this);
   HAL_Report(HALUsageReporting::kResourceType_Solenoid, m_channel,
              m_moduleNumber);
 }
@@ -66,7 +63,6 @@ Solenoid::Solenoid(int moduleNumber, int channel)
  */
 Solenoid::~Solenoid() {
   HAL_FreeSolenoidPort(m_solenoidHandle);
-  if (m_table != nullptr) m_table->RemoveTableListener(this);
 }
 
 /**
@@ -108,38 +104,3 @@ bool Solenoid::IsBlackListed() const {
   int value = GetPCMSolenoidBlackList(m_moduleNumber) & (1 << m_channel);
   return (value != 0);
 }
-
-void Solenoid::ValueChanged(ITable* source, llvm::StringRef key,
-                            std::shared_ptr<nt::Value> value, bool isNew) {
-  if (!value->IsBoolean()) return;
-  Set(value->GetBoolean());
-}
-
-void Solenoid::UpdateTable() {
-  if (m_table != nullptr) {
-    m_table->PutBoolean("Value", Get());
-  }
-}
-
-void Solenoid::StartLiveWindowMode() {
-  Set(false);
-  if (m_table != nullptr) {
-    m_table->AddTableListener("Value", this, true);
-  }
-}
-
-void Solenoid::StopLiveWindowMode() {
-  Set(false);
-  if (m_table != nullptr) {
-    m_table->RemoveTableListener(this);
-  }
-}
-
-std::string Solenoid::GetSmartDashboardType() const { return "Solenoid"; }
-
-void Solenoid::InitTable(std::shared_ptr<ITable> subTable) {
-  m_table = subTable;
-  UpdateTable();
-}
-
-std::shared_ptr<ITable> Solenoid::GetTable() const { return m_table; }

@@ -13,7 +13,6 @@
 #include <string>
 
 #include "DigitalSource.h"
-#include "LiveWindow/LiveWindowSendable.h"
 
 namespace frc {
 
@@ -27,7 +26,7 @@ class DigitalGlitchFilter;
  * as required. This class is only for devices like switches etc. that aren't
  * implemented anywhere else.
  */
-class DigitalInput : public DigitalSource, public LiveWindowSendable {
+class DigitalInput : public DigitalSource {
  public:
   explicit DigitalInput(int channel);
   virtual ~DigitalInput();
@@ -39,18 +38,10 @@ class DigitalInput : public DigitalSource, public LiveWindowSendable {
   AnalogTriggerType GetAnalogTriggerTypeForRouting() const override;
   bool IsAnalogTrigger() const override;
 
-  void UpdateTable();
-  void StartLiveWindowMode();
-  void StopLiveWindowMode();
-  std::string GetSmartDashboardType() const;
-  void InitTable(std::shared_ptr<ITable> subTable);
-  std::shared_ptr<ITable> GetTable() const;
-
  private:
   int m_channel;
   HAL_DigitalHandle m_handle;
 
-  std::shared_ptr<ITable> m_table;
   friend class DigitalGlitchFilter;
 };
 

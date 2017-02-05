@@ -11,11 +11,8 @@
 #include <string>
 
 #include "HAL/Types.h"
-#include "LiveWindow/LiveWindowSendable.h"
 #include "MotorSafety.h"
 #include "SensorBase.h"
-#include "tables/ITable.h"
-#include "tables/ITableListener.h"
 
 namespace frc {
 
@@ -33,9 +30,7 @@ class MotorSafetyHelper;
  * a solenoid).
  */
 class Relay : public MotorSafety,
-              public SensorBase,
-              public ITableListener,
-              public LiveWindowSendable {
+              public SensorBase {
  public:
   enum Value { kOff, kOn, kForward, kReverse };
   enum Direction { kBothDirections, kForwardOnly, kReverseOnly };
@@ -54,17 +49,6 @@ class Relay : public MotorSafety,
   bool IsSafetyEnabled() const override;
   void SetSafetyEnabled(bool enabled) override;
   void GetDescription(std::ostringstream& desc) const override;
-
-  void ValueChanged(ITable* source, llvm::StringRef key,
-                    std::shared_ptr<nt::Value> value, bool isNew) override;
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
-  std::shared_ptr<ITable> m_table;
 
  private:
   int m_channel;

@@ -10,7 +10,6 @@
 #include <memory>
 #include <string>
 
-#include "LiveWindow/LiveWindowSendable.h"
 #include "PIDSource.h"
 #include "SensorBase.h"
 #include "interfaces/Gyro.h"
@@ -23,23 +22,12 @@ namespace frc {
  */
 class GyroBase : public Gyro,
                  public SensorBase,
-                 public PIDSource,
-                 public LiveWindowSendable {
+                 public PIDSource {
  public:
   virtual ~GyroBase() = default;
 
   // PIDSource interface
   double PIDGet() override;
-
-  void UpdateTable() override;
-  void StartLiveWindowMode() override;
-  void StopLiveWindowMode() override;
-  std::string GetSmartDashboardType() const override;
-  void InitTable(std::shared_ptr<ITable> subTable) override;
-  std::shared_ptr<ITable> GetTable() const override;
-
- private:
-  std::shared_ptr<ITable> m_table;
 };
 
 }  // namespace frc
