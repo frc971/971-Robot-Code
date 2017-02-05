@@ -93,7 +93,6 @@ cc_test(
   ],
 )
 
-"""
 cc_library(
   name = 'stream_view',
   hdrs = ['stream_view.h'],
@@ -103,4 +102,3 @@ cc_library(
     '//aos/vision/image:image_types',
   ],
 )
-"""

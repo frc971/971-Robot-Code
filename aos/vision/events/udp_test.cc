@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 namespace aos {
-namespace vision {
+namespace events {
 
 TEST(UDPTest, SendRecv) {
   RXUdpSocket rx(1109);
@@ -19,5 +19,5 @@ TEST(UDPTest, SendRecv) {
   EXPECT_EQ(txdata[3], rxdata[3]);
 }
 
-}  // namespace vision
+}  // namespace events
 }  // namespace aos

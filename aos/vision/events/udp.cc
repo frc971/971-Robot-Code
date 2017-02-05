@@ -5,24 +5,24 @@
 #include "aos/common/logging/logging.h"
 
 namespace aos {
-namespace vision {
+namespace events {
 
-TXUdpSocket::TXUdpSocket(const char *ip_addr, int port)
+TXUdpSocket::TXUdpSocket(const std::string &ip_addr, int port)
     : fd_(PCHECK(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))) {
   sockaddr_in destination_in;
   memset(&destination_in, 0, sizeof(destination_in));
   destination_in.sin_family = AF_INET;
   destination_in.sin_port = htons(port);
-  if (inet_aton(ip_addr, &destination_in.sin_addr) == 0) {
-    LOG(FATAL, "invalid IP address %s\n", ip_addr);
+  if (inet_aton(ip_addr.c_str(), &destination_in.sin_addr) == 0) {
+    LOG(FATAL, "invalid IP address %s\n", ip_addr.c_str());
   }
 
   PCHECK(connect(fd_.get(), reinterpret_cast<sockaddr *>(&destination_in),
                  sizeof(destination_in)));
 }
 
-int TXUdpSocket::Send(const void *data, int size) {
-  return PCHECK(send(fd_.get(), static_cast<const char *>(data), size, 0));
+int TXUdpSocket::Send(const char *data, int size) {
+  return PCHECK(send(fd_.get(), data, size, 0));
 }
 
 RXUdpSocket::RXUdpSocket(int port)
@@ -42,5 +42,5 @@ int RXUdpSocket::Recv(void *data, int size) {
   return PCHECK(recv(fd_.get(), static_cast<char *>(data), size, 0));
 }
 
-}  // namespace vision
+}  // namespace events
 }  // namespace aos

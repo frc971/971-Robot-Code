@@ -76,6 +76,39 @@ cc_library(
   ],
 )
 
+cc_binary(name = 'target_sender',
+  srcs = ['target_sender.cc'],
+  deps = [
+    '//aos/common:time',
+    '//aos/common/logging:logging',
+    '//aos/common/logging:implementations',
+    '//aos/vision/image:reader',
+    '//aos/vision/image:jpeg_routines',
+    '//aos/vision/image:image_stream',
+    '//y2016/vision:blob_filters',
+    '//aos/vision/events:udp',
+    '//aos/vision/events:epoll_events',
+    '//aos/vision/events:socket_types',
+    ':stereo_geometry',
+    ':vision_data',
+    ':calibration',
+  ]
+)
+
+cc_library(name = "blob_filters",
+    srcs = ["blob_filters.cc"],
+    hdrs = ["blob_filters.h"],
+    deps = [
+      "//aos/vision/math:vector",
+      "//aos/vision/math:segment",
+      "//aos/vision/blob:range_image",
+      "//aos/vision/blob:threshold",
+      "//aos/vision/blob:find_blob",
+      "//aos/vision/blob:hierarchical_contour_merge",
+      "//aos/vision/blob:codec",
+        ],
+)
+
 cc_binary(
   name = 'target_receiver',
   srcs = [
