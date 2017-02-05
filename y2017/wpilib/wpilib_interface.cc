@@ -1,0 +1,629 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <inttypes.h>
+
+#include <chrono>
+#include <thread>
+#include <mutex>
+#include <functional>
+#include <array>
+
+#include "Encoder.h"
+#include "VictorSP.h"
+#include "Relay.h"
+#include "DriverStation.h"
+#include "AnalogInput.h"
+#include "Compressor.h"
+#include "DigitalGlitchFilter.h"
+#undef ERROR
+
+#include "aos/common/logging/logging.h"
+#include "aos/common/logging/queue_logging.h"
+#include "aos/common/time.h"
+#include "aos/common/util/log_interval.h"
+#include "aos/common/util/phased_loop.h"
+#include "aos/common/util/wrapping_counter.h"
+#include "aos/common/stl_mutex.h"
+#include "aos/linux_code/init.h"
+#include "aos/common/messages/robot_state.q.h"
+#include "aos/common/commonmath.h"
+
+#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2017/constants.h"
+#include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/actors/autonomous_action.q.h"
+
+#include "frc971/wpilib/wpilib_robot_base.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/gyro_sender.h"
+#include "frc971/wpilib/dma_edge_counting.h"
+#include "frc971/wpilib/interrupt_edge_counting.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/logging.q.h"
+#include "frc971/wpilib/wpilib_interface.h"
+#include "frc971/wpilib/pdp_fetcher.h"
+#include "frc971/wpilib/ADIS16448.h"
+#include "frc971/wpilib/dma.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+using ::frc971::control_loops::drivetrain_queue;
+using ::y2017::control_loops::superstructure_queue;
+
+namespace y2017 {
+namespace wpilib {
+namespace {
+constexpr double kMaxBringupPower = 12.0;
+}  // namespace
+
+// TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
+// DMA stuff and then removing the * 2.0 in *_translate.
+// The low bit is direction.
+
+// TODO(brian): Replace this with ::std::make_unique once all our toolchains
+// have support.
+template <class T, class... U>
+std::unique_ptr<T> make_unique(U &&... u) {
+  return std::unique_ptr<T>(new T(std::forward<U>(u)...));
+}
+
+// Translates for the sensor values to convert raw index pulses into something
+// with proper units.
+// TODO(campbell): Update everything below to match sensors on the robot.
+
+// TODO(comran): Template these methods since there is a lot of repetition here.
+double drivetrain_translate(int32_t in) {
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kDrivetrainEncoderRatio *
+         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
+}
+
+double drivetrain_velocity_translate(double in) {
+  return (1.0 / in) / 256.0 /*cpr*/ *
+         constants::Values::kDrivetrainEncoderRatio *
+         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
+}
+
+double shooter_translate(int32_t in) {
+  return static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double intake_translate(int32_t in) {
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double intake_pot_translate(double voltage) {
+  return voltage * constants::Values::kIntakePotRatio *
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double turret_translate(int32_t in) {
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kTurretEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+double turret_pot_translate(double voltage) {
+  return voltage * constants::Values::kTurretPotRatio *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
+double serializer_translate(int32_t in) {
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kSerializerEncoderRatio *
+         (2 * M_PI /*radians*/);
+}
+
+double hood_translate(int32_t in) {
+  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
+         constants::Values::kHoodEncoderRatio * (2 * M_PI /*radians*/);
+}
+
+// TODO(campbell): Update all gear ratios below.
+
+constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
+    5600.0 /* CIM free speed RPM */ * 14.0 / 48.0 /* 1st reduction */ * 28.0 /
+    50.0 /* 2nd reduction (high gear) */ * 30.0 / 44.0 /* encoder gears */ /
+    60.0 /* seconds per minute */ * 256.0 /* CPR */ * 4 /* edges per cycle */;
+
+constexpr double kMaxIntakeEncoderPulsesPerSecond =
+    18700.0 /* 775pro free speed RPM */ * 12.0 /
+    18.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
+    128.0 /* CPR */ * 4 /* edges per cycle */;
+
+constexpr double kMaxShooterEncoderPulsesPerSecond =
+    18700.0 /* 775pro free speed RPM */ * 12.0 /
+    18.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
+    128.0 /* CPR */ * 4 /* edges per cycle */;
+
+constexpr double kMaxSerializerEncoderPulsesPerSecond =
+    18700.0 /* 775pro free speed RPM */ * 12.0 /
+    56.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
+    512.0 /* CPR */ * 4 /* index pulse every quarter cycle */;
+
+double kMaxEncoderPulsesPerSecond =
+    ::std::max(kMaxSerializerEncoderPulsesPerSecond,
+               ::std::max(kMaxIntakeEncoderPulsesPerSecond,
+                          ::std::max(kMaxDrivetrainEncoderPulsesPerSecond,
+                                     kMaxShooterEncoderPulsesPerSecond)));
+
+// Class to send position messages with sensor readings to our loops.
+class SensorReader {
+ public:
+  SensorReader() {
+    // Set it to filter out anything shorter than 1/4 of the minimum pulse width
+    // we should ever see.
+    drivetrain_shooter_encoder_filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
+                             kMaxDrivetrainShooterEncoderPulsesPerSecond * 1e9 +
+                         0.5));
+    superstructure_encoder_filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
+                             kMaxSuperstructureEncoderPulsesPerSecond * 1e9 +
+                         0.5));
+    hall_filter_.SetPeriodNanoSeconds(100000);
+  }
+
+  // Drivetrain setters.
+  void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    drivetrain_left_encoder_ = ::std::move(encoder);
+  }
+
+  void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    drivetrain_right_encoder_ = ::std::move(encoder);
+  }
+
+  // Shooter setter.
+  void set_shooter_encoder(::std::unique_ptr<Encoder> encoder) {
+    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    shooter_encoder_ = ::std::move(encoder);
+  }
+
+  // Intake setters.
+  void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
+    superstructure_encoder_filter_.Add(encoder.get());
+    intake_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_intake_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    intake_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_intake_index(::std::unique_ptr<DigitalInput> index) {
+    superstructure_encoder_filter_.Add(index.get());
+    intake_encoder_.set_index(::std::move(index));
+  }
+
+  // Serializer setters.
+  void set_serializer_encoder(::std::unique_ptr<Encoder> encoder) {
+    serializer_encoder_ = ::std::move(encoder);
+  }
+
+  // Turret setters.
+  void set_turret_encoder(::std::unique_ptr<Encoder> encoder) {
+    superstructure_encoder_filter_.Add(encoder.get());
+    turret_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_turret_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    turret_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+   void set_turret_index(::std::unique_ptr<DigitalInput> index) {
+    superstructure_encoder_filter_.Add(index.get());
+    turret_encoder_.set_index(::std::move(index));
+  }
+
+ // Shooter hood setter.
+  void set_hood_encoder(::std::unique_ptr<Encoder> encoder) {
+    superstructure_encoder_filter_.Add(encoder.get());
+    hood_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_hood_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    hood_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_hood_index(::std::unique_ptr<DigitalInput> index) {
+    superstructure_encoder_filter_.Add(index.get());
+    hood_encoder_.set_index(::std::move(index));
+  }
+
+  // Autonomous mode switch setter.
+  void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
+    autonomous_modes_.at(i) = ::std::move(sensor);
+  }
+
+
+  // All of the DMA-related set_* calls must be made before this, and it doesn't
+  // hurt to do all of them.
+  void set_dma(::std::unique_ptr<DMA> dma) {
+    dma_synchronizer_.reset(
+        new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_->Add(&intake_encoder_);
+    dma_synchronizer_->Add(&turret_encoder_);
+    dma_synchronizer_->Add(&hood_encoder_);
+  }
+
+  void operator()() {
+    ::aos::SetCurrentThreadName("SensorReader");
+
+    my_pid_ = getpid();
+    ds_ =
+        &DriverStation::GetInstance();
+
+    dma_synchronizer_->Start();
+
+    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+                                        ::std::chrono::milliseconds(4));
+
+    ::aos::SetCurrentThreadRealtimePriority(40);
+    while (run_) {
+      {
+        const int iterations = phased_loop.SleepUntilNext();
+        if (iterations != 1) {
+          LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
+        }
+      }
+      RunIteration();
+    }
+  }
+
+  void RunIteration() {
+    ::frc971::wpilib::SendRobotState(my_pid_, ds_);
+
+    const auto values = constants::GetValues();
+
+    {
+      auto drivetrain_message = drivetrain_queue.position.MakeMessage();
+      drivetrain_message->right_encoder =
+          drivetrain_translate(drivetrain_right_encoder_->GetRaw());
+      drivetrain_message->left_encoder =
+          -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
+      drivetrain_message->left_speed =
+          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
+      drivetrain_message->right_speed =
+          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+
+      drivetrain_message.Send();
+    }
+
+    dma_synchronizer_->RunIteration();
+
+    {
+      auto superstructure_message = superstructure_queue.position.MakeMessage();
+      CopyPotAndAbsolutePosition(
+          intake_encoder_, &superstructure_message->intake, intake_translate,
+          intake_pot_translate, false, values.intake_pot_offset);
+
+      superstructure_message->theta_serializer =
+          serializer_translate(serializer_encoder_->GetRaw());
+
+      superstructure_message->theta_shooter=
+          shooter_translate(shooter_encoder_->GetRaw());
+
+      CopyPotAndAbsolutePosition(hood_encoder_, &superstructure_message->hood,
+                                 hood_translate, hood_pot_translate, false,
+                                 values.hood_pot_offset);
+
+      CopyPotAndAbsolutePosition(turret_encoder_,
+                              &superstructure_message->turret,
+                              turret_translate, turret_pot_translate, false,
+                              values.turret_pot_offset);
+
+      superstructure_message.Send();
+    }
+
+    {
+      auto auto_mode_message = ::y2017::actors::auto_mode.MakeMessage();
+      auto_mode_message->mode = 0;
+      for (size_t i = 0; i < autonomous_modes_.size(); ++i) {
+        if (autonomous_modes_[i]->Get()) {
+          auto_mode_message->mode |= 1 << i;
+        }
+      }
+      LOG_STRUCT(DEBUG, "auto mode", *auto_mode_message);
+      auto_mode_message.Send();
+    }
+  }
+
+  void Quit() { run_ = false; }
+
+ private:
+  void CopyPotAndIndexPosition(
+      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+      ::frc971::PotAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.polled_potentiometer_voltage()) +
+                    pot_offset;
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->latched_pot =
+        multiplier *
+            potentiometer_translate(encoder.last_potentiometer_voltage()) +
+        pot_offset;
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
+  // TODO(campbell): Fix this stuff. It is all wrong.
+  void CopyPotAndAbsolutePosition(
+      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+      ::frc971::PotAndAbsolutePosition *position,
+      ::std::function<double(int32_t)> encoder_translate,
+      ::std::function<double(double)> potentiometer_translate, bool reverse,
+      double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->pot = multiplier * potentiometer_translate(
+                                     encoder.polled_potentiometer_voltage()) +
+                    pot_offset;
+    position->relative_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->absolute_encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+  }
+
+  // TODO(campbell): Fix this stuff. It is all wrong.
+  void CopyAbsoluteAndIndexPosition(
+      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+      ::frc971::EncoderAndIndexPosition *position,
+      ::std::function<double(int32_t)> encoder_translate, bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.polled_encoder_value());
+    position->latched_encoder =
+        multiplier * encoder_translate(encoder.last_encoder_value());
+    position->index_pulses = encoder.index_posedge_count();
+  }
+
+  int32_t my_pid_;
+  DriverStation *ds_;
+
+  ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
+
+  ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
+      drivetrain_right_encoder_;
+
+  ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_;
+
+  ::std::unique_ptr<Encoder> serializer_encoder_;
+  ::std::unique_ptr<AnalogInput> serializer_hall_;
+
+  ::frc971::wpilib::DMAEncoderAndPotentiometer turret_encoder_;
+  ::frc971::wpilib::DMAEncoderAndPotentiometer hood_encoder_;
+  ::std::unique_ptr<Encoder> shooter_encoder_;
+
+  ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
+
+  ::std::atomic<bool> run_{true};
+  DigitalGlitchFilter drivetrain_shooter_encoder_filter_,
+      superstructure_encoder_filter_, hall_filter_;
+};
+
+class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_drivetrain_left_victor(::std::unique_ptr<VictorSP> t) {
+    drivetrain_left_victor_ = ::std::move(t);
+  }
+
+  void set_drivetrain_right_victor(::std::unique_ptr<VictorSP> t) {
+    drivetrain_right_victor_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::frc971::control_loops::drivetrain_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::frc971::control_loops::drivetrain_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    drivetrain_left_victor_->SetSpeed(queue->left_voltage / 12.0);
+    drivetrain_right_victor_->SetSpeed(-queue->right_voltage / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "drivetrain output too old\n");
+    drivetrain_left_victor_->SetDisabled();
+    drivetrain_right_victor_->SetDisabled();
+  }
+
+  ::std::unique_ptr<VictorSP> drivetrain_left_victor_, drivetrain_right_victor_;
+};
+
+class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
+ public:
+  void set_intake_victor(::std::unique_ptr<VictorSP> t) {
+    intake_victor_ = ::std::move(t);
+  }
+  void set_intake_rollers_victor(::std::unique_ptr<VictorSP> t) {
+    intake_rollers_victor_ = ::std::move(t);
+  }
+
+  void set_serializer_victor(::std::unique_ptr<VictorSP> t) {
+    serializer_victor_ = ::std::move(t);
+  }
+  void set_serializer_roller_victor(::std::unique_ptr<VictorSP> t) {
+    serializer_roller_victor_ = ::std::move(t);
+  }
+
+  void set_shooter_victor(::std::unique_ptr<VictorSP> t) {
+    shooter_victor_ = ::std::move(t);
+  }
+  void set_turret_victor(::std::unique_ptr<VictorSP> t) {
+    turret_victor_ = ::std::move(t);
+  }
+  void set_hood_victor(::std::unique_ptr<VictorSP> t) {
+    hood_victor_ = ::std::move(t);
+  }
+
+ private:
+  virtual void Read() override {
+    ::y2017::control_loops::superstructure_queue.output.FetchAnother();
+  }
+
+  virtual void Write() override {
+    auto &queue = ::y2017::control_loops::superstructure_queue.output;
+    LOG_STRUCT(DEBUG, "will output", *queue);
+    intake_victor_->SetSpeed(::aos::Clip(queue->voltage_intake,
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
+    intake_rollers_victor_->SetSpeed(queue->voltage_intake_rollers / 12.0);
+    serializer_victor_->SetSpeed(queue->voltage_serializer / 12.0);
+    serializer_roller_victor_->SetSpeed(queue->voltage_serializer_rollers /
+                                        12.0);
+    turret_victor_->SetSpeed(::aos::Clip(queue->voltage_turret,
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
+    hood_victor_->SetSpeed(
+        ::aos::Clip(queue->voltage_hood, -kMaxBringupPower, kMaxBringupPower) /
+        12.0);
+    shooter_victor_->SetSpeed(queue->voltage_shooter / 12.0);
+  }
+
+  virtual void Stop() override {
+    LOG(WARNING, "Superstructure output too old.\n");
+    intake_victor_->SetDisabled();
+    intake_rollers_victor_->SetDisabled();
+    serializer_victor_->SetDisabled();
+    serializer_roller_victor_->SetDisabled();
+    turret_victor_->SetDisabled();
+    hood_victor_->SetDisabled();
+    shooter_victor_->SetDisabled();
+  }
+
+  ::std::unique_ptr<VictorSP> intake_victor_, intake_rollers_victor_,
+      serializer_victor_, serializer_roller_victor_, shooter_victor_,
+      turret_victor_, hood_victor_;
+};
+
+class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
+ public:
+  ::std::unique_ptr<Encoder> make_encoder(int index) {
+    return make_unique<Encoder>(10 + index * 2, 11 + index * 2, false,
+                                Encoder::k4X);
+  }
+
+  void Run() override {
+    ::aos::InitNRT();
+    ::aos::SetCurrentThreadName("StartCompetition");
+
+    ::frc971::wpilib::JoystickSender joystick_sender;
+    ::std::thread joystick_thread(::std::ref(joystick_sender));
+
+    ::frc971::wpilib::PDPFetcher pdp_fetcher;
+    ::std::thread pdp_fetcher_thread(::std::ref(pdp_fetcher));
+    SensorReader reader;
+
+    // TODO(campbell): Update port numbers
+    reader.set_drivetrain_left_encoder(make_encoder(0));
+    reader.set_drivetrain_right_encoder(make_encoder(1));
+
+    reader.set_intake_encoder(make_encoder(2));
+    reader.set_intake_index(make_unique<DigitalInput>(0));
+    reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
+
+    reader.set_serializer_encoder(make_encoder(3));
+    reader.set_serializer_hall(make_unique<AnalogInput>(1));
+
+    reader.set_turret_encoder(make_encoder(5));
+    reader.set_turret_index(make_unique<DigitalInput>(1));
+    reader.set_turret_potentiometer(make_unique<AnalogInput>(3));
+
+    reader.set_hood_encoder(make_encoder(6));
+    reader.set_hood_index(make_unique<DigitalInput>(2));
+
+    reader.set_shooter_encoder(make_encoder(7));
+
+    reader.set_autonomous_mode(0, make_unique<DigitalInput>(6));
+    reader.set_autonomous_mode(1, make_unique<DigitalInput>(5));
+    reader.set_autonomous_mode(2, make_unique<DigitalInput>(4));
+    reader.set_autonomous_mode(3, make_unique<DigitalInput>(3));
+
+    reader.set_dma(make_unique<DMA>());
+    ::std::thread reader_thread(::std::ref(reader));
+
+    ::frc971::wpilib::GyroSender gyro_sender;
+    ::std::thread gyro_thread(::std::ref(gyro_sender));
+
+    auto imu_trigger = make_unique<DigitalInput>(5);
+    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kMXP, imu_trigger.get());
+    ::std::thread imu_thread(::std::ref(imu));
+
+    DrivetrainWriter drivetrain_writer;
+    drivetrain_writer.set_drivetrain_left_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(0)));
+    drivetrain_writer.set_drivetrain_right_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(1)));
+    ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
+
+    SuperstructureWriter superstructure_writer;
+    superstructure_writer.set_intake_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(2)));
+    superstructure_writer.set_intake_rollers_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(3)));
+    superstructure_writer.set_serializer_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(4)));
+    superstructure_writer.set_serializer_roller_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(5)));
+    superstructure_writer.set_turret_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(6)));
+    superstructure_writer.set_hood_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(7)));
+    superstructure_writer.set_shooter_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(8)));
+    ::std::thread superstructure_writer_thread(
+        ::std::ref(superstructure_writer));
+
+    // Wait forever. Not much else to do...
+    while (true) {
+      const int r = select(0, nullptr, nullptr, nullptr, nullptr);
+      if (r != 0) {
+        PLOG(WARNING, "infinite select failed");
+      } else {
+        PLOG(WARNING, "infinite select succeeded??\n");
+      }
+    }
+
+    LOG(ERROR, "Exiting WPILibRobot\n");
+
+    joystick_sender.Quit();
+    joystick_thread.join();
+    pdp_fetcher.Quit();
+    pdp_fetcher_thread.join();
+    reader.Quit();
+    reader_thread.join();
+    gyro_sender.Quit();
+    gyro_thread.join();
+    imu.Quit();
+    imu_thread.join();
+
+    drivetrain_writer.Quit();
+    drivetrain_writer_thread.join();
+    superstructure_writer.Quit();
+    superstructure_writer_thread.join();
+
+    ::aos::Cleanup();
+  }
+};
+
+}  // namespace wpilib
+}  // namespace y2017
+
+AOS_ROBOT_CLASS(::y2017::wpilib::WPILibRobot);
