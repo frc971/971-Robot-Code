@@ -79,6 +79,22 @@ void PositionSensorSimulator::MoveTo(double new_pos) {
   cur_pos_ = new_pos;
 }
 
+void PositionSensorSimulator::GetSensorValues(IndexPosition *values) {
+  values->encoder = cur_pos_ - start_position_;
+
+  if (index_count_ == 0) {
+    values->latched_encoder = 0.0;
+  } else {
+    // Determine the position of the index pulse relative to absolute zero.
+    double index_pulse_position = cur_index_ * index_diff_ + known_index_pos_;
+
+    // Populate the latched encoder samples.
+    values->latched_encoder = index_pulse_position - start_position_;
+  }
+
+  values->index_pulses = index_count_;
+}
+
 void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
   values->pot = pot_noise_.AddNoiseToSample(cur_pos_);
   values->encoder = cur_pos_ - start_position_;
