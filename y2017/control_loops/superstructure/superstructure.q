@@ -43,7 +43,7 @@ struct IntakeGoal {
   .frc971.ProfileParameters profile_params;
 
   // Voltage to send to the rollers. Positive is sucking in.
-  float voltage_rollers;
+  double voltage_rollers;
 };
 
 struct SerializerGoal {
@@ -65,7 +65,7 @@ struct TurretGoal {
 
 struct HoodGoal {
   // Angle the hood is currently at
-  double angle_hood;
+  double angle;
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
   .frc971.ProfileParameters profile_params;
@@ -166,19 +166,23 @@ queue_group SuperstructureQueue {
   };
 
   message Position {
+    // TODO(austin): The turret and intake really should be absolute.  Switch
+    // them over when that class is ready.
+
     // Position of the intake, zero when the intake is in, positive when it is
     // out.
-    .frc971.PotAndAbsolutePosition intake;
+    .frc971.PotAndIndexPosition intake;
 
     // Serializer angle in radians.
     double theta_serializer;
 
     // The sensor readings for the turret. The units and sign are defined the
     // same as what's in the Goal message.
-    .frc971.PotAndAbsolutePosition turret;
+    .frc971.PotAndIndexPosition turret;
 
-    // Position of the hood in radians
-    double theta_hood;
+    // The sensor readings for the hood. The units and sign are defined the
+    // same as what's in the Goal message.
+    .frc971.PotAndIndexPosition hood;
 
     // Shooter wheel angle in radians.
     double theta_shooter;
@@ -186,17 +190,17 @@ queue_group SuperstructureQueue {
 
   message Output {
     // Voltages for some of the subsystems.
-    float voltage_intake;
-    float voltage_serializer;
-    float voltage_shooter;
+    double voltage_intake;
+    double voltage_serializer;
+    double voltage_shooter;
 
     // Rollers on the intake.
-    float voltage_intake_rollers;
+    double voltage_intake_rollers;
     // Roller on the serializer
-    float voltage_serializer_rollers;
+    double voltage_serializer_rollers;
 
-    float voltage_turret;
-    float voltage_hood;
+    double voltage_turret;
+    double voltage_hood;
   };
 
   queue Goal goal;

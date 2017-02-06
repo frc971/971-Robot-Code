@@ -42,8 +42,10 @@ class Hood(control_loop.ControlLoop):
     self.G2 = self.G1 * (14.0 / 36.0)
     # Third axle gear ratio off the motor
     self.G3 = self.G2 * (14.0 / 36.0)
+    # The last gear reduction (encoder -> hood angle)
+    self.last_G = (18.0 / 345.0)
     # Gear ratio
-    self.G = (12.0 / 60.0) * (14.0 / 36.0) * (14.0 / 36.0) * (18.0 / 345.0)
+    self.G = (12.0 / 60.0) * (14.0 / 36.0) * (14.0 / 36.0) * self.last_G
 
     # 36 tooth gear inertia in kg * m^2
     self.big_gear_inertia = 0.5 * 0.039 * ((36.0 / 40.0 * 0.025) ** 2)
@@ -319,6 +321,8 @@ def main(argv):
     integral_hood = IntegralHood('IntegralHood')
     integral_loop_writer = control_loop.ControlLoopWriter('IntegralHood', [integral_hood],
                                                           namespaces=namespaces)
+    integral_loop_writer.AddConstant(control_loop.Constant('kLastReduction', '%f',
+          integral_hood.last_G))
     integral_loop_writer.Write(argv[3], argv[4])
 
 
