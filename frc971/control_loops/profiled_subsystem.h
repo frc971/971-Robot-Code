@@ -16,14 +16,17 @@
 namespace frc971 {
 namespace control_loops {
 
-template <int number_of_states, int number_of_axes>
+// TODO(Brian): Use a tuple instead of an array to support heterogeneous zeroing
+// styles.
+template <int number_of_states, int number_of_axes,
+          class ZeroingEstimator =
+              ::frc971::zeroing::PotAndIndexPulseZeroingEstimator>
 class ProfiledSubsystem {
  public:
   ProfiledSubsystem(
       ::std::unique_ptr<::frc971::control_loops::SimpleCappedStateFeedbackLoop<
           number_of_states, number_of_axes, number_of_axes>> loop,
-      ::std::array<::frc971::zeroing::PotAndIndexPulseZeroingEstimator,
-                   number_of_axes> &&estimators)
+      ::std::array<ZeroingEstimator, number_of_axes> &&estimators)
       : loop_(::std::move(loop)), estimators_(::std::move(estimators)) {
     zeroed_.fill(false);
     unprofiled_goal_.setZero();
@@ -117,24 +120,25 @@ class ProfiledSubsystem {
 
   bool initialized_ = false;
 
-  ::std::array<::frc971::zeroing::PotAndIndexPulseZeroingEstimator,
-               number_of_axes> estimators_;
+  ::std::array<ZeroingEstimator, number_of_axes> estimators_;
 
  private:
   ::std::array<bool, number_of_axes> zeroed_;
 };
 
+template <class ZeroingEstimator =
+              ::frc971::zeroing::PotAndIndexPulseZeroingEstimator>
 class SingleDOFProfiledSubsystem
     : public ::frc971::control_loops::ProfiledSubsystem<3, 1> {
  public:
   SingleDOFProfiledSubsystem(
       ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,
-      const ::frc971::constants::PotAndIndexPulseZeroingConstants &estimator,
+      const typename ZeroingEstimator::ZeroingConstants &zeroing_constants,
       const ::frc971::constants::Range &range, double default_angular_velocity,
       double default_angular_acceleration);
 
   // Updates our estimator with the latest position.
-  void Correct(::frc971::PotAndIndexPosition position);
+  void Correct(typename ZeroingEstimator::Position position);
   // Runs the controller and profile generator for a cycle.
   void Update(bool disabled);
 
@@ -179,6 +183,146 @@ class SingleDOFProfiledSubsystem
   const double default_velocity_;
   const double default_acceleration_;
 };
+
+namespace internal {
+
+double UseUnlessZero(double target_value, double default_value);
+
+}  // namespace internal
+
+template <class ZeroingEstimator>
+SingleDOFProfiledSubsystem<ZeroingEstimator>::SingleDOFProfiledSubsystem(
+    ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,
+    const typename ZeroingEstimator::ZeroingConstants &zeroing_constants,
+    const ::frc971::constants::Range &range, double default_velocity,
+    double default_acceleration)
+    : ProfiledSubsystem(::std::move(loop), {{zeroing_constants}}),
+      profile_(::aos::controls::kLoopFrequency),
+      range_(range),
+      default_velocity_(default_velocity),
+      default_acceleration_(default_acceleration) {
+  Y_.setZero();
+  offset_.setZero();
+  AdjustProfile(0.0, 0.0);
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
+  const double doffset = offset - offset_(0, 0);
+  LOG(INFO, "Adjusting offset from %f to %f\n", offset_(0, 0), offset);
+
+  loop_->mutable_X_hat()(0, 0) += doffset;
+  Y_(0, 0) += doffset;
+  loop_->mutable_R(0, 0) += doffset;
+
+  profile_.MoveGoal(doffset);
+  offset_(0, 0) = offset;
+
+  CapGoal("R", &loop_->mutable_R());
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
+    typename ZeroingEstimator::Position position) {
+  estimators_[0].UpdateEstimate(position);
+
+  if (estimators_[0].error()) {
+    LOG(ERROR, "zeroing error with intake_estimator\n");
+    return;
+  }
+
+  if (!initialized_) {
+    if (estimators_[0].offset_ready()) {
+      UpdateOffset(estimators_[0].offset());
+      initialized_ = true;
+    }
+  }
+
+  if (!zeroed(0) && estimators_[0].zeroed()) {
+    UpdateOffset(estimators_[0].offset());
+    set_zeroed(0, true);
+  }
+
+  Y_ << position.encoder;
+  Y_ += offset_;
+  loop_->Correct(Y_);
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
+    const char *name, Eigen::Matrix<double, 3, 1> *goal) {
+  // Limit the goal to min/max allowable angles.
+  if ((*goal)(0, 0) > range_.upper) {
+    LOG(WARNING, "Intake goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+        range_.upper);
+    (*goal)(0, 0) = range_.upper;
+  }
+  if ((*goal)(0, 0) < range_.lower) {
+    LOG(WARNING, "Intake goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+        range_.lower);
+    (*goal)(0, 0) = range_.lower;
+  }
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
+  set_unprofiled_goal(goal);
+  loop_->mutable_R() = unprofiled_goal_;
+  loop_->mutable_next_R() = loop_->R();
+
+  profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
+    double unprofiled_goal) {
+  unprofiled_goal_(0, 0) = unprofiled_goal;
+  unprofiled_goal_(1, 0) = 0.0;
+  unprofiled_goal_(2, 0) = 0.0;
+  CapGoal("unprofiled R", &unprofiled_goal_);
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
+  if (!disable) {
+    ::Eigen::Matrix<double, 2, 1> goal_state =
+        profile_.Update(unprofiled_goal_(0, 0), unprofiled_goal_(1, 0));
+
+    loop_->mutable_next_R(0, 0) = goal_state(0, 0);
+    loop_->mutable_next_R(1, 0) = goal_state(1, 0);
+    loop_->mutable_next_R(2, 0) = 0.0;
+    CapGoal("next R", &loop_->mutable_next_R());
+  }
+
+  loop_->Update(disable);
+
+  if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
+    profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
+  }
+}
+
+template <class ZeroingEstimator>
+bool SingleDOFProfiledSubsystem<ZeroingEstimator>::CheckHardLimits() {
+  // Returns whether hard limits have been exceeded.
+
+  if (angle() > range_.upper_hard || angle() < range_.lower_hard) {
+    LOG(ERROR,
+        "SingleDOFProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
+        angle(), range_.lower_hard, range_.upper_hard);
+    return true;
+  }
+
+  return false;
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::AdjustProfile(
+    double max_angular_velocity, double max_angular_acceleration) {
+  profile_.set_maximum_velocity(
+      internal::UseUnlessZero(max_angular_velocity, default_velocity_));
+  profile_.set_maximum_acceleration(
+      internal::UseUnlessZero(max_angular_acceleration, default_acceleration_));
+}
 
 }  // namespace control_loops
 }  // namespace frc971

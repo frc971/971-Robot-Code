@@ -98,7 +98,7 @@ class ArmControlLoop
   }
 };
 
-class Intake : public ::frc971::control_loops::SingleDOFProfiledSubsystem {
+class Intake : public ::frc971::control_loops::SingleDOFProfiledSubsystem<> {
  public:
   Intake();
 };

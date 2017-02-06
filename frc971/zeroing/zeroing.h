@@ -19,10 +19,13 @@
 namespace frc971 {
 namespace zeroing {
 
-// Estimates the position with encoder,
-// the pot and the indices.
+// Estimates the position with an incremental encoder with an index pulse and a
+// potentiometer.
 class PotAndIndexPulseZeroingEstimator {
  public:
+  using Position = PotAndIndexPosition;
+  using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
+
   PotAndIndexPulseZeroingEstimator(
       const constants::PotAndIndexPulseZeroingConstants &constants);
 
