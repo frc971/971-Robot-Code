@@ -412,8 +412,6 @@ class VelocityDrivetrain(object):
 
 
 def main(argv):
-  argv = FLAGS(argv)
-
   vdrivetrain = VelocityDrivetrain()
 
   if not FLAGS.plot:
@@ -515,4 +513,6 @@ def main(argv):
   return 0
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))

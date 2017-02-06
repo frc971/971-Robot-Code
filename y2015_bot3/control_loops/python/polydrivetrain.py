@@ -412,8 +412,6 @@ class VelocityDrivetrain(object):
 
 
 def main(argv):
-  argv = FLAGS(argv)
-
   vdrivetrain = VelocityDrivetrain()
 
   if not FLAGS.plot:
@@ -482,22 +480,6 @@ def main(argv):
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
 
-  cim_velocity_plot = []
-  cim_voltage_plot = []
-  cim_time = []
-  cim = CIM()
-  R = numpy.matrix([[300]])
-  for t in numpy.arange(0, 0.5, cim.dt):
-    U = numpy.clip(cim.K * (R - cim.X) + R / cim.Kv, cim.U_min, cim.U_max)
-    cim.Update(U)
-    cim_velocity_plot.append(cim.X[0, 0])
-    cim_voltage_plot.append(U[0, 0] * 10)
-    cim_time.append(t)
-  pylab.plot(cim_time, cim_velocity_plot, label='cim spinup')
-  pylab.plot(cim_time, cim_voltage_plot, label='cim voltage')
-  pylab.legend()
-  pylab.show()
-
   # TODO(austin):
   # Shifting compensation.
 
@@ -516,4 +498,6 @@ def main(argv):
   return 0
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))

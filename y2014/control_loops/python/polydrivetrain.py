@@ -134,7 +134,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
 
     self.G_high = self._drivetrain.G_high
     self.G_low = self._drivetrain.G_low
-    self.R = self._drivetrain.R
+    self.resistance = self._drivetrain.R
     self.r = self._drivetrain.r
     self.Kv = self._drivetrain.Kv
     self.Kt = self._drivetrain.Kt
@@ -181,6 +181,10 @@ class VelocityDrivetrain(object):
     self.dt = 0.005
 
     self.R = numpy.matrix(
+        [[0.0],
+         [0.0]])
+
+    self.U_ideal = numpy.matrix(
         [[0.0],
          [0.0]])
 
@@ -239,9 +243,9 @@ class VelocityDrivetrain(object):
                  self.CurrentDrivetrain().r)
     #print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
     high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
-                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                   self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
-                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().R)
+                  self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
     high_power = high_torque * high_omega
     low_power = low_torque * low_omega
     #if should_print:
@@ -407,27 +411,26 @@ class VelocityDrivetrain(object):
 
 
 def main(argv):
-  argv = FLAGS(argv)
-
   vdrivetrain = VelocityDrivetrain()
 
-  if len(argv) != 5:
-    glog.fatal('Expected .h file name and .cc file name')
-  else:
-    namespaces = ['y2014', 'control_loops', 'drivetrain']
-    dog_loop_writer = control_loop.ControlLoopWriter(
-        "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
-                       vdrivetrain.drivetrain_low_high,
-                       vdrivetrain.drivetrain_high_low,
-                       vdrivetrain.drivetrain_high_high],
-                       namespaces=namespaces)
+  if not FLAGS.plot:
+    if len(argv) != 5:
+      glog.fatal('Expected .h file name and .cc file name')
+    else:
+      namespaces = ['y2014', 'control_loops', 'drivetrain']
+      dog_loop_writer = control_loop.ControlLoopWriter(
+          "VelocityDrivetrain", [vdrivetrain.drivetrain_low_low,
+                         vdrivetrain.drivetrain_low_high,
+                         vdrivetrain.drivetrain_high_low,
+                         vdrivetrain.drivetrain_high_high],
+                         namespaces=namespaces)
 
-    dog_loop_writer.Write(argv[1], argv[2])
+      dog_loop_writer.Write(argv[1], argv[2])
 
-    cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()])
+      cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()])
 
-    cim_writer.Write(argv[3], argv[4])
-    return
+      cim_writer.Write(argv[3], argv[4])
+      return
 
   vl_plot = []
   vr_plot = []
@@ -474,7 +477,6 @@ def main(argv):
       radius_plot.append(turn_velocity)
     else:
       radius_plot.append(turn_velocity / fwd_velocity)
-
   cim_velocity_plot = []
   cim_voltage_plot = []
   cim_time = []
@@ -509,4 +511,6 @@ def main(argv):
   return 0
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))
