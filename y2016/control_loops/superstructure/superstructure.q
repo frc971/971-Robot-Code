@@ -37,14 +37,17 @@ queue_group SuperstructureQueue {
 
   message Goal {
     // Zero on the intake is when the horizontal tube stock members are level
-    // with the ground.  This will be essentially when we are in the intaking
-    // position.  Positive is up.  The angle is measured relative to the top
+    // with the top frame rails of the robot.  This will be essentially when we
+    // are in the intaking position.  Positive is up.  The angle is measured
+    // relative to the top
     // of the robot frame.
-    // Zero on the shoulder is horizontal.  Positive is up.  The angle is
-    // measured relative to the top of the robot frame.
+    // Zero on the shoulder is when the shoulder is down against the hard stop
+    // blocks.  Positive is up.  The angle is measured relative to the top of
+    // the robot frame.
     // Zero on the wrist is horizontal and landed in the bellypan.  Positive is
     // the same direction as the shoulder.  The angle is measured relative to
-    // the top of the robot frame.
+    // the top of the robot frame.  For calibration, 0 is measured as parallel
+    // to the big frame supporting the shooter.
 
     // Goal angles and angular velocities of the superstructure subsystems.
     double angle_intake;
