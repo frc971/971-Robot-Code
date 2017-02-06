@@ -4,8 +4,8 @@ struct Joystick {
   // A bitmask of the button state.
   uint16_t buttons;
 
-  // The 4 joystick axes.
-  double[4] axis;
+  // The 6 joystick axes.
+  double[6] axis;
 
   // The POV axis.
   int32_t pov;
