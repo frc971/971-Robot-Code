@@ -21,8 +21,8 @@ bind(
 new_http_archive(
   name = 'arm_frc_linux_gnueabi_repo',
   build_file = 'tools/cpp/arm-frc-linux-gnueabi/arm-frc-linux-gnueabi.BUILD',
-  sha256 = '9e93b0712e90d11895444f720f0c90c649fb9becb4ca28bb50749d9074eb1306',
-  url = 'http://frc971.org/Build-Dependencies/roborio-compiler-2016.tar.gz',
+  sha256 = '9e2e58f0a668c22e46486a76df8b9da08f526cd8bf4e579f19b461f70a358bf8',
+  url = 'http://frc971.org/Build-Dependencies/roborio-compiler-2017.tar.xz',
 )
 
 # Recompressed version of the one downloaded from Linaro at
