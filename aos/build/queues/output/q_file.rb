@@ -49,7 +49,11 @@ class Target::QInclude < Target::Node
 	def initialize(path)
 		@path = path
 	end
+	def extern=(value)
+		@extern=value
+	end
 	def create(cpp_tree)
+		return if (@extern)
 #		inc = cpp_tree.header.add_include("\"#{@path}\"")
 		inc = cpp_tree.add_header_include("\"#{@path}\"")
 		cpp_tree.set(self,inc)
