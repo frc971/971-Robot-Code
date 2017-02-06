@@ -2,10 +2,11 @@
 #define AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 
 #include <string.h>
+#include <atomic>
 
-#include "aos/common/type_traits.h"
 #include "aos/common/queue.h"
 #include "aos/common/time.h"
+#include "aos/common/type_traits.h"
 #include "aos/common/util/log_interval.h"
 
 namespace aos {
@@ -115,7 +116,12 @@ class ControlLoop : public SerializableControlLoop {
 
   uint32_t UniqueID() override { return control_loop_->hash(); }
 
+
  protected:
+  static void Quit(int /*signum*/) {
+    run_ = false;
+  }
+
   // Runs an iteration of the control loop.
   // goal is the last goal that was sent.  It might be any number of cycles old
   // or nullptr if we haven't ever received a goal.
@@ -159,6 +165,8 @@ class ControlLoop : public SerializableControlLoop {
       SimpleLogInterval(kStaleLogInterval, WARNING, "motors disabled");
   SimpleLogInterval no_goal_ =
       SimpleLogInterval(kStaleLogInterval, ERROR, "no goal");
+
+  static ::std::atomic<bool> run_;
 };
 
 }  // namespace controls
