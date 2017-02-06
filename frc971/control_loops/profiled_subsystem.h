@@ -48,6 +48,7 @@ class ProfiledSubsystem {
 
   void Reset() {
     zeroed_.fill(false);
+    initialized_ = false;
     for (auto &estimator : estimators_) {
       estimator.Reset();
     }
