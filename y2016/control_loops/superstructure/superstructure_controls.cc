@@ -29,7 +29,7 @@ enum ArmIndices { kShoulderIndex = 0, kWristIndex = 1 };
 
 // Intake
 Intake::Intake()
-    : ::frc971::control_loops::SingleDOFProfiledSubsystem(
+    : ::frc971::control_loops::SingleDOFProfiledSubsystem<>(
           ::std::unique_ptr<
               ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>>(
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
