@@ -15,6 +15,7 @@
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/zeroing/zeroing.h"
+#include "frc971/constants.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -171,6 +172,8 @@ class SingleDOFProfiledSubsystem
   // Triggers an estimator error.
   void TriggerEstimatorError() { estimators_[0].TriggerError(); }
 
+  const ::frc971::constants::Range &range() const { return range_; }
+
  private:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
@@ -235,6 +238,7 @@ template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
     ProfiledJointStatus *status) {
   status->zeroed = zeroed();
+  status->state = -1;
   // We don't know, so default to the bad case.
   status->estopped = true;
 
