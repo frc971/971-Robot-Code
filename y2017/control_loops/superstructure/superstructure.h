@@ -35,9 +35,9 @@ class Superstructure
     ESTOP = 4,
   };
 
-  bool IsRunning() const { return state_ == RUNNING; }
+  const hood::Hood &hood() const { return hood_; }
 
-  State state() const { return state_; }
+  bool IsRunning() const { return state_ == RUNNING; }
 
   // Returns the value to move the joint to such that it will stay below
   // reference_angle starting at current_angle, but move at least move_distance
