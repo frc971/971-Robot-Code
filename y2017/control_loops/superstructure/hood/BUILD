@@ -29,3 +29,19 @@ cc_library(
     '//frc971/control_loops:state_feedback_loop',
   ],
 )
+
+cc_library(
+  name = 'hood',
+  srcs = [
+    'hood.cc',
+  ],
+  hdrs = [
+    'hood.h',
+  ],
+  deps = [
+    ':hood_plants',
+    '//frc971/control_loops:profiled_subsystem',
+    '//y2017/control_loops/superstructure:superstructure_queue',
+    '//y2017:constants',
+  ],
+)

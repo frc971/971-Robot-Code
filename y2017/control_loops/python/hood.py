@@ -93,8 +93,8 @@ class Hood(control_loop.ControlLoop):
     glog.debug(repr(self.A_continuous))
 
     # Calculate the LQR controller gain
-    q_pos = 2.0
-    q_vel = 500.0
+    q_pos = 0.05
+    q_vel = 10.0
     self.Q = numpy.matrix([[(1.0 / (q_pos ** 2.0)), 0.0],
                            [0.0, (1.0 / (q_vel ** 2.0))]])
 
