@@ -9,6 +9,7 @@ queue_library(
   ],
   deps = [
     '//aos/common/controls:control_loop_queues',
+    '//frc971/control_loops:profiled_subsystem_queue',
     '//frc971/control_loops:queues',
   ],
 )

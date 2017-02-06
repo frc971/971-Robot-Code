@@ -41,7 +41,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
 
   double shoulder_angle = arm_->shoulder_angle();
   double wrist_angle = arm_->wrist_angle();
-  double intake_angle = intake_->angle();
+  double intake_angle = intake_->position();
 
   // TODO(phil): This may need tuning to account for bounciness in the limbs or
   // some other thing that I haven't thought of. At the very least,
@@ -163,7 +163,7 @@ void CollisionAvoidance::UpdateGoal(double shoulder_angle_goal,
 
 bool CollisionAvoidance::collided() const {
   return collided_with_given_angles(arm_->shoulder_angle(), arm_->wrist_angle(),
-                                    intake_->angle());
+                                    intake_->position());
 }
 
 bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
@@ -345,7 +345,7 @@ void Superstructure::RunIteration(
 
       // Set the goals to where we are now so when we start back up, we don't
       // jump.
-      intake_.ForceGoal(intake_.angle());
+      intake_.ForceGoal(intake_.position());
       arm_.ForceGoal(arm_.shoulder_angle(), arm_.wrist_angle());
       // Set up the profile to be the zeroing profile.
       intake_.AdjustProfile(0.5, 10);
@@ -390,7 +390,7 @@ void Superstructure::RunIteration(
         // enough.
         if (last_state_ != HIGH_ARM_ZERO_MOVE_INTAKE_OUT) {
           intake_.set_unprofiled_goal(
-              MoveButKeepBelow(kIntakeUpperClear, intake_.angle(),
+              MoveButKeepBelow(kIntakeUpperClear, intake_.position(),
                                kIntakeEncoderIndexDifference * 2.5));
         }
 
@@ -428,7 +428,7 @@ void Superstructure::RunIteration(
         // far enough to zero.
         if (last_state_ != LOW_ARM_ZERO_LOWER_INTAKE) {
           intake_.set_unprofiled_goal(
-              MoveButKeepBelow(kIntakeLowerClear, intake_.angle(),
+              MoveButKeepBelow(kIntakeLowerClear, intake_.position(),
                                kIntakeEncoderIndexDifference * 2.5));
         }
         if (IsIntakeNear(kLooseTolerance)) {
@@ -539,7 +539,7 @@ void Superstructure::RunIteration(
         }
 
         // Reset the profile to the current position so it moves well from here.
-        intake_.ForceGoal(intake_.angle());
+        intake_.ForceGoal(intake_.position());
         arm_.ForceGoal(arm_.shoulder_angle(), arm_.wrist_angle());
       } else {
         // If we are in slow_running and are no longer collided, let 'er rip.
@@ -687,7 +687,7 @@ void Superstructure::RunIteration(
 
   // Write out all the voltages.
   if (output) {
-    output->voltage_intake = intake_.intake_voltage();
+    output->voltage_intake = intake_.voltage();
     output->voltage_shoulder = arm_.shoulder_voltage();
     output->voltage_wrist = arm_.wrist_voltage();
 
@@ -764,7 +764,7 @@ void Superstructure::RunIteration(
   status->intake.unprofiled_goal_angular_velocity =
       intake_.unprofiled_goal(1, 0);
   status->intake.calculated_velocity =
-      (intake_.angle() - last_intake_angle_) / 0.005;
+      (intake_.position() - last_intake_angle_) / 0.005;
   status->intake.voltage_error = intake_.X_hat(2, 0);
   status->intake.estimator_state = intake_.EstimatorState(0);
   status->intake.feedforwards_power = intake_.controller().ff_U(0, 0);
@@ -773,7 +773,7 @@ void Superstructure::RunIteration(
 
   last_shoulder_angle_ = arm_.shoulder_angle();
   last_wrist_angle_ = arm_.wrist_angle();
-  last_intake_angle_ = intake_.angle();
+  last_intake_angle_ = intake_.position();
 
   status->estopped = (state_ == ESTOP);
 

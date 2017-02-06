@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_PROFILED_SUBSYSTEM_H_
 
 #include <array>
+#include <chrono>
 #include <memory>
 #include <utility>
 
@@ -9,6 +10,8 @@
 
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/util/trapezoid_profile.h"
+#include "frc971/control_loops/control_loops.q.h"
+#include "frc971/control_loops/profiled_subsystem.q.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/zeroing/zeroing.h"
@@ -142,23 +145,27 @@ class SingleDOFProfiledSubsystem
   // Runs the controller and profile generator for a cycle.
   void Update(bool disabled);
 
+  // Fills out the ProfiledJointStatus structure with the current state.
+  void PopulateStatus(ProfiledJointStatus *status);
+
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal);
   // Sets the unprofiled goal.  The profiler will generate a profile to go to
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal);
   // Limits our profiles to a max velocity and acceleration for proper motion.
+  void AdjustProfile(const ::frc971::ProfileParameters &profile_parameters);
   void AdjustProfile(double max_angular_velocity,
                      double max_angular_acceleration);
 
   // Returns true if we have exceeded any hard limits.
   bool CheckHardLimits();
 
-  // Returns the requested intake voltage.
-  double intake_voltage() const { return loop_->U(0, 0); }
+  // Returns the requested voltage.
+  double voltage() const { return loop_->U(0, 0); }
 
   // Returns the current position.
-  double angle() const { return Y_(0, 0); }
+  double position() const { return Y_(0, 0); }
 
   // For testing:
   // Triggers an estimator error.
@@ -182,6 +189,8 @@ class SingleDOFProfiledSubsystem
 
   const double default_velocity_;
   const double default_acceleration_;
+
+  double last_position_ = 0;
 };
 
 namespace internal {
@@ -213,6 +222,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
 
   loop_->mutable_X_hat()(0, 0) += doffset;
   Y_(0, 0) += doffset;
+  last_position_ += doffset;
   loop_->mutable_R(0, 0) += doffset;
 
   profile_.MoveGoal(doffset);
@@ -222,12 +232,39 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
 }
 
 template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
+    ProfiledJointStatus *status) {
+  status->zeroed = zeroed();
+  // We don't know, so default to the bad case.
+  status->estopped = true;
+
+  status->position = X_hat(0, 0);
+  status->velocity = X_hat(1, 0);
+  status->goal_position = goal(0, 0);
+  status->goal_velocity = goal(1, 0);
+  status->unprofiled_goal_position = unprofiled_goal(0, 0);
+  status->unprofiled_goal_velocity = unprofiled_goal(1, 0);
+  status->voltage_error = X_hat(2, 0);
+  status->calculated_velocity =
+      (position() - last_position_) /
+      ::std::chrono::duration_cast<::std::chrono::duration<double>>(
+          ::aos::controls::kLoopFrequency)
+          .count();
+
+  status->estimator_state = EstimatorState(0);
+
+  Eigen::Matrix<double, 3, 1> error = controller().error();
+  status->position_power = controller().K(0, 0) * error(0, 0);
+  status->velocity_power = controller().K(0, 1) * error(1, 0);
+}
+
+template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
-    typename ZeroingEstimator::Position position) {
-  estimators_[0].UpdateEstimate(position);
+    typename ZeroingEstimator::Position new_position) {
+  estimators_[0].UpdateEstimate(new_position);
 
   if (estimators_[0].error()) {
-    LOG(ERROR, "zeroing error with intake_estimator\n");
+    LOG(ERROR, "zeroing error\n");
     return;
   }
 
@@ -243,7 +280,8 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
     set_zeroed(0, true);
   }
 
-  Y_ << position.encoder;
+  last_position_ = position();
+  Y_ << new_position.encoder;
   Y_ += offset_;
   loop_->Correct(Y_);
 }
@@ -251,14 +289,14 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
     const char *name, Eigen::Matrix<double, 3, 1> *goal) {
-  // Limit the goal to min/max allowable angles.
+  // Limit the goal to min/max allowable positions.
   if ((*goal)(0, 0) > range_.upper) {
-    LOG(WARNING, "Intake goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+    LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
         range_.upper);
     (*goal)(0, 0) = range_.upper;
   }
   if ((*goal)(0, 0) < range_.lower) {
-    LOG(WARNING, "Intake goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+    LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
         range_.lower);
     (*goal)(0, 0) = range_.lower;
   }
@@ -305,14 +343,21 @@ template <class ZeroingEstimator>
 bool SingleDOFProfiledSubsystem<ZeroingEstimator>::CheckHardLimits() {
   // Returns whether hard limits have been exceeded.
 
-  if (angle() > range_.upper_hard || angle() < range_.lower_hard) {
+  if (position() > range_.upper_hard || position() < range_.lower_hard) {
     LOG(ERROR,
         "SingleDOFProfiledSubsystem at %f out of bounds [%f, %f], ESTOPing\n",
-        angle(), range_.lower_hard, range_.upper_hard);
+        position(), range_.lower_hard, range_.upper_hard);
     return true;
   }
 
   return false;
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::AdjustProfile(
+    const ::frc971::ProfileParameters &profile_parameters) {
+  AdjustProfile(profile_parameters.max_velocity,
+                profile_parameters.max_acceleration);
 }
 
 template <class ZeroingEstimator>

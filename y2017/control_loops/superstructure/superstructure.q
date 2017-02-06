@@ -1,36 +1,10 @@
 package y2017.control_loops;
 
 import "aos/common/controls/control_loops.q";
-import "frc971/control_loops/control_loops.q";
-
-struct JointState {
-  // Position of the joint.
-  float position;
-  // Velocity of the joint in units/second.
-  float velocity;
-  // Profiled goal position of the joint.
-  float goal_position;
-  // Profiled goal velocity of the joint in units/second.
-  float goal_velocity;
-  // Unprofiled goal position from absoulte zero  of the joint.
-  float unprofiled_goal_position;
-  // Unprofiled goal velocity of the joint in units/second.
-  float unprofiled_goal_velocity;
-
-  // The estimated voltage error.
-  float voltage_error;
-
-  // The calculated velocity with delta x/delta t
-  float calculated_velocity;
-
-  // Components of the control loop output
-  float position_power;
-  float velocity_power;
-  float feedforwards_power;
-
-  // State of the estimator.
-  .frc971.EstimatorState estimator_state;
-};
+import "frc971/control_loops/profiled_subsystem.q";
+// TODO(austin): Add this back in when the queue compiler supports diamond
+// inheritance.
+//import "frc971/control_loops/control_loops.q";
 
 struct IntakeGoal {
   // Zero on the intake is when the intake is retracted inside the robot,
@@ -76,17 +50,6 @@ struct ShooterGoal {
   double angular_velocity;
 };
 
-struct IntakeStatus {
-  // Is it zeroed?
-  bool zeroed;
-
-  // Estimated position and velocities.
-  JointState joint_state;
-
-  // If true, we have aborted.
-  bool estopped;
-};
-
 struct SerializerStatus {
   // The current average velocity in radians/second.
   double avg_angular_velocity;
@@ -100,28 +63,6 @@ struct SerializerStatus {
 
   // If true, we have aborted.
   bool estopped;
-};
-
-struct TurretStatus {
-  // Is the turret zeroed?
-  bool zeroed;
-
-  // If true, we have aborted.
-  bool estopped;
-
-  // Estimate angles and angular velocities.
-  JointState turret;
-};
-
-struct HoodStatus {
-  // Is the turret zeroed?
-  bool zeroed;
-
-  // If true, we have aborted.
-  bool estopped;
-
-  // Estimate angles and angular velocities.
-  JointState hood;
 };
 
 struct ShooterStatus {
@@ -158,10 +99,10 @@ queue_group SuperstructureQueue {
     bool estopped;
 
     // Each subsystems status.
-    IntakeStatus intake;
+    .frc971.control_loops.ProfiledJointStatus intake;
+    .frc971.control_loops.ProfiledJointStatus turret;
+    .frc971.control_loops.ProfiledJointStatus hood;
     SerializerStatus serializer;
-    TurretStatus turret;
-    HoodStatus hood;
     ShooterStatus shooter;
   };
 

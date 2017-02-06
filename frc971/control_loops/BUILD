@@ -148,6 +148,16 @@ cc_test(
   ],
 )
 
+queue_library(
+  name = 'profiled_subsystem_queue',
+  srcs = [
+    'profiled_subsystem.q',
+  ],
+  deps = [
+    ':queues',
+  ],
+)
+
 cc_library(
   name = 'profiled_subsystem',
   srcs = [
@@ -157,6 +167,7 @@ cc_library(
     'profiled_subsystem.h',
   ],
   deps = [
+    ':profiled_subsystem_queue',
     ':simple_capped_state_feedback_loop',
     ':state_feedback_loop',
     '//aos/common/controls:control_loop',
