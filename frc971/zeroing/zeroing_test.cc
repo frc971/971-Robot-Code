@@ -29,10 +29,10 @@ class ZeroingTest : public ::testing::Test {
   void MoveTo(PositionSensorSimulator *simulator,
               PotAndIndexPulseZeroingEstimator *estimator,
               double new_position) {
-    PotAndIndexPosition sensor_values_;
+    PotAndIndexPosition sensor_values;
     simulator->MoveTo(new_position);
-    simulator->GetSensorValues(&sensor_values_);
-    estimator->UpdateEstimate(sensor_values_);
+    simulator->GetSensorValues(&sensor_values);
+    estimator->UpdateEstimate(sensor_values);
   }
 
   ::aos::testing::TestSharedMemory my_shm_;
