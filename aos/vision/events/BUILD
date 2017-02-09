@@ -1,3 +1,4 @@
+load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -54,5 +55,14 @@ cc_test(
   deps = [
     ':udp',
     '//aos/testing:googletest',
+  ],
+)
+
+gtk_dependent_cc_library(
+  name = "gtk_event",
+  srcs = ["gtk_event.cc"],
+  deps = [
+    ":epoll_events",
+    '@usr_repo//:gtk+-3.0',
   ],
 )

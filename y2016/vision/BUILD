@@ -1,5 +1,6 @@
 load('/tools/build_rules/protobuf', 'proto_cc_library')
 load('/aos/build/queues', 'queue_library')
+load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
 
 queue_library(
   name = 'vision_queue',
@@ -107,6 +108,7 @@ cc_library(name = "blob_filters",
       "//aos/vision/blob:hierarchical_contour_merge",
       "//aos/vision/blob:codec",
         ],
+  visibility = ['//visibility:public'],
 )
 
 cc_binary(
@@ -127,5 +129,27 @@ cc_binary(
     '//y2016:constants',
     '//frc971/control_loops/drivetrain:drivetrain_queue',
     '//aos/common:mutex',
+  ],
+)
+
+gtk_dependent_cc_binary(
+  name = "debug_receiver",
+  srcs = ["debug_receiver.cc"],
+  visibility = ['//visibility:public'],
+  deps = [
+    "//aos/vision/image:image_types",
+    "//aos/vision/image:jpeg_routines",
+    "//aos/vision/events:socket_types",
+    "//aos/vision/events:tcp_client",
+    "//aos/vision/events:epoll_events",
+    "//aos/vision/events:gtk_event",
+    "//aos/vision/debug:debug_viewer",
+    "//aos/vision/blob:range_image",
+    "//aos/vision/blob:codec",
+    "//aos/vision/blob:stream_view",
+    ":stereo_geometry",
+    ":blob_filters",
+    ":vision_data",
+    ":calibration",
   ],
 )
