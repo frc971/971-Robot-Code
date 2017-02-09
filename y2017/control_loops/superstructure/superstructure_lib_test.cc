@@ -12,8 +12,9 @@
 #include "gtest/gtest.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
-#include "y2017/control_loops/superstructure/turret/turret_plant.h"
 #include "y2017/control_loops/superstructure/intake/intake_plant.h"
+#include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
+#include "y2017/control_loops/superstructure/turret/turret_plant.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -27,6 +28,25 @@ constexpr double kNoiseScalar = 0.01;
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
+
+class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
+ public:
+  explicit ShooterPlant(StateFeedbackPlant<2, 1, 1> &&other)
+      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+
+  void CheckU() override {
+    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
+    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
+  }
+
+  double voltage_offset() const { return voltage_offset_; }
+  void set_voltage_offset(double voltage_offset) {
+    voltage_offset_ = voltage_offset;
+  }
+
+ private:
+  double voltage_offset_ = 0.0;
+};
 
 class HoodPlant : public StateFeedbackPlant<2, 1, 1> {
  public:
@@ -102,6 +122,9 @@ class SuperstructureSimulation {
             ::y2017::control_loops::superstructure::intake::MakeIntakePlant())),
         intake_pot_encoder_(constants::Values::kIntakeEncoderIndexDifference),
 
+        shooter_plant_(new ShooterPlant(::y2017::control_loops::superstructure::
+                                            shooter::MakeShooterPlant())),
+
         superstructure_queue_(".y2017.control_loops.superstructure", 0xdeadbeef,
                               ".y2017.control_loops.superstructure.goal",
                               ".y2017.control_loops.superstructure.position",
@@ -158,6 +181,7 @@ class SuperstructureSimulation {
     hood_pot_encoder_.GetSensorValues(&position->hood);
     turret_pot_encoder_.GetSensorValues(&position->turret);
     intake_pot_encoder_.GetSensorValues(&position->intake);
+    position->theta_shooter = shooter_plant_->Y(0, 0);
     position.Send();
   }
 
@@ -169,6 +193,8 @@ class SuperstructureSimulation {
 
   double intake_position() const { return intake_plant_->X(0, 0); }
   double intake_velocity() const { return intake_plant_->X(1, 0); }
+
+  double shooter_velocity() const { return shooter_plant_->X(1, 0); }
 
   // Sets the difference between the commanded and applied powers.
   // This lets us test that the integrators work.
@@ -182,6 +208,10 @@ class SuperstructureSimulation {
 
   void set_intake_power_error(double power_error) {
     intake_plant_->set_voltage_offset(power_error);
+  }
+
+  void set_shooter_voltage_offset(double power_error) {
+    shooter_plant_->set_voltage_offset(power_error);
   }
 
   // Simulates the superstructure for a single timestep.
@@ -228,9 +258,14 @@ class SuperstructureSimulation {
     intake_plant_->mutable_U() << superstructure_queue_.output->voltage_intake +
                                       intake_plant_->voltage_offset();
 
+    shooter_plant_->mutable_U()
+        << superstructure_queue_.output->voltage_shooter +
+               shooter_plant_->voltage_offset();
+
     hood_plant_->Update();
     turret_plant_->Update();
     intake_plant_->Update();
+    shooter_plant_->Update();
 
     const double angle_hood = hood_plant_->Y(0, 0);
     const double angle_turret = turret_plant_->Y(0, 0);
@@ -257,6 +292,8 @@ class SuperstructureSimulation {
 
   ::std::unique_ptr<IntakePlant> intake_plant_;
   PositionSensorSimulator intake_pot_encoder_;
+
+  ::std::unique_ptr<ShooterPlant> shooter_plant_;
 
   SuperstructureQueue superstructure_queue_;
 };
@@ -294,6 +331,14 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                 superstructure_queue_.status->intake.position, 0.001);
     EXPECT_NEAR(superstructure_queue_.goal->intake.distance,
                 superstructure_plant_.intake_position(), 0.001);
+
+    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
+                superstructure_queue_.status->shooter.angular_velocity, 0.1);
+    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
+                superstructure_queue_.status->shooter.avg_angular_velocity,
+                0.1);
+    EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
+                superstructure_plant_.shooter_velocity(), 0.1);
   }
 
   // Runs one iteration of the whole simulation.
@@ -610,6 +655,60 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
 }
 
 // TODO(austin): Test saturation
+
+// Tests that the shooter spins up to speed and that it then spins down
+// without applying any power.
+TEST_F(SuperstructureTest, SpinUpAndDown) {
+  // Spin up.
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
+    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
+    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
+    goal->shooter.angular_velocity = 300.0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+
+  RunForTime(chrono::seconds(5));
+  VerifyNearGoal();
+  EXPECT_TRUE(superstructure_queue_.status->shooter.ready);
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
+    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
+    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
+    goal->shooter.angular_velocity = 0.0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  // Make sure we don't apply voltage on spin-down.
+  RunIteration();
+  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
+  EXPECT_EQ(0.0, superstructure_queue_.output->voltage_shooter);
+  // Continue to stop.
+  RunForTime(chrono::seconds(5));
+  EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
+  EXPECT_EQ(0.0, superstructure_queue_.output->voltage_shooter);
+}
+
+// Tests that the shooter can spin up nicely after being disabled for a while.
+TEST_F(SuperstructureTest, Disabled) {
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
+    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
+    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
+    goal->shooter.angular_velocity = 200.0;
+    ASSERT_TRUE(goal.Send());
+  }
+  RunForTime(chrono::seconds(5), false);
+  EXPECT_EQ(nullptr, superstructure_queue_.output.get());
+
+  RunForTime(chrono::seconds(5));
+
+  VerifyNearGoal();
+}
 
 }  // namespace testing
 }  // namespace superstructure

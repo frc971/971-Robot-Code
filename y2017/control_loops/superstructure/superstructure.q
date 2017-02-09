@@ -81,6 +81,15 @@ struct ShooterStatus {
 
   // If true, we have aborted.
   bool estopped;
+
+  // The estimated voltage error from the kalman filter in volts.
+  double voltage_error;
+
+  // The current velocity measured as delta x / delta t in radians/sec.
+  double instantaneous_velocity;
+
+  // The error between our measurement and expected measurement in radians.
+  double position_error;
 };
 
 queue_group SuperstructureQueue {
