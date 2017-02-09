@@ -29,12 +29,12 @@ namespace constants {
 struct Values {
   struct Intake {
     double pot_offset;
-    ::frc971::constants::PotAndIndexPulseZeroingConstants zeroing;
+    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
   };
 
   struct Turret {
     double pot_offset;
-    ::frc971::constants::PotAndIndexPulseZeroingConstants zeroing;
+    ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
   };
 
   struct Hood {
@@ -86,8 +86,8 @@ struct Values {
       control_loops::superstructure::hood::kFreeSpeed * control_loops::superstructure::hood::kOutputRatio /
       constants::Values::kHoodEncoderRatio * kHoodEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kHoodRange{
-      -0.39 * M_PI / 2.0, 37.11 * M_PI / 2.0, (-0.39 + 1.0) * M_PI / 2.0,
-      (37.11 - 1.0) * M_PI / 2.0};
+      -0.39 * M_PI / 180.0, 37.11 * M_PI / 180.0, (-0.39 + 1.0) * M_PI / 180.0,
+      (37.11 - 1.0) * M_PI / 180.0};
 
   static constexpr double kTurretEncoderCountsPerRevolution = 1024 * 4;
   static constexpr double kTurretEncoderRatio = 16.0 / 92.0;

@@ -97,8 +97,8 @@ class ProfiledSubsystem {
   double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
 
   // Returns the current internal estimator state for logging.
-  ::frc971::EstimatorState EstimatorState(int index) {
-    ::frc971::EstimatorState estimator_state;
+  typename ZeroingEstimator::State EstimatorState(int index) {
+    typename ZeroingEstimator::State estimator_state;
     ::frc971::zeroing::PopulateEstimatorState(estimators_[index],
                                               &estimator_state);
 
@@ -131,10 +131,10 @@ class ProfiledSubsystem {
   ::std::array<bool, number_of_axes> zeroed_;
 };
 
-template <class ZeroingEstimator =
+template <typename ZeroingEstimator =
               ::frc971::zeroing::PotAndIndexPulseZeroingEstimator>
 class SingleDOFProfiledSubsystem
-    : public ::frc971::control_loops::ProfiledSubsystem<3, 1> {
+    : public ::frc971::control_loops::ProfiledSubsystem<3, 1, ZeroingEstimator> {
  public:
   SingleDOFProfiledSubsystem(
       ::std::unique_ptr<SimpleCappedStateFeedbackLoop<3, 1, 1>> loop,
@@ -148,7 +148,8 @@ class SingleDOFProfiledSubsystem
   void Update(bool disabled);
 
   // Fills out the ProfiledJointStatus structure with the current state.
-  void PopulateStatus(ProfiledJointStatus *status);
+  template <class StatusType>
+  void PopulateStatus(StatusType *status);
 
   // Forces the current goal to the provided goal, bypassing the profiler.
   void ForceGoal(double goal);
@@ -164,14 +165,14 @@ class SingleDOFProfiledSubsystem
   bool CheckHardLimits();
 
   // Returns the requested voltage.
-  double voltage() const { return loop_->U(0, 0); }
+  double voltage() const { return this->loop_->U(0, 0); }
 
   // Returns the current position.
-  double position() const { return Y_(0, 0); }
+  double position() const { return this->Y_(0, 0); }
 
   // For testing:
   // Triggers an estimator error.
-  void TriggerEstimatorError() { estimators_[0].TriggerError(); }
+  void TriggerEstimatorError() { this->estimators_[0].TriggerError(); }
 
   const ::frc971::constants::Range &range() const { return range_; }
 
@@ -209,7 +210,8 @@ SingleDOFProfiledSubsystem<ZeroingEstimator>::SingleDOFProfiledSubsystem(
     const typename ZeroingEstimator::ZeroingConstants &zeroing_constants,
     const ::frc971::constants::Range &range, double default_velocity,
     double default_acceleration)
-    : ProfiledSubsystem(::std::move(loop), {{zeroing_constants}}),
+    : ProfiledSubsystem<3, 1, ZeroingEstimator>(::std::move(loop),
+                                                {{zeroing_constants}}),
       profile_(::aos::controls::kLoopFrequency),
       range_(range),
       default_velocity_(default_velocity),
@@ -224,71 +226,72 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateOffset(double offset) {
   const double doffset = offset - offset_(0, 0);
   LOG(INFO, "Adjusting offset from %f to %f\n", offset_(0, 0), offset);
 
-  loop_->mutable_X_hat()(0, 0) += doffset;
-  Y_(0, 0) += doffset;
+  this->loop_->mutable_X_hat()(0, 0) += doffset;
+  this->Y_(0, 0) += doffset;
   last_position_ += doffset;
-  loop_->mutable_R(0, 0) += doffset;
+  this->loop_->mutable_R(0, 0) += doffset;
 
   profile_.MoveGoal(doffset);
   offset_(0, 0) = offset;
 
-  CapGoal("R", &loop_->mutable_R());
+  CapGoal("R", &this->loop_->mutable_R());
 }
 
 template <class ZeroingEstimator>
+template <class StatusType>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
-    ProfiledJointStatus *status) {
-  status->zeroed = zeroed();
+    StatusType *status) {
+  status->zeroed = this->zeroed();
   status->state = -1;
   // We don't know, so default to the bad case.
   status->estopped = true;
 
-  status->position = X_hat(0, 0);
-  status->velocity = X_hat(1, 0);
-  status->goal_position = goal(0, 0);
-  status->goal_velocity = goal(1, 0);
-  status->unprofiled_goal_position = unprofiled_goal(0, 0);
-  status->unprofiled_goal_velocity = unprofiled_goal(1, 0);
-  status->voltage_error = X_hat(2, 0);
+  status->position = this->X_hat(0, 0);
+  status->velocity = this->X_hat(1, 0);
+  status->goal_position = this->goal(0, 0);
+  status->goal_velocity = this->goal(1, 0);
+  status->unprofiled_goal_position = this->unprofiled_goal(0, 0);
+  status->unprofiled_goal_velocity = this->unprofiled_goal(1, 0);
+  status->voltage_error = this->X_hat(2, 0);
   status->calculated_velocity =
       (position() - last_position_) /
       ::std::chrono::duration_cast<::std::chrono::duration<double>>(
           ::aos::controls::kLoopFrequency)
           .count();
 
-  status->estimator_state = EstimatorState(0);
+  status->estimator_state = this->EstimatorState(0);
 
-  Eigen::Matrix<double, 3, 1> error = controller().error();
-  status->position_power = controller().K(0, 0) * error(0, 0);
-  status->velocity_power = controller().K(0, 1) * error(1, 0);
+  Eigen::Matrix<double, 3, 1> error = this->controller().error();
+  status->position_power = this->controller().K(0, 0) * error(0, 0);
+  status->velocity_power = this->controller().K(0, 1) * error(1, 0);
 }
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
     typename ZeroingEstimator::Position new_position) {
-  estimators_[0].UpdateEstimate(new_position);
+  this->estimators_[0].UpdateEstimate(new_position);
 
-  if (estimators_[0].error()) {
+  if (this->estimators_[0].error()) {
     LOG(ERROR, "zeroing error\n");
     return;
   }
 
-  if (!initialized_) {
-    if (estimators_[0].offset_ready()) {
-      UpdateOffset(estimators_[0].offset());
-      initialized_ = true;
+  if (!this->initialized_) {
+    if (this->estimators_[0].offset_ready()) {
+      UpdateOffset(this->estimators_[0].offset());
+      this->initialized_ = true;
     }
   }
 
-  if (!zeroed(0) && estimators_[0].zeroed()) {
-    UpdateOffset(estimators_[0].offset());
-    set_zeroed(0, true);
+  if (!this->zeroed(0) && this->estimators_[0].zeroed()) {
+    UpdateOffset(this->estimators_[0].offset());
+    this->set_zeroed(0, true);
   }
 
   last_position_ = position();
-  Y_ << new_position.encoder;
-  Y_ += offset_;
-  loop_->Correct(Y_);
+  this->Y_ << new_position.encoder;
+  this->Y_ += this->offset_;
+  this->loop_->Correct(Y_);
 }
 
 template <class ZeroingEstimator>
@@ -310,37 +313,39 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
   set_unprofiled_goal(goal);
-  loop_->mutable_R() = unprofiled_goal_;
-  loop_->mutable_next_R() = loop_->R();
+  this->loop_->mutable_R() = this->unprofiled_goal_;
+  this->loop_->mutable_next_R() = this->loop_->R();
 
-  profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
+  const ::Eigen::Matrix<double, 3, 1> &R = this->loop_->R();
+  this->profile_.MoveCurrentState(R.block<2, 1>(0, 0));
 }
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
     double unprofiled_goal) {
-  unprofiled_goal_(0, 0) = unprofiled_goal;
-  unprofiled_goal_(1, 0) = 0.0;
-  unprofiled_goal_(2, 0) = 0.0;
-  CapGoal("unprofiled R", &unprofiled_goal_);
+  this->unprofiled_goal_(0, 0) = unprofiled_goal;
+  this->unprofiled_goal_(1, 0) = 0.0;
+  this->unprofiled_goal_(2, 0) = 0.0;
+  CapGoal("unprofiled R", &this->unprofiled_goal_);
 }
 
 template <class ZeroingEstimator>
 void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
   if (!disable) {
-    ::Eigen::Matrix<double, 2, 1> goal_state =
-        profile_.Update(unprofiled_goal_(0, 0), unprofiled_goal_(1, 0));
+    ::Eigen::Matrix<double, 2, 1> goal_state = profile_.Update(
+        this->unprofiled_goal_(0, 0), this->unprofiled_goal_(1, 0));
 
-    loop_->mutable_next_R(0, 0) = goal_state(0, 0);
-    loop_->mutable_next_R(1, 0) = goal_state(1, 0);
-    loop_->mutable_next_R(2, 0) = 0.0;
-    CapGoal("next R", &loop_->mutable_next_R());
+    this->loop_->mutable_next_R(0, 0) = goal_state(0, 0);
+    this->loop_->mutable_next_R(1, 0) = goal_state(1, 0);
+    this->loop_->mutable_next_R(2, 0) = 0.0;
+    CapGoal("next R", &this->loop_->mutable_next_R());
   }
 
-  loop_->Update(disable);
+  this->loop_->Update(disable);
 
-  if (!disable && loop_->U(0, 0) != loop_->U_uncapped(0, 0)) {
-    profile_.MoveCurrentState(loop_->R().block<2, 1>(0, 0));
+  if (!disable && this->loop_->U(0, 0) != this->loop_->U_uncapped(0, 0)) {
+    const ::Eigen::Matrix<double, 3, 1> &R = this->loop_->R();
+    profile_.MoveCurrentState(R.block<2, 1>(0, 0));
   }
 }
 

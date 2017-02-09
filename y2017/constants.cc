@@ -70,14 +70,14 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   r->drivetrain_max_speed = 5;
 
   intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  intake->zeroing.index_difference = Values::kIntakeEncoderIndexDifference;
-  intake->zeroing.measured_index_position = 0;
-  intake->zeroing.allowable_encoder_error = 0.3;
+  intake->zeroing.one_revolution_distance = Values::kIntakeEncoderIndexDifference;
+  intake->zeroing.measured_absolute_position = 0;
+  intake->zeroing.zeroing_threshold = 0.3;
 
   turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  turret->zeroing.index_difference = Values::kTurretEncoderIndexDifference;
-  turret->zeroing.measured_index_position = 0;
-  turret->zeroing.allowable_encoder_error = 0.3;
+  turret->zeroing.one_revolution_distance = Values::kTurretEncoderIndexDifference;
+  turret->zeroing.measured_absolute_position = 0;
+  turret->zeroing.zeroing_threshold = 0.3;
 
   hood->zeroing.average_filter_size = Values::kZeroingSampleSize;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;

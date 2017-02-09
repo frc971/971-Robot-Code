@@ -102,8 +102,8 @@ queue_group SuperstructureQueue {
     bool estopped;
 
     // Each subsystems status.
-    .frc971.control_loops.ProfiledJointStatus intake;
-    .frc971.control_loops.ProfiledJointStatus turret;
+    .frc971.control_loops.AbsoluteProfiledJointStatus intake;
+    .frc971.control_loops.AbsoluteProfiledJointStatus turret;
     .frc971.control_loops.ProfiledJointStatus hood;
     IndexerStatus indexer;
     ShooterStatus shooter;
@@ -115,14 +115,14 @@ queue_group SuperstructureQueue {
 
     // Position of the intake, zero when the intake is in, positive when it is
     // out.
-    .frc971.PotAndIndexPosition intake;
+    .frc971.PotAndAbsolutePosition intake;
 
     // Indexer angle in radians.
     double theta_indexer;
 
     // The sensor readings for the turret. The units and sign are defined the
     // same as what's in the Goal message.
-    .frc971.PotAndIndexPosition turret;
+    .frc971.PotAndAbsolutePosition turret;
 
     // The sensor readings for the hood. The units and sign are defined the
     // same as what's in the Goal message.

@@ -1,0 +1,7 @@
+superstructure_lib_test output voltage_intake
+
+superstructure_lib_test status intake estimator_state position
+superstructure_lib_test status intake state
+superstructure_lib_test goal intake distance
+superstructure_lib_test position intake pot
+superstructure_lib_test position intake encoder

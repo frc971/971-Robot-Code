@@ -27,3 +27,20 @@ cc_library(
     '//frc971/control_loops:state_feedback_loop',
   ],
 )
+
+cc_library(
+  name = 'turret',
+  visibility = ['//visibility:public'],
+  srcs = [
+    'turret.cc',
+  ],
+  hdrs = [
+    'turret.h',
+  ],
+  deps = [
+    ':turret_plants',
+    '//frc971/control_loops:profiled_subsystem',
+    '//y2017/control_loops/superstructure:superstructure_queue',
+    '//y2017:constants',
+  ],
+)

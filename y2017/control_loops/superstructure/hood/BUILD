@@ -30,6 +30,7 @@ cc_library(
 
 cc_library(
   name = 'hood',
+  visibility = ['//visibility:public'],
   srcs = [
     'hood.cc',
   ],
