@@ -123,9 +123,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           // Shoulder (Now calibrated at 0)
           {
            -1.0016 - 0.0841 + 0.06138835 * M_PI / 180.0 + 1.07838 - 1.0441 +
-               0.0034 + 0.0065,
+               0.0034 + 0.0065 - 0.0505,
            {Values::kZeroingSampleSize, Values::kShoulderEncoderIndexDifference,
-            0.126458, 1.3},
+            0.027180, 1.3},
           },
 
           // Wrist
