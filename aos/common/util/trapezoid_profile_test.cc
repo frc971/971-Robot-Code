@@ -113,6 +113,16 @@ TEST_F(TrapezoidProfileTest, TopSpeed) {
   EXPECT_TRUE(At(4, 0));
 }
 
+// Tests that the position and velocity exactly match at the end.  Some code we
+// have assumes this to be true as a simplification.
+TEST_F(TrapezoidProfileTest, ExactlyReachesGoal) {
+  for (int i = 0; i < 450; ++i) {
+    RunIteration(1, 0);
+  }
+  EXPECT_EQ(position()(1), 0.0);
+  EXPECT_EQ(position()(0), 1.0);
+}
+
 }  // namespace testing
 }  // namespace util
 }  // namespace aos
