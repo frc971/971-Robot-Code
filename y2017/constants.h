@@ -20,12 +20,11 @@ struct Values {
   static const int kZeroingSampleSize = 200;
 
   // The ratio from the encoder shaft to the drivetrain wheels.
+  // TODO(constants): Fix this.
   static constexpr double kDrivetrainEncoderRatio =
       (18.0 / 36.0) /*output reduction*/ * (44.0 / 30.0) /*encoder gears*/;
 
   // ///// Dynamic constants. /////
-  double drivetrain_max_speed;
-
   double down_error;
 };
 

@@ -37,21 +37,18 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
       return new Values{
-          5.0,  // drivetrain max speed
           0.0,  // down error
       };
       break;
 
     case kCompTeamNumber:
       return new Values{
-          5.0,  // drivetrain max speed
           0.0,  // down error
       };
       break;
 
     case kPracticeTeamNumber:
       return new Values{
-          5.0,  // drivetrain max speed
           0.0,  // down error
       };
       break;
