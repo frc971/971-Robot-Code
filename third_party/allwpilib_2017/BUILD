@@ -51,23 +51,39 @@ _excluded_devices = [
   'SafePWM',
   'SpeedController',
   'PWMSpeedController',
+  'SerialPort',
+  'OSSerialPort',
+  'SerialHelper',
+  'XboxController',
+  'GenericHID',
+  'GamepadBase',
+  'PIDSource',
+  'Potentiometer',
+  'JoystickBase',
+  'Joystick',
+  'Log',
+  'CANSpeedController',
+  'visa',
 ]
 
 # Whole subdirectories of WPILib we don't want around.
-_excluded_shared_directories = [
+_excluded_directories = [
   'SmartDashboard',
   'LiveWindow',
   'Commands',
   'Buttons',
   'Filters',
+  'LabView',
+  'vision',
 ]
 
 # Header files we don't want to have.
 _bad_hdrs = ([
   'wpilibc/athena/include/WPILib.h',
-] + ['wpilibc/shared/include/%s/**/*' % d
-     for d in _excluded_shared_directories] +
- ['wpilibc/*/include/%s.h' % d for d in _excluded_devices])
+  'hal/include/HAL/LabVIEW/HAL.h',
+  'wpilibc/**/Accelerometer.*',
+] + ['**/%s/**' % d for d in _excluded_directories] +
+ ['**/%s.*' % d for d in _excluded_devices])
 _h_hdrs = glob([d + '/**/*.h' for d in _header_dirs], exclude=_bad_hdrs)
 _hpp_hdrs = glob([d + '/**/*.hpp' for d in _header_dirs], exclude=_bad_hdrs)
 
@@ -84,9 +100,10 @@ cc_library(
     'hal/lib/athena/ctre/*.cpp',
     'hal/lib/shared/handles/*.cpp',
   ], exclude = (
-    ['wpilibc/shared/src/%s/**/*' % d for d in _excluded_shared_directories] +
-    ['wpilibc/*/src/%s.cpp' % d for d in _excluded_devices]
-  )) + [
+    ['**/%s/**' % d for d in _excluded_directories] +
+    ['**/%s.*' % d for d in _excluded_devices] + [
+    'wpilibc/**/Accelerometer.*',
+  ])) + [
     ':wpilib_version',
   ],
   copts = [

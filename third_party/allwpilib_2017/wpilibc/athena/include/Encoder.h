@@ -13,7 +13,6 @@
 #include "Counter.h"
 #include "CounterBase.h"
 #include "HAL/Encoder.h"
-#include "PIDSource.h"
 #include "SensorBase.h"
 
 namespace frc {
@@ -36,8 +35,7 @@ class DigitalGlitchFilter;
  * to be zeroed before use.
  */
 class Encoder : public SensorBase,
-                public CounterBase,
-                public PIDSource {
+                public CounterBase {
  public:
   enum IndexingType {
     kResetWhileHigh,
@@ -74,7 +72,6 @@ class Encoder : public SensorBase,
   void SetReverseDirection(bool reverseDirection);
   void SetSamplesToAverage(int samplesToAverage);
   int GetSamplesToAverage() const;
-  double PIDGet() override;
 
   void SetIndexSource(int channel, IndexingType type = kResetOnRisingEdge);
   WPI_DEPRECATED("Use pass-by-reference instead.")

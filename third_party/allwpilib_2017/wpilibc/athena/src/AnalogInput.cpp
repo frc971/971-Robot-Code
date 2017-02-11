@@ -403,13 +403,3 @@ double AnalogInput::GetSampleRate() {
   wpi_setGlobalErrorWithContext(status, HAL_GetErrorMessage(status));
   return sampleRate;
 }
-
-/**
- * Get the Average value for the PID Source base object.
- *
- * @return The average voltage.
- */
-double AnalogInput::PIDGet() {
-  if (StatusIsFatal()) return 0.0;
-  return GetAverageVoltage();
-}

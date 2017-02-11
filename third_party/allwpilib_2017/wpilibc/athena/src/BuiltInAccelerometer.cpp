@@ -26,11 +26,6 @@ BuiltInAccelerometer::BuiltInAccelerometer(Range range) {
 }
 
 void BuiltInAccelerometer::SetRange(Range range) {
-  if (range == kRange_16G) {
-    wpi_setWPIErrorWithContext(
-        ParameterOutOfRange, "16G range not supported (use k2G, k4G, or k8G)");
-  }
-
   HAL_SetAccelerometerActive(false);
   HAL_SetAccelerometerRange((HAL_AccelerometerRange)range);
   HAL_SetAccelerometerActive(true);

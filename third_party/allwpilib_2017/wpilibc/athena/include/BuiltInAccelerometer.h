@@ -11,7 +11,6 @@
 #include <string>
 
 #include "SensorBase.h"
-#include "interfaces/Accelerometer.h"
 
 namespace frc {
 
@@ -20,17 +19,17 @@ namespace frc {
  *
  * This class allows access to the roboRIO's internal accelerometer.
  */
-class BuiltInAccelerometer : public Accelerometer,
-                             public SensorBase {
+class BuiltInAccelerometer : public SensorBase {
  public:
+  enum Range { kRange_2G = 0, kRange_4G = 1, kRange_8G = 2 };
+
   explicit BuiltInAccelerometer(Range range = kRange_8G);
   virtual ~BuiltInAccelerometer() = default;
 
-  // Accelerometer interface
-  void SetRange(Range range) override;
-  double GetX() override;
-  double GetY() override;
-  double GetZ() override;
+  void SetRange(Range range);
+  double GetX();
+  double GetY();
+  double GetZ();
 };
 
 }  // namespace frc
