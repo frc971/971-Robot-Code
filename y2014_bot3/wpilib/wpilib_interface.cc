@@ -276,14 +276,14 @@ class DrivetrainWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(-queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(queue->right_voltage / 12.0);
+    left_drivetrain_talon_->SetSpeed(-queue->left_voltage / 12.0);
+    right_drivetrain_talon_->SetSpeed(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    left_drivetrain_talon_->SetDisabled();
+    right_drivetrain_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
@@ -315,20 +315,20 @@ class RollersWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2014_bot3::control_loops::rollers_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    rollers_front_left_intake_talon_->Set(queue->front_intake_voltage / 12.0);
-    rollers_front_right_intake_talon_->Set(-(queue->front_intake_voltage / 12.0));
-    rollers_back_left_intake_talon_->Set(queue->back_intake_voltage / 12.0);
-    rollers_back_right_intake_talon_->Set(-(queue->back_intake_voltage / 12.0));
-    rollers_low_goal_talon_->Set(queue->low_goal_voltage / 12.0);
+    rollers_front_left_intake_talon_->SetSpeed(queue->front_intake_voltage / 12.0);
+    rollers_front_right_intake_talon_->SetSpeed(-(queue->front_intake_voltage / 12.0));
+    rollers_back_left_intake_talon_->SetSpeed(queue->back_intake_voltage / 12.0);
+    rollers_back_right_intake_talon_->SetSpeed(-(queue->back_intake_voltage / 12.0));
+    rollers_low_goal_talon_->SetSpeed(queue->low_goal_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Intake output too old\n");
-    rollers_front_left_intake_talon_->Disable();
-    rollers_front_right_intake_talon_->Disable();
-    rollers_back_left_intake_talon_->Disable();
-    rollers_back_right_intake_talon_->Disable();
-    rollers_low_goal_talon_->Disable();
+    rollers_front_left_intake_talon_->SetDisabled();
+    rollers_front_right_intake_talon_->SetDisabled();
+    rollers_back_left_intake_talon_->SetDisabled();
+    rollers_back_right_intake_talon_->SetDisabled();
+    rollers_low_goal_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> rollers_front_left_intake_talon_,

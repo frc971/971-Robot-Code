@@ -171,18 +171,18 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_talon_0_->Set(-queue->left_voltage / 12.0);
-    drivetrain_left_talon_1_->Set(-queue->left_voltage / 12.0);
-    drivetrain_right_talon_0_->Set(queue->right_voltage / 12.0);
-    drivetrain_right_talon_1_->Set(queue->right_voltage / 12.0);
+    drivetrain_left_talon_0_->SetSpeed(-queue->left_voltage / 12.0);
+    drivetrain_left_talon_1_->SetSpeed(-queue->left_voltage / 12.0);
+    drivetrain_right_talon_0_->SetSpeed(queue->right_voltage / 12.0);
+    drivetrain_right_talon_1_->SetSpeed(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    drivetrain_left_talon_0_->Disable();
-    drivetrain_right_talon_0_->Disable();
-    drivetrain_left_talon_1_->Disable();
-    drivetrain_right_talon_1_->Disable();
+    drivetrain_left_talon_0_->SetDisabled();
+    drivetrain_right_talon_0_->SetDisabled();
+    drivetrain_left_talon_1_->SetDisabled();
+    drivetrain_right_talon_1_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> drivetrain_left_talon_0_, drivetrain_right_talon_0_,

@@ -46,6 +46,11 @@ _excluded_devices = [
   'ADXRS450_Gyro',
   'GyroBase',
   'IterativeRobot',
+  'MotorSafety',
+  'MotorSafetyHelper',
+  'SafePWM',
+  'SpeedController',
+  'PWMSpeedController',
 ]
 
 # Whole subdirectories of WPILib we don't want around.

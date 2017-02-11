@@ -520,12 +520,12 @@ class CanWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015::autonomous::can_control;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    can_talon_->Set(queue->can_voltage / 12.0);
+    can_talon_->SetSpeed(queue->can_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Can output too old\n");
-    can_talon_->Disable();
+    can_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> can_talon_;
@@ -549,14 +549,14 @@ class DrivetrainWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_drivetrain_talon_->Set(queue->left_voltage / 12.0);
-    right_drivetrain_talon_->Set(-queue->right_voltage / 12.0);
+    left_drivetrain_talon_->SetSpeed(queue->left_voltage / 12.0);
+    right_drivetrain_talon_->SetSpeed(-queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "drivetrain output too old\n");
-    left_drivetrain_talon_->Disable();
-    right_drivetrain_talon_->Disable();
+    left_drivetrain_talon_->SetDisabled();
+    right_drivetrain_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_drivetrain_talon_;
@@ -589,18 +589,18 @@ class FridgeWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015::control_loops::fridge::fridge_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_arm_talon_->Set(queue->left_arm / 12.0);
-    right_arm_talon_->Set(-queue->right_arm / 12.0);
-    left_elevator_talon_->Set(queue->left_elevator / 12.0);
-    right_elevator_talon_->Set(-queue->right_elevator / 12.0);
+    left_arm_talon_->SetSpeed(queue->left_arm / 12.0);
+    right_arm_talon_->SetSpeed(-queue->right_arm / 12.0);
+    left_elevator_talon_->SetSpeed(queue->left_elevator / 12.0);
+    right_elevator_talon_->SetSpeed(-queue->right_elevator / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Fridge output too old.\n");
-    left_arm_talon_->Disable();
-    right_arm_talon_->Disable();
-    left_elevator_talon_->Disable();
-    right_elevator_talon_->Disable();
+    left_arm_talon_->SetDisabled();
+    right_arm_talon_->SetDisabled();
+    left_elevator_talon_->SetDisabled();
+    right_elevator_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_arm_talon_;
@@ -631,16 +631,16 @@ class ClawWriter : public LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::y2015::control_loops::claw_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    left_intake_talon_->Set(queue->intake_voltage / 12.0);
-    right_intake_talon_->Set(-queue->intake_voltage / 12.0);
-    wrist_talon_->Set(-queue->voltage / 12.0);
+    left_intake_talon_->SetSpeed(queue->intake_voltage / 12.0);
+    right_intake_talon_->SetSpeed(-queue->intake_voltage / 12.0);
+    wrist_talon_->SetSpeed(-queue->voltage / 12.0);
   }
 
   virtual void Stop() override {
     LOG(WARNING, "Claw output too old.\n");
-    left_intake_talon_->Disable();
-    right_intake_talon_->Disable();
-    wrist_talon_->Disable();
+    left_intake_talon_->SetDisabled();
+    right_intake_talon_->SetDisabled();
+    wrist_talon_->SetDisabled();
   }
 
   ::std::unique_ptr<Talon> left_intake_talon_;

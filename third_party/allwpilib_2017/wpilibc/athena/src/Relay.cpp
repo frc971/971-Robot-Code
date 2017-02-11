@@ -12,7 +12,6 @@
 
 #include "HAL/HAL.h"
 #include "HAL/Ports.h"
-#include "MotorSafetyHelper.h"
 #include "WPIErrors.h"
 
 using namespace frc;
@@ -82,9 +81,6 @@ Relay::Relay(int channel, Relay::Direction direction)
       return;
     }
   }
-
-  m_safetyHelper = std::make_unique<MotorSafetyHelper>(this);
-  m_safetyHelper->SetSafetyEnabled(false);
 }
 
 /**
@@ -206,57 +202,3 @@ Relay::Value Relay::Get() const {
 }
 
 int Relay::GetChannel() const { return m_channel; }
-
-/**
- * Set the expiration time for the Relay object
- * @param timeout The timeout (in seconds) for this relay object
- */
-void Relay::SetExpiration(double timeout) {
-  m_safetyHelper->SetExpiration(timeout);
-}
-
-/**
- * Return the expiration time for the relay object.
- * @return The expiration time value.
- */
-double Relay::GetExpiration() const { return m_safetyHelper->GetExpiration(); }
-
-/**
- * Check if the relay object is currently alive or stopped due to a timeout.
- *
- * @return a bool value that is true if the motor has NOT timed out and should
- *         still be running.
- */
-bool Relay::IsAlive() const { return m_safetyHelper->IsAlive(); }
-
-/**
- * Stop the motor associated with this PWM object.
- *
- * This is called by the MotorSafetyHelper object when it has a timeout for this
- * relay and needs to stop it from running.
- */
-void Relay::StopMotor() { Set(kOff); }
-
-/**
- * Enable/disable motor safety for this device.
- *
- * Turn on and off the motor safety option for this relay object.
- *
- * @param enabled True if motor safety is enforced for this object
- */
-void Relay::SetSafetyEnabled(bool enabled) {
-  m_safetyHelper->SetSafetyEnabled(enabled);
-}
-
-/**
- * Check if motor safety is enabled for this object.
- *
- * @returns True if motor safety is enforced for this object
- */
-bool Relay::IsSafetyEnabled() const {
-  return m_safetyHelper->IsSafetyEnabled();
-}
-
-void Relay::GetDescription(std::ostringstream& desc) const {
-  desc << "Relay " << GetChannel();
-}
