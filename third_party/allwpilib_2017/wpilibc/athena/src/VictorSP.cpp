@@ -8,7 +8,6 @@
 #include "VictorSP.h"
 
 #include "HAL/HAL.h"
-#include "LiveWindow/LiveWindow.h"
 
 using namespace frc;
 
@@ -18,7 +17,7 @@ using namespace frc;
  * @param channel The PWM channel that the VictorSP is attached to. 0-9 are
  *                on-board, 10-19 are on the MXP port
  */
-VictorSP::VictorSP(int channel) : PWMSpeedController(channel) {
+VictorSP::VictorSP(int channel) : PWM(channel) {
   /**
    * Note that the VictorSP uses the following bounds for PWM values. These
    * values should work reasonably well for most controllers, but if users
@@ -39,5 +38,4 @@ VictorSP::VictorSP(int channel) : PWMSpeedController(channel) {
   SetZeroLatch();
 
   HAL_Report(HALUsageReporting::kResourceType_VictorSP, GetChannel());
-  LiveWindow::GetInstance()->AddActuator("VictorSP", GetChannel(), this);
 }
