@@ -56,3 +56,24 @@ cc_test(
     '//frc971/control_loops:queues',
   ],
 )
+
+cc_library(
+  name = 'wrap',
+  srcs = [
+    'wrap.cc',
+  ],
+  hdrs = [
+    'wrap.h',
+  ],
+)
+
+cc_test(
+  name = 'wrap_test',
+  srcs = [
+    'wrap_test.cc',
+  ],
+  deps = [
+    '//aos/testing:googletest',
+    ':wrap',
+  ],
+)
