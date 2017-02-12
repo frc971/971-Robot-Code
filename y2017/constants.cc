@@ -1,8 +1,8 @@
 #include "y2017/constants.h"
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
-#include <inttypes.h>
 
 #include <map>
 
@@ -11,9 +11,12 @@
 #endif
 
 #include "aos/common/logging/logging.h"
-#include "aos/common/once.h"
-#include "aos/common/network/team_number.h"
 #include "aos/common/mutex.h"
+#include "aos/common/network/team_number.h"
+#include "aos/common/once.h"
+
+#include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2017/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -25,7 +28,15 @@ namespace constants {
 // ///// Mutual constants between robots. /////
 const int Values::kZeroingSampleSize;
 
-constexpr double Values::kDrivetrainEncoderRatio;
+constexpr double Values::kDrivetrainEncoderRatio, Values::kShooterEncoderRatio,
+    Values::kIntakeEncoderRatio, Values::kIntakePotRatio,
+    Values::kHoodEncoderRatio, Values::kHoodPotRatio,
+    Values::kTurretEncoderRatio, Values::kTurretPotRatio,
+    Values::kIndexerEncoderRatio, Values::kIntakeEncoderIndexDifference,
+    Values::kIndexerEncoderIndexDifference,
+    Values::kTurretEncoderIndexDifference, Values::kHoodEncoderIndexDifference;
+constexpr ::frc971::constants::Range Values::kIntakeRange, Values::kHoodRange,
+    Values::kTurretRange;
 
 namespace {
 const uint16_t kCompTeamNumber = 971;
@@ -37,19 +48,97 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     case 1:  // for tests
       return new Values{
+          5.0,  // drivetrain max speed
+
+          // Intake
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Turret
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Hood
+          {
+              // Pot Offset
+              0.1,
+              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
+               0.1, 0.3},
+          },
           0.0,  // down error
+          "practice",
       };
       break;
 
     case kCompTeamNumber:
       return new Values{
+          5.0,  // drivetrain max speed
+
+          // Intake
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Turret
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Hood
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
+               0.0, 0.3},
+          },
           0.0,  // down error
+          "competition",
       };
       break;
 
     case kPracticeTeamNumber:
       return new Values{
+          5.0,  // drivetrain max speed
+
+          // Intake
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Turret
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize,
+               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
+          },
+
+          // Hood
+          {
+              // Pot Offset
+              0.0,
+              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
+               0.0, 0.3},
+          },
           0.0,  // down error
+          "practice",
       };
       break;
 

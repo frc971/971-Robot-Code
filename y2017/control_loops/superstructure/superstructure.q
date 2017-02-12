@@ -38,7 +38,8 @@ struct TurretGoal {
 };
 
 struct HoodGoal {
-  // Angle the hood is currently at
+  // Angle the hood is currently at. An angle of zero hood is at the lower soft stop, angle
+  // increases as hood rises.
   double angle;
 
   // Caps on velocity/acceleration for profiling. 0 for the default.

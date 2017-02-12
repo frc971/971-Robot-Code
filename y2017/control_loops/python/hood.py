@@ -43,7 +43,7 @@ class Hood(control_loop.ControlLoop):
     # Third axle gear ratio off the motor
     self.G3 = self.G2 * (14.0 / 36.0)
     # The last gear reduction (encoder -> hood angle)
-    self.last_G = (18.0 / 345.0)
+    self.last_G = (20.0 / 345.0)
     # Gear ratio
     self.G = (12.0 / 60.0) * (14.0 / 36.0) * (14.0 / 36.0) * self.last_G
 
