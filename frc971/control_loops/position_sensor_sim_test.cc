@@ -267,37 +267,37 @@ TEST_F(PositionSensorSimTest, PotAndEncodersNoIndexPulse) {
 
   sim.MoveTo(0.20);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.00, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.00, position.encoder);
   EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.30);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.10, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.10, position.encoder);
   EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.40);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.20, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.20, position.encoder);
   EXPECT_NEAR(0.07, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.34);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.14, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.14, position.encoder);
   EXPECT_NEAR(0.01, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.24);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.04, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.04, position.encoder);
   EXPECT_NEAR(0.01, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.23);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(0.03, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(0.03, position.encoder);
   EXPECT_NEAR(0.00, position.absolute_encoder, 0.00000001);
 
   sim.MoveTo(0.13);
   sim.GetSensorValues(&position);
-  EXPECT_DOUBLE_EQ(-0.07, position.relative_encoder);
+  EXPECT_DOUBLE_EQ(-0.07, position.encoder);
   EXPECT_NEAR(0.00, position.absolute_encoder, 0.00000001);
 
   // TODO(philipp): Test negative values.

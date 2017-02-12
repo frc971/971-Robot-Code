@@ -17,6 +17,7 @@ namespace zeroing {
 
 using control_loops::PositionSensorSimulator;
 using constants::PotAndIndexPulseZeroingConstants;
+using constants::PotAndAbsoluteEncoderZeroingConstants;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
@@ -34,6 +35,15 @@ class ZeroingTest : public ::testing::Test {
     simulator->GetSensorValues(&sensor_values);
     estimator->UpdateEstimate(sensor_values);
   }
+
+  void MoveTo(PositionSensorSimulator *simulator,
+              PotAndAbsEncoderZeroingEstimator *estimator, double new_position) {
+    PotAndAbsolutePosition sensor_values_;
+    simulator->MoveTo(new_position);
+    simulator->GetSensorValues(&sensor_values_);
+    estimator->UpdateEstimate(sensor_values_);
+  }
+  // TODO(phil): Add new MoveTo overloads for different zeroing estimators.
 
   ::aos::testing::TestSharedMemory my_shm_;
 };
@@ -281,13 +291,13 @@ TEST_F(ZeroingTest, BasicErrorAPITest) {
 TEST_F(ZeroingTest, TestOffsetError) {
   const double index_diff = 0.8;
   const double known_index_pos = 2 * index_diff;
-  int sample_size = 30;
+  const size_t sample_size = 30;
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(10 * index_diff, index_diff / 3.0, known_index_pos);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
       sample_size, index_diff, known_index_pos, kIndexErrorFraction});
 
-  for (int i = 0; i < sample_size; i++) {
+  for (size_t i = 0; i < sample_size; i++) {
     MoveTo(&sim, &estimator, 13 * index_diff);
   }
   MoveTo(&sim, &estimator, 8 * index_diff);
@@ -301,5 +311,56 @@ TEST_F(ZeroingTest, TestOffsetError) {
   ASSERT_TRUE(estimator.error());
 }
 
+// Makes sure that using an absolute encoder lets us zero without moving.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double start_pos = 2.1;
+  double measured_absolute_position = 0.3 * index_diff;
+
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, index_diff, measured_absolute_position, 0.1};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  PotAndAbsEncoderZeroingEstimator estimator(constants);
+
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_TRUE(estimator.zeroed());
+  EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
+}
+
+// Makes sure that using an absolute encoder doesn't let us zero while moving.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+
+  const double start_pos = 10 * index_diff;
+  double measured_absolute_position = 0.3 * index_diff;
+
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, index_diff, measured_absolute_position, 0.1};
+
+  sim.Initialize(start_pos, index_diff / 3.0, 0.0,
+                 constants.measured_absolute_position);
+
+  PotAndAbsEncoderZeroingEstimator estimator(constants);
+
+  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+    MoveTo(&sim, &estimator, start_pos + i * index_diff);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+  MoveTo(&sim, &estimator, start_pos + 10 * index_diff);
+
+  MoveTo(&sim, &estimator, start_pos);
+  ASSERT_FALSE(estimator.zeroed());
+}
 }  // namespace zeroing
 }  // namespace frc971

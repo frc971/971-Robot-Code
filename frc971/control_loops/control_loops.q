@@ -44,7 +44,7 @@ struct PotAndIndexPosition {
 // arbitrary 0 position which varies with each robot.
 struct PotAndAbsolutePosition {
   // Current position read from each encoder.
-  double relative_encoder;
+  double encoder;
   double absolute_encoder;
 
   // Current position read from the potentiometer.
@@ -53,6 +53,19 @@ struct PotAndAbsolutePosition {
 
 // The internal state of a zeroing estimator.
 struct EstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  bool error;
+  // If the joint has seen an index pulse and is zeroed.
+  bool zeroed;
+  // The estimated position of the joint.
+  double position;
+
+  // The estimated position not using the index pulse.
+  double pot_position;
+};
+
+// The internal state of a zeroing estimator.
+struct AbsoluteEstimatorState {
   // If true, there has been a fatal error for the estimator.
   bool error;
   // If the joint has seen an index pulse and is zeroed.

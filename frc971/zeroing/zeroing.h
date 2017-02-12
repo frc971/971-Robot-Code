@@ -25,6 +25,7 @@ class PotAndIndexPulseZeroingEstimator {
  public:
   using Position = PotAndIndexPosition;
   using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
+  using State = EstimatorState;
 
   PotAndIndexPulseZeroingEstimator(
       const constants::PotAndIndexPulseZeroingConstants &constants);
@@ -44,14 +45,13 @@ class PotAndIndexPulseZeroingEstimator {
   bool error() const { return error_; }
 
   // Returns true if the logic considers the corresponding mechanism to be
-  // zeroed. It return false otherwise. For example, right after a call to
-  // Reset() this returns false.
+  // zeroed. It return false otherwise.
   bool zeroed() const { return zeroed_; }
 
   // Return the estimated position of the corresponding mechanism. This value
   // is in SI units. For example, the estimator for the elevator would return a
   // value in meters for the height relative to absolute zero.
-  double position() const { return pos_; }
+  double position() const { return position_; }
 
   // Return the estimated starting position of the corresponding mechansim. In
   // some contexts we refer to this as the "offset".
@@ -68,12 +68,13 @@ class PotAndIndexPulseZeroingEstimator {
   // value returns 0.0. As more samples get added with UpdateEstimate(...) the
   // return value starts increasing to 1.0.
   double offset_ratio_ready() const {
-    return start_pos_samples_.size() / static_cast<double>(max_sample_count_);
+    return start_pos_samples_.size() /
+           static_cast<double>(constants_.average_filter_size);
   }
 
   // Returns true if the sample buffer is full.
   bool offset_ready() const {
-    return start_pos_samples_.size() == max_sample_count_;
+    return start_pos_samples_.size() == constants_.average_filter_size;
   }
 
  private:
@@ -82,26 +83,21 @@ class PotAndIndexPulseZeroingEstimator {
   double CalculateStartPosition(double start_average,
                                 double latched_encoder) const;
 
+  // The zeroing constants used to describe the configuration of the system.
+  const constants::PotAndIndexPulseZeroingConstants constants_;
+
   // The estimated position.
-  double pos_;
+  double position_;
   // The unzeroed filtered position.
   double filtered_position_ = 0.0;
-  // The distance between two consecutive index positions.
-  double index_diff_;
   // The next position in 'start_pos_samples_' to be used to store the next
   // sample.
   int samples_idx_;
   // Last 'max_sample_count_' samples for start positions.
   std::vector<double> start_pos_samples_;
-  // The number of the last samples of start position to consider in the
-  // estimation.
-  size_t max_sample_count_;
   // The estimated starting position of the mechanism. We also call this the
   // 'offset' in some contexts.
   double start_pos_;
-  // The absolute position of any index pulse on the mechanism. This is used to
-  // account for the various ways the encoders get mounted into the robot.
-  double known_index_pos_;
   // Flag for triggering logic that takes note of the current index pulse count
   // after a reset. See `last_used_index_pulse_count_'.
   bool wait_for_index_pulse_;
@@ -120,15 +116,81 @@ class PotAndIndexPulseZeroingEstimator {
   // Stores the position "start_pos" variable the first time the program
   // is zeroed.
   double first_start_pos_;
-  // The fraction of index_diff (possibly greater than 1) after which an error
-  // is reported.
-  double allowable_encoder_error_;
+};
+
+// Estimates the position with an absolute encoder which also reports
+// incremental counts, and a potentiometer.
+class PotAndAbsEncoderZeroingEstimator {
+ public:
+  using Position = PotAndAbsolutePosition;
+  using ZeroingConstants = constants::PotAndAbsoluteEncoderZeroingConstants;
+  using State = AbsoluteEstimatorState;
+
+  PotAndAbsEncoderZeroingEstimator(
+      const constants::PotAndAbsoluteEncoderZeroingConstants &constants);
+
+  // Resets the internal logic so it needs to be re-zeroed.
+  void Reset();
+
+  // Updates the sensor values for the zeroing logic.
+  void UpdateEstimate(const PotAndAbsolutePosition &info);
+
+  // Returns true if the mechanism is zeroed, and false if it isn't.
+  bool zeroed() const { return zeroed_; }
+
+  // Return the estimated position of the corresponding mechanism. This value
+  // is in SI units. For example, the estimator for the elevator would return a
+  // value in meters for the height relative to absolute zero.
+  double position() const { return position_; }
+
+  // Return the estimated starting position of the corresponding mechansim. In
+  // some contexts we refer to this as the "offset".
+  double offset() const { return offset_; }
+
+  // Returns true if an error has occurred, false otherwise. This gets reset to
+  // false when the Reset() function is called.
+  // TODO(austin): Actually implement this.
+  bool error() const { return false; }
+
+  // Returns true if the sample buffer is full.
+  bool offset_ready() const {
+    return relative_to_absolute_offset_samples_.size() ==
+               constants_.average_filter_size &&
+           offset_samples_.size() == constants_.average_filter_size;
+  }
+
+  // Return the estimated position of the corresponding mechanism not using the
+  // index pulse, even if one is available.
+  double filtered_position() const { return filtered_position_; }
+
+ private:
+  // The zeroing constants used to describe the configuration of the system.
+  const constants::PotAndAbsoluteEncoderZeroingConstants constants_;
+  // True if the mechanism is zeroed.
+  bool zeroed_;
+  // Samples of the offset needed to line the relative encoder up with the
+  // absolute encoder.
+  ::std::vector<double> relative_to_absolute_offset_samples_;
+  // Offset between the Pot and Relative encoder position.
+  ::std::vector<double> offset_samples_;
+  // Estimated start position of the mechanism
+  double offset_;
+  // The next position in 'relative_to_absolute_offset_samples_' and
+  // 'encoder_samples_' to be used to store the next sample.
+  int samples_idx_;
+  // The unzeroed filtered position.
+  double filtered_position_ = 0.0;
+  // The filtered position.
+  double position_ = 0.0;
 };
 
 // Populates an EstimatorState struct with information from the zeroing
 // estimator.
 void PopulateEstimatorState(const PotAndIndexPulseZeroingEstimator &estimator,
                             EstimatorState *state);
+
+void PopulateEstimatorState(const PotAndAbsEncoderZeroingEstimator &estimator,
+                            AbsoluteEstimatorState *state);
 
 }  // namespace zeroing
 }  // namespace frc971

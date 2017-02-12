@@ -36,6 +36,7 @@ cc_library(
     'zeroing.h',
   ],
   deps = [
+    ':wrap',
     '//frc971/control_loops:queues',
     '//frc971:constants',
   ],

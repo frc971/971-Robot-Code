@@ -1,12 +1,14 @@
 #ifndef FRC971_CONSTANTS_H_
 #define FRC971_CONSTANTS_H_
 
+#include <cstddef>
+
 namespace frc971 {
 namespace constants {
 
 struct PotAndIndexPulseZeroingConstants {
   // The number of samples in the moving average filter.
-  int average_filter_size;
+  size_t average_filter_size;
   // The difference in scaled units between two index pulses.
   double index_difference;
   // The absolute position in scaled units of one of the index pulses.
@@ -22,11 +24,16 @@ struct EncoderPlusIndexZeroingConstants {
 };
 
 struct PotAndAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  size_t average_filter_size;
   // The distance that the absolute encoder needs to complete a full rotation.
-  double abs_duration;
-  // Sample mechanism angle and absolute encoder value.
-  double sample_abs_value;
-  double sample_degrees;
+  double one_revolution_distance;
+  // Measured absolute position of the encoder when at zero.
+  double measured_absolute_position;
+
+  // Treshold for deciding if we are moving
+  // TODO(austin): Figure out what this is actually measuring.
+  double zeroing_threshold;
 };
 
 // Defines a range of motion for a subsystem.

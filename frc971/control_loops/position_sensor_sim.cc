@@ -145,12 +145,15 @@ void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
 
 void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
   values->pot = pot_noise_.AddNoiseToSample(cur_pos_);
-  values->relative_encoder = cur_pos_ - start_position_;
+  values->encoder = cur_pos_ - start_position_;
   // TODO(phil): Create some lag here since this is a PWM signal it won't be
   // instantaneous like the other signals. Better yet, its lag varies
   // randomly with the distribution varying depending on the reading.
   values->absolute_encoder =
-      fmod(cur_pos_ - known_index_pos_ + known_absolute_encoder_, index_diff_);
+      ::std::remainder(cur_pos_ + known_absolute_encoder_, index_diff_);
+  if (values->absolute_encoder < 0) {
+    values->absolute_encoder += index_diff_;
+  }
 }
 
 }  // namespace control_loops
