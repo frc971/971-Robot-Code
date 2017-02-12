@@ -23,12 +23,46 @@ aos_downloader(
   name = 'download',
   start_srcs = [
     ':joystick_reader',
+    ':wpilib_interface',
     '//y2012/control_loops/drivetrain',
     '//y2012/control_loops/accessories',
-    '//y2012/wpilib:wpilib_interface',
     '//aos:prime_start_binaries',
   ],
   srcs = [
     '//aos:prime_binaries',
+  ],
+)
+
+cc_binary(
+  name = 'wpilib_interface',
+  srcs = [
+    'wpilib_interface.cc',
+  ],
+  deps = [
+    '//aos/common/controls:control_loop',
+    '//aos/common/logging',
+    '//aos/common/logging:queue_logging',
+    '//aos/common/messages:robot_state',
+    '//aos/common/util:log_interval',
+    '//aos/common/util:phased_loop',
+    '//aos/common/util:wrapping_counter',
+    '//aos/common:stl_mutex',
+    '//aos/common:time',
+    '//aos/linux_code:init',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//frc971/control_loops:queues',
+    '//frc971/wpilib:buffered_pcm',
+    '//frc971/wpilib:dma',
+    '//frc971/wpilib:dma_edge_counting',
+    '//frc971/wpilib:encoder_and_potentiometer',
+    '//frc971/wpilib:gyro_sender',
+    '//frc971/wpilib:interrupt_edge_counting',
+    '//frc971/wpilib:joystick_sender',
+    '//frc971/wpilib:logging_queue',
+    '//frc971/wpilib:loop_output_handler',
+    '//frc971/wpilib:wpilib_interface',
+    '//frc971/wpilib:wpilib_robot_base',
+    '//third_party:wpilib',
+    '//y2012/control_loops/accessories:accessories_queue',
   ],
 )
