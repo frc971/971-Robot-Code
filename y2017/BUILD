@@ -13,5 +13,6 @@ cc_library(
     '//aos/common/network:team_number',
     '//aos/common:mutex',
     '//frc971:constants',
+    '//y2017/control_loops/drivetrain:polydrivetrain_plants',
   ],
 )

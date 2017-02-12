@@ -34,8 +34,8 @@ class VelocityIndexer(control_loop.ControlLoop):
     self.J_inner = 0.0269
     self.J_outer = 0.0952
     # Gear ratios for the inner and outer parts.
-    self.G_inner = (12.0 / 48.0) * (18.0 / 48.0) * (24.0 / 36.0) * (16.0 / 72.0)
-    self.G_outer = (12.0 / 48.0) * (18.0 / 48.0) * (30.0 / 422.0)
+    self.G_inner = (12.0 / 48.0) * (18.0 / 36.0) * (12.0 / 84.0)
+    self.G_outer = (12.0 / 48.0) * (18.0 / 36.0) * (24.0 / 420.0)
 
     # Motor inertia in kg * m^2
     self.motor_inertia = 0.000006
