@@ -1,8 +1,5 @@
-package(default_visibility = ['//visibility:public'])
-
 genrule(
   name = 'genrule_shooter',
-  visibility = ['//visibility:private'],
   cmd = '$(location //y2017/control_loops/python:shooter) $(OUTS)',
   tools = [
     '//y2017/control_loops/python:shooter',
@@ -17,6 +14,7 @@ genrule(
 
 cc_library(
   name = 'shooter_plants',
+  visibility = ['//visibility:public'],
   srcs = [
     'shooter_plant.cc',
     'shooter_integral_plant.cc',

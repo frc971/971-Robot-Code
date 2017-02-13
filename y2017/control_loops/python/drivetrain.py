@@ -23,8 +23,9 @@ class Drivetrain(control_loop.ControlLoop):
     self.stall_torque = 2.42 * self.num_motors * 0.60
     # Stall Current in Amps
     self.stall_current = 133.0 * self.num_motors
-    # Free Speed in RPM. Used number from last year.
-    self.free_speed = 5500.0
+    self.free_speed_rpm = 5500.0
+    # Free Speed in rotations/second.
+    self.free_speed = self.free_speed_rpm / 60
     # Free Current in Amps
     self.free_current = 4.7 * self.num_motors
     # Moment of inertia of the drivetrain in kg m^2
@@ -38,7 +39,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Resistance of the motor, divided by the number of motors.
     self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
-    self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
+    self.Kv = ((self.free_speed * 2.0 * numpy.pi) /
                (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
@@ -321,7 +322,7 @@ def main(argv):
           drivetrain_low_low.stall_torque))
     dog_loop_writer.AddConstant(control_loop.Constant("kStallCurrent", "%f",
           drivetrain_low_low.stall_current))
-    dog_loop_writer.AddConstant(control_loop.Constant("kFreeSpeedRPM", "%f",
+    dog_loop_writer.AddConstant(control_loop.Constant("kFreeSpeed", "%f",
           drivetrain_low_low.free_speed))
     dog_loop_writer.AddConstant(control_loop.Constant("kFreeCurrent", "%f",
           drivetrain_low_low.free_current))
@@ -343,6 +344,8 @@ def main(argv):
           drivetrain_low_low.G_low))
     dog_loop_writer.AddConstant(control_loop.Constant("kHighGearRatio", "%f",
           drivetrain_high_high.G_high))
+    dog_loop_writer.AddConstant(control_loop.Constant("kHighOutputRatio", "%f",
+          drivetrain_high_high.G_high * drivetrain_high_high.r))
 
     dog_loop_writer.Write(argv[1], argv[2])
 

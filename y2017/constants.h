@@ -6,6 +6,13 @@
 
 #include "frc971/constants.h"
 
+#include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
+#include "y2017/control_loops/superstructure/intake/intake_plant.h"
+#include "y2017/control_loops/superstructure/turret/turret_plant.h"
+#include "y2017/control_loops/superstructure/indexer/indexer_plant.h"
+#include "y2017/control_loops/superstructure/hood/hood_plant.h"
+
 namespace y2017 {
 namespace constants {
 
@@ -20,8 +27,6 @@ namespace constants {
 // All ratios are from the encoder shaft to the output units.
 
 struct Values {
-  // TODO(constants): Update/check these with what we're using this year.
-
   struct Intake {
     double pot_offset;
     ::frc971::constants::PotAndIndexPulseZeroingConstants zeroing;
@@ -39,60 +44,73 @@ struct Values {
 
   static const int kZeroingSampleSize = 200;
 
-  // TODO(Brian): This isn't all the way to the output yet.
-  static constexpr double kDrivetrainEncoderRatio = 1.0 ;
+  static constexpr double kDrivetrainCyclesPerRevolution = 256;
+  static constexpr double kDrivetrainEncoderCountsPerRevolution =
+      kDrivetrainCyclesPerRevolution * 4;
+  static constexpr double kDrivetrainEncoderRatio =
+      1.0 * control_loops::drivetrain::kWheelRadius;
+  static constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
+      control_loops::drivetrain::kFreeSpeed *
+      control_loops::drivetrain::kHighOutputRatio /
+      constants::Values::kDrivetrainEncoderRatio *
+      kDrivetrainEncoderCountsPerRevolution;
 
+  static constexpr double kShooterEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kShooterEncoderRatio = 32.0 / 48.0;
+  static constexpr double kMaxShooterEncoderPulsesPerSecond =
+      control_loops::superstructure::shooter::kFreeSpeed *
+      control_loops::superstructure::shooter::kOutputRatio /
+      constants::Values::kShooterEncoderRatio *
+      kShooterEncoderCountsPerRevolution;
 
+  static constexpr double kIntakeEncoderCountsPerRevolution = 1024 * 4;
   static constexpr double kIntakeEncoderRatio =
       (16.0 * 0.25) * (20.0 / 40.0) / (2.0 * M_PI) * 0.0254;
   static constexpr double kIntakePotRatio = (16 * 0.25) / (2.0 * M_PI) * 0.0254;
   static constexpr double kIntakeEncoderIndexDifference =
       2.0 * M_PI * kIntakeEncoderRatio;
-
+  static constexpr double kMaxIntakeEncoderPulsesPerSecond =
+      control_loops::superstructure::intake::kFreeSpeed * control_loops::superstructure::intake::kOutputRatio /
+      constants::Values::kIntakeEncoderRatio *
+      kIntakeEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kIntakeRange{
-      // Lower hard stop in meters (from inches).
-      -0.600 * 0.0254,
-      // Upper hard stop in meters (from inches).
-      8.655 * 0.0254,
-      // Lower soft stop in meters (from inches).
-      0.000,
-      // Upper soft stop in meters (from inches).
-      8.530 * 0.0254};
+      -0.29878633 * 0.0254, 9.23012063 * 0.0254, (-0.29878633 + 0.125) * 0.0254,
+      (9.23012063 - 0.125) * 0.0254};
 
+  static constexpr double kHoodEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kHoodEncoderRatio = 20.0 / 345.0;
   static constexpr double kHoodPotRatio = 20.0 / 345.0;
   static constexpr double kHoodEncoderIndexDifference =
       2.0 * M_PI * kHoodEncoderRatio;
-
+  static constexpr double kMaxHoodEncoderPulsesPerSecond =
+      control_loops::superstructure::hood::kFreeSpeed * control_loops::superstructure::hood::kOutputRatio /
+      constants::Values::kHoodEncoderRatio * kHoodEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kHoodRange{
-      // Lower hard stop in radians.
-      -1.0 / 345.0 * 2.0 * M_PI,
-      // Upper hard stop in radians.
-      39.0 / 345.0 * 2.0 * M_PI,
-      // Lower soft stop in radians.
-      0.0,
-      // Upper soft stop in radians.
-      (39.0 - 1.0) / 345.0 * 2.0 * M_PI};
+      -0.39 * M_PI / 2.0, 37.11 * M_PI / 2.0, (-0.39 + 1.0) * M_PI / 2.0,
+      (37.11 - 1.0) * M_PI / 2.0};
 
+  static constexpr double kTurretEncoderCountsPerRevolution = 1024 * 4;
   static constexpr double kTurretEncoderRatio = 16.0 / 92.0;
   static constexpr double kTurretPotRatio = 16.0 / 92.0;
   static constexpr double kTurretEncoderIndexDifference =
       2.0 * M_PI * kTurretEncoderRatio;
-
+  static constexpr double kMaxTurretEncoderPulsesPerSecond =
+      control_loops::superstructure::turret::kFreeSpeed * control_loops::superstructure::turret::kOutputRatio /
+      constants::Values::kTurretEncoderRatio *
+      kTurretEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kTurretRange{
-      // Lower hard stop in radians.
-      -460.0 / 2.0 * M_PI / 180.0,
-      // Upper hard stop in radians.
-      460.0 / 2.0 * M_PI / 180.0,
-      // Lower soft stop in radians.
-      -450.0 / 2.0 * M_PI / 180.0,
-      // Upper soft stop in radians.
-      450.0 / 2.0 * M_PI / 180.0};
+      -460.0 / 2.0 * M_PI / 180.0, 460.0 / 2.0 * M_PI / 180.0,
+      -450.0 / 2.0 * M_PI / 180.0, 450.0 / 2.0 * M_PI / 180.0};
 
+  static constexpr double kMaxIndexerEncoderCountsPerRevolution = 256 * 4;
   static constexpr double kIndexerEncoderRatio = (18.0 / 36.0) * (12.0 / 84.0);
   static constexpr double kIndexerEncoderIndexDifference =
       2.0 * M_PI * kIndexerEncoderRatio;
+  static constexpr double kMaxIndexerEncoderPulsesPerSecond =
+      control_loops::superstructure::indexer::kFreeSpeed *
+      control_loops::superstructure::indexer::kOutputRatio /
+      constants::Values::kIndexerEncoderRatio *
+      kMaxIndexerEncoderCountsPerRevolution;
 
   double drivetrain_max_speed;
 

@@ -7,8 +7,8 @@ import "frc971/control_loops/profiled_subsystem.q";
 //import "frc971/control_loops/control_loops.q";
 
 struct IntakeGoal {
-  // Zero on the intake is when the intake is retracted inside the robot,
-  // unable to intake. Positive is out.
+  // Zero for the intake is when the front tube is tangent with the front of the
+  // frame. Positive is out.
 
   // Goal distance of the intake.
   double distance;
@@ -20,8 +20,8 @@ struct IntakeGoal {
   double voltage_rollers;
 };
 
-struct SerializerGoal {
-  // Serializer angular velocity goals in radians/second.
+struct IndexerGoal {
+  // Indexer angular velocity goals in radians/second.
   double angular_velocity;
 };
 
@@ -38,8 +38,8 @@ struct TurretGoal {
 };
 
 struct HoodGoal {
-  // Angle the hood is currently at. An angle of zero hood is at the lower soft stop, angle
-  // increases as hood rises.
+  // Angle the hood is currently at. An angle of zero is at the lower hard
+  // stop, angle increases as hood rises.
   double angle;
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
@@ -47,18 +47,20 @@ struct HoodGoal {
 };
 
 struct ShooterGoal {
-  // Angular velocity goals in radians/second.
+  // Angular velocity goals in radians/second. Positive is shooting out of the
+  // robot.
   double angular_velocity;
 };
 
-struct SerializerStatus {
-  // The current average velocity in radians/second.
+struct IndexerStatus {
+  // The current average velocity in radians/second. Positive is moving balls up
+  // towards the shooter. This is the angular velocity of the inner piece.
   double avg_angular_velocity;
 
   // The current instantaneous filtered velocity in radians/second.
   double angular_velocity;
 
-  // True if the serializer is ready.  It is better to compare the velocities
+  // True if the indexer is ready.  It is better to compare the velocities
   // directly so there isn't confusion on if the goal is up to date.
   bool ready;
 
@@ -86,7 +88,7 @@ queue_group SuperstructureQueue {
 
   message Goal {
     IntakeGoal intake;
-    SerializerGoal serializer;
+    IndexerGoal indexer;
     TurretGoal turret;
     HoodGoal hood;
     ShooterGoal shooter;
@@ -103,7 +105,7 @@ queue_group SuperstructureQueue {
     .frc971.control_loops.ProfiledJointStatus intake;
     .frc971.control_loops.ProfiledJointStatus turret;
     .frc971.control_loops.ProfiledJointStatus hood;
-    SerializerStatus serializer;
+    IndexerStatus indexer;
     ShooterStatus shooter;
   };
 
@@ -115,8 +117,8 @@ queue_group SuperstructureQueue {
     // out.
     .frc971.PotAndIndexPosition intake;
 
-    // Serializer angle in radians.
-    double theta_serializer;
+    // Indexer angle in radians.
+    double theta_indexer;
 
     // The sensor readings for the turret. The units and sign are defined the
     // same as what's in the Goal message.
@@ -133,13 +135,13 @@ queue_group SuperstructureQueue {
   message Output {
     // Voltages for some of the subsystems.
     double voltage_intake;
-    double voltage_serializer;
+    double voltage_indexer;
     double voltage_shooter;
 
     // Rollers on the intake.
     double voltage_intake_rollers;
-    // Roller on the serializer
-    double voltage_serializer_rollers;
+    // Roller on the indexer
+    double voltage_indexer_rollers;
 
     double voltage_turret;
     double voltage_hood;

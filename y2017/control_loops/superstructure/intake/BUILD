@@ -1,8 +1,5 @@
-package(default_visibility = ['//visibility:public'])
-
 genrule(
   name = 'genrule_intake',
-  visibility = ['//visibility:private'],
   cmd = '$(location //y2017/control_loops/python:intake) $(OUTS)',
   tools = [
     '//y2017/control_loops/python:intake',
@@ -17,6 +14,7 @@ genrule(
 
 cc_library(
   name = 'intake_plants',
+  visibility = ['//visibility:public'],
   srcs = [
     'intake_plant.cc',
     'intake_integral_plant.cc',

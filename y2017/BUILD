@@ -14,6 +14,11 @@ cc_library(
     '//aos/common:mutex',
     '//frc971:constants',
     '//y2017/control_loops/drivetrain:polydrivetrain_plants',
+    '//y2017/control_loops/superstructure/shooter:shooter_plants',
+    '//y2017/control_loops/superstructure/intake:intake_plants',
+    '//y2017/control_loops/superstructure/turret:turret_plants',
+    '//y2017/control_loops/superstructure/indexer:indexer_plants',
+    '//y2017/control_loops/superstructure/hood:hood_plants',
   ],
 )
 
@@ -51,7 +56,6 @@ cc_binary(
     '//frc971/wpilib:pdp_fetcher',
     '//frc971/wpilib:ADIS16448',
     '//frc971/wpilib:dma',
-    '//y2017/control_loops/drivetrain:polydrivetrain_plants',
     '//y2017/control_loops/superstructure:superstructure_queue',
     '//y2017/actors:autonomous_action_queue',
   ],

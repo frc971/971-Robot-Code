@@ -27,24 +27,34 @@ namespace constants {
 
 const int Values::kZeroingSampleSize;
 
-constexpr double Values::kDrivetrainEncoderRatio;
+constexpr double Values::kDrivetrainCyclesPerRevolution,
+    Values::kDrivetrainEncoderCountsPerRevolution,
+    Values::kDrivetrainEncoderRatio,
+    Values::kMaxDrivetrainEncoderPulsesPerSecond;
 
-constexpr double Values::kShooterEncoderRatio;
+constexpr double Values::kShooterEncoderCountsPerRevolution,
+    Values::kShooterEncoderRatio, Values::kMaxShooterEncoderPulsesPerSecond;
 
-constexpr double Values::kIntakeEncoderRatio, Values::kIntakePotRatio,
-    Values::kIntakeEncoderIndexDifference;
+constexpr double Values::kIntakeEncoderCountsPerRevolution,
+    Values::kIntakeEncoderRatio, Values::kIntakePotRatio,
+    Values::kIntakeEncoderIndexDifference,
+    Values::kMaxIntakeEncoderPulsesPerSecond;
 constexpr ::frc971::constants::Range Values::kIntakeRange;
 
-constexpr double Values::kHoodEncoderRatio, Values::kHoodPotRatio,
-    Values::kHoodEncoderIndexDifference;
+constexpr double Values::kHoodEncoderCountsPerRevolution,
+    Values::kHoodEncoderRatio, Values::kHoodPotRatio,
+    Values::kHoodEncoderIndexDifference, Values::kMaxHoodEncoderPulsesPerSecond;
 constexpr ::frc971::constants::Range Values::kHoodRange;
 
-constexpr double Values::kTurretEncoderRatio, Values::kTurretPotRatio,
-    Values::kTurretEncoderIndexDifference;
+constexpr double Values::kTurretEncoderCountsPerRevolution,
+    Values::kTurretEncoderRatio, Values::kTurretPotRatio,
+    Values::kTurretEncoderIndexDifference,
+    Values::kMaxTurretEncoderPulsesPerSecond;
 constexpr ::frc971::constants::Range Values::kTurretRange;
 
-constexpr double Values::kIndexerEncoderRatio,
-    Values::kIndexerEncoderIndexDifference;
+constexpr double Values::kMaxIndexerEncoderCountsPerRevolution,
+    Values::kIndexerEncoderRatio, Values::kIndexerEncoderIndexDifference,
+    Values::kMaxIndexerEncoderPulsesPerSecond;
 
 namespace {
 
