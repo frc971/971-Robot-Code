@@ -1,8 +1,5 @@
-package(default_visibility = ['//visibility:public'])
-
 genrule(
   name = 'genrule_indexer',
-  visibility = ['//visibility:private'],
   cmd = '$(location //y2017/control_loops/python:indexer) $(OUTS)',
   tools = [
     '//y2017/control_loops/python:indexer',
@@ -17,6 +14,7 @@ genrule(
 
 cc_library(
   name = 'indexer_plants',
+  visibility = ['//visibility:public'],
   srcs = [
     'indexer_plant.cc',
     'indexer_integral_plant.cc',

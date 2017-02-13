@@ -32,7 +32,6 @@
 #include "frc971/control_loops/control_loops.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "y2017/constants.h"
-#include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/actors/autonomous_action.q.h"
 
@@ -57,12 +56,13 @@
 
 using ::frc971::control_loops::drivetrain_queue;
 using ::y2017::control_loops::superstructure_queue;
+using ::y2017::constants::Values;
 
 namespace y2017 {
 namespace wpilib {
 namespace {
+
 constexpr double kMaxBringupPower = 12.0;
-}  // namespace
 
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
 // DMA stuff and then removing the * 2.0 in *_translate.
@@ -75,124 +75,125 @@ std::unique_ptr<T> make_unique(U &&... u) {
   return std::unique_ptr<T>(new T(std::forward<U>(u)...));
 }
 
-// Translates for the sensor values to convert raw index pulses into something
-// with proper units.
-// TODO(campbell): Update everything below to match sensors on the robot.
+// TODO(brian): Use ::std::max instead once we have C++14 so that can be
+// constexpr.
+template <typename T>
+constexpr T max(T a, T b) {
+  return (a > b) ? a : b;
+}
+template <typename T, typename... Rest>
+constexpr T max(T a, T b, T c, Rest... rest) {
+  return max(max(a, b), c, rest...);
+}
 
-// TODO(comran): Template these methods since there is a lot of repetition here.
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kDrivetrainEncoderRatio *
-         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
+  return static_cast<double>(in) /
+         Values::kDrivetrainEncoderCountsPerRevolution *
+         Values::kDrivetrainEncoderRatio * 2.0 * M_PI;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / 256.0 /*cpr*/ *
-         constants::Values::kDrivetrainEncoderRatio *
-         control_loops::drivetrain::kWheelRadius * 2.0 * M_PI;
+  return (1.0 / in) / Values::kDrivetrainCyclesPerRevolution *
+         Values::kDrivetrainEncoderRatio * 2.0 * M_PI;
 }
 
 double shooter_translate(int32_t in) {
-  return static_cast<double>(in) / (128.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
+  return static_cast<double>(in) / Values::kShooterEncoderCountsPerRevolution *
+         Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
 }
 
 double intake_translate(int32_t in) {
-  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
+  return static_cast<double>(in) / Values::kIntakeEncoderCountsPerRevolution *
+         Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
 }
 
+// TODO(constants): Update the number of turns.
 double intake_pot_translate(double voltage) {
-  return voltage * constants::Values::kIntakePotRatio *
-         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
-}
-
-double turret_translate(int32_t in) {
-  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kTurretEncoderRatio * (2 * M_PI /*radians*/);
-}
-
-double turret_pot_translate(double voltage) {
-  return voltage * constants::Values::kTurretPotRatio *
-         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
-}
-
-double serializer_translate(int32_t in) {
-  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kSerializerEncoderRatio *
+  return voltage * Values::kIntakePotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
 }
 
 double hood_translate(int32_t in) {
-  return static_cast<double>(in) / (512.0 /*cpr*/ * 4.0 /*4x*/) *
-         constants::Values::kHoodEncoderRatio * (2 * M_PI /*radians*/);
+  return static_cast<double>(in) / Values::kHoodEncoderCountsPerRevolution *
+         Values::kHoodEncoderRatio * (2 * M_PI /*radians*/);
 }
 
-// TODO(campbell): Update all gear ratios below.
+// TODO(constants): Update the number of turns.
+double hood_pot_translate(double voltage) {
+  return voltage * Values::kHoodPotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
+         (2 * M_PI /*radians*/);
+}
 
-constexpr double kMaxDrivetrainEncoderPulsesPerSecond =
-    5600.0 /* CIM free speed RPM */ * 14.0 / 48.0 /* 1st reduction */ * 28.0 /
-    50.0 /* 2nd reduction (high gear) */ * 30.0 / 44.0 /* encoder gears */ /
-    60.0 /* seconds per minute */ * 256.0 /* CPR */ * 4 /* edges per cycle */;
+double turret_translate(int32_t in) {
+  return static_cast<double>(in) / Values::kTurretEncoderCountsPerRevolution *
+         Values::kTurretEncoderRatio * (2 * M_PI /*radians*/);
+}
 
-constexpr double kMaxIntakeEncoderPulsesPerSecond =
-    18700.0 /* 775pro free speed RPM */ * 12.0 /
-    18.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
-    128.0 /* CPR */ * 4 /* edges per cycle */;
+// TODO(constants): Update the number of turns.
+double turret_pot_translate(double voltage) {
+  return voltage * Values::kTurretPotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
+         (2 * M_PI /*radians*/);
+}
 
-constexpr double kMaxShooterEncoderPulsesPerSecond =
-    18700.0 /* 775pro free speed RPM */ * 12.0 /
-    18.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
-    128.0 /* CPR */ * 4 /* edges per cycle */;
+double indexer_translate(int32_t in) {
+  return static_cast<double>(in) /
+         Values::kMaxIndexerEncoderCountsPerRevolution *
+         Values::kIndexerEncoderRatio * (2 * M_PI /*radians*/);
+}
 
-constexpr double kMaxSerializerEncoderPulsesPerSecond =
-    18700.0 /* 775pro free speed RPM */ * 12.0 /
-    56.0 /* motor to encoder reduction */ / 60.0 /* seconds per minute */ *
-    512.0 /* CPR */ * 4 /* index pulse every quarter cycle */;
-
-double kMaxEncoderPulsesPerSecond =
-    ::std::max(kMaxSerializerEncoderPulsesPerSecond,
-               ::std::max(kMaxIntakeEncoderPulsesPerSecond,
-                          ::std::max(kMaxDrivetrainEncoderPulsesPerSecond,
-                                     kMaxShooterEncoderPulsesPerSecond)));
+constexpr double kMaxFastEncoderPulsesPerSecond =
+    max(Values::kMaxDrivetrainEncoderPulsesPerSecond,
+        Values::kMaxShooterEncoderPulsesPerSecond);
+static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
+              "fast encoders are too fast");
+constexpr double kMaxMediumEncoderPulsesPerSecond =
+    max(Values::kMaxIntakeEncoderPulsesPerSecond,
+        Values::kMaxTurretEncoderPulsesPerSecond,
+        Values::kMaxIndexerEncoderPulsesPerSecond);
+static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
+              "medium encoders are too fast");
+constexpr double kMaxSlowEncoderPulsesPerSecond =
+    Values::kMaxHoodEncoderPulsesPerSecond;
+static_assert(kMaxSlowEncoderPulsesPerSecond <= 100000,
+              "slow encoders are too fast");
 
 // Class to send position messages with sensor readings to our loops.
 class SensorReader {
  public:
   SensorReader() {
-    // Set it to filter out anything shorter than 1/4 of the minimum pulse width
+    // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
-    drivetrain_shooter_encoder_filter_.SetPeriodNanoSeconds(
+    fast_encoder_filter_.SetPeriodNanoSeconds(
         static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxDrivetrainShooterEncoderPulsesPerSecond * 1e9 +
+                             kMaxFastEncoderPulsesPerSecond * 1e9 +
                          0.5));
-    superstructure_encoder_filter_.SetPeriodNanoSeconds(
+    medium_encoder_filter_.SetPeriodNanoSeconds(
         static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxSuperstructureEncoderPulsesPerSecond * 1e9 +
+                             kMaxMediumEncoderPulsesPerSecond * 1e9 +
                          0.5));
-    hall_filter_.SetPeriodNanoSeconds(100000);
+    slow_encoder_filter_.SetPeriodNanoSeconds(
+        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
+                             kMaxSlowEncoderPulsesPerSecond * 1e9 +
+                         0.5));
   }
 
-  // Drivetrain setters.
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     drivetrain_left_encoder_ = ::std::move(encoder);
   }
 
   void set_drivetrain_right_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     drivetrain_right_encoder_ = ::std::move(encoder);
   }
 
-  // Shooter setter.
   void set_shooter_encoder(::std::unique_ptr<Encoder> encoder) {
-    drivetrain_shooter_encoder_filter_.Add(encoder.get());
+    fast_encoder_filter_.Add(encoder.get());
     shooter_encoder_ = ::std::move(encoder);
   }
 
-  // Intake setters.
   void set_intake_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     intake_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -200,19 +201,19 @@ class SensorReader {
     intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  // TODO(brian): This is wrong.
   void set_intake_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     intake_encoder_.set_index(::std::move(index));
   }
 
-  // Serializer setters.
-  void set_serializer_encoder(::std::unique_ptr<Encoder> encoder) {
-    serializer_encoder_ = ::std::move(encoder);
+  void set_indexer_encoder(::std::unique_ptr<Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    indexer_encoder_ = ::std::move(encoder);
   }
 
-  // Turret setters.
   void set_turret_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     turret_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -220,14 +221,14 @@ class SensorReader {
     turret_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  // TODO(brian): This is wrong.
    void set_turret_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     turret_encoder_.set_index(::std::move(index));
   }
 
- // Shooter hood setter.
   void set_hood_encoder(::std::unique_ptr<Encoder> encoder) {
-    superstructure_encoder_filter_.Add(encoder.get());
+    slow_encoder_filter_.Add(encoder.get());
     hood_encoder_.set_encoder(::std::move(encoder));
   }
 
@@ -236,21 +237,20 @@ class SensorReader {
   }
 
   void set_hood_index(::std::unique_ptr<DigitalInput> index) {
-    superstructure_encoder_filter_.Add(index.get());
+    slow_encoder_filter_.Add(index.get());
     hood_encoder_.set_index(::std::move(index));
   }
 
-  // Autonomous mode switch setter.
   void set_autonomous_mode(int i, ::std::unique_ptr<DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
-
 
   // All of the DMA-related set_* calls must be made before this, and it doesn't
   // hurt to do all of them.
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+    // TODO(constants): Update this.
     dma_synchronizer_->Add(&intake_encoder_);
     dma_synchronizer_->Add(&turret_encoder_);
     dma_synchronizer_->Add(&hood_encoder_);
@@ -303,24 +303,22 @@ class SensorReader {
 
     {
       auto superstructure_message = superstructure_queue.position.MakeMessage();
-      CopyPotAndAbsolutePosition(
-          intake_encoder_, &superstructure_message->intake, intake_translate,
-          intake_pot_translate, false, values.intake_pot_offset);
+      CopyPosition(intake_encoder_, &superstructure_message->intake,
+                   intake_translate, intake_pot_translate, false,
+                   values.intake.pot_offset);
 
-      superstructure_message->theta_serializer =
-          serializer_translate(serializer_encoder_->GetRaw());
+      superstructure_message->theta_indexer =
+          indexer_translate(indexer_encoder_->GetRaw());
 
       superstructure_message->theta_shooter=
           shooter_translate(shooter_encoder_->GetRaw());
 
-      CopyPotAndAbsolutePosition(hood_encoder_, &superstructure_message->hood,
-                                 hood_translate, hood_pot_translate, false,
-                                 values.hood_pot_offset);
+      CopyPosition(hood_encoder_, &superstructure_message->hood, hood_translate,
+                   hood_pot_translate, false, values.hood.pot_offset);
 
-      CopyPotAndAbsolutePosition(turret_encoder_,
-                              &superstructure_message->turret,
-                              turret_translate, turret_pot_translate, false,
-                              values.turret_pot_offset);
+      CopyPosition(turret_encoder_, &superstructure_message->turret,
+                   turret_translate, turret_pot_translate, false,
+                   values.turret.pot_offset);
 
       superstructure_message.Send();
     }
@@ -341,12 +339,11 @@ class SensorReader {
   void Quit() { run_ = false; }
 
  private:
-  void CopyPotAndIndexPosition(
-      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndIndexPosition *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double pot_offset) {
+  void CopyPosition(const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+                    ::frc971::PotAndIndexPosition *position,
+                    ::std::function<double(int32_t)> encoder_translate,
+                    ::std::function<double(double)> potentiometer_translate,
+                    bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.polled_encoder_value());
@@ -362,8 +359,9 @@ class SensorReader {
     position->index_pulses = encoder.index_posedge_count();
   }
 
+#if 0
   // TODO(campbell): Fix this stuff. It is all wrong.
-  void CopyPotAndAbsolutePosition(
+  void CopyPosition(
       const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
       ::frc971::PotAndAbsolutePosition *position,
       ::std::function<double(int32_t)> encoder_translate,
@@ -380,7 +378,7 @@ class SensorReader {
   }
 
   // TODO(campbell): Fix this stuff. It is all wrong.
-  void CopyAbsoluteAndIndexPosition(
+  void CopyPosition(
       const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
       ::frc971::EncoderAndIndexPosition *position,
       ::std::function<double(int32_t)> encoder_translate, bool reverse) {
@@ -391,19 +389,23 @@ class SensorReader {
         multiplier * encoder_translate(encoder.last_encoder_value());
     position->index_pulses = encoder.index_posedge_count();
   }
+#endif
 
   int32_t my_pid_;
   DriverStation *ds_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
+  DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
+      slow_encoder_filter_;
+
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;
 
   ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_;
 
-  ::std::unique_ptr<Encoder> serializer_encoder_;
-  ::std::unique_ptr<AnalogInput> serializer_hall_;
+  ::std::unique_ptr<Encoder> indexer_encoder_;
+  ::std::unique_ptr<AnalogInput> indexer_hall_;
 
   ::frc971::wpilib::DMAEncoderAndPotentiometer turret_encoder_;
   ::frc971::wpilib::DMAEncoderAndPotentiometer hood_encoder_;
@@ -412,8 +414,6 @@ class SensorReader {
   ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;
 
   ::std::atomic<bool> run_{true};
-  DigitalGlitchFilter drivetrain_shooter_encoder_filter_,
-      superstructure_encoder_filter_, hall_filter_;
 };
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
@@ -456,11 +456,11 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     intake_rollers_victor_ = ::std::move(t);
   }
 
-  void set_serializer_victor(::std::unique_ptr<VictorSP> t) {
-    serializer_victor_ = ::std::move(t);
+  void set_indexer_victor(::std::unique_ptr<VictorSP> t) {
+    indexer_victor_ = ::std::move(t);
   }
-  void set_serializer_roller_victor(::std::unique_ptr<VictorSP> t) {
-    serializer_roller_victor_ = ::std::move(t);
+  void set_indexer_roller_victor(::std::unique_ptr<VictorSP> t) {
+    indexer_roller_victor_ = ::std::move(t);
   }
 
   void set_shooter_victor(::std::unique_ptr<VictorSP> t) {
@@ -485,8 +485,8 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
     intake_rollers_victor_->SetSpeed(queue->voltage_intake_rollers / 12.0);
-    serializer_victor_->SetSpeed(queue->voltage_serializer / 12.0);
-    serializer_roller_victor_->SetSpeed(queue->voltage_serializer_rollers /
+    indexer_victor_->SetSpeed(queue->voltage_indexer / 12.0);
+    indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers /
                                         12.0);
     turret_victor_->SetSpeed(::aos::Clip(queue->voltage_turret,
                                          -kMaxBringupPower, kMaxBringupPower) /
@@ -501,15 +501,15 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     LOG(WARNING, "Superstructure output too old.\n");
     intake_victor_->SetDisabled();
     intake_rollers_victor_->SetDisabled();
-    serializer_victor_->SetDisabled();
-    serializer_roller_victor_->SetDisabled();
+    indexer_victor_->SetDisabled();
+    indexer_roller_victor_->SetDisabled();
     turret_victor_->SetDisabled();
     hood_victor_->SetDisabled();
     shooter_victor_->SetDisabled();
   }
 
   ::std::unique_ptr<VictorSP> intake_victor_, intake_rollers_victor_,
-      serializer_victor_, serializer_roller_victor_, shooter_victor_,
+      indexer_victor_, indexer_roller_victor_, shooter_victor_,
       turret_victor_, hood_victor_;
 };
 
@@ -539,8 +539,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_intake_index(make_unique<DigitalInput>(0));
     reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
 
-    reader.set_serializer_encoder(make_encoder(3));
-    reader.set_serializer_hall(make_unique<AnalogInput>(1));
+    reader.set_indexer_encoder(make_encoder(3));
 
     reader.set_turret_encoder(make_encoder(5));
     reader.set_turret_index(make_unique<DigitalInput>(1));
@@ -578,9 +577,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<VictorSP>(new VictorSP(2)));
     superstructure_writer.set_intake_rollers_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(3)));
-    superstructure_writer.set_serializer_victor(
+    superstructure_writer.set_indexer_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(4)));
-    superstructure_writer.set_serializer_roller_victor(
+    superstructure_writer.set_indexer_roller_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(5)));
     superstructure_writer.set_turret_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(6)));
@@ -623,6 +622,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
+}  // namespace
 }  // namespace wpilib
 }  // namespace y2017
 

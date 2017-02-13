@@ -25,126 +25,96 @@
 namespace y2017 {
 namespace constants {
 
-// ///// Mutual constants between robots. /////
 const int Values::kZeroingSampleSize;
 
-constexpr double Values::kDrivetrainEncoderRatio, Values::kShooterEncoderRatio,
+constexpr double Values::kDrivetrainCyclesPerRevolution,
+    Values::kDrivetrainEncoderCountsPerRevolution,
+    Values::kDrivetrainEncoderRatio,
+    Values::kMaxDrivetrainEncoderPulsesPerSecond;
+
+constexpr double Values::kShooterEncoderCountsPerRevolution,
+    Values::kShooterEncoderRatio, Values::kMaxShooterEncoderPulsesPerSecond;
+
+constexpr double Values::kIntakeEncoderCountsPerRevolution,
     Values::kIntakeEncoderRatio, Values::kIntakePotRatio,
+    Values::kIntakeEncoderIndexDifference,
+    Values::kMaxIntakeEncoderPulsesPerSecond;
+constexpr ::frc971::constants::Range Values::kIntakeRange;
+
+constexpr double Values::kHoodEncoderCountsPerRevolution,
     Values::kHoodEncoderRatio, Values::kHoodPotRatio,
+    Values::kHoodEncoderIndexDifference, Values::kMaxHoodEncoderPulsesPerSecond;
+constexpr ::frc971::constants::Range Values::kHoodRange;
+
+constexpr double Values::kTurretEncoderCountsPerRevolution,
     Values::kTurretEncoderRatio, Values::kTurretPotRatio,
-    Values::kIndexerEncoderRatio, Values::kIntakeEncoderIndexDifference,
-    Values::kIndexerEncoderIndexDifference,
-    Values::kTurretEncoderIndexDifference, Values::kHoodEncoderIndexDifference;
-constexpr ::frc971::constants::Range Values::kIntakeRange, Values::kHoodRange,
-    Values::kTurretRange;
+    Values::kTurretEncoderIndexDifference,
+    Values::kMaxTurretEncoderPulsesPerSecond;
+constexpr ::frc971::constants::Range Values::kTurretRange;
+
+constexpr double Values::kMaxIndexerEncoderCountsPerRevolution,
+    Values::kIndexerEncoderRatio, Values::kIndexerEncoderIndexDifference,
+    Values::kMaxIndexerEncoderPulsesPerSecond;
 
 namespace {
+
 const uint16_t kCompTeamNumber = 971;
 const uint16_t kPracticeTeamNumber = 9971;
 
-// ///// Dynamic constants. /////
-
 const Values *DoGetValuesForTeam(uint16_t team) {
+  Values *const r = new Values();
+  Values::Intake *const intake = &r->intake;
+  Values::Turret *const turret = &r->turret;
+  Values::Hood *const hood = &r->hood;
+
+  r->drivetrain_max_speed = 5;
+
+  intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
+  intake->zeroing.index_difference = Values::kIntakeEncoderIndexDifference;
+  intake->zeroing.measured_index_position = 0;
+  intake->zeroing.allowable_encoder_error = 0.3;
+
+  turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
+  turret->zeroing.index_difference = Values::kTurretEncoderIndexDifference;
+  turret->zeroing.measured_index_position = 0;
+  turret->zeroing.allowable_encoder_error = 0.3;
+
+  hood->zeroing.average_filter_size = Values::kZeroingSampleSize;
+  hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
+  hood->zeroing.measured_index_position = 0.1;
+  hood->zeroing.allowable_encoder_error = 0.3;
+
   switch (team) {
-    case 1:  // for tests
-      return new Values{
-          5.0,  // drivetrain max speed
-
-          // Intake
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Turret
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Hood
-          {
-              // Pot Offset
-              0.1,
-              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
-               0.1, 0.3},
-          },
-          0.0,  // down error
-          "practice",
-      };
+    // A set of constants for tests.
+    case 1:
+      intake->pot_offset = 0;
+      turret->pot_offset = 0;
+      hood->pot_offset = 0.1;
+      r->down_error = 0;
+      r->vision_name = "test";
       break;
 
     case kCompTeamNumber:
-      return new Values{
-          5.0,  // drivetrain max speed
-
-          // Intake
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Turret
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Hood
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
-               0.0, 0.3},
-          },
-          0.0,  // down error
-          "competition",
-      };
+      intake->pot_offset = 0;
+      turret->pot_offset = 0;
+      hood->pot_offset = 0.1;
+      r->down_error = 0;
+      r->vision_name = "competition";
       break;
 
     case kPracticeTeamNumber:
-      return new Values{
-          5.0,  // drivetrain max speed
-
-          // Intake
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kIntakeEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Turret
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize,
-               Values::kTurretEncoderIndexDifference, 0.0, 0.3},
-          },
-
-          // Hood
-          {
-              // Pot Offset
-              0.0,
-              {Values::kZeroingSampleSize, Values::kHoodEncoderIndexDifference,
-               0.0, 0.3},
-          },
-          0.0,  // down error
-          "practice",
-      };
+      intake->pot_offset = 0;
+      turret->pot_offset = 0;
+      hood->pot_offset = 0.1;
+      r->down_error = 0;
+      r->vision_name = "practice";
       break;
 
     default:
       LOG(FATAL, "unknown team #%" PRIu16 "\n", team);
   }
+
+  return r;
 }
 
 const Values *DoGetValues() {

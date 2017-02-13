@@ -1,8 +1,5 @@
-package(default_visibility = ['//visibility:public'])
-
 genrule(
   name = 'genrule_turret',
-  visibility = ['//visibility:private'],
   cmd = '$(location //y2017/control_loops/python:turret) $(OUTS)',
   tools = [
     '//y2017/control_loops/python:turret',
@@ -17,6 +14,7 @@ genrule(
 
 cc_library(
   name = 'turret_plants',
+  visibility = ['//visibility:public'],
   srcs = [
     'turret_plant.cc',
     'turret_integral_plant.cc',

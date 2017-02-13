@@ -23,7 +23,9 @@ class VelocityShooter(control_loop.ControlLoop):
     # Stall Current in Amps
     self.stall_current = 134.0 * self.num_motors
     # Free Speed in RPM
-    self.free_speed = 18730.0
+    self.free_speed_rpm = 18730.0
+    # Free Speed in rotations/second.
+    self.free_speed = self.free_speed_rpm / 60.0
     # Free Current in Amps
     self.free_current = 0.7 * self.num_motors
     # Moment of inertia of the shooter wheel in kg m^2
@@ -33,7 +35,7 @@ class VelocityShooter(control_loop.ControlLoop):
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current
     # Motor velocity constant
-    self.Kv = ((self.free_speed / 60.0 * 2.0 * numpy.pi) /
+    self.Kv = ((self.free_speed * 2.0 * numpy.pi) /
               (12.0 - self.R * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
@@ -266,6 +268,10 @@ def main(argv):
     shooter = Shooter('Shooter')
     loop_writer = control_loop.ControlLoopWriter('Shooter', [shooter],
                                                  namespaces=namespaces)
+    loop_writer.AddConstant(control_loop.Constant(
+        'kFreeSpeed', '%f', shooter.free_speed))
+    loop_writer.AddConstant(control_loop.Constant(
+        'kOutputRatio', '%f', shooter.G))
     loop_writer.Write(argv[1], argv[2])
 
     integral_shooter = IntegralShooter('IntegralShooter')

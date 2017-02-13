@@ -1,8 +1,5 @@
-package(default_visibility = ['//visibility:public'])
-
 genrule(
   name = 'genrule_hood',
-  visibility = ['//visibility:private'],
   cmd = '$(location //y2017/control_loops/python:hood) $(OUTS)',
   tools = [
     '//y2017/control_loops/python:hood',
@@ -17,6 +14,7 @@ genrule(
 
 cc_library(
   name = 'hood_plants',
+  visibility = ['//visibility:public'],
   srcs = [
     'hood_plant.cc',
     'hood_integral_plant.cc',
