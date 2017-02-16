@@ -1,8 +1,9 @@
 #include "frc971/zeroing/zeroing.h"
 
-#include <cmath>
-#include <vector>
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <vector>
 
 #include "frc971/zeroing/wrap.h"
 
@@ -44,9 +45,10 @@ PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
   Reset();
 }
 
+
 void PotAndIndexPulseZeroingEstimator::Reset() {
   samples_idx_ = 0;
-  start_pos_ = 0;
+  offset_ = 0;
   start_pos_samples_.clear();
   zeroed_ = false;
   wait_for_index_pulse_ = true;
@@ -111,12 +113,12 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
   // our best guess.
   if (!zeroed_ &&
       (info.index_pulses == last_used_index_pulse_count_ || !offset_ready())) {
-    start_pos_ = start_average;
+    offset_ = start_average;
   } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses) {
     // Note the accurate start position and the current index pulse count so
     // that we only run this logic once per index pulse. That should be more
     // resilient to corrupted intermediate data.
-    start_pos_ = CalculateStartPosition(start_average, info.latched_encoder);
+    offset_ = CalculateStartPosition(start_average, info.latched_encoder);
     last_used_index_pulse_count_ = info.index_pulses;
 
     // TODO(austin): Reject encoder positions which have x% error rather than
@@ -124,7 +126,7 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
 
     // Save the first starting position.
     if (!zeroed_) {
-      first_start_pos_ = start_pos_;
+      first_start_pos_ = offset_;
       LOG(INFO, "latching start position %f\n", first_start_pos_);
     }
 
@@ -133,20 +135,20 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
     zeroed_ = true;
     // Throw an error if first_start_pos is bigger/smaller than
     // constants_.allowable_encoder_error * index_diff + start_pos.
-    if (::std::abs(first_start_pos_ - start_pos_) >
+    if (::std::abs(first_start_pos_ - offset_) >
         constants_.allowable_encoder_error * constants_.index_difference) {
       if (!error_) {
         LOG(ERROR,
             "Encoder ticks out of range since last index pulse. first start "
             "position: %f recent starting position: %f, allowable error: %f\n",
-            first_start_pos_, start_pos_,
+            first_start_pos_, offset_,
             constants_.allowable_encoder_error * constants_.index_difference);
         error_ = true;
       }
     }
   }
 
-  position_ = start_pos_ + info.encoder;
+  position_ = offset_ + info.encoder;
   filtered_position_ = start_average + info.encoder;
 }
 
@@ -305,6 +307,64 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
   // Update the position.
   filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
   position_ = offset_ + info.encoder;
+}
+
+void PulseIndexZeroingEstimator::Reset() {
+  max_index_position_ = ::std::numeric_limits<double>::lowest();
+  min_index_position_ = ::std::numeric_limits<double>::max();
+  offset_ = 0;
+  last_used_index_pulse_count_ = 0;
+  zeroed_ = false;
+  error_ = false;
+}
+
+void PulseIndexZeroingEstimator::StoreIndexPulseMaxAndMin(
+    const IndexPosition &info) {
+  // If we have a new index pulse.
+  if (last_used_index_pulse_count_ != info.index_pulses) {
+    // If the latest pulses's position is outside the range we've currently
+    // seen, record it appropriately.
+    if (info.latched_encoder > max_index_position_) {
+      max_index_position_ = info.latched_encoder;
+    }
+    if (info.latched_encoder < min_index_position_) {
+      min_index_position_ = info.latched_encoder;
+    }
+    last_used_index_pulse_count_ = info.index_pulses;
+  }
+}
+
+int PulseIndexZeroingEstimator::IndexPulseCount() {
+  if (min_index_position_ > max_index_position_) {
+    // This condition means we haven't seen a pulse yet.
+    return 0;
+  }
+
+  // Calculate the number of pulses encountered so far.
+  return 1 + static_cast<int>(
+                 ::std::round((max_index_position_ - min_index_position_) /
+                              constants_.index_difference));
+}
+
+void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
+  StoreIndexPulseMaxAndMin(info);
+  const int index_pulse_count = IndexPulseCount();
+  if (index_pulse_count > constants_.index_pulse_count) {
+    error_ = true;
+  }
+
+  // TODO(austin): Detect if the encoder or index pulse is unplugged.
+  // TODO(austin): Detect missing counts.
+
+  if (index_pulse_count == constants_.index_pulse_count && !zeroed_) {
+    offset_ = constants_.measured_index_position -
+              constants_.known_index_pulse * constants_.index_difference -
+              min_index_position_;
+    zeroed_ = true;
+  }
+  if (zeroed_) {
+    position_ = info.encoder + offset_;
+  }
 }
 
 }  // namespace zeroing

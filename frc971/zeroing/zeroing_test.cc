@@ -18,6 +18,7 @@ namespace zeroing {
 using control_loops::PositionSensorSimulator;
 using constants::PotAndIndexPulseZeroingConstants;
 using constants::PotAndAbsoluteEncoderZeroingConstants;
+using constants::EncoderPlusIndexZeroingConstants;
 
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
@@ -45,7 +46,14 @@ class ZeroingTest : public ::testing::Test {
     simulator->GetSensorValues(&sensor_values_);
     estimator->UpdateEstimate(sensor_values_);
   }
-  // TODO(phil): Add new MoveTo overloads for different zeroing estimators.
+
+  void MoveTo(PositionSensorSimulator *simulator,
+              PulseIndexZeroingEstimator *estimator, double new_position) {
+    IndexPosition sensor_values_;
+    simulator->MoveTo(new_position);
+    simulator->GetSensorValues(&sensor_values_);
+    estimator->UpdateEstimate(sensor_values_);
+  }
 
   ::aos::testing::TestSharedMemory my_shm_;
 };
@@ -381,6 +389,60 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
   estimator.UpdateEstimate(sensor_values_);
 
   ASSERT_TRUE(estimator.error());
+}
+
+// Makes sure that using only a relative encoder with index pulses allows us to
+// successfully zero.
+// We pretend that there are index pulses at 10, 20, and 30.
+TEST_F(ZeroingTest, TestRelativeEncoderZeroing) {
+  EncoderPlusIndexZeroingConstants constants;
+  constants.index_pulse_count = 3;
+  constants.index_difference = 10.0;
+  constants.measured_index_position = 20.0;
+  constants.known_index_pulse = 1;
+
+  PositionSensorSimulator sim(constants.index_difference);
+
+  const double start_pos = 2.5 * constants.index_difference;
+
+  sim.Initialize(start_pos, constants.index_difference / 3.0,
+                 constants.measured_index_position);
+
+  PulseIndexZeroingEstimator estimator(constants);
+
+  // Should not be zeroed when we stand still.
+  for (int i = 0; i < 300; ++i) {
+    MoveTo(&sim, &estimator, start_pos);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+
+  // Move to 1.5 constants.index_difference and we should still not be zeroed.
+  MoveTo(&sim, &estimator, 1.5 * constants.index_difference);
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Move to 0.5 constants.index_difference and we should still not be zeroed.
+  MoveTo(&sim, &estimator, 0.5 * constants.index_difference);
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Move back to 1.5 constants.index_difference and we should still not be
+  // zeroed.
+  MoveTo(&sim, &estimator, 1.5 * constants.index_difference);
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Move back to 2.5 constants.index_difference and we should still not be
+  // zeroed.
+  MoveTo(&sim, &estimator, 2.5 * constants.index_difference);
+  ASSERT_FALSE(estimator.zeroed());
+
+  // Move back to 3.5 constants.index_difference and we should now be zeroed.
+  MoveTo(&sim, &estimator, 3.5 * constants.index_difference);
+  ASSERT_TRUE(estimator.zeroed());
+
+  ASSERT_DOUBLE_EQ(start_pos, estimator.offset());
+  ASSERT_DOUBLE_EQ(3.5 * constants.index_difference, estimator.position());
+
+  MoveTo(&sim, &estimator, 0.5 * constants.index_difference);
+  ASSERT_DOUBLE_EQ(0.5 * constants.index_difference, estimator.position());
 }
 
 }  // namespace zeroing

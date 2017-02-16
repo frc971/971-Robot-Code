@@ -19,8 +19,15 @@ struct PotAndIndexPulseZeroingConstants {
 };
 
 struct EncoderPlusIndexZeroingConstants {
-  // The amount of index pulses in the limb's range of motion.
-  int num_index_pulses;
+  // The amount of index pulses in the joint's range of motion.
+  int index_pulse_count;
+  // The difference in scaled units between two index pulses.
+  double index_difference;
+  // The absolute position in scaled units of one of the index pulses.
+  double measured_index_position;
+  // The index pulse that is known, going from lowest in the range of motion to
+  // highest (Starting at 0).
+  int known_index_pulse;
 };
 
 struct PotAndAbsoluteEncoderZeroingConstants {

@@ -24,21 +24,16 @@ class ZeroingEstimator {
   virtual ~ZeroingEstimator(){}
 
   // Returns true if the logic considers the corresponding mechanism to be
-  // zeroed. It return false otherwise. For example, right after a call to
-  // Reset() this returns false.
+  // zeroed.
   virtual bool zeroed() const = 0;
 
-  // Returns the estimated starting position of the corresponding mechansim. In
-  // some contexts we refer to this as the "offset".
+  // Returns the estimated position of the corresponding mechanism.
   virtual double offset() const = 0;
 
-  // Returns the estimated position of the corresponding mechanism. This value
-  // is in SI units. For example, the estimator for the elevator would return a
-  // value in meters for the height relative to absolute zero.
+  // Returns the estimated starting position of the corresponding mechansim.
   virtual double position() const = 0;
 
-  // Returns true if an error has occurred, false otherwise. This gets reset to
-  // false when the Reset() function is called.
+  // Returns true if there has been an error.
   virtual bool error() const = 0;
 };
 
@@ -69,7 +64,7 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
 
   double position() const override { return position_; }
 
-  double offset() const override { return start_pos_; }
+  double offset() const override { return offset_; }
 
   // Return the estimated position of the corresponding mechanism not using the
   // index pulse, even if one is available.
@@ -111,7 +106,7 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   std::vector<double> start_pos_samples_;
   // The estimated starting position of the mechanism. We also call this the
   // 'offset' in some contexts.
-  double start_pos_;
+  double offset_;
   // Flag for triggering logic that takes note of the current index pulse count
   // after a reset. See `last_used_index_pulse_count_'.
   bool wait_for_index_pulse_;
@@ -196,6 +191,75 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   double position_ = 0.0;
   // Whether or not there is an error in the estimate.
   bool error_ = false;
+};
+
+
+// Zeros by seeing all the index pulses in the range of motion of the mechanism
+// and using that to figure out which index pulse is which.
+class PulseIndexZeroingEstimator : public ZeroingEstimator {
+ public:
+  using Position = IndexPosition;
+  using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
+  using State = EstimatorState;
+
+  PulseIndexZeroingEstimator(
+      const constants::EncoderPlusIndexZeroingConstants &constants)
+      : constants_(constants) {
+    Reset();
+  }
+
+  // Resets the internal logic so it needs to be re-zeroed.
+  void Reset();
+
+  bool zeroed() const override { return zeroed_; }
+
+  double position() const override {
+    CHECK(zeroed_);
+    return position_;
+  }
+
+  double offset() const override { return offset_; }
+
+  bool error() const override { return error_; }
+
+  // Updates the internal logic with the next sensor values.
+  void UpdateEstimate(const IndexPosition &info);
+
+ private:
+  // Returns the current real position using the relative encoder offset.
+  double CalculateCurrentPosition(const IndexPosition &info);
+
+  // Sets the minimum and maximum index pulse position values.
+  void StoreIndexPulseMaxAndMin(const IndexPosition &info);
+
+  // Returns the number of index pulses we should have seen so far.
+  int IndexPulseCount();
+
+  // Contains the physical constants describing the system.
+  const constants::EncoderPlusIndexZeroingConstants constants_;
+
+  // The smallest position of all the index pulses.
+  double min_index_position_;
+  // The largest position of all the index pulses.
+  double max_index_position_;
+
+  // The estimated starting position of the mechanism.
+  double offset_;
+  // After a reset we keep track of the index pulse count with this. Only after
+  // the index pulse count changes (i.e. increments at least once or wraps
+  // around) will we consider the mechanism zeroed. We also use this to store
+  // the most recent `PotAndIndexPosition::index_pulses' value when the start
+  // position was calculated. It helps us calculate the start position only on
+  // index pulses to reject corrupted intermediate data.
+  uint32_t last_used_index_pulse_count_;
+
+  // True if we are fully zeroed.
+  bool zeroed_;
+  // Marker to track whether an error has occurred.
+  bool error_;
+
+  // The estimated position.
+  double position_;
 };
 
 // Populates an EstimatorState struct with information from the zeroing
