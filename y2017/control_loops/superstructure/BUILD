@@ -28,6 +28,7 @@ cc_library(
     '//y2017/control_loops/superstructure/hood',
     '//y2017/control_loops/superstructure/turret',
     '//y2017/control_loops/superstructure/intake',
+    '//y2017/control_loops/superstructure/shooter',
     '//y2017:constants',
   ],
 )
@@ -40,15 +41,16 @@ cc_test(
   deps = [
     ':superstructure_queue',
     ':superstructure_lib',
-    '//aos/testing:googletest',
-    '//aos/common:queues',
     '//aos/common/controls:control_loop_test',
     '//aos/common:math',
+    '//aos/common:queues',
     '//aos/common:time',
+    '//aos/testing:googletest',
     '//frc971/control_loops:position_sensor_sim',
     '//frc971/control_loops:team_number_test_environment',
     '//y2017/control_loops/superstructure/hood:hood_plants',
-    '//y2017/control_loops/superstructure/turret:turret_plants',
     '//y2017/control_loops/superstructure/intake:intake_plants',
+    '//y2017/control_loops/superstructure/shooter:shooter_plants',
+    '//y2017/control_loops/superstructure/turret:turret_plants',
   ],
 )

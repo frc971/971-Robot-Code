@@ -9,6 +9,7 @@
 #include "y2017/control_loops/superstructure/turret/turret.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/shooter/shooter.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -36,6 +37,7 @@ class Superstructure
   hood::Hood hood_;
   turret::Turret turret_;
   intake::Intake intake_;
+  shooter::Shooter shooter_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

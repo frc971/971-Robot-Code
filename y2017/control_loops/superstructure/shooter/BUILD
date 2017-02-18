@@ -1,3 +1,7 @@
+package(default_visibility = ['//visibility:public'])
+
+load('/aos/build/queues', 'queue_library')
+
 genrule(
   name = 'genrule_shooter',
   cmd = '$(location //y2017/control_loops/python:shooter) $(OUTS)',
@@ -25,5 +29,21 @@ cc_library(
   ],
   deps = [
     '//frc971/control_loops:state_feedback_loop',
+  ],
+)
+
+cc_library(
+  name = 'shooter',
+  visibility = ['//visibility:public'],
+  srcs = [
+    'shooter.cc',
+  ],
+  hdrs = [
+    'shooter.h',
+  ],
+  deps = [
+    ':shooter_plants',
+    '//aos/common/controls:control_loop',
+    '//y2017/control_loops/superstructure:superstructure_queue',
   ],
 )
