@@ -110,9 +110,6 @@ queue_group SuperstructureQueue {
   };
 
   message Position {
-    // TODO(austin): The turret and intake really should be absolute.  Switch
-    // them over when that class is ready.
-
     // Position of the intake, zero when the intake is in, positive when it is
     // out.
     .frc971.PotAndAbsolutePosition intake;
