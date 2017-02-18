@@ -112,7 +112,7 @@ class Hood(control_loop.ControlLoop):
 
     glog.debug('K %s', repr(self.K))
     glog.debug('Poles are %s',
-              repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     q_pos = 0.10
     q_vel = 1.65

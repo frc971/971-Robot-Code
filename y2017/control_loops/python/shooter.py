@@ -58,6 +58,10 @@ class VelocityShooter(control_loop.ControlLoop):
 
     self.PlaceControllerPoles([.90])
 
+    glog.debug('K %s', repr(self.K))
+    glog.debug('Poles are %s',
+               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+
     self.PlaceObserverPoles([0.3])
 
     self.U_max = numpy.matrix([[12.0]])
@@ -128,9 +132,9 @@ class IntegralShooter(Shooter):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 2.0
-    q_vel = 0.001
-    q_voltage = 10.0
+    q_pos = 0.01
+    q_vel = 2.0
+    q_voltage = 0.2
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])
@@ -225,8 +229,6 @@ class ScenarioPlotter(object):
 
       self.t.append(initial_t + i * shooter.dt)
       self.u.append(U[0, 0])
-
-      glog.debug('Time: %f', self.t[-1])
 
   def Plot(self):
     pylab.subplot(3, 1, 1)

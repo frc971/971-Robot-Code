@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
+#include "y2017/control_loops/superstructure/indexer/indexer_plant.h"
 #include "y2017/control_loops/superstructure/intake/intake_plant.h"
 #include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
 #include "y2017/control_loops/superstructure/turret/turret_plant.h"
@@ -32,6 +33,25 @@ using ::aos::monotonic_clock;
 class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
  public:
   explicit ShooterPlant(StateFeedbackPlant<2, 1, 1> &&other)
+      : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
+
+  void CheckU() override {
+    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
+    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
+  }
+
+  double voltage_offset() const { return voltage_offset_; }
+  void set_voltage_offset(double voltage_offset) {
+    voltage_offset_ = voltage_offset;
+  }
+
+ private:
+  double voltage_offset_ = 0.0;
+};
+
+class IndexerPlant : public StateFeedbackPlant<2, 1, 1> {
+ public:
+  explicit IndexerPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
   void CheckU() override {
@@ -125,6 +145,9 @@ class SuperstructureSimulation {
         shooter_plant_(new ShooterPlant(::y2017::control_loops::superstructure::
                                             shooter::MakeShooterPlant())),
 
+        indexer_plant_(new IndexerPlant(::y2017::control_loops::superstructure::
+                                            indexer::MakeIndexerPlant())),
+
         superstructure_queue_(".y2017.control_loops.superstructure", 0xdeadbeef,
                               ".y2017.control_loops.superstructure.goal",
                               ".y2017.control_loops.superstructure.position",
@@ -182,6 +205,7 @@ class SuperstructureSimulation {
     turret_pot_encoder_.GetSensorValues(&position->turret);
     intake_pot_encoder_.GetSensorValues(&position->intake);
     position->theta_shooter = shooter_plant_->Y(0, 0);
+    position->theta_indexer = indexer_plant_->Y(0, 0);
     position.Send();
   }
 
@@ -195,6 +219,8 @@ class SuperstructureSimulation {
   double intake_velocity() const { return intake_plant_->X(1, 0); }
 
   double shooter_velocity() const { return shooter_plant_->X(1, 0); }
+
+  double indexer_velocity() const { return indexer_plant_->X(1, 0); }
 
   // Sets the difference between the commanded and applied powers.
   // This lets us test that the integrators work.
@@ -212,6 +238,15 @@ class SuperstructureSimulation {
 
   void set_shooter_voltage_offset(double power_error) {
     shooter_plant_->set_voltage_offset(power_error);
+  }
+
+  void set_indexer_voltage_offset(double power_error) {
+    indexer_plant_->set_voltage_offset(power_error);
+  }
+
+  // Triggers the indexer to freeze in position.
+  void set_freeze_indexer(bool freeze_indexer) {
+    freeze_indexer_ = freeze_indexer;
   }
 
   // Simulates the superstructure for a single timestep.
@@ -262,10 +297,20 @@ class SuperstructureSimulation {
         << superstructure_queue_.output->voltage_shooter +
                shooter_plant_->voltage_offset();
 
+    indexer_plant_->mutable_U()
+        << superstructure_queue_.output->voltage_indexer +
+               indexer_plant_->voltage_offset();
+
     hood_plant_->Update();
     turret_plant_->Update();
     intake_plant_->Update();
     shooter_plant_->Update();
+    if (freeze_indexer_) {
+      indexer_plant_->mutable_X(1, 0) = 0.0;
+    } else {
+      indexer_plant_->Update();
+    }
+
 
     const double angle_hood = hood_plant_->Y(0, 0);
     const double angle_turret = turret_plant_->Y(0, 0);
@@ -294,6 +339,9 @@ class SuperstructureSimulation {
   PositionSensorSimulator intake_pot_encoder_;
 
   ::std::unique_ptr<ShooterPlant> shooter_plant_;
+
+  ::std::unique_ptr<IndexerPlant> indexer_plant_;
+  bool freeze_indexer_ = false;
 
   SuperstructureQueue superstructure_queue_;
 };
@@ -332,6 +380,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     EXPECT_NEAR(superstructure_queue_.goal->intake.distance,
                 superstructure_plant_.intake_position(), 0.001);
 
+    // Check that the angular velocity, average angular velocity, and estimated
+    // angular velocity match when we are done for the shooter.
     EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
                 superstructure_queue_.status->shooter.angular_velocity, 0.1);
     EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
@@ -339,6 +389,16 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                 0.1);
     EXPECT_NEAR(superstructure_queue_.goal->shooter.angular_velocity,
                 superstructure_plant_.shooter_velocity(), 0.1);
+
+    // Check that the angular velocity, average angular velocity, and estimated
+    // angular velocity match when we are done for the indexer.
+    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
+                superstructure_queue_.status->indexer.angular_velocity, 0.1);
+    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
+                superstructure_queue_.status->indexer.avg_angular_velocity,
+                0.1);
+    EXPECT_NEAR(superstructure_queue_.goal->indexer.angular_velocity,
+                superstructure_plant_.indexer_velocity(), 0.1);
   }
 
   // Runs one iteration of the whole simulation.
@@ -658,7 +718,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
 
 // Tests that the shooter spins up to speed and that it then spins down
 // without applying any power.
-TEST_F(SuperstructureTest, SpinUpAndDown) {
+TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
   // Spin up.
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
@@ -666,6 +726,7 @@ TEST_F(SuperstructureTest, SpinUpAndDown) {
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
     goal->shooter.angular_velocity = 300.0;
+    goal->indexer.angular_velocity = 20.0;
     ASSERT_TRUE(goal.Send());
   }
 
@@ -679,6 +740,7 @@ TEST_F(SuperstructureTest, SpinUpAndDown) {
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
     goal->shooter.angular_velocity = 0.0;
+    goal->indexer.angular_velocity = 0.0;
     ASSERT_TRUE(goal.Send());
   }
 
@@ -693,13 +755,14 @@ TEST_F(SuperstructureTest, SpinUpAndDown) {
 }
 
 // Tests that the shooter can spin up nicely after being disabled for a while.
-TEST_F(SuperstructureTest, Disabled) {
+TEST_F(SuperstructureTest, ShooterDisabled) {
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
     goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
     goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
     goal->shooter.angular_velocity = 200.0;
+    goal->indexer.angular_velocity = 20.0;
     ASSERT_TRUE(goal.Send());
   }
   RunForTime(chrono::seconds(5), false);
@@ -708,6 +771,160 @@ TEST_F(SuperstructureTest, Disabled) {
   RunForTime(chrono::seconds(5));
 
   VerifyNearGoal();
+}
+
+// Tests that when the indexer gets stuck, it detects it and unjams.
+TEST_F(SuperstructureTest, StuckIndexerTest) {
+  // Spin up.
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
+    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
+    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
+    goal->shooter.angular_velocity = 0.0;
+    goal->indexer.angular_velocity = 5.0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(5));
+  VerifyNearGoal();
+  EXPECT_TRUE(superstructure_queue_.status->indexer.ready);
+
+  // Now, stick it.
+  const auto stuck_start_time = monotonic_clock::now();
+  superstructure_plant_.set_freeze_indexer(true);
+  while (monotonic_clock::now() < stuck_start_time + chrono::seconds(1)) {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    if (static_cast<indexer::Indexer::State>(
+            superstructure_queue_.status->indexer.state) ==
+        indexer::Indexer::State::REVERSING) {
+      break;
+    }
+  }
+
+  // Make sure it detected it reasonably fast.
+  const auto stuck_detection_time = monotonic_clock::now();
+  EXPECT_TRUE(stuck_detection_time - stuck_start_time <
+              chrono::milliseconds(200));
+
+  // Grab the position we were stuck at.
+  superstructure_queue_.position.FetchLatest();
+  ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
+  const double indexer_position = superstructure_queue_.position->theta_indexer;
+
+  // Now, unstick it.
+  superstructure_plant_.set_freeze_indexer(false);
+  const auto unstuck_start_time = monotonic_clock::now();
+  while (monotonic_clock::now() < unstuck_start_time + chrono::seconds(1)) {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    if (static_cast<indexer::Indexer::State>(
+            superstructure_queue_.status->indexer.state) ==
+        indexer::Indexer::State::RUNNING) {
+      break;
+    }
+  }
+
+  // Make sure it took some time, but not too much to detect us not being stuck anymore.
+  const auto unstuck_detection_time = monotonic_clock::now();
+  EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
+              chrono::milliseconds(200));
+  EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
+              chrono::milliseconds(40));
+
+  // Verify that it actually moved.
+  superstructure_queue_.position.FetchLatest();
+  ASSERT_TRUE(superstructure_queue_.position.get() != nullptr);
+  const double unstuck_indexer_position =
+      superstructure_queue_.position->theta_indexer;
+  EXPECT_LT(unstuck_indexer_position, indexer_position - 0.1);
+
+  // Now, verify that everything works as expected.
+  RunForTime(chrono::seconds(5));
+  VerifyNearGoal();
+}
+
+// Tests that when the indexer gets stuck forever, it switches back and forth at
+// a reasonable rate.
+TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
+  // Spin up.
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->hood.angle = constants::Values::kHoodRange.lower + 0.03;
+    goal->turret.angle = constants::Values::kTurretRange.lower + 0.03;
+    goal->intake.distance = constants::Values::kIntakeRange.lower + 0.03;
+    goal->shooter.angular_velocity = 0.0;
+    goal->indexer.angular_velocity = 5.0;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  RunForTime(chrono::seconds(5));
+  VerifyNearGoal();
+  EXPECT_TRUE(superstructure_queue_.status->indexer.ready);
+
+  // Now, stick it.
+  const auto stuck_start_time = monotonic_clock::now();
+  superstructure_plant_.set_freeze_indexer(true);
+  while (monotonic_clock::now() < stuck_start_time + chrono::seconds(1)) {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    if (static_cast<indexer::Indexer::State>(
+            superstructure_queue_.status->indexer.state) ==
+        indexer::Indexer::State::REVERSING) {
+      break;
+    }
+  }
+
+  // Make sure it detected it reasonably fast.
+  const auto stuck_detection_time = monotonic_clock::now();
+  EXPECT_TRUE(stuck_detection_time - stuck_start_time <
+              chrono::milliseconds(200));
+
+  // Now, try to unstick it.
+  const auto unstuck_start_time = monotonic_clock::now();
+  while (monotonic_clock::now() < unstuck_start_time + chrono::seconds(1)) {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    if (static_cast<indexer::Indexer::State>(
+            superstructure_queue_.status->indexer.state) ==
+        indexer::Indexer::State::RUNNING) {
+      break;
+    }
+  }
+
+  // Make sure it took some time, but not too much to detect us not being stuck
+  // anymore.
+  const auto unstuck_detection_time = monotonic_clock::now();
+  EXPECT_TRUE(unstuck_detection_time - unstuck_start_time <
+              chrono::milliseconds(600));
+  EXPECT_TRUE(unstuck_detection_time - unstuck_start_time >
+              chrono::milliseconds(400));
+
+  // Now, make sure it transitions to stuck again after a delay.
+  const auto restuck_start_time = monotonic_clock::now();
+  superstructure_plant_.set_freeze_indexer(true);
+  while (monotonic_clock::now() < restuck_start_time + chrono::seconds(1)) {
+    RunIteration();
+    superstructure_queue_.status.FetchLatest();
+    ASSERT_TRUE(superstructure_queue_.status.get() != nullptr);
+    if (static_cast<indexer::Indexer::State>(
+            superstructure_queue_.status->indexer.state) ==
+        indexer::Indexer::State::REVERSING) {
+      break;
+    }
+  }
+
+  // Make sure it detected it reasonably fast.
+  const auto restuck_detection_time = monotonic_clock::now();
+  EXPECT_TRUE(restuck_detection_time - restuck_start_time >
+              chrono::milliseconds(400));
+  EXPECT_TRUE(restuck_detection_time - restuck_start_time <
+              chrono::milliseconds(600));
 }
 
 }  // namespace testing

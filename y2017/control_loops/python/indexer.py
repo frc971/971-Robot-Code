@@ -13,6 +13,8 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
+gflags.DEFINE_bool('stall', False, 'If true, stall the indexer.')
+
 class VelocityIndexer(control_loop.ControlLoop):
   def __init__(self, name='VelocityIndexer'):
     super(VelocityIndexer, self).__init__(name)
@@ -74,8 +76,11 @@ class VelocityIndexer(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.PlaceControllerPoles([.82])
-    glog.debug(repr(self.K))
+    self.PlaceControllerPoles([.80])
+    glog.debug('K: %s', repr(self.K))
+
+    glog.debug('Poles are %s',
+               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.PlaceObserverPoles([0.3])
 
@@ -127,7 +132,7 @@ class Indexer(VelocityIndexer):
 
 
 class IntegralIndexer(Indexer):
-  def __init__(self, name="IntegralIndexer"):
+  def __init__(self, name="IntegralIndexer", voltage_error_noise=None):
     super(IntegralIndexer, self).__init__(name=name)
 
     self.A_continuous_unaugmented = self.A_continuous
@@ -147,9 +152,12 @@ class IntegralIndexer(Indexer):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 2.0
-    q_vel = 0.001
-    q_voltage = 10.0
+    q_pos = 0.01
+    q_vel = 2.0
+    q_voltage = 0.4
+    if voltage_error_noise is not None:
+      q_voltage = voltage_error_noise
+
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])
@@ -179,6 +187,7 @@ class ScenarioPlotter(object):
     self.x = []
     self.v = []
     self.a = []
+    self.stall_ratio = []
     self.x_hat = []
     self.u = []
     self.offset = []
@@ -212,14 +221,16 @@ class ScenarioPlotter(object):
 
       if observer_indexer is not None:
         X_hat = observer_indexer.X_hat
+        observer_indexer.Y = indexer.Y
+        observer_indexer.CorrectObserver(numpy.matrix([[0.0]]))
         self.x_hat.append(observer_indexer.X_hat[1, 0])
+        self.offset.append(observer_indexer.X_hat[2, 0])
 
       ff_U = controller_indexer.Kff * (goal - observer_indexer.A * goal)
 
       U = controller_indexer.K * (goal - X_hat) + ff_U
       U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
       self.x.append(indexer.X[0, 0])
-
 
       if self.v:
         last_v = self.v[-1]
@@ -229,17 +240,25 @@ class ScenarioPlotter(object):
       self.v.append(indexer.X[1, 0])
       self.a.append((self.v[-1] - last_v) / indexer.dt)
 
-      if observer_indexer is not None:
-        observer_indexer.Y = indexer.Y
-        observer_indexer.CorrectObserver(U)
-        self.offset.append(observer_indexer.X_hat[2, 0])
-
       applied_U = U.copy()
-      if i > 30:
-        applied_U += 2
-      indexer.Update(applied_U)
+      if i >= 40:
+        applied_U -= 2
+
+      if FLAGS.stall and i >= 40:
+        indexer.X[1, 0] = 0.0
+      else:
+        indexer.Update(applied_U)
 
       if observer_indexer is not None:
+        clipped_u = U[0, 0]
+        clip_u_value = 3.0
+        if clipped_u < 0:
+          clipped_u = min(clipped_u, -clip_u_value)
+        else:
+          clipped_u = max(clipped_u, clip_u_value)
+
+        self.stall_ratio.append(10 * (-self.offset[-1] / clipped_u))
+
         observer_indexer.PredictObserver(U)
 
       self.t.append(initial_t + i * indexer.dt)
@@ -254,6 +273,10 @@ class ScenarioPlotter(object):
     pylab.subplot(3, 1, 2)
     pylab.plot(self.t, self.u, label='u')
     pylab.plot(self.t, self.offset, label='voltage_offset')
+    pylab.plot(self.t, self.stall_ratio, label='stall_ratio')
+    pylab.plot(self.t,
+               [10.0 if x > 6.0 else 0.0 for x in self.stall_ratio],
+               label='is_stalled')
     pylab.legend()
 
     pylab.subplot(3, 1, 3)
@@ -278,8 +301,22 @@ def main(argv):
   if FLAGS.plot:
     scenario_plotter.Plot()
 
-  if len(argv) != 5:
-    glog.fatal('Expected .h file name and .cc file name')
+  scenario_plotter = ScenarioPlotter()
+
+  indexer = Indexer()
+  indexer_controller = IntegralIndexer(voltage_error_noise=1.5)
+  observer_indexer = IntegralIndexer(voltage_error_noise=1.5)
+
+  initial_X = numpy.matrix([[0.0], [0.0]])
+  R = numpy.matrix([[0.0], [20.0], [0.0]])
+  scenario_plotter.run_test(indexer, goal=R, controller_indexer=indexer_controller,
+                            observer_indexer=observer_indexer, iterations=200)
+
+  if FLAGS.plot:
+    scenario_plotter.Plot()
+
+  if len(argv) != 7:
+    glog.fatal('Expected .h file name and .cc file names')
   else:
     namespaces = ['y2017', 'control_loops', 'superstructure', 'indexer']
     indexer = Indexer('Indexer')
@@ -295,6 +332,11 @@ def main(argv):
     integral_loop_writer = control_loop.ControlLoopWriter(
         'IntegralIndexer', [integral_indexer], namespaces=namespaces)
     integral_loop_writer.Write(argv[3], argv[4])
+
+    stuck_integral_indexer = IntegralIndexer('StuckIntegralIndexer', voltage_error_noise=1.5)
+    stuck_integral_loop_writer = control_loop.ControlLoopWriter(
+        'StuckIntegralIndexer', [stuck_integral_indexer], namespaces=namespaces)
+    stuck_integral_loop_writer.Write(argv[5], argv[6])
 
 
 if __name__ == '__main__':

@@ -6,10 +6,11 @@
 #include "aos/common/controls/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2017/control_loops/superstructure/hood/hood.h"
-#include "y2017/control_loops/superstructure/turret/turret.h"
+#include "y2017/control_loops/superstructure/indexer/indexer.h"
 #include "y2017/control_loops/superstructure/intake/intake.h"
-#include "y2017/control_loops/superstructure/superstructure.q.h"
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
+#include "y2017/control_loops/superstructure/superstructure.q.h"
+#include "y2017/control_loops/superstructure/turret/turret.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -25,6 +26,8 @@ class Superstructure
   const hood::Hood &hood() const { return hood_; }
   const turret::Turret &turret() const { return turret_; }
   const intake::Intake &intake() const { return intake_; }
+  const shooter::Shooter &shooter() const { return shooter_; }
+  const indexer::Indexer &indexer() const { return indexer_; }
 
  protected:
   virtual void RunIteration(
@@ -38,6 +41,7 @@ class Superstructure
   turret::Turret turret_;
   intake::Intake intake_;
   shooter::Shooter shooter_;
+  indexer::Indexer indexer_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

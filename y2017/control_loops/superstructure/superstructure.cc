@@ -27,6 +27,7 @@ void Superstructure::RunIteration(
     turret_.Reset();
     intake_.Reset();
     shooter_.Reset();
+    indexer_.Reset();
   }
 
   hood_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->hood) : nullptr,
@@ -46,6 +47,10 @@ void Superstructure::RunIteration(
                 &(position->theta_shooter),
                 output != nullptr ? &(output->voltage_shooter) : nullptr,
                 &(status->shooter));
+  indexer_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,
+                &(position->theta_indexer),
+                output != nullptr ? &(output->voltage_indexer) : nullptr,
+                &(status->indexer));
 }
 
 }  // namespace superstructure

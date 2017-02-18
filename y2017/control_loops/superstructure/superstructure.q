@@ -64,8 +64,23 @@ struct IndexerStatus {
   // directly so there isn't confusion on if the goal is up to date.
   bool ready;
 
-  // If true, we have aborted.
-  bool estopped;
+  // True if the indexer is stuck.
+  bool stuck;
+  float stuck_ratio;
+
+  // The state of the indexer state machine.
+  int32_t state;
+
+  // The estimated voltage error from the kalman filter in volts.
+  double voltage_error;
+  // The estimated voltage error from the stuck indexer kalman filter.
+  double stuck_voltage_error;
+
+  // The current velocity measured as delta x / delta t in radians/sec.
+  double instantaneous_velocity;
+
+  // The error between our measurement and expected measurement in radians.
+  double position_error;
 };
 
 struct ShooterStatus {
@@ -78,9 +93,6 @@ struct ShooterStatus {
   // True if the shooter is ready.  It is better to compare the velocities
   // directly so there isn't confusion on if the goal is up to date.
   bool ready;
-
-  // If true, we have aborted.
-  bool estopped;
 
   // The estimated voltage error from the kalman filter in volts.
   double voltage_error;

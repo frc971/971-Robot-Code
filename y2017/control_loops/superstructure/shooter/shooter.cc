@@ -90,9 +90,11 @@ void ShooterController::Update(bool disabled) {
     }
   }
   if (reset_) {
-    loop_->mutable_X_hat(2, 0) = 0.0;
-    loop_->mutable_X_hat(1, 0) = dt_velocity_;
     loop_->mutable_X_hat(0, 0) = Y_(0, 0);
+    // TODO(austin): This should be 0 for the WPILib reset since dt_velocity_
+    // will be rubbish.
+    loop_->mutable_X_hat(1, 0) = dt_velocity_;
+    loop_->mutable_X_hat(2, 0) = 0.0;
     reset_ = false;
   }
   last_ready_ = ready_;
