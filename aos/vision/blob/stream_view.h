@@ -10,30 +10,32 @@
 namespace aos {
 namespace vision {
 
-class BlobStreamViewer {
+class BlobStreamViewer : public DebugViewer {
  public:
-  BlobStreamViewer() : view_(false) {}
+  BlobStreamViewer() : DebugViewer(false) {}
+  explicit BlobStreamViewer(bool flip) : DebugViewer(flip) {}
+
   void Submit(ImageFormat fmt, const BlobList &blob_list) {
     SetFormatAndClear(fmt);
     DrawBlobList(blob_list, {255, 255, 255});
   }
 
   inline void SetFormatAndClear(ImageFormat fmt) {
-    if (fmt.w != ptr_.fmt().w || fmt.h != ptr_.fmt().h) {
+    if (!image_.fmt().Equals(fmt)) {
       printf("resizing data: %d, %d\n", fmt.w, fmt.h);
-      outbuf_.reset(new PixelRef[fmt.ImgSize()]);
-      ptr_ = ImagePtr{fmt, outbuf_.get()};
-      view_.UpdateImage(ptr_);
+      image_ = ImageValue(fmt);
+      UpdateImage(image_.get());
     }
-    memset(ptr_.data(), 0, fmt.ImgSize() * sizeof(PixelRef));
+    memset(image_.data(), 0, fmt.ImgSize() * sizeof(PixelRef));
   }
 
   inline void DrawBlobList(const BlobList &blob_list, PixelRef color) {
-    for (const auto &blob : blob_list) {
-      for (int i = 0; i < (int)blob.ranges.size(); ++i) {
-        for (const auto &range : blob.ranges[i]) {
+    ImagePtr ptr = img();
+    for (const RangeImage &blob : blob_list) {
+      for (int i = 0; i < (int)blob.ranges().size(); ++i) {
+        for (const auto &range : blob.ranges()[i]) {
           for (int j = range.st; j < range.ed; ++j) {
-            ptr_.get_px(j, i + blob.min_y) = color;
+            ptr.get_px(j, i + blob.min_y()) = color;
           }
         }
       }
@@ -42,15 +44,16 @@ class BlobStreamViewer {
 
   inline void DrawSecondBlobList(const BlobList &blob_list, PixelRef color1,
                                  PixelRef color2) {
+    ImagePtr ptr = img();
     for (const auto &blob : blob_list) {
-      for (int i = 0; i < (int)blob.ranges.size(); ++i) {
-        for (const auto &range : blob.ranges[i]) {
+      for (int i = 0; i < (int)blob.ranges().size(); ++i) {
+        for (const auto &range : blob.ranges()[i]) {
           for (int j = range.st; j < range.ed; ++j) {
-            auto px = ptr_.get_px(j, i + blob.min_y);
+            auto px = ptr.get_px(j, i + blob.min_y());
             if (px.r == 0 && px.g == 0 && px.b == 0) {
-              ptr_.get_px(j, i + blob.min_y) = color1;
+              ptr.get_px(j, i + blob.min_y()) = color1;
             } else {
-              ptr_.get_px(j, i + blob.min_y) = color2;
+              ptr.get_px(j, i + blob.min_y()) = color2;
             }
           }
         }
@@ -58,13 +61,13 @@ class BlobStreamViewer {
     }
   }
 
-  DebugViewer *view() { return &view_; }
+  // Backwards compatible.
+  DebugViewer *view() { return this; }
+
+  ImagePtr img() { return image_.get(); }
 
  private:
-  std::unique_ptr<PixelRef[]> outbuf_;
-  ImagePtr ptr_;
-
-  DebugViewer view_;
+  ImageValue image_;
 };
 
 }  // namespace vision

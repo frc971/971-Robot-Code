@@ -42,17 +42,10 @@ void EpollLoop::Run() {
       }
       event->ReadEvent();
     }
-
-    for (EpollWatcher *watcher : watchers_) {
-      watcher->Wake();
-    }
   }
 }
 
 void EpollLoop::AddWait(EpollWait *wait) { waits_.push_back(wait); }
-void EpollLoop::AddWatcher(EpollWatcher *watcher) {
-  watchers_.push_back(watcher);
-}
 
 // Calculates the new timeout value to pass to epoll_wait.
 int EpollLoop::CalculateTimeout() {

@@ -17,6 +17,7 @@ class EpollLoop;
 // Performs an asychronous wait using an EpollLoop.
 //
 // Note: this does not have very high resolution (sub-millisecond).
+// TODO(parker): This is mostly broken.
 class EpollWait {
  public:
   virtual ~EpollWait() {}
@@ -37,10 +38,15 @@ class EpollWait {
   int Recalculate(const monotonic_clock::time_point now) {
     if (time_ < monotonic_clock::epoch()) return -1;
     if (time_ <= now) {
-      Done();
       time_ = monotonic_clock::time_point(::std::chrono::seconds(-1));
-      return -1;
+      Done();
     }
+    // Duplicate above to allow Done to change itself.
+    if (time_ < monotonic_clock::epoch()) return -1;
+    if (time_ <= now) {
+      return -1;// Recalculate(now);
+    }
+
     if (time_ - now > ::std::chrono::milliseconds(INT_MAX)) {
       return INT_MAX;
     } else {
@@ -75,17 +81,6 @@ class EpollEvent {
   EpollLoop *loop_ = nullptr;
 };
 
-// Provides a way for code to be notified every time after events are handled by
-// an EpollLoop. This is mainly a hack for the GTK integration and testing;
-// think very carefully before using it anywhere else.
-class EpollWatcher {
- public:
-  virtual ~EpollWatcher() {}
-
-  // Called after events have been processed each time the event loop wakes up.
-  virtual void Wake() = 0;
-};
-
 // A file descriptor based event loop implemented with epoll.
 class EpollLoop {
  public:
@@ -95,7 +90,6 @@ class EpollLoop {
   // None of these take ownership of the passed-in objects.
   void AddWait(EpollWait *wait);
   void Add(EpollEvent *event);
-  void AddWatcher(EpollWatcher *watcher);
 
   // Delete event. Note that there are caveats here as this is
   // not idiot proof.
@@ -111,6 +105,10 @@ class EpollLoop {
   // Loops forever, handling events.
   void Run();
 
+  // Fuses with gtk_main().
+  // Note that the dep for this is separate: //aos/vision/events:gtk_event
+  void RunWithGtkMain();
+
  private:
   int epoll_fd() { return epoll_fd_.get(); }
 
@@ -118,7 +116,6 @@ class EpollLoop {
 
   ::aos::ScopedFD epoll_fd_;
   ::std::vector<EpollWait *> waits_;
-  ::std::vector<EpollWatcher *> watchers_;
 };
 
 }  // namespace events
