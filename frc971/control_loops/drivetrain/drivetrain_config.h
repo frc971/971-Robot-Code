@@ -21,12 +21,23 @@ enum class LoopType : int32_t {
   CLOSED_LOOP = 1,  // Add in closed loop calculation.
 };
 
+enum class GyroType : int32_t {
+  SPARTAN_GYRO = 0, // Use the gyro on the spartan board.
+  IMU_X_GYRO = 1,   // Use the x-axis of the gyro on the IMU.
+  IMU_Y_GYRO = 2,   // Use the y-axis of the gyro on the IMU.
+  IMU_Z_GYRO = 3,   // Use the z-axis of the gyro on the IMU.
+  FLIPPED_SPARTAN_GYRO = 4, // Use the gyro on the spartan board.
+};
+
 struct DrivetrainConfig {
   // Shifting method we are using.
   ShifterType shifter_type;
 
   // Type of loop to use.
   LoopType loop_type;
+
+  // Type of gyro to use.
+  GyroType gyro_type;
 
   // Polydrivetrain functions returning various controller loops with plants.
   ::std::function<StateFeedbackLoop<4, 2, 2>()> make_drivetrain_loop;

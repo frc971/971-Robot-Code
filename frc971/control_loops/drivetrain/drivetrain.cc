@@ -20,6 +20,7 @@
 #include "frc971/wpilib/imu.q.h"
 
 using frc971::sensors::gyro_reading;
+using frc971::imu_values;
 
 namespace frc971 {
 namespace control_loops {
@@ -121,8 +122,8 @@ void DrivetrainLoop::RunIteration(
     gear_logging.controller_index = kf_.controller_index();
     LOG_STRUCT(DEBUG, "state", gear_logging);
   }
-
-  if (::frc971::imu_values.FetchLatest()) {
+  const bool is_latest_imu_values = ::frc971::imu_values.FetchLatest();
+  if (is_latest_imu_values) {
     const double rate = -::frc971::imu_values->gyro_y;
     const double accel_squared = ::frc971::imu_values->accelerometer_x *
                                      ::frc971::imu_values->accelerometer_x +
@@ -154,10 +155,40 @@ void DrivetrainLoop::RunIteration(
 
   // TODO(austin): Signal the current gear to both loops.
 
-  if (gyro_reading.FetchLatest()) {
-    LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
-    last_gyro_heading_ = gyro_reading->angle;
-    last_gyro_rate_ = gyro_reading->velocity;
+  switch (dt_config_.gyro_type) {
+    case GyroType::IMU_X_GYRO:
+      if (is_latest_imu_values) {
+        LOG_STRUCT(DEBUG, "using", *imu_values.get());
+        last_gyro_rate_ = imu_values->gyro_x;
+      }
+      break;
+    case GyroType::IMU_Y_GYRO:
+      if (is_latest_imu_values) {
+        LOG_STRUCT(DEBUG, "using", *imu_values.get());
+        last_gyro_rate_ = imu_values->gyro_y;
+      }
+      break;
+    case GyroType::IMU_Z_GYRO:
+      if (is_latest_imu_values) {
+        LOG_STRUCT(DEBUG, "using", *imu_values.get());
+        last_gyro_rate_ = imu_values->gyro_z;
+      }
+      break;
+    case GyroType::SPARTAN_GYRO:
+      if (gyro_reading.FetchLatest()) {
+        LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
+        last_gyro_rate_ = gyro_reading->velocity;
+      }
+      break;
+    case GyroType::FLIPPED_SPARTAN_GYRO:
+      if (gyro_reading.FetchLatest()) {
+        LOG_STRUCT(DEBUG, "using", *gyro_reading.get());
+        last_gyro_rate_ = -gyro_reading->velocity;
+      }
+      break;
+    default:
+      LOG(FATAL, "invalid gyro configured");
+      break;
   }
 
   {

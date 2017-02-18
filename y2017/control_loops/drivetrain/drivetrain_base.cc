@@ -22,6 +22,7 @@ const DrivetrainConfig &GetDrivetrainConfig() {
   static DrivetrainConfig kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::NO_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
+      ::frc971::control_loops::drivetrain::GyroType::IMU_Y_GYRO,
 
       ::y2017::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2017::control_loops::drivetrain::MakeVelocityDrivetrainLoop,

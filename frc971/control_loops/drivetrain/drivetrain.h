@@ -39,7 +39,6 @@ class DrivetrainLoop : public aos::controls::ControlLoop<
 
   void Zero(::frc971::control_loops::DrivetrainQueue::Output *output) override;
 
-  double last_gyro_heading_ = 0.0;
   double last_gyro_rate_ = 0.0;
 
   const DrivetrainConfig dt_config_;
