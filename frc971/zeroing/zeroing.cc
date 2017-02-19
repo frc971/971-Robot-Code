@@ -184,6 +184,13 @@ void PotAndAbsEncoderZeroingEstimator::Reset() {
 // update estimates based on those samples.
 void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
     const PotAndAbsolutePosition &info) {
+  // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
+  // code below. NaN values are given when the Absolute Encoder is disconnected.
+  if (::std::isnan(info.absolute_encoder)) {
+    error_ = true;
+    return;
+  }
+
   bool moving = true;
   if (buffered_samples_.size() < constants_.moving_buffer_size) {
     // Not enough samples to start determining if the robot is moving or not,

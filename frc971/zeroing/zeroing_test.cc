@@ -38,7 +38,8 @@ class ZeroingTest : public ::testing::Test {
   }
 
   void MoveTo(PositionSensorSimulator *simulator,
-              PotAndAbsEncoderZeroingEstimator *estimator, double new_position) {
+              PotAndAbsEncoderZeroingEstimator *estimator,
+              double new_position) {
     PotAndAbsolutePosition sensor_values_;
     simulator->MoveTo(new_position);
     simulator->GetSensorValues(&sensor_values_);
@@ -365,5 +366,22 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   MoveTo(&sim, &estimator, start_pos);
   ASSERT_FALSE(estimator.zeroed());
 }
+
+// Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
+TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, 1, 0.3, 0.1, kMovingBufferSize};
+
+  PotAndAbsEncoderZeroingEstimator estimator(constants);
+
+  PotAndAbsolutePosition sensor_values_;
+  sensor_values_.absolute_encoder = ::std::numeric_limits<double>::quiet_NaN();
+  sensor_values_.encoder = 0.0;
+  sensor_values_.pot = 0.0;
+  estimator.UpdateEstimate(sensor_values_);
+
+  ASSERT_TRUE(estimator.error());
+}
+
 }  // namespace zeroing
 }  // namespace frc971

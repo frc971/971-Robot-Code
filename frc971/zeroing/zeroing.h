@@ -155,8 +155,7 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
 
   double offset() const override { return offset_; }
 
-  // TODO(austin): Actually implement this.
-  bool error() const override { return false; }
+  bool error() const override { return error_; }
 
   // Returns true if the sample buffer is full.
   bool offset_ready() const {
@@ -195,6 +194,8 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   double filtered_position_ = 0.0;
   // The filtered position.
   double position_ = 0.0;
+  // Whether or not there is an error in the estimate.
+  bool error_ = false;
 };
 
 // Populates an EstimatorState struct with information from the zeroing
