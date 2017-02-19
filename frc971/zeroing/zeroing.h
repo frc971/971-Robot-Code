@@ -19,9 +19,32 @@
 namespace frc971 {
 namespace zeroing {
 
+class ZeroingEstimator {
+ public:
+  virtual ~ZeroingEstimator(){}
+
+  // Returns true if the logic considers the corresponding mechanism to be
+  // zeroed. It return false otherwise. For example, right after a call to
+  // Reset() this returns false.
+  virtual bool zeroed() const = 0;
+
+  // Returns the estimated starting position of the corresponding mechansim. In
+  // some contexts we refer to this as the "offset".
+  virtual double offset() const = 0;
+
+  // Returns the estimated position of the corresponding mechanism. This value
+  // is in SI units. For example, the estimator for the elevator would return a
+  // value in meters for the height relative to absolute zero.
+  virtual double position() const = 0;
+
+  // Returns true if an error has occurred, false otherwise. This gets reset to
+  // false when the Reset() function is called.
+  virtual bool error() const = 0;
+};
+
 // Estimates the position with an incremental encoder with an index pulse and a
 // potentiometer.
-class PotAndIndexPulseZeroingEstimator {
+class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
  public:
   using Position = PotAndIndexPosition;
   using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
@@ -40,22 +63,13 @@ class PotAndIndexPulseZeroingEstimator {
   // logic.
   void TriggerError();
 
-  // Returns true if an error has occurred, false otherwise. This gets reset to
-  // false when the Reset() function is called.
-  bool error() const { return error_; }
+  bool error() const override { return error_; }
 
-  // Returns true if the logic considers the corresponding mechanism to be
-  // zeroed. It return false otherwise.
-  bool zeroed() const { return zeroed_; }
+  bool zeroed() const override { return zeroed_; }
 
-  // Return the estimated position of the corresponding mechanism. This value
-  // is in SI units. For example, the estimator for the elevator would return a
-  // value in meters for the height relative to absolute zero.
-  double position() const { return position_; }
+  double position() const override { return position_; }
 
-  // Return the estimated starting position of the corresponding mechansim. In
-  // some contexts we refer to this as the "offset".
-  double offset() const { return start_pos_; }
+  double offset() const override { return start_pos_; }
 
   // Return the estimated position of the corresponding mechanism not using the
   // index pulse, even if one is available.
@@ -120,7 +134,7 @@ class PotAndIndexPulseZeroingEstimator {
 
 // Estimates the position with an absolute encoder which also reports
 // incremental counts, and a potentiometer.
-class PotAndAbsEncoderZeroingEstimator {
+class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
  public:
   using Position = PotAndAbsolutePosition;
   using ZeroingConstants = constants::PotAndAbsoluteEncoderZeroingConstants;
@@ -135,22 +149,14 @@ class PotAndAbsEncoderZeroingEstimator {
   // Updates the sensor values for the zeroing logic.
   void UpdateEstimate(const PotAndAbsolutePosition &info);
 
-  // Returns true if the mechanism is zeroed, and false if it isn't.
-  bool zeroed() const { return zeroed_; }
+  bool zeroed() const override { return zeroed_; }
 
-  // Return the estimated position of the corresponding mechanism. This value
-  // is in SI units. For example, the estimator for the elevator would return a
-  // value in meters for the height relative to absolute zero.
-  double position() const { return position_; }
+  double position() const override { return position_; }
 
-  // Return the estimated starting position of the corresponding mechansim. In
-  // some contexts we refer to this as the "offset".
-  double offset() const { return offset_; }
+  double offset() const override { return offset_; }
 
-  // Returns true if an error has occurred, false otherwise. This gets reset to
-  // false when the Reset() function is called.
   // TODO(austin): Actually implement this.
-  bool error() const { return false; }
+  bool error() const override { return false; }
 
   // Returns true if the sample buffer is full.
   bool offset_ready() const {
