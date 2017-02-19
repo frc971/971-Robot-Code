@@ -1,18 +1,22 @@
 #!/usr/bin/python
 
-import control_loop
-import controls
-import polytope
-import polydrivetrain
+from frc971.control_loops.python import control_loop
+from frc971.control_loops.python import controls
 import numpy
 import math
 import sys
-import matplotlib
 from matplotlib import pylab
+
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 
 class Arm(control_loop.ControlLoop):
-  def __init__(self, name="Arm", mass=None):
+  def __init__(self, name='Arm', mass=None):
     super(Arm, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = 0.476
@@ -63,12 +67,12 @@ class Arm(control_loop.ControlLoop):
          [0, 0, 0, 1],
          [0, 0, -self.C1 * 2.0, -self.C3]])
 
-    print 'Full speed is', self.C2 / self.C3 * 12.0
+    glog.debug('Full speed is %f', self.C2 / self.C3 * 12.0)
 
-    print 'Stall arm difference is', 12.0 * self.C2 / self.C1
-    print 'Stall arm difference first principles is', self.stall_torque * self.G / self.spring
+    glog.debug('Stall arm difference is %f', 12.0 * self.C2 / self.C1)
+    glog.debug('Stall arm difference first principles is %f', self.stall_torque * self.G / self.spring)
 
-    print '5 degrees of arm error is', self.spring / self.r * (math.pi * 5.0 / 180.0)
+    glog.debug('5 degrees of arm error is %f', self.spring / self.r * (math.pi * 5.0 / 180.0))
 
     # Start with the unmodified input
     self.B_continuous = numpy.matrix(
@@ -86,8 +90,8 @@ class Arm(control_loop.ControlLoop):
         self.A_continuous, self.B_continuous, self.dt)
 
     controllability = controls.ctrb(self.A, self.B)
-    print 'Rank of augmented controllability matrix.', numpy.linalg.matrix_rank(
-        controllability)
+    glog.debug('Rank of augmented controllability matrix. %d', numpy.linalg.matrix_rank(
+        controllability))
 
     q_pos = 0.02
     q_vel = 0.300
@@ -101,11 +105,10 @@ class Arm(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
                            [0.0, 1.0 / (12.0 ** 2.0)]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
-    print 'Controller'
-    print self.K
+    glog.debug('Controller\n %s', repr(self.K))
 
-    print 'Controller Poles'
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('Controller Poles\n %s',
+               numpy.linalg.eig(self.A - self.B * self.K)[0])
 
     self.rpl = 0.20
     self.ipl = 0.05
@@ -119,13 +122,14 @@ class Arm(control_loop.ControlLoop):
     self.U_max = numpy.matrix([[12.0], [12.0]])
     self.U_min = numpy.matrix([[-12.0], [-12.0]])
 
-    print 'Observer (Converted to a KF)', numpy.linalg.inv(self.A) * self.L
+    glog.debug('Observer (Converted to a KF):\n%s',
+               repr(numpy.linalg.inv(self.A) * self.L))
 
     self.InitializeState()
 
 
 class IntegralArm(Arm):
-  def __init__(self, name="IntegralArm", mass=None):
+  def __init__(self, name='IntegralArm', mass=None):
     super(IntegralArm, self).__init__(name=name, mass=mass)
 
     self.A_continuous_unaugmented = self.A_continuous
@@ -144,9 +148,9 @@ class IntegralArm(Arm):
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
-    print 'A cont', self.A_continuous
-    print 'B cont', self.B_continuous
-    print 'A discrete', self.A
+    glog.debug('A cont: %s', repr(self.A_continuous))
+    glog.debug('B cont %s', repr(self.B_continuous))
+    glog.debug('A discrete %s', repr(self.A))
 
     q_pos = 0.08
     q_vel = 0.40
@@ -175,7 +179,7 @@ class IntegralArm(Arm):
     self.K[0:2, 0:4] = self.K_unaugmented
     self.K[0, 4] = 1
     self.K[1, 4] = 1
-    print 'Kal', self.KalmanGain
+    glog.debug('Kal: %s', repr(self.KalmanGain))
     self.L = self.A * self.KalmanGain
 
     self.InitializeState()
@@ -264,10 +268,10 @@ def run_test(arm, initial_X, goal, max_separation_error=0.01,
     u_left.append(U[0, 0])
     u_right.append(U[1, 0])
 
-  print numpy.linalg.inv(arm.A)
-  print "delta time is ", arm.dt
-  print "Velocity at t=0 is ", x_avg[0], v_avg[0], x_sep[0], v_sep[0]
-  print "Velocity at t=1+dt is ", x_avg[1], v_avg[1], x_sep[1], v_sep[1]
+  glog.debug(repr(numpy.linalg.inv(arm.A)))
+  glog.debug('delta time is %f', arm.dt)
+  glog.debug('Velocity at t=0 is %f %f %f %f', x_avg[0], v_avg[0], x_sep[0], v_sep[0])
+  glog.debug('Velocity at t=1+dt is %f %f %f %f', x_avg[1], v_avg[1], x_sep[1], v_sep[1])
 
   if show_graph:
     pylab.subplot(2, 1, 1)
@@ -350,7 +354,7 @@ def run_integral_test(arm, initial_X, goal, observer_arm, disturbance,
     u_left.append(U[0, 0])
     u_right.append(U[1, 0])
 
-  print 'End is', observer_arm.X_hat[4, 0]
+  glog.debug('End is %f', observer_arm.X_hat[4, 0])
 
   if show_graph:
     pylab.subplot(2, 1, 1)
@@ -370,40 +374,40 @@ def run_integral_test(arm, initial_X, goal, observer_arm, disturbance,
 
 
 def main(argv):
-  loaded_mass = 25
-  #loaded_mass = 0
-  arm = Arm(mass=13 + loaded_mass)
-  #arm_controller = Arm(mass=13 + 15)
-  #observer_arm = Arm(mass=13 + 15)
-  #observer_arm = None
+  if FLAGS.plot:
+    loaded_mass = 25
+    #loaded_mass = 0
+    arm = Arm(mass=13 + loaded_mass)
+    #arm_controller = Arm(mass=13 + 15)
+    #observer_arm = Arm(mass=13 + 15)
+    #observer_arm = None
 
-  integral_arm = IntegralArm(mass=13 + loaded_mass)
-  integral_arm.X_hat[0, 0] += 0.02
-  integral_arm.X_hat[2, 0] += 0.02
-  integral_arm.X_hat[4] = 0
+    integral_arm = IntegralArm(mass=13 + loaded_mass)
+    integral_arm.X_hat[0, 0] += 0.02
+    integral_arm.X_hat[2, 0] += 0.02
+    integral_arm.X_hat[4] = 0
 
-  # Test moving the arm with constant separation.
-  initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  R = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
-  run_integral_test(arm, initial_X, R, integral_arm, disturbance=2)
+    # Test moving the arm with constant separation.
+    initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    R = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
+    run_integral_test(arm, initial_X, R, integral_arm, disturbance=2)
 
   # Write the generated constants out to a file.
   if len(argv) != 5:
-    print "Expected .h file name and .cc file name for the arm and augmented arm."
+    glog.fatal('Expected .h file name and .cc file name for the arm and augmented arm.')
   else:
-    arm = Arm("Arm", mass=13)
-    loop_writer = control_loop.ControlLoopWriter("Arm", [arm])
-    if argv[1][-3:] == '.cc':
-      loop_writer.Write(argv[2], argv[1])
-    else:
-      loop_writer.Write(argv[1], argv[2])
+    namespaces = ['y2015', 'control_loops', 'fridge']
+    arm = Arm('Arm', mass=13)
+    loop_writer = control_loop.ControlLoopWriter('Arm', [arm],
+                                                 namespaces=namespaces)
+    loop_writer.Write(argv[1], argv[2])
 
-    integral_arm = IntegralArm("IntegralArm", mass=13)
-    loop_writer = control_loop.ControlLoopWriter("IntegralArm", [integral_arm])
-    if argv[3][-3:] == '.cc':
-      loop_writer.Write(argv[4], argv[3])
-    else:
-      loop_writer.Write(argv[3], argv[4])
+    integral_arm = IntegralArm('IntegralArm', mass=13)
+    loop_writer = control_loop.ControlLoopWriter('IntegralArm', [integral_arm],
+                                                 namespaces=namespaces)
+    loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))

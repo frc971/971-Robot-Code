@@ -18,7 +18,7 @@ except gflags.DuplicateFlagError:
   pass
 
 class Claw(control_loop.ControlLoop):
-  def __init__(self, name="Claw", mass=None):
+  def __init__(self, name='Claw', mass=None):
     super(Claw, self).__init__(name)
     # Stall Torque in N m
     self.stall_torque = 0.476
@@ -74,7 +74,7 @@ class Claw(control_loop.ControlLoop):
 
     controllability = controls.ctrb(self.A, self.B)
 
-    print "Free speed is", self.free_speed * numpy.pi * 2.0 / 60.0 / self.G
+    glog.debug('Free speed is %f', self.free_speed * numpy.pi * 2.0 / 60.0 / self.G)
 
     q_pos = 0.15
     q_vel = 2.5
@@ -84,15 +84,15 @@ class Claw(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    print 'K', self.K
-    print 'Poles are', numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug('K: %s', repr(self.K))
+    glog.debug('Poles are: %s', repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = 0.30
     self.ipl = 0.10
     self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
                              self.rpl - 1j * self.ipl])
 
-    print 'L is', self.L
+    glog.debug('L is: %s', repr(self.L))
 
     q_pos = 0.05
     q_vel = 2.65
@@ -105,9 +105,9 @@ class Claw(control_loop.ControlLoop):
     self.KalmanGain, self.Q_steady = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
-    print 'Kal', self.KalmanGain
+    glog.debug('Kal: %s', repr(self.KalmanGain))
     self.L = self.A * self.KalmanGain
-    print 'KalL is', self.L
+    glog.debug('KalL is: %s', repr(self.L))
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -118,7 +118,7 @@ class Claw(control_loop.ControlLoop):
 
 
 def run_test(claw, initial_X, goal, max_separation_error=0.01,
-             show_graph=False, iterations=200, controller_claw=None,
+             iterations=200, controller_claw=None,
              observer_claw=None):
   """Runs the claw plant with an initial condition and goal.
 
@@ -131,8 +131,6 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01,
       claw: claw object to use.
       initial_X: starting state.
       goal: goal state.
-      show_graph: Whether or not to display a graph showing the changing
-           states and voltages.
       iterations: Number of timesteps to run the model for.
       controller_claw: claw object to get K from, or None if we should
           use claw.
@@ -177,32 +175,32 @@ def run_test(claw, initial_X, goal, max_separation_error=0.01,
     t.append(i * claw.dt)
     u.append(U[0, 0])
 
-  if show_graph:
-    pylab.subplot(2, 1, 1)
-    pylab.plot(t, x, label='x')
-    if observer_claw is not None:
-      pylab.plot(t, x_hat, label='x_hat')
-    pylab.legend()
+  pylab.subplot(2, 1, 1)
+  pylab.plot(t, x, label='x')
+  if observer_claw is not None:
+    pylab.plot(t, x_hat, label='x_hat')
+  pylab.legend()
 
-    pylab.subplot(2, 1, 2)
-    pylab.plot(t, u, label='u')
-    pylab.legend()
-    pylab.show()
+  pylab.subplot(2, 1, 2)
+  pylab.plot(t, u, label='u')
+  pylab.legend()
+  pylab.show()
 
 
 def main(argv):
-  loaded_mass = 0
-  #loaded_mass = 0
-  claw = Claw(mass=4 + loaded_mass)
-  claw_controller = Claw(mass=5 + 0)
-  observer_claw = Claw(mass=5 + 0)
-  #observer_claw = None
+  if FLAGS.plot:
+    loaded_mass = 0
+    #loaded_mass = 0
+    claw = Claw(mass=4 + loaded_mass)
+    claw_controller = Claw(mass=5 + 0)
+    observer_claw = Claw(mass=5 + 0)
+    #observer_claw = None
 
-  # Test moving the claw with constant separation.
-  initial_X = numpy.matrix([[0.0], [0.0]])
-  R = numpy.matrix([[1.0], [0.0]])
-  run_test(claw, initial_X, R, controller_claw=claw_controller,
-           observer_claw=observer_claw)
+    # Test moving the claw with constant separation.
+    initial_X = numpy.matrix([[0.0], [0.0]])
+    R = numpy.matrix([[1.0], [0.0]])
+    run_test(claw, initial_X, R, controller_claw=claw_controller,
+             observer_claw=observer_claw)
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
@@ -215,4 +213,6 @@ def main(argv):
     loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))

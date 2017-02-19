@@ -26,7 +26,9 @@ class StateFeedbackPlantCoefficients final {
 
   StateFeedbackPlantCoefficients(const StateFeedbackPlantCoefficients &other)
       : A_(other.A()),
+        A_continuous_(other.A_continuous()),
         B_(other.B()),
+        B_continuous_(other.B_continuous()),
         C_(other.C()),
         D_(other.D()),
         U_min_(other.U_min()),
@@ -34,21 +36,41 @@ class StateFeedbackPlantCoefficients final {
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<double, number_of_states, number_of_states> &A,
+      const Eigen::Matrix<double, number_of_states, number_of_states>
+          &A_continuous,
       const Eigen::Matrix<double, number_of_states, number_of_inputs> &B,
+      const Eigen::Matrix<double, number_of_states, number_of_inputs>
+          &B_continuous,
       const Eigen::Matrix<double, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<double, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<double, number_of_inputs, 1> &U_min)
-      : A_(A), B_(B), C_(C), D_(D), U_min_(U_min), U_max_(U_max) {}
+      : A_(A),
+        A_continuous_(A_continuous),
+        B_(B),
+        B_continuous_(B_continuous),
+        C_(C),
+        D_(D),
+        U_min_(U_min),
+        U_max_(U_max) {}
 
   const Eigen::Matrix<double, number_of_states, number_of_states> &A() const {
     return A_;
   }
   double A(int i, int j) const { return A()(i, j); }
+  const Eigen::Matrix<double, number_of_states, number_of_states> &A_continuous()
+      const {
+    return A_continuous_;
+  }
+  double A_continuous(int i, int j) const { return A_continuous()(i, j); }
   const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
     return B_;
   }
   double B(int i, int j) const { return B()(i, j); }
+  const Eigen::Matrix<double, number_of_states, number_of_inputs> &B_continuous() const {
+    return B_continuous_;
+  }
+  double B_continuous(int i, int j) const { return B_continuous()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
     return C_;
   }
@@ -68,7 +90,9 @@ class StateFeedbackPlantCoefficients final {
 
  private:
   const Eigen::Matrix<double, number_of_states, number_of_states> A_;
+  const Eigen::Matrix<double, number_of_states, number_of_states> A_continuous_;
   const Eigen::Matrix<double, number_of_states, number_of_inputs> B_;
+  const Eigen::Matrix<double, number_of_states, number_of_inputs> B_continuous_;
   const Eigen::Matrix<double, number_of_outputs, number_of_states> C_;
   const Eigen::Matrix<double, number_of_outputs, number_of_inputs> D_;
   const Eigen::Matrix<double, number_of_inputs, 1> U_min_;

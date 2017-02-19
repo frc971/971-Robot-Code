@@ -276,15 +276,17 @@ class ControlLoop(object):
         num_states, num_inputs, num_outputs, self._name)]
 
     ans.append(self._DumpMatrix('A', self.A))
+    ans.append(self._DumpMatrix('A_continuous', self.A_continuous))
     ans.append(self._DumpMatrix('B', self.B))
+    ans.append(self._DumpMatrix('B_continuous', self.B_continuous))
     ans.append(self._DumpMatrix('C', self.C))
     ans.append(self._DumpMatrix('D', self.D))
     ans.append(self._DumpMatrix('U_max', self.U_max))
     ans.append(self._DumpMatrix('U_min', self.U_min))
 
     ans.append('  return StateFeedbackPlantCoefficients<%d, %d, %d>'
-               '(A, B, C, D, U_max, U_min);\n' % (num_states, num_inputs,
-                                                  num_outputs))
+               '(A, A_continuous, B, B_continuous, C, D, U_max, U_min);\n' % (
+                   num_states, num_inputs, num_outputs))
     ans.append('}\n')
     return ''.join(ans)
 

@@ -34,8 +34,7 @@ class FridgeSimulation {
   static constexpr double kNoiseScalar = 0.1;
   // Constructs a simulation.
   FridgeSimulation()
-      : arm_plant_(new StateFeedbackPlant<4, 2, 2>(
-            ::frc971::control_loops::MakeArmPlant())),
+      : arm_plant_(new StateFeedbackPlant<4, 2, 2>(MakeArmPlant())),
         elevator_plant_(new StateFeedbackPlant<4, 2, 2>(MakeElevatorPlant())),
         left_arm_pot_encoder_(
             constants::GetValues().fridge.left_arm_zeroing.index_difference),

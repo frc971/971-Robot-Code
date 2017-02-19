@@ -54,7 +54,7 @@ CappedStateFeedbackLoop<S>::UnsaturateOutputGoalChange() {
 Fridge::Fridge(FridgeQueue *fridge)
     : aos::controls::ControlLoop<FridgeQueue>(fridge),
       arm_loop_(new CappedStateFeedbackLoop<5>(StateFeedbackLoop<5, 2, 2>(
-          ::frc971::control_loops::MakeIntegralArmLoop()))),
+          MakeIntegralArmLoop()))),
       elevator_loop_(new CappedStateFeedbackLoop<4>(
           StateFeedbackLoop<4, 2, 2>(MakeElevatorLoop()))),
       left_arm_estimator_(constants::GetValues().fridge.left_arm_zeroing),
