@@ -75,6 +75,21 @@ cc_library(
   ],
 )
 
+genrule(
+  name = 'genrule_arm_motor',
+  visibility = ['//visibility:private'],
+  cmd = '$(location //y2015/control_loops/python:arm) $(OUTS)',
+  tools = [
+    '//y2015/control_loops/python:arm',
+  ],
+  outs = [
+    'arm_motor_plant.h',
+    'arm_motor_plant.cc',
+    'integral_arm_plant.h',
+    'integral_arm_plant.cc',
+  ],
+)
+
 cc_test(
   name = 'fridge_lib_test',
   srcs = [

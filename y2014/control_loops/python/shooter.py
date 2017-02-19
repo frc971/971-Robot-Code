@@ -108,6 +108,16 @@ class SprungShooterDeltaU(SprungShooter):
     A_unaugmented = self.A
     B_unaugmented = self.B
 
+    A_continuous_unaugmented = self.A_continuous
+    B_continuous_unaugmented = self.B_continuous
+
+    self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
+    self.A_continuous[0:2, 0:2] = A_continuous_unaugmented
+    self.A_continuous[0:2, 2] = B_continuous_unaugmented
+
+    self.B_continuous = numpy.matrix(numpy.zeros((3, 1)))
+    self.B_continuous[2, 0] = 1.0 / self.dt
+
     self.A = numpy.matrix([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 1.0]])
@@ -146,6 +156,16 @@ class ShooterDeltaU(Shooter):
     super(ShooterDeltaU, self).__init__(name)
     A_unaugmented = self.A
     B_unaugmented = self.B
+
+    A_continuous_unaugmented = self.A_continuous
+    B_continuous_unaugmented = self.B_continuous
+
+    self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
+    self.A_continuous[0:2, 0:2] = A_continuous_unaugmented
+    self.A_continuous[0:2, 2] = B_continuous_unaugmented
+
+    self.B_continuous = numpy.matrix(numpy.zeros((3, 1)))
+    self.B_continuous[2, 0] = 1.0 / self.dt
 
     self.A = numpy.matrix([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],

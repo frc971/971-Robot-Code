@@ -3,6 +3,7 @@
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
+import scipy
 import sys
 from matplotlib import pylab
 
@@ -131,6 +132,11 @@ class IntegralShooter(Shooter):
 
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
+
+    glog.debug('A: \n%s', repr(self.A_continuous))
+    glog.debug('eig(A): \n%s', repr(scipy.linalg.eig(self.A_continuous)))
+    glog.debug('schur(A): \n%s', repr(scipy.linalg.schur(self.A_continuous)))
+    glog.debug('A_dt(A): \n%s', repr(self.A))
 
     q_pos = 0.01
     q_vel = 2.0

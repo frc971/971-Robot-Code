@@ -80,8 +80,8 @@ class Elevator(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0))]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
-    glog.info('K %s', str(self.K))
-    glog.info('Poles are %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+    glog.debug('K %s', str(self.K))
+    glog.debug('Poles are %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = 0.30
     self.ipl = 0.10
@@ -100,7 +100,7 @@ class Elevator(control_loop.ControlLoop):
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
 
     self.L = self.A * self.KalmanGain
-    glog.info('KalL is %s', str(self.L))
+    glog.debug('KalL is %s', str(self.L))
 
     # The box formed by U_min and U_max must encompass all possible values,
     # or else Austin's code gets angry.
@@ -237,8 +237,6 @@ class ScenarioPlotter(object):
 
 
 def main(argv):
-  argv = FLAGS(argv)
-
   loaded_mass = 7+4.0
   #loaded_mass = 0
   #observer_elevator = None
@@ -255,7 +253,7 @@ def main(argv):
 
   for i in xrange(0, 7):
     elevator = Elevator(mass=i*totemass + loaded_mass)
-    glog.info('Actual poles are %s', str(numpy.linalg.eig(elevator.A - elevator.B * elevator_controller.K[0, 0:2])[0]))
+    glog.debug('Actual poles are %s', str(numpy.linalg.eig(elevator.A - elevator.B * elevator_controller.K[0, 0:2])[0]))
 
     elevator.X = initial_X
     scenario_plotter.run_test(elevator, goal=up_R, controller_elevator=elevator_controller,
@@ -282,4 +280,6 @@ def main(argv):
     integral_loop_writer.Write(argv[3], argv[4])
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))

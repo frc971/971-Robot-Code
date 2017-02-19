@@ -8,6 +8,14 @@ import sys
 import matplotlib
 from matplotlib import pylab
 
+import gflags
+import glog
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+
+
 class Elevator(control_loop.ControlLoop):
   def __init__(self, name="Elevator", mass=None):
     super(Elevator, self).__init__(name)
@@ -57,7 +65,7 @@ class Elevator(control_loop.ControlLoop):
          [0, 0, 0, 1],
          [0, 0, -C1 * 2.0, -C3]])
 
-    print "Full speed is", C2 / C3 * 12.0
+    glog.debug('Full speed is', C2 / C3 * 12.0)
 
     # Start with the unmodified input
     self.B_continuous = numpy.matrix(
@@ -74,11 +82,11 @@ class Elevator(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    print self.A
+    glog.debug(repr(self.A))
 
     controllability = controls.ctrb(self.A, self.B)
-    print "Rank of augmented controllability matrix.", numpy.linalg.matrix_rank(
-        controllability)
+    glog.debug('Rank of augmented controllability matrix: %d',
+               numpy.linalg.matrix_rank(controllability))
 
     q_pos = 0.02
     q_vel = 0.400
@@ -92,9 +100,9 @@ class Elevator(control_loop.ControlLoop):
     self.R = numpy.matrix([[(1.0 / (12.0 ** 2.0)), 0.0],
                            [0.0, 1.0 / (12.0 ** 2.0)]])
     self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
-    print self.K
+    glog.debug(repr(self.K))
 
-    print numpy.linalg.eig(self.A - self.B * self.K)[0]
+    glog.debug(repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.rpl = 0.20
     self.ipl = 0.05
@@ -194,10 +202,10 @@ def run_test(elevator, initial_X, goal, max_separation_error=0.01,
     u_left.append(U[0, 0])
     u_right.append(U[1, 0])
 
-  print numpy.linalg.inv(elevator.A)
-  print "delta time is ", elevator.dt
-  print "Velocity at t=0 is ", x_avg[0], v_avg[0], x_sep[0], v_sep[0]
-  print "Velocity at t=1+dt is ", x_avg[1], v_avg[1], x_sep[1], v_sep[1]
+  glog.debug(repr(numpy.linalg.inv(elevator.A)))
+  glog.debug('delta time is %f', elevator.dt)
+  glog.debug('Velocity at t=0 is %f %f %f %f', x_avg[0], v_avg[0], x_sep[0], v_sep[0])
+  glog.debug('Velocity at t=1+dt is %f %f %f %f', x_avg[1], v_avg[1], x_sep[1], v_sep[1])
 
   if show_graph:
     pylab.subplot(2, 1, 1)
@@ -232,7 +240,7 @@ def main(argv):
 
   # Write the generated constants out to a file.
   if len(argv) != 3:
-    print "Expected .h file name and .cc file name for the elevator."
+    glog.fatal('Expected .h file name and .cc file name for the elevator.')
   else:
     namespaces = ['y2015', 'control_loops', 'fridge']
     elevator = Elevator("Elevator")
@@ -244,4 +252,6 @@ def main(argv):
     loop_writer.Write(argv[1], argv[2])
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv))
+  argv = FLAGS(sys.argv)
+  glog.init()
+  sys.exit(main(argv))
