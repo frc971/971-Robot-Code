@@ -173,8 +173,15 @@ class PotAndAbsEncoderZeroingEstimator {
   ::std::vector<double> relative_to_absolute_offset_samples_;
   // Offset between the Pot and Relative encoder position.
   ::std::vector<double> offset_samples_;
+  // Last moving_buffer_size position samples to be used to determine if the
+  // robot is moving.
+  ::std::vector<PotAndAbsolutePosition> buffered_samples_;
+  // Pointer to front of the buffered samples.
+  int buffered_samples_idx_ = 0;
+  // Estimated offset between the pot and relative encoder.
+  double pot_relative_encoder_offset_ = 0;
   // Estimated start position of the mechanism
-  double offset_;
+  double offset_ = 0;
   // The next position in 'relative_to_absolute_offset_samples_' and
   // 'encoder_samples_' to be used to store the next sample.
   int samples_idx_;

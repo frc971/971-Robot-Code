@@ -2,11 +2,21 @@
 
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 #include "frc971/zeroing/wrap.h"
 
+
 namespace frc971 {
 namespace zeroing {
+namespace {
+
+bool compare_encoder(const PotAndAbsolutePosition &left,
+                     const PotAndAbsolutePosition &right) {
+  return left.encoder < right.encoder;
+}
+
+}  // namespace
 
 void PopulateEstimatorState(
     const zeroing::PotAndIndexPulseZeroingEstimator &estimator,
@@ -152,6 +162,7 @@ void PotAndAbsEncoderZeroingEstimator::Reset() {
   zeroed_ = false;
   relative_to_absolute_offset_samples_.clear();
   offset_samples_.clear();
+  buffered_samples_.clear();
 }
 
 // So, this needs to be a multistep process.  We need to first estimate the
@@ -166,82 +177,126 @@ void PotAndAbsEncoderZeroingEstimator::Reset() {
 // would be to wrap the encoder, subtract the two of them, and then average the
 // result.  That will struggle when they are off by PI.  Instead, we need to
 // wrap the number to +- PI from the current averaged offset.
+//
+// To guard against the robot moving while updating estimates, buffer a number
+// of samples and check that the buffered samples are not different than the
+// zeroing threshold. At any point that the samples differ too much, do not
+// update estimates based on those samples.
 void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
     const PotAndAbsolutePosition &info) {
-  // TODO(austin): Only add this sample if the robot is stopped.
-
-  // Compute the sum of all the offset samples.
-  double relative_to_absolute_offset_sum = 0.0;
-  for (size_t i = 0; i < relative_to_absolute_offset_samples_.size(); ++i) {
-    relative_to_absolute_offset_sum += relative_to_absolute_offset_samples_[i];
-  }
-
-  // Compute the average offset between the absolute encoder and relative
-  // encoder.  If we have 0 samples, assume it is 0.
-  double average_relative_to_absolute_offset =
-      relative_to_absolute_offset_samples_.size() == 0
-          ? 0.0
-          : relative_to_absolute_offset_sum /
-                relative_to_absolute_offset_samples_.size();
-
-  // Now, compute the nearest absolute encoder value to the offset relative
-  // encoder position.
-  const double adjusted_absolute_encoder =
-      Wrap(info.encoder + average_relative_to_absolute_offset,
-           info.absolute_encoder - constants_.measured_absolute_position,
-           constants_.one_revolution_distance);
-
-  const double relative_to_absolute_offset =
-      adjusted_absolute_encoder - info.encoder;
-
-  // Add the sample and update the average with the new reading.
-  const size_t relative_to_absolute_offset_samples_size =
-      relative_to_absolute_offset_samples_.size();
-  if (relative_to_absolute_offset_samples_size <
-      constants_.average_filter_size) {
-    average_relative_to_absolute_offset =
-        (average_relative_to_absolute_offset *
-             relative_to_absolute_offset_samples_size +
-         relative_to_absolute_offset) /
-        (relative_to_absolute_offset_samples_size + 1);
-
-    relative_to_absolute_offset_samples_.push_back(relative_to_absolute_offset);
+  bool moving = true;
+  if (buffered_samples_.size() < constants_.moving_buffer_size) {
+    // Not enough samples to start determining if the robot is moving or not,
+    // don't use the samples yet.
+    buffered_samples_.push_back(info);
   } else {
-    average_relative_to_absolute_offset -=
-        relative_to_absolute_offset_samples_[samples_idx_] /
-        relative_to_absolute_offset_samples_size;
-    relative_to_absolute_offset_samples_[samples_idx_] =
-        relative_to_absolute_offset;
-    average_relative_to_absolute_offset +=
-        relative_to_absolute_offset / relative_to_absolute_offset_samples_size;
+    // Have enough samples to start determining if the robot is moving or not.
+    buffered_samples_[buffered_samples_idx_] = info;
+    auto max_value =
+        ::std::max_element(buffered_samples_.begin(), buffered_samples_.end(),
+                           compare_encoder)
+            ->encoder;
+    auto min_value =
+        ::std::min_element(buffered_samples_.begin(), buffered_samples_.end(),
+                           compare_encoder)
+            ->encoder;
+    if (::std::abs(max_value - min_value) < constants_.zeroing_threshold) {
+      // Robot isn't moving, use middle sample to determine offsets.
+      moving = false;
+    }
+  }
+  buffered_samples_idx_ =
+      (buffered_samples_idx_ + 1) % constants_.moving_buffer_size;
+
+  if (!moving) {
+    // The robot is not moving, use the middle sample to determine offsets.
+    const int middle_index =
+        (buffered_samples_idx_ + (constants_.moving_buffer_size - 1) / 2) %
+        constants_.moving_buffer_size;
+
+    // Compute the sum of all the offset samples.
+    double relative_to_absolute_offset_sum = 0.0;
+    for (size_t i = 0; i < relative_to_absolute_offset_samples_.size(); ++i) {
+      relative_to_absolute_offset_sum +=
+          relative_to_absolute_offset_samples_[i];
+    }
+
+    // Compute the average offset between the absolute encoder and relative
+    // encoder.  If we have 0 samples, assume it is 0.
+    double average_relative_to_absolute_offset =
+        relative_to_absolute_offset_samples_.size() == 0
+            ? 0.0
+            : relative_to_absolute_offset_sum /
+                  relative_to_absolute_offset_samples_.size();
+
+    // Now, compute the nearest absolute encoder value to the offset relative
+    // encoder position.
+    const double adjusted_absolute_encoder =
+        Wrap(buffered_samples_[middle_index].encoder +
+                 average_relative_to_absolute_offset,
+             buffered_samples_[middle_index].absolute_encoder -
+                 constants_.measured_absolute_position,
+             constants_.one_revolution_distance);
+
+    const double relative_to_absolute_offset =
+        adjusted_absolute_encoder - buffered_samples_[middle_index].encoder;
+
+    // Add the sample and update the average with the new reading.
+    const size_t relative_to_absolute_offset_samples_size =
+        relative_to_absolute_offset_samples_.size();
+    if (relative_to_absolute_offset_samples_size <
+        constants_.average_filter_size) {
+      average_relative_to_absolute_offset =
+          (average_relative_to_absolute_offset *
+               relative_to_absolute_offset_samples_size +
+           relative_to_absolute_offset) /
+          (relative_to_absolute_offset_samples_size + 1);
+
+      relative_to_absolute_offset_samples_.push_back(
+          relative_to_absolute_offset);
+    } else {
+      average_relative_to_absolute_offset -=
+          relative_to_absolute_offset_samples_[samples_idx_] /
+          relative_to_absolute_offset_samples_size;
+      relative_to_absolute_offset_samples_[samples_idx_] =
+          relative_to_absolute_offset;
+      average_relative_to_absolute_offset +=
+          relative_to_absolute_offset /
+          relative_to_absolute_offset_samples_size;
+    }
+
+    // Now compute the offset between the pot and relative encoder.
+    if (offset_samples_.size() < constants_.average_filter_size) {
+      offset_samples_.push_back(buffered_samples_[middle_index].pot -
+                                buffered_samples_[middle_index].encoder);
+    } else {
+      offset_samples_[samples_idx_] = buffered_samples_[middle_index].pot -
+                                      buffered_samples_[middle_index].encoder;
+    }
+
+    // Drop the oldest sample when we run this function the next time around.
+    samples_idx_ = (samples_idx_ + 1) % constants_.average_filter_size;
+
+    double pot_relative_encoder_offset_sum = 0.0;
+    for (size_t i = 0; i < offset_samples_.size(); ++i) {
+      pot_relative_encoder_offset_sum += offset_samples_[i];
+    }
+    pot_relative_encoder_offset_ =
+        pot_relative_encoder_offset_sum / offset_samples_.size();
+
+    offset_ = Wrap(buffered_samples_[middle_index].encoder +
+                       pot_relative_encoder_offset_,
+                   average_relative_to_absolute_offset +
+                       buffered_samples_[middle_index].encoder,
+                   constants_.one_revolution_distance) -
+              buffered_samples_[middle_index].encoder;
+    if (offset_ready()) {
+      zeroed_ = true;
+    }
   }
 
-  // Now compute the offset between the pot and relative encoder.
-  if (offset_samples_.size() < constants_.average_filter_size) {
-    offset_samples_.push_back(info.pot - info.encoder);
-  } else {
-    offset_samples_[samples_idx_] = info.pot - info.encoder;
-  }
-
-  // Drop the oldest sample when we run this function the next time around.
-  samples_idx_ = (samples_idx_ + 1) % constants_.average_filter_size;
-
-  double pot_relative_encoder_offset_sum = 0.0;
-  for (size_t i = 0; i < offset_samples_.size(); ++i) {
-    pot_relative_encoder_offset_sum += offset_samples_[i];
-  }
-  const double pot_relative_encoder_offset =
-      pot_relative_encoder_offset_sum / offset_samples_.size();
-
-  offset_ = Wrap(info.encoder + pot_relative_encoder_offset,
-                 average_relative_to_absolute_offset + info.encoder,
-                 constants_.one_revolution_distance) -
-            info.encoder;
-  if (offset_ready()) {
-    zeroed_ = true;
-  }
-
-  filtered_position_ = pot_relative_encoder_offset + info.encoder;
+  // Update the position.
+  filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
   position_ = offset_ + info.encoder;
 }
 
