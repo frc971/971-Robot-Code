@@ -1,7 +1,5 @@
 package(default_visibility = ['//visibility:public'])
 
-load('/aos/build/queues', 'queue_library')
-
 genrule(
   name = 'genrule_shooter',
   cmd = '$(location //y2017/control_loops/python:shooter) $(OUTS)',
@@ -44,6 +42,7 @@ cc_library(
   deps = [
     ':shooter_plants',
     '//aos/common/controls:control_loop',
+    '//third_party/eigen',
     '//y2017/control_loops/superstructure:superstructure_queue',
   ],
 )

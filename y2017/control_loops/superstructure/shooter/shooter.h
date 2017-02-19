@@ -1,11 +1,13 @@
 #ifndef Y2017_CONTROL_LOOPS_SHOOTER_SHOOTER_H_
 #define Y2017_CONTROL_LOOPS_SHOOTER_SHOOTER_H_
 
+#include <array>
 #include <memory>
 
 #include "aos/common/controls/control_loop.h"
 #include "aos/common/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "third_party/eigen/Eigen/Dense"
 
 #include "y2017/control_loops/superstructure/shooter/shooter_integral_plant.h"
 #include "y2017/control_loops/superstructure/superstructure.q.h"

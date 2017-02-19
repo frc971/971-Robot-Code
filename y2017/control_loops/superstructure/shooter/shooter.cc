@@ -41,7 +41,10 @@ void ShooterController::set_position(double current_position) {
   history_[history_position_] = current_position;
   history_position_ = (history_position_ + 1) % kHistoryLength;
 
-  dt_velocity_ = (current_position - last_position_) / 0.005;
+  dt_velocity_ = (current_position - last_position_) /
+                 chrono::duration_cast<chrono::duration<double>>(
+                     ::aos::controls::kLoopFrequency)
+                     .count();
   last_position_ = current_position;
 }
 
@@ -104,7 +107,7 @@ void ShooterController::SetStatus(ShooterStatus *status) {
   status->avg_angular_velocity = average_angular_velocity_;
 
   status->angular_velocity = X_hat_current_(1, 0);
-  status->ready = std::abs(error_) < kTolerance && loop_->next_R(1, 0) > 1.0;
+  status->ready = ready_;
 
   status->voltage_error = X_hat_current_(2, 0);
   status->position_error = position_error_;
