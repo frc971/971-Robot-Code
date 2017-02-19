@@ -357,9 +357,62 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
                   bool enabled = true) {
     const auto start_time = monotonic_clock::now();
     while (monotonic_clock::now() < start_time + run_for) {
+      const auto loop_start_time = monotonic_clock::now();
+      double begin_intake_velocity = superstructure_plant_.intake_velocity();
+      double begin_turret_velocity =
+          superstructure_plant_.turret_angular_velocity();
+      double begin_hood_velocity =
+          superstructure_plant_.hood_angular_velocity();
+
       RunIteration(enabled);
+
+      const double loop_time =
+          chrono::duration_cast<chrono::duration<double>>(
+              monotonic_clock::now() - loop_start_time).count();
+      const double intake_acceleration =
+          (superstructure_plant_.intake_velocity() - begin_intake_velocity) /
+          loop_time;
+      const double turret_acceleration =
+          (superstructure_plant_.turret_angular_velocity() -
+           begin_turret_velocity) /
+          loop_time;
+      const double hood_acceleration =
+          (superstructure_plant_.hood_angular_velocity() -
+           begin_hood_velocity) /
+          loop_time;
+      EXPECT_GE(peak_intake_acceleration_, intake_acceleration);
+      EXPECT_LE(-peak_intake_acceleration_, intake_acceleration);
+      EXPECT_GE(peak_turret_acceleration_, turret_acceleration);
+      EXPECT_LE(-peak_turret_acceleration_, turret_acceleration);
+      EXPECT_GE(peak_hood_acceleration_, hood_acceleration);
+      EXPECT_LE(-peak_hood_acceleration_, hood_acceleration);
+
+      EXPECT_GE(peak_intake_velocity_, superstructure_plant_.intake_velocity());
+      EXPECT_LE(-peak_intake_velocity_,
+                superstructure_plant_.intake_velocity());
+      EXPECT_GE(peak_turret_velocity_,
+                superstructure_plant_.turret_angular_velocity());
+      EXPECT_LE(-peak_turret_velocity_,
+                superstructure_plant_.turret_angular_velocity());
+      EXPECT_GE(peak_hood_velocity_,
+                superstructure_plant_.hood_angular_velocity());
+      EXPECT_LE(-peak_hood_velocity_,
+                superstructure_plant_.hood_angular_velocity());
     }
   }
+
+  void set_peak_intake_acceleration(double value) {
+    peak_intake_acceleration_ = value;
+  }
+  void set_peak_turret_acceleration(double value) {
+    peak_turret_acceleration_ = value;
+  }
+  void set_peak_hood_acceleration(double value) {
+    peak_hood_acceleration_ = value;
+  }
+  void set_peak_intake_velocity(double value) { peak_intake_velocity_ = value; }
+  void set_peak_turret_velocity(double value) { peak_turret_velocity_ = value; }
+  void set_peak_hood_velocity(double value) { peak_hood_velocity_ = value; }
 
   // Create a new instance of the test queue so that it invalidates the queue
   // that it points to.  Otherwise, we will have a pointer to shared memory
@@ -369,6 +422,16 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   // Create a control loop and simulation.
   Superstructure superstructure_;
   SuperstructureSimulation superstructure_plant_;
+
+ private:
+  // The acceleration limits to check for while moving.
+  double peak_intake_acceleration_ = 1e10;
+  double peak_turret_acceleration_ = 1e10;
+  double peak_hood_acceleration_ = 1e10;
+  // The velocity limits to check for while moving.
+  double peak_intake_velocity_ = 1e10;
+  double peak_turret_velocity_ = 1e10;
+  double peak_hood_velocity_ = 1e10;
 };
 
 // Tests that the superstructure does nothing when the goal is zero.
@@ -408,6 +471,56 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   }
 
   // Give it a lot of time to get there.
+  RunForTime(chrono::seconds(8));
+
+  VerifyNearGoal();
+}
+
+// Makes sure that the voltage on a motor is properly pulled back after
+// saturation such that we don't get weird or bad (e.g. oscillating) behaviour.
+TEST_F(SuperstructureTest, SaturationTest) {
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.distance = constants::Values::kIntakeRange.lower;
+    goal->intake.profile_params.max_velocity = 20.0;
+    goal->intake.profile_params.max_acceleration = 0.1;
+    goal->turret.angle = constants::Values::kTurretRange.lower;
+    goal->turret.profile_params.max_velocity = 20.0;
+    goal->turret.profile_params.max_acceleration = 1.0;
+    goal->hood.angle = constants::Values::kHoodRange.lower;
+    goal->hood.profile_params.max_velocity = 20.0;
+    goal->hood.profile_params.max_acceleration = 1.0;
+    ASSERT_TRUE(goal.Send());
+  }
+  set_peak_intake_velocity(23.0);
+  set_peak_turret_velocity(23.0);
+  set_peak_hood_velocity(23.0);
+  set_peak_intake_acceleration(0.2);
+  set_peak_turret_acceleration(1.1);
+  set_peak_hood_acceleration(1.1);
+
+  RunForTime(chrono::seconds(8));
+
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.distance = constants::Values::kIntakeRange.upper;
+    goal->intake.profile_params.max_velocity = 0.1;
+    goal->intake.profile_params.max_acceleration = 100;
+    goal->turret.angle = constants::Values::kTurretRange.upper;
+    goal->turret.profile_params.max_velocity = 1;
+    goal->turret.profile_params.max_acceleration = 100;
+    goal->hood.angle = constants::Values::kHoodRange.upper;
+    goal->hood.profile_params.max_velocity = 1;
+    goal->hood.profile_params.max_acceleration = 100;
+    ASSERT_TRUE(goal.Send());
+  }
+
+  set_peak_intake_velocity(0.2);
+  set_peak_turret_velocity(1.1);
+  set_peak_hood_velocity(1.1);
+  set_peak_intake_acceleration(103);
+  set_peak_turret_acceleration(103);
+  set_peak_hood_acceleration(103);
   RunForTime(chrono::seconds(8));
 
   VerifyNearGoal();
