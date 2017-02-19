@@ -22,6 +22,7 @@ using constants::PotAndAbsoluteEncoderZeroingConstants;
 static const size_t kSampleSize = 30;
 static const double kAcceptableUnzeroedError = 0.2;
 static const double kIndexErrorFraction = 0.3;
+static const size_t kMovingBufferSize = 3;
 
 class ZeroingTest : public ::testing::Test {
  protected:
@@ -319,15 +320,16 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
   const double start_pos = 2.1;
   double measured_absolute_position = 0.3 * index_diff;
 
-  PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, index_diff, measured_absolute_position, 0.1};
+  PotAndAbsoluteEncoderZeroingConstants constants{kSampleSize, index_diff,
+                                                  measured_absolute_position,
+                                                  0.1, kMovingBufferSize};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
 
   PotAndAbsEncoderZeroingEstimator estimator(constants);
 
-  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
     MoveTo(&sim, &estimator, start_pos);
     ASSERT_FALSE(estimator.zeroed());
   }
@@ -345,15 +347,16 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   const double start_pos = 10 * index_diff;
   double measured_absolute_position = 0.3 * index_diff;
 
-  PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, index_diff, measured_absolute_position, 0.1};
+  PotAndAbsoluteEncoderZeroingConstants constants{kSampleSize, index_diff,
+                                                  measured_absolute_position,
+                                                  0.1, kMovingBufferSize};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
 
   PotAndAbsEncoderZeroingEstimator estimator(constants);
 
-  for (size_t i = 0; i < kSampleSize - 1; ++i) {
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
     MoveTo(&sim, &estimator, start_pos + i * index_diff);
     ASSERT_FALSE(estimator.zeroed());
   }

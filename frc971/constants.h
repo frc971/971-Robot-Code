@@ -34,6 +34,9 @@ struct PotAndAbsoluteEncoderZeroingConstants {
   // Treshold for deciding if we are moving
   // TODO(austin): Figure out what this is actually measuring.
   double zeroing_threshold;
+
+  // Buffer size for deciding if we are moving.
+  size_t moving_buffer_size;
 };
 
 // Defines a range of motion for a subsystem.
