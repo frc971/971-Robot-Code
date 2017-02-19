@@ -188,6 +188,24 @@ cc_library(
 )
 
 cc_library(
+  name = 'global_factory',
+  hdrs = [
+    'global_factory.h'
+  ],
+)
+
+cc_test(
+  name = 'global_factory_test',
+  srcs = [
+    'global_factory_test.cc'
+  ],
+  deps = [
+    '//aos/testing:googletest',
+    ':global_factory'
+  ],
+)
+
+cc_library(
   name = 'linked_list',
   hdrs = [
     'linked_list.h',
