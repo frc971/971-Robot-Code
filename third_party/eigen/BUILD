@@ -14,5 +14,6 @@ cc_library(
     'Eigen/SPQRSupport',
     'Eigen/SuperLUSupport',
     'Eigen/UmfPackSupport',
-  ]),
+  ]) + ['unsupported/Eigen/MatrixFunctions'] +
+  glob(['unsupported/Eigen/src/MatrixFunctions/*.h']),
 )
