@@ -11,6 +11,12 @@ namespace y2017 {
 namespace control_loops {
 namespace superstructure {
 
+namespace {
+// The maximum voltage the intake roller will be allowed to use.
+constexpr double kMaxIntakeRollerVoltage = 12.0;
+constexpr double kMaxIndexerRollerVoltage = 12.0;
+}  // namespace
+
 Superstructure::Superstructure(
     control_loops::SuperstructureQueue *superstructure_queue)
     : aos::controls::ControlLoop<control_loops::SuperstructureQueue>(
@@ -35,22 +41,33 @@ void Superstructure::RunIteration(
                 output != nullptr ? &(output->voltage_hood) : nullptr,
                 &(status->hood));
   turret_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->turret) : nullptr,
-                &(position->turret),
-                output != nullptr ? &(output->voltage_turret) : nullptr,
-                &(status->turret));
+                  &(position->turret),
+                  output != nullptr ? &(output->voltage_turret) : nullptr,
+                  &(status->turret));
 
   intake_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->intake) : nullptr,
                   &(position->intake),
                   output != nullptr ? &(output->voltage_intake) : nullptr,
                   &(status->intake));
   shooter_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->shooter) : nullptr,
-                &(position->theta_shooter),
-                output != nullptr ? &(output->voltage_shooter) : nullptr,
-                &(status->shooter));
+                   &(position->theta_shooter),
+                   output != nullptr ? &(output->voltage_shooter) : nullptr,
+                   &(status->shooter));
   indexer_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,
                 &(position->theta_indexer),
                 output != nullptr ? &(output->voltage_indexer) : nullptr,
                 &(status->indexer));
+
+  if (output && unsafe_goal) {
+    output->voltage_intake_rollers =
+        ::std::max(-kMaxIntakeRollerVoltage,
+                   ::std::min(unsafe_goal->intake.voltage_rollers,
+                              kMaxIntakeRollerVoltage));
+    output->voltage_indexer_rollers =
+        ::std::max(-kMaxIndexerRollerVoltage,
+                   ::std::min(unsafe_goal->indexer.voltage_rollers,
+                              kMaxIndexerRollerVoltage));
+  }
 }
 
 }  // namespace superstructure

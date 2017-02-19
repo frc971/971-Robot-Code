@@ -23,6 +23,9 @@ struct IntakeGoal {
 struct IndexerGoal {
   // Indexer angular velocity goals in radians/second.
   double angular_velocity;
+
+  // Roller voltage. Positive is sucking in.
+  double voltage_rollers;
 };
 
 struct TurretGoal {
