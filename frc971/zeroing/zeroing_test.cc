@@ -289,16 +289,8 @@ TEST_F(ZeroingTest, BasicErrorAPITest) {
   ASSERT_FALSE(estimator.error());
 }
 
-// I want to test that the the zeroing class can
-// detect an error when the starting position
-// changes too much. I do so by creating the
-// simulator at an 'X' positon, making sure
-// that the estimator is zeroed, and then
-// initializing the simulator at another
-// position. After making sure it's zeroed,
-// if the error() function returns true,
-// then, it works.
-TEST_F(ZeroingTest, TestOffsetError) {
+// Tests that an error is detected when the starting position changes too much.
+TEST_F(ZeroingTest, TestIndexOffsetError) {
   const double index_diff = 0.8;
   const double known_index_pos = 2 * index_diff;
   const size_t sample_size = 30;
@@ -329,9 +321,9 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
   const double start_pos = 2.1;
   double measured_absolute_position = 0.3 * index_diff;
 
-  PotAndAbsoluteEncoderZeroingConstants constants{kSampleSize, index_diff,
-                                                  measured_absolute_position,
-                                                  0.1, kMovingBufferSize};
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, index_diff,        measured_absolute_position,
+      0.1,         kMovingBufferSize, kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -356,9 +348,9 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   const double start_pos = 10 * index_diff;
   double measured_absolute_position = 0.3 * index_diff;
 
-  PotAndAbsoluteEncoderZeroingConstants constants{kSampleSize, index_diff,
-                                                  measured_absolute_position,
-                                                  0.1, kMovingBufferSize};
+  PotAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize, index_diff,        measured_absolute_position,
+      0.1,         kMovingBufferSize, kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -378,7 +370,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
 // Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
 TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
   PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, 1, 0.3, 0.1, kMovingBufferSize};
+      kSampleSize, 1, 0.3, 0.1, kMovingBufferSize, kIndexErrorFraction};
 
   PotAndAbsEncoderZeroingEstimator estimator(constants);
 
@@ -391,9 +383,7 @@ TEST_F(ZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
   ASSERT_TRUE(estimator.error());
 }
 
-// Makes sure that using only a relative encoder with index pulses allows us to
-// successfully zero.
-// We pretend that there are index pulses at 10, 20, and 30.
+// Tests that an error is detected when the starting position changes too much.
 TEST_F(ZeroingTest, TestRelativeEncoderZeroing) {
   EncoderPlusIndexZeroingConstants constants;
   constants.index_pulse_count = 3;

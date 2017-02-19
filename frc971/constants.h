@@ -38,12 +38,15 @@ struct PotAndAbsoluteEncoderZeroingConstants {
   // Measured absolute position of the encoder when at zero.
   double measured_absolute_position;
 
-  // Treshold for deciding if we are moving
-  // TODO(austin): Figure out what this is actually measuring.
+  // Treshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
   double zeroing_threshold;
-
   // Buffer size for deciding if we are moving.
   size_t moving_buffer_size;
+
+  // Value between 0 and 1 indicating what fraction of one_revolution_distance
+  // it is acceptable for the offset to move.
+  double allowable_encoder_error;
 };
 
 // Defines a range of motion for a subsystem.

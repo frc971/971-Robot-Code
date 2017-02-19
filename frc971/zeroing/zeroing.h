@@ -164,8 +164,15 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
  private:
   // The zeroing constants used to describe the configuration of the system.
   const constants::PotAndAbsoluteEncoderZeroingConstants constants_;
+
   // True if the mechanism is zeroed.
   bool zeroed_;
+  // Marker to track whether an error has occurred.
+  bool error_;
+  // The first valid offset we recorded. This is only set after zeroed_ first
+  // changes to true.
+  double first_offset_;
+
   // Samples of the offset needed to line the relative encoder up with the
   // absolute encoder.
   ::std::vector<double> relative_to_absolute_offset_samples_;
@@ -183,12 +190,11 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   // The next position in 'relative_to_absolute_offset_samples_' and
   // 'encoder_samples_' to be used to store the next sample.
   int samples_idx_;
+
   // The unzeroed filtered position.
   double filtered_position_ = 0.0;
   // The filtered position.
   double position_ = 0.0;
-  // Whether or not there is an error in the estimate.
-  bool error_ = false;
 };
 
 

@@ -34,7 +34,6 @@ void PotAndIndexPulseZeroingEstimator::Reset() {
   zeroed_ = false;
   wait_for_index_pulse_ = true;
   last_used_index_pulse_count_ = 0;
-  first_start_pos_ = 0.0;
   error_ = false;
 }
 
@@ -157,6 +156,7 @@ void PotAndAbsEncoderZeroingEstimator::Reset() {
   relative_to_absolute_offset_samples_.clear();
   offset_samples_.clear();
   buffered_samples_.clear();
+  error_ = false;
 }
 
 // So, this needs to be a multistep process.  We need to first estimate the
@@ -292,6 +292,21 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
                    constants_.one_revolution_distance) -
               buffered_samples_[middle_index].encoder;
     if (offset_ready()) {
+      if (!zeroed_) {
+        first_offset_ = offset_;
+      }
+
+      if (::std::abs(first_offset_ - offset_) >
+          constants_.allowable_encoder_error *
+              constants_.one_revolution_distance) {
+        LOG(ERROR,
+            "Offset moved too far. Initial: %f, current %f, allowable change: "
+            "%f\n",
+            first_offset_, offset_, constants_.allowable_encoder_error *
+                                        constants_.one_revolution_distance);
+        error_ = true;
+      }
+
       zeroed_ = true;
     }
   }

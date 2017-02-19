@@ -74,12 +74,14 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing.measured_absolute_position = 0;
   intake->zeroing.zeroing_threshold = 0.001;
   intake->zeroing.moving_buffer_size = 9;
+  intake->zeroing.allowable_encoder_error = 0.3;
 
   turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
   turret->zeroing.one_revolution_distance = Values::kTurretEncoderIndexDifference;
   turret->zeroing.measured_absolute_position = 0;
   turret->zeroing.zeroing_threshold = 0.001;
   turret->zeroing.moving_buffer_size = 9;
+  turret->zeroing.allowable_encoder_error = 0.3;
 
   hood->zeroing.average_filter_size = Values::kZeroingSampleSize;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
