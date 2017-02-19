@@ -52,7 +52,7 @@ struct BlobBuilder {
 };
 
 // Uses disjoint set class to track range images.
-// Joins in the disjoint set are done at the same time as joins in the 
+// Joins in the disjoint set are done at the same time as joins in the
 // range image.
 class BlobDisjointSet {
  public:

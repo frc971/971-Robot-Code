@@ -94,6 +94,43 @@ cc_test(
   ],
 )
 
+cc_library(
+  name = 'move_scale',
+  hdrs = ['move_scale.h'],
+  srcs = ['move_scale.cc'],
+  deps = [
+    ':range_image',
+  ],
+)
+
+cc_library(
+  name = 'test_utils',
+  hdrs = ['test_utils.h'],
+  srcs = ['test_utils.cc'],
+  deps = [
+    ':range_image',
+  ],
+)
+
+cc_library(
+  name = 'transpose',
+  hdrs = ['transpose.h'],
+  srcs = ['transpose.cc'],
+  deps = [
+    ':range_image',
+  ],
+)
+
+cc_test(
+  name = 'transpose_test',
+  srcs = ['transpose_test.cc'],
+  deps = [
+    ':transpose',
+    ':test_utils',
+    '//aos/testing:googletest',
+  ],
+)
+
 gtk_dependent_cc_library(
   name = 'stream_view',
   hdrs = ['stream_view.h'],

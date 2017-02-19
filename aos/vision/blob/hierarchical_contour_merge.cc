@@ -22,7 +22,7 @@ class IntegralArray {
 
   // This is an exclusive range lookup into a modulo ring.
   // The integral is precomputed in items_ and is inclusive even though
-  // the input is [a, b). 
+  // the input is [a, b).
   T Get(int a, int b) {
     a = Mod(a, items_.size());
     b = Mod(b, items_.size());

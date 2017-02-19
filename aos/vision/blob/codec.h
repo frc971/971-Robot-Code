@@ -12,11 +12,12 @@ template <typename T>
 struct IntCodec {
   static constexpr size_t kSize = sizeof(T);
   static inline char *Write(char *data, T ival) {
-    *(reinterpret_cast<T *>(data)) = ival;
+    memcpy(data, &ival, sizeof(T));
     return data + kSize;
   }
   static inline T Read(const char **data) {
-    auto datum = *(reinterpret_cast<const T *>(*data));
+    T datum;
+    memcpy(&datum, *data, sizeof(T));
     *data += kSize;
     return datum;
   }

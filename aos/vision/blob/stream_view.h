@@ -61,6 +61,26 @@ class BlobStreamViewer : public DebugViewer {
     }
   }
 
+  inline void DrawSecondBlobList(const BlobList &blob_list, PixelRef color1,
+                                 PixelRef color2, PixelRef prev_color) {
+    ImagePtr ptr = img();
+    for (const auto &blob : blob_list) {
+      for (int i = 0; i < (int)blob.ranges().size(); ++i) {
+        for (const auto &range : blob.ranges()[i]) {
+          for (int j = range.st; j < range.ed; ++j) {
+            auto px = ptr.get_px(j, i + blob.min_y());
+            if (px.r == prev_color.r && px.g == prev_color.g &&
+                px.b == prev_color.b) {
+              ptr.get_px(j, i + blob.min_y()) = color2;
+            } else {
+              ptr.get_px(j, i + blob.min_y()) = color1;
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Backwards compatible.
   DebugViewer *view() { return this; }
 
