@@ -128,7 +128,7 @@ queue_group SuperstructureQueue {
     // Each subsystems status.
     .frc971.control_loops.AbsoluteProfiledJointStatus intake;
     .frc971.control_loops.AbsoluteProfiledJointStatus turret;
-    .frc971.control_loops.ProfiledJointStatus hood;
+    .frc971.control_loops.IndexProfiledJointStatus hood;
     IndexerStatus indexer;
     ShooterStatus shooter;
   };
@@ -147,7 +147,7 @@ queue_group SuperstructureQueue {
 
     // The sensor readings for the hood. The units and sign are defined the
     // same as what's in the Goal message.
-    .frc971.PotAndIndexPosition hood;
+    .frc971.IndexPosition hood;
 
     // Shooter wheel angle in radians.
     double theta_shooter;

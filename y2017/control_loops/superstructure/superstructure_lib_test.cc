@@ -132,7 +132,7 @@ class SuperstructureSimulation {
   SuperstructureSimulation()
       : hood_plant_(new HoodPlant(
             ::y2017::control_loops::superstructure::hood::MakeHoodPlant())),
-        hood_pot_encoder_(constants::Values::kHoodEncoderIndexDifference),
+        hood_encoder_(constants::Values::kHoodEncoderIndexDifference),
 
         turret_plant_(new TurretPlant(
             ::y2017::control_loops::superstructure::turret::MakeTurretPlant())),
@@ -173,7 +173,7 @@ class SuperstructureSimulation {
     hood_plant_->mutable_X(0, 0) = start_pos;
     hood_plant_->mutable_X(1, 0) = 0.0;
 
-    hood_pot_encoder_.Initialize(
+    hood_encoder_.Initialize(
         start_pos, kNoiseScalar,
         constants::GetValues().hood.zeroing.measured_index_position);
   }
@@ -201,7 +201,7 @@ class SuperstructureSimulation {
     ::aos::ScopedMessagePtr<SuperstructureQueue::Position> position =
         superstructure_queue_.position.MakeMessage();
 
-    hood_pot_encoder_.GetSensorValues(&position->hood);
+    hood_encoder_.GetSensorValues(&position->hood);
     turret_pot_encoder_.GetSensorValues(&position->turret);
     intake_pot_encoder_.GetSensorValues(&position->intake);
     position->theta_shooter = shooter_plant_->Y(0, 0);
@@ -311,17 +311,33 @@ class SuperstructureSimulation {
       indexer_plant_->Update();
     }
 
-
-    const double angle_hood = hood_plant_->Y(0, 0);
+    double angle_hood = hood_plant_->Y(0, 0);
     const double angle_turret = turret_plant_->Y(0, 0);
     const double position_intake = intake_plant_->Y(0, 0);
 
-    hood_pot_encoder_.MoveTo(angle_hood);
+    // The hood is special.  We don't want to fault when we hit the hard stop.
+    // We want to freeze the hood at the hard stop.
+    if (angle_hood > constants::Values::kHoodRange.upper_hard) {
+      LOG(INFO, "At the hood upper hard stop of %f\n",
+          constants::Values::kHoodRange.upper_hard);
+      angle_hood = constants::Values::kHoodRange.upper_hard;
+      hood_plant_->mutable_Y(0, 0) = angle_hood;
+      hood_plant_->mutable_X(0, 0) = angle_hood;
+      hood_plant_->mutable_X(1, 0) = 0.0;
+    } else if (angle_hood < constants::Values::kHoodRange.lower_hard) {
+      LOG(INFO, "At the hood lower hard stop of %f\n",
+          constants::Values::kHoodRange.lower_hard);
+      angle_hood = constants::Values::kHoodRange.lower_hard;
+      hood_plant_->mutable_Y(0, 0) = angle_hood;
+      hood_plant_->mutable_X(0, 0) = angle_hood;
+      hood_plant_->mutable_X(1, 0) = 0.0;
+    }
+
+    hood_encoder_.MoveTo(angle_hood);
     turret_pot_encoder_.MoveTo(angle_turret);
     intake_pot_encoder_.MoveTo(position_intake);
 
-    EXPECT_GE(angle_hood, constants::Values::kHoodRange.lower_hard);
-    EXPECT_LE(angle_hood, constants::Values::kHoodRange.upper_hard);
+
     EXPECT_GE(angle_turret, constants::Values::kTurretRange.lower_hard);
     EXPECT_LE(angle_turret, constants::Values::kTurretRange.upper_hard);
     EXPECT_GE(position_intake, constants::Values::kIntakeRange.lower_hard);
@@ -330,7 +346,7 @@ class SuperstructureSimulation {
 
  private:
   ::std::unique_ptr<HoodPlant> hood_plant_;
-  PositionSensorSimulator hood_pot_encoder_;
+  PositionSensorSimulator hood_encoder_;
 
   ::std::unique_ptr<TurretPlant> turret_plant_;
   PositionSensorSimulator turret_pot_encoder_;
@@ -539,6 +555,19 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // Makes sure that the voltage on a motor is properly pulled back after
 // saturation such that we don't get weird or bad (e.g. oscillating) behaviour.
 TEST_F(SuperstructureTest, SaturationTest) {
+  // Zero it before we move.
+  {
+    auto goal = superstructure_queue_.goal.MakeMessage();
+    goal->intake.distance = constants::Values::kIntakeRange.upper;
+    goal->turret.angle = constants::Values::kTurretRange.upper;
+    goal->hood.angle = constants::Values::kHoodRange.upper;
+    ASSERT_TRUE(goal.Send());
+  }
+  RunForTime(chrono::seconds(8));
+  VerifyNearGoal();
+
+  // Try a low acceleration move with a high max velocity and verify the
+  // acceleration is capped like expected.
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->intake.distance = constants::Values::kIntakeRange.lower;
@@ -560,7 +589,9 @@ TEST_F(SuperstructureTest, SaturationTest) {
   set_peak_hood_acceleration(1.1);
 
   RunForTime(chrono::seconds(8));
+  VerifyNearGoal();
 
+  // Now do a high acceleration move with a low velocity limit.
   {
     auto goal = superstructure_queue_.goal.MakeMessage();
     goal->intake.distance = constants::Values::kIntakeRange.upper;
@@ -753,7 +784,7 @@ TEST_F(SuperstructureTest, ResetTest) {
   SimulateSensorReset();
   RunForTime(chrono::milliseconds(100));
 
-  EXPECT_EQ(hood::Hood::State::UNINITIALIZED, superstructure_.hood().state());
+  EXPECT_EQ(hood::Hood::State::ZEROING, superstructure_.hood().state());
   EXPECT_EQ(turret::Turret::State::UNINITIALIZED,
             superstructure_.turret().state());
   EXPECT_EQ(intake::Intake::State::UNINITIALIZED,
@@ -814,7 +845,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   EXPECT_EQ(intake::Intake::State::RUNNING,
             superstructure_.intake().state());
 
-  superstructure_plant_.set_hood_power_error(1.0);
+  superstructure_plant_.set_hood_power_error(2.0);
 
   RunForTime(chrono::seconds(1), false);
 
@@ -822,7 +853,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
   EXPECT_EQ(turret::Turret::State::RUNNING, superstructure_.turret().state());
   EXPECT_EQ(intake::Intake::State::RUNNING, superstructure_.intake().state());
 
-  RunForTime(chrono::seconds(2), true);
+  RunForTime(chrono::seconds(4), true);
 
   VerifyNearGoal();
 }

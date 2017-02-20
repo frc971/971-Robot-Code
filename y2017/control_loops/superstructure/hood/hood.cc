@@ -10,9 +10,13 @@ namespace hood {
 
 constexpr double Hood::kZeroingVoltage;
 constexpr double Hood::kOperatingVoltage;
+// The tracking error to allow before declaring that we are stuck and reversing
+// direction while zeroing.
+constexpr double kStuckZeroingTrackingError = 0.02;
 
-Hood::Hood()
-    : profiled_subsystem_(
+IndexPulseProfiledSubsystem::IndexPulseProfiledSubsystem()
+    : ::frc971::control_loops::SingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PulseIndexZeroingEstimator>(
           ::std::unique_ptr<
               ::frc971::control_loops::SimpleCappedStateFeedbackLoop<3, 1, 1>>(
               new ::frc971::control_loops::SimpleCappedStateFeedbackLoop<
@@ -20,15 +24,40 @@ Hood::Hood()
           constants::GetValues().hood.zeroing, constants::Values::kHoodRange,
           0.5, 10.0) {}
 
+void IndexPulseProfiledSubsystem::CapGoal(const char *name,
+                                          Eigen::Matrix<double, 3, 1> *goal) {
+  if (zeroed()) {
+    ::frc971::control_loops::SingleDOFProfiledSubsystem<
+        ::frc971::zeroing::PulseIndexZeroingEstimator>::CapGoal(name, goal);
+  } else {
+    const double kMaxRange = range().upper_hard - range().lower_hard;
+    // Limit the goal to min/max allowable positions much less agressively.
+    // We don't know where the limits are, so we have to let the user move far
+    // enough to find them (and the index pulse which might be right next to
+    // one).
+    if ((*goal)(0, 0) > kMaxRange) {
+      LOG(WARNING, "Goal %s above limit, %f > %f\n", name, (*goal)(0, 0),
+          kMaxRange);
+      (*goal)(0, 0) = kMaxRange;
+    }
+    if ((*goal)(0, 0) < -kMaxRange) {
+      LOG(WARNING, "Goal %s below limit, %f < %f\n", name, (*goal)(0, 0),
+          kMaxRange);
+      (*goal)(0, 0) = -kMaxRange;
+    }
+  }
+}
+
+Hood::Hood() {}
+
 void Hood::Reset() {
   state_ = State::UNINITIALIZED;
   profiled_subsystem_.Reset();
 }
 
 void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
-                   const ::frc971::PotAndIndexPosition *position,
-                   double *output,
-                   ::frc971::control_loops::ProfiledJointStatus *status) {
+                   const ::frc971::IndexPosition *position, double *output,
+                   ::frc971::control_loops::IndexProfiledJointStatus *status) {
   bool disable = output == nullptr;
   profiled_subsystem_.Correct(*position);
 
@@ -57,7 +86,7 @@ void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
       // jump.
       profiled_subsystem_.ForceGoal(profiled_subsystem_.position());
       // Set up the profile to be the zeroing profile.
-      profiled_subsystem_.AdjustProfile(0.10, 1);
+      profiled_subsystem_.AdjustProfile(0.30, 1.0);
 
       // We are not ready to start doing anything yet.
       disable = true;
@@ -71,33 +100,36 @@ void Hood::Iterate(const control_loops::HoodGoal *unsafe_goal,
       } else if (disable) {
         state_ = State::DISABLED_INITIALIZED;
       } else {
-        // Seek between the two soft limits.
-        if (profiled_subsystem_.position() >
-            (profiled_subsystem_.range().lower +
-             profiled_subsystem_.range().upper) /
-                2.0) {
+        const double kRange = profiled_subsystem_.range().upper_hard -
+                              profiled_subsystem_.range().lower_hard;
+        // Seek +- the range of motion.
+        if (profiled_subsystem_.position() > 0) {
           // We are above the middle.
-          if (profiled_subsystem_.goal(1, 0) > 0) {
-            // And moving up.  Keep going to the upper soft limit until we
-            // arrive.
-            profiled_subsystem_.set_unprofiled_goal(
-                profiled_subsystem_.range().upper);
+          if (profiled_subsystem_.goal(1, 0) > 0 &&
+              ::std::abs(profiled_subsystem_.position() -
+                         profiled_subsystem_.goal(0, 0)) <
+                  kStuckZeroingTrackingError) {
+            // And moving up and not stuck.  Keep going until we've gone the
+            // full range of motion or get stuck.
+            profiled_subsystem_.set_unprofiled_goal(kRange);
           } else {
-            // And no longer moving.  Go down to the lower soft limit.
-            profiled_subsystem_.set_unprofiled_goal(
-                profiled_subsystem_.range().lower);
+            // And no longer moving.  Go down to the opposite of the range of
+            // motion.
+            profiled_subsystem_.set_unprofiled_goal(-kRange);
           }
         } else {
           // We are below the middle.
-          if (profiled_subsystem_.goal(1, 0) < 0) {
-            // And moving down.  Keep going to the lower soft limit until we
-            // arrive.
-            profiled_subsystem_.set_unprofiled_goal(
-                profiled_subsystem_.range().lower);
+          if (profiled_subsystem_.goal(1, 0) < 0 &&
+              ::std::abs(profiled_subsystem_.position() -
+                         profiled_subsystem_.goal(0, 0)) <
+                  kStuckZeroingTrackingError) {
+            // And moving down and not stuck.  Keep going until we've gone the
+            // full range of motion or get stuck.
+            profiled_subsystem_.set_unprofiled_goal(-kRange);
           } else {
-            // And no longer moving.  Go up to the upper soft limit.
-            profiled_subsystem_.set_unprofiled_goal(
-                profiled_subsystem_.range().upper);
+            // And no longer moving.  Go up to the opposite of the range of
+            // motion.
+            profiled_subsystem_.set_unprofiled_goal(kRange);
           }
         }
       }

@@ -2,5 +2,11 @@ superstructure_lib_test output voltage_hood
 
 superstructure_lib_test status hood estimator_state position
 superstructure_lib_test status hood state
+superstructure_lib_test status hood position
+superstructure_lib_test status hood velocity
+superstructure_lib_test status hood goal_position
+superstructure_lib_test status hood goal_velocity
+
+superstructure_lib_test status hood unprofiled_goal_position
 superstructure_lib_test goal hood angle
-superstructure_lib_test position hood pot
+superstructure_lib_test position hood encoder

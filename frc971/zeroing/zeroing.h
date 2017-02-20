@@ -196,7 +196,7 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
 class PulseIndexZeroingEstimator : public ZeroingEstimator {
  public:
   using Position = IndexPosition;
-  using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
+  using ZeroingConstants = constants::EncoderPlusIndexZeroingConstants;
   using State = IndexEstimatorState;
 
   PulseIndexZeroingEstimator(
@@ -209,6 +209,9 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   void Reset();
 
   bool zeroed() const override { return zeroed_; }
+
+  // It's as ready as it'll ever be...
+  bool offset_ready() const { return true; }
 
   double offset() const override { return offset_; }
 
