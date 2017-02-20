@@ -25,13 +25,13 @@ config_setting(
 )
 config_setting(
   name = 'has_asan',
-  values = {'copt': '-fsanitize=address'},
+  values = {'define': 'have_asan=true'},
 )
 config_setting(
   name = 'has_tsan',
-  values = {'copt': '-fsanitize=thread'},
+  values = {'define': 'have_tsan=true'},
 )
 config_setting(
   name = 'has_ubsan',
-  values = {'copt': '-fsanitize=undefined'},
+  values = {'define': 'have_ubsan=true'},
 )

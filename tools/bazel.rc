@@ -15,16 +15,19 @@ build:asan --platform_suffix=-asan
 build:asan --test_env ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
 build:asan --test_env ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_odr_violation=2:allow_user_segv_handler=1
 build:asan --copt -fsanitize-blacklist=tools/cpp/asan-blacklist
+build:asan --define have_asan=true
 
 build:tsan --copt -fsanitize=thread --copt -DAOS_SANITIZER_thread
 build:tsan --linkopt -fsanitize=thread
 build:tsan --platform_suffix=-tsan
 build:tsan --test_env TSAN_OPTIONS=external_symbolizer_path=/usr/bin/llvm-symbolizer-3.6:detect_deadlocks=1:second_deadlock_stack=1
+build:tsan --define have_tsan=true
 
 build:isan --copt -fsanitize=integer
 build:isan --linkopt -fsanitize=integer
 build:isan --platform_suffix=-isan
 build:isan --test_env LLVM_SYMBOLIZER=/usr/bin/llvm-symbolizer-3.6
+build:isan --define have_isan=true
 
 build:ubsan --copt -fsanitize=undefined --copt -fno-sanitize-recover
 # Bad alignment is just slow on x86 and traps on ARM, so we'll find
@@ -36,11 +39,13 @@ build:ubsan --linkopt /usr/lib/llvm-3.6/lib/clang/3.6.2/lib/linux/libclang_rt.ub
 build:ubsan --platform_suffix=-ubsan
 build:ubsan --test_env UBSAN_OPTIONS=external_symbolizer_path=/usr/bin/llvm-symbolizer-3.6:color=always:print_stacktrace=1
 build:ubsan --copt -fsanitize-blacklist=tools/cpp/ubsan-blacklist
+build:ubsan --define have_ubsan=true
 
 build:msan --copt -fsanitize=memory --copt -fsanitize-memory-track-origins
 build:msan --linkopt -fsanitize=memory --linkopt -fsanitize-memory-track-origins
 build:msan --platform_suffix=-msan
 build:msan --test_env MSAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.6
+build:msan --define have_msan=true
 
 # Show paths to a few more than just 1 target.
 build --show_result 5
