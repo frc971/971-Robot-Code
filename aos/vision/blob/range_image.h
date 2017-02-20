@@ -53,6 +53,8 @@ class RangeImage {
 
   int mini() const { return min_y_; }
 
+  int height() const { return min_y_ + ranges_.size(); }
+
  private:
   // minimum index in y where the blob starts
   int min_y_ = 0;
