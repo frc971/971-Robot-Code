@@ -8,7 +8,9 @@
 #include <mutex>
 #include <functional>
 #include <array>
+#include <cmath>
 
+#include "Counter.h"
 #include "Encoder.h"
 #include "VictorSP.h"
 #include "Relay.h"
@@ -97,48 +99,21 @@ double drivetrain_velocity_translate(double in) {
          Values::kDrivetrainEncoderRatio * 2.0 * M_PI;
 }
 
-double shooter_translate(int32_t in) {
-  return static_cast<double>(in) / Values::kShooterEncoderCountsPerRevolution *
-         Values::kShooterEncoderRatio * (2 * M_PI /*radians*/);
-}
-
-double intake_translate(int32_t in) {
-  return static_cast<double>(in) / Values::kIntakeEncoderCountsPerRevolution *
-         Values::kIntakeEncoderRatio * (2 * M_PI /*radians*/);
-}
-
-// TODO(constants): Update the number of turns.
+// TODO(Travis): Make sure the number of turns is right.
 double intake_pot_translate(double voltage) {
-  return voltage * Values::kIntakePotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
+  return voltage * Values::kIntakePotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
 }
 
-double hood_translate(int32_t in) {
-  return static_cast<double>(in) / Values::kHoodEncoderCountsPerRevolution *
-         Values::kHoodEncoderRatio * (2 * M_PI /*radians*/);
-}
-
-// TODO(constants): Update the number of turns.
+// TODO(Travis): Make sure the number of turns is right.
 double hood_pot_translate(double voltage) {
   return voltage * Values::kHoodPotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
 }
 
-double turret_translate(int32_t in) {
-  return static_cast<double>(in) / Values::kTurretEncoderCountsPerRevolution *
-         Values::kTurretEncoderRatio * (2 * M_PI /*radians*/);
-}
-
-// TODO(constants): Update the number of turns.
 double turret_pot_translate(double voltage) {
-  return voltage * Values::kTurretPotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
+  return voltage * Values::kTurretPotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
-}
-
-double indexer_translate(int32_t in) {
-  return static_cast<double>(in) /
-         Values::kMaxIndexerEncoderCountsPerRevolution *
-         Values::kIndexerEncoderRatio * (2 * M_PI /*radians*/);
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond =
@@ -156,6 +131,69 @@ constexpr double kMaxSlowEncoderPulsesPerSecond =
     Values::kMaxHoodEncoderPulsesPerSecond;
 static_assert(kMaxSlowEncoderPulsesPerSecond <= 100000,
               "slow encoders are too fast");
+
+// Handles reading the duty cycle on a DigitalInput.
+class DutyCycleReader {
+ public:
+  void set_input(::std::unique_ptr<DigitalInput> input) {
+    high_counter_.reset(new Counter(input.get()));
+    high_counter_->SetMaxPeriod(kMaxPeriod);
+    high_counter_->SetSemiPeriodMode(true);
+
+    period_length_counter_.reset(new Counter(input.get()));
+    period_length_counter_->SetMaxPeriod(kMaxPeriod);
+    period_length_counter_->SetUpSourceEdge(true, false);
+
+    input_ = ::std::move(input);
+  }
+
+  double Read() const {
+    const double high_time = high_counter_->GetPeriod();
+    const double period_length = period_length_counter_->GetPeriod();
+    if (!::std::isfinite(high_time) || !::std::isfinite(period_length)) {
+      return ::std::numeric_limits<double>::quiet_NaN();
+    }
+    return high_time / period_length;
+  }
+
+ private:
+  static constexpr ::std::chrono::nanoseconds kNominalPeriod =
+      ::std::chrono::microseconds(4096);
+  static constexpr double kMaxPeriod =
+      (::std::chrono::duration_cast<::std::chrono::seconds>(kNominalPeriod) * 2)
+          .count();
+
+  ::std::unique_ptr<Counter> high_counter_, period_length_counter_;
+  ::std::unique_ptr<DigitalInput> input_;
+};
+
+class AbsoluteEncoderAndPotentiometer {
+ public:
+  void set_absolute_pwm(::std::unique_ptr<DigitalInput> input) {
+    duty_cycle_.set_input(::std::move(input));
+  }
+
+  void set_encoder(::std::unique_ptr<Encoder> encoder) {
+    encoder_ = ::std::move(encoder);
+  }
+
+  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    potentiometer_ = ::std::move(potentiometer);
+  }
+
+  double ReadAbsoluteEncoder() const { return duty_cycle_.Read(); }
+
+  int32_t ReadRelativeEncoder() const { return encoder_->GetRaw(); }
+
+  double ReadPotentiometerVoltage() const {
+    return potentiometer_->GetVoltage();
+  }
+
+ private:
+  DutyCycleReader duty_cycle_;
+  ::std::unique_ptr<Encoder> encoder_;
+  ::std::unique_ptr<AnalogInput> potentiometer_;
+};
 
 // Class to send position messages with sensor readings to our loops.
 class SensorReader {
@@ -201,10 +239,8 @@ class SensorReader {
     intake_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  // TODO(brian): This is wrong.
-  void set_intake_index(::std::unique_ptr<DigitalInput> index) {
-    medium_encoder_filter_.Add(index.get());
-    intake_encoder_.set_index(::std::move(index));
+  void set_intake_absolute(::std::unique_ptr<DigitalInput> input) {
+    intake_encoder_.set_absolute_pwm(::std::move(input));
   }
 
   void set_indexer_encoder(::std::unique_ptr<Encoder> encoder) {
@@ -221,10 +257,8 @@ class SensorReader {
     turret_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
-  // TODO(brian): This is wrong.
-   void set_turret_index(::std::unique_ptr<DigitalInput> index) {
-    medium_encoder_filter_.Add(index.get());
-    turret_encoder_.set_index(::std::move(index));
+  void set_turret_absolute(::std::unique_ptr<DigitalInput> input) {
+    turret_encoder_.set_absolute_pwm(::std::move(input));
   }
 
   void set_hood_encoder(::std::unique_ptr<Encoder> encoder) {
@@ -250,9 +284,6 @@ class SensorReader {
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
-    // TODO(constants): Update this.
-    dma_synchronizer_->Add(&intake_encoder_);
-    dma_synchronizer_->Add(&turret_encoder_);
     dma_synchronizer_->Add(&hood_encoder_);
   }
 
@@ -304,20 +335,28 @@ class SensorReader {
     {
       auto superstructure_message = superstructure_queue.position.MakeMessage();
       CopyPosition(intake_encoder_, &superstructure_message->intake,
-                   intake_translate, intake_pot_translate, false,
+                   Values::kIntakeEncoderCountsPerRevolution,
+                   Values::kIntakeEncoderRatio, intake_pot_translate, false,
                    values.intake.pot_offset);
 
       superstructure_message->theta_indexer =
-          indexer_translate(indexer_encoder_->GetRaw());
+          encoder_translate(indexer_encoder_->GetRaw(),
+                            Values::kMaxIndexerEncoderCountsPerRevolution,
+                            Values::kIndexerEncoderRatio);
 
-      superstructure_message->theta_shooter=
-          shooter_translate(shooter_encoder_->GetRaw());
+      superstructure_message->theta_shooter =
+          encoder_translate(shooter_encoder_->GetRaw(),
+                            Values::kShooterEncoderCountsPerRevolution,
+                            Values::kShooterEncoderRatio);
 
-      CopyPosition(hood_encoder_, &superstructure_message->hood, hood_translate,
-                   hood_pot_translate, false, values.hood.pot_offset);
+      CopyPosition(hood_encoder_, &superstructure_message->hood,
+                   Values::kHoodEncoderCountsPerRevolution,
+                   Values::kHoodEncoderRatio, hood_pot_translate, false,
+                   values.hood.pot_offset);
 
       CopyPosition(turret_encoder_, &superstructure_message->turret,
-                   turret_translate, turret_pot_translate, false,
+                   Values::kTurretEncoderCountsPerRevolution,
+                   Values::kTurretEncoderRatio, turret_pot_translate, false,
                    values.turret.pot_offset);
 
       superstructure_message.Send();
@@ -339,19 +378,29 @@ class SensorReader {
   void Quit() { run_ = false; }
 
  private:
+  double encoder_translate(int32_t value, double counts_per_revolution,
+                           double ratio) {
+    return static_cast<double>(value) / counts_per_revolution * ratio *
+           (2.0 * M_PI);
+  }
+
   void CopyPosition(const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
                     ::frc971::PotAndIndexPosition *position,
-                    ::std::function<double(int32_t)> encoder_translate,
+                    double encoder_counts_per_revolution, double encoder_ratio,
                     ::std::function<double(double)> potentiometer_translate,
                     bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
+        multiplier * encoder_translate(encoder.polled_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
     position->pot = multiplier * potentiometer_translate(
                                      encoder.polled_potentiometer_voltage()) +
                     pot_offset;
     position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
+        multiplier * encoder_translate(encoder.last_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
     position->latched_pot =
         multiplier *
             potentiometer_translate(encoder.last_potentiometer_voltage()) +
@@ -359,37 +408,22 @@ class SensorReader {
     position->index_pulses = encoder.index_posedge_count();
   }
 
-#if 0
-  // TODO(campbell): Fix this stuff. It is all wrong.
-  void CopyPosition(
-      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndAbsolutePosition *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double pot_offset) {
+  void CopyPosition(const AbsoluteEncoderAndPotentiometer &encoder,
+                    ::frc971::PotAndAbsolutePosition *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    ::std::function<double(double)> potentiometer_translate,
+                    bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->pot = multiplier * potentiometer_translate(
-                                     encoder.polled_potentiometer_voltage()) +
+                                     encoder.ReadPotentiometerVoltage()) +
                     pot_offset;
-    position->relative_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->absolute_encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
-  }
-
-  // TODO(campbell): Fix this stuff. It is all wrong.
-  void CopyPosition(
-      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::EncoderAndIndexPosition *position,
-      ::std::function<double(int32_t)> encoder_translate, bool reverse) {
-    const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->index_pulses = encoder.index_posedge_count();
+        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->absolute_encoder = multiplier * encoder.ReadAbsoluteEncoder() *
+                                 encoder_ratio * (2.0 * M_PI);
   }
-#endif
 
   int32_t my_pid_;
   DriverStation *ds_;
@@ -402,12 +436,12 @@ class SensorReader {
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;
 
-  ::frc971::wpilib::DMAEncoderAndPotentiometer intake_encoder_;
+  AbsoluteEncoderAndPotentiometer intake_encoder_;
 
   ::std::unique_ptr<Encoder> indexer_encoder_;
   ::std::unique_ptr<AnalogInput> indexer_hall_;
 
-  ::frc971::wpilib::DMAEncoderAndPotentiometer turret_encoder_;
+  AbsoluteEncoderAndPotentiometer turret_encoder_;
   ::frc971::wpilib::DMAEncoderAndPotentiometer hood_encoder_;
   ::std::unique_ptr<Encoder> shooter_encoder_;
 
@@ -536,13 +570,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
     reader.set_intake_encoder(make_encoder(2));
-    reader.set_intake_index(make_unique<DigitalInput>(0));
+    reader.set_intake_absolute(make_unique<DigitalInput>(0));
     reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
 
     reader.set_indexer_encoder(make_encoder(3));
 
     reader.set_turret_encoder(make_encoder(5));
-    reader.set_turret_index(make_unique<DigitalInput>(1));
+    reader.set_turret_absolute(make_unique<DigitalInput>(1));
     reader.set_turret_potentiometer(make_unique<AnalogInput>(3));
 
     reader.set_hood_encoder(make_encoder(6));
