@@ -177,12 +177,12 @@ void Indexer::Iterate(const control_loops::IndexerGoal *goal,
              monotonic_now > last_transition_time_ + kReverseMinTimeout) ||
             monotonic_now > kReverseTimeout + last_transition_time_) {
           state_ = State::RUNNING;
-          last_transition_time_ = monotonic_now;
 
           // Only reset if we got stuck going this way too.
           if (monotonic_now > kReverseTimeout + last_transition_time_) {
             indexer_.Reset();
           }
+          last_transition_time_ = monotonic_now;
         }
         break;
     }
