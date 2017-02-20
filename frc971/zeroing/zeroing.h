@@ -66,10 +66,6 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
 
   double offset() const override { return offset_; }
 
-  // Return the estimated position of the corresponding mechanism not using the
-  // index pulse, even if one is available.
-  double filtered_position() const { return filtered_position_; }
-
   // Returns a number between 0 and 1 that represents the percentage of the
   // samples being used in the moving average filter. A value of 0.0 means that
   // no samples are being used. A value of 1.0 means that the filter is using
@@ -85,6 +81,9 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   bool offset_ready() const {
     return start_pos_samples_.size() == constants_.average_filter_size;
   }
+
+  // Returns information about our current state.
+  State GetEstimatorState() const;
 
  private:
   // This function calculates the start position given the internal state and
@@ -159,9 +158,8 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
            offset_samples_.size() == constants_.average_filter_size;
   }
 
-  // Return the estimated position of the corresponding mechanism not using the
-  // index pulse, even if one is available.
-  double filtered_position() const { return filtered_position_; }
+  // Returns information about our current state.
+  State GetEstimatorState() const;
 
  private:
   // The zeroing constants used to describe the configuration of the system.
@@ -261,14 +259,6 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   // The estimated position.
   double position_;
 };
-
-// Populates an EstimatorState struct with information from the zeroing
-// estimator.
-void PopulateEstimatorState(const PotAndIndexPulseZeroingEstimator &estimator,
-                            EstimatorState *state);
-
-void PopulateEstimatorState(const PotAndAbsEncoderZeroingEstimator &estimator,
-                            AbsoluteEstimatorState *state);
 
 }  // namespace zeroing
 }  // namespace frc971

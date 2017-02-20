@@ -19,25 +19,6 @@ bool compare_encoder(const PotAndAbsolutePosition &left,
 
 }  // namespace
 
-void PopulateEstimatorState(
-    const zeroing::PotAndIndexPulseZeroingEstimator &estimator,
-    EstimatorState *state) {
-  state->error = estimator.error();
-  state->zeroed = estimator.zeroed();
-  state->position = estimator.position();
-  state->pot_position = estimator.filtered_position();
-}
-
-void PopulateEstimatorState(
-    const zeroing::PotAndAbsEncoderZeroingEstimator &estimator,
-    AbsoluteEstimatorState *state) {
-  state->error = estimator.error();
-  state->zeroed = estimator.zeroed();
-
-  state->position = estimator.position();
-  state->pot_position = estimator.filtered_position();
-}
-
 PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
     const constants::PotAndIndexPulseZeroingConstants &constants)
     : constants_(constants) {
@@ -151,6 +132,17 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
   position_ = offset_ + info.encoder;
   filtered_position_ = start_average + info.encoder;
 }
+
+PotAndIndexPulseZeroingEstimator::State
+PotAndIndexPulseZeroingEstimator::GetEstimatorState() const {
+  State r;
+  r.error = error_;
+  r.zeroed = zeroed_;
+  r.position = position_;
+  r.pot_position = filtered_position_;
+  return r;
+}
+
 
 PotAndAbsEncoderZeroingEstimator::PotAndAbsEncoderZeroingEstimator(
     const constants::PotAndAbsoluteEncoderZeroingConstants &constants)
@@ -307,6 +299,16 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
   // Update the position.
   filtered_position_ = pot_relative_encoder_offset_ + info.encoder;
   position_ = offset_ + info.encoder;
+}
+
+PotAndAbsEncoderZeroingEstimator::State
+PotAndAbsEncoderZeroingEstimator::GetEstimatorState() const {
+  State r;
+  r.error = error_;
+  r.zeroed = zeroed_;
+  r.position = position_;
+  r.pot_position = filtered_position_;
+  return r;
 }
 
 void PulseIndexZeroingEstimator::Reset() {

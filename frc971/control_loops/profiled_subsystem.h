@@ -98,11 +98,7 @@ class ProfiledSubsystem {
 
   // Returns the current internal estimator state for logging.
   typename ZeroingEstimator::State EstimatorState(int index) {
-    typename ZeroingEstimator::State estimator_state;
-    ::frc971::zeroing::PopulateEstimatorState(estimators_[index],
-                                              &estimator_state);
-
-    return estimator_state;
+    return estimators_[index].GetEstimatorState();
   }
 
   // Sets the maximum voltage that will be commanded by the loop.
