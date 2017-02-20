@@ -157,10 +157,7 @@ void IntakeArm::Reset() {
 }
 
 EstimatorState IntakeArm::IntakeEstimatorState() {
-  EstimatorState estimator_state;
-  ::frc971::zeroing::PopulateEstimatorState(estimator_, &estimator_state);
-
-  return estimator_state;
+  return estimator_.GetEstimatorState();
 }
 
 }  // namespace intake

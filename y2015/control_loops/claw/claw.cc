@@ -281,8 +281,7 @@ void Claw::RunIteration(const control_loops::ClawQueue::Goal *unsafe_goal,
   status->zeroed = state_ == RUNNING;
   status->estopped = state_ == ESTOP;
   status->state = state_;
-  ::frc971::zeroing::PopulateEstimatorState(claw_estimator_,
-                                            &status->zeroing_state);
+  status->zeroing_state = claw_estimator_.GetEstimatorState();
 
   status->angle = claw_loop_->X_hat(0, 0);
   status->angular_velocity = claw_loop_->X_hat(1, 0);

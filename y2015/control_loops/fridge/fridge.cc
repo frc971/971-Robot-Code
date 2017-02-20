@@ -711,14 +711,10 @@ void Fridge::RunIteration(const FridgeQueue::Goal *unsafe_goal,
     status->grabbers.bottom_front = false;
     status->grabbers.bottom_back = false;
   }
-  ::frc971::zeroing::PopulateEstimatorState(left_arm_estimator_,
-                                            &status->left_arm_state);
-  ::frc971::zeroing::PopulateEstimatorState(right_arm_estimator_,
-                                            &status->right_arm_state);
-  ::frc971::zeroing::PopulateEstimatorState(left_elevator_estimator_,
-                                            &status->left_elevator_state);
-  ::frc971::zeroing::PopulateEstimatorState(right_elevator_estimator_,
-                                            &status->right_elevator_state);
+  status->left_arm_state = left_arm_estimator_.GetEstimatorState();
+  status->right_arm_state = right_arm_estimator_.GetEstimatorState();
+  status->left_elevator_state = left_elevator_estimator_.GetEstimatorState();
+  status->right_elevator_state = right_elevator_estimator_.GetEstimatorState();
   status->estopped = (state_ == ESTOP);
   status->state = state_;
   last_state_ = state_;
