@@ -29,6 +29,7 @@ cc_toolchain_suite(
   toolchains = {
     'k8|clang': ':cc-compiler-k8',
     'roborio|gcc': ':cc-compiler-roborio',
+    'armhf-debian|clang': 'cc-compiler-armhf-debian',
   },
 )
 
@@ -122,6 +123,7 @@ filegroup(
     '//tools/cpp/linaro_linux_gcc:clang-ld',
     '//tools/cpp/linaro_linux_gcc:clang',
     '@linaro_linux_gcc_4_9_repo//:compiler_pieces',
+    '//tools/cpp/linaro_linux_gcc:clang-symlinks',
   ],
 )
 
