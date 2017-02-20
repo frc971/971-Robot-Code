@@ -350,7 +350,7 @@ int main(int argc, char **argv) {
         memcpy(&string_length, position, sizeof(string_length));
         position += sizeof(string_length);
 
-        char buffer[2048];
+        char buffer[3072];
         size_t output_length = sizeof(buffer);
         size_t input_length =
             msg->message_size -
@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
             (sizeof(type) + sizeof(uint32_t) + sizeof(uint16_t) +
              sizeof(uint16_t) + string_length);
         CHECK_EQ(matrix_bytes, ::aos::MessageType::Sizeof(type) * rows * cols);
-        char buffer[2048];
+        char buffer[3072];
         size_t output_length = sizeof(buffer);
         if (!::aos::PrintMatrix(buffer, &output_length,
                                 position + string_length, type, rows, cols)) {

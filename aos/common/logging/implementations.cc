@@ -173,7 +173,7 @@ void PrintMessage(FILE *output, const LogMessage &message) {
               static_cast<int>(message.message_length), message.message);
       break;
     case LogMessage::Type::kStruct: {
-      char buffer[2048];
+      char buffer[3072];
       size_t output_length = sizeof(buffer);
       size_t input_length = message.message_length;
       if (!PrintMessage(
