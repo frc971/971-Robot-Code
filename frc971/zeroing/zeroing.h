@@ -30,9 +30,6 @@ class ZeroingEstimator {
   // Returns the estimated position of the corresponding mechanism.
   virtual double offset() const = 0;
 
-  // Returns the estimated starting position of the corresponding mechansim.
-  virtual double position() const = 0;
-
   // Returns true if there has been an error.
   virtual bool error() const = 0;
 };
@@ -61,8 +58,6 @@ class PotAndIndexPulseZeroingEstimator : public ZeroingEstimator {
   bool error() const override { return error_; }
 
   bool zeroed() const override { return zeroed_; }
-
-  double position() const override { return position_; }
 
   double offset() const override { return offset_; }
 
@@ -145,8 +140,6 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
 
   bool zeroed() const override { return zeroed_; }
 
-  double position() const override { return position_; }
-
   double offset() const override { return offset_; }
 
   bool error() const override { return error_; }
@@ -198,7 +191,7 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
  public:
   using Position = IndexPosition;
   using ZeroingConstants = constants::PotAndIndexPulseZeroingConstants;
-  using State = EstimatorState;
+  using State = IndexEstimatorState;
 
   PulseIndexZeroingEstimator(
       const constants::EncoderPlusIndexZeroingConstants &constants)
@@ -211,17 +204,15 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
 
   bool zeroed() const override { return zeroed_; }
 
-  double position() const override {
-    CHECK(zeroed_);
-    return position_;
-  }
-
   double offset() const override { return offset_; }
 
   bool error() const override { return error_; }
 
   // Updates the internal logic with the next sensor values.
   void UpdateEstimate(const IndexPosition &info);
+
+  // Returns information about our current state.
+  State GetEstimatorState() const;
 
  private:
   // Returns the current real position using the relative encoder offset.
@@ -231,7 +222,7 @@ class PulseIndexZeroingEstimator : public ZeroingEstimator {
   void StoreIndexPulseMaxAndMin(const IndexPosition &info);
 
   // Returns the number of index pulses we should have seen so far.
-  int IndexPulseCount();
+  int IndexPulseCount() const;
 
   // Contains the physical constants describing the system.
   const constants::EncoderPlusIndexZeroingConstants constants_;

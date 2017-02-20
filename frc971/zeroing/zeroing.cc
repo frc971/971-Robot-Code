@@ -336,7 +336,7 @@ void PulseIndexZeroingEstimator::StoreIndexPulseMaxAndMin(
   }
 }
 
-int PulseIndexZeroingEstimator::IndexPulseCount() {
+int PulseIndexZeroingEstimator::IndexPulseCount() const {
   if (min_index_position_ > max_index_position_) {
     // This condition means we haven't seen a pulse yet.
     return 0;
@@ -364,9 +364,20 @@ void PulseIndexZeroingEstimator::UpdateEstimate(const IndexPosition &info) {
               min_index_position_;
     zeroed_ = true;
   }
-  if (zeroed_) {
-    position_ = info.encoder + offset_;
-  }
+
+  position_ = info.encoder + offset_;
+}
+
+PulseIndexZeroingEstimator::State
+PulseIndexZeroingEstimator::GetEstimatorState() const {
+  State r;
+  r.error = error_;
+  r.zeroed = zeroed_;
+  r.position = position_;
+  r.min_index_position = min_index_position_;
+  r.max_index_position = max_index_position_;
+  r.index_pulses_seen = IndexPulseCount();
+  return r;
 }
 
 }  // namespace zeroing

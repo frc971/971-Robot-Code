@@ -71,13 +71,13 @@ TEST_F(ZeroingTest, TestMovingAverageFilter) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.3 * index_diff);
   }
-  ASSERT_NEAR(3.3 * index_diff, estimator.position(),
+  ASSERT_NEAR(3.3 * index_diff, estimator.GetEstimatorState().position,
               kAcceptableUnzeroedError * index_diff);
 
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.9 * index_diff);
   }
-  ASSERT_NEAR(3.9 * index_diff, estimator.position(),
+  ASSERT_NEAR(3.9 * index_diff, estimator.GetEstimatorState().position,
               kAcceptableUnzeroedError * index_diff);
 }
 
@@ -114,24 +114,25 @@ TEST_F(ZeroingTest, TestLotsOfMovement) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.6);
   }
-  ASSERT_NEAR(3.6, estimator.position(), kAcceptableUnzeroedError * index_diff);
+  ASSERT_NEAR(3.6, estimator.GetEstimatorState().position,
+              kAcceptableUnzeroedError * index_diff);
 
   // With a single index pulse the zeroing estimator should be able to lock
   // onto the true value of the position.
   MoveTo(&sim, &estimator, 4.01);
-  ASSERT_NEAR(4.01, estimator.position(), 0.001);
+  ASSERT_NEAR(4.01, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 4.99);
-  ASSERT_NEAR(4.99, estimator.position(), 0.001);
+  ASSERT_NEAR(4.99, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 3.99);
-  ASSERT_NEAR(3.99, estimator.position(), 0.001);
+  ASSERT_NEAR(3.99, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 3.01);
-  ASSERT_NEAR(3.01, estimator.position(), 0.001);
+  ASSERT_NEAR(3.01, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 13.55);
-  ASSERT_NEAR(13.55, estimator.position(), 0.001);
+  ASSERT_NEAR(13.55, estimator.GetEstimatorState().position, 0.001);
 }
 
 TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
@@ -147,25 +148,25 @@ TEST_F(ZeroingTest, TestDifferentIndexDiffs) {
   for (int i = 0; i < 300; i++) {
     MoveTo(&sim, &estimator, 3.5 * index_diff);
   }
-  ASSERT_NEAR(3.5 * index_diff, estimator.position(),
+  ASSERT_NEAR(3.5 * index_diff, estimator.GetEstimatorState().position,
               kAcceptableUnzeroedError * index_diff);
 
   // With a single index pulse the zeroing estimator should be able to lock
   // onto the true value of the position.
   MoveTo(&sim, &estimator, 4.01);
-  ASSERT_NEAR(4.01, estimator.position(), 0.001);
+  ASSERT_NEAR(4.01, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 4.99);
-  ASSERT_NEAR(4.99, estimator.position(), 0.001);
+  ASSERT_NEAR(4.99, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 3.99);
-  ASSERT_NEAR(3.99, estimator.position(), 0.001);
+  ASSERT_NEAR(3.99, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 3.01);
-  ASSERT_NEAR(3.01, estimator.position(), 0.001);
+  ASSERT_NEAR(3.01, estimator.GetEstimatorState().position, 0.001);
 
   MoveTo(&sim, &estimator, 13.55);
-  ASSERT_NEAR(13.55, estimator.position(), 0.001);
+  ASSERT_NEAR(13.55, estimator.GetEstimatorState().position, 0.001);
 }
 
 TEST_F(ZeroingTest, TestPercentage) {
@@ -258,12 +259,12 @@ TEST_F(ZeroingTest, TestNonZeroIndexPulseOffsets) {
   MoveTo(&sim, &estimator, 3.7 * index_diff);
   ASSERT_TRUE(estimator.zeroed());
   ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
-  ASSERT_DOUBLE_EQ(3.7 * index_diff, estimator.position());
+  ASSERT_DOUBLE_EQ(3.7 * index_diff, estimator.GetEstimatorState().position);
 
   // Trigger one more index pulse and check the offset.
   MoveTo(&sim, &estimator, 4.7 * index_diff);
   ASSERT_DOUBLE_EQ(3.3 * index_diff, estimator.offset());
-  ASSERT_DOUBLE_EQ(4.7 * index_diff, estimator.position());
+  ASSERT_DOUBLE_EQ(4.7 * index_diff, estimator.GetEstimatorState().position);
 }
 
 TEST_F(ZeroingTest, BasicErrorAPITest) {
@@ -439,10 +440,12 @@ TEST_F(ZeroingTest, TestRelativeEncoderZeroing) {
   ASSERT_TRUE(estimator.zeroed());
 
   ASSERT_DOUBLE_EQ(start_pos, estimator.offset());
-  ASSERT_DOUBLE_EQ(3.5 * constants.index_difference, estimator.position());
+  ASSERT_DOUBLE_EQ(3.5 * constants.index_difference,
+                   estimator.GetEstimatorState().position);
 
   MoveTo(&sim, &estimator, 0.5 * constants.index_difference);
-  ASSERT_DOUBLE_EQ(0.5 * constants.index_difference, estimator.position());
+  ASSERT_DOUBLE_EQ(0.5 * constants.index_difference,
+                   estimator.GetEstimatorState().position);
 }
 
 }  // namespace zeroing
