@@ -33,7 +33,7 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
 
   void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp) {
     if (data.size() < 300) {
-      LOG(INFO, "got bad img of size(%lu)\n", data.size());
+      LOG(INFO, "got bad img of size(%zu)\n", data.size());
       return;
     }
     ProcessImage(data, timestamp);
