@@ -77,6 +77,23 @@ struct AbsoluteEstimatorState {
   double pot_position;
 };
 
+// The internal state of a zeroing estimator.
+struct IndexEstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  bool error;
+  // If the joint has seen an index pulse and is zeroed.
+  bool zeroed;
+  // The estimated position of the joint. This is just the position relative to
+  // where we started if we're not zeroed yet.
+  double position;
+
+  // The positions of the extreme index pulses we've seen.
+  double min_index_position;
+  double max_index_position;
+  // The number of index pulses we've seen.
+  int32_t index_pulses_seen;
+};
+
 // A left/right pair of PotAndIndexPositions.
 struct PotAndIndexPair {
   PotAndIndexPosition left;
