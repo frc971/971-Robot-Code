@@ -20,13 +20,6 @@ cc_test(
   ],
 )
 
-queue_library(
-  name = 'zeroing_queue',
-  srcs = [
-    'zeroing_queue.q',
-  ],
-)
-
 cc_library(
   name = 'zeroing',
   srcs = [
