@@ -1,5 +1,4 @@
 load('/aos/downloader/downloader', 'aos_downloader')
-load('/aos/downloader/downloader', 'aos_downloader_dir')
 
 cc_library(
   name = 'constants',

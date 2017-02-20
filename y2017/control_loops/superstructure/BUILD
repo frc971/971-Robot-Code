@@ -56,3 +56,15 @@ cc_test(
     '//y2017/control_loops/superstructure/turret:turret_plants',
   ],
 )
+
+cc_binary(
+  name = 'superstructure',
+  srcs = [
+    'superstructure_main.cc',
+  ],
+  deps = [
+    '//aos/linux_code:init',
+    ':superstructure_lib',
+    ':superstructure_queue',
+  ],
+)

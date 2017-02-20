@@ -1,3 +1,5 @@
+load('/aos/downloader/downloader', 'aos_downloader')
+
 cc_library(
   name = 'constants',
   visibility = ['//visibility:public'],
@@ -58,5 +60,35 @@ cc_binary(
     '//frc971/wpilib:dma',
     '//y2017/control_loops/superstructure:superstructure_queue',
     '//y2017/actors:autonomous_action_queue',
+  ],
+)
+
+aos_downloader(
+  name = 'download',
+  start_srcs = [
+    #':joystick_reader',
+    ':wpilib_interface',
+    '//aos:prime_start_binaries',
+    '//y2017/control_loops/drivetrain:drivetrain',
+    '//y2017/control_loops/superstructure:superstructure',
+    '//y2017/actors:autonomous_action',
+  ],
+  srcs = [
+    '//aos:prime_binaries',
+  ],
+)
+
+aos_downloader(
+  name = 'download_stripped',
+  start_srcs = [
+    #':joystick_reader.stripped',
+    ':wpilib_interface.stripped',
+    '//aos:prime_start_binaries_stripped',
+    '//y2017/control_loops/drivetrain:drivetrain.stripped',
+    '//y2017/control_loops/superstructure:superstructure.stripped',
+    '//y2017/actors:autonomous_action.stripped',
+  ],
+  srcs = [
+    '//aos:prime_binaries_stripped',
   ],
 )
