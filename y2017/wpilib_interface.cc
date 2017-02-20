@@ -105,12 +105,6 @@ double intake_pot_translate(double voltage) {
          (2 * M_PI /*radians*/);
 }
 
-// TODO(Travis): Make sure the number of turns is right.
-double hood_pot_translate(double voltage) {
-  return voltage * Values::kHoodPotRatio * (3.0 /*turns*/ / 5.0 /*volts*/) *
-         (2 * M_PI /*radians*/);
-}
-
 double turret_pot_translate(double voltage) {
   return voltage * Values::kTurretPotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
@@ -266,10 +260,6 @@ class SensorReader {
     hood_encoder_.set_encoder(::std::move(encoder));
   }
 
-  void set_hood_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
-    hood_encoder_.set_potentiometer(::std::move(potentiometer));
-  }
-
   void set_hood_index(::std::unique_ptr<DigitalInput> index) {
     slow_encoder_filter_.Add(index.get());
     hood_encoder_.set_index(::std::move(index));
@@ -351,8 +341,7 @@ class SensorReader {
 
       CopyPosition(hood_encoder_, &superstructure_message->hood,
                    Values::kHoodEncoderCountsPerRevolution,
-                   Values::kHoodEncoderRatio, hood_pot_translate, false,
-                   values.hood.pot_offset);
+                   Values::kHoodEncoderRatio, false);
 
       CopyPosition(turret_encoder_, &superstructure_message->turret,
                    Values::kTurretEncoderCountsPerRevolution,
@@ -384,27 +373,19 @@ class SensorReader {
            (2.0 * M_PI);
   }
 
-  void CopyPosition(const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-                    ::frc971::PotAndIndexPosition *position,
+  void CopyPosition(const ::frc971::wpilib::DMAEncoder &encoder,
+                    ::frc971::IndexPosition *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
-                    ::std::function<double(double)> potentiometer_translate,
-                    bool reverse, double pot_offset) {
+                    bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.polled_encoder_value(),
                                        encoder_counts_per_revolution,
                                        encoder_ratio);
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.polled_potentiometer_voltage()) +
-                    pot_offset;
     position->latched_encoder =
         multiplier * encoder_translate(encoder.last_encoder_value(),
                                        encoder_counts_per_revolution,
                                        encoder_ratio);
-    position->latched_pot =
-        multiplier *
-            potentiometer_translate(encoder.last_potentiometer_voltage()) +
-        pot_offset;
     position->index_pulses = encoder.index_posedge_count();
   }
 
@@ -442,7 +423,7 @@ class SensorReader {
   ::std::unique_ptr<AnalogInput> indexer_hall_;
 
   AbsoluteEncoderAndPotentiometer turret_encoder_;
-  ::frc971::wpilib::DMAEncoderAndPotentiometer hood_encoder_;
+  ::frc971::wpilib::DMAEncoder hood_encoder_;
   ::std::unique_ptr<Encoder> shooter_encoder_;
 
   ::std::array<::std::unique_ptr<DigitalInput>, 4> autonomous_modes_;

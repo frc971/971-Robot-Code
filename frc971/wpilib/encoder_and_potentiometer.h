@@ -88,11 +88,11 @@ class InterruptEncoderAndPotentiometer {
   DISALLOW_COPY_AND_ASSIGN(InterruptEncoderAndPotentiometer);
 };
 
-// Latches values from an encoder and potentiometer on positive edges from
-// another input using DMA.
-class DMAEncoderAndPotentiometer : public DMASampleHandlerInterface {
+// Latches values from an encoder on positive edges from another input using
+// DMA.
+class DMAEncoder : public DMASampleHandlerInterface {
  public:
-  DMAEncoderAndPotentiometer() {}
+  DMAEncoder() {}
 
   void set_encoder(::std::unique_ptr<Encoder> encoder) {
     encoder_ = ::std::move(encoder);
@@ -104,61 +104,101 @@ class DMAEncoderAndPotentiometer : public DMASampleHandlerInterface {
   }
   DigitalSource *index() const { return index_.get(); }
 
-  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
-    potentiometer_ = ::std::move(potentiometer);
-  }
-  AnalogInput *potentiometer() const { return potentiometer_.get(); }
-
   // Returns the most recent polled value of the encoder.
   uint32_t polled_encoder_value() const { return polled_encoder_value_; }
-  // Returns the most recent polled voltage of the potentiometer.
-  float polled_potentiometer_voltage() const {
-    return polled_potentiometer_voltage_;
-  }
 
   // Returns the number of poseges that have happened on the index input.
   uint32_t index_posedge_count() const { return index_posedge_count_; }
   // Returns the value of the encoder at the last index posedge.
   int32_t last_encoder_value() const { return last_encoder_value_; }
-  // Returns the voltage of the potentiometer at the last index posedge.
-  float last_potentiometer_voltage() const {
-    return last_potentiometer_voltage_;
+
+  void UpdateFromSample(const DMASample &sample) override {
+    DoUpdateFromSample(sample);
   }
 
-  virtual void UpdateFromSample(const DMASample &sample) override;
-
-  virtual void PollFromSample(const DMASample &sample) override {
+  void PollFromSample(const DMASample &sample) override {
     polled_encoder_value_ = sample.GetRaw(encoder_.get());
-    polled_potentiometer_voltage_ = sample.GetVoltage(potentiometer_.get());
   }
 
-  virtual void UpdatePolledValue() override {
+  void UpdatePolledValue() override {
     polled_encoder_value_ = encoder_->GetRaw();
-    polled_potentiometer_voltage_ = potentiometer_->GetVoltage();
   }
 
-  virtual void AddToDMA(DMA *dma) override {
+  void AddToDMA(DMA *dma) override {
     dma->Add(encoder_.get());
     dma->Add(index_.get());
-    dma->Add(potentiometer_.get());
     dma->SetExternalTrigger(index_.get(), true, true);
   }
+
+ protected:
+  // The same as UpdateFromSample except also returns true if this sample is a
+  // new edge on the index.
+  bool DoUpdateFromSample(const DMASample &sample);
 
  private:
   ::std::unique_ptr<Encoder> encoder_;
   ::std::unique_ptr<DigitalSource> index_;
-  ::std::unique_ptr<AnalogInput> potentiometer_;
 
   int32_t polled_encoder_value_ = 0;
-  float polled_potentiometer_voltage_ = 0.0f;
 
   int32_t last_encoder_value_ = 0;
-  float last_potentiometer_voltage_ = 0.0f;
 
   uint32_t index_posedge_count_ = 0;
 
   // Whether or not it was triggered in the last sample.
   bool index_last_value_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(DMAEncoder);
+};
+
+// Latches values from an encoder and potentiometer on positive edges from
+// another input using DMA.
+class DMAEncoderAndPotentiometer : public DMAEncoder {
+ public:
+  DMAEncoderAndPotentiometer() {}
+
+  void set_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
+    potentiometer_ = ::std::move(potentiometer);
+  }
+  AnalogInput *potentiometer() const { return potentiometer_.get(); }
+
+  // Returns the most recent polled voltage of the potentiometer.
+  float polled_potentiometer_voltage() const {
+    return polled_potentiometer_voltage_;
+  }
+
+  // Returns the voltage of the potentiometer at the last index posedge.
+  float last_potentiometer_voltage() const {
+    return last_potentiometer_voltage_;
+  }
+
+  void UpdateFromSample(const DMASample &sample) override {
+    if (DMAEncoder::DoUpdateFromSample(sample)) {
+      last_potentiometer_voltage_ = sample.GetVoltage(potentiometer_.get());
+    }
+  }
+
+  void PollFromSample(const DMASample &sample) override {
+    polled_potentiometer_voltage_ = sample.GetVoltage(potentiometer_.get());
+    DMAEncoder::PollFromSample(sample);
+  }
+
+  void UpdatePolledValue() override {
+    polled_potentiometer_voltage_ = potentiometer_->GetVoltage();
+    DMAEncoder::UpdatePolledValue();
+  }
+
+  void AddToDMA(DMA *dma) override {
+    dma->Add(potentiometer_.get());
+    DMAEncoder::AddToDMA(dma);
+  }
+
+ private:
+  ::std::unique_ptr<AnalogInput> potentiometer_;
+
+  float polled_potentiometer_voltage_ = 0.0f;
+
+  float last_potentiometer_voltage_ = 0.0f;
 
   DISALLOW_COPY_AND_ASSIGN(DMAEncoderAndPotentiometer);
 };

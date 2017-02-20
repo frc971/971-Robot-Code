@@ -6,7 +6,7 @@
 namespace frc971 {
 namespace wpilib {
 
-void DMAEncoderAndPotentiometer::UpdateFromSample(const DMASample &sample) {
+bool DMAEncoder::DoUpdateFromSample(const DMASample &sample) {
   if (index_last_value_) {
     // It was already true last time, so check if it's reset back to false yet.
     index_last_value_ = sample.Get(index_.get());
@@ -15,8 +15,9 @@ void DMAEncoderAndPotentiometer::UpdateFromSample(const DMASample &sample) {
     index_last_value_ = true;
     ++index_posedge_count_;
     last_encoder_value_ = sample.GetRaw(encoder_.get());
-    last_potentiometer_voltage_ = sample.GetVoltage(potentiometer_.get());
+    return true;
   }
+  return false;
 }
 
 void InterruptEncoderAndPotentiometer::Start() {

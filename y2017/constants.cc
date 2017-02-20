@@ -42,8 +42,8 @@ constexpr double Values::kIntakeEncoderCountsPerRevolution,
 constexpr ::frc971::constants::Range Values::kIntakeRange;
 
 constexpr double Values::kHoodEncoderCountsPerRevolution,
-    Values::kHoodEncoderRatio, Values::kHoodPotRatio,
-    Values::kHoodEncoderIndexDifference, Values::kMaxHoodEncoderPulsesPerSecond;
+    Values::kHoodEncoderRatio, Values::kHoodEncoderIndexDifference,
+    Values::kMaxHoodEncoderPulsesPerSecond;
 constexpr ::frc971::constants::Range Values::kHoodRange;
 
 constexpr double Values::kTurretEncoderCountsPerRevolution,

@@ -80,7 +80,6 @@ struct Values {
 
   static constexpr double kHoodEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kHoodEncoderRatio = 20.0 / 345.0;
-  static constexpr double kHoodPotRatio = 20.0 / 345.0;
   static constexpr double kHoodEncoderIndexDifference =
       2.0 * M_PI * kHoodEncoderRatio;
   static constexpr double kMaxHoodEncoderPulsesPerSecond =
