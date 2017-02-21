@@ -75,6 +75,10 @@ struct AbsoluteEstimatorState {
 
   // The estimated position not using the index pulse.
   double pot_position;
+
+  // The estimated absolute position of the encoder.  This is filtered, so it
+  // can be easily used when zeroing.
+  double absolute_position;
 };
 
 // The internal state of a zeroing estimator.

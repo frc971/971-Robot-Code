@@ -230,14 +230,28 @@ void PotAndAbsEncoderZeroingEstimator::UpdateEstimate(
             : relative_to_absolute_offset_sum /
                   relative_to_absolute_offset_samples_.size();
 
+    const double adjusted_incremental_encoder =
+        buffered_samples_[middle_index].encoder +
+        average_relative_to_absolute_offset;
+
     // Now, compute the nearest absolute encoder value to the offset relative
     // encoder position.
     const double adjusted_absolute_encoder =
-        Wrap(buffered_samples_[middle_index].encoder +
-                 average_relative_to_absolute_offset,
+        Wrap(adjusted_incremental_encoder,
              buffered_samples_[middle_index].absolute_encoder -
                  constants_.measured_absolute_position,
              constants_.one_revolution_distance);
+
+    // Reverse the math on the previous line to compute the absolute encoder.
+    // Do this by taking the adjusted encoder, and then subtracting off the
+    // second argument above, and the value that was added by Wrap.
+    filtered_absolute_encoder_ =
+        ((buffered_samples_[middle_index].encoder +
+          average_relative_to_absolute_offset) -
+         (-constants_.measured_absolute_position +
+          (adjusted_absolute_encoder -
+           (buffered_samples_[middle_index].absolute_encoder -
+            constants_.measured_absolute_position))));
 
     const double relative_to_absolute_offset =
         adjusted_absolute_encoder - buffered_samples_[middle_index].encoder;
@@ -323,6 +337,7 @@ PotAndAbsEncoderZeroingEstimator::GetEstimatorState() const {
   r.zeroed = zeroed_;
   r.position = position_;
   r.pot_position = filtered_position_;
+  r.absolute_position = filtered_absolute_encoder_;
   return r;
 }
 

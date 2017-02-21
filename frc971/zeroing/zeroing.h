@@ -166,6 +166,9 @@ class PotAndAbsEncoderZeroingEstimator : public ZeroingEstimator {
   // changes to true.
   double first_offset_;
 
+  // The filtered absolute encoder.  This is used in the status for calibration.
+  double filtered_absolute_encoder_ = 0.0;
+
   // Samples of the offset needed to line the relative encoder up with the
   // absolute encoder.
   ::std::vector<double> relative_to_absolute_offset_samples_;
