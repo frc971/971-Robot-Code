@@ -157,14 +157,14 @@ class IntegralHood(Hood):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    q_pos = 0.12
-    q_vel = 2.00
-    q_voltage = 3.0
+    q_pos = 0.01
+    q_vel = 4.0
+    q_voltage = 4.0
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                            [0.0, (q_vel ** 2.0), 0.0],
                            [0.0, 0.0, (q_voltage ** 2.0)]])
 
-    r_pos = 0.05
+    r_pos = 0.001
     self.R = numpy.matrix([[(r_pos ** 2.0)]])
 
     self.KalmanGain, self.Q_steady = controls.kalman(
@@ -186,6 +186,7 @@ class ScenarioPlotter(object):
     self.t = []
     self.x = []
     self.v = []
+    self.v_hat = []
     self.a = []
     self.x_hat = []
     self.u = []
@@ -251,6 +252,7 @@ class ScenarioPlotter(object):
 
       self.v.append(hood.X[1, 0])
       self.a.append((self.v[-1] - last_v) / hood.dt)
+      self.v_hat.append(observer_hood.X_hat[1, 0])
 
       offset = 0.0
       if i > 100:
@@ -277,6 +279,8 @@ class ScenarioPlotter(object):
     pylab.subplot(3, 1, 1)
     pylab.plot(self.t, self.x, label='x')
     pylab.plot(self.t, self.x_hat, label='x_hat')
+    pylab.plot(self.t, self.v, label='v')
+    pylab.plot(self.t, self.v_hat, label='v_hat')
     pylab.legend()
 
     pylab.subplot(3, 1, 2)
@@ -301,7 +305,7 @@ def main(argv):
 
   # Test moving the hood with constant separation.
   initial_X = numpy.matrix([[0.0], [0.0]])
-  R = numpy.matrix([[numpy.pi/2.0], [0.0], [0.0]])
+  R = numpy.matrix([[numpy.pi/4.0], [0.0], [0.0]])
   scenario_plotter.run_test(hood, end_goal=R,
                             controller_hood=hood_controller,
                             observer_hood=observer_hood, iterations=200)

@@ -172,11 +172,12 @@ class SingleDOFProfiledSubsystem
 
   const ::frc971::constants::Range &range() const { return range_; }
 
- private:
+ protected:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
-  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal);
+  virtual void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal);
 
+ private:
   void UpdateOffset(double offset);
 
   aos::util::TrapezoidProfile profile_;

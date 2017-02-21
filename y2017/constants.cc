@@ -71,45 +71,59 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
   intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
   intake->zeroing.one_revolution_distance = Values::kIntakeEncoderIndexDifference;
-  intake->zeroing.measured_absolute_position = 0;
   intake->zeroing.zeroing_threshold = 0.001;
   intake->zeroing.moving_buffer_size = 9;
   intake->zeroing.allowable_encoder_error = 0.3;
 
   turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  turret->zeroing.one_revolution_distance = Values::kTurretEncoderIndexDifference;
-  turret->zeroing.measured_absolute_position = 0;
+  turret->zeroing.one_revolution_distance =
+      Values::kTurretEncoderIndexDifference;
   turret->zeroing.zeroing_threshold = 0.001;
   turret->zeroing.moving_buffer_size = 9;
   turret->zeroing.allowable_encoder_error = 0.3;
 
-  hood->zeroing.average_filter_size = Values::kZeroingSampleSize;
+  hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
-  hood->zeroing.measured_index_position = 0.1;
-  hood->zeroing.allowable_encoder_error = 0.3;
+  hood->zeroing.known_index_pulse = 0;
 
   switch (team) {
     // A set of constants for tests.
     case 1:
       intake->pot_offset = 0;
+      intake->zeroing.measured_absolute_position = 0;
+
       turret->pot_offset = 0;
+      turret->zeroing.measured_absolute_position = 0;
+
       hood->pot_offset = 0.1;
+      hood->zeroing.measured_index_position = 0.05;
+
       r->down_error = 0;
       r->vision_name = "test";
       break;
 
     case kCompTeamNumber:
       intake->pot_offset = 0;
+      intake->zeroing.measured_absolute_position = 0;
+
       turret->pot_offset = 0;
-      hood->pot_offset = 0.1;
+      turret->zeroing.measured_absolute_position = 0;
+
+      hood->zeroing.measured_index_position = 0.05;
+
       r->down_error = 0;
       r->vision_name = "competition";
       break;
 
     case kPracticeTeamNumber:
       intake->pot_offset = 0;
+      intake->zeroing.measured_absolute_position = 0;
+
       turret->pot_offset = 0;
-      hood->pot_offset = 0.1;
+      turret->zeroing.measured_absolute_position = 0;
+
+      hood->zeroing.measured_index_position = 0.05;
+
       r->down_error = 0;
       r->vision_name = "practice";
       break;

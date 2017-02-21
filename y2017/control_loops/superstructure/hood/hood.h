@@ -9,37 +9,51 @@ namespace control_loops {
 namespace superstructure {
 namespace hood {
 
+// Profiled subsystem class with significantly relaxed limits while zeroing.  We
+// need relaxed limits, because if you start at the top of the range, you need
+// to go to -range, and if you start at the bottom of the range, you need to go
+// to +range.  The standard subsystem doesn't support that.
+class IndexPulseProfiledSubsystem
+    : public ::frc971::control_loops::SingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PulseIndexZeroingEstimator> {
+ public:
+  IndexPulseProfiledSubsystem();
+
+ private:
+  void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal) override;
+};
+
 class Hood {
  public:
-   Hood();
-   double goal(int row, int col) const {
-     return profiled_subsystem_.goal(row, col);
-   }
+  Hood();
+  double goal(int row, int col) const {
+    return profiled_subsystem_.goal(row, col);
+  }
 
-   // The zeroing and operating voltages.
-   static constexpr double kZeroingVoltage = 2.5;
-   static constexpr double kOperatingVoltage = 12.0;
+  // The zeroing and operating voltages.
+  static constexpr double kZeroingVoltage = 2.5;
+  static constexpr double kOperatingVoltage = 12.0;
 
-   void Iterate(const control_loops::HoodGoal *unsafe_goal,
-                const ::frc971::PotAndIndexPosition *position, double *output,
-                ::frc971::control_loops::ProfiledJointStatus *status);
+  void Iterate(const control_loops::HoodGoal *unsafe_goal,
+               const ::frc971::IndexPosition *position, double *output,
+               ::frc971::control_loops::IndexProfiledJointStatus *status);
 
-   void Reset();
+  void Reset();
 
-   enum class State : int32_t{
-     UNINITIALIZED,
-     DISABLED_INITIALIZED,
-     ZEROING,
-     RUNNING,
-     ESTOP,
-   };
+  enum class State : int32_t {
+    UNINITIALIZED,
+    DISABLED_INITIALIZED,
+    ZEROING,
+    RUNNING,
+    ESTOP,
+  };
 
-   State state() const { return state_; }
+  State state() const { return state_; }
 
-  private:
-   State state_;
+ private:
+  State state_;
 
-   ::frc971::control_loops::SingleDOFProfiledSubsystem<> profiled_subsystem_;
+  IndexPulseProfiledSubsystem profiled_subsystem_;
 };
 
 }  // namespace hood

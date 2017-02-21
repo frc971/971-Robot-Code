@@ -39,7 +39,7 @@ struct Values {
 
   struct Hood {
     double pot_offset;
-    ::frc971::constants::PotAndIndexPulseZeroingConstants zeroing;
+    ::frc971::constants::EncoderPlusIndexZeroingConstants zeroing;
   };
 
   static const int kZeroingSampleSize = 200;
