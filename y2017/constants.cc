@@ -71,8 +71,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
   intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
   intake->zeroing.one_revolution_distance = Values::kIntakeEncoderIndexDifference;
-  intake->zeroing.zeroing_threshold = 0.001;
-  intake->zeroing.moving_buffer_size = 9;
+  intake->zeroing.zeroing_threshold = 0.0005;
+  intake->zeroing.moving_buffer_size = 20;
   intake->zeroing.allowable_encoder_error = 0.3;
 
   turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
@@ -103,13 +103,13 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      intake->pot_offset = 0;
-      intake->zeroing.measured_absolute_position = 0;
+      intake->pot_offset = 0.2921 + 0.00039;
+      intake->zeroing.measured_absolute_position = 0.045209;
 
-      turret->pot_offset = 0;
-      turret->zeroing.measured_absolute_position = 0;
+      turret->pot_offset = -5.45 - 0.026111;
+      turret->zeroing.measured_absolute_position = 0.2429;
 
-      hood->zeroing.measured_index_position = 0.05;
+      hood->zeroing.measured_index_position = 0.655432 - 0.460505;
 
       r->down_error = 0;
       r->vision_name = "competition";

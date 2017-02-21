@@ -106,7 +106,7 @@ double intake_pot_translate(double voltage) {
 }
 
 double turret_pot_translate(double voltage) {
-  return voltage * Values::kTurretPotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
+  return -voltage * Values::kTurretPotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
 }
 
@@ -154,8 +154,9 @@ class DutyCycleReader {
   static constexpr ::std::chrono::nanoseconds kNominalPeriod =
       ::std::chrono::microseconds(4096);
   static constexpr double kMaxPeriod =
-      (::std::chrono::duration_cast<::std::chrono::seconds>(kNominalPeriod) * 2)
-          .count();
+      (::std::chrono::duration_cast<::std::chrono::duration<double>>(
+           kNominalPeriod) *
+       2).count();
 
   ::std::unique_ptr<Counter> high_counter_, period_length_counter_;
   ::std::unique_ptr<DigitalInput> input_;
@@ -310,12 +311,13 @@ class SensorReader {
       auto drivetrain_message = drivetrain_queue.position.MakeMessage();
       drivetrain_message->right_encoder =
           drivetrain_translate(drivetrain_right_encoder_->GetRaw());
+      drivetrain_message->right_speed =
+          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
+
       drivetrain_message->left_encoder =
           -drivetrain_translate(drivetrain_left_encoder_->GetRaw());
       drivetrain_message->left_speed =
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod());
-      drivetrain_message->right_speed =
-          drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod());
 
       drivetrain_message.Send();
     }
@@ -326,13 +328,13 @@ class SensorReader {
       auto superstructure_message = superstructure_queue.position.MakeMessage();
       CopyPosition(intake_encoder_, &superstructure_message->intake,
                    Values::kIntakeEncoderCountsPerRevolution,
-                   Values::kIntakeEncoderRatio, intake_pot_translate, false,
+                   Values::kIntakeEncoderRatio, intake_pot_translate, true,
                    values.intake.pot_offset);
 
       superstructure_message->theta_indexer =
-          encoder_translate(indexer_encoder_->GetRaw(),
-                            Values::kMaxIndexerEncoderCountsPerRevolution,
-                            Values::kIndexerEncoderRatio);
+          -encoder_translate(indexer_encoder_->GetRaw(),
+                             Values::kMaxIndexerEncoderCountsPerRevolution,
+                             Values::kIndexerEncoderRatio);
 
       superstructure_message->theta_shooter =
           encoder_translate(shooter_encoder_->GetRaw(),
@@ -341,11 +343,11 @@ class SensorReader {
 
       CopyPosition(hood_encoder_, &superstructure_message->hood,
                    Values::kHoodEncoderCountsPerRevolution,
-                   Values::kHoodEncoderRatio, false);
+                   Values::kHoodEncoderRatio, true);
 
       CopyPosition(turret_encoder_, &superstructure_message->turret,
                    Values::kTurretEncoderCountsPerRevolution,
-                   Values::kTurretEncoderRatio, turret_pot_translate, false,
+                   Values::kTurretEncoderRatio, turret_pot_translate, true,
                    values.turret.pot_offset);
 
       superstructure_message.Send();
@@ -402,8 +404,11 @@ class SensorReader {
         multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
                                        encoder_counts_per_revolution,
                                        encoder_ratio);
-    position->absolute_encoder = multiplier * encoder.ReadAbsoluteEncoder() *
-                                 encoder_ratio * (2.0 * M_PI);
+
+    position->absolute_encoder =
+        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
+                 : encoder.ReadAbsoluteEncoder()) *
+        encoder_ratio * (2.0 * M_PI);
   }
 
   int32_t my_pid_;
@@ -550,25 +555,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_drivetrain_left_encoder(make_encoder(0));
     reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    reader.set_intake_encoder(make_encoder(2));
+    reader.set_intake_encoder(make_encoder(3));
     reader.set_intake_absolute(make_unique<DigitalInput>(0));
-    reader.set_intake_potentiometer(make_unique<AnalogInput>(0));
+    reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
 
-    reader.set_indexer_encoder(make_encoder(3));
+    reader.set_indexer_encoder(make_encoder(5));
 
-    reader.set_turret_encoder(make_encoder(5));
-    reader.set_turret_absolute(make_unique<DigitalInput>(1));
-    reader.set_turret_potentiometer(make_unique<AnalogInput>(3));
+    reader.set_turret_encoder(make_encoder(6));
+    reader.set_turret_absolute(make_unique<DigitalInput>(2));
+    reader.set_turret_potentiometer(make_unique<AnalogInput>(5));
 
-    reader.set_hood_encoder(make_encoder(6));
-    reader.set_hood_index(make_unique<DigitalInput>(2));
+    reader.set_hood_encoder(make_encoder(4));
+    reader.set_hood_index(make_unique<DigitalInput>(1));
 
-    reader.set_shooter_encoder(make_encoder(7));
+    reader.set_shooter_encoder(make_encoder(2));
 
-    reader.set_autonomous_mode(0, make_unique<DigitalInput>(6));
-    reader.set_autonomous_mode(1, make_unique<DigitalInput>(5));
-    reader.set_autonomous_mode(2, make_unique<DigitalInput>(4));
-    reader.set_autonomous_mode(3, make_unique<DigitalInput>(3));
+    reader.set_autonomous_mode(0, make_unique<DigitalInput>(9));
+    reader.set_autonomous_mode(1, make_unique<DigitalInput>(8));
+    reader.set_autonomous_mode(2, make_unique<DigitalInput>(7));
+    reader.set_autonomous_mode(3, make_unique<DigitalInput>(6));
 
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
@@ -577,29 +582,29 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::std::thread gyro_thread(::std::ref(gyro_sender));
 
     auto imu_trigger = make_unique<DigitalInput>(5);
-    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kMXP, imu_trigger.get());
+    ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
     ::std::thread imu_thread(::std::ref(imu));
 
     DrivetrainWriter drivetrain_writer;
     drivetrain_writer.set_drivetrain_left_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(0)));
+        ::std::unique_ptr<VictorSP>(new VictorSP(7)));
     drivetrain_writer.set_drivetrain_right_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(1)));
+        ::std::unique_ptr<VictorSP>(new VictorSP(3)));
     ::std::thread drivetrain_writer_thread(::std::ref(drivetrain_writer));
 
     SuperstructureWriter superstructure_writer;
     superstructure_writer.set_intake_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(2)));
+        ::std::unique_ptr<VictorSP>(new VictorSP(1)));
     superstructure_writer.set_intake_rollers_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(3)));
-    superstructure_writer.set_indexer_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(4)));
+    superstructure_writer.set_indexer_victor(
+        ::std::unique_ptr<VictorSP>(new VictorSP(6)));
     superstructure_writer.set_indexer_roller_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(5)));
     superstructure_writer.set_turret_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(6)));
+        ::std::unique_ptr<VictorSP>(new VictorSP(9)));
     superstructure_writer.set_hood_victor(
-        ::std::unique_ptr<VictorSP>(new VictorSP(7)));
+        ::std::unique_ptr<VictorSP>(new VictorSP(2)));
     superstructure_writer.set_shooter_victor(
         ::std::unique_ptr<VictorSP>(new VictorSP(8)));
     ::std::thread superstructure_writer_thread(
