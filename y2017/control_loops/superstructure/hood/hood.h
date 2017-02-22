@@ -31,8 +31,8 @@ class Hood {
   }
 
   // The zeroing and operating voltages.
-  static constexpr double kZeroingVoltage = 2.5;
-  static constexpr double kOperatingVoltage = 12.0;
+  static constexpr double kZeroingVoltage = 2.0;
+  static constexpr double kOperatingVoltage = 3.0;
 
   void Iterate(const control_loops::HoodGoal *unsafe_goal,
                const ::frc971::IndexPosition *position, double *output,

@@ -454,8 +454,8 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler {
   virtual void Write() override {
     auto &queue = ::frc971::control_loops::drivetrain_queue.output;
     LOG_STRUCT(DEBUG, "will output", *queue);
-    drivetrain_left_victor_->SetSpeed(queue->left_voltage / 12.0);
-    drivetrain_right_victor_->SetSpeed(-queue->right_voltage / 12.0);
+    drivetrain_left_victor_->SetSpeed(-queue->left_voltage / 12.0);
+    drivetrain_right_victor_->SetSpeed(queue->right_voltage / 12.0);
   }
 
   virtual void Stop() override {
@@ -508,7 +508,7 @@ class SuperstructureWriter : public ::frc971::wpilib::LoopOutputHandler {
     indexer_victor_->SetSpeed(queue->voltage_indexer / 12.0);
     indexer_roller_victor_->SetSpeed(queue->voltage_indexer_rollers /
                                         12.0);
-    turret_victor_->SetSpeed(::aos::Clip(queue->voltage_turret,
+    turret_victor_->SetSpeed(::aos::Clip(-queue->voltage_turret,
                                          -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
     hood_victor_->SetSpeed(
