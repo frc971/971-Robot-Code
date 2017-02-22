@@ -12,7 +12,6 @@
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
 #include "y2016/control_loops/shooter/shooter.q.h"
 #include "y2016/control_loops/superstructure/superstructure.q.h"
-#include "y2016/actors/autonomous_action.q.h"
 #include "y2016/queues/ball_detector.q.h"
 #include "y2016/vision/vision.q.h"
 
@@ -50,255 +49,12 @@ double DoubleSeconds(monotonic_clock::duration duration) {
 }
 }  // namespace
 
-AutonomousActor::AutonomousActor(actors::AutonomousActionQueueGroup *s)
-    : aos::common::actions::ActorBase<actors::AutonomousActionQueueGroup>(s),
-      dt_config_(control_loops::drivetrain::GetDrivetrainConfig()),
-      initial_drivetrain_({0.0, 0.0}) {}
-
-void AutonomousActor::ResetDrivetrain() {
-  LOG(INFO, "resetting the drivetrain\n");
-  drivetrain_queue.goal.MakeWithBuilder()
-      .control_loop_driving(false)
-      .highgear(true)
-      .steering(0.0)
-      .throttle(0.0)
-      .left_goal(initial_drivetrain_.left)
-      .left_velocity_goal(0)
-      .right_goal(initial_drivetrain_.right)
-      .right_velocity_goal(0)
-      .Send();
-}
-
-void AutonomousActor::StartDrive(double distance, double angle,
-                                 ProfileParameters linear,
-                                 ProfileParameters angular) {
-  {
-    LOG(INFO, "Driving distance %f, angle %f\n", distance, angle);
-    {
-      const double dangle = angle * dt_config_.robot_radius;
-      initial_drivetrain_.left += distance - dangle;
-      initial_drivetrain_.right += distance + dangle;
-    }
-
-    auto drivetrain_message = drivetrain_queue.goal.MakeMessage();
-    drivetrain_message->control_loop_driving = true;
-    drivetrain_message->highgear = true;
-    drivetrain_message->steering = 0.0;
-    drivetrain_message->throttle = 0.0;
-    drivetrain_message->left_goal = initial_drivetrain_.left;
-    drivetrain_message->left_velocity_goal = 0;
-    drivetrain_message->right_goal = initial_drivetrain_.right;
-    drivetrain_message->right_velocity_goal = 0;
-    drivetrain_message->linear = linear;
-    drivetrain_message->angular = angular;
-
-    LOG_STRUCT(DEBUG, "drivetrain_goal", *drivetrain_message);
-
-    drivetrain_message.Send();
-  }
-}
-
-void AutonomousActor::InitializeEncoders() {
-  drivetrain_queue.status.FetchAnother();
-  initial_drivetrain_.left = drivetrain_queue.status->estimated_left_position;
-  initial_drivetrain_.right = drivetrain_queue.status->estimated_right_position;
-}
-
-void AutonomousActor::WaitUntilDoneOrCanceled(
-    ::std::unique_ptr<aos::common::actions::Action> action) {
-  if (!action) {
-    LOG(ERROR, "No action, not waiting\n");
-    return;
-  }
-
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  while (true) {
-    // Poll the running bit and see if we should cancel.
-    phased_loop.SleepUntilNext();
-    if (!action->Running() || ShouldCancel()) {
-      return;
-    }
-  }
-}
+AutonomousActor::AutonomousActor(
+    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+    : frc971::autonomous::BaseAutonomousActor(
+          s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
 constexpr double kDoNotTurnCare = 2.0;
-
-bool AutonomousActor::WaitForDriveNear(double distance, double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  constexpr double kPositionTolerance = 0.02;
-  constexpr double kProfileTolerance = 0.001;
-
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status.get()) {
-      const double left_profile_error =
-          (initial_drivetrain_.left -
-           drivetrain_queue.status->profiled_left_position_goal);
-      const double right_profile_error =
-          (initial_drivetrain_.right -
-           drivetrain_queue.status->profiled_right_position_goal);
-
-      const double left_error =
-          (initial_drivetrain_.left -
-           drivetrain_queue.status->estimated_left_position);
-      const double right_error =
-          (initial_drivetrain_.right -
-           drivetrain_queue.status->estimated_right_position);
-
-      const double profile_distance_to_go =
-          (left_profile_error + right_profile_error) / 2.0;
-      const double profile_angle_to_go =
-          (right_profile_error - left_profile_error) /
-          (dt_config_.robot_radius * 2.0);
-
-      const double distance_to_go = (left_error + right_error) / 2.0;
-      const double angle_to_go =
-          (right_error - left_error) / (dt_config_.robot_radius * 2.0);
-
-      if (::std::abs(profile_distance_to_go) < distance + kProfileTolerance &&
-          ::std::abs(profile_angle_to_go) < angle + kProfileTolerance &&
-          ::std::abs(distance_to_go) < distance + kPositionTolerance &&
-          ::std::abs(angle_to_go) < angle + kPositionTolerance) {
-        LOG(INFO, "Closer than %f distance, %f angle\n", distance, angle);
-        return true;
-      }
-    }
-  }
-}
-
-bool AutonomousActor::WaitForDriveProfileDone() {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  constexpr double kProfileTolerance = 0.001;
-
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (drivetrain_queue.status.get()) {
-      if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
-                     initial_drivetrain_.left) < kProfileTolerance &&
-          ::std::abs(drivetrain_queue.status->profiled_right_position_goal -
-                     initial_drivetrain_.right) < kProfileTolerance) {
-        LOG(INFO, "Finished drive\n");
-        return true;
-      }
-    }
-  }
-}
-
-bool AutonomousActor::WaitForMaxBy(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  double max_angle = -M_PI;
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (IsDriveDone()) {
-      return true;
-    }
-    if (drivetrain_queue.status.get()) {
-      if (drivetrain_queue.status->ground_angle > max_angle) {
-        max_angle = drivetrain_queue.status->ground_angle;
-      }
-      if (drivetrain_queue.status->ground_angle < max_angle - angle) {
-        return true;
-      }
-    }
-  }
-}
-
-bool AutonomousActor::WaitForAboveAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (IsDriveDone()) {
-      return true;
-    }
-    if (drivetrain_queue.status.get()) {
-      if (drivetrain_queue.status->ground_angle > angle) {
-        return true;
-      }
-    }
-  }
-}
-
-bool AutonomousActor::WaitForBelowAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (IsDriveDone()) {
-      return true;
-    }
-    if (drivetrain_queue.status.get()) {
-      if (drivetrain_queue.status->ground_angle < angle) {
-        return true;
-      }
-    }
-  }
-}
-
-bool AutonomousActor::IsDriveDone() {
-  constexpr double kPositionTolerance = 0.02;
-  constexpr double kVelocityTolerance = 0.10;
-  constexpr double kProfileTolerance = 0.001;
-
-  if (drivetrain_queue.status.get()) {
-    if (::std::abs(drivetrain_queue.status->profiled_left_position_goal -
-                   initial_drivetrain_.left) < kProfileTolerance &&
-        ::std::abs(drivetrain_queue.status->profiled_right_position_goal -
-                   initial_drivetrain_.right) < kProfileTolerance &&
-        ::std::abs(drivetrain_queue.status->estimated_left_position -
-                   initial_drivetrain_.left) < kPositionTolerance &&
-        ::std::abs(drivetrain_queue.status->estimated_right_position -
-                   initial_drivetrain_.right) < kPositionTolerance &&
-        ::std::abs(drivetrain_queue.status->estimated_left_velocity) <
-            kVelocityTolerance &&
-        ::std::abs(drivetrain_queue.status->estimated_right_velocity) <
-            kVelocityTolerance) {
-      LOG(INFO, "Finished drive\n");
-      return true;
-    }
-  }
-  return false;
-}
-
-bool AutonomousActor::WaitForDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-
-  while (true) {
-    if (ShouldCancel()) {
-      return false;
-    }
-    phased_loop.SleepUntilNext();
-    drivetrain_queue.status.FetchLatest();
-    if (IsDriveDone()) {
-      return true;
-    }
-  }
-}
 
 void AutonomousActor::MoveSuperstructure(
     double intake, double shoulder, double wrist,
@@ -461,7 +217,7 @@ void AutonomousActor::WaitForAlignedWithVision(
     ::y2016::vision::vision_status.FetchLatest();
     if (::y2016::vision::vision_status.get()) {
       vision_valid = (::y2016::vision::vision_status->left_image_valid &&
-                       ::y2016::vision::vision_status->right_image_valid);
+                      ::y2016::vision::vision_status->right_image_valid);
       last_angle = ::y2016::vision::vision_status->horizontal_angle;
     }
 
@@ -641,10 +397,8 @@ void AutonomousActor::BackLongShotTwoBall() {
 
 void AutonomousActor::BackLongShotTwoBallFinish() {
   LOG(INFO, "Expanding for back long shot\n");
-  MoveSuperstructure(
-      0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03, {7.0, 40.0},
-      {4.0, 6.0},
-      {10.0, 25.0}, false, 0.0);
+  MoveSuperstructure(0.00, M_PI / 2.0 - 0.2, -0.625 + 0.03, {7.0, 40.0},
+                     {4.0, 6.0}, {10.0, 25.0}, false, 0.0);
 }
 
 void AutonomousActor::BackLongShot() {
@@ -1033,7 +787,8 @@ void AutonomousActor::StealAndMoveOverBy(double distance) {
   if (!WaitForDriveDone()) return;
 }
 
-bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
+bool AutonomousActor::RunAction(
+    const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_clock::now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
 
@@ -1187,12 +942,6 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
   LOG(DEBUG, "Done running\n");
 
   return true;
-}
-
-::std::unique_ptr<AutonomousAction> MakeAutonomousAction(
-    const ::y2016::actors::AutonomousActionParams &params) {
-  return ::std::unique_ptr<AutonomousAction>(
-      new AutonomousAction(&::y2016::actors::autonomous_action, params));
 }
 
 }  // namespace actors
