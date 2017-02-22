@@ -9,7 +9,7 @@
 #include "aos/common/logging/logging.h"
 
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
-#include "y2017/actors/autonomous_action.q.h"
+#include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2017 {
 namespace actors {
@@ -25,28 +25,13 @@ double DoubleSeconds(monotonic_clock::duration duration) {
 }
 }  // namespace
 
-AutonomousActor::AutonomousActor(actors::AutonomousActionQueueGroup *s)
-    : aos::common::actions::ActorBase<actors::AutonomousActionQueueGroup>(s) {}
+AutonomousActor::AutonomousActor(
+    ::frc971::autonomous::AutonomousActionQueueGroup *s)
+    : frc971::autonomous::BaseAutonomousActor(
+          s, control_loops::drivetrain::GetDrivetrainConfig()) {}
 
-void AutonomousActor::WaitUntilDoneOrCanceled(
-    ::std::unique_ptr<aos::common::actions::Action> action) {
-  if (!action) {
-    LOG(ERROR, "No action, not waiting\n");
-    return;
-  }
-
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      ::std::chrono::milliseconds(5) / 2);
-  while (true) {
-    // Poll the running bit and see if we should cancel.
-    phased_loop.SleepUntilNext();
-    if (!action->Running() || ShouldCancel()) {
-      return;
-    }
-  }
-}
-
-bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
+bool AutonomousActor::RunAction(
+    const ::frc971::autonomous::AutonomousActionParams &params) {
   monotonic_clock::time_point start_time = monotonic_clock::now();
   LOG(INFO, "Starting autonomous action with mode %" PRId32 "\n", params.mode);
 
@@ -70,12 +55,6 @@ bool AutonomousActor::RunAction(const actors::AutonomousActionParams &params) {
   LOG(DEBUG, "Done running\n");
 
   return true;
-}
-
-::std::unique_ptr<AutonomousAction> MakeAutonomousAction(
-    const ::y2017::actors::AutonomousActionParams &params) {
-  return ::std::unique_ptr<AutonomousAction>(
-      new AutonomousAction(&::y2017::actors::autonomous_action, params));
 }
 
 }  // namespace actors
