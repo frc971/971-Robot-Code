@@ -64,21 +64,6 @@ cc_binary(
 )
 
 aos_downloader(
-  name = 'download',
-  start_srcs = [
-    #':joystick_reader',
-    ':wpilib_interface',
-    '//aos:prime_start_binaries',
-    '//y2017/control_loops/drivetrain:drivetrain',
-    '//y2017/control_loops/superstructure:superstructure',
-    '//y2017/actors:autonomous_action',
-  ],
-  srcs = [
-    '//aos:prime_binaries',
-  ],
-)
-
-aos_downloader(
   name = 'download_stripped',
   start_srcs = [
     #':joystick_reader.stripped',
