@@ -288,7 +288,7 @@ class SensorReader {
     dma_synchronizer_->Start();
 
     ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                        ::std::chrono::milliseconds(4));
+                                        ::std::chrono::milliseconds(0));
 
     ::aos::SetCurrentThreadRealtimePriority(40);
     while (run_) {
