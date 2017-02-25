@@ -133,23 +133,25 @@ class FridgeSimulation {
   void Simulate() {
     EXPECT_TRUE(fridge_queue_.output.FetchLatest());
 
+    ::Eigen::Matrix<double, 2, 1> arm_U;
+    ::Eigen::Matrix<double, 2, 1> elevator_U;
     // Feed voltages into physics simulation.
     if (arm_power_error_ != 0.0) {
-      arm_plant_->mutable_U() << ::aos::Clip(
+      arm_U << ::aos::Clip(
           fridge_queue_.output->left_arm + arm_power_error_, -12, 12),
           ::aos::Clip(fridge_queue_.output->right_arm + arm_power_error_, -12,
                       12);
     } else {
-      arm_plant_->mutable_U() << fridge_queue_.output->left_arm,
+      arm_U << fridge_queue_.output->left_arm,
           fridge_queue_.output->right_arm;
     }
-    elevator_plant_->mutable_U() << fridge_queue_.output->left_elevator,
+    elevator_U << fridge_queue_.output->left_elevator,
         fridge_queue_.output->right_elevator;
 
     // Use the plant to generate the next physical state given the voltages to
     // the motors.
-    arm_plant_->Update();
-    elevator_plant_->Update();
+    arm_plant_->Update(arm_U);
+    elevator_plant_->Update(elevator_U);
 
     const double left_arm_angle = arm_plant_->Y(0, 0);
     const double right_arm_angle = arm_plant_->Y(1, 0);

@@ -67,11 +67,11 @@ class DrivetrainPlant : public StateFeedbackPlant<4, 2, 2> {
   explicit DrivetrainPlant(StateFeedbackPlant<4, 2, 2> &&other)
       : StateFeedbackPlant<4, 2, 2>(::std::move(other)) {}
 
-  void CheckU() override {
-    assert(U(0, 0) <= U_max(0, 0) + 0.00001 + left_voltage_offset_);
-    assert(U(0, 0) >= U_min(0, 0) - 0.00001 + left_voltage_offset_);
-    assert(U(1, 0) <= U_max(1, 0) + 0.00001 + right_voltage_offset_);
-    assert(U(1, 0) >= U_min(1, 0) - 0.00001 + right_voltage_offset_);
+  void CheckU(const Eigen::Matrix<double, 2, 1> &U) override {
+    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + left_voltage_offset_);
+    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + left_voltage_offset_);
+    EXPECT_LE(U(1, 0), U_max(1, 0) + 0.00001 + right_voltage_offset_);
+    EXPECT_GE(U(1, 0), U_min(1, 0) - 0.00001 + right_voltage_offset_);
   }
 
   double left_voltage_offset() const { return left_voltage_offset_; }
@@ -154,7 +154,7 @@ class DrivetrainSimulation {
     last_left_position_ = drivetrain_plant_->Y(0, 0);
     last_right_position_ = drivetrain_plant_->Y(1, 0);
     EXPECT_TRUE(my_drivetrain_queue_.output.FetchLatest());
-    drivetrain_plant_->mutable_U() = last_U_;
+    ::Eigen::Matrix<double, 2, 1> U = last_U_;
     last_U_ << my_drivetrain_queue_.output->left_voltage,
         my_drivetrain_queue_.output->right_voltage;
     {
@@ -178,11 +178,9 @@ class DrivetrainSimulation {
       }
     }
 
-    drivetrain_plant_->mutable_U(0, 0) +=
-        drivetrain_plant_->left_voltage_offset();
-    drivetrain_plant_->mutable_U(1, 0) +=
-        drivetrain_plant_->right_voltage_offset();
-    drivetrain_plant_->Update();
+    U(0, 0) += drivetrain_plant_->left_voltage_offset();
+    U(1, 0) += drivetrain_plant_->right_voltage_offset();
+    drivetrain_plant_->Update(U);
   }
 
   void set_left_voltage_offset(double left_voltage_offset) {

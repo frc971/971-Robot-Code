@@ -28,9 +28,9 @@ class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
   explicit ShooterPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
-    assert(U(0, 0) <= U_max(0, 0) + 0.00001 + voltage_offset_);
-    assert(U(0, 0) >= U_min(0, 0) - 0.00001 + voltage_offset_);
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
+    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
+    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
 
   double voltage_offset() const { return voltage_offset_; }
@@ -81,15 +81,15 @@ class ShooterSimulation {
   void Simulate() {
     EXPECT_TRUE(shooter_queue_.output.FetchLatest());
 
-    shooter_plant_left_->mutable_U(0, 0) =
-        shooter_queue_.output->voltage_left +
-        shooter_plant_left_->voltage_offset();
-    shooter_plant_right_->mutable_U(0, 0) =
-        shooter_queue_.output->voltage_right +
-        shooter_plant_right_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> U_left;
+    ::Eigen::Matrix<double, 1, 1> U_right;
+    U_left(0, 0) = shooter_queue_.output->voltage_left +
+                   shooter_plant_left_->voltage_offset();
+    U_right(0, 0) = shooter_queue_.output->voltage_right +
+                    shooter_plant_right_->voltage_offset();
 
-    shooter_plant_left_->Update();
-    shooter_plant_right_->Update();
+    shooter_plant_left_->Update(U_left);
+    shooter_plant_right_->Update(U_right);
   }
 
   ::std::unique_ptr<ShooterPlant> shooter_plant_left_, shooter_plant_right_;

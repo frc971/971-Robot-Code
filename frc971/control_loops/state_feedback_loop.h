@@ -109,8 +109,8 @@ class StateFeedbackPlant {
 
   StateFeedbackPlant(
       ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
-          number_of_states, number_of_inputs, number_of_outputs>>> *
-          coefficients)
+          number_of_states, number_of_inputs, number_of_outputs>>>
+          *coefficients)
       : coefficients_(::std::move(*coefficients)), plant_index_(0) {
     Reset();
   }
@@ -120,7 +120,6 @@ class StateFeedbackPlant {
     ::std::swap(coefficients_, other.coefficients_);
     X_.swap(other.X_);
     Y_.swap(other.Y_);
-    U_.swap(other.U_);
   }
 
   virtual ~StateFeedbackPlant() {}
@@ -154,15 +153,11 @@ class StateFeedbackPlant {
   double X(int i, int j) const { return X()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, 1> &Y() const { return Y_; }
   double Y(int i, int j) const { return Y()(i, j); }
-  const Eigen::Matrix<double, number_of_inputs, 1> &U() const { return U_; }
-  double U(int i, int j) const { return U()(i, j); }
 
   Eigen::Matrix<double, number_of_states, 1> &mutable_X() { return X_; }
   double &mutable_X(int i, int j) { return mutable_X()(i, j); }
   Eigen::Matrix<double, number_of_outputs, 1> &mutable_Y() { return Y_; }
   double &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
-  Eigen::Matrix<double, number_of_inputs, 1> &mutable_U() { return U_; }
-  double &mutable_U(int i, int j) { return mutable_U()(i, j); }
 
   const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                        number_of_outputs> &
@@ -180,24 +175,24 @@ class StateFeedbackPlant {
   void Reset() {
     X_.setZero();
     Y_.setZero();
-    U_.setZero();
   }
 
   // Assert that U is within the hardware range.
-  virtual void CheckU() {
+  virtual void CheckU(const Eigen::Matrix<double, number_of_inputs, 1> &U) {
     for (int i = 0; i < kNumInputs; ++i) {
-      assert(U(i, 0) <= U_max(i, 0) + 0.00001);
-      assert(U(i, 0) >= U_min(i, 0) - 0.00001);
+      if (U(i, 0) > U_max(i, 0) + 0.00001 || U(i, 0) < U_min(i, 0) - 0.00001) {
+        LOG(FATAL, "U out of range\n");
+      }
     }
   }
 
   // Computes the new X and Y given the control input.
-  void Update() {
+  void Update(const Eigen::Matrix<double, number_of_inputs, 1> &U) {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
-    CheckU();
-    X_ = A() * X() + B() * U();
-    Y_ = C() * X() + D() * U();
+    CheckU(U);
+    X_ = A() * X() + B() * U;
+    Y_ = C() * X() + D() * U;
   }
 
  protected:
@@ -209,7 +204,6 @@ class StateFeedbackPlant {
  private:
   Eigen::Matrix<double, number_of_states, 1> X_;
   Eigen::Matrix<double, number_of_outputs, 1> Y_;
-  Eigen::Matrix<double, number_of_inputs, 1> U_;
 
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>> coefficients_;
@@ -223,7 +217,7 @@ class StateFeedbackPlant {
 // This is designed such that multiple controllers can share one set of state to
 // support gain scheduling easily.
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
-struct StateFeedbackController final {
+struct StateFeedbackControllerConstants final {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   const Eigen::Matrix<double, number_of_states, number_of_outputs> L;
@@ -231,9 +225,10 @@ struct StateFeedbackController final {
   const Eigen::Matrix<double, number_of_inputs, number_of_states> Kff;
   const Eigen::Matrix<double, number_of_states, number_of_states> A_inv;
   StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
-                                 number_of_outputs> plant;
+                                 number_of_outputs>
+      plant;
 
-  StateFeedbackController(
+  StateFeedbackControllerConstants(
       const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
       const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
       const Eigen::Matrix<double, number_of_inputs, number_of_states> &Kff,
@@ -243,7 +238,7 @@ struct StateFeedbackController final {
       : L(L), K(K), Kff(Kff), A_inv(A_inv), plant(plant) {}
 
   // TODO(Brian): Remove this overload once they're all converted.
-  StateFeedbackController(
+  StateFeedbackControllerConstants(
       const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
       const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
       const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv,
@@ -262,17 +257,19 @@ class StateFeedbackLoop {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-  StateFeedbackLoop(const StateFeedbackController<
-      number_of_states, number_of_inputs, number_of_outputs> &controller)
+  StateFeedbackLoop(
+      const StateFeedbackControllerConstants<number_of_states, number_of_inputs,
+                                             number_of_outputs> &controller)
       : controller_index_(0) {
     controllers_.emplace_back(
-        new StateFeedbackController<number_of_states, number_of_inputs,
-                                    number_of_outputs>(controller));
+        new StateFeedbackControllerConstants<number_of_states, number_of_inputs,
+                                             number_of_outputs>(controller));
     Reset();
   }
 
-  StateFeedbackLoop(::std::vector<::std::unique_ptr<StateFeedbackController<
-      number_of_states, number_of_inputs, number_of_outputs>>> *controllers)
+  StateFeedbackLoop(
+      ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<
+          number_of_states, number_of_inputs, number_of_outputs>>> *controllers)
       : controllers_(::std::move(*controllers)), controller_index_(0) {
     Reset();
   }
@@ -371,15 +368,15 @@ class StateFeedbackLoop {
     return mutable_U_uncapped()(i, j);
   }
 
-  const StateFeedbackController<number_of_states, number_of_inputs,
-                                number_of_outputs> &
-  controller() const {
+  const StateFeedbackControllerConstants<number_of_states, number_of_inputs,
+                                         number_of_outputs>
+      &controller() const {
     return *controllers_[controller_index_];
   }
 
-  const StateFeedbackController<number_of_states, number_of_inputs,
-                                number_of_outputs> &
-  controller(int index) const {
+  const StateFeedbackControllerConstants<number_of_states, number_of_inputs,
+                                         number_of_outputs>
+      &controller(int index) const {
     return *controllers_[index];
   }
 
@@ -466,8 +463,9 @@ class StateFeedbackLoop {
   int controller_index() const { return controller_index_; }
 
  protected:
-  ::std::vector<::std::unique_ptr<StateFeedbackController<
-      number_of_states, number_of_inputs, number_of_outputs>>> controllers_;
+  ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<
+      number_of_states, number_of_inputs, number_of_outputs>>>
+      controllers_;
 
   // These are accessible from non-templated subclasses.
   static constexpr int kNumStates = number_of_states;

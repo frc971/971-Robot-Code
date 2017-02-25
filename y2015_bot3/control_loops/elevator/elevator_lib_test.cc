@@ -39,6 +39,7 @@ class ElevatorSimulator {
                ".y2015_bot3.control_loops.elevator_queue.status") {
     // Initialize the elevator.
     InitializePosition(kElevLowerLimit);
+    U_.setZero();
   }
 
   void InitializePosition(double start_pos) {
@@ -67,9 +68,9 @@ class ElevatorSimulator {
   void Simulate() {
     EXPECT_TRUE(queue_.output.FetchLatest());
 
-    plant_->mutable_U() << queue_.output->elevator;
+    U_ << queue_.output->elevator;
 
-    plant_->Update();
+    plant_->Update(U_);
     plant_->mutable_X()(1, 0) += acceleration_offset_ * 0.005;
 
     const double height = plant_->Y(0, 0);
@@ -82,10 +83,11 @@ class ElevatorSimulator {
 
   void MoveTo(double position) { position_sim_.MoveTo(position); }
 
-  double GetVoltage() const { return plant_->U()(0,0); }
+  double GetVoltage() const { return U_(0, 0); }
 
  private:
   ::std::unique_ptr<StateFeedbackPlant<2, 1, 1>> plant_;
+  ::Eigen::Matrix<double, 1, 1> U_;
 
   PositionSensorSimulator position_sim_;
 

@@ -71,8 +71,8 @@ class ControlLoopWriter(object):
         typename, num_states, num_inputs, num_outputs)
 
   def _ControllerType(self):
-    """Returns a template name for StateFeedbackController."""
-    return self._GenericType('StateFeedbackController')
+    """Returns a template name for StateFeedbackControllerConstants."""
+    return self._GenericType('StateFeedbackControllerConstants')
 
   def _LoopType(self):
     """Returns a template name for StateFeedbackLoop."""
@@ -307,7 +307,7 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    return 'StateFeedbackController<%d, %d, %d> %s;\n' % (
+    return 'StateFeedbackControllerConstants<%d, %d, %d> %s;\n' % (
         num_states, num_inputs, num_outputs, self.ControllerFunction())
 
   def DumpController(self):
@@ -319,7 +319,7 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    ans = ['StateFeedbackController<%d, %d, %d> %s {\n' % (
+    ans = ['StateFeedbackControllerConstants<%d, %d, %d> %s {\n' % (
         num_states, num_inputs, num_outputs, self.ControllerFunction())]
 
     ans.append(self._DumpMatrix('L', self.L))
@@ -330,7 +330,7 @@ class ControlLoop(object):
     ans.append(self._DumpMatrix('Kff', self.Kff))
     ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
 
-    ans.append('  return StateFeedbackController<%d, %d, %d>'
+    ans.append('  return StateFeedbackControllerConstants<%d, %d, %d>'
                '(L, K, Kff, A_inv, Make%sPlantCoefficients());\n' % (
                    num_states, num_inputs, num_outputs, self._name))
     ans.append('}\n')

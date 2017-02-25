@@ -35,7 +35,7 @@ class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
   explicit ShooterPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
@@ -54,7 +54,7 @@ class IndexerPlant : public StateFeedbackPlant<2, 1, 1> {
   explicit IndexerPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
@@ -73,7 +73,7 @@ class HoodPlant : public StateFeedbackPlant<2, 1, 1> {
   explicit HoodPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
@@ -92,7 +92,7 @@ class TurretPlant : public StateFeedbackPlant<2, 1, 1> {
   explicit TurretPlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
@@ -111,7 +111,7 @@ class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
   explicit IntakePlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
     EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
     EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
   }
@@ -284,31 +284,34 @@ class SuperstructureSimulation {
     CHECK_LE(::std::abs(superstructure_queue_.output->voltage_intake),
              voltage_check_intake);
 
-    hood_plant_->mutable_U() << superstructure_queue_.output->voltage_hood +
-                                    hood_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> hood_U;
+    hood_U << superstructure_queue_.output->voltage_hood +
+                  hood_plant_->voltage_offset();
 
-    turret_plant_->mutable_U() << superstructure_queue_.output->voltage_turret +
-                                      turret_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> turret_U;
+    turret_U << superstructure_queue_.output->voltage_turret +
+                    turret_plant_->voltage_offset();
 
-    intake_plant_->mutable_U() << superstructure_queue_.output->voltage_intake +
-                                      intake_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> intake_U;
+    intake_U << superstructure_queue_.output->voltage_intake +
+                    intake_plant_->voltage_offset();
 
-    shooter_plant_->mutable_U()
-        << superstructure_queue_.output->voltage_shooter +
-               shooter_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> shooter_U;
+    shooter_U << superstructure_queue_.output->voltage_shooter +
+                     shooter_plant_->voltage_offset();
 
-    indexer_plant_->mutable_U()
-        << superstructure_queue_.output->voltage_indexer +
-               indexer_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> indexer_U;
+    indexer_U << superstructure_queue_.output->voltage_indexer +
+                     indexer_plant_->voltage_offset();
 
-    hood_plant_->Update();
-    turret_plant_->Update();
-    intake_plant_->Update();
-    shooter_plant_->Update();
+    hood_plant_->Update(hood_U);
+    turret_plant_->Update(turret_U);
+    intake_plant_->Update(intake_U);
+    shooter_plant_->Update(shooter_U);
     if (freeze_indexer_) {
       indexer_plant_->mutable_X(1, 0) = 0.0;
     } else {
-      indexer_plant_->Update();
+      indexer_plant_->Update(indexer_U);
     }
 
     double angle_hood = hood_plant_->Y(0, 0);
