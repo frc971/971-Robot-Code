@@ -21,7 +21,6 @@ using ::aos::monotonic_clock;
 
 namespace {
 constexpr double kTolerance = 10.0;
-constexpr double kMinStuckVoltage = 3.0;
 constexpr chrono::milliseconds kForwardTimeout{500};
 constexpr chrono::milliseconds kReverseTimeout{500};
 constexpr chrono::milliseconds kReverseMinTimeout{100};
@@ -61,21 +60,15 @@ void IndexerController::set_position(double current_position) {
 
 double IndexerController::voltage() const { return loop_->U(0, 0); }
 
-double IndexerController::StuckRatio() const {
-  double applied_voltage = voltage();
+double IndexerController::StuckVoltage() const {
+  const double applied_voltage = voltage() + loop_->X_hat(2, 0);
   if (applied_voltage < 0) {
-    applied_voltage = ::std::min(applied_voltage, -kMinStuckVoltage);
+    return +stuck_indexer_X_hat_current_(2, 0) + applied_voltage;
   } else {
-    applied_voltage = ::std::max(applied_voltage, kMinStuckVoltage);
+    return -stuck_indexer_X_hat_current_(2, 0) - applied_voltage;
   }
-  // Look at the ratio of the current controller power to the voltage_error
-  // term.  If our output is dominated by the voltage_error, then we are likely
-  // pretty stuck and should try reversing.
-  // We don't want to worry about dividing by zero, so keep the applied voltage
-  // away from 0 though a min/max.
-  return -stuck_indexer_X_hat_current_(2, 0) / applied_voltage;
 }
-bool IndexerController::IsStuck() const { return StuckRatio() > 0.6; }
+bool IndexerController::IsStuck() const { return StuckVoltage() > 1.5; }
 
 void IndexerController::Reset() { reset_ = true; }
 
@@ -139,7 +132,7 @@ void IndexerController::SetStatus(IndexerStatus *status) {
 
   status->stuck = IsStuck();
 
-  status->stuck_ratio = StuckRatio();
+  status->stuck_voltage = StuckVoltage();
 }
 
 void Indexer::Reset() { indexer_.Reset(); }

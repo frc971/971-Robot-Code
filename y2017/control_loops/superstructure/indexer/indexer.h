@@ -39,7 +39,7 @@ class IndexerController {
 
   // Returns true if the indexer is stuck.
   bool IsStuck() const;
-  double StuckRatio() const;
+  double StuckVoltage() const;
 
   // Executes the control loop for a cycle.
   void Update(bool disabled);

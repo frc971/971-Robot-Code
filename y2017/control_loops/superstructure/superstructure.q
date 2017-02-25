@@ -69,7 +69,7 @@ struct IndexerStatus {
 
   // True if the indexer is stuck.
   bool stuck;
-  float stuck_ratio;
+  float stuck_voltage;
 
   // The state of the indexer state machine.
   int32_t state;

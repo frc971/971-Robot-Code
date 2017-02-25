@@ -76,7 +76,7 @@ class VelocityIndexer(control_loop.ControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.PlaceControllerPoles([.80])
+    self.PlaceControllerPoles([.75])
     glog.debug('K: %s', repr(self.K))
 
     glog.debug('Poles are %s',
@@ -154,7 +154,7 @@ class IntegralIndexer(Indexer):
 
     q_pos = 0.01
     q_vel = 2.0
-    q_voltage = 0.4
+    q_voltage = 0.6
     if voltage_error_noise is not None:
       q_voltage = voltage_error_noise
 
