@@ -3,6 +3,8 @@
 
 #include <poll.h>
 #include <stdint.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "aos/vision/events/tcp_server.h"
 #include "aos/vision/image/image_types.h"
@@ -32,7 +34,12 @@ class DataSocket : public events::SocketConnection {
     char buf[512];
     while (true) {
       count = read(fd(), &buf, sizeof buf);
-      if (count <= 0) return;
+      if (count <= 0) {
+        if (errno != EAGAIN) {
+          CloseConnection();
+          return;
+        }
+      }
     }
   }
 
@@ -46,14 +53,15 @@ class DataSocket : public events::SocketConnection {
   void Emit(vision::DataRef data) {
     data_len len;
     len.len = data.size();
-    int res = write(fd(), len.buf, sizeof len.buf);
+    int res = send(fd(), len.buf, sizeof len.buf, MSG_NOSIGNAL);
     if (res == -1) {
-      printf("Emit Error on write\n");
+      CloseConnection();
+      return;
     }
     size_t write_count = 0;
     while (write_count < data.size()) {
-      int len =
-          write(fd(), &data.data()[write_count], data.size() - write_count);
+      int len = send(fd(), &data.data()[write_count], data.size() - write_count,
+                     MSG_NOSIGNAL);
       if (len == -1) {
         if (errno == EAGAIN) {
           struct pollfd waiting;
@@ -61,7 +69,7 @@ class DataSocket : public events::SocketConnection {
           waiting.events = POLLOUT;
           poll(&waiting, 1, -1);
         } else {
-          close(fd());
+          CloseConnection();
           return;
         }
       } else {
@@ -69,6 +77,13 @@ class DataSocket : public events::SocketConnection {
       }
       if (write_count != data.size()) printf("wrote: %d\n", len);
     }
+  }
+
+ private:
+  void CloseConnection() {
+    loop()->Delete(this);
+    close(fd());
+    delete this;
   }
 };
 

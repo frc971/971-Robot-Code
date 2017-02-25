@@ -36,7 +36,7 @@ void EpollLoop::Run() {
 
     for (int i = 0; i < number_events; i++) {
       EpollEvent *event = static_cast<EpollEvent *>(events[i].data.ptr);
-      if ((events[i].events & ~(EPOLLIN | EPOLLPRI)) != 0) {
+      if ((events[i].events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
         LOG(FATAL, "unexpected epoll events set in %x on %d\n",
             events[i].events, event->fd());
       }

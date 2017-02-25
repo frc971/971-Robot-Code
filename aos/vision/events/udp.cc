@@ -22,7 +22,8 @@ TXUdpSocket::TXUdpSocket(const std::string &ip_addr, int port)
 }
 
 int TXUdpSocket::Send(const char *data, int size) {
-  return PCHECK(send(fd_.get(), data, size, 0));
+  // Don't fail on send. If no one is connected that is fine.
+  return send(fd_.get(), data, size, 0);
 }
 
 RXUdpSocket::RXUdpSocket(int port)

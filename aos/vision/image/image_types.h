@@ -19,7 +19,7 @@ using DataRef = std::experimental::string_view;
 struct ImageFormat {
   ImageFormat() : w(0), h(0) {}
   ImageFormat(int nw, int nh) : w(nw), h(nh) {}
-  std::string ToString() {
+  std::string ToString() const {
     std::ostringstream s;
     s << "ImageFormat {" << w << ", " << h << "}";
     return s.str();

@@ -29,6 +29,9 @@ Reader::Reader(const std::string &dev_name, ProcessCb process,
   }
 
   Init();
+
+  InitMMap();
+  LOG(INFO, "Bat Vision Successfully Initialized.\n");
 }
 
 void Reader::QueueBuffer(v4l2_buffer *buf) {
@@ -57,6 +60,18 @@ void Reader::HandleFrame() {
   }
   --queued_;
 
+  if (tick_id_ % 10 == 0) {
+    if (!SetCameraControl(V4L2_CID_EXPOSURE_AUTO, "V4L2_CID_EXPOSURE_AUTO",
+                          V4L2_EXPOSURE_MANUAL)) {
+      LOG(FATAL, "Failed to set exposure\n");
+    }
+
+    if (!SetCameraControl(V4L2_CID_EXPOSURE_ABSOLUTE,
+                          "V4L2_CID_EXPOSURE_ABSOLUTE", params_.exposure)) {
+      LOG(FATAL, "Failed to set exposure\n");
+    }
+  }
+  ++tick_id_;
   // Get a timestamp now as proxy for when the image was taken
   // TODO(ben): the image should come with a timestamp, parker
   // will know how to get it.
@@ -66,6 +81,7 @@ void Reader::HandleFrame() {
                reinterpret_cast<const char *>(buffers_[buf.index].start),
                buf.bytesused),
            time);
+
   QueueBuffer(&buf);
 }
 
@@ -105,7 +121,7 @@ void Reader::InitMMap() {
     }
   }
   queued_ = kNumBuffers;
-  if (req.count < kNumBuffers) {
+  if (req.count != kNumBuffers) {
     LOG(FATAL, "Insufficient buffer memory on %s\n", dev_name_.c_str());
   }
 }
@@ -236,9 +252,6 @@ void Reader::Init() {
       setfps->parm.capture.timeperframe.numerator,
       setfps->parm.capture.timeperframe.denominator);
   // #endif
-
-  InitMMap();
-  LOG(INFO, "Bat Vision Successfully Initialized.\n");
 }
 
 aos::vision::ImageFormat Reader::get_format() {

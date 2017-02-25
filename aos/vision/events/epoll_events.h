@@ -44,7 +44,7 @@ class EpollWait {
     // Duplicate above to allow Done to change itself.
     if (time_ < monotonic_clock::epoch()) return -1;
     if (time_ <= now) {
-      return -1;// Recalculate(now);
+      return -1;
     }
 
     if (time_ - now > ::std::chrono::milliseconds(INT_MAX)) {

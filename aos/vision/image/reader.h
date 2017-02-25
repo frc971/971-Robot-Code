@@ -41,8 +41,8 @@ class Reader {
 
   void HandleFrame();
   void StartAsync() {
-    Start();
     MMapBuffers();
+    Start();
   }
   int fd() { return fd_; }
 
@@ -60,6 +60,7 @@ class Reader {
 
   ProcessCb process_;
 
+  int tick_id_ = 0;
   // The number of buffers currently queued in v4l2.
   uint32_t queued_;
   struct Buffer;
@@ -67,7 +68,10 @@ class Reader {
   // because the buffers are not ummapped.
   Buffer *buffers_;
 
-  static const unsigned int kNumBuffers = 10;
+  // TODO(parker): The timestamps should be queue insertion timestamps
+  // which will remove the impact of kNumBuffers.
+  // TODO(parker): Flush the queue (or tweak the FPS) if we fall behind.
+  static const unsigned int kNumBuffers = 5;
 
   // set only at initialize
   CameraParams params_;

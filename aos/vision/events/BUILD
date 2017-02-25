@@ -1,5 +1,5 @@
 load('/tools/build_rules/gtk_dependent', 'gtk_dependent_cc_binary', 'gtk_dependent_cc_library')
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ['//visibility:public'])
 
 cc_library(
   name = 'epoll_events',
@@ -12,12 +12,14 @@ cc_library(
   ],
 )
 
-cc_library(name = "socket_types",
-    hdrs = ["socket_types.h"],
-    deps = [
-        "//aos/vision/events:tcp_server",
-        "//aos/vision/image:image_types",
-    ],
+cc_library(
+  name = 'socket_types',
+  hdrs = ['socket_types.h'],
+  deps = [
+    '//aos/vision/events:tcp_server',
+    '//aos/vision/image:image_types',
+    '//third_party/protobuf:protobuf',
+  ],
 )
 
 cc_library(
@@ -59,10 +61,10 @@ cc_test(
 )
 
 gtk_dependent_cc_library(
-  name = "gtk_event",
-  srcs = ["gtk_event.cc"],
+  name = 'gtk_event',
+  srcs = ['gtk_event.cc'],
   deps = [
-    ":epoll_events",
+    ':epoll_events',
     '@usr_repo//:gtk+-3.0',
   ],
 )

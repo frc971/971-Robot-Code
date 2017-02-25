@@ -1,9 +1,9 @@
-#include <gtk/gtk.h>
 #include <gdk/gdk.h>
-#include <thread>
+#include <gtk/gtk.h>
 #include <sys/epoll.h>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
 
 #include "aos/vision/events/epoll_events.h"
 
@@ -43,16 +43,19 @@ void EpollLoop::RunWithGtkMain() {
   std::thread t([&]() {
     std::unique_lock<std::mutex> lk(m);
     while (true) {
-      cv.wait(lk, [&all_events_handled]{return all_events_handled;});
+      cv.wait(lk, [&all_events_handled] { return all_events_handled; });
       // Wait for handle_cb to be done.
-      number_events = PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
+      number_events =
+          PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
       all_events_handled = false;
       // Trigger handle_cb on main_thread to avoid concurrency.
-      gdk_threads_add_idle(+[](gpointer user_data) -> gboolean {
-        auto& handle_cb = *reinterpret_cast<HandleCBType*>(user_data);
-        handle_cb();
-        return G_SOURCE_REMOVE;
-      }, &handle_cb);
+      gdk_threads_add_idle(
+          +[](gpointer user_data) -> gboolean {
+            auto &handle_cb = *reinterpret_cast<HandleCBType *>(user_data);
+            handle_cb();
+            return G_SOURCE_REMOVE;
+          },
+          &handle_cb);
     }
   });
   gtk_main();

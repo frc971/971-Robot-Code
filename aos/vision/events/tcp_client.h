@@ -4,6 +4,7 @@
 #include "aos/vision/events/epoll_events.h"
 
 #include <memory>
+#include <string>
 
 namespace aos {
 namespace events {
@@ -11,7 +12,7 @@ namespace events {
 // Handles the client connection logic to hostname:portno
 class TcpClient : public EpollEvent {
  public:
-  TcpClient(const char *hostname, int portno);
+  TcpClient(const std::string &hostname, int portno);
 
   // Implement ReadEvent from EpollEvent to use this class.
 };

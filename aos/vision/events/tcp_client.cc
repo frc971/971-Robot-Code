@@ -30,7 +30,7 @@ int MakeSocketNonBlocking(int sfd) {
   return 0;
 }
 
-int OpenClient(const char *hostname, int portno) {
+int OpenClient(const std::string &hostname, int portno) {
   int sockfd;
   struct sockaddr_in serveraddr;
   struct hostent *server;
@@ -38,9 +38,9 @@ int OpenClient(const char *hostname, int portno) {
   PCHECK(sockfd = socket(AF_INET, SOCK_STREAM, 0));
 
   /* gethostbyname: get the server's DNS entry */
-  server = gethostbyname(hostname);
+  server = gethostbyname(hostname.c_str());
   if (server == NULL) {
-    fprintf(stderr, "ERROR, no such host as %s\n", hostname);
+    fprintf(stderr, "ERROR, no such host as %s\n", hostname.c_str());
     exit(-1);
   }
 
@@ -60,7 +60,7 @@ int OpenClient(const char *hostname, int portno) {
 }
 }  // namespace
 
-TcpClient::TcpClient(const char *hostname, int portno)
+TcpClient::TcpClient(const std::string &hostname, int portno)
     : EpollEvent(OpenClient(hostname, portno)) {}
 
 }  // namespace events
