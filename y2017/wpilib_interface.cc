@@ -42,7 +42,6 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/buffered_pcm.h"
-#include "frc971/wpilib/gyro_sender.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 #include "frc971/wpilib/interrupt_edge_counting.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
@@ -578,10 +577,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_dma(make_unique<DMA>());
     ::std::thread reader_thread(::std::ref(reader));
 
-    ::frc971::wpilib::GyroSender gyro_sender;
-    ::std::thread gyro_thread(::std::ref(gyro_sender));
-
-    auto imu_trigger = make_unique<DigitalInput>(5);
+    auto imu_trigger = make_unique<DigitalInput>(3);
     ::frc971::wpilib::ADIS16448 imu(SPI::Port::kOnboardCS1, imu_trigger.get());
     ::std::thread imu_thread(::std::ref(imu));
 
@@ -628,8 +624,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     pdp_fetcher_thread.join();
     reader.Quit();
     reader_thread.join();
-    gyro_sender.Quit();
-    gyro_thread.join();
     imu.Quit();
     imu_thread.join();
 

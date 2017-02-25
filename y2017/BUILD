@@ -48,7 +48,6 @@ cc_binary(
     '//frc971/wpilib:joystick_sender',
     '//frc971/wpilib:loop_output_handler',
     '//frc971/wpilib:buffered_pcm',
-    '//frc971/wpilib:gyro_sender',
     '//frc971/wpilib:dma_edge_counting',
     '//frc971/wpilib:interrupt_edge_counting',
     '//frc971/wpilib:wpilib_robot_base',
