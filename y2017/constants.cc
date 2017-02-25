@@ -103,8 +103,21 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      intake->pot_offset = 0.2921 + 0.00039;
-      intake->zeroing.measured_absolute_position = 0.045209;
+      intake->pot_offset = 0.26712;
+      intake->zeroing.measured_absolute_position = 0.008913;
+
+      turret->pot_offset = 0;
+      turret->zeroing.measured_absolute_position = 0;
+
+      hood->zeroing.measured_index_position = 0.652898 - 0.488117;
+
+      r->down_error = 0;
+      r->vision_name = "competition";
+      break;
+
+    case kPracticeTeamNumber:
+      intake->pot_offset = 0.2921 + 0.00039 + 0.012236;
+      intake->zeroing.measured_absolute_position = 0.033408;
 
       turret->pot_offset = -5.45 - 0.026111;
       turret->zeroing.measured_absolute_position = 0.2429;
@@ -112,21 +125,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       hood->zeroing.measured_index_position = 0.655432 - 0.460505;
 
       r->down_error = 0;
-      r->vision_name = "competition";
-      break;
-
-    case kPracticeTeamNumber:
-      intake->pot_offset = 0;
-      intake->zeroing.measured_absolute_position = 0;
-
-      turret->pot_offset = 0;
-      turret->zeroing.measured_absolute_position = 0;
-
-      hood->zeroing.measured_index_position = 0.05;
-
-      r->down_error = 0;
       r->vision_name = "practice";
       break;
+
 
     default:
       LOG(FATAL, "unknown team #%" PRIu16 "\n", team);

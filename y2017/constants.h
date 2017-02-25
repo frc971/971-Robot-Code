@@ -74,9 +74,8 @@ struct Values {
       control_loops::superstructure::intake::kOutputRatio /
       constants::Values::kIntakeEncoderRatio *
       kIntakeEncoderCountsPerRevolution;
-  static constexpr ::frc971::constants::Range kIntakeRange{
-      -0.29878633 * 0.0254, 9.23012063 * 0.0254, (-0.29878633 + 0.125) * 0.0254,
-      (9.23012063 - 0.125) * 0.0254};
+  static constexpr ::frc971::constants::Range kIntakeRange{-0.01, 0.240, 0.01,
+                                                           0.21};
 
   static constexpr double kHoodEncoderCountsPerRevolution = 2048 * 4;
   static constexpr double kHoodEncoderRatio = 20.0 / 345.0;
