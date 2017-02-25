@@ -20,19 +20,19 @@
 // input because that's what comes back from the sensors).
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
-class StateFeedbackPlantCoefficients final {
+struct StateFeedbackPlantCoefficients final {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   StateFeedbackPlantCoefficients(const StateFeedbackPlantCoefficients &other)
-      : A_(other.A()),
-        A_continuous_(other.A_continuous()),
-        B_(other.B()),
-        B_continuous_(other.B_continuous()),
-        C_(other.C()),
-        D_(other.D()),
-        U_min_(other.U_min()),
-        U_max_(other.U_max()) {}
+      : A(other.A),
+        A_continuous(other.A_continuous),
+        B(other.B),
+        B_continuous(other.B_continuous),
+        C(other.C),
+        D(other.D),
+        U_min(other.U_min),
+        U_max(other.U_max) {}
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<double, number_of_states, number_of_states> &A,
@@ -45,61 +45,23 @@ class StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<double, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<double, number_of_inputs, 1> &U_min)
-      : A_(A),
-        A_continuous_(A_continuous),
-        B_(B),
-        B_continuous_(B_continuous),
-        C_(C),
-        D_(D),
-        U_min_(U_min),
-        U_max_(U_max) {}
+      : A(A),
+        A_continuous(A_continuous),
+        B(B),
+        B_continuous(B_continuous),
+        C(C),
+        D(D),
+        U_min(U_min),
+        U_max(U_max) {}
 
-  const Eigen::Matrix<double, number_of_states, number_of_states> &A() const {
-    return A_;
-  }
-  double A(int i, int j) const { return A()(i, j); }
-  const Eigen::Matrix<double, number_of_states, number_of_states> &A_continuous()
-      const {
-    return A_continuous_;
-  }
-  double A_continuous(int i, int j) const { return A_continuous()(i, j); }
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
-    return B_;
-  }
-  double B(int i, int j) const { return B()(i, j); }
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> &B_continuous() const {
-    return B_continuous_;
-  }
-  double B_continuous(int i, int j) const { return B_continuous()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
-    return C_;
-  }
-  double C(int i, int j) const { return C()(i, j); }
-  const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D() const {
-    return D_;
-  }
-  double D(int i, int j) const { return D()(i, j); }
-  const Eigen::Matrix<double, number_of_inputs, 1> &U_min() const {
-    return U_min_;
-  }
-  double U_min(int i, int j) const { return U_min()(i, j); }
-  const Eigen::Matrix<double, number_of_inputs, 1> &U_max() const {
-    return U_max_;
-  }
-  double U_max(int i, int j) const { return U_max()(i, j); }
-
- private:
-  const Eigen::Matrix<double, number_of_states, number_of_states> A_;
-  const Eigen::Matrix<double, number_of_states, number_of_states> A_continuous_;
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> B_;
-  const Eigen::Matrix<double, number_of_states, number_of_inputs> B_continuous_;
-  const Eigen::Matrix<double, number_of_outputs, number_of_states> C_;
-  const Eigen::Matrix<double, number_of_outputs, number_of_inputs> D_;
-  const Eigen::Matrix<double, number_of_inputs, 1> U_min_;
-  const Eigen::Matrix<double, number_of_inputs, 1> U_max_;
-
-  StateFeedbackPlantCoefficients &operator=(
-      StateFeedbackPlantCoefficients other) = delete;
+  const Eigen::Matrix<double, number_of_states, number_of_states> A;
+  const Eigen::Matrix<double, number_of_states, number_of_states> A_continuous;
+  const Eigen::Matrix<double, number_of_states, number_of_inputs> B;
+  const Eigen::Matrix<double, number_of_states, number_of_inputs> B_continuous;
+  const Eigen::Matrix<double, number_of_outputs, number_of_states> C;
+  const Eigen::Matrix<double, number_of_outputs, number_of_inputs> D;
+  const Eigen::Matrix<double, number_of_inputs, 1> U_min;
+  const Eigen::Matrix<double, number_of_inputs, 1> U_max;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -125,27 +87,27 @@ class StateFeedbackPlant {
   virtual ~StateFeedbackPlant() {}
 
   const Eigen::Matrix<double, number_of_states, number_of_states> &A() const {
-    return coefficients().A();
+    return coefficients().A;
   }
   double A(int i, int j) const { return A()(i, j); }
   const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
-    return coefficients().B();
+    return coefficients().B;
   }
   double B(int i, int j) const { return B()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
-    return coefficients().C();
+    return coefficients().C;
   }
   double C(int i, int j) const { return C()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D() const {
-    return coefficients().D();
+    return coefficients().D;
   }
   double D(int i, int j) const { return D()(i, j); }
   const Eigen::Matrix<double, number_of_inputs, 1> &U_min() const {
-    return coefficients().U_min();
+    return coefficients().U_min;
   }
   double U_min(int i, int j) const { return U_min()(i, j); }
   const Eigen::Matrix<double, number_of_inputs, 1> &U_max() const {
-    return coefficients().U_max();
+    return coefficients().U_max;
   }
   double U_max(int i, int j) const { return U_max()(i, j); }
 
@@ -206,7 +168,8 @@ class StateFeedbackPlant {
   Eigen::Matrix<double, number_of_outputs, 1> Y_;
 
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
-      number_of_states, number_of_inputs, number_of_outputs>>> coefficients_;
+      number_of_states, number_of_inputs, number_of_outputs>>>
+      coefficients_;
 
   int plant_index_;
 
@@ -236,20 +199,6 @@ struct StateFeedbackControllerConstants final {
       const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
                                            number_of_outputs> &plant)
       : L(L), K(K), Kff(Kff), A_inv(A_inv), plant(plant) {}
-
-  // TODO(Brian): Remove this overload once they're all converted.
-  StateFeedbackControllerConstants(
-      const Eigen::Matrix<double, number_of_states, number_of_outputs> &L,
-      const Eigen::Matrix<double, number_of_inputs, number_of_states> &K,
-      const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv,
-      const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
-                                           number_of_outputs> &plant)
-      : L(L),
-        K(K),
-        Kff(::Eigen::Matrix<double, number_of_inputs,
-                            number_of_states>::Zero()),
-        A_inv(A_inv),
-        plant(plant) {}
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -288,11 +237,11 @@ class StateFeedbackLoop {
   virtual ~StateFeedbackLoop() {}
 
   const Eigen::Matrix<double, number_of_states, number_of_states> &A() const {
-    return controller().plant.A();
+    return controller().plant.A;
   }
   double A(int i, int j) const { return A()(i, j); }
   const Eigen::Matrix<double, number_of_states, number_of_inputs> &B() const {
-    return controller().plant.B();
+    return controller().plant.B;
   }
   const Eigen::Matrix<double, number_of_states, number_of_states> &A_inv()
       const {
@@ -301,19 +250,19 @@ class StateFeedbackLoop {
   double A_inv(int i, int j) const { return A_inv()(i, j); }
   double B(int i, int j) const { return B()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_states> &C() const {
-    return controller().plant.C();
+    return controller().plant.C;
   }
   double C(int i, int j) const { return C()(i, j); }
   const Eigen::Matrix<double, number_of_outputs, number_of_inputs> &D() const {
-    return controller().plant.D();
+    return controller().plant.D;
   }
   double D(int i, int j) const { return D()(i, j); }
   const Eigen::Matrix<double, number_of_inputs, 1> &U_min() const {
-    return controller().plant.U_min();
+    return controller().plant.U_min;
   }
   double U_min(int i, int j) const { return U_min()(i, j); }
   const Eigen::Matrix<double, number_of_inputs, 1> &U_max() const {
-    return controller().plant.U_max();
+    return controller().plant.U_max;
   }
   double U_max(int i, int j) const { return U_max()(i, j); }
 
