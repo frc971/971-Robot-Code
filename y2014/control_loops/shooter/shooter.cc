@@ -56,11 +56,11 @@ void ZeroedStateFeedbackLoop::CapU() {
 void ZeroedStateFeedbackLoop::CapGoal() {
   if (uncapped_voltage() > max_voltage_) {
     double dx;
-    if (controller_index() == 0) {
+    if (index() == 0) {
       dx = (uncapped_voltage() - max_voltage_) /
-           (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
+           (K(0, 0) - plant().A(1, 0) * K(0, 2) / plant().A(1, 2));
       mutable_R(0, 0) -= dx;
-      mutable_R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+      mutable_R(2, 0) -= -plant().A(1, 0) / plant().A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() - max_voltage_) / K(0, 0);
       mutable_R(0, 0) -= dx;
@@ -70,11 +70,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
                ::y2014::control_loops::ShooterMovingGoal(dx));
   } else if (uncapped_voltage() < -max_voltage_) {
     double dx;
-    if (controller_index() == 0) {
+    if (index() == 0) {
       dx = (uncapped_voltage() + max_voltage_) /
-           (K(0, 0) - A(1, 0) * K(0, 2) / A(1, 2));
+           (K(0, 0) - plant().A(1, 0) * K(0, 2) / plant().A(1, 2));
       mutable_R(0, 0) -= dx;
-      mutable_R(2, 0) -= -A(1, 0) / A(1, 2) * dx;
+      mutable_R(2, 0) -= -plant().A(1, 0) / plant().A(1, 2) * dx;
     } else {
       dx = (uncapped_voltage() + max_voltage_) / K(0, 0);
       mutable_R(0, 0) -= dx;
@@ -88,10 +88,11 @@ void ZeroedStateFeedbackLoop::CapGoal() {
 }
 
 void ZeroedStateFeedbackLoop::RecalculatePowerGoal() {
-  if (controller_index() == 0) {
-    mutable_R(2, 0) = (-A(1, 0) / A(1, 2) * R(0, 0) - A(1, 1) / A(1, 2) * R(1, 0));
+  if (index() == 0) {
+    mutable_R(2, 0) = (-plant().A(1, 0) / plant().A(1, 2) * R(0, 0) -
+                       plant().A(1, 1) / plant().A(1, 2) * R(1, 0));
   } else {
-    mutable_R(2, 0) = -A(1, 1) / A(1, 2) * R(1, 0);
+    mutable_R(2, 0) = -plant().A(1, 1) / plant().A(1, 2) * R(1, 0);
   }
 }
 
@@ -104,8 +105,8 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
   mutable_X_hat(0, 0) += doffset;
   // Offset the goal so we don't move.
   mutable_R(0, 0) += doffset;
-  if (controller_index() == 0) {
-    mutable_R(2, 0) += -A(1, 0) / A(1, 2) * (doffset);
+  if (index() == 0) {
+    mutable_R(2, 0) += -plant().A(1, 0) / plant().A(1, 2) * (doffset);
   }
   LOG_STRUCT(DEBUG, "sensor edge (fake?)",
              ::y2014::control_loops::ShooterChangeCalibration(
@@ -257,16 +258,16 @@ void ShooterMotor::RunIteration(
   // Probably not needed yet.
 
   if (position) {
-    int last_controller_index = shooter_.controller_index();
+    int last_index = shooter_.index();
     if (position->plunger && position->latch) {
       // Use the controller without the spring if the latch is set and the
       // plunger is back
-      shooter_.set_controller_index(1);
+      shooter_.set_index(1);
     } else {
       // Otherwise use the controller with the spring.
-      shooter_.set_controller_index(0);
+      shooter_.set_index(0);
     }
-    if (shooter_.controller_index() != last_controller_index) {
+    if (shooter_.index() != last_index) {
       shooter_.RecalculatePowerGoal();
     }
   }

@@ -83,8 +83,9 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
         desired_velocity);
 
     mutable_R() << desired_position - kPositionOffset, desired_velocity,
-        (-A(1, 0) / A(1, 2) * (desired_position - kPositionOffset) -
-         A(1, 1) / A(1, 2) * desired_velocity);
+        (-plant().A(1, 0) / plant().A(1, 2) *
+             (desired_position - kPositionOffset) -
+         plant().A(1, 1) / plant().A(1, 2) * desired_velocity);
   }
 
   double position() const { return X_hat(0, 0) - offset_ + kPositionOffset; }

@@ -24,7 +24,7 @@ namespace chrono = ::std::chrono;
 DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s),
       loop_(constants::GetValues().make_drivetrain_loop()) {
-  loop_.set_controller_index(3);
+  loop_.set_index(3);
 }
 
 bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {

@@ -158,7 +158,8 @@ class ControlLoopWriter(object):
         fd.write('  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
                  (index, self._ControllerType(), self._ControllerType(),
                   loop.ControllerFunction()))
-      fd.write('  return %s(&controllers);\n' % self._LoopType())
+      fd.write('  return %s(Make%sPlant(), &controllers);\n' %
+          (self._LoopType(), self._gain_schedule_name))
       fd.write('}\n\n')
 
       fd.write(self._namespace_end)
@@ -276,6 +277,7 @@ class ControlLoop(object):
         num_states, num_inputs, num_outputs, self._name)]
 
     ans.append(self._DumpMatrix('A', self.A))
+    ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
     ans.append(self._DumpMatrix('A_continuous', self.A_continuous))
     ans.append(self._DumpMatrix('B', self.B))
     ans.append(self._DumpMatrix('B_continuous', self.B_continuous))
@@ -285,7 +287,7 @@ class ControlLoop(object):
     ans.append(self._DumpMatrix('U_min', self.U_min))
 
     ans.append('  return StateFeedbackPlantCoefficients<%d, %d, %d>'
-               '(A, A_continuous, B, B_continuous, C, D, U_max, U_min);\n' % (
+               '(A, A_inv, A_continuous, B, B_continuous, C, D, U_max, U_min);\n' % (
                    num_states, num_inputs, num_outputs))
     ans.append('}\n')
     return ''.join(ans)
@@ -328,10 +330,9 @@ class ControlLoop(object):
       self.Kff = numpy.matrix(numpy.zeros(self.K.shape))
 
     ans.append(self._DumpMatrix('Kff', self.Kff))
-    ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
 
     ans.append('  return StateFeedbackControllerConstants<%d, %d, %d>'
-               '(L, K, Kff, A_inv, Make%sPlantCoefficients());\n' % (
-                   num_states, num_inputs, num_outputs, self._name))
+               '(L, K, Kff);\n' % (
+                   num_states, num_inputs, num_outputs))
     ans.append('}\n')
     return ''.join(ans)

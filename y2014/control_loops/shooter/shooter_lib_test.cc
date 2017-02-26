@@ -102,12 +102,12 @@ class ShooterSimulation {
       // Only disengage the spring if we are greater than 0, which is where the
       // latch will take the load off the pusher.
       if (GetAbsolutePosition() > 0.0) {
-        shooter_plant_->set_plant_index(1);
+        shooter_plant_->set_index(1);
       } else {
-        shooter_plant_->set_plant_index(0);
+        shooter_plant_->set_index(0);
       }
     } else {
-      shooter_plant_->set_plant_index(0);
+      shooter_plant_->set_index(0);
       position->plunger =
           CheckRange(GetAbsolutePosition(), values.shooter.plunger_back);
     }
@@ -228,7 +228,7 @@ class ShooterSimulation {
       U << last_voltage_;
       shooter_plant_->Update(U);
     }
-    LOG(DEBUG, "Plant index is %d\n", shooter_plant_->plant_index());
+    LOG(DEBUG, "Plant index is %d\n", shooter_plant_->index());
 
     // Handle latch hall effect
     if (!latch_piston_state_ && latch_delay_count_ > 0) {

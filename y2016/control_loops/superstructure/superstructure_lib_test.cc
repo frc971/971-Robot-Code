@@ -207,9 +207,9 @@ class SuperstructureSimulation {
         is_accelerating = arm_U(0, 0) < bemf_voltage;
       }
       if (is_accelerating) {
-        arm_plant_->set_plant_index(0);
+        arm_plant_->set_index(0);
       } else {
-        arm_plant_->set_plant_index(1);
+        arm_plant_->set_index(1);
       }
     }
     arm_plant_->Update(arm_U);

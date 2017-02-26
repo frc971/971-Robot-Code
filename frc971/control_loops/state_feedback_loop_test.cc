@@ -15,6 +15,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   const StateFeedbackPlantCoefficients<2, 4, 7> coefficients(
       Eigen::Matrix<double, 2, 2>::Identity(),
       Eigen::Matrix<double, 2, 2>::Identity(),
+      Eigen::Matrix<double, 2, 2>::Identity(),
       Eigen::Matrix<double, 2, 4>::Identity(),
       Eigen::Matrix<double, 2, 4>::Identity(),
       Eigen::Matrix<double, 7, 2>::Identity(),
@@ -22,27 +23,27 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 4, 1>::Constant(1),
       Eigen::Matrix<double, 4, 1>::Constant(-1));
 
-  {
-    ::std::vector< ::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>> v;
-    v.emplace_back(new StateFeedbackPlantCoefficients<2, 4, 7>(coefficients));
-    StateFeedbackPlant<2, 4, 7> plant(&v);
-    plant.Update(Eigen::Matrix<double, 4, 1>::Zero());
-    plant.Reset();
-    plant.CheckU(Eigen::Matrix<double, 4, 1>::Zero());
-  }
-  {
-    ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<2, 4, 7>>>
-        v;
-    v.emplace_back(new StateFeedbackControllerConstants<2, 4, 7>(
-        Eigen::Matrix<double, 2, 7>::Identity(),
-        Eigen::Matrix<double, 4, 2>::Identity(),
-        Eigen::Matrix<double, 4, 2>::Identity(),
-        Eigen::Matrix<double, 2, 2>::Identity(), coefficients));
-    StateFeedbackLoop<2, 4, 7> test_loop(&v);
-    test_loop.Correct(Eigen::Matrix<double, 7, 1>::Identity());
-    test_loop.Update(false);
-    test_loop.CapU();
-  }
+  // Build a plant.
+  ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>>
+      v_plant;
+  v_plant.emplace_back(
+      new StateFeedbackPlantCoefficients<2, 4, 7>(coefficients));
+  StateFeedbackPlant<2, 4, 7> plant(&v_plant);
+  plant.Update(Eigen::Matrix<double, 4, 1>::Zero());
+  plant.Reset();
+  plant.CheckU(Eigen::Matrix<double, 4, 1>::Zero());
+
+  // Now build a controller.
+  ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<2, 4, 7>>>
+      v_loop;
+  v_loop.emplace_back(new StateFeedbackControllerConstants<2, 4, 7>(
+      Eigen::Matrix<double, 2, 7>::Identity(),
+      Eigen::Matrix<double, 4, 2>::Identity(),
+      Eigen::Matrix<double, 4, 2>::Identity()));
+  StateFeedbackLoop<2, 4, 7> test_loop(::std::move(plant), &v_loop);
+  test_loop.Correct(Eigen::Matrix<double, 7, 1>::Identity());
+  test_loop.Update(false);
+  test_loop.CapU();
 }
 
 }  // namespace testing
