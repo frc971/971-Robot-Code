@@ -25,7 +25,8 @@ DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
     : aos::common::actions::ActorBase<actors::DrivetrainActionQueueGroup>(s) {}
 
 bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
-  static const auto K = constants::GetValues().make_drivetrain_loop().K();
+  static const auto K =
+      constants::GetValues().make_drivetrain_loop().controller().K();
 
   const double yoffset = params.y_offset;
   const double turn_offset =

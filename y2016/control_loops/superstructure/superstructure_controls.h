@@ -28,14 +28,16 @@ class ArmControlLoop
 
   const Eigen::Matrix<double, 2, 1> ControllerOutput() override {
     const Eigen::Matrix<double, 2, 1> accelerating_ff =
-        controller(0).Kff * (next_R() - plant().coefficients(0).A * R());
+        controller().coefficients(0).Kff *
+        (next_R() - plant().coefficients(0).A * R());
     const Eigen::Matrix<double, 2, 1> accelerating_controller =
-        controller(0).K * error() + accelerating_ff;
+        controller().coefficients(0).K * error() + accelerating_ff;
 
     const Eigen::Matrix<double, 2, 1> decelerating_ff =
-        controller(1).Kff * (next_R() - plant().coefficients(1).A * R());
+        controller().coefficients(1).Kff *
+        (next_R() - plant().coefficients(1).A * R());
     const Eigen::Matrix<double, 2, 1> decelerating_controller =
-        controller(1).K * error() + decelerating_ff;
+        controller().coefficients(1).K * error() + decelerating_ff;
 
     const double bemf_voltage = X_hat(1, 0) / kV_shoulder;
     bool use_accelerating_controller = true;
@@ -66,18 +68,18 @@ class ArmControlLoop
     if (U(0, 0) > max_voltage(0)) {
       const double overage_amount = U(0, 0) - max_voltage(0);
       mutable_U(0, 0) = max_voltage(0);
-      const double coupled_amount =
-          (Kff().block<1, 2>(1, 2) * plant().B().block<2, 1>(2, 0))(0, 0) *
-          overage_amount;
+      const double coupled_amount = (controller().Kff().block<1, 2>(1, 2) *
+                                     plant().B().block<2, 1>(2, 0))(0, 0) *
+                                    overage_amount;
       LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
       mutable_U(1, 0) += coupled_amount;
     }
     if (U(0, 0) < min_voltage(0)) {
       const double under_amount = U(0, 0) - min_voltage(0);
       mutable_U(0, 0) = min_voltage(0);
-      const double coupled_amount =
-          (Kff().block<1, 2>(1, 2) * plant().B().block<2, 1>(2, 0))(0, 0) *
-          under_amount;
+      const double coupled_amount = (controller().Kff().block<1, 2>(1, 2) *
+                                     plant().B().block<2, 1>(2, 0))(0, 0) *
+                                    under_amount;
       LOG(DEBUG, "Removing coupled amount %f\n", coupled_amount);
       mutable_U(1, 0) += coupled_amount;
     }

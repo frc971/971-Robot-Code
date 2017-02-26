@@ -670,16 +670,22 @@ void Superstructure::RunIteration(
   // Calculate the loops for a cycle.
   {
     Eigen::Matrix<double, 3, 1> error = intake_.controller().error();
-    status->intake.position_power = intake_.controller().K(0, 0) * error(0, 0);
-    status->intake.velocity_power = intake_.controller().K(0, 1) * error(1, 0);
+    status->intake.position_power =
+        intake_.controller().controller().K(0, 0) * error(0, 0);
+    status->intake.velocity_power =
+        intake_.controller().controller().K(0, 1) * error(1, 0);
   }
 
   {
     Eigen::Matrix<double, 6, 1> error = arm_.controller().error();
-    status->shoulder.position_power = arm_.controller().K(0, 0) * error(0, 0);
-    status->shoulder.velocity_power = arm_.controller().K(0, 1) * error(1, 0);
-    status->wrist.position_power = arm_.controller().K(0, 2) * error(2, 0);
-    status->wrist.velocity_power = arm_.controller().K(0, 3) * error(3, 0);
+    status->shoulder.position_power =
+        arm_.controller().controller().K(0, 0) * error(0, 0);
+    status->shoulder.velocity_power =
+        arm_.controller().controller().K(0, 1) * error(1, 0);
+    status->wrist.position_power =
+        arm_.controller().controller().K(0, 2) * error(2, 0);
+    status->wrist.velocity_power =
+        arm_.controller().controller().K(0, 3) * error(3, 0);
   }
 
   arm_.Update(disable);

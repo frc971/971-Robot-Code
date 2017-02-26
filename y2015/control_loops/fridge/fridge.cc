@@ -39,8 +39,8 @@ CappedStateFeedbackLoop<S>::UnsaturateOutputGoalChange() {
   // Compute the K matrix used to compensate for position errors.
   Eigen::Matrix<double, 2, 2> Kp;
   Kp.setZero();
-  Kp.col(0) = this->K().col(0);
-  Kp.col(1) = this->K().col(2);
+  Kp.col(0) = this->controller().K().col(0);
+  Kp.col(1) = this->controller().K().col(2);
 
   Eigen::Matrix<double, 2, 2> Kp_inv = Kp.inverse();
 

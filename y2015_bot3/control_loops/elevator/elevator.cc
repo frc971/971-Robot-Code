@@ -20,7 +20,7 @@ void SimpleCappedStateFeedbackLoop::CapU() {
 
 double SimpleCappedStateFeedbackLoop::UnsaturateOutputGoalChange() {
   // Compute K matrix to compensate for position errors.
-  double Kp = K(0, 0);
+  double Kp = controller().K(0, 0);
 
   // Compute how much we need to change R in order to achieve the change in U
   // that was observed.

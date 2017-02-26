@@ -35,9 +35,11 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   LOG_MATRIX(DEBUG, "U_uncapped", *U);
 
   Eigen::Matrix<double, 2, 2> position_K;
-  position_K << kf_->K(0, 0), kf_->K(0, 2), kf_->K(1, 0), kf_->K(1, 2);
+  position_K << kf_->controller().K(0, 0), kf_->controller().K(0, 2),
+      kf_->controller().K(1, 0), kf_->controller().K(1, 2);
   Eigen::Matrix<double, 2, 2> velocity_K;
-  velocity_K << kf_->K(0, 1), kf_->K(0, 3), kf_->K(1, 1), kf_->K(1, 3);
+  velocity_K << kf_->controller().K(0, 1), kf_->controller().K(0, 3),
+      kf_->controller().K(1, 1), kf_->controller().K(1, 3);
 
   Eigen::Matrix<double, 2, 1> position_error;
   position_error << error(0, 0), error(2, 0);
@@ -144,7 +146,7 @@ void DrivetrainMotorsSS::SetGoal(
       goal.right_velocity_goal, 0.0, 0.0, 0.0;
 
   use_profile_ =
-      !kf_->Kff().isZero(0) &&
+      !kf_->controller().Kff().isZero(0) &&
       (goal.linear.max_velocity != 0.0 && goal.linear.max_acceleration != 0.0 &&
        goal.angular.max_velocity != 0.0 &&
        goal.angular.max_acceleration != 0.0);

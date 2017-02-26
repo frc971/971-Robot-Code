@@ -259,8 +259,10 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::PopulateStatus(
   status->estimator_state = this->EstimatorState(0);
 
   Eigen::Matrix<double, 3, 1> error = this->controller().error();
-  status->position_power = this->controller().K(0, 0) * error(0, 0);
-  status->velocity_power = this->controller().K(0, 1) * error(1, 0);
+  status->position_power =
+      this->controller().controller().K(0, 0) * error(0, 0);
+  status->velocity_power =
+      this->controller().controller().K(0, 1) * error(1, 0);
 }
 
 template <class ZeroingEstimator>

@@ -58,11 +58,12 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     double dx;
     if (index() == 0) {
       dx = (uncapped_voltage() - max_voltage_) /
-           (K(0, 0) - plant().A(1, 0) * K(0, 2) / plant().A(1, 2));
+           (controller().K(0, 0) -
+            plant().A(1, 0) * controller().K(0, 2) / plant().A(1, 2));
       mutable_R(0, 0) -= dx;
       mutable_R(2, 0) -= -plant().A(1, 0) / plant().A(1, 2) * dx;
     } else {
-      dx = (uncapped_voltage() - max_voltage_) / K(0, 0);
+      dx = (uncapped_voltage() - max_voltage_) / controller().K(0, 0);
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;
@@ -72,11 +73,12 @@ void ZeroedStateFeedbackLoop::CapGoal() {
     double dx;
     if (index() == 0) {
       dx = (uncapped_voltage() + max_voltage_) /
-           (K(0, 0) - plant().A(1, 0) * K(0, 2) / plant().A(1, 2));
+           (controller().K(0, 0) -
+            plant().A(1, 0) * controller().K(0, 2) / plant().A(1, 2));
       mutable_R(0, 0) -= dx;
       mutable_R(2, 0) -= -plant().A(1, 0) / plant().A(1, 2) * dx;
     } else {
-      dx = (uncapped_voltage() + max_voltage_) / K(0, 0);
+      dx = (uncapped_voltage() + max_voltage_) / controller().K(0, 0);
       mutable_R(0, 0) -= dx;
     }
     capped_goal_ = true;

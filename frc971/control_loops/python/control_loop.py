@@ -71,8 +71,12 @@ class ControlLoopWriter(object):
         typename, num_states, num_inputs, num_outputs)
 
   def _ControllerType(self):
-    """Returns a template name for StateFeedbackControllerConstants."""
-    return self._GenericType('StateFeedbackControllerConstants')
+    """Returns a template name for StateFeedbackController."""
+    return self._GenericType('StateFeedbackController')
+
+  def _ObserverType(self):
+    """Returns a template name for StateFeedbackObserver."""
+    return self._GenericType('StateFeedbackObserver')
 
   def _LoopType(self):
     """Returns a template name for StateFeedbackLoop."""
@@ -82,9 +86,17 @@ class ControlLoopWriter(object):
     """Returns a template name for StateFeedbackPlant."""
     return self._GenericType('StateFeedbackPlant')
 
-  def _CoeffType(self):
+  def _PlantCoeffType(self):
     """Returns a template name for StateFeedbackPlantCoefficients."""
     return self._GenericType('StateFeedbackPlantCoefficients')
+
+  def _ControllerCoeffType(self):
+    """Returns a template name for StateFeedbackControllerCoefficients."""
+    return self._GenericType('StateFeedbackControllerCoefficients')
+
+  def _ObserverCoeffType(self):
+    """Returns a template name for StateFeedbackObserverCoefficients."""
+    return self._GenericType('StateFeedbackObserverCoefficients')
 
   def WriteHeader(self, header_file, double_appendage=False, MoI_ratio=0.0):
     """Writes the header file to the file named header_file.
@@ -108,9 +120,17 @@ class ControlLoopWriter(object):
         fd.write('\n')
         fd.write(loop.DumpControllerHeader())
         fd.write('\n')
+        fd.write(loop.DumpObserverHeader())
+        fd.write('\n')
 
       fd.write('%s Make%sPlant();\n\n' %
                (self._PlantType(), self._gain_schedule_name))
+
+      fd.write('%s Make%sController();\n\n' %
+               (self._ControllerType(), self._gain_schedule_name))
+
+      fd.write('%s Make%sObserver();\n\n' %
+               (self._ObserverType(), self._gain_schedule_name))
 
       fd.write('%s Make%sLoop();\n\n' %
                (self._LoopType(), self._gain_schedule_name))
@@ -139,27 +159,48 @@ class ControlLoopWriter(object):
         fd.write(loop.DumpController())
         fd.write('\n')
 
+      for loop in self._loops:
+        fd.write(loop.DumpObserver())
+        fd.write('\n')
+
       fd.write('%s Make%sPlant() {\n' %
                (self._PlantType(), self._gain_schedule_name))
       fd.write('  ::std::vector< ::std::unique_ptr<%s>> plants(%d);\n' % (
-          self._CoeffType(), len(self._loops)))
+          self._PlantCoeffType(), len(self._loops)))
       for index, loop in enumerate(self._loops):
         fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
-                 (index, self._CoeffType(), self._CoeffType(),
+                 (index, self._PlantCoeffType(), self._PlantCoeffType(),
                   loop.PlantFunction()))
       fd.write('  return %s(&plants);\n' % self._PlantType())
       fd.write('}\n\n')
 
-      fd.write('%s Make%sLoop() {\n' %
-               (self._LoopType(), self._gain_schedule_name))
+      fd.write('%s Make%sController() {\n' %
+               (self._ControllerType(), self._gain_schedule_name))
       fd.write('  ::std::vector< ::std::unique_ptr<%s>> controllers(%d);\n' % (
-          self._ControllerType(), len(self._loops)))
+          self._ControllerCoeffType(), len(self._loops)))
       for index, loop in enumerate(self._loops):
         fd.write('  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
-                 (index, self._ControllerType(), self._ControllerType(),
+                 (index, self._ControllerCoeffType(), self._ControllerCoeffType(),
                   loop.ControllerFunction()))
-      fd.write('  return %s(Make%sPlant(), &controllers);\n' %
-          (self._LoopType(), self._gain_schedule_name))
+      fd.write('  return %s(&controllers);\n' % self._ControllerType())
+      fd.write('}\n\n')
+
+      fd.write('%s Make%sObserver() {\n' %
+               (self._ObserverType(), self._gain_schedule_name))
+      fd.write('  ::std::vector< ::std::unique_ptr<%s>> observers(%d);\n' % (
+          self._ObserverCoeffType(), len(self._loops)))
+      for index, loop in enumerate(self._loops):
+        fd.write('  observers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
+                 (index, self._ObserverCoeffType(), self._ObserverCoeffType(),
+                  loop.ObserverFunction()))
+      fd.write('  return %s(&observers);\n' % self._ObserverType())
+      fd.write('}\n\n')
+
+      fd.write('%s Make%sLoop() {\n' %
+               (self._LoopType(), self._gain_schedule_name))
+      fd.write('  return %s(Make%sPlant(), Make%sController(), Make%sObserver());\n' %
+          (self._LoopType(), self._gain_schedule_name,
+           self._gain_schedule_name, self._gain_schedule_name))
       fd.write('}\n\n')
 
       fd.write(self._namespace_end)
@@ -298,7 +339,11 @@ class ControlLoop(object):
 
   def ControllerFunction(self):
     """Returns the name of the controller function."""
-    return 'Make%sController()' % self._name
+    return 'Make%sControllerCoefficients()' % self._name
+
+  def ObserverFunction(self):
+    """Returns the name of the controller function."""
+    return 'Make%sObserverCoefficients()' % self._name
 
   def DumpControllerHeader(self):
     """Writes out a c++ header declaration which will create a Controller object.
@@ -309,7 +354,7 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    return 'StateFeedbackControllerConstants<%d, %d, %d> %s;\n' % (
+    return 'StateFeedbackControllerCoefficients<%d, %d, %d> %s;\n' % (
         num_states, num_inputs, num_outputs, self.ControllerFunction())
 
   def DumpController(self):
@@ -321,18 +366,48 @@ class ControlLoop(object):
     num_states = self.A.shape[0]
     num_inputs = self.B.shape[1]
     num_outputs = self.C.shape[0]
-    ans = ['StateFeedbackControllerConstants<%d, %d, %d> %s {\n' % (
+    ans = ['StateFeedbackControllerCoefficients<%d, %d, %d> %s {\n' % (
         num_states, num_inputs, num_outputs, self.ControllerFunction())]
 
-    ans.append(self._DumpMatrix('L', self.L))
     ans.append(self._DumpMatrix('K', self.K))
     if not hasattr(self, 'Kff'):
       self.Kff = numpy.matrix(numpy.zeros(self.K.shape))
 
     ans.append(self._DumpMatrix('Kff', self.Kff))
 
-    ans.append('  return StateFeedbackControllerConstants<%d, %d, %d>'
-               '(L, K, Kff);\n' % (
+    ans.append('  return StateFeedbackControllerCoefficients<%d, %d, %d>'
+               '(K, Kff);\n' % (
                    num_states, num_inputs, num_outputs))
+    ans.append('}\n')
+    return ''.join(ans)
+
+  def DumpObserverHeader(self):
+    """Writes out a c++ header declaration which will create a Observer object.
+
+    Returns:
+      string, The header declaration for the function.
+    """
+    num_states = self.A.shape[0]
+    num_inputs = self.B.shape[1]
+    num_outputs = self.C.shape[0]
+    return 'StateFeedbackObserverCoefficients<%d, %d, %d> %s;\n' % (
+        num_states, num_inputs, num_outputs, self.ObserverFunction())
+
+  def DumpObserver(self):
+    """Returns a c++ function which will create a Observer object.
+
+    Returns:
+      string, The function which will create the object.
+    """
+    num_states = self.A.shape[0]
+    num_inputs = self.B.shape[1]
+    num_outputs = self.C.shape[0]
+    ans = ['StateFeedbackObserverCoefficients<%d, %d, %d> %s {\n' % (
+        num_states, num_inputs, num_outputs, self.ObserverFunction())]
+
+    ans.append(self._DumpMatrix('L', self.L))
+
+    ans.append('  return StateFeedbackObserverCoefficients<%d, %d, %d>'
+               '(L);\n' % (num_states, num_inputs, num_outputs))
     ans.append('}\n')
     return ''.join(ans)

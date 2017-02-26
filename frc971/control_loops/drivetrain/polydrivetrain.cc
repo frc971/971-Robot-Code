@@ -163,7 +163,7 @@ double PolyDrivetrain::FilterVelocity(double throttle) const {
   ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
   int min_FF_sum_index;
   const double min_FF_sum = FF_sum.minCoeff(&min_FF_sum_index);
-  const double min_K_sum = loop_->K().col(min_FF_sum_index).sum();
+  const double min_K_sum = loop_->controller().K().col(min_FF_sum_index).sum();
   const double high_min_FF_sum = FF_high.col(0).sum();
 
   const double adjusted_ff_voltage =
@@ -244,11 +244,13 @@ void PolyDrivetrain::Update() {
 
       // Construct a constraint on R by manipulating the constraint on U
       ::aos::controls::HVPolytope<2, 4, 4> R_poly_hv(
-          U_Poly_.static_H() * (loop_->K() + FF),
-          U_Poly_.static_k() + U_Poly_.static_H() * loop_->K() * loop_->X_hat(),
-          (loop_->K() + FF).inverse() *
-              ::aos::controls::ShiftPoints<2, 4>(U_Poly_.StaticVertices(),
-                                                 loop_->K() * loop_->X_hat()));
+          U_Poly_.static_H() * (loop_->controller().K() + FF),
+          U_Poly_.static_k() +
+              U_Poly_.static_H() * loop_->controller().K() * loop_->X_hat(),
+          (loop_->controller().K() + FF).inverse() *
+              ::aos::controls::ShiftPoints<2, 4>(
+                  U_Poly_.StaticVertices(),
+                  loop_->controller().K() * loop_->X_hat()));
 
       // Limit R back inside the box.
       loop_->mutable_R() =
@@ -257,7 +259,7 @@ void PolyDrivetrain::Update() {
 
     const Eigen::Matrix<double, 2, 1> FF_volts = FF * loop_->R();
     const Eigen::Matrix<double, 2, 1> U_ideal =
-        loop_->K() * (loop_->R() - loop_->X_hat()) + FF_volts;
+        loop_->controller().K() * (loop_->R() - loop_->X_hat()) + FF_volts;
 
     for (int i = 0; i < 2; i++) {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
