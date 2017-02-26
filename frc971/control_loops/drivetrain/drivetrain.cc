@@ -151,7 +151,7 @@ void DrivetrainLoop::RunIteration(
         rate, angle, down_estimator_.X_hat(0, 0), down_estimator_.X_hat(1, 0));
     down_U_(0, 0) = rate;
   }
-  down_estimator_.UpdateObserver(down_U_);
+  down_estimator_.UpdateObserver(down_U_, ::aos::controls::kLoopFrequency);
 
   // TODO(austin): Signal the current gear to both loops.
 
@@ -292,7 +292,7 @@ void DrivetrainLoop::RunIteration(
   last_left_voltage_ = left_voltage;
   last_right_voltage_ = right_voltage;
 
-  kf_.UpdateObserver(U);
+  kf_.UpdateObserver(U, ::aos::controls::kLoopFrequency);
 }
 
 void DrivetrainLoop::Zero(

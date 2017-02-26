@@ -116,7 +116,8 @@ void IndexerController::Update(bool disabled) {
   position_error_ = X_hat_current_(0, 0) - Y_(0, 0);
 
   loop_->Update(disabled);
-  stuck_indexer_detector_->UpdateObserver(loop_->U());
+  stuck_indexer_detector_->UpdateObserver(loop_->U(),
+                                          ::aos::controls::kLoopFrequency);
 }
 
 void IndexerController::SetStatus(IndexerStatus *status) {

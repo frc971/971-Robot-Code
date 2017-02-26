@@ -109,9 +109,10 @@ cc_library(
     'state_feedback_loop.h',
   ],
   deps = [
-    '//third_party/eigen',
+    '//aos/common/controls:control_loop',
     '//aos/common/logging',
     '//aos/common:macros',
+    '//third_party/eigen',
   ],
 )
 
