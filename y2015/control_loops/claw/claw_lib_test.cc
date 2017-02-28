@@ -74,8 +74,9 @@ class ClawSimulation {
     EXPECT_TRUE(claw_queue_.output.FetchLatest());
 
     // Feed voltages into physics simulation.
-    claw_plant_->mutable_U() << claw_queue_.output->voltage;
-    claw_plant_->Update();
+    ::Eigen::Matrix<double, 1, 1> U;
+    U << claw_queue_.output->voltage;
+    claw_plant_->Update(U);
 
     const double wrist_angle = claw_plant_->Y(0, 0);
 

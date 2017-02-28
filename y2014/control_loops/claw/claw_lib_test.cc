@@ -214,9 +214,10 @@ class ClawMotorSimulation {
     const constants::Values& v = constants::GetValues();
     EXPECT_TRUE(claw_queue.output.FetchLatest());
 
-    claw_plant_->mutable_U() << claw_queue.output->bottom_claw_voltage,
+    Eigen::Matrix<double, 2, 1> U;
+    U << claw_queue.output->bottom_claw_voltage,
         claw_queue.output->top_claw_voltage;
-    claw_plant_->Update();
+    claw_plant_->Update(U);
 
     // Check that the claw is within the limits.
     EXPECT_GE(v.claw.upper_claw.upper_limit, claw_plant_->Y(0, 0));

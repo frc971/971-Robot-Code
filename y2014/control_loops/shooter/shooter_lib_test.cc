@@ -221,14 +221,12 @@ class ShooterSimulation {
     }
 
     if (brake_piston_state_) {
-      shooter_plant_->mutable_U() << 0.0;
       shooter_plant_->mutable_X(1, 0) = 0.0;
-      shooter_plant_->mutable_Y() = shooter_plant_->C() * shooter_plant_->X() +
-                                   shooter_plant_->D() * shooter_plant_->U();
+      shooter_plant_->mutable_Y() = shooter_plant_->C() * shooter_plant_->X();
     } else {
-      shooter_plant_->mutable_U() << last_voltage_;
-      //shooter_plant_->U << shooter_queue_.output->voltage;
-      shooter_plant_->Update();
+      Eigen::Matrix<double, 1, 1> U;
+      U << last_voltage_;
+      shooter_plant_->Update(U);
     }
     LOG(DEBUG, "Plant index is %d\n", shooter_plant_->plant_index());
 

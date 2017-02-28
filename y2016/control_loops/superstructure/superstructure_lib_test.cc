@@ -33,11 +33,11 @@ class ArmPlant : public StateFeedbackPlant<4, 2, 2> {
   explicit ArmPlant(StateFeedbackPlant<4, 2, 2> &&other)
       : StateFeedbackPlant<4, 2, 2>(::std::move(other)) {}
 
-  void CheckU() override {
-    assert(U(0, 0) <= U_max(0, 0) + 0.00001 + shoulder_voltage_offset_);
-    assert(U(0, 0) >= U_min(0, 0) - 0.00001 + shoulder_voltage_offset_);
-    assert(U(1, 0) <= U_max(1, 0) + 0.00001 + wrist_voltage_offset_);
-    assert(U(1, 0) >= U_min(1, 0) - 0.00001 + wrist_voltage_offset_);
+  void CheckU(const ::Eigen::Matrix<double, 2, 1> &U) override {
+    EXPECT_LT(U(0, 0), U_max(0, 0) + 0.00001 + shoulder_voltage_offset_);
+    EXPECT_GT(U(0, 0), U_min(0, 0) - 0.00001 + shoulder_voltage_offset_);
+    EXPECT_LT(U(1, 0), U_max(1, 0) + 0.00001 + wrist_voltage_offset_);
+    EXPECT_GT(U(1, 0), U_min(1, 0) - 0.00001 + wrist_voltage_offset_);
   }
 
   double shoulder_voltage_offset() const { return shoulder_voltage_offset_; }
@@ -60,10 +60,10 @@ class IntakePlant : public StateFeedbackPlant<2, 1, 1> {
   explicit IntakePlant(StateFeedbackPlant<2, 1, 1> &&other)
       : StateFeedbackPlant<2, 1, 1>(::std::move(other)) {}
 
-  void CheckU() override {
+  void CheckU(const ::Eigen::Matrix<double, 1, 1> &U) override {
     for (int i = 0; i < kNumInputs; ++i) {
-      assert(U(i, 0) <= U_max(i, 0) + 0.00001 + voltage_offset_);
-      assert(U(i, 0) >= U_min(i, 0) - 0.00001 + voltage_offset_);
+      EXPECT_LE(U(i, 0), U_max(i, 0) + 0.00001 + voltage_offset_);
+      EXPECT_GE(U(i, 0), U_min(i, 0) - 0.00001 + voltage_offset_);
     }
   }
 
@@ -158,11 +158,13 @@ class SuperstructureSimulation {
     EXPECT_TRUE(superstructure_queue_.output.FetchLatest());
 
     // Feed voltages into physics simulation.
-    intake_plant_->mutable_U() << superstructure_queue_.output->voltage_intake +
-                                      intake_plant_->voltage_offset();
+    ::Eigen::Matrix<double, 1, 1> intake_U;
+    ::Eigen::Matrix<double, 2, 1> arm_U;
+    intake_U << superstructure_queue_.output->voltage_intake +
+                    intake_plant_->voltage_offset();
 
-    arm_plant_->mutable_U() << superstructure_queue_.output->voltage_shoulder +
-                                   arm_plant_->shoulder_voltage_offset(),
+    arm_U << superstructure_queue_.output->voltage_shoulder +
+                 arm_plant_->shoulder_voltage_offset(),
         superstructure_queue_.output->voltage_wrist +
             arm_plant_->wrist_voltage_offset();
 
@@ -194,15 +196,15 @@ class SuperstructureSimulation {
 
     // Use the plant to generate the next physical state given the voltages to
     // the motors.
-    intake_plant_->Update();
+    intake_plant_->Update(intake_U);
 
     {
       const double bemf_voltage = arm_plant_->X(1, 0) / kV_shoulder;
       bool is_accelerating = false;
       if (bemf_voltage > 0) {
-        is_accelerating = arm_plant_->U(0, 0) > bemf_voltage;
+        is_accelerating = arm_U(0, 0) > bemf_voltage;
       } else {
-        is_accelerating = arm_plant_->U(0, 0) < bemf_voltage;
+        is_accelerating = arm_U(0, 0) < bemf_voltage;
       }
       if (is_accelerating) {
         arm_plant_->set_plant_index(0);
@@ -210,7 +212,7 @@ class SuperstructureSimulation {
         arm_plant_->set_plant_index(1);
       }
     }
-    arm_plant_->Update();
+    arm_plant_->Update(arm_U);
 
     const double angle_intake = intake_plant_->Y(0, 0);
     const double angle_shoulder = arm_plant_->Y(0, 0);
