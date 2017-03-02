@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package frc971;
+
+message BaseProto {
+  optional string a = 1;
+  optional string b = 2;
+}

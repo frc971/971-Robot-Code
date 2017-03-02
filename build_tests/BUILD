@@ -74,6 +74,14 @@ sh_test(
 proto_cc_library(
   name = 'proto_build_test_library',
   src = 'proto.proto',
+  deps = [
+    ':proto_build_test_library_base',
+  ],
+)
+
+proto_cc_library(
+  name = 'proto_build_test_library_base',
+  src = 'proto_base.proto',
 )
 
 cc_test(
