@@ -1,6 +1,7 @@
 #include "aos/vision/blob/transpose.h"
 
 #include <algorithm>
+#include <limits>
 
 namespace aos {
 namespace vision {
@@ -14,27 +15,30 @@ RangeImage Transpose(const RangeImage &img) {
     kPointAdd = 3,
     kPointDel = 2,
   };
+  int min_y = std::numeric_limits<int>::max();
+  for (const std::vector<ImageRange> &row : img) {
+    if (!row.empty()) min_y = std::min(row[0].st, min_y);
+  }
+
   std::vector<std::vector<std::pair<int, EventT>>> events;
   int y = img.min_y();
   for (const std::vector<ImageRange> &row : img) {
     for (const ImageRange &range : row) {
-      if (range.ed >= static_cast<int>(events.size()))
-        events.resize(range.ed + 1);
-      events[range.st].emplace_back(y, kPointAdd);
-      events[range.ed].emplace_back(y, kPointDel);
+      if (range.ed - min_y >= static_cast<int>(events.size())) {
+        events.resize(range.ed - min_y + 1);
+      }
+      events[range.st - min_y].emplace_back(y, kPointAdd);
+      events[range.ed - min_y].emplace_back(y, kPointDel);
     }
     ++y;
   }
-
-  int min_y = 0;
-  while (min_y < (int)events.size() && events[min_y].empty()) ++min_y;
 
   std::vector<ImageRange> prev_ranges;
   std::vector<ImageRange> cur_ranges;
 
   std::vector<std::vector<ImageRange>> rows;
-  for (int y = min_y; y < static_cast<int>(events.size()) - 1; ++y) {
-    auto row_events = std::move(events[y]);
+  for (int dy = 0; dy < static_cast<int>(events.size()) - 1; ++dy) {
+    auto row_events = std::move(events[dy]);
     for (const auto &range : prev_ranges) {
       row_events.emplace_back(range.st, kRangeStart);
       row_events.emplace_back(range.ed, kRangeEnd);

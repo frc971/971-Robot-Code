@@ -101,6 +101,10 @@ void DebugViewer::UpdateImage(ImagePtr ptr) {
     window_height_ = h;
     window_width_ = w;
   }
+  if (!shown_yet_) {
+    gtk_widget_show_all(self->window);
+    shown_yet_ = true;
+  }
 }
 
 void DebugViewer::MoveTo(int x, int y) {
@@ -149,7 +153,6 @@ DebugViewer::DebugViewer(bool flip) : self(new Internals(flip)) {
                               window_height_ * scale_factor);
 
   gtk_container_add(GTK_CONTAINER(window), drawing_area);
-  gtk_widget_show_all(window);
 }
 DebugViewer::~DebugViewer() {}
 

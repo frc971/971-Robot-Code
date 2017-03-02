@@ -66,6 +66,7 @@ class DebugViewer {
   std::function<void(uint32_t)> key_press_event;
 
  private:
+  bool shown_yet_ = false;
   double scale_factor = 1.0;
   int window_width_ = 100;
   int window_height_ = 100;

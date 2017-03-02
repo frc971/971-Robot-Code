@@ -18,8 +18,8 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
       camera::CameraParams params) {
     using namespace std::placeholders;
     std::unique_ptr<::camera::Reader> camread(new ::camera::Reader(
-        fname,
-        std::bind(&ImageStreamEvent::ProcessHelper, obj, _1, _2), params));
+        fname, std::bind(&ImageStreamEvent::ProcessHelper, obj, _1, _2),
+        params));
     camread->StartAsync();
     return camread;
   }
@@ -33,12 +33,13 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
 
   void ProcessHelper(DataRef data, aos::monotonic_clock::time_point timestamp) {
     if (data.size() < 300) {
-      LOG(INFO, "got bad img of size(%zu)\n", data.size());
+      LOG(INFO, "got bad img of size(%d)\n", static_cast<int>(data.size()));
       return;
     }
     ProcessImage(data, timestamp);
   }
-  virtual void ProcessImage(DataRef data, aos::monotonic_clock::time_point timestamp) = 0;
+  virtual void ProcessImage(DataRef data,
+                            aos::monotonic_clock::time_point timestamp) = 0;
 
   void ReadEvent() override { reader_->HandleFrame(); }
 

@@ -44,7 +44,7 @@ template <typename BaseClass, typename... FactoryArgs>
 class GlobalFactory {
  public:
   using FactoryFunction =
-      std::function<std::unique_ptr<BaseClass>(FactoryArgs&&...)>;
+      std::function<std::unique_ptr<BaseClass>(FactoryArgs &&...)>;
 
   // Gets the factory function by named. This will return a null factory
   // std::function if the factory is not available, so one would be wise
@@ -67,12 +67,17 @@ class GlobalFactory {
   class SubClassRegisterer {
    public:
     explicit SubClassRegisterer(const char *name) {
-      (*GetMap())[name] = [](FactoryArgs&&... args) {
+      (*GetMap())[name] = [](FactoryArgs &&... args) {
         return std::unique_ptr<BaseClass>(
             new SubClass(std::forward<FactoryArgs>(args)...));
       };
     }
   };
+
+  // Fetch all factory functions.
+  static const std::unordered_map<std::string, FactoryFunction> &GetAll() {
+    return *GetMap();
+  }
 
  private:
   // Actual map. (Protected by static from concurrent construction

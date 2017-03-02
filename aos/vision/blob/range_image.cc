@@ -75,7 +75,7 @@ void DebugPrint(const BlobList &blobl) {
       if (span.ed > maxx) maxx = span.ed;
     }
   }
-  LOG(INFO, "maxx: %d minx: %d\n", maxx, minx);
+  printf("maxx: %d minx: %d\n", maxx, minx);
   char buf[maxx - minx];
   for (const auto &range : rimg.ranges()) {
     int i = minx;
@@ -84,7 +84,7 @@ void DebugPrint(const BlobList &blobl) {
       for (; i < span.ed; ++i) buf[i - minx] = '#';
     }
     for (; i < maxx; ++i) buf[i - minx] = ' ';
-    LOG(INFO, "%.*s\n", maxx - minx, buf);
+    printf("%.*s\n", maxx - minx, buf);
   }
 }
 
