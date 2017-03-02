@@ -46,6 +46,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
         StateFeedbackControllerConstants<2, 4, 7>(
             Eigen::Matrix<double, 2, 7>::Identity(),
             Eigen::Matrix<double, 4, 2>::Identity(),
+            Eigen::Matrix<double, 4, 2>::Identity(),
             Eigen::Matrix<double, 2, 2>::Identity(), coefficients));
     test_loop.Correct(Eigen::Matrix<double, 7, 1>::Identity());
     test_loop.Update(false);

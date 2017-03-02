@@ -153,9 +153,9 @@ double PolyDrivetrain::FilterVelocity(double throttle) const {
 
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<double, 2, 2> FF_high =
-      loop_->controller(kHighGearController).plant.B().inverse() *
+      loop_->controller(kHighGearController).plant.B.inverse() *
       (Eigen::Matrix<double, 2, 2>::Identity() -
-       loop_->controller(kHighGearController).plant.A());
+       loop_->controller(kHighGearController).plant.A);
 
   ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
   int min_FF_sum_index;
@@ -178,9 +178,9 @@ double PolyDrivetrain::MaxVelocity() {
 
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<double, 2, 2> FF_high =
-      loop_->controller(kHighGearController).plant.B().inverse() *
+      loop_->controller(kHighGearController).plant.B.inverse() *
       (Eigen::Matrix<double, 2, 2>::Identity() -
-       loop_->controller(kHighGearController).plant.A());
+       loop_->controller(kHighGearController).plant.A);
 
   ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
   int min_FF_sum_index;

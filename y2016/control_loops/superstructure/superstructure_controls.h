@@ -28,12 +28,12 @@ class ArmControlLoop
 
   const Eigen::Matrix<double, 2, 1> ControllerOutput() override {
     const Eigen::Matrix<double, 2, 1> accelerating_ff =
-        controller(0).Kff * (next_R() - controller(0).plant.A() * R());
+        controller(0).Kff * (next_R() - controller(0).plant.A * R());
     const Eigen::Matrix<double, 2, 1> accelerating_controller =
         controller(0).K * error() + accelerating_ff;
 
     const Eigen::Matrix<double, 2, 1> decelerating_ff =
-        controller(1).Kff * (next_R() - controller(1).plant.A() * R());
+        controller(1).Kff * (next_R() - controller(1).plant.A * R());
     const Eigen::Matrix<double, 2, 1> decelerating_controller =
         controller(1).K * error() + decelerating_ff;
 
