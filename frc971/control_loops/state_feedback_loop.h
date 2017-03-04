@@ -207,16 +207,6 @@ class StateFeedbackLoop {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   StateFeedbackLoop(
-      const StateFeedbackControllerConstants<number_of_states, number_of_inputs,
-                                             number_of_outputs> &controller)
-      : controller_index_(0) {
-    controllers_.emplace_back(
-        new StateFeedbackControllerConstants<number_of_states, number_of_inputs,
-                                             number_of_outputs>(controller));
-    Reset();
-  }
-
-  StateFeedbackLoop(
       ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<
           number_of_states, number_of_inputs, number_of_outputs>>> *controllers)
       : controllers_(::std::move(*controllers)), controller_index_(0) {
