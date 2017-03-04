@@ -116,8 +116,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      intake->pot_offset = 0.2921 + 0.00039 + 0.012236;
-      intake->zeroing.measured_absolute_position = 0.033408;
+      intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602;
+      intake->zeroing.measured_absolute_position = 0.031437;
 
       turret->pot_offset = -5.45 - 0.026111;
       turret->zeroing.measured_absolute_position = 0.2429;
