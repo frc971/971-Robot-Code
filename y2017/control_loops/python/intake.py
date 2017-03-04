@@ -99,13 +99,6 @@ class Intake(control_loop.ControlLoop):
     glog.debug('Poles are %s',
               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
-    self.rpl = 0.30
-    self.ipl = 0.10
-    self.PlaceObserverPoles([self.rpl + 1j * self.ipl,
-                             self.rpl - 1j * self.ipl])
-
-    glog.debug('L is %s', repr(self.L))
-
     q_pos = 0.10
     q_vel = 1.65
     self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0],

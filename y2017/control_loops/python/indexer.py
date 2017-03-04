@@ -11,7 +11,10 @@ import glog
 
 FLAGS = gflags.FLAGS
 
-gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+try:
+  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+except gflags.DuplicateFlagError:
+  pass
 
 gflags.DEFINE_bool('stall', False, 'If true, stall the indexer.')
 
@@ -40,8 +43,8 @@ class VelocityIndexer(control_loop.ControlLoop):
     self.G_inner = (12.0 / 48.0) * (18.0 / 36.0) * (12.0 / 84.0)
     self.G_outer = (12.0 / 48.0) * (18.0 / 36.0) * (24.0 / 420.0)
 
-    # Motor inertia in kg * m^2
-    self.motor_inertia = 0.000006
+    # Motor inertia in kg m^2
+    self.motor_inertia = 0.00001187
 
     # The output coordinate system is in radians for the inner part of the
     # indexer.
@@ -51,14 +54,13 @@ class VelocityIndexer(control_loop.ControlLoop):
         self.J_inner * self.G_inner * self.G_inner +
         self.J_outer * self.G_outer * self.G_outer) / (self.G_inner * self.G_inner) + \
         self.motor_inertia * ((1.0 / self.G_inner) ** 2.0)
-    glog.debug('J is %f', self.J)
     self.G = self.G_inner
 
     # Resistance of the motor, divided by 2 to account for the 2 motors
-    self.R = 12.0 / self.stall_current
+    self.resistance = 12.0 / self.stall_current
     # Motor velocity constant
     self.Kv = ((self.free_speed * 2.0 * numpy.pi) /
-              (12.0 - self.R * self.free_current))
+              (12.0 - self.resistance * self.free_current))
     # Torque constant
     self.Kt = self.stall_torque / self.stall_current
     # Control loop time step
@@ -67,9 +69,9 @@ class VelocityIndexer(control_loop.ControlLoop):
     # State feedback matrices
     # [angular velocity]
     self.A_continuous = numpy.matrix(
-        [[-self.Kt / self.Kv / (self.J * self.G * self.G * self.R)]])
+        [[-self.Kt / self.Kv / (self.J * self.G * self.G * self.resistance)]])
     self.B_continuous = numpy.matrix(
-        [[self.Kt / (self.J * self.G * self.R)]])
+        [[self.Kt / (self.J * self.G * self.resistance)]])
     self.C = numpy.matrix([[1]])
     self.D = numpy.matrix([[0]])
 
@@ -77,10 +79,6 @@ class VelocityIndexer(control_loop.ControlLoop):
         self.A_continuous, self.B_continuous, self.dt)
 
     self.PlaceControllerPoles([.75])
-    glog.debug('K: %s', repr(self.K))
-
-    glog.debug('Poles are %s',
-               repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
     self.PlaceObserverPoles([0.3])
 
