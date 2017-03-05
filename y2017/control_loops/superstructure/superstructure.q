@@ -107,6 +107,15 @@ struct ShooterStatus {
   double position_error;
 };
 
+struct ColumnPosition {
+  // Indexer angle in radians relative to the base.  Positive is according to
+  // the right hand rule around +z.
+  .frc971.HallEffectAndPosition indexer;
+  // Turret angle in radians relative to the indexer.  Positive is the same as
+  // the indexer.
+  .frc971.HallEffectAndPosition turret;
+};
+
 queue_group SuperstructureQueue {
   implements aos.control_loops.ControlLoop;
 
@@ -138,12 +147,8 @@ queue_group SuperstructureQueue {
     // out.
     .frc971.PotAndAbsolutePosition intake;
 
-    // Indexer angle in radians.
-    double theta_indexer;
-
-    // The sensor readings for the turret. The units and sign are defined the
-    // same as what's in the Goal message.
-    .frc971.PotAndAbsolutePosition turret;
+    // The position of the column.
+    ColumnPosition column;
 
     // The sensor readings for the hood. The units and sign are defined the
     // same as what's in the Goal message.
