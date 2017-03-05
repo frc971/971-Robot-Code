@@ -56,104 +56,131 @@ namespace control_loops {
  * remainder of the graph.
  */
 
-PositionSensorSimulator::PositionSensorSimulator(double index_diff,
+PositionSensorSimulator::PositionSensorSimulator(double index_difference,
                                                  unsigned int noise_seed)
-    : index_diff_(index_diff), pot_noise_(noise_seed, 0.0) {
+    : lower_index_edge_(index_difference, noise_seed),
+      upper_index_edge_(index_difference, noise_seed),
+      index_difference_(index_difference) {
   Initialize(0.0, 0.0);
 }
 
 void PositionSensorSimulator::Initialize(
     double start_position, double pot_noise_stddev,
-    double known_index_pos /* = 0*/,
+    double known_index_position /* = 0*/,
     double known_absolute_encoder_pos /* = 0*/) {
-  // We're going to make the index pulse we know "segment zero".
-  cur_index_segment_ = floor((start_position - known_index_pos) / index_diff_);
-  known_index_pos_ = known_index_pos;
+  InitializeHallEffectAndPosition(start_position, known_index_position,
+                                  known_index_position);
+
   known_absolute_encoder_ = known_absolute_encoder_pos;
-  cur_index_ = 0;
-  index_count_ = 0;
-  cur_pos_ = start_position;
-  start_position_ = start_position;
-  pot_noise_.set_standard_deviation(pot_noise_stddev);
+
+  lower_index_edge_.mutable_pot_noise()->set_standard_deviation(pot_noise_stddev);
+  upper_index_edge_.mutable_pot_noise()->set_standard_deviation(pot_noise_stddev);
 }
 
-void PositionSensorSimulator::MoveTo(double new_pos) {
-  // Compute which index segment we're in. In other words, compute between
-  // which two index pulses we are.
-  const int new_index_segment =
-      floor((new_pos - known_index_pos_) / index_diff_);
+void PositionSensorSimulator::InitializeHallEffectAndPosition(
+    double start_position, double known_index_lower, double known_index_upper) {
+  current_position_ = start_position;
+  start_position_ = start_position;
 
-  if (new_index_segment < cur_index_segment_) {
-    // We've crossed an index pulse in the negative direction. That means the
-    // index pulse we just crossed is the higher end of the current index
-    // segment. For example, if the mechanism moved from index segment four to
-    // index segment three, then we just crossed index pulse 4.
-    cur_index_ = new_index_segment + 1;
-    index_count_++;
-  } else if (new_index_segment > cur_index_segment_) {
-    // We've crossed an index pulse in the positive direction. That means the
-    // index pulse we just crossed is the lower end of the index segment. For
-    // example, if the mechanism moved from index segment seven to index
-    // segment eight, then we just crossed index pulse eight.
-    cur_index_ = new_index_segment;
-    index_count_++;
+  lower_index_edge_.Initialize(start_position, known_index_lower);
+  upper_index_edge_.Initialize(start_position, known_index_upper);
+
+  posedge_count_ = 0;
+  negedge_count_ = 0;
+  posedge_value_ = start_position;
+  negedge_value_ = start_position;
+}
+
+void PositionSensorSimulator::MoveTo(double new_position) {
+  {
+    const int lower_start_segment = lower_index_edge_.current_index_segment();
+    lower_index_edge_.MoveTo(new_position);
+    const int lower_end_segment = lower_index_edge_.current_index_segment();
+    if (lower_end_segment > lower_start_segment) {
+      // Moving up past the lower edge.
+      ++posedge_count_;
+      posedge_value_ = lower_index_edge_.IndexPulsePosition();
+    }
+    if (lower_end_segment < lower_start_segment) {
+      // Moved down.
+      ++negedge_count_;
+      negedge_value_ = lower_index_edge_.IndexPulsePosition();
+    }
   }
 
-  if (new_index_segment != cur_index_segment_) {
-    latched_pot_ = pot_noise_.AddNoiseToSample(cur_index_ * index_diff_ +
-                                               known_index_pos_);
+  {
+    const int upper_start_segment = upper_index_edge_.current_index_segment();
+    upper_index_edge_.MoveTo(new_position);
+    const int upper_end_segment = upper_index_edge_.current_index_segment();
+    if (upper_end_segment > upper_start_segment) {
+      // Moving up past the upper edge.
+      ++negedge_count_;
+      negedge_value_ = upper_index_edge_.IndexPulsePosition();
+    }
+    if (upper_end_segment < upper_start_segment) {
+      // Moved down.
+      ++posedge_count_;
+      posedge_value_ = upper_index_edge_.IndexPulsePosition();
+    }
   }
 
-  cur_index_segment_ = new_index_segment;
-  cur_pos_ = new_pos;
+  current_position_ = new_position;
 }
 
 void PositionSensorSimulator::GetSensorValues(IndexPosition *values) {
-  values->encoder = cur_pos_ - start_position_;
+  values->encoder = current_position_ - start_position_;
 
-  if (index_count_ == 0) {
+  values->index_pulses = lower_index_edge_.index_count();
+  if (values->index_pulses == 0) {
     values->latched_encoder = 0.0;
   } else {
-    // Determine the position of the index pulse relative to absolute zero.
-    double index_pulse_position = cur_index_ * index_diff_ + known_index_pos_;
-
     // Populate the latched encoder samples.
-    values->latched_encoder = index_pulse_position - start_position_;
+    values->latched_encoder =
+        lower_index_edge_.IndexPulsePosition() - start_position_;
   }
-
-  values->index_pulses = index_count_;
 }
 
 void PositionSensorSimulator::GetSensorValues(PotAndIndexPosition *values) {
-  values->pot = pot_noise_.AddNoiseToSample(cur_pos_);
-  values->encoder = cur_pos_ - start_position_;
+  values->pot = lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
+      current_position_);
+  values->encoder = current_position_ - start_position_;
 
-  if (index_count_ == 0) {
+  if (lower_index_edge_.index_count() == 0) {
     values->latched_pot = 0.0;
     values->latched_encoder = 0.0;
   } else {
-    // Determine the position of the index pulse relative to absolute zero.
-    double index_pulse_position = cur_index_ * index_diff_ + known_index_pos_;
-
     // Populate the latched pot/encoder samples.
-    values->latched_pot = latched_pot_;
-    values->latched_encoder = index_pulse_position - start_position_;
+    values->latched_pot = lower_index_edge_.latched_pot();
+    values->latched_encoder =
+        lower_index_edge_.IndexPulsePosition() - start_position_;
   }
 
-  values->index_pulses = index_count_;
+  values->index_pulses = lower_index_edge_.index_count();
 }
 
 void PositionSensorSimulator::GetSensorValues(PotAndAbsolutePosition *values) {
-  values->pot = pot_noise_.AddNoiseToSample(cur_pos_);
-  values->encoder = cur_pos_ - start_position_;
+  values->pot = lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
+      current_position_);
+  values->encoder = current_position_ - start_position_;
   // TODO(phil): Create some lag here since this is a PWM signal it won't be
   // instantaneous like the other signals. Better yet, its lag varies
   // randomly with the distribution varying depending on the reading.
-  values->absolute_encoder =
-      ::std::remainder(cur_pos_ + known_absolute_encoder_, index_diff_);
+  values->absolute_encoder = ::std::remainder(
+      current_position_ + known_absolute_encoder_, index_difference_);
   if (values->absolute_encoder < 0) {
-    values->absolute_encoder += index_diff_;
+    values->absolute_encoder += index_difference_;
   }
+}
+
+void PositionSensorSimulator::GetSensorValues(HallEffectAndPosition *values) {
+  values->current = lower_index_edge_.current_index_segment() !=
+                    upper_index_edge_.current_index_segment();
+  values->position = current_position_ - start_position_;
+
+  values->posedge_count = posedge_count_;
+  values->negedge_count = negedge_count_;
+  values->posedge_value = posedge_value_ - start_position_;
+  values->negedge_value = negedge_value_ - start_position_;
 }
 
 }  // namespace control_loops

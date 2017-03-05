@@ -303,5 +303,75 @@ TEST_F(PositionSensorSimTest, PotAndEncodersNoIndexPulse) {
   // TODO(philipp): Test negative values.
 }
 
+// Tests that we get the right number of edges with the HallEffectAndPosition
+// sensor value.
+TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
+  const double index_diff = 1.0;
+  PositionSensorSimulator sim(index_diff);
+  sim.InitializeHallEffectAndPosition(-0.25, 0.0, 0.5);
+  HallEffectAndPosition position;
+
+  // Go over only the lower edge rising.
+  sim.MoveTo(0.25);
+  sim.GetSensorValues(&position);
+  EXPECT_TRUE(position.current);
+  EXPECT_DOUBLE_EQ(0.50, position.position);
+  EXPECT_EQ(1, position.posedge_count);
+  EXPECT_EQ(0.25, position.posedge_value);
+  EXPECT_EQ(0, position.negedge_count);
+  EXPECT_EQ(0, position.negedge_value);
+
+  // Now, go over the upper edge, falling.
+  sim.MoveTo(0.75);
+  sim.GetSensorValues(&position);
+  EXPECT_FALSE(position.current);
+  EXPECT_DOUBLE_EQ(1.0, position.position);
+  EXPECT_EQ(1, position.posedge_count);
+  EXPECT_DOUBLE_EQ(0.25, position.posedge_value);
+  EXPECT_EQ(1, position.negedge_count);
+  EXPECT_DOUBLE_EQ(0.75, position.negedge_value);
+
+  // Now, jump a whole cycle.
+  sim.MoveTo(1.75);
+  sim.GetSensorValues(&position);
+  EXPECT_FALSE(position.current);
+  EXPECT_DOUBLE_EQ(2.0, position.position);
+  EXPECT_EQ(2, position.posedge_count);
+  EXPECT_DOUBLE_EQ(1.25, position.posedge_value);
+  EXPECT_EQ(2, position.negedge_count);
+  EXPECT_DOUBLE_EQ(1.75, position.negedge_value);
+
+  // Now, jump a whole cycle backwards.
+  sim.MoveTo(0.75);
+  sim.GetSensorValues(&position);
+  EXPECT_FALSE(position.current);
+  EXPECT_DOUBLE_EQ(1.0, position.position);
+  EXPECT_EQ(3, position.posedge_count);
+  EXPECT_DOUBLE_EQ(1.75, position.posedge_value);
+  EXPECT_EQ(3, position.negedge_count);
+  EXPECT_DOUBLE_EQ(1.25, position.negedge_value);
+
+  // Now, go over the upper edge, rising.
+  sim.MoveTo(0.25);
+  sim.GetSensorValues(&position);
+  EXPECT_TRUE(position.current);
+  EXPECT_DOUBLE_EQ(0.5, position.position);
+  EXPECT_EQ(4, position.posedge_count);
+  EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
+  EXPECT_EQ(3, position.negedge_count);
+  EXPECT_DOUBLE_EQ(1.25, position.negedge_value);
+
+  // Now, go over the lower edge, falling.
+  sim.MoveTo(-0.25);
+  sim.GetSensorValues(&position);
+  EXPECT_FALSE(position.current);
+  EXPECT_DOUBLE_EQ(0.0, position.position);
+  EXPECT_EQ(4, position.posedge_count);
+  EXPECT_DOUBLE_EQ(0.75, position.posedge_value);
+  EXPECT_EQ(4, position.negedge_count);
+  EXPECT_DOUBLE_EQ(0.25, position.negedge_value);
+}
+
+
 }  // namespace control_loops
 }  // namespace frc971

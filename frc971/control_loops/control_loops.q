@@ -113,6 +113,21 @@ struct HallEffectStruct {
   double negedge_value;
 };
 
+// Records the hall effect sensor and encoder values.
+struct HallEffectAndPosition {
+  // The current hall effect state.
+  bool current;
+  // The current encoder position.
+  double position;
+  // The number of positive and negative edges we've seen on the hall effect
+  // sensor.
+  int32_t posedge_count;
+  int32_t negedge_count;
+  // The values corresponding to the last hall effect sensor reading.
+  double posedge_value;
+  double negedge_value;
+};
+
 // Records the positions for a mechanism with edge-capturing sensors on it.
 struct HallEffectPositions {
   double current;
