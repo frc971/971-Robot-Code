@@ -23,7 +23,8 @@ constexpr double kTolerance = 10.0;
 // TODO(austin): Pseudo current limit?
 
 ShooterController::ShooterController()
-    : loop_(new StateFeedbackLoop<3, 1, 1>(
+    : loop_(new StateFeedbackLoop<3, 1, 1, StateFeedbackHybridPlant<3, 1, 1>,
+                                  HybridKalman<3, 1, 1>>(
           superstructure::shooter::MakeIntegralShooterLoop())) {
   history_.fill(0);
   Y_.setZero();

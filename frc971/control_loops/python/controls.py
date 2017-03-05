@@ -151,6 +151,49 @@ def kalman(A, B, C, Q, R):
 
   return K, P
 
+
+def kalmd(A_continuous, B_continuous, Q_continuous, R_continuous, dt):
+  """Converts a continuous time kalman filter to discrete time.
+
+    Args:
+      A_continuous: The A continuous matrix
+      B_continuous: the B continuous matrix
+      Q_continuous: The continuous cost matrix
+      R_continuous: The R continuous matrix
+      dt: Timestep
+
+    The math for this is from:
+    https://www.mathworks.com/help/control/ref/kalmd.html
+
+    Returns:
+      The discrete matrices of A, B, Q, and R.
+  """
+  # TODO(austin): Verify that the dimensions make sense.
+  number_of_states = A_continuous.shape[0]
+  number_of_inputs = B_continuous.shape[1]
+  M = numpy.zeros((len(A_continuous) + number_of_inputs,
+                   len(A_continuous) + number_of_inputs))
+  M[0:number_of_states, 0:number_of_states] = A_continuous
+  M[0:number_of_states, number_of_states:] = B_continuous
+  M_exp = scipy.linalg.expm(M * dt)
+  A_discrete = M_exp[0:number_of_states, 0:number_of_states]
+  B_discrete = numpy.matrix(M_exp[0:number_of_states, number_of_states:])
+  Q_continuous = (Q_continuous + Q_continuous.T) / 2.0
+  R_continuous = (R_continuous + R_continuous.T) / 2.0
+  M = numpy.concatenate((-A_continuous, Q_continuous), axis=1)
+  M = numpy.concatenate(
+      (M, numpy.concatenate((numpy.matrix(
+          numpy.zeros((number_of_states, number_of_states))),
+       numpy.transpose(A_continuous)), axis = 1)), axis = 0)
+  phi = numpy.matrix(scipy.linalg.expm(M*dt))
+  phi12 = phi[0:number_of_states, number_of_states:(2*number_of_states)]
+  phi22 = phi[number_of_states:2*number_of_states, number_of_states:2*number_of_states]
+  Q_discrete = phi22.T * phi12
+  Q_discrete = (Q_discrete + Q_discrete.T) / 2.0
+  R_discrete = R_continuous / dt
+  return (A_discrete, B_discrete, Q_discrete, R_discrete)
+
+
 def TwoStateFeedForwards(B, Q):
   """Computes the feed forwards constant for a 2 state controller.
 

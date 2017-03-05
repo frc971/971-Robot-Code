@@ -16,7 +16,9 @@ class Constant(object):
 
 
 class ControlLoopWriter(object):
-  def __init__(self, gain_schedule_name, loops, namespaces=None, write_constants=False):
+  def __init__(self, gain_schedule_name, loops, namespaces=None,
+               write_constants=False, plant_type='StateFeedbackPlant',
+               observer_type='StateFeedbackObserver'):
     """Constructs a control loop writer.
 
     Args:
@@ -25,6 +27,8 @@ class ControlLoopWriter(object):
         in order.
       namespaces: array[string], a list of names of namespaces to nest in
         order.  If None, the default will be used.
+      plant_type: string, The C++ type of the plant.
+      observer_type: string, The C++ type of the observer.
     """
     self._gain_schedule_name = gain_schedule_name
     self._loops = loops
@@ -40,6 +44,8 @@ class ControlLoopWriter(object):
         ['}  // namespace %s' % name for name in reversed(self._namespaces)])
 
     self._constant_list = []
+    self._plant_type = plant_type
+    self._observer_type = observer_type
 
   def AddConstant(self, constant):
     """Adds a constant to write.
@@ -62,13 +68,17 @@ class ControlLoopWriter(object):
     self.WriteHeader(header_file)
     self.WriteCC(os.path.basename(header_file), cc_file)
 
-  def _GenericType(self, typename):
+  def _GenericType(self, typename, extra_args=None):
     """Returns a loop template using typename for the type."""
     num_states = self._loops[0].A.shape[0]
     num_inputs = self._loops[0].B.shape[1]
     num_outputs = self._loops[0].C.shape[0]
-    return '%s<%d, %d, %d>' % (
-        typename, num_states, num_inputs, num_outputs)
+    if extra_args is not None:
+      extra_args = ', ' + extra_args
+    else:
+      extra_args = ''
+    return '%s<%d, %d, %d%s>' % (
+        typename, num_states, num_inputs, num_outputs, extra_args)
 
   def _ControllerType(self):
     """Returns a template name for StateFeedbackController."""
@@ -76,19 +86,20 @@ class ControlLoopWriter(object):
 
   def _ObserverType(self):
     """Returns a template name for StateFeedbackObserver."""
-    return self._GenericType('StateFeedbackObserver')
+    return self._GenericType(self._observer_type)
 
   def _LoopType(self):
     """Returns a template name for StateFeedbackLoop."""
-    return self._GenericType('StateFeedbackLoop')
+    extra_args = '%s, %s' % (self._PlantType(), self._ObserverType())
+    return self._GenericType('StateFeedbackLoop', extra_args)
 
   def _PlantType(self):
     """Returns a template name for StateFeedbackPlant."""
-    return self._GenericType('StateFeedbackPlant')
+    return self._GenericType(self._plant_type)
 
   def _PlantCoeffType(self):
     """Returns a template name for StateFeedbackPlantCoefficients."""
-    return self._GenericType('StateFeedbackPlantCoefficients')
+    return self._GenericType(self._plant_type + 'Coefficients')
 
   def _ControllerCoeffType(self):
     """Returns a template name for StateFeedbackControllerCoefficients."""
@@ -96,7 +107,7 @@ class ControlLoopWriter(object):
 
   def _ObserverCoeffType(self):
     """Returns a template name for StateFeedbackObserverCoefficients."""
-    return self._GenericType('StateFeedbackObserverCoefficients')
+    return self._GenericType(self._observer_type + 'Coefficients')
 
   def WriteHeader(self, header_file, double_appendage=False, MoI_ratio=0.0):
     """Writes the header file to the file named header_file.
@@ -116,11 +127,11 @@ class ControlLoopWriter(object):
 
       fd.write('\n\n')
       for loop in self._loops:
-        fd.write(loop.DumpPlantHeader())
+        fd.write(loop.DumpPlantHeader(self._PlantCoeffType()))
         fd.write('\n')
         fd.write(loop.DumpControllerHeader())
         fd.write('\n')
-        fd.write(loop.DumpObserverHeader())
+        fd.write(loop.DumpObserverHeader(self._ObserverCoeffType()))
         fd.write('\n')
 
       fd.write('%s Make%sPlant();\n\n' %
@@ -152,7 +163,7 @@ class ControlLoopWriter(object):
       fd.write(self._namespace_start)
       fd.write('\n\n')
       for loop in self._loops:
-        fd.write(loop.DumpPlant())
+        fd.write(loop.DumpPlant(self._PlantCoeffType()))
         fd.write('\n')
 
       for loop in self._loops:
@@ -160,7 +171,7 @@ class ControlLoopWriter(object):
         fd.write('\n')
 
       for loop in self._loops:
-        fd.write(loop.DumpObserver())
+        fd.write(loop.DumpObserver(self._ObserverCoeffType()))
         fd.write('\n')
 
       fd.write('%s Make%sPlant() {\n' %
@@ -292,44 +303,45 @@ class ControlLoop(object):
 
     return ''.join(ans)
 
-  def DumpPlantHeader(self):
+  def DumpPlantHeader(self, plant_coefficient_type):
     """Writes out a c++ header declaration which will create a Plant object.
 
     Returns:
       string, The header declaration for the function.
     """
-    num_states = self.A.shape[0]
-    num_inputs = self.B.shape[1]
-    num_outputs = self.C.shape[0]
-    return 'StateFeedbackPlantCoefficients<%d, %d, %d> Make%sPlantCoefficients();\n' % (
-        num_states, num_inputs, num_outputs, self._name)
+    return '%s Make%sPlantCoefficients();\n' % (
+        plant_coefficient_type, self._name)
 
-  def DumpPlant(self):
+  def DumpPlant(self, plant_coefficient_type):
     """Writes out a c++ function which will create a PlantCoefficients object.
 
     Returns:
       string, The function which will create the object.
     """
-    num_states = self.A.shape[0]
-    num_inputs = self.B.shape[1]
-    num_outputs = self.C.shape[0]
-    ans = ['StateFeedbackPlantCoefficients<%d, %d, %d>'
-           ' Make%sPlantCoefficients() {\n' % (
-        num_states, num_inputs, num_outputs, self._name)]
+    ans = ['%s Make%sPlantCoefficients() {\n' % (
+        plant_coefficient_type, self._name)]
 
-    ans.append(self._DumpMatrix('A', self.A))
-    ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
-    ans.append(self._DumpMatrix('A_continuous', self.A_continuous))
-    ans.append(self._DumpMatrix('B', self.B))
-    ans.append(self._DumpMatrix('B_continuous', self.B_continuous))
     ans.append(self._DumpMatrix('C', self.C))
     ans.append(self._DumpMatrix('D', self.D))
     ans.append(self._DumpMatrix('U_max', self.U_max))
     ans.append(self._DumpMatrix('U_min', self.U_min))
 
-    ans.append('  return StateFeedbackPlantCoefficients<%d, %d, %d>'
-               '(A, A_inv, A_continuous, B, B_continuous, C, D, U_max, U_min);\n' % (
-                   num_states, num_inputs, num_outputs))
+    if plant_coefficient_type.startswith('StateFeedbackPlant'):
+      ans.append(self._DumpMatrix('A', self.A))
+      ans.append(self._DumpMatrix('A_inv', numpy.linalg.inv(self.A)))
+      ans.append(self._DumpMatrix('B', self.B))
+      ans.append('  return %s'
+                 '(A, A_inv, B, C, D, U_max, U_min);\n' % (
+                     plant_coefficient_type))
+    elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
+      ans.append(self._DumpMatrix('A_continuous', self.A_continuous))
+      ans.append(self._DumpMatrix('B_continuous', self.B_continuous))
+      ans.append('  return %s'
+                 '(A_continuous, B_continuous, C, D, U_max, U_min);\n' % (
+                     plant_coefficient_type))
+    else:
+      glog.fatal('Unsupported plant type %s', plant_coefficient_type)
+
     ans.append('}\n')
     return ''.join(ans)
 
@@ -381,33 +393,62 @@ class ControlLoop(object):
     ans.append('}\n')
     return ''.join(ans)
 
-  def DumpObserverHeader(self):
+  def DumpObserverHeader(self, observer_coefficient_type):
     """Writes out a c++ header declaration which will create a Observer object.
 
     Returns:
       string, The header declaration for the function.
     """
-    num_states = self.A.shape[0]
-    num_inputs = self.B.shape[1]
-    num_outputs = self.C.shape[0]
-    return 'StateFeedbackObserverCoefficients<%d, %d, %d> %s;\n' % (
-        num_states, num_inputs, num_outputs, self.ObserverFunction())
+    return '%s %s;\n' % (
+        observer_coefficient_type, self.ObserverFunction())
 
-  def DumpObserver(self):
+  def DumpObserver(self, observer_coefficient_type):
     """Returns a c++ function which will create a Observer object.
 
     Returns:
       string, The function which will create the object.
     """
-    num_states = self.A.shape[0]
-    num_inputs = self.B.shape[1]
-    num_outputs = self.C.shape[0]
-    ans = ['StateFeedbackObserverCoefficients<%d, %d, %d> %s {\n' % (
-        num_states, num_inputs, num_outputs, self.ObserverFunction())]
+    ans = ['%s %s {\n' % (
+           observer_coefficient_type, self.ObserverFunction())]
 
-    ans.append(self._DumpMatrix('L', self.L))
+    if observer_coefficient_type.startswith('StateFeedbackObserver'):
+      ans.append(self._DumpMatrix('L', self.L))
+      ans.append('  return %s(L);\n' % (observer_coefficient_type,))
+    elif observer_coefficient_type.startswith('HybridKalman'):
+      ans.append(self._DumpMatrix('Q_continuous', self.Q_continuous))
+      ans.append(self._DumpMatrix('R_continuous', self.R_continuous))
+      ans.append(self._DumpMatrix('P_steady_state', self.P_steady_state))
+      ans.append('  return %s(Q_continuous, R_continuous, P_steady_state);\n' % (
+          observer_coefficient_type,))
 
-    ans.append('  return StateFeedbackObserverCoefficients<%d, %d, %d>'
-               '(L);\n' % (num_states, num_inputs, num_outputs))
     ans.append('}\n')
     return ''.join(ans)
+
+class HybridControlLoop(ControlLoop):
+  def __init__(self, name):
+    super(HybridControlLoop, self).__init__(name=name)
+
+  def Discritize(self, dt):
+    [self.A, self.B, self.Q, self.R] = \
+        controls.kalmd(self.A_continuous, self.B_continuous,
+                       self.Q_continuous, self.R_continuous, dt)
+
+  def PredictHybridObserver(self, U, dt):
+    self.Discritize(dt)
+    self.X_hat = self.A * self.X_hat + self.B * U
+    self.P = (self.A * self.P * self.A.T + self.Q)
+
+  def CorrectHybridObserver(self, U):
+    Y_bar = self.Y - self.C * self.X_hat
+    C_t = self.C.T
+    S = self.C * self.P * C_t + self.R
+    self.KalmanGain = self.P * C_t * numpy.linalg.inv(S)
+    self.X_hat = self.X_hat + self.KalmanGain * Y_bar
+    self.P = (numpy.eye(len(self.A)) - self.KalmanGain * self.C) * self.P
+
+  def InitializeState(self):
+    super(HybridControlLoop, self).InitializeState()
+    if hasattr(self, 'Q_steady_state'):
+      self.P = self.Q_steady_state
+    else:
+      self.P = numpy.matrix(numpy.zeros((self.A.shape[0], self.A.shape[0])))

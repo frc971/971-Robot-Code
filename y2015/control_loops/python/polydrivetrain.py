@@ -112,7 +112,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     super(VelocityDrivetrainModel, self).__init__(name)
     self._drivetrain = drivetrain.Drivetrain(left_low=left_low,
                                              right_low=right_low)
-    self.dt = 0.01
+    self.dt = 0.005
     self.A_continuous = numpy.matrix(
         [[self._drivetrain.A_continuous[1, 1], self._drivetrain.A_continuous[1, 3]],
          [self._drivetrain.A_continuous[3, 1], self._drivetrain.A_continuous[3, 3]]])
@@ -129,7 +129,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
     # FF * X = U (steady state)
     self.FF = self.B.I * (numpy.eye(2) - self.A)
 
-    self.PlaceControllerPoles([0.6, 0.6])
+    self.PlaceControllerPoles([0.7, 0.7])
     self.PlaceObserverPoles([0.02, 0.02])
 
     self.G_high = self._drivetrain.G_high
@@ -178,7 +178,7 @@ class VelocityDrivetrain(object):
         [[-12.0000000000],
          [-12.0000000000]])
 
-    self.dt = 0.01
+    self.dt = 0.005
 
     self.R = numpy.matrix(
         [[0.0],

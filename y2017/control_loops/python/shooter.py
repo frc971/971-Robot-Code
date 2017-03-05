@@ -14,7 +14,14 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
-class VelocityShooter(control_loop.ControlLoop):
+
+def PlotDiff(list1, list2, time):
+  pylab.subplot(1, 1, 1)
+  pylab.plot(time, numpy.subtract(list1, list2), label='diff')
+  pylab.legend()
+
+
+class VelocityShooter(control_loop.HybridControlLoop):
   def __init__(self, name='VelocityShooter'):
     super(VelocityShooter, self).__init__(name)
     # Number of motors
@@ -141,14 +148,19 @@ class IntegralShooter(Shooter):
     q_pos = 0.01
     q_vel = 2.0
     q_voltage = 0.2
-    self.Q = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
-                           [0.0, (q_vel ** 2.0), 0.0],
-                           [0.0, 0.0, (q_voltage ** 2.0)]])
+    self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
+                                      [0.0, (q_vel ** 2.0), 0.0],
+                                      [0.0, 0.0, (q_voltage ** 2.0)]])
 
     r_pos = 0.001
-    self.R = numpy.matrix([[(r_pos ** 2.0)]])
+    self.R_continuous = numpy.matrix([[(r_pos ** 2.0)]])
 
-    self.KalmanGain, self.Q_steady = controls.kalman(
+    _, _, self.Q, self.R = controls.kalmd(
+        A_continuous=self.A_continuous, B_continuous=self.B_continuous,
+        Q_continuous=self.Q_continuous, R_continuous=self.R_continuous,
+        dt=self.dt)
+
+    self.KalmanGain, self.P_steady_state = controls.kalman(
         A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
     self.L = self.A * self.KalmanGain
 
@@ -173,9 +185,10 @@ class ScenarioPlotter(object):
     self.x_hat = []
     self.u = []
     self.offset = []
+    self.diff = []
 
   def run_test(self, shooter, goal, iterations=200, controller_shooter=None,
-             observer_shooter=None):
+             observer_shooter=None, hybrid_obs = False):
     """Runs the shooter plant with an initial condition and goal.
 
       Args:
@@ -211,6 +224,7 @@ class ScenarioPlotter(object):
       U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
       self.x.append(shooter.X[0, 0])
 
+      self.diff.append(shooter.X[1, 0] - observer_shooter.X_hat[1, 0])
 
       if self.v:
         last_v = self.v[-1]
@@ -221,8 +235,9 @@ class ScenarioPlotter(object):
       self.a.append((self.v[-1] - last_v) / shooter.dt)
 
       if observer_shooter is not None:
-        observer_shooter.Y = shooter.Y
-        observer_shooter.CorrectObserver(U)
+        if i != 0:
+          observer_shooter.Y = shooter.Y
+          observer_shooter.CorrectObserver(U)
         self.offset.append(observer_shooter.X_hat[2, 0])
 
       applied_U = U.copy()
@@ -231,7 +246,11 @@ class ScenarioPlotter(object):
       shooter.Update(applied_U)
 
       if observer_shooter is not None:
-        observer_shooter.PredictObserver(U)
+        if hybrid_obs:
+          observer_shooter.PredictHybridObserver(U, shooter.dt)
+        else:
+          observer_shooter.PredictObserver(U)
+
 
       self.t.append(initial_t + i * shooter.dt)
       self.u.append(U[0, 0])
@@ -251,23 +270,41 @@ class ScenarioPlotter(object):
     pylab.plot(self.t, self.a, label='a')
     pylab.legend()
 
-    pylab.show()
+    pylab.figure()
+    pylab.draw()
 
 
 def main(argv):
   scenario_plotter = ScenarioPlotter()
 
-  shooter = Shooter()
-  shooter_controller = IntegralShooter()
-  observer_shooter = IntegralShooter()
-
-  initial_X = numpy.matrix([[0.0], [0.0]])
-  R = numpy.matrix([[0.0], [100.0], [0.0]])
-  scenario_plotter.run_test(shooter, goal=R, controller_shooter=shooter_controller,
-                            observer_shooter=observer_shooter, iterations=200)
-
   if FLAGS.plot:
+    shooter = Shooter()
+    shooter_controller = IntegralShooter()
+    observer_shooter = IntegralShooter()
+    iterations = 200
+
+    initial_X = numpy.matrix([[0.0], [0.0]])
+    R = numpy.matrix([[0.0], [100.0], [0.0]])
+    scenario_plotter.run_test(shooter, goal=R, controller_shooter=shooter_controller,
+                              observer_shooter=observer_shooter, iterations=iterations)
+
     scenario_plotter.Plot()
+
+    scenario_plotter_int = ScenarioPlotter()
+
+    shooter = Shooter()
+    shooter_controller = IntegralShooter()
+    observer_shooter_hybrid = IntegralShooter()
+
+    scenario_plotter_int.run_test(shooter, goal=R, controller_shooter=shooter_controller,
+      observer_shooter=observer_shooter_hybrid, iterations=iterations,
+      hybrid_obs = True)
+
+    scenario_plotter_int.Plot()
+    PlotDiff(scenario_plotter.x_hat, scenario_plotter_int.x_hat,
+      scenario_plotter.t)
+
+    pylab.show()
 
   if len(argv) != 5:
     glog.fatal('Expected .h file name and .cc file name')
@@ -284,7 +321,9 @@ def main(argv):
 
     integral_shooter = IntegralShooter('IntegralShooter')
     integral_loop_writer = control_loop.ControlLoopWriter(
-        'IntegralShooter', [integral_shooter], namespaces=namespaces)
+        'IntegralShooter', [integral_shooter], namespaces=namespaces,
+        plant_type='StateFeedbackHybridPlant',
+        observer_type='HybridKalman')
     integral_loop_writer.Write(argv[3], argv[4])
 
 
