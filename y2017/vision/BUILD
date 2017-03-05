@@ -34,3 +34,16 @@ cc_binary(
     '//aos/common:mutex',
   ],
 )
+
+cc_library(
+  name = 'target_finder',
+  srcs = ['target_finder.cc'],
+  hdrs = ['target_finder.h'],
+  deps = [
+    '//aos/vision/blob:threshold',
+    '//aos/vision/blob:transpose',
+    '//aos/vision/debug:overlay',
+    '//aos/vision/math:vector',
+  ],
+)
+)
