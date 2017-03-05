@@ -6,14 +6,14 @@
 #include "aos/linux_code/init.h"
 #include "aos/vision/events/udp.h"
 #include "y2017/vision/vision.q.h"
-#include "y2017/vision/vision_data.pb.h"
+#include "y2017/vision/vision_result.pb.h"
 
 using aos::monotonic_clock;
 
 namespace y2017 {
 namespace vision {
 
-void ComputeDistanceAngle(const Target &target, double *distance,
+void ComputeDistanceAngle(const TargetResult &target, double *distance,
                           double *angle) {
   // TODO: fix this.
   *distance = target.y();
@@ -30,7 +30,7 @@ int main() {
 
   while (true) {
     // TODO(austin): Don't malloc.
-    VisionData target;
+    VisionResult target;
     int size = recv.Recv(raw_data, sizeof(raw_data));
     monotonic_clock::time_point now = monotonic_clock::now();
     auto target_time = now -

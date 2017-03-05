@@ -5,15 +5,15 @@ package y2017.vision;
 // Represents a target found by the vision processing code.
 // X is an estimate of the center of the target.
 // Y is an estimate of the top of the bottom retroreflective tape.
-message Target {
+message TargetResult {
   optional double x = 1;
   optional double y = 2;
 }
 
 // Represents the best target in the image if there is such a target
 // along with timing information.
-message VisionData {
+message VisionResult {
   optional int64 image_timestamp = 1;
   optional int64 send_timestamp = 2;
-  optional Target target = 3;
+  optional TargetResult target = 3;
 }
