@@ -1,16 +1,16 @@
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 
-#include "aos/common/logging/logging.h"
-#include "aos/common/controls/polytope.h"
 #include "aos/common/commonmath.h"
-#include "aos/common/logging/queue_logging.h"
+#include "aos/common/controls/polytope.h"
+#include "aos/common/logging/logging.h"
 #include "aos/common/logging/matrix_logging.h"
+#include "aos/common/logging/queue_logging.h"
 
 #include "aos/common/messages/robot_state.q.h"
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -22,13 +22,16 @@ PolyDrivetrain::PolyDrivetrain(const DrivetrainConfig &dt_config,
       U_Poly_((Eigen::Matrix<double, 4, 2>() << /*[[*/ 1, 0 /*]*/,
                /*[*/ -1, 0 /*]*/,
                /*[*/ 0, 1 /*]*/,
-               /*[*/ 0, -1 /*]]*/).finished(),
+               /*[*/ 0, -1 /*]]*/)
+                  .finished(),
               (Eigen::Matrix<double, 4, 1>() << /*[[*/ 12 /*]*/,
                /*[*/ 12 /*]*/,
                /*[*/ 12 /*]*/,
-               /*[*/ 12 /*]]*/).finished(),
+               /*[*/ 12 /*]]*/)
+                  .finished(),
               (Eigen::Matrix<double, 2, 4>() << /*[[*/ 12, 12, -12, -12 /*]*/,
-               /*[*/ -12, 12, 12, -12 /*]*/).finished()),
+               /*[*/ -12, 12, 12, -12 /*]*/)
+                  .finished()),
       loop_(new StateFeedbackLoop<2, 2, 2>(dt_config.make_v_drivetrain_loop())),
       ttrust_(1.1),
       wheel_(0.0),
@@ -148,14 +151,14 @@ void PolyDrivetrain::SetPosition(
 
 double PolyDrivetrain::FilterVelocity(double throttle) const {
   const Eigen::Matrix<double, 2, 2> FF =
-      loop_->B().inverse() *
-      (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+      loop_->plant().B().inverse() *
+      (Eigen::Matrix<double, 2, 2>::Identity() - loop_->plant().A());
 
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<double, 2, 2> FF_high =
-      loop_->controller(kHighGearController).plant.B.inverse() *
+      loop_->plant().coefficients(kHighGearController).B.inverse() *
       (Eigen::Matrix<double, 2, 2>::Identity() -
-       loop_->controller(kHighGearController).plant.A);
+       loop_->plant().coefficients(kHighGearController).A);
 
   ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
   int min_FF_sum_index;
@@ -173,14 +176,14 @@ double PolyDrivetrain::FilterVelocity(double throttle) const {
 
 double PolyDrivetrain::MaxVelocity() {
   const Eigen::Matrix<double, 2, 2> FF =
-      loop_->B().inverse() *
-      (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+      loop_->plant().B().inverse() *
+      (Eigen::Matrix<double, 2, 2>::Identity() - loop_->plant().A());
 
   constexpr int kHighGearController = 3;
   const Eigen::Matrix<double, 2, 2> FF_high =
-      loop_->controller(kHighGearController).plant.B.inverse() *
+      loop_->plant().coefficients(kHighGearController).B.inverse() *
       (Eigen::Matrix<double, 2, 2>::Identity() -
-       loop_->controller(kHighGearController).plant.A);
+       loop_->plant().coefficients(kHighGearController).A);
 
   ::Eigen::Matrix<double, 1, 2> FF_sum = FF.colwise().sum();
   int min_FF_sum_index;
@@ -206,8 +209,8 @@ void PolyDrivetrain::Update() {
   if (IsInGear(left_gear_) && IsInGear(right_gear_)) {
     // FF * X = U (steady state)
     const Eigen::Matrix<double, 2, 2> FF =
-        loop_->B().inverse() *
-        (Eigen::Matrix<double, 2, 2>::Identity() - loop_->A());
+        loop_->plant().B().inverse() *
+        (Eigen::Matrix<double, 2, 2>::Identity() - loop_->plant().A());
 
     // Invert the plant to figure out how the velocity filter would have to
     // work
@@ -262,7 +265,7 @@ void PolyDrivetrain::Update() {
 
     if (dt_config_.loop_type == LoopType::OPEN_LOOP) {
       loop_->mutable_X_hat() =
-          loop_->A() * loop_->X_hat() + loop_->B() * loop_->U();
+          loop_->plant().A() * loop_->X_hat() + loop_->plant().B() * loop_->U();
     }
   } else {
     const double current_left_velocity =

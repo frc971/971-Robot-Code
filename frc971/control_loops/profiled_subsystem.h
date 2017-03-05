@@ -60,7 +60,7 @@ class ProfiledSubsystem {
     return *loop_;
   }
 
-  int controller_index() const { return loop_->controller_index(); }
+  int controller_index() const { return loop_->index(); }
 
   // Returns whether the estimators have been initialized and zeroed.
   bool initialized() const { return initialized_; }

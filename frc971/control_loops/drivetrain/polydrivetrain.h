@@ -17,7 +17,7 @@ class PolyDrivetrain {
   PolyDrivetrain(const DrivetrainConfig &dt_config,
                  StateFeedbackLoop<7, 2, 3> *kf);
 
-  int controller_index() const { return loop_->controller_index(); }
+  int controller_index() const { return loop_->index(); }
 
   // Computes the speed of the motor given the hall effect position and the
   // speed of the robot.

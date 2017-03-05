@@ -166,15 +166,15 @@ class DrivetrainSimulation {
 
     if (left_gear_high_) {
       if (right_gear_high_) {
-        drivetrain_plant_->set_plant_index(3);
+        drivetrain_plant_->set_index(3);
       } else {
-        drivetrain_plant_->set_plant_index(2);
+        drivetrain_plant_->set_index(2);
       }
     } else {
       if (right_gear_high_) {
-        drivetrain_plant_->set_plant_index(1);
+        drivetrain_plant_->set_index(1);
       } else {
-        drivetrain_plant_->set_plant_index(0);
+        drivetrain_plant_->set_index(0);
       }
     }
 
