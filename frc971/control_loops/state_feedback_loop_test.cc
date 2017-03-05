@@ -34,13 +34,21 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   plant.CheckU(Eigen::Matrix<double, 4, 1>::Zero());
 
   // Now build a controller.
-  ::std::vector<::std::unique_ptr<StateFeedbackControllerConstants<2, 4, 7>>>
-      v_loop;
-  v_loop.emplace_back(new StateFeedbackControllerConstants<2, 4, 7>(
-      Eigen::Matrix<double, 2, 7>::Identity(),
+  ::std::vector<::std::unique_ptr<StateFeedbackControllerCoefficients<2, 4, 7>>>
+      v_controller;
+  v_controller.emplace_back(new StateFeedbackControllerCoefficients<2, 4, 7>(
       Eigen::Matrix<double, 4, 2>::Identity(),
       Eigen::Matrix<double, 4, 2>::Identity()));
-  StateFeedbackLoop<2, 4, 7> test_loop(::std::move(plant), &v_loop);
+  StateFeedbackController<2, 4, 7> controller(&v_controller);
+
+  ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<2, 4, 7>>>
+      v_observer;
+  v_observer.emplace_back(new StateFeedbackObserverCoefficients<2, 4, 7>(
+      Eigen::Matrix<double, 2, 7>::Identity()));
+  StateFeedbackObserver<2, 4, 7> observer(&v_observer);
+
+  StateFeedbackLoop<2, 4, 7> test_loop(
+      ::std::move(plant), ::std::move(controller), ::std::move(observer));
   test_loop.Correct(Eigen::Matrix<double, 7, 1>::Identity());
   test_loop.Update(false);
   test_loop.CapU();

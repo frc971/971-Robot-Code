@@ -542,7 +542,8 @@ class WindupClawTest : public ClawTest {
               claw_motor_.top_claw_goal_ - claw_motor_.bottom_claw_goal_, 0.0,
               0.0;
           Eigen::Matrix<double, 2, 1> uncapped_voltage =
-              claw_motor_.claw_.K() * (R - claw_motor_.claw_.X_hat());
+              claw_motor_.claw_.controller().K() *
+              (R - claw_motor_.claw_.X_hat());
           // Use a factor of 1.8 because so long as it isn't actually running
           // away, the CapU function will deal with getting the actual output
           // down.

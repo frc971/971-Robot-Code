@@ -30,7 +30,9 @@ DrivetrainActor::DrivetrainActor(actors::DrivetrainActionQueueGroup* s)
 
 bool DrivetrainActor::RunAction(const actors::DrivetrainActionParams &params) {
   static const auto K =
-      ::y2015_bot3::control_loops::drivetrain::MakeDrivetrainLoop().K();
+      ::y2015_bot3::control_loops::drivetrain::MakeDrivetrainLoop()
+          .controller()
+          .K();
 
   const double yoffset = params.y_offset;
   const double turn_offset =
