@@ -31,7 +31,7 @@ class Drivetrain(control_loop.ControlLoop):
     # Moment of inertia of the drivetrain in kg m^2
     self.J = 2.0
     # Mass of the robot, in kg.
-    self.m = 24
+    self.m = 50
     # Radius of the robot, in meters (requires tuning by hand)
     self.rb = 0.59055 / 2.0
     # Radius of the wheels, in meters.

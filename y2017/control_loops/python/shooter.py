@@ -39,7 +39,7 @@ class VelocityShooter(control_loop.HybridControlLoop):
     # Moment of inertia of the shooter wheel in kg m^2
     # 1400.6 grams/cm^2
     # 1.407 *1e-4 kg m^2
-    self.J = 0.00080
+    self.J = 0.00120
     # Resistance of the motor, divided by 2 to account for the 2 motors
     self.R = 12.0 / self.stall_current
     # Motor velocity constant
@@ -64,7 +64,7 @@ class VelocityShooter(control_loop.HybridControlLoop):
     self.A, self.B = self.ContinuousToDiscrete(
         self.A_continuous, self.B_continuous, self.dt)
 
-    self.PlaceControllerPoles([.90])
+    self.PlaceControllerPoles([.75])
 
     glog.debug('K %s', repr(self.K))
     glog.debug('Poles are %s',
@@ -147,12 +147,12 @@ class IntegralShooter(Shooter):
 
     q_pos = 0.01
     q_vel = 2.0
-    q_voltage = 0.2
+    q_voltage = 0.3
     self.Q_continuous = numpy.matrix([[(q_pos ** 2.0), 0.0, 0.0],
                                       [0.0, (q_vel ** 2.0), 0.0],
                                       [0.0, 0.0, (q_voltage ** 2.0)]])
 
-    r_pos = 0.001
+    r_pos = 0.0003
     self.R_continuous = numpy.matrix([[(r_pos ** 2.0)]])
 
     _, _, self.Q, self.R = controls.kalmd(
@@ -256,6 +256,7 @@ class ScenarioPlotter(object):
       self.u.append(U[0, 0])
 
   def Plot(self):
+    pylab.figure()
     pylab.subplot(3, 1, 1)
     pylab.plot(self.t, self.v, label='x')
     pylab.plot(self.t, self.x_hat, label='x_hat')
@@ -270,7 +271,6 @@ class ScenarioPlotter(object):
     pylab.plot(self.t, self.a, label='a')
     pylab.legend()
 
-    pylab.figure()
     pylab.draw()
 
 
