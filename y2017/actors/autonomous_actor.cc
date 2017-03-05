@@ -19,10 +19,15 @@ namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 
 namespace {
+
 double DoubleSeconds(monotonic_clock::duration duration) {
   return ::std::chrono::duration_cast<::std::chrono::duration<double>>(duration)
       .count();
 }
+
+const ProfileParameters kSlowDrive = {0.8, 2.5};
+const ProfileParameters kSlowTurn = {0.8, 3.0};
+
 }  // namespace
 
 AutonomousActor::AutonomousActor(
@@ -37,6 +42,12 @@ bool AutonomousActor::RunAction(
 
   switch (params.mode) {
     case 0:
+      // Test case autonomous mode.
+      // Drives forward 1.0 meters and then turns 180 degrees.
+      StartDrive(1.1, 0.0, kSlowDrive, kSlowTurn);
+      if (!WaitForDriveNear(1.0, 0.0)) return true;
+      StartDrive(0.0, M_PI / 2, kSlowDrive, kSlowTurn);
+      if (!WaitForDriveDone()) return true;
       break;
 
     default:
