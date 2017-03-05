@@ -228,12 +228,12 @@ int main(int, char **) {
   std::thread cam0([stereo]() {
     RunCamera(0, GetCameraParams(stereo.calibration()),
               stereo.calibration().right_camera_name(),
-              stereo.calibration().roborio_ip_addr(), 8082);
+              stereo.calibration().roborio_ip_addr(), 8080);
   });
   std::thread cam1([stereo]() {
     RunCamera(1, GetCameraParams(stereo.calibration()),
               stereo.calibration().left_camera_name(),
-              stereo.calibration().roborio_ip_addr(), 8082);
+              stereo.calibration().roborio_ip_addr(), 8080);
   });
   cam0.join();
   cam1.join();

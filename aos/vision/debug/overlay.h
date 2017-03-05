@@ -117,18 +117,39 @@ class PixelLinesOverlay : public OverlayBase {
   ~PixelLinesOverlay() {}
 
   // build a segment for this line
-  void add_line(Vector<2> st, Vector<2> ed) { add_line(st, ed, color); }
+  void AddLine(Vector<2> st, Vector<2> ed) { AddLine(st, ed, color); }
 
   // build a segment for this line
-  void add_line(Vector<2> st, Vector<2> ed, PixelRef newColor) {
+  void AddLine(Vector<2> st, Vector<2> ed, PixelRef newColor) {
     lines_.emplace_back(
         std::pair<Segment<2>, PixelRef>(Segment<2>(st, ed), newColor));
   }
 
-  void start_new_profile() { start_profile = true; }
+  void DrawCross(aos::vision::Vector<2> center, int width,
+                 aos::vision::PixelRef color) {
+    using namespace aos::vision;
+    AddLine(Vector<2>(center.x() - width, center.y()),
+            Vector<2>(center.x() + width, center.y()), color);
+    AddLine(Vector<2>(center.x(), center.y() - width),
+            Vector<2>(center.x(), center.y() + width), color);
+  }
+
+  void DrawBBox(const ImageBBox &box, aos::vision::PixelRef color) {
+    using namespace aos::vision;
+    AddLine(Vector<2>(box.minx, box.miny), Vector<2>(box.maxx, box.miny),
+            color);
+    AddLine(Vector<2>(box.maxx, box.miny), Vector<2>(box.maxx, box.maxy),
+            color);
+    AddLine(Vector<2>(box.maxx, box.maxy), Vector<2>(box.minx, box.maxy),
+            color);
+    AddLine(Vector<2>(box.minx, box.maxy), Vector<2>(box.minx, box.miny),
+            color);
+  }
+
+  void StartNewProfile() { start_profile = true; }
 
   // add a new point connected to the last point in the line
-  void add_point(Vector<2> pt, PixelRef newColor) {
+  void AddPoint(Vector<2> pt, PixelRef newColor) {
     if (lines_.empty() || start_profile) {
       lines_.emplace_back(
           std::pair<Segment<2>, PixelRef>(Segment<2>(pt, pt), newColor));

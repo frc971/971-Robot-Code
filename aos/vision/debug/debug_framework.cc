@@ -6,7 +6,6 @@
 #include "aos/common/logging/logging.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/blob/stream_view.h"
-#include "aos/vision/debug/debug_viewer.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/jpeg_routines.h"
 

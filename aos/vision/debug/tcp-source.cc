@@ -76,7 +76,8 @@ class TCPImageSource : public ImageSource {
    public:
     Impl(const std::string &hostname, int portno,
          DebugFrameworkInterface *interface)
-        : aos::events::TcpClient(hostname.c_str(), portno), interface_(interface) {}
+        : aos::events::TcpClient(hostname.c_str(), portno),
+          interface_(interface) {}
 
     void ReadEvent() override {
       read_.up(fd(), [&](DataRef data) {

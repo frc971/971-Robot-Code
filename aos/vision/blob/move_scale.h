@@ -5,17 +5,10 @@
 #include <vector>
 
 #include "aos/vision/blob/range_image.h"
+#include "aos/vision/image/image_types.h"
 
 namespace aos {
 namespace vision {
-
-// Bounding box for a RangeImage.
-struct ImageBBox {
-  int minx = std::numeric_limits<int>::max();
-  int maxx = std::numeric_limits<int>::min();
-  int miny = std::numeric_limits<int>::max();
-  int maxy = std::numeric_limits<int>::min();
-};
 
 // Sums img into bbox. bbox is constructed empty and grows with each call
 // to GetBBox.

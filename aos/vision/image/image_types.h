@@ -12,6 +12,14 @@
 namespace aos {
 namespace vision {
 
+// Bounding box for a RangeImage.
+struct ImageBBox {
+  int minx = std::numeric_limits<int>::max();
+  int maxx = std::numeric_limits<int>::min();
+  int miny = std::numeric_limits<int>::max();
+  int maxy = std::numeric_limits<int>::min();
+};
+
 // This will go into c++17. No sense writing my own version.
 using DataRef = std::experimental::string_view;
 

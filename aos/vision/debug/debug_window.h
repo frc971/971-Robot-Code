@@ -1,5 +1,5 @@
-#ifndef AOS_VISION_DEBUG_DEBUG_VIEWER_H_
-#define AOS_VISION_DEBUG_DEBUG_VIEWER_H_
+#ifndef AOS_VISION_DEBUG_DEBUG_WINDOW_H_
+#define AOS_VISION_DEBUG_DEBUG_WINDOW_H_
 
 #include <cairo.h>
 #include <functional>
@@ -39,11 +39,11 @@ class CairoRender : public RenderInterface {
 };
 
 // Simple debug view window.
-class DebugViewer {
+class DebugWindow {
  public:
   struct Internals;
-  explicit DebugViewer(bool flip);
-  ~DebugViewer();
+  explicit DebugWindow(bool flip);
+  ~DebugWindow();
   // Explicit redraw queuing (Will not double-queue).
   void Redraw();
 
@@ -76,4 +76,4 @@ class DebugViewer {
 }  // namespace vision
 }  // namespace aos
 
-#endif  // AOS_VISION_DEBUG_DEBUG_VIEWER_H_
+#endif  // AOS_VISION_DEBUG_DEBUG_WINDOW_H_

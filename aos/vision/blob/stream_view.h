@@ -2,7 +2,7 @@
 #define _AOS_VISION_BLOB_STREAM_VIEW_H_
 
 #include "aos/vision/blob/range_image.h"
-#include "aos/vision/debug/debug_viewer.h"
+#include "aos/vision/debug/debug_window.h"
 #include "aos/vision/image/image_types.h"
 
 #include <memory>
@@ -10,10 +10,10 @@
 namespace aos {
 namespace vision {
 
-class BlobStreamViewer : public DebugViewer {
+class BlobStreamViewer : public DebugWindow {
  public:
-  BlobStreamViewer() : DebugViewer(false) {}
-  explicit BlobStreamViewer(bool flip) : DebugViewer(flip) {}
+  BlobStreamViewer() : DebugWindow(false) {}
+  explicit BlobStreamViewer(bool flip) : DebugWindow(flip) {}
 
   void Submit(ImageFormat fmt, const BlobList &blob_list) {
     SetFormatAndClear(fmt);
@@ -77,7 +77,7 @@ class BlobStreamViewer : public DebugViewer {
   }
 
   // Backwards compatible.
-  DebugViewer *view() { return this; }
+  DebugWindow *view() { return this; }
 
   ImagePtr img() { return image_.get(); }
 

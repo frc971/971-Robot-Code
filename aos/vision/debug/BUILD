@@ -11,9 +11,9 @@ cc_library(
         ],
 )
 
-gtk_dependent_cc_library(name = "debug_viewer",
-    srcs = ["debug_viewer.cc"],
-    hdrs = ["debug_viewer.h"],
+gtk_dependent_cc_library(name = "debug_window",
+    srcs = ["debug_window.cc"],
+    hdrs = ["debug_window.h"],
     deps = [
         '@usr_repo//:gtk+-3.0',
         "//aos/vision/image:image_types",
@@ -44,7 +44,6 @@ gtk_dependent_cc_library(
     '//aos/vision/image:jpeg_routines',
     '//aos/vision/image:image_stream',
     '//aos/vision/image:image_types',
-    '//aos/vision/debug:debug_viewer',
     '//aos/common/util:global_factory',
     '@usr_repo//:gtk+-3.0',
   ],

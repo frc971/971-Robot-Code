@@ -237,7 +237,6 @@ void Reader::Init() {
     LOG(FATAL, "Failed to set up camera\n");
   }
 
-  // #if 0
   // set framerate
   struct v4l2_streamparm *setfps;
   setfps = (struct v4l2_streamparm *)calloc(1, sizeof(struct v4l2_streamparm));
@@ -251,7 +250,6 @@ void Reader::Init() {
   LOG(INFO, "framerate ended up at %d/%d\n",
       setfps->parm.capture.timeperframe.numerator,
       setfps->parm.capture.timeperframe.denominator);
-  // #endif
 }
 
 aos::vision::ImageFormat Reader::get_format() {

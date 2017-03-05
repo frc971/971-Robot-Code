@@ -100,6 +100,7 @@ cc_library(
   srcs = ['move_scale.cc'],
   deps = [
     ':range_image',
+    '//aos/vision/image:image_types',
   ],
 )
 
@@ -136,7 +137,7 @@ gtk_dependent_cc_library(
   hdrs = ['stream_view.h'],
   deps = [
     ':range_image',
-    '//aos/vision/debug:debug_viewer',
+    '//aos/vision/debug:debug_window',
     '//aos/vision/image:image_types',
   ],
 )

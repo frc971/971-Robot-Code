@@ -1,4 +1,4 @@
-#include "aos/vision/debug/debug_viewer.h"
+#include "aos/vision/debug/debug_window.h"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -26,7 +26,7 @@ void g_draw_signal_connect(GtkWidget *widget, T *obj) {
   g_signal_connect(widget, "draw", G_CALLBACK(fnptr), obj);
 }
 
-struct DebugViewer::Internals {
+struct DebugWindow::Internals {
   Internals(bool flip) : flip_(flip) {}
 
   gboolean Draw(cairo_t *cr) {
@@ -73,18 +73,18 @@ struct DebugViewer::Internals {
   bool clear_per_frame_ = true;
 };
 
-void DebugViewer::SetOverlays(std::vector<OverlayBase *> *overlays) {
+void DebugWindow::SetOverlays(std::vector<OverlayBase *> *overlays) {
   self->overlays = overlays;
 }
 
-void DebugViewer::Redraw() {
+void DebugWindow::Redraw() {
   if (!self->needs_draw) {
     gtk_widget_queue_draw(self->drawing_area);
     self->needs_draw = true;
   }
 }
 
-void DebugViewer::UpdateImage(ImagePtr ptr) {
+void DebugWindow::UpdateImage(ImagePtr ptr) {
   if (ptr.data() != self->ptr.data()) {
     int w = ptr.fmt().w;
     int h = ptr.fmt().h;
@@ -107,11 +107,11 @@ void DebugViewer::UpdateImage(ImagePtr ptr) {
   }
 }
 
-void DebugViewer::MoveTo(int x, int y) {
+void DebugWindow::MoveTo(int x, int y) {
   gtk_window_move(GTK_WINDOW(self->window), x, y);
 }
 
-void DebugViewer::SetScale(double scale_factor_inp) {
+void DebugWindow::SetScale(double scale_factor_inp) {
   int w = window_width_;
   int h = window_height_;
 
@@ -128,12 +128,12 @@ void DebugViewer::SetScale(double scale_factor_inp) {
 gboolean debug_viewer_key_press_event(GtkWidget * /*widget*/,
                                       GdkEventKey *event, gpointer user_data) {
   auto &key_press_cb =
-      reinterpret_cast<DebugViewer *>(user_data)->key_press_event;
+      reinterpret_cast<DebugWindow *>(user_data)->key_press_event;
   if (key_press_cb) key_press_cb(event->keyval);
   return FALSE;
 }
 
-DebugViewer::DebugViewer(bool flip) : self(new Internals(flip)) {
+DebugWindow::DebugWindow(bool flip) : self(new Internals(flip)) {
   self->scale_factor = scale_factor;
   GtkWidget *window;
   auto drawing_area = self->drawing_area = gtk_drawing_area_new();
@@ -141,7 +141,7 @@ DebugViewer::DebugViewer(bool flip) : self(new Internals(flip)) {
                               window_height_ * scale_factor);
   gtk_widget_add_events(drawing_area, GDK_KEY_PRESS_MASK);
 
-  g_draw_signal_connect<DebugViewer::Internals, &DebugViewer::Internals::Draw>(
+  g_draw_signal_connect<DebugWindow::Internals, &DebugWindow::Internals::Draw>(
       drawing_area, self.get());
 
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -154,7 +154,7 @@ DebugViewer::DebugViewer(bool flip) : self(new Internals(flip)) {
 
   gtk_container_add(GTK_CONTAINER(window), drawing_area);
 }
-DebugViewer::~DebugViewer() {}
+DebugWindow::~DebugWindow() {}
 
 void CairoRender::Text(int x, int y, int /*text_x*/, int /*text_y*/,
                        const std::string &text) {
