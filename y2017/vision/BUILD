@@ -13,8 +13,38 @@ queue_library(
 )
 
 proto_cc_library(
-  name = 'vision_data',
-  src = 'vision_data.proto',
+  name = 'vision_result',
+  src = 'vision_result.proto',
+)
+
+proto_cc_library(
+  name = 'vision_config',
+  src = 'vision_config.proto',
+)
+
+cc_binary(
+  name = 'target_sender',
+  srcs = [
+    'target_sender.cc',
+  ],
+  deps = [
+    ':vision_result',
+    ':vision_config',
+    ':target_finder',
+    '//aos/common/logging:logging',
+    '//aos/common/logging:implementations',
+    '//aos/common:time',
+    '//aos/vision/image:reader',
+    '//aos/vision/image:jpeg_routines',
+    '//aos/vision/image:image_stream',
+    '//aos/vision/events:udp',
+    '//aos/vision/events:epoll_events',
+    '//aos/vision/events:socket_types',
+    '//aos/vision/blob:range_image',
+    '//aos/vision/blob:codec',
+    '//aos/vision/blob:find_blob',
+    '//aos/vision/blob:threshold',
+  ],
 )
 
 cc_binary(
@@ -30,7 +60,7 @@ cc_binary(
     '//aos/common:time',
     '//aos/vision/events:udp',
     ':vision_queue',
-    ':vision_data',
+    ':vision_result',
     '//aos/common:mutex',
   ],
 )
@@ -45,5 +75,4 @@ cc_library(
     '//aos/vision/debug:overlay',
     '//aos/vision/math:vector',
   ],
-)
 )
