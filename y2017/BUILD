@@ -25,6 +25,25 @@ cc_library(
 )
 
 cc_binary(
+  name = 'joystick_reader',
+  srcs = [
+    'joystick_reader.cc',
+  ],
+  deps = [
+    ':constants',
+    '//aos/common/actions:action_lib',
+    '//aos/common/logging',
+    '//aos/common/util:log_interval',
+    '//aos/common:time',
+    '//aos/input:joystick_input',
+    '//aos/linux_code:init',
+    '//frc971/autonomous:auto_queue',
+    '//frc971/control_loops/drivetrain:drivetrain_queue',
+    '//y2017/control_loops/superstructure:superstructure_queue',
+  ],
+)
+
+cc_binary(
   name = 'wpilib_interface',
   srcs = [
     'wpilib_interface.cc',

@@ -1,0 +1,244 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <math.h>
+
+#include "aos/linux_code/init.h"
+#include "aos/input/joystick_input.h"
+#include "aos/common/input/driver_station_data.h"
+#include "aos/common/logging/logging.h"
+#include "aos/common/util/log_interval.h"
+#include "aos/common/time.h"
+#include "aos/common/actions/actions.h"
+
+#include "frc971/control_loops/drivetrain/drivetrain.q.h"
+#include "y2017/control_loops/superstructure/superstructure.q.h"
+
+#include "y2017/constants.h"
+#include "frc971/autonomous/auto.q.h"
+
+using ::frc971::control_loops::drivetrain_queue;
+using ::y2017::control_loops::superstructure_queue;
+
+using ::aos::input::driver_station::ButtonLocation;
+using ::aos::input::driver_station::ControlBit;
+using ::aos::input::driver_station::JoystickAxis;
+using ::aos::input::driver_station::POVLocation;
+
+namespace y2017 {
+namespace input {
+namespace joysticks {
+
+const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
+const ButtonLocation kQuickTurn(1, 5);
+
+const ButtonLocation kTurn1(1, 7);
+const ButtonLocation kTurn2(1, 11);
+
+const ButtonLocation kIntakeDown(3, 9);
+const ButtonLocation kIntakeIn(3, 12);
+const ButtonLocation kIntakeOut(3, 8);
+const POVLocation kHang(3, 90);
+const ButtonLocation kFire(3, 3);
+const ButtonLocation kCloseShot(3, 7);
+const ButtonLocation kMiddleShot(3, 6);
+const POVLocation kFarShot(3, 270);
+
+const ButtonLocation kVisionAlign(3, 5);
+
+const ButtonLocation kReverseIndexer(3, 4);
+const ButtonLocation kExtra1(3, 11);
+const ButtonLocation kExtra2(3, 10);
+const ButtonLocation kExtra3(3, 2);
+
+class Reader : public ::aos::input::JoystickInput {
+ public:
+  Reader() {}
+
+  void RunIteration(const ::aos::input::driver_station::Data &data) override {
+    bool last_auto_running = auto_running_;
+    auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
+                    data.GetControlBit(ControlBit::kEnabled);
+    if (auto_running_ != last_auto_running) {
+      if (auto_running_) {
+        StartAuto();
+      } else {
+        StopAuto();
+      }
+    }
+
+    vision_valid_ = false;
+
+    if (!auto_running_) {
+      HandleDrivetrain(data);
+      HandleTeleop(data);
+    }
+
+    // Process any pending actions.
+    action_queue_.Tick();
+    was_running_ = action_queue_.Running();
+  }
+
+  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
+    bool is_control_loop_driving = false;
+
+    const double wheel = -data.GetAxis(kSteeringWheel);
+    const double throttle = -data.GetAxis(kDriveThrottle);
+    drivetrain_queue.status.FetchLatest();
+
+    if (data.PosEdge(kTurn1) || data.PosEdge(kTurn2)) {
+      if (drivetrain_queue.status.get()) {
+        left_goal_ = drivetrain_queue.status->estimated_left_position;
+        right_goal_ = drivetrain_queue.status->estimated_right_position;
+      }
+    }
+    if (data.IsPressed(kTurn1) || data.IsPressed(kTurn2)) {
+      is_control_loop_driving = true;
+    }
+    if (!drivetrain_queue.goal.MakeWithBuilder()
+             .steering(wheel)
+             .throttle(throttle)
+             .quickturn(data.IsPressed(kQuickTurn))
+             .control_loop_driving(is_control_loop_driving)
+             .left_goal(left_goal_ - wheel * 0.5 + throttle * 0.3)
+             .right_goal(right_goal_ + wheel * 0.5 + throttle * 0.3)
+             .left_velocity_goal(0)
+             .right_velocity_goal(0)
+             .Send()) {
+      LOG(WARNING, "sending stick values failed\n");
+    }
+  }
+
+  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+    // Default the intake to in.
+    intake_goal_ = constants::Values::kIntakeRange.lower;
+
+    if (!data.GetControlBit(ControlBit::kEnabled)) {
+      action_queue_.CancelAllActions();
+      LOG(DEBUG, "Canceling\n");
+    }
+
+    superstructure_queue.status.FetchLatest();
+    if (!superstructure_queue.status.get()) {
+      LOG(ERROR, "Got no superstructure status packet.\n");
+      return;
+    }
+
+    if (data.IsPressed(kIntakeDown)) {
+      intake_goal_ = 0.23;
+    }
+
+    if (data.IsPressed(kVisionAlign)) {
+      // Align shot using vision
+      // TODO(campbell): Add vision aligning.
+      shooter_velocity_ = 100.0;
+    } else if (data.IsPressed(kCloseShot)) {
+      // Close shot
+      hood_goal_ = 0.5;
+      shooter_velocity_ = 350.0;
+    } else if (data.IsPressed(kMiddleShot)) {
+      // Medium distance shot
+      hood_goal_ = 0.4;
+      shooter_velocity_ = 350.0;
+    } else if (data.IsPressed(kFarShot)) {
+      // Far shot
+      hood_goal_ = 0.6;
+      shooter_velocity_ = 250.0;
+    } else {
+      hood_goal_ = 0.15;
+      shooter_velocity_ = 0.0;
+    }
+
+    if (data.IsPressed(kExtra1)) {
+      turret_goal_ += -0.1;
+    }
+    if (data.IsPressed(kExtra2)) {
+      turret_goal_ = 0.0;
+    }
+    if (data.IsPressed(kExtra3)) {
+      turret_goal_ += 0.1;
+    }
+
+    fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
+
+    auto new_superstructure_goal = superstructure_queue.goal.MakeMessage();
+    new_superstructure_goal->intake.distance = intake_goal_;
+    new_superstructure_goal->turret.angle = turret_goal_;
+    new_superstructure_goal->hood.angle = hood_goal_;
+    new_superstructure_goal->shooter.angular_velocity = shooter_velocity_;
+
+    new_superstructure_goal->intake.profile_params.max_velocity = 0.50;
+    new_superstructure_goal->turret.profile_params.max_velocity = 6.0;
+    new_superstructure_goal->hood.profile_params.max_velocity = 5.0;
+
+    new_superstructure_goal->intake.profile_params.max_acceleration = 5.0;
+    new_superstructure_goal->turret.profile_params.max_acceleration = 15.0;
+    new_superstructure_goal->hood.profile_params.max_acceleration = 25.0;
+
+    if (data.IsPressed(kHang)) {
+      new_superstructure_goal->intake.voltage_rollers = -12.0;
+    } else if (data.IsPressed(kIntakeIn)) {
+      new_superstructure_goal->intake.voltage_rollers = 12.0;
+    } else if (data.IsPressed(kIntakeOut)) {
+      new_superstructure_goal->intake.voltage_rollers = -8.0;
+    } else {
+      new_superstructure_goal->intake.voltage_rollers = 0.0;
+    }
+
+    if (data.IsPressed(kReverseIndexer)) {
+      new_superstructure_goal->indexer.voltage_rollers = -4.0;
+      new_superstructure_goal->indexer.angular_velocity = -4.0;
+      new_superstructure_goal->indexer.angular_velocity = -1.0;
+    } else if (fire_) {
+      new_superstructure_goal->indexer.voltage_rollers = 2.0;
+      new_superstructure_goal->indexer.angular_velocity = 3.0 * M_PI;
+      new_superstructure_goal->indexer.angular_velocity = 1.0;
+    } else {
+      new_superstructure_goal->indexer.voltage_rollers = 0.0;
+      new_superstructure_goal->indexer.angular_velocity = 0.0;
+    }
+
+    LOG_STRUCT(DEBUG, "sending goal", *new_superstructure_goal);
+    if (!new_superstructure_goal.Send()) {
+      LOG(ERROR, "Sending superstructure goal failed.\n");
+    }
+  }
+
+ private:
+  void StartAuto() { LOG(INFO, "Starting auto mode\n"); }
+
+  void StopAuto() {
+    LOG(INFO, "Stopping auto mode\n");
+    action_queue_.CancelAllActions();
+  }
+
+  // Current goals to send to the robot.
+  double intake_goal_ = 0.0;
+  double turret_goal_ = 0.0;
+  double hood_goal_ = 0.3;
+  double shooter_velocity_ = 0.0;
+
+  // Goals to send to the drivetrain in closed loop mode.
+  double left_goal_;
+  double right_goal_;
+
+  bool was_running_ = false;
+  bool auto_running_ = false;
+
+  bool vision_valid_ = false;
+
+  bool fire_ = false;
+
+  ::aos::common::actions::ActionQueue action_queue_;
+};
+
+}  // namespace joysticks
+}  // namespace input
+}  // namespace y2017
+
+int main() {
+  ::aos::Init(-1);
+  ::y2017::input::joysticks::Reader reader;
+  reader.Run();
+  ::aos::Cleanup();
+}
