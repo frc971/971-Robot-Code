@@ -43,6 +43,10 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
  public:
   DMAEdgeCounter(Encoder *encoder, DigitalInput *input)
       : encoder_(encoder), input_(input) {}
+  DMAEdgeCounter() = default;
+
+  void set_encoder(Encoder *encoder) { encoder_ = encoder; }
+  void set_input(DigitalInput *input) { input_ = input; }
 
   int positive_count() const { return pos_edge_count_; }
   int negative_count() const { return neg_edge_count_; }
@@ -74,8 +78,8 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
 
   bool ExtractValue(const DMASample &sample) const;
 
-  Encoder *const encoder_;
-  DigitalInput *const input_;
+  Encoder *encoder_ = nullptr;
+  DigitalInput *input_ = nullptr;
 
   // The last DMA reading we got.
   DMASample prev_sample_;

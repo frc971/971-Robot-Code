@@ -47,12 +47,9 @@ constexpr double Values::kHoodEncoderCountsPerRevolution,
 constexpr ::frc971::constants::Range Values::kHoodRange;
 
 constexpr double Values::kTurretEncoderCountsPerRevolution,
-    Values::kTurretEncoderRatio, Values::kTurretPotRatio,
-    Values::kTurretEncoderIndexDifference,
-    Values::kMaxTurretEncoderPulsesPerSecond;
-constexpr ::frc971::constants::Range Values::kTurretRange;
+    Values::kTurretEncoderRatio, Values::kMaxTurretEncoderPulsesPerSecond;
 
-constexpr double Values::kMaxIndexerEncoderCountsPerRevolution,
+constexpr double Values::kIndexerEncoderCountsPerRevolution,
     Values::kIndexerEncoderRatio, Values::kIndexerEncoderIndexDifference,
     Values::kMaxIndexerEncoderPulsesPerSecond;
 
@@ -64,7 +61,6 @@ const uint16_t kPracticeTeamNumber = 9971;
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
   Values::Intake *const intake = &r->intake;
-  Values::Turret *const turret = &r->turret;
   Values::Hood *const hood = &r->hood;
 
   r->drivetrain_max_speed = 5;
@@ -75,13 +71,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   intake->zeroing.moving_buffer_size = 20;
   intake->zeroing.allowable_encoder_error = 0.3;
 
-  turret->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  turret->zeroing.one_revolution_distance =
-      Values::kTurretEncoderIndexDifference;
-  turret->zeroing.zeroing_threshold = 0.001;
-  turret->zeroing.moving_buffer_size = 9;
-  turret->zeroing.allowable_encoder_error = 0.3;
-
   hood->zeroing.index_pulse_count = 2;
   hood->zeroing.index_difference = Values::kHoodEncoderIndexDifference;
   hood->zeroing.known_index_pulse = 0;
@@ -91,9 +80,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case 1:
       intake->pot_offset = 0;
       intake->zeroing.measured_absolute_position = 0;
-
-      turret->pot_offset = 0;
-      turret->zeroing.measured_absolute_position = 0;
 
       hood->pot_offset = 0.1;
       hood->zeroing.measured_index_position = 0.05;
@@ -106,9 +92,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       intake->pot_offset = 0.26712;
       intake->zeroing.measured_absolute_position = 0.008913;
 
-      turret->pot_offset = 0;
-      turret->zeroing.measured_absolute_position = 0;
-
       hood->zeroing.measured_index_position = 0.652898 - 0.488117;
 
       r->down_error = 0;
@@ -118,9 +101,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case kPracticeTeamNumber:
       intake->pot_offset = 0.2921 + 0.00039 + 0.012236 - 0.023602;
       intake->zeroing.measured_absolute_position = 0.031437;
-
-      turret->pot_offset = -5.45 - 0.026111;
-      turret->zeroing.measured_absolute_position = 0.2429;
 
       hood->zeroing.measured_index_position = 0.655432 - 0.460505;
 

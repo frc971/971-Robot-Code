@@ -104,11 +104,6 @@ double intake_pot_translate(double voltage) {
          (2 * M_PI /*radians*/);
 }
 
-double turret_pot_translate(double voltage) {
-  return -voltage * Values::kTurretPotRatio * (10.0 /*turns*/ / 5.0 /*volts*/) *
-         (2 * M_PI /*radians*/);
-}
-
 constexpr double kMaxFastEncoderPulsesPerSecond =
     max(Values::kMaxDrivetrainEncoderPulsesPerSecond,
         Values::kMaxShooterEncoderPulsesPerSecond);
@@ -124,6 +119,8 @@ constexpr double kMaxSlowEncoderPulsesPerSecond =
     Values::kMaxHoodEncoderPulsesPerSecond;
 static_assert(kMaxSlowEncoderPulsesPerSecond <= 100000,
               "slow encoders are too fast");
+static_assert(kMaxSlowEncoderPulsesPerSecond < kMaxMediumEncoderPulsesPerSecond,
+              "slow encoders are faster than medium?");
 
 // Handles reading the duty cycle on a DigitalInput.
 class DutyCycleReader {
@@ -203,10 +200,7 @@ class SensorReader {
         static_cast<int>(1 / 4.0 /* built-in tolerance */ /
                              kMaxMediumEncoderPulsesPerSecond * 1e9 +
                          0.5));
-    slow_encoder_filter_.SetPeriodNanoSeconds(
-        static_cast<int>(1 / 4.0 /* built-in tolerance */ /
-                             kMaxSlowEncoderPulsesPerSecond * 1e9 +
-                         0.5));
+    hall_filter_.SetPeriodNanoSeconds(100000);
   }
 
   void set_drivetrain_left_encoder(::std::unique_ptr<Encoder> encoder) {
@@ -239,29 +233,35 @@ class SensorReader {
 
   void set_indexer_encoder(::std::unique_ptr<Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
+    indexer_counter_.set_encoder(encoder.get());
     indexer_encoder_ = ::std::move(encoder);
+  }
+
+  void set_indexer_hall(::std::unique_ptr<DigitalInput> input) {
+    hall_filter_.Add(input.get());
+    indexer_counter_.set_input(input.get());
+    indexer_hall_ = ::std::move(input);
   }
 
   void set_turret_encoder(::std::unique_ptr<Encoder> encoder) {
     medium_encoder_filter_.Add(encoder.get());
-    turret_encoder_.set_encoder(::std::move(encoder));
+    turret_counter_.set_encoder(encoder.get());
+    turret_encoder_ = ::std::move(encoder);
   }
 
-  void set_turret_potentiometer(::std::unique_ptr<AnalogInput> potentiometer) {
-    turret_encoder_.set_potentiometer(::std::move(potentiometer));
-  }
-
-  void set_turret_absolute(::std::unique_ptr<DigitalInput> input) {
-    turret_encoder_.set_absolute_pwm(::std::move(input));
+  void set_turret_hall(::std::unique_ptr<DigitalInput> input) {
+    hall_filter_.Add(input.get());
+    turret_counter_.set_input(input.get());
+    turret_hall_ = ::std::move(input);
   }
 
   void set_hood_encoder(::std::unique_ptr<Encoder> encoder) {
-    slow_encoder_filter_.Add(encoder.get());
+    medium_encoder_filter_.Add(encoder.get());
     hood_encoder_.set_encoder(::std::move(encoder));
   }
 
   void set_hood_index(::std::unique_ptr<DigitalInput> index) {
-    slow_encoder_filter_.Add(index.get());
+    medium_encoder_filter_.Add(index.get());
     hood_encoder_.set_index(::std::move(index));
   }
 
@@ -274,7 +274,9 @@ class SensorReader {
   void set_dma(::std::unique_ptr<DMA> dma) {
     dma_synchronizer_.reset(
         new ::frc971::wpilib::DMASynchronizer(::std::move(dma)));
+    dma_synchronizer_->Add(&indexer_counter_);
     dma_synchronizer_->Add(&hood_encoder_);
+    dma_synchronizer_->Add(&turret_counter_);
   }
 
   void operator()() {
@@ -330,10 +332,9 @@ class SensorReader {
                    Values::kIntakeEncoderRatio, intake_pot_translate, true,
                    values.intake.pot_offset);
 
-      superstructure_message->theta_indexer =
-          -encoder_translate(indexer_encoder_->GetRaw(),
-                             Values::kMaxIndexerEncoderCountsPerRevolution,
-                             Values::kIndexerEncoderRatio);
+      CopyPosition(indexer_counter_, &superstructure_message->column.indexer,
+                   Values::kIndexerEncoderCountsPerRevolution,
+                   Values::kIndexerEncoderRatio, true);
 
       superstructure_message->theta_shooter =
           encoder_translate(shooter_encoder_->GetRaw(),
@@ -344,10 +345,9 @@ class SensorReader {
                    Values::kHoodEncoderCountsPerRevolution,
                    Values::kHoodEncoderRatio, true);
 
-      CopyPosition(turret_encoder_, &superstructure_message->turret,
+      CopyPosition(turret_counter_, &superstructure_message->column.turret,
                    Values::kTurretEncoderCountsPerRevolution,
-                   Values::kTurretEncoderRatio, turret_pot_translate, true,
-                   values.turret.pot_offset);
+                   Values::kTurretEncoderRatio, true);
 
       superstructure_message.Send();
     }
@@ -410,13 +410,35 @@ class SensorReader {
         encoder_ratio * (2.0 * M_PI);
   }
 
+  void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
+                    ::frc971::HallEffectAndPosition *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->position =
+        multiplier * encoder_translate(counter.polled_encoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->current = !counter.polled_value();
+    position->posedge_count = counter.negative_count();
+    position->negedge_count = counter.positive_count();
+    position->posedge_value =
+        multiplier * encoder_translate(counter.last_negative_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+    position->negedge_value =
+        multiplier * encoder_translate(counter.last_positive_encoder_value(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+  }
+
   int32_t my_pid_;
   DriverStation *ds_;
 
   ::std::unique_ptr<::frc971::wpilib::DMASynchronizer> dma_synchronizer_;
 
   DigitalGlitchFilter fast_encoder_filter_, medium_encoder_filter_,
-      slow_encoder_filter_;
+      hall_filter_;
 
   ::std::unique_ptr<Encoder> drivetrain_left_encoder_,
       drivetrain_right_encoder_;
@@ -424,9 +446,13 @@ class SensorReader {
   AbsoluteEncoderAndPotentiometer intake_encoder_;
 
   ::std::unique_ptr<Encoder> indexer_encoder_;
-  ::std::unique_ptr<AnalogInput> indexer_hall_;
+  ::std::unique_ptr<DigitalInput> indexer_hall_;
+  ::frc971::wpilib::DMAEdgeCounter indexer_counter_;
 
-  AbsoluteEncoderAndPotentiometer turret_encoder_;
+  ::std::unique_ptr<Encoder> turret_encoder_;
+  ::std::unique_ptr<DigitalInput> turret_hall_;
+  ::frc971::wpilib::DMAEdgeCounter turret_counter_;
+
   ::frc971::wpilib::DMAEncoder hood_encoder_;
   ::std::unique_ptr<Encoder> shooter_encoder_;
 
@@ -559,10 +585,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     reader.set_intake_potentiometer(make_unique<AnalogInput>(4));
 
     reader.set_indexer_encoder(make_encoder(5));
+    reader.set_indexer_hall(make_unique<DigitalInput>(4));
 
     reader.set_turret_encoder(make_encoder(6));
-    reader.set_turret_absolute(make_unique<DigitalInput>(2));
-    reader.set_turret_potentiometer(make_unique<AnalogInput>(5));
+    reader.set_turret_hall(make_unique<DigitalInput>(2));
 
     reader.set_hood_encoder(make_encoder(4));
     reader.set_hood_index(make_unique<DigitalInput>(1));

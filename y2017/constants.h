@@ -89,21 +89,15 @@ struct Values {
       -0.39 * M_PI / 180.0, 37.11 * M_PI / 180.0, (-0.39 + 1.0) * M_PI / 180.0,
       (37.11 - 1.0) * M_PI / 180.0};
 
-  static constexpr double kTurretEncoderCountsPerRevolution = 1024 * 4;
-  static constexpr double kTurretEncoderRatio = 16.0 / 92.0;
-  static constexpr double kTurretPotRatio = 16.0 / 92.0;
-  static constexpr double kTurretEncoderIndexDifference =
-      2.0 * M_PI * kTurretEncoderRatio;
+  static constexpr double kTurretEncoderCountsPerRevolution = 256 * 4;
+  static constexpr double kTurretEncoderRatio = 11.0 / 94.0;
   static constexpr double kMaxTurretEncoderPulsesPerSecond =
       control_loops::superstructure::turret::kFreeSpeed *
       control_loops::superstructure::turret::kOutputRatio /
       constants::Values::kTurretEncoderRatio *
       kTurretEncoderCountsPerRevolution;
-  static constexpr ::frc971::constants::Range kTurretRange{
-      -460.0 / 2.0 * M_PI / 180.0, 460.0 / 2.0 * M_PI / 180.0,
-      -450.0 / 2.0 * M_PI / 180.0, 450.0 / 2.0 * M_PI / 180.0};
 
-  static constexpr double kMaxIndexerEncoderCountsPerRevolution = 256 * 4;
+  static constexpr double kIndexerEncoderCountsPerRevolution = 256 * 4;
   static constexpr double kIndexerEncoderRatio = (18.0 / 36.0) * (12.0 / 84.0);
   static constexpr double kIndexerEncoderIndexDifference =
       2.0 * M_PI * kIndexerEncoderRatio;
@@ -111,13 +105,11 @@ struct Values {
       control_loops::superstructure::indexer::kFreeSpeed *
       control_loops::superstructure::indexer::kOutputRatio /
       constants::Values::kIndexerEncoderRatio *
-      kMaxIndexerEncoderCountsPerRevolution;
+      kIndexerEncoderCountsPerRevolution;
 
   double drivetrain_max_speed;
 
   Intake intake;
-
-  Turret turret;
 
   Hood hood;
 
