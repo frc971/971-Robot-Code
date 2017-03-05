@@ -17,3 +17,14 @@ gtk_dependent_cc_binary(name = "jpeg_vision_test",
     "//aos/vision/events:gtk_event",
   ],
 )
+
+cc_binary(
+  name = 'camera_primer',
+  srcs = ['camera_primer.cc'],
+  deps = [
+    '//aos/common/logging:logging',
+    '//aos/common/logging:implementations',
+    '//aos/vision/image:image_stream',
+    '//aos/vision/events:epoll_events',
+  ],
+)
