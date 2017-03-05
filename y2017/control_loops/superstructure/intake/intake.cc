@@ -85,7 +85,8 @@ void Intake::Iterate(
       }
 
       // ESTOP if we hit the hard limits.
-      if (profiled_subsystem_.CheckHardLimits()) {
+      if (profiled_subsystem_.CheckHardLimits() ||
+          profiled_subsystem_.error()) {
         state_ = State::ESTOP;
       }
     } break;
