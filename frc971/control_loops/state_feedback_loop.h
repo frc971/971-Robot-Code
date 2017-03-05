@@ -13,6 +13,10 @@
 #include "aos/common/logging/logging.h"
 #include "aos/common/macros.h"
 
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename PlantType, typename ObserverType>
+class StateFeedbackLoop;
+
 // For everything in this file, "inputs" and "outputs" are defined from the
 // perspective of the plant. This means U is an input and Y is an output
 // (because you give the plant U (powers) and it gives you back a Y (sensor
@@ -168,8 +172,14 @@ class StateFeedbackPlant {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
-    X_ = A() * X() + B() * U;
+    X_ = Update(X(), U);
     Y_ = C() * X() + D() * U;
+  }
+
+  Eigen::Matrix<double, number_of_states, 1> Update(
+      const Eigen::Matrix<double, number_of_states, 1> X,
+      const Eigen::Matrix<double, number_of_inputs, 1> &U) {
+    return A() * X + B() * U;
   }
 
  protected:
@@ -233,6 +243,8 @@ class StateFeedbackController {
   }
   double L(int i, int j) const { return L()(i, j); }
 
+  void Reset() {}
+
   // Sets the current controller to be index, clamped to be within range.
   void set_index(int index) {
     if (index < 0) {
@@ -289,7 +301,7 @@ class StateFeedbackObserver {
       : coefficients_(::std::move(*observers)) {}
 
   StateFeedbackObserver(StateFeedbackObserver &&other)
-      : index_(other.index_) {
+      : X_hat_(other.X_hat_), index_(other.index_) {
     ::std::swap(coefficients_, other.coefficients_);
   }
 
@@ -297,6 +309,33 @@ class StateFeedbackObserver {
     return coefficients().L;
   }
   double L(int i, int j) const { return L()(i, j); }
+
+  const Eigen::Matrix<double, number_of_states, 1> &X_hat() const {
+    return X_hat_;
+  }
+  Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
+
+  void Reset() { X_hat_.setZero(); }
+
+  void Predict(const StateFeedbackLoop<
+                   number_of_states, number_of_inputs, number_of_outputs,
+                   StateFeedbackPlant<number_of_states, number_of_inputs,
+                                      number_of_outputs>,
+                   StateFeedbackObserver> &loop,
+               const Eigen::Matrix<double, number_of_inputs, 1> &new_u) {
+    mutable_X_hat() = loop.plant().A() * X_hat() + loop.plant().B() * new_u;
+  }
+
+  void Correct(const StateFeedbackLoop<
+                   number_of_states, number_of_inputs, number_of_outputs,
+                   StateFeedbackPlant<number_of_states, number_of_inputs,
+                                      number_of_outputs>,
+                   StateFeedbackObserver> &loop,
+               const Eigen::Matrix<double, number_of_inputs, 1> &U,
+               const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
+    mutable_X_hat() += loop.plant().A_inv() * L() *
+                       (Y - loop.plant().C() * X_hat() - loop.plant().D() * U);
+  }
 
   // Sets the current controller to be index, clamped to be within range.
   void set_index(int index) {
@@ -324,24 +363,29 @@ class StateFeedbackObserver {
   }
 
  private:
+  // Internal state estimate.
+  Eigen::Matrix<double, number_of_states, 1> X_hat_;
+
   int index_ = 0;
   ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>>
       coefficients_;
 };
 
-template <int number_of_states, int number_of_inputs, int number_of_outputs>
+template <int number_of_states, int number_of_inputs, int number_of_outputs,
+          typename PlantType = StateFeedbackPlant<
+              number_of_states, number_of_inputs, number_of_outputs>,
+          typename ObserverType = StateFeedbackObserver<
+              number_of_states, number_of_inputs, number_of_outputs>>
 class StateFeedbackLoop {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   explicit StateFeedbackLoop(
-      StateFeedbackPlant<number_of_states, number_of_inputs, number_of_outputs>
-          &&plant,
+      PlantType &&plant,
       StateFeedbackController<number_of_states, number_of_inputs,
                               number_of_outputs> &&controller,
-      StateFeedbackObserver<number_of_states, number_of_inputs,
-                            number_of_outputs> &&observer)
+      ObserverType &&observer)
       : plant_(::std::move(plant)),
         controller_(::std::move(controller)),
         observer_(::std::move(observer)) {
@@ -352,7 +396,6 @@ class StateFeedbackLoop {
       : plant_(::std::move(other.plant_)),
         controller_(::std::move(other.controller_)),
         observer_(::std::move(other.observer_)) {
-    X_hat_.swap(other.X_hat_);
     R_.swap(other.R_);
     next_R_.swap(other.next_R_);
     U_.swap(other.U_);
@@ -368,7 +411,7 @@ class StateFeedbackLoop {
   double L(int i, int j) const { return L()(i, j); }
 
   const Eigen::Matrix<double, number_of_states, 1> &X_hat() const {
-    return X_hat_;
+    return observer().X_hat();
   }
   double X_hat(int i, int j) const { return X_hat()(i, j); }
   const Eigen::Matrix<double, number_of_states, 1> &R() const { return R_; }
@@ -388,7 +431,9 @@ class StateFeedbackLoop {
   }
   double ff_U(int i, int j) const { return ff_U()(i, j); }
 
-  Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
+  Eigen::Matrix<double, number_of_states, 1> &mutable_X_hat() {
+    return observer_.mutable_X_hat();
+  }
   double &mutable_X_hat(int i, int j) { return mutable_X_hat()(i, j); }
   Eigen::Matrix<double, number_of_states, 1> &mutable_R() { return R_; }
   double &mutable_R(int i, int j) { return mutable_R()(i, j); }
@@ -405,11 +450,7 @@ class StateFeedbackLoop {
     return mutable_U_uncapped()(i, j);
   }
 
-  const StateFeedbackPlant<number_of_states, number_of_inputs,
-                           number_of_outputs>
-      &plant() const {
-    return plant_;
-  }
+  const PlantType &plant() const { return plant_; }
 
   const StateFeedbackController<number_of_states, number_of_inputs,
                                 number_of_outputs>
@@ -417,19 +458,18 @@ class StateFeedbackLoop {
     return controller_;
   }
 
-  const StateFeedbackObserver<number_of_states, number_of_inputs,
-                              number_of_outputs>
-      &observer() const {
-    return observer_;
-  }
+  const ObserverType &observer() const { return observer_; }
 
   void Reset() {
-    X_hat_.setZero();
     R_.setZero();
     next_R_.setZero();
     U_.setZero();
     U_uncapped_.setZero();
     ff_U_.setZero();
+
+    plant_.Reset();
+    controller_.Reset();
+    observer_.Reset();
   }
 
   // If U is outside the hardware range, limit it before the plant tries to use
@@ -446,8 +486,7 @@ class StateFeedbackLoop {
 
   // Corrects X_hat given the observation in Y.
   void Correct(const Eigen::Matrix<double, number_of_outputs, 1> &Y) {
-    X_hat_ +=
-        plant().A_inv() * L() * (Y - plant().C() * X_hat_ - plant().D() * U());
+    observer_.Correct(*this, U(), Y);
   }
 
   const Eigen::Matrix<double, number_of_states, 1> error() const {
@@ -492,27 +531,25 @@ class StateFeedbackLoop {
   }
 
   void UpdateObserver(const Eigen::Matrix<double, number_of_inputs, 1> &new_u) {
-    // TODO(austin): Should this live in StateSpacePlant?
-    X_hat_ = plant().A() * X_hat() + plant().B() * new_u;
+    observer_.Predict(*this, new_u);
   }
 
   // Sets the current controller to be index.
   void set_index(int index) {
-    controller_.set_index(index);
     plant_.set_index(index);
+    controller_.set_index(index);
+    observer_.set_index(index);
   }
 
   int index() const { return plant_.index(); }
 
  protected:
-  StateFeedbackPlant<number_of_states, number_of_inputs, number_of_outputs>
-      plant_;
+  PlantType plant_;
 
   StateFeedbackController<number_of_states, number_of_inputs, number_of_outputs>
       controller_;
 
-  StateFeedbackObserver<number_of_states, number_of_inputs, number_of_outputs>
-      observer_;
+  ObserverType observer_;
 
   // These are accessible from non-templated subclasses.
   static constexpr int kNumStates = number_of_states;
@@ -523,8 +560,6 @@ class StateFeedbackLoop {
   Eigen::Matrix<double, number_of_inputs, 1> ff_U_;
 
  private:
-  // Internal state estimate.
-  Eigen::Matrix<double, number_of_states, 1> X_hat_;
   // Current goal (Used by the feed-back controller).
   Eigen::Matrix<double, number_of_states, 1> R_;
   // Goal to go to in the next cycle (Used by Feed-Forward controller.)
