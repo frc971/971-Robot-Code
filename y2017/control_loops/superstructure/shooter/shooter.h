@@ -40,7 +40,7 @@ class ShooterController {
   double error() const { return error_; }
 
   // Executes the control loop for a cycle.
-  void Update(bool disabled);
+  void Update(bool disabled, ::std::chrono::nanoseconds dt);
 
   // Resets the kalman filter and any other internal state.
   void Reset();
@@ -59,7 +59,9 @@ class ShooterController {
   ptrdiff_t history_position_ = 0;
 
   double error_ = 0.0;
+  double dt_position_ = 0.0;
   double dt_velocity_ = 0.0;
+  double fixed_dt_velocity_ = 0.0;
   double last_position_ = 0.0;
   double average_angular_velocity_ = 0.0;
   double min_velocity_ = 0.0;
@@ -83,7 +85,8 @@ class Shooter {
   // never be nullptr.  goal can be nullptr if no goal exists, and output should
   // be nullptr if disabled.
   void Iterate(const control_loops::ShooterGoal *goal, const double *position,
-               double *output, control_loops::ShooterStatus *status);
+               ::aos::monotonic_clock::time_point position_time, double *output,
+               control_loops::ShooterStatus *status);
 
   // Sets the shooter up to reset the kalman filter next time Iterate is called.
   void Reset();
@@ -93,6 +96,8 @@ class Shooter {
 
   bool last_ready_ = false;
   double min_ = 0.0;
+  ::aos::monotonic_clock::time_point last_time_ =
+      ::aos::monotonic_clock::min_time;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };

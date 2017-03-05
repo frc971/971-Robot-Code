@@ -50,7 +50,7 @@ void Superstructure::RunIteration(
                   output != nullptr ? &(output->voltage_intake) : nullptr,
                   &(status->intake));
   shooter_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->shooter) : nullptr,
-                   &(position->theta_shooter),
+                   &(position->theta_shooter), position->sent_time,
                    output != nullptr ? &(output->voltage_shooter) : nullptr,
                    &(status->shooter));
   indexer_.Iterate(unsafe_goal != nullptr ? &(unsafe_goal->indexer) : nullptr,

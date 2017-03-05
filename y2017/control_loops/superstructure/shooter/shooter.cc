@@ -42,10 +42,7 @@ void ShooterController::set_position(double current_position) {
   history_[history_position_] = current_position;
   history_position_ = (history_position_ + 1) % kHistoryLength;
 
-  dt_velocity_ = (current_position - last_position_) /
-                 chrono::duration_cast<chrono::duration<double>>(
-                     ::aos::controls::kLoopFrequency)
-                     .count();
+  dt_position_ = current_position - last_position_;
   last_position_ = current_position;
 }
 
@@ -53,7 +50,7 @@ double ShooterController::voltage() const { return loop_->U(0, 0); }
 
 void ShooterController::Reset() { reset_ = true; }
 
-void ShooterController::Update(bool disabled) {
+void ShooterController::Update(bool disabled, chrono::nanoseconds dt) {
   loop_->mutable_R() = loop_->next_R();
   if (::std::abs(loop_->R(1, 0)) < 1.0) {
     // Kill power at low angular velocities.
@@ -102,8 +99,11 @@ void ShooterController::Update(bool disabled) {
 
   X_hat_current_ = loop_->X_hat();
   position_error_ = X_hat_current_(0, 0) - Y_(0, 0);
+  dt_velocity_ = dt_position_ /
+                 chrono::duration_cast<chrono::duration<double>>(dt).count();
+  fixed_dt_velocity_ = dt_position_ / 0.005;
 
-  loop_->Update(disabled);
+  loop_->Update(disabled, dt);
 }
 
 void ShooterController::SetStatus(ShooterStatus *status) {
@@ -115,13 +115,15 @@ void ShooterController::SetStatus(ShooterStatus *status) {
   status->voltage_error = X_hat_current_(2, 0);
   status->position_error = position_error_;
   status->instantaneous_velocity = dt_velocity_;
+  status->fixed_instantaneous_velocity = fixed_dt_velocity_;
 }
 
 void Shooter::Reset() { wheel_.Reset(); }
 
 void Shooter::Iterate(const control_loops::ShooterGoal *goal,
-                      const double *position, double *output,
-                      control_loops::ShooterStatus *status) {
+                      const double *position,
+                      ::aos::monotonic_clock::time_point position_time,
+                      double *output, control_loops::ShooterStatus *status) {
   if (goal) {
     // Update position/goal for our wheel.
     wheel_.set_goal(goal->angular_velocity);
@@ -129,7 +131,13 @@ void Shooter::Iterate(const control_loops::ShooterGoal *goal,
 
   wheel_.set_position(*position);
 
-  wheel_.Update(output == nullptr);
+  chrono::nanoseconds dt = ::aos::controls::kLoopFrequency;
+  if (last_time_ != ::aos::monotonic_clock::min_time) {
+    dt = position_time - last_time_;
+  }
+  last_time_ = position_time;
+
+  wheel_.Update(output == nullptr, dt);
 
   wheel_.SetStatus(status);
 
