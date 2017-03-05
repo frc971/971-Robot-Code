@@ -74,7 +74,7 @@ std::vector<std::pair<Vector<2>, Vector<2>>> CornerFinder::Find(
 
     if (do_overlay_) {
       for (FittedLine &line : lines) {
-        overlay_->add_line(Vector<2>(line.st.x, line.st.y),
+        overlay_->AddLine(Vector<2>(line.st.x, line.st.y),
                            Vector<2>(line.ed.x, line.ed.y), {255, 0, 0});
       }
     }
@@ -105,9 +105,9 @@ std::vector<std::pair<Vector<2>, Vector<2>>> CornerFinder::Find(
       Segment<2> bottom(MakeLine(bottomLine));
 
       if (do_overlay_) {
-        overlay_->add_line(left.A(), left.B(), {155, 0, 255});
-        overlay_->add_line(right.A(), right.B(), {255, 155, 0});
-        overlay_->add_line(bottom.A(), bottom.B(), {255, 0, 155});
+        overlay_->AddLine(left.A(), left.B(), {155, 0, 255});
+        overlay_->AddLine(right.A(), right.B(), {255, 155, 0});
+        overlay_->AddLine(bottom.A(), bottom.B(), {255, 0, 155});
       }
 
       res.emplace_back(left.Intersect(bottom), right.Intersect(bottom));
@@ -238,8 +238,8 @@ double HistogramBlobFilter::CheckHistogram(SelectedBlob *blob,
     if (do_overlay_) {
       double a = hist_lr[i];
       Vector<2> mid = a * s + (1.0 - a) * e;
-      overlay_->add_line(s, mid, {0, 0, 255});
-      overlay_->add_line(mid, e, {255, 255, 0});
+      overlay_->AddLine(s, mid, {0, 0, 255});
+      overlay_->AddLine(mid, e, {255, 255, 0});
     }
   }
   double check_vert_up = L22_dist(hist_size_, vert_hist_, hist_lr);
@@ -259,8 +259,8 @@ double HistogramBlobFilter::CheckHistogram(SelectedBlob *blob,
     if (do_overlay_) {
       double a = hist_ub[i];
       Vector<2> mid = a * s + (1.0 - a) * e;
-      overlay_->add_line(s, mid, {0, 0, 255});
-      overlay_->add_line(mid, e, {255, 255, 0});
+      overlay_->AddLine(s, mid, {0, 0, 255});
+      overlay_->AddLine(mid, e, {255, 255, 0});
     }
   }
   double check_horiz = L22_dist(hist_size_, horiz_hist_, hist_ub);
@@ -268,16 +268,16 @@ double HistogramBlobFilter::CheckHistogram(SelectedBlob *blob,
   if (do_overlay_) {
     Vector<2> A = blob->upper_left + Vector<2>(-10, 10);
     Vector<2> B = blob->upper_left - Vector<2>(-10, 10);
-    overlay_->add_line(A, B, {255, 255, 255});
+    overlay_->AddLine(A, B, {255, 255, 255});
     A = blob->upper_right + Vector<2>(-10, 10);
     B = blob->upper_right - Vector<2>(-10, 10);
-    overlay_->add_line(A, B, {255, 255, 255});
+    overlay_->AddLine(A, B, {255, 255, 255});
     A = blob->lower_right + Vector<2>(-10, 10);
     B = blob->lower_right - Vector<2>(-10, 10);
-    overlay_->add_line(A, B, {255, 255, 255});
+    overlay_->AddLine(A, B, {255, 255, 255});
     A = blob->lower_left + Vector<2>(-10, 10);
     B = blob->lower_left - Vector<2>(-10, 10);
-    overlay_->add_line(A, B, {255, 255, 255});
+    overlay_->AddLine(A, B, {255, 255, 255});
   }
   // If this target is better upside down, if it is flip the blob.
   // The horizontal will not be effected, so we will not change that.
@@ -292,16 +292,16 @@ double HistogramBlobFilter::CheckHistogram(SelectedBlob *blob,
   if (do_overlay_) {
     Vector<2> A = blob->upper_left + Vector<2>(10, 10);
     Vector<2> B = blob->upper_left - Vector<2>(10, 10);
-    overlay_->add_line(A, B, {255, 0, 255});
+    overlay_->AddLine(A, B, {255, 0, 255});
     A = blob->upper_right + Vector<2>(10, 10);
     B = blob->upper_right - Vector<2>(10, 10);
-    overlay_->add_line(A, B, {255, 0, 255});
+    overlay_->AddLine(A, B, {255, 0, 255});
     A = blob->lower_right + Vector<2>(10, 10);
     B = blob->lower_right - Vector<2>(10, 10);
-    overlay_->add_line(A, B, {255, 0, 255});
+    overlay_->AddLine(A, B, {255, 0, 255});
     A = blob->lower_left + Vector<2>(10, 10);
     B = blob->lower_left - Vector<2>(10, 10);
-    overlay_->add_line(A, B, {255, 0, 255});
+    overlay_->AddLine(A, B, {255, 0, 255});
   }
 
   // average the two distances
