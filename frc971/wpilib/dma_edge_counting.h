@@ -63,10 +63,12 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
  private:
   void UpdateFromSample(const DMASample &sample) override;
   void UpdatePolledValue() override {
+    previous_polled_value_ = polled_value_;
     polled_value_ = input_->Get();
     polled_encoder_ = encoder_->GetRaw();
   }
   void PollFromSample(const DMASample &sample) override {
+    previous_polled_value_ = polled_value_;
     polled_value_ = ExtractValue(sample);
     polled_encoder_ = sample.GetRaw(encoder_);
   }
@@ -97,6 +99,7 @@ class DMAEdgeCounter : public DMASampleHandlerInterface {
   int neg_last_encoder_ = 0;
 
   bool polled_value_ = false;
+  bool previous_polled_value_ = false;
   int polled_encoder_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(DMAEdgeCounter);

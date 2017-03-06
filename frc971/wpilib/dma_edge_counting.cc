@@ -11,7 +11,7 @@ bool DMAEdgeCounter::ExtractValue(const DMASample &sample) const {
 
 void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
   const bool previous_value =
-      have_prev_sample_ ? ExtractValue(prev_sample_) : polled_value_;
+      have_prev_sample_ ? ExtractValue(prev_sample_) : previous_polled_value_;
   have_prev_sample_ = true;
   prev_sample_ = sample;
 
