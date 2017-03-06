@@ -420,6 +420,8 @@ class ControlLoop(object):
       ans.append(self._DumpMatrix('P_steady_state', self.P_steady_state))
       ans.append('  return %s(Q_continuous, R_continuous, P_steady_state);\n' % (
           observer_coefficient_type,))
+    else:
+      glog.fatal('Unsupported observer type %s', observer_coefficient_type)
 
     ans.append('}\n')
     return ''.join(ans)
