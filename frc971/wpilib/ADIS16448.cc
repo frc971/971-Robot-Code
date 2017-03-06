@@ -127,6 +127,12 @@ ADIS16448::ADIS16448(SPI::Port port, DigitalInput *dio1)
 }
 
 void ADIS16448::operator()() {
+  // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
+  // it to a RT priority of 33.
+  PCHECK(system(
+             "ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
+             "33") == 0);
+
   ::aos::SetCurrentThreadName("IMU");
 
   // Try to initialize repeatedly as long as we're supposed to be running.
@@ -134,6 +140,8 @@ void ADIS16448::operator()() {
     ::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
   }
   LOG(INFO, "IMU initialized successfully\n");
+
+  ::aos::SetCurrentThreadRealtimePriority(33);
 
   // Rounded to approximate the 204.8 Hz.
   constexpr size_t kImuSendRate = 205;
