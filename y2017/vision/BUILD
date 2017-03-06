@@ -76,3 +76,16 @@ cc_library(
     '//aos/vision/math:vector',
   ],
 )
+
+gtk_dependent_cc_binary(
+  name = 'debug_viewer',
+  srcs = ['debug_viewer.cc'],
+  deps = [
+    ':target_finder',
+    '//aos/vision/blob:threshold',
+    '//aos/vision/blob:transpose',
+    '//aos/vision/blob:move_scale',
+    '//aos/vision/math:vector',
+    '//aos/vision/debug:debug_framework',
+  ]
+)
